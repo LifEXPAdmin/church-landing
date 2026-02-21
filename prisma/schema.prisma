@@ -1,0 +1,54 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum WaitlistRole {
+  BELIEVER
+  CHURCH
+  CREATOR
+  BUSINESS
+  BUILDER
+}
+
+enum AnalyticsEventType {
+  PAGE_VIEW
+  CTA_CLICK
+  JOIN_SUBMIT
+  JOIN_SUCCESS
+}
+
+model WaitlistSignup {
+  id        String       @id @default(cuid())
+  createdAt DateTime     @default(now())
+  role      WaitlistRole
+  name      String
+  email     String
+  message   String?
+  source    String?
+
+  @@index([createdAt])
+  @@index([role])
+  @@index([email])
+  @@unique([email, role])
+}
+
+model WaitlistEvent {
+  id         String             @id @default(cuid())
+  createdAt  DateTime           @default(now())
+  eventType  AnalyticsEventType
+  path       String
+  role       WaitlistRole?
+  label      String?
+  userAgent  String?
+  ipHash     String?
+  referrer   String?
+
+  @@index([createdAt])
+  @@index([eventType])
+  @@index([path])
+}
