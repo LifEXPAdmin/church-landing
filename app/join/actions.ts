@@ -60,42 +60,52 @@ export async function submitWaitlist(
     };
   }
 
-  const signup = await prisma.waitlistSignup.upsert({
-    where: {
-      email_role: {
+  try {
+    const signup = await prisma.waitlistSignup.upsert({
+      where: {
+        email_role: {
+          email,
+          role
+        }
+      },
+      create: {
+        name,
         email,
-        role
+        role,
+        message: message.length > 0 ? message : null,
+        source
+      },
+      update: {
+        name,
+        message: message.length > 0 ? message : null,
+        source
       }
-    },
-    create: {
-      name,
-      email,
-      role,
-      message: message.length > 0 ? message : null,
-      source
-    },
-    update: {
-      name,
-      message: message.length > 0 ? message : null,
-      source
-    }
-  });
+    });
 
-  await Promise.all([
-    syncSubscriberToMailerLite({
-      role: role as WaitlistRole,
-      name,
-      email
-    }).catch((error) => {
-      console.error("MailerLite sync failed", error);
-    }),
-    trackEvent({
-      eventType: "JOIN_SUCCESS",
-      path: "/join",
-      role: role as WaitlistRole,
-      label: source
-    })
-  ]);
+    await Promise.all([
+      syncSubscriberToMailerLite({
+        role: role as WaitlistRole,
+        name,
+        email
+      }).catch((error) => {
+        console.error("MailerLite sync failed", error);
+      }),
+      trackEvent({
+        eventType: "JOIN_SUCCESS",
+        path: "/join",
+        role: role as WaitlistRole,
+        label: source
+      }).catch((error) => {
+        console.error("Analytics tracking failed", error);
+      })
+    ]);
 
-  redirect(`/thanks?role=${signup.role}`);
+    redirect(`/thanks?role=${signup.role}`);
+  } catch (error) {
+    console.error("Waitlist submit failed", error);
+    return {
+      success: false,
+      message: "We couldn't submit your request right now. Please try again in a minute."
+    };
+  }
 }
