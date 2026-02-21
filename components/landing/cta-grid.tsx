@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
@@ -45,7 +45,7 @@ const ctas = [
   }
 ] as const;
 
-function trackCtaEvent(role: string, label: string, eventType: "CTA_CLICK" | "CTA_EXPAND" | "CTA_HOVER") {
+function trackCtaEvent(role: string, label: string, eventType: "CTA_CLICK") {
   const payload = JSON.stringify({
     eventType,
     path: "/",
@@ -68,79 +68,68 @@ function trackCtaEvent(role: string, label: string, eventType: "CTA_CLICK" | "CT
 
 export function CtaGrid() {
   const router = useRouter();
-  const [expandedRole, setExpandedRole] = useState<(typeof ctas)[number]["role"] | null>(null);
-  const [hoveredRole, setHoveredRole] = useState<(typeof ctas)[number]["role"] | null>(null);
-
-  const activeRole = expandedRole ?? hoveredRole;
-  const activeCta = useMemo(() => ctas.find((item) => item.role === activeRole) ?? null, [activeRole]);
-
-  function handleCtaClick(cta: (typeof ctas)[number]) {
-    if (expandedRole === cta.role) {
-      trackCtaEvent(cta.role, cta.label, "CTA_CLICK");
-      router.push(`/join?role=${cta.role}&source=hero`);
-      return;
-    }
-
-    setExpandedRole(cta.role);
-    trackCtaEvent(cta.role, cta.label, "CTA_EXPAND");
-  }
+  const [activeCta, setActiveCta] = useState<(typeof ctas)[number] | null>(null);
 
   return (
     <div className="w-full max-w-3xl">
       <div className="grid gap-3 sm:grid-cols-2">
-        {ctas.map((cta) => {
-          const isExpanded = expandedRole === cta.role;
-
-          return (
-            <Button
-              key={cta.label}
-              size="lg"
-              variant={cta.priority === "primary" ? "default" : "secondary"}
-              className={
-                cta.priority === "primary"
-                  ? "justify-between rounded-xl bg-[#c38a45] text-white hover:bg-[#aa7537]"
-                  : "justify-between rounded-xl border border-[#f4d8ab]/50 bg-white/15 text-white hover:bg-white/25"
-              }
-              onMouseEnter={() => {
-                if (expandedRole) return;
-                setHoveredRole(cta.role);
-                trackCtaEvent(cta.role, cta.label, "CTA_HOVER");
-              }}
-              onMouseLeave={() => {
-                if (expandedRole) return;
-                setHoveredRole(null);
-              }}
-              onClick={() => handleCtaClick(cta)}
-            >
-              <span>{cta.label}</span>
-              <ArrowRight className={`h-4 w-4 transition-transform ${isExpanded ? "translate-x-0.5" : ""}`} />
-            </Button>
-          );
-        })}
+        {ctas.map((cta) => (
+          <Button
+            key={cta.label}
+            size="lg"
+            variant={cta.priority === "primary" ? "default" : "secondary"}
+            className={
+              cta.priority === "primary"
+                ? "justify-between rounded-xl bg-[#c38a45] text-white hover:bg-[#aa7537]"
+                : "justify-between rounded-xl border border-[#f4d8ab]/50 bg-white/15 text-white hover:bg-white/25"
+            }
+            onClick={() => setActiveCta(cta)}
+          >
+            <span>{cta.label}</span>
+            <ArrowRight className="h-4 w-4" />
+          </Button>
+        ))}
       </div>
 
-      <div
-        className={`mt-3 overflow-hidden rounded-xl border border-[#f2d8af]/45 bg-black/40 p-4 text-[#f7ead5] transition-all ${
-          activeCta ? "max-h-72 opacity-100" : "max-h-0 border-transparent p-0 opacity-0"
-        }`}
-      >
-        {activeCta ? (
-          <div>
-            <p className="text-sm font-semibold text-[#ffe8c5]">{activeCta.label}</p>
-            <p className="mt-2 text-sm text-[#f4e4ca]">{activeCta.summary}</p>
-            <p className="mt-2 text-sm text-[#edd9bb]">{activeCta.detail}</p>
-            <div className="mt-4">
+      {activeCta ? (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/65 p-4 sm:items-center">
+          <div className="w-full max-w-lg rounded-2xl border border-[#f2d8af]/45 bg-[#1f1510] p-5 text-[#f7ead5] shadow-2xl sm:p-6">
+            <div className="flex items-start justify-between gap-4">
+              <p className="text-xl leading-tight sm:text-2xl">{activeCta.label}</p>
+              <button
+                type="button"
+                aria-label="Close"
+                className="rounded-full border border-[#f2d8af]/35 p-1.5 text-[#f7ead5] hover:bg-white/10"
+                onClick={() => setActiveCta(null)}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <p className="mt-4 text-sm text-[#f4e4ca] sm:text-base">{activeCta.summary}</p>
+            <p className="mt-2 text-sm text-[#edd9bb] sm:text-base">{activeCta.detail}</p>
+
+            <div className="mt-6 flex gap-3">
               <Button
-                size="sm"
                 className="rounded-full bg-[#c38a45] text-white hover:bg-[#aa7537]"
-                onClick={() => router.push(`/join?role=${activeCta.role}&source=hero-card`)}
+                onClick={() => {
+                  trackCtaEvent(activeCta.role, activeCta.label, "CTA_CLICK");
+                  router.push(`/join?role=${activeCta.role}&source=hero-modal`);
+                }}
               >
                 {activeCta.action}
               </Button>
+              <Button
+                variant="secondary"
+                className="rounded-full border border-[#f2d8af]/35 bg-transparent text-[#f7ead5] hover:bg-white/10"
+                onClick={() => setActiveCta(null)}
+              >
+                Cancel
+              </Button>
             </div>
           </div>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
     </div>
   );
 }
