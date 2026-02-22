@@ -60,6 +60,8 @@ export async function submitWaitlist(
     };
   }
 
+  let submittedRole: WaitlistRole | null = null;
+
   try {
     const signup = await prisma.waitlistSignup.upsert({
       where: {
@@ -100,7 +102,7 @@ export async function submitWaitlist(
       })
     ]);
 
-    redirect(`/thanks?role=${signup.role}`);
+    submittedRole = signup.role;
   } catch (error) {
     console.error("Waitlist submit failed", error);
     return {
@@ -108,4 +110,13 @@ export async function submitWaitlist(
       message: "We couldn't submit your request right now. Please try again in a minute."
     };
   }
+
+  if (submittedRole) {
+    redirect(`/thanks?role=${submittedRole}`);
+  }
+
+  return {
+    success: false,
+    message: "We couldn't submit your request right now. Please try again in a minute."
+  };
 }
