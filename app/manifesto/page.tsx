@@ -9,7 +9,7 @@ export default function ManifestoPage() {
             <h2 className="mb-3 text-3xl">Church Is Alive</h2>
             <p>Church is not a building.</p>
             <p>Church is not a schedule.</p>
-            <p>Church is the living Body of Christ—called, gathered, and growing.</p>
+            <p>Church is the living Body of Christ, called, gathered, and growing.</p>
             <p>If the Body is alive, it does not shut down.</p>
             <p>If the Body is alive, it does not go silent.</p>
             <p>If the Body is alive, it does not exist one day a week.</p>
@@ -21,7 +21,7 @@ export default function ManifestoPage() {
             <p>We believe God is moving.</p>
             <p>We believe The Revival is happening now.</p>
             <p>
-              Church exists to support what God is already doing—not to replace it, control it, or contain it.
+              Church exists to support what God is already doing, not to replace it, control it, or contain it.
             </p>
             <p>
               Church is a place where believers gather, where voices are amplified, where churches are
@@ -35,7 +35,7 @@ export default function ManifestoPage() {
             <p>The Church is not centralized.</p>
             <p>The Church is not confined.</p>
             <p>
-              The Church is the people—new believers and seasoned believers, pastors and preachers, builders and
+              The Church is the people, new believers and seasoned believers, pastors and preachers, builders and
               business owners.
             </p>
             <p>Many callings. One Body. One Lord.</p>
@@ -44,7 +44,7 @@ export default function ManifestoPage() {
           <section>
             <h2 className="mb-3 text-3xl">We Stand With Local Churches</h2>
             <p>Church does not replace local churches. Church exists for them.</p>
-            <p>We want every church—small or large, rural or urban—to thrive.</p>
+            <p>We want every church, small or large, rural or urban, to thrive.</p>
             <p>
               Through Church, local churches can be discovered, share messages and events, connect with believers,
               and receive support and funding pathways.
@@ -65,7 +65,7 @@ export default function ManifestoPage() {
             <h2 className="mb-3 text-3xl">Church Is Always Open</h2>
             <p>People don’t only need God on Sundays.</p>
             <p>
-              Church exists continuously—pointing people to Christ and leading them into real relationship, real
+              Church exists continuously, pointing people to Christ and leading them into real relationship, real
               fellowship, and real faith.
             </p>
           </section>
@@ -81,7 +81,7 @@ export default function ManifestoPage() {
             <h2 className="mb-3 text-3xl">Our Commitment</h2>
             <p>
               We commit to honoring pastors and leadership, supporting churches of all sizes, keeping Christ at the
-              center, serving without ego, and building tools that empower—not control.
+              center, serving without ego, and building tools that empower, not control.
             </p>
             <p>Church belongs to Jesus. We are stewards.</p>
           </section>

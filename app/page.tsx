@@ -4,6 +4,7 @@ import Link from "next/link";
 import { CheckCircle2 } from "lucide-react";
 
 import { CtaGrid } from "@/components/landing/cta-grid";
+import { HowItWorksGrid } from "@/components/landing/how-it-works-grid";
 
 const trustCards = [
   {
@@ -33,21 +34,6 @@ const commitments = [
   "No spam, no noisy growth hacks",
   "Segmented communication by calling and role",
   "Real support for churches of all sizes"
-];
-
-const howItWorks = [
-  {
-    title: "Choose your role",
-    body: "Believer, Church, Creator, Business, or Builder."
-  },
-  {
-    title: "Join the waitlist",
-    body: "Submit your details once, and we keep your segment clean."
-  },
-  {
-    title: "Get relevant updates",
-    body: "Role-specific emails for launch, hiring, and partner opportunities."
-  }
 ];
 
 export const metadata: Metadata = {
@@ -102,14 +88,7 @@ export default function HomePage() {
               </a>
             </div>
 
-            <div className="mt-7 grid gap-3 sm:grid-cols-3">
-              {howItWorks.map((item) => (
-                <div key={item.title} className="rounded-xl border border-[#f2d8af]/35 bg-black/35 px-4 py-3">
-                  <p className="text-sm font-semibold text-[#ffe8c5]">{item.title}</p>
-                  <p className="mt-1 text-xs text-[#f4e4ca]">{item.body}</p>
-                </div>
-              ))}
-            </div>
+            <HowItWorksGrid />
           </div>
         </div>
       </section>

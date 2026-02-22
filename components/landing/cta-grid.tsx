@@ -13,7 +13,7 @@ const ctas = [
     priority: "primary",
     summary: "For believers who want daily fellowship, growth, and Christ-centered connection.",
     detail:
-      "Find real Christian community, discover churches, and get early access to features built for prayer, discipleship, and meaningful relationships.",
+      "Find real Christian community, discover churches, and get early access to prayer circles, discipleship spaces, and trusted conversations that help you grow day by day.",
     action: "Join as Believer"
   },
   {
@@ -22,7 +22,7 @@ const ctas = [
     priority: "secondary",
     summary: "For business owners who want to support Kingdom impact through practical partnership.",
     detail:
-      "Get updates on sponsorship opportunities, hiring needs, and launch initiatives where your business can help fund real ministry outcomes.",
+      "Get updates on sponsorship opportunities, hiring needs, and launch initiatives where your business can support churches, creators, and outreach with measurable impact.",
     action: "Join as Business"
   },
   {
@@ -31,7 +31,7 @@ const ctas = [
     priority: "secondary",
     summary: "For creators and preachers who want to publish messages with reach and clarity.",
     detail:
-      "Be part of a platform built for testimonies, teaching, and Gospel media that helps people grow in faith without algorithmic noise.",
+      "Be part of a platform built for testimonies, teaching, short videos, and Gospel media that helps people grow in faith without algorithmic noise.",
     action: "Join as Creator"
   },
   {
@@ -40,7 +40,7 @@ const ctas = [
     priority: "secondary",
     summary: "For builders and volunteers who want to serve through product, design, and operations.",
     detail:
-      "Help shape the foundations of Church from the ground up and receive role-specific updates for engineering, design, and launch support.",
+      "Help shape the foundations of Church from the ground up and receive role-specific updates for engineering, design, moderation, and launch support.",
     action: "Join as Builder"
   }
 ] as const;
@@ -92,8 +92,14 @@ export function CtaGrid() {
       </div>
 
       {activeCta ? (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/65 p-4 sm:items-center">
-          <div className="w-full max-w-lg rounded-2xl border border-[#f2d8af]/45 bg-[#1f1510] p-5 text-[#f7ead5] shadow-2xl sm:p-6">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4"
+          onClick={() => setActiveCta(null)}
+        >
+          <div
+            className="w-full max-w-lg rounded-2xl border border-[#f2d8af]/45 bg-[#1f1510] p-5 text-[#f7ead5] shadow-2xl sm:p-6"
+            onClick={(event) => event.stopPropagation()}
+          >
             <div className="flex items-start justify-between gap-4">
               <p className="text-xl leading-tight sm:text-2xl">{activeCta.label}</p>
               <button
@@ -118,13 +124,6 @@ export function CtaGrid() {
                 }}
               >
                 {activeCta.action}
-              </Button>
-              <Button
-                variant="secondary"
-                className="rounded-full border border-[#f2d8af]/35 bg-transparent text-[#f7ead5] hover:bg-white/10"
-                onClick={() => setActiveCta(null)}
-              >
-                Cancel
               </Button>
             </div>
           </div>
