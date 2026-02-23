@@ -4,7 +4,10 @@ export function SiteFooter() {
   return (
     <footer className="border-t border-border/60 bg-[#17120d] py-10 text-[#e7dccd]">
       <div className="container-shell flex flex-col gap-4 text-sm md:flex-row md:items-center md:justify-between">
-        <p>© {new Date().getFullYear()} Church, for The Revival.</p>
+        <div className="space-y-1">
+          <p>© {new Date().getFullYear()} Church, for The Revival.</p>
+          <p className="text-xs text-[#cfbfa4]">✝ Built on Faith</p>
+        </div>
         <div className="flex flex-wrap items-center gap-4">
           <Link href="/manifesto" className="hover:text-white">
             Manifesto

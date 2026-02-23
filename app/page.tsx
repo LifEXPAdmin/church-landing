@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowRight, CheckCircle2, Church, Handshake, MicVocal, Users } from "lucide-react";
 
 import { CtaGrid } from "@/components/landing/cta-grid";
+import { FaithTraceGame } from "@/components/landing/faith-trace-game";
 import { HowItWorksGrid } from "@/components/landing/how-it-works-grid";
 
 const audienceCards = [
@@ -96,7 +97,7 @@ export const metadata: Metadata = {
 export default function HomePage() {
   return (
     <div className="bg-[#150f09]">
-      <section className="relative min-h-[84svh] overflow-hidden border-b border-white/20">
+      <section className="relative min-h-[86svh] overflow-hidden border-b border-white/20">
         <Image
           src="/hero-desktop.jpg"
           alt="Sunrise over mountains and clouds"
@@ -117,11 +118,11 @@ export default function HomePage() {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(240,194,129,0.58)_0%,rgba(16,13,10,0.46)_55%,rgba(10,8,6,0.64)_100%)] md:bg-[radial-gradient(circle_at_center,rgba(240,194,129,0.48)_0%,rgba(16,13,10,0.52)_55%,rgba(10,8,6,0.72)_100%)]" />
         <div className="absolute inset-0 bg-gradient-to-b from-black/28 via-black/8 to-black/52 md:from-black/35 md:via-black/15 md:to-black/60" />
 
-        <div className="container-shell relative flex min-h-[84svh] items-end pb-14 pt-24 sm:items-center sm:pb-16">
+        <div className="container-shell relative flex min-h-[86svh] items-end pb-12 pt-20 sm:items-center sm:pb-16 sm:pt-24">
           <div className="w-full max-w-4xl text-white">
             <p className="mb-3 text-xs uppercase tracking-[0.24em] text-[#f4d8ab] sm:text-sm">The Revival Movement</p>
-            <h1 className="text-balance text-5xl leading-[0.95] sm:text-6xl md:text-7xl">Revival Isn’t Coming. It’s Here.</h1>
-            <p className="mt-5 max-w-2xl text-lg text-[#f4ede1] sm:text-2xl">
+            <h1 className="text-balance text-[2.65rem] leading-[0.95] sm:text-6xl md:text-7xl">Revival Isn’t Coming. It’s Here.</h1>
+            <p className="mt-4 max-w-2xl text-lg text-[#f4ede1] sm:mt-5 sm:text-2xl">
               Church is alive every second of every day.
             </p>
             <p className="mt-3 max-w-3xl text-base text-[#f5debc] sm:text-lg">
@@ -137,6 +138,8 @@ export default function HomePage() {
               <a href="mailto:mcdrew169@yahoo.com" className="underline decoration-[#f6d39f]/60 underline-offset-4">
                 Contact directly
               </a>
+              <span className="hidden sm:inline">•</span>
+              <FaithTraceGame />
             </div>
 
             <HowItWorksGrid />
