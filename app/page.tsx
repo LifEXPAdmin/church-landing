@@ -4,7 +4,6 @@ import Link from "next/link";
 import { ArrowRight, CheckCircle2, Church, Handshake, MicVocal, Users } from "lucide-react";
 
 import { CtaGrid } from "@/components/landing/cta-grid";
-import { FaithTraceGame } from "@/components/landing/faith-trace-game";
 import { HowItWorksGrid } from "@/components/landing/how-it-works-grid";
 
 const audienceCards = [
@@ -117,7 +116,6 @@ export default function HomePage() {
 
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(240,194,129,0.58)_0%,rgba(16,13,10,0.46)_55%,rgba(10,8,6,0.64)_100%)] md:bg-[radial-gradient(circle_at_center,rgba(240,194,129,0.48)_0%,rgba(16,13,10,0.52)_55%,rgba(10,8,6,0.72)_100%)]" />
         <div className="absolute inset-0 bg-gradient-to-b from-black/28 via-black/8 to-black/52 md:from-black/35 md:via-black/15 md:to-black/60" />
-        <FaithTraceGame />
 
         <div className="container-shell relative flex min-h-[86svh] items-end pb-12 pt-20 sm:items-center sm:pb-16 sm:pt-24">
           <div className="w-full max-w-4xl text-white">
