@@ -56,6 +56,7 @@ cp .env.example .env
 Required:
 
 - `DATABASE_URL`
+- `DIRECT_URL` (non-pooled direct DB URL for migrations)
 - `ADMIN_PASSWORD`
 
 Recommended:
@@ -132,6 +133,7 @@ Default local connection used by `.env.example`:
 
 ```env
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/church"
+DIRECT_URL="postgresql://postgres:postgres@localhost:5432/church"
 ```
 
 ## Admin Access
@@ -154,7 +156,9 @@ npm run start
 1. Push repo to GitHub.
 2. Import project into Vercel.
 3. Add environment variables in Vercel settings.
-4. Use a managed Postgres DB and set `DATABASE_URL`.
+4. Use a managed Postgres DB and set:
+   - `DATABASE_URL` to pooled Prisma URL (`POSTGRES_PRISMA_URL`)
+   - `DIRECT_URL` to non-pooled direct URL (`POSTGRES_URL_NON_POOLING`)
 5. Run migrations on deploy target:
 
 ```bash
