@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { X } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { InfoModal } from "@/components/landing/info-modal";
+import { trackClientEvent } from "@/lib/client-analytics";
 
 const howItWorksCards = [
   {
@@ -43,46 +44,45 @@ export function HowItWorksGrid() {
         <button
           type="button"
           key={item.title}
-          className="rounded-xl border border-[#f2d8af]/35 bg-black/35 px-4 py-3 text-left transition-colors hover:bg-black/45"
-          onClick={() => setActiveCard(item)}
+          className="group rounded-xl border border-[#f2d8af]/35 bg-black/35 px-4 py-3 text-left transition-all hover:bg-black/45 hover:shadow-[0_8px_22px_rgba(0,0,0,0.35)]"
+          onClick={() => {
+            setActiveCard(item);
+            trackClientEvent({
+              eventType: "CTA_CLICK",
+              path: "/",
+              label: `open:${item.title}`
+            });
+          }}
         >
-          <p className="text-sm font-semibold text-[#ffe8c5]">{item.title}</p>
-          <p className="mt-1 text-xs text-[#f4e4ca]">{item.body}</p>
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-sm font-semibold text-[#ffe8c5]">{item.title}</p>
+            <ArrowUpRight className="h-4 w-4 text-[#f6d8ab] transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+          </div>
+          <p className="mt-1 text-xs leading-relaxed text-[#f4e4ca]">{item.body}</p>
         </button>
       ))}
 
-      {activeCard ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4" onClick={() => setActiveCard(null)}>
-          <div
-            className="w-full max-w-lg rounded-2xl border border-[#f2d8af]/45 bg-[#1f1510] p-5 text-[#f7ead5] shadow-2xl sm:p-6"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="flex items-start justify-between gap-4">
-              <p className="text-xl leading-tight sm:text-2xl">{activeCard.title}</p>
-              <button
-                type="button"
-                aria-label="Close"
-                className="rounded-full border border-[#f2d8af]/35 p-1.5 text-[#f7ead5] hover:bg-white/10"
-                onClick={() => setActiveCard(null)}
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
+      <InfoModal
+        open={Boolean(activeCard)}
+        title={activeCard?.title ?? ""}
+        summary={activeCard?.body ?? ""}
+        detail={activeCard?.detail ?? ""}
+        ctaLabel={activeCard?.cta ?? "Continue"}
+        badge="How It Works"
+        onClose={() => setActiveCard(null)}
+        onContinue={() => {
+          if (!activeCard) {
+            return;
+          }
 
-            <p className="mt-4 text-sm text-[#f4e4ca] sm:text-base">{activeCard.body}</p>
-            <p className="mt-2 text-sm text-[#edd9bb] sm:text-base">{activeCard.detail}</p>
-
-            <div className="mt-6">
-              <Button
-                className="rounded-full bg-[#c38a45] text-white hover:bg-[#aa7537]"
-                onClick={() => router.push(activeCard.href)}
-              >
-                {activeCard.cta}
-              </Button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+          trackClientEvent({
+            eventType: "CTA_CLICK",
+            path: "/",
+            label: `continue:${activeCard.title}`
+          });
+          router.push(activeCard.href);
+        }}
+      />
     </div>
   );
 }

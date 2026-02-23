@@ -4,12 +4,12 @@ export default function ForBusinessesPage() {
   return (
     <SegmentPage
       title="For Businesses"
-      intro="Businesses can be a force for Kingdom impact. Church creates meaningful partnership opportunities with real ministry needs."
+      intro="Businesses can be a force for Kingdom impact. Church creates meaningful partnership opportunities connected to real ministry needs."
       bullets={[
-        "Sponsor local church initiatives and outreach opportunities.",
+        "Sponsor local church initiatives, community outreach, and practical service projects.",
         "Support Gospel work with clear alignment and trusted relationships.",
-        "Build credibility with believers by serving tangible community needs.",
-        "Invest in The Revival with measurable local impact."
+        "Build credibility by serving tangible needs across faith communities.",
+        "Invest in The Revival through partnerships that create lasting impact."
       ]}
       role="BUSINESS"
     />

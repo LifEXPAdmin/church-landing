@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 export const dynamic = "force-dynamic";
 
 export default async function AdminAnalyticsPage() {
-  const [eventCounts, recent] = await Promise.all([
+  const [eventCounts, recent, homeViews, ctaOpens, ctaContinues, joinSubmits, joinSuccesses] = await Promise.all([
     prisma.waitlistEvent.groupBy({
       by: ["eventType"],
       _count: true
@@ -13,6 +13,38 @@ export default async function AdminAnalyticsPage() {
     prisma.waitlistEvent.findMany({
       orderBy: { createdAt: "desc" },
       take: 100
+    }),
+    prisma.waitlistEvent.count({
+      where: {
+        eventType: "PAGE_VIEW",
+        path: "/"
+      }
+    }),
+    prisma.waitlistEvent.count({
+      where: {
+        eventType: "CTA_CLICK",
+        label: {
+          startsWith: "open:"
+        }
+      }
+    }),
+    prisma.waitlistEvent.count({
+      where: {
+        eventType: "CTA_CLICK",
+        label: {
+          startsWith: "continue:"
+        }
+      }
+    }),
+    prisma.waitlistEvent.count({
+      where: {
+        eventType: "JOIN_SUBMIT"
+      }
+    }),
+    prisma.waitlistEvent.count({
+      where: {
+        eventType: "JOIN_SUCCESS"
+      }
     })
   ]);
 
@@ -35,6 +67,32 @@ export default async function AdminAnalyticsPage() {
             <p className="text-3xl font-semibold">{event._count}</p>
           </div>
         ))}
+      </div>
+
+      <div className="mb-6 rounded-2xl border border-border bg-card p-4">
+        <p className="mb-4 text-xs uppercase tracking-wide text-muted-foreground">Conversion Funnel</p>
+        <div className="grid gap-3 sm:grid-cols-5">
+          <div className="rounded-xl bg-muted/55 p-3">
+            <p className="text-xs text-muted-foreground">Home Views</p>
+            <p className="text-2xl font-semibold">{homeViews}</p>
+          </div>
+          <div className="rounded-xl bg-muted/55 p-3">
+            <p className="text-xs text-muted-foreground">Card Opens</p>
+            <p className="text-2xl font-semibold">{ctaOpens}</p>
+          </div>
+          <div className="rounded-xl bg-muted/55 p-3">
+            <p className="text-xs text-muted-foreground">Card Continues</p>
+            <p className="text-2xl font-semibold">{ctaContinues}</p>
+          </div>
+          <div className="rounded-xl bg-muted/55 p-3">
+            <p className="text-xs text-muted-foreground">Join Submits</p>
+            <p className="text-2xl font-semibold">{joinSubmits}</p>
+          </div>
+          <div className="rounded-xl bg-muted/55 p-3">
+            <p className="text-xs text-muted-foreground">Join Successes</p>
+            <p className="text-2xl font-semibold">{joinSuccesses}</p>
+          </div>
+        </div>
       </div>
 
       <div className="overflow-x-auto rounded-2xl border border-border bg-card">

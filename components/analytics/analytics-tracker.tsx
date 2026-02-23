@@ -3,6 +3,8 @@
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 
+import { trackClientEvent } from "@/lib/client-analytics";
+
 export function AnalyticsTracker() {
   const pathname = usePathname();
 
@@ -11,21 +13,9 @@ export function AnalyticsTracker() {
       return;
     }
 
-    const payload = JSON.stringify({
+    trackClientEvent({
       eventType: "PAGE_VIEW",
       path: pathname
-    });
-
-    if (navigator.sendBeacon) {
-      navigator.sendBeacon("/api/track", new Blob([payload], { type: "application/json" }));
-      return;
-    }
-
-    void fetch("/api/track", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: payload,
-      keepalive: true
     });
   }, [pathname]);
 

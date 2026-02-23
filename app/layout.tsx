@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     default: "Church | The Revival",
     template: "%s | Church"
   },
-  description: "Church is alive every second of every day. Join The Revival movement.",
+  description: "Church is alive every second of every day. Join the Christian-first connection platform for The Revival.",
   keywords: [
     "church",
     "revival",

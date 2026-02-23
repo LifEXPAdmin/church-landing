@@ -5,6 +5,7 @@ import { useFormStatus } from "react-dom";
 
 import { submitWaitlist, type JoinActionState } from "@/app/join/actions";
 import { Button } from "@/components/ui/button";
+import { trackClientEvent } from "@/lib/client-analytics";
 import { ROLE_OPTIONS, type Role } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
@@ -43,22 +44,10 @@ export function JoinForm({ initialRole, source }: JoinFormProps) {
   }, [resolvedInitialRole]);
 
   const trackSubmit = () => {
-    const payload = JSON.stringify({
+    trackClientEvent({
       eventType: "JOIN_SUBMIT",
       path: "/join",
       role: selectedRole
-    });
-
-    if (navigator.sendBeacon) {
-      navigator.sendBeacon("/api/track", new Blob([payload], { type: "application/json" }));
-      return;
-    }
-
-    void fetch("/api/track", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: payload,
-      keepalive: true
     });
   };
 

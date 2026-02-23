@@ -5,7 +5,7 @@ import { JoinForm } from "@/components/join/join-form";
 export const metadata: Metadata = {
   title: "Join Waitlist",
   description:
-    "Join the Church waitlist as a believer, church, creator, business, or builder. Get role-specific updates and launch invites."
+    "Join the Church waitlist as a believer, church, creator, business, or builder. Receive role-specific updates and launch invitations."
 };
 
 export default async function JoinPage({
@@ -21,18 +21,18 @@ export default async function JoinPage({
         <aside>
           <h1 className="mb-4 text-5xl leading-tight">Join Church</h1>
           <p className="mb-4 text-muted-foreground">
-            This is the founding waitlist for The Revival movement. Tell us your role and what you are called to
-            build.
+            This is the founding waitlist for The Revival movement. Tell us your role and what you hope to build,
+            support, or discover.
           </p>
           <p className="mb-8 text-sm text-muted-foreground">
-            We review submissions by role so early access and partnership invites are intentional.
+            We review every submission by role so invitations, updates, and partnership opportunities stay relevant.
           </p>
 
           <div className="space-y-2 rounded-xl bg-muted/65 p-4 text-sm">
             <p className="font-semibold">What happens next?</p>
-            <p>1. Your signup is saved in your role segment.</p>
-            <p>2. You receive updates relevant to your role.</p>
-            <p>3. Early access invites are rolled out in waves.</p>
+            <p>1. Your signup is saved under your selected role.</p>
+            <p>2. You receive updates matched to your role and calling.</p>
+            <p>3. Early access invitations are released in phases.</p>
           </div>
         </aside>
 
