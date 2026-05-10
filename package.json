@@ -10,7 +10,7 @@
     "lint": "eslint .",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "prisma:deploy": "DIRECT_URL=${DIRECT_URL:-${POSTGRES_URL_NON_POOLING:-$DATABASE_URL}} prisma migrate deploy"
+    "prisma:deploy": "node scripts/prisma-deploy.mjs"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.1.1",

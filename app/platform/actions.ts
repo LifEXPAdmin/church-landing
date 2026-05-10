@@ -4,6 +4,7 @@ import { PlatformPostType, PlatformRole } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { hashPassword, validatePassword, verifyPassword } from "@/lib/platform/auth";
 import { prisma } from "@/lib/prisma";
 import {
   clearPlatformSession,
@@ -23,36 +24,72 @@ function cleanUsername(value: string) {
     .replace(/[^a-z0-9_]/g, "");
 }
 
+function safeRedirectPath(value: FormDataEntryValue | null) {
+  const path = String(value ?? "/platform");
+
+  return path.startsWith("/platform") ? path : "/platform";
+}
+
 export async function createPlatformAccount(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   const username = cleanUsername(String(formData.get("username") ?? ""));
   const email = String(formData.get("email") ?? "")
     .trim()
     .toLowerCase();
+  const password = String(formData.get("password") ?? "");
+  const confirmPassword = String(formData.get("confirmPassword") ?? "");
   const roleValue = String(formData.get("role") ?? "BELIEVER") as PlatformRole;
+  const passwordError = validatePassword(password);
 
   if (
     name.length < 2 ||
     !USERNAME_REGEX.test(username) ||
     !EMAIL_REGEX.test(email) ||
-    !roles.has(roleValue)
+    !roles.has(roleValue) ||
+    passwordError ||
+    password !== confirmPassword
   ) {
     redirect("/platform/login?error=invalid");
   }
 
-  const user = await prisma.platformUser.upsert({
-    where: { email },
-    create: {
+  const existingByEmail = await prisma.platformUser.findUnique({ where: { email } });
+  const passwordHash = await hashPassword(password);
+
+  if (existingByEmail) {
+    if (existingByEmail.passwordHash || existingByEmail.username !== username) {
+      redirect("/platform/login?error=exists");
+    }
+
+    const user = await prisma.platformUser.update({
+      where: { id: existingByEmail.id },
+      data: {
+        name,
+        role: roleValue,
+        passwordHash
+      }
+    });
+
+    await setPlatformSession(user.id);
+    redirect("/platform");
+  }
+
+  const existingUsername = await prisma.platformUser.findUnique({
+    where: { username }
+  });
+
+  if (existingUsername) {
+    redirect("/platform/login?error=username");
+  }
+
+  const user = await prisma.platformUser.create({
+    data: {
       name,
       username,
       email,
+      passwordHash,
       role: roleValue,
       bio: "I am exploring Church and The Revival.",
       interests: ["Prayer", "Community"]
-    },
-    update: {
-      name,
-      role: roleValue
     }
   });
 
@@ -64,8 +101,9 @@ export async function loginPlatformAccount(formData: FormData) {
   const email = String(formData.get("email") ?? "")
     .trim()
     .toLowerCase();
+  const password = String(formData.get("password") ?? "");
 
-  if (!EMAIL_REGEX.test(email)) {
+  if (!EMAIL_REGEX.test(email) || !password) {
     redirect("/platform/login?error=login");
   }
 
@@ -73,6 +111,16 @@ export async function loginPlatformAccount(formData: FormData) {
 
   if (!user) {
     redirect("/platform/login?error=missing");
+  }
+
+  if (!user.passwordHash) {
+    redirect("/platform/login?error=needs-password");
+  }
+
+  const passwordMatches = await verifyPassword(password, user.passwordHash);
+
+  if (!passwordMatches) {
+    redirect("/platform/login?error=login");
   }
 
   await setPlatformSession(user.id);
@@ -161,6 +209,30 @@ export async function createPlatformPost(formData: FormData) {
   redirect("/platform");
 }
 
+export async function deletePlatformPost(formData: FormData) {
+  const currentUser = await getCurrentPlatformUser();
+
+  if (!currentUser) {
+    redirect("/platform/login");
+  }
+
+  const postId = String(formData.get("postId") ?? "");
+  const redirectTo = safeRedirectPath(formData.get("redirectTo"));
+
+  if (postId) {
+    await prisma.platformPost.deleteMany({
+      where: {
+        id: postId,
+        authorId: currentUser.id
+      }
+    });
+  }
+
+  revalidatePath("/platform");
+  revalidatePath(`/platform/profile/${currentUser.username}`);
+  redirect(redirectTo);
+}
+
 export async function followPlatformUser(formData: FormData) {
   const currentUser = await getCurrentPlatformUser();
 
@@ -224,7 +296,7 @@ export async function togglePlatformPostLike(formData: FormData) {
   }
 
   const postId = String(formData.get("postId") ?? "");
-  const redirectTo = String(formData.get("redirectTo") ?? "/platform");
+  const redirectTo = safeRedirectPath(formData.get("redirectTo"));
 
   if (!postId) {
     redirect(redirectTo);
@@ -269,7 +341,7 @@ export async function createPlatformPostComment(formData: FormData) {
   }
 
   const postId = String(formData.get("postId") ?? "");
-  const redirectTo = String(formData.get("redirectTo") ?? "/platform");
+  const redirectTo = safeRedirectPath(formData.get("redirectTo"));
   const content = String(formData.get("content") ?? "")
     .trim()
     .slice(0, 400);
@@ -285,6 +357,29 @@ export async function createPlatformPostComment(formData: FormData) {
       content
     }
   });
+
+  revalidatePath("/platform");
+  redirect(redirectTo);
+}
+
+export async function deletePlatformPostComment(formData: FormData) {
+  const currentUser = await getCurrentPlatformUser();
+
+  if (!currentUser) {
+    redirect("/platform/login");
+  }
+
+  const commentId = String(formData.get("commentId") ?? "");
+  const redirectTo = safeRedirectPath(formData.get("redirectTo"));
+
+  if (commentId) {
+    await prisma.platformPostComment.deleteMany({
+      where: {
+        id: commentId,
+        authorId: currentUser.id
+      }
+    });
+  }
 
   revalidatePath("/platform");
   redirect(redirectTo);

@@ -26,6 +26,10 @@ Production-ready landing site + segmented waitlist for Church while full platfor
 - `/admin/waitlist` Waitlist table + segment filters
 - `/admin/waitlist/export` CSV export (all or by role)
 - `/admin/analytics` Event analytics dashboard
+- `/platform` Early platform preview with feed, posts, likes, comments, search, profiles, and follows
+- `/platform/login` Password-backed platform account access
+- `/platform/profile/me` Editable platform profile
+- `/platform/profile/[username]` Public platform profile
 
 ## Features Included
 
@@ -44,6 +48,11 @@ Production-ready landing site + segmented waitlist for Church while full platfor
   - `JOIN_SUCCESS`
 - Error handling pages (`app/error.tsx`, `app/global-error.tsx`, `app/not-found.tsx`)
 - SEO metadata + `robots.txt` + `sitemap.xml`
+- Platform preview foundation:
+  - password-hashed accounts
+  - database-backed session tokens
+  - cloud-saved posts, comments, likes, follows, profiles
+  - owner-only delete controls for posts and comments
 
 ## Environment Variables
 
@@ -142,6 +151,17 @@ Protected by middleware basic auth (`/admin/:path*`):
 
 - Username: `admin`
 - Password: value of `ADMIN_PASSWORD`
+
+## Platform Preview Notes
+
+The `/platform` area is an early working preview, not the final social product.
+Data is stored in Postgres through Prisma. Accounts use password hashes and
+opaque session cookies, so passwords are not stored as plain text and the browser
+does not receive a raw user id as its login cookie.
+
+Existing test accounts created before password login may need to be secured once:
+open `/platform/login`, create an account again with the same email and username,
+and choose a password. That keeps the old posts attached to the same account.
 
 ## Dev Commands
 

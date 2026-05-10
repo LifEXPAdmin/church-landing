@@ -3,8 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
@@ -32,22 +32,22 @@ model WaitlistSignup {
   message   String?
   source    String?
 
+  @@unique([email, role])
   @@index([createdAt])
   @@index([role])
   @@index([email])
-  @@unique([email, role])
 }
 
 model WaitlistEvent {
-  id         String             @id @default(cuid())
-  createdAt  DateTime           @default(now())
-  eventType  AnalyticsEventType
-  path       String
-  role       WaitlistRole?
-  label      String?
-  userAgent  String?
-  ipHash     String?
-  referrer   String?
+  id        String             @id @default(cuid())
+  createdAt DateTime           @default(now())
+  eventType AnalyticsEventType
+  path      String
+  role      WaitlistRole?
+  label     String?
+  userAgent String?
+  ipHash    String?
+  referrer  String?
 
   @@index([createdAt])
   @@index([eventType])
@@ -71,26 +71,42 @@ enum PlatformPostType {
 }
 
 model PlatformUser {
-  id        String       @id @default(cuid())
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
-  name      String
-  username  String       @unique
-  email     String       @unique
-  role      PlatformRole @default(BELIEVER)
-  bio       String?
-  location  String?
-  website   String?
-  interests String[]     @default([])
+  id           String       @id @default(cuid())
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  name         String
+  username     String       @unique
+  email        String       @unique
+  passwordHash String?
+  role         PlatformRole @default(BELIEVER)
+  bio          String?
+  location     String?
+  website      String?
+  interests    String[]     @default([])
 
   posts     PlatformPost[]
   postLikes PlatformPostLike[]
   comments  PlatformPostComment[]
-  following PlatformFollow[] @relation("following")
-  followers PlatformFollow[] @relation("followers")
+  sessions  PlatformSession[]
+  following PlatformFollow[]      @relation("following")
+  followers PlatformFollow[]      @relation("followers")
 
   @@index([role])
   @@index([createdAt])
+}
+
+model PlatformSession {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  tokenHash String   @unique
+  userId    String
+  userAgent String?
+
+  user PlatformUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 model PlatformPost {
@@ -102,8 +118,8 @@ model PlatformPost {
   content   String
   scripture String?
 
-  author PlatformUser @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  likes  PlatformPostLike[]
+  author   PlatformUser          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  likes    PlatformPostLike[]
   comments PlatformPostComment[]
 
   @@index([authorId])
