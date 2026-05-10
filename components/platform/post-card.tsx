@@ -1,13 +1,26 @@
 import Link from "next/link";
-import type { PlatformPost, PlatformUser } from "@prisma/client";
+import type { PlatformPost, PlatformPostComment, PlatformPostLike, PlatformUser } from "@prisma/client";
+import { Heart, MessageCircle } from "lucide-react";
+
+import { createPlatformPostComment, togglePlatformPostLike } from "@/app/platform/actions";
 
 import { formatDate, postTypeLabels, roleLabels } from "@/lib/platform/format";
 
 interface PostCardProps {
-  post: PlatformPost & { author: PlatformUser };
+  post: PlatformPost & {
+    author: PlatformUser;
+    likes: PlatformPostLike[];
+    comments: (PlatformPostComment & { author: PlatformUser })[];
+  };
+  currentUserId?: string;
+  redirectTo?: string;
 }
 
-export function PostCard({ post }: PostCardProps) {
+export function PostCard({ post, currentUserId, redirectTo = "/platform" }: PostCardProps) {
+  const likedByCurrentUser = currentUserId
+    ? post.likes.some((like) => like.userId === currentUserId)
+    : false;
+
   return (
     <article className="border-[#f2d8af]/18 rounded-3xl border bg-[#1a120c] p-5 shadow-[0_18px_50px_rgba(0,0,0,0.22)]">
       <div className="mb-4 flex items-start justify-between gap-4">
@@ -39,6 +52,56 @@ export function PostCard({ post }: PostCardProps) {
         <p className="bg-black/28 mt-4 rounded-2xl p-3 text-sm text-[#f4d7aa]">
           Scripture: {post.scripture}
         </p>
+      ) : null}
+
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <form action={togglePlatformPostLike}>
+          <input type="hidden" name="postId" value={post.id} />
+          <input type="hidden" name="redirectTo" value={redirectTo} />
+          <button
+            type="submit"
+            className={`inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-sm ${
+              likedByCurrentUser
+                ? "border-[#f4c98c]/50 bg-[#f4c98c]/20 text-[#fbe5c0]"
+                : "border-[#f2d8af]/20 bg-black/24 text-[#d8c4a8] hover:bg-black/34"
+            }`}
+          >
+            <Heart className={`h-4 w-4 ${likedByCurrentUser ? "fill-current" : ""}`} />
+            {post.likes.length}
+          </button>
+        </form>
+        <span className="inline-flex items-center gap-1 rounded-full border border-[#f2d8af]/20 bg-black/24 px-3 py-1.5 text-sm text-[#d8c4a8]">
+          <MessageCircle className="h-4 w-4" /> {post.comments.length}
+        </span>
+      </div>
+
+      {post.comments.length ? (
+        <div className="mt-4 space-y-2">
+          {post.comments.slice(0, 3).map((comment) => (
+            <div key={comment.id} className="rounded-2xl bg-black/24 px-3 py-2 text-sm">
+              <span className="font-semibold text-[#f8ead6]">{comment.author.name}: </span>
+              <span className="text-[#d8c4a8]">{comment.content}</span>
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      {currentUserId ? (
+        <form action={createPlatformPostComment} className="mt-3 flex gap-2">
+          <input type="hidden" name="postId" value={post.id} />
+          <input type="hidden" name="redirectTo" value={redirectTo} />
+          <input
+            name="content"
+            minLength={2}
+            maxLength={400}
+            required
+            placeholder="Add a comment"
+            className="min-w-0 flex-1 rounded-full border border-[#f2d8af]/20 bg-[#120c08] px-4 py-2 text-sm text-[#f8ead6] outline-none placeholder:text-[#9c8b73] focus:border-[#f4c98c]"
+          />
+          <button type="submit" className="rounded-full bg-[#c38a45] px-4 py-2 text-sm font-semibold text-white hover:bg-[#aa7537]">
+            Send
+          </button>
+        </form>
       ) : null}
     </article>
   );

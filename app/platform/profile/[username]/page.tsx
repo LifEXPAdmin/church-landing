@@ -39,7 +39,15 @@ export default async function PublicProfilePage({
     where: { username },
     include: {
       posts: {
-        include: { author: true },
+        include: {
+          author: true,
+          likes: true,
+          comments: {
+            include: { author: true },
+            orderBy: { createdAt: "desc" },
+            take: 6
+          }
+        },
         orderBy: { createdAt: "desc" }
       },
       _count: {
@@ -172,7 +180,14 @@ export default async function PublicProfilePage({
 
         <div className="space-y-5">
           {profile.posts.length ? (
-            profile.posts.map((post) => <PostCard key={post.id} post={post} />)
+            profile.posts.map((post) => (
+              <PostCard
+                key={post.id}
+                post={post}
+                currentUserId={currentUser?.id}
+                redirectTo={`/platform/profile/${profile.username}`}
+              />
+            ))
           ) : (
             <div className="border-[#f2d8af]/18 rounded-3xl border bg-[#1a120c] p-8 text-[#d8c4a8]">
               No posts yet.

@@ -84,6 +84,8 @@ model PlatformUser {
   interests String[]     @default([])
 
   posts     PlatformPost[]
+  postLikes PlatformPostLike[]
+  comments  PlatformPostComment[]
   following PlatformFollow[] @relation("following")
   followers PlatformFollow[] @relation("followers")
 
@@ -101,10 +103,40 @@ model PlatformPost {
   scripture String?
 
   author PlatformUser @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  likes  PlatformPostLike[]
+  comments PlatformPostComment[]
 
   @@index([authorId])
   @@index([type])
   @@index([createdAt])
+}
+
+model PlatformPostLike {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  postId    String
+  userId    String
+
+  post PlatformPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user PlatformUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@index([postId])
+  @@index([userId])
+}
+
+model PlatformPostComment {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  postId    String
+  authorId  String
+  content   String
+
+  post   PlatformPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author PlatformUser @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([postId, createdAt])
+  @@index([authorId])
 }
 
 model PlatformFollow {

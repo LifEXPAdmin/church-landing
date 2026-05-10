@@ -30,7 +30,15 @@ async function getFeed(userId?: string) {
 
   return prisma.platformPost.findMany({
     where: authorIds?.length ? { authorId: { in: authorIds } } : undefined,
-    include: { author: true },
+    include: {
+      author: true,
+      likes: true,
+      comments: {
+        include: { author: true },
+        orderBy: { createdAt: "desc" },
+        take: 6
+      }
+    },
     orderBy: { createdAt: "desc" },
     take: 30
   });
@@ -80,7 +88,14 @@ export default async function PlatformPage() {
             {currentUser ? <PostComposer /> : null}
 
             {posts.length > 0 ? (
-              posts.map((post) => <PostCard key={post.id} post={post} />)
+              posts.map((post) => (
+                <PostCard
+                  key={post.id}
+                  post={post}
+                  currentUserId={currentUser?.id}
+                  redirectTo="/platform"
+                />
+              ))
             ) : (
               <div className="border-[#f2d8af]/18 rounded-3xl border bg-[#1a120c] p-8 text-center text-[#e8d3b2]">
                 <p className="text-3xl text-white">No posts yet.</p>

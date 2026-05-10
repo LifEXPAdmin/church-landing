@@ -215,3 +215,77 @@ export async function unfollowPlatformUser(formData: FormData) {
   revalidatePath(`/platform/profile/${username}`);
   redirect(`/platform/profile/${username}`);
 }
+
+export async function togglePlatformPostLike(formData: FormData) {
+  const currentUser = await getCurrentPlatformUser();
+
+  if (!currentUser) {
+    redirect("/platform/login");
+  }
+
+  const postId = String(formData.get("postId") ?? "");
+  const redirectTo = String(formData.get("redirectTo") ?? "/platform");
+
+  if (!postId) {
+    redirect(redirectTo);
+  }
+
+  const existing = await prisma.platformPostLike.findUnique({
+    where: {
+      postId_userId: {
+        postId,
+        userId: currentUser.id
+      }
+    }
+  });
+
+  if (existing) {
+    await prisma.platformPostLike.delete({
+      where: {
+        postId_userId: {
+          postId,
+          userId: currentUser.id
+        }
+      }
+    });
+  } else {
+    await prisma.platformPostLike.create({
+      data: {
+        postId,
+        userId: currentUser.id
+      }
+    });
+  }
+
+  revalidatePath("/platform");
+  redirect(redirectTo);
+}
+
+export async function createPlatformPostComment(formData: FormData) {
+  const currentUser = await getCurrentPlatformUser();
+
+  if (!currentUser) {
+    redirect("/platform/login");
+  }
+
+  const postId = String(formData.get("postId") ?? "");
+  const redirectTo = String(formData.get("redirectTo") ?? "/platform");
+  const content = String(formData.get("content") ?? "")
+    .trim()
+    .slice(0, 400);
+
+  if (!postId || content.length < 2) {
+    redirect(redirectTo);
+  }
+
+  await prisma.platformPostComment.create({
+    data: {
+      postId,
+      authorId: currentUser.id,
+      content
+    }
+  });
+
+  revalidatePath("/platform");
+  redirect(redirectTo);
+}

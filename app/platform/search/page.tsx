@@ -43,7 +43,15 @@ export default async function PlatformSearchPage({
               { scripture: { contains: q, mode: "insensitive" } }
             ]
           },
-          include: { author: true },
+          include: {
+            author: true,
+            likes: true,
+            comments: {
+              include: { author: true },
+              orderBy: { createdAt: "desc" },
+              take: 6
+            }
+          },
           orderBy: { createdAt: "desc" },
           take: 20
         })
@@ -99,7 +107,14 @@ export default async function PlatformSearchPage({
             <div className="space-y-5">
               <h2 className="text-3xl text-white">Posts</h2>
               {posts.length ? (
-                posts.map((post) => <PostCard key={post.id} post={post} />)
+                posts.map((post) => (
+                  <PostCard
+                    key={post.id}
+                    post={post}
+                    currentUserId={currentUser?.id}
+                    redirectTo={`/platform/search?q=${encodeURIComponent(q)}`}
+                  />
+                ))
               ) : (
                 <p className="rounded-2xl bg-[#1a120c] p-4 text-[#d8c4a8]">
                   No posts found.
