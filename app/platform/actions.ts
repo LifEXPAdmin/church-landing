@@ -175,6 +175,45 @@ export async function updatePlatformProfile(formData: FormData) {
   redirect(`/platform/profile/${currentUser.username}`);
 }
 
+export async function changePlatformPassword(formData: FormData) {
+  const currentUser = await getCurrentPlatformUser();
+
+  if (!currentUser) {
+    redirect("/platform/login");
+  }
+
+  const currentPassword = String(formData.get("currentPassword") ?? "");
+  const newPassword = String(formData.get("newPassword") ?? "");
+  const confirmPassword = String(formData.get("confirmPassword") ?? "");
+  const passwordError = validatePassword(newPassword);
+
+  if (passwordError || newPassword !== confirmPassword) {
+    redirect("/platform/settings?error=password");
+  }
+
+  const user = await prisma.platformUser.findUnique({
+    where: { id: currentUser.id },
+    select: { passwordHash: true }
+  });
+
+  if (!user?.passwordHash) {
+    redirect("/platform/settings?error=session");
+  }
+
+  const passwordMatches = await verifyPassword(currentPassword, user.passwordHash);
+
+  if (!passwordMatches) {
+    redirect("/platform/settings?error=current");
+  }
+
+  await prisma.platformUser.update({
+    where: { id: currentUser.id },
+    data: { passwordHash: await hashPassword(newPassword) }
+  });
+
+  redirect("/platform/settings?updated=password");
+}
+
 export async function createPlatformPost(formData: FormData) {
   const currentUser = await getCurrentPlatformUser();
 

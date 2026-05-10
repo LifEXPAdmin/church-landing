@@ -30,6 +30,7 @@ Production-ready landing site + segmented waitlist for Church while full platfor
 - `/platform/login` Password-backed platform account access
 - `/platform/profile/me` Editable platform profile
 - `/platform/profile/[username]` Public platform profile
+- `/platform/settings` Password and session settings
 
 ## Features Included
 
@@ -53,6 +54,7 @@ Production-ready landing site + segmented waitlist for Church while full platfor
   - database-backed session tokens
   - cloud-saved posts, comments, likes, follows, profiles
   - owner-only delete controls for posts and comments
+  - password change screen for signed-in users
 
 ## Environment Variables
 
