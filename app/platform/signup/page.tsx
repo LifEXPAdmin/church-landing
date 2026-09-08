@@ -3,23 +3,15 @@ import { AccountAccess } from "@/components/platform/account-access";
 import { PlatformShell } from "@/components/platform/platform-shell";
 import { getCurrentPlatformUser } from "@/lib/platform/session";
 export const metadata: Metadata = {
-  title: "Sign in to Godschurches",
-  description: "Sign in securely with your email and password."
+  title: "Create a Godschurches account",
+  description: "Create your account and start connecting in faith."
 };
-export default async function PlatformLoginPage({
-  searchParams
-}: {
-  searchParams: Promise<{ notice?: string }>;
-}) {
+export default async function PlatformSignupPage() {
   const user = await getCurrentPlatformUser();
-  const { notice } = await searchParams;
   return (
     <PlatformShell user={user}>
       <section className="container-shell py-8 sm:py-10">
-        <AccountAccess
-          initialView="login"
-          passwordChanged={notice === "password-changed"}
-        />
+        <AccountAccess initialView="register" />
       </section>
     </PlatformShell>
   );

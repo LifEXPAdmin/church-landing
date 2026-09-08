@@ -1,5 +1,63 @@
 # Stage 2 build plan
 
+<!-- ACCOUNT_REPAIR_CURRENT_BEGIN -->
+## Account repair, September 8, 2026
+
+Candidate verified locally and prepared for publication to the existing production
+project. See ACCOUNT_TEST_GUIDE.md for the distinct signup and sign-in pages.
+Publication SHA and real-boundary results will be recorded after the release check.
+This account repair supersedes the account status in the historical reports below;
+Stage 2C support features are preserved, not expanded.
+
+Confirmed defect: all registration P2002 conflicts were swallowed. Reproduced over
+isolated production HTTPS: unique signup 200 with insertion and login 200; taken
+public username plus fresh email 200 without insertion, then login 400. The live
+inventory contained one legacy passwordless account. It is preserved. Protected
+recent runtime logs did not establish Andrew's exact attempt; browser validity and
+other failures cannot be retroactively inferred from a generic error screenshot.
+
+Public handles now get explicit invalid/taken guidance (409 for taken), including
+race and ambiguous unique-target rechecks independent of private email linkage.
+Duplicate private emails remain neutral, insert-only, without overwrite, a created
+flag or a session. After submission a distinct sign-in view retains only email in
+short-lived page state. Existing accounts never receive a password through signup.
+No email verification, church appointment, or sender is needed for ordinary new
+signup/login. Recovery/verification delivery remains disabled and is stated plainly.
+
+Forms have stable distinct IDs, POST methods, labels, email autocomplete=username,
+public-handle separation, current/new-password hints, show/hide and FormData autofill.
+No reset before successful navigation, no automatic retries and no credential app
+storage. Profile edits are session-owned, explicitly validated, reject forged IDs,
+and give visible failures. Optional new profile fields start empty. Privacy and
+existing credentialVersion/password-change/logout protections remain intact.
+
+74 automated service/HTTP checks passed: the previous 67 account/portal/support
+regressions plus six focused production-HTTPS checks and one actual new-server-
+process persistence check. Fresh/upgrade migrations, synthetic full restore,
+production builds and runtime trace guards passed with unchanged schema/lockfile.
+The browser flow passed 16 checks with the full Chromium binary: 320/390/1440px,
+validity without request, event-free autofill, profile reload/new tab, browser-process
+restart, private HTML/RSC, logout and fresh sign-in. Actual password-manager vaults,
+physical devices, Safari, Samsung Pass, biometric and sync behavior are not verified.
+
+Current encrypted PG17 production backup was decrypted and restored locally with
+account/content fingerprints matching production; the restore server is stopped.
+Exact-ID cleanup removed only the May 10 Test post, its comment reading Test, and
+one same-owner reaction. Before/after account fingerprints match; one existing
+account remains. No account, contact, church, support record, privilege or password
+was changed. Private backup/manifest evidence is ignored under .account-test/account-repair;
+no IDs, emails, hashes, cookie values, credentials or connection strings are in reports.
+
+Session policy is unchanged: 30-day finite DB session and host-scoped persistent
+Secure/HttpOnly/SameSite=Lax cookie. The browser must retain cookies. No Remember-me
+checkbox, second session store, authentication bypass or new dependency was added.
+Production origin remains https://godschurches.com, Node24/2048MB account API/60s,
+8 existing migrations, SUPPORT_INTAKE_ENABLED=false, ACCOUNT_DELIVERY_MODE=disabled.
+No blind rollback to pre-credentialVersion code is safe.
+
+<!-- ACCOUNT_REPAIR_CURRENT_END -->
+
+
 <!-- STAGE_2C_CURRENT_BEGIN -->
 ## Stage 2C current status (September 8, 2026)
 

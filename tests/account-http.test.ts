@@ -59,10 +59,11 @@ test("actual HTTP registration/login rejects origin forgery, duplicates and forg
     where: { username: "http_account" }
   });
   const duplicate = await signup("http_account");
+  assert.equal(duplicate.status, 409);
   assert.equal(duplicate.headers.get("set-cookie"), null);
   assert.equal(
     (await duplicate.json()).message,
-    "Your request is complete. Try signing in with your details. If you already have an account, registration will not change it."
+    "That public username is already taken. Choose another, or sign in if you already have an account."
   );
   assert.deepEqual(
     await db.platformUser.findUnique({ where: { id: before.id } }),

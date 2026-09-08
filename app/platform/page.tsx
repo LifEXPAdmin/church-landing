@@ -73,7 +73,7 @@ export default async function PlatformPage() {
             </p>
             <div className="mt-7 flex flex-col gap-3 sm:flex-row">
               <Button asChild size="lg" className="rounded-full">
-                <Link href="/platform/login">Create an account</Link>
+                <Link href="/platform/signup">Create an account</Link>
               </Button>
               <Button
                 asChild
@@ -116,8 +116,9 @@ export default async function PlatformPage() {
               <div className="border-[#f2d8af]/18 rounded-3xl border bg-[#1a120c] p-8 text-center text-[#e8d3b2]">
                 <p className="text-3xl text-white">No posts yet.</p>
                 <p className="mt-2">
-                  Create an account and share the first testimony, prayer
-                  request, or update.
+                  {currentUser
+                    ? "Share a testimony, prayer request, or update. Follow people to see their posts here."
+                    : "Create an account to share a testimony, prayer request, or update. There are no public posts to show yet."}
                 </p>
               </div>
             )}

@@ -1,5 +1,6 @@
 import type { PrismaClient } from "@prisma/client";
 import { setTimeout as delay } from "node:timers/promises";
+import { randomUUID } from "node:crypto";
 import {
   AccountError,
   changeAccountPassword,
@@ -8,6 +9,7 @@ import {
   normalizeEmail,
   registerAccount,
   requestAccountGrant,
+  updateAccountProfile,
   SESSION_SECONDS
 } from "./accounts";
 import { accountConfig } from "./account-config";
@@ -32,8 +34,21 @@ function reply(
   headers: Record<string, string> = {},
   redirect?: string
 ) {
+  const code =
+    headers["X-Account-Code"] ??
+    (
+      {
+        400: "ACCOUNT_VALIDATION",
+        403: "ACCOUNT_ORIGIN",
+        405: "ACCOUNT_METHOD",
+        409: "ACCOUNT_HANDLE_TAKEN",
+        429: "ACCOUNT_LIMIT",
+        503: "ACCOUNT_UNAVAILABLE"
+      } as Record<number, string>
+    )[status] ??
+    "ACCOUNT_OK";
   return Response.json(
-    { message, ...(redirect ? { redirect } : {}) },
+    { message, code, ...(redirect ? { redirect } : {}) },
     {
       status,
       headers: {
@@ -75,6 +90,27 @@ export async function handleAccountRequest(
   db: PrismaClient,
   request: Request
 ): Promise<Response> {
+  const requestId = randomUUID();
+  const response = await processAccountRequest(db, request);
+  response.headers.set("X-Account-Request-Id", requestId);
+  if (
+    response.status === 503 &&
+    !response.headers.has("X-Account-Delivery-Disabled")
+  )
+    console.error(
+      JSON.stringify({
+        event: "account_unavailable",
+        requestId,
+        code: response.headers.get("X-Account-Code") ?? "ACCOUNT_UNAVAILABLE"
+      })
+    );
+  return response;
+}
+
+async function processAccountRequest(
+  db: PrismaClient,
+  request: Request
+): Promise<Response> {
   if (request.method !== "POST")
     return reply("Use the account form to continue.", 405, { Allow: "POST" });
   let config;
@@ -83,7 +119,8 @@ export async function handleAccountRequest(
   } catch {
     return reply(
       "Account services are temporarily unavailable. Please try again later.",
-      503
+      503,
+      { "X-Account-Code": "ACCOUNT_CONFIGURATION" }
     );
   }
   // The configured origin, never a forwarded Host supplied by a caller, is authoritative.
@@ -108,6 +145,7 @@ export async function handleAccountRequest(
     ![
       "register",
       "login",
+      "update-profile",
       "change-password",
       "request-reset",
       "request-verification",
@@ -126,10 +164,9 @@ export async function handleAccountRequest(
       ? (request.headers.get("x-real-ip") ?? "unknown").slice(0, 64)
       : "local";
     const subject =
-      normalizeEmail(body.email) ??
-      (operation === "change-password"
+      operation === "change-password" || operation === "update-profile"
         ? (requestSessionToken(request)?.slice(0, 43) ?? "anonymous")
-        : "anonymous");
+        : (normalizeEmail(body.email) ?? "anonymous");
     const allowed = await allowAccountAttempt(
       db,
       config.rateSecret,
@@ -141,7 +178,8 @@ export async function handleAccountRequest(
       if (config.delivery === "disabled")
         return reply(
           "Email recovery and verification are not available yet. Your account and posts are unchanged.",
-          503
+          503,
+          { "X-Account-Delivery-Disabled": "1" }
         );
       if (allowed)
         await requestAccountGrant(
@@ -163,7 +201,7 @@ export async function handleAccountRequest(
     if (operation === "register") {
       await registerAccount(db, body);
       return reply(
-        "Your request is complete. Try signing in with your details. If you already have an account, registration will not change it.",
+        "Continue by signing in with your email and password. Registration never changes an existing account or resets its password.",
         200
       );
     }
@@ -179,6 +217,19 @@ export async function handleAccountRequest(
         200,
         { "Set-Cookie": sessionCookie(token, config.secureCookie) },
         "/platform"
+      );
+    }
+    if (operation === "update-profile") {
+      const profile = await updateAccountProfile(
+        db,
+        requestSessionToken(request),
+        body
+      );
+      return reply(
+        "Profile saved.",
+        200,
+        {},
+        `/platform/profile/${profile.username}`
       );
     }
     if (operation === "change-password") {
@@ -199,7 +250,8 @@ export async function handleAccountRequest(
     if (config.delivery === "disabled")
       return reply(
         "Email recovery and verification are not available yet.",
-        503
+        503,
+        { "X-Account-Delivery-Disabled": "1" }
       );
     await consumeAccountGrant(
       db,
@@ -219,6 +271,12 @@ export async function handleAccountRequest(
   } catch (error) {
     if (error instanceof AccountError) {
       const messages = {
+        "handle-invalid":
+          "Choose a public username with 3 to 24 letters, numbers, or underscores. No spaces.",
+        "handle-taken":
+          "That public username is already taken. Choose another, or sign in if you already have an account.",
+        profile:
+          "Check your profile: name 2 to 100 characters, bio up to 500, location up to 80, a full http:// or https:// website up to 120, and at most 8 interests of 40 characters each.",
         invalid:
           "Check every field. Passwords must match and contain 8 to 128 characters.",
         credentials:
@@ -226,12 +284,15 @@ export async function handleAccountRequest(
             ? "Your current password did not match."
             : "That email and password did not match.",
         registration:
-          "Your registration could not be completed. Try signing in or recovering your account.",
-        session: "Please sign in again before changing your password.",
+          "Your registration could not be completed. Please try again later.",
+        session: "Please sign in again before changing your account.",
         grant:
           "This link is invalid, expired, or already used. Request a new link."
       };
-      return reply(messages[error.code], 400);
+      return reply(
+        messages[error.code],
+        error.code === "handle-taken" ? 409 : 400
+      );
     }
     // Avoid serializing errors that may contain SQL parameters, credential material, or contacts.
     return reply(

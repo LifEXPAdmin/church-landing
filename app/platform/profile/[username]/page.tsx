@@ -126,7 +126,9 @@ export default async function PublicProfilePage({
                   </form>
                 ) : (
                   <Button asChild className="rounded-full">
-                    <Link href="/platform/login">Create account to follow</Link>
+                    <Link href="/platform/signup">
+                      Create account to follow
+                    </Link>
                   </Button>
                 )}
               </div>

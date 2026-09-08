@@ -23,49 +23,6 @@ export async function logoutPlatformAccount() {
   redirect("/platform/login");
 }
 
-export async function updatePlatformProfile(formData: FormData) {
-  const currentUser = await getCurrentPlatformUser();
-
-  if (!currentUser) {
-    redirect("/platform/login");
-  }
-
-  const name = String(formData.get("name") ?? "").trim();
-  const bio = String(formData.get("bio") ?? "")
-    .trim()
-    .slice(0, 500);
-  const location = String(formData.get("location") ?? "")
-    .trim()
-    .slice(0, 80);
-  const website = String(formData.get("website") ?? "")
-    .trim()
-    .slice(0, 120);
-  const interests = String(formData.get("interests") ?? "")
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean)
-    .slice(0, 8);
-
-  if (name.length < 2) {
-    redirect("/platform/profile/me?error=name");
-  }
-
-  await prisma.platformUser.update({
-    where: { id: currentUser.id },
-    data: {
-      name,
-      bio: bio || null,
-      location: location || null,
-      website: website || null,
-      interests
-    }
-  });
-
-  revalidatePath("/platform");
-  revalidatePath(`/platform/profile/${currentUser.username}`);
-  redirect(`/platform/profile/${currentUser.username}`);
-}
-
 export async function createPlatformPost(formData: FormData) {
   const currentUser = await getCurrentPlatformUser();
 

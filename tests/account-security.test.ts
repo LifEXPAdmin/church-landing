@@ -86,7 +86,7 @@ test("duplicate passwordless and password registrations never overwrite or creat
     await registerAccount(db, {
       name: "Attempted rewrite",
       email: before.email,
-      username: before.username,
+      username: `unused_${id.replaceAll("-", "_")}`,
       role: "BUILDER",
       password,
       confirmPassword: password

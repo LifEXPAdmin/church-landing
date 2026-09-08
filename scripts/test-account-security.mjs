@@ -582,6 +582,45 @@ try {
     }
     if (!productionReady)
       throw new Error("Isolated production HTTPS portal did not start");
+    await runTests("tests/account-repair.test.ts", productionEnv);
+    const previousPid = server.pid;
+    await stopChild(server);
+    server = spawn(
+      process.execPath,
+      [
+        "node_modules/next/dist/bin/next",
+        "start",
+        "--hostname",
+        "127.0.0.1",
+        "--port",
+        String(productionPort)
+      ],
+      { env: productionEnv, stdio: "ignore" }
+    );
+    if (server.pid === previousPid)
+      throw new Error("Restart did not create a new process");
+    let restarted = false;
+    for (let i = 0; i < 80; i++) {
+      try {
+        if ((await fetch(`http://127.0.0.1:${productionPort}/api/health`)).ok) {
+          restarted = true;
+          break;
+        }
+      } catch {
+        /* starting */
+      }
+      await new Promise((resolve) => setTimeout(resolve, 250));
+    }
+    if (!restarted) throw new Error("Production server restart failed");
+    await runTests("tests/account-restart.test.ts", productionEnv);
+    console.log(
+      "Account/profile/session persistence passed after a new production server process."
+    );
+    writeFileSync(
+      join(dir, "browser-env.json"),
+      JSON.stringify({ origin: httpsOrigin, database, certificate }),
+      { mode: 0o600 }
+    );
     await runTests("tests/portal-http.test.ts", portalEnv);
     if (supportTests) await runTests("tests/support-http.test.ts", portalEnv);
     if (supportTests)

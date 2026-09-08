@@ -16,7 +16,15 @@ import {
 export const SESSION_SECONDS = 60 * 60 * 24 * 30;
 const txOptions = { maxWait: 5000, timeout: 15000 };
 export class AccountError extends Error {
-  code: "invalid" | "credentials" | "registration" | "session" | "grant";
+  code:
+    | "invalid"
+    | "credentials"
+    | "registration"
+    | "session"
+    | "grant"
+    | "handle-invalid"
+    | "handle-taken"
+    | "profile";
   constructor(code: AccountError["code"]) {
     super(code);
     this.code = code;
@@ -40,17 +48,26 @@ export async function registerAccount(
     typeof input.username === "string"
       ? input.username.trim().toLowerCase()
       : "";
+  if (!/^[a-z0-9_]{3,24}$/.test(username))
+    throw new AccountError("handle-invalid");
   if (
     !email ||
     name.length < 2 ||
     name.length > 100 ||
-    !/^[a-z0-9_]{3,24}$/.test(username) ||
     typeof input.role !== "string" ||
     !Object.values(PlatformRole).includes(input.role as PlatformRole) ||
     validatePassword(input.password) ||
     input.password !== input.confirmPassword
   )
     throw new AccountError("invalid");
+  // Handles are public. Availability must not depend on a private email/handle pairing.
+  if (
+    await db.platformUser.findUnique({
+      where: { username },
+      select: { id: true }
+    })
+  )
+    throw new AccountError("handle-taken");
   const passwordHash = await hashPassword(input.password as string);
   try {
     // Insert only. Unique constraints settle duplicate/concurrent registrations without overwrites.
@@ -61,16 +78,35 @@ export async function registerAccount(
         username,
         passwordHash,
         role: input.role as PlatformRole,
-        bio: "I am exploring Church and The Revival.",
-        interests: ["Prayer", "Community"]
+        interests: []
       }
     });
   } catch (error) {
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === "P2002"
-    )
-      return;
+    ) {
+      // Recheck after a concurrent insert, including providers with ambiguous P2002 metadata.
+      if (
+        await db.platformUser.findUnique({
+          where: { username },
+          select: { id: true }
+        })
+      )
+        throw new AccountError("handle-taken");
+      const target = error.meta?.target;
+      const emailConflict =
+        Array.isArray(target) && target.length === 1 && target[0] === "email";
+      const ambiguous = !Array.isArray(target) || target.length === 0;
+      if (
+        (emailConflict || ambiguous) &&
+        (await db.platformUser.findUnique({
+          where: { email },
+          select: { id: true }
+        }))
+      )
+        return;
+    }
     throw error;
   }
 }
@@ -146,7 +182,10 @@ export async function loginAccount(
   );
 }
 
-export async function readAccountSession(db: PrismaClient, token: unknown) {
+export async function readAccountSession(
+  db: PrismaClient | Prisma.TransactionClient,
+  token: unknown
+) {
   if (!validToken(token)) return null;
   const session = await db.platformSession.findUnique({
     where: { tokenHash: hashSessionToken(token) },
@@ -179,6 +218,75 @@ export async function readAccountSession(db: PrismaClient, token: unknown) {
   )
     return null;
   return session.user;
+}
+
+export async function updateAccountProfile(
+  db: PrismaClient,
+  token: unknown,
+  input: Record<string, unknown>
+) {
+  const allowed = [
+    "operation",
+    "name",
+    "bio",
+    "location",
+    "website",
+    "interests"
+  ];
+  if (Object.keys(input).some((key) => !allowed.includes(key)))
+    throw new AccountError("profile");
+  const field = (key: string, maximum: number) => {
+    const value = input[key] ?? "";
+    if (typeof value !== "string" || value.trim().length > maximum)
+      throw new AccountError("profile");
+    return value.trim();
+  };
+  const name = field("name", 100);
+  const bio = field("bio", 500);
+  const location = field("location", 80);
+  const website = field("website", 120);
+  const interests = field("interests", 334)
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+  if (
+    name.length < 2 ||
+    interests.length > 8 ||
+    interests.some((item) => item.length > 40)
+  )
+    throw new AccountError("profile");
+  if (website) {
+    try {
+      const url = new URL(website);
+      if (
+        !["https:", "http:"].includes(url.protocol) ||
+        url.username ||
+        url.password
+      )
+        throw new Error();
+    } catch {
+      throw new AccountError("profile");
+    }
+  }
+  const snapshot = await readAccountSession(db, token);
+  if (!snapshot) throw new AccountError("session");
+  return db.$transaction(async (tx) => {
+    await lockUser(tx, snapshot.id);
+    const current = await readAccountSession(tx, token);
+    if (!current || current.id !== snapshot.id)
+      throw new AccountError("session");
+    return tx.platformUser.update({
+      where: { id: current.id },
+      data: {
+        name,
+        bio: bio || null,
+        location: location || null,
+        website: website || null,
+        interests
+      },
+      select: { username: true }
+    });
+  }, txOptions);
 }
 async function revokeAccountAccess(
   tx: Prisma.TransactionClient,
