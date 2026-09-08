@@ -56,21 +56,7 @@ export async function createPlatformAccount(formData: FormData) {
   const passwordHash = await hashPassword(password);
 
   if (existingByEmail) {
-    if (existingByEmail.passwordHash || existingByEmail.username !== username) {
-      redirect("/platform/login?error=exists");
-    }
-
-    const user = await prisma.platformUser.update({
-      where: { id: existingByEmail.id },
-      data: {
-        name,
-        role: roleValue,
-        passwordHash
-      }
-    });
-
-    await setPlatformSession(user.id);
-    redirect("/platform");
+    redirect("/platform/login?error=exists");
   }
 
   const existingUsername = await prisma.platformUser.findUnique({

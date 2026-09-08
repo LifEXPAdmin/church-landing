@@ -161,9 +161,11 @@ Data is stored in Postgres through Prisma. Accounts use password hashes and
 opaque session cookies, so passwords are not stored as plain text and the browser
 does not receive a raw user id as its login cookie.
 
-Existing test accounts created before password login may need to be secured once:
-open `/platform/login`, create an account again with the same email and username,
-and choose a password. That keeps the old posts attached to the same account.
+Existing accounts cannot be claimed by registering their email and username again.
+Older passwordless accounts require verified account recovery. Until recovery
+delivery is configured and tested, that route is unavailable. Existing accounts
+and their posts remain intact; do not delete them or assign passwords manually
+based on public profile information.
 
 ## Dev Commands
 

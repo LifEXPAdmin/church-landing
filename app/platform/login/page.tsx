@@ -17,11 +17,11 @@ export const metadata: Metadata = {
 
 const errorMessages: Record<string, string> = {
   invalid: "Check every field, make sure passwords match, and use at least 8 characters.",
-  exists: "That email already has a secured account. Log in instead.",
+  exists: "An account could not be created with those details. Try signing in or use account recovery when available.",
   username: "That username is already taken. Try another one.",
   login: "That email and password did not match.",
-  missing: "We could not find an account with that email.",
-  "needs-password": "This older test account needs to be secured. Create an account again with the same email and username to add a password."
+  missing: "That email and password did not match.",
+  "needs-password": "That email and password did not match. Older accounts require verified recovery, which is not yet available."
 };
 
 export default async function PlatformLoginPage({
