@@ -1,3 +1,4 @@
+import { publicProfileSelect } from "@/lib/platform/public-profile";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, Search, ShieldCheck, UsersRound } from "lucide-react";
@@ -31,10 +32,10 @@ async function getFeed(userId?: string) {
   return prisma.platformPost.findMany({
     where: authorIds?.length ? { authorId: { in: authorIds } } : undefined,
     include: {
-      author: true,
+      author: { select: publicProfileSelect },
       likes: true,
       comments: {
-        include: { author: true },
+        include: { author: { select: publicProfileSelect } },
         orderBy: { createdAt: "desc" },
         take: 6
       }
@@ -48,6 +49,7 @@ export default async function PlatformPage() {
   const currentUser = await getCurrentPlatformUser();
   const posts = await getFeed(currentUser?.id);
   const newestMembers = await prisma.platformUser.findMany({
+    select: publicProfileSelect,
     orderBy: { createdAt: "desc" },
     take: 5
   });

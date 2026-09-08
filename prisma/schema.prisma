@@ -78,6 +78,8 @@ model PlatformUser {
   username     String       @unique
   email        String       @unique
   passwordHash String?
+  credentialVersion Int @default(0)
+  emailVerifiedAt DateTime?
   role         PlatformRole @default(BELIEVER)
   bio          String?
   location     String?
@@ -88,6 +90,7 @@ model PlatformUser {
   postLikes PlatformPostLike[]
   comments  PlatformPostComment[]
   sessions  PlatformSession[]
+  accountGrants PlatformAccountGrant[]
   following PlatformFollow[]      @relation("following")
   followers PlatformFollow[]      @relation("followers")
 
@@ -102,10 +105,39 @@ model PlatformSession {
   tokenHash String   @unique
   userId    String
   userAgent String?
+  credentialVersion Int @default(0)
 
   user PlatformUser @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([expiresAt])
+}
+
+enum AccountGrantPurpose {
+  RESET_PASSWORD
+  VERIFY_EMAIL
+}
+
+model PlatformAccountGrant {
+  id String @id @default(cuid())
+  userId String
+  purpose AccountGrantPurpose
+  tokenHash String @unique
+  credentialVersion Int
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  consumedAt DateTime?
+  user PlatformUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose])
+  @@index([expiresAt])
+}
+
+model PlatformAuthLimit {
+  key String @id
+  hits Int
+  expiresAt DateTime
+
   @@index([expiresAt])
 }
 

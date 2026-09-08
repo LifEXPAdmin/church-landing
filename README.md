@@ -203,3 +203,47 @@ npm run prisma:deploy
 - If MailerLite API key is set, each signup is synced into role-specific groups.
 - Legal pages are starter templates and should be reviewed by counsel for your jurisdiction and business model.
 - Hero photo source is from Pexels (`public/hero-original.jpg`) and transformed into web-ready variants.
+
+## Account security development (stage 2A)
+
+The account-security branch is local review work, not a deployed release.
+Registration never overwrites existing accounts. New registration asks the person
+to sign in normally; duplicate registration has the same confirmation. Password
+changes require the current password and revoke every session and outstanding
+recovery/verification grant. Password resets also require a fresh normal login.
+
+Recovery and email verification use separate, one-use, 30-minute grants. Existing
+email addresses remain unverified. Production email delivery is deliberately
+unavailable in this slice. The test sender writes only to a private local folder;
+it never sends messages or uses MailerLite/Resend credentials.
+
+### Safe local checks
+
+From this project directory, `npm run test:accounts` creates its own disposable
+PostgreSQL cluster bound to loopback, applies synthetic migrations/fixtures, checks
+account services and HTTP routes, verifies backup/restore, and shuts it down.
+It does not reuse the database URL from `.env`. Requires local PostgreSQL binaries
+(default `/opt/homebrew/opt/postgresql@16/bin`, override `TEST_PG_BIN`) and Node
+22.15+ with native TypeScript stripping/module hooks (tested on Node 25.9.0).
+
+`npm run preview:accounts` runs the same checks and then keeps an isolated preview
+open. The command prints a local sign-in URL. Create a fictional account there.
+Request reset or verification from Account recovery. Test messages are JSON files
+under the printed run directory's `sink/` folder, not a public browser mailbox.
+Open a test link locally to exercise the explicit confirmation form. Ctrl+C stops
+the preview and its disposable database. Do not use real member data.
+
+### Account configuration for a later approved release
+
+- `ACCOUNT_ORIGIN`: exact trusted website origin, HTTPS in production. No path,
+  credentials or query. Falls back to `NEXT_PUBLIC_SITE_URL` for normal access.
+- `AUTH_RATE_LIMIT_SECRET`: at least 32 characters of cryptographically generated
+  server-only randomness. Required in production. Do not paste secrets into chat.
+- `ACCOUNT_DELIVERY_MODE`: keep `disabled` for production in this stage.
+- `ACCOUNT_TEST_ISOLATED`, `ACCOUNT_TEST_SINK_DIR`: managed by the disposable test
+  runner only. Never configure these as a production delivery workaround.
+
+The account migration is additive. Read `docs/godschurches/RELEASE_READINESS.md`
+before any separately authorized migration or deployment. Do not return to the
+old account-claim code when rolling back. Non-production fixtures and reports are
+ignored under `.account-test/` and are not bundled with deployment artifacts.

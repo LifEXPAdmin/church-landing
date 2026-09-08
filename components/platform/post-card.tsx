@@ -1,9 +1,9 @@
+import type { PublicProfile } from "@/lib/platform/public-profile";
 import Link from "next/link";
 import type {
   PlatformPost,
   PlatformPostComment,
-  PlatformPostLike,
-  PlatformUser
+  PlatformPostLike
 } from "@prisma/client";
 import { Heart, MessageCircle, Trash2 } from "lucide-react";
 
@@ -18,9 +18,9 @@ import { formatDate, postTypeLabels, roleLabels } from "@/lib/platform/format";
 
 interface PostCardProps {
   post: PlatformPost & {
-    author: PlatformUser;
+    author: PublicProfile;
     likes: PlatformPostLike[];
-    comments: (PlatformPostComment & { author: PlatformUser })[];
+    comments: (PlatformPostComment & { author: PublicProfile })[];
   };
   currentUserId?: string;
   redirectTo?: string;
@@ -93,7 +93,7 @@ export function PostCard({
             className={`inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-sm ${
               likedByCurrentUser
                 ? "border-[#f4c98c]/50 bg-[#f4c98c]/20 text-[#fbe5c0]"
-                : "border-[#f2d8af]/20 bg-black/24 text-[#d8c4a8] hover:bg-black/34"
+                : "bg-black/24 hover:bg-black/34 border-[#f2d8af]/20 text-[#d8c4a8]"
             }`}
           >
             <Heart
@@ -102,7 +102,7 @@ export function PostCard({
             {post.likes.length}
           </button>
         </form>
-        <span className="inline-flex items-center gap-1 rounded-full border border-[#f2d8af]/20 bg-black/24 px-3 py-1.5 text-sm text-[#d8c4a8]">
+        <span className="bg-black/24 inline-flex items-center gap-1 rounded-full border border-[#f2d8af]/20 px-3 py-1.5 text-sm text-[#d8c4a8]">
           <MessageCircle className="h-4 w-4" /> {post.comments.length}
         </span>
       </div>
@@ -112,11 +112,11 @@ export function PostCard({
           {post.comments.slice(0, 3).map((comment) => (
             <div
               key={comment.id}
-              className="flex items-start justify-between gap-3 rounded-2xl bg-black/24 px-3 py-2 text-sm"
+              className="bg-black/24 flex items-start justify-between gap-3 rounded-2xl px-3 py-2 text-sm"
             >
               <p>
                 <span className="font-semibold text-[#f8ead6]">
-                  {comment.author.name}: {" "}
+                  {comment.author.name}:{" "}
                 </span>
                 <span className="text-[#d8c4a8]">{comment.content}</span>
               </p>

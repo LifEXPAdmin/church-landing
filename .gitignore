@@ -27,3 +27,6 @@ yarn-error.log*
 
 # typescript
 *.tsbuildinfo
+
+# Disposable account-security fixtures and local delivery sink
+/.account-test/

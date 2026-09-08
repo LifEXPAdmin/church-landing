@@ -10,7 +10,13 @@ const EVENT_TYPES = new Set<AnalyticsEventType>([
   "JOIN_SUCCESS"
 ]);
 
-const ROLES = new Set<WaitlistRole>(["BELIEVER", "CHURCH", "CREATOR", "BUSINESS", "BUILDER"]);
+const ROLES = new Set<WaitlistRole>([
+  "BELIEVER",
+  "CHURCH",
+  "CREATOR",
+  "BUSINESS",
+  "BUILDER"
+]);
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,6 +29,13 @@ export async function POST(request: NextRequest) {
 
     if (!body.eventType || !EVENT_TYPES.has(body.eventType) || !body.path) {
       return NextResponse.json({ ok: false }, { status: 400 });
+    }
+
+    if (
+      body.path.startsWith("/platform/account") ||
+      request.headers.get("referer")?.includes("/platform/account")
+    ) {
+      return NextResponse.json({ ok: true });
     }
 
     await trackEvent({

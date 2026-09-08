@@ -1,3 +1,4 @@
+import { publicProfileSelect } from "@/lib/platform/public-profile";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Search } from "lucide-react";
@@ -27,6 +28,7 @@ export default async function PlatformSearchPage({
   const [people, posts] = q
     ? await Promise.all([
         prisma.platformUser.findMany({
+          select: publicProfileSelect,
           where: {
             OR: [
               { name: { contains: q, mode: "insensitive" } },
@@ -44,10 +46,10 @@ export default async function PlatformSearchPage({
             ]
           },
           include: {
-            author: true,
+            author: { select: publicProfileSelect },
             likes: true,
             comments: {
-              include: { author: true },
+              include: { author: { select: publicProfileSelect } },
               orderBy: { createdAt: "desc" },
               take: 6
             }

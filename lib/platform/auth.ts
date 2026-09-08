@@ -1,54 +1,61 @@
-import { randomBytes, scrypt as scryptCallback, timingSafeEqual, createHash } from "node:crypto";
-import { promisify } from "node:util";
+import { randomBytes, scrypt, timingSafeEqual, createHash } from "node:crypto";
 
-const scrypt = promisify(scryptCallback);
-const KEY_LENGTH = 64;
-const PASSWORD_PREFIX = "scrypt";
-
-export function validatePassword(password: string) {
-  if (password.length < 8) {
-    return "Password must be at least 8 characters.";
+// Preserve the original 8..128 UTF-16 character policy, including Unicode.
+export function validatePassword(password: unknown): string | null {
+  if (
+    typeof password !== "string" ||
+    password.length < 8 ||
+    password.length > 128
+  ) {
+    return "Use a password between 8 and 128 characters.";
   }
-
-  if (password.length > 128) {
-    return "Password is too long.";
-  }
-
   return null;
 }
 
-export async function hashPassword(password: string) {
-  const salt = randomBytes(16).toString("hex");
-  const key = (await scrypt(password, salt, KEY_LENGTH)) as Buffer;
-
-  return `${PASSWORD_PREFIX}:${salt}:${key.toString("hex")}`;
+const LEGACY = { N: 16384, r: 8, p: 1, maxmem: 32 * 1024 * 1024 };
+const CURRENT = { N: 131072, r: 8, p: 1, maxmem: 160 * 1024 * 1024 };
+function derive(password: string, salt: string, legacy: boolean) {
+  return new Promise<Buffer>((resolve, reject) => {
+    scrypt(password, salt, 64, legacy ? LEGACY : CURRENT, (error, key) => {
+      if (error) reject(error);
+      else resolve(key);
+    });
+  });
 }
 
-export async function verifyPassword(password: string, storedHash: string | null) {
-  if (!storedHash) {
-    return false;
-  }
+export async function hashPassword(password: string) {
+  if (validatePassword(password)) throw new Error("Invalid password input");
+  const salt = randomBytes(16).toString("hex");
+  return `scrypt-v2:${salt}:${(await derive(password, salt, false)).toString("hex")}`;
+}
 
-  const [prefix, salt, hash] = storedHash.split(":");
-
-  if (prefix !== PASSWORD_PREFIX || !salt || !hash) {
-    return false;
-  }
-
-  const key = (await scrypt(password, salt, KEY_LENGTH)) as Buffer;
-  const saved = Buffer.from(hash, "hex");
-
-  if (key.length !== saved.length) {
-    return false;
-  }
-
-  return timingSafeEqual(key, saved);
+export async function verifyPassword(
+  password: unknown,
+  storedHash: string | null
+) {
+  if (validatePassword(password)) return false;
+  const parts = storedHash?.split(":") ?? [];
+  const [prefix, salt, hash] = parts;
+  const valid =
+    parts.length === 3 &&
+    ["scrypt", "scrypt-v2"].includes(prefix) &&
+    /^[a-f0-9]{32}$/.test(salt) &&
+    /^[a-f0-9]{128}$/.test(hash);
+  // Unknown accounts still perform bounded password work, with the same public result.
+  const key = await derive(
+    password as string,
+    valid ? salt : "0".repeat(32),
+    valid && prefix === "scrypt"
+  );
+  return Boolean(valid && timingSafeEqual(key, Buffer.from(hash, "hex")));
 }
 
 export function createSessionToken() {
   return randomBytes(32).toString("base64url");
 }
-
+export function validToken(value: unknown): value is string {
+  return typeof value === "string" && /^[A-Za-z0-9_-]{43}$/.test(value);
+}
 export function hashSessionToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
 }

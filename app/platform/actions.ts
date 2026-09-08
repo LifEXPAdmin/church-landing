@@ -1,116 +1,21 @@
 "use server";
 
-import { PlatformPostType, PlatformRole } from "@prisma/client";
+import { PlatformPostType } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { hashPassword, validatePassword, verifyPassword } from "@/lib/platform/auth";
 import { prisma } from "@/lib/prisma";
 import {
   clearPlatformSession,
-  getCurrentPlatformUser,
-  setPlatformSession
+  getCurrentPlatformUser
 } from "@/lib/platform/session";
 
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const USERNAME_REGEX = /^[a-z0-9_]{3,24}$/;
-const roles = new Set(Object.values(PlatformRole));
 const postTypes = new Set(Object.values(PlatformPostType));
-
-function cleanUsername(value: string) {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9_]/g, "");
-}
 
 function safeRedirectPath(value: FormDataEntryValue | null) {
   const path = String(value ?? "/platform");
 
   return path.startsWith("/platform") ? path : "/platform";
-}
-
-export async function createPlatformAccount(formData: FormData) {
-  const name = String(formData.get("name") ?? "").trim();
-  const username = cleanUsername(String(formData.get("username") ?? ""));
-  const email = String(formData.get("email") ?? "")
-    .trim()
-    .toLowerCase();
-  const password = String(formData.get("password") ?? "");
-  const confirmPassword = String(formData.get("confirmPassword") ?? "");
-  const roleValue = String(formData.get("role") ?? "BELIEVER") as PlatformRole;
-  const passwordError = validatePassword(password);
-
-  if (
-    name.length < 2 ||
-    !USERNAME_REGEX.test(username) ||
-    !EMAIL_REGEX.test(email) ||
-    !roles.has(roleValue) ||
-    passwordError ||
-    password !== confirmPassword
-  ) {
-    redirect("/platform/login?error=invalid");
-  }
-
-  const existingByEmail = await prisma.platformUser.findUnique({ where: { email } });
-  const passwordHash = await hashPassword(password);
-
-  if (existingByEmail) {
-    redirect("/platform/login?error=exists");
-  }
-
-  const existingUsername = await prisma.platformUser.findUnique({
-    where: { username }
-  });
-
-  if (existingUsername) {
-    redirect("/platform/login?error=username");
-  }
-
-  const user = await prisma.platformUser.create({
-    data: {
-      name,
-      username,
-      email,
-      passwordHash,
-      role: roleValue,
-      bio: "I am exploring Church and The Revival.",
-      interests: ["Prayer", "Community"]
-    }
-  });
-
-  await setPlatformSession(user.id);
-  redirect("/platform");
-}
-
-export async function loginPlatformAccount(formData: FormData) {
-  const email = String(formData.get("email") ?? "")
-    .trim()
-    .toLowerCase();
-  const password = String(formData.get("password") ?? "");
-
-  if (!EMAIL_REGEX.test(email) || !password) {
-    redirect("/platform/login?error=login");
-  }
-
-  const user = await prisma.platformUser.findUnique({ where: { email } });
-
-  if (!user) {
-    redirect("/platform/login?error=missing");
-  }
-
-  if (!user.passwordHash) {
-    redirect("/platform/login?error=needs-password");
-  }
-
-  const passwordMatches = await verifyPassword(password, user.passwordHash);
-
-  if (!passwordMatches) {
-    redirect("/platform/login?error=login");
-  }
-
-  await setPlatformSession(user.id);
-  redirect("/platform");
 }
 
 export async function logoutPlatformAccount() {
@@ -159,45 +64,6 @@ export async function updatePlatformProfile(formData: FormData) {
   revalidatePath("/platform");
   revalidatePath(`/platform/profile/${currentUser.username}`);
   redirect(`/platform/profile/${currentUser.username}`);
-}
-
-export async function changePlatformPassword(formData: FormData) {
-  const currentUser = await getCurrentPlatformUser();
-
-  if (!currentUser) {
-    redirect("/platform/login");
-  }
-
-  const currentPassword = String(formData.get("currentPassword") ?? "");
-  const newPassword = String(formData.get("newPassword") ?? "");
-  const confirmPassword = String(formData.get("confirmPassword") ?? "");
-  const passwordError = validatePassword(newPassword);
-
-  if (passwordError || newPassword !== confirmPassword) {
-    redirect("/platform/settings?error=password");
-  }
-
-  const user = await prisma.platformUser.findUnique({
-    where: { id: currentUser.id },
-    select: { passwordHash: true }
-  });
-
-  if (!user?.passwordHash) {
-    redirect("/platform/settings?error=session");
-  }
-
-  const passwordMatches = await verifyPassword(currentPassword, user.passwordHash);
-
-  if (!passwordMatches) {
-    redirect("/platform/settings?error=current");
-  }
-
-  await prisma.platformUser.update({
-    where: { id: currentUser.id },
-    data: { passwordHash: await hashPassword(newPassword) }
-  });
-
-  redirect("/platform/settings?updated=password");
 }
 
 export async function createPlatformPost(formData: FormData) {
