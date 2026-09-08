@@ -1,4 +1,177 @@
-# Stage 1 acceptance baseline
+# Stage 2B QA report
+
+## Current result (September 7, 2026 local)
+
+**Local implementation and automated verification passed; browser/device review
+remains blocked. Not a production or pilot-readiness approval.** Branch
+`codex/church-portal`, implementation commit `9e927f6`, continues the actual
+completed Stage 2A account foundation.
+No push, production read/write/migration, real email, invitation or paid service.
+
+Final command: `npm run preview:portal`. Evidence:
+`.account-test/stage2b-final-6.log`, `.account-test/run-MSq1n6/RESULT.txt`.
+All **42 tests passed**: 12 original account service, 6 original account HTTP,
+16 portal service and 8 portal HTTP. Original account test files remain unchanged.
+Additional harness assertions passed for upgrade preservation, fresh schema,
+synthetic restore and constraints, development privacy guards and verified local
+HTTPS readiness. No skipped/cancelled tests in those four suites.
+
+| Check | Final evidence and limits |
+|---|---|
+| Prisma generate | Passed with client 6.19.3; no production connection |
+| ESLint / TypeScript / diff check | Passed. Generated `.account-test/` and nested test-build output are excluded, not source/test files. |
+| Account regressions | All 18 passed, including original/new scrypt, old-credential race, grant purpose/single use, revocation and production rejection of the sink. |
+| Portal service | All16 passed against actual PostgreSQL, not mocked policy functions. |
+| Portal HTTP | All8 passed against actual production Next 15.5.25 over loopback HTTPS. Cookies/hidden fields absent from entire raw HTML/RSC responses. |
+| Production compilation | Passed both the initial build and post-development rebuild for HTTPS. |
+| Actual Stage 2A upgrade | Raw prior schema contains original and scrypt-v2 accounts, sessions, grants and content. Stage 2B adds schema without modifying prior field/content fingerprints or inventing verification/adult consent. |
+| Fresh schema | Existing Prisma deployment wrapper applies all preserved migrations plus Stage 2B to a new empty synthetic database. All expected tables/indexes/checks present and no fixture rows silently created. |
+| Synthetic backup/restore | pg_dump/pg_restore compare account/church row-content fingerprints, constraints and indexes in a separate local DB. NOT verified production recovery. |
+| Development guard | New portal pages return a static notice before private reads outside production. Actual HTML and text/x-component RSC contain no supplied synthetic cookie. |
+| Dependency audit | Three high package entries for one remaining advisory, GHSA-ggr8-5vv4-36mx; not a clean audit. Full inventory/sources in DEPENDENCY_REVIEW.md. |
+| Browser/mobile/keyboard | Blocked: CUA reported the Mac locked and automatic unlock unavailable. User was asked to unlock it. No Stage 2B screenshot, narrow/desktop interaction, keyboard journey, zoom or physical-device check is claimed. |
+| Screen reader / independent review | Not run. HTTP landmark checks are not a browser accessibility audit or qualified independent security/privacy review. |
+
+Environment: Node 25.9.0, PostgreSQL 16.12, Prisma 6.19.3, Next 15.5.25. Account HTTP
+uses a development server with the isolated file sink. That server is stopped;
+the production build is regenerated, then a production server runs with real
+delivery disabled behind a fixed-loopback HTTPS proxy. Only the test subprocess
+trusts the ephemeral local certificate via NODE_EXTRA_CA_CERTS. No system trust
+change, global TLS bypass, production sink exception or external mail was used.
+The separate fixture process verifies synthetic identities through the actual
+guarded local sink and grant-consumption service. The production preview's email
+recovery remains truthfully unavailable.
+
+### What the new tests exercise
+
+- Two fictional churches and distinct operators/reviewers/members/coordinators.
+  Forged category/grant/identity cannot establish a church or elevate authority.
+  Explicit operator DTOs reveal only information needed for each capability.
+- Eligibility, suspension, cross-church and guessed identifiers, self-review even
+  with a valid scoped grant, first-request preservation of independent reviewer
+  authority, invalid shapes, invalid/stale state/version and concurrent requests.
+- Both service races and all four DB uniqueness combinations of PENDING/APPROVED.
+  Concurrent review has one winner and a conflict, not contradictory success.
+  Deterministic decline, withdrawal, leave and removal each require fresh approval
+  on re-request. Following/categories never create a church connection.
+- Optional name/email/phone sharing and owner-only preview; eligible same-church
+  viewing without listing; no private login-email copying. Invalid array audiences
+  and stale consent cannot mutate preferences or restore revoked access.
+- Contact titles provide no approval/directory power; scoped reviewers cannot see
+  directories without membership. Primary and relationship owner are actual
+  fictional assignments, backup absent. Leaving/suspension/revocation invalidate
+  related privileges/appointments in old sessions; rejoin does not restore them.
+- Entire raw API, public HTML and actual RSC payload privacy, including own-page
+  credential exclusion and public-profile isolation. Cross-church directory/review
+  HTML/RSC show denied states without private names or contacts. Unsupported query
+  text does not act as a hidden-contact search/count oracle.
+- Subsequent API/HTML/RSC responses stop exposing withdrawn directory fields;
+  sharing/removal races and active-session grant revocation preserve denial.
+  Required cache/referrer directives are checked on actual responses.
+- My church, sharing and reviewer pages render with expected title/heading/action
+  labels, one balanced main/skip target and labeled platform/utility navigation.
+  No rendered marketing waitlist/nav on those pages. Only structural assertions
+  omit inline scripts; privacy assertions examine the unfiltered response.
+
+### Defects and intermediate failures
+
+1. Internal static review found an array-shaped APPROVE action could be coerced
+   through a state map without its eligibility branch; strict string validation
+   and suspended-target regression now pass. Array sharing audiences are likewise
+   rejected without mutation. This review was internal, not independent approval.
+2. An operator possessing only church-creation capability initially received an
+   overbroad candidate/appointment projection. Per-capability projections now pass
+   dedicated least-privilege tests; title alone never gives access.
+3. A first church request revoked an independently appointed reviewer capability.
+   Cleanup now applies to terminal/re-request transitions, not first creation.
+   The self-review test uses a dedicated valid reviewer, proves that grant remains
+   active and can review another person, then tests explicit self-review denial.
+   A contact test also needed the correct403 expectation for explicit other-church
+   help; generic direct help remains available without contacts.
+4. Next's global header configuration replaced the route's fuller cache directive.
+   Configuration and API now agree on private/no-store/max-age=0.
+5. Next development Flight I/O debug metadata serialized the synthetic request
+   cookie. A cached server helper alone did not fix it. New portal pages now fail
+   closed before private reads outside production; tests/preview use actual
+   production HTTPS with sender disabled. Production raw payload absence and
+   development guard absence checks both pass. Other dev routes are not certified
+   private; development must use only fictional data.
+6. Streaming loading fallback rendered another complete application shell/main.
+   It now renders a neutral busy state without duplicate nav or signed-out controls.
+   The final structural checks pass. Generated dependency-smoke output also exposed
+   a missing lint ignore; only disposable generated artifacts are now excluded.
+
+Earlier unsuccessful runs are retained locally in stage2b-final*.log. Failures
+were corrected and the complete final suite rerun. No privacy assertion was
+weakened or response filtered to declare a pass. Native TypeScript module-type
+warnings remain nonfatal; no package-module rewrite was made just to hide them.
+
+### AC-01 through AC-24
+
+| ID | Stage 2B status | Evidence / remaining scope |
+|---|---|---|
+| AC-01 | Passed, bounded | Existing account/feed/profile/text-search/public render regressions and build. Not all historical social mutations or live deployment. |
+| AC-02 | Passed | Two-fictional-church fixtures exercise the same services and isolation. |
+| AC-03 | Passed | Category/forged identity/operator/capability escalation denied through real service/API. |
+| AC-04 | Passed, automated | One pending request, explicit state/withdraw UI, no directory access. Human usability check pending. |
+| AC-05 | Passed | Scoped reviewer approval and same-transaction audit/state checks. |
+| AC-06 | Passed | Self, ordinary, unprivileged contact and Church B reviewer denied for Church A. |
+| AC-07 | Passed, bounded | Combined index, concurrent requests/review/removal/sharing and stale versions. Not production load testing. |
+| AC-08 | Passed | Combined Home Church limit; follows/account category independent; explicit leave-first. |
+| AC-09 | Passed, automated | Separate opt-in, no implicit/public affiliation; owner settings/projection. Browser comprehension untested. |
+| AC-10 | Passed, production portal | Hidden contact/login/session fields absent from authorized projections and unauthorized API/HTML/RSC; no address field introduced. Development guard is separately verified. |
+| AC-11 | Passed | Same-church selected fields only; unrelated/anonymous/reviewer-without-membership denial. |
+| AC-12 | Passed | Subsequent raw API/HTML/RSC omit withdrawn information; no-store and stale-write protection. Previously viewed data cannot be recalled. |
+| AC-13 | Passed | Leave/remove/revoke/suspension affect old sessions; consent/assignments do not revive on rejoin. Public accounts/content preserved. |
+| AC-14 | Blocked for real delivery | All 18 local account checks preserved; actual external email and operational recovery remain unavailable. |
+| AC-15 | Passed, synthetic | Primary/backup/relationship-owner semantics and permissions tested. Real appointments not authorized. |
+| AC-16 | Not run, deferred | Ordinary support cases/participants are not implemented in 2B. |
+| AC-17 | Blocked operationally | Ordinary direct email exists beyond church contacts; no genuine independent concern responder established. No allegation intake. |
+| AC-18 | Not run, deferred | Support-case receipt/progress/resolution/reopening are later work. |
+| AC-19 | Not run for category fix | Existing text-search regression exercised; broader Testimony category correction explicitly deferred. |
+| AC-20 | Blocked for browser QA | Labels, landmarks and page structure checked over HTTP; Mac lock prevents narrow/desktop/keyboard checks. No screen-reader claim. |
+| AC-21 | Passed, synthetic | Actual2A upgrade plus fresh migrations preserve data and enforce new constraints. |
+| AC-22 | Passed, synthetic only | Restore fingerprints/constraints and rollback limitations recorded. Actual production backup/recovery unverified. |
+| AC-23 | Blocked for release | New UI explains verified behavior; policy/operator/entity/retention/adult-pilot facts and legal review remain unresolved. Policies not newly published. |
+| AC-24 | Passed | No deployment, real data/email/appointments, ordinary cases, calendar, paid services or unrelated-file changes. |
+
+### Local two-church walkthrough for review
+
+Preview: `https://127.0.0.1:52881/platform/login` on this Mac only. It uses a local
+self-signed certificate; see README and the fictional-only
+`.account-test/run-MSq1n6/PREVIEW.md`. That ignored file holds the actual generated
+login emails/passwords and exact church names. No credentials are copied here.
+Several test runs may create similarly named fictional churches; select the exact
+pair/suffix in that file. Use Log out between actors so permissions stay clear.
+
+1. Sign in as `Fictional unack ...`. Open My church, confirm the adult acknowledgment,
+   then Find a church and select the exact Fictional Lantern Test Church (Church A).
+   Request a connection. Verify Pending and no private directory access.
+2. Sign out and sign in as `Fictional review_a ...`. Open My church, then the scoped
+   Review link. Approve the `unack` request, not another fixture's similarly named row.
+3. Sign in as `unack` again. My church now shows approval. Open Manage sharing,
+   choose a display name, opt into the directory, add a fictional email ending
+   `@example.test`, select approved church members for email and keep phone Only me.
+   Save. The preview shows only your own saved, audience-filtered listing.
+4. Sign in as `Fictional member_a ...`. Open My church > Member directory. Your new
+   listing/email should be visible; private phone/login email should not be.
+5. Return as `unack`, turn off Include me and save. Reload the directory as member_a;
+   the withdrawn listing should be absent. Then as unack deliberately Leave this
+   church. My church shows the ended connection; a saved directory link is denied.
+6. As member_a, open Help. See the configured fictional primary coordinator and
+   relationship owner, honest backup setup-pending state and ordinary direct email.
+   Do not send a real email during this review.
+7. As `Fictional member_b ...`, open Church A's saved directory URL. It must deny
+   access. As `Fictional review_b ...`, Church A's saved Review URL must also deny.
+   Church A reviewer can approve Church A requests but has no directory membership
+   merely because of that capability.
+
+This walkthrough is provided for review; its browser clicks have NOT been performed
+while the Mac is locked. Equivalent service/HTTP transitions and denials passed.
+The preview remains disposable; stopping the runner ends it. Do not invite real
+members or expose it on the Internet. No ordinary support-case work has begun.
+
+## Historical Stage 1 and Stage 2A evidence
 
 September 7, 2026; source main 68b4190. These are evidence statuses, not completion claims for the proposed product. Lint/build passed; no fixture/runtime/restore suite was run. No production test writes occurred.
 

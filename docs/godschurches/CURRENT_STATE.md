@@ -1,5 +1,78 @@
 # Godschurches current state
 
+## Current: Stage 2B local portal (September 7, 2026 local)
+
+This section supersedes the historical inventory below. Branch
+`codex/church-portal` continues `9b6a5a0` and preserves account commits `f027758`
+and `e8b370c`. Stage 2B implementation commit: `9e927f6`, local only. All 42
+automated tests plus migration/restore/build checks pass; browser/device checks
+remain blocked by the locked Mac. The user explicitly authorized Stage 2B,
+not publication, production reads/migrations, real email, or ordinary support cases.
+Production SHA remains unverified. Nothing in this report describes the live site
+as patched or ready for private church use.
+
+Implemented locally:
+
+- Reusable Church records; explicitly provisioned operator capabilities;
+  church-scoped reviewer and coordinator-appointment grants; minimal audit events.
+  Account categories, following, Basic Auth, and contact titles confer no authority.
+- Verified contact plus `adult-preview-v1` acknowledgment for private participation.
+  Existing accounts are not backfilled as verified/adult. No birth dates or IDs.
+  Suspension checks are integrated into login, locked session creation, and every
+  session read. Account security from Stage 2A remains intact.
+- Discovery, requests, My church, withdrawal, scoped approval/decline, leave/remove,
+  and explicit re-request. A combined partial unique index permits only one row
+  per person in either PENDING or APPROVED, not one of each. Following is independent.
+- Version checks, transaction-scoped authorization and audit writes; self-review
+  and cross-church decisions denied. Revocation is evaluated against current DB
+  state in old sessions. Leaving preserves accounts and public content.
+- Separate opt-in directory name; optional contact email and phone default ONLY_ME.
+  Login email is never copied. Same-church approved eligible people may view without
+  listing themselves. Fields are projected on the server, not hidden in the browser.
+  Leaving/removal clears preferences and related grants/appointments. Rejoin needs
+  new approval and consent; old appointments are not restored.
+- Primary/backup Church Connection Coordinators and a distinct Godschurches
+  relationship owner. Titles do not grant approval or directory access. Unassigned
+  slots say setup pending. Direct published email remains available; no internal
+  phone, invented staff, response promise, or independent responder is published.
+- One application shell with Godschurches branding, mobile bottom navigation,
+  labeled forms, pending/conflict/error/denied states and scoped review links.
+  Marketing layout remains separate. Signed-in feed introduction remains hidden.
+- All platform routes/API responses are private/no-store/no-referrer/noindex;
+  platform tracking is disabled. Marketing analytics accepts only known paths and
+  no arbitrary label/referrer. No directory search, export or public affiliation.
+
+New routes: `/platform/churches`, `/platform/churches/[churchId]`,
+`/platform/my-church`, `/platform/my-church/sharing`,
+`/platform/churches/[churchId]/directory`, `/platform/churches/[churchId]/review`,
+`/platform/help`, `/platform/operator/churches`, `/api/platform/portal`.
+Services are `lib/platform/portal.ts`, `portal-boundary.ts`, and `portal-types.ts`.
+UI modules are `components/platform/portal-*`. Additive migration:
+`prisma/migrations/20260908032000_church_portal/migration.sql`.
+
+`lib/platform/portal-session.ts` keeps credential access in a server data boundary.
+Because the installed development Flight debugger serializes awaited I/O values,
+new portal pages show a static notice before private reads outside production.
+The local portal preview therefore uses a production build behind isolated HTTPS,
+not the development renderer. Real email stays disabled in that server.
+
+Dependencies: Next/eslint-config-next 15.5.25, Prisma/client 6.19.3, targeted
+compatible transitive fixes. One remaining advisory appears as three high package
+entries: GHSA-ggr8-5vv4-36mx in deepmerge-ts 7.1.5 via Prisma config. See
+DEPENDENCY_REVIEW.md for named advisories, sources and reachability limits.
+
+Evidence and exact final run status are in QA_REPORT.md and PROGRESS.md. Browser
+checks are a distinct gate, not inferred from HTTP or compilation. Local generated
+fixtures, sink records and credentials remain ignored under `.account-test/`.
+The unrelated `docs/ai-assisted-investing-workflow.md` was not read or changed.
+
+Release gaps: real recovery sender, independent concern route, actual church/operator
+authorization, policy/retention facts, independent security/privacy review, real
+backup/restore and deployed-version verification. Wider search-category correction,
+ordinary support cases, policy publishing and calendar remain deferred.
+
+## Historical inspection and Stage 2A evidence
+
 Inspection: September 7, 2026 (local system date). Stage 1 only.
 
 ## Evidence and source

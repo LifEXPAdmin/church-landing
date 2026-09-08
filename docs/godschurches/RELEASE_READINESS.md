@@ -1,4 +1,103 @@
-# Release readiness: account fix only
+# Release readiness: Stage 2B development review
+
+## Current release gate (September 7, 2026 local)
+
+**Not authorized for deployment or a real private-church pilot.** The current
+branch `codex/church-portal` builds on `9b6a5a0`, retaining `f027758` and `e8b370c`.
+Local implementation commit: `9e927f6`. All 42 automated checks and migration,
+restore/build checks pass; browser/mobile/keyboard review remains blocked.
+Stage 2B adds church connections, optional private directory, named contacts and
+scoped authority in isolated fictional data. Nothing was pushed/merged/deployed;
+no production data/settings were read or changed. Actual production SHA and the
+live account security state are unverified. See QA_REPORT.md for final test results
+and outstanding browser checks, rather than interpreting this as launch approval.
+
+### Local implementation and migration
+
+The additive `20260908032000_church_portal` migration adds eligibility/suspension
+fields and church/connection/preferences/capability/contact/audit tables. It does
+not rewrite original or scrypt-v2 passwords, retroactively verify/age-acknowledge
+accounts, infer affiliation from categories/follows, delete public content, or
+appoint real people. The SQL includes the combined PENDING/APPROVED partial unique
+index and contact/version checks; do not replace it with separate state indexes
+or regenerate away the custom constraints. Earlier migrations are unchanged.
+
+`npm run test:portal` exercises real services and HTTP boundaries in a newly
+created loopback PostgreSQL cluster, with prior-schema fixtures, actual Stage 2A
+upgrade, fresh migrations and synthetic dump/restore of rows plus constraints.
+`npm run preview:portal` leaves that environment running after successful checks.
+These results are not a production backup/restore rehearsal. Test output and
+fictional credentials stay under ignored `.account-test/` and are never exported.
+
+Private portal pages fail closed outside the production renderer: the installed
+Next development Flight debugging stream was observed serializing awaited cookie
+values. The runner separately checks that guard, then serves the real portal from
+`next start` over loopback HTTPS with an ephemeral certificate and disabled sender.
+Its separate test process verifies fictional identities through the guarded local
+sink; the production server itself cannot deliver those messages. No global TLS
+bypass, system trust change, production delivery exception or filtered privacy
+assertion is used. Other development pages have not been certified private; use
+only fictional data in all development renderers.
+
+### Unresolved release requirements
+
+1. Decide the immediate account-release path. The small claim correction
+   `f027758` remains independently reviewable and requires no new schema/env.
+   It fixes only the old unverified claim path. A compatible full account/church
+   rollout is a separate, larger decision; do not silently postpone the account
+   defect while adding features, or publish either option without authorization.
+2. Review the remaining dependency advisory **GHSA-ggr8-5vv4-36mx /
+   CVE-2026-40345**, `deepmerge-ts@7.1.5` via Prisma 6 config. Full and production
+   audits show three affected package entries for this one advisory. Fixed major 8
+   is outside Prisma 6's exact dependency pin; no unsupported override was used.
+   Recommend a maintainer-compatible patch or a separately scoped, tested Prisma
+   config/toolchain migration before accepting a production exception. Build-time
+   reachability limits are not proof of safety. See DEPENDENCY_REVIEW.md.
+3. Keep real delivery disabled. No sender, domain, API key or MailerLite group
+   enables recovery. A reviewed transactional adapter, queue/timing/abuse handling,
+   safe notifications and actual inbox end-to-end checks remain outstanding.
+4. Verify real operator identity/authority, actual church authorization and named
+   appointment/audience consent. The fixture bootstrap is loopback-only and must
+   never be used with real data. CHURCH/BUILDER, marketing Basic Auth and contact
+   cards are not provisioning mechanisms. Review privileged reauthentication and
+   second-factor requirements before real operator appointments.
+5. Establish a genuine independent concern route and coverage. Published direct
+   email to Andrew remains available but is not independent escalation. No real
+   backup, staff, availability, appointment or response promise was invented.
+6. Complete independent qualified security/privacy review, browser/device/keyboard
+   and screen-reader/accessibility checks, actual policy/operator/entity/jurisdiction
+   facts, consent/retention/deletion decisions and adult-pilot conditions. Adult
+   acknowledgment is not proof of age. Existing public policies remain drafts for
+   this expanded private scope; no legal adequacy is claimed.
+7. Verify the intended runtime (Sharp requires Node>=20.9), exact target database,
+   deployed SHA, safe secrets, backups and restoration access, platform response
+   headers and excluded analytics. Load/pagination review is needed beyond the
+   small pilot: portal transactions use a global advisory gate and lists cap at 100.
+
+### Rollback limitations
+
+Old main cannot verify new scrypt-v2 passwords or enforce credentialVersion.
+Do not blindly roll back there, downgrade hashes, revive sessions or restore old
+grants. Prefer a reviewed forward fix. A UI-only rollback must retain compatible
+Stage 2A account code/schema and the new revocation behavior where applicable.
+Do not drop portal tables or restore a stale backup to undo a page change: that
+could lose consent withdrawals, transitions and permission revocations. Any real
+restore needs a new recovery/credential and privacy reconciliation plan.
+
+For any separately approved release, first verify the target and protected backup,
+then apply compatible additive migrations with the existing wrapper and deploy
+the reviewed commit; verify the actual deployment and auth/private responses.
+No command or checklist here authorizes execution against production.
+
+### Next stage
+
+Andrew reviews this local portal and outstanding QA first. A separately authorized
+ordinary support-case slice can follow. Its private participants, owner/state
+history and concern routing must not borrow authority from a contact title.
+Calendar, broad social/search-category changes and final policy publishing are
+deferred. Production deployment remains a separate instruction.
+
+## Historical Stage 2A release evidence
 
 September 7, 2026 local. Stage 2A local implementation; no deployment authorization.
 Branch: codex/account-security, baseline main 68b4190. Production commit still

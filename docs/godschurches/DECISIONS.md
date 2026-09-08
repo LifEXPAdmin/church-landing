@@ -1,5 +1,49 @@
 # Decisions and recommendations
 
+## Current decisions: Stage 2B (September 7, 2026 local)
+
+The defaults below were accepted explicitly through the user's pasted Stage 2B
+prompt. They apply to this development slice, not retroactive consent, legal
+approval, real church policy, or appointment of any person. Historical proposal
+labels below do not override this current authorization.
+
+| Topic | Current resolution |
+|---|---|
+| Delivery boundary | Isolated local implementation/testing only. No push, merge, deployment, real data/email, invitation or paid service. |
+| Home Church | One combined pending OR approved relationship per person. No new request while approved; explicit leave first. Following is unrelated. |
+| Connection meaning | Approval enables church-only access, not certification of formal membership or pastoral office. |
+| Re-request | Terminal connections may request again, at most five requests per person/day, subject to account eligibility and API rate limits. Fresh review required. |
+| Eligibility | Active account, verified email, and versioned acknowledgment of age 18+. No DOB/ID documents; acknowledgment is not independent age verification. Existing rows remain unknown. |
+| Directory audience | Separate opt-in name. Optional separate contact email/phone default ONLY_ME; no login-email copying, addresses, public affiliation or export. Approved eligible members can view without being listed. |
+| Withdrawal | Turning off listing clears field-sharing choices; owner-only drafts may remain until leaving/removal deletes preferences. Subsequent responses change immediately; already viewed information cannot be recalled. |
+| Lifecycle revocation | Withdrawal/decline/leave/removal revoke same-church grants and dependent contact appointments. Rejoin never restores them. A first request preserves an independently assigned reviewer grant, but never permits self-review. |
+| Scoped authority | REVIEW_CONNECTIONS and APPOINT_COORDINATORS are technical capabilities, not pastoral titles. Explicit operator capabilities separately establish churches, manage access/accounts, and appoint relationship owners. |
+| Contacts | Primary/backup coordinators require current approved eligibility in that church. Relationship owners need not be church members. Displaying a contact does not confer directory/review/support rights. |
+| Appointments | Only fictional appointments are provisioned. Andrew is the only confirmed real Godschurches operator; no real assignment record or staff claim was created. |
+| Contact route | Keep published mcdrew169@yahoo.com. Do not add internal phone, allegation intake, promised availability, or an invented independent responder. Independent escalation remains a pilot gate. |
+| Concurrency | Portal advisory transaction gate plus actor/target row locks, expected versions and combined partial unique index; current authoritative authorization, not cached token grants. |
+| Privacy boundaries | Server-selected DTOs, no-store/no-referrer private routes, no generic platform analytics. Operator responses include only data needed by the actual capability. |
+| Private preview renderer | Production build on loopback HTTPS with an ephemeral certificate; no system trust change. New portal pages refuse private reads in non-production renderers after a test demonstrated Next development I/O debug-cookie serialization. Account sink tests remain separate. |
+| Dependency choice | Next 15 and Prisma 6 targeted patches only. Do not force deepmerge-ts8 under Prisma 6's exact7.1.5 pin. Residual named risk and release recommendation in DEPENDENCY_REVIEW.md. |
+| Product scope | Ordinary support cases, category-search correction, final policies, calendar and social expansion are later work requiring review/instruction. |
+
+The combined index and transaction behavior follow PostgreSQL's documented
+[partial indexes](https://www.postgresql.org/docs/16/indexes-partial.html) and
+[explicit locking](https://www.postgresql.org/docs/16/explicit-locking.html).
+These mechanisms are verified only to the extent of the recorded local tests,
+not a proof of all possible production races. Private DTO/authorization choices
+also follow Next's [data-security guidance](https://nextjs.org/docs/15/app/guides/data-security).
+
+Real provisioning remains separately controlled: Andrew verifies identity and
+documented church authority, approves specific scoped capabilities/contacts and
+their audience, and records the appointment through a reviewed release process.
+The fictional test bootstrap is not a production command or self-service claim.
+Privileged reauthentication/second-factor requirements and a backup operator need
+independent review before real appointments. No retention period/entity/jurisdiction
+or production authorization was invented to unblock development.
+
+## Historical decisions and Stage 2A notes
+
 Recorded September 7, 2026. Andrew McCuen owns product/operator decisions. Recommendations below are not approvals. Brief release 1.0.0 is dated September 8; source facts are from 68b4190.
 
 | Topic | Status | Decision / recommendation and implications | Owner |

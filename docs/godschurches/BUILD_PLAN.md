@@ -1,4 +1,51 @@
-# Stage 2 build proposal
+# Stage 2 build plan
+
+## Current Stage 2B disposition (September 7, 2026 local)
+
+The pasted Stage 2B prompt explicitly authorizes implementation and testing of
+church connections, optional private directory and named contacts. That bounded
+slice is implemented on `codex/church-portal`, continuing the completed account
+foundation, not restarting from old main. Final evidence/gaps are recorded in
+QA_REPORT.md. No deployment or ordinary case implementation is authorized.
+
+Implemented sequence:
+
+1. Rerun the 18-check account baseline in a new loopback PostgreSQL cluster.
+2. Reconcile the actual lockfile/audit and apply supported compatible fixes.
+   Remaining deepmerge-ts major-version remediation is documented, not forced.
+3. Add account eligibility, Church/connection/consent/capability/contact/audit
+   models and an additive migration. Keep account hashes and versions compatible.
+4. Centralize portal operations and private projections in `portal.ts`, with a
+   typed HTTP boundary in `portal-boundary.ts`; do not duplicate policy in pages.
+5. Add member, reviewer and operator pages using existing Next and dark/gold design.
+   Remove duplicate marketing/application navigation and nested main landmarks.
+6. Extend the existing real-service/HTTP harness, fresh/upgrade migration rehearsal,
+   and synthetic backup restore; keep a fictional two-church preview for review.
+
+Correction to the original proposal below: **two separate unique indexes for
+PENDING and APPROVED are insufficient**. The implementation has a single partial
+unique index covering BOTH states. A deliberate leave-first path is required.
+Optimistic versions return 409 on repeated/stale writes; they do not silently
+pretend an old request is a new success. Audit and state changes share a transaction.
+
+Small implementation choices: no generic organization or role engine; all church
+policy is in one service module. A transaction-level advisory gate serializes this
+bounded pilot's portal reads/writes, combined with row locks and DB uniqueness.
+Views are capped at 100 records and have no bulk export. Before broader rollout,
+review scoped locking, pagination, monitoring and load tests. Do not claim arbitrary
+church counts or production throughput based on this local implementation.
+
+Next: review this local slice and the QA limitations. After separate authorization,
+the next feature slice is the ordinary private support case system, including
+participant authorization, safe ownership/state history and independent-route
+operational requirements. Do not start calendar or broad social expansion now.
+
+Parallel release decisions must not disappear: review the independently releasable
+claim correction `f027758` and security patches, or plan a compatible full account
+release. Any publication still needs explicit approval, target/SHA verification,
+appropriate migration/recovery planning and the gates in RELEASE_READINESS.md.
+
+## Historical proposal and Stage 2A notes
 
 Prepared September 7, 2026 against main 68b4190. Proposed, not approved or implemented. Read CURRENT_STATE.md and DECISIONS.md first.
 
