@@ -3,14 +3,20 @@ import {
   mkdirSync,
   mkdtempSync,
   writeFileSync,
+  readFileSync,
+  chmodSync,
   readdirSync,
   existsSync
 } from "node:fs";
 import { resolve, join } from "node:path";
 import { createServer } from "node:net";
+import { request as httpRequest } from "node:http";
+import { createServer as createHttpsServer, get as httpsGet } from "node:https";
 import { randomBytes } from "node:crypto";
 
 const root = process.cwd();
+const portalTests = process.argv.includes("--portal");
+const preview = process.argv.includes("--preview");
 const pg = process.env.TEST_PG_BIN ?? "/opt/homebrew/opt/postgresql@16/bin";
 if (!existsSync(join(pg, "initdb")))
   throw new Error(
@@ -62,7 +68,30 @@ function run(cmd, args, overrides = {}) {
   return r.stdout;
 }
 let server;
+let testProcess;
+let proxy;
+let previewOrigin = env.ACCOUNT_ORIGIN;
+const proxySockets = new Set();
+const proxyRequests = new Set();
 let databaseStarted = false;
+async function stopChild(child) {
+  if (!child?.pid || child.exitCode !== null || child.signalCode !== null)
+    return;
+  await new Promise((resolve) => {
+    const force = setTimeout(() => child.kill("SIGKILL"), 5000);
+    force.unref();
+    child.once("exit", () => {
+      clearTimeout(force);
+      resolve();
+    });
+    child.kill("SIGTERM");
+  });
+}
+async function stopProxy() {
+  for (const request of proxyRequests) request.destroy();
+  for (const socket of proxySockets) socket.destroy();
+  if (proxy?.listening) await new Promise((resolve) => proxy.close(resolve));
+}
 try {
   run(join(pg, "initdb"), [
     "-D",
@@ -93,31 +122,150 @@ try {
     "fixture",
     "godschurches_security_test"
   ]);
-  const psql = (args) =>
-    run(join(pg, "psql"), [database, "-v", "ON_ERROR_STOP=1", ...args]);
+  const psql = (args, url = database) =>
+    run(join(pg, "psql"), [url, "-v", "ON_ERROR_STOP=1", ...args]);
+  const clearLimits = () => psql(["-c", 'TRUNCATE "PlatformAuthLimit"']);
+  const runTests = async (file, testEnv = env) => {
+    clearLimits();
+    // Keep the event loop available when this process serves the local HTTPS proxy.
+    await new Promise((resolve, reject) => {
+      testProcess = spawn(
+        process.execPath,
+        ["--import", "./tests/register.mjs", "--test", file],
+        { cwd: root, env: testEnv, stdio: "inherit" }
+      );
+      testProcess.once("error", reject);
+      testProcess.once("exit", (code) =>
+        code === 0
+          ? resolve()
+          : reject(
+              new Error(
+                `Local tests failed: ${file}; see test diagnostics above`
+              )
+            )
+      );
+    });
+    testProcess = undefined;
+    clearLimits();
+  };
+  const accountTables = [
+    ["PlatformUser", "id"],
+    ["PlatformSession", "id"],
+    ["PlatformAccountGrant", "id"],
+    ["PlatformAuthLimit", "key"],
+    ["PlatformPost", "id"],
+    ["PlatformPostComment", "id"],
+    ["PlatformPostLike", "id"],
+    ["PlatformFollow", "id"]
+  ];
+  const churchTables = [
+    ["Church", "id"],
+    ["ChurchConnection", "id"],
+    ["ChurchDirectoryPreference", "connectionId"],
+    ["ChurchCapabilityGrant", "id"],
+    ["PlatformOperatorGrant", "id"],
+    ["ChurchContactAssignment", "id"],
+    ["ChurchAuditEvent", "id"]
+  ];
+  const fingerprint = (table, key, url = database, beforeChurch = false) => {
+    const row =
+      beforeChurch && table === "PlatformUser"
+        ? `to_jsonb(t) - ARRAY['suspendedAt','adultAcknowledgedAt','adultPolicyVersion','portalVersion']`
+        : "to_jsonb(t)";
+    return psql(
+      [
+        "-Atc",
+        `SELECT md5(COALESCE(jsonb_agg(${row} ORDER BY t."${key}")::text, '[]')) FROM "${table}" t`
+      ],
+      url
+    );
+  };
+  const churchNames = churchTables.map(([name]) => `'${name}'`).join(",");
+  const constraintFingerprint = (url) =>
+    psql(
+      [
+        "-Atc",
+        `
+    SELECT jsonb_agg(t ORDER BY t.kind, t.name)::text FROM (
+      SELECT 'index' AS kind, indexname AS name, indexdef AS definition FROM pg_indexes
+      WHERE schemaname = 'public' AND tablename IN (${churchNames})
+      UNION ALL
+      SELECT 'constraint', c.conname, pg_get_constraintdef(c.oid)
+      FROM pg_constraint c JOIN pg_class r ON r.oid = c.conrelid
+      JOIN pg_namespace n ON n.oid = r.relnamespace
+      WHERE n.nspname = 'public' AND r.relname IN (${churchNames})
+    ) t`
+      ],
+      url
+    );
+  const checkChurchConstraints = (url) => {
+    const result = psql(
+      [
+        "-Atc",
+        `SELECT
+      (SELECT count(*) FROM pg_indexes WHERE schemaname = 'public'
+       AND indexname = 'ChurchConnection_one_active_user'
+       AND indexdef LIKE 'CREATE UNIQUE INDEX%' AND indexdef LIKE '%PENDING%'
+       AND indexdef LIKE '%APPROVED%') = 1
+      AND (SELECT count(*) FROM pg_constraint c JOIN pg_namespace n ON n.oid = c.connamespace
+       WHERE n.nspname = 'public' AND c.convalidated AND c.contype = 'c'
+       AND c.conname IN ('ChurchConnection_positive_version', 'ChurchContactAssignment_membership_required')) = 2`
+      ],
+      url
+    );
+    if (result.trim() !== "t")
+      throw new Error(
+        "Missing combined affiliation index or church constraints"
+      );
+    for (const [table] of churchTables)
+      psql(["-Atc", `SELECT count(*) FROM "${table}"`], url);
+  };
   // Upgrade rehearsal: previous SQL state with synthetic legacy/password accounts and relationships.
   const migrations = readdirSync("prisma/migrations")
     .filter((n) => n.startsWith("20"))
     .sort();
-  for (const name of migrations.filter((n) => !n.startsWith("202609")))
+  const accountMigration = migrations.indexOf(
+    "20260907180000_account_security"
+  );
+  if (
+    accountMigration < 0 ||
+    !migrations.includes("20260908032000_church_portal")
+  )
+    throw new Error("Expected Stage2A and Stage2B migrations are required");
+  for (const name of migrations.slice(0, accountMigration))
     psql(["-f", `prisma/migrations/${name}/migration.sql`]);
   run(process.execPath, [
     "--import",
     "./tests/register.mjs",
     "tests/seed-upgrade.ts"
   ]);
-  psql(["-f", `prisma/migrations/${migrations.at(-1)}/migration.sql`]);
-  console.log("Synthetic prior-schema upgrade applied.");
-  run(
-    process.execPath,
-    [
+  psql([
+    "-f",
+    `prisma/migrations/${migrations[accountMigration]}/migration.sql`
+  ]);
+  console.log(
+    run(process.execPath, [
       "--import",
       "./tests/register.mjs",
-      "--test",
-      "tests/account-security.test.ts"
-    ],
-    { stdio: "inherit" }
+      "tests/seed-stage2a.ts"
+    ]).trim()
   );
+  const stage2a = accountTables.map(([table, key]) =>
+    fingerprint(table, key, database, true)
+  );
+  // Apply every remaining migration even in account-only mode: the client uses the full schema.
+  for (const name of migrations.slice(accountMigration + 1))
+    psql(["-f", `prisma/migrations/${name}/migration.sql`]);
+  for (const [i, [table, key]] of accountTables.entries()) {
+    if (stage2a[i] !== fingerprint(table, key, database, true))
+      throw new Error(`Stage2B upgrade changed prior account data: ${table}`);
+  }
+  checkChurchConstraints(database);
+  console.log(
+    "Synthetic Stage1 -> Stage2A -> Stage2B upgrade preserved all prior account data."
+  );
+  await runTests("tests/account-security.test.ts");
+  if (portalTests) await runTests("tests/portal-service.test.ts");
   run(join(pg, "pg_dump"), [
     database,
     "-Fc",
@@ -140,22 +288,18 @@ try {
     "--exit-on-error",
     join(dir, "synthetic.dump")
   ]);
-  for (const table of [
-    "PlatformUser",
-    "PlatformSession",
-    "PlatformAccountGrant",
-    "PlatformPost",
-    "PlatformPostComment",
-    "PlatformPostLike",
-    "PlatformFollow"
-  ]) {
-    const query = `SELECT md5(COALESCE(json_agg(t ORDER BY t.id)::text, '[]')) FROM "${table}" t`;
-    const before = run(join(pg, "psql"), [database, "-Atc", query]);
-    const restored = run(join(pg, "psql"), [restoreUrl, "-Atc", query]);
+  for (const [table, key] of [...accountTables, ...churchTables]) {
+    const before = fingerprint(table, key);
+    const restored = fingerprint(table, key, restoreUrl);
     if (before !== restored)
       throw new Error(`Synthetic restore mismatch: ${table}`);
   }
-  console.log("Synthetic backup and restore completed.");
+  checkChurchConstraints(restoreUrl);
+  if (constraintFingerprint(database) !== constraintFingerprint(restoreUrl))
+    throw new Error("Synthetic restore changed church constraints or indexes");
+  console.log(
+    "Synthetic backup/restore preserved account and church rows, constraints and indexes."
+  );
   // A third fresh DB proves the actual Prisma migration deployment path.
   run(join(pg, "createdb"), [
     "-h",
@@ -173,6 +317,19 @@ try {
   run("npm", ["run", "prisma:deploy"], {
     env: { ...env, DATABASE_URL: freshUrl, DIRECT_URL: freshUrl }
   });
+  checkChurchConstraints(freshUrl);
+  if (constraintFingerprint(database) !== constraintFingerprint(freshUrl))
+    throw new Error(
+      "Fresh migration church constraints differ from upgraded schema"
+    );
+  for (const [table] of [...accountTables, ...churchTables]) {
+    if (
+      psql(["-Atc", `SELECT count(*) FROM "${table}"`], freshUrl).trim() !== "0"
+    )
+      throw new Error(
+        `Fresh migration unexpectedly created fixture data: ${table}`
+      );
+  }
   console.log("Fresh Prisma migration setup passed.");
   // Production-mode compile verifies the sink cannot run there; runtime sink uses development.
   run("npm", ["run", "build"], {
@@ -205,27 +362,211 @@ try {
     await new Promise((resolve) => setTimeout(resolve, 250));
   }
   if (!ready) throw new Error("Isolated Next server did not start");
-  run(
-    process.execPath,
-    [
-      "--import",
-      "./tests/register.mjs",
-      "--test",
-      "tests/account-http.test.ts"
-    ],
-    { stdio: "inherit" }
-  );
+  await runTests("tests/account-http.test.ts");
+  if (portalTests) {
+    run(
+      process.execPath,
+      [
+        "--input-type=module",
+        "-e",
+        `
+      import assert from 'node:assert/strict';
+      import { randomBytes } from 'node:crypto';
+      const token = randomBytes(32).toString('base64url');
+      for (const rsc of [false, true]) {
+        const response = await fetch(process.env.ACCOUNT_ORIGIN + '/platform/churches/fictional-guard-probe/directory', {
+          headers: { Cookie: 'church_platform_session=' + token, ...(rsc ? { RSC: '1' } : {}) }
+        });
+        assert.equal(response.status, 200);
+        assert.match(response.headers.get('content-type'), rsc ? /text\\/x-component/ : /text\\/html/);
+        const body = await response.text();
+        assert.ok(body.includes('Open the private portal preview'), 'Development portal renders its privacy guard');
+        assert.ok(!body.includes(token), 'Development privacy guard never serializes the supplied cookie');
+      }
+      console.log('Development portal HTML/RSC privacy guards passed without reading an account or church.');
+    `
+      ],
+      { stdio: "inherit" }
+    );
+    await stopChild(server);
+    server = undefined;
+    if (process.env.NODE_TLS_REJECT_UNAUTHORIZED === "0")
+      throw new Error(
+        "Portal HTTPS checks require certificate verification; remove NODE_TLS_REJECT_UNAUTHORIZED=0"
+      );
+    const tlsPort = await freePort();
+    const productionPort = await freePort();
+    const httpsOrigin = `https://127.0.0.1:${tlsPort}`;
+    const certificate = join(dir, "localhost-cert.pem");
+    const privateKey = join(dir, "localhost-key.pem");
+    const certificateConfig = join(dir, "localhost-cert.cnf");
+    writeFileSync(
+      certificateConfig,
+      [
+        "[req]",
+        "prompt = no",
+        "distinguished_name = dn",
+        "x509_extensions = local_tls",
+        "[dn]",
+        "CN = localhost",
+        "[local_tls]",
+        "subjectAltName = IP:127.0.0.1,DNS:localhost",
+        "basicConstraints = critical,CA:TRUE",
+        "keyUsage = critical,digitalSignature,keyEncipherment,keyCertSign",
+        "extendedKeyUsage = serverAuth",
+        ""
+      ].join("\n"),
+      { mode: 0o600 }
+    );
+    run("openssl", [
+      "req",
+      "-x509",
+      "-newkey",
+      "rsa:2048",
+      "-sha256",
+      "-nodes",
+      "-days",
+      "2",
+      "-config",
+      certificateConfig,
+      "-keyout",
+      privateKey,
+      "-out",
+      certificate
+    ]);
+    chmodSync(privateKey, 0o600);
+    chmodSync(certificate, 0o600);
+    const portalEnv = {
+      ...env,
+      ACCOUNT_ORIGIN: httpsOrigin,
+      NEXT_PUBLIC_SITE_URL: httpsOrigin,
+      NODE_EXTRA_CA_CERTS: certificate
+    };
+    const productionEnv = {
+      ...portalEnv,
+      NODE_ENV: "production",
+      ACCOUNT_DELIVERY_MODE: "disabled"
+    };
+    // next dev writes .next; build again only after that process has exited.
+    run("npm", ["run", "build"], { env: productionEnv });
+    console.log(
+      "Production portal rebuilt for local HTTPS with delivery disabled."
+    );
+    server = spawn(
+      process.execPath,
+      [
+        "node_modules/next/dist/bin/next",
+        "start",
+        "--hostname",
+        "127.0.0.1",
+        "--port",
+        String(productionPort)
+      ],
+      { env: productionEnv, stdio: "ignore" }
+    );
+    proxy = createHttpsServer(
+      { key: readFileSync(privateKey), cert: readFileSync(certificate) },
+      (request, response) => {
+        if (!request.url?.startsWith("/") || request.url.startsWith("//")) {
+          response.writeHead(400);
+          response.end();
+          return;
+        }
+        // The upstream address is fixed loopback, never derived from request headers or URLs.
+        const headers = {
+          ...request.headers,
+          host: new URL(httpsOrigin).host,
+          "x-forwarded-host": new URL(httpsOrigin).host,
+          "x-forwarded-proto": "https",
+          "x-forwarded-for": "127.0.0.1"
+        };
+        delete headers.forwarded;
+        const upstream = httpRequest(
+          {
+            hostname: "127.0.0.1",
+            port: productionPort,
+            path: request.url,
+            method: request.method,
+            headers,
+            agent: false
+          },
+          (result) => {
+            response.writeHead(result.statusCode ?? 502, result.headers);
+            result.once("error", () => response.destroy());
+            result.pipe(response);
+          }
+        );
+        proxyRequests.add(upstream);
+        upstream.once("close", () => proxyRequests.delete(upstream));
+        upstream.once("error", () => {
+          if (response.destroyed) return;
+          if (response.headersSent) response.destroy();
+          else {
+            response.writeHead(502, { "Cache-Control": "no-store" });
+            response.end("Local production server unavailable.");
+          }
+        });
+        upstream.setTimeout(30000, () => upstream.destroy());
+        request.once("aborted", () => upstream.destroy());
+        response.once("close", () => upstream.destroy());
+        request.pipe(upstream);
+      }
+    );
+    proxy.on("connection", (socket) => {
+      proxySockets.add(socket);
+      socket.once("close", () => proxySockets.delete(socket));
+    });
+    await new Promise((resolve, reject) => {
+      proxy.once("error", reject);
+      proxy.listen(tlsPort, "127.0.0.1", resolve);
+    });
+    let productionReady = false;
+    for (let i = 0; i < 80; i++) {
+      productionReady = await new Promise((resolve) => {
+        const request = httpsGet(
+          `${httpsOrigin}/api/health`,
+          { ca: readFileSync(certificate), timeout: 3000 },
+          (response) => {
+            response.resume();
+            resolve(response.statusCode === 200);
+          }
+        );
+        request.once("error", () => resolve(false));
+        request.once("timeout", () => {
+          request.destroy();
+          resolve(false);
+        });
+      });
+      if (productionReady) break;
+      if (server.exitCode !== null || server.signalCode !== null) break;
+      await new Promise((resolve) => setTimeout(resolve, 250));
+    }
+    if (!productionReady)
+      throw new Error("Isolated production HTTPS portal did not start");
+    await runTests("tests/portal-http.test.ts", portalEnv);
+    console.log(
+      run(
+        process.execPath,
+        ["--import", "./tests/register.mjs", "tests/seed-portal.ts"],
+        { env: portalEnv }
+      ).trim()
+    );
+    previewOrigin = httpsOrigin;
+    console.log(
+      "Portal HTTP privacy checks passed on the actual production HTML/RSC over locally verified HTTPS."
+    );
+  }
   writeFileSync(
     join(dir, "RESULT.txt"),
-    "PASS: synthetic upgrade, account services, restore, fresh migrations, build and HTTP checks. No production data or external email used.\n"
+    `PASS: synthetic Stage1/2A/2B upgrade, account services${portalTests ? ", portal services" : ""}, full restore, fresh migrations, build and account${portalTests ? "+production HTTPS portal" : ""} HTTP checks. No production data or external email used.\n`
   );
   console.log(`Account checks passed. Synthetic artifacts: ${dir}`);
-  if (process.argv.includes("--preview")) {
+  if (preview) {
+    console.log(`Local synthetic preview: ${previewOrigin}/platform/login`);
     console.log(
-      `Local synthetic preview: ${env.ACCOUNT_ORIGIN}/platform/login`
-    );
-    console.log(
-      "Create a fictional account in this preview. Recovery messages stay in the local sink folder. Stop with Ctrl+C."
+      portalTests
+        ? `Use the fictional accounts in ${join(dir, "PREVIEW.md")}. Credentials are ignored locally; no session/grant tokens are included. Stop with Ctrl+C.`
+        : "Create a fictional account in this preview. Recovery messages stay in the local sink folder. Stop with Ctrl+C."
     );
     await new Promise((resolve) => {
       process.once("SIGINT", resolve);
@@ -233,7 +574,9 @@ try {
     });
   }
 } finally {
-  server?.kill("SIGTERM");
+  await stopChild(testProcess);
+  await stopProxy();
+  await stopChild(server);
   if (databaseStarted)
     run(join(pg, "pg_ctl"), [
       "-D",

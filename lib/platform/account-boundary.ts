@@ -44,7 +44,9 @@ function reply(
     }
   );
 }
-async function readBody(request: Request): Promise<Record<string, unknown>> {
+export async function readBody(
+  request: Request
+): Promise<Record<string, unknown>> {
   if (
     !request.headers.get("content-type")?.startsWith("application/json") ||
     !request.body

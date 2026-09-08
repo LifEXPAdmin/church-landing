@@ -11,10 +11,18 @@ interface ClientTrackInput {
 }
 
 export function trackClientEvent(input: ClientTrackInput) {
+  if (
+    window.location.pathname.startsWith("/platform") ||
+    input.path.startsWith("/platform")
+  )
+    return;
   const payload = JSON.stringify(input);
 
   if (navigator.sendBeacon) {
-    navigator.sendBeacon("/api/track", new Blob([payload], { type: "application/json" }));
+    navigator.sendBeacon(
+      "/api/track",
+      new Blob([payload], { type: "application/json" })
+    );
     return;
   }
 

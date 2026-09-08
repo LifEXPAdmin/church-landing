@@ -80,6 +80,10 @@ model PlatformUser {
   passwordHash String?
   credentialVersion Int @default(0)
   emailVerifiedAt DateTime?
+  suspendedAt DateTime?
+  adultAcknowledgedAt DateTime?
+  adultPolicyVersion String?
+  portalVersion Int @default(0)
   role         PlatformRole @default(BELIEVER)
   bio          String?
   location     String?
@@ -91,6 +95,10 @@ model PlatformUser {
   comments  PlatformPostComment[]
   sessions  PlatformSession[]
   accountGrants PlatformAccountGrant[]
+  connections ChurchConnection[]
+  churchGrants ChurchCapabilityGrant[]
+  operatorGrants PlatformOperatorGrant[]
+  contactAssignments ChurchContactAssignment[]
   following PlatformFollow[]      @relation("following")
   followers PlatformFollow[]      @relation("followers")
 
@@ -139,6 +147,132 @@ model PlatformAuthLimit {
   expiresAt DateTime
 
   @@index([expiresAt])
+}
+
+enum ChurchConnectionState {
+  PENDING
+  APPROVED
+  DECLINED
+  WITHDRAWN
+  LEFT
+  REMOVED
+}
+
+enum ChurchCapability {
+  REVIEW_CONNECTIONS
+  APPOINT_COORDINATORS
+}
+
+enum OperatorCapability {
+  ESTABLISH_CHURCH
+  MANAGE_CHURCH_ACCESS
+  MANAGE_ACCOUNTS
+  ASSIGN_RELATIONSHIP_OWNER
+}
+
+enum ChurchContactSlot {
+  PRIMARY
+  BACKUP
+  RELATIONSHIP_OWNER
+}
+
+enum DirectoryAudience {
+  ONLY_ME
+  SAME_CHURCH
+}
+
+model Church {
+  id String @id @default(cuid())
+  slug String @unique
+  name String
+  summary String
+  createdAt DateTime @default(now())
+  connections ChurchConnection[]
+  grants ChurchCapabilityGrant[]
+  contacts ChurchContactAssignment[]
+  events ChurchAuditEvent[]
+}
+
+model ChurchConnection {
+  id String @id @default(cuid())
+  userId String
+  churchId String
+  state ChurchConnectionState
+  version Int @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user PlatformUser @relation(fields: [userId], references: [id], onDelete: Restrict)
+  church Church @relation(fields: [churchId], references: [id], onDelete: Restrict)
+  preference ChurchDirectoryPreference?
+  dependentGrants ChurchCapabilityGrant[]
+  contacts ChurchContactAssignment[]
+  @@unique([userId, churchId])
+  @@index([churchId, state])
+}
+
+model ChurchDirectoryPreference {
+  connectionId String @id
+  listed Boolean @default(false)
+  displayName String @default("")
+  contactEmail String?
+  phone String?
+  emailAudience DirectoryAudience @default(ONLY_ME)
+  phoneAudience DirectoryAudience @default(ONLY_ME)
+  connection ChurchConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+}
+
+model ChurchCapabilityGrant {
+  id String @id @default(cuid())
+  userId String
+  churchId String
+  capability ChurchCapability
+  dependencyConnectionId String?
+  version Int @default(1)
+  createdAt DateTime @default(now())
+  revokedAt DateTime?
+  user PlatformUser @relation(fields: [userId], references: [id], onDelete: Restrict)
+  church Church @relation(fields: [churchId], references: [id], onDelete: Restrict)
+  dependency ChurchConnection? @relation(fields: [dependencyConnectionId], references: [id], onDelete: Restrict)
+  @@unique([userId, churchId, capability])
+}
+
+model PlatformOperatorGrant {
+  id String @id @default(cuid())
+  userId String
+  capability OperatorCapability
+  revokedAt DateTime?
+  user PlatformUser @relation(fields: [userId], references: [id], onDelete: Restrict)
+  @@unique([userId, capability])
+}
+
+model ChurchContactAssignment {
+  id String @id @default(cuid())
+  churchId String
+  userId String
+  slot ChurchContactSlot
+  connectionId String?
+  contactEmail String?
+  phone String?
+  version Int @default(1)
+  revokedAt DateTime?
+  church Church @relation(fields: [churchId], references: [id], onDelete: Restrict)
+  user PlatformUser @relation(fields: [userId], references: [id], onDelete: Restrict)
+  connection ChurchConnection? @relation(fields: [connectionId], references: [id], onDelete: Restrict)
+  @@unique([churchId, slot])
+}
+
+model ChurchAuditEvent {
+  id String @id @default(cuid())
+  churchId String?
+  actorId String
+  targetId String
+  action String
+  fromState String?
+  toState String?
+  version Int?
+  createdAt DateTime @default(now())
+  church Church? @relation(fields: [churchId], references: [id], onDelete: Restrict)
+  @@index([churchId, createdAt])
 }
 
 model PlatformPost {

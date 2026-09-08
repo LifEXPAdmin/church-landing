@@ -3,6 +3,7 @@ import { Cormorant_Garamond, Source_Sans_3 } from "next/font/google";
 
 import "./globals.css";
 import { AnalyticsTracker } from "@/components/analytics/analytics-tracker";
+import { PublicChrome } from "@/components/layout/public-chrome";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 import { cn } from "@/lib/utils";
@@ -57,11 +58,9 @@ export default function RootLayout({
     <html lang="en">
       <body className={cn(headingFont.variable, bodyFont.variable)}>
         <AnalyticsTracker />
-        <div className="flex min-h-screen flex-col">
-          <SiteHeader />
-          <main className="flex-1">{children}</main>
-          <SiteFooter />
-        </div>
+        <PublicChrome header={<SiteHeader />} footer={<SiteFooter />}>
+          {children}
+        </PublicChrome>
       </body>
     </html>
   );

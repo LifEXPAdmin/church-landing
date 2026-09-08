@@ -27,23 +27,36 @@ export async function POST(request: NextRequest) {
       label?: string;
     };
 
-    if (!body.eventType || !EVENT_TYPES.has(body.eventType) || !body.path) {
+    if (
+      !body.eventType ||
+      !EVENT_TYPES.has(body.eventType) ||
+      typeof body.path !== "string" ||
+      body.path.length > 300
+    ) {
       return NextResponse.json({ ok: false }, { status: 400 });
     }
 
     if (
-      body.path.startsWith("/platform/account") ||
-      request.headers.get("referer")?.includes("/platform/account")
+      body.path.includes("/platform") ||
+      request.headers.get("referer")?.includes("/platform")
     ) {
       return NextResponse.json({ ok: true });
     }
+
+    // General analytics never accepts arbitrary paths, labels, or referrers.
+    if (
+      !/^\/(?:manifesto|for-users|for-churches|for-creators|for-businesses|join|thanks|privacy|terms)?$/.test(
+        body.path
+      )
+    )
+      return NextResponse.json({ ok: true });
 
     await trackEvent({
       eventType: body.eventType,
       path: body.path,
       role: body.role && ROLES.has(body.role) ? body.role : undefined,
-      label: body.label,
-      referrer: request.headers.get("referer"),
+      label: undefined,
+      referrer: null,
       userAgent: request.headers.get("user-agent"),
       ip: request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null
     });

@@ -9,7 +9,7 @@ export function AnalyticsTracker() {
   const pathname = usePathname();
 
   useEffect(() => {
-    if (!pathname || pathname.startsWith("/platform/account")) {
+    if (!pathname || pathname.startsWith("/platform")) {
       return;
     }
 

@@ -12,15 +12,17 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "node scripts/prisma-deploy.mjs",
     "test:accounts": "node scripts/test-account-security.mjs",
-    "preview:accounts": "node scripts/test-account-security.mjs --preview"
+    "preview:accounts": "node scripts/test-account-security.mjs --preview",
+    "test:portal": "node scripts/test-account-security.mjs --portal",
+    "preview:portal": "node scripts/test-account-security.mjs --portal --preview"
   },
   "dependencies": {
-    "@prisma/client": "^6.3.1",
+    "@prisma/client": "^6.19.3",
     "@radix-ui/react-slot": "^1.1.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.475.0",
-    "next": "^15.5.21",
+    "next": "^15.5.25",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "tailwind-merge": "^3.0.1"
@@ -32,12 +34,17 @@
     "@types/react-dom": "^19.0.3",
     "autoprefixer": "^10.4.20",
     "eslint": "^9.18.0",
-    "eslint-config-next": "^15.5.21",
-    "postcss": "^8.5.1",
+    "eslint-config-next": "^15.5.25",
+    "postcss": "^8.5.28",
     "prettier": "^3.4.2",
     "prettier-plugin-tailwindcss": "^0.6.11",
-    "prisma": "^6.3.1",
+    "prisma": "^6.19.3",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.7.3"
+  },
+  "overrides": {
+    "next": {
+      "postcss": "$postcss"
+    }
   }
 }

@@ -247,3 +247,38 @@ The account migration is additive. Read `docs/godschurches/RELEASE_READINESS.md`
 before any separately authorized migration or deployment. Do not return to the
 old account-claim code when rolling back. Non-production fixtures and reports are
 ignored under `.account-test/` and are not bundled with deployment artifacts.
+
+## Stage 2B Local Church Portal
+
+This slice is local review work, not a deployed private-church pilot. It adds
+church discovery/connection review, opt-in member directories, scoped capabilities
+and appointed contacts. No ordinary support-case system or real email is enabled.
+Read the current sections at the top of `docs/godschurches/QA_REPORT.md`,
+`RELEASE_READINESS.md` and `DEPENDENCY_REVIEW.md` before making release decisions.
+
+For engineering checks, run `npm run test:portal` in this project directory. For a
+review preview, use `npm run preview:portal`. The runner creates a disposable
+loopback PostgreSQL cluster and fictional accounts. It never uses the project's
+real database or sender configuration. It prints the preview URL and an ignored
+`PREVIEW.md` containing only fictional login details. Codex can run/restart this
+for you; you do not need to configure a cloud database to review this local slice.
+
+The account regression phase uses `next dev` with the local file sink. Private
+portal HTTP tests and the review preview use `next start` from a production build,
+real delivery disabled, behind a loopback-only HTTPS proxy. An ephemeral local
+certificate is generated for 127.0.0.1; the test child trusts that certificate via
+`NODE_EXTRA_CA_CERTS`, never a global TLS-verification bypass. No system trust
+settings are changed. A browser may ask you to acknowledge that local certificate.
+Only do so for the exact loopback URL printed by this runner, not the public site.
+
+This split is deliberate: the installed Next development Flight debugger can
+serialize awaited cookie/DB values into developer payloads. Do not run development
+servers with real private church/member data. A passing production-mode payload
+test is not a claim that Next's development debug stream is private.
+
+The preview works only on this Mac, not remotely from a phone. Its database and
+certificate are temporary; stopping/restarting the runner creates a new isolated
+preview. Local sink files are not an inbox and must not be exposed as one. The
+production preview's recovery screen correctly reports that delivery is disabled;
+the supplied verified fictional accounts are prepared by the separate guarded
+test process through the actual local verification service.

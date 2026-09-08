@@ -85,9 +85,18 @@ export async function authenticatePassword(
     throw new AccountError("credentials");
   const user = await db.platformUser.findUnique({
     where: { email },
-    select: { id: true, passwordHash: true, credentialVersion: true }
+    select: {
+      id: true,
+      passwordHash: true,
+      credentialVersion: true,
+      suspendedAt: true
+    }
   });
-  if (!(await verifyPassword(password, user?.passwordHash ?? null)) || !user)
+  if (
+    !(await verifyPassword(password, user?.passwordHash ?? null)) ||
+    !user ||
+    user.suspendedAt
+  )
     throw new AccountError("credentials");
   return user;
 }
@@ -102,10 +111,11 @@ export async function issueAuthenticatedSession(
     await lockUser(tx, credential.id);
     const current = await tx.platformUser.findUnique({
       where: { id: credential.id },
-      select: { credentialVersion: true, passwordHash: true }
+      select: { credentialVersion: true, passwordHash: true, suspendedAt: true }
     });
     if (
       !current ||
+      current.suspendedAt ||
       current.credentialVersion !== credential.credentialVersion ||
       current.passwordHash !== credential.passwordHash
     )
@@ -155,6 +165,7 @@ export async function readAccountSession(db: PrismaClient, token: unknown) {
           interests: true,
           emailVerifiedAt: true,
           credentialVersion: true,
+          suspendedAt: true,
           _count: { select: { posts: true, followers: true, following: true } }
         }
       }
@@ -162,6 +173,7 @@ export async function readAccountSession(db: PrismaClient, token: unknown) {
   });
   if (
     !session ||
+    session.user.suspendedAt ||
     session.expiresAt <= new Date() ||
     session.credentialVersion !== session.user.credentialVersion
   )
