@@ -3,6 +3,21 @@ export const DEMO_ROOT = "/platform/demo";
 
 export const demoViews = [
   {
+    slug: "support-requests",
+    title: "My support requests",
+    description: "Fictional private requests and clear next steps."
+  },
+  {
+    slug: "support-case",
+    title: "Support conversation",
+    description: "A fictional reply, resolution and reopening."
+  },
+  {
+    slug: "support-inbox",
+    title: "Support inbox",
+    description: "Assigned work and the separate unassigned queue."
+  },
+  {
     slug: "member",
     title: "Member home",
     description: "Your church connection and next steps."

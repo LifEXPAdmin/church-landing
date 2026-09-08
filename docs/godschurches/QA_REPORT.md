@@ -1,5 +1,107 @@
 # Stage 2B QA report
 
+<!-- STAGE_2C_CURRENT_BEGIN -->
+## Stage 2C current status (September 8, 2026)
+
+**Implementation and isolated verification complete; publication in progress.** This section is the current Stage 2C release candidate, not a claim that the older live deployment already contains support.
+
+Baseline canonical application: 7679e034b93e3a905a7bee92ac6f5c377c2ce42d, READY. This branch continues its local report successor 044e27a without resetting either history. Exact candidate/provider evidence will be recorded after publication.
+
+**Real new-case intake remains unavailable.** Production SUPPORT_INTAKE_ENABLED=false;
+no real eligible RESPOND grant or approved SupportIntakeSetting has been created.
+Andrew is the only confirmed operator, but a display name or founding role does not
+appoint an account. ACCOUNT_DELIVERY_MODE=disabled remains unchanged. No real email,
+fixtures, church appointments, member imports, case redactions or purchases occurred.
+Code publication and a public demo are not approval for a real-member church pilot.
+
+Verified candidate: Node 24.20.0, Next 15.5.25, Prisma/Client 6.19.3; unchanged lockfile.
+67 real-service/HTTP checks pass (18 account, 26 portal, 23 support), plus fresh
+migrations, actual Stage2B-to-2C upgrade, synthetic full restore, production builds,
+dev-renderer guards, lint and TypeScript. Chromium: eight support journey groups
+and 13 existing account/portal/demo groups; 1440px, 390px and 320px checks, keyboard,
+no horizontal overflow or page errors. These are emulated browser widths, not physical
+iOS/Android or screen-reader certification. Authenticated mutations use isolated
+fictional actors, not production accounts. Non-destructive live verification follows the deployment; no authenticated production journey is claimed.
+
+Fresh protected real backup release-2026-09-08T22-39-07-914Z was restored from the encrypted artifact
+using PostgreSQL17. Its exact candidate migration rehearsal preserved all 17 existing
+tables' full-field fingerprints. One reviewed additive support migration is ready; seven existing migrations are unchanged. Production migration has not yet been claimed complete.
+
+See SUPPORT_OPERATIONS.md for the authorization/transition/provisioning and redaction
+contract, SUPPORT_POLICY_REVIEW.md for concrete unapproved notice facts, and the current
+QA/deployment sections here for limitations. Earlier dated sections below are historical
+and do not override this explicit build-and-publish instruction or the current result.
+Stop after 2C. Recommended next bounded stage: real verification/recovery delivery,
+verified operator/church provisioning and operational/policy approval, not more demos.
+
+### Reproducible Stage 2C evidence
+
+Final isolated run: .account-test/run-20aOnO (ignored private fixture evidence, no public
+credentials). Run npm run test:support for a fresh disposable database or npm run
+preview:support for the production-mode loopback HTTPS preview. Set QA_PREVIEW_DIR to
+that generated directory for scripts/qa-support-browser.mjs and qa-portal-browser.mjs.
+These scripts require the existing local Playwright/Chromium installation and pin only
+the generated local certificate; no global TLS bypass or system trust change.
+
+- 12 account service + 6 account HTTP tests retained; 17 portal service + 9 portal
+  production HTTPS tests retained; 17 new support service + 6 new support HTTP tests.
+- Create/retry/concurrent duplicate prevention, disclosure/consent, unverified-email
+  account-support exception, pending context, bounded input and durable throttles.
+- Same/wrong-church, guessed ID, forged fields/grants and routing-manager content denials;
+  hidden login/contact/session values absent from private HTML/RSC and generic errors.
+- Lifecycle/reply/waiting/resolution/reopen, separate feature decision, per-user seen
+  markers, stale updates, immutable church/category/requester and owner pair constraints.
+- Explicit sharing, immediate revoke in existing coordinator session, appointment and
+  membership removal/rejoin, owner handoff/capability loss, revoke/renew generation even
+  without an intervening read, suspension, race winners, restricted privacy redaction.
+- Intake-off and missing/changed actual recipient do not create a fake received receipt.
+  Unassigned reopen cannot silently hand history to a newly configured default owner.
+- Production-renderer guards remain on new private pages. Analytics rejects support
+  paths; demo responses are fixture-only/no-form/noindex with no API/auth state.
+- Actual seven-migration schema upgrade and fresh eight-migration setup; full synthetic
+  restore includes support rows, relationships, checks and custom triggers. Earlier
+  applied SQL remains unchanged. Real encrypted restore rehearsal is separate evidence.
+
+Browser support groups: mobile create/disclosure; desktop assigned owner waiting update;
+requester reply; share/revoke; resolve/reopen; narrow routing denial; 320px labeled keyboard
+form; three read-only support demos. Existing 13 groups cover all 11 demo URLs at three
+widths, church requests/review/sharing/contacts, account/password/session regression,
+operator narrow layouts and keyboard. Initial failures led to fresh-document support
+navigation and consistent demo headings; final reruns, not partial attempts, are reported.
+No physical-device, full screen-reader, independent security review or live load test.
+### Current original acceptance matrix (AC-01 through AC-24)
+
+| ID | Stage 2C disposition | Evidence / remaining scope |
+| --- | --- | --- |
+| AC-01 | Passed, bounded | Account/feed/profile/text-search and existing browser regressions retained; not every historic social mutation. |
+| AC-02 | Passed, isolated | Two fictional churches plus distinct support owner/manager/requester/coordinator actors. |
+| AC-03 | Passed | Explicit capabilities and forged category/identity checks; no inferred founder/contact privilege. |
+| AC-04 | Passed | Pending connection request and UI, no premature church/directory access. |
+| AC-05 | Passed | Scoped approval/decline and same-transaction audit. |
+| AC-06 | Passed | Wrong-church/self/unrelated reviewers and support viewers denied. |
+| AC-07 | Passed, bounded | DB uniqueness, locked/versioned races and stale writes; not a load test. |
+| AC-08 | Passed | One pending-or-approved Home Church; following independent. |
+| AC-09 | Passed | Optional directory listing/contact consent, browser flow and private defaults. |
+| AC-10 | Passed, tested paths | API/HTML/raw production RSC and metadata privacy; private dev guard retained. |
+| AC-11 | Passed | Selected same-church fields only; support never copies hidden directory/login contacts. |
+| AC-12 | Passed | Withdrawal removes subsequent authorized visibility; cannot erase already viewed copies. |
+| AC-13 | Passed | Membership/contact/capability/suspension loss revokes old sessions/rights; rejoin does not revive shares. |
+| AC-14 | Blocked operationally | 18 account tests pass; real verification/recovery delivery is disabled. |
+| AC-15 | Passed, synthetic | Primary/backup/relationship-owner semantics preserved; no real appointments invented. |
+| AC-16 | Passed in isolated workflow; real intake off | Private ordinary cases, explicit small audience, ownership/handoff, narrow assignment and redaction. |
+| AC-17 | Blocked operationally | Direct contact exists; actual independent concern route is not established. No sensitive intake added. |
+| AC-18 | Passed in isolated workflow; code published only after verified release | Receipt, replies, state, reasoned resolution/reopen, feature decision separation and unassigned state. |
+| AC-19 | Deferred | Existing text search tested; Testimony/category-search correction is outside this slice. |
+| AC-20 | Passed, bounded browser | Desktop/320/390 keyboard and touch-emulated journeys. No screen-reader or physical-device certification. |
+| AC-21 | Passed | Actual Stage2B upgrade, fresh setup and preserved prior migration checksums. |
+| AC-22 | Passed, bounded recovery | Encrypted real backup restored and migration rehearsed; current backup keys protected. Not offsite disaster-recovery certification. |
+| AC-23 | Blocked for real intake/pilot | Internal support notice and exact missing identity/recipient/retention/processor/rights facts prepared; no invented public legal claims. |
+| AC-24 | Publication explicitly authorized | Supersedes historic no-live-rollout restriction for 2C only. No unrelated system, staff fabrication, money/children, member imports or purchases. |
+
+<!-- STAGE_2C_CURRENT_END -->
+
+## Earlier dated records (historical)
+
 <!-- RELEASE_STATUS_BEGIN -->
 ## Published release (September 8, 2026, America/Chicago)
 

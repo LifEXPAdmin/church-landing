@@ -1,5 +1,111 @@
 # Godschurches deployment report
 
+<!-- STAGE_2C_CURRENT_BEGIN -->
+## Stage 2C current status (September 8, 2026)
+
+**Implementation and isolated verification complete; publication in progress.** This section is the current Stage 2C release candidate, not a claim that the older live deployment already contains support.
+
+Baseline canonical application: 7679e034b93e3a905a7bee92ac6f5c377c2ce42d, READY. This branch continues its local report successor 044e27a without resetting either history. Exact candidate/provider evidence will be recorded after publication.
+
+**Real new-case intake remains unavailable.** Production SUPPORT_INTAKE_ENABLED=false;
+no real eligible RESPOND grant or approved SupportIntakeSetting has been created.
+Andrew is the only confirmed operator, but a display name or founding role does not
+appoint an account. ACCOUNT_DELIVERY_MODE=disabled remains unchanged. No real email,
+fixtures, church appointments, member imports, case redactions or purchases occurred.
+Code publication and a public demo are not approval for a real-member church pilot.
+
+Verified candidate: Node 24.20.0, Next 15.5.25, Prisma/Client 6.19.3; unchanged lockfile.
+67 real-service/HTTP checks pass (18 account, 26 portal, 23 support), plus fresh
+migrations, actual Stage2B-to-2C upgrade, synthetic full restore, production builds,
+dev-renderer guards, lint and TypeScript. Chromium: eight support journey groups
+and 13 existing account/portal/demo groups; 1440px, 390px and 320px checks, keyboard,
+no horizontal overflow or page errors. These are emulated browser widths, not physical
+iOS/Android or screen-reader certification. Authenticated mutations use isolated
+fictional actors, not production accounts. Non-destructive live verification follows the deployment; no authenticated production journey is claimed.
+
+Fresh protected real backup release-2026-09-08T22-39-07-914Z was restored from the encrypted artifact
+using PostgreSQL17. Its exact candidate migration rehearsal preserved all 17 existing
+tables' full-field fingerprints. One reviewed additive support migration is ready; seven existing migrations are unchanged. Production migration has not yet been claimed complete.
+
+See SUPPORT_OPERATIONS.md for the authorization/transition/provisioning and redaction
+contract, SUPPORT_POLICY_REVIEW.md for concrete unapproved notice facts, and the current
+QA/deployment sections here for limitations. Earlier dated sections below are historical
+and do not override this explicit build-and-publish instruction or the current result.
+Stop after 2C. Recommended next bounded stage: real verification/recovery delivery,
+verified operator/church provisioning and operational/policy approval, not more demos.
+
+### Target, migration and live links
+
+Same GitHub LifEXPAdmin/church-landing, main; same Vercel church-landing project
+prj_dvPQhou6hzYuJoOfy5Fbdhff7HjE, team andrew-mccuens-projects, Node24.x. Preserve
+existing normal Git deployment integration, branch rules, domain and secure settings.
+No new project, wildcard origin, credential exposure or paid service. The unrelated
+pre-existing church-landing-81hk project is not the canonical target and was not edited.
+
+Normal fast-forward publication, production migration, READY and live checks are still release steps at this pre-publication checkpoint. Do not interpret approval or a successful local build as evidence the domain already changed.
+
+| URL | Availability |
+| --- | --- |
+| https://godschurches.com/ | Existing landing/waitlist preserved; no live signup/email test. |
+| https://godschurches.com/platform | Real platform/feed, early-preview data is saved; not a fictional demo account. |
+| https://godschurches.com/platform/help | Public help/direct contact and links to private requests. |
+| https://godschurches.com/platform/help/new | Sign-in/adult eligibility; new intake remains unavailable with direct contact. |
+| https://godschurches.com/platform/help/requests | Sign-in, only own authorized requests/history. |
+| https://godschurches.com/platform/help/inbox | Current explicit RESPOND and assigned work; no real owner provisioned. |
+| https://godschurches.com/platform/help/routing | Explicit ASSIGN, unassigned minimal metadata only. |
+| https://godschurches.com/platform/demo | Public fixture-only read-only tour; 11 total views including overview. |
+| https://godschurches.com/platform/demo/support-requests | Fictional statuses, next steps and unavailable example. |
+| https://godschurches.com/platform/demo/support-case | Fictional private conversation, resolution/reopen and audience. |
+| https://godschurches.com/platform/demo/support-inbox | Fictional assigned inbox, feature decision and minimal routing example. |
+
+No real support-case identifier, church membership or authorized owner login was
+invented for live verification. Signed-out private HTML/RSC goes to sign-in; direct
+support API requires session; foreign-origin writes are denied. Demo browser checks
+make no API calls/mutations or session and stay out of sitemap with noindex. Live
+verification does not replace the isolated authenticated/concurrency suite. Normal
+TLS is verified; www remains unconfigured, and no www redirect is claimed.
+### Release and recovery constraints
+
+Keep real intake off until an actual adult verified responder, separate explicit
+RESPOND grant, restricted provisioning record and approved ordinary-support-v1 notice
+are established. Confirm controller/contact/jurisdiction, actual processing purpose,
+retention/backup expiry, processor/rights information and independent concern routing.
+SUPPORT_POLICY_REVIEW.md contains prepared notice substance, not legal approval.
+
+Backup encryption SHA256: a589432185987bb7c9a350a6b00f8555e82292613befb85381e03f5a936e2d09. Encryption key is separately held under
+owner-only Godschurches application support storage, not Git or reports. The protected
+restored cluster is stopped. No plaintext dump was retained after encrypted-restore
+verification. One support-only additive migration, 20260909010000_ordinary_support,
+adds tables, constraints and generation/immutability triggers; no old SQL was rewritten.
+
+Use a forward fix whenever possible. Never blindly deploy old main without scrypt-v2,
+credentialVersion and current grant/share revocation semantics. Disable new intake
+first for a support incident. A database restore must reconcile current credential
+revocations, membership/appointments, shares, receipts and approved redactions before
+reopening private access. Redaction affects active content, not all older backups or
+past views. Existing Stage2B code does not maintain the new support revocation hooks;
+an unreviewed downgrade followed by re-upgrade is not a safe access-control rollback.
+No real-data deletion, restore-over-production or mass credential reset was performed.
+### Stage 2C dependency disposition
+
+The graph and lockfile are unchanged: Next15.5.25, Prisma/Client6.19.3 and Node24.
+Fresh npm audit --json: three high package entries, zero critical; the same one distinct
+GHSA-ggr8-5vv4-36mx via prisma -> @prisma/config -> deepmerge-ts7.1.5. Carry the dated
+bounded tooling exception below; this is not a patched/universally-safe dependency claim.
+No forced deepmerge-ts8 override, Prisma major upgrade or historical advisory reinvestigation.
+
+Final local support candidate build: 48 .nft.json traces, 3605 entries, 112 server JS
+files. Committed guard passes, requires the new support API trace and rejects Prisma
+CLI, @prisma/config, c12/deepmerge-ts request imports and config-loader call markers.
+Actual Linux build/resource evidence will be recorded after provider completion.
+Tooling importing untrusted executable config remains affected. Do not expose config
+loading from an HTTP route. A graph/config/import change reopens the disposition;
+independent qualified review remains a real-pilot dependency.
+
+<!-- STAGE_2C_CURRENT_END -->
+
+## Earlier dated records (historical)
+
 ## Published release (September 8, 2026, America/Chicago)
 
 The actual account foundation and Stage 2B church portal are published together at

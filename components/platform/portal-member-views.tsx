@@ -554,6 +554,20 @@ export function PortalHelp({ snapshot }: { snapshot: PortalSnapshot }) {
         title="Help and contacts"
         description="Reach your church's appointed contacts or contact Godschurches directly."
       />
+      <nav aria-label="Private support" className="mb-6 flex flex-wrap gap-6">
+        <Link className={portalLinkClass} href="/platform/help/new">
+          Get help
+        </Link>
+        <Link className={portalLinkClass} href="/platform/help/requests">
+          My requests and support inbox
+        </Link>
+        <Link
+          className={portalLinkClass}
+          href="/platform/demo/support-requests"
+        >
+          Explore the fictional support demo
+        </Link>
+      </nav>
       <div className="grid items-start gap-6 lg:grid-cols-2">
         <PortalCard title="Your church contacts">
           {!approved ? (

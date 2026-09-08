@@ -99,6 +99,11 @@ model PlatformUser {
   churchGrants ChurchCapabilityGrant[]
   operatorGrants PlatformOperatorGrant[]
   contactAssignments ChurchContactAssignment[]
+  supportGrants SupportCapabilityGrant[]
+  supportCases SupportCase[]
+  supportMessages SupportMessage[]
+  supportReads SupportRead[]
+  supportOperations SupportOperation[]
   following PlatformFollow[]      @relation("following")
   followers PlatformFollow[]      @relation("followers")
 
@@ -191,6 +196,7 @@ model Church {
   grants ChurchCapabilityGrant[]
   contacts ChurchContactAssignment[]
   events ChurchAuditEvent[]
+  supportCases SupportCase[]
 }
 
 model ChurchConnection {
@@ -206,6 +212,7 @@ model ChurchConnection {
   preference ChurchDirectoryPreference?
   dependentGrants ChurchCapabilityGrant[]
   contacts ChurchContactAssignment[]
+  supportShares SupportCoordinatorShare[]
   @@unique([userId, churchId])
   @@index([churchId, state])
 }
@@ -258,7 +265,149 @@ model ChurchContactAssignment {
   church Church @relation(fields: [churchId], references: [id], onDelete: Restrict)
   user PlatformUser @relation(fields: [userId], references: [id], onDelete: Restrict)
   connection ChurchConnection? @relation(fields: [connectionId], references: [id], onDelete: Restrict)
+  supportShares SupportCoordinatorShare[]
   @@unique([churchId, slot])
+}
+
+enum SupportCapability {
+  RESPOND
+  ASSIGN
+  REDACT
+}
+
+enum SupportCategory {
+  ACCOUNT_WEBSITE
+  CHURCH_SETUP
+  DIRECTORY_SHARING
+  FEATURE_SUGGESTION
+}
+
+enum SupportStatus {
+  RECEIVED
+  IN_PROGRESS
+  WAITING_FOR_REQUESTER
+  RESOLVED
+  CLOSED
+}
+
+enum SupportFeatureDecision {
+  RECEIVED
+  UNDER_CONSIDERATION
+  PLANNED
+  DELIVERED
+  DEFERRED
+  DECLINED
+}
+
+model SupportCapabilityGrant {
+  id String @id @default(cuid())
+  userId String
+  capability SupportCapability
+  version Int @default(1)
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+  user PlatformUser @relation(fields: [userId], references: [id], onDelete: Restrict)
+  assignedCases SupportCase[]
+  intakeSettings SupportIntakeSetting[]
+  @@unique([userId, capability])
+}
+
+model SupportIntakeSetting {
+  id String @id
+  enabled Boolean @default(false)
+  ownerGrantId String
+  approvedNoticeVersion String?
+  ownerGrant SupportCapabilityGrant @relation(fields: [ownerGrantId], references: [id], onDelete: Restrict)
+}
+
+model SupportCase {
+  id String @id @default(cuid())
+  requesterId String
+  churchId String?
+  category SupportCategory
+  subject String
+  description String
+  ownerGrantId String?
+  ownerGrantVersion Int?
+  status SupportStatus @default(RECEIVED)
+  version Int @default(1)
+  resolution String?
+  featureDecision SupportFeatureDecision?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  requester PlatformUser @relation(fields: [requesterId], references: [id], onDelete: Restrict)
+  church Church? @relation(fields: [churchId], references: [id], onDelete: Restrict)
+  ownerGrant SupportCapabilityGrant? @relation(fields: [ownerGrantId], references: [id], onDelete: Restrict)
+  coordinatorShare SupportCoordinatorShare?
+  messages SupportMessage[]
+  reads SupportRead[]
+  operations SupportOperation[]
+  audit SupportAuditEvent[]
+  @@index([requesterId, updatedAt])
+  @@index([ownerGrantId, updatedAt])
+  @@index([status, updatedAt])
+}
+
+model SupportCoordinatorShare {
+  caseId String @id
+  appointmentId String
+  appointmentVersion Int
+  requesterConnectionId String
+  createdAt DateTime @default(now())
+  revokedAt DateTime?
+  case SupportCase @relation(fields: [caseId], references: [id], onDelete: Restrict)
+  appointment ChurchContactAssignment @relation(fields: [appointmentId], references: [id], onDelete: Restrict)
+  requesterConnection ChurchConnection @relation(fields: [requesterConnectionId], references: [id], onDelete: Restrict)
+}
+
+model SupportMessage {
+  id String @id @default(cuid())
+  caseId String
+  authorId String
+  kind String
+  body String
+  version Int
+  createdAt DateTime @default(now())
+  redactedAt DateTime?
+  case SupportCase @relation(fields: [caseId], references: [id], onDelete: Restrict)
+  author PlatformUser @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  @@index([caseId, version])
+}
+
+model SupportRead {
+  caseId String
+  userId String
+  version Int
+  case SupportCase @relation(fields: [caseId], references: [id], onDelete: Restrict)
+  user PlatformUser @relation(fields: [userId], references: [id], onDelete: Restrict)
+  @@id([caseId, userId])
+}
+
+model SupportOperation {
+  id String @id @default(cuid())
+  actorId String
+  requestKey String
+  fingerprint String
+  caseId String
+  version Int
+  actor PlatformUser @relation(fields: [actorId], references: [id], onDelete: Restrict)
+  case SupportCase @relation(fields: [caseId], references: [id], onDelete: Restrict)
+  @@unique([actorId, requestKey])
+}
+
+model SupportAuditEvent {
+  id String @id @default(cuid())
+  caseId String
+  actorId String?
+  action String
+  targetId String?
+  fromState String?
+  toState String?
+  version Int
+  createdAt DateTime @default(now())
+  case SupportCase @relation(fields: [caseId], references: [id], onDelete: Restrict)
+  @@index([caseId, createdAt])
+  @@index([actorId, createdAt])
 }
 
 model ChurchAuditEvent {

@@ -1,3 +1,4 @@
+import { SupportDemo } from "./support-demo";
 import {
   PortalCard,
   PortalHeading,
@@ -198,6 +199,21 @@ function ContactsSummary() {
 }
 
 const summaries: Record<DemoView, () => React.ReactNode> = {
+  "support-requests": () => (
+    <p className={copyClass}>
+      Private requests with clear status and ownership. Fictional examples only.
+    </p>
+  ),
+  "support-case": () => (
+    <p className={copyClass}>
+      A reply, resolution and reopening, visible to the disclosed participants.
+    </p>
+  ),
+  "support-inbox": () => (
+    <p className={copyClass}>
+      Assigned conversations and a separate content-free routing queue.
+    </p>
+  ),
   member: MemberSummary,
   pending: PendingSummary,
   approved: ApprovedSummary,
@@ -314,6 +330,7 @@ function SharingView() {
 }
 
 export function DemoScreen({ view }: { view: DemoView }) {
+  if (view.startsWith("support-")) return <SupportDemo view={view} />;
   const definition = findDemoView(view)!;
   return (
     <>

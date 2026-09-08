@@ -421,7 +421,7 @@ async function demoAudit() {
     const { page, context } = session;
     await page.setViewportSize({ width, height: width < 768 ? 844 : 1000 });
     await check(
-      `Signed-out read-only demo: overview and seven routes at ${width}px`,
+      `Signed-out read-only demo: overview and ${demoViews.length} routes at ${width}px`,
       async () => {
         const routes = [{ slug: "", title: "Overview" }, ...demoViews];
         for (const route of routes) {

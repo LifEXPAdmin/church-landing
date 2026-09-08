@@ -11,7 +11,7 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentPlatformUser } from "@/lib/platform/session";
 
 export const metadata: Metadata = {
-  title: "Church Platform Preview",
+  title: "Godschurches Platform Preview",
   description: "A working preview of the Church connection platform."
 };
 
@@ -67,12 +67,13 @@ export default async function PlatformPage() {
               and real service.
             </h1>
             <p className="mt-4 max-w-2xl text-lg text-[#e8d3b2]">
-              Create a test account, post updates, follow people, search
+              This is an early preview. Real account information and posts are
+              saved. Create an account, post updates, follow people, search
               profiles, and shape the first version of Church.
             </p>
             <div className="mt-7 flex flex-col gap-3 sm:flex-row">
               <Button asChild size="lg" className="rounded-full">
-                <Link href="/platform/login">Create a test account</Link>
+                <Link href="/platform/login">Create an account</Link>
               </Button>
               <Button
                 asChild
@@ -90,9 +91,12 @@ export default async function PlatformPage() {
             href="/platform/demo"
             className="inline-flex min-h-11 items-center gap-2 rounded-lg py-2 font-semibold text-[#f4c98c] underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f4c98c]"
           >
-            Explore the church portal <ArrowRight aria-hidden="true" className="h-4 w-4" />
+            Explore the church portal{" "}
+            <ArrowRight aria-hidden="true" className="h-4 w-4" />
           </Link>
-          <span className="text-[#d8c4a8]">Read-only demo with fictional information. No account needed.</span>
+          <span className="text-[#d8c4a8]">
+            Read-only demo with fictional information. No account needed.
+          </span>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">

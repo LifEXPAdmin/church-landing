@@ -8,7 +8,7 @@ import { getCurrentPlatformUser } from "@/lib/platform/session";
 
 export const metadata: Metadata = {
   title: "Edit Church Profile",
-  description: "Update your Church platform preview profile."
+  description: "Update your Godschurches platform preview profile."
 };
 
 export default async function EditProfilePage() {

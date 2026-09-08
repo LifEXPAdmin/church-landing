@@ -11,7 +11,7 @@ import { getCurrentPlatformUser } from "@/lib/platform/session";
 
 export const metadata: Metadata = {
   title: "Search Church",
-  description: "Search people and posts on the Church platform preview."
+  description: "Search people and posts on the Godschurches platform preview."
 };
 
 export const dynamic = "force-dynamic";

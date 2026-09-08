@@ -7,6 +7,7 @@ import {
   ChurchContactSlot
 } from "@prisma/client";
 import { readAccountSession, normalizeEmail } from "./accounts";
+import { reconcileSupportAccess } from "./support-revocation";
 import {
   ADULT_POLICY,
   type PortalSnapshot,
@@ -199,7 +200,9 @@ async function portal<T>(
           403,
           "This account cannot access the private church journey. Contact Godschurches for help."
         );
-      return work(tx, actor);
+      const result = await work(tx, actor);
+      await reconcileSupportAccess(tx);
+      return result;
     },
     { maxWait: 10000, timeout: 15000 }
   );
@@ -296,9 +299,15 @@ export async function portalCommand(
           dependency: { select: { userId: true, churchId: true, state: true } }
         }
       });
-      if (!reviewers.some(({ userId, dependency }) =>
-        !dependency || (dependency.userId === userId &&
-          dependency.churchId === churchId && dependency.state === "APPROVED")))
+      if (
+        !reviewers.some(
+          ({ userId, dependency }) =>
+            !dependency ||
+            (dependency.userId === userId &&
+              dependency.churchId === churchId &&
+              dependency.state === "APPROVED")
+        )
+      )
         throw new PortalError(
           503,
           "Church connection setup is not ready. An eligible, assigned reviewer other than you is needed. No request was created. Contact Godschurches for help."
@@ -501,6 +510,10 @@ export async function portalCommand(
         data: { consumedAt: new Date() }
       });
       if (input.suspended) {
+        await tx.supportCapabilityGrant.updateMany({
+          where: { userId, revokedAt: null },
+          data: { revokedAt: new Date(), version: { increment: 1 } }
+        });
         const connections = await tx.churchConnection.findMany({
           where: { userId }
         });

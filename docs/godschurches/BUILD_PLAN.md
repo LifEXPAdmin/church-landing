@@ -1,5 +1,70 @@
 # Stage 2 build plan
 
+<!-- STAGE_2C_CURRENT_BEGIN -->
+## Stage 2C current status (September 8, 2026)
+
+**Implementation and isolated verification complete; publication in progress.** This section is the current Stage 2C release candidate, not a claim that the older live deployment already contains support.
+
+Baseline canonical application: 7679e034b93e3a905a7bee92ac6f5c377c2ce42d, READY. This branch continues its local report successor 044e27a without resetting either history. Exact candidate/provider evidence will be recorded after publication.
+
+**Real new-case intake remains unavailable.** Production SUPPORT_INTAKE_ENABLED=false;
+no real eligible RESPOND grant or approved SupportIntakeSetting has been created.
+Andrew is the only confirmed operator, but a display name or founding role does not
+appoint an account. ACCOUNT_DELIVERY_MODE=disabled remains unchanged. No real email,
+fixtures, church appointments, member imports, case redactions or purchases occurred.
+Code publication and a public demo are not approval for a real-member church pilot.
+
+Verified candidate: Node 24.20.0, Next 15.5.25, Prisma/Client 6.19.3; unchanged lockfile.
+67 real-service/HTTP checks pass (18 account, 26 portal, 23 support), plus fresh
+migrations, actual Stage2B-to-2C upgrade, synthetic full restore, production builds,
+dev-renderer guards, lint and TypeScript. Chromium: eight support journey groups
+and 13 existing account/portal/demo groups; 1440px, 390px and 320px checks, keyboard,
+no horizontal overflow or page errors. These are emulated browser widths, not physical
+iOS/Android or screen-reader certification. Authenticated mutations use isolated
+fictional actors, not production accounts. Non-destructive live verification follows the deployment; no authenticated production journey is claimed.
+
+Fresh protected real backup release-2026-09-08T22-39-07-914Z was restored from the encrypted artifact
+using PostgreSQL17. Its exact candidate migration rehearsal preserved all 17 existing
+tables' full-field fingerprints. One reviewed additive support migration is ready; seven existing migrations are unchanged. Production migration has not yet been claimed complete.
+
+See SUPPORT_OPERATIONS.md for the authorization/transition/provisioning and redaction
+contract, SUPPORT_POLICY_REVIEW.md for concrete unapproved notice facts, and the current
+QA/deployment sections here for limitations. Earlier dated sections below are historical
+and do not override this explicit build-and-publish instruction or the current result.
+Stop after 2C. Recommended next bounded stage: real verification/recovery delivery,
+verified operator/church provisioning and operational/policy approval, not more demos.
+
+### Completed sequence and next boundary
+
+Reviewed actual history and source; implemented the small model and private projections; added lifecycle, explicit routing/sharing and minimal redaction; built member/owner/mobile views and fixture-only demo; ran the expanded existing harness and browsers; restored and migrated a fresh encrypted production backup in isolation. Publication follows the existing protected release workflow. No next feature system is started.
+
+### Implemented support slice
+
+Eight new support models: Case, Message, CoordinatorShare, Read, Operation, AuditEvent,
+CapabilityGrant and IntakeSetting. Four ordinary categories and five case states;
+feature decisions remain separate from support resolution. No general messaging,
+attachments, pastoral records, allegations, AI triage, anonymous intake or notifications.
+
+Private service projections and HTTP/HTML/RSC enforce requester, one current assigned
+RESPOND owner and at most one deliberately shared eligible coordinator. ASSIGN alone
+gets only opaque unassigned routing metadata; REDACT additionally requires ownership.
+Role/category, public contact title and church membership never imply case authority.
+Versioned grants and shares, revocation hooks, case versions, transactions and actor-bound
+HMAC retry receipts prevent stale writes or renewed grants from reviving old access.
+An unassigned reopen stays unassigned even if the intake default changes; assignment
+requires its own explicit audited handoff. Requester history survives leaving its fixed
+church context. The global pilot transaction gate is not a load-tested large queue.
+
+Real platform copy says Create an account and that early-preview account/post data is
+saved. Landing design and deferred search correction are unchanged. New private routes:
+/platform/help/new, /requests, /inbox, /routing and /cases/[caseId] beneath /platform/help;
+API /api/platform/support. Public fixture-only routes are /platform/demo/support-requests,
+/platform/demo/support-case and /platform/demo/support-inbox; no login or live state.
+
+<!-- STAGE_2C_CURRENT_END -->
+
+## Earlier dated records (historical)
+
 <!-- RELEASE_STATUS_BEGIN -->
 ## Published release (September 8, 2026, America/Chicago)
 

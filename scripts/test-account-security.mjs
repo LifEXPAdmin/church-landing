@@ -15,7 +15,8 @@ import { createServer as createHttpsServer, get as httpsGet } from "node:https";
 import { randomBytes } from "node:crypto";
 
 const root = process.cwd();
-const portalTests = process.argv.includes("--portal");
+const supportTests = process.argv.includes("--support");
+const portalTests = supportTests || process.argv.includes("--portal");
 const preview = process.argv.includes("--preview");
 const pg = process.env.TEST_PG_BIN ?? "/opt/homebrew/opt/postgresql@16/bin";
 if (!existsSync(join(pg, "initdb")))
@@ -50,7 +51,8 @@ const env = {
   ACCOUNT_DELIVERY_MODE: "test-sink",
   AUTH_RATE_LIMIT_SECRET: randomBytes(32).toString("hex"),
   MAILERLITE_API_KEY: "",
-  RESEND_API_KEY: ""
+  RESEND_API_KEY: "",
+  SUPPORT_INTAKE_ENABLED: supportTests ? "true" : "false"
 };
 const log = join(dir, "setup.log");
 function run(cmd, args, overrides = {}) {
@@ -167,6 +169,16 @@ try {
     ["ChurchContactAssignment", "id"],
     ["ChurchAuditEvent", "id"]
   ];
+  const supportTables = [
+    ["SupportCapabilityGrant", "id"],
+    ["SupportIntakeSetting", "id"],
+    ["SupportCase", "id"],
+    ["SupportCoordinatorShare", "caseId"],
+    ["SupportMessage", "id"],
+    ["SupportRead", "caseId"],
+    ["SupportOperation", "id"],
+    ["SupportAuditEvent", "id"]
+  ];
   const fingerprint = (table, key, url = database, beforeChurch = false) => {
     const row =
       beforeChurch && table === "PlatformUser"
@@ -175,12 +187,14 @@ try {
     return psql(
       [
         "-Atc",
-        `SELECT md5(COALESCE(jsonb_agg(${row} ORDER BY t."${key}")::text, '[]')) FROM "${table}" t`
+        `SELECT md5(COALESCE(jsonb_agg(${row} ORDER BY t."${key}", to_jsonb(t)::text)::text, '[]')) FROM "${table}" t`
       ],
       url
     );
   };
-  const churchNames = churchTables.map(([name]) => `'${name}'`).join(",");
+  const churchNames = [...churchTables, ...supportTables]
+    .map(([name]) => `'${name}'`)
+    .join(",");
   const constraintFingerprint = (url) =>
     psql(
       [
@@ -194,6 +208,8 @@ try {
       FROM pg_constraint c JOIN pg_class r ON r.oid = c.conrelid
       JOIN pg_namespace n ON n.oid = r.relnamespace
       WHERE n.nspname = 'public' AND r.relname IN (${churchNames})
+      UNION ALL
+      SELECT 'trigger', t.tgname, pg_get_triggerdef(t.oid) FROM pg_trigger t JOIN pg_class r ON r.oid = t.tgrelid WHERE r.relname IN ('SupportCase','SupportCapabilityGrant') AND NOT t.tgisinternal
     ) t`
       ],
       url
@@ -254,8 +270,26 @@ try {
     fingerprint(table, key, database, true)
   );
   // Apply every remaining migration even in account-only mode: the client uses the full schema.
-  for (const name of migrations.slice(accountMigration + 1))
-    psql(["-f", `prisma/migrations/${name}/migration.sql`]);
+  for (const name of migrations.slice(accountMigration + 1)) {
+    if (name === "20260909010000_ordinary_support") {
+      // Actual seven-migration Stage2B schema, populated before support tables exist.
+      psql([
+        "-c",
+        `INSERT INTO "Church" (id,name,slug,summary) VALUES ('fixture-stage2b-church','Fictional upgrade church','fixture-stage2b-church','Synthetic upgrade only');
+        INSERT INTO "ChurchConnection" (id,"userId","churchId",state,"updatedAt") VALUES ('fixture-stage2b-connection','fixture-existing','fixture-stage2b-church','PENDING',CURRENT_TIMESTAMP);`
+      ]);
+      const prior = [...accountTables, ...churchTables].map(([t, k]) =>
+        fingerprint(t, k)
+      );
+      psql(["-f", `prisma/migrations/${name}/migration.sql`]);
+      for (const [i, [t, k]] of [...accountTables, ...churchTables].entries())
+        if (prior[i] !== fingerprint(t, k))
+          throw new Error("Stage2C upgrade changed existing rows: " + t);
+      console.log(
+        "Actual Stage2B -> Stage2C additive upgrade preserved account and church fingerprints."
+      );
+    } else psql(["-f", `prisma/migrations/${name}/migration.sql`]);
+  }
   for (const [i, [table, key]] of accountTables.entries()) {
     if (stage2a[i] !== fingerprint(table, key, database, true))
       throw new Error(`Stage2B upgrade changed prior account data: ${table}`);
@@ -266,6 +300,7 @@ try {
   );
   await runTests("tests/account-security.test.ts");
   if (portalTests) await runTests("tests/portal-service.test.ts");
+  if (supportTests) await runTests("tests/support-service.test.ts");
   run(join(pg, "pg_dump"), [
     database,
     "-Fc",
@@ -288,7 +323,11 @@ try {
     "--exit-on-error",
     join(dir, "synthetic.dump")
   ]);
-  for (const [table, key] of [...accountTables, ...churchTables]) {
+  for (const [table, key] of [
+    ...accountTables,
+    ...churchTables,
+    ...supportTables
+  ]) {
     const before = fingerprint(table, key);
     const restored = fingerprint(table, key, restoreUrl);
     if (before !== restored)
@@ -322,7 +361,7 @@ try {
     throw new Error(
       "Fresh migration church constraints differ from upgraded schema"
     );
-  for (const [table] of [...accountTables, ...churchTables]) {
+  for (const [table] of [...accountTables, ...churchTables, ...supportTables]) {
     if (
       psql(["-Atc", `SELECT count(*) FROM "${table}"`], freshUrl).trim() !== "0"
     )
@@ -373,14 +412,14 @@ try {
       import assert from 'node:assert/strict';
       import { randomBytes } from 'node:crypto';
       const token = randomBytes(32).toString('base64url');
-      for (const rsc of [false, true]) {
-        const response = await fetch(process.env.ACCOUNT_ORIGIN + '/platform/churches/fictional-guard-probe/directory', {
+      for (const rsc of [false, true]) for (const guarded of ["portal", "support"]) {
+        const response = await fetch(process.env.ACCOUNT_ORIGIN + (guarded === 'portal' ? '/platform/churches/fictional-guard-probe/directory' : '/platform/help/cases/fictional-guard-probe'), {
           headers: { Cookie: 'church_platform_session=' + token, ...(rsc ? { RSC: '1' } : {}) }
         });
         assert.equal(response.status, 200);
         assert.match(response.headers.get('content-type'), rsc ? /text\\/x-component/ : /text\\/html/);
         const body = await response.text();
-        assert.ok(body.includes('Open the private portal preview'), 'Development portal renders its privacy guard');
+        assert.ok(body.includes('Open the private ' + guarded + ' preview'), 'Development portal renders its privacy guard');
         assert.ok(!body.includes(token), 'Development privacy guard never serializes the supplied cookie');
       }
       console.log('Development portal HTML/RSC privacy guards passed without reading an account or church.');
@@ -544,6 +583,15 @@ try {
     if (!productionReady)
       throw new Error("Isolated production HTTPS portal did not start");
     await runTests("tests/portal-http.test.ts", portalEnv);
+    if (supportTests) await runTests("tests/support-http.test.ts", portalEnv);
+    if (supportTests)
+      console.log(
+        run(
+          process.execPath,
+          ["--import", "./tests/register.mjs", "tests/seed-support.ts"],
+          { env: portalEnv }
+        ).trim()
+      );
     console.log(
       run(
         process.execPath,
@@ -558,7 +606,7 @@ try {
   }
   writeFileSync(
     join(dir, "RESULT.txt"),
-    `PASS: synthetic Stage1/2A/2B upgrade, account services${portalTests ? ", portal services" : ""}, full restore, fresh migrations, build and account${portalTests ? "+production HTTPS portal" : ""} HTTP checks. No production data or external email used.\n`
+    `PASS: synthetic Stage1/2A/2B/2C upgrade, account services${supportTests ? ", support service/HTTPS checks" : ""}${portalTests ? ", portal services" : ""}, full restore, fresh migrations, build and account${portalTests ? "+production HTTPS portal" : ""} HTTP checks. No production data or external email used.\n`
   );
   console.log(`Account checks passed. Synthetic artifacts: ${dir}`);
   if (preview) {
