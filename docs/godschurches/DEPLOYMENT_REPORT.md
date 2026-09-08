@@ -1,40 +1,218 @@
 # Godschurches deployment report
 
-## Authorized release in progress (September 8, 2026)
+## Published release (September 8, 2026, America/Chicago)
 
-The current user explicitly authorized publishing the completed account and church portal
-update to the existing https://godschurches.com project. This supersedes the earlier
-local-only boundary below, not production access controls or real-member pilot gates.
-Routine publication is included in future authorized build stages unless Andrew says
-otherwise; stop before the next feature stage. No purchases, imports, invitations,
-real email, destructive data changes or real church appointments are authorized.
+The actual account foundation and Stage 2B church portal are published together at
+https://godschurches.com/platform. A persistent, signed-out, fixture-only tour is
+available at https://godschurches.com/platform/demo. The original landing/feed remain.
 
-Release scope includes the Stage 2A account foundation and Stage 2B portal together,
-a static fixture-only /platform/demo tour, mobile keyboard scroll spacing, a
-no-reviewer setup guard, runtime trace checks, and secure production configuration.
-Current preflight: GitHub main and existing canonical production both use 68b4190.
-The correct Vercel project is church-landing, prj_dvPQhou6hzYuJoOfy5Fbdhff7HjE,
-on andrew-mccuens-projects, Node24/Fluid/2048MiB. The five applied migration
-checksums match. An encrypted production backup and isolated PostgreSQL17 restore
-and upgrade rehearsal passed with all prior field fingerprints preserved.
-No live deployment is claimed by this preparation section. Final source SHA,
-migration and provider status, URLs, evidence and limitations belong in DEPLOYMENT_REPORT.md.
+Application SHA: 7679e034b93e3a905a7bee92ac6f5c377c2ce42d.
+Vercel deployment: dpl_GnAHFqqiDBzheEh6j6ohL4G1P21R, READY; canonical alias confirmed.
+Published September 8, 2026 at 16:10:07 CDT (21:10:07 UTC).
+This current section supersedes the historical local-only/no-deployment statements
+below; it does not retroactively change their results or remove real-member gates.
 
-Real recovery/verification remains disabled. No operator or church is appointed
-by this release. The demo grants no permission and accesses no real account or DB.
-Independent qualified review, real delivery, actual church authorization, operator
-provisioning, policy/retention and independent concern routing remain pilot gates.
+The user explicitly included routine publication in this and future authorized
+build stages unless they say otherwise. Stop before the next feature stage.
+No purchases, member imports, email/invitations, real church appointments, auth
+bypass or destructive production data changes were performed.
 
+Verification: 44 isolated account/portal tests, five demo fixture tests, lint,
+types, fresh/upgrade migrations, production builds, encrypted real backup restore
+and upgrade rehearsal passed. Actual local Chromium: 13 journey groups including
+320px keyboard/mobile. Live: 28 HTTP checks and 27 browser checks, no page errors
+or demo mutation attempts. Two additive production migrations applied; seven
+complete. Linux build traces exclude the Prisma configuration-loader request path.
+Account/portal functions: Node24, 2048MiB, 60 seconds; hashing was not weakened.
 
-## Pre-publication evidence
+Published is not pilot approval. Real recovery/verification delivery is disabled;
+operator identity/provisioning, real church/reviewer appointments, independent
+security/privacy review, policy/retention and independent concern routing remain.
+No email was silently verified and no demo data was inserted into production.
+An actual owner-authenticated production journey was not exercised. Comprehensive
+mutation/concurrency tests used isolated fictional records, not live accounts.
+See DEPLOYMENT_REPORT.md for exact URLs, evidence, availability and recovery limits.
 
-- Node 24.20.0: 44 account/portal checks and five demo fixture checks passed.
-- TypeScript, ESLint, fresh migrations, synthetic upgrade/backup restore and final production build passed.
-- Runtime guard: 42 NFT traces / 3184 entries / 97 server JS files exclude the Prisma CLI/config merger request path.
-- Actual browser: 13 groups passed, including desktop, 390px, 320px and 18 keyboard stops. Eight demo URLs checked at all three widths. No demo API calls or page errors.
-- Encrypted real production backup: release-2026-09-08T20-41-58-457Z, completed 2026-09-08T20:42:03.850Z. SHA-256 7e2adb8d3c65bea1d00c54e32c0c67f05238a134cb348ad6e5779c99c086a249.
-- Real backup decrypt/restore and PostgreSQL 17 additive upgrade rehearsal passed; all eight previous tables' original field fingerprints preserved.
-- Production migration: two additive migrations applied; seven complete. No fixture churches, real appointments or invented email verification.
-- No blind rollback to old main: preserve scrypt-v2/legacy verification and credential-version enforcement; prefer a compatible forward fix. Never restore revoked sessions/passwords as a routine rollback.
+The application remains the SHA above. Post-verification report changes are a
+local documentation-only successor, not a different published application release.
 
-Publication pending provider completion and live verification.
+## Target and publication
+
+- Existing GitHub repository: LifEXPAdmin/church-landing; production branch main.
+- Existing Vercel team: andrew-mccuens-projects. Correct project: church-landing,
+  prj_dvPQhou6hzYuJoOfy5Fbdhff7HjE. No new site, domain move or paid upgrade.
+- Previous main and canonical production SHA: 68b4190f83b6833251dcf1dd664804117ef4c930.
+- Normal, non-forced fast-forward push of account+portal ancestry and release fixes.
+  No branch protection/rules were changed. Existing Git integration triggered production.
+- Application commit: 7679e034b93e3a905a7bee92ac6f5c377c2ce42d.
+- Provider deployment: dpl_GnAHFqqiDBzheEh6j6ohL4G1P21R; READY at 2026-09-08T21:10:07.386Z.
+- Canonical godschurches.com alias assigned at 2026-09-08T21:10:07.630Z and
+  independently resolved through the provider alias API to that same deployment.
+- Canonical HTTPS passed normal TLS validation. HTTP redirects to HTTPS.
+  www.godschurches.com is not configured and resolves NXDOMAIN; no www redirect is
+  claimed. Account origin stays exactly https://godschurches.com, not wildcard hosts.
+- A separate pre-existing church-landing-81hk project also tracks the repository.
+  It was not used as the release target or modified. Its deployments do not establish
+  what godschurches.com serves.
+- Public demo and the real application are hosted on Vercel, independent of the Mac.
+
+## Live routes and prerequisites
+
+| URL | Actual availability |
+| --- | --- |
+| https://godschurches.com/ | Existing landing/waitlist site preserved. No live waitlist submission/email test performed. |
+| https://godschurches.com/platform | Actual public platform/feed plus restrained demo link. |
+| https://godschurches.com/platform/demo | Static fictional overview, no login; eight views, no database/session/API writes. |
+| https://godschurches.com/platform/demo/member | Fictional approved member home. |
+| https://godschurches.com/platform/demo/pending | Fictional pending request. |
+| https://godschurches.com/platform/demo/approved | Fictional approved connection. |
+| https://godschurches.com/platform/demo/review | Fictional reviewer queue; action controls disabled. |
+| https://godschurches.com/platform/demo/sharing | Fictional optional directory/contact choices. |
+| https://godschurches.com/platform/demo/directory | Fictional consent-based member directory. |
+| https://godschurches.com/platform/demo/contacts | Fictional named contacts; example.com text, no sending controls. |
+| https://godschurches.com/platform/login | Real sign-in and registration; older passwordless accounts cannot be claimed by registering again. |
+| https://godschurches.com/platform/settings | Real account/password settings; sign-in required. |
+| https://godschurches.com/platform/account/recover | Truthful unavailable message, no recovery/verification submission form. |
+| https://godschurches.com/platform/churches | Real church discovery. No real churches provisioned by this release. |
+| https://godschurches.com/platform/my-church | Sign-in; real eligibility/connection status and approved directory entry point. |
+| https://godschurches.com/platform/my-church/sharing | Sign-in and applicable approved eligibility; optional consent, private-by-default contact fields. |
+| https://godschurches.com/platform/help | Public help contact; church-only contacts require approved eligible membership. |
+| https://godschurches.com/platform/operator/churches | Explicit assigned operator/coordinator capability; no role inferred from a name or marketing category. |
+
+The genuine church-specific directory route is
+`/platform/churches/{actualChurchId}/directory`, linked from My church after approval.
+The genuine review route is `/platform/churches/{actualChurchId}/review`, requiring
+that church's assigned reviewer capability. No real church exists yet, so there is
+no legitimate concrete directory/reviewer URL to invent. Demo paths are not those
+private routes and grant no authority. Private route and API denial were verified.
+
+## Production configuration and data
+
+- Existing Neon PostgreSQL17 database retained. No localhost, fixture database,
+  dev seed or alternate convenience database was substituted.
+- Reviewed production history: five completed migration checksums matched repository
+  SQL; no failed/rolled-back entries. Two additive migrations applied using the
+  committed prisma:deploy wrapper at 2026-09-08T21:06:25.061Z; seven now complete.
+- Added account security first, then portal. Existing credential/version defaults
+  remain compatible during migration ordering. No previous migration SQL rewritten.
+- New Church/PlatformOperatorGrant tables have no fixture/appointment records;
+  emailVerifiedAt was not backfilled. Combined pending-or-approved unique index exists.
+- Canonical ACCOUNT_ORIGIN and NEXT_PUBLIC_SITE_URL verified. Server-only rate-limit
+  secret generated directly into sensitive production config; never published.
+- ACCOUNT_DELIVERY_MODE=disabled; no production test-sink flags. Session cookie source
+  retains Secure, HttpOnly, SameSite=Lax and scoped lifetime for this HTTPS origin.
+  No live successful login or owner cookie was fabricated to demonstrate cookie flags.
+- DIRECT_URL securely uses the existing verified unpooled production connection.
+  The deployment wrapper also recognizes DATABASE_URL_UNPOOLED. Provider build ran
+  migrations idempotently with no pending migrations, then built and ran trace guards.
+- Known placeholder waitlist Basic Auth password was replaced securely. A mode600
+  local owner copy is outside the repository; no password is in this report. This is
+  separate from platform login, which was not reset or changed. Unauthenticated admin
+  access returned401. MailerLite/marketing settings were not used to send email.
+
+## Protected backup and recovery
+
+Backup ID: release-2026-09-08T20-41-58-457Z.
+Completed: 2026-09-08T20:42:03.850Z (15:42:03 CDT).
+Encrypted artifact SHA256: 7e2adb8d3c65bea1d00c54e32c0c67f05238a134cb348ad6e5779c99c086a249.
+
+The real pg_dump custom-format backup is encrypted with AES256/PBKDF2 and kept in
+owner-only storage outside Git, with its key stored separately. Raw temporary dumps
+were removed. Restore was actually decrypted, integrity-checked and pg_restored into
+a private, loopback-only PostgreSQL17 instance; it was never served as an application.
+The five migration records and original tables were verified. Both new migrations
+then ran against that restored copy, preserving original-field fingerprints for all
+eight prior tables. Rehearsal instances were stopped. Production TLS client validation
+used verify-full; Neon proxy's internal pg_stat_ssl observation is not the client link.
+
+Recovery procedure is stored privately beside the encrypted artifact: locate by the
+ID above, decrypt with the separately held key into owner-only storage, restore first
+into an isolated database and verify migration/account/consent state before any cutover.
+A backup restore is not routine code rollback. Old main cannot verify scrypt-v2 or
+honor credentialVersion. Prefer a compatible forward fix retaining account and portal
+security. Do not restore old credentials, revoked sessions, withdrawn consent or stale
+grants to recover a page deployment, and do not drop the additive schema automatically.
+Recovery requires reconciliation with any changes after the snapshot. This one local
+protected artifact is not an offsite backup/retention service or durability SLA.
+
+## Verification performed
+
+- Node24.20.0 final isolated runner: account service12, account HTTP6, portal service17,
+  portal HTTP9, all44 passed. Includes origin, atomic grants, legacy/new hashes,
+  credential invalidation, eligibility, cross-church denial, revocation, consent,
+  concurrent transitions, missing-reviewer setup guard, and demo HTML/RSC privacy.
+- Five demo fixture/static contract checks passed. No sessions, live DB imports, mutation
+  calls or real member data in demo. Disabled controls are illustrations, not successes.
+- ESLint, TypeScript, production build, fresh and upgrade migrations, synthetic backup
+  restore and real encrypted backup/upgrade rehearsal passed after meaningful changes.
+- Headless Chromium141 local HTTPS:13groups passed. Actual request/withdraw/approve/
+  leave/re-request, optional contact consent, directory/contact/reviewer navigation,
+  cross-church denial and password change/relogin were exercised with fictional actors.
+  Desktop plus390px/320px, labels, overflow and18keyboard stops checked. The320px
+  bottom-nav obstruction was repaired and retested against compiled CSS.
+- Local final build:42NFT traces/3184entries/97serverJSfiles. Actual Linux Vercel build:
+  42traces/3063entries/97serverJSfiles; committed trace guard passed at21:09:55UTC.
+- Actual provider account/portal function outputs:nodejs24.x/2048MiB/60seconds. Scrypt-v2
+  strength unchanged; local four-way benchmark used587MiB peak RSS and313ms, not a
+  production load test. Runtime thread pool configured to4.
+- Live smoke completed 2026-09-08T21:13:32.768Z:28HTTP checks and27browser checks at1440px,
+  390px,320px, normal HTTPS validation and fresh signed-out contexts. All eight demo
+  URLs, login/recovery/help and private-page login redirects checked. Zero page errors,
+  demo API/mutation attempts or created session cookies. Demo excluded from sitemap.
+- Private API denied signed-out access401; forged-origin account/portal requests403;
+  nonexistent-login handling returned generic400 credential mismatch without a session.
+  Two such attempts were made; the first probe used the wrong expected status, then
+  the assertion was corrected to the application's existing400 contract.
+- Next streamed private-page redirects returned200with exact login refresh metadata
+  (settings307); real browser navigation reached login with no private content. An
+  initial smoke assertion expecting only307 was corrected, not treated as an auth bug.
+- Minimal login probes affected only expiring limiter state, not accounts/posts/church
+  records. No registration, real password change, posting, invitation or email sent live.
+- Provider error-level runtime log query for this exact deployment over the smoke window
+  returned zero rows. This is a bounded log check, not permanent monitoring.
+- Captured live demo320overview and1440contacts screenshots were visually inspected.
+
+Private evidence remains ignored under .account-test/release and the isolated runner
+folders. No real roster, raw errors with credentials, full env file, cookies or backup
+contents are committed. Unrelated docs/ai-assisted-investing-workflow.md was untouched.
+
+## Limits and prerequisites
+
+Independent qualified security/privacy review remains outstanding. This agent's
+review, subagent review and tests are not independent approval. Safari/physical phones,
+screen readers, exhaustive WCAG testing and production load/concurrency were not tested.
+The actual owner-authenticated live workflow was not checked; no authorized owner
+session was available to this release process, and none was impersonated or extracted.
+Comprehensive mutation tests used only isolated fixtures.
+
+The deepmerge-ts tooling advisory remains installed:three high package entries/one
+GHSA-ggr8-5vv4-36mx. Actual source and local/Linux trace evidence substantiate the bounded
+HTTP non-reachability disposition; no package-wide safety or clean audit is claimed.
+Untrusted executable Prisma config/CLI must remain unavailable. A supported toolchain
+update and independent review remain necessary; see DEPENDENCY_REVIEW.md.
+
+Real email verification/recovery is deliberately unavailable until a reviewed delivery
+adapter and actual inbox tests exist. A MailerLite key/group does not enable account
+recovery. Existing password accounts can sign in; older passwordless accounts cannot
+be reclaimed through unverified registration. No fabricated verification was used.
+
+For one-time owner setup: Andrew should sign in through /platform/login with his
+existing password, never send it in chat. If the account is passwordless, wait for
+verified recovery; do not claim it by re-registering. Before privilege provisioning,
+confirm the server-side account ID through authenticated ownership evidence and an
+independent identity/authority check, then use an audited narrowly scoped operator
+appointment. No established production bootstrap for a real owner exists in this
+slice; the synthetic fixture bootstrap is not a substitute. Do not grant by matching
+public name/email or marketing Basic Auth. Verified address/adult eligibility, actual
+church authorization and scoped reviewer/contact appointments must precede a pilot.
+
+Policy/entity/retention/deletion, directory consent, genuine independent concern routing,
+privileged reauthentication/second-factor review and real contacts/coverage remain pilot
+gates. Demo names and roles are fictional, not staff claims. Missing prerequisites
+produce setup/denial messages rather than false requests, empty success or a crash.
+
+## Next stage, not started
+
+Recommend the ordinary private support-case slice after review of this release, while
+keeping delivery/operator/pilot prerequisites separately tracked. No case system,
+member onboarding or other feature stage was begun by this release task.

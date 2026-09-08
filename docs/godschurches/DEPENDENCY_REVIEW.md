@@ -1,5 +1,42 @@
 # Stage 2B dependency review
 
+## Final candidate and actual deployment evidence
+
+Application 7679e034b93e3a905a7bee92ac6f5c377c2ce42d is published as dpl_GnAHFqqiDBzheEh6j6ohL4G1P21R.
+The final local production build checked **42 traces, 3184 entries and 97 server JS
+files**. The actual Vercel Linux build checked **42 traces, 3063 entries and 97 server
+JS files** at 2026-09-08T21:09:55.556Z. Both passed the committed build guard:
+no deepmerge-ts, @prisma/config, c12 or Prisma CLI paths in traced HTTP dependencies,
+and no configuration-loader call markers in generated server JavaScript.
+The platform-specific entry-count difference is recorded, not assumed identical.
+Vercel then completed the build and reported READY; the canonical alias was checked.
+This closes the later-deployment-evidence gap in the dated subtask text below.
+
+Actual provider outputs for account and portal (including their RSC outputs) use
+nodejs24.x, 2048MiB and 60-second timeout. Production UV_THREADPOOL_SIZE is four.
+Node24.20.0 local four-way scrypt-v2 measurement: 313ms, peak RSS 587MiB, verification
+passed. Production's minimal invalid-login smoke returned the expected generic
+credential failure without a session or startup error. This is not a live load test.
+No hash parameters were weakened. Fresh 44-test regression/build and five static demo
+checks passed after the meaningful release fixes; actual mobile/keyboard and live
+public checks are in QA_REPORT.md and DEPLOYMENT_REPORT.md.
+
+**Residual tooling advisory remains open:** three high audit package entries, one
+GHSA-ggr8-5vv4-36mx. No supported compatible Prisma6 patch was available in the dated
+registry check. Version8 was not forced under the exact7.1.5 parent pin. The inspected
+HTTP path is non-reachable under this source/config/runtime graph; tooling importing
+untrusted executable Prisma config remains affected. The build guard must stay on,
+and a future config/import/toolchain change reopens this disposition. Installed
+packages are not claimed patched or universally safe. No untrusted config or CLI
+is exposed by the app. Independent qualified review remains outstanding.
+
+Vercel's [request-header contract](https://vercel.com/docs/headers/request-headers)
+documents x-real-ip as the platform-forwarded client IP and overwriting ordinary
+forwarded inputs to prevent spoofing. The account/portal boundary uses it only when
+VERCEL is set; elsewhere it uses a shared bucket, not caller-supplied XFF. This is
+source/config/provider-contract verification, not a live spoofing/load experiment.
+
+
 Historical baseline reviewed September 7, 2026 America/Chicago (September 8 UTC),
 on `codex/church-portal`. The September 8 release follow-up below supersedes the
 earlier generic reachability assessment for its specifically captured artifacts.

@@ -1,35 +1,41 @@
 # Release readiness: Stage 2B development review
 
 <!-- RELEASE_STATUS_BEGIN -->
-## Authorized release in progress (September 8, 2026)
+## Published release (September 8, 2026, America/Chicago)
 
-The current user explicitly authorized publishing the completed account and church portal
-update to the existing https://godschurches.com project. This supersedes the earlier
-local-only boundary below, not production access controls or real-member pilot gates.
-Routine publication is included in future authorized build stages unless Andrew says
-otherwise; stop before the next feature stage. No purchases, imports, invitations,
-real email, destructive data changes or real church appointments are authorized.
+The actual account foundation and Stage 2B church portal are published together at
+https://godschurches.com/platform. A persistent, signed-out, fixture-only tour is
+available at https://godschurches.com/platform/demo. The original landing/feed remain.
 
-Release scope includes the Stage 2A account foundation and Stage 2B portal together,
-a static fixture-only /platform/demo tour, mobile keyboard scroll spacing, a
-no-reviewer setup guard, runtime trace checks, and secure production configuration.
-Current preflight: GitHub main and existing canonical production both use 68b4190.
-The correct Vercel project is church-landing, prj_dvPQhou6hzYuJoOfy5Fbdhff7HjE,
-on andrew-mccuens-projects, Node24/Fluid/2048MiB. The five applied migration
-checksums match. An encrypted production backup and isolated PostgreSQL17 restore
-and upgrade rehearsal passed with all prior field fingerprints preserved.
-Final release checks: 44 account/portal tests, five demo fixture checks, type check,
-ESLint, production build and runtime trace guard passed. Headless Chromium passed
-13 browser groups, including actual desktop, 390px and 320px journeys. The two
-reviewed additive migrations were applied to production on September 8, 2026;
-seven are now complete. No church fixtures, appointments or verification backfill
-were introduced. No live deployment is claimed by this preparation section. Final source SHA,
-migration and provider status, URLs, evidence and limitations belong in DEPLOYMENT_REPORT.md.
+Application SHA: 7679e034b93e3a905a7bee92ac6f5c377c2ce42d.
+Vercel deployment: dpl_GnAHFqqiDBzheEh6j6ohL4G1P21R, READY; canonical alias confirmed.
+Published September 8, 2026 at 16:10:07 CDT (21:10:07 UTC).
+This current section supersedes the historical local-only/no-deployment statements
+below; it does not retroactively change their results or remove real-member gates.
 
-Real recovery/verification remains disabled. No operator or church is appointed
-by this release. The demo grants no permission and accesses no real account or DB.
-Independent qualified review, real delivery, actual church authorization, operator
-provisioning, policy/retention and independent concern routing remain pilot gates.
+The user explicitly included routine publication in this and future authorized
+build stages unless they say otherwise. Stop before the next feature stage.
+No purchases, member imports, email/invitations, real church appointments, auth
+bypass or destructive production data changes were performed.
+
+Verification: 44 isolated account/portal tests, five demo fixture tests, lint,
+types, fresh/upgrade migrations, production builds, encrypted real backup restore
+and upgrade rehearsal passed. Actual local Chromium: 13 journey groups including
+320px keyboard/mobile. Live: 28 HTTP checks and 27 browser checks, no page errors
+or demo mutation attempts. Two additive production migrations applied; seven
+complete. Linux build traces exclude the Prisma configuration-loader request path.
+Account/portal functions: Node24, 2048MiB, 60 seconds; hashing was not weakened.
+
+Published is not pilot approval. Real recovery/verification delivery is disabled;
+operator identity/provisioning, real church/reviewer appointments, independent
+security/privacy review, policy/retention and independent concern routing remain.
+No email was silently verified and no demo data was inserted into production.
+An actual owner-authenticated production journey was not exercised. Comprehensive
+mutation/concurrency tests used isolated fictional records, not live accounts.
+See DEPLOYMENT_REPORT.md for exact URLs, evidence, availability and recovery limits.
+
+The application remains the SHA above. Post-verification report changes are a
+local documentation-only successor, not a different published application release.
 
 <!-- RELEASE_STATUS_END -->
 
