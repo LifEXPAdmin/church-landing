@@ -3,9 +3,12 @@
 <!-- ACCOUNT_REPAIR_CURRENT_BEGIN -->
 ## Account repair, September 8, 2026
 
-Candidate verified locally and prepared for publication to the existing production
-project. See ACCOUNT_TEST_GUIDE.md for the distinct signup and sign-in pages.
-Publication SHA and real-boundary results will be recorded after the release check.
+**Published and verified on https://godschurches.com.** Application/tested commit:
+`f3b2fe11ceaa1092bafc43f733e5e512c21fb027`. Vercel deployment: `dpl_6mY9kQiTvcp17hjxppr8H6JigQ3G`, READY at
+2026-09-08T23:40:36.380Z. The canonical alias matched this exact deployment when checked at
+2026-09-08T23:45:11.049Z. See ACCOUNT_TEST_GUIDE.md for the distinct signup/sign-in pages.
+A report-only follow-up commit may redeploy the same application code; the IDs here
+identify the release on which the controlled real-account test was performed.
 This account repair supersedes the account status in the historical reports below;
 Stage 2C support features are preserved, not expanded.
 
@@ -54,6 +57,71 @@ checkbox, second session store, authentication bypass or new dependency was adde
 Production origin remains https://godschurches.com, Node24/2048MB account API/60s,
 8 existing migrations, SUPPORT_INTAKE_ENABLED=false, ACCOUNT_DELIVERY_MODE=disabled.
 No blind rollback to pre-credentialVersion code is safe.
+
+
+### Production outcome
+
+One controlled disposable, unprivileged account was created through the real browser
+form. PostgreSQL insertion and a non-null compatible password hash were confirmed
+privately. Email stayed unverified and optional profile fields started empty.
+Signup 200, sign-in 200, profile save 200 and fresh sign-in 200 were observed through
+the actual production boundary. The same profile survived full reload, new tab,
+actual Chromium process close/reopen and logout/fresh sign-in. HTML/RSC and application
+storage checks did not expose its email, password or raw session token. A simulated
+DOM autofill without input/change events successfully submitted through FormData.
+The test completed at 2026-09-08T23:41:32.154Z; no external email or public post was sent.
+
+Exact-ID cleanup then removed that repair-owned account and its one remaining
+session after checking row state and all foreign-key dependencies. The existing
+account fingerprint still matched the pre-test value. Final real data: one preserved
+legacy account, zero posts/comments/reactions and eight migrations. Four post-cleanup
+feed/search/profile checks passed, including zero public profile posts and no search
+result for the removed verification account. The read-only fixture demo remains.
+
+The separate live smoke run passed 39 public HTTP checks and
+36 Chromium route/width checks for existing demo, portal, support,
+login/recovery, guards and privacy. The controlled live account journey passed 16
+browser checks. No browser JavaScript errors. Production diagnostics returned safe
+ACCOUNT_VALIDATION/400 and ACCOUNT_ORIGIN/403 with random reference IDs. Local tests
+also cover durable 429 and safe configuration/database 503 behavior. Recent protected
+log retrieval alone did not identify Andrew's historical failure; successful live
+creation is not proof that a preserved passwordless account can now sign in.
+
+Canonical HTTP-to-HTTPS redirects return 308. Only the apex godschurches.com is
+attached to this project; www is not a configured alternate origin. Exact-origin
+checks were not relaxed. The existing Neon production target has eight completed
+migrations; deployment reported no pending migrations. Runtime outputs confirm
+Node24, 2048 MB and 60s for the account API and RSC counterpart. Actual Linux trace
+checks passed: 49 traces, 3544 entries, 114 server JS files, no Prisma config loader.
+No database, dependency, provider or schema migration was needed for this repair.
+
+### Limits and next secure step
+
+Existing passwordless accounts still require verified ownership recovery or a
+separately reviewed owner-specific process. No unauthenticated claiming, silent
+password overwrite, verification shortcut or account deletion was added. Recovery
+emails remain disabled; do not promise them or repeatedly register the same email.
+For a new-account check, use an unused public username and an unused email you control.
+Andrew's old account is preserved unchanged. Actual password-manager Save/Update/Fill,
+Apple/Safari, Samsung, biometric and sync behavior require the manual guide; this is
+not a security certification or approval to open real church/support intake.
+
+### Reproducibility
+
+Run the existing Node24 `npm run test:support` harness for all 74 service/HTTP
+checks, actual production-server restart, fresh/upgrade and restore checks. It uses
+isolated loopback PostgreSQL and a verified local TLS certificate. No production
+account or email sender is involved. `scripts/check-account-browser.mjs` exports
+`checkAccountBrowser` for the isolated fixture preview, requires Playwright and a
+full Chromium binary, and accepts a private output directory and fixture identity.
+PLAYWRIGHT_MODULE and CHROMIUM_PATH can point to a local test installation; the bundled
+runtime is the default here. Its certificate pin is local-only. Headless Shell was
+not used to claim persistent browser-cookie behavior. Private helper scripts and
+credentials are not committed. No actual password vault is accessed by this helper.
+
+Browser implementation guidance checked against primary documentation:
+[Sign-in form best practices](https://web.dev/articles/sign-in-form-best-practices)
+and [HTML autocomplete](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Attributes/autocomplete).
 
 <!-- ACCOUNT_REPAIR_CURRENT_END -->
 
