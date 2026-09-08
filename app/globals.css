@@ -55,3 +55,14 @@ h4 {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+@media (max-width: 767px) {
+  /* Keep keyboard-focused controls above the fixed platform navigation. */
+  html:has(#platform-content) {
+    scroll-padding-bottom: calc(6rem + env(safe-area-inset-bottom));
+  }
+
+  #platform-content :is(a, button, input, select, textarea, [tabindex]) {
+    scroll-margin-block: 1rem;
+  }
+}

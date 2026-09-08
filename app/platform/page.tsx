@@ -85,6 +85,16 @@ export default async function PlatformPage() {
           </div>
         ) : null}
 
+        <div className="mb-6 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+          <Link
+            href="/platform/demo"
+            className="inline-flex min-h-11 items-center gap-2 rounded-lg py-2 font-semibold text-[#f4c98c] underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f4c98c]"
+          >
+            Explore the church portal <ArrowRight aria-hidden="true" className="h-4 w-4" />
+          </Link>
+          <span className="text-[#d8c4a8]">Read-only demo with fictional information. No account needed.</span>
+        </div>
+
         <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
           <div className="space-y-5">
             {currentUser ? <PostComposer /> : null}

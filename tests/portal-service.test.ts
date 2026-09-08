@@ -54,6 +54,37 @@ async function approve(actor: PortalActor) {
   return connection(actor);
 }
 
+test("requests require a different eligible assigned reviewer and never fake pending setup", async () => {
+  const actor = await createPortalActor(db, "setup_member");
+  const reviewer = await createPortalActor(db, "setup_review");
+  const church = await db.church.create({ data: {
+    name: "Fictional setup-pending church", slug: `setup-${actor.id}`,
+    summary: "Isolated test fixture only."
+  }});
+  const request = () => command(actor, { operation: "request", churchId: church.id, expectedVersion: 0 });
+  await denied(request(), 503);
+  const selfGrant = await db.churchCapabilityGrant.create({ data: {
+    churchId: church.id, userId: actor.id, capability: "REVIEW_CONNECTIONS"
+  }});
+  await denied(request(), 503);
+  const grant = await db.churchCapabilityGrant.create({ data: {
+    churchId: church.id, userId: reviewer.id, capability: "REVIEW_CONNECTIONS", revokedAt: new Date()
+  }});
+  await denied(request(), 503);
+  await db.churchCapabilityGrant.update({ where: { id: grant.id }, data: { revokedAt: null } });
+  await db.platformUser.update({ where: { id: reviewer.id }, data: { suspendedAt: new Date() } });
+  await denied(request(), 503);
+  await db.platformUser.update({ where: { id: reviewer.id }, data: { suspendedAt: null, emailVerifiedAt: null } });
+  await denied(request(), 503);
+  assert.equal(await db.churchConnection.count({ where: { churchId: church.id } }), 0);
+  assert.equal(await db.churchAuditEvent.count({ where: { churchId: church.id, action: "REQUEST" } }), 0);
+  // All identity setup in this file is guarded, fictional and loopback-only.
+  await db.platformUser.update({ where: { id: reviewer.id }, data: { emailVerifiedAt: new Date() } });
+  await request();
+  assert.equal((await connection(actor, church.id)).state, "PENDING");
+  assert.equal((await db.churchCapabilityGrant.findUniqueOrThrow({ where: { id: selfGrant.id } })).revokedAt, null);
+});
+
 test("church upgrade preserves Stage2A credentials, sessions and grants without invented verification", async () => {
   const user = await db.platformUser.findUniqueOrThrow({
     where: { id: "fixture-stage2a" }

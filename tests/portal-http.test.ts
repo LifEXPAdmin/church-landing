@@ -1,6 +1,7 @@
 import test, { after, before, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import { PrismaClient } from "@prisma/client";
+import { demoViews, demoFixture, DEMO_NOTICE } from "../lib/platform/demo-fixtures";
 import {
   assertPortalTestDatabase,
   createPortalActor,
@@ -25,6 +26,41 @@ after(async () => {
   await db.$disconnect();
 });
 const cookie = (actor: PortalActor) => `church_platform_session=${actor.token}`;
+
+test("public demo is fixture-only, signed-out and read-only across HTML/RSC", async () => {
+  const state = async () => JSON.stringify(await db.$queryRaw`
+    SELECT (SELECT count(*) FROM "PlatformUser") AS users,
+      (SELECT count(*) FROM "PlatformSession") AS sessions,
+      (SELECT count(*) FROM "ChurchConnection") AS connections,
+      (SELECT count(*) FROM "ChurchAuditEvent") AS events,
+      (SELECT count(*) FROM "ChurchDirectoryPreference") AS preferences
+  `, (_key, value) => typeof value === "bigint" ? String(value) : value);
+  const beforeState = await state();
+  for (const path of ["/platform/demo", ...demoViews.map(v => `/platform/demo/${v.slug}`)]) {
+    for (const rsc of [false, true]) {
+      const response = await fetch(origin + path, {
+        redirect: "manual",
+        headers: rsc ? { RSC: "1" } : {}
+      });
+      assert.equal(response.status, 200);
+      assert.equal(response.headers.get("set-cookie"), null);
+      assert.match(response.headers.get("x-robots-tag") ?? "", /noindex/);
+      const body = await response.text();
+      assert.ok(body.includes(DEMO_NOTICE));
+      assert.ok(body.includes(demoFixture.church.name));
+      assert.ok(!body.includes("/api/platform/"));
+      assert.ok(!body.includes("$ACTION_"));
+      assert.ok(!body.includes("<form"));
+      for (const actor of fixtureActors()) {
+        for (const privateValue of [actor.name, actor.email, actor.token])
+          assert.ok(!body.includes(privateValue), "Demo must not read a real fixture account");
+      }
+    }
+  }
+  assert.equal(await state(), beforeState, "Demo has no real-system mutations");
+  const sitemap = await (await fetch(origin + "/sitemap.xml")).text();
+  assert.ok(!sitemap.includes("/platform/demo"));
+});
 const post = (
   actor: PortalActor | undefined,
   body: Record<string, unknown>,

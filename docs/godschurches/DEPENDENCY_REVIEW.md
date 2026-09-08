@@ -1,9 +1,285 @@
 # Stage 2B dependency review
 
-Reviewed September 7, 2026 America/Chicago (September 8 UTC), on
-`codex/church-portal`. Local evidence only; no deployment authorization.
+Historical baseline reviewed September 7, 2026 America/Chicago (September 8 UTC),
+on `codex/church-portal`. The September 8 release follow-up below supersedes the
+earlier generic reachability assessment for its specifically captured artifacts.
 
-## Result and scope
+## September 8 release follow-up
+
+Scope: section 2 of the authorized release request. This subtask changes only this
+report and ignored evidence, not source, dependencies, schemas, configuration,
+other reports, commits, or the shared `.next`. No install, generation, build,
+database access, production environment read, or live benchmark was performed.
+The parent owns the authorized release. This is not an independent security review.
+
+### Disposition for GHSA-ggr8-5vv4-36mx
+
+**The vulnerable package remains installed and its failure is reproducible through
+the actual Prisma configuration loader. It is not reachable from the inspected
+HTTP entrypoints in the captured local runtime graph.** This is a bounded
+source-and-artifact disposition, not a claim that deepmerge-ts is fixed, harmless,
+absent from every production installation, or excluded from the eventual Vercel
+deployment. Final-candidate trace verification remains required.
+
+Fresh `npm audit --json` and `npm audit --omit=dev --json`, captured September 8,
+2026, both exit 1 with **3 high entries, 0 critical, and one distinct advisory**:
+`prisma@6.19.3 -> @prisma/config@6.19.3 -> deepmerge-ts@7.1.5`.
+`npm explain deepmerge-ts` confirms the exact pins, the root dev dependency on
+Prisma, and Prisma Client's optional peer on Prisma. That optional peer explains
+the production-only audit result; it does not establish an import at runtime.
+
+The registry's newest Prisma 6 version is still **6.19.3**, whose config package
+still requires deepmerge-ts **7.1.5**. The [maintainer advisory](https://github.com/RebeccaStevens/deepmerge-ts/security/advisories/GHSA-ggr8-5vv4-36mx)
+fixes versions below 8.0.0 in 8.0.0. No supported compatible Prisma 6 update was
+available in this check. The audit suggestion of Prisma 6.12.0 is a downgrade,
+not a current patch. Neither it nor an unvalidated deepmerge-ts 8 override was
+applied. Next 15.5.25 and the existing security overrides remain unchanged.
+
+### Installed calls and configuration boundary
+
+The following are actual local installed-source references, not assumptions from
+package categories. Fingerprints and excerpts are retained in the evidence directory.
+
+| Stage | Exact evidence | Consequence |
+| --- | --- | --- |
+| CLI entry | `node_modules/prisma/build/index.js:4883` requires `@prisma/config` and calls `loadConfigFromFile({configFile: e})` | Prisma CLI configuration loading is a real consumer. |
+| Loader | `node_modules/@prisma/config/dist/index.js:806`, `:825`, `:892` | `loadConfigFromFile` calls `loadConfigTsOrJs` even when there is no config file. |
+| Actual import | `node_modules/@prisma/config/dist/index.js:893`, `:894`, `:917` | Dynamically imports c12 and deepmerge-ts, then supplies `merger: deepmerge`. |
+| Restricted sources | `node_modules/@prisma/config/dist/index.js:907` | `dotenv`, `rcFile`, `giget`, `extend`, and `packageJson` are false. No remote extension/RC/default-layer permission follows from c12 being installed. |
+| Actual c12 implementation | `node_modules/c12/dist/index.mjs:1` reexports `shared/c12.BXpNC6YI.mjs`; shared file `:136`, `:197` | Selects the supplied merger and merges override/main/RC/package/default inputs. Most inputs are undefined under Prisma's options. |
+| Executable config and overlay | `node_modules/c12/dist/shared/c12.BXpNC6YI.mjs:365`, `:369`, `:372`, `:378` | Imports a JS/TS config, can call its exported function, and merges `$<NODE_ENV>`/`$env[NODE_ENV]` into the base. **Environment overlays are not disabled by `extend: false`.** |
+| Vulnerable recursion | `node_modules/deepmerge-ts/dist/index.mjs:162`, `:178`, `:242`, `:281`, `:299` | Collects same-key values from input records and recursively merges them; the installed implementation lacks a visited-pair cycle guard. A single non-undefined value returns through the non-recursive branch. |
+
+There is no `package.json#prisma` field and no Prisma config file among the 18
+checked JS/TS module candidates at the project root and in `.config/`. The root
+uses `prisma/schema.prisma` with `prisma-client-js`. The install lifecycle is
+`prisma generate`; the reviewed migration wrapper spawns `prisma migrate deploy`.
+Those build/operator commands can import the vulnerable loader. They were not
+executed by this follow-up, and the migration wrapper's environment loader was
+not invoked. A future config file/plugin can change this conclusion.
+
+To trigger this advisory, two values reaching a merge at the same property path
+must carry matching recursive object references. Plain request JSON is acyclic;
+however, that is **only one part** of the boundary: server-side reconstruction,
+executable config, a deserializer preserving references, or a config function can
+create the required graph. Inspected app inputs are JSON/form/string values
+validated into account/portal operations, not Prisma config objects. Account JSON
+is limited to 8192 bytes in `lib/platform/account-boundary.ts:47` and parsed at
+`:68`; size limits are not themselves a cycle defense. A scan of 100 app/component/
+library source files found no deepmerge-ts/config-loader import or call marker.
+No user-controlled config filename, dynamic config loader, or request-to-CLI
+bridge was found in those application sources. The migration wrapper is an
+operator script, not a route.
+
+Three owned synthetic fixtures called **the installed** `loadConfigFromFile`
+directly in separate processes with explicit `NODE_ENV=production`, no real
+environment, no database, a 10-second timeout and a 256 KiB V8 stack:
+
+| Fixture | Result |
+| --- | --- |
+| No Prisma config file | `resolvedPath: null`, no error; default config returned. |
+| Ordinary config with synthetic schema path | Config loads, schema path resolves, no error. No schema/database access is needed. |
+| Cyclic base `graph` plus a different cyclic `graph` in `$production` | `ConfigLoadError` containing `RangeError`; stack-exhaustion message confirmed. Error is caught by Prisma's loader; the probe process exits 0 after recording it. |
+
+This proves a reachable **tooling** defect for a malicious executable config,
+including with Prisma's restricted loader options. It does not show that an HTTP
+caller can write such a config. The caught failure still prevents successful
+configuration loading; do not expose the loader/CLI/Studio to untrusted users or
+run attacker-controlled config with release credentials. No destructive/OOM test
+or production exploit was run.
+
+### All available NFT traces
+
+Capture: **2026-09-08 15:39:33 CDT / 20:39:33 UTC**, checkout HEAD
+`9b1354873d3f1665c37e96593af1cc42f688aa6a`, existing local build ID
+`TVkJg3grzh0eIB6hO2FJH`. Trace mtimes span
+`2026-09-08T04:00:28.167Z` through `2026-09-08T04:00:28.173Z`.
+The build ID is not a Git SHA, and these mtimes do not prove which exact source
+revision was compiled. No new build was run to change that uncertainty.
+
+Every `.next/**/*.nft.json` was parsed recursively, resolving entries relative to
+the owning trace, not by searching a few route names. All **40 traces** were copied
+and hashed: **2 core-server traces, 3 Pages framework traces, 35 App Router traces**;
+**3,056 entries / 739 unique resolved files**. Results:
+
+| Package | Traces containing package files |
+| --- | ---: |
+| deepmerge-ts | 0 / 40 |
+| @prisma/config | 0 / 40 |
+| c12 | 0 / 40 |
+| prisma (CLI, not @prisma/client) | 0 / 40 |
+| @prisma/client | 22 / 40 |
+| .prisma/client generated client | 22 / 40 |
+
+This includes `/api/platform/account`, `/api/platform/portal`, all captured
+church/directory/reviewer/sharing/operator pages, recovery/settings/login,
+platform/profile/search pages, admin routes, other public routes, and both
+`next-server.js.nft.json` and `next-minimal-server.js.nft.json`. The complete
+per-trace file list, counts and SHA-256 values are in `runtime-traces.json`;
+raw traces are in `nft-snapshot/`. No trace was omitted for being unrelated.
+
+The account trace contains Client `default.js`, package metadata, and
+`runtime/library.js`, plus generated `.prisma/client/default.js`, `index.js`,
+schema, metadata and the local Darwin native query engine. The observed import
+chain is `lib/prisma.ts:1 -> @prisma/client/default.js:2 ->
+.prisma/client/default.js:5 -> #main-entry-point -> .prisma/client/index.js:30 ->
+@prisma/client/runtime/library.js`. It does **not** go through the CLI/config loader.
+
+All **91 generated server JS files** were separately searched for deepmerge-ts,
+`@prisma/config`, `loadConfigFromFile`, and `loadConfigTsOrJs`: no marker hits.
+Client import-specifier inspection found no loader/deepmerge import. The external
+Client runtime does contain the text `@prisma/config` in bundled **package manifest
+metadata** (`dependencies: {"@prisma/config":"workspace:*", ...}`), not a require/
+import call. Literal package-name presence was therefore not mistaken for execution.
+
+[Next's output-tracing documentation](https://nextjs.org/docs/app/api-reference/config/next-config-js/output)
+describes static import/require/filesystem tracing and its possible omissions or
+over-inclusions. Consequently, this evidence supports non-reachability in this
+captured local runtime graph, not a mathematical guarantee for dynamic code or an
+attestation about actual Vercel function contents. The captured graph predates
+the new demo and route-duration changes; it includes a Mac query engine rather
+than production Linux binaries. The final release build and provider packaging
+must be checked again. Keeping a complete `node_modules` installation can leave
+the package on disk even though none of these request entrypoints imports it.
+
+### Node 24, scrypt and function budgets
+
+Parent-reported preflight evidence, received September 8 (not fetched from
+production by this subtask): the **existing deployment's** Vercel
+`/v1/deployments/.../builds` outputs show `runtime: nodejs24.x`,
+`memorySize: 2048`, `timeout: 300`, Fluid enabled, Hobby plan. Parent also confirms
+configured `UV_THREADPOOL_SIZE=4`. A local parent Node **24.20.0** test of four
+simultaneous v2 hashes completed in **313 ms**, peak RSS **587 MiB**, verification
+true. These are useful preflight inputs, **not an actual-server benchmark**.
+The deployment ID and raw API evidence were not supplied to this subtask; the
+parent must retain their non-sensitive provenance in the release evidence.
+
+Current source was independently reread: both
+`app/api/platform/account/route.ts:5` and
+`app/api/platform/portal/route.ts:5` now export `maxDuration = 60` (parent change).
+The captured old `.next/server/functions-config-manifest.json` has empty function
+config objects, so it does not substantiate this new limit. **Verify the new
+release's actual function outputs again**, expecting Node 24, memory 2048, timeout
+60 for both routes, Fluid true and threadpool size 4. The old deployment's timeout
+300 is not evidence that the new route limit took effect.
+
+Official guidance checked September 8:
+
+- [Vercel Node versions](https://vercel.com/docs/functions/runtimes/node-js/node-js-versions)
+  supports 24.x and rolls minor/patch versions automatically. Installed engine
+  declarations for Next 15.5.25, Prisma/Client 6.19.3 and Sharp 0.35.4 accept
+  Node 24; this checks version prerequisites, not runtime throughput.
+- [Vercel memory/CPU](https://vercel.com/docs/functions/configuring-functions/memory)
+  documents Hobby's 2 GB / 1 vCPU setting. Pro/Enterprise can select 4 GB / 2 vCPUs.
+  Memory is per instance; the setting cannot be changed via `vercel.json` under
+  Fluid. Existing-deployment API metadata, not that generic default, is the
+  parent's evidence for the 2048 allocation here.
+- [Vercel duration](https://vercel.com/docs/functions/configuring-functions/duration)
+  documents Fluid's Hobby default/maximum of 300 seconds and route-level
+  `maxDuration`. Pro/Enterprise have 800-second general maximums and an optional
+  1800-second beta; those paid-plan values do not apply to this Hobby release.
+  More allowed duration does not add CPU or fix queuing/transaction deadlines.
+- [Vercel Fluid concurrency](https://vercel.com/docs/fluid-compute#optimized-concurrency)
+  permits simultaneous requests in one process/instance; an awaited async hash
+  does not receive its own isolated 2 GB allocation. Autoscaling is not a
+  substitute for an application concurrency/resource analysis.
+- [Node 24 scrypt](https://nodejs.org/docs/latest-v24.x/api/crypto.html#cryptoscryptpassword-salt-keylen-options-callback)
+  documents approximately `128 * N * r` memory and `maxmem` validation.
+  [Node 24 threadpool documentation](https://github.com/nodejs/node/blob/v24.20.0/doc/api/cli.md#uv_threadpool_sizesize)
+  confirms async scrypt shares libuv workers with filesystem, DNS lookup and other
+  crypto work; the default is four. The primary Node CLI Markdown was fetched
+  directly because its rendered docs endpoint failed in the web reader.
+
+Actual implementation: `lib/platform/auth.ts:15` uses legacy
+`N=16384,r=8,p=1,maxmem=32 MiB`; `:16` uses current
+`N=131072,r=8,p=1,maxmem=160 MiB`. The dominant v2 region is **128 MiB per active
+derivation** (legacy 16 MiB), not 160 MiB permanently allocated per request.
+Four active v2 operations imply roughly **512 MiB** of scrypt working regions;
+four per-operation maxmem allowances sum to **640 MiB**, but neither figure bounds
+total process RSS. Node, Next, Prisma, native buffers, loaded code and queued
+requests require additional headroom. `p=1` is not a cross-request concurrency cap.
+Do not raise threadpool size to 16 on this budget: the dominant scrypt regions
+alone would be about 2 GiB before process overhead.
+
+The local parent 587 MiB result supports feasibility, not a 1-vCPU Vercel latency
+guarantee. As a separate reproducible check, this subtask called the actual
+`hashPassword` function with synthetic passwords in fresh local Node 25.9.0
+Darwin/ARM64 processes and an explicit four-worker pool:
+
+| Submitted hashes | Batch completion | Sampled peak / OS max RSS |
+| ---: | ---: | ---: |
+| 1 | 305 ms | 203 / 203 MiB |
+| 4 | 319 ms | 584 / 584 MiB |
+| 8 (two worker-pool waves) | 717 ms | 584 / 585 MiB |
+
+Each batch exits 0. No passwords, salts, hashes, or environment contents are logged.
+These tiny local samples exclude Next/Prisma/HTTP and are **not capacity tests or
+production latency evidence**. The probe initially had an incorrect import path;
+it was corrected only in the ignored harness before these successful runs.
+
+Request-level implications from actual call sites:
+
+- Registration hashes once (`accounts.ts:54`); login verifies once (`:96`). A
+  syntactically valid unknown-account login still runs v2 scrypt (`auth.ts:45`).
+  An attacker does not need an existing account to consume this hashing budget.
+- Password change verifies then hashes **sequentially**, while holding its user
+  row lock in an interactive transaction (`accounts.ts:212`, `:224`, `:229`).
+  Reset consumption also hashes inside a transaction (`:302`, `:324`) when
+  recovery is enabled; disabled delivery does not remove login/registration work.
+- `accounts.ts:17` sets Prisma transaction `maxWait=5000 ms, timeout=15000 ms`.
+  The route's new 60-second ceiling does not extend those shorter database
+  deadlines. Pool queuing, row-lock waits, DB latency and two sequential hashes
+  must fit; a short isolated hash timing cannot establish that.
+- `account-boundary.ts:133` checks the shared limiter before hashing.
+  `account-limits.ts:32` permits 120 global attempts per 60-second window, 30 per
+  network per 15 minutes and 10 per operation/subject (3 for grant requests).
+  This bounds admission volume, **not active jobs or queue length**. Many subjects/
+  networks can burst into the same process, and fixed-window boundaries can admit
+  adjacent bursts. With four workers, excess work queues and competes with other
+  libuv tasks. No application-wide hash semaphore was found in current source.
+
+**Resource disposition:** the confirmed Node 24 / 2048 / Fluid / four-worker
+settings meet the known version and nominal per-process memory prerequisites;
+no hashing weakening or dependency change is indicated by the available evidence.
+The new candidate's effective 60-second budget and representative Node 24 Linux
+HTTP/DB concurrency remain to be verified. Under overload, use bounded admission/
+queueing or an explicitly reviewed hash-work concurrency limit and preserve
+credential checks/KDF parameters; do not solve a timeout by weakening scrypt.
+
+### Release gates and evidence
+
+1. Preserve trusted build/config inputs. Do not add user-driven config evaluation,
+   config uploads, CLI/Studio endpoints, or cyclic-object reconstruction into the
+   loader without resolving the dependency and retesting the boundary.
+2. After the parent's final build, rerun the all-trace inspection on that candidate,
+   including new demo routes and any provider-added function files. Confirm no
+   config/deepmerge executable reaches a public request path. If one does, repair
+   it or disable that server capability before exposing it; do not relabel unknown
+   as non-reachable. This follow-up did not run the prohibited shared build.
+3. Recheck actual new-deployment function metadata for Node 24, memory 2048,
+   account/portal timeout 60, Fluid and four-worker configuration. Retain the exact
+   candidate/deployment identifiers with the parent release evidence. Test bounded
+   synthetic HTTP/DB concurrency on equivalent non-production infrastructure;
+   check RSS, queuing, 429/503 behavior and the 15-second transaction deadline.
+4. Keep the three audit entries visible and the independent security/privacy
+   review outstanding. This disposition applies only to the measured graph and
+   reviewed trust boundary; it is not a general dependency waiver or pilot approval.
+
+Evidence directory: `.account-test/stage2b-release-dependency-20260908/`.
+
+| File | Exact evidence |
+| --- | --- |
+| `audit.full.json`, `audit.production.json`, `deepmerge.explain.json` | Fresh registry findings and dependency chain; audit exits 1, explain exits 0 |
+| `prisma6.versions.json`, `prisma-config.registry.json`, `GHSA-ggr8-5vv4-36mx.json` | Current supported-line check, exact upstream pin and official advisory |
+| `runtime-traces.json`, `nft-snapshot/`, `trace-review.cjs` | All 40 trace snapshots, per-trace package matches, 91 server-JS fingerprints and capture metadata |
+| `client-imports.json`, `source-inventory.json`, `source-review.cjs`, `source-excerpts.txt` | Actual client/import resolution, source inventory and installed loader/merger call sites |
+| `config-probe-results.json`, `config-probe.cjs`, `config-fixtures/` | Absent/ordinary/cyclic loader results with isolated synthetic inputs |
+| `parent-preflight.json` | Parent-supplied deployment budgets and local Node 24 measurements, explicitly attributed rather than independently fetched |
+| `scrypt-probe-results.json`, `scrypt-probe.mjs` | Bounded local Node 25 actual-function measurements, not a Vercel load test |
+| `vercel-memory.md`, `vercel-duration.md`, `vercel-fluid.md`, `node24-cli.md` | Dated official documentation captures |
+| `evidence-hashes.txt`, `trace-stability.json` | Content fingerprints and whether the captured local traces changed before handoff |
+
+## Historical result and scope
 
 Parent final integration checkpoint: local commit `9e927f6`. All 42 account/portal
 tests, shared production builds, Prisma generation, fresh migrations, actual

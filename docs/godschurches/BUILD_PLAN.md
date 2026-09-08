@@ -1,5 +1,39 @@
 # Stage 2 build plan
 
+<!-- RELEASE_STATUS_BEGIN -->
+## Authorized release in progress (September 8, 2026)
+
+The current user explicitly authorized publishing the completed account and church portal
+update to the existing https://godschurches.com project. This supersedes the earlier
+local-only boundary below, not production access controls or real-member pilot gates.
+Routine publication is included in future authorized build stages unless Andrew says
+otherwise; stop before the next feature stage. No purchases, imports, invitations,
+real email, destructive data changes or real church appointments are authorized.
+
+Release scope includes the Stage 2A account foundation and Stage 2B portal together,
+a static fixture-only /platform/demo tour, mobile keyboard scroll spacing, a
+no-reviewer setup guard, runtime trace checks, and secure production configuration.
+Current preflight: GitHub main and existing canonical production both use 68b4190.
+The correct Vercel project is church-landing, prj_dvPQhou6hzYuJoOfy5Fbdhff7HjE,
+on andrew-mccuens-projects, Node24/Fluid/2048MiB. The five applied migration
+checksums match. An encrypted production backup and isolated PostgreSQL17 restore
+and upgrade rehearsal passed with all prior field fingerprints preserved.
+Final release checks: 44 account/portal tests, five demo fixture checks, type check,
+ESLint, production build and runtime trace guard passed. Headless Chromium passed
+13 browser groups, including actual desktop, 390px and 320px journeys. The two
+reviewed additive migrations were applied to production on September 8, 2026;
+seven are now complete. No church fixtures, appointments or verification backfill
+were introduced. No live deployment is claimed by this preparation section. Final source SHA,
+migration and provider status, URLs, evidence and limitations belong in DEPLOYMENT_REPORT.md.
+
+Real recovery/verification remains disabled. No operator or church is appointed
+by this release. The demo grants no permission and accesses no real account or DB.
+Independent qualified review, real delivery, actual church authorization, operator
+provisioning, policy/retention and independent concern routing remain pilot gates.
+
+<!-- RELEASE_STATUS_END -->
+
+
 ## Current Stage 2B disposition (September 7, 2026 local)
 
 The pasted Stage 2B prompt explicitly authorizes implementation and testing of

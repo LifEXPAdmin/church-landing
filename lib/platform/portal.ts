@@ -283,6 +283,26 @@ export async function portalCommand(
           429,
           "You have reached today's request limit. Please try tomorrow."
         );
+      const reviewers = await tx.churchCapabilityGrant.findMany({
+        where: {
+          churchId,
+          capability: "REVIEW_CONNECTIONS",
+          revokedAt: null,
+          userId: { not: actor.id },
+          user: eligibleWhere
+        },
+        select: {
+          userId: true,
+          dependency: { select: { userId: true, churchId: true, state: true } }
+        }
+      });
+      if (!reviewers.some(({ userId, dependency }) =>
+        !dependency || (dependency.userId === userId &&
+          dependency.churchId === churchId && dependency.state === "APPROVED")))
+        throw new PortalError(
+          503,
+          "Church connection setup is not ready. An eligible, assigned reviewer other than you is needed. No request was created. Contact Godschurches for help."
+        );
       const connection = prior
         ? await tx.churchConnection.update({
             where: { id: prior.id },
