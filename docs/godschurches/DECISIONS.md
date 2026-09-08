@@ -3,9 +3,9 @@
 <!-- STAGE_2C_CURRENT_BEGIN -->
 ## Stage 2C current status (September 8, 2026)
 
-**Implementation and isolated verification complete; publication in progress.** This section is the current Stage 2C release candidate, not a claim that the older live deployment already contains support.
+**Published:** ordinary private support code and a fictional, read-only demonstration at the existing godschurches.com project.
 
-Baseline canonical application: 7679e034b93e3a905a7bee92ac6f5c377c2ce42d, READY. This branch continues its local report successor 044e27a without resetting either history. Exact candidate/provider evidence will be recorded after publication.
+Application SHA: 9177e86d8fde78db8ff5a50c7e8633b46900dc32. Vercel deployment: dpl_26z5tg2wEr8K6gAdS2xTJ4U6hY2e, READY at 2026-09-08T22:45:25.238Z. The canonical godschurches.com alias independently resolves to this deployment. Live verification finished 2026-09-08T22:46:45.832Z.
 
 **Real new-case intake remains unavailable.** Production SUPPORT_INTAKE_ENABLED=false;
 no real eligible RESPOND grant or approved SupportIntakeSetting has been created.
@@ -21,11 +21,11 @@ dev-renderer guards, lint and TypeScript. Chromium: eight support journey groups
 and 13 existing account/portal/demo groups; 1440px, 390px and 320px checks, keyboard,
 no horizontal overflow or page errors. These are emulated browser widths, not physical
 iOS/Android or screen-reader certification. Authenticated mutations use isolated
-fictional actors, not production accounts. Non-destructive live verification follows the deployment; no authenticated production journey is claimed.
+fictional actors, not production accounts. Live: 39 HTTP checks and 36 browser groups passed, no demo mutations or page errors.
 
 Fresh protected real backup release-2026-09-08T22-39-07-914Z was restored from the encrypted artifact
 using PostgreSQL17. Its exact candidate migration rehearsal preserved all 17 existing
-tables' full-field fingerprints. One reviewed additive support migration is ready; seven existing migrations are unchanged. Production migration has not yet been claimed complete.
+tables' full-field fingerprints. One additive production migration completed at 2026-09-08T22:44:02.032Z; eight migrations are now complete, without verification backfill, support fixtures or grants.
 
 See SUPPORT_OPERATIONS.md for the authorization/transition/provisioning and redaction
 contract, SUPPORT_POLICY_REVIEW.md for concrete unapproved notice facts, and the current

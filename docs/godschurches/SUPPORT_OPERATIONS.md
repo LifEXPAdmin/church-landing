@@ -65,7 +65,8 @@ existing history needs a separate explicit handoff. The requester sees Awaiting 
 Use the existing PostgreSQL transaction-scoped portal gate plus row/version checks,
 not process locks. Case writes and audits/receipts are atomic. Replayed keys with
 different payloads conflict; replay cannot bypass current authorization. Every
-mutation except a monotonic personal read marker requires the current case version.
+case mutation requires the current case version. Personal read markers also reject
+stale snapshots, but do not increment the case version.
 The pilot uses one PostgreSQL advisory transaction gate shared with church changes. This is durable across serverless instances but serializes these operations and scans assignment metadata for revocation; it is not a load-tested large-scale support queue. Owner assignments bind to a specific current grant version. Coordinator shares bind
 to the exact appointment version, requester connection and church. Revocation or
 reappointment never resurrects shares. Leaving/revocation removes dependent shares;
