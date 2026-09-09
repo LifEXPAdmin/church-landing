@@ -1,7 +1,10 @@
 # Godschurches
 
 The existing account and community application, with public information pages and private church tools.
-The app-entrance change is a local release candidate; see [ENTRANCE_REPORT.md](docs/godschurches/ENTRANCE_REPORT.md) for actual verification and release gates.
+The app entrance and account session controls are published. See
+[ENTRANCE_REPORT.md](docs/godschurches/ENTRANCE_REPORT.md) and
+[SESSION_CONTROLS_REPORT.md](docs/godschurches/SESSION_CONTROLS_REPORT.md) for
+tested releases, actual verification and remaining account work.
 
 ## Continue with ChatGPT or Codex
 
@@ -56,6 +59,7 @@ older checkpoints in this README may be superseded.
   - cloud-saved posts, comments, likes, follows, profiles
   - owner-only delete controls for posts and comments
   - password change screen for signed-in users
+  - owner-only active sign-ins and password-confirmed sign-out of other sessions
 
 ## Environment Variables
 

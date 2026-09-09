@@ -1,5 +1,21 @@
 # Active sign-ins and session revocation
 
+## Published — September 9, 2026
+
+Application commit `b792f500f4b0f6c9984e1526b4ccab2abd206288` was pushed to main
+and published to https://godschurches.com. Deployment
+`dpl_Dow1e3xE9fhRV1eQk6d77vZDAjHM` became READY at 2026-09-09T22:08:52.277Z;
+the Vercel API returned the exact Git SHA and canonical alias. Ten live checks
+passed at 2026-09-09T22:09:44Z: entrance/app/settings/login/help/health routes,
+401 responses for anonymous session operations, forged-owner rejection and
+cross-origin rejection. Responses retain private/no-store behavior and issue no
+session cookie. A deployment-scoped error-log query returned no matching entries.
+
+Authenticated session behavior was verified by the isolated HTTPS and two-browser
+checks below; no real production account was created or revoked for this release.
+A later report-only commit may redeploy identical application code. The IDs here
+identify the release checked directly after the application change.
+
 ## Implemented and verified — September 9, 2026
 
 Account settings now provides an owner-only active sign-in list and an explicit
@@ -68,5 +84,4 @@ a valid password can sign in again after session removal; the UI points to passw
 change for that case. Real church/support intake is not opened by this feature.
 
 The preceding entrance release and its exact deployment/live verification are
-recorded in [ENTRANCE_REPORT.md](ENTRANCE_REPORT.md). Session publication details
-belong in the next release checkpoint after deployment identity is verified.
+recorded in [ENTRANCE_REPORT.md](ENTRANCE_REPORT.md).

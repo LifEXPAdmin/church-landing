@@ -1,9 +1,13 @@
 # Godschurches current state
 
-## Account session-controls candidate — September 9, 2026
+## Account session controls published — September 9, 2026
 
 The owner-only active sign-in list and password-confirmed revocation of other
-sessions are implemented on `codex/account-sessions`. The 85-test isolated harness
+sessions are published from `codex/account-sessions`, application commit
+`b792f500f4b0f6c9984e1526b4ccab2abd206288`, on READY production deployment
+`dpl_Dow1e3xE9fhRV1eQk6d77vZDAjHM`. The exact Git SHA and canonical domain alias
+were verified. Ten live route/anonymous API checks passed; the deployment-scoped
+error query returned no matching entries. The 85-test isolated harness
 and an actual two-browser fictional-session flow passed, including next-request
 rejection for the revoked browser and continued access for the retained session.
 See [SESSION_CONTROLS_REPORT.md](SESSION_CONTROLS_REPORT.md) for scope and limits.
