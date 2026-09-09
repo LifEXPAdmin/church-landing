@@ -54,12 +54,25 @@ error logs were returned. The browser used local development HTTP; production
 HTTPS is evidenced separately by the harness. No physical-device test is claimed.
 The final production build/type check passed; runtime inspection covered 52 traces,
 3,777 entries and 120 server JavaScript files without a Prisma configuration-loader
-path. Publication and serving-identity verification are pending.
+path.
 
 A local regression identified that revalidating the entire platform layout after
 a community write could make static demo routes return 404 (`NoFallbackError`).
 The refresh now targets Home, search and profile pages. The action test verifies
 that the static demo remains available after posting.
+
+## Published release
+
+Application `c08226efba67dcc2aabe1f4c97030aafdfe922bc` is live on production
+deployment `dpl_2iwfAMNWTszoV6Nfx1KxmjEK5L5T`, READY at
+2026-09-09T23:46:21.970Z. The migration completed successfully. The exact Git SHA
+and canonical alias were verified; 17 live HTTP route/origin/anonymous-access
+checks passed at 23:47:43Z. The deployment-scoped error query returned no matching
+entries. These live checks created no account and sent no email.
+
+Once an account is deactivated, a rollback must retain lifecycle-aware access and
+visibility checks. Older application code does not understand the inactive state;
+the additive schema alone does not make that older behavior a safe rollback.
 
 ## Remaining account scope
 

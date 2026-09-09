@@ -1,6 +1,6 @@
 # Godschurches current state
 
-## Account lifecycle verified locally — September 9, 2026
+## Account lifecycle published — September 9, 2026
 
 Password-confirmed deactivation and explicit reactivation are implemented on
 `codex/account-lifecycle`. Duty handoff is enforced before deactivation; sessions
@@ -8,7 +8,9 @@ and sharing end while stored records remain. Inactive community content is hidde
 and all community writes recheck session status under the shared access gate.
 All 105 isolated service/HTTP tests, lint, TypeScript, migration/restore/restart
 checks, actual fictional browser flows and the final production build/runtime
-traces passed. Publication verification is pending. See [ACCOUNT_LIFECYCLE_REPORT.md](ACCOUNT_LIFECYCLE_REPORT.md).
+traces passed. Application `c08226efba67dcc2aabe1f4c97030aafdfe922bc` is live
+on READY deployment `dpl_2iwfAMNWTszoV6Nfx1KxmjEK5L5T`; exact SHA/canonical
+alias and 17 live checks passed. See [ACCOUNT_LIFECYCLE_REPORT.md](ACCOUNT_LIFECYCLE_REPORT.md).
 Remaining account work includes actual email delivery, verified ownership changes,
 permanent deletion and Google linking; full parent acceptance remains open.
 
