@@ -19,6 +19,7 @@ export default async function PlatformLoginPage({
         <AccountAccess
           initialView="login"
           passwordChanged={notice === "password-changed"}
+          reactivated={notice === "reactivated"}
         />
       </section>
     </PlatformShell>

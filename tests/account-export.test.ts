@@ -214,7 +214,7 @@ test("preparation requires the current password and proofs cannot move between a
     prepareAccountExport(db, a.token, "Wrong-export-password", secret)
   );
   const prepared = await prepareAccountExport(db, a.token, password, secret);
-  const second = await loginAccount(db, a.user.email, password);
+  const second = await loginAccount(db, a.user.email, password, null);
   for (const token of [b.token, second])
     await assert.rejects(
       downloadAccountExport(db, token, prepared.authorization, secret),
@@ -287,7 +287,7 @@ test("expired authorization and revoked, suspended or changed credentials deny e
   await assert.rejects(
     downloadAccountExport(db, a.token, prepared.authorization, secret)
   );
-  const fresh = await loginAccount(db, a.user.email, password);
+  const fresh = await loginAccount(db, a.user.email, password, null);
   const next = await prepareAccountExport(db, fresh, password, secret);
   await db.platformSession.delete({
     where: { tokenHash: hashSessionToken(fresh) }

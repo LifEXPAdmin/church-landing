@@ -1,4 +1,7 @@
-import { publicProfileSelect } from "@/lib/platform/public-profile";
+import {
+  publicProfileSelect,
+  activePublicAccount
+} from "@/lib/platform/public-profile";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Search } from "lucide-react";
@@ -30,6 +33,7 @@ export default async function PlatformSearchPage({
         prisma.platformUser.findMany({
           select: publicProfileSelect,
           where: {
+            ...activePublicAccount,
             OR: [
               { name: { contains: q, mode: "insensitive" } },
               { username: { contains: q.toLowerCase(), mode: "insensitive" } },
@@ -40,6 +44,7 @@ export default async function PlatformSearchPage({
         }),
         prisma.platformPost.findMany({
           where: {
+            author: activePublicAccount,
             OR: [
               { content: { contains: q, mode: "insensitive" } },
               { scripture: { contains: q, mode: "insensitive" } }
@@ -47,8 +52,9 @@ export default async function PlatformSearchPage({
           },
           include: {
             author: { select: publicProfileSelect },
-            likes: true,
+            likes: { where: { user: activePublicAccount } },
             comments: {
+              where: { author: activePublicAccount },
               include: { author: { select: publicProfileSelect } },
               orderBy: { createdAt: "desc" },
               take: 6

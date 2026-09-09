@@ -42,7 +42,7 @@ test("public demo is fixture-only, signed-out and read-only across HTML/RSC", as
         redirect: "manual",
         headers: rsc ? { RSC: "1" } : {}
       });
-      assert.equal(response.status, 200);
+      assert.equal(response.status, 200, `${path} RSC=${rsc}`);
       assert.equal(response.headers.get("set-cookie"), null);
       assert.match(response.headers.get("x-robots-tag") ?? "", /noindex/);
       const body = await response.text();

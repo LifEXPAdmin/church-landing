@@ -33,11 +33,13 @@ const actorSelect = {
   adultAcknowledgedAt: true,
   adultPolicyVersion: true,
   emailVerifiedAt: true,
-  suspendedAt: true
+  suspendedAt: true,
+  deactivatedAt: true
 } as const;
 type Actor = Prisma.PlatformUserGetPayload<{ select: typeof actorSelect }>;
 const eligible = {
   suspendedAt: null,
+  deactivatedAt: null,
   emailVerifiedAt: { not: null },
   adultAcknowledgedAt: { not: null },
   adultPolicyVersion: ADULT_POLICY
@@ -68,6 +70,7 @@ const denied = () =>
   new SupportError(404, "This request is not available to this account.");
 const adult = (a: Actor) =>
   !a.suspendedAt &&
+  !a.deactivatedAt &&
   !!a.adultAcknowledgedAt &&
   a.adultPolicyVersion === ADULT_POLICY;
 const verified = (a: Actor) => adult(a) && !!a.emailVerifiedAt;

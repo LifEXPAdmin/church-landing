@@ -1,5 +1,10 @@
 import type { Prisma } from "@prisma/client";
 
+export const activePublicAccount = {
+  suspendedAt: null,
+  deactivatedAt: null
+} satisfies Prisma.PlatformUserWhereInput;
+
 export const publicProfileSelect = {
   id: true,
   name: true,

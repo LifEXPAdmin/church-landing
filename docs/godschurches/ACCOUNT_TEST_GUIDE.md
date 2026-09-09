@@ -68,6 +68,27 @@ after signing in again. The file has explicit size limits; oversized exports
 return a message without silently omitting records. See
 [ACCOUNT_DATA_REPORT.md](ACCOUNT_DATA_REPORT.md) for the full scope and limits.
 
+## Deactivate and return
+
+In **Account settings**, read **Deactivate account**, enter your current password,
+and select the acknowledgement before submitting. This hides your community
+content on future page loads, signs out every device and removes directory and
+support coordinator sharing. Your account, content, church connections and
+support records remain stored. Download your data first if you want a copy.
+
+Assigned church, contact, operator and support duties must be handed off and
+removed before deactivation. If this check fails, your account is unchanged.
+
+To return, select **Reactivate an account** from Sign in. Use the existing email
+and password and confirm that your community content will be visible again.
+Then sign in separately and review directory sharing before opting in again.
+Old sessions and sharing do not return. Administrator suspensions cannot be
+bypassed here. Recovery emails remain unavailable until sender setup is complete.
+
+Use fictional accounts in the isolated environment for lifecycle tests. See
+[ACCOUNT_LIFECYCLE_REPORT.md](ACCOUNT_LIFECYCLE_REPORT.md) for implementation,
+verification and remaining deletion work.
+
 ## If something does not work
 
 - A username is taken: choose a different public username, or sign in if this is

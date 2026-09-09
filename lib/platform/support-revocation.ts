@@ -9,7 +9,7 @@ export async function reconcileSupportAccess(tx: Prisma.TransactionClient) {
     WHERE c."ownerGrantId" IS NOT NULL AND NOT EXISTS (
       SELECT 1 FROM "SupportCapabilityGrant" g JOIN "PlatformUser" u ON u.id=g."userId"
       WHERE g.id=c."ownerGrantId" AND g.version=c."ownerGrantVersion" AND g.capability='RESPOND'
-      AND g."revokedAt" IS NULL AND u."suspendedAt" IS NULL AND u."emailVerifiedAt" IS NOT NULL
+      AND g."revokedAt" IS NULL AND u."suspendedAt" IS NULL AND u."deactivatedAt" IS NULL AND u."emailVerifiedAt" IS NOT NULL
       AND u."adultAcknowledgedAt" IS NOT NULL AND u."adultPolicyVersion"=${ADULT_POLICY})
     RETURNING c.id,c.version`;
   const revoked = await tx.$queryRaw<Array<{ caseId: string }>>`
@@ -25,8 +25,8 @@ export async function reconcileSupportAccess(tx: Prisma.TransactionClient) {
       AND a.slot IN ('PRIMARY','BACKUP') AND a."churchId"=c."churchId"
       AND member."churchId"=c."churchId" AND member."userId"=u.id AND member.state='APPROVED'
       AND requester."churchId"=c."churchId" AND requester."userId"=c."requesterId" AND requester.state='APPROVED'
-      AND u."suspendedAt" IS NULL AND u."emailVerifiedAt" IS NOT NULL AND u."adultAcknowledgedAt" IS NOT NULL
-      AND u."adultPolicyVersion"=${ADULT_POLICY} AND ru."suspendedAt" IS NULL
+      AND u."suspendedAt" IS NULL AND u."deactivatedAt" IS NULL AND u."emailVerifiedAt" IS NOT NULL AND u."adultAcknowledgedAt" IS NOT NULL
+      AND u."adultPolicyVersion"=${ADULT_POLICY} AND ru."suspendedAt" IS NULL AND ru."deactivatedAt" IS NULL
       AND ru."emailVerifiedAt" IS NOT NULL AND ru."adultAcknowledgedAt" IS NOT NULL
       AND ru."adultPolicyVersion"=${ADULT_POLICY}) RETURNING s."caseId"`;
   for (const row of unassigned)

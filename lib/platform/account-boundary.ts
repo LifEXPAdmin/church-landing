@@ -24,6 +24,11 @@ import {
   prepareAccountExport,
   downloadAccountExport
 } from "./account-export";
+import {
+  AccountLifecycleError,
+  deactivateAccount,
+  reactivateAccount
+} from "./account-lifecycle";
 
 export const SESSION_COOKIE = "church_platform_session";
 export function sessionCookie(token: string, secure: boolean) {
@@ -169,6 +174,8 @@ async function processAccountRequest(
       "revoke-other-sessions",
       "prepare-export",
       "download-export",
+      "deactivate-account",
+      "reactivate-account",
       "request-reset",
       "request-verification",
       "consume-reset",
@@ -181,7 +188,8 @@ async function processAccountRequest(
     "list-sessions": [],
     "revoke-other-sessions": ["currentPassword"],
     "prepare-export": ["currentPassword"],
-    "download-export": ["authorization"]
+    "download-export": ["authorization"],
+    "deactivate-account": ["currentPassword", "confirmed"]
   };
   const sessionOperation = Object.hasOwn(sessionFields, operation);
   if (
@@ -191,6 +199,13 @@ async function processAccountRequest(
     )
   )
     return reply("Use the controls on your account settings page.", 400);
+  if (
+    operation === "reactivate-account" &&
+    Object.keys(body).some(
+      (key) => !["operation", "email", "password", "confirmed"].includes(key)
+    )
+  )
+    return reply("Use the account reactivation form.", 400);
   const started = Date.now();
   const accepted =
     "If this address is eligible, a link will be sent. Check your inbox and spam folder.";
@@ -254,6 +269,29 @@ async function processAccountRequest(
       return reply(
         "Continue by signing in with your email and password. Registration never changes an existing account or resets its password.",
         200
+      );
+    }
+    if (operation === "deactivate-account") {
+      await deactivateAccount(
+        db,
+        requestSessionToken(request),
+        body.currentPassword,
+        body.confirmed
+      );
+      return reply(
+        "Account deactivated. All devices are signed out.",
+        200,
+        { "Set-Cookie": sessionCookie("", config.secureCookie) },
+        "/platform/account/reactivate?notice=deactivated"
+      );
+    }
+    if (operation === "reactivate-account") {
+      await reactivateAccount(db, body.email, body.password, body.confirmed);
+      return reply(
+        "Your account is active. Sign in to continue. Review your directory sharing before opting in again.",
+        200,
+        {},
+        "/platform/login?notice=reactivated"
       );
     }
     if (operation === "list-sessions") {
@@ -377,6 +415,19 @@ async function processAccountRequest(
       );
     return reply("Email verified. You can return to your account.", 200);
   } catch (error) {
+    if (error instanceof AccountLifecycleError)
+      return reply(
+        error.code === "handoff"
+          ? "Hand off your church, contact, operator or support duties before deactivating. An administrator must remove your assignments and transfer any case or intake ownership first. Your account is unchanged."
+          : "Confirm that you understand the account change before continuing.",
+        error.code === "handoff" ? 409 : 400,
+        {
+          "X-Account-Code":
+            error.code === "handoff"
+              ? "ACCOUNT_HANDOFF"
+              : "ACCOUNT_CONFIRMATION"
+        }
+      );
     if (error instanceof AccountExportError)
       return reply(
         error.code === "size"
@@ -397,6 +448,7 @@ async function processAccountRequest(
         credentials:
           operation === "change-password" ||
           operation === "prepare-export" ||
+          operation === "deactivate-account" ||
           operation === "revoke-other-sessions"
             ? "Your current password did not match."
             : "That email and password did not match.",

@@ -190,7 +190,7 @@ test("HTTP boundary responds before account lookup or slow provider work, with i
       return Response.json({ id: "synthetic-accepted" });
     }
   );
-  const results = [];
+  const results: unknown[] = [];
   for (const email of [
     user.email,
     "absent@example.test",

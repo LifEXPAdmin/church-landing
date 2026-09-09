@@ -81,6 +81,7 @@ model PlatformUser {
   credentialVersion Int @default(0)
   emailVerifiedAt DateTime?
   suspendedAt DateTime?
+  deactivatedAt DateTime?
   adultAcknowledgedAt DateTime?
   adultPolicyVersion String?
   portalVersion Int @default(0)

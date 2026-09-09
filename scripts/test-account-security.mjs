@@ -183,7 +183,7 @@ try {
   const fingerprint = (table, key, url = database, beforeChurch = false) => {
     const row =
       beforeChurch && table === "PlatformUser"
-        ? `to_jsonb(t) - ARRAY['suspendedAt','adultAcknowledgedAt','adultPolicyVersion','portalVersion']`
+        ? `to_jsonb(t) - ARRAY['deactivatedAt','suspendedAt','adultAcknowledgedAt','adultPolicyVersion','portalVersion']`
         : "to_jsonb(t)";
     return psql(
       [
@@ -617,6 +617,7 @@ try {
     await runTests("tests/account-restart.test.ts", productionEnv);
     await runTests("tests/account-sessions.test.ts", productionEnv);
     await runTests("tests/account-export.test.ts", productionEnv);
+    await runTests("tests/account-lifecycle.test.ts", productionEnv);
     console.log(
       "Account/profile/session persistence passed after a new production server process."
     );

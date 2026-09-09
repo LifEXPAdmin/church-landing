@@ -1,4 +1,7 @@
-import { publicProfileSelect } from "@/lib/platform/public-profile";
+import {
+  publicProfileSelect,
+  activePublicAccount
+} from "@/lib/platform/public-profile";
 import { publicMetadata } from "@/lib/site-metadata";
 import Link from "next/link";
 import { ArrowRight, MessageCircle, PenLine } from "lucide-react";
@@ -32,7 +35,7 @@ export default async function PlatformPage({
   const params = await searchParams;
   const following = currentUser
     ? await prisma.platformFollow.findMany({
-        where: { followerId: currentUser.id },
+        where: { followerId: currentUser.id, following: activePublicAccount },
         select: { followingId: true }
       })
     : [];
@@ -48,6 +51,7 @@ export default async function PlatformPage({
       : null;
   const result = await prisma.platformPost.findMany({
     where: {
+      author: activePublicAccount,
       ...(currentUser
         ? {
             authorId: {
@@ -66,9 +70,12 @@ export default async function PlatformPage({
     },
     include: {
       author: { select: publicProfileSelect },
-      likes: true,
-      _count: { select: { comments: true } },
+      likes: { where: { user: activePublicAccount } },
+      _count: {
+        select: { comments: { where: { author: activePublicAccount } } }
+      },
       comments: {
+        where: { author: activePublicAccount },
         include: { author: { select: publicProfileSelect } },
         orderBy: { createdAt: "desc" },
         take: 6

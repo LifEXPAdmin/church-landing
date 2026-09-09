@@ -26,6 +26,7 @@ export class PortalError extends Error {
 type Tx = Prisma.TransactionClient;
 const eligibleWhere = {
   suspendedAt: null,
+  deactivatedAt: null,
   emailVerifiedAt: { not: null },
   adultAcknowledgedAt: { not: null },
   adultPolicyVersion: ADULT_POLICY
@@ -41,6 +42,7 @@ const actorSelect = {
   name: true,
   username: true,
   suspendedAt: true,
+  deactivatedAt: true,
   emailVerifiedAt: true,
   adultAcknowledgedAt: true,
   adultPolicyVersion: true,
@@ -49,6 +51,7 @@ const actorSelect = {
 type Actor = Prisma.PlatformUserGetPayload<{ select: typeof actorSelect }>;
 const isEligible = (user: Actor) =>
   !user.suspendedAt &&
+  !user.deactivatedAt &&
   !!user.emailVerifiedAt &&
   !!user.adultAcknowledgedAt &&
   user.adultPolicyVersion === ADULT_POLICY;
@@ -195,7 +198,7 @@ async function portal<T>(
         where: { id: session.id },
         select: actorSelect
       });
-      if (actor.suspendedAt)
+      if (actor.suspendedAt || actor.deactivatedAt)
         throw new PortalError(
           403,
           "This account cannot access the private church journey. Contact Godschurches for help."

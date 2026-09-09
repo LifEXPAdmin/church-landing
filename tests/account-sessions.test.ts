@@ -295,7 +295,7 @@ test("HTTPS rejects forged owner/target/origin and anonymous callers without tou
       { Origin: "https://wrong.example" },
       { Origin: "" },
       { "Sec-Fetch-Site": "cross-site" }
-    ])
+    ] as Array<Record<string, string>>)
       assert.equal((await post(validBody, current, headers)).status, 403);
     assert.equal((await post(validBody)).status, 401);
     assert.equal(

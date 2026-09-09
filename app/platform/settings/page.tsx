@@ -9,6 +9,7 @@ import { getCurrentPlatformUser } from "@/lib/platform/session";
 import { ReadingSettings } from "@/components/platform/reading-preferences";
 import { AccountSessions } from "@/components/platform/account-sessions";
 import { AccountExport } from "@/components/platform/account-export";
+import { AccountLifecycle } from "@/components/platform/account-lifecycle";
 export const metadata: Metadata = { title: "Account settings" };
 export default async function PlatformSettingsPage() {
   const user = await getCurrentPlatformUser();
@@ -41,6 +42,7 @@ export default async function PlatformSettingsPage() {
           </div>
           <AccountSessions />
           <AccountExport />
+          <AccountLifecycle />
           <div className="rounded-xl border border-gc-divider bg-gc-surface p-6">
             <AccountForm operation="change-password" />
           </div>

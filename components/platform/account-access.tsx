@@ -4,10 +4,12 @@ import { useRef, useState } from "react";
 import { AccountForm } from "./account-form";
 export function AccountAccess({
   initialView,
-  passwordChanged = false
+  passwordChanged = false,
+  reactivated = false
 }: {
   initialView: "login" | "register";
   passwordChanged?: boolean;
+  reactivated?: boolean;
 }) {
   const [view, setView] = useState(initialView);
   const [email, setEmail] = useState("");
@@ -42,6 +44,12 @@ export function AccountAccess({
           with your new password.
         </p>
       )}
+      {reactivated && (
+        <p role="status" className="mb-6 text-gc-accent">
+          Your account is active. Sign in to continue. Old sign-ins and sharing
+          have not been restored.
+        </p>
+      )}
       <AccountForm
         key={view}
         operation={view}
@@ -71,6 +79,12 @@ export function AccountAccess({
         not give access to them.
       </p>
       <div className="mt-4 flex flex-wrap gap-x-6 text-sm text-gc-accent">
+        <Link
+          href="/platform/account/reactivate"
+          className="inline-flex min-h-11 items-center underline"
+        >
+          Reactivate an account
+        </Link>
         <Link
           href="/platform/account/recover"
           className="inline-flex min-h-11 items-center underline"

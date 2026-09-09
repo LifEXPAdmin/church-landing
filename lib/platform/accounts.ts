@@ -4,6 +4,7 @@ import {
   type AccountGrantPurpose,
   type PrismaClient
 } from "@prisma/client";
+import { activePublicAccount } from "./public-profile";
 import {
   createSessionToken,
   hashPassword,
@@ -125,13 +126,15 @@ export async function authenticatePassword(
       id: true,
       passwordHash: true,
       credentialVersion: true,
-      suspendedAt: true
+      suspendedAt: true,
+      deactivatedAt: true
     }
   });
   if (
     !(await verifyPassword(password, user?.passwordHash ?? null)) ||
     !user ||
-    user.suspendedAt
+    user.suspendedAt ||
+    user.deactivatedAt
   )
     throw new AccountError("credentials");
   return user;
@@ -147,11 +150,17 @@ export async function issueAuthenticatedSession(
     await lockUser(tx, credential.id);
     const current = await tx.platformUser.findUnique({
       where: { id: credential.id },
-      select: { credentialVersion: true, passwordHash: true, suspendedAt: true }
+      select: {
+        credentialVersion: true,
+        passwordHash: true,
+        suspendedAt: true,
+        deactivatedAt: true
+      }
     });
     if (
       !current ||
       current.suspendedAt ||
+      current.deactivatedAt ||
       current.credentialVersion !== credential.credentialVersion ||
       current.passwordHash !== credential.passwordHash
     )
@@ -205,7 +214,14 @@ export async function readAccountSession(
           emailVerifiedAt: true,
           credentialVersion: true,
           suspendedAt: true,
-          _count: { select: { posts: true, followers: true, following: true } }
+          deactivatedAt: true,
+          _count: {
+            select: {
+              posts: true,
+              followers: { where: { follower: activePublicAccount } },
+              following: { where: { following: activePublicAccount } }
+            }
+          }
         }
       }
     }
@@ -213,6 +229,7 @@ export async function readAccountSession(
   if (
     !session ||
     session.user.suspendedAt ||
+    session.user.deactivatedAt ||
     session.expiresAt <= new Date() ||
     session.credentialVersion !== session.user.credentialVersion
   )
@@ -326,6 +343,7 @@ export async function changeAccountPassword(
     if (
       !session ||
       session.user.suspendedAt ||
+      session.user.deactivatedAt ||
       session.expiresAt <= new Date() ||
       session.credentialVersion !== session.user.credentialVersion
     )
@@ -368,12 +386,14 @@ export async function requestAccountGrant(
         credentialVersion: true,
         emailVerifiedAt: true,
         suspendedAt: true,
+        deactivatedAt: true,
         email: true
       }
     });
     if (
       !current ||
       current.suspendedAt ||
+      (purpose === "VERIFY_EMAIL" && current.deactivatedAt) ||
       current.email !== email ||
       (purpose === "VERIFY_EMAIL" && current.emailVerifiedAt)
     )
@@ -428,6 +448,7 @@ export async function consumeAccountGrant(
     if (
       !grant ||
       grant.user.suspendedAt ||
+      (purpose === "VERIFY_EMAIL" && grant.user.deactivatedAt) ||
       grant.purpose !== purpose ||
       grant.consumedAt ||
       grant.expiresAt <= new Date() ||

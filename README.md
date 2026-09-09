@@ -10,6 +10,8 @@ disabled pending sender setup and receipt verification. See
 [ACCOUNT_DELIVERY_REPORT.md](docs/godschurches/ACCOUNT_DELIVERY_REPORT.md).
 Private account downloads are verified in
 [ACCOUNT_DATA_REPORT.md](docs/godschurches/ACCOUNT_DATA_REPORT.md).
+Account deactivation and reactivation are tracked in
+[ACCOUNT_LIFECYCLE_REPORT.md](docs/godschurches/ACCOUNT_LIFECYCLE_REPORT.md).
 
 ## Continue with ChatGPT or Codex
 

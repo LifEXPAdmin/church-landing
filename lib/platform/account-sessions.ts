@@ -15,7 +15,12 @@ const sessionSelect = {
   userAgent: true,
   credentialVersion: true,
   user: {
-    select: { credentialVersion: true, suspendedAt: true, passwordHash: true }
+    select: {
+      credentialVersion: true,
+      suspendedAt: true,
+      deactivatedAt: true,
+      passwordHash: true
+    }
   }
 } satisfies Prisma.PlatformSessionSelect;
 type OwnedSession = Prisma.PlatformSessionGetPayload<{
@@ -25,7 +30,8 @@ type OwnedSession = Prisma.PlatformSessionGetPayload<{
 export async function withOwnedSession<T>(
   db: PrismaClient,
   token: unknown,
-  action: (tx: Prisma.TransactionClient, current: OwnedSession) => Promise<T>
+  action: (tx: Prisma.TransactionClient, current: OwnedSession) => Promise<T>,
+  serializeAccess = false
 ) {
   if (!validToken(token)) throw new AccountError("session");
   const tokenHash = hashSessionToken(token);
@@ -36,6 +42,10 @@ export async function withOwnedSession<T>(
   if (!snapshot) throw new AccountError("session");
   return db.$transaction(
     async (tx) => {
+      // Shared church/support gate precedes user locks everywhere that can
+      // change status or interact with another account.
+      if (serializeAccess)
+        await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(730221, 2)`;
       // Serialize with session issuance, password changes and other revocations.
       await tx.$queryRaw`SELECT "id" FROM "PlatformUser" WHERE "id" = ${snapshot.userId} FOR UPDATE`;
       const current = await tx.platformSession.findUnique({
@@ -45,6 +55,7 @@ export async function withOwnedSession<T>(
       if (
         !current ||
         current.user.suspendedAt ||
+        current.user.deactivatedAt ||
         current.expiresAt <= new Date() ||
         current.credentialVersion !== current.user.credentialVersion
       )

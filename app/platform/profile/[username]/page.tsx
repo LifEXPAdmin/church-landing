@@ -1,4 +1,7 @@
-import { publicProfileSelect } from "@/lib/platform/public-profile";
+import {
+  publicProfileSelect,
+  activePublicAccount
+} from "@/lib/platform/public-profile";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -37,14 +40,15 @@ export default async function PublicProfilePage({
   const currentUser = await getCurrentPlatformUser();
   const { username } = await params;
   const profile = await prisma.platformUser.findUnique({
-    where: { username },
+    where: { username, ...activePublicAccount },
     select: {
       ...publicProfileSelect,
       posts: {
         include: {
           author: { select: publicProfileSelect },
-          likes: true,
+          likes: { where: { user: activePublicAccount } },
           comments: {
+            where: { author: activePublicAccount },
             include: { author: { select: publicProfileSelect } },
             orderBy: { createdAt: "desc" },
             take: 6
@@ -55,8 +59,8 @@ export default async function PublicProfilePage({
       _count: {
         select: {
           posts: true,
-          followers: true,
-          following: true
+          followers: { where: { follower: activePublicAccount } },
+          following: { where: { following: activePublicAccount } }
         }
       }
     }

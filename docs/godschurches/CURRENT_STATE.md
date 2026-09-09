@@ -1,5 +1,17 @@
 # Godschurches current state
 
+## Account lifecycle verified locally — September 9, 2026
+
+Password-confirmed deactivation and explicit reactivation are implemented on
+`codex/account-lifecycle`. Duty handoff is enforced before deactivation; sessions
+and sharing end while stored records remain. Inactive community content is hidden
+and all community writes recheck session status under the shared access gate.
+All 105 isolated service/HTTP tests, lint, TypeScript, migration/restore/restart
+checks, actual fictional browser flows and the final production build/runtime
+traces passed. Publication verification is pending. See [ACCOUNT_LIFECYCLE_REPORT.md](ACCOUNT_LIFECYCLE_REPORT.md).
+Remaining account work includes actual email delivery, verified ownership changes,
+permanent deletion and Google linking; full parent acceptance remains open.
+
 ## Private account download published — September 9, 2026
 
 Account settings now offers a password-confirmed private JSON download, bound to
