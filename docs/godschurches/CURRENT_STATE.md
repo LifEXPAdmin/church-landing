@@ -1,6 +1,6 @@
 # Godschurches current state
 
-## Private account download verified — September 9, 2026
+## Private account download published — September 9, 2026
 
 Account settings now offers a password-confirmed private JSON download, bound to
 the current active session through a one-minute authorization. Explicit fields
@@ -11,7 +11,9 @@ build/type/runtime traces passed. Actual local browser preparation/save, inspect
 file content, wrong-password/expiry feedback and 320/390/1440px reflow passed.
 
 See [ACCOUNT_DATA_REPORT.md](ACCOUNT_DATA_REPORT.md) for scope, bounds and evidence.
-Publication is being verified separately. The broader list remains active, with
+Application `19c5850b931fd75ce4ea365206c654fc79c3ddff` is published on READY
+deployment `dpl_ChL5CKaPNJSvz3jxJpMhk7XgzsLy`; the exact SHA/canonical alias and
+11 live route/anonymous export checks passed. The broader list remains active, with
 email activation, account lifecycle/ownership and remaining product work open.
 
 ## Account delivery integration published — September 9, 2026

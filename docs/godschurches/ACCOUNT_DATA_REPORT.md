@@ -78,7 +78,16 @@ loopback port resolved the setup error; the repeated browser flow passed. Browse
 testing used local development HTTP, while the production server/API checks used
 locally verified HTTPS. No physical-device or live personal-account export is
 claimed. The final production build/type/runtime-trace check passed after browser
-testing; the fixture servers are stopped. Publication is being verified separately.
+testing; the fixture servers are stopped.
+
+### Publication
+
+Application commit `19c5850b931fd75ce4ea365206c654fc79c3ddff` is published on
+production deployment `dpl_ChL5CKaPNJSvz3jxJpMhk7XgzsLy`, READY at
+`2026-09-09T23:13:15.489Z`. The exact Git SHA and canonical alias were verified.
+Eleven live HTTP checks passed at `2026-09-09T23:14:52Z`, including rejection of
+anonymous, forged-owner and foreign-origin export requests. No live personal
+export was requested. A report-only follow-up may redeploy the same application.
 
 ## Remaining account work
 
