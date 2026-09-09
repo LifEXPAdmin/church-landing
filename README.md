@@ -2,6 +2,15 @@
 
 Production-ready landing site + segmented waitlist for Church while full platform development continues.
 
+## Continue with ChatGPT or Codex
+
+Start with [AGENTS.md](AGENTS.md) and the
+[workflow guide](docs/godschurches/WORKFLOW_GUIDE.md). They explain how to locate
+the private second-brain context, read current evidence, and leave a useful handoff.
+For implementation status, use the newest applicable sections of
+[CURRENT_STATE.md](docs/godschurches/CURRENT_STATE.md) and its linked reports;
+older checkpoints in this README may be superseded.
+
 ## Stack
 
 - Next.js App Router + TypeScript
