@@ -1,7 +1,8 @@
 export type AccountConfig = {
   origin: string;
   rateSecret: string;
-  delivery: "disabled" | "test-sink";
+  delivery: "disabled" | "test-sink" | "resend";
+  resend?: { apiKey: string; from: string };
   sinkDirectory?: string;
   secureCookie: boolean;
 };
@@ -31,7 +32,7 @@ export function accountConfig(
   if (rateSecret.length < 32)
     throw new Error("Account rate limiter is not configured");
   const delivery = env.ACCOUNT_DELIVERY_MODE ?? "disabled";
-  if (!["disabled", "test-sink"].includes(delivery))
+  if (!["disabled", "test-sink", "resend"].includes(delivery))
     throw new Error("Account delivery is not configured");
   if (delivery === "test-sink") {
     const db = new URL(env.DATABASE_URL ?? "http://invalid");
@@ -45,10 +46,28 @@ export function accountConfig(
     )
       throw new Error("Test delivery requires isolated local configuration");
   }
+  let resend: AccountConfig["resend"];
+  if (delivery === "resend") {
+    const apiKey = env.RESEND_API_KEY?.trim() ?? "";
+    const from = env.ACCOUNT_EMAIL_FROM?.trim().toLowerCase() ?? "";
+    const domain = from.split("@")[1];
+    const host = origin.hostname.replace(/^www\./, "");
+    if (
+      origin.protocol !== "https:" ||
+      local ||
+      (env.VERCEL && env.VERCEL_ENV !== "production") ||
+      !/^re_[A-Za-z0-9_-]+$/.test(apiKey) ||
+      !/^[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-z0-9.-]+\.[a-z]{2,}$/.test(from) ||
+      !(domain === host || domain?.endsWith(`.${host}`))
+    )
+      throw new Error("Account email sender is not configured");
+    resend = { apiKey, from };
+  }
   return {
     origin: origin.origin,
     rateSecret,
     delivery: delivery as AccountConfig["delivery"],
+    resend,
     sinkDirectory: env.ACCOUNT_TEST_SINK_DIR,
     secureCookie: origin.protocol === "https:"
   };

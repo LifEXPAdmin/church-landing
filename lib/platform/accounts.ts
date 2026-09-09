@@ -363,9 +363,19 @@ export async function requestAccountGrant(
     await lockUser(tx, user.id);
     const current = await tx.platformUser.findUnique({
       where: { id: user.id },
-      select: { credentialVersion: true, emailVerifiedAt: true }
+      select: {
+        credentialVersion: true,
+        emailVerifiedAt: true,
+        suspendedAt: true,
+        email: true
+      }
     });
-    if (!current || (purpose === "VERIFY_EMAIL" && current.emailVerifiedAt))
+    if (
+      !current ||
+      current.suspendedAt ||
+      current.email !== email ||
+      (purpose === "VERIFY_EMAIL" && current.emailVerifiedAt)
+    )
       return null;
     await tx.platformAccountGrant.deleteMany({
       where: { userId: user.id, expiresAt: { lt: new Date() } }
@@ -385,6 +395,7 @@ export async function requestAccountGrant(
       await deliver(email, purpose, token);
     } catch {
       await db.platformAccountGrant.deleteMany({ where: { id: grant.id } });
+      throw new Error("Account delivery failed");
     }
   }
 }
@@ -415,6 +426,7 @@ export async function consumeAccountGrant(
     });
     if (
       !grant ||
+      grant.user.suspendedAt ||
       grant.purpose !== purpose ||
       grant.consumedAt ||
       grant.expiresAt <= new Date() ||

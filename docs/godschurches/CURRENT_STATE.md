@@ -1,5 +1,20 @@
 # Godschurches current state
 
+## Account delivery integration verified — September 9, 2026
+
+The Resend adapter and post-response account delivery are implemented on
+`codex/account-delivery`. All 91 isolated service/HTTP checks, lint, production
+build/type/runtime traces and migration/restart checks passed. Requests remain
+neutral; failed sends invalidate only the new grant; suspended accounts cannot
+request or consume grants. No schema or dependency change was needed.
+
+**Actual recovery email remains disabled:** production has no configured
+transactional sender/key. Real sender verification and authorized inbox receipt
+are still required. See [ACCOUNT_DELIVERY_REPORT.md](ACCOUNT_DELIVERY_REPORT.md)
+for exact behavior, activation steps and the distinction between provider mocks,
+local sink evidence and real delivery. Full account/Google acceptance remains
+open. Publication of this tested implementation is being verified separately.
+
 ## Account session controls published — September 9, 2026
 
 The owner-only active sign-in list and password-confirmed revocation of other

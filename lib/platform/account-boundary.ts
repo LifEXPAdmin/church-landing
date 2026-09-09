@@ -13,7 +13,7 @@ import {
   SESSION_SECONDS
 } from "./accounts";
 import { accountConfig } from "./account-config";
-import { deliverAccountGrant } from "./account-delivery";
+import { accountGrantDelivery } from "./account-delivery";
 import { allowAccountAttempt } from "./account-limits";
 import {
   listAccountSessions,
@@ -93,10 +93,16 @@ export async function readBody(
 
 export async function handleAccountRequest(
   db: PrismaClient,
-  request: Request
+  request: Request,
+  afterResponse?: (work: () => Promise<void>) => void
 ): Promise<Response> {
   const requestId = randomUUID();
-  const response = await processAccountRequest(db, request);
+  const response = await processAccountRequest(
+    db,
+    request,
+    requestId,
+    afterResponse
+  );
   response.headers.set("X-Account-Request-Id", requestId);
   if (
     response.status === 503 &&
@@ -114,7 +120,9 @@ export async function handleAccountRequest(
 
 async function processAccountRequest(
   db: PrismaClient,
-  request: Request
+  request: Request,
+  requestId: string,
+  afterResponse?: (work: () => Promise<void>) => void
 ): Promise<Response> {
   if (request.method !== "POST")
     return reply("Use the account form to continue.", 405, { Allow: "POST" });
@@ -204,14 +212,27 @@ async function processAccountRequest(
           503,
           { "X-Account-Delivery-Disabled": "1" }
         );
-      if (allowed)
-        await requestAccountGrant(
-          db,
-          body.email,
-          operation === "request-reset" ? "RESET_PASSWORD" : "VERIFY_EMAIL",
-          deliverAccountGrant
-        );
-      // The local sink has bounded latency. A future real sender must enqueue delivery and recheck timing.
+      if (config.delivery === "resend" && !afterResponse)
+        throw new Error("Account delivery requires response lifecycle support");
+      if (allowed) {
+        const email = normalizeEmail(body.email);
+        const purpose =
+          operation === "request-reset" ? "RESET_PASSWORD" : "VERIFY_EMAIL";
+        const deliver = accountGrantDelivery(config);
+        const work = async () => {
+          try {
+            await requestAccountGrant(db, email, purpose, deliver);
+          } catch {
+            console.error(
+              JSON.stringify({ event: "account_delivery_failed", requestId })
+            );
+          }
+        };
+        // Account lookup and all vendor latency occur after the response. This is
+        // a bounded lifecycle callback, not a durable queue or receipt guarantee.
+        if (afterResponse) afterResponse(work);
+        else await work(); // Isolated sink-only service tests.
+      }
       await delay(Math.max(0, 500 - (Date.now() - started)));
       return reply(accepted);
     }

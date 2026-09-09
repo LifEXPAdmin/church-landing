@@ -5,6 +5,9 @@ The app entrance and account session controls are published. See
 [ENTRANCE_REPORT.md](docs/godschurches/ENTRANCE_REPORT.md) and
 [SESSION_CONTROLS_REPORT.md](docs/godschurches/SESSION_CONTROLS_REPORT.md) for
 tested releases, actual verification and remaining account work.
+The transactional recovery adapter is tested; actual email delivery remains
+disabled pending sender setup and receipt verification. See
+[ACCOUNT_DELIVERY_REPORT.md](docs/godschurches/ACCOUNT_DELIVERY_REPORT.md).
 
 ## Continue with ChatGPT or Codex
 

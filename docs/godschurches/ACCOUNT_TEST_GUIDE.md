@@ -63,6 +63,8 @@ borrow another person's account, session cookie or password.
   created before passwords were introduced cannot be claimed by registering
   again. **Email recovery is not enabled yet.** Existing accounts are preserved;
   a verified ownership-recovery setup is needed to restore access safely.
+  The transactional adapter is implemented; configuration and actual receipt
+  remain pending in [ACCOUNT_DELIVERY_REPORT.md](ACCOUNT_DELIVERY_REPORT.md).
 - A highlighted field prevents submission: correct that field first. This can be
   browser validation, meaning no request was sent to the server.
 - A connection error appears: a request may have reached the server even when

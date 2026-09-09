@@ -52,6 +52,7 @@ const env = {
   AUTH_RATE_LIMIT_SECRET: randomBytes(32).toString("hex"),
   MAILERLITE_API_KEY: "",
   RESEND_API_KEY: "",
+  ACCOUNT_EMAIL_FROM: "",
   SUPPORT_INTAKE_ENABLED: supportTests ? "true" : "false"
 };
 const log = join(dir, "setup.log");
@@ -299,6 +300,7 @@ try {
     "Synthetic Stage1 -> Stage2A -> Stage2B upgrade preserved all prior account data."
   );
   await runTests("tests/account-security.test.ts");
+  await runTests("tests/account-delivery.test.ts");
   if (portalTests) await runTests("tests/portal-service.test.ts");
   if (supportTests) await runTests("tests/support-service.test.ts");
   run(join(pg, "pg_dump"), [

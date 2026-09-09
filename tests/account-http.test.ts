@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { PrismaClient } from "@prisma/client";
 import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { setTimeout as delay } from "node:timers/promises";
 import {
   handleAccountRequest,
   SESSION_COOKIE
@@ -236,14 +237,22 @@ test("HTTP recovery uses sink delivery, link preview is inert, purpose enforced,
   });
   assert.deepEqual(await response.json(), await absent.json());
   const dir = process.env.ACCOUNT_TEST_SINK_DIR!;
-  const messages = await Promise.all(
-    (await readdir(dir)).map(async (file) =>
-      JSON.parse(await readFile(join(dir, file), "utf8"))
-    )
-  );
-  const message = messages.find(
-    (m) => m.email === "http_recovery@example.test"
-  );
+  // Actual Next after() work starts after the request completes. Wait only for
+  // this fictional recipient's sink entry, never infer delivery from HTTP 200.
+  let message;
+  for (let attempt = 0; attempt < 50 && !message; attempt++) {
+    const messages = await Promise.all(
+      (await readdir(dir)).map(async (file) => {
+        try {
+          return JSON.parse(await readFile(join(dir, file), "utf8"));
+        } catch {
+          return null;
+        } // A newly created sink file may still be writing.
+      })
+    );
+    message = messages.find((m) => m?.email === "http_recovery@example.test");
+    if (!message) await delay(100);
+  }
   assert.ok(message);
   const url = new URL(message.url);
   const token = new URLSearchParams(url.hash.slice(1)).get("token")!;
