@@ -1,6 +1,6 @@
 # Godschurches current state
 
-## Account delivery integration verified — September 9, 2026
+## Account delivery integration published — September 9, 2026
 
 The Resend adapter and post-response account delivery are implemented on
 `codex/account-delivery`. All 91 isolated service/HTTP checks, lint, production
@@ -13,7 +13,9 @@ transactional sender/key. Real sender verification and authorized inbox receipt
 are still required. See [ACCOUNT_DELIVERY_REPORT.md](ACCOUNT_DELIVERY_REPORT.md)
 for exact behavior, activation steps and the distinction between provider mocks,
 local sink evidence and real delivery. Full account/Google acceptance remains
-open. Publication of this tested implementation is being verified separately.
+open. Application `5fc6d3fea4975655067687ee4bdf832edd178445` is published on READY
+deployment `dpl_J11qS8MCY126MTQc7DGoX1zc9o5C`; exact SHA/canonical alias and
+15 live route/anonymous API checks passed. No actual email was sent.
 
 ## Account session controls published — September 9, 2026
 

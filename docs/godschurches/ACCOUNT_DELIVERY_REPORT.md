@@ -16,7 +16,22 @@ All **91 isolated service/HTTP checks passed**, including six new delivery test
 groups, the actual Next.js post-response sink flow, production builds/type/runtime
 traces, upgrade/restore/fresh migrations, and the account-session restart tests.
 Lint passed. This release changes backend delivery behavior; no interface or
-physical-device test result is claimed. Publication is being verified separately.
+physical-device test result is claimed.
+
+## Published release
+
+Application commit `5fc6d3fea4975655067687ee4bdf832edd178445` is on main and live
+on production deployment `dpl_J11qS8MCY126MTQc7DGoX1zc9o5C`, READY at
+`2026-09-09T22:33:50.253Z`. Exact Git SHA and the canonical
+`https://godschurches.com` alias were verified. Fifteen live HTTP checks passed
+at `2026-09-09T22:34:54Z`, covering public/account routes, anonymous session
+rejection, forged-origin rejection and all four disabled recovery/verification
+operations. No production account or external message was created. The optional
+provider remains unconfigured and disabled; this is publication of the tested
+integration, not activation of email recovery.
+
+A documentation-only follow-up may redeploy the same application code. The
+commit and deployment above identify the exact application release tested here.
 
 ## Behavior and boundaries
 
