@@ -6,7 +6,11 @@ The owner approved the attached direction for the real platform, superseding the
 preview-only proposal. See [DESIGN_IMPLEMENTATION_REPORT.md](DESIGN_IMPLEMENTATION_REPORT.md)
 for scope, behavior, verification, publication, and remaining limitations. Account
 security and private church/support boundaries from the preceding release remain
-in force. The marketing landing page and production data are not being replaced.
+in force. The official interface is published at https://godschurches.com/platform.
+The marketing landing page and production data were preserved. Local checks passed
+(74 service/HTTP, 16 account browser, 15 design browser, 3 preference/contrast),
+plus the production build and 39 HTTP/48 browser live smoke checks. The linked
+report identifies the exact tested application commit and serving deployment.
 
 
 <!-- ACCOUNT_REPAIR_CURRENT_BEGIN -->

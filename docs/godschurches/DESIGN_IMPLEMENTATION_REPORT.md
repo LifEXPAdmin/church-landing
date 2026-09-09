@@ -129,8 +129,34 @@ conformance, or WCAG certification claim is made. Touch tests dispatch synthetic
 events; they do not establish physical iOS/Android gesture behavior. The text
 enlargement check changes the root font size, not a physical mobile zoom gesture.
 
-Publication is pending the exact GitHub commit's Vercel build and canonical-domain
-checks. The deployment result will be added in a report-only follow-up.
+### Published release
+
+**Live at https://godschurches.com/platform.** Application commit:
+`56be28a2ae1ad6f14b01481251546387325383e2`. Vercel production deployment:
+`dpl_EjWJoq3Xs6z2dbjha4DSMPkEw35T`, READY at 2026-09-09T02:07:51.112Z.
+The canonical godschurches.com alias matched that exact deployment at
+2026-09-09T02:07:54.400Z. Live verification finished at 2026-09-09T02:09:09.046Z.
+
+The actual Linux build passed, with no pending database migrations. Its runtime
+trace check covered 49 traces, 3,531 entries, and 113 server JavaScript files,
+with no Prisma configuration-loader path. Existing Node 24 configuration and the
+account API's 60-second limit were retained; no provider resource settings changed.
+
+Live smoke tests passed 39 HTTP checks and 48 browser route/appearance checks
+at 320, 390, and 1440px, with zero browser exceptions and zero demo mutation
+attempts. Anonymous dark appearance persisted after reload without creating an
+account session. Protected account/church/support pages still required sign-in,
+cross-origin write requests were rejected, and the fictional tour remained read-only.
+No real account registration, member post, church appointment, support request,
+email send, or production database mutation was performed during this design release.
+Those functional write tests ran only in the disposable local database.
+
+The landing page, waitlist, auth services, schema, production secrets, and stored
+member information were not replaced. The test server and its local database were
+stopped after verification. Evidence is in the ignored design folder's
+`published.json`, `linux-build-proof.json`, `live-smoke-result.json`, and
+`live-public-screenshots/`. This report-only follow-up may redeploy identical
+application code; the IDs above identify the deployment used for the full live checks.
 
 ### Reproduce locally
 
