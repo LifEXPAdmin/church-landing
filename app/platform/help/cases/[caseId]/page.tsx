@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { SupportPage } from "@/components/platform/support-page";
 export const dynamic = "force-dynamic";
 // Private subjects never become page titles, social metadata or analytics labels.
-export const metadata: Metadata = { title: "Private request | Godschurches" };
+export const metadata: Metadata = { title: { absolute: "Private request | Godschurches" } };
 export default async function Page({
   params,
   searchParams

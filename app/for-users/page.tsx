@@ -1,17 +1,24 @@
 import { SegmentPage } from "@/components/layout/segment-page";
+import { publicMetadata } from "@/lib/site-metadata";
+
+export const metadata = publicMetadata(
+  "For believers",
+  "Share encouragement and connect with people growing in faith.",
+  "/for-users"
+);
 
 export default function ForUsersPage() {
   return (
     <SegmentPage
-      title="For Believers"
-      intro="Church is a Christian-first connection platform for believers who want daily discipleship, real fellowship, and Christ-centered community."
+      title="For believers"
+      intro="Share everyday faith, find encouragement, and keep a conversation going beyond Sunday."
       bullets={[
-        "Discover churches, gatherings, teaching, and prayer opportunities in one place.",
-        "Build meaningful relationships with believers near you and across regions.",
-        "Stay connected to testimony, accountability, and spiritual growth all week.",
-        "Participate in a Christ-centered community designed for depth, not noise."
+        "Read public testimonies, prayer requests, and updates.",
+        "Create an account to post, comment, and react.",
+        "Follow people whose posts you want to see on Home.",
+        "Search public posts and profiles to find people to connect with."
       ]}
-      role="BELIEVER"
+      note="Posts, comments, and profile details are public. Share with care."
     />
   );
 }

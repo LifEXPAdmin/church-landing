@@ -249,6 +249,6 @@ test("support demo is fixture-only and analytics rejects support paths without s
       label: "Private case subject"
     })
   });
-  assert.equal(tracked.status, 200);
+  assert.equal(tracked.status, 410);
   assert.equal(await db.waitlistEvent.count(), analyticsBefore);
 });

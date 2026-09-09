@@ -76,7 +76,8 @@ export async function PlatformShell({
         <footer className="gc-platform-footer">
           <AppearanceSelect />
           <span>Built on faith. Made for connection.</span>
-          <Link href="/">About Godschurches</Link>
+          <Link href="/about">About Godschurches</Link>
+          <Link href="/help">Help</Link>
           <Link href="/privacy">Privacy</Link>
           <Link href="/terms">Terms</Link>
         </footer>

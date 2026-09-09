@@ -4,7 +4,7 @@ import { PlatformShell } from "@/components/platform/platform-shell";
 import { ProfileForm } from "@/components/platform/profile-form";
 import { getCurrentPlatformUser } from "@/lib/platform/session";
 export const metadata: Metadata = {
-  title: "Edit your Godschurches profile",
+  title: { absolute: "Edit your Godschurches profile" },
   description: "Choose what to share on your public profile."
 };
 export default async function EditProfilePage() {

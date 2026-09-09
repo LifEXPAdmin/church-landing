@@ -10,7 +10,7 @@ import { roleLabels } from "@/lib/platform/format";
 import { getCurrentPlatformUser } from "@/lib/platform/session";
 
 export const metadata: Metadata = {
-  title: "Explore | Godschurches",
+  title: { absolute: "Explore | Godschurches" },
   description: "Find people and public posts on Godschurches."
 };
 

@@ -3,7 +3,7 @@ import { AccountAccess } from "@/components/platform/account-access";
 import { PlatformShell } from "@/components/platform/platform-shell";
 import { getCurrentPlatformUser } from "@/lib/platform/session";
 export const metadata: Metadata = {
-  title: "Sign in to Godschurches",
+  title: { absolute: "Sign in to Godschurches" },
   description: "Sign in securely with your email and password."
 };
 export default async function PlatformLoginPage({

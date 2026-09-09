@@ -1,5 +1,21 @@
 # Godschurches current state
 
+## App entrance candidate — September 9, 2026
+
+The app entrance and waitlist retirement are implemented and verified locally on
+`codex/app-front-door`. Root and old confirmation links lead to Home; old join
+links lead to account signup; retired submissions and tracking return 410 without
+writes. Public About/Help, navigation, metadata and service information match the
+current application. Accounts and historical records are preserved.
+
+All 78 isolated service/HTTP checks, final lint/build/type/runtime-trace checks,
+and browser reflow checks for five routes at 320/390/1440 px passed. Browser scope
+was anonymous local navigation; authenticated checks used the HTTPS harness.
+The live site was not changed. Account/Google and applicable mobile/support gates
+remain open. See [ENTRANCE_REPORT.md](ENTRANCE_REPORT.md) for actual evidence,
+serving identity, limitations and the next account-foundation slice. The published
+design and account reports below remain historical release evidence.
+
 ## Official platform design, September 2026
 
 The owner approved the attached direction for the real platform, superseding the

@@ -17,9 +17,17 @@ export function PublicChrome({
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div
+      className="platform-design gc-public flex min-h-screen flex-col"
+      data-appearance="system"
+    >
+      <a href="#website-content" className="gc-skip">
+        Skip to content
+      </a>
       {header}
-      <main className="flex-1">{children}</main>
+      <main id="website-content" tabIndex={-1} className="flex-1">
+        {children}
+      </main>
       {footer}
     </div>
   );

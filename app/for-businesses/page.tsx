@@ -1,17 +1,24 @@
 import { SegmentPage } from "@/components/layout/segment-page";
+import { publicMetadata } from "@/lib/site-metadata";
+
+export const metadata = publicMetadata(
+  "For businesses",
+  "The Godschurches vision for practical service and community relationships.",
+  "/for-businesses"
+);
 
 export default function ForBusinessesPage() {
   return (
     <SegmentPage
-      title="For Businesses"
-      intro="Businesses can be a force for Kingdom impact. Church creates meaningful partnership opportunities connected to real ministry needs."
+      title="For businesses"
+      intro="Our vision includes people who want to support local churches through practical service and lasting relationships."
       bullets={[
-        "Sponsor local church initiatives, community outreach, and practical service projects.",
-        "Support Gospel work with clear alignment and trusted relationships.",
-        "Build credibility by serving tangible needs across faith communities.",
-        "Invest in The Revival through partnerships that create lasting impact."
+        "Participate in public conversations through a personal account.",
+        "Share encouragement and get to know people in the community.",
+        "Use public profile information thoughtfully; avoid posting private contact details.",
+        "Read the manifesto to understand the convictions behind the project."
       ]}
-      role="BUSINESS"
+      note="Sponsorship, payments, investments, and business partnership services are not available through Godschurches. A profile category creates no financial agreement or church authority."
     />
   );
 }

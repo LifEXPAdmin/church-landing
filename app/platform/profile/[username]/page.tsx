@@ -22,7 +22,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { username } = await params;
   return {
-    title: `@${username} on Church`,
+    title: { absolute: `@${username} | Godschurches` },
     description: `View @${username}'s Godschurches platform profile.`
   };
 }

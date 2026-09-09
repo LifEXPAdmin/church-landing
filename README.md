@@ -1,6 +1,7 @@
-# Church (The Revival) MVP
+# Godschurches
 
-Production-ready landing site + segmented waitlist for Church while full platform development continues.
+The existing account and community application, with public information pages and private church tools.
+The app-entrance change is a local release candidate; see [ENTRANCE_REPORT.md](docs/godschurches/ENTRANCE_REPORT.md) for actual verification and release gates.
 
 ## Continue with ChatGPT or Codex
 
@@ -16,26 +17,27 @@ older checkpoints in this README may be superseded.
 - Next.js App Router + TypeScript
 - TailwindCSS + shadcn/ui-style setup
 - Prisma ORM + PostgreSQL
-- MailerLite group-based email syncing
 - Basic auth-protected admin routes
-- First-party analytics event tracking
+- Historical waitlist and analytics administration (new collection retired)
 
 ## Routes
 
-- `/` Finalized landing page (mobile-first)
+- `/` GET redirects to `/platform`; other submission methods are not accepted
+- `/about` Project purpose and current capabilities
+- `/help` Public account and church guidance
 - `/manifesto` Manifesto
 - `/for-users` For Believers
 - `/for-churches`
 - `/for-creators`
 - `/for-businesses`
-- `/join` Segmented waitlist form
-- `/thanks` Confirmation
+- `/join` GET redirects to account signup; POST returns 410 without inserting data
+- `/thanks` GET redirects to Home without claiming a submission succeeded
 - `/privacy` Privacy policy
 - `/terms` Terms of service
 - `/admin/waitlist` Waitlist table + segment filters
 - `/admin/waitlist/export` CSV export (all or by role)
 - `/admin/analytics` Event analytics dashboard
-- `/platform` Early platform preview with feed, posts, likes, comments, search, profiles, and follows
+- `/platform` Existing application Home with public posts, comments, reactions, search, profiles, and follows
 - `/platform/login` Password-backed platform account access
 - `/platform/profile/me` Editable platform profile
 - `/platform/profile/[username]` Public platform profile
@@ -43,22 +45,12 @@ older checkpoints in this README may be superseded.
 
 ## Features Included
 
-- Hero image pipeline with separate desktop/mobile assets:
-  - `public/hero-desktop.jpg`
-  - `public/hero-mobile.jpg`
-- CTA hierarchy (one primary, three secondary)
-- Segmented waitlist roles: `BELIEVER`, `CHURCH`, `CREATOR`, `BUSINESS`, `BUILDER`
-- Server-side validation and honeypot anti-spam
-- Role-segmented data in PostgreSQL
-- Optional MailerLite sync on each signup (role -> group)
-- First-party analytics events:
-  - `PAGE_VIEW`
-  - `CTA_CLICK`
-  - `JOIN_SUBMIT`
-  - `JOIN_SUCCESS`
+- App entrance and legacy-link handling without a second feed or account system
+- Historical waitlist consent and account records preserved
+- No new waitlist subscriptions, marketing sync, or first-party analytics collection
 - Error handling pages (`app/error.tsx`, `app/global-error.tsx`, `app/not-found.tsx`)
 - SEO metadata + `robots.txt` + `sitemap.xml`
-- Platform preview foundation:
+- Account and community foundation:
   - password-hashed accounts
   - database-backed session tokens
   - cloud-saved posts, comments, likes, follows, profiles
@@ -82,27 +74,15 @@ Required:
 Recommended:
 
 - `NEXT_PUBLIC_SITE_URL` (production URL)
-- `ANALYTICS_SALT` (random string)
+- `ACCOUNT_ORIGIN` (canonical HTTPS production origin)
+- `AUTH_RATE_LIMIT_SECRET` (at least 32 characters)
+- `ACCOUNT_DELIVERY_MODE=disabled` until authorized delivery is configured
 
-MailerLite:
-
-- `MAILERLITE_API_KEY`
-- Optional role group IDs (preferred):
-  - `MAILERLITE_GROUP_ID_BELIEVER`
-  - `MAILERLITE_GROUP_ID_CHURCH`
-  - `MAILERLITE_GROUP_ID_CREATOR`
-  - `MAILERLITE_GROUP_ID_BUSINESS`
-  - `MAILERLITE_GROUP_ID_BUILDER`
-- Optional role group names (fallback):
-  - `MAILERLITE_GROUP_NAME_BELIEVER` (default `Church (User)`)
-  - `MAILERLITE_GROUP_NAME_CHURCH` (default `Church (Church)`)
-  - `MAILERLITE_GROUP_NAME_CREATOR` (default `Church (Creator)`)
-  - `MAILERLITE_GROUP_NAME_BUSINESS` (default `Church (Business)`)
-  - `MAILERLITE_GROUP_NAME_BUILDER` (default `Church (Builder)`)
+Former MailerLite group settings and analytics salts are not used by the retired submission routes. They do not enable account recovery. Do not delete production secrets or historical subscriber records merely because the public funnel is retired.
 
 ## Setup
 
-Prerequisite: Node.js 22 LTS.
+Use Node.js 24 for the existing test harness and current production runtime.
 
 1. Install dependencies:
 
@@ -130,17 +110,9 @@ npm run prisma:migrate
 npm run dev
 ```
 
-## MailerLite Setup (Role-Based Emails)
+## Retired waitlist
 
-1. Create groups in MailerLite (you already did this).
-2. Create an API key in MailerLite (`Integrations` -> API).
-3. Set `MAILERLITE_API_KEY` in `.env`.
-4. EITHER set group IDs for each role (best), OR keep group names matching exactly.
-5. In MailerLite, create one automation per group:
-   - Trigger: subscriber joins group
-   - Action: send role-specific welcome/confirmation email
-
-Result: each signup goes to the correct group automatically, and each group can receive a different email sequence.
+New collection is closed. GET `/join` leads to `/platform/signup`; POST `/join` and POST `/api/track` return 410. The old server action and collection components are removed. Historical records and read/export administration remain intact. No waitlist entry becomes an account, church role, or new email subscription.
 
 ## Local Postgres (Homebrew)
 
@@ -208,8 +180,8 @@ npm run prisma:deploy
 
 ## Notes
 
-- Waitlist is segmented by role in database and admin filters/exports.
-- If MailerLite API key is set, each signup is synced into role-specific groups.
+- Historical waitlist records remain segmented by role in admin filters/exports.
+- Old waitlist links do not subscribe or grant access. Marketing sync is no longer called.
 - Legal pages are starter templates and should be reviewed by counsel for your jurisdiction and business model.
 - Hero photo source is from Pexels (`public/hero-original.jpg`) and transformed into web-ready variants.
 

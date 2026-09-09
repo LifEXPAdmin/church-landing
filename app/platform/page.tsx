@@ -1,5 +1,5 @@
 import { publicProfileSelect } from "@/lib/platform/public-profile";
-import type { Metadata } from "next";
+import { publicMetadata } from "@/lib/site-metadata";
 import Link from "next/link";
 import { ArrowRight, MessageCircle, PenLine } from "lucide-react";
 import { PostCard } from "@/components/platform/post-card";
@@ -10,11 +10,11 @@ import { PlatformShell } from "@/components/platform/platform-shell";
 import { prisma } from "@/lib/prisma";
 import { getCurrentPlatformUser } from "@/lib/platform/session";
 
-export const metadata: Metadata = {
-  title: "Home | Godschurches",
-  description:
-    "Grow in faith, connect with your community, and share everyday life on Godschurches."
-};
+export const metadata = publicMetadata(
+  "Home",
+  "Grow in faith, connect with your community, and share everyday life on Godschurches.",
+  "/platform"
+);
 export const dynamic = "force-dynamic";
 type FeedParams = {
   before?: string;
@@ -102,9 +102,9 @@ export default async function PlatformPage({
           <div className="gc-welcome">
             <h2>There is a place for you here.</h2>
             <p>
-              Connect with people growing in faith. Share a testimony, ask for
-              prayer, and find ways to serve. Your account and posts are saved
-              on the real platform.
+              Read public posts from people growing in faith. Create an account
+              to share a testimony, prayer request, or update, and follow people
+              you want to hear from.
             </p>
             <Link href="/platform/signup" className="gc-button">
               Create an account

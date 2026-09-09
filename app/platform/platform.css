@@ -145,6 +145,59 @@
 .gc-shell {
   min-height: 100vh;
 }
+.gc-public-header {
+  background: var(--gc-surface);
+  border-bottom: 1px solid var(--gc-divider);
+}
+.gc-public-nav {
+  display: flex;
+  gap: 1.5rem;
+}
+.gc-public-nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+.gc-info-article {
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: clamp(1.25rem, 4vw, 3rem);
+  border: 1px solid var(--gc-divider);
+  border-radius: 1rem;
+  background: var(--gc-surface);
+}
+.gc-info-article > * + *,
+.gc-info-article section > * + * {
+  margin-top: 1rem;
+}
+.gc-info-article section + section {
+  margin-top: 2.5rem;
+}
+.gc-info-article a:not(.gc-button) {
+  color: var(--gc-action);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+.gc-info-intro {
+  color: var(--gc-muted);
+  font-size: 1.25rem;
+}
+.gc-info-list {
+  padding-left: 1.25rem;
+  list-style: disc;
+}
+.gc-info-list li + li {
+  margin-top: 0.75rem;
+}
+.gc-info-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+}
+.gc-public .gc-topbar {
+  justify-content: space-between;
+}
 .gc-topbar {
   min-height: 80px;
   padding: 1rem max(1rem, calc((100vw - 1280px) / 2));

@@ -1,15 +1,31 @@
+import Link from "next/link";
+import { publicMetadata } from "@/lib/site-metadata";
+
+export const metadata = publicMetadata(
+  "Manifesto",
+  "The convictions and long-term vision behind Godschurches and The Revival.",
+  "/manifesto"
+);
+
 export default function ManifestoPage() {
   return (
     <section className="container-shell py-16 sm:py-20">
-      <article className="mx-auto max-w-3xl rounded-3xl border border-border bg-card/80 p-8 sm:p-12">
-        <h1 className="mb-8 text-5xl">The Church Manifesto</h1>
+      <article className="gc-info-article">
+        <h1 className="mb-8 text-5xl">The Godschurches Manifesto</h1>
+        <p>
+          This is our founding vision. Some tools described below remain
+          planned. <Link href="/about">See what you can use today.</Link>
+        </p>
 
-        <div className="space-y-9 text-lg leading-relaxed text-foreground/95">
+        <div className="space-y-9 text-lg leading-relaxed">
           <section>
             <h2 className="mb-3 text-3xl">Church Is Alive</h2>
             <p>Church is not a building.</p>
             <p>Church is not a schedule.</p>
-            <p>Church is the living Body of Christ, called, gathered, and growing.</p>
+            <p>
+              Church is the living Body of Christ, called, gathered, and
+              growing.
+            </p>
             <p>If the Body is alive, it does not shut down.</p>
             <p>If the Body is alive, it does not go silent.</p>
             <p>If the Body is alive, it does not exist one day a week.</p>
@@ -21,11 +37,13 @@ export default function ManifestoPage() {
             <p>We believe God is moving.</p>
             <p>We believe The Revival is happening now.</p>
             <p>
-              Church exists to support what God is already doing, not to replace it, control it, or contain it.
+              Church exists to support what God is already doing, not to replace
+              it, control it, or contain it.
             </p>
             <p>
-              Church is a place where believers gather, where voices are amplified, where churches are
-              strengthened, and where the Gospel is never offline.
+              Church is a place where believers gather, where voices are
+              amplified, where churches are strengthened, and where the Gospel
+              is never offline.
             </p>
           </section>
 
@@ -35,19 +53,24 @@ export default function ManifestoPage() {
             <p>The Church is not centralized.</p>
             <p>The Church is not confined.</p>
             <p>
-              The Church is the people, new believers and seasoned believers, pastors and preachers, builders and
-              business owners.
+              The Church is the people, new believers and seasoned believers,
+              pastors and preachers, builders and business owners.
             </p>
             <p>Many callings. One Body. One Lord.</p>
           </section>
 
           <section>
             <h2 className="mb-3 text-3xl">We Stand With Local Churches</h2>
-            <p>Church does not replace local churches. Church exists for them.</p>
-            <p>We want every church, small or large, rural or urban, to thrive.</p>
             <p>
-              Through Church, local churches can be discovered, share messages and events, connect with believers,
-              and receive support and funding pathways.
+              Church does not replace local churches. Church exists for them.
+            </p>
+            <p>
+              We want every church, small or large, rural or urban, to thrive.
+            </p>
+            <p>
+              Our vision is for Godschurches to help local churches be
+              discovered, share messages and events, connect with believers, and
+              find practical support. Event and funding tools remain planned.
             </p>
             <p>When churches are strengthened, the Body is strengthened.</p>
           </section>
@@ -55,8 +78,9 @@ export default function ManifestoPage() {
           <section>
             <h2 className="mb-3 text-3xl">Church Is a Connector</h2>
             <p>
-              Church exists to connect believers to community, churches to people, preachers to platforms,
-              businesses to Kingdom work, and resources to real needs.
+              Church exists to connect believers to community, churches to
+              people, preachers to platforms, businesses to Kingdom work, and
+              resources to real needs.
             </p>
             <p>Collaboration builds the Kingdom faster than isolation.</p>
           </section>
@@ -65,8 +89,8 @@ export default function ManifestoPage() {
             <h2 className="mb-3 text-3xl">Church Is Always Open</h2>
             <p>People don’t only need God on Sundays.</p>
             <p>
-              Church exists continuously, pointing people to Christ and leading them into real relationship, real
-              fellowship, and real faith.
+              Church exists continuously, pointing people to Christ and leading
+              them into real relationship, real fellowship, and real faith.
             </p>
           </section>
 
@@ -74,14 +98,18 @@ export default function ManifestoPage() {
             <h2 className="mb-3 text-3xl">Our Posture</h2>
             <p>We are not here to build a brand or compete.</p>
             <p>We are here to serve, amplify, and steward.</p>
-            <p>Everything we build exists to honor Christ and strengthen His Church.</p>
+            <p>
+              Everything we build exists to honor Christ and strengthen His
+              Church.
+            </p>
           </section>
 
           <section>
             <h2 className="mb-3 text-3xl">Our Commitment</h2>
             <p>
-              We commit to honoring pastors and leadership, supporting churches of all sizes, keeping Christ at the
-              center, serving without ego, and building tools that empower, not control.
+              We commit to honoring pastors and leadership, supporting churches
+              of all sizes, keeping Christ at the center, serving without ego,
+              and building tools that empower, not control.
             </p>
             <p>Church belongs to Jesus. We are stewards.</p>
           </section>

@@ -1,78 +1,112 @@
-import type { Metadata } from "next";
+import { publicMetadata } from "@/lib/site-metadata";
 
-export const metadata: Metadata = {
-  title: "Privacy Policy",
-  description: "Privacy policy for Church (The Revival)."
-};
+export const metadata = publicMetadata(
+  "Privacy Policy",
+  "Privacy information for Godschurches accounts, public content, and historical waitlist records.",
+  "/privacy"
+);
 
 export default function PrivacyPage() {
   return (
     <section className="container-shell py-16 sm:py-20">
-      <article className="mx-auto max-w-3xl rounded-3xl border border-border bg-card/80 p-8 sm:p-12">
+      <article className="gc-info-article">
         <h1 className="mb-6 text-5xl">Privacy Policy</h1>
-        <p className="mb-8 text-sm text-muted-foreground">Effective date: February 21, 2026</p>
+        <p className="mb-8 text-sm">
+          Original policy: February 21, 2026. Service information updated
+          September 9, 2026.
+        </p>
 
-        <div className="space-y-8 text-base leading-relaxed text-foreground/95">
+        <div className="space-y-8 text-base leading-relaxed">
           <section>
             <h2 className="mb-2 text-3xl">What We Collect</h2>
             <p>
-              We collect information you provide through our waitlist form: name, email address, selected role, and
-              optional message. We also collect basic usage data (page views and button clicks) to improve the site.
+              Account registration collects your name, email address, public
+              username, profile category, and password. Passwords are stored as
+              salted hashes. We store the posts, comments, reactions, follows,
+              and profile details you choose to provide. Church connections,
+              shared directory details, and support records have separate access
+              requirements.
             </p>
           </section>
           <section>
             <h2 className="mb-2 text-3xl">How We Use Information</h2>
             <p>
-              We use your information to manage the waitlist, send product updates, share role-relevant opportunities,
-              and respond to requests. We segment communications by role so churches, creators, businesses, believers,
-              and builders can receive relevant updates.
+              We use account and session information to provide sign-in and
+              account controls, display your public contributions, and enforce
+              access to church tools. Public posts, comments, and profile
+              details can be read by visitors. Your sign-in email and password
+              are not public profile fields.
             </p>
           </section>
           <section>
-            <h2 className="mb-2 text-3xl">Email Communications</h2>
+            <h2 className="mb-2 text-3xl">Historical Waitlist and Email</h2>
             <p>
-              By submitting the waitlist form, you agree to receive emails related to Church and The Revival. You can
-              unsubscribe at any time using the link in emails or by emailing mcdrew169@yahoo.com.
+              The former waitlist collected name, email, selected role, and an
+              optional message. New submissions are closed. Existing records
+              retain their original consent context; they are not converted into
+              accounts, church roles, or new subscriptions. Creating an account
+              does not subscribe you to promotional email. You can unsubscribe
+              from earlier communications using the email link or by emailing
+              mcdrew169@yahoo.com.
+            </p>
+          </section>
+          <section>
+            <h2 className="mb-2 text-3xl">Cookies and Collection</h2>
+            <p>
+              A session cookie keeps you signed in. A separate
+              reading-preference cookie can save appearance, text size, feed
+              mode, and motion choices. These are not advertising cookies. The
+              former page-view, button-click, and waitlist collection hooks are
+              retired. Historical analytics records are retained; new reading
+              analytics are not enabled by this change. Hosting and security
+              services may retain operational logs.
             </p>
           </section>
           <section>
             <h2 className="mb-2 text-3xl">Data Sharing</h2>
             <p>
-              We do not sell personal information. We may use service providers for hosting, analytics, and email
-              delivery who process data on our behalf.
+              We do not sell personal information. We may use service providers
+              for hosting, analytics, and email delivery who process data on our
+              behalf.
             </p>
           </section>
           <section>
             <h2 className="mb-2 text-3xl">Retention</h2>
             <p>
-              We keep waitlist information while preparing product launch and outreach operations, then retain only the
-              data necessary for lawful business purposes.
+              Closing the waitlist does not delete historical records or change
+              the consent under which they were collected. Account,
+              contribution, and church records remain subject to their existing
+              access controls. Contact us about access, correction, or deletion
+              requests.
             </p>
           </section>
           <section>
             <h2 className="mb-2 text-3xl">Your Rights</h2>
             <p>
-              Depending on your location, you may have rights to access, correct, delete, or limit use of your
-              personal data. Contact mcdrew169@yahoo.com to request support.
+              Depending on your location, you may have rights to access,
+              correct, delete, or limit use of your personal data. Contact
+              mcdrew169@yahoo.com to request support.
             </p>
           </section>
           <section>
             <h2 className="mb-2 text-3xl">Security</h2>
             <p>
-              We use reasonable administrative and technical safeguards, but no system can guarantee absolute security.
+              We use reasonable administrative and technical safeguards, but no
+              system can guarantee absolute security.
             </p>
           </section>
           <section>
             <h2 className="mb-2 text-3xl">Children</h2>
             <p>
-              This website is not directed to children under 13, and we do not knowingly collect their personal
-              information.
+              This website is not directed to children under 13, and we do not
+              knowingly collect their personal information.
             </p>
           </section>
           <section>
             <h2 className="mb-2 text-3xl">Changes</h2>
             <p>
-              We may update this policy as the platform evolves. The effective date above reflects the latest version.
+              We may update this policy as the platform evolves. The effective
+              date above reflects the latest version.
             </p>
           </section>
           <section>

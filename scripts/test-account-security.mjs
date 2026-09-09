@@ -623,6 +623,7 @@ try {
     );
     await runTests("tests/portal-http.test.ts", portalEnv);
     if (supportTests) await runTests("tests/support-http.test.ts", portalEnv);
+    if (supportTests) await runTests("tests/entrance-http.test.ts", portalEnv);
     if (supportTests)
       console.log(
         run(

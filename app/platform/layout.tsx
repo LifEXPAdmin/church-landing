@@ -1,5 +1,3 @@
-import "./platform.css";
-
 export default function PlatformLayout({
   children
 }: {

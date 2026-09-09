@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Cormorant_Garamond, Source_Sans_3 } from "next/font/google";
 
 import "./globals.css";
-import { AnalyticsTracker } from "@/components/analytics/analytics-tracker";
+import "./platform/platform.css";
 import { PublicChrome } from "@/components/layout/public-chrome";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
@@ -21,30 +21,40 @@ const bodyFont = Source_Sans_3({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL ?? "https://godschurches.com"
+  ),
   title: {
-    default: "Church | The Revival",
-    template: "%s | Church"
+    default: "Godschurches | The Revival",
+    template: "%s | Godschurches"
   },
-  description: "Church is alive every second of every day. Join the Christian-first connection platform for The Revival.",
+  description:
+    "Faith, fellowship, and everyday life. Read public posts and connect with people on Godschurches.",
   keywords: [
     "church",
     "revival",
     "christian community",
-    "church waitlist",
     "faith creators",
     "church platform"
   ],
   openGraph: {
-    title: "Church | The Revival",
-    description: "Revival Isn’t Coming. It’s Here.",
+    title: "Godschurches | The Revival",
+    description: "Faith, fellowship, and everyday life.",
+    siteName: "Godschurches",
     type: "website",
-    images: [{ url: "/hero.jpg", width: 1600, height: 1067, alt: "Church sunrise hero" }]
+    images: [
+      {
+        url: "/hero.jpg",
+        width: 1600,
+        height: 1067,
+        alt: "Sunrise over mountains and clouds"
+      }
+    ]
   },
   twitter: {
     card: "summary_large_image",
-    title: "Church | The Revival",
-    description: "Church is alive every second of every day.",
+    title: "Godschurches | The Revival",
+    description: "Faith, fellowship, and everyday life.",
     images: ["/hero.jpg"]
   }
 };
@@ -57,7 +67,6 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={cn(headingFont.variable, bodyFont.variable)}>
-        <AnalyticsTracker />
         <PublicChrome header={<SiteHeader />} footer={<SiteFooter />}>
           {children}
         </PublicChrome>
