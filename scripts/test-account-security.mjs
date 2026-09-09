@@ -616,6 +616,7 @@ try {
     if (!restarted) throw new Error("Production server restart failed");
     await runTests("tests/account-restart.test.ts", productionEnv);
     await runTests("tests/account-sessions.test.ts", productionEnv);
+    await runTests("tests/account-export.test.ts", productionEnv);
     console.log(
       "Account/profile/session persistence passed after a new production server process."
     );

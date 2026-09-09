@@ -19,6 +19,11 @@ import {
   listAccountSessions,
   revokeOtherAccountSessions
 } from "./account-sessions";
+import {
+  AccountExportError,
+  prepareAccountExport,
+  downloadAccountExport
+} from "./account-export";
 
 export const SESSION_COOKIE = "church_platform_session";
 export function sessionCookie(token: string, secure: boolean) {
@@ -162,6 +167,8 @@ async function processAccountRequest(
       "change-password",
       "list-sessions",
       "revoke-other-sessions",
+      "prepare-export",
+      "download-export",
       "request-reset",
       "request-verification",
       "consume-reset",
@@ -170,20 +177,20 @@ async function processAccountRequest(
   )
     return reply("Check the fields and try again.", 400);
   const recoveryRequest = operation.startsWith("request-");
-  const sessionOperation =
-    operation === "list-sessions" || operation === "revoke-other-sessions";
+  const sessionFields: Record<string, string[]> = {
+    "list-sessions": [],
+    "revoke-other-sessions": ["currentPassword"],
+    "prepare-export": ["currentPassword"],
+    "download-export": ["authorization"]
+  };
+  const sessionOperation = Object.hasOwn(sessionFields, operation);
   if (
     sessionOperation &&
     Object.keys(body).some(
-      (key) =>
-        key !== "operation" &&
-        !(operation === "revoke-other-sessions" && key === "currentPassword")
+      (key) => key !== "operation" && !sessionFields[operation].includes(key)
     )
   )
-    return reply(
-      "Use the sign-in controls on your account settings page.",
-      400
-    );
+    return reply("Use the controls on your account settings page.", 400);
   const started = Date.now();
   const accepted =
     "If this address is eligible, a link will be sent. Check your inbox and spam folder.";
@@ -264,6 +271,38 @@ async function processAccountRequest(
         }
       );
     }
+    if (operation === "prepare-export") {
+      const prepared = await prepareAccountExport(
+        db,
+        requestSessionToken(request),
+        body.currentPassword,
+        config.rateSecret
+      );
+      return Response.json(prepared, {
+        headers: {
+          "Cache-Control": "no-store",
+          "Referrer-Policy": "no-referrer"
+        }
+      });
+    }
+    if (operation === "download-export") {
+      const content = await downloadAccountExport(
+        db,
+        requestSessionToken(request),
+        body.authorization,
+        config.rateSecret
+      );
+      return new Response(content, {
+        headers: {
+          "Content-Type": "application/json; charset=utf-8",
+          "Content-Disposition":
+            'attachment; filename="godschurches-account.json"',
+          "Cache-Control": "no-store",
+          "Referrer-Policy": "no-referrer",
+          "X-Content-Type-Options": "nosniff"
+        }
+      });
+    }
     if (operation === "revoke-other-sessions") {
       await revokeOtherAccountSessions(
         db,
@@ -338,6 +377,13 @@ async function processAccountRequest(
       );
     return reply("Email verified. You can return to your account.", 200);
   } catch (error) {
+    if (error instanceof AccountExportError)
+      return reply(
+        error.code === "size"
+          ? "Your data exceeds this download's current size limit. No file was created and no partial export was returned."
+          : "This download authorization is invalid or expired. Confirm your password and try again.",
+        400
+      );
     if (error instanceof AccountError) {
       const messages = {
         "handle-invalid":
@@ -350,6 +396,7 @@ async function processAccountRequest(
           "Check every field. Passwords must match and contain 8 to 128 characters.",
         credentials:
           operation === "change-password" ||
+          operation === "prepare-export" ||
           operation === "revoke-other-sessions"
             ? "Your current password did not match."
             : "That email and password did not match.",

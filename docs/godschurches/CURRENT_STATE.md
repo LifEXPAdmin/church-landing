@@ -1,5 +1,19 @@
 # Godschurches current state
 
+## Private account download verified — September 9, 2026
+
+Account settings now offers a password-confirmed private JSON download, bound to
+the current active session through a one-minute authorization. Explicit fields
+exclude credentials and unrelated private church/support data; oversized exports
+fail without returning a partial file. Suspended sessions also cannot change
+passwords. All 96 isolated service/HTTP checks, lint and final production
+build/type/runtime traces passed. Actual local browser preparation/save, inspected
+file content, wrong-password/expiry feedback and 320/390/1440px reflow passed.
+
+See [ACCOUNT_DATA_REPORT.md](ACCOUNT_DATA_REPORT.md) for scope, bounds and evidence.
+Publication is being verified separately. The broader list remains active, with
+email activation, account lifecycle/ownership and remaining product work open.
+
 ## Account delivery integration published — September 9, 2026
 
 The Resend adapter and post-response account delivery are implemented on

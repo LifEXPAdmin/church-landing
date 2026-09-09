@@ -22,7 +22,7 @@ type OwnedSession = Prisma.PlatformSessionGetPayload<{
   select: typeof sessionSelect;
 }>;
 
-async function withOwnedSession<T>(
+export async function withOwnedSession<T>(
   db: PrismaClient,
   token: unknown,
   action: (tx: Prisma.TransactionClient, current: OwnedSession) => Promise<T>

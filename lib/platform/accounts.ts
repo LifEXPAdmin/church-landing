@@ -325,6 +325,7 @@ export async function changeAccountPassword(
     });
     if (
       !session ||
+      session.user.suspendedAt ||
       session.expiresAt <= new Date() ||
       session.credentialVersion !== session.user.credentialVersion
     )

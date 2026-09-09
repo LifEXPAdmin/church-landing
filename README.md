@@ -8,6 +8,8 @@ tested releases, actual verification and remaining account work.
 The transactional recovery adapter is tested; actual email delivery remains
 disabled pending sender setup and receipt verification. See
 [ACCOUNT_DELIVERY_REPORT.md](docs/godschurches/ACCOUNT_DELIVERY_REPORT.md).
+Private account downloads are verified in
+[ACCOUNT_DATA_REPORT.md](docs/godschurches/ACCOUNT_DATA_REPORT.md).
 
 ## Continue with ChatGPT or Codex
 

@@ -54,6 +54,20 @@ response is lost, refresh the list to check the result before trying again.
 Use two fictional sessions in the isolated environment to test revocation; never
 borrow another person's account, session cookie or password.
 
+## Download your account data
+
+In **Account settings**, find **Download your account data**, confirm your current
+password and select **Prepare account download**. Then select **Save account data**
+within one minute. The JSON file includes your profile, authored community data,
+likes/following, directory choices and your own support submissions. Save it in a
+private place. Credentials, other people's private data, staff replies and church
+operations are excluded. Browser-only reading settings are separate.
+
+If the authorization expires or the sign-in is revoked, prepare a new download
+after signing in again. The file has explicit size limits; oversized exports
+return a message without silently omitting records. See
+[ACCOUNT_DATA_REPORT.md](ACCOUNT_DATA_REPORT.md) for the full scope and limits.
+
 ## If something does not work
 
 - A username is taken: choose a different public username, or sign in if this is
