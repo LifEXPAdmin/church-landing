@@ -1,6 +1,27 @@
 # App entrance and waitlist retirement
 
-## Status — September 9, 2026
+## Published — September 9, 2026
+
+The tested entrance was explicitly authorized for immediate publication. Commit
+`b0b7aab404b3d947267844e7ec73537dc81e1989` was pushed to `main`; production deployment
+`dpl_J4D1fjzPS8zMSxgzazWStF3EVvQr` became READY at 2026-09-09T21:48:50.752Z.
+The Vercel API returned that exact Git SHA and the `godschurches.com` alias.
+The domain now opens the real app. Remaining account/Google and broader release
+acceptance are follow-up work, superseding the earlier entrance publication hold.
+
+Thirty live HTTP checks passed at 2026-09-09T21:51:32Z: root/join/thanks GET and
+HEAD behavior, rejected retired POSTs, nine public pages and their canonical
+metadata, app/login/signup/recovery/demo/search/health, protected settings/profile
+redirects, sitemap contents and account-origin rejection. No real account or
+external email was created. Live browser Home/About/Help navigation and 390px
+About/Help reflow passed; phone-width Help was visually inspected, with no browser
+warning/error logs. A deployment-scoped error-log query returned no matching
+entries. Physical-device and new real-account journeys were not performed.
+
+The local implementation and verification checkpoint below is preserved as
+historical evidence; its local-only release status is superseded by this section.
+
+## Original local checkpoint — September 9, 2026
 
 Implemented and verified locally on `codex/app-front-door`, based on workstation
 onboarding commit `bd422ea` and repository main `41b6cce`. This is a release

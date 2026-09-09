@@ -7,6 +7,7 @@ import { PlatformShell } from "@/components/platform/platform-shell";
 import { Button } from "@/components/ui/button";
 import { getCurrentPlatformUser } from "@/lib/platform/session";
 import { ReadingSettings } from "@/components/platform/reading-preferences";
+import { AccountSessions } from "@/components/platform/account-sessions";
 export const metadata: Metadata = { title: "Account settings" };
 export default async function PlatformSettingsPage() {
   const user = await getCurrentPlatformUser();
@@ -37,6 +38,7 @@ export default async function PlatformSettingsPage() {
               Manage church directory sharing
             </Link>
           </div>
+          <AccountSessions />
           <div className="rounded-xl border border-gc-divider bg-gc-surface p-6">
             <AccountForm operation="change-password" />
           </div>

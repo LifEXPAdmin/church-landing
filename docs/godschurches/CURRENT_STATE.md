@@ -1,6 +1,26 @@
 # Godschurches current state
 
-## App entrance candidate — September 9, 2026
+## Account session-controls candidate — September 9, 2026
+
+The owner-only active sign-in list and password-confirmed revocation of other
+sessions are implemented on `codex/account-sessions`. The 85-test isolated harness
+and an actual two-browser fictional-session flow passed, including next-request
+rejection for the revoked browser and continued access for the retained session.
+See [SESSION_CONTROLS_REPORT.md](SESSION_CONTROLS_REPORT.md) for scope and limits.
+This bounded slice does not complete the broader account recovery/Google work.
+
+## App entrance published — September 9, 2026
+
+The tested entrance was authorized for immediate publication and is now live at
+https://godschurches.com. Commit `b0b7aab404b3d947267844e7ec73537dc81e1989` is on
+main and deployment `dpl_J4D1fjzPS8zMSxgzazWStF3EVvQr` is READY. The exact Git SHA
+and canonical alias were verified, followed by 30 passing live HTTP checks and
+browser navigation/phone-width public-page checks. Remaining account/Google and
+broader acceptance work continues separately. See the publication section of
+[ENTRANCE_REPORT.md](ENTRANCE_REPORT.md). The local checkpoint below predates this
+explicit release instruction.
+
+### Local entrance verification checkpoint
 
 The app entrance and waitlist retirement are implemented and verified locally on
 `codex/app-front-door`. Root and old confirmation links lead to Home; old join

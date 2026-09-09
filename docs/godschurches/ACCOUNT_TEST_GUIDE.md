@@ -36,6 +36,24 @@ separate demo does not create accounts or save its fictional information.
    email and password. Sign in again and check your profile. Never send your
    password, cookies, API keys, or an unredacted password-manager screenshot here.
 
+## Review active sign-ins
+
+In **Account settings**, select **Show active sign-ins**. The list shows this
+sign-in and up to 20 other active sign-ins, with a total when there are more.
+Browser/device labels are approximate. Started and expiry dates do not claim
+recent activity or a verified physical device.
+
+Enter your current password and select **Sign out other sessions**. Other
+sessions lose access on their next authenticated request; the current one stays
+signed in. Refresh the list to confirm. This does not change your password. If
+someone else knows it, also use **Change password**, which signs out every
+session. Someone with valid credentials can sign in again after session removal.
+
+Wrong passwords and failed/forged requests do not remove sessions. If a network
+response is lost, refresh the list to check the result before trying again.
+Use two fictional sessions in the isolated environment to test revocation; never
+borrow another person's account, session cookie or password.
+
 ## If something does not work
 
 - A username is taken: choose a different public username, or sign in if this is

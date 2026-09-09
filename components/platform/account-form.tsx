@@ -10,7 +10,7 @@ type Operation =
   | "request-verification";
 export const accountInputClass =
   "mt-2 w-full rounded-xl border border-gc-divider bg-gc-canvas px-4 py-3 text-base text-gc-text outline-none focus:ring-2 focus:ring-gc-focus";
-function PasswordField({
+export function PasswordField({
   id,
   name,
   label,

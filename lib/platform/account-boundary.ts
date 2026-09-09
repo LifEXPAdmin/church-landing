@@ -15,6 +15,10 @@ import {
 import { accountConfig } from "./account-config";
 import { deliverAccountGrant } from "./account-delivery";
 import { allowAccountAttempt } from "./account-limits";
+import {
+  listAccountSessions,
+  revokeOtherAccountSessions
+} from "./account-sessions";
 
 export const SESSION_COOKIE = "church_platform_session";
 export function sessionCookie(token: string, secure: boolean) {
@@ -39,6 +43,7 @@ function reply(
     (
       {
         400: "ACCOUNT_VALIDATION",
+        401: "ACCOUNT_SESSION",
         403: "ACCOUNT_ORIGIN",
         405: "ACCOUNT_METHOD",
         409: "ACCOUNT_HANDLE_TAKEN",
@@ -147,6 +152,8 @@ async function processAccountRequest(
       "login",
       "update-profile",
       "change-password",
+      "list-sessions",
+      "revoke-other-sessions",
       "request-reset",
       "request-verification",
       "consume-reset",
@@ -155,6 +162,20 @@ async function processAccountRequest(
   )
     return reply("Check the fields and try again.", 400);
   const recoveryRequest = operation.startsWith("request-");
+  const sessionOperation =
+    operation === "list-sessions" || operation === "revoke-other-sessions";
+  if (
+    sessionOperation &&
+    Object.keys(body).some(
+      (key) =>
+        key !== "operation" &&
+        !(operation === "revoke-other-sessions" && key === "currentPassword")
+    )
+  )
+    return reply(
+      "Use the sign-in controls on your account settings page.",
+      400
+    );
   const started = Date.now();
   const accepted =
     "If this address is eligible, a link will be sent. Check your inbox and spam folder.";
@@ -164,7 +185,9 @@ async function processAccountRequest(
       ? (request.headers.get("x-real-ip") ?? "unknown").slice(0, 64)
       : "local";
     const subject =
-      operation === "change-password" || operation === "update-profile"
+      operation === "change-password" ||
+      operation === "update-profile" ||
+      sessionOperation
         ? (requestSessionToken(request)?.slice(0, 43) ?? "anonymous")
         : (normalizeEmail(body.email) ?? "anonymous");
     const allowed = await allowAccountAttempt(
@@ -203,6 +226,31 @@ async function processAccountRequest(
       return reply(
         "Continue by signing in with your email and password. Registration never changes an existing account or resets its password.",
         200
+      );
+    }
+    if (operation === "list-sessions") {
+      const listing = await listAccountSessions(
+        db,
+        requestSessionToken(request)
+      );
+      return Response.json(
+        { ...listing, message: "Active sign-ins loaded.", code: "ACCOUNT_OK" },
+        {
+          headers: {
+            "Cache-Control": "no-store",
+            "Referrer-Policy": "no-referrer"
+          }
+        }
+      );
+    }
+    if (operation === "revoke-other-sessions") {
+      await revokeOtherAccountSessions(
+        db,
+        requestSessionToken(request),
+        body.currentPassword
+      );
+      return reply(
+        "Other sign-ins have been removed. This sign-in stays active."
       );
     }
     if (operation === "login") {
@@ -280,7 +328,8 @@ async function processAccountRequest(
         invalid:
           "Check every field. Passwords must match and contain 8 to 128 characters.",
         credentials:
-          operation === "change-password"
+          operation === "change-password" ||
+          operation === "revoke-other-sessions"
             ? "Your current password did not match."
             : "That email and password did not match.",
         registration:
@@ -291,7 +340,11 @@ async function processAccountRequest(
       };
       return reply(
         messages[error.code],
-        error.code === "handle-taken" ? 409 : 400
+        error.code === "handle-taken"
+          ? 409
+          : sessionOperation && error.code === "session"
+            ? 401
+            : 400
       );
     }
     // Avoid serializing errors that may contain SQL parameters, credential material, or contacts.
