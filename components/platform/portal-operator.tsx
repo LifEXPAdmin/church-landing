@@ -42,7 +42,7 @@ function Choose({
   const id = useId();
   return (
     <div>
-      <label htmlFor={id} className="text-sm font-semibold text-[#f8ead6]">
+      <label htmlFor={id} className="text-sm font-semibold text-gc-text">
         {label}
       </label>
       <select
@@ -91,7 +91,7 @@ function CapabilityAssignments({
   );
   return (
     <PortalCard title="Church permissions">
-      <p className="text-sm text-[#d8c4a8]">
+      <p className="text-sm text-gc-muted">
         Assign permissions explicitly. A profile category or contact title never
         grants review or appointment access.
       </p>
@@ -129,20 +129,20 @@ function CapabilityAssignments({
           confirmation={`Assign ${capabilityLabels[capability].toLowerCase()} permission to ${target.name} for this church.`}
         />
       )}
-      <h3 className="pt-2 text-2xl text-white">Current permissions</h3>
+      <h3 className="pt-2 text-2xl text-gc-text">Current permissions</h3>
       {active.length === 0 ? (
         <PortalEmpty>No permissions are assigned for this church.</PortalEmpty>
       ) : (
         active.map((grant) => (
           <div
             key={grant.id}
-            className="space-y-3 rounded-xl border border-[#f2d8af]/15 p-4"
+            className="space-y-3 rounded-xl border border-gc-divider p-4"
           >
-            <p className="font-semibold text-white">
+            <p className="font-semibold text-gc-text">
               {data.users.find((user) => user.id === grant.userId)?.name ??
                 "Assigned account"}
             </p>
-            <p className="text-sm text-[#d8c4a8]">
+            <p className="text-sm text-gc-muted">
               {capabilityLabels[grant.capability] ?? "Church permission"}
             </p>
             <PortalActionForm
@@ -185,7 +185,7 @@ function ContactAppointments({
   );
   return (
     <PortalCard title="Appointed contacts">
-      <p className="text-sm leading-relaxed text-[#d8c4a8]">
+      <p className="text-sm leading-relaxed text-gc-muted">
         Primary and backup coordinators must have approved connections to this
         church. A relationship owner requires a separate operator assignment.
         Contact titles do not add software permissions.
@@ -236,7 +236,7 @@ function ContactAppointments({
           confirmation={`I confirm ${target.name}'s appointment and that these contact details may be shown to approved members of this church.`}
         />
       )}
-      <h3 className="pt-2 text-2xl text-white">Current appointments</h3>
+      <h3 className="pt-2 text-2xl text-gc-text">Current appointments</h3>
       {visible.length === 0 ? (
         <PortalEmpty>
           No contacts have been appointed for the roles you manage here.
@@ -245,12 +245,12 @@ function ContactAppointments({
         visible.map((assignment) => (
           <div
             key={assignment.id}
-            className="space-y-3 rounded-xl border border-[#f2d8af]/15 p-4"
+            className="space-y-3 rounded-xl border border-gc-divider p-4"
           >
-            <p className="font-semibold text-white">
+            <p className="font-semibold text-gc-text">
               {slotLabels[assignment.slot]}
             </p>
-            <p className="text-sm text-[#d8c4a8]">
+            <p className="text-sm text-gc-muted">
               {data.users.find((user) => user.id === assignment.userId)?.name ??
                 "Assigned account"}
             </p>
@@ -284,7 +284,7 @@ function AccountStatus({
   );
   return (
     <PortalCard title="Account access">
-      <p className="text-sm text-[#d8c4a8]">
+      <p className="text-sm text-gc-muted">
         Suspension ends sessions and removes private sharing, permissions, and
         appointments. Restoring access does not reactivate those assignments.
       </p>
@@ -296,7 +296,7 @@ function AccountStatus({
       />
       {target && typeof target.version === "number" && (
         <>
-          <p className="text-sm font-semibold text-[#f4c98c]">
+          <p className="text-sm font-semibold text-gc-accent">
             Current status: {target.suspended ? "Suspended" : "Not suspended"}
           </p>
           <PortalActionForm
@@ -409,7 +409,7 @@ export function PortalOperator({
             </PortalCard>
             {church && (
               <div key={church.id} className="space-y-5">
-                <h2 className="text-3xl text-white">{church.name}</h2>
+                <h2 className="text-3xl text-gc-text">{church.name}</h2>
                 <div className="grid items-start gap-6 lg:grid-cols-2">
                   {manageAccess && (
                     <CapabilityAssignments data={data} churchId={church.id} />

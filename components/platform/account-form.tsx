@@ -9,7 +9,7 @@ type Operation =
   | "request-reset"
   | "request-verification";
 export const accountInputClass =
-  "mt-2 w-full rounded-2xl border border-[#f2d8af]/30 bg-[#100b07] px-4 py-3 text-base text-[#f8ead6] outline-none focus:ring-2 focus:ring-[#f4c98c]";
+  "mt-2 w-full rounded-xl border border-gc-divider bg-gc-canvas px-4 py-3 text-base text-gc-text outline-none focus:ring-2 focus:ring-gc-focus";
 function PasswordField({
   id,
   name,
@@ -42,7 +42,7 @@ function PasswordField({
           aria-pressed={visible}
           aria-controls={id}
           onClick={() => setVisible(!visible)}
-          className="absolute bottom-1 right-1 min-h-11 min-w-16 rounded-xl text-sm text-[#f4c98c] focus-visible:outline focus-visible:outline-2"
+          className="absolute bottom-1 right-1 min-h-11 min-w-16 rounded-xl text-sm text-gc-accent focus-visible:outline focus-visible:outline-2"
         >
           {visible ? "Hide" : "Show"}
         </button>
@@ -134,7 +134,7 @@ export function AccountForm({
         }
       }}
     >
-      <h2 className="text-3xl text-white">{title}</h2>
+      <h2 className="text-3xl text-gc-text">{title}</h2>
       {registration && (
         <>
           <div>
@@ -164,7 +164,7 @@ export function AccountForm({
               aria-describedby={id("handle-help")}
               className={accountInputClass}
             />
-            <p id={id("handle-help")} className="mt-2 text-sm text-[#d8c4a8]">
+            <p id={id("handle-help")} className="mt-2 text-sm text-gc-muted">
               3 to 24 letters, numbers, or underscores. This is public. Use your
               email, not this username, to sign in.
             </p>
@@ -209,7 +209,7 @@ export function AccountForm({
       )}
       {(registration || change) && (
         <>
-          <p className="text-sm text-[#d8c4a8]">
+          <p className="text-sm text-gc-muted">
             Use 8 to 128 characters. You can paste a password or use one your
             password manager generates.
           </p>
@@ -236,20 +236,20 @@ export function AccountForm({
             <option value="BUSINESS">Business</option>
             <option value="BUILDER">Builder</option>
           </select>
-          <p className="mt-2 text-sm text-[#d8c4a8]">
+          <p className="mt-2 text-sm text-gc-muted">
             This describes your interests. It does not grant church or
             administrative access.
           </p>
         </div>
       )}
       {change && (
-        <p className="text-sm text-[#d8c4a8]">
+        <p className="text-sm text-gc-muted">
           Changing your password signs out every device, including this one.
           Sign in again with your new password.
         </p>
       )}
       {operation === "login" && (
-        <p className="text-sm text-[#d8c4a8]">
+        <p className="text-sm text-gc-muted">
           On your own device, your sign-in can last up to 30 days. Sign out when
           using a shared device.
         </p>
@@ -259,7 +259,7 @@ export function AccountForm({
         ref={feedback}
         tabIndex={-1}
         role={failed ? "alert" : "status"}
-        className={`break-words text-sm ${failed ? "text-red-200" : "text-[#f4c98c]"}`}
+        className={`break-words text-sm ${failed ? "text-gc-error" : "text-gc-accent"}`}
       >
         {message}
       </p>

@@ -9,18 +9,19 @@ export function PostComposer() {
   return (
     <form
       action={createPlatformPost}
-      className="rounded-3xl border border-[#f2d8af]/20 bg-[#21160f] p-5"
+      className="rounded-xl border border-gc-divider bg-gc-surface p-5"
     >
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-sm uppercase tracking-[0.16em] text-[#f4c98c]">
+          <p className="text-sm uppercase tracking-[0.16em] text-gc-accent">
             Share Something
           </p>
-          <h2 className="text-3xl text-white">What is God doing?</h2>
+          <h2 className="text-3xl text-gc-text">What is God doing?</h2>
         </div>
         <select
           name="type"
-          className="rounded-full border border-[#f2d8af]/30 bg-[#100b07] px-4 py-2 text-sm text-[#f8ead6]"
+          aria-label="Post category"
+          className="rounded-full border border-gc-divider bg-gc-canvas px-4 py-2 text-sm text-gc-text"
         >
           {Object.values(PlatformPostType).map((type) => (
             <option key={type} value={type}>
@@ -30,24 +31,29 @@ export function PostComposer() {
         </select>
       </div>
       <textarea
+        aria-label="Post content"
         name="content"
         required
         minLength={3}
         maxLength={900}
         rows={5}
         placeholder="Share a testimony, prayer request, teaching, update, or practical need."
-        className="border-[#f2d8af]/24 w-full rounded-2xl border bg-[#120c08] px-4 py-3 text-[#f8ead6] outline-none placeholder:text-[#9c8b73] focus:border-[#f4c98c]"
+        className="w-full rounded-xl border border-gc-divider bg-gc-canvas px-4 py-3 text-gc-text outline-none placeholder:text-gc-muted focus:border-gc-action"
       />
       <div className="mt-3 flex flex-col gap-3 sm:flex-row">
         <input
           name="scripture"
+          aria-label="Optional scripture reference"
           placeholder="Optional scripture reference"
-          className="border-[#f2d8af]/24 min-w-0 flex-1 rounded-full border bg-[#120c08] px-4 py-3 text-[#f8ead6] outline-none placeholder:text-[#9c8b73] focus:border-[#f4c98c]"
+          className="min-w-0 flex-1 rounded-full border border-gc-divider bg-gc-canvas px-4 py-3 text-gc-text outline-none placeholder:text-gc-muted focus:border-gc-action"
         />
         <Button type="submit" className="rounded-full">
           <Send className="mr-2 h-4 w-4" /> Post
         </Button>
       </div>
+      <p className="mt-3 text-sm text-gc-muted">
+        Posts are public. Share only details you have permission to share.
+      </p>
     </form>
   );
 }

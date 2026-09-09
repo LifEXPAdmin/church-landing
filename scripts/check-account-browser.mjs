@@ -14,7 +14,8 @@ export async function checkAccountBrowser({
   output,
   certificate,
   onRegistered,
-  beforeLogin
+  beforeLogin,
+  onPageError
 }) {
   assert.ok(
     origin === "https://godschurches.com" ||
@@ -84,7 +85,12 @@ export async function checkAccountBrowser({
       output + "/browser-profile",
       options
     );
-    c.on("page", (p) => p.on("pageerror", () => result.pageErrors++));
+    c.on("page", (p) =>
+      p.on("pageerror", (error) => {
+        result.pageErrors++;
+        onPageError?.(error);
+      })
+    );
     await c.route("**/*", (route) =>
       new URL(route.request().url()).origin === origin
         ? route.continue()

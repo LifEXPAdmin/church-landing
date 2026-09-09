@@ -105,27 +105,24 @@ export function SupportDemo({ view }: { view: string }) {
         <>
           <SupportConversation detail={detail} />
           <PortalCard title="Reply and audience">
-            <p className="text-[#d8c4a8]">
+            <p className="text-gc-muted">
               In this example, only Avery and Jordan can read the conversation.
               Sharing with a coordinator would require Avery to agree to expose
               existing history and future replies. It is optional and revocable.
             </p>
-            <label
-              className="block text-sm text-[#d8c4a8]"
-              htmlFor="demo-reply"
-            >
+            <label className="block text-sm text-gc-muted" htmlFor="demo-reply">
               Your reply (disabled example)
             </label>
             <textarea
               id="demo-reply"
               disabled
-              className="w-full rounded-xl border border-[#f2d8af]/25 bg-[#100b07] p-4"
+              className="w-full rounded-xl border border-gc-divider bg-gc-canvas p-4"
               value="This demonstration cannot submit a reply."
               readOnly
             />
             <button
               disabled
-              className="min-h-11 rounded-xl bg-[#f4c98c]/20 px-5 text-[#f4c98c]"
+              className="min-h-11 rounded-xl bg-gc-selected px-5 text-gc-accent"
             >
               Save reply (demo only)
             </button>
@@ -142,7 +139,7 @@ export function SupportDemo({ view }: { view: string }) {
             }
           />
           <PortalCard title="A suggestion is not a promise">
-            <p className="text-[#d8c4a8]">
+            <p className="text-gc-muted">
               The contact-label suggestion is marked Under consideration, while
               its support request is Resolved. Answering the request does not
               mean the feature was delivered. Suggestions and their authors are
@@ -151,14 +148,14 @@ export function SupportDemo({ view }: { view: string }) {
           </PortalCard>
           {view === "support-inbox" && (
             <PortalCard title="Separate assignment-manager view">
-              <p className="text-[#d8c4a8]">
+              <p className="text-gc-muted">
                 Example reference: example-unassigned / Account or website
                 problem / Received at 3:30 PM UTC. No subject, requester name or
                 conversation is available to the routing manager.
               </p>
               <button
                 disabled
-                className="min-h-11 rounded-xl bg-[#f4c98c]/20 px-5 text-[#f4c98c]"
+                className="min-h-11 rounded-xl bg-gc-selected px-5 text-gc-accent"
               >
                 Assign authorized owner (demo only)
               </button>

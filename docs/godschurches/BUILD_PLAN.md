@@ -1,5 +1,14 @@
 # Stage 2 build plan
 
+## Official platform design, September 2026
+
+The owner approved the attached direction for the real platform, superseding the
+preview-only proposal. See [DESIGN_IMPLEMENTATION_REPORT.md](DESIGN_IMPLEMENTATION_REPORT.md)
+for scope, behavior, verification, publication, and remaining limitations. Account
+security and private church/support boundaries from the preceding release remain
+in force. The marketing landing page and production data are not being replaced.
+
+
 <!-- ACCOUNT_REPAIR_CURRENT_BEGIN -->
 ## Account repair, September 8, 2026
 

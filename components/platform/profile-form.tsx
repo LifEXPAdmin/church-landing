@@ -19,7 +19,7 @@ export function ProfileForm({ profile }: { profile: Profile }) {
       id="account-profile-form"
       method="post"
       action="/api/platform/account"
-      className="mx-auto max-w-3xl space-y-5 rounded-[2rem] border border-[#f2d8af]/20 bg-[#1a120c] p-5 text-[#f8ead6] sm:p-8"
+      className="mx-auto max-w-3xl space-y-5 rounded-xl border border-gc-divider bg-gc-surface p-5 text-gc-text sm:p-8"
       aria-busy={pending}
       onSubmit={async (event) => {
         event.preventDefault();
@@ -58,8 +58,8 @@ export function ProfileForm({ profile }: { profile: Profile }) {
       }}
     >
       <div>
-        <h1 className="text-4xl text-white sm:text-5xl">Edit your profile</h1>
-        <p className="mt-3 text-[#d8c4a8]">
+        <h1 className="text-4xl text-gc-text sm:text-5xl">Edit your profile</h1>
+        <p className="mt-3 text-gc-muted">
           Share only what you want others to see. These profile fields are
           public. Your account email and private church directory choices are
           separate.
@@ -88,7 +88,7 @@ export function ProfileForm({ profile }: { profile: Profile }) {
           defaultValue={profile.bio ?? ""}
           className={accountInputClass}
         />
-        <p className="mt-2 text-sm text-[#d8c4a8]">
+        <p className="mt-2 text-sm text-gc-muted">
           Up to 500 characters. A little about you, in your own words.
         </p>
       </div>
@@ -126,7 +126,7 @@ export function ProfileForm({ profile }: { profile: Profile }) {
           aria-describedby="profile-interests-help"
           className={accountInputClass}
         />
-        <p id="profile-interests-help" className="mt-2 text-sm text-[#d8c4a8]">
+        <p id="profile-interests-help" className="mt-2 text-sm text-gc-muted">
           Separate up to 8 interests with commas. Up to 40 characters each.
         </p>
       </div>
@@ -134,7 +134,7 @@ export function ProfileForm({ profile }: { profile: Profile }) {
         ref={feedback}
         tabIndex={-1}
         role="alert"
-        className="break-words text-sm text-red-200"
+        className="break-words text-sm text-gc-error"
       >
         {message}
       </p>

@@ -75,8 +75,8 @@ export function SupportViews({
       {view === "new" && (
         <>
           <PortalCard title="A little help, with a clear audience">
-            <p className="text-[#d8c4a8]">{SUPPORT_INTAKE_NOTE}</p>
-            <p className="text-sm text-[#d8c4a8]">
+            <p className="text-gc-muted">{SUPPORT_INTAKE_NOTE}</p>
+            <p className="text-sm text-gc-muted">
               This is not an emergency, pastoral care or independent complaints
               service. If a concern involves your church representative, use the
               direct Godschurches contact rather than sharing it with that
@@ -85,7 +85,7 @@ export function SupportViews({
             </p>
             {s.churches.length > 0 && (
               <div>
-                <p className="text-sm text-[#d8c4a8]">
+                <p className="text-sm text-gc-muted">
                   Choose the context before writing. Changing it opens a fresh
                   form.
                 </p>
@@ -111,14 +111,14 @@ export function SupportViews({
             )}
             {s.intake.available && s.intake.recipient ? (
               <>
-                <p className="rounded-xl border border-[#f4c98c]/30 p-4 text-[#f3dfc3]">
+                <p className="rounded-xl border border-gc-action p-4 text-gc-text">
                   Recipient: {s.intake.recipient.name}, your Godschurches
                   support owner. Only you and this assigned owner can read the
                   request at first. A church representative is not automatically
                   included.
                 </p>
                 {!s.viewer.verified && (
-                  <p className="text-sm text-[#d8c4a8]">
+                  <p className="text-sm text-gc-muted">
                     Until your email is verified, you can request Account or
                     website help. This does not give access to private church
                     pages.
@@ -202,13 +202,13 @@ export function SupportViews({
           )}
           {s.routing.map((row) => (
             <PortalCard key={row.id} title={supportCategories[row.category]}>
-              <p className="break-all text-xs text-[#d8c4a8]">
+              <p className="break-all text-xs text-gc-muted">
                 Reference: {row.id}
                 {row.churchId
                   ? ` / Church scope: ${row.churchId}`
                   : " / General support"}
               </p>
-              <p className="text-sm text-[#d8c4a8]">
+              <p className="text-sm text-gc-muted">
                 {supportStatuses[row.status]} / Received{" "}
                 <SupportTime value={row.createdAt} />
               </p>
@@ -248,7 +248,7 @@ export function SupportViews({
           {received && (
             <p
               role="status"
-              className="rounded-xl border border-[#f4c98c]/30 p-4 text-[#f4c98c]"
+              className="rounded-xl border border-gc-action p-4 text-gc-accent"
             >
               Your request is saved. Check this conversation for replies. No
               email was sent.
@@ -269,7 +269,7 @@ export function SupportViews({
           )}
           {!["RESOLVED", "CLOSED"].includes(c.status) ? (
             <PortalCard title="Add a reply">
-              <p className="text-sm text-[#d8c4a8]">
+              <p className="text-sm text-gc-muted">
                 Visible to {c.requester.name}
                 {c.owner ? `, ${c.owner.name}` : " (awaiting an owner)"}
                 {c.coordinator ? `, and ${c.coordinator.name}` : ""}. Do not
@@ -336,7 +336,7 @@ export function SupportViews({
             <PortalCard title="Church coordinator sharing">
               {c.coordinator ? (
                 <>
-                  <p className="text-[#d8c4a8]">
+                  <p className="text-gc-muted">
                     {c.coordinator.name} can read this history and future
                     replies. Removing access stops future access here; it cannot
                     erase information already seen.
@@ -373,7 +373,7 @@ export function SupportViews({
                   caution="Sharing is optional. You may remove access here at any time. A new church connection does not move or share this history."
                 />
               ) : (
-                <p className="text-[#d8c4a8]">
+                <p className="text-gc-muted">
                   No coordinator is included. Sharing requires an open
                   church-context request, your approved connection and an
                   eligible appointed coordinator.
@@ -423,11 +423,11 @@ export function SupportViews({
                 />
               )}
               {c.access.redact && (
-                <details className="rounded-xl border border-[#f2d8af]/20 p-4">
-                  <summary className="min-h-11 cursor-pointer font-semibold text-[#f4c98c]">
+                <details className="rounded-xl border border-gc-divider p-4">
+                  <summary className="min-h-11 cursor-pointer font-semibold text-gc-accent">
                     Restricted privacy redaction
                   </summary>
-                  <p className="my-4 text-sm text-[#d8c4a8]">
+                  <p className="my-4 text-sm text-gc-muted">
                     Only after verifying the request under the support
                     operations procedure. This removes the subject, description
                     and conversation content from the active case. Backup

@@ -83,16 +83,16 @@ export default async function PublicProfilePage({
   return (
     <PlatformShell user={currentUser}>
       <section className="container-shell py-8 sm:py-10">
-        <div className="mb-6 overflow-hidden rounded-[2rem] border border-[#f2d8af]/20 bg-[#1a120c]">
-          <div className="h-32 bg-[radial-gradient(circle_at_top_left,rgba(244,201,140,0.52),rgba(42,29,18,0.92)_48%,rgba(16,11,7,1))]" />
+        <div className="mb-6 overflow-hidden rounded-xl border border-gc-divider bg-gc-surface">
+          <div className="h-32 bg-gc-subtle" />
           <div className="p-6 sm:p-8">
             <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <div className="-mt-20 mb-4 grid h-24 w-24 place-items-center rounded-full border-4 border-[#1a120c] bg-[#c38a45] text-4xl font-bold text-white">
+                <div className="-mt-20 mb-4 grid h-24 w-24 place-items-center rounded-full border-4 border-gc-surface bg-gc-action text-4xl font-bold text-gc-text">
                   {profile.name.charAt(0).toUpperCase()}
                 </div>
-                <p className="text-4xl text-white">{profile.name}</p>
-                <p className="text-[#cdbb9d]">
+                <h1 className="text-4xl text-gc-text">{profile.name}</h1>
+                <p className="text-gc-muted">
                   @{profile.username} · {roleLabels[profile.role]}
                 </p>
               </div>
@@ -135,11 +135,11 @@ export default async function PublicProfilePage({
             </div>
 
             {profile.bio ? (
-              <p className="mt-5 max-w-2xl text-lg leading-relaxed text-[#f8ead6]">
+              <p className="mt-5 max-w-2xl text-lg leading-relaxed text-gc-text">
                 {profile.bio}
               </p>
             ) : null}
-            <div className="mt-5 flex flex-wrap gap-3 text-sm text-[#d8c4a8]">
+            <div className="mt-5 flex flex-wrap gap-3 text-sm text-gc-muted">
               {profile.location ? (
                 <span className="inline-flex items-center gap-1">
                   <MapPin className="h-4 w-4" /> {profile.location}
@@ -147,7 +147,7 @@ export default async function PublicProfilePage({
               ) : null}
               {profile.website ? (
                 <a
-                  className="text-[#f4c98c] hover:text-[#ffe0b1]"
+                  className="text-gc-accent hover:text-gc-muted"
                   href={profile.website}
                 >
                   Website
@@ -155,15 +155,15 @@ export default async function PublicProfilePage({
               ) : null}
             </div>
             <div className="mt-5 flex flex-wrap gap-3 text-sm">
-              <span className="bg-black/24 inline-flex items-center gap-1 rounded-full px-3 py-1 text-[#f8ead6]">
-                <Rss className="h-4 w-4 text-[#f4c98c]" />{" "}
+              <span className="inline-flex items-center gap-1 rounded-full bg-gc-subtle px-3 py-1 text-gc-text">
+                <Rss className="h-4 w-4 text-gc-accent" />{" "}
                 {profile._count.posts} posts
               </span>
-              <span className="bg-black/24 inline-flex items-center gap-1 rounded-full px-3 py-1 text-[#f8ead6]">
-                <UsersRound className="h-4 w-4 text-[#f4c98c]" />{" "}
+              <span className="inline-flex items-center gap-1 rounded-full bg-gc-subtle px-3 py-1 text-gc-text">
+                <UsersRound className="h-4 w-4 text-gc-accent" />{" "}
                 {profile._count.followers} followers
               </span>
-              <span className="bg-black/24 rounded-full px-3 py-1 text-[#f8ead6]">
+              <span className="rounded-full bg-gc-subtle px-3 py-1 text-gc-text">
                 {profile._count.following} following
               </span>
             </div>
@@ -172,7 +172,7 @@ export default async function PublicProfilePage({
                 {profile.interests.map((interest) => (
                   <span
                     key={interest}
-                    className="border-[#f2d8af]/18 rounded-full border px-3 py-1 text-sm text-[#f4c98c]"
+                    className="rounded-full border border-gc-divider px-3 py-1 text-sm text-gc-accent"
                   >
                     {interest}
                   </span>
@@ -193,7 +193,7 @@ export default async function PublicProfilePage({
               />
             ))
           ) : (
-            <div className="border-[#f2d8af]/18 rounded-3xl border bg-[#1a120c] p-8 text-[#d8c4a8]">
+            <div className="rounded-xl border border-gc-divider bg-gc-surface p-8 text-gc-muted">
               No posts yet.
             </div>
           )}

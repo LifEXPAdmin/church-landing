@@ -20,16 +20,16 @@ export function PortalRouteError({
     heading.current?.focus();
   }, []);
   return (
-    <main className="min-h-screen bg-[#100b07] py-10 text-[#f8ead6]">
+    <main className="min-h-screen bg-gc-canvas py-10 text-gc-text">
       <div className="container-shell space-y-6">
         <h1
           ref={heading}
           tabIndex={-1}
-          className="text-4xl text-white focus:outline-none"
+          className="text-4xl text-gc-text focus:outline-none"
         >
           Godschurches could not load this page
         </h1>
-        <p role="alert" className="text-[#d8c4a8]">
+        <p role="alert" className="text-gc-muted">
           Please try again. No private information has been displayed.
         </p>
         <div className="flex flex-wrap items-center gap-5">
@@ -37,7 +37,7 @@ export function PortalRouteError({
             Try again
           </button>
           <Link href="/platform" className={portalLinkClass}>
-            Back to Feed
+            Back to Home
           </Link>
           <Link href="/platform/login" className={portalLinkClass}>
             Sign in

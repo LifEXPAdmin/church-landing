@@ -112,7 +112,7 @@ export function SupportForm({
         <div key={f.name}>
           <label
             htmlFor={`${id}-${f.name}`}
-            className="mb-2 block text-sm font-semibold text-[#f3dfc3]"
+            className="mb-2 block text-sm font-semibold text-gc-text"
           >
             {f.label}
             {f.optional ? " (optional)" : ""}
@@ -159,28 +159,28 @@ export function SupportForm({
             />
           )}
           {f.max && (
-            <p className="mt-1 text-xs text-[#d8c4a8]">
+            <p className="mt-1 text-xs text-gc-muted">
               Up to {f.max.toLocaleString()} characters. Plain text only.
             </p>
           )}
         </div>
       ))}
       {caution && (
-        <p className="text-sm leading-relaxed text-[#d8c4a8]">{caution}</p>
+        <p className="text-sm leading-relaxed text-gc-muted">{caution}</p>
       )}
       <p
         ref={feedbackRef}
         tabIndex={-1}
         role={failed ? "alert" : "status"}
         aria-live="polite"
-        className={`break-words text-sm focus:outline-none ${failed ? "text-rose-200" : "text-[#f4c98c]"}`}
+        className={`break-words text-sm focus:outline-none ${failed ? "text-gc-error" : "text-gc-accent"}`}
       >
         {feedback}
       </p>
       {failed && (
         <a
           href=""
-          className="inline-flex min-h-11 items-center text-sm text-[#f4c98c] underline"
+          className="inline-flex min-h-11 items-center text-sm text-gc-accent underline"
         >
           Load the latest page (clears this draft)
         </a>
@@ -188,7 +188,7 @@ export function SupportForm({
       <button
         disabled={busy}
         type="submit"
-        className="min-h-11 rounded-xl bg-[#e6b56c] px-5 py-3 text-sm font-semibold text-[#21170d] hover:bg-[#f4c98c] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#f4c98c] disabled:opacity-60"
+        className="min-h-11 rounded-xl bg-gc-action px-5 py-3 text-sm font-semibold text-gc-on-action hover:bg-gc-action focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#f4c98c] disabled:opacity-60"
       >
         {busy ? "Saving..." : button}
       </button>
@@ -196,4 +196,4 @@ export function SupportForm({
   );
 }
 const inputClass =
-  "block min-h-11 w-full min-w-0 rounded-xl border border-[#f2d8af]/30 bg-[#130e09] px-3 py-3 text-base text-white focus:border-[#f4c98c] focus:outline-none focus:ring-2 focus:ring-[#f4c98c]/50";
+  "block min-h-11 w-full min-w-0 rounded-xl border border-gc-divider bg-gc-canvas px-3 py-3 text-base text-gc-text focus:border-gc-action focus:outline-none focus:ring-2 focus:ring-gc-focus";

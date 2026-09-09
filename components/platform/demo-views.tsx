@@ -13,16 +13,16 @@ import {
   type DemoView
 } from "@/lib/platform/demo-fixtures";
 
-const copyClass = "leading-relaxed text-[#d8c4a8]";
+const copyClass = "leading-relaxed text-gc-muted";
 const inputClass =
-  "mt-2 block min-h-11 w-full rounded-xl border border-[#f2d8af]/30 bg-[#100b07] px-3 py-3 text-base text-[#f8ead6]";
+  "mt-2 block min-h-11 w-full rounded-xl border border-gc-divider bg-gc-canvas px-3 py-3 text-base text-gc-text";
 
 function DemoAction({ children }: { children: React.ReactNode }) {
   return (
     <button
       type="button"
       disabled
-      className="min-h-11 cursor-not-allowed rounded-full border border-[#f4c98c]/35 bg-[#f4c98c]/10 px-4 py-2 text-sm font-semibold text-[#e8d3b2]"
+      className="min-h-11 cursor-not-allowed rounded-full border border-gc-action bg-gc-selected px-4 py-2 text-sm font-semibold text-gc-muted"
     >
       {children} (demo only)
     </button>
@@ -46,9 +46,9 @@ function DemoLink({
 function MemberSummary() {
   return (
     <>
-      <p className="text-lg font-semibold text-white">
+      <p className="text-lg font-semibold text-gc-text">
         {fixture.member.name}{" "}
-        <span className="text-sm font-normal text-[#d8c4a8]">
+        <span className="text-sm font-normal text-gc-muted">
           (fictional member)
         </span>
       </p>
@@ -67,7 +67,7 @@ function MemberSummary() {
 function PendingSummary() {
   return (
     <>
-      <p className="font-semibold text-white">{fixture.pending.name}</p>
+      <p className="font-semibold text-gc-text">{fixture.pending.name}</p>
       <PortalStatus state={fixture.pending.state} />
       <p className={copyClass}>
         A request to {fixture.church.name} is awaiting review. Church-only
@@ -80,7 +80,7 @@ function PendingSummary() {
 function ApprovedSummary() {
   return (
     <>
-      <p className="font-semibold text-white">
+      <p className="font-semibold text-gc-text">
         {fixture.member.name} at {fixture.church.name}
       </p>
       <PortalStatus state={fixture.member.state} />
@@ -104,10 +104,10 @@ function QueueSummary({ controls = false }: { controls?: boolean } = {}) {
         {fixture.queue.map((entry) => (
           <li
             key={entry.name}
-            className="space-y-3 rounded-xl border border-[#f2d8af]/15 bg-[#100b07] p-4"
+            className="space-y-3 rounded-xl border border-gc-divider bg-gc-canvas p-4"
           >
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <p className="font-semibold text-white">{entry.name}</p>
+              <p className="font-semibold text-gc-text">{entry.name}</p>
               <PortalStatus state={entry.state} />
             </div>
             {controls && (
@@ -133,27 +133,27 @@ function SharingSummary() {
   return (
     <dl className="space-y-3 text-sm">
       <div>
-        <dt className="text-[#d8c4a8]">Directory listing</dt>
-        <dd className="mt-1 font-semibold text-white">
+        <dt className="text-gc-muted">Directory listing</dt>
+        <dd className="mt-1 font-semibold text-gc-text">
           Included by the member&apos;s choice
         </dd>
       </div>
       <div>
-        <dt className="text-[#d8c4a8]">Display name</dt>
-        <dd className="mt-1 text-white">{fixture.sharing.displayName}</dd>
+        <dt className="text-gc-muted">Display name</dt>
+        <dd className="mt-1 text-gc-text">{fixture.sharing.displayName}</dd>
       </div>
       <div>
-        <dt className="text-[#d8c4a8]">Contact email</dt>
-        <dd className="mt-1 break-all text-white">
+        <dt className="text-gc-muted">Contact email</dt>
+        <dd className="mt-1 break-all text-gc-text">
           {fixture.sharing.contactEmail}
         </dd>
-        <dd className="mt-1 text-[#e8d3b2]">
+        <dd className="mt-1 text-gc-muted">
           Visible to approved members of the same church
         </dd>
       </div>
       <div>
-        <dt className="text-[#d8c4a8]">Phone sharing</dt>
-        <dd className="mt-1 text-white">Only me; no phone number provided</dd>
+        <dt className="text-gc-muted">Phone sharing</dt>
+        <dd className="mt-1 text-gc-text">Only me; no phone number provided</dd>
       </div>
     </dl>
   );
@@ -165,10 +165,10 @@ function DirectorySummary() {
       {fixture.directory.map((entry) => (
         <li
           key={entry.name}
-          className="rounded-xl border border-[#f2d8af]/15 bg-[#100b07] p-4"
+          className="rounded-xl border border-gc-divider bg-gc-canvas p-4"
         >
-          <p className="font-semibold text-white">{entry.name}</p>
-          <p className="mt-2 break-all text-sm text-[#d8c4a8]">
+          <p className="font-semibold text-gc-text">{entry.name}</p>
+          <p className="mt-2 break-all text-sm text-gc-muted">
             {"email" in entry ? entry.email : "No contact details shared."}
           </p>
         </li>
@@ -183,13 +183,13 @@ function ContactsSummary() {
       {fixture.contacts.map((contact) => (
         <li
           key={contact.slot}
-          className="border-b border-[#f2d8af]/15 pb-4 last:border-0 last:pb-0"
+          className="border-b border-gc-divider pb-4 last:border-0 last:pb-0"
         >
-          <p className="text-sm font-semibold text-[#f4c98c]">
+          <p className="text-sm font-semibold text-gc-accent">
             {contact.role} (fictional)
           </p>
-          <p className="mt-1 font-semibold text-white">{contact.name}</p>
-          <p className="mt-1 break-all text-sm text-[#d8c4a8]">
+          <p className="mt-1 font-semibold text-gc-text">{contact.name}</p>
+          <p className="mt-1 break-all text-sm text-gc-muted">
             {contact.email}
           </p>
         </li>
@@ -230,10 +230,10 @@ export function DemoOverview() {
         title="Explore the church portal"
         description="Every screen below is a read-only example of an implemented portal feature. Pending and approved views are separate fictional scenarios, not actions on a live account."
       />
-      <div className="mb-7 rounded-2xl border border-[#f4c98c]/25 bg-[#f4c98c]/5 p-5">
-        <h2 className="text-3xl text-white">{fixture.church.name}</h2>
+      <div className="mb-7 rounded-xl border border-gc-action bg-gc-selected p-5">
+        <h2 className="text-3xl text-gc-text">{fixture.church.name}</h2>
         <p className={`mt-2 ${copyClass}`}>{fixture.church.summary}</p>
-        <p className="mt-3 text-sm text-[#d8c4a8]">
+        <p className="mt-3 text-sm text-gc-muted">
           The real application keeps sign-in, eligibility, approval, and sharing
           checks. This demo grants none of those permissions.
         </p>
@@ -313,7 +313,7 @@ function SharingView() {
           </label>
         </fieldset>
         <DemoAction>Save sharing choices</DemoAction>
-        <p className="text-sm text-[#d8c4a8]">
+        <p className="text-sm text-gc-muted">
           All controls are disabled. No input is submitted or stored.
         </p>
       </PortalCard>
@@ -367,7 +367,7 @@ export function DemoScreen({ view }: { view: DemoView }) {
           <PortalCard title="Awaiting a church reviewer">
             <PendingSummary />
             <DemoAction>Withdraw request</DemoAction>
-            <p className="text-sm text-[#d8c4a8]">
+            <p className="text-sm text-gc-muted">
               Demo only: nothing is sent, approved, or withdrawn.
             </p>
           </PortalCard>
@@ -414,7 +414,7 @@ export function DemoScreen({ view }: { view: DemoView }) {
         <div className="grid items-start gap-6 lg:grid-cols-[1.3fr_1fr]">
           <PortalCard title="Church connection queue">
             <QueueSummary controls />
-            <p className="text-sm text-[#d8c4a8]">
+            <p className="text-sm text-gc-muted">
               Demonstration controls are disabled. There are no live approval or
               removal actions here.
             </p>

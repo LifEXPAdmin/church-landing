@@ -22,12 +22,12 @@ export default async function RecoveryPage() {
   return (
     <PlatformShell user={user}>
       <section className="container-shell py-10">
-        <div className="mx-auto max-w-xl rounded-3xl border border-[#f2d8af]/20 bg-[#1a120c] p-6 text-[#f8ead6] sm:p-8">
-          <h1 className="mb-6 text-4xl text-white">Account recovery</h1>
+        <div className="mx-auto max-w-xl rounded-xl border border-gc-divider bg-gc-surface p-6 text-gc-text sm:p-8">
+          <h1 className="mb-6 text-4xl text-gc-text">Account recovery</h1>
           <RecoveryForm available={available} />
           <Link
             href="/platform/login"
-            className="mt-8 block text-[#f4c98c] underline"
+            className="mt-8 block text-gc-accent underline"
           >
             Back to sign in
           </Link>

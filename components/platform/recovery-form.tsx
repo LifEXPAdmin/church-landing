@@ -85,7 +85,7 @@ export function RecoveryForm({ available }: { available: boolean }) {
         }
       }}
     >
-      <h2 className="text-3xl text-white">
+      <h2 className="text-3xl text-gc-text">
         {grant.purpose === "RESET_PASSWORD"
           ? "Choose a new password"
           : "Confirm your email"}
@@ -99,7 +99,7 @@ export function RecoveryForm({ available }: { available: boolean }) {
           <label className="block">
             New password
             <input
-              className="mt-2 w-full rounded-2xl border border-[#f2d8af]/30 bg-[#100b07] p-3 focus:ring-2 focus:ring-[#f4c98c]"
+              className="mt-2 w-full rounded-xl border border-gc-divider bg-gc-canvas p-3 focus:ring-2 focus:ring-gc-focus"
               name="password"
               type="password"
               autoComplete="new-password"
@@ -111,7 +111,7 @@ export function RecoveryForm({ available }: { available: boolean }) {
           <label className="block">
             Confirm password
             <input
-              className="mt-2 w-full rounded-2xl border border-[#f2d8af]/30 bg-[#100b07] p-3 focus:ring-2 focus:ring-[#f4c98c]"
+              className="mt-2 w-full rounded-xl border border-gc-divider bg-gc-canvas p-3 focus:ring-2 focus:ring-gc-focus"
               name="confirmPassword"
               type="password"
               autoComplete="new-password"
@@ -136,7 +136,7 @@ export function RecoveryForm({ available }: { available: boolean }) {
               : "Verify my email"}
         </Button>
       )}
-      <Link href="/platform/login" className="block text-[#f4c98c] underline">
+      <Link href="/platform/login" className="block text-gc-accent underline">
         Return to sign in
       </Link>
     </form>

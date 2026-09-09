@@ -1,7 +1,13 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
+import { ReadingProvider, AppearanceSelect } from "./reading-preferences";
+import {
+  parseReadingPreferences,
+  preferenceCookie,
+  defaultReadingPreferences
+} from "@/lib/platform/reading-preferences";
 import type { PlatformUser } from "@prisma/client";
-import { Church, LogOut } from "lucide-react";
-
+import { Church, LogOut, Settings } from "lucide-react";
 import { logoutPlatformAccount } from "@/app/platform/actions";
 import { PortalNavigation } from "@/components/platform/portal-navigation";
 
@@ -11,72 +17,70 @@ interface PlatformShellProps {
   reviewerNavigation?: { href: string; label: string }[];
 }
 
-const utilityLink =
-  "inline-flex min-h-11 items-center rounded-full px-3 py-2 text-sm text-[#e8d3b2] hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f4c98c]";
-
-export function PlatformShell({
+export async function PlatformShell({
   user,
   children,
   reviewerNavigation = []
 }: PlatformShellProps) {
+  // The development Flight debugger can serialize awaited cookie jars. Keep
+  // presentation reads behind the same production boundary as account reads.
+  const initial =
+    process.env.NODE_ENV === "production"
+      ? parseReadingPreferences((await cookies()).get(preferenceCookie)?.value)
+      : defaultReadingPreferences;
   return (
-    <div className="min-h-screen bg-[#100b07] text-[#f8ead6]">
-      <a
-        href="#platform-content"
-        className="sr-only z-50 rounded-lg bg-[#f4c98c] p-3 text-[#100b07] focus:not-sr-only focus:fixed focus:left-4 focus:top-4"
-      >
-        Skip to content
-      </a>
-      <header className="border-b border-[#f2d8af]/20 bg-[#17100b]/95">
-        <div className="container-shell flex min-h-16 flex-wrap items-center justify-between gap-x-4 gap-y-1 py-3">
-          <Link
-            href="/platform"
-            className="wordmark inline-flex min-h-11 items-center gap-2 rounded-lg text-3xl text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f4c98c]"
-          >
-            <Church aria-hidden="true" className="h-6 w-6 text-[#f4c98c]" />
+    <ReadingProvider initial={initial}>
+      <div className="gc-shell">
+        <a href="#platform-content" className="gc-skip">
+          Skip to content
+        </a>
+        <header className="gc-topbar">
+          <Link href="/platform" className="wordmark gc-brand">
+            <Church aria-hidden="true" />
             Godschurches
           </Link>
-          <nav
-            aria-label="Account and website"
-            className="flex flex-wrap items-center gap-1"
-          >
-            <Link href="/" className={utilityLink}>
-              Landing page
-            </Link>
+          <span className="gc-tagline">Faith. Fellowship. Everyday life.</span>
+          <nav aria-label="Account and website" className="gc-utilities">
             {user ? (
               <>
-                <Link href="/platform/profile/me" className={utilityLink}>
-                  Edit profile
-                </Link>
-                <Link href="/platform/settings" className={utilityLink}>
-                  Settings
+                <Link href="/platform/settings" className="gc-utility">
+                  <Settings aria-hidden="true" />
+                  <span>Settings</span>
                 </Link>
                 <form action={logoutPlatformAccount}>
-                  <button className={utilityLink} type="submit">
-                    <LogOut aria-hidden="true" className="mr-2 h-4 w-4" />
-                    Log out
+                  <button type="submit" className="gc-utility">
+                    <LogOut aria-hidden="true" />
+                    <span>Log out</span>
                   </button>
                 </form>
               </>
             ) : (
-              <Link href="/platform/login" className={utilityLink}>
+              <Link
+                href="/platform/login"
+                className="gc-button gc-button-quiet"
+              >
                 Sign in
               </Link>
             )}
           </nav>
+        </header>
+        <div className="gc-workspace">
+          <PortalNavigation
+            username={user?.username}
+            reviewerNavigation={reviewerNavigation}
+          />
+          <main id="platform-content" tabIndex={-1} className="gc-main">
+            {children}
+          </main>
         </div>
-        <PortalNavigation
-          username={user?.username}
-          reviewerNavigation={reviewerNavigation}
-        />
-      </header>
-      <main
-        id="platform-content"
-        tabIndex={-1}
-        className="min-h-[65vh] pb-[calc(6rem+env(safe-area-inset-bottom))] outline-none md:pb-10"
-      >
-        {children}
-      </main>
-    </div>
+        <footer className="gc-platform-footer">
+          <AppearanceSelect />
+          <span>Built on faith. Made for connection.</span>
+          <Link href="/">About Godschurches</Link>
+          <Link href="/privacy">Privacy</Link>
+          <Link href="/terms">Terms</Link>
+        </footer>
+      </div>
+    </ReadingProvider>
   );
 }

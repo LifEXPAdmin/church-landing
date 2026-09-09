@@ -28,9 +28,9 @@ export type PortalField = {
 };
 
 export const portalInputClass =
-  "mt-2 block min-h-11 w-full rounded-xl border border-[#f2d8af]/30 bg-[#100b07] px-3 py-3 text-base text-[#f8ead6] placeholder:text-[#b5a083] focus:outline-none focus:ring-2 focus:ring-[#f4c98c] disabled:opacity-60";
+  "mt-2 block min-h-11 w-full rounded-xl border border-gc-divider bg-gc-canvas px-3 py-3 text-base text-gc-text placeholder:text-gc-muted focus:outline-none focus:ring-2 focus:ring-gc-focus disabled:opacity-60";
 export const portalButtonClass =
-  "inline-flex min-h-11 items-center justify-center rounded-full bg-[#f4c98c] px-5 py-3 text-sm font-semibold text-[#100b07] hover:bg-[#ffdeb0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f4c98c] focus-visible:ring-offset-2 focus-visible:ring-offset-[#100b07] disabled:cursor-not-allowed disabled:opacity-60";
+  "inline-flex min-h-11 items-center justify-center rounded-full bg-gc-action px-5 py-3 text-sm font-semibold text-gc-on-action hover:bg-gc-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gc-focus focus-visible:ring-offset-2 focus-visible:ring-offset-gc-surface disabled:cursor-not-allowed disabled:opacity-60";
 
 export function PortalActionForm({
   operation,
@@ -131,7 +131,7 @@ export function PortalActionForm({
       }}
     >
       {description && (
-        <p className="text-sm leading-relaxed text-[#d8c4a8]">{description}</p>
+        <p className="text-sm leading-relaxed text-gc-muted">{description}</p>
       )}
       <fieldset
         key={JSON.stringify(payload)}
@@ -146,7 +146,7 @@ export function PortalActionForm({
             <div key={field.name}>
               <label
                 htmlFor={inputId}
-                className={`text-sm font-semibold text-[#f8ead6] ${field.type === "checkbox" ? "flex min-h-11 items-start gap-3" : "block"}`}
+                className={`text-sm font-semibold text-gc-text ${field.type === "checkbox" ? "flex min-h-11 items-start gap-3" : "block"}`}
               >
                 {field.type === "checkbox" && (
                   <input
@@ -156,7 +156,7 @@ export function PortalActionForm({
                     defaultChecked={field.value === true}
                     required={field.required}
                     aria-describedby={describedBy}
-                    className="mt-1 h-5 w-5 shrink-0 accent-[#f4c98c] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f4c98c]"
+                    className="mt-1 h-5 w-5 shrink-0 accent-[#f4c98c] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gc-focus"
                   />
                 )}
                 {field.label}
@@ -210,7 +210,7 @@ export function PortalActionForm({
               {field.hint && (
                 <p
                   id={describedBy}
-                  className="mt-2 text-sm leading-relaxed text-[#d8c4a8]"
+                  className="mt-2 text-sm leading-relaxed text-gc-muted"
                 >
                   {field.hint}
                 </p>
@@ -221,13 +221,13 @@ export function PortalActionForm({
         {confirmation && (
           <label
             htmlFor={`${id}-confirmation`}
-            className="flex min-h-11 items-start gap-3 text-sm text-[#e8d3b2]"
+            className="flex min-h-11 items-start gap-3 text-sm text-gc-muted"
           >
             <input
               id={`${id}-confirmation`}
               type="checkbox"
               required
-              className="mt-1 h-5 w-5 shrink-0 accent-[#f4c98c] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f4c98c]"
+              className="mt-1 h-5 w-5 shrink-0 accent-[#f4c98c] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gc-focus"
             />
             {confirmation}
           </label>
@@ -245,7 +245,7 @@ export function PortalActionForm({
           ref={resultRef}
           tabIndex={-1}
           role={result.failed ? "alert" : "status"}
-          className={`rounded-xl border p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#f4c98c] ${result.failed ? "border-red-300/30 bg-red-950/30 text-red-100" : "border-[#f4c98c]/30 text-[#f4c98c]"}`}
+          className={`rounded-xl border p-3 text-sm focus:outline-none focus:ring-2 focus:ring-gc-focus ${result.failed ? "border-gc-error bg-gc-error-surface text-gc-error" : "border-gc-action text-gc-accent"}`}
         >
           {result.message}
         </p>

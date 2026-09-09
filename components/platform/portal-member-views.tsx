@@ -27,9 +27,9 @@ export function PortalEligibility({ snapshot }: { snapshot: PortalSnapshot }) {
   if (snapshot.viewer.verified && snapshot.viewer.adult) return null;
   return (
     <PortalCard title="Before you connect">
-      <p className="text-[#d8c4a8]">
-        Church connections in this preview require a verified email and
-        confirmation that you are at least 18.
+      <p className="text-gc-muted">
+        Church connections require a verified email and confirmation that you
+        are at least 18.
       </p>
       {!snapshot.viewer.verified && (
         <Link href="/platform/account/recover" className={portalLinkClass}>
@@ -101,7 +101,7 @@ function ChurchConnection({
     <div className="space-y-4">
       {connection && <PortalStatus state={connection.state} />}
       {connection?.state === "PENDING" && (
-        <p className="text-sm text-[#d8c4a8]">
+        <p className="text-sm text-gc-muted">
           Your request is awaiting review. Church-only contacts and the member
           directory become available after approval.
         </p>
@@ -125,7 +125,7 @@ function ChurchConnection({
       {active && connection ? (
         <ConnectionAction connection={connection} />
       ) : elsewhere ? (
-        <p className="text-sm text-[#d8c4a8]">
+        <p className="text-sm text-gc-muted">
           You already have an active connection or request. Manage it in{" "}
           <Link href="/platform/my-church" className={portalLinkClass}>
             My church
@@ -189,7 +189,7 @@ export function PortalDiscover({
       <div className="grid gap-5 md:grid-cols-2">
         {churches.map((church) => (
           <PortalCard key={church.id} title={church.name}>
-            <p className="whitespace-pre-wrap leading-relaxed text-[#d8c4a8]">
+            <p className="whitespace-pre-wrap leading-relaxed text-gc-muted">
               {church.summary || "Church information is pending."}
             </p>
             {detail ? (
@@ -241,7 +241,7 @@ export function PortalPublicDiscover({
       <div className="grid gap-5 md:grid-cols-2">
         {visible.map((church) => (
           <PortalCard key={church.id} title={church.name}>
-            <p className="whitespace-pre-wrap leading-relaxed text-[#d8c4a8]">
+            <p className="whitespace-pre-wrap leading-relaxed text-gc-muted">
               {church.summary || "Church information is pending."}
             </p>
             <Link
@@ -283,7 +283,7 @@ export function PortalMyChurch({ snapshot }: { snapshot: PortalSnapshot }) {
           <PortalCard key={connection.id} title={connection.churchName}>
             <PortalStatus state={connection.state} />
             {connection.state === "PENDING" && (
-              <p className="text-[#d8c4a8]">
+              <p className="text-gc-muted">
                 A reviewer has not approved your request yet. Your directory and
                 church-only contacts are not available while it is pending.
               </p>
@@ -400,12 +400,12 @@ export function PortalSharing({ snapshot }: { snapshot: PortalSnapshot }) {
             />
           </PortalCard>
           <PortalCard title="What members currently see">
-            <p className="text-sm text-[#d8c4a8]">
+            <p className="text-sm text-gc-muted">
               This is your saved visibility, not a preview of unsaved edits.
             </p>
             {sharing.preview ? (
-              <div className="rounded-xl bg-[#100b07] p-4">
-                <p className="font-semibold text-white">
+              <div className="rounded-xl bg-gc-canvas p-4">
+                <p className="font-semibold text-gc-text">
                   {sharing.preview.name}
                 </p>
                 <PortalContactDetails
@@ -454,9 +454,9 @@ export function PortalDirectory({ snapshot }: { snapshot: PortalSnapshot }) {
           {snapshot.directory.map((entry, index) => (
             <li
               key={index}
-              className="min-w-0 break-words rounded-2xl border border-[#f2d8af]/20 bg-[#1a120c] p-5"
+              className="min-w-0 break-words rounded-xl border border-gc-divider bg-gc-surface p-5"
             >
-              <h2 className="text-2xl text-white">{entry.name}</h2>
+              <h2 className="text-2xl text-gc-text">{entry.name}</h2>
               <PortalContactDetails email={entry.email} phone={entry.phone} />
             </li>
           ))}
@@ -490,7 +490,7 @@ export function PortalReview({ snapshot }: { snapshot: PortalSnapshot }) {
           <PortalCard key={connection.id} title={connection.name}>
             <PortalStatus state={connection.state} />
             {connection.isSelf ? (
-              <p className="text-sm text-[#d8c4a8]">
+              <p className="text-sm text-gc-muted">
                 Another assigned reviewer must decide your request. Use My
                 church to manage your own connection.
               </p>
@@ -583,12 +583,12 @@ export function PortalHelp({ snapshot }: { snapshot: PortalSnapshot }) {
               return (
                 <div
                   key={slot.key}
-                  className="border-b border-[#f2d8af]/15 pb-4 last:border-0 last:pb-0"
+                  className="border-b border-gc-divider pb-4 last:border-0 last:pb-0"
                 >
-                  <h3 className="text-2xl text-white">{slot.label}</h3>
+                  <h3 className="text-2xl text-gc-text">{slot.label}</h3>
                   {contact ? (
                     <>
-                      <p className="mt-2 font-semibold text-[#e8d3b2]">
+                      <p className="mt-2 font-semibold text-gc-muted">
                         {contact.name}
                       </p>
                       <PortalContactDetails
@@ -597,7 +597,7 @@ export function PortalHelp({ snapshot }: { snapshot: PortalSnapshot }) {
                       />
                     </>
                   ) : (
-                    <p className="mt-2 text-sm text-[#d8c4a8]">
+                    <p className="mt-2 text-sm text-gc-muted">
                       Appointment pending. No contact has been published for
                       this role.
                     </p>

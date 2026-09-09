@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 export const portalLinkClass =
-  "inline-flex min-h-11 items-center rounded-lg py-2 text-sm font-semibold text-[#f4c98c] underline decoration-[#f4c98c]/40 underline-offset-4 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f4c98c]";
+  "inline-flex min-h-11 items-center rounded-lg py-2 text-sm font-semibold text-gc-accent underline decoration-gc-focus underline-offset-4 hover:text-gc-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gc-focus";
 
 export function PortalCard({
   title,
@@ -11,8 +11,8 @@ export function PortalCard({
   children: React.ReactNode;
 }) {
   return (
-    <section className="min-w-0 rounded-2xl border border-[#f2d8af]/20 bg-[#1a120c] p-5 sm:p-6">
-      <h2 className="mb-4 text-3xl leading-tight text-white">{title}</h2>
+    <section className="min-w-0 rounded-xl border border-gc-divider bg-gc-surface p-5 sm:p-6">
+      <h2 className="mb-4 text-3xl leading-tight text-gc-text">{title}</h2>
       <div className="space-y-4 break-words">{children}</div>
     </section>
   );
@@ -26,12 +26,14 @@ export function PortalHeading({
   description: string;
 }) {
   return (
-    <div className="mb-7 border-l-2 border-[#f4c98c] pl-4">
-      <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#f4c98c]">
+    <div className="mb-7 border-l-2 border-gc-action pl-4">
+      <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-gc-accent">
         Godschurches
       </p>
-      <h1 className="text-4xl leading-tight text-white sm:text-5xl">{title}</h1>
-      <p className="mt-3 max-w-2xl leading-relaxed text-[#d8c4a8]">
+      <h1 className="text-4xl leading-tight text-gc-text sm:text-5xl">
+        {title}
+      </h1>
+      <p className="mt-3 max-w-2xl leading-relaxed text-gc-muted">
         {description}
       </p>
     </div>
@@ -40,7 +42,7 @@ export function PortalHeading({
 
 export function PortalEmpty({ children }: { children: React.ReactNode }) {
   return (
-    <p className="rounded-xl border border-dashed border-[#f2d8af]/25 p-5 leading-relaxed text-[#d8c4a8]">
+    <p className="rounded-xl border border-dashed border-gc-divider p-5 leading-relaxed text-gc-muted">
       {children}
     </p>
   );
@@ -57,7 +59,7 @@ export function PortalStatus({ state }: { state: string }) {
   };
   return (
     <span
-      className={`inline-flex rounded-full border px-3 py-1 text-sm ${state === "APPROVED" ? "border-emerald-300/30 bg-emerald-950/40 text-emerald-100" : "border-[#f4c98c]/30 bg-[#f4c98c]/10 text-[#f4c98c]"}`}
+      className={`inline-flex rounded-full border px-3 py-1 text-sm ${state === "APPROVED" ? "border-gc-success bg-gc-success-surface text-gc-success" : "border-gc-action bg-gc-selected text-gc-accent"}`}
     >
       {labels[state] ?? "Status unavailable"}
     </span>
@@ -67,7 +69,7 @@ export function PortalStatus({ state }: { state: string }) {
 export function PortalHelpContact() {
   return (
     <PortalCard title="Contact Godschurches directly">
-      <p className="leading-relaxed text-[#d8c4a8]">
+      <p className="leading-relaxed text-gc-muted">
         You can use the website&apos;s published contact email independently of
         church approval or a coordinator assignment.
       </p>
@@ -77,7 +79,7 @@ export function PortalHelpContact() {
       >
         mcdrew169@yahoo.com
       </a>
-      <p className="text-sm text-[#d8c4a8]">
+      <p className="text-sm text-gc-muted">
         This opens your email app. Nothing is submitted through this page. Never
         send your password or sign-in codes.
       </p>
@@ -114,7 +116,7 @@ export function PortalContactDetails({
         </a>
       )}
       {!email && !phone && (
-        <p className="text-sm text-[#d8c4a8]">No contact details shared.</p>
+        <p className="text-sm text-gc-muted">No contact details shared.</p>
       )}
     </div>
   );

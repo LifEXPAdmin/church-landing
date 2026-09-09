@@ -1,172 +1,200 @@
 import { publicProfileSelect } from "@/lib/platform/public-profile";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, Search, ShieldCheck, UsersRound } from "lucide-react";
-
+import { ArrowRight, MessageCircle, PenLine } from "lucide-react";
 import { PostCard } from "@/components/platform/post-card";
 import { PostComposer } from "@/components/platform/post-composer";
+import { FeedReader } from "@/components/platform/feed-reader";
+import { ComposePostButton } from "@/components/platform/compose-post-button";
 import { PlatformShell } from "@/components/platform/platform-shell";
-import { Button } from "@/components/ui/button";
 import { prisma } from "@/lib/prisma";
 import { getCurrentPlatformUser } from "@/lib/platform/session";
 
 export const metadata: Metadata = {
-  title: "Godschurches Platform Preview",
-  description: "A working preview of the Church connection platform."
+  title: "Home | Godschurches",
+  description:
+    "Grow in faith, connect with your community, and share everyday life on Godschurches."
+};
+export const dynamic = "force-dynamic";
+type FeedParams = {
+  before?: string;
+  cursor?: string;
+  post?: string;
+  mode?: string;
 };
 
-export const dynamic = "force-dynamic";
-
-async function getFeed(userId?: string) {
-  const following = userId
+export default async function PlatformPage({
+  searchParams
+}: {
+  searchParams: Promise<FeedParams>;
+}) {
+  const currentUser = await getCurrentPlatformUser();
+  const params = await searchParams;
+  const following = currentUser
     ? await prisma.platformFollow.findMany({
-        where: { followerId: userId },
+        where: { followerId: currentUser.id },
         select: { followingId: true }
       })
     : [];
-
-  const authorIds = userId
-    ? [userId, ...following.map((item) => item.followingId)]
-    : undefined;
-
-  return prisma.platformPost.findMany({
-    where: authorIds?.length ? { authorId: { in: authorIds } } : undefined,
+  const before =
+    params.before &&
+    /^\d{4}-\d{2}-\d{2}T[\d:.]+Z$/.test(params.before) &&
+    Number.isFinite(Date.parse(params.before))
+      ? new Date(params.before)
+      : null;
+  const cursor =
+    params.cursor && /^[a-zA-Z0-9_-]{1,100}$/.test(params.cursor)
+      ? params.cursor
+      : null;
+  const result = await prisma.platformPost.findMany({
+    where: {
+      ...(currentUser
+        ? {
+            authorId: {
+              in: [currentUser.id, ...following.map((f) => f.followingId)]
+            }
+          }
+        : {}),
+      ...(before && cursor
+        ? {
+            OR: [
+              { createdAt: { lt: before } },
+              { createdAt: before, id: { lt: cursor } }
+            ]
+          }
+        : {})
+    },
     include: {
       author: { select: publicProfileSelect },
       likes: true,
+      _count: { select: { comments: true } },
       comments: {
         include: { author: { select: publicProfileSelect } },
         orderBy: { createdAt: "desc" },
         take: 6
       }
     },
-    orderBy: { createdAt: "desc" },
-    take: 30
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    take: 31
   });
-}
-
-export default async function PlatformPage() {
-  const currentUser = await getCurrentPlatformUser();
-  const posts = await getFeed(currentUser?.id);
-  const newestMembers = await prisma.platformUser.findMany({
-    select: publicProfileSelect,
-    orderBy: { createdAt: "desc" },
-    take: 5
-  });
-
+  const posts = result.slice(0, 30);
+  const last = posts.at(-1);
+  const moreHref =
+    result.length > 30 && last
+      ? `/platform?before=${encodeURIComponent(last.createdAt.toISOString())}&cursor=${encodeURIComponent(last.id)}`
+      : undefined;
   return (
     <PlatformShell user={currentUser}>
-      <section className="container-shell py-8 sm:py-10">
-        {!currentUser ? (
-          <div className="mb-8 rounded-[2rem] border border-[#f2d8af]/20 bg-[radial-gradient(circle_at_top_left,rgba(195,138,69,0.26),rgba(26,18,12,0.96)_48%)] p-7 text-[#f8ead6] sm:p-10">
-            <p className="mb-3 text-sm uppercase tracking-[0.18em] text-[#f4c98c]">
-              Platform Preview
+      <section className="container-shell">
+        <div className="gc-screen-heading">
+          <div>
+            <p className="gc-eyebrow">Life together</p>
+            <h1>Home</h1>
+            <p className="text-gc-muted">
+              {currentUser
+                ? "From you and the people you follow."
+                : "Faith, fellowship, and everyday life."}
             </p>
-            <h1 className="max-w-3xl text-balance text-5xl leading-tight text-white sm:text-6xl">
-              A Christian connection platform built around faith, fellowship,
-              and real service.
-            </h1>
-            <p className="mt-4 max-w-2xl text-lg text-[#e8d3b2]">
-              This is an early preview. Real account information and posts are
-              saved. Create an account, post updates, follow people, search
-              profiles, and shape the first version of Church.
-            </p>
-            <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-              <Button asChild size="lg" className="rounded-full">
-                <Link href="/platform/signup">Create an account</Link>
-              </Button>
-              <Button
-                asChild
-                size="lg"
-                className="rounded-full border-[#f2d8af]/40 bg-transparent text-[#f8ead6] hover:bg-white/10"
-              >
-                <Link href="/">Back to landing page</Link>
-              </Button>
-            </div>
           </div>
-        ) : null}
-
-        <div className="mb-6 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-          <Link
-            href="/platform/demo"
-            className="inline-flex min-h-11 items-center gap-2 rounded-lg py-2 font-semibold text-[#f4c98c] underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f4c98c]"
-          >
-            Explore the church portal{" "}
-            <ArrowRight aria-hidden="true" className="h-4 w-4" />
-          </Link>
-          <span className="text-[#d8c4a8]">
-            Read-only demo with fictional information. No account needed.
-          </span>
+          {currentUser && <ComposePostButton />}
         </div>
-
-        <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
-          <div className="space-y-5">
-            {currentUser ? <PostComposer /> : null}
-
-            {posts.length > 0 ? (
-              posts.map((post) => (
-                <PostCard
-                  key={post.id}
-                  post={post}
-                  currentUserId={currentUser?.id}
-                  redirectTo="/platform"
-                />
-              ))
+        {!currentUser && (
+          <div className="gc-welcome">
+            <h2>There is a place for you here.</h2>
+            <p>
+              Connect with people growing in faith. Share a testimony, ask for
+              prayer, and find ways to serve. Your account and posts are saved
+              on the real platform.
+            </p>
+            <Link href="/platform/signup" className="gc-button">
+              Create an account
+              <ArrowRight aria-hidden="true" />
+            </Link>
+          </div>
+        )}
+        <div className="gc-home-columns">
+          <div className="min-w-0">
+            {currentUser && (
+              <details id="compose-post" className="gc-composer">
+                <summary>
+                  <PenLine aria-hidden="true" />
+                  Share what&apos;s on your heart
+                </summary>
+                <PostComposer />
+              </details>
+            )}
+            {posts.length ? (
+              <FeedReader
+                items={posts.map((post) => ({
+                  id: post.id,
+                  label: post.author.name,
+                  content: (
+                    <PostCard
+                      post={post}
+                      currentUserId={currentUser?.id}
+                      redirectTo={`/platform?post=${post.id}`}
+                    />
+                  )
+                }))}
+                initialPost={params.post}
+                initialMode={
+                  params.mode === "pages" || params.mode === "list"
+                    ? params.mode
+                    : undefined
+                }
+                moreHref={moreHref}
+              />
             ) : (
-              <div className="border-[#f2d8af]/18 rounded-3xl border bg-[#1a120c] p-8 text-center text-[#e8d3b2]">
-                <p className="text-3xl text-white">No posts yet.</p>
-                <p className="mt-2">
+              <div className="gc-empty">
+                <MessageCircle aria-hidden="true" />
+                <h2>No posts yet.</h2>
+                <p>
                   {currentUser
-                    ? "Share a testimony, prayer request, or update. Follow people to see their posts here."
-                    : "Create an account to share a testimony, prayer request, or update. There are no public posts to show yet."}
+                    ? "This space grows with the people you follow. Find someone to connect with, or share the first word of encouragement."
+                    : "Every community starts with a conversation. Create an account to share a testimony, prayer request, or update."}
                 </p>
+                <Link
+                  href={currentUser ? "/platform/search" : "/platform/signup"}
+                  className="gc-button gc-button-quiet"
+                >
+                  {currentUser ? "Find your people" : "Join the conversation"}
+                  <ArrowRight aria-hidden="true" />
+                </Link>
               </div>
             )}
           </div>
-
-          <aside className="space-y-4">
-            <div className="border-[#f2d8af]/18 rounded-3xl border bg-[#1a120c] p-5">
-              <div className="mb-3 flex items-center gap-2 text-[#f4c98c]">
-                <ShieldCheck className="h-5 w-5" />
-                <p className="font-semibold">Preview rules</p>
-              </div>
-              <p className="text-sm leading-relaxed text-[#d8c4a8]">
-                This is a live skeleton for testing. Keep posts Christ-honoring,
-                useful, and kind while we build moderation.
+          <aside className="gc-context">
+            <section>
+              <p className="gc-eyebrow mb-3">Rooted in real life</p>
+              <h2>Your local church matters.</h2>
+              <p>
+                Online connection is a beginning, not a replacement for
+                gathering together.
               </p>
-            </div>
-
-            <Link
-              href="/platform/search"
-              className="border-[#f2d8af]/18 flex items-center justify-between rounded-3xl border bg-[#1a120c] p-5 text-[#f8ead6] hover:border-[#f4c98c]/50"
-            >
-              <span className="inline-flex items-center gap-2">
-                <Search className="h-5 w-5 text-[#f4c98c]" /> Search people and
-                posts
-              </span>
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-
-            <div className="border-[#f2d8af]/18 rounded-3xl border bg-[#1a120c] p-5">
-              <div className="mb-4 flex items-center gap-2 text-[#f4c98c]">
-                <UsersRound className="h-5 w-5" />
-                <p className="font-semibold">Newest members</p>
-              </div>
-              <div className="space-y-3">
-                {newestMembers.map((member) => (
-                  <Link
-                    key={member.id}
-                    href={`/platform/profile/${member.username}`}
-                    className="bg-black/24 hover:bg-black/34 block rounded-2xl p-3"
-                  >
-                    <p className="font-semibold text-white">{member.name}</p>
-                    <p className="text-sm text-[#cdbb9d]">@{member.username}</p>
-                  </Link>
-                ))}
-              </div>
-            </div>
+              <Link href="/platform/my-church">
+                My church connection <span aria-hidden="true">→</span>
+              </Link>
+            </section>
+            <section>
+              <h2>A thoughtful place</h2>
+              <p>
+                Share with care. Posts are public, so keep private prayer
+                details and personal contact information out of your feed.
+              </p>
+              <Link href="/platform/help">Find help and contacts</Link>
+            </section>
           </aside>
         </div>
+        <p className="mt-8 text-sm text-gc-muted">
+          New to the church tools?{" "}
+          <Link
+            href="/platform/demo"
+            className="inline-flex min-h-11 items-center text-gc-action underline underline-offset-4"
+          >
+            Take the read-only tour
+          </Link>
+          . The tour uses fictional information.
+        </p>
       </section>
     </PlatformShell>
   );

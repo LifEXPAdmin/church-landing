@@ -34,13 +34,13 @@ export function SupportRows({
       {rows.map((c) => (
         <article
           key={c.id}
-          className="rounded-2xl border border-[#f2d8af]/20 bg-[#1a120c] p-5"
+          className="rounded-xl border border-gc-divider bg-gc-surface p-5"
         >
-          <p className="text-xs font-semibold uppercase tracking-wider text-[#f4c98c]">
+          <p className="text-xs font-semibold uppercase tracking-wider text-gc-accent">
             {supportCategories[c.category]}
             {c.unread ? " / Updated" : ""}
           </p>
-          <h2 className="mt-2 break-words text-2xl text-white">
+          <h2 className="mt-2 break-words text-2xl text-gc-text">
             <Link
               className={portalLinkClass + " text-xl"}
               href={
@@ -52,11 +52,11 @@ export function SupportRows({
               {c.subject}
             </Link>
           </h2>
-          <p className="mt-2 text-sm text-[#d8c4a8]">
+          <p className="mt-2 text-sm text-gc-muted">
             {supportStatuses[c.status]}
             {c.unassigned ? " / Awaiting assignment" : ""}
           </p>
-          <p className="mt-2 text-xs text-[#d8c4a8]">
+          <p className="mt-2 text-xs text-gc-muted">
             Updated <SupportTime value={c.updatedAt} />
           </p>
         </article>
@@ -72,22 +72,22 @@ export function SupportConversation({ detail: c }: { detail: SupportDetail }) {
   return (
     <div className="space-y-5">
       <PortalCard title="Your request">
-        <p className="text-sm text-[#f4c98c]">
+        <p className="text-sm text-gc-accent">
           {supportCategories[c.category]} / {supportStatuses[c.status]}
         </p>
-        <p className="whitespace-pre-wrap leading-relaxed text-[#f3dfc3]">
+        <p className="whitespace-pre-wrap leading-relaxed text-gc-text">
           {c.description}
         </p>
-        <p className="text-xs text-[#d8c4a8]">
+        <p className="text-xs text-gc-muted">
           Received <SupportTime value={c.createdAt} />
         </p>
         {c.church && (
-          <p className="text-sm text-[#d8c4a8]">
+          <p className="text-sm text-gc-muted">
             Church context: {c.church.name}. This request stays with its
             original context.
           </p>
         )}
-        <p className="text-sm text-[#d8c4a8]">
+        <p className="text-sm text-gc-muted">
           Who can read and reply: {c.requester.name} (requester),{" "}
           {c.owner
             ? `${c.owner.name} (Godschurches support owner)`
@@ -104,15 +104,15 @@ export function SupportConversation({ detail: c }: { detail: SupportDetail }) {
           </PortalEmpty>
         )}
         {c.featureDecision && (
-          <p className="text-sm text-[#f4c98c]">
+          <p className="text-sm text-gc-accent">
             Suggestion decision: {featureDecisions[c.featureDecision]}. This is
             separate from the request status and is not a promise to build.
           </p>
         )}
         {c.resolution && (
-          <div className="rounded-xl border border-[#f2d8af]/20 p-4">
-            <h3 className="text-xl text-white">Resolution</h3>
-            <p className="mt-2 whitespace-pre-wrap text-[#d8c4a8]">
+          <div className="rounded-xl border border-gc-divider p-4">
+            <h3 className="text-xl text-gc-text">Resolution</h3>
+            <p className="mt-2 whitespace-pre-wrap text-gc-muted">
               {c.resolution}
             </p>
           </div>
@@ -122,10 +122,10 @@ export function SupportConversation({ detail: c }: { detail: SupportDetail }) {
         {c.messages.length ? (
           <ol className="space-y-5">
             {c.messages.map((m) => (
-              <li key={m.id} className="border-l-2 border-[#f4c98c]/40 pl-4">
-                <p className="font-semibold text-[#f3dfc3]">
+              <li key={m.id} className="border-l-2 border-gc-action pl-4">
+                <p className="font-semibold text-gc-text">
                   {m.author}{" "}
-                  <span className="font-normal text-[#d8c4a8]">
+                  <span className="font-normal text-gc-muted">
                     /{" "}
                     {(
                       {
@@ -138,10 +138,10 @@ export function SupportConversation({ detail: c }: { detail: SupportDetail }) {
                     )[m.kind] ?? "Update"}
                   </span>
                 </p>
-                <p className="my-2 whitespace-pre-wrap leading-relaxed text-[#d8c4a8]">
+                <p className="my-2 whitespace-pre-wrap leading-relaxed text-gc-muted">
                   {m.body}
                 </p>
-                <p className="text-xs text-[#d8c4a8]">
+                <p className="text-xs text-gc-muted">
                   <SupportTime value={m.createdAt} />
                   {m.redacted ? " / Privacy redaction" : ""}
                 </p>
