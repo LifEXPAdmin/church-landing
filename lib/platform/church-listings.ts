@@ -41,7 +41,7 @@ function string(value: unknown, max: number, min = 1): string {
     throw new PortalError(400, "Check the required fields and their length.");
   return value.trim();
 }
-function listingData(value: unknown, complete: boolean): ListingData {
+export function listingData(value: unknown, complete: boolean): ListingData {
   if (!value || typeof value !== "object" || Array.isArray(value))
     throw new PortalError(400, "Check the church details.");
   const input = value as Record<string, unknown>;

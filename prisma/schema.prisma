@@ -103,6 +103,7 @@ model PlatformUser {
   connections ChurchConnection[]
   churchGrants ChurchCapabilityGrant[]
   operatorGrants PlatformOperatorGrant[]
+  churchClaims ChurchClaim[]
   churchListings ChurchListingSubmission[]
   contactAssignments ChurchContactAssignment[]
   supportGrants SupportCapabilityGrant[]
@@ -239,11 +240,14 @@ enum ChurchConnectionState {
 enum ChurchCapability {
   REVIEW_CONNECTIONS
   APPOINT_COORDINATORS
+  MANAGE_CHURCH_PROFILE
+  MANAGE_CHURCH_ACCESS
 }
 
 enum OperatorCapability {
   ESTABLISH_CHURCH
   REVIEW_CHURCH_LISTINGS
+  REVIEW_CHURCH_CLAIMS
   MANAGE_CHURCH_ACCESS
   MANAGE_ACCOUNTS
   ASSIGN_RELATIONSHIP_OWNER
@@ -266,6 +270,7 @@ model Church {
   name String
   summary String
   version Int @default(1)
+  managementVersion Int @default(0)
   communityListed Boolean @default(false)
   city String @default("")
   region String @default("")
@@ -284,6 +289,7 @@ model Church {
   contacts ChurchContactAssignment[]
   events ChurchAuditEvent[]
   supportCases SupportCase[]
+  claims ChurchClaim[]
   listings ChurchListingSubmission[]
 }
 
@@ -361,6 +367,8 @@ model ChurchDirectoryPreference {
 }
 
 model ChurchCapabilityGrant {
+  sourceClaimId String?
+  sourceClaim ChurchClaim? @relation(fields: [sourceClaimId], references: [id], onDelete: Restrict)
   id String @id @default(cuid())
   userId String
   churchId String
@@ -613,4 +621,62 @@ model PlatformFollow {
 
   @@unique([followerId, followingId])
   @@index([followingId])
+}
+
+enum ChurchClaimStatus {
+  DRAFT
+  SUBMITTED
+  NEEDS_INFORMATION
+  APPROVED
+  REJECTED
+  WITHDRAWN
+  REVOKED
+}
+
+model ChurchClaim {
+  id                    String                  @id @default(cuid())
+  ownerId               String
+  requestKey            String
+  churchId              String?
+  kind                  String
+  authority             Json
+  profile               Json
+  preparation           String                  @default("")
+  scopes                ChurchCapability[]      @default([])
+  status                ChurchClaimStatus       @default(DRAFT)
+  version               Int                     @default(1)
+  baseChurchVersion     Int?
+  baseManagementVersion Int                     @default(0)
+  credentialVersion     Int?
+  reviewReason          String                  @default("")
+  approvedBy            String?
+  policyVersion         String?
+  submittedAt           DateTime?
+  approvedAt            DateTime?
+  activatedAt           DateTime?
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  owner                 PlatformUser            @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  church                Church?                 @relation(fields: [churchId], references: [id], onDelete: Restrict)
+  decisions             ChurchClaimDecision[]
+  grants                ChurchCapabilityGrant[]
+
+  @@unique([ownerId, requestKey])
+  @@index([ownerId, createdAt])
+  @@index([status, createdAt])
+  @@index([churchId])
+}
+
+model ChurchClaimDecision {
+  id        String      @id @default(cuid())
+  claimId   String
+  actorId   String
+  action    String
+  reason    String
+  evidence  Json
+  version   Int
+  createdAt DateTime    @default(now())
+  claim     ChurchClaim @relation(fields: [claimId], references: [id], onDelete: Restrict)
+
+  @@index([claimId, createdAt])
 }

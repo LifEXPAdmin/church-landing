@@ -15,17 +15,21 @@ export function ChurchPublicDetails({
     <div className="space-y-4 break-words">
       <div>
         <p className="inline-flex rounded-full border border-gc-divider px-3 py-1 text-sm text-gc-accent">
-          {church.communityListed
-            ? "Community listing · Unofficial"
-            : "Church listing · Unverified"}
+          {church.representativeVerified
+            ? "Church-managed · Representative verified"
+            : church.communityListed
+              ? "Community listing · Unofficial"
+              : "Church listing · Unmanaged"}
         </p>
         {detail && (
           <p className="mt-2 text-sm text-gc-muted">
-            {church.communityListed
-              ? "Added by a community member. Not yet managed by a verified church representative."
-              : "Representative verification has not been completed for this listing."}{" "}
-            This describes page management, not the church’s beliefs or
-            legitimacy.
+            {church.representativeVerified
+              ? "An independently reviewed representative currently has management access."
+              : church.communityListed
+                ? "Added by a community member. Not yet managed by a verified church representative."
+                : "No verified representative currently manages this listing."}{" "}
+            This describes page management. It does not guarantee the church’s
+            teachings, safety or legitimacy.
           </p>
         )}
       </div>
@@ -91,12 +95,22 @@ export function ChurchPublicDetails({
             </p>
           )}
           {!preview && (
-            <Link
-              href={`/platform/church-listings/new?churchId=${encodeURIComponent(church.id)}`}
-              className={portalLinkClass}
-            >
-              Suggest a correction
-            </Link>
+            <div className="flex flex-wrap gap-5">
+              <Link
+                href={`/platform/church-claims/new?churchId=${encodeURIComponent(church.id)}`}
+                className={portalLinkClass}
+              >
+                {church.representativeVerified
+                  ? "Request management access"
+                  : "Represent this church? Verify your role"}
+              </Link>
+              <Link
+                href={`/platform/church-listings/new?churchId=${encodeURIComponent(church.id)}`}
+                className={portalLinkClass}
+              >
+                Suggest a correction
+              </Link>
+            </div>
           )}
         </>
       )}

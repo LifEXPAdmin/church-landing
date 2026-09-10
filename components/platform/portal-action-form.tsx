@@ -40,6 +40,7 @@ export function PortalActionForm({
   description,
   confirmation,
   listingAction,
+  claimAction,
   disabled = false
 }: {
   payload: {
@@ -52,10 +53,26 @@ export function PortalActionForm({
   confirmation?: string;
   disabled?: boolean;
 } & (
-  | { operation: PortalOperation; listingAction?: never }
+  | { operation: PortalOperation; listingAction?: never; claimAction?: never }
   | {
       operation?: never;
       listingAction: "create" | "save" | "publish" | "withdraw" | "review";
+      claimAction?: never;
+    }
+  | {
+      operation?: never;
+      listingAction?: never;
+      claimAction:
+        | "create"
+        | "save"
+        | "prepare"
+        | "submit"
+        | "review"
+        | "activate"
+        | "withdraw"
+        | "revoke"
+        | "profile-save"
+        | "profile-publish";
     }
 )) {
   const id = useId();
@@ -98,20 +115,37 @@ export function PortalActionForm({
         setResult(null);
         try {
           const response = await fetch(
-            listingAction
-              ? "/api/platform/church-listings"
-              : "/api/platform/portal",
+            claimAction
+              ? "/api/platform/church-claims"
+              : listingAction
+                ? "/api/platform/church-listings"
+                : "/api/platform/portal",
             {
               method: "POST",
               credentials: "same-origin",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 ...(listingAction === "save" ? { data: values } : values),
+                ...(claimAction === "save" || claimAction === "profile-save"
+                  ? {
+                      profile: Object.fromEntries(
+                        Object.entries(values)
+                          .filter(([key]) => key.startsWith("profile_"))
+                          .map(([key, value]) => [key.slice(8), value])
+                      ),
+                      authority: Object.fromEntries(
+                        Object.entries(values)
+                          .filter(([key]) => key.startsWith("authority_"))
+                          .map(([key, value]) => [key.slice(10), value])
+                      ),
+                      scopes: values
+                    }
+                  : {}),
                 ...payload,
-                ...(listingAction === "create"
+                ...(listingAction === "create" || claimAction === "create"
                   ? { requestKey: creationKey.current }
                   : {}),
-                operation: listingAction ?? operation
+                operation: claimAction ?? listingAction ?? operation
               })
             }
           );
@@ -134,6 +168,21 @@ export function PortalActionForm({
                   ? "Your session has ended. Sign in again before continuing."
                   : message
           });
+          if (
+            response.ok &&
+            claimAction &&
+            body &&
+            typeof body === "object" &&
+            "id" in body &&
+            typeof body.id === "string"
+          ) {
+            window.location.assign(
+              claimAction === "review"
+                ? "/platform/church-claims/review"
+                : `/platform/church-claims/${encodeURIComponent(body.id)}${claimAction === "save" || claimAction === "profile-save" ? "?preview=1" : ""}`
+            );
+            return;
+          }
           if (
             response.ok &&
             listingAction &&

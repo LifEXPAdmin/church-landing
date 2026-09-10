@@ -78,6 +78,9 @@ export async function ChurchListingPage({
           <Link href="/platform/church-listings" className={portalLinkClass}>
             My listing drafts
           </Link>
+          <Link href="/platform/church-claims/new" className={portalLinkClass}>
+            Represent a church
+          </Link>
         </section>
       </PlatformShell>
     );

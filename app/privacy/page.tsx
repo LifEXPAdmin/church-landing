@@ -40,6 +40,29 @@ export default function PrivacyPage() {
             </p>
           </section>
           <section>
+            <h2 className="mb-2 text-3xl">Church Representative Setup</h2>
+            <p>
+              Representative requests store private role and contact
+              information, requested permissions, public profile drafts and
+              optional preparation notes. Submitted requests are available to
+              independently authorized Godschurches reviewers or appropriately
+              authorized managers of that church. Reviewers can see the
+              claimant’s account name, username and verified sign-in email for
+              the review. Independent review references and staff notes stay in
+              the restricted review record; they are never public church
+              contacts.
+            </p>
+            <p className="mt-3">
+              You can download your own setup information through account
+              settings. Withdrawing or ending access preserves the request and
+              decision history. Activation grants only approved permissions
+              after current eligibility and authority checks. Verification
+              describes representative authority, and does not guarantee a
+              church’s teachings, safety or legitimacy. Deactivation preserves
+              setup records; active duties must be removed first.
+            </p>
+          </section>
+          <section>
             <h2 className="mb-2 text-3xl">Church Listings and Drafts</h2>
             <p>
               We store church listing drafts, proposed corrections, and review

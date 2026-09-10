@@ -358,7 +358,7 @@ test("public church search paginates for guests and members without searching pr
   }});
   const matches = await (await get("/api/platform/portal?view=public&q=" + encodeURIComponent(needle + "%_"))).json();
   assert.deepEqual(matches.churches.map((c: {id: string}) => c.id), [literal.id]);
-  assert.deepEqual(Object.keys(matches.churches[0]).sort(), ["id", "name", "slug", "summary", "version", "communityListed", "city", "region", "country", "serviceArea", "locationModel", "website", "publicEmail", "publicPhone", "meetingInfo", "denomination", "source"].sort());
+  assert.deepEqual(Object.keys(matches.churches[0]).sort(), ["id", "name", "slug", "summary", "version", "communityListed", "representativeVerified", "city", "region", "country", "serviceArea", "locationModel", "website", "publicEmail", "publicPhone", "meetingInfo", "denomination", "source"].sort());
   assert.equal(await db.churchConnection.count({where:{churchId:last.id}}), 0);
 });
 

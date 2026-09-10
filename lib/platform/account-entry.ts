@@ -11,13 +11,17 @@ export function safeAccountReturn(value: unknown): string {
   const url = new URL(value, "https://return.invalid");
   if (
     url.origin !== "https://return.invalid" ||
-    !/^\/platform(?:\/(?:search|menu|settings|profile(?:\/(?:me|[a-zA-Z0-9_]{3,24}))?|posts\/[a-zA-Z0-9_-]{1,100}|church-listings(?:\/[a-zA-Z0-9_-]{1,100})?|churches(?:\/[a-zA-Z0-9_-]{1,100}(?:\/(?:directory|review))?)?|my-church(?:\/sharing)?|help|support(?:\/[a-zA-Z0-9_-]{1,100})?))?\/?$/.test(
+    !/^\/platform(?:\/(?:search|menu|settings|profile(?:\/(?:me|[a-zA-Z0-9_]{3,24}))?|posts\/[a-zA-Z0-9_-]{1,100}|church-listings(?:\/[a-zA-Z0-9_-]{1,100})?|church-claims(?:\/(?:review(?:\/[a-zA-Z0-9_-]{1,100})?|[a-zA-Z0-9_-]{1,100}))?|churches(?:\/[a-zA-Z0-9_-]{1,100}(?:\/(?:directory|review))?)?|my-church(?:\/sharing)?|help|support(?:\/[a-zA-Z0-9_-]{1,100})?))?\/?$/.test(
       url.pathname
     )
   )
     return "/platform";
   const query = new URLSearchParams();
-  if (url.pathname === "/platform/church-listings/new") {
+  if (
+    ["/platform/church-listings/new", "/platform/church-claims/new"].includes(
+      url.pathname
+    )
+  ) {
     const churchId = url.searchParams.get("churchId");
     if (churchId && /^[a-zA-Z0-9_-]{1,100}$/.test(churchId))
       query.set("churchId", churchId);
@@ -31,6 +35,7 @@ export function safeAccountReturn(value: unknown): string {
 }
 
 export const accountReasons = {
+  claim: "Join or sign in to prepare a church representative request.",
   listing: "Join or sign in to add a church listing.",
   account: "Join or sign in to use your account.",
   profile: "Join or sign in to view member profiles.",

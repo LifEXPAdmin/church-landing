@@ -35,7 +35,7 @@ export function AccountExport() {
       <h2 id="account-data-title">Download your account data</h2>
       <p className="text-gc-muted">
         Get a JSON file containing your profile, posts, comments, likes,
-        follows, church directory choices, your church listing drafts and
+        follows, church directory choices, your private church setup, listing drafts and
         submissions, and your own support submissions. It contains personal
         information, so save it somewhere private.
       </p>

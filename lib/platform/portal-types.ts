@@ -14,6 +14,7 @@ export type ChurchSummary = {
   summary: string;
   version?: number;
   communityListed?: boolean;
+  representativeVerified?: boolean;
   connectionsAvailable?: boolean;
   city?: string;
   region?: string;

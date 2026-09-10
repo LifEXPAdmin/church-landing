@@ -56,6 +56,8 @@ const env = {
   ACCOUNT_GOOGLE_ENABLED: "false",
   GOOGLE_CLIENT_ID: "",
   GOOGLE_CLIENT_SECRET: "",
+  CHURCH_CLAIM_REVIEW_ENABLED: "true",
+  CHURCH_CLAIM_POLICY_VERSION: "manual-review-v1",
   SUPPORT_INTAKE_ENABLED: supportTests ? "true" : "false"
 };
 const log = join(dir, "setup.log");
@@ -181,7 +183,9 @@ try {
   ];
   const listingTables = [
     ["ChurchListingSubmission", "id"],
-    ["ChurchListingDecision", "id"]
+    ["ChurchListingDecision", "id"],
+    ["ChurchClaim", "id"],
+    ["ChurchClaimDecision", "id"]
   ];
   const supportTables = [
     ["SupportCapabilityGrant", "id"],
@@ -325,6 +329,7 @@ try {
   await runTests("tests/google-boundary.test.ts");
   if (portalTests) await runTests("tests/portal-service.test.ts");
   if (portalTests) await runTests("tests/church-listings.test.ts");
+  if (portalTests) await runTests("tests/church-claims.test.ts");
   if (supportTests) await runTests("tests/support-service.test.ts");
   run(join(pg, "pg_dump"), [
     database,
@@ -443,6 +448,11 @@ try {
     await runTests("tests/church-listing-http.test.ts", {
       ...env,
       LISTING_RENDER_PHASE: "development"
+    });
+  if (portalTests)
+    await runTests("tests/church-claim-http.test.ts", {
+      ...env,
+      CLAIM_RENDER_PHASE: "development"
     });
   if (portalTests) {
     run(
@@ -672,6 +682,10 @@ try {
     await runTests("tests/church-listing-http.test.ts", {
       ...portalEnv,
       LISTING_RENDER_PHASE: "production"
+    });
+    await runTests("tests/church-claim-http.test.ts", {
+      ...portalEnv,
+      CLAIM_RENDER_PHASE: "production"
     });
     if (supportTests) await runTests("tests/support-http.test.ts", portalEnv);
     if (supportTests) await runTests("tests/entrance-http.test.ts", portalEnv);

@@ -6,6 +6,7 @@ import {
   ChurchCapability,
   ChurchContactSlot
 } from "@prisma/client";
+import { verifiedChurchManagement } from "./church-management";
 import { readAccountSession, normalizeEmail } from "./accounts";
 import { reconcileSupportAccess } from "./support-revocation";
 import { churchSearchQuery } from "./church-search";
@@ -132,6 +133,7 @@ export async function operator(
   capability:
     | "ESTABLISH_CHURCH"
     | "REVIEW_CHURCH_LISTINGS"
+    | "REVIEW_CHURCH_CLAIMS"
     | "MANAGE_CHURCH_ACCESS"
     | "MANAGE_ACCOUNTS"
     | "ASSIGN_RELATIONSHIP_OWNER"
@@ -613,6 +615,7 @@ export async function portalCommand(
         userId,
         churchId,
         capability,
+        sourceClaimId: null,
         dependencyConnectionId: dependency?.id ?? null,
         revokedAt: null
       };
@@ -750,10 +753,18 @@ export async function publicChurches(
     orderBy: [{ name: "asc" }, { id: "asc" }],
     take: 101
   });
-  if (!churchId || !rows.length) return rows;
+  const managed = await verifiedChurchManagement(
+    db,
+    rows.map((row) => row.id)
+  );
+  const projected = rows.map((row) => ({
+    ...row,
+    representativeVerified: managed.has(row.id)
+  }));
+  if (!churchId || !rows.length) return projected;
   return [
     {
-      ...rows[0],
+      ...projected[0],
       connectionsAvailable: await connectionsAvailable(db, churchId)
     }
   ];
@@ -867,10 +878,17 @@ export async function getPortalSnapshot(
         })) ?? undefined)
       : active?.church;
     if (churchId && !church) throw new PortalError(404, "Church not found.");
-    snapshot.church = church;
+    snapshot.church = church
+      ? {
+          ...church,
+          representativeVerified: (
+            await verifiedChurchManagement(tx, [church.id])
+          ).has(church.id)
+        }
+      : undefined;
     if (church && view === "discover" && churchId)
       snapshot.church = {
-        ...church,
+        ...snapshot.church!,
         connectionsAvailable: await connectionsAvailable(
           tx,
           church.id,

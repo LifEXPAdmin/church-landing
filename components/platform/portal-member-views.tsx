@@ -207,6 +207,12 @@ export function PortalDiscover({
           >
             My listing drafts
           </Link>
+          <Link
+            href="/platform/church-claims"
+            className={`${portalLinkClass} mb-5 ml-5`}
+          >
+            My church setup
+          </Link>
         </>
       )}
       <div className="mb-6">
@@ -288,6 +294,12 @@ export function PortalPublicDiscover({
             className={`${portalLinkClass} mb-5`}
           >
             Add a church
+          </Link>
+          <Link
+            href="/platform/church-claims/new"
+            className={`${portalLinkClass} mb-5 ml-5`}
+          >
+            Set up your church
           </Link>
         </>
       )}

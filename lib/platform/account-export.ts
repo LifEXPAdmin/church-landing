@@ -1,3 +1,4 @@
+import { projectClaimAuthority, claimScopes } from "./church-claim-data";
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import type { PrismaClient } from "@prisma/client";
 import { withOwnedSession } from "./account-sessions";
@@ -193,7 +194,67 @@ export async function downloadAccountExport(
         }
       })
     ).map((row) => ({ ...row, data: projectListingData(row.data) }));
+    const churchClaims = (
+      await tx.churchClaim.findMany({
+        where: { ownerId: userId },
+        orderBy: { id: "asc" },
+        take: MAX_ROWS + 1,
+        select: {
+          id: true,
+          kind: true,
+          status: true,
+          authority: true,
+          profile: true,
+          preparation: true,
+          scopes: true,
+          reviewReason: true,
+          createdAt: true,
+          updatedAt: true,
+          activatedAt: true,
+          church: { select: { id: true, slug: true, name: true } }
+        }
+      })
+    ).map((row) => ({
+      ...row,
+      authority: projectClaimAuthority(row.authority),
+      profile: projectListingData(row.profile)
+    }));
+    const churchClaimSubmissions = (
+      await tx.churchClaimDecision.findMany({
+        where: { claim: { ownerId: userId }, action: "SUBMIT" },
+        orderBy: { id: "asc" },
+        take: MAX_ROWS + 1,
+        select: {
+          claimId: true,
+          version: true,
+          createdAt: true,
+          evidence: true
+        }
+      })
+    ).map((row) => {
+      const value =
+        row.evidence &&
+        typeof row.evidence === "object" &&
+        !Array.isArray(row.evidence)
+          ? row.evidence
+          : {};
+      return {
+        claimId: row.claimId,
+        version: row.version,
+        createdAt: row.createdAt,
+        authority: projectClaimAuthority(value.authority),
+        profile: projectListingData(value.profile),
+        scopes: Array.isArray(value.scopes)
+          ? value.scopes.filter(
+              (scope) =>
+                typeof scope === "string" && Object.hasOwn(claimScopes, scope)
+            )
+          : []
+      };
+    });
     const collections = {
+      churchClaimSubmissions,
+      churchClaims,
       churchListings,
       posts,
       comments,
@@ -211,7 +272,7 @@ export async function downloadAccountExport(
         version: 1,
         generatedAt: new Date().toISOString(),
         scope:
-          "Your account profile and linked Google identity, authored community content, likes/following, church directory choices, your own church listing drafts/submissions and your own support submissions. Other people's content, staff/church operations, credentials, session data and security audit records are excluded. Reading preferences saved only on this browser are not in this account file.",
+          "Your account profile and linked Google identity, authored community content, likes/following, church directory choices, your own church representative setup and listing drafts/submissions and your own support submissions. Other people's content, staff/church operations, credentials, session data and security audit records are excluded. Reading preferences saved only on this browser are not in this account file.",
         account,
         ...collections
       },
