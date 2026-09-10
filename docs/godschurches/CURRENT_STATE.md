@@ -1,5 +1,26 @@
 # Godschurches current state
 
+## Role-library code verified; browser acceptance pending — September 10, 2026
+
+`codex/church-role-templates` preserves the unpublished post/profile work and
+merges the live recovery-entry release. The 82-title catalog, versioned
+church-owned templates and editable recommendations are implemented. Separate
+position references preserve prior names, duties, reporting links and grants.
+The full isolated sweep passed 323 checks (321 pass, two expected skips), including
+populated upgrade, restore and fresh migrations. All 22 final affected production
+HTTPS checks, lint/types/build and runtime audit passed (91 traces / 7,198 entries /
+223 server JS files; no private fixtures/environment files).
+
+A real fictional browser saved the customized starter title and confirmed the
+390-pixel layout. An old native test confirmation stalled browser input. Page-based
+review controls now replace it; their remaining browser acceptance is still open
+pending dismissal of the old test tab. This task is neither completed nor
+published. See [CHURCH_STRUCTURE_REPORT.md](CHURCH_STRUCTURE_REPORT.md).
+The next independent code action is scoped permission delegation and assignment
+grant ownership, while the owner/browser step and real account email activation
+remain explicitly pending. The visual chart, social release and final batch
+review stay open.
+
 ## Password-recovery entry published — September 10, 2026
 
 `codex/account-recovery-activation` changes the account entry link to **Forgot

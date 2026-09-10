@@ -1,6 +1,76 @@
 # Church positions, responsibilities and access
 
-September 10, 2026 · Published; engineering checks complete
+September 10, 2026 · Published structure foundation; local role-library browser acceptance pending
+
+## Role library implementation — September 10, 2026
+
+The local `codex/church-role-templates` branch extends the published structure
+with a searchable 82-title starter library. Each title explicitly references one
+of eight versioned recommendation presets. A custom church title starts with the
+member/service preset and no additional recommended powers. Managers can edit
+the title, description, responsibilities and supported recommendations before
+saving. Sensitive access delegation and help-coordinator appointment start off;
+reviewed profile authority and unsupported draft-only/welcome tools cannot be
+added here. Recommendations do not grant any access.
+
+Eligible approved structure managers manage up to 200 active church-owned titles
+from **Structure → Role library**. Names are normalized for clear duplicate
+handling within one church. Another church may independently use the same name.
+A title can be archived without changing a saved position or its permissions;
+the name can then be reused as a new title. Immutable content revisions retain
+prior names, responsibilities and recommendations. Updates and archives recheck
+current membership/authority and both church/title versions in the existing
+serialized transaction. Creation uses a stable idempotency key.
+
+**Add a position** can copy a chosen church title and responsibilities into a new
+position instance, retaining its exact title revision through a composite
+church-scoped foreign key. Choosing the same title again creates another
+position; it does not merge positions, guess a supervisor, assign a member or
+apply permissions. Retitling or archiving the library entry leaves existing
+position names, duties, parent links, appointments and grants unchanged. Editing
+an existing position retains its original revision reference. Published positions
+receive only nullable reference columns in the additive migration; their IDs and
+existing relationships remain intact.
+
+The library editor preserves failed/stale drafts, previews the latest saved title
+before an explicit retry against its current version, retains creation keys,
+and confirms discard. Ordinary link navigation and document unload warn about
+an open draft; browser-history navigation inside the app remains separate future
+navigation work. The layout uses native controls, visible focus/status feedback
+and responsive cards. Real role assignment still uses the existing separate
+position/access operations. Assignment-owned grants, mandatory Privileges review,
+visual canvas, placement/drag/history and integrated chart acceptance remain
+subsequent implementation tasks.
+
+The full isolated regression run passed **323 checks: 321 passing, two expected
+account-delivery skips, no failures**. This includes the populated additive-upgrade
+rehearsal, six new role-library service groups, existing structure/account/calendar/
+post/profile regressions, backup/restore, fresh migration setup and actual
+development/production HTTP. After replacing native confirmations with in-page
+review controls and preserving the new-position reporting draft, all 22 final
+production HTTPS portal/structure/entry/guest checks passed again. Lint/types and
+build passed; the final runtime audit found 91 traces, 7,198 entries and 223 server
+JavaScript files with no private fixture/environment files.
+
+Actual fictional browser navigation reached the library, confirmed its 82-title
+catalog and narrowed search, opened a starter with keyboard focus, edited its
+recommendations and saved/reloaded the title. The 390-pixel editor was readable
+without horizontal overflow. A native confirmation in the original picker then
+stalled in-app browser input. It has been replaced with visible page controls,
+including deliberate title application, preset/discard/archive review and current
+saved-library recovery. Applying a title preserves the chosen reporting line,
+returns focus to the position name and disables the picker during a save.
+
+**Browser acceptance remains open.** The old test dialog needs dismissal before
+confirming the replacement controls, two-tab conflict recovery, stable network
+retry, separate position creation, archiving and remaining responsive journeys.
+The browser's documented dialog/close controls could not clear the stalled tab;
+a paired owner action records the exact temporary workstation step. This is not
+a completed or published role-library checkpoint. No real church records or
+permissions have been changed. The live release remains the password-recovery
+entry update; actual email activation is a separate owner dependency. Further
+permission-service work can build on the verified additive schema while browser
+acceptance remains explicitly pending.
 
 ## Implemented behavior
 

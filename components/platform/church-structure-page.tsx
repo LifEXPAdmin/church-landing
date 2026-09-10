@@ -1,3 +1,5 @@
+import { ChurchRoleLibrary } from "./church-role-library";
+import { ChurchRolePosition } from "./church-role-position";
 import { randomUUID } from "node:crypto";
 import Link from "next/link";
 import { PortalError } from "@/lib/platform/portal";
@@ -610,7 +612,7 @@ export async function ChurchStructurePage({
   cursor?: string;
   candidateCursor?: string;
 }) {
-  const path = `${root(churchId)}/${view === "person" ? `people/${encodeURIComponent(connectionId ?? "")}` : view === "structure" ? `structure${create ? "/new" : positionId ? `/${encodeURIComponent(positionId)}` : ""}` : view}`;
+  const path = `${root(churchId)}/${view === "roles" ? "structure/roles" : view === "person" ? `people/${encodeURIComponent(connectionId ?? "")}` : view === "structure" ? `structure${create ? "/new" : positionId ? `/${encodeURIComponent(positionId)}` : ""}` : view}`;
   // Do not read cookies or private church values inside development Flight diagnostics.
   if (process.env.NODE_ENV !== "production")
     return (
@@ -667,17 +669,19 @@ export async function ChurchStructurePage({
     ? snapshot.positions.find((p) => p.id === positionId)
     : undefined;
   const title =
-    view === "person"
-      ? snapshot.person!.name
-      : view === "overview"
-        ? snapshot.church.name
-        : view === "responsibilities"
-          ? "My responsibilities"
-          : view === "access"
-            ? "Church access"
-            : create
-              ? "Create a position"
-              : (row?.name ?? "Church structure");
+    view === "roles"
+      ? "Church role library"
+      : view === "person"
+        ? snapshot.person!.name
+        : view === "overview"
+          ? snapshot.church.name
+          : view === "responsibilities"
+            ? "My responsibilities"
+            : view === "access"
+              ? "Church access"
+              : create
+                ? "Create a position"
+                : (row?.name ?? "Church structure");
   return (
     <PlatformShell user={snapshot.viewer}>
       <section className="container-shell min-w-0 space-y-6 py-8 [overflow-wrap:anywhere]">
@@ -711,6 +715,15 @@ export async function ChurchStructurePage({
               {label}
             </Link>
           ))}
+          {snapshot.capabilities.includes("MANAGE_STRUCTURE") && (
+            <Link
+              href={`${root(churchId)}/structure/roles`}
+              className={portalLinkClass}
+              aria-current={view === "roles" ? "page" : undefined}
+            >
+              Role library
+            </Link>
+          )}
           {snapshot.capabilities.includes("MANAGE_CHURCH_ACCESS") && (
             <Link
               href={`${root(churchId)}/access`}
@@ -792,11 +805,31 @@ export async function ChurchStructurePage({
           <Responsibilities snapshot={snapshot} />
         )}
         {view === "access" && <Access snapshot={snapshot} query={query} />}
+        {view === "roles" && (
+          <ChurchRoleLibrary
+            snapshot={{
+              church: { id: snapshot.church.id },
+              version: snapshot.version,
+              roleTemplates: snapshot.roleTemplates
+            }}
+          />
+        )}
         {view === "structure" &&
           (create ? (
             <div className="max-w-2xl">
               <PortalCard title="Position details">
-                <PositionEditor snapshot={snapshot} />
+                <ChurchRolePosition
+                  snapshot={{
+                    church: { id: snapshot.church.id },
+                    version: snapshot.version,
+                    roleTemplates: snapshot.roleTemplates,
+                    positions: snapshot.positions.map(({ id, name }) => ({
+                      id,
+                      name
+                    }))
+                  }}
+                  requestKey={randomUUID()}
+                />
               </PortalCard>
             </div>
           ) : row ? (

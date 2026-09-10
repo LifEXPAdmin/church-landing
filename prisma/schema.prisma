@@ -371,6 +371,7 @@ model Church {
   claims ChurchClaim[]
   listings ChurchListingSubmission[]
   positions ChurchPosition[]
+  roleTemplates ChurchRoleTemplate[]
   calendars PlatformCalendar[]
   authoredPosts PlatformPost[] @relation("ChurchPostAuthor")
   sharedPosts PlatformPost[] @relation("ChurchPostAudience")
@@ -451,6 +452,9 @@ model ChurchPosition {
   parentId String?
   name String
   description String @default("")
+  roleTemplateId String?
+  roleTemplateVersion Int?
+  roleRevision ChurchRoleRevision? @relation(fields: [roleTemplateId, churchId, roleTemplateVersion], references: [templateId, churchId, version], onDelete: Restrict, onUpdate: Restrict)
   requestKey String
   archivedAt DateTime?
   createdAt DateTime @default(now())
@@ -462,6 +466,38 @@ model ChurchPosition {
   @@unique([id, churchId])
   @@unique([churchId, requestKey])
   @@index([churchId, archivedAt])
+}
+
+model ChurchRoleTemplate {
+  id String @id @default(cuid())
+  churchId String
+  normalizedName String
+  version Int @default(1)
+  requestKey String
+  archivedAt DateTime?
+  createdAt DateTime @default(now())
+  church Church @relation(fields: [churchId], references: [id], onDelete: Restrict)
+  revisions ChurchRoleRevision[]
+  @@unique([id, churchId])
+  @@unique([churchId, requestKey])
+  @@index([churchId, archivedAt])
+}
+
+model ChurchRoleRevision {
+  templateId String
+  churchId String
+  version Int
+  name String
+  description String
+  responsibilities String
+  starterId String?
+  presetKey String
+  presetVersion Int
+  recommendations ChurchCapability[]
+  createdAt DateTime @default(now())
+  template ChurchRoleTemplate @relation(fields: [templateId, churchId], references: [id, churchId], onDelete: Restrict, onUpdate: Restrict)
+  positions ChurchPosition[]
+  @@id([templateId, churchId, version])
 }
 
 model ChurchPositionAssignment {

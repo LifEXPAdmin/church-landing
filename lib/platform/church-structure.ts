@@ -1,4 +1,9 @@
 import {
+  roleTemplateCommand,
+  readRoleTemplates,
+  positionRoleRevision
+} from "./church-role-templates";
+import {
   type Prisma,
   type PrismaClient,
   type ChurchCapability
@@ -136,6 +141,9 @@ export async function churchStructureCommand(
         "assign",
         "unassign",
         "step-down",
+        "template-create",
+        "template-edit",
+        "template-archive",
         "grant",
         "revoke"
       ].includes(String(op))
@@ -244,6 +252,34 @@ export async function churchStructureCommand(
     }
     if (op !== "step-down")
       await churchCapability(tx, actor, churchId, "MANAGE_STRUCTURE");
+    if (String(op).startsWith("template-")) {
+      // Idempotent title creation still rechecks current authority first.
+      if (
+        op !== "template-create" ||
+        !(await tx.churchRoleTemplate.findUnique({
+          where: {
+            churchId_requestKey: {
+              churchId,
+              requestKey: identifier(input.requestKey)
+            }
+          }
+        }))
+      )
+        expected(input.expectedVersion, church.structureVersion);
+      const result = await roleTemplateCommand(tx, churchId, input);
+      if (result.changed) {
+        await advance(tx, churchId);
+        await audit(
+          tx,
+          actor.id,
+          churchId,
+          result.id,
+          String(op).toUpperCase().replaceAll("-", "_"),
+          church.structureVersion + 1
+        );
+      }
+      return { id: result.id, message: result.message };
+    }
     if (op === "create") {
       const requestKey = identifier(input.requestKey);
       const prior = await tx.churchPosition.findUnique({
@@ -267,12 +303,36 @@ export async function churchStructureCommand(
         );
       const parentId = input.parentId ? identifier(input.parentId) : null;
       validateTree([...rows, { id: "new-position", parentId }]);
+      const role = input.roleTemplateId
+        ? await positionRoleRevision(
+            tx,
+            churchId,
+            input.roleTemplateId,
+            input.roleTemplateVersion
+          )
+        : null;
+      if (
+        !role &&
+        input.roleTemplateVersion !== undefined &&
+        input.roleTemplateVersion !== null
+      )
+        throw new PortalError(400, "Choose a title with its current version.");
       const row = await tx.churchPosition.create({
         data: {
           churchId,
           parentId,
-          name: field(input.name),
-          description: field(input.description ?? "", 3000, true),
+          name: field(input.name ?? role?.name),
+          description: field(
+            input.description ?? role?.responsibilities ?? "",
+            3000,
+            true
+          ),
+          ...(role
+            ? {
+                roleTemplateId: role.templateId,
+                roleTemplateVersion: role.version
+              }
+            : {}),
           requestKey
         }
       });
@@ -459,6 +519,11 @@ export async function getChurchStructure(
         403,
         "Church access management is not available to this account."
       );
+    if (options.view === "roles" && !capabilities.includes("MANAGE_STRUCTURE"))
+      throw new PortalError(
+        403,
+        "Role title management is not available to this account."
+      );
     const rows = await tx.churchPosition.findMany({
       where: { churchId, archivedAt: null },
       orderBy: [{ name: "asc" }, { id: "asc" }],
@@ -468,6 +533,8 @@ export async function getChurchStructure(
         name: true,
         description: true,
         parentId: true,
+        roleTemplateId: true,
+        roleTemplateVersion: true,
         assignments: {
           where: { revokedAt: null, connection: activeMember },
           orderBy: { id: "asc" },
@@ -502,6 +569,8 @@ export async function getChurchStructure(
         name: p.name,
         description: p.description,
         parentId: p.parentId,
+        roleTemplateId: p.roleTemplateId,
+        roleTemplateVersion: p.roleTemplateVersion,
         assignments: p.assignments.map((a) => ({
           id: a.id,
           isSelf: a.connectionId === own.id,
@@ -514,6 +583,13 @@ export async function getChurchStructure(
         }))
       }))
     };
+    if (
+      capabilities.includes("MANAGE_STRUCTURE") &&
+      (options.view === "roles" ||
+        !options.view ||
+        options.view === "structure")
+    )
+      snapshot.roleTemplates = await readRoleTemplates(tx, churchId);
     if (options.view === "person") {
       const id = identifier(options.connectionId);
       const pref = await tx.churchDirectoryPreference.findFirst({

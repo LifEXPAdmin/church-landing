@@ -466,3 +466,135 @@ test("actual structure HTTP handles forged requests and preserves guest destinat
     assert.equal(html.includes(morgan.user.name), false);
   }
 });
+
+test("actual role library HTTP preserves revisions and separates templates from grants and position instances", async () => {
+  const template = await cmd({
+    operation: "template-create",
+    requestKey: randomUUID(),
+    name: "HTTP Role Library Canary",
+    description: "Only approved structure managers see this library.",
+    responsibilities: "Prepare rehearsals",
+    presetKey: "G"
+  });
+  const library = await read(ada.token, "&view=roles");
+  assert.equal(library.roleTemplates[0].id, template.id);
+  assert.deepEqual(library.roleTemplates[0].recommendations, []);
+  for (const token of [lee.token, pat.token, blake.token]) {
+    assert.equal(
+      (
+        await get(
+          `/api/platform/church-structure?churchId=${churchId}&view=roles`,
+          token
+        )
+      ).status,
+      403
+    );
+    await cmd(
+      {
+        operation: "template-edit",
+        templateId: template.id,
+        templateVersion: 1,
+        name: "Forbidden"
+      },
+      token,
+      403
+    );
+  }
+  const path = `/platform/churches/${churchId}/structure/roles`;
+  for (const rsc of [false, true]) {
+    const visible = await (await get(path, ada.token, rsc)).text();
+    if (production) {
+      assert.ok(visible.includes("HTTP Role Library Canary"));
+      if (!rsc) {
+        assert.ok(visible.includes("Starter library"));
+        assert.ok(visible.includes("Create a custom title"));
+      }
+    } else
+      assert.ok(visible.includes("Open the private church structure preview"));
+    for (const marker of [
+      ada.user.email,
+      morgan.user.email,
+      "Hidden Morgan Canary",
+      connections[morgan.user.id]
+    ])
+      assert.equal(visible.includes(marker), false, marker);
+    for (const token of ["", lee.token, blake.token, pat.token]) {
+      const deniedHtml = await (await get(path, token, rsc)).text();
+      assert.equal(deniedHtml.includes("HTTP Role Library Canary"), false);
+      assert.equal(
+        deniedHtml.includes(
+          "Only approved structure managers see this library."
+        ),
+        false
+      );
+      if (production && !token)
+        assert.ok(deniedHtml.includes(encodeURIComponent(path)));
+    }
+  }
+  const first = await cmd({
+    operation: "create",
+    requestKey: randomUUID(),
+    roleTemplateId: template.id,
+    roleTemplateVersion: 1
+  });
+  const second = await cmd({
+    operation: "create",
+    requestKey: randomUUID(),
+    roleTemplateId: template.id,
+    roleTemplateVersion: 1,
+    parentId: first.id
+  });
+  assert.notEqual(first.id, second.id);
+  const grants = await db.churchCapabilityGrant.findMany({
+    where: { churchId },
+    orderBy: { id: "asc" }
+  });
+  await cmd({
+    operation: "template-edit",
+    templateId: template.id,
+    templateVersion: 1,
+    name: "HTTP Updated Role",
+    presetKey: "C",
+    recommendations: ["EDIT_CHURCH_CALENDAR"]
+  });
+  await cmd(
+    {
+      operation: "template-edit",
+      templateId: template.id,
+      templateVersion: 1,
+      name: "Stale title"
+    },
+    ada.token,
+    409
+  );
+  const persisted = await db.churchPosition.findUniqueOrThrow({
+    where: { id: second.id }
+  });
+  assert.equal(persisted.name, "HTTP Role Library Canary");
+  assert.equal(persisted.roleTemplateVersion, 1);
+  assert.equal(persisted.parentId, first.id);
+  await cmd({
+    operation: "template-archive",
+    templateId: template.id,
+    templateVersion: 2,
+    confirmed: true
+  });
+  await cmd(
+    {
+      operation: "create",
+      requestKey: randomUUID(),
+      roleTemplateId: template.id,
+      roleTemplateVersion: 2
+    },
+    ada.token,
+    404
+  );
+  assert.equal((await read(ada.token, "&view=roles")).roleTemplates.length, 0);
+  assert.deepEqual(
+    await db.churchCapabilityGrant.findMany({
+      where: { churchId },
+      orderBy: { id: "asc" }
+    }),
+    grants
+  );
+});

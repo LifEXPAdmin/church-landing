@@ -1,3 +1,4 @@
+import type { ChurchRoleSummary } from "./church-role-library";
 import type { ChurchSummary, DirectoryEntry } from "./portal-types";
 
 export const structureCapabilities = {
@@ -14,6 +15,9 @@ export const structureCapabilities = {
 } as const;
 export type StructureCapability = keyof typeof structureCapabilities;
 export type StructureOperation =
+  | "template-create"
+  | "template-edit"
+  | "template-archive"
   | "create"
   | "edit"
   | "archive"
@@ -23,6 +27,7 @@ export type StructureOperation =
   | "grant"
   | "revoke";
 export type StructureView =
+  | "roles"
   | "overview"
   | "structure"
   | "responsibilities"
@@ -33,6 +38,8 @@ export type PositionSummary = {
   parentId: string | null;
   name: string;
   description: string;
+  roleTemplateId?: string | null;
+  roleTemplateVersion?: number | null;
   assignments: {
     id: string;
     name?: string;
@@ -47,6 +54,7 @@ export type StructureSnapshot = {
   ownConnectionId: string;
   capabilities: StructureCapability[];
   positions: PositionSummary[];
+  roleTemplates?: ChurchRoleSummary[];
   candidates?: { id: string; name: string }[];
   candidatesCursor?: string;
   grants?: {

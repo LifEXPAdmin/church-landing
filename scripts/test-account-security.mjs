@@ -193,6 +193,8 @@ try {
     ["ChurchClaimDecision", "id"],
     ["ChurchPosition", "id"],
     ["ChurchPositionAssignment", "id"],
+    ["ChurchRoleTemplate", "id"],
+    ["ChurchRoleRevision", "templateId"],
     ["PlatformCalendar", "id"],
     ["CalendarEvent", "id"],
     ["CalendarOccurrence", "id"],
@@ -338,6 +340,46 @@ try {
       console.log(
         "Actual Stage2B -> Stage2C additive upgrade preserved account and church fingerprints."
       );
+    } else if (name === "20260910173000_church_role_templates") {
+      psql([
+        "-c",
+        `INSERT INTO "ChurchPosition" (id,"churchId",name,description,"requestKey","updatedAt") VALUES ('fixture-role-upgrade-root','fixture-stage2b-church','Existing leadership','Keep published duties','fixture-role-root',CURRENT_TIMESTAMP);
+        INSERT INTO "ChurchPosition" (id,"churchId","parentId",name,description,"requestKey","updatedAt") VALUES ('fixture-role-upgrade-child','fixture-stage2b-church','fixture-role-upgrade-root','Existing outreach','Keep reporting link','fixture-role-child',CURRENT_TIMESTAMP);
+        INSERT INTO "ChurchPositionAssignment" (id,"churchId","positionId","connectionId") VALUES ('fixture-role-upgrade-appointment','fixture-stage2b-church','fixture-role-upgrade-child','fixture-stage2b-connection');
+        INSERT INTO "ChurchCapabilityGrant" (id,"churchId","userId",capability) VALUES ('fixture-role-upgrade-grant','fixture-stage2b-church','fixture-existing','MANAGE_STRUCTURE');`
+      ]);
+      const positions = () =>
+        psql([
+          "-Atc",
+          `SELECT md5(jsonb_agg(to_jsonb(t) - ARRAY['roleTemplateId','roleTemplateVersion'] ORDER BY id)::text) FROM "ChurchPosition" t`
+        ]);
+      const prior = [
+        positions(),
+        fingerprint("ChurchPositionAssignment", "id"),
+        fingerprint("ChurchCapabilityGrant", "id")
+      ];
+      psql(["-f", `prisma/migrations/${name}/migration.sql`]);
+      const after = [
+        positions(),
+        fingerprint("ChurchPositionAssignment", "id"),
+        fingerprint("ChurchCapabilityGrant", "id")
+      ];
+      if (JSON.stringify(prior) !== JSON.stringify(after))
+        throw new Error(
+          "Role-library upgrade changed published positions, appointments or grants"
+        );
+      if (
+        psql([
+          "-Atc",
+          `SELECT count(*) FROM "ChurchPosition" WHERE "roleTemplateId" IS NOT NULL OR "roleTemplateVersion" IS NOT NULL`
+        ]).trim() !== "0"
+      )
+        throw new Error(
+          "Existing positions unexpectedly gained role references"
+        );
+      console.log(
+        "Role-library additive upgrade preserved populated position IDs, reporting edges, responsibilities, appointments and independent grants."
+      );
     } else psql(["-f", `prisma/migrations/${name}/migration.sql`]);
   }
   for (const [i, [table, key]] of accountTables.entries()) {
@@ -370,6 +412,7 @@ try {
   if (portalTests) await runTests("tests/church-listings.test.ts");
   if (portalTests) await runTests("tests/church-claims.test.ts");
   if (portalTests) await runTests("tests/church-structure.test.ts");
+  if (portalTests) await runTests("tests/church-role-templates.test.ts");
   if (portalTests) await runTests("tests/calendars.test.ts");
   if (portalTests) await runTests("tests/post-publishing.test.ts");
   if (portalTests) await runTests("tests/post-participation.test.ts");

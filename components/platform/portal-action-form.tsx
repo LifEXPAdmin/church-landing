@@ -43,6 +43,7 @@ export function PortalActionForm({
   listingAction,
   claimAction,
   structureAction,
+  onBusyChange,
   disabled = false
 }: {
   payload: {
@@ -54,6 +55,7 @@ export function PortalActionForm({
   description?: string;
   confirmation?: string;
   disabled?: boolean;
+  onBusyChange?: (busy: boolean) => void;
 } & (
   | {
       operation: PortalOperation;
@@ -102,6 +104,9 @@ export function PortalActionForm({
     message: string;
   } | null>(null);
   const busy = pending || refreshing;
+  useEffect(() => {
+    onBusyChange?.(busy);
+  }, [busy, onBusyChange]);
 
   useEffect(() => {
     if (result) resultRef.current?.focus();

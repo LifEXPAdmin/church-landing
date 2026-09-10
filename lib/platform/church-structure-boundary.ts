@@ -23,6 +23,7 @@ export async function handleChurchStructureRequest(
       const view = url.searchParams.get("view") ?? "structure";
       if (
         ![
+          "roles",
           "overview",
           "structure",
           "responsibilities",
