@@ -5,7 +5,7 @@ main `ab14cf9ba258517ce76a1f24be55b0fd9eff3fc3`.
 
 ## Recovery entry clarification — September 10, 2026
 
-The current candidate on `codex/account-recovery-activation` is based on published
+The verified change on `codex/account-recovery-activation` is based on published
 calendar revision `745917ae45116c59e1a4aed8ca8f52a081665861`. Sign-in and signup now
 use the requested **Forgot password?** label and preserve the existing recovery
 route. The surrounding guidance uses the same validated delivery-availability
@@ -38,8 +38,15 @@ against the matching calendar fixture. These were verification corrections, not
 production account changes. The existing recovery checks prove expiry, one-use
 reset and old-session invalidation separately from real inbox receipt.
 
-Publication is being verified. The exact label/destination and enabled/disabled
-wording are covered without exposing sender credentials.
+Application `324415197e5be57a007023dda4aacc5e70d16a09` is published on READY
+production `dpl_NJ72TNNqvtkBt71YXfoKvsWf3unF` (September 10, 16:40:24.703 UTC).
+Exact Git SHA and canonical serving identity passed. All 13 live read-only HTTP
+checks passed at 16:42:19 UTC, and the actual 390-pixel browser showed the exact
+Forgot password? label, a 44-pixel target, no horizontal overflow, keyboard
+navigation to the honest unavailable recovery screen, and the return link.
+No browser errors were returned. These checks did not submit an email address or
+change a live account. Real sender activation and account recovery remain open.
+A later report-only deployment may serve the same application code.
 
 ## Current delivery result
 

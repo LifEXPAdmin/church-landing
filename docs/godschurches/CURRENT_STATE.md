@@ -1,6 +1,6 @@
 # Godschurches current state
 
-## Password-recovery entry verified locally — September 10, 2026
+## Password-recovery entry published — September 10, 2026
 
 `codex/account-recovery-activation` changes the account entry link to **Forgot
 password?** and makes the surrounding guidance follow the same validated
@@ -13,7 +13,11 @@ two expected disabled-email skips and no unresolved failures. Final build/types/
 lint, migrations/restore/restart and runtime checks passed (85 traces / 6,163
 entries / 204 server JS files), including an additional private-fixture audit.
 The rendered-text/RSC assertion and a mismatched fixture resume were corrected.
-Publication is being verified. See [ACCOUNT_DELIVERY_REPORT.md](ACCOUNT_DELIVERY_REPORT.md).
+Application `324415197e5be57a007023dda4aacc5e70d16a09` is live on READY
+`dpl_NJ72TNNqvtkBt71YXfoKvsWf3unF` at 16:40:24.703 UTC. Exact canonical serving
+identity, all 13 live read-only checks and actual 390-pixel keyboard navigation
+passed; no browser errors were returned. See
+[ACCOUNT_DELIVERY_REPORT.md](ACCOUNT_DELIVERY_REPORT.md).
 
 Real sender activation is still pending: fresh hosting inspection found no
 Resend resource or sender variables and delivery remains disabled. The existing
