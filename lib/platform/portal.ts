@@ -63,8 +63,19 @@ const actorSelect = {
   adultPolicyVersion: true,
   portalVersion: true
 } as const;
-type Actor = Prisma.PlatformUserGetPayload<{ select: typeof actorSelect }>;
-const isEligible = (user: Actor) =>
+export type Actor = Prisma.PlatformUserGetPayload<{
+  select: typeof actorSelect;
+}>;
+export const isEligible = (
+  user: Pick<
+    Actor,
+    | "suspendedAt"
+    | "deactivatedAt"
+    | "emailVerifiedAt"
+    | "adultAcknowledgedAt"
+    | "adultPolicyVersion"
+  >
+) =>
   !user.suspendedAt &&
   !user.deactivatedAt &&
   !!user.emailVerifiedAt &&
@@ -228,6 +239,32 @@ export async function portal<T>(
   );
 }
 async function resetConnectionAccess(tx: Tx, connection: ChurchConnection) {
+  await tx.calendarShare.updateMany({
+    where: { connectionId: connection.id, revokedAt: null },
+    data: { revokedAt: new Date(), version: { increment: 1 } }
+  });
+  await tx.calendarEventShare.updateMany({
+    where: { connectionId: connection.id, revokedAt: null },
+    data: { revokedAt: new Date(), version: { increment: 1 } }
+  });
+  await tx.calendarResponse.updateMany({
+    where: {
+      userId: connection.userId,
+      state: { in: ["GOING", "MAYBE"] },
+      occurrence: {
+        event: {
+          OR: [
+            { calendar: { churchId: connection.churchId } },
+            {
+              calendar: { shares: { some: { churchId: connection.churchId } } }
+            },
+            { shares: { some: { churchId: connection.churchId } } }
+          ]
+        }
+      }
+    },
+    data: { state: "DECLINED", version: { increment: 1 } }
+  });
   const appointments = await tx.churchPositionAssignment.updateMany({
     where: { connectionId: connection.id, revokedAt: null },
     data: { revokedAt: new Date() }

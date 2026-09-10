@@ -187,7 +187,14 @@ try {
     ["ChurchClaim", "id"],
     ["ChurchClaimDecision", "id"],
     ["ChurchPosition", "id"],
-    ["ChurchPositionAssignment", "id"]
+    ["ChurchPositionAssignment", "id"],
+    ["PlatformCalendar", "id"],
+    ["CalendarEvent", "id"],
+    ["CalendarOccurrence", "id"],
+    ["CalendarShare", "id"],
+    ["CalendarEventShare", "id"],
+    ["CalendarResponse", "id"],
+    ["CalendarAudit", "id"]
   ];
   const supportTables = [
     ["SupportCapabilityGrant", "id"],
@@ -334,6 +341,7 @@ try {
   if (portalTests) await runTests("tests/church-listings.test.ts");
   if (portalTests) await runTests("tests/church-claims.test.ts");
   if (portalTests) await runTests("tests/church-structure.test.ts");
+  if (portalTests) await runTests("tests/calendars.test.ts");
   if (supportTests) await runTests("tests/support-service.test.ts");
   run(join(pg, "pg_dump"), [
     database,

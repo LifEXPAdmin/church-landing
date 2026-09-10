@@ -1,5 +1,17 @@
 # Godschurches current state
 
+## Calendar foundation verified locally — September 10, 2026
+
+`codex/calendar-foundation` adds private personal and church calendar ownership,
+explicit busy/detail sharing, separate editing/publication permissions, stable
+weekly occurrences, RSVP/commitments, private conflict hints and owned export.
+All 203 applicable checks passed (205 total, two expected delivery skips), plus
+a final calendar deactivation/reactivation test. Full migrations/restore/restart,
+production build/runtime and existing HTTPS regressions passed; final lint and
+TypeScript passed. Calendar routes/forms and actual browser acceptance are next.
+The foundation is local and unpublished; the structure release below remains
+live. See [CALENDAR_REPORT.md](CALENDAR_REPORT.md).
+
 ## Church structure published — September 10, 2026
 
 `codex/church-organization-structure` adds church positions, one-parent reporting

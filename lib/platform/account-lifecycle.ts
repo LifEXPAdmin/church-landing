@@ -72,6 +72,18 @@ export async function deactivateAccount(
       ]);
       if (duties.some(Boolean)) throw new AccountLifecycleError("handoff");
       const now = new Date();
+      await tx.calendarShare.updateMany({
+        where: { calendar: { ownerId: userId }, revokedAt: null },
+        data: { revokedAt: now, version: { increment: 1 } }
+      });
+      await tx.calendarEventShare.updateMany({
+        where: { event: { calendar: { ownerId: userId } }, revokedAt: null },
+        data: { revokedAt: now, version: { increment: 1 } }
+      });
+      await tx.calendarResponse.updateMany({
+        where: { userId, state: { in: ["GOING", "MAYBE"] } },
+        data: { state: "DECLINED", version: { increment: 1 } }
+      });
       await tx.platformUser.update({
         where: { id: userId },
         data: {

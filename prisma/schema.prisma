@@ -106,6 +106,9 @@ model PlatformUser {
   churchClaims ChurchClaim[]
   churchListings ChurchListingSubmission[]
   contactAssignments ChurchContactAssignment[]
+  calendars PlatformCalendar[] @relation("CalendarOwner")
+  createdCalendars PlatformCalendar[] @relation("CalendarCreator")
+  eventResponses CalendarResponse[]
   supportGrants SupportCapabilityGrant[]
   supportCases SupportCase[]
   supportMessages SupportMessage[]
@@ -243,6 +246,8 @@ enum ChurchCapability {
   MANAGE_CHURCH_PROFILE
   MANAGE_CHURCH_ACCESS
   MANAGE_STRUCTURE
+  EDIT_CHURCH_CALENDAR
+  PUBLISH_CHURCH_EVENTS
 }
 
 enum OperatorCapability {
@@ -294,6 +299,9 @@ model Church {
   claims ChurchClaim[]
   listings ChurchListingSubmission[]
   positions ChurchPosition[]
+  calendars PlatformCalendar[]
+  calendarShares CalendarShare[]
+  eventShares CalendarEventShare[]
 }
 
 enum ChurchListingStatus {
@@ -355,6 +363,8 @@ model ChurchConnection {
   contacts ChurchContactAssignment[]
   supportShares SupportCoordinatorShare[]
   positionAssignments ChurchPositionAssignment[]
+  calendarShares CalendarShare[]
+  eventShares CalendarEventShare[]
   @@unique([userId, churchId])
   @@unique([id, churchId])
   @@index([churchId, state])
@@ -390,6 +400,153 @@ model ChurchPositionAssignment {
   connection ChurchConnection @relation(fields: [connectionId, churchId], references: [id, churchId], onDelete: Restrict, onUpdate: Restrict)
   @@unique([positionId, connectionId])
   @@index([connectionId, revokedAt])
+}
+
+enum CalendarVisibility {
+  PRIVATE
+  CHURCH
+  PUBLIC
+}
+
+enum CalendarShareLevel {
+  BUSY
+  DETAILS
+}
+
+enum CalendarResponseState {
+  GOING
+  MAYBE
+  DECLINED
+}
+
+model PlatformCalendar {
+  id String @id @default(cuid())
+  ownerId String?
+  churchId String?
+  creatorId String
+  requestKey String
+  name String
+  timeZone String
+  version Int @default(1)
+  archivedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  owner PlatformUser? @relation("CalendarOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  church Church? @relation(fields: [churchId], references: [id], onDelete: Restrict)
+  creator PlatformUser @relation("CalendarCreator", fields: [creatorId], references: [id], onDelete: Restrict)
+  events CalendarEvent[]
+  shares CalendarShare[]
+  audit CalendarAudit[]
+  @@unique([creatorId, requestKey])
+  @@index([ownerId, archivedAt])
+  @@index([churchId, archivedAt])
+}
+
+model CalendarEvent {
+  id String @id @default(cuid())
+  calendarId String
+  requestKey String
+  title String
+  description String @default("")
+  location String @default("")
+  onlineUrl String @default("")
+  organizer String @default("")
+  visibility CalendarVisibility @default(PRIVATE)
+  allDay Boolean @default(false)
+  timeZone String
+  startLocal String
+  endLocal String
+  weeklyUntil String?
+  version Int @default(1)
+  canceledAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  calendar PlatformCalendar @relation(fields: [calendarId], references: [id], onDelete: Restrict)
+  occurrences CalendarOccurrence[]
+  shares CalendarEventShare[]
+  @@unique([calendarId, requestKey])
+  @@index([calendarId, canceledAt])
+}
+
+model CalendarOccurrence {
+  id String @id @default(cuid())
+  eventId String
+  ordinal Int
+  title String
+  description String @default("")
+  location String @default("")
+  onlineUrl String @default("")
+  organizer String @default("")
+  allDay Boolean
+  timeZone String
+  startLocal String
+  endLocal String
+  startAt DateTime @db.Timestamptz(3)
+  endAt DateTime @db.Timestamptz(3)
+  isException Boolean @default(false)
+  canceledAt DateTime?
+  version Int @default(1)
+  event CalendarEvent @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  responses CalendarResponse[]
+  @@unique([eventId, ordinal])
+  @@index([startAt, endAt])
+}
+
+model CalendarShare {
+  id String @id @default(cuid())
+  calendarId String
+  churchId String
+  connectionId String
+  level CalendarShareLevel
+  version Int @default(1)
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+  calendar PlatformCalendar @relation(fields: [calendarId], references: [id], onDelete: Restrict)
+  church Church @relation(fields: [churchId], references: [id], onDelete: Restrict)
+  connection ChurchConnection @relation(fields: [connectionId, churchId], references: [id, churchId], onDelete: Restrict, onUpdate: Restrict)
+  @@unique([calendarId, churchId])
+  @@index([connectionId, revokedAt])
+}
+
+model CalendarEventShare {
+  id String @id @default(cuid())
+  eventId String
+  churchId String
+  connectionId String
+  level CalendarShareLevel
+  version Int @default(1)
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+  event CalendarEvent @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  church Church @relation(fields: [churchId], references: [id], onDelete: Restrict)
+  connection ChurchConnection @relation(fields: [connectionId, churchId], references: [id, churchId], onDelete: Restrict, onUpdate: Restrict)
+  @@unique([eventId, churchId])
+  @@index([connectionId, revokedAt])
+}
+
+model CalendarResponse {
+  id String @id @default(cuid())
+  occurrenceId String
+  userId String
+  state CalendarResponseState
+  version Int @default(1)
+  updatedAt DateTime @updatedAt
+  occurrence CalendarOccurrence @relation(fields: [occurrenceId], references: [id], onDelete: Restrict)
+  user PlatformUser @relation(fields: [userId], references: [id], onDelete: Restrict)
+  @@unique([occurrenceId, userId])
+  @@index([userId, state])
+}
+
+model CalendarAudit {
+  id String @id @default(cuid())
+  calendarId String
+  actorId String
+  targetId String
+  action String
+  version Int
+  createdAt DateTime @default(now())
+  calendar PlatformCalendar @relation(fields: [calendarId], references: [id], onDelete: Restrict)
+  @@index([calendarId, createdAt])
 }
 
 model ChurchDirectoryPreference {

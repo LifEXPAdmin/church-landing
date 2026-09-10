@@ -252,7 +252,99 @@ export async function downloadAccountExport(
           : []
       };
     });
+    const personalCalendars = await tx.platformCalendar.findMany({
+      where: { ownerId: userId },
+      orderBy: { id: "asc" },
+      take: MAX_ROWS + 1,
+      select: {
+        id: true,
+        name: true,
+        timeZone: true,
+        archivedAt: true,
+        createdAt: true,
+        updatedAt: true
+      }
+    });
+    const personalEvents = await tx.calendarEvent.findMany({
+      where: { calendar: { ownerId: userId } },
+      orderBy: { id: "asc" },
+      take: MAX_ROWS + 1,
+      select: {
+        id: true,
+        calendarId: true,
+        title: true,
+        description: true,
+        location: true,
+        onlineUrl: true,
+        organizer: true,
+        allDay: true,
+        timeZone: true,
+        startLocal: true,
+        endLocal: true,
+        weeklyUntil: true,
+        canceledAt: true
+      }
+    });
+    const personalOccurrences = await tx.calendarOccurrence.findMany({
+      where: { event: { calendar: { ownerId: userId } } },
+      orderBy: { id: "asc" },
+      take: MAX_ROWS + 1,
+      select: {
+        id: true,
+        eventId: true,
+        ordinal: true,
+        title: true,
+        description: true,
+        location: true,
+        onlineUrl: true,
+        organizer: true,
+        allDay: true,
+        timeZone: true,
+        startLocal: true,
+        endLocal: true,
+        startAt: true,
+        endAt: true,
+        isException: true,
+        canceledAt: true
+      }
+    });
+    const calendarShares = await tx.calendarShare.findMany({
+      where: { calendar: { ownerId: userId } },
+      orderBy: { id: "asc" },
+      take: MAX_ROWS + 1,
+      select: {
+        calendarId: true,
+        churchId: true,
+        level: true,
+        createdAt: true,
+        revokedAt: true
+      }
+    });
+    const eventShares = await tx.calendarEventShare.findMany({
+      where: { event: { calendar: { ownerId: userId } } },
+      orderBy: { id: "asc" },
+      take: MAX_ROWS + 1,
+      select: {
+        eventId: true,
+        churchId: true,
+        level: true,
+        createdAt: true,
+        revokedAt: true
+      }
+    });
+    const eventResponses = await tx.calendarResponse.findMany({
+      where: { userId },
+      orderBy: { id: "asc" },
+      take: MAX_ROWS + 1,
+      select: { occurrenceId: true, state: true, updatedAt: true }
+    });
     const collections = {
+      personalCalendars,
+      personalEvents,
+      personalOccurrences,
+      calendarShares,
+      eventShares,
+      eventResponses,
       churchClaimSubmissions,
       churchClaims,
       churchListings,
@@ -272,7 +364,7 @@ export async function downloadAccountExport(
         version: 1,
         generatedAt: new Date().toISOString(),
         scope:
-          "Your account profile and linked Google identity, authored community content, likes/following, church directory choices, your own church representative setup and listing drafts/submissions and your own support submissions. Other people's content, staff/church operations, credentials, session data and security audit records are excluded. Reading preferences saved only on this browser are not in this account file.",
+          "Your account profile and linked Google identity, authored community content, likes/following, church directory choices, your own church representative setup and listing drafts/submissions, personal calendars/events and their sharing choices, your event responses and your own support submissions. Other people's content, staff/church operations, credentials, session data and security audit records are excluded. Reading preferences saved only on this browser are not in this account file.",
         account,
         ...collections
       },
