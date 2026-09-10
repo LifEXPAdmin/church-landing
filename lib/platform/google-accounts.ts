@@ -1,13 +1,23 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
 import { AccountError, SESSION_SECONDS } from "./accounts";
 import { withOwnedSession } from "./account-sessions";
+import {
+  AccountLifecycleError,
+  reactivateVerifiedAccount
+} from "./account-lifecycle";
+import {
+  isRecentAuthenticationPurpose,
+  requireAccountCredential,
+  type RecentAuthenticationPurpose
+} from "./account-credential";
 import { safeAccountReturn } from "./account-entry";
 import {
   createSessionToken,
   hashSessionToken,
   validToken,
   validatePassword,
-  verifyPassword
+  verifyPassword,
+  usablePasswordHash
 } from "./auth";
 import { ADULT_POLICY } from "./portal-types";
 import {
@@ -20,9 +30,54 @@ import {
 } from "./google-provider";
 
 const ATTEMPT_MS = 10 * 60_000;
+const RECENT_MS = 5 * 60_000;
 const txOptions = { maxWait: 5000, timeout: 15000 };
 type Tx = Prisma.TransactionClient;
 type LinkProof = { sessionToken: unknown; password: unknown };
+
+export async function beginGoogleReauthentication(
+  db: PrismaClient,
+  sessionToken: unknown,
+  browserToken: string,
+  purpose: RecentAuthenticationPurpose,
+  next: unknown
+) {
+  if (!validToken(browserToken) || !isRecentAuthenticationPurpose(purpose))
+    throw new GoogleAccountError();
+  const state = createSessionToken();
+  const nonce = createSessionToken();
+  await withOwnedSession(
+    db,
+    sessionToken,
+    async (tx, current) => {
+      if (
+        !(await tx.platformGoogleIdentity.findUnique({
+          where: { userId: current.userId },
+          select: { id: true }
+        }))
+      )
+        throw new GoogleAccountError();
+      await tx.platformRecentAuthentication.deleteMany({
+        where: { expiresAt: { lt: new Date() } }
+      });
+      await tx.platformGoogleAttempt.create({
+        data: {
+          stateHash: hashSessionToken(state),
+          browserHash: hashSessionToken(browserToken),
+          nonceHash: hashSessionToken(nonce),
+          returnTo: safeAccountReturn(next),
+          expiresAt: new Date(Date.now() + ATTEMPT_MS),
+          linkUserId: current.userId,
+          linkSessionId: current.id,
+          credentialVersion: current.credentialVersion,
+          reauthPurpose: purpose
+        }
+      });
+    },
+    true
+  );
+  return { state, nonce };
+}
 
 // The HTTP layer must enforce exact origin, rate limits and HttpOnly browser
 // cookies. All returned raw tokens are server response work, never page props.
@@ -115,6 +170,13 @@ const identityWhere = (subject: string) => ({
 type AttemptResult =
   | { kind: "signed-in"; token: string; next: string }
   | { kind: "linked"; next: string }
+  | {
+      kind: "reauthenticated";
+      recentToken: string;
+      purpose: RecentAuthenticationPurpose;
+      next: string;
+    }
+  | { kind: "reactivate"; reactivationToken: string; next: string }
   | { kind: "signup"; signupToken: string; next: string }
   | { kind: "link-required"; next: string };
 
@@ -199,6 +261,47 @@ export async function finishGoogleAttempt(
         current.expiresAt <= new Date()
       )
         throw new GoogleAccountError();
+      if (pending.reauthPurpose) {
+        if (
+          !isRecentAuthenticationPurpose(pending.reauthPurpose) ||
+          !identity ||
+          identity.userId !== current.userId
+        )
+          throw new GoogleAccountError();
+        const recentToken = createSessionToken();
+        const data = {
+          tokenHash: hashSessionToken(recentToken),
+          credentialVersion: current.credentialVersion,
+          googleIdentityId: identity.id,
+          userId: current.userId,
+          expiresAt: new Date(Date.now() + RECENT_MS),
+          createdAt: new Date()
+        };
+        await tx.platformRecentAuthentication.upsert({
+          where: {
+            sessionId_purpose: {
+              sessionId: current.id,
+              purpose: pending.reauthPurpose
+            }
+          },
+          create: {
+            ...data,
+            sessionId: current.id,
+            purpose: pending.reauthPurpose
+          },
+          update: data
+        });
+        await tx.platformGoogleAttempt.update({
+          where: { id: pending.id },
+          data: { completedAt: new Date() }
+        });
+        return {
+          kind: "reauthenticated",
+          recentToken,
+          purpose: pending.reauthPurpose,
+          next: pending.returnTo
+        };
+      }
       const own = await tx.platformGoogleIdentity.findUnique({
         where: { userId: current.userId }
       });
@@ -222,6 +325,33 @@ export async function finishGoogleAttempt(
       return { kind: "linked", next: pending.returnTo };
     }
     if (identity) {
+      await tx.$queryRaw`SELECT "id" FROM "PlatformUser" WHERE "id" = ${identity.userId} FOR UPDATE`;
+      const account = await tx.platformUser.findUnique({
+        where: { id: identity.userId },
+        select: {
+          suspendedAt: true,
+          deactivatedAt: true,
+          credentialVersion: true
+        }
+      });
+      if (!account || account.suspendedAt) throw new GoogleAccountError();
+      if (account.deactivatedAt) {
+        const reactivationToken = createSessionToken();
+        await tx.platformGoogleAttempt.update({
+          where: { id: pending.id },
+          data: {
+            reactivationTokenHash: hashSessionToken(reactivationToken),
+            linkUserId: identity.userId,
+            subject: identity.subject,
+            credentialVersion: account.credentialVersion
+          }
+        });
+        return {
+          kind: "reactivate",
+          reactivationToken,
+          next: pending.returnTo
+        };
+      }
       const token = await session(tx, identity.userId, input.userAgent ?? null);
       await tx.platformGoogleAttempt.update({
         where: { id: pending.id },
@@ -357,12 +487,9 @@ export async function unlinkGoogleIdentity(
     token,
     async (tx, current) => {
       // A passwordless account cannot remove its only usable sign-in method.
-      if (
-        !current.user.passwordHash ||
-        validatePassword(password) ||
-        !(await verifyPassword(password, current.user.passwordHash))
-      )
+      if (!usablePasswordHash(current.user.passwordHash))
         throw new AccountError("credentials");
+      await requireAccountCredential(tx, current, password, "unlink-google");
       const removed = await tx.platformGoogleIdentity.deleteMany({
         where: { userId: current.userId }
       });
@@ -394,9 +521,68 @@ export async function unlinkGoogleIdentity(
   );
 }
 
+export async function finishGoogleReactivation(
+  db: PrismaClient,
+  browserToken: unknown,
+  reactivationToken: unknown,
+  confirmed: unknown
+) {
+  if (confirmed !== true) throw new AccountLifecycleError("confirmation");
+  if (!validToken(browserToken) || !validToken(reactivationToken))
+    throw new GoogleAccountError();
+  return gated(db, async (tx) => {
+    const proof = await tx.platformGoogleAttempt.findUnique({
+      where: { reactivationTokenHash: hashSessionToken(reactivationToken) }
+    });
+    if (
+      !proof ||
+      proof.browserHash !== hashSessionToken(browserToken) ||
+      !proof.consumedAt ||
+      proof.completedAt ||
+      proof.expiresAt <= new Date() ||
+      !proof.linkUserId ||
+      !proof.subject ||
+      proof.linkSessionId ||
+      proof.reauthPurpose
+    )
+      throw new GoogleAccountError();
+    await tx.$queryRaw`SELECT "id" FROM "PlatformUser" WHERE "id" = ${proof.linkUserId} FOR UPDATE`;
+    const current = await tx.platformUser.findUnique({
+      where: { id: proof.linkUserId },
+      select: {
+        id: true,
+        suspendedAt: true,
+        deactivatedAt: true,
+        credentialVersion: true
+      }
+    });
+    const identity = await tx.platformGoogleIdentity.findUnique({
+      where: identityWhere(proof.subject)
+    });
+    if (
+      !current ||
+      current.suspendedAt ||
+      !current.deactivatedAt ||
+      current.credentialVersion !== proof.credentialVersion ||
+      identity?.userId !== current.id
+    )
+      throw new GoogleAccountError();
+    await reactivateVerifiedAccount(tx, current.id);
+    await tx.platformGoogleAttempt.update({
+      where: { id: proof.id },
+      data: {
+        completedAt: new Date(),
+        reactivationTokenHash: null,
+        subject: null
+      }
+    });
+    return { next: proof.returnTo };
+  });
+}
+
 export async function googleSignInMethods(db: PrismaClient, token: unknown) {
   return withOwnedSession(db, token, async (tx, current) => ({
-    password: !!current.user.passwordHash,
+    password: usablePasswordHash(current.user.passwordHash),
     google: !!(await tx.platformGoogleIdentity.findUnique({
       where: { userId: current.userId },
       select: { id: true }

@@ -99,6 +99,7 @@ model PlatformUser {
   emailChange PlatformEmailChange?
   googleIdentity PlatformGoogleIdentity?
   googleAttempts PlatformGoogleAttempt[]
+  recentAuthentications PlatformRecentAuthentication[]
   connections ChurchConnection[]
   churchGrants ChurchCapabilityGrant[]
   operatorGrants PlatformOperatorGrant[]
@@ -122,6 +123,7 @@ model PlatformGoogleIdentity {
   issuer String
   subject String
   user PlatformUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recentAuthentications PlatformRecentAuthentication[]
   @@unique([issuer, subject])
 }
 
@@ -138,6 +140,8 @@ model PlatformGoogleAttempt {
   linkUserId String?
   linkSessionId String?
   credentialVersion Int?
+  reauthPurpose String?
+  reactivationTokenHash String? @unique
   signupTokenHash String? @unique
   subject String?
   email String?
@@ -159,6 +163,25 @@ model PlatformEmailChange {
   @@index([expiresAt])
 }
 
+model PlatformRecentAuthentication {
+  id String @id @default(cuid())
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  tokenHash String @unique
+  purpose String
+  credentialVersion Int
+  userId String
+  sessionId String
+  googleIdentityId String
+  user PlatformUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session PlatformSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  googleIdentity PlatformGoogleIdentity @relation(fields: [googleIdentityId], references: [id], onDelete: Cascade)
+  @@unique([sessionId, purpose])
+  @@index([userId])
+  @@index([googleIdentityId])
+  @@index([expiresAt])
+}
+
 model PlatformSession {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
@@ -169,6 +192,7 @@ model PlatformSession {
   credentialVersion Int @default(0)
 
   user PlatformUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recentAuthentications PlatformRecentAuthentication[]
 
   @@index([userId])
   @@index([expiresAt])

@@ -6,6 +6,10 @@ import {
 } from "@prisma/client";
 import { activePublicAccount } from "./public-profile";
 import {
+  isGoogleCredential,
+  requireAccountCredential
+} from "./account-credential";
+import {
   createSessionToken,
   hashPassword,
   hashSessionToken,
@@ -325,7 +329,7 @@ export async function changeAccountPassword(
 ) {
   if (!validToken(token)) throw new AccountError("session");
   if (
-    validatePassword(oldPassword) ||
+    (!isGoogleCredential(oldPassword) && validatePassword(oldPassword)) ||
     validatePassword(password) ||
     password !== confirmation
   )
@@ -349,8 +353,7 @@ export async function changeAccountPassword(
       session.credentialVersion !== session.user.credentialVersion
     )
       throw new AccountError("session");
-    if (!(await verifyPassword(oldPassword, session.user.passwordHash)))
-      throw new AccountError("credentials");
+    await requireAccountCredential(tx, session, oldPassword, "change-password");
     await tx.platformUser.update({
       where: { id: session.userId },
       data: {

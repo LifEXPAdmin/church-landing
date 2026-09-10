@@ -7,8 +7,10 @@ is enabled. The isolated harness includes `tests/google-accounts.test.ts`, which
 uses the real library signature verifier with a fictional RSA certificate and
 substituted code exchange. It covers state/browser/nonce/expiry, matching-email
 non-takeover, onboarding/adult acknowledgment, owner linking, concurrent identity
-creation, suspension/revocation and the last-method rule. Database backup/restore
-and fresh migrations include the identity and attempt tables. This evidence does
+creation, suspension/revocation and the last-method rule. It also covers one-use
+session/action-bound Google confirmation, explicit reactivation, private identity
+export and password-backed unlinking. Database backup/restore and fresh migrations
+include identity, attempt and recent-authentication tables. This evidence does
 not establish a real Google redirect, live provider configuration or a complete
 Google-only account interface. See [GOOGLE_ACCOUNT_REPORT.md](GOOGLE_ACCOUNT_REPORT.md).
 

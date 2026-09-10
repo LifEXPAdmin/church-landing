@@ -1,11 +1,7 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
 import { AccountError } from "./accounts";
-import {
-  hashSessionToken,
-  validToken,
-  validatePassword,
-  verifyPassword
-} from "./auth";
+import { requireAccountCredential } from "./account-credential";
+import { hashSessionToken, validToken } from "./auth";
 
 const sessionSelect = {
   id: true,
@@ -141,11 +137,12 @@ export async function revokeOtherAccountSessions(
   password: unknown
 ) {
   return withOwnedSession(db, token, async (tx, current) => {
-    if (
-      validatePassword(password) ||
-      !(await verifyPassword(password, current.user.passwordHash))
-    )
-      throw new AccountError("credentials");
+    await requireAccountCredential(
+      tx,
+      current,
+      password,
+      "revoke-other-sessions"
+    );
     // The owner and the retained session come only from the authenticated cookie.
     await tx.platformSession.deleteMany({
       where: { userId: current.userId, id: { not: current.id } }

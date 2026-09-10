@@ -167,7 +167,8 @@ try {
   const emailTables = [["PlatformEmailChange", "id"]];
   const googleTables = [
     ["PlatformGoogleIdentity", "id"],
-    ["PlatformGoogleAttempt", "id"]
+    ["PlatformGoogleAttempt", "id"],
+    ["PlatformRecentAuthentication", "id"]
   ];
   const churchTables = [
     ["Church", "id"],

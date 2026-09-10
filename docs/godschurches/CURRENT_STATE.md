@@ -1,5 +1,15 @@
 # Godschurches current state
 
+## Google account controls verified locally — September 9, 2026
+
+`codex/google-reauthentication` extends local foundation `6030ba3` with one-use,
+action-specific Google confirmation for sensitive account services, explicit
+Google reactivation and own-identity export. All 139 applicable isolated checks,
+lint, TypeScript, upgrade/restore/fresh migrations, restart and the final
+production build/runtime checks passed. HTTP/UI integration and real provider acceptance remain
+pending, and no Google control is enabled or published. See
+[GOOGLE_ACCOUNT_REPORT.md](GOOGLE_ACCOUNT_REPORT.md).
+
 ## Google account foundation verified locally — September 9, 2026
 
 The local `codex/google-account-foundation` branch adds library-verified Google

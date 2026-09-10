@@ -1,5 +1,38 @@
 # Google account foundation
 
+## Recent authentication verified locally — September 9, 2026
+
+The `codex/google-reauthentication` branch extends local foundation `6030ba3`.
+Five-minute confirmation proofs are tied to the active owner, original session,
+credential version, linked Google identity and one named action. Only a fresh
+callback for that same linked subject can create a proof. The requested action
+is performed separately; successful service use consumes the proof in the owner
+transaction. Replacing a proof invalidates its predecessor. Session or identity
+removal cascades to proofs, and credential-version changes invalidate them.
+
+The existing password services now also accept this internal proof for password
+change, other-session revocation, private export, email-change request/confirmation,
+deactivation and unlinking. HTTP password fields reject proof objects; cookie and
+interface integration still follows. Unlinking requires a structurally usable
+backup password, so a Google-only account cannot strand itself. An owner export
+includes its Google issuer/subject/link date without pending attempts or tokens.
+
+A deactivated linked Google identity receives a browser-bound reactivation proof,
+not a session. Separate explicit confirmation applies the shared verified
+reactivation transition; suspension, changed credentials/identity, expiry,
+wrong browser and replay remain denied. Prior roles/sharing and sessions are not
+restored, and another sign-in follows. Google transport has a 15-second deadline
+across exchange/certificate requests. Provider-token details stay out of errors.
+
+Nine additional service groups cover these paths, bringing Google coverage to
+18 groups. All 139 applicable isolated checks passed with zero failures and two
+intentional disabled-delivery skips. Lint, TypeScript, synthetic upgrade/restore,
+fresh migrations, restart and the final production build passed. Runtime checks
+covered 55 traces, 3,977 entries and 127 server JavaScript files. The fixture is
+stopped. Public Google controls and real-provider/browser acceptance remain
+pending. Production remains
+the published guest-browsing release, with both Google slices local and unpushed.
+
 ## Local implementation — September 9, 2026
 
 The `codex/google-account-foundation` branch starts the Google account service
@@ -62,8 +95,9 @@ No unrelated forced dependency downgrade is applied.
 Before exposure, finish exact-origin/rate-limited routes, HttpOnly cookie and
 callback cleanup, cancellation/provider timeout feedback, the profile/adult UI,
 Google-only recent-authentication controls for sensitive account operations and
-sign-in-method management. Extend account export for the identity record and
-document lifecycle handling. The guest return boundary must remain intact.
+sign-in-method management. The service-level identity export and lifecycle work
+is complete in the recent-authentication slice above. The guest return boundary
+must remain intact.
 Real provider configuration, brand-compliant controls and a consenting actual
 Google browser journey, including an external Android browser, remain required.
 No real Google login, credential configuration or public launch is claimed here.

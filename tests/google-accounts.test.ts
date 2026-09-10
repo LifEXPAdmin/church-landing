@@ -5,7 +5,9 @@ import { OAuth2Client } from "google-auth-library";
 import { PrismaClient } from "@prisma/client";
 import {
   beginGoogleAttempt,
+  beginGoogleReauthentication,
   finishGoogleAttempt,
+  finishGoogleReactivation,
   finishGoogleSignup,
   googleSignInMethods,
   unlinkGoogleIdentity
@@ -16,6 +18,7 @@ import {
   googleAuthorizationUrl,
   googleConfig,
   verifyGoogleIdToken,
+  exchangeGoogleCode,
   type GoogleConfig
 } from "../lib/platform/google-provider";
 import {
@@ -27,6 +30,23 @@ import {
 } from "../lib/platform/accounts";
 import { revokeOtherAccountSessions } from "../lib/platform/account-sessions";
 import { createSessionToken, hashSessionToken } from "../lib/platform/auth";
+import {
+  prepareAccountExport,
+  downloadAccountExport
+} from "../lib/platform/account-export";
+import {
+  requestEmailChange,
+  confirmEmailChange
+} from "../lib/platform/account-email-change";
+import {
+  deactivateAccount,
+  AccountLifecycleError
+} from "../lib/platform/account-lifecycle";
+import { type RecentAuthenticationPurpose } from "../lib/platform/account-credential";
+import {
+  handleAccountRequest,
+  SESSION_COOKIE
+} from "../lib/platform/account-boundary";
 
 assert.equal(process.env.ACCOUNT_TEST_ISOLATED, "1");
 assert.equal(new URL(process.env.DATABASE_URL!).hostname, "127.0.0.1");
@@ -445,10 +465,580 @@ test("returning Google subjects keep their original account and local email desp
     where: { id: a.user.id },
     data: { suspendedAt: null, deactivatedAt: new Date() }
   });
+  assert.equal(
+    (await finish(await attempt({ sub: a.subject }))).kind,
+    "reactivate"
+  );
+  assert.equal(await readAccountSession(db, result.token), null);
+});
+
+async function recent(
+  sessionToken: string,
+  subject: string,
+  purpose: RecentAuthenticationPurpose
+) {
+  const browserToken = createSessionToken();
+  const proof = await beginGoogleReauthentication(
+    db,
+    sessionToken,
+    browserToken,
+    purpose,
+    "/platform/settings"
+  );
+  const result = await finishGoogleAttempt(
+    db,
+    config,
+    {
+      ...proof,
+      browserToken,
+      sessionToken,
+      code: jwt(proof.nonce, { sub: subject })
+    },
+    exchange
+  );
+  assert.equal(result.kind, "reauthenticated");
+  return { kind: "google-reauth" as const, token: result.recentToken };
+}
+
+test("Google code exchange discards provider tokens and sanitizes failures; reauthentication requests explicit Google interaction", async () => {
+  const nonce = createSessionToken();
+  const idToken = jwt(nonce);
+  const getToken = mock.method(client, "getToken", async () => ({
+    tokens: {
+      id_token: idToken,
+      access_token: "private-access-marker",
+      refresh_token: "private-refresh-marker"
+    }
+  }));
+  const result = await exchangeGoogleCode(
+    config,
+    "fictional-code",
+    "fictional-verifier",
+    hashSessionToken(nonce),
+    client
+  );
+  assert.ok(result.subject);
+  assert.ok(!JSON.stringify(result).includes("private-"));
+  assert.deepEqual(getToken.mock.calls[0].arguments[0], {
+    code: "fictional-code",
+    codeVerifier: "fictional-verifier",
+    redirect_uri: config.callback
+  });
+  getToken.mock.mockImplementation(async () => {
+    throw new Error("private-provider-detail");
+  });
   await assert.rejects(
-    finish(await attempt({ sub: a.subject })),
+    exchangeGoogleCode(
+      config,
+      "fictional-code",
+      "fictional-verifier",
+      hashSessionToken(nonce),
+      client
+    ),
+    (error) =>
+      error instanceof GoogleAccountError &&
+      !error.message.includes("private-provider")
+  );
+  getToken.mock.restore();
+  const a = await attempt();
+  assert.equal(
+    new URL(
+      googleAuthorizationUrl(config, a.state, a.nonce, a.browserToken, true)
+    ).searchParams.get("prompt"),
+    "consent select_account"
+  );
+});
+
+test("recent authentication requires the already linked subject and exact original active session without performing the action", async () => {
+  const a = await newGoogle();
+  const b = await newGoogle();
+  const unlinked = await owner();
+  await assert.rejects(
+    beginGoogleReauthentication(
+      db,
+      unlinked.token,
+      createSessionToken(),
+      "prepare-export",
+      "/platform"
+    ),
     GoogleAccountError
   );
+  await assert.rejects(
+    beginGoogleReauthentication(
+      db,
+      createSessionToken(),
+      createSessionToken(),
+      "prepare-export",
+      "/platform"
+    ),
+    AccountError
+  );
+  const browserToken = createSessionToken();
+  const pending = await beginGoogleReauthentication(
+    db,
+    a.outcome.token,
+    browserToken,
+    "prepare-export",
+    "/platform/settings"
+  );
+  await assert.rejects(
+    finishGoogleAttempt(
+      db,
+      config,
+      {
+        ...pending,
+        browserToken,
+        sessionToken: a.outcome.token,
+        code: jwt(pending.nonce, { sub: b.subject })
+      },
+      exchange
+    ),
+    GoogleAccountError
+  );
+  await assert.rejects(
+    finishGoogleAttempt(
+      db,
+      config,
+      {
+        ...pending,
+        browserToken,
+        sessionToken: b.outcome.token,
+        code: jwt(pending.nonce, { sub: a.subject })
+      },
+      exchange
+    ),
+    GoogleAccountError
+  );
+  const before = await db.platformUser.findUniqueOrThrow({
+    where: { id: a.user.id }
+  });
+  const result = await finishGoogleAttempt(
+    db,
+    config,
+    {
+      ...pending,
+      browserToken,
+      sessionToken: a.outcome.token,
+      code: jwt(pending.nonce, { sub: a.subject })
+    },
+    exchange
+  );
+  assert.equal(result.kind, "reauthenticated");
+  const proof = await db.platformRecentAuthentication.findUniqueOrThrow({
+    where: { tokenHash: hashSessionToken(result.recentToken) }
+  });
+  assert.equal(proof.userId, a.user.id);
+  assert.equal(proof.purpose, "prepare-export");
+  assert.ok(proof.expiresAt.getTime() - proof.createdAt.getTime() <= 300_000);
+  assert.ok(!JSON.stringify(proof).includes(result.recentToken));
+  assert.deepEqual(
+    await db.platformUser.findUnique({ where: { id: a.user.id } }),
+    before
+  );
+});
+
+test("recent proofs are one-use and bound to owner, session, purpose and expiry, including concurrent use", async () => {
+  const a = await newGoogle();
+  const b = await newGoogle();
+  const proof = await recent(a.outcome.token, a.subject, "prepare-export");
+  const secret = "fictional-export-secret-" + unique();
+  await assert.rejects(
+    prepareAccountExport(db, b.outcome.token, proof, secret),
+    AccountError
+  );
+  await assert.rejects(
+    revokeOtherAccountSessions(db, a.outcome.token, proof),
+    AccountError
+  );
+  const another = await finish(await attempt({ sub: a.subject }));
+  assert.equal(another.kind, "signed-in");
+  await assert.rejects(
+    prepareAccountExport(db, another.token, proof, secret),
+    AccountError
+  );
+  const responses = await Promise.allSettled([
+    prepareAccountExport(db, a.outcome.token, proof, secret),
+    prepareAccountExport(db, a.outcome.token, proof, secret)
+  ]);
+  assert.equal(responses.filter((r) => r.status === "fulfilled").length, 1);
+  await assert.rejects(
+    prepareAccountExport(db, a.outcome.token, proof, secret),
+    AccountError
+  );
+  const expired = await recent(a.outcome.token, a.subject, "prepare-export");
+  await db.platformRecentAuthentication.update({
+    where: { tokenHash: hashSessionToken(expired.token) },
+    data: { expiresAt: new Date(0) }
+  });
+  await assert.rejects(
+    prepareAccountExport(db, a.outcome.token, expired, secret),
+    AccountError
+  );
+  const older = await recent(a.outcome.token, a.subject, "prepare-export");
+  const newer = await recent(a.outcome.token, a.subject, "prepare-export");
+  await assert.rejects(
+    prepareAccountExport(db, a.outcome.token, older, secret),
+    AccountError
+  );
+  assert.ok(
+    (await prepareAccountExport(db, a.outcome.token, newer, secret))
+      .authorization
+  );
+});
+
+test("Google-only users can revoke sessions and add a password with fresh confirmation; stale attempts/proofs and sessions then fail", async () => {
+  const a = await newGoogle();
+  const other = await finish(await attempt({ sub: a.subject }));
+  assert.equal(other.kind, "signed-in");
+  const otherProof = await recent(other.token, a.subject, "prepare-export");
+  const revoke = await recent(
+    a.outcome.token,
+    a.subject,
+    "revoke-other-sessions"
+  );
+  await revokeOtherAccountSessions(db, a.outcome.token, revoke);
+  assert.equal(await readAccountSession(db, other.token), null);
+  assert.equal(
+    await db.platformRecentAuthentication.count({
+      where: { tokenHash: hashSessionToken(otherProof.token) }
+    }),
+    0
+  );
+  const browserToken = createSessionToken();
+  const stale = await beginGoogleReauthentication(
+    db,
+    a.outcome.token,
+    browserToken,
+    "prepare-export",
+    "/platform/settings"
+  );
+  const credential = await recent(
+    a.outcome.token,
+    a.subject,
+    "change-password"
+  );
+  await changeAccountPassword(
+    db,
+    a.outcome.token,
+    credential,
+    password,
+    password
+  );
+  assert.equal(await readAccountSession(db, a.outcome.token), null);
+  await assert.rejects(
+    finishGoogleAttempt(
+      db,
+      config,
+      {
+        ...stale,
+        browserToken,
+        sessionToken: a.outcome.token,
+        code: jwt(stale.nonce, { sub: a.subject })
+      },
+      exchange
+    ),
+    GoogleAccountError
+  );
+  const user = await db.platformUser.findUniqueOrThrow({
+    where: { id: a.user.id }
+  });
+  assert.equal(user.emailVerifiedAt, null);
+  const passwordSession = await loginAccount(db, user.email, password, null);
+  assert.deepEqual(await googleSignInMethods(db, passwordSession), {
+    password: true,
+    google: true
+  });
+  const google = await finish(await attempt({ sub: a.subject }));
+  assert.equal(google.kind, "signed-in");
+  assert.equal((await readAccountSession(db, google.token))?.id, a.user.id);
+});
+
+test("Google-confirmed email changes require separate purpose proofs and preserve the same provider identity", async () => {
+  const a = await newGoogle();
+  const newEmail = unique() + "@example.test";
+  let emailToken = "";
+  const requestProof = await recent(
+    a.outcome.token,
+    a.subject,
+    "request-email-change"
+  );
+  const send = await requestEmailChange(
+    db,
+    a.outcome.token,
+    requestProof,
+    newEmail,
+    async (_email, _purpose, token) => {
+      emailToken = token;
+    }
+  );
+  await send();
+  assert.ok(emailToken);
+  await assert.rejects(
+    confirmEmailChange(db, a.outcome.token, requestProof, emailToken),
+    AccountError
+  );
+  const confirmation = await recent(
+    a.outcome.token,
+    a.subject,
+    "confirm-email-change"
+  );
+  await confirmEmailChange(db, a.outcome.token, confirmation, emailToken);
+  assert.equal(await readAccountSession(db, a.outcome.token), null);
+  const user = await db.platformUser.findUniqueOrThrow({
+    where: { id: a.user.id }
+  });
+  assert.equal(user.email, newEmail);
+  assert.ok(user.emailVerifiedAt);
+  const again = await finish(
+    await attempt({ sub: a.subject, email: "provider-old@example.test" })
+  );
+  assert.equal(again.kind, "signed-in");
+  assert.equal((await readAccountSession(db, again.token))?.id, a.user.id);
+  assert.equal(
+    (await db.platformUser.findUniqueOrThrow({ where: { id: a.user.id } }))
+      .email,
+    newEmail
+  );
+});
+
+test("Google-only deactivation requires an explicit action and reactivation requires a fresh browser-bound proof with confirmation", async () => {
+  const a = await newGoogle({ hd: "example.test" });
+  const credential = await recent(
+    a.outcome.token,
+    a.subject,
+    "deactivate-account"
+  );
+  await assert.rejects(
+    deactivateAccount(db, a.outcome.token, credential, false),
+    AccountLifecycleError
+  );
+  await deactivateAccount(db, a.outcome.token, credential, true);
+  assert.equal(await readAccountSession(db, a.outcome.token), null);
+  const before = await db.platformUser.findUniqueOrThrow({
+    where: { id: a.user.id }
+  });
+  assert.ok(before.deactivatedAt);
+  const expired = await attempt({ sub: a.subject });
+  const first = await finish(expired);
+  assert.equal(first.kind, "reactivate");
+  await db.platformGoogleAttempt.update({
+    where: { stateHash: hashSessionToken(expired.state) },
+    data: { expiresAt: new Date(0) }
+  });
+  await assert.rejects(
+    finishGoogleReactivation(
+      db,
+      expired.browserToken,
+      first.reactivationToken,
+      true
+    ),
+    GoogleAccountError
+  );
+  const pending = await attempt({ sub: a.subject });
+  const result = await finish(pending);
+  assert.equal(result.kind, "reactivate");
+  assert.deepEqual(
+    await db.platformUser.findUnique({ where: { id: a.user.id } }),
+    before
+  );
+  assert.equal(
+    await db.platformSession.count({ where: { userId: a.user.id } }),
+    0
+  );
+  await assert.rejects(
+    finishGoogleReactivation(
+      db,
+      pending.browserToken,
+      result.reactivationToken,
+      false
+    ),
+    AccountLifecycleError
+  );
+  await assert.rejects(
+    finishGoogleReactivation(
+      db,
+      createSessionToken(),
+      result.reactivationToken,
+      true
+    ),
+    GoogleAccountError
+  );
+  const outcomes = await Promise.allSettled([
+    finishGoogleReactivation(
+      db,
+      pending.browserToken,
+      result.reactivationToken,
+      true
+    ),
+    finishGoogleReactivation(
+      db,
+      pending.browserToken,
+      result.reactivationToken,
+      true
+    )
+  ]);
+  assert.equal(outcomes.filter((r) => r.status === "fulfilled").length, 1);
+  const after = await db.platformUser.findUniqueOrThrow({
+    where: { id: a.user.id }
+  });
+  assert.equal(after.deactivatedAt, null);
+  assert.equal(after.email, before.email);
+  assert.equal(after.adultPolicyVersion, before.adultPolicyVersion);
+  assert.equal(after.credentialVersion, before.credentialVersion + 1);
+  assert.equal(
+    await db.platformSession.count({ where: { userId: a.user.id } }),
+    0
+  );
+  assert.equal(
+    await db.churchCapabilityGrant.count({ where: { userId: a.user.id } }),
+    0
+  );
+  assert.equal(
+    (await finish(await attempt({ sub: a.subject }))).kind,
+    "signed-in"
+  );
+});
+
+test("a suspended account cannot reactivate even with a previously issued Google proof", async () => {
+  const a = await newGoogle();
+  await deactivateAccount(
+    db,
+    a.outcome.token,
+    await recent(a.outcome.token, a.subject, "deactivate-account"),
+    true
+  );
+  const pending = await attempt({ sub: a.subject });
+  const result = await finish(pending);
+  assert.equal(result.kind, "reactivate");
+  await db.platformUser.update({
+    where: { id: a.user.id },
+    data: { suspendedAt: new Date(), credentialVersion: { increment: 1 } }
+  });
+  await assert.rejects(
+    finishGoogleReactivation(
+      db,
+      pending.browserToken,
+      result.reactivationToken,
+      true
+    ),
+    GoogleAccountError
+  );
+  assert.ok(
+    (await db.platformUser.findUniqueOrThrow({ where: { id: a.user.id } }))
+      .deactivatedAt
+  );
+  assert.equal(
+    await db.platformSession.count({ where: { userId: a.user.id } }),
+    0
+  );
+});
+
+test("Google-confirmed unlink requires a usable backup password and invalidates other sessions and recent proofs", async () => {
+  const only = await newGoogle();
+  const denied = await recent(
+    only.outcome.token,
+    only.subject,
+    "unlink-google"
+  );
+  await assert.rejects(
+    unlinkGoogleIdentity(db, only.outcome.token, denied),
+    AccountError
+  );
+  await db.platformUser.update({
+    where: { id: only.user.id },
+    data: { passwordHash: "malformed-password-hash" }
+  });
+  await assert.rejects(
+    unlinkGoogleIdentity(db, only.outcome.token, denied),
+    AccountError
+  );
+  assert.deepEqual(await googleSignInMethods(db, only.outcome.token), {
+    password: false,
+    google: true
+  });
+  const a = await owner();
+  const subject = unique();
+  await finish(
+    await attempt({ sub: subject }, { sessionToken: a.token, password }),
+    a.token
+  );
+  const other = await finish(await attempt({ sub: subject }));
+  assert.equal(other.kind, "signed-in");
+  const old = await recent(a.token, subject, "prepare-export");
+  const credential = await recent(a.token, subject, "unlink-google");
+  await unlinkGoogleIdentity(db, a.token, credential);
+  assert.ok(await readAccountSession(db, a.token));
+  assert.equal(await readAccountSession(db, other.token), null);
+  assert.deepEqual(await googleSignInMethods(db, a.token), {
+    password: true,
+    google: false
+  });
+  assert.equal(
+    await db.platformRecentAuthentication.count({
+      where: { tokenHash: hashSessionToken(old.token) }
+    }),
+    0
+  );
+});
+
+test("Google exports contain only the owner's identity metadata, and HTTP password fields cannot inject recent-proof objects", async () => {
+  const a = await newGoogle();
+  const b = await newGoogle();
+  const credential = await recent(a.outcome.token, a.subject, "prepare-export");
+  const origin = process.env.ACCOUNT_ORIGIN!;
+  const response = await handleAccountRequest(
+    db,
+    new Request(origin + "/api/platform/account", {
+      method: "POST",
+      headers: {
+        Origin: origin,
+        "Content-Type": "application/json",
+        Cookie: `${SESSION_COOKIE}=${a.outcome.token}`
+      },
+      body: JSON.stringify({
+        operation: "prepare-export",
+        currentPassword: credential
+      })
+    })
+  );
+  assert.equal(response.status, 400);
+  assert.equal(
+    await db.platformRecentAuthentication.count({
+      where: { tokenHash: hashSessionToken(credential.token) }
+    }),
+    1
+  );
+  const secret = "fictional-export-secret-" + unique();
+  const proof = await prepareAccountExport(
+    db,
+    a.outcome.token,
+    credential,
+    secret
+  );
+  const content = await downloadAccountExport(
+    db,
+    a.outcome.token,
+    proof.authorization,
+    secret
+  );
+  const data = JSON.parse(content);
+  assert.equal(data.account.googleIdentity.issuer, GOOGLE_ISSUER);
+  assert.equal(data.account.googleIdentity.subject, a.subject);
+  assert.deepEqual(Object.keys(data.account.googleIdentity).sort(), [
+    "createdAt",
+    "issuer",
+    "subject"
+  ]);
+  for (const hidden of [
+    b.subject,
+    credential.token,
+    hashSessionToken(credential.token),
+    a.outcome.token,
+    "signupTokenHash",
+    "reactivationTokenHash",
+    "googleIdentityId"
+  ])
+    assert.ok(!content.includes(hidden));
 });
 
 test("concurrent callbacks and new-identity completions produce one binding/account, without replay sessions", async () => {

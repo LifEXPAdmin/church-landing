@@ -1,13 +1,8 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
 import { AccountError, normalizeEmail } from "./accounts";
 import { withOwnedSession } from "./account-sessions";
-import {
-  createSessionToken,
-  hashSessionToken,
-  validToken,
-  validatePassword,
-  verifyPassword
-} from "./auth";
+import { requireAccountCredential } from "./account-credential";
+import { createSessionToken, hashSessionToken, validToken } from "./auth";
 
 export class AccountEmailChangeError extends Error {}
 type Delivery = (
@@ -34,11 +29,12 @@ export async function requestEmailChange(
     db,
     sessionToken,
     async (tx, current) => {
-      if (
-        validatePassword(currentPassword) ||
-        !(await verifyPassword(currentPassword, current.user.passwordHash))
-      )
-        throw new AccountError("credentials");
+      await requireAccountCredential(
+        tx,
+        current,
+        currentPassword,
+        "request-email-change"
+      );
       const data = {
         tokenHash,
         newEmail,
@@ -102,11 +98,12 @@ export async function confirmEmailChange(
       db,
       sessionToken,
       async (tx, current) => {
-        if (
-          validatePassword(currentPassword) ||
-          !(await verifyPassword(currentPassword, current.user.passwordHash))
-        )
-          throw new AccountError("credentials");
+        await requireAccountCredential(
+          tx,
+          current,
+          currentPassword,
+          "confirm-email-change"
+        );
         const pending = await tx.platformEmailChange.findUnique({
           where: { userId: current.userId }
         });

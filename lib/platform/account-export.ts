@@ -1,8 +1,8 @@
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import type { PrismaClient } from "@prisma/client";
 import { withOwnedSession } from "./account-sessions";
-import { AccountError } from "./accounts";
-import { hashSessionToken, validatePassword, verifyPassword } from "./auth";
+import { hashSessionToken } from "./auth";
+import { requireAccountCredential } from "./account-credential";
 
 const EXPORT_SECONDS = 60;
 const MAX_ROWS = 2000;
@@ -55,12 +55,8 @@ export async function prepareAccountExport(
   password: unknown,
   secret: string
 ) {
-  return withOwnedSession(db, token, async (_tx, session) => {
-    if (
-      validatePassword(password) ||
-      !(await verifyPassword(password, session.user.passwordHash))
-    )
-      throw new AccountError("credentials");
+  return withOwnedSession(db, token, async (tx, session) => {
+    await requireAccountCredential(tx, session, password, "prepare-export");
     const expiresAt = Date.now() + EXPORT_SECONDS * 1000;
     const value = `${expiresAt}.${randomBytes(16).toString("base64url")}`;
     return {
@@ -96,7 +92,10 @@ export async function downloadAccountExport(
         website: true,
         interests: true,
         adultAcknowledgedAt: true,
-        adultPolicyVersion: true
+        adultPolicyVersion: true,
+        googleIdentity: {
+          select: { issuer: true, subject: true, createdAt: true }
+        }
       }
     });
     const posts = await tx.platformPost.findMany({
@@ -193,7 +192,7 @@ export async function downloadAccountExport(
         version: 1,
         generatedAt: new Date().toISOString(),
         scope:
-          "Your account profile, authored community content, likes/following, church directory choices and your own support submissions. Other people's content, staff/church operations, credentials, session data and security audit records are excluded. Reading preferences saved only on this browser are not in this account file.",
+          "Your account profile and linked Google identity, authored community content, likes/following, church directory choices and your own support submissions. Other people's content, staff/church operations, credentials, session data and security audit records are excluded. Reading preferences saved only on this browser are not in this account file.",
         account,
         ...collections
       },

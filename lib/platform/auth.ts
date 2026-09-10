@@ -29,6 +29,13 @@ export async function hashPassword(password: string) {
   return `scrypt-v2:${salt}:${(await derive(password, salt, false)).toString("hex")}`;
 }
 
+export function usablePasswordHash(value: unknown): value is string {
+  return (
+    typeof value === "string" &&
+    /^scrypt(?:-v2)?:[a-f0-9]{32}:[a-f0-9]{128}$/.test(value)
+  );
+}
+
 export async function verifyPassword(
   password: unknown,
   storedHash: string | null
@@ -36,11 +43,7 @@ export async function verifyPassword(
   if (validatePassword(password)) return false;
   const parts = storedHash?.split(":") ?? [];
   const [prefix, salt, hash] = parts;
-  const valid =
-    parts.length === 3 &&
-    ["scrypt", "scrypt-v2"].includes(prefix) &&
-    /^[a-f0-9]{32}$/.test(salt) &&
-    /^[a-f0-9]{128}$/.test(hash);
+  const valid = usablePasswordHash(storedHash);
   // Unknown accounts still perform bounded password work, with the same public result.
   const key = await derive(
     password as string,

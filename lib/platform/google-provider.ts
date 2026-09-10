@@ -18,6 +18,15 @@ export type GoogleConfig = {
   clientSecret: string;
   callback: string;
 };
+function googleClient(config: GoogleConfig) {
+  return new OAuth2Client({
+    clientId: config.clientId,
+    clientSecret: config.clientSecret,
+    redirectUri: config.callback,
+    // One deadline covers exchange and certificate retrieval, including retries.
+    transporterOptions: { timeout: 10_000, signal: AbortSignal.timeout(15_000) }
+  });
+}
 export function googleConfig(
   env: NodeJS.ProcessEnv = process.env
 ): GoogleConfig | null {
@@ -50,7 +59,8 @@ export function googleAuthorizationUrl(
   config: GoogleConfig,
   state: string,
   nonce: string,
-  browserToken: string
+  browserToken: string,
+  reauthenticate = false
 ) {
   if (!validToken(nonce)) throw new GoogleAccountError();
   const client = new OAuth2Client(
@@ -68,7 +78,7 @@ export function googleAuthorizationUrl(
     nonce,
     code_challenge: codeChallenge,
     code_challenge_method: CodeChallengeMethod.S256,
-    prompt: "select_account"
+    prompt: reauthenticate ? "consent select_account" : "select_account"
   });
 }
 
@@ -85,11 +95,7 @@ export async function verifyGoogleIdToken(
   config: GoogleConfig,
   token: unknown,
   nonceHash: string,
-  client = new OAuth2Client(
-    config.clientId,
-    config.clientSecret,
-    config.callback
-  )
+  client = googleClient(config)
 ): Promise<VerifiedGoogleIdentity> {
   try {
     if (
@@ -146,15 +152,11 @@ export async function exchangeGoogleCode(
   config: GoogleConfig,
   code: string,
   verifier: string,
-  nonceHash: string
+  nonceHash: string,
+  client = googleClient(config)
 ) {
   try {
     if (!code || code.length > 2048) throw new GoogleAccountError();
-    const client = new OAuth2Client(
-      config.clientId,
-      config.clientSecret,
-      config.callback
-    );
     const { tokens } = await client.getToken({
       code,
       codeVerifier: verifier,

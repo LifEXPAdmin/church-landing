@@ -169,6 +169,13 @@ async function processAccountRequest(
     return reply("Check the fields and try again.", 400);
   }
   const operation = body.operation;
+  // Google proofs will come from the server's HttpOnly cookie integration,
+  // never from an object substituted into a password field.
+  if (
+    body.currentPassword !== undefined &&
+    typeof body.currentPassword !== "string"
+  )
+    return reply("Check the fields and try again.", 400);
   if (
     typeof operation !== "string" ||
     ![

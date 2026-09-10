@@ -1,8 +1,9 @@
-import type { PrismaClient } from "@prisma/client";
+import type { Prisma, PrismaClient } from "@prisma/client";
 import { AccountError, normalizeEmail } from "./accounts";
 import { withOwnedSession } from "./account-sessions";
 import { validatePassword, verifyPassword } from "./auth";
 import { reconcileSupportAccess } from "./support-revocation";
+import { requireAccountCredential } from "./account-credential";
 
 export class AccountLifecycleError extends Error {
   code: "confirmation" | "handoff";
@@ -10,6 +11,28 @@ export class AccountLifecycleError extends Error {
     super(code);
     this.code = code;
   }
+}
+
+// Internal transition: caller must hold the user/access locks and validate a
+// current password or the browser-bound Google reactivation proof for this user.
+export async function reactivateVerifiedAccount(
+  tx: Prisma.TransactionClient,
+  userId: string
+) {
+  await tx.platformUser.update({
+    where: { id: userId },
+    data: {
+      deactivatedAt: null,
+      credentialVersion: { increment: 1 },
+      portalVersion: { increment: 1 }
+    }
+  });
+  await tx.platformSession.deleteMany({ where: { userId } });
+  await tx.platformEmailChange.deleteMany({ where: { userId } });
+  await tx.platformAccountGrant.updateMany({
+    where: { userId, consumedAt: null },
+    data: { consumedAt: new Date() }
+  });
 }
 
 export async function deactivateAccount(
@@ -23,11 +46,12 @@ export async function deactivateAccount(
     token,
     async (tx, current) => {
       if (confirmed !== true) throw new AccountLifecycleError("confirmation");
-      if (
-        validatePassword(password) ||
-        !(await verifyPassword(password, current.user.passwordHash))
-      )
-        throw new AccountError("credentials");
+      await requireAccountCredential(
+        tx,
+        current,
+        password,
+        "deactivate-account"
+      );
       const userId = current.userId;
       // Role grants, appointments and case/intake ownership cannot be abandoned.
       // Check under the same transaction gate used to assign those duties.
@@ -107,22 +131,7 @@ export async function reactivateAccount(
       )
         throw new AccountError("credentials");
       if (!current.deactivatedAt) return;
-      await tx.platformUser.update({
-        where: { id: current.id },
-        data: {
-          deactivatedAt: null,
-          credentialVersion: { increment: 1 },
-          portalVersion: { increment: 1 }
-        }
-      });
-      await tx.platformSession.deleteMany({ where: { userId: current.id } });
-      await tx.platformEmailChange.deleteMany({
-        where: { userId: current.id }
-      });
-      await tx.platformAccountGrant.updateMany({
-        where: { userId: current.id, consumedAt: null },
-        data: { consumedAt: new Date() }
-      });
+      await reactivateVerifiedAccount(tx, current.id);
     },
     { maxWait: 5000, timeout: 15000 }
   );
