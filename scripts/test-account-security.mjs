@@ -495,6 +495,7 @@ try {
   }
   if (!ready) throw new Error("Isolated Next server did not start");
   await runTests("tests/account-http.test.ts");
+  await runTests("tests/recovery-entry-http.test.ts");
   await runTests("tests/account-email-http.test.ts");
   await runTests("tests/google-http.test.ts");
   if (portalTests) await runTests("tests/media-http.test.ts");
@@ -725,6 +726,7 @@ try {
     if (!productionReady)
       throw new Error("Isolated production HTTPS portal did not start");
     await runTests("tests/account-repair.test.ts", productionEnv);
+    await runTests("tests/recovery-entry-http.test.ts", productionEnv);
     const previousPid = server.pid;
     await stopChild(server);
     server = spawn(

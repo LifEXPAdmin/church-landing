@@ -1,5 +1,31 @@
 # Godschurches current state
 
+## Password-recovery entry published — September 10, 2026
+
+`codex/account-recovery-activation` changes the account entry link to **Forgot
+password?** and makes the surrounding guidance follow the same validated
+availability setting as the recovery page. Help directs readers to that current
+status. Account ownership, reset and session behavior are unchanged. The work is
+based on the currently published calendar code, with no schema/dependency change.
+
+Across the sweep and corrected remaining checks, 216 of 218 checks passed with
+two expected disabled-email skips and no unresolved failures. Final build/types/
+lint, migrations/restore/restart and runtime checks passed (85 traces / 6,163
+entries / 204 server JS files), including an additional private-fixture audit.
+The rendered-text/RSC assertion and a mismatched fixture resume were corrected.
+Application `324415197e5be57a007023dda4aacc5e70d16a09` is live on READY
+`dpl_NJ72TNNqvtkBt71YXfoKvsWf3unF` at 16:40:24.703 UTC. Exact canonical serving
+identity, all 13 live read-only checks and actual 390-pixel keyboard navigation
+passed; no browser errors were returned. See
+[ACCOUNT_DELIVERY_REPORT.md](ACCOUNT_DELIVERY_REPORT.md).
+
+Real sender activation is still pending: fresh hosting inspection found no
+Resend resource or sender variables and delivery remains disabled. The existing
+provider terms screen requires the owner step and an authorized account mailbox.
+No real recovery email, password or account-data change has occurred. The broader
+post/profile work remains saved on its separate local branch; the full batch and
+actual account-recovery acceptance remain open.
+
 ## Profile photos and customization verified locally — September 10, 2026
 
 `codex/profile-controls` adds saved avatar/cover crop, zoom, reposition, progress,

@@ -16,6 +16,7 @@ export function AccountAccess({
   returnTo = "/platform",
   reason,
   googleAvailable = false,
+  recoveryAvailable = false,
   googleNotice
 }: {
   initialView: "login" | "register";
@@ -25,6 +26,7 @@ export function AccountAccess({
   returnTo?: string;
   reason?: AccountReason;
   googleAvailable?: boolean;
+  recoveryAvailable?: boolean;
   googleNotice?: "retry" | "link-required" | "unavailable";
 }) {
   const [view, setView] = useState(initialView);
@@ -128,9 +130,9 @@ export function AccountAccess({
         </Link>
       </p>
       <p className="mt-3 text-sm text-gc-muted">
-        Password recovery emails are not available yet. Older accounts without
-        passwords require verified ownership recovery; registering again will
-        not give access to them.
+        {recoveryAvailable
+          ? "Use Forgot password? to request a reset link for your existing account. Registering again will not recover it."
+          : "Password recovery emails are not available yet. Older accounts without passwords require verified ownership recovery; registering again will not give access to them."}
       </p>
       <div className="mt-4 flex flex-wrap gap-x-6 text-sm text-gc-accent">
         <Link
@@ -143,7 +145,7 @@ export function AccountAccess({
           href="/platform/account/recover"
           className="inline-flex min-h-11 items-center underline"
         >
-          Recovery availability
+          Forgot password?
         </Link>
         <Link
           href="/platform"

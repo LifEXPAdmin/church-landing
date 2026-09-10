@@ -75,6 +75,15 @@ separate demo does not create accounts or save its fictional information.
    email and password. Sign in again and check your profile. Never send your
    password, cookies, API keys, or an unredacted password-manager screenshot here.
 
+## Forgot your password?
+
+Select **Forgot password?** on Sign in to open the existing account-recovery page.
+It shows whether email recovery is available. When enabled, request a link using
+your existing account email and choose the new password privately on the linked
+page. Registration never replaces an existing account or resets its password.
+Actual delivery currently awaits sender setup; the label change alone does not
+enable it. See [ACCOUNT_DELIVERY_REPORT.md](ACCOUNT_DELIVERY_REPORT.md).
+
 ## Review active sign-ins
 
 In **Account settings**, select **Show active sign-ins**. The list shows this

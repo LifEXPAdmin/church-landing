@@ -3,7 +3,52 @@
 Updated September 9, 2026. Branch: `codex/account-delivery`, based on published
 main `ab14cf9ba258517ce76a1f24be55b0fd9eff3fc3`.
 
-## Current result
+## Recovery entry clarification — September 10, 2026
+
+The verified change on `codex/account-recovery-activation` is based on published
+calendar revision `745917ae45116c59e1a4aed8ca8f52a081665861`. Sign-in and signup now
+use the requested **Forgot password?** label and preserve the existing recovery
+route. The surrounding guidance uses the same validated delivery-availability
+reader as the recovery page. Components receive only a boolean; sender keys and
+configuration are never passed to the client. Missing/invalid sender configuration
+continues to show unavailable recovery. General Help points to the actual status
+on the recovery page instead of hardcoding an indefinitely disabled sender.
+
+The Mac's authenticated repository and hosting access work. Fresh project
+inspection found only the existing database integration, no Resend resource or
+sender environment variables, and `ACCOUNT_DELIVERY_MODE=disabled`. The existing
+provider setup screen still requires its owner to accept the Marketplace/Resend
+terms. No provider agreement, paid plan, DNS change, real email, password reset
+or account-data change is part of this clarification. Actual sender receipt and
+existing-account recovery remain open under the activation steps below.
+
+Verification completed locally: 218 distinct checks, 216 passing and two expected
+disabled-delivery skips, with no unresolved failures across the sweep and corrected
+remaining runs. All 17 remaining development checks and 70 production HTTPS checks
+(68 passing, two skips) passed. Additive/fresh migrations, backup/restore, account
+restart, final lint/types/build and runtime checks passed. The build has 85 traces,
+6,163 entries and 204 server JavaScript files; an additional trace audit found no
+private fixture/environment files. No schema or dependency change is included.
+
+The new test was corrected to check rendered text in HTML and the client
+component's availability prop in RSC. An isolated resume initially used the later
+social fixture, whose new capability enum values are incompatible with the
+published calendar client's operator read. The remaining 35 portal checks passed
+against the matching calendar fixture. These were verification corrections, not
+production account changes. The existing recovery checks prove expiry, one-use
+reset and old-session invalidation separately from real inbox receipt.
+
+Application `324415197e5be57a007023dda4aacc5e70d16a09` is published on READY
+production `dpl_NJ72TNNqvtkBt71YXfoKvsWf3unF` (September 10, 16:40:24.703 UTC).
+Exact Git SHA and canonical serving identity passed. All 13 live read-only HTTP
+checks passed at 16:42:19 UTC, and the actual 390-pixel browser showed the exact
+Forgot password? label, a 44-pixel target, no horizontal overflow, keyboard
+navigation to the honest unavailable recovery screen, and the return link.
+No browser errors were returned. These checks did not submit an email address or
+change a live account. Real sender activation and account recovery remain open.
+A later report-only deployment may serve the same application code.
+
+## Current delivery result
 
 Transactional recovery and verification delivery is implemented through Resend.
 **Real email delivery remains disabled.** Production inspection found
