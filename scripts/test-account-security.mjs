@@ -108,7 +108,8 @@ try {
     "trust",
     "-U",
     "fixture",
-    "--no-locale"
+    "--no-locale",
+    "--encoding=UTF8"
   ]);
   run(join(pg, "pg_ctl"), [
     "-D",
@@ -471,6 +472,11 @@ try {
       ...env,
       STRUCTURE_RENDER_PHASE: "development"
     });
+  if (portalTests)
+    await runTests("tests/calendar-http.test.ts", {
+      ...env,
+      CALENDAR_RENDER_PHASE: "development"
+    });
   if (portalTests) {
     run(
       process.execPath,
@@ -707,6 +713,10 @@ try {
     await runTests("tests/church-structure-http.test.ts", {
       ...portalEnv,
       STRUCTURE_RENDER_PHASE: "production"
+    });
+    await runTests("tests/calendar-http.test.ts", {
+      ...portalEnv,
+      CALENDAR_RENDER_PHASE: "production"
     });
     if (supportTests) await runTests("tests/support-http.test.ts", portalEnv);
     if (supportTests) await runTests("tests/entrance-http.test.ts", portalEnv);

@@ -145,7 +145,10 @@ export function expandCalendarSchedule(input: Record<string, unknown>): {
 export function calendarWindow(from: unknown, until: unknown, zone: unknown) {
   const timeZone = calendarZone(zone);
   const start = calendarDate(from),
-    end = calendarDate(until);
+    end =
+      until === "2100-01-01"
+        ? Temporal.PlainDate.from(until)
+        : calendarDate(until);
   if (
     Temporal.PlainDate.compare(end, start) <= 0 ||
     Temporal.PlainDate.compare(end, start.add({ days: 93 })) > 0

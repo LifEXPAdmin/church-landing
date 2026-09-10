@@ -1,6 +1,63 @@
 # Calendars, sharing and events
 
-September 10, 2026 · Foundation verified locally; interface and publication pending
+September 10, 2026 · Interface verified locally; publication pending
+
+## Calendar interface
+
+The local `codex/calendar-interface` working tree adds My calendars, church
+calendar layers, monthly agendas, an explicit viewer time zone, event pages,
+occurrence/series editing, cancellation, separate publication and sharing,
+RSVP and My commitments. Public church events are readable without an account;
+account entry preserves known calendar/event destinations. Church menus, public
+pages, responsibilities and management tools link to the calendar.
+
+The real JSON boundary checks the configured origin, current session/eligibility,
+body size, durable rate limits and current permissions. Private calendar pages
+use the production renderer; development diagnostics never load private events.
+Busy-only projections apply in JSON and server-rendered content. Agenda queries
+restrict the audience before loading/counting event rows so hidden private
+appointments cannot fill a shared viewer's event limit.
+
+Forms retain entries after validation, network or service failures. A stale
+version requires an explicit refresh/review before another save. Lost account
+or resource access refreshes private content. Creation retries return the same
+calendar/event and occurrence link. Canceling a final active occurrence closes
+its series so calendar archiving remains available.
+
+All 214 applicable regression checks passed (216 total, zero failures, two
+expected disabled-delivery skips), including eleven calendar service groups and
+four actual HTTP groups in each of development and production. These cover
+public/member/busy/private HTML, RSC and JSON, current permissions, stable RSVP
+references, origin/body/rate limits, creation retries, stale versions and bounded
+Unicode notes. The harness now creates UTF-8 databases explicitly. Synthetic
+upgrade, full row/schema restore, fresh migrations and restart passed.
+
+Final lint, production compilation/types and runtime verification passed (85
+traces, 6,163 entries and 204 server JavaScript files). All four final production
+HTTPS calendar groups passed again with certificate verification after the final
+interface polish.
+
+Actual fictional browser journeys passed in two independent sessions: private
+appointment creation, explicit busy/detail sharing, separate revocation, public
+church event creation, weekly local time across DST, all-day dates in another
+zone, RSVP persistence, occurrence-only editing/cancellation and owner-only
+conflict hints. An editor revoked with a form still open could not save; the
+database contained no attempted event. Invalid input, an injected service failure
+and competing RSVP saves preserved recoverable input. Stale saves require loading
+and reviewing the latest version, retaining the unsaved selection.
+
+Guest event reading and Join/Back preserved the destination; the guest agenda
+included only the deliberately public event. The 320/390/1440-pixel layouts fit
+without horizontal overflow, including date/time fields. Native browser
+screenshots established the mobile agenda appearance, with light/dark views;
+keyboard submission and month/Back state retention passed. Final rebuilt guest
+and unavailable-page links have 20-pixel separation. Both browser error logs
+were empty. These are browser
+viewport checks, not physical-device acceptance.
+
+Publication and exact canonical live checks remain before release completion.
+The foundation checkpoint below is historical and superseded by these interface
+results.
 
 ## Foundation scope
 
@@ -53,7 +110,7 @@ responses while retaining private calendar records. A private account download
 includes owned calendars, events/occurrences, sharing choices and the user's
 response records, excluding other attendees and church operational records.
 
-## Verification checkpoint
+## Historical foundation verification checkpoint
 
 All 203 applicable full regression checks passed (205 total, zero failures,
 two expected disabled-delivery skips). Eight focused calendar groups covered

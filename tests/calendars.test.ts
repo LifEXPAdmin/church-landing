@@ -17,6 +17,7 @@ import { portalCommand, PortalError } from "../lib/platform/portal";
 import { calendarCommand } from "../lib/platform/calendar-commands";
 import {
   getCalendars,
+  getCalendarDetails,
   getCalendarAgenda,
   getCalendarEvent,
   getCalendarCommitments,
@@ -904,5 +905,92 @@ test("deactivation preserves owned appointments but reactivation does not revive
   await denied(
     getCalendarEvent(db, f.lee.token, ownEvent.occurrences[0].id),
     404
+  );
+});
+
+test("canceling the last occurrence closes its series and permits archiving without leaving an active orphan", async () => {
+  const f = await fixture();
+  const created = await f.cmd(f.val, {
+    operation: "create-event",
+    calendarId: f.personal,
+    requestKey: randomUUID(),
+    expectedVersion: 1,
+    title: "Single private appointment",
+    ...time
+  });
+  assert.ok(created.occurrenceId);
+  const before = await getCalendarEvent(db, f.val.token, created.occurrenceId);
+  await f.cmd(f.val, {
+    operation: "cancel-event",
+    eventId: created.id,
+    occurrenceId: created.occurrenceId,
+    expectedVersion: before.event.eventVersion,
+    occurrenceVersion: before.event.version,
+    scope: "OCCURRENCE",
+    confirmed: true
+  });
+  assert.ok(
+    (await db.calendarEvent.findUniqueOrThrow({ where: { id: created.id } }))
+      .canceledAt
+  );
+  const details = await getCalendarDetails(db, f.val.token, f.personal);
+  await f.cmd(f.val, {
+    operation: "archive-calendar",
+    calendarId: f.personal,
+    expectedVersion: details.calendar.version,
+    confirmed: true
+  });
+  await denied(getCalendarDetails(db, f.val.token, f.personal), 404);
+  await denied(getCalendarEvent(db, f.val.token, created.occurrenceId), 404);
+  const finalMonth = calendarWindow(
+    "2099-12-01",
+    "2100-01-01",
+    "America/Chicago"
+  );
+  assert.equal(finalMonth.until, "2100-01-01");
+});
+
+test("a single shared event stays readable when the owner's hidden events exceed the agenda limit", async () => {
+  const f = await fixture();
+  const times = expandCalendarSchedule({ ...time, weeklyUntil: "2026-11-08" });
+  // Valid bounded three-occurrence series below the 500-series/calendar limit.
+  const hidden = Array.from({ length: 340 }, () => ({
+    id: randomUUID(),
+    requestKey: randomUUID(),
+    calendarId: f.personal,
+    title: "HIDDEN-AGENDA-LIMIT-CANARY",
+    ...times.schedule
+  }));
+  await db.calendarEvent.createMany({ data: hidden });
+  await db.calendarOccurrence.createMany({
+    data: hidden.flatMap((event) =>
+      times.occurrences.map((t) => ({
+        ...t,
+        eventId: event.id,
+        title: event.title
+      }))
+    )
+  });
+  const planning = await f.create(f.val, f.personal, {
+    title: "Chosen planning event"
+  });
+  await f.cmd(f.val, {
+    operation: "share-event",
+    eventId: planning.id,
+    churchId: f.churchA.id,
+    expectedVersion: 0,
+    level: "DETAILS",
+    confirmed: true
+  });
+  const visible = await getCalendarAgenda(db, f.lee.token, {
+    ...range,
+    calendarIds: [f.personal]
+  });
+  assert.equal(visible.events.length, 1);
+  assert.equal(visible.events[0].title, "Chosen planning event");
+  assert.ok(!JSON.stringify(visible).includes("HIDDEN-AGENDA-LIMIT-CANARY"));
+  await denied(
+    getCalendarAgenda(db, f.val.token, { ...range, calendarIds: [f.personal] }),
+    409
   );
 });

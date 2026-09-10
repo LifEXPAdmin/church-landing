@@ -228,12 +228,43 @@ export async function loadCalendarSourceNames(
   for (const name of names)
     context.sharedNames.set(name.connection.userId, name.displayName);
 }
+type OccurrenceDetails = {
+  description: string;
+  location: string;
+  onlineUrl: string;
+  organizer: string;
+  version: number;
+  eventVersion: number;
+  isException: boolean;
+  recurring: boolean;
+  visibility: "PRIVATE" | "CHURCH" | "PUBLIC";
+  canEdit: boolean;
+  canPublish: boolean;
+  response: { state: string; version: number } | null;
+};
+export type CalendarOccurrenceView = {
+  id: string;
+  eventId: string;
+  calendarId: string;
+  title: string;
+  startAt: string;
+  endAt: string;
+  startLocal: string;
+  endLocal: string;
+  allDay: boolean;
+  timeZone: string;
+  canceled: boolean;
+  source: ReturnType<typeof calendarSource>;
+} & (
+  | ({ access: "BUSY" } & { [K in keyof OccurrenceDetails]?: never })
+  | ({ access: "EDIT" | "DETAILS" } & OccurrenceDetails)
+);
 export function projectOccurrence(
   context: CalendarContext,
   event: EventRow,
   row: CalendarOccurrence,
   response?: { state: string; version: number }
-) {
+): CalendarOccurrenceView | null {
   const access = eventAccess(context, event);
   if (!access) return null;
   const timing = {
@@ -250,9 +281,10 @@ export function projectOccurrence(
     source: calendarSource(context, event.calendar, access),
     access
   };
-  if (access === "BUSY") return { ...timing, title: "Busy" };
+  if (access === "BUSY") return { ...timing, access: "BUSY", title: "Busy" };
   return {
     ...timing,
+    access,
     title: row.title,
     description: row.description,
     location: row.location,

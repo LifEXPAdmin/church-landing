@@ -107,6 +107,12 @@ function ChurchConnection({
   const eligible = snapshot.viewer.verified && snapshot.viewer.adult;
   return (
     <div className="space-y-4">
+      <Link
+        href={`${churchPath(church.id)}/calendar`}
+        className={portalLinkClass}
+      >
+        Church calendar and public events
+      </Link>
       {connection && <PortalStatus state={connection.state} />}
       {connection?.state === "PENDING" && (
         <p className="text-sm text-gc-muted">
@@ -324,6 +330,14 @@ export function PortalPublicDiscover({
         {visible.map((church) => (
           <PortalCard key={church.id} title={church.name}>
             <ChurchPublicDetails church={church} detail={!!churchId} />
+            {churchId && (
+              <Link
+                href={`${churchPath(church.id)}/calendar`}
+                className={portalLinkClass}
+              >
+                Church calendar and public events
+              </Link>
+            )}
             {churchId && church.connectionsAvailable === false ? (
               <p className="text-sm text-gc-muted">
                 Member connections will open once an authorized church reviewer

@@ -19,6 +19,8 @@ import {
 type OperatorData = NonNullable<PortalSnapshot["operator"]>;
 type OperatorUser = OperatorData["users"][number];
 const capabilityLabels: Record<string, string> = {
+  EDIT_CHURCH_CALENDAR: "Edit church calendar",
+  PUBLISH_CHURCH_EVENTS: "Publish church events",
   REVIEW_CONNECTIONS: "Review connections",
   APPOINT_COORDINATORS: "Appoint coordinators",
   MANAGE_STRUCTURE: "Manage structure",

@@ -63,6 +63,66 @@ async function calendarVisible(
     select: { id: true }
   }));
 }
+function projectCalendar(context: CalendarContext, calendar: CalendarRow) {
+  const level = sharedLevel(context, calendar, calendar.shares);
+  const own = calendarOwn(context, calendar);
+  const canEdit = calendarCanEdit(context, calendar);
+  return {
+    id: calendar.id,
+    name:
+      own || calendar.churchId || level === "DETAILS"
+        ? calendar.name
+        : "Shared calendar",
+    source: calendarSource(context, calendar, level),
+    timeZone:
+      own || calendar.churchId || level === "DETAILS"
+        ? calendar.timeZone
+        : undefined,
+    version: canEdit ? calendar.version : undefined,
+    canEdit,
+    canPublish:
+      !!calendar.churchId &&
+      calendarHas(context, calendar.churchId, "PUBLISH_CHURCH_EVENTS"),
+    own,
+    ...(own
+      ? {
+          shares: calendar.shares.map((s) => ({
+            churchId: s.churchId,
+            level: s.level,
+            version: s.version,
+            revoked: !!s.revokedAt
+          }))
+        }
+      : {})
+  };
+}
+function projectChurches(context: CalendarContext) {
+  return context.churches.map((c) => ({
+    id: c.id,
+    name: c.name,
+    canCreate: calendarHas(context, c.id, "EDIT_CHURCH_CALENDAR")
+  }));
+}
+export async function getCalendarDetails(
+  db: PrismaClient,
+  token: unknown,
+  calendarId: string
+) {
+  return portal(db, token, async (tx, actor) => {
+    const context = await calendarContext(tx, actor);
+    const calendar = await tx.platformCalendar.findUnique({
+      where: { id: id(calendarId) },
+      include: calendarInclude
+    });
+    if (!calendar || !(await calendarVisible(tx, context, calendar)))
+      throw new PortalError(404, "This calendar is not available.");
+    await loadCalendarSourceNames(tx, context, [calendar]);
+    return {
+      calendar: projectCalendar(context, calendar),
+      churches: projectChurches(context)
+    };
+  });
+}
 export async function getCalendars(
   db: PrismaClient,
   token: unknown,
@@ -80,7 +140,7 @@ export async function getCalendars(
       );
     const rows = await tx.platformCalendar.findMany({
       where: {
-        ...accessibleCalendarWhere(context),
+        AND: [accessibleCalendarWhere(context)],
         ...(options.cursor ? { id: { gt: id(options.cursor) } } : {}),
         ...(options.churchId
           ? {
@@ -112,48 +172,12 @@ export async function getCalendars(
     await loadCalendarSourceNames(tx, context, rows.slice(0, 20));
     for (const calendar of rows.slice(0, 20)) {
       if (!(await calendarVisible(tx, context, calendar))) continue;
-      const level = sharedLevel(context, calendar, calendar.shares),
-        own = calendarOwn(context, calendar);
-      const canEdit = calendarCanEdit(context, calendar);
-      calendars.push({
-        id: calendar.id,
-        name:
-          own || calendar.churchId
-            ? calendar.name
-            : level === "DETAILS"
-              ? calendar.name
-              : "Shared calendar",
-        source: calendarSource(context, calendar, level),
-        timeZone:
-          own || calendar.churchId || level === "DETAILS"
-            ? calendar.timeZone
-            : undefined,
-        version: canEdit ? calendar.version : undefined,
-        canEdit,
-        canPublish:
-          !!calendar.churchId &&
-          calendarHas(context, calendar.churchId, "PUBLISH_CHURCH_EVENTS"),
-        own,
-        ...(own
-          ? {
-              shares: calendar.shares.map((s) => ({
-                churchId: s.churchId,
-                level: s.level,
-                version: s.version,
-                revoked: !!s.revokedAt
-              }))
-            }
-          : {})
-      });
+      calendars.push(projectCalendar(context, calendar));
     }
     return {
       calendars,
       cursor: rows.length > 20 ? rows[19].id : undefined,
-      churches: context.churches.map((c) => ({
-        id: c.id,
-        name: c.name,
-        canCreate: calendarHas(context, c.id, "EDIT_CHURCH_CALENDAR")
-      }))
+      churches: projectChurches(context)
     };
   });
 }
@@ -222,10 +246,40 @@ export async function getCalendarAgenda(
           403,
           "A selected calendar is no longer shared with you. Update your calendar layers."
         );
+    // Apply audience restrictions before fetching event content or counting the
+    // agenda limit. An independently shared event must not reveal or be blocked
+    // by the owner's other private appointments.
+    const audiences: Prisma.CalendarEventWhereInput[] = calendars.map(
+      (calendar) => {
+        if (
+          calendarCanEdit(context, calendar) ||
+          (calendar.churchId &&
+            calendarHas(context, calendar.churchId, "PUBLISH_CHURCH_EVENTS"))
+        )
+          return { calendarId: calendar.id };
+        if (calendar.churchId)
+          return {
+            calendarId: calendar.id,
+            visibility: { in: ["CHURCH", "PUBLIC"] }
+          };
+        if (sharedLevel(context, calendar, calendar.shares))
+          return { calendarId: calendar.id };
+        return {
+          calendarId: calendar.id,
+          shares: {
+            some: {
+              churchId: { in: context.churches.map((c) => c.id) },
+              revokedAt: null,
+              connection: { userId: calendar.ownerId!, state: "APPROVED" }
+            }
+          }
+        };
+      }
+    );
     const rows = await tx.calendarOccurrence.findMany({
       where: {
         ...timeWhere(range),
-        event: { calendarId: { in: calendarIds } }
+        event: { OR: audiences }
       },
       include: { event: { include: eventInclude } },
       orderBy: [{ startAt: "asc" }, { id: "asc" }],
@@ -257,6 +311,21 @@ export async function getCalendarEvent(
     const own = calendarOwn(context, event.calendar);
     return {
       event: projected,
+      churches: projectChurches(context),
+      occurrences: await tx.calendarOccurrence
+        .findMany({
+          where: { eventId: event.id },
+          select: { id: true, startLocal: true, canceledAt: true },
+          orderBy: { ordinal: "asc" },
+          take: 52
+        })
+        .then((rows) =>
+          rows.map((r) => ({
+            id: r.id,
+            startLocal: r.startLocal,
+            canceled: !!r.canceledAt || !!event.canceledAt
+          }))
+        ),
       ...(calendarCanEdit(context, event.calendar)
         ? {
             series: {

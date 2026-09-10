@@ -3,6 +3,8 @@ import Link from "next/link";
 import {
   ArrowRight,
   Church,
+  CalendarDays,
+  CalendarCheck,
   CircleHelp,
   FileText,
   LifeBuoy,
@@ -93,6 +95,18 @@ export default async function PlatformMenuPage() {
                   icon={UserRound}
                 />
               )}
+              <MenuLink
+                href="/platform/calendars"
+                title="My calendars"
+                description="Your personal, church and shared calendars."
+                icon={CalendarDays}
+              />
+              <MenuLink
+                href="/platform/commitments"
+                title="My commitments"
+                description="Your event responses and private conflict hints."
+                icon={CalendarCheck}
+              />
               <MenuLink
                 href="/platform/settings"
                 title="Account settings"

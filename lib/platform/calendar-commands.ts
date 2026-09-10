@@ -195,10 +195,21 @@ export async function calendarCommand(
           where: {
             calendarId_requestKey: { calendarId: calendar.id, requestKey }
           },
-          select: { id: true }
+          select: {
+            id: true,
+            occurrences: {
+              select: { id: true },
+              orderBy: { ordinal: "asc" },
+              take: 1
+            }
+          }
         });
         if (prior)
-          return { id: prior.id, message: "This event was already saved." };
+          return {
+            id: prior.id,
+            occurrenceId: prior.occurrences[0]?.id,
+            message: "This event was already saved."
+          };
         expected(input.expectedVersion, calendar.version);
         if (
           (await tx.calendarEvent.count({
@@ -225,6 +236,13 @@ export async function calendarCommand(
             occurrences: {
               create: schedule.occurrences.map((time) => ({ ...data, ...time }))
             }
+          },
+          include: {
+            occurrences: {
+              select: { id: true },
+              orderBy: { ordinal: "asc" },
+              take: 1
+            }
           }
         });
         await tx.platformCalendar.update({
@@ -241,6 +259,7 @@ export async function calendarCommand(
         );
         return {
           id: row.id,
+          occurrenceId: row.occurrences[0]?.id,
           message:
             "Event saved. No invitations or external reminders were sent."
         };
@@ -623,7 +642,11 @@ export async function calendarCommand(
       await tx.calendarEvent.update({
         where: { id: event.id },
         data: {
-          ...(input.scope === "SERIES" ? { canceledAt: new Date() } : {}),
+          ...((await tx.calendarOccurrence.count({
+            where: { eventId: event.id, canceledAt: null }
+          })) === 0
+            ? { canceledAt: new Date() }
+            : {}),
           version: { increment: 1 }
         }
       });

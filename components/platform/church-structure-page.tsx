@@ -542,6 +542,15 @@ function Responsibilities({ snapshot }: { snapshot: StructureSnapshot }) {
         ) : (
           <p>You have no church management permissions.</p>
         )}
+        {(snapshot.capabilities.includes("EDIT_CHURCH_CALENDAR") ||
+          snapshot.capabilities.includes("PUBLISH_CHURCH_EVENTS")) && (
+          <Link
+            href={`${root(snapshot.church.id)}/calendar`}
+            className={portalLinkClass}
+          >
+            Manage church calendar and events
+          </Link>
+        )}
         {snapshot.capabilities.includes("MANAGE_STRUCTURE") && (
           <Link
             href={`${root(snapshot.church.id)}/structure`}
@@ -688,6 +697,7 @@ export async function ChurchStructurePage({
             [
               ["overview", "Overview"],
               ["directory", "People"],
+              ["calendar", "Calendar"],
               ["structure", "Structure"],
               ["responsibilities", "My responsibilities"]
             ] as const
@@ -747,9 +757,15 @@ export async function ChurchStructurePage({
             </PortalCard>
             <PortalCard title="Calendar and upcoming events">
               <p className="text-gc-muted">
-                The church calendar is being prepared. No events are available
-                here yet.
+                View church events and calendars deliberately shared with your
+                church.
               </p>
+              <Link
+                href={`${root(churchId)}/calendar`}
+                className={portalLinkClass}
+              >
+                Open church calendar
+              </Link>
             </PortalCard>
             <PortalCard title="Church posts and volunteering">
               <p className="text-gc-muted">

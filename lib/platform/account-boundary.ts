@@ -89,7 +89,8 @@ function reply(
   );
 }
 export async function readBody(
-  request: Request
+  request: Request,
+  maximumBytes = 8192
 ): Promise<Record<string, unknown>> {
   if (
     !request.headers.get("content-type")?.startsWith("application/json") ||
@@ -103,7 +104,7 @@ export async function readBody(
     const { done, value } = await reader.read();
     if (done) break;
     length += value.length;
-    if (length > 8192) {
+    if (length > maximumBytes) {
       await reader.cancel();
       throw new AccountError("invalid");
     }

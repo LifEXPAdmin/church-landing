@@ -686,6 +686,19 @@ export async function ChurchClaimPage({
                           Review management access
                         </Link>
                       )}
+                      {(snapshot.currentScopes.includes(
+                        "EDIT_CHURCH_CALENDAR"
+                      ) ||
+                        snapshot.currentScopes.includes(
+                          "PUBLISH_CHURCH_EVENTS"
+                        )) && (
+                        <Link
+                          className={portalLinkClass}
+                          href={`/platform/churches/${encodeURIComponent(row.churchId!)}/calendar`}
+                        >
+                          Manage church calendar and events
+                        </Link>
+                      )}
                       {snapshot.currentScopes.includes("MANAGE_STRUCTURE") && (
                         <Link
                           className={portalLinkClass}

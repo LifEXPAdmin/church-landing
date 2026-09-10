@@ -40,6 +40,37 @@ export default function PrivacyPage() {
             </p>
           </section>
           <section>
+            <h2 className="mb-2 text-3xl">Calendars, Events and Responses</h2>
+            <p>
+              Personal calendars start private. You may share a chosen calendar
+              or event series with approved members of your church as busy-only
+              availability or full event details. Whole-calendar sharing
+              includes current and future events. Calendar and event shares are
+              separate; ending one does not end the other. Shared source names
+              use your chosen church directory name when listed. Account sign-in
+              contacts are not added to event details automatically.
+            </p>
+            <p className="mt-3">
+              Church calendar editors and publishers can view private church
+              drafts. Authorized publishers choose whether a church event is
+              visible to approved members or everyone, including visitors
+              without accounts. We store event details, local dates, time zones,
+              recurrence, sharing choices, responses and a restricted change
+              history. Your commitments and conflict hints are visible only to
+              you; busy-only sharing does not reveal private appointment titles.
+            </p>
+            <p className="mt-3">
+              Leaving a church ends dependent calendar sharing and church
+              commitments. Deactivation ends your active sharing and responses
+              while retaining private calendar records. Rejoining or
+              reactivating does not restore these permissions. Your account
+              download includes your own calendars, events, shares and response
+              records. Canceling events preserves their history and existing
+              response references. Information someone has already seen cannot
+              be recalled.
+            </p>
+          </section>
+          <section>
             <h2 className="mb-2 text-3xl">
               Church Structure and Responsibilities
             </h2>
