@@ -1,6 +1,6 @@
 # Godschurches current state
 
-## Browse before joining verified locally — September 9, 2026
+## Browse before joining published — September 9, 2026
 
 Guest browsing is implemented on `codex/guest-browsing`: public posts and all
 comments, paginated church discovery and public church details are readable
@@ -8,9 +8,15 @@ without signing in. Member profiles, settings and participation use contextual
 Join/Sign in with validated return destinations. Minimal author projections keep
 member biographies out of anonymous queries and responses. All 121 applicable
 isolated checks, final lint/types/build/runtime checks and fictional browser
-signup/return/reflow passed. Publication is next; see
+signup/return/reflow passed. Application `ced731baaeea4d31a00759cfee562d8e2e0637a6`
+is live on READY deployment `dpl_91yvqbhLpucMq79iGojnzLXAFp9E`; exact SHA/canonical
+serving identity, 22 live HTTP checks and live mobile-width navigation passed.
+The live lists are empty; populated reading was tested using fictional fixtures.
+No browser or deployment errors were returned. See
 [GUEST_BROWSING_REPORT.md](GUEST_BROWSING_REPORT.md) for scope and evidence.
 Topic communities remain specified for the discussion/moderation workstream.
+Continue Google sign-in's account foundation while actual sender/provider setup
+and full account acceptance remain open.
 
 ## Verified email-change release — September 9, 2026
 

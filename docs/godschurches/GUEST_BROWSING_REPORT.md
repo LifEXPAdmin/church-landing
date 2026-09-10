@@ -4,7 +4,10 @@
 
 The `codex/guest-browsing` branch implements browsing public posts, comments and
 church pages before creating an account. Local regression, browser acceptance and
-the final production build passed; production publication is the next step.
+the final production build passed. Application
+`ced731baaeea4d31a00759cfee562d8e2e0637a6` is published on READY production
+`dpl_91yvqbhLpucMq79iGojnzLXAFp9E`; the exact Git SHA and canonical serving
+identity at godschurches.com were verified.
 
 Home invites visitors to look around and links to church discovery. Visitor
 navigation opens public Churches; Explore also links to church pages. There are
@@ -97,5 +100,18 @@ overlapped the mobile Home control at 390 px; the logo and keyboard Home worked.
 That tool is absent from production. These checks are browser viewport tests,
 not physical Samsung/Safari or password-manager acceptance.
 
-Production serving identity and read-only live results will be recorded after
-publication. Full roadmap parents remain open.
+## Production verification — September 9, 2026
+
+The application became READY at 2026-09-10T00:52:27.267Z (September 9 locally).
+Twenty-two read-only live HTTP checks passed at 00:52:53Z: root redirect,
+anonymous Home HTML/RSC, church discovery, search, profile gates, settings return,
+safe account choice, existing account/information/demo pages and missing-post
+document/RSC behavior. No records or messages were created. The live feed and
+church list were empty, so populated post/church detail acceptance is established
+by isolated fixtures, not live content.
+
+Actual live browser navigation Home → Churches → Home and Profile → account
+choice passed at 390 px. The production Home control worked normally without
+the development overlay. Browser warning/error logs were empty; the
+deployment-scoped error query returned no matching entries. Full roadmap parents,
+physical-device acceptance and topic-community implementation remain open.
