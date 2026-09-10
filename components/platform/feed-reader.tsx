@@ -1,98 +1,276 @@
 "use client";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  useTransition,
+  type ReactNode
+} from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, ArrowRight, BookOpen, List, RotateCw } from "lucide-react";
 import { useReadingPreferences } from "./reading-preferences";
+import {
+  newWheelGesture,
+  readerDate,
+  readerHref,
+  readerId,
+  readerMode,
+  touchTurn,
+  wheelTurn
+} from "@/lib/platform/reader-navigation";
 
 type Item = { id: string; label: string; content: ReactNode };
+const interactive =
+  "a,button,input,textarea,select,label,summary,details,video,audio,[contenteditable],dialog,[role=dialog]";
+function hasDraft(root: HTMLElement | null) {
+  return (
+    !!root?.querySelector('[data-reader-dirty="true"]') ||
+    Array.from(
+      root?.querySelectorAll<HTMLInputElement>(
+        '.gc-comment-form input[name="content"]'
+      ) ?? []
+    ).some((input) => input.value.length > 0)
+  );
+}
+function isBusy(root: HTMLElement | null) {
+  return !!root?.querySelector('[aria-busy="true"], [data-reader-busy="true"]');
+}
 export function FeedReader({
   items,
   initialPost,
   initialMode,
-  moreHref
+  moreHref,
+  anchor
 }: {
   items: Item[];
   initialPost?: string;
   initialMode?: "pages" | "list";
   moreHref?: string;
+  anchor?: { id: string; at: string };
 }) {
-  const { preferences, update } = useReadingPreferences();
-  const [mode, setMode] = useState(initialMode ?? preferences.mode);
-  const [selected, setSelected] = useState(
-    items.find((p) => p.id === initialPost)?.id ?? items[0]?.id
-  );
-  const [announcement, announce] = useState("");
-  const [direction, setDirection] = useState("next");
-  const root = useRef<HTMLDivElement>(null);
-  const touch = useRef<{ x: number; y: number; time: number } | null>(null);
+  const { preferences, update } = useReadingPreferences(),
+    router = useRouter(),
+    search = useSearchParams();
+  const mode =
+    readerMode(search.get("mode")) ?? initialMode ?? preferences.mode;
+  const selected = readerId(search.get("post")) ?? initialPost ?? items[0]?.id;
   const index = Math.max(
-    0,
-    items.findIndex((p) => p.id === selected)
-  );
-  const current = items[index];
-  const unavailable =
-    !!initialPost && !items.some((item) => item.id === initialPost);
-
+      0,
+      items.findIndex((item) => item.id === selected)
+    ),
+    current = items[index];
+  const unavailable = !!selected && !items.some((item) => item.id === selected);
+  const root = useRef<HTMLDivElement>(null),
+    sheet = useRef<HTMLDivElement>(null),
+    heading = useRef<HTMLParagraphElement>(null);
+  const turning = useRef(false),
+    timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const touch = useRef<{ x: number; y: number; time: number } | null>(null),
+    wheel = useRef(newWheelGesture());
+  const [leaving, setLeaving] = useState<string | null>(null),
+    [direction, setDirection] = useState<"next" | "previous">("next"),
+    [height, setHeight] = useState<number>();
+  const [announcement, announce] = useState(""),
+    [notice, setNotice] = useState(""),
+    [leaveHref, setLeaveHref] = useState<string | null>(null);
+  const [transitionPending, navigate] = useTransition();
+  const [refreshingSet, setRefreshingSet] = useState(false);
+  const loading = transitionPending || refreshingSet;
+  const discardNavigation = useRef(false);
+  const turningCleanup = () => {
+    if (timer.current) clearTimeout(timer.current);
+    turning.current = false;
+    setLeaving(null);
+    setHeight(undefined);
+  };
+  const positionHref = (id = current?.id, nextMode = mode) =>
+    id ? readerHref(location.href, id, nextMode, anchor) : "/platform";
   function remember(id: string, nextMode = mode) {
-    const url = new URL(window.location.href);
-    url.searchParams.set("post", id);
-    url.searchParams.set("mode", nextMode);
-    // Let Next synchronize its router state; passing its private history marker bypasses that.
-    window.history.replaceState(null, "", url);
+    history.replaceState(null, "", positionHref(id, nextMode));
   }
+  useEffect(() => {
+    const media = matchMedia("(prefers-reduced-motion: reduce)");
+    const stop = () => {
+      if (media.matches || preferences.reduceMotion) turningCleanup();
+    };
+    stop();
+    media.addEventListener("change", stop);
+    return () => {
+      media.removeEventListener("change", stop);
+      if (timer.current) clearTimeout(timer.current);
+    };
+  }, [preferences.reduceMotion]);
+  useEffect(() => {
+    if (
+      current &&
+      (!readerId(search.get("post")) ||
+        !readerDate(search.get("through")) ||
+        !readerId(search.get("anchor")))
+    )
+      history.replaceState(
+        null,
+        "",
+        readerHref(location.href, selected ?? current.id, mode, anchor)
+      );
+  }, [current, selected, mode, anchor, search]);
+  useEffect(() => {
+    // Draft content stays in its mounted form, never in a URL or browser storage.
+    const beforeUnload = (event: BeforeUnloadEvent) => {
+      if (
+        !discardNavigation.current &&
+        (hasDraft(root.current) || isBusy(root.current))
+      ) {
+        event.preventDefault();
+        event.returnValue = "";
+      }
+    };
+    const click = (event: MouseEvent) => {
+      const link =
+        event.target instanceof Element
+          ? event.target.closest<HTMLAnchorElement>("a[href]")
+          : null;
+      if (
+        !link ||
+        link.target === "_blank" ||
+        link.hasAttribute("download") ||
+        link.getAttribute("href")?.startsWith("#") ||
+        event.ctrlKey ||
+        event.metaKey ||
+        event.shiftKey ||
+        event.altKey ||
+        event.button !== 0
+      )
+        return;
+      if (isBusy(root.current)) {
+        event.preventDefault();
+        event.stopPropagation();
+        setNotice(
+          "Wait for your current submission to finish before leaving this reader."
+        );
+      } else if (hasDraft(root.current)) {
+        event.preventDefault();
+        event.stopPropagation();
+        setLeaveHref(link.href);
+        setNotice(
+          "You have unsent entries on these posts. Keep reading, or open the destination in a new tab to keep your entries here."
+        );
+      }
+    };
+    window.addEventListener("beforeunload", beforeUnload);
+    document.addEventListener("click", click, true);
+    return () => {
+      window.removeEventListener("beforeunload", beforeUnload);
+      document.removeEventListener("click", click, true);
+    };
+  }, []);
+  useEffect(() => {
+    if (mode !== "list" || !root.current) return;
+    // Use the reading line, not a preceding post's last visible pixels. Keep
+    // scroll work to one animation frame and never move focus while scrolling.
+    const nodes = Array.from(
+      root.current.querySelectorAll<HTMLElement>("[data-post]")
+    );
+    let pendingFrame = 0;
+    const position = () => {
+      pendingFrame = 0;
+      const node =
+        nodes.find(
+          (item) => item.getBoundingClientRect().bottom > innerHeight * 0.25
+        ) ?? nodes.at(-1);
+      const id = node?.dataset.post;
+      if (id && new URL(location.href).searchParams.get("post") !== id)
+        history.replaceState(
+          null,
+          "",
+          readerHref(location.href, id, "list", anchor)
+        );
+    };
+    const scroll = () => {
+      if (!pendingFrame) pendingFrame = requestAnimationFrame(position);
+    };
+    const restored =
+      readerId(new URL(location.href).searchParams.get("post")) ?? initialPost;
+    const frame = requestAnimationFrame(() => {
+      const node = nodes.find((item) => item.dataset.post === restored);
+      const rect = node?.getBoundingClientRect();
+      if (rect && (rect.bottom <= 0 || rect.top >= innerHeight * 0.5))
+        node?.scrollIntoView({ block: "start", behavior: "instant" });
+      position();
+    });
+    window.addEventListener("scroll", scroll, { passive: true });
+    window.addEventListener("resize", scroll);
+    return () => {
+      cancelAnimationFrame(frame);
+      cancelAnimationFrame(pendingFrame);
+      window.removeEventListener("scroll", scroll);
+      window.removeEventListener("resize", scroll);
+    };
+  }, [mode, items, anchor, initialPost]);
+  const blockedGesture = (target: EventTarget | null) =>
+    mode !== "pages" ||
+    loading ||
+    turning.current ||
+    isBusy(root.current) ||
+    (target instanceof Element && !!target.closest(interactive)) ||
+    !!document.querySelector(
+      'dialog[open],[role="dialog"][aria-modal="true"]'
+    ) ||
+    !!getSelection()?.toString();
   function turn(delta: number, fromBottom = false) {
+    if (turning.current || loading) return;
+    if (isBusy(root.current)) {
+      setNotice(
+        "Wait for your current submission to finish before turning the page."
+      );
+      return;
+    }
     const next = items[index + delta];
-    if (!next) return;
+    if (!next) {
+      announce(
+        delta < 0
+          ? "This is the first post in this set."
+          : moreHref
+            ? "This is the last post in this set. Older posts are available below."
+            : "You have reached the last available post."
+      );
+      return;
+    }
+    setNotice("");
+    setLeaveHref(null);
     setDirection(delta > 0 ? "next" : "previous");
-    setSelected(next.id);
+    if (
+      !preferences.reduceMotion &&
+      !matchMedia("(prefers-reduced-motion: reduce)").matches &&
+      current
+    ) {
+      turning.current = true;
+      setHeight(sheet.current?.offsetHeight);
+      setLeaving(current.id);
+      timer.current = setTimeout(turningCleanup, 520);
+    }
     remember(next.id);
     announce(`Post ${index + delta + 1} of ${items.length}, by ${next.label}`);
     if (fromBottom)
       requestAnimationFrame(() => {
-        const control = root.current?.querySelector<HTMLButtonElement>(
-          `[data-top-${delta > 0 ? "next" : "previous"}]`
-        );
-        control?.focus({ preventScroll: true });
+        heading.current?.focus({ preventScroll: true });
         root.current?.scrollIntoView({ block: "start", behavior: "instant" });
       });
   }
   function changeMode(nextMode: "pages" | "list") {
-    setMode(nextMode);
+    turningCleanup();
     update({ mode: nextMode });
     if (current) remember(current.id, nextMode);
-    announce(`${nextMode === "pages" ? "Pages" : "List"} view`);
-    requestAnimationFrame(() =>
-      root.current
-        ?.querySelector(`[data-post="${current?.id}"]`)
-        ?.scrollIntoView({ block: "nearest", behavior: "instant" })
+    announce(
+      `${nextMode === "pages" ? "Pages" : "List"} view. Your entries stay with their posts.`
     );
+    requestAnimationFrame(() => {
+      Array.from(
+        root.current?.querySelectorAll<HTMLElement>("[data-post]") ?? []
+      )
+        .find((node) => node.dataset.post === current?.id)
+        ?.scrollIntoView({ block: "nearest", behavior: "instant" });
+    });
   }
-  useEffect(() => {
-    if (mode !== "list" || !root.current) return;
-    // Follow reading position in List without a scroll listener or persisting post content.
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((e) => e.isIntersecting)
-          .sort(
-            (a, b) => a.boundingClientRect.top - b.boundingClientRect.top
-          )[0];
-        const id = (visible?.target as HTMLElement | undefined)?.dataset.post;
-        if (id) {
-          setSelected(id);
-          const url = new URL(location.href);
-          url.searchParams.set("post", id);
-          url.searchParams.set("mode", "list");
-          history.replaceState(null, "", url);
-        }
-      },
-      { rootMargin: "-10% 0px -65% 0px" }
-    );
-    root.current
-      .querySelectorAll("[data-post]")
-      .forEach((node) => observer.observe(node));
-    return () => observer.disconnect();
-  }, [mode, items]);
-
   function navigation(bottom = false) {
     return (
       <div
@@ -102,9 +280,8 @@ export function FeedReader({
       >
         <button
           type="button"
-          {...(!bottom ? { "data-top-previous": true } : {})}
           className="gc-button gc-button-quiet"
-          aria-disabled={index === 0}
+          aria-disabled={index === 0 || loading}
           onClick={() => turn(-1, bottom)}
         >
           <ArrowLeft aria-hidden="true" />
@@ -115,9 +292,8 @@ export function FeedReader({
         </span>
         <button
           type="button"
-          {...(!bottom ? { "data-top-next": true } : {})}
           className="gc-button gc-button-quiet"
-          aria-disabled={index === items.length - 1}
+          aria-disabled={index === items.length - 1 || loading}
           onClick={() => turn(1, bottom)}
         >
           Next
@@ -126,12 +302,54 @@ export function FeedReader({
       </div>
     );
   }
+  // Native non-passive handling cancels only eligible horizontal scrolling, so
+  // the browser cannot also interpret the same gesture as history navigation.
+  // Rebind after renders to use current selection and permissions.
+  useEffect(() => {
+    const node = sheet.current;
+    const onWheel = (event: WheelEvent) => {
+      const eligible =
+        mode === "pages" &&
+        !event.ctrlKey &&
+        !event.metaKey &&
+        event.clientX >= 32 &&
+        event.clientX <= innerWidth - 32 &&
+        !(
+          event.target instanceof Element && event.target.closest(interactive)
+        ) &&
+        !getSelection()?.toString() &&
+        !document.querySelector(
+          'dialog[open],[role="dialog"][aria-modal="true"]'
+        );
+      if (
+        eligible &&
+        Math.abs(event.deltaX) > Math.abs(event.deltaY) * 2 &&
+        event.cancelable
+      )
+        event.preventDefault();
+      const result = wheelTurn(wheel.current, {
+        x: event.deltaX,
+        y: event.deltaY,
+        mode: event.deltaMode,
+        height: innerHeight,
+        time: performance.now(),
+        blocked: !eligible || loading || turning.current || isBusy(root.current)
+      });
+      wheel.current = result.state;
+      if (result.delta) turn(result.delta);
+    };
+    node?.addEventListener("wheel", onWheel, { passive: false });
+    return () => node?.removeEventListener("wheel", onWheel);
+  });
   return (
-    <div ref={root} className="gc-feed" data-mode={mode}>
+    <div ref={root} className="gc-feed" data-mode={mode} aria-busy={loading}>
       {unavailable && (
         <p className="mb-4 text-sm text-gc-muted" role="status">
-          The post you were reading is no longer in this set. Showing the first
-          available post.
+          The post you were reading is no longer in this set. Its content and
+          unsent entries are no longer available here.
+          {current
+            ? " Showing the first available post."
+            : " No posts remain in this set."}
         </p>
       )}
       <div className="gc-feed-toolbar">
@@ -153,10 +371,30 @@ export function FeedReader({
             Pages
           </button>
         </div>
-        <a href="/platform" className="gc-refresh">
+        <button
+          type="button"
+          className="gc-refresh"
+          disabled={loading}
+          onClick={() => {
+            if (isBusy(root.current) || hasDraft(root.current)) {
+              setNotice(
+                "Finish or clear your unsent entries before refreshing. You can keep using Pages and List without losing them."
+              );
+              return;
+            }
+            if (current) remember(current.id);
+            // Request a fresh document at the frozen reading URL. A server
+            // failure then uses the route's explicit retry screen.
+            setRefreshingSet(true);
+            announce(
+              "Refreshing this set while keeping your reading position."
+            );
+            location.reload();
+          }}
+        >
           <RotateCw aria-hidden="true" />
-          Refresh posts
-        </a>
+          {loading ? "Loading posts…" : "Refresh posts"}
+        </button>
       </div>
       <p
         role="status"
@@ -166,50 +404,92 @@ export function FeedReader({
       >
         {announcement}
       </p>
-      {mode === "pages" && (
+      {notice && (
+        <div
+          role="status"
+          className="my-4 space-y-3 rounded-xl border border-gc-divider p-4"
+        >
+          <p>{notice}</p>
+          {leaveHref && (
+            <div className="flex flex-wrap gap-4">
+              <button
+                type="button"
+                className="gc-button gc-button-quiet"
+                onClick={() => {
+                  setNotice("");
+                  setLeaveHref(null);
+                }}
+              >
+                Keep reading
+              </button>
+              <a
+                href={leaveHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="gc-button gc-button-quiet"
+              >
+                Open in a new tab
+              </a>
+              <button
+                type="button"
+                className="gc-button gc-button-quiet"
+                onClick={() => {
+                  discardNavigation.current = true;
+                  location.assign(leaveHref);
+                }}
+              >
+                Discard unsent entries and leave
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+      {current && mode === "pages" && (
         <>
           {navigation()}
-          <p className="gc-reading-hint">
-            One post at a time. Read at your own pace.
+          <p ref={heading} tabIndex={-1} className="gc-reading-hint">
+            One post at a time. Swipe right for next, left for previous. Scroll
+            down to keep reading.
           </p>
         </>
       )}
       <div
+        ref={sheet}
         className="gc-feed-items"
         data-direction={direction}
+        style={height ? { minHeight: height } : undefined}
         onSubmitCapture={(event) => {
-          const form = event.target as HTMLFormElement;
+          const form = event.target as HTMLFormElement,
+            id = form.closest<HTMLElement>("[data-post]")?.dataset.post;
           const destination = form.elements?.namedItem("redirectTo");
-          if (destination instanceof HTMLInputElement)
-            destination.value = location.pathname + location.search;
+          if (id) {
+            remember(id);
+            if (destination instanceof HTMLInputElement)
+              destination.value = positionHref(id);
+          }
         }}
         onTouchStart={(event) => {
-          const point = event.touches[0];
-          const target = event.target as Element;
           touch.current = null;
+          const point = event.touches[0];
           if (
-            mode !== "pages" ||
+            !point ||
             event.touches.length !== 1 ||
             point.clientX < 32 ||
             point.clientX > innerWidth - 32 ||
-            target.closest(
-              "a,button,input,textarea,select,summary,details,video,audio,[contenteditable],dialog"
-            ) ||
-            document.querySelector("dialog[open]") ||
-            window.getSelection()?.toString()
+            blockedGesture(event.target)
           )
             return;
           touch.current = {
             x: point.clientX,
             y: point.clientY,
-            time: Date.now()
+            time: performance.now()
           };
         }}
         onTouchMove={(event) => {
-          if (!touch.current) return;
           if (
-            event.touches.length !== 1 ||
-            Math.abs(event.touches[0].clientY - touch.current.y) > 20
+            touch.current &&
+            (event.touches.length !== 1 ||
+              Math.abs(event.touches[0].clientY - touch.current.y) > 20)
           )
             touch.current = null;
         }}
@@ -217,33 +497,57 @@ export function FeedReader({
           touch.current = null;
         }}
         onTouchEnd={(event) => {
-          const start = touch.current;
+          const start = touch.current,
+            end = event.changedTouches[0];
           touch.current = null;
           if (
             !start ||
+            !end ||
             event.touches.length ||
-            Date.now() - start.time > 650 ||
-            window.getSelection()?.toString()
+            blockedGesture(event.target)
           )
             return;
-          const end = event.changedTouches[0];
-          const dx = end.clientX - start.x;
-          if (Math.abs(dx) > 80 && Math.abs(end.clientY - start.y) < 20)
-            turn(dx < 0 ? 1 : -1);
+          const delta = touchTurn(
+            end.clientX - start.x,
+            end.clientY - start.y,
+            performance.now() - start.time
+          );
+          if (delta) turn(delta);
         }}
       >
-        {(mode === "pages" ? [current] : items).filter(Boolean).map((item) => (
-          <div key={item.id} data-post={item.id} className="gc-post-page">
-            {item.content}
-          </div>
-        ))}
+        {items.map((item) => {
+          const isLeaving =
+            mode === "pages" && leaving === item.id && item.id !== current?.id;
+          const hidden =
+            mode === "pages" && item.id !== current?.id && !isLeaving;
+          return (
+            <div
+              key={item.id}
+              data-post={item.id}
+              data-leaving={isLeaving || undefined}
+              hidden={hidden}
+              inert={hidden || isLeaving}
+              aria-hidden={hidden || isLeaving || undefined}
+              className="gc-post-page"
+            >
+              {item.content}
+            </div>
+          );
+        })}
       </div>
-      {mode === "pages" && navigation(true)}
-      {(mode === "list" || index === items.length - 1) && (
+      {current && mode === "pages" && navigation(true)}
+      {(mode === "list" || !current || index === items.length - 1) && (
         <div className="gc-feed-end">
           <p>You&apos;ve reached the end of this set.</p>
           {moreHref ? (
-            <a href={moreHref} className="gc-button gc-button-quiet">
+            <a
+              href={`${moreHref}&mode=${mode}`}
+              onClick={(event) => {
+                event.preventDefault();
+                navigate(() => router.push(`${moreHref}&mode=${mode}`));
+              }}
+              className="gc-button gc-button-quiet"
+            >
               Read older posts
               <ArrowRight aria-hidden="true" />
             </a>
@@ -253,6 +557,16 @@ export function FeedReader({
               this page.
             </p>
           )}
+          <a
+            href="/platform"
+            onClick={(event) => {
+              event.preventDefault();
+              navigate(() => router.push("/platform"));
+            }}
+            className="inline-flex min-h-11 items-center text-gc-accent underline"
+          >
+            Start again with the newest posts
+          </a>
         </div>
       )}
     </div>

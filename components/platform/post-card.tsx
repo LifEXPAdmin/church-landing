@@ -1,5 +1,6 @@
 import type { PostView } from "@/lib/platform/post-reads";
 import { PostLink } from "./post-link";
+import { PostActionPending } from "./post-action-pending";
 import { accountEntryHref } from "@/lib/platform/account-entry";
 import Link from "next/link";
 import { Heart, MessageCircle, Trash2, Globe } from "lucide-react";
@@ -94,6 +95,7 @@ export function PostCard({
       <div className="gc-post-actions">
         {currentUserId ? (
           <form action={togglePlatformPostLike}>
+            <PostActionPending />
             <input type="hidden" name="postId" value={post.id} />
             <input type="hidden" name="redirectTo" value={redirectTo} />
             <button className="gc-reaction" type="submit" aria-pressed={liked}>
@@ -164,6 +166,7 @@ export function PostCard({
             </div>
             {comment.canDelete && (
               <form action={deletePlatformPostComment}>
+                <PostActionPending />
                 <input type="hidden" name="commentId" value={comment.id} />
                 <input type="hidden" name="redirectTo" value={redirectTo} />
                 <button
@@ -187,6 +190,7 @@ export function PostCard({
         )}
         {post.canReply ? (
           <form action={createPlatformPostComment} className="gc-comment-form">
+            <PostActionPending />
             <input type="hidden" name="postId" value={post.id} />
             <input type="hidden" name="redirectTo" value={redirectTo} />
             <label htmlFor={`comment-${post.id}`}>Add a comment</label>

@@ -1,3 +1,5 @@
+import { readerDate, readerId } from "./reader-navigation";
+
 // Account entry preserves only known in-app reading/navigation state. Never
 // preserve credentials, arbitrary query strings or another authentication page.
 export function safeAccountReturn(value: unknown): string {
@@ -39,6 +41,14 @@ export function safeAccountReturn(value: unknown): string {
     const entry = url.searchParams.get(key);
     if (entry && entry.length <= 200 && !/[\u0000-\u001f\u007f]/.test(entry))
       query.set(key, entry);
+  }
+  if (/^\/platform\/?$/.test(url.pathname)) {
+    const through = readerDate(url.searchParams.get("through"));
+    const anchor = readerId(url.searchParams.get("anchor"));
+    if (through && anchor) {
+      query.set("through", through.toISOString());
+      query.set("anchor", anchor);
+    }
   }
   return url.pathname + (query.size ? "?" + query.toString() : "");
 }

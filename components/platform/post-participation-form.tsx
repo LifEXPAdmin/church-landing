@@ -32,6 +32,7 @@ function ParticipationForm({
     inFlight = useRef(false),
     creationKey = useRef(payload.requestKey);
   const [created, setCreated] = useState(false);
+  const [dirty, setDirty] = useState(false);
   const [pending, setPending] = useState(false),
     [refreshing, refresh] = useTransition();
   const [result, setResult] = useState<{
@@ -44,6 +45,9 @@ function ParticipationForm({
   return (
     <form
       className="space-y-3"
+      aria-busy={pending || refreshing}
+      data-reader-dirty={dirty}
+      onChangeCapture={() => setDirty(true)}
       onSubmit={async (e) => {
         e.preventDefault();
         if (inFlight.current || refreshing || disabled) return;
@@ -69,6 +73,7 @@ function ParticipationForm({
             failed: !response.ok
           });
           if (response.ok) {
+            setDirty(false);
             if (payload.operation === "configure-slot" && !payload.slotId)
               setCreated(true);
             refresh(() => router.refresh());

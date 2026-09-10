@@ -369,6 +369,8 @@ try {
   if (portalTests) await runTests("tests/post-editor.test.ts");
   if (portalTests) await runTests("tests/post-link-fetch.test.ts");
   if (portalTests) await runTests("tests/post-links.test.ts");
+  if (portalTests) await runTests("tests/reader-navigation.test.ts");
+  if (portalTests) await runTests("tests/post-reader.test.ts");
   if (supportTests) await runTests("tests/support-service.test.ts");
   run(join(pg, "pg_dump"), [
     database,
@@ -515,6 +517,11 @@ try {
     });
   if (portalTests)
     await runTests("tests/post-links-http.test.ts", {
+      ...env,
+      POST_RENDER_PHASE: "development"
+    });
+  if (portalTests)
+    await runTests("tests/post-reader-http.test.ts", {
       ...env,
       POST_RENDER_PHASE: "development"
     });
@@ -773,6 +780,10 @@ try {
       POST_RENDER_PHASE: "production"
     });
     await runTests("tests/post-links-http.test.ts", {
+      ...portalEnv,
+      POST_RENDER_PHASE: "production"
+    });
+    await runTests("tests/post-reader-http.test.ts", {
       ...portalEnv,
       POST_RENDER_PHASE: "production"
     });

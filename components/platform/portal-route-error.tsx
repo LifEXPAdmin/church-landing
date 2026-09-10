@@ -9,12 +9,7 @@ import {
   portalLinkClass
 } from "@/components/platform/portal-ui";
 
-export function PortalRouteError({
-  reset
-}: {
-  error: Error & { digest?: string };
-  reset: () => void;
-}) {
+export function PortalRouteError() {
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
     heading.current?.focus();
@@ -33,7 +28,11 @@ export function PortalRouteError({
           Please try again. No private information has been displayed.
         </p>
         <div className="flex flex-wrap items-center gap-5">
-          <button type="button" onClick={reset} className={portalButtonClass}>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className={portalButtonClass}
+          >
             Try again
           </button>
           <Link href="/platform" className={portalLinkClass}>

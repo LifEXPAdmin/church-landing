@@ -8,6 +8,7 @@ import { FeedReader } from "@/components/platform/feed-reader";
 import { ComposePostButton } from "@/components/platform/compose-post-button";
 import { PlatformShell } from "@/components/platform/platform-shell";
 import { getCurrentPlatformUser } from "@/lib/platform/session";
+import { readerDate, readerId } from "@/lib/platform/reader-navigation";
 
 export const metadata = publicMetadata(
   "Home",
@@ -20,6 +21,8 @@ type FeedParams = {
   cursor?: string;
   post?: string;
   mode?: string;
+  through?: string;
+  anchor?: string;
 };
 
 export default async function PlatformPage({
@@ -39,7 +42,15 @@ export default async function PlatformPage({
     params.cursor && /^[a-zA-Z0-9_-]{1,100}$/.test(params.cursor)
       ? params.cursor
       : null;
-  const result = await readPosts({ feed: true, before, cursor });
+  const through = readerDate(params.through),
+    anchor = readerId(params.anchor);
+  const result = await readPosts({
+    feed: true,
+    before,
+    cursor,
+    through,
+    anchor
+  });
   const posts = result.slice(0, 30);
   const last = posts.at(-1);
   const moreHref =
@@ -89,7 +100,7 @@ export default async function PlatformPage({
                 <PostComposer />
               </details>
             )}
-            {posts.length ? (
+            {posts.length || params.post ? (
               <FeedReader
                 items={posts.map((post) => ({
                   id: post.id,
@@ -102,7 +113,18 @@ export default async function PlatformPage({
                     />
                   )
                 }))}
-                initialPost={params.post}
+                initialPost={readerId(params.post)}
+                anchor={
+                  posts[0]
+                    ? {
+                        id: anchor && through ? anchor : posts[0].id,
+                        at: (anchor && through
+                          ? through
+                          : posts[0].createdAt
+                        ).toISOString()
+                      }
+                    : undefined
+                }
                 initialMode={
                   params.mode === "pages" || params.mode === "list"
                     ? params.mode

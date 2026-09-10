@@ -1,5 +1,19 @@
 # Godschurches current state
 
+## Bible-page reader verified locally — September 10, 2026
+
+`codex/bible-page-reader` adds literal rightward-next/leftward-previous gestures,
+paper hinge/shadow motion, retained mounted post controls, Pages first-use default
+with saved preferences preserved, stable reading URLs and explicit guarded
+refresh/retry behavior. The full isolated run passed 274 checks with two expected
+skips and zero failures (276 total). All eleven final affected production HTTPS
+groups and final lint/types/build/runtime checks passed. Actual fictional browser
+actions, drafts, List/Pages, profile Back, older sets, outage recovery and 320/390/
+1,226-pixel layouts were checked; source matched the browser copy. Real Samsung,
+OS motion/200% text and short recordings remain separate integrated acceptance.
+The post changes are local and unpublished; calendar remains live. Profiles and
+image uploads are next. See [POST_READER_REPORT.md](POST_READER_REPORT.md).
+
 ## Safe post link previews verified locally — September 10, 2026
 
 `codex/post-link-previews` adds optional removable public HTTPS text cards to the

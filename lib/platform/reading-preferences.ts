@@ -7,7 +7,7 @@ export type ReadingPreferences = {
 };
 export const defaultReadingPreferences: ReadingPreferences = {
   appearance: "system",
-  mode: "list",
+  mode: "pages",
   size: "comfortable",
   reduceMotion: false
 };
@@ -20,7 +20,7 @@ export function parseReadingPreferences(raw?: string): ReadingPreferences {
       appearance: ["system", "light", "dark"].includes(value?.appearance)
         ? value.appearance
         : "system",
-      mode: value?.mode === "pages" ? "pages" : "list",
+      mode: value?.mode === "list" ? "list" : "pages",
       size: ["standard", "comfortable", "large", "largest"].includes(
         value?.size
       )

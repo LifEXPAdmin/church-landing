@@ -118,6 +118,8 @@ export type PostQuery = {
   search?: string;
   before?: Date | null;
   cursor?: string | null;
+  through?: Date | null;
+  anchor?: string | null;
   pinned?: boolean;
   limit?: number;
 };
@@ -174,6 +176,13 @@ export async function listPostsIn(
       OR: [
         { publishedAt: { lt: query.before } },
         { publishedAt: query.before, id: { lt: query.cursor } }
+      ]
+    });
+  if (query.through && query.anchor)
+    filters.push({
+      OR: [
+        { publishedAt: { lt: query.through } },
+        { publishedAt: query.through, id: { lte: postId(query.anchor) } }
       ]
     });
   const limit = Math.max(1, Math.min(31, query.limit ?? 31));
