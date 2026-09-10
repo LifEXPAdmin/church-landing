@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { positionPlacementLabel } from "@/lib/platform/church-position-placement";
 import {
   rolePresets,
   roleRecommendationChoices,
@@ -18,6 +19,7 @@ import { portalLinkClass } from "./portal-ui";
 type Review = NonNullable<StructureSnapshot["privileges"]> & {
   version: number;
   positionName: string;
+  positionPlacement: string;
 };
 type Stage = "select" | "privileges" | "review" | "saved";
 
@@ -114,7 +116,8 @@ export function ChurchAssignmentReview({
       setBaseline({
         ...review,
         version: snapshot.version,
-        positionName: position.name
+        positionName: position.name,
+        positionPlacement: positionPlacementLabel(position, snapshot.positions)
       });
       if (!keepChoices)
         setSelected(
@@ -357,6 +360,7 @@ export function ChurchAssignmentReview({
         <>
           <div className="space-y-2 rounded-xl border border-gc-divider bg-gc-surface p-4">
             <p className="font-semibold">{baseline.positionName}</p>
+            <p className="text-sm">Placement: {baseline.positionPlacement}</p>
             <p>
               {baseline.memberLabel}
               {baseline.isSelf ? " (you)" : ""}

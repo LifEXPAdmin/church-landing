@@ -175,8 +175,10 @@ test("assignment review entry protects member identity, preserves title revision
       ).text();
       assert.equal(
         page.includes("Assign role and review privileges"),
-        canAssign
+        production && canAssign
       );
+      if (!production)
+        assert.ok(page.includes("Open the private portal preview"));
       assert.equal(page.includes(morgan.user.email), false);
       assert.equal(page.includes("Hidden Morgan Canary"), false);
     }
@@ -249,6 +251,11 @@ test("assignment review entry protects member identity, preserves title revision
     await db.churchPositionAssignment.count({ where: { positionId: p.id } }),
     0,
     "Reading privileges never assigns a member"
+  );
+  assert.equal(
+    preview.positions.find((position: { id: string }) => position.id === p.id)
+      .placement,
+    "UNCONNECTED"
   );
   const saved = await cmd({
     operation: "assignment-privileges",
@@ -432,13 +439,23 @@ test("actual structure HTTP routes preserve private positions/contact projection
   const outreach = await cmd({
     operation: "create",
     requestKey: randomUUID(),
-    name: "Outreach",
+    name: "Outreach"
+  });
+  await cmd({
+    operation: "place",
+    positionId: outreach.id,
+    placement: "REPORTING",
     parentId: leadership.id
   });
   const coordinator = await cmd({
     operation: "create",
     requestKey: randomUUID(),
-    name: "Volunteer Coordinator",
+    name: "Volunteer Coordinator"
+  });
+  await cmd({
+    operation: "place",
+    positionId: coordinator.id,
+    placement: "REPORTING",
     parentId: outreach.id
   });
   const worship = await cmd({
@@ -578,10 +595,10 @@ test("actual structure HTTP routes preserve private positions/contact projection
   );
   await cmd(
     {
-      operation: "edit",
+      operation: "place",
+      placement: "REPORTING",
       positionId: leadership.id,
-      parentId: coordinator.id,
-      name: "Cycle"
+      parentId: coordinator.id
     },
     ada.token,
     400
@@ -811,7 +828,12 @@ test("actual role library HTTP preserves revisions and separates templates from 
     operation: "create",
     requestKey: randomUUID(),
     roleTemplateId: template.id,
-    roleTemplateVersion: 1,
+    roleTemplateVersion: 1
+  });
+  await cmd({
+    operation: "place",
+    positionId: second.id,
+    placement: "REPORTING",
     parentId: first.id
   });
   assert.notEqual(first.id, second.id);

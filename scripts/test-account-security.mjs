@@ -410,6 +410,36 @@ try {
       console.log(
         "Assignment permissions additive upgrade preserves existing appointments and direct grants, with no inferred permissions."
       );
+    } else if (name === "20260910220000_church_position_placement") {
+      const positions = () =>
+        psql([
+          "-Atc",
+          `SELECT md5(jsonb_agg(to_jsonb(t) - 'placement' ORDER BY id)::text) FROM "ChurchPosition" t`
+        ]);
+      const sources = () => [
+        positions(),
+        fingerprint("ChurchPositionAssignment", "id"),
+        fingerprint("ChurchRoleGrant", "id"),
+        fingerprint("ChurchCapabilityGrant", "id")
+      ];
+      const prior = sources();
+      psql(["-f", `prisma/migrations/${name}/migration.sql`]);
+      if (JSON.stringify(prior) !== JSON.stringify(sources()))
+        throw new Error(
+          "Placement upgrade changed published positions, reporting lines, assignments or grants"
+        );
+      const placements = psql([
+        "-Atc",
+        `SELECT id || ':' || placement FROM "ChurchPosition" ORDER BY id`
+      ]).trim();
+      if (
+        placements !==
+        "fixture-role-upgrade-child:REPORTING\nfixture-role-upgrade-root:ROOT"
+      )
+        throw new Error("Existing root/reporting placement was not preserved");
+      console.log(
+        "Placement additive upgrade preserved existing position, assignment and grant fingerprints; existing roots and reporting links keep their meaning."
+      );
     } else psql(["-f", `prisma/migrations/${name}/migration.sql`]);
   }
   for (const [i, [table, key]] of accountTables.entries()) {

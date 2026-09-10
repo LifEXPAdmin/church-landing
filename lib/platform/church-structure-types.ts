@@ -15,6 +15,7 @@ export const structureCapabilities = {
 } as const;
 export type StructureCapability = keyof typeof structureCapabilities;
 export type StructureOperation =
+  | "place"
   | "template-create"
   | "template-edit"
   | "template-archive"
@@ -39,6 +40,7 @@ export type StructureView =
 export type PositionSummary = {
   id: string;
   parentId: string | null;
+  placement: "UNCONNECTED" | "ROOT" | "REPORTING";
   name: string;
   description: string;
   roleTemplateId?: string | null;

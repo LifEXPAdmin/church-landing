@@ -91,14 +91,22 @@ async function fixture() {
       expectedVersion: (await read()).version,
       ...input
     });
-  const create = (name: string, parentId?: string) =>
-    cmd(ada, {
+  const create = async (name: string, parentId?: string) => {
+    const row = await cmd(ada, {
       operation: "create",
       requestKey: randomUUID(),
       name,
-      description: `Responsibilities for ${name}`,
-      parentId
+      description: `Responsibilities for ${name}`
     });
+    if (parentId)
+      await cmd(ada, {
+        operation: "place",
+        positionId: row.id,
+        placement: "REPORTING",
+        parentId
+      });
+    return row;
+  };
   return {
     ...f,
     ada,
@@ -319,19 +327,18 @@ test("structure: explicit scoped delegation denies self-promotion, unrelated pow
   );
   await denied(
     f.cmd(f.lee, {
-      operation: "edit",
+      operation: "place",
+      placement: "REPORTING",
       positionId: t.leadership.id,
-      name: "Leadership",
-      description: "bad",
       parentId: t.coordinator.id
     }),
     400
   );
   await denied(
     f.cmd(f.lee, {
-      operation: "edit",
+      operation: "place",
+      placement: "REPORTING",
       positionId: t.leadership.id,
-      name: "Leadership",
       parentId: other.id
     }),
     400
@@ -352,7 +359,7 @@ test("structure: explicit scoped delegation denies self-promotion, unrelated pow
   await assert.rejects(
     db.churchPosition.update({
       where: { id: t.leadership.id },
-      data: { parentId: t.coordinator.id }
+      data: { parentId: t.coordinator.id, placement: "REPORTING" }
     })
   );
   await assert.rejects(
@@ -367,7 +374,7 @@ test("structure: explicit scoped delegation denies self-promotion, unrelated pow
   await assert.rejects(
     db.churchPosition.update({
       where: { id: t.leadership.id },
-      data: { parentId: other.id }
+      data: { parentId: other.id, placement: "REPORTING" }
     })
   );
 });
@@ -378,10 +385,10 @@ test("structure: stale edits and concurrent moves have one winner, create retrie
   const version = (await f.read()).version;
   const input = {
     churchId: f.churchA.id,
-    operation: "edit",
+    operation: "place",
+    placement: "REPORTING",
     expectedVersion: version,
     positionId: t.worship.id,
-    name: "Worship",
     parentId: t.leadership.id
   };
   const results = await Promise.allSettled([
@@ -612,9 +619,22 @@ test("structure: members can step down from their own duty; archive and depth li
   let parent = t.leadership.id;
   for (let level = 2; level <= 12; level++)
     parent = (await f.create(`Depth ${level}`, parent)).id;
+  const unconnected = await f.create("Too deep");
   const version = (await f.read()).version;
-  await denied(f.create("Too deep", parent), 400);
+  await denied(
+    f.cmd(f.ada, {
+      operation: "place",
+      positionId: unconnected.id,
+      placement: "REPORTING",
+      parentId: parent
+    }),
+    400
+  );
   assert.equal((await f.read()).version, version);
+  assert.equal(
+    (await f.read()).positions.find((p) => p.id === unconnected.id)!.placement,
+    "UNCONNECTED"
+  );
   await denied(
     f.cmd(f.ada, {
       operation: "create",

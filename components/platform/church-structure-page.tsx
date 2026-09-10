@@ -1,3 +1,5 @@
+import { ChurchPositionPlacement } from "./church-position-placement";
+import { positionPlacementLabel } from "@/lib/platform/church-position-placement";
 import { ChurchRoleLibrary } from "./church-role-library";
 import { ChurchAssignmentReview } from "./church-assignment-review";
 import { ChurchRolePosition } from "./church-role-position";
@@ -73,12 +75,14 @@ function PositionTree({
   positions,
   churchId,
   parentId = null,
-  level = 0
+  level = 0,
+  rootPlacement
 }: {
   positions: PositionSummary[];
   churchId: string;
   parentId?: string | null;
   level?: number;
+  rootPlacement?: "ROOT" | "UNCONNECTED";
 }) {
   return (
     <ul
@@ -89,7 +93,13 @@ function PositionTree({
       }
     >
       {positions
-        .filter((p) => p.parentId === parentId)
+        .filter(
+          (p) =>
+            p.parentId === parentId &&
+            (parentId !== null ||
+              !rootPlacement ||
+              p.placement === rootPlacement)
+        )
         .map((p) => (
           <li key={p.id} className="min-w-0">
             <details
@@ -256,21 +266,6 @@ function PositionEditor({
       maxLength: 3000,
       type: "textarea",
       hint: "Describe this position’s responsibilities. Position information is visible to approved members of this church."
-    },
-    {
-      name: "parentId",
-      label: "Reports to",
-      type: "select",
-      value: row?.parentId ?? "",
-      options: [
-        { value: "", label: "No parent position" },
-        ...snapshot.positions
-          .filter((p) => p.id !== row?.id)
-          .map((p) => ({
-            value: p.id,
-            label: reportingPath(p, snapshot.positions)
-          }))
-      ]
     }
   ];
   return (
@@ -313,9 +308,14 @@ function PositionDetail({
               >
                 {parent.name}
               </Link>
+            ) : row.placement === "UNCONNECTED" ? (
+              "Not connected yet"
             ) : (
-              "No parent position"
+              "Top of chart"
             )}
+          </p>
+          <p className="text-sm text-gc-muted">
+            {positionPlacementLabel(row, snapshot.positions)}
           </p>
           {children.length > 0 && (
             <div>
@@ -379,6 +379,26 @@ function PositionDetail({
         <div className="space-y-6">
           <PortalCard title="Edit position">
             <PositionEditor snapshot={snapshot} row={row} />
+          </PortalCard>
+          <PortalCard title="Place position">
+            <ChurchPositionPlacement
+              churchId={snapshot.church.id}
+              version={snapshot.version}
+              row={{
+                id: row.id,
+                name: row.name,
+                parentId: row.parentId,
+                placement: row.placement
+              }}
+              positions={snapshot.positions.map(
+                ({ id, name, parentId, placement }) => ({
+                  id,
+                  name,
+                  parentId,
+                  placement
+                })
+              )}
+            />
           </PortalCard>
           <PortalCard title="Assign a member">
             <p>
@@ -512,6 +532,9 @@ function Responsibilities({ snapshot }: { snapshot: StructureSnapshot }) {
             >
               {reportingPath(p, snapshot.positions)}
             </Link>
+            <p className="text-sm text-gc-muted">
+              {positionPlacementLabel(p, snapshot.positions)}
+            </p>
             <p className="whitespace-pre-wrap text-sm text-gc-muted">
               {p.description || "Responsibilities have not been added yet."}
             </p>
@@ -877,11 +900,7 @@ export async function ChurchStructurePage({
                   snapshot={{
                     church: { id: snapshot.church.id },
                     version: snapshot.version,
-                    roleTemplates: snapshot.roleTemplates,
-                    positions: snapshot.positions.map(({ id, name }) => ({
-                      id,
-                      name
-                    }))
+                    roleTemplates: snapshot.roleTemplates
                   }}
                   requestKey={randomUUID()}
                 />
@@ -947,15 +966,48 @@ export async function ChurchStructurePage({
                         {p.description ||
                           "Responsibilities have not been added yet."}
                       </p>
+                      <p className="text-sm text-gc-muted">
+                        {positionPlacementLabel(p, snapshot.positions)}
+                      </p>
                       {names(p, churchId)}
                     </li>
                   ))}
                 </ol>
               ) : (
-                <PositionTree
-                  positions={snapshot.positions}
-                  churchId={churchId}
-                />
+                <div className="space-y-6">
+                  <PortalCard title="Church chart">
+                    {snapshot.positions.some((p) => p.placement === "ROOT") ? (
+                      <PositionTree
+                        positions={snapshot.positions}
+                        churchId={churchId}
+                        rootPlacement="ROOT"
+                      />
+                    ) : (
+                      <p>
+                        No positions have been placed at the top of the chart
+                        yet.
+                      </p>
+                    )}
+                  </PortalCard>
+                  <PortalCard title="Not connected yet">
+                    <p className="mb-3 text-sm text-gc-muted">
+                      New positions and detached branches stay here until a
+                      manager explicitly places them. Their assignments, duties
+                      and reviewed permissions remain active.
+                    </p>
+                    {snapshot.positions.some(
+                      (p) => p.placement === "UNCONNECTED"
+                    ) ? (
+                      <PositionTree
+                        positions={snapshot.positions}
+                        churchId={churchId}
+                        rootPlacement="UNCONNECTED"
+                      />
+                    ) : (
+                      <p>Every position has been placed in the chart.</p>
+                    )}
+                  </PortalCard>
+                </div>
               )}
             </>
           ))}

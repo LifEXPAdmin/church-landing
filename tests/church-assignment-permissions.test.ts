@@ -21,6 +21,8 @@ import { effectiveChurchGrants } from "../lib/platform/church-permissions";
 import { calendarContext, calendarHas } from "../lib/platform/calendar-access";
 import { postContext } from "../lib/platform/post-access";
 import { delegableChurchCapabilities } from "../lib/platform/church-assignment-permissions";
+import { loginAccount } from "../lib/platform/accounts";
+import { positionPlacementLabel } from "../lib/platform/church-position-placement";
 const db = new PrismaClient();
 before(() => assertPortalTestDatabase(db));
 after(() => db.$disconnect());
@@ -119,6 +121,159 @@ async function fixture() {
     effective
   };
 }
+
+test("placement: new role instances remain independently unconnected; placement, vacancy and duties preserve grants across sessions", async () => {
+  const f = await fixture();
+  const title = await f.cmd({
+    operation: "template-create",
+    requestKey: randomUUID(),
+    name: "Placement ministry",
+    presetKey: "G"
+  });
+  const create = () =>
+    f.cmd({
+      operation: "create",
+      requestKey: randomUUID(),
+      roleTemplateId: title.id,
+      roleTemplateVersion: 1
+    });
+  const a = await create(),
+    b = await create();
+  const assignment = await f.save(a.id, ["PUBLISH_CHURCH_POSTS"]);
+  await f.save(b.id, ["PUBLISH_CHURCH_POSTS"]);
+  const secondSession = await loginAccount(
+    db,
+    f.memberA.email,
+    f.memberA.password,
+    null
+  );
+  const read = () =>
+    getChurchStructure(db, secondSession, { churchId: f.churchId });
+  let snapshot = await read();
+  for (const id of [a.id, b.id]) {
+    const row = snapshot.positions.find((p) => p.id === id)!;
+    assert.equal(row.placement, "UNCONNECTED");
+    assert.equal(row.parentId, null);
+    assert.equal(row.assignments.length, 1);
+  }
+  const grants = await db.churchRoleGrant.findMany({
+    where: { churchId: f.churchId },
+    orderBy: { id: "asc" }
+  });
+  const direct = await db.churchCapabilityGrant.findMany({
+    where: { churchId: f.churchId },
+    orderBy: { id: "asc" }
+  });
+  await f.cmd({ operation: "place", positionId: a.id, placement: "ROOT" });
+  snapshot = await read();
+  assert.equal(
+    snapshot.positions.find((p) => p.id === a.id)!.placement,
+    "ROOT"
+  );
+  assert.equal(
+    snapshot.positions.find((p) => p.id === b.id)!.placement,
+    "UNCONNECTED"
+  );
+  await f.cmd({
+    operation: "place",
+    positionId: b.id,
+    placement: "REPORTING",
+    parentId: a.id
+  });
+  await f.cmd({
+    operation: "edit",
+    positionId: b.id,
+    name: "Updated duties title",
+    description: "Keep the saved reporting line"
+  });
+  assert.equal(
+    (await read()).positions.find((p) => p.id === b.id)!.parentId,
+    a.id
+  );
+  await f.cmd({
+    operation: "place",
+    positionId: a.id,
+    placement: "UNCONNECTED"
+  });
+  snapshot = await read();
+  const child = snapshot.positions.find((p) => p.id === b.id)!;
+  assert.equal(child.parentId, a.id);
+  assert.equal(
+    positionPlacementLabel(child, snapshot.positions),
+    "In a branch not connected yet"
+  );
+  assert.deepEqual(
+    await db.churchRoleGrant.findMany({
+      where: { churchId: f.churchId },
+      orderBy: { id: "asc" }
+    }),
+    grants
+  );
+  assert.deepEqual(
+    await db.churchCapabilityGrant.findMany({
+      where: { churchId: f.churchId },
+      orderBy: { id: "asc" }
+    }),
+    direct
+  );
+  for (const input of [
+    {
+      operation: "place",
+      positionId: a.id,
+      placement: "REPORTING",
+      parentId: b.id
+    },
+    { operation: "place", positionId: a.id, placement: "ROOT", parentId: b.id },
+    { operation: "place", positionId: a.id, placement: ["ROOT"] },
+    { operation: "place", positionId: a.id, placement: "REPORTING" },
+    {
+      operation: "create",
+      requestKey: randomUUID(),
+      name: "Cannot infer",
+      parentId: a.id
+    },
+    {
+      operation: "create",
+      requestKey: randomUUID(),
+      name: "Cannot assume root",
+      placement: "ROOT"
+    },
+    {
+      operation: "edit",
+      positionId: b.id,
+      name: "Cannot silently detach",
+      parentId: ""
+    }
+  ])
+    await denied(f.cmd(input), 400);
+  await denied(
+    f.cmd(
+      { operation: "place", positionId: b.id, placement: "ROOT" },
+      f.coordinator.token
+    )
+  );
+  await assert.rejects(
+    db.churchPosition.update({
+      where: { id: b.id },
+      data: { placement: "UNCONNECTED" }
+    })
+  );
+  await f.cmd({
+    operation: "unassign",
+    positionId: a.id,
+    id: assignment.id,
+    confirmed: true
+  });
+  snapshot = await read();
+  assert.equal(
+    snapshot.positions.find((p) => p.id === a.id)!.assignments.length,
+    0
+  );
+  assert.equal(snapshot.positions.find((p) => p.id === b.id)!.parentId, a.id);
+  const refill = await f.save(a.id, []);
+  assert.equal(refill.id, assignment.id);
+  assert.equal((await read()).positions.length, 2);
+});
 
 test("assignment permissions: overlapping roles and direct grants survive independent removal", async () => {
   const f = await fixture();

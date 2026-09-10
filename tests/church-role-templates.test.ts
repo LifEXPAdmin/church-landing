@@ -142,7 +142,12 @@ test("role titles: custom defaults confer no access; revisions and multiple inde
     operation: "create",
     requestKey: randomUUID(),
     roleTemplateId: role.id,
-    roleTemplateVersion: 1,
+    roleTemplateVersion: 1
+  });
+  await f.cmd({
+    operation: "place",
+    positionId: second.id,
+    placement: "REPORTING",
     parentId: first.id
   });
   const connection = await db.churchConnection.findUniqueOrThrow({

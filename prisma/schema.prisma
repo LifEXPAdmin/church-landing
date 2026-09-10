@@ -447,10 +447,17 @@ model ChurchConnection {
   @@index([churchId, state])
 }
 
+enum ChurchPositionPlacement {
+  UNCONNECTED
+  ROOT
+  REPORTING
+}
+
 model ChurchPosition {
   id String @id @default(cuid())
   churchId String
   parentId String?
+  placement ChurchPositionPlacement @default(UNCONNECTED)
   name String
   description String @default("")
   roleTemplateId String?

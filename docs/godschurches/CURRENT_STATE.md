@@ -1,5 +1,30 @@
 # Godschurches current state
 
+## Unconnected placement verified; visual chart next — September 10, 2026
+
+Positions now distinguish Not connected yet, an explicit chart root and a reporting
+position. New positions start unconnected, editing duties preserves placement, and
+moving a branch preserves its assignments and grants. The migration retains prior
+position fields, roots, reporting lines and permissions. The tree has a separate
+unconnected area, with placement labels in details, Privileges and responsibilities.
+
+The full isolated sweep passed 303 checks (301 pass/two expected skips), all 24
+targeted service checks passed, and populated upgrade/restore/fresh migrations,
+build/types/lint, restart and actual production HTTPS checks passed. Chrome verified
+two separately assigned positions from one title, reload, one-at-a-time placement,
+branch detach, unchanged duties/reporting and the member view. The 320/390-pixel
+layouts and visible keyboard focus passed; native arrow-key selection and full
+chart accessibility/physical-device review remain unverified. See
+[CHURCH_STRUCTURE_REPORT.md](CHURCH_STRUCTURE_REPORT.md).
+
+The Privileges interface and placement prerequisite are verified locally; the
+future visual chart must still use the mandatory assignment flow. Continue with
+the visual hierarchy canvas, preserving the equivalent outline. This bundle is
+unpushed/unpublished. Integrate newer main recovery/feed changes without removing
+post-audience checks before release. No owner action blocks this coding; separate
+provider-account and church-review policy decisions and the final batch review
+remain open.
+
 ## Privileges interface verified; placement integration remains — September 10, 2026
 
 The saved `codex/role-privileges-interface` checkpoint provides the shared

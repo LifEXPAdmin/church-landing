@@ -138,6 +138,7 @@ export async function churchStructureCommand(
       ![
         "create",
         "edit",
+        "place",
         "archive",
         "assign",
         "assignment-privileges",
@@ -288,6 +289,14 @@ export async function churchStructureCommand(
       return { id: result.id, message: result.message };
     }
     if (op === "create") {
+      if (
+        input.parentId ||
+        (input.placement !== undefined && input.placement !== "UNCONNECTED")
+      )
+        throw new PortalError(
+          400,
+          "New positions start in Not connected yet. Create the position, then explicitly place it."
+        );
       const requestKey = identifier(input.requestKey);
       const prior = await tx.churchPosition.findUnique({
         where: { churchId_requestKey: { churchId, requestKey } }
@@ -399,7 +408,38 @@ export async function churchStructureCommand(
     expected(input.expectedVersion, church.structureVersion);
     const row = await position(tx, churchId, input.positionId);
     if (op === "edit") {
+      if (
+        input.placement !== undefined ||
+        (input.parentId !== undefined &&
+          (input.parentId || null) !== row.parentId)
+      )
+        throw new PortalError(
+          400,
+          "Use Place position to change reporting. Editing a title or duties keeps its current placement."
+        );
+      await tx.churchPosition.update({
+        where: { id: row.id },
+        data: {
+          name: field(input.name),
+          description: field(input.description ?? "", 3000, true)
+        }
+      });
+    } else if (op === "place") {
+      const placement = input.placement;
+      if (
+        typeof placement !== "string" ||
+        !["UNCONNECTED", "ROOT", "REPORTING"].includes(placement)
+      )
+        throw new PortalError(
+          400,
+          "Choose Not connected yet, Top of chart or a reporting position."
+        );
       const parentId = input.parentId ? identifier(input.parentId) : null;
+      if ((placement === "REPORTING") !== (parentId !== null))
+        throw new PortalError(
+          400,
+          "Choose one reporting parent, or explicitly choose a position without a parent."
+        );
       const rows = await tx.churchPosition.findMany({
         where: { churchId, archivedAt: null },
         select: { id: true, parentId: true }
@@ -408,8 +448,7 @@ export async function churchStructureCommand(
       await tx.churchPosition.update({
         where: { id: row.id },
         data: {
-          name: field(input.name),
-          description: field(input.description ?? "", 3000, true),
+          placement: placement as "UNCONNECTED" | "ROOT" | "REPORTING",
           parentId
         }
       });
@@ -603,6 +642,7 @@ export async function getChurchStructure(
         parentId: true,
         roleTemplateId: true,
         roleTemplateVersion: true,
+        placement: true,
         assignments: {
           where: { revokedAt: null, connection: activeMember },
           orderBy: { id: "asc" },
@@ -637,6 +677,7 @@ export async function getChurchStructure(
         name: p.name,
         description: p.description,
         parentId: p.parentId,
+        placement: p.placement,
         roleTemplateId: p.roleTemplateId,
         roleTemplateVersion: p.roleTemplateVersion,
         assignments: p.assignments.map((a) => ({

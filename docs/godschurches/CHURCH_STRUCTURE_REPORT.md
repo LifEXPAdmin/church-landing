@@ -2,6 +2,57 @@
 
 September 10, 2026 · Published structure foundation; local role library, assignment service and Privileges interface verified
 
+## Explicit unconnected placement verified locally — September 10, 2026
+
+The placement prerequisite extends the mandatory Privileges checkpoint `38d6cdc`
+on `codex/role-privileges-interface`. Positions now persist one of three states:
+**Not connected yet**, **Top of chart**, or a reporting position. The additive
+migration labels existing roots and reporting positions without changing their
+previous fields, assignments or grants. New positions start unconnected; creation
+rejects a supplied parent or assumed root. A saved title still creates a separate
+position instance.
+
+Managers use **Place position** to choose a parent, an explicit root or the
+unconnected area. Server authorization, church versions, parent scope, cycles and
+depth remain enforced. Database constraints bind the placement state to whether a
+parent exists. Editing a name or duties preserves placement; an older edit form
+cannot silently move or detach a position. Detaching a branch retains its children,
+assignments and grants. The tree separates placed roots from **Not connected yet**,
+and the outline, position details, Privileges and My responsibilities show the
+saved placement. Members can see their duties before their role is placed.
+
+The full isolated sweep passed **303 checks: 301 pass, two expected disabled-email
+skips, zero failures**. All 24 targeted structure/title/assignment service checks
+also passed. Populated upgrade, restore, fresh migration deployment, production
+restart, build/types/lint and development/production HTTP checks passed. The final
+runtime audit found 92 traces, 7,270 entries and 225 server JavaScript files with
+no private fixtures/environment files or Prisma loader path. The saved browser
+fixture separately preserved all prior position, assignment and grant fingerprints
+while labeling 65 roots and 72 reporting positions across its fictional churches.
+An older depth-limit test assumed creation and placement were one operation; it
+now checks that a failed separate placement leaves the new position unconnected,
+with the saved tree and version unchanged.
+
+Chrome created and assigned two separate volunteer positions from the same title.
+Both stayed unconnected after reload in another tab. Explicitly placing one left
+the other unconnected; later attaching it, editing its duties and detaching the
+parent retained the branch and assignments. The unlisted member remained truthfully
+occupied, and signing in as that member showed both duties and the unchanged
+independent/other-role permissions without manager controls. The two new role-only
+assignments had zero permission contributions. Screens at 320 and 390 pixels were
+readable without horizontal overflow; keyboard focus was visible and the equivalent
+picker worked through browser selection. Native arrow-key selection was not
+established by this automation. Full keyboard/touch and physical-device acceptance
+remain in the chart accessibility work. No browser errors or warnings were returned.
+
+This completes the persisted placement prerequisite. The visual canvas and its
+assignment entry, drag connections, contact integration, staged Save/Undo and full
+chart accessibility/release acceptance remain open. Mandatory Privileges remains
+open for that chart entry integration; its current routes and new-role placement
+criteria are verified. No real church record or permission changed. Nothing in this
+saved bundle has been pushed or published; newer main recovery/feed changes still
+need integration with the existing audience checks before release.
+
 ## Mandatory Privileges interface verified locally — September 10, 2026
 
 The `codex/role-privileges-interface` checkpoint adds selection, a mandatory
