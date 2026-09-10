@@ -1,6 +1,6 @@
 # Godschurches current state
 
-## Church structure verified locally — September 10, 2026
+## Church structure published — September 10, 2026
 
 `codex/church-organization-structure` adds church positions, one-parent reporting
 lines, vacancies, consented assignments/contact cards, personal responsibilities,
@@ -9,9 +9,13 @@ isolated checks passed (197 total, two intentional delivery skips), including
 upgrade/restore/fresh migrations and restart. Final lint/build/runtime, both
 production HTTPS groups and actual fictional browser journeys passed. Two
 independent browser sessions verified stale-editor revocation; phone/desktop
-reflow, keyboard expansion and the twelve-level tree/outline passed. Publication
-is pending. Real claim policy/reviewer readiness and later calendar/publishing
-integration remain open. See [CHURCH_STRUCTURE_REPORT.md](CHURCH_STRUCTURE_REPORT.md).
+reflow, keyboard expansion and the twelve-level tree/outline passed. Application `73ea360cd953edf01047751c9a7acbbb866e4fb2` is live on READY
+`dpl_8UokbVooXAFf9n3tbHHcnb9bEDM9`; exact canonical identity and all 93 live HTTP
+checks passed. Phone-width signup/Back preserved its destination. One transient
+React hydration error remains an open navigation investigation; reload and fresh
+in-app/Chrome journeys returned no new errors. Server error logs were empty.
+Real claim policy/reviewer readiness and later calendar/publishing integration
+remain open. See [CHURCH_STRUCTURE_REPORT.md](CHURCH_STRUCTURE_REPORT.md).
 
 ## Official church setup published — September 10, 2026
 

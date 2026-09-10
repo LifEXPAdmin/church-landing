@@ -1,6 +1,6 @@
 # Church positions, responsibilities and access
 
-September 10, 2026 · Local verification complete; publication pending
+September 10, 2026 · Published; engineering checks complete
 
 ## Implemented behavior
 
@@ -89,3 +89,19 @@ No real church position, account grant, message, member import or verification
 has been created. Real claim review remains disabled pending the recorded policy
 and reviewer-operations decision. Provider delivery, physical-device acceptance
 and a real operational pilot remain separate requirements.
+
+## Published release
+
+Application `73ea360cd953edf01047751c9a7acbbb866e4fb2` is live on READY
+production `dpl_8UokbVooXAFf9n3tbHHcnb9bEDM9`. Exact serving SHA and canonical
+aliases were verified. All 93 live HTTP checks passed at
+2026-09-10T07:35:32Z with no production writes. Public post/church lists remain
+empty; populated behavior was verified in isolated fixtures. Live 320/390px guest
+structure/signup/Back navigation preserved its destination without overflow.
+Production error logs returned zero entries.
+
+One initial in-app browser journey reported React #418 (HTML hydration mismatch)
+at 07:35:21Z. The page recovered. Reload/repeated navigation and fresh in-app and
+Chrome journeys completed without new browser errors. This intermittent
+observation is recorded as an open navigation investigation; it is not claimed
+fixed and does not establish physical-device acceptance.
