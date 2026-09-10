@@ -68,6 +68,25 @@ after signing in again. The file has explicit size limits; oversized exports
 return a message without silently omitting records. See
 [ACCOUNT_DATA_REPORT.md](ACCOUNT_DATA_REPORT.md) for the full scope and limits.
 
+## Change your sign-in email
+
+When account email delivery is available, use **Change sign-in email** in Account
+settings. Enter an address you control and your current password. The response
+does not disclose whether another account owns that address. Your existing email
+keeps working until confirmation.
+
+Open the confirmation link from the new address in a browser signed in to the
+requesting account, then confirm your current password. If signed out, sign in
+with the existing email first and reopen the link. Confirmation changes the email
+and signs out every device. Sign in with the new email and the same password.
+Your profile and church directory contact choices do not change.
+
+Links expire after 30 minutes; a newer request invalidates the previous link.
+Opening a link alone never changes an account. If delivery is unavailable, the
+page says so and does not offer a submission form. Use only fictional addresses
+and the isolated sink for automated tests. See
+[ACCOUNT_EMAIL_CHANGE_REPORT.md](ACCOUNT_EMAIL_CHANGE_REPORT.md).
+
 ## Deactivate and return
 
 In **Account settings**, read **Deactivate account**, enter your current password,

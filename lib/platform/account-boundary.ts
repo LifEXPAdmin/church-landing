@@ -29,6 +29,11 @@ import {
   deactivateAccount,
   reactivateAccount
 } from "./account-lifecycle";
+import {
+  AccountEmailChangeError,
+  requestEmailChange,
+  confirmEmailChange
+} from "./account-email-change";
 
 export const SESSION_COOKIE = "church_platform_session";
 export function sessionCookie(token: string, secure: boolean) {
@@ -176,6 +181,8 @@ async function processAccountRequest(
       "download-export",
       "deactivate-account",
       "reactivate-account",
+      "request-email-change",
+      "confirm-email-change",
       "request-reset",
       "request-verification",
       "consume-reset",
@@ -183,13 +190,16 @@ async function processAccountRequest(
     ].includes(operation)
   )
     return reply("Check the fields and try again.", 400);
-  const recoveryRequest = operation.startsWith("request-");
+  const recoveryRequest =
+    operation === "request-reset" || operation === "request-verification";
   const sessionFields: Record<string, string[]> = {
     "list-sessions": [],
     "revoke-other-sessions": ["currentPassword"],
     "prepare-export": ["currentPassword"],
     "download-export": ["authorization"],
-    "deactivate-account": ["currentPassword", "confirmed"]
+    "deactivate-account": ["currentPassword", "confirmed"],
+    "request-email-change": ["currentPassword", "newEmail"],
+    "confirm-email-change": ["currentPassword", "token"]
   };
   const sessionOperation = Object.hasOwn(sessionFields, operation);
   if (
@@ -264,6 +274,57 @@ async function processAccountRequest(
         429,
         { "Retry-After": "900" }
       );
+    if (
+      operation === "request-email-change" ||
+      operation === "confirm-email-change"
+    ) {
+      if (config.delivery === "disabled")
+        return reply(
+          "Sign-in email changes are not available until email delivery is ready. Your existing sign-in email is unchanged.",
+          503,
+          { "X-Account-Delivery-Disabled": "1" }
+        );
+      if (operation === "request-email-change") {
+        if (config.delivery === "resend" && !afterResponse)
+          throw new Error(
+            "Account delivery requires response lifecycle support"
+          );
+        const send = await requestEmailChange(
+          db,
+          requestSessionToken(request),
+          body.currentPassword,
+          body.newEmail,
+          accountGrantDelivery(config)
+        );
+        const work = async () => {
+          try {
+            await send();
+          } catch {
+            console.error(
+              JSON.stringify({ event: "account_delivery_failed", requestId })
+            );
+          }
+        };
+        if (afterResponse) afterResponse(work);
+        else await work();
+        await delay(Math.max(0, 500 - (Date.now() - started)));
+        return reply(
+          "If this address can be used, a confirmation link will be sent. Your existing sign-in email keeps working until you confirm. Check your inbox and spam folder."
+        );
+      }
+      await confirmEmailChange(
+        db,
+        requestSessionToken(request),
+        body.currentPassword,
+        body.token
+      );
+      return reply(
+        "Sign-in email changed. All devices are signed out. Sign in with your new email and existing password.",
+        200,
+        { "Set-Cookie": sessionCookie("", config.secureCookie) },
+        "/platform/login?notice=email-changed"
+      );
+    }
     if (operation === "register") {
       await registerAccount(db, body);
       return reply(
@@ -415,6 +476,8 @@ async function processAccountRequest(
       );
     return reply("Email verified. You can return to your account.", 200);
   } catch (error) {
+    if (error instanceof AccountEmailChangeError)
+      return reply(error.message, 400);
     if (error instanceof AccountLifecycleError)
       return reply(
         error.code === "handoff"
@@ -449,6 +512,8 @@ async function processAccountRequest(
           operation === "change-password" ||
           operation === "prepare-export" ||
           operation === "deactivate-account" ||
+          operation === "request-email-change" ||
+          operation === "confirm-email-change" ||
           operation === "revoke-other-sessions"
             ? "Your current password did not match."
             : "That email and password did not match.",

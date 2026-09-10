@@ -1,5 +1,22 @@
 # Godschurches current state
 
+## Verified email-change implementation — September 9, 2026
+
+Current-password-confirmed sign-in email changes are implemented and locally
+verified on `codex/account-email-change`. Confirmation requires the same account,
+a one-use link delivered to the new address and the current password; it revokes
+every session while preserving profile, church and directory records. All 116
+applicable isolated checks, lint/types, migration/restore/restart, browser flows
+and the final production build/runtime trace passed. Two enabled-delivery cases
+are intentionally skipped in the disabled production-mode pass. Publication is
+pending at this checkpoint; delivery stays disabled until sender setup is ready.
+See [ACCOUNT_EMAIL_CHANGE_REPORT.md](ACCOUNT_EMAIL_CHANGE_REPORT.md).
+
+Next product work is guest browsing: public posts/comments and church pages are
+readable without an account; participation, settings and member-profile views
+require contextual account access. Topic communities are captured in the private
+canonical roadmap for implementation with discussion/moderation foundations.
+
 ## Account lifecycle published — September 9, 2026
 
 Password-confirmed deactivation and explicit reactivation are implemented on

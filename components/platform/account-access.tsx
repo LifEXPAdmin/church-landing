@@ -5,11 +5,13 @@ import { AccountForm } from "./account-form";
 export function AccountAccess({
   initialView,
   passwordChanged = false,
-  reactivated = false
+  reactivated = false,
+  emailChanged = false
 }: {
   initialView: "login" | "register";
   passwordChanged?: boolean;
   reactivated?: boolean;
+  emailChanged?: boolean;
 }) {
   const [view, setView] = useState(initialView);
   const [email, setEmail] = useState("");
@@ -48,6 +50,12 @@ export function AccountAccess({
         <p role="status" className="mb-6 text-gc-accent">
           Your account is active. Sign in to continue. Old sign-ins and sharing
           have not been restored.
+        </p>
+      )}
+      {emailChanged && (
+        <p role="status" className="mb-6 text-gc-accent">
+          Your sign-in email changed and all devices were signed out. Use your
+          new email and existing password to sign in.
         </p>
       )}
       <AccountForm

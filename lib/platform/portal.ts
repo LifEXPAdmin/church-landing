@@ -508,6 +508,7 @@ export async function portalCommand(
         }
       });
       await tx.platformSession.deleteMany({ where: { userId } });
+      await tx.platformEmailChange.deleteMany({ where: { userId } });
       await tx.platformAccountGrant.updateMany({
         where: { userId, consumedAt: null },
         data: { consumedAt: new Date() }

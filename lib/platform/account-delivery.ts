@@ -4,14 +4,23 @@ import { createHash, randomUUID } from "node:crypto";
 import { setTimeout as delay } from "node:timers/promises";
 import type { AccountGrantPurpose } from "@prisma/client";
 import { accountConfig, type AccountConfig } from "./account-config";
+export type AccountDeliveryPurpose = AccountGrantPurpose | "CHANGE_EMAIL";
 
 // Dependency injection is code-only for isolated tests; no configurable vendor URL.
 export function accountGrantDelivery(
   config: AccountConfig,
   send: typeof fetch = fetch
 ) {
-  return async (email: string, purpose: AccountGrantPurpose, token: string) => {
-    const url = new URL("/platform/account/recover", config.origin);
+  return async (
+    email: string,
+    purpose: AccountDeliveryPurpose,
+    token: string
+  ) => {
+    const change = purpose === "CHANGE_EMAIL";
+    const url = new URL(
+      change ? "/platform/account/change-email" : "/platform/account/recover",
+      config.origin
+    );
     url.hash = new URLSearchParams({ token, purpose }).toString();
     if (config.delivery === "test-sink" && config.sinkDirectory) {
       await mkdir(config.sinkDirectory, { recursive: true, mode: 0o700 });
@@ -27,19 +36,25 @@ export function accountGrantDelivery(
     const reset = purpose === "RESET_PASSWORD";
     const subject = reset
       ? "Reset your Godschurches password"
-      : "Verify your Godschurches email";
+      : change
+        ? "Confirm your new Godschurches sign-in email"
+        : "Verify your Godschurches email";
     const text = [
       subject,
       "",
       reset
         ? "Use this link to choose a new password:"
-        : "Use this link to confirm your email address:",
+        : change
+          ? "Open this link in a browser signed in to the account that requested the change, then confirm your current password:"
+          : "Use this link to confirm your email address:",
       url.toString(),
       "",
       "This link expires in 30 minutes and can only be used once.",
       reset
         ? "Resetting your password signs out every device."
-        : "Verifying your email does not change your password or sign you in.",
+        : change
+          ? "Your existing sign-in email keeps working until you confirm. Confirmation changes your sign-in email and signs out every device. Your public profile and church directory contacts are unchanged."
+          : "Verifying your email does not change your password or sign you in.",
       "If you did not request this, you can ignore this email. Your account is unchanged."
     ].join("\n");
     const body = JSON.stringify({
@@ -51,7 +66,11 @@ export function accountGrantDelivery(
       tags: [
         {
           name: "category",
-          value: reset ? "account_reset" : "account_verification"
+          value: reset
+            ? "account_reset"
+            : change
+              ? "account_email_change"
+              : "account_verification"
         }
       ]
     });

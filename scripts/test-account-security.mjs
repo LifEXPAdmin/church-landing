@@ -161,6 +161,7 @@ try {
     ["PlatformPostLike", "id"],
     ["PlatformFollow", "id"]
   ];
+  const emailTables = [["PlatformEmailChange", "id"]];
   const churchTables = [
     ["Church", "id"],
     ["ChurchConnection", "id"],
@@ -193,7 +194,7 @@ try {
       url
     );
   };
-  const churchNames = [...churchTables, ...supportTables]
+  const churchNames = [...churchTables, ...supportTables, ...emailTables]
     .map(([name]) => `'${name}'`)
     .join(",");
   const constraintFingerprint = (url) =>
@@ -301,6 +302,7 @@ try {
   );
   await runTests("tests/account-security.test.ts");
   await runTests("tests/account-delivery.test.ts");
+  await runTests("tests/account-email-change.test.ts");
   if (portalTests) await runTests("tests/portal-service.test.ts");
   if (supportTests) await runTests("tests/support-service.test.ts");
   run(join(pg, "pg_dump"), [
@@ -327,6 +329,7 @@ try {
   ]);
   for (const [table, key] of [
     ...accountTables,
+    ...emailTables,
     ...churchTables,
     ...supportTables
   ]) {
@@ -363,7 +366,12 @@ try {
     throw new Error(
       "Fresh migration church constraints differ from upgraded schema"
     );
-  for (const [table] of [...accountTables, ...churchTables, ...supportTables]) {
+  for (const [table] of [
+    ...accountTables,
+    ...emailTables,
+    ...churchTables,
+    ...supportTables
+  ]) {
     if (
       psql(["-Atc", `SELECT count(*) FROM "${table}"`], freshUrl).trim() !== "0"
     )
@@ -404,6 +412,7 @@ try {
   }
   if (!ready) throw new Error("Isolated Next server did not start");
   await runTests("tests/account-http.test.ts");
+  await runTests("tests/account-email-http.test.ts");
   if (portalTests) {
     run(
       process.execPath,
@@ -618,6 +627,7 @@ try {
     await runTests("tests/account-sessions.test.ts", productionEnv);
     await runTests("tests/account-export.test.ts", productionEnv);
     await runTests("tests/account-lifecycle.test.ts", productionEnv);
+    await runTests("tests/account-email-http.test.ts", productionEnv);
     console.log(
       "Account/profile/session persistence passed after a new production server process."
     );

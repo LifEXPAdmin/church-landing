@@ -20,6 +20,7 @@ export default async function PlatformLoginPage({
           initialView="login"
           passwordChanged={notice === "password-changed"}
           reactivated={notice === "reactivated"}
+          emailChanged={notice === "email-changed"}
         />
       </section>
     </PlatformShell>

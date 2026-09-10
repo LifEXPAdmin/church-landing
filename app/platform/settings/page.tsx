@@ -10,10 +10,18 @@ import { ReadingSettings } from "@/components/platform/reading-preferences";
 import { AccountSessions } from "@/components/platform/account-sessions";
 import { AccountExport } from "@/components/platform/account-export";
 import { AccountLifecycle } from "@/components/platform/account-lifecycle";
+import { AccountEmailChange } from "@/components/platform/account-email-change";
+import { accountConfig } from "@/lib/platform/account-config";
 export const metadata: Metadata = { title: "Account settings" };
 export default async function PlatformSettingsPage() {
   const user = await getCurrentPlatformUser();
   if (!user) redirect("/platform/login");
+  let emailAvailable = false;
+  try {
+    emailAvailable = accountConfig().delivery !== "disabled";
+  } catch {
+    /* Unconfigured delivery stays unavailable. */
+  }
   return (
     <PlatformShell user={user}>
       <section className="container-shell py-10">
@@ -41,6 +49,7 @@ export default async function PlatformSettingsPage() {
             </Link>
           </div>
           <AccountSessions />
+          <AccountEmailChange available={emailAvailable} />
           <AccountExport />
           <AccountLifecycle />
           <div className="rounded-xl border border-gc-divider bg-gc-surface p-6">

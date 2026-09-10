@@ -54,6 +54,7 @@ export async function deactivateAccount(
         }
       });
       await tx.platformSession.deleteMany({ where: { userId } });
+      await tx.platformEmailChange.deleteMany({ where: { userId } });
       await tx.platformAccountGrant.updateMany({
         where: { userId, consumedAt: null },
         data: { consumedAt: now }
@@ -115,6 +116,9 @@ export async function reactivateAccount(
         }
       });
       await tx.platformSession.deleteMany({ where: { userId: current.id } });
+      await tx.platformEmailChange.deleteMany({
+        where: { userId: current.id }
+      });
       await tx.platformAccountGrant.updateMany({
         where: { userId: current.id, consumedAt: null },
         data: { consumedAt: new Date() }

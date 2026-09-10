@@ -96,6 +96,7 @@ model PlatformUser {
   comments  PlatformPostComment[]
   sessions  PlatformSession[]
   accountGrants PlatformAccountGrant[]
+  emailChange PlatformEmailChange?
   connections ChurchConnection[]
   churchGrants ChurchCapabilityGrant[]
   operatorGrants PlatformOperatorGrant[]
@@ -110,6 +111,18 @@ model PlatformUser {
 
   @@index([role])
   @@index([createdAt])
+}
+
+model PlatformEmailChange {
+  id String @id @default(cuid())
+  userId String @unique
+  tokenHash String @unique
+  newEmail String
+  credentialVersion Int
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  user PlatformUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([expiresAt])
 }
 
 model PlatformSession {
