@@ -7,7 +7,12 @@ Home remains scrollable; the modal pages horizontally and supports deliberate
 vertical dismissal, Close/Escape, keyboard/trackpad controls, long-post reading
 and restored Home position. Fifteen development and fifteen production HTTPS
 checks, final build/lint/types/runtime, and fictional browser checks passed;
-live publication is next. See [FEED_READER_REPORT.md](FEED_READER_REPORT.md).
+application `7fdaf6a` is live on READY `dpl_DrpPVcC5FY7yVth5RfsDaM5h5zBU`.
+Exact canonical identity, all 17 live read-only checks and actual guest paging
+through both public authors passed. Native Chrome touch emulation also passed
+both swipe directions, short/large vertical drags and long-post scrolling.
+Physical-device feel, broader Home planning and later ranking remain separate.
+See [FEED_READER_REPORT.md](FEED_READER_REPORT.md).
 
 ## First-use account and early feed fixes — September 10, 2026
 

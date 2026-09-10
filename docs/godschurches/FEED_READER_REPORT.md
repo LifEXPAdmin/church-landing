@@ -1,5 +1,25 @@
 # Focused My feed reader
 
+## Published release — September 10, 2026
+
+Application `7fdaf6a1cbb88f87ab4451f91586a4d803a8c226` is published on READY
+production `dpl_DrpPVcC5FY7yVth5RfsDaM5h5zBU` through the existing GitHub
+integration. Exact canonical serving identity and all 17 live read-only checks
+passed at 20:19 UTC, including account availability, Home/feed HTML and RSC,
+Menu, empty feed and protected Settings. Actual signed-out live browsing paged
+through both available public authors at 390-pixel width, kept the background
+locked without horizontal overflow, and closed to normal Home scrolling.
+No real post, like, comment or account was changed during release verification.
+No browser or deployment error rows were returned.
+
+Chrome device emulation was also exercised through its native UI on the built
+isolated app. Native drags on post text (where mouse paging is disabled) verified
+both touch swipe directions, a small vertical drag staying open, a larger
+vertical drag closing to Home, and a long-post touch scroll reaching 2,195 pixels
+while the background stayed fixed. Device emulation and viewport overrides were
+turned off afterward. This verifies browser touch-event handling; physical
+phone browser chrome and the owner's preferred gesture feel remain follow-ups.
+
 ## Implementation — September 10, 2026
 
 `codex/focused-feed-reader` builds on the published early-community/account release
@@ -57,4 +77,4 @@ in production with email disabled. The application and fixture guard were not
 weakened. No schema/dependency changes required migration work for this reader.
 The built production app also passed actual browser end-of-set/older-page
 navigation: 30/30 exposed Read older posts, opened 1/19 in My feed, and keyboard
-paging advanced to 2/19. Live publication is next at this checkpoint.
+paging advanced to 2/19. Publication and live verification are recorded above.
