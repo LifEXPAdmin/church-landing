@@ -103,6 +103,7 @@ model PlatformUser {
   connections ChurchConnection[]
   churchGrants ChurchCapabilityGrant[]
   operatorGrants PlatformOperatorGrant[]
+  churchListings ChurchListingSubmission[]
   contactAssignments ChurchContactAssignment[]
   supportGrants SupportCapabilityGrant[]
   supportCases SupportCase[]
@@ -242,6 +243,7 @@ enum ChurchCapability {
 
 enum OperatorCapability {
   ESTABLISH_CHURCH
+  REVIEW_CHURCH_LISTINGS
   MANAGE_CHURCH_ACCESS
   MANAGE_ACCOUNTS
   ASSIGN_RELATIONSHIP_OWNER
@@ -263,12 +265,70 @@ model Church {
   slug String @unique
   name String
   summary String
+  version Int @default(1)
+  communityListed Boolean @default(false)
+  city String @default("")
+  region String @default("")
+  country String @default("")
+  serviceArea String @default("")
+  locationModel String @default("NO_BUILDING")
+  website String @default("")
+  publicEmail String @default("")
+  publicPhone String @default("")
+  meetingInfo String @default("")
+  denomination String @default("")
+  source String @default("")
   createdAt DateTime @default(now())
   connections ChurchConnection[]
   grants ChurchCapabilityGrant[]
   contacts ChurchContactAssignment[]
   events ChurchAuditEvent[]
   supportCases SupportCase[]
+  listings ChurchListingSubmission[]
+}
+
+enum ChurchListingStatus {
+  DRAFT
+  SUBMITTED
+  NEEDS_INFORMATION
+  PUBLISHED
+  REJECTED
+  WITHDRAWN
+}
+
+model ChurchListingSubmission {
+  id String @id @default(cuid())
+  ownerId String
+  requestKey String
+  kind String
+  churchId String?
+  baseVersion Int?
+  data Json
+  status ChurchListingStatus @default(DRAFT)
+  version Int @default(1)
+  reviewReason String @default("")
+  submittedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  owner PlatformUser @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  church Church? @relation(fields: [churchId], references: [id], onDelete: Restrict)
+  decisions ChurchListingDecision[]
+  @@unique([ownerId, requestKey])
+  @@index([ownerId, updatedAt])
+  @@index([status, updatedAt])
+  @@index([churchId])
+}
+
+model ChurchListingDecision {
+  id String @id @default(cuid())
+  submissionId String
+  actorId String
+  action String
+  reason String
+  version Int
+  createdAt DateTime @default(now())
+  submission ChurchListingSubmission @relation(fields: [submissionId], references: [id], onDelete: Restrict)
+  @@index([submissionId, createdAt])
 }
 
 model ChurchConnection {

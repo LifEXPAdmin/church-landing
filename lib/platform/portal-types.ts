@@ -12,6 +12,20 @@ export type ChurchSummary = {
   slug: string;
   name: string;
   summary: string;
+  version?: number;
+  communityListed?: boolean;
+  connectionsAvailable?: boolean;
+  city?: string;
+  region?: string;
+  country?: string;
+  serviceArea?: string;
+  locationModel?: string;
+  website?: string;
+  publicEmail?: string;
+  publicPhone?: string;
+  meetingInfo?: string;
+  denomination?: string;
+  source?: string;
 };
 export type ConnectionSummary = {
   id: string;

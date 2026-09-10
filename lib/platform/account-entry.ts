@@ -11,12 +11,17 @@ export function safeAccountReturn(value: unknown): string {
   const url = new URL(value, "https://return.invalid");
   if (
     url.origin !== "https://return.invalid" ||
-    !/^\/platform(?:\/(?:search|menu|settings|profile(?:\/(?:me|[a-zA-Z0-9_]{3,24}))?|posts\/[a-zA-Z0-9_-]{1,100}|churches(?:\/[a-zA-Z0-9_-]{1,100}(?:\/(?:directory|review))?)?|my-church(?:\/sharing)?|help|support(?:\/[a-zA-Z0-9_-]{1,100})?))?\/?$/.test(
+    !/^\/platform(?:\/(?:search|menu|settings|profile(?:\/(?:me|[a-zA-Z0-9_]{3,24}))?|posts\/[a-zA-Z0-9_-]{1,100}|church-listings(?:\/[a-zA-Z0-9_-]{1,100})?|churches(?:\/[a-zA-Z0-9_-]{1,100}(?:\/(?:directory|review))?)?|my-church(?:\/sharing)?|help|support(?:\/[a-zA-Z0-9_-]{1,100})?))?\/?$/.test(
       url.pathname
     )
   )
     return "/platform";
   const query = new URLSearchParams();
+  if (url.pathname === "/platform/church-listings/new") {
+    const churchId = url.searchParams.get("churchId");
+    if (churchId && /^[a-zA-Z0-9_-]{1,100}$/.test(churchId))
+      query.set("churchId", churchId);
+  }
   for (const key of ["q", "post", "mode", "before", "cursor"] as const) {
     const entry = url.searchParams.get(key);
     if (entry && entry.length <= 200 && !/[\u0000-\u001f\u007f]/.test(entry))
@@ -26,6 +31,7 @@ export function safeAccountReturn(value: unknown): string {
 }
 
 export const accountReasons = {
+  listing: "Join or sign in to add a church listing.",
   account: "Join or sign in to use your account.",
   profile: "Join or sign in to view member profiles.",
   like: "Join or sign in to like a post.",

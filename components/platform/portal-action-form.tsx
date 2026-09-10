@@ -39,9 +39,9 @@ export function PortalActionForm({
   label,
   description,
   confirmation,
+  listingAction,
   disabled = false
 }: {
-  operation: PortalOperation;
   payload: {
     expectedVersion: number;
     [key: string]: string | number | boolean;
@@ -51,11 +51,18 @@ export function PortalActionForm({
   description?: string;
   confirmation?: string;
   disabled?: boolean;
-}) {
+} & (
+  | { operation: PortalOperation; listingAction?: never }
+  | {
+      operation?: never;
+      listingAction: "create" | "save" | "publish" | "withdraw" | "review";
+    }
+)) {
   const id = useId();
   const router = useRouter();
   const resultRef = useRef<HTMLParagraphElement>(null);
   const inFlight = useRef(false);
+  const creationKey = useRef(payload.requestKey);
   const [pending, setPending] = useState(false);
   const [refreshing, startRefresh] = useTransition();
   const [result, setResult] = useState<{
@@ -90,12 +97,24 @@ export function PortalActionForm({
         setPending(true);
         setResult(null);
         try {
-          const response = await fetch("/api/platform/portal", {
-            method: "POST",
-            credentials: "same-origin",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ ...values, ...payload, operation })
-          });
+          const response = await fetch(
+            listingAction
+              ? "/api/platform/church-listings"
+              : "/api/platform/portal",
+            {
+              method: "POST",
+              credentials: "same-origin",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                ...(listingAction === "save" ? { data: values } : values),
+                ...payload,
+                ...(listingAction === "create"
+                  ? { requestKey: creationKey.current }
+                  : {}),
+                operation: listingAction ?? operation
+              })
+            }
+          );
           const body: unknown = await response.json().catch(() => null);
           const message =
             body &&
@@ -115,6 +134,26 @@ export function PortalActionForm({
                   ? "Your session has ended. Sign in again before continuing."
                   : message
           });
+          if (
+            response.ok &&
+            listingAction &&
+            body &&
+            typeof body === "object" &&
+            "id" in body &&
+            typeof body.id === "string"
+          ) {
+            if (listingAction === "create" || listingAction === "save") {
+              window.location.assign(
+                `/platform/church-listings/${encodeURIComponent(body.id)}${listingAction === "save" ? "?preview=1" : ""}`
+              );
+              return;
+            } else if (listingAction === "review") {
+              // The reviewed record leaves the queue. Load the destination
+              // afresh instead of racing a push with a refresh of that record.
+              window.location.assign("/platform/operator/listings");
+              return;
+            }
+          }
           // Refresh on errors too: permissions and versions may have changed.
           startRefresh(() => router.refresh());
         } catch {

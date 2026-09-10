@@ -179,6 +179,10 @@ try {
     ["ChurchContactAssignment", "id"],
     ["ChurchAuditEvent", "id"]
   ];
+  const listingTables = [
+    ["ChurchListingSubmission", "id"],
+    ["ChurchListingDecision", "id"]
+  ];
   const supportTables = [
     ["SupportCapabilityGrant", "id"],
     ["SupportIntakeSetting", "id"],
@@ -204,6 +208,7 @@ try {
   };
   const churchNames = [
     ...churchTables,
+    ...listingTables,
     ...supportTables,
     ...emailTables,
     ...googleTables
@@ -319,6 +324,7 @@ try {
   await runTests("tests/google-accounts.test.ts");
   await runTests("tests/google-boundary.test.ts");
   if (portalTests) await runTests("tests/portal-service.test.ts");
+  if (portalTests) await runTests("tests/church-listings.test.ts");
   if (supportTests) await runTests("tests/support-service.test.ts");
   run(join(pg, "pg_dump"), [
     database,
@@ -346,6 +352,7 @@ try {
     ...accountTables,
     ...emailTables,
     ...googleTables,
+    ...listingTables,
     ...churchTables,
     ...supportTables
   ]) {
@@ -386,6 +393,7 @@ try {
     ...accountTables,
     ...emailTables,
     ...googleTables,
+    ...listingTables,
     ...churchTables,
     ...supportTables
   ]) {
@@ -431,6 +439,11 @@ try {
   await runTests("tests/account-http.test.ts");
   await runTests("tests/account-email-http.test.ts");
   await runTests("tests/google-http.test.ts");
+  if (portalTests)
+    await runTests("tests/church-listing-http.test.ts", {
+      ...env,
+      LISTING_RENDER_PHASE: "development"
+    });
   if (portalTests) {
     run(
       process.execPath,
@@ -656,6 +669,10 @@ try {
       { mode: 0o600 }
     );
     await runTests("tests/portal-http.test.ts", portalEnv);
+    await runTests("tests/church-listing-http.test.ts", {
+      ...portalEnv,
+      LISTING_RENDER_PHASE: "production"
+    });
     if (supportTests) await runTests("tests/support-http.test.ts", portalEnv);
     if (supportTests) await runTests("tests/entrance-http.test.ts", portalEnv);
     if (supportTests) await runTests("tests/guest-browsing.test.ts", portalEnv);

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { accountEntryHref } from "@/lib/platform/account-entry";
 import { churchDiscoveryHref } from "@/lib/platform/church-search";
 import { ChurchSearchForm } from "./church-search-form";
+import { ChurchPublicDetails } from "./church-public-details";
 
 import {
   ADULT_POLICY,
@@ -26,12 +27,16 @@ import {
 const churchPath = (id: string) =>
   `/platform/churches/${encodeURIComponent(id)}`;
 
-export function PortalEligibility({ snapshot }: { snapshot: PortalSnapshot }) {
+export function PortalEligibility({
+  snapshot
+}: {
+  snapshot: Pick<PortalSnapshot, "viewer">;
+}) {
   if (snapshot.viewer.verified && snapshot.viewer.adult) return null;
   return (
-    <PortalCard title="Before you connect">
+    <PortalCard title="Before you participate">
       <p className="text-gc-muted">
-        Church connections require a verified email and confirmation that you
+        Church participation requires a verified email and confirmation that you
         are at least 18.
       </p>
       {!snapshot.viewer.verified && (
@@ -135,6 +140,11 @@ function ChurchConnection({
           </Link>{" "}
           before connecting here.
         </p>
+      ) : church.connectionsAvailable === false ? (
+        <p className="text-sm text-gc-muted">
+          Member connections will open once an authorized church reviewer is in
+          place.
+        </p>
       ) : (
         <PortalActionForm
           operation="request"
@@ -182,7 +192,23 @@ export function PortalDiscover({
         }
         description="Choose your church and request a connection. Your directory sharing stays under your control."
       />
-      {!detail && <ChurchSearchForm query={query} />}
+      {!detail && (
+        <>
+          <ChurchSearchForm query={query} />
+          <Link
+            href="/platform/church-listings/new"
+            className={`${portalLinkClass} mb-5`}
+          >
+            Add a church
+          </Link>
+          <Link
+            href="/platform/church-listings"
+            className={`${portalLinkClass} mb-5 ml-5`}
+          >
+            My listing drafts
+          </Link>
+        </>
+      )}
       <div className="mb-6">
         <PortalEligibility snapshot={snapshot} />
       </div>
@@ -194,9 +220,7 @@ export function PortalDiscover({
       <div className="grid gap-5 md:grid-cols-2">
         {churches.map((church) => (
           <PortalCard key={church.id} title={church.name}>
-            <p className="whitespace-pre-wrap leading-relaxed text-gc-muted">
-              {church.summary || "Church information is pending."}
-            </p>
+            <ChurchPublicDetails church={church} detail={detail} />
             {detail ? (
               <ChurchConnection church={church} snapshot={snapshot} />
             ) : (
@@ -256,7 +280,17 @@ export function PortalPublicDiscover({
         }
         description="Explore churches on Godschurches. Sign in to request a connection and manage your sharing."
       />
-      {!churchId && <ChurchSearchForm query={query} />}
+      {!churchId && (
+        <>
+          <ChurchSearchForm query={query} />
+          <Link
+            href="/platform/church-listings/new"
+            className={`${portalLinkClass} mb-5`}
+          >
+            Add a church
+          </Link>
+        </>
+      )}
       {(churchId || continued) && (
         <Link href="/platform/churches" className={`${portalLinkClass} mb-4`}>
           All churches
@@ -265,23 +299,28 @@ export function PortalPublicDiscover({
       <div className="grid gap-5 md:grid-cols-2">
         {visible.map((church) => (
           <PortalCard key={church.id} title={church.name}>
-            <p className="whitespace-pre-wrap leading-relaxed text-gc-muted">
-              {church.summary || "Church information is pending."}
-            </p>
-            <Link
-              href={
-                churchId
-                  ? accountEntryHref(
-                      "join",
-                      churchPath(church.id),
-                      "connection"
-                    )
-                  : churchPath(church.id)
-              }
-              className={portalLinkClass}
-            >
-              {churchId ? "Connect with this church" : "View church"}
-            </Link>
+            <ChurchPublicDetails church={church} detail={!!churchId} />
+            {churchId && church.connectionsAvailable === false ? (
+              <p className="text-sm text-gc-muted">
+                Member connections will open once an authorized church reviewer
+                is in place.
+              </p>
+            ) : (
+              <Link
+                href={
+                  churchId
+                    ? accountEntryHref(
+                        "join",
+                        churchPath(church.id),
+                        "connection"
+                      )
+                    : churchPath(church.id)
+                }
+                className={portalLinkClass}
+              >
+                {churchId ? "Connect with this church" : "View church"}
+              </Link>
+            )}
           </PortalCard>
         ))}
       </div>

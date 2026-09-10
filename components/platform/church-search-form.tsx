@@ -1,18 +1,19 @@
 import Link from "next/link";
 
-export function ChurchSearchForm({ query }: { query: string }) {
+export function ChurchSearchForm({
+  query,
+  action = "/platform/churches"
+}: {
+  query: string;
+  action?: string;
+}) {
   return (
-    <form
-      action="/platform/churches"
-      method="get"
-      role="search"
-      className="mb-6 max-w-2xl"
-    >
+    <form action={action} method="get" role="search" className="mb-6 max-w-2xl">
       <label htmlFor="church-search" className="block font-semibold">
         Search churches
       </label>
       <p id="church-search-hint" className="mb-3 mt-1 text-gc-muted">
-        Search by a name or words in a church’s public description.
+        Search by name, area, website or words in a church’s public description.
       </p>
       <div className="flex flex-wrap gap-3">
         <input
@@ -29,7 +30,7 @@ export function ChurchSearchForm({ query }: { query: string }) {
           Search
         </button>
         {query && (
-          <Link href="/platform/churches" className="gc-button gc-button-quiet">
+          <Link href={action} className="gc-button gc-button-quiet">
             Clear search
           </Link>
         )}

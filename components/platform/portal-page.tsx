@@ -30,6 +30,11 @@ function reviewerNavigation(snapshot: PortalSnapshot) {
     href: `/platform/churches/${encodeURIComponent(church.id)}/review`,
     label: `Review: ${church.name}`
   }));
+  if (snapshot.operatorCapabilities.includes("REVIEW_CHURCH_LISTINGS"))
+    links.push({
+      href: "/platform/operator/listings",
+      label: "Review church listings"
+    });
   if (
     snapshot.operatorCapabilities.length ||
     snapshot.coordinatorChurches.length

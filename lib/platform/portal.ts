@@ -25,18 +25,31 @@ export class PortalError extends Error {
   }
 }
 type Tx = Prisma.TransactionClient;
-const eligibleWhere = {
+export const eligibleWhere = {
   suspendedAt: null,
   deactivatedAt: null,
   emailVerifiedAt: { not: null },
   adultAcknowledgedAt: { not: null },
   adultPolicyVersion: ADULT_POLICY
 };
-const churchSelect = {
+export const churchSelect = {
   id: true,
   slug: true,
   name: true,
-  summary: true
+  summary: true,
+  version: true,
+  communityListed: true,
+  city: true,
+  region: true,
+  country: true,
+  serviceArea: true,
+  locationModel: true,
+  website: true,
+  publicEmail: true,
+  publicPhone: true,
+  meetingInfo: true,
+  denomination: true,
+  source: true
 } as const;
 const actorSelect = {
   id: true,
@@ -56,14 +69,14 @@ const isEligible = (user: Actor) =>
   !!user.emailVerifiedAt &&
   !!user.adultAcknowledgedAt &&
   user.adultPolicyVersion === ADULT_POLICY;
-function eligibility(user: Actor) {
+export function eligibility(user: Actor) {
   if (!isEligible(user))
     throw new PortalError(
       403,
       "Verify your email and confirm adult eligibility before joining this private journey."
     );
 }
-function expected(value: unknown, actual: number) {
+export function expected(value: unknown, actual: number) {
   if (!Number.isSafeInteger(value) || value !== actual)
     throw new PortalError(
       409,
@@ -113,11 +126,12 @@ async function audit(
     data: { actorId, targetId, action, churchId, fromState, toState, version }
   });
 }
-async function operator(
+export async function operator(
   tx: Tx,
   actor: Actor,
   capability:
     | "ESTABLISH_CHURCH"
+    | "REVIEW_CHURCH_LISTINGS"
     | "MANAGE_CHURCH_ACCESS"
     | "MANAGE_ACCOUNTS"
     | "ASSIGN_RELATIONSHIP_OWNER"
@@ -182,7 +196,7 @@ async function lockUser(tx: Tx, userId: string) {
 }
 // A single transaction-scoped portal gate makes eligibility, consent and revocation reads
 // coherent with writes in this small pilot. DB constraints also enforce active affiliation.
-async function portal<T>(
+export async function portal<T>(
   db: PrismaClient,
   token: unknown,
   work: (tx: Tx, actor: Actor) => Promise<T>
@@ -692,6 +706,21 @@ function entry(p: ChurchDirectoryPreference | null): DirectoryEntry | null {
       }
     : null;
 }
+async function connectionsAvailable(
+  db: PrismaClient | Tx,
+  churchId: string,
+  viewerId = ""
+) {
+  const [result] = await db.$queryRaw<{ available: boolean }[]>`SELECT EXISTS (
+    SELECT 1 FROM "ChurchCapabilityGrant" g JOIN "PlatformUser" u ON u.id = g."userId"
+    LEFT JOIN "ChurchConnection" c ON c.id = g."dependencyConnectionId"
+    WHERE g."churchId" = ${churchId} AND g.capability = 'REVIEW_CONNECTIONS' AND g."revokedAt" IS NULL
+    AND u.id <> ${viewerId} AND u."suspendedAt" IS NULL AND u."deactivatedAt" IS NULL
+    AND u."emailVerifiedAt" IS NOT NULL AND u."adultAcknowledgedAt" IS NOT NULL AND u."adultPolicyVersion" = ${ADULT_POLICY}
+    AND (g."dependencyConnectionId" IS NULL OR (c."userId" = u.id AND c."churchId" = g."churchId" AND c.state = 'APPROVED'))
+  ) AS available`;
+  return result.available;
+}
 export async function publicChurches(
   db: PrismaClient,
   churchId?: string,
@@ -700,7 +729,7 @@ export async function publicChurches(
 ) {
   // Prisma's PostgreSQL contains filter uses LIKE; treat search punctuation literally.
   const search = churchSearchQuery(query).replace(/[\\%_]/g, "\\$&");
-  return db.church.findMany({
+  const rows = await db.church.findMany({
     select: churchSelect,
     where: churchId
       ? { id: churchId }
@@ -708,7 +737,12 @@ export async function publicChurches(
         ? {
             OR: [
               { name: { contains: search, mode: "insensitive" } },
-              { summary: { contains: search, mode: "insensitive" } }
+              { summary: { contains: search, mode: "insensitive" } },
+              { city: { contains: search, mode: "insensitive" } },
+              { region: { contains: search, mode: "insensitive" } },
+              { country: { contains: search, mode: "insensitive" } },
+              { serviceArea: { contains: search, mode: "insensitive" } },
+              { website: { contains: search, mode: "insensitive" } }
             ]
           }
         : {},
@@ -716,6 +750,13 @@ export async function publicChurches(
     orderBy: [{ name: "asc" }, { id: "asc" }],
     take: 101
   });
+  if (!churchId || !rows.length) return rows;
+  return [
+    {
+      ...rows[0],
+      connectionsAvailable: await connectionsAvailable(db, churchId)
+    }
+  ];
 }
 export async function getPortalSnapshot(
   db: PrismaClient,
@@ -827,6 +868,15 @@ export async function getPortalSnapshot(
       : active?.church;
     if (churchId && !church) throw new PortalError(404, "Church not found.");
     snapshot.church = church;
+    if (church && view === "discover" && churchId)
+      snapshot.church = {
+        ...church,
+        connectionsAvailable: await connectionsAvailable(
+          tx,
+          church.id,
+          actor.id
+        )
+      };
     if (view === "directory" || view === "sharing") {
       if (!church)
         throw new PortalError(403, "Choose an approved Home Church first.");

@@ -13,7 +13,7 @@ export default function PrivacyPage() {
         <h1 className="mb-6 text-5xl">Privacy Policy</h1>
         <p className="mb-8 text-sm">
           Original policy: February 21, 2026. Service information updated
-          September 9, 2026.
+          September 10, 2026.
         </p>
 
         <div className="space-y-8 text-base leading-relaxed">
@@ -37,6 +37,27 @@ export default function PrivacyPage() {
               church pages and basic author information such as names and
               usernames. Viewing member profiles requires sign-in. Your account
               email and password are excluded from profile and public content.
+            </p>
+          </section>
+          <section>
+            <h2 className="mb-2 text-3xl">Church Listings and Drafts</h2>
+            <p>
+              We store church listing drafts, proposed corrections, and review
+              responses. Unsubmitted drafts are available to their contributor;
+              submitted information is also available to authorized listing
+              reviewers. Publishing requires confirmation of the public preview.
+              Published church names, descriptions, areas, meeting information,
+              sources, and optional public church contacts can be read by
+              anyone. Your sign-in email is not copied into a public church
+              contact field. Adding a listing does not grant church management
+              or member access.
+            </p>
+            <p className="mt-3">
+              You can download your own listing drafts and submissions through
+              account settings. Withdrawing a submission ends that submission;
+              it does not delete its history or a published church page. Account
+              deactivation preserves these records and does not remove public
+              church information. Use the correction or help route for changes.
             </p>
           </section>
           <section>

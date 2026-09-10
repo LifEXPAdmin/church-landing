@@ -300,8 +300,15 @@ test("public churches remain readable without account authority and detail looku
     assert.ok(!text.includes('"directoryPreferences"'));
   }
   const source = await (await get("/platform/churches/" + church.id)).text();
-  assert.ok(source.includes("Connect with this church"));
-  assert.ok(source.includes("reason=connection"));
+  assert.ok(source.includes("Member connections will open"));
+  assert.ok(!source.includes("Connect with this church"));
+  assert.ok(!source.includes("reason=connection"));
+  const reviewer = await owner();
+  await db.platformUser.update({ where: { id: reviewer.user.id }, data: { emailVerifiedAt: new Date(), adultAcknowledgedAt: new Date(), adultPolicyVersion: "adult-preview-v1" } });
+  await db.churchCapabilityGrant.create({ data: { userId: reviewer.user.id, churchId: church.id, capability: "REVIEW_CONNECTIONS" } });
+  const readySource = await (await get("/platform/churches/" + church.id)).text();
+  assert.ok(readySource.includes("Connect with this church"));
+  assert.ok(readySource.includes("reason=connection"));
   assert.equal(
     await db.churchConnection.count({ where: { churchId: church.id } }),
     before
@@ -351,7 +358,7 @@ test("public church search paginates for guests and members without searching pr
   }});
   const matches = await (await get("/api/platform/portal?view=public&q=" + encodeURIComponent(needle + "%_"))).json();
   assert.deepEqual(matches.churches.map((c: {id: string}) => c.id), [literal.id]);
-  assert.deepEqual(Object.keys(matches.churches[0]).sort(), ["id", "name", "slug", "summary"]);
+  assert.deepEqual(Object.keys(matches.churches[0]).sort(), ["id", "name", "slug", "summary", "version", "communityListed", "city", "region", "country", "serviceArea", "locationModel", "website", "publicEmail", "publicPhone", "meetingInfo", "denomination", "source"].sort());
   assert.equal(await db.churchConnection.count({where:{churchId:last.id}}), 0);
 });
 

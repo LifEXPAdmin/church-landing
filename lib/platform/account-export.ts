@@ -3,6 +3,7 @@ import type { PrismaClient } from "@prisma/client";
 import { withOwnedSession } from "./account-sessions";
 import { hashSessionToken } from "./auth";
 import { requireAccountCredential } from "./account-credential";
+import { projectListingData } from "./church-listing-data";
 
 const EXPORT_SECONDS = 60;
 const MAX_ROWS = 2000;
@@ -175,7 +176,25 @@ export async function downloadAccountExport(
       take: MAX_ROWS + 1,
       select: { caseId: true, body: true, createdAt: true }
     });
+    const churchListings = (
+      await tx.churchListingSubmission.findMany({
+        where: { ownerId: userId },
+        orderBy: { id: "asc" },
+        take: MAX_ROWS + 1,
+        select: {
+          id: true,
+          kind: true,
+          status: true,
+          data: true,
+          reviewReason: true,
+          createdAt: true,
+          updatedAt: true,
+          church: { select: { id: true, slug: true, name: true } }
+        }
+      })
+    ).map((row) => ({ ...row, data: projectListingData(row.data) }));
     const collections = {
+      churchListings,
       posts,
       comments,
       likes,
@@ -192,7 +211,7 @@ export async function downloadAccountExport(
         version: 1,
         generatedAt: new Date().toISOString(),
         scope:
-          "Your account profile and linked Google identity, authored community content, likes/following, church directory choices and your own support submissions. Other people's content, staff/church operations, credentials, session data and security audit records are excluded. Reading preferences saved only on this browser are not in this account file.",
+          "Your account profile and linked Google identity, authored community content, likes/following, church directory choices, your own church listing drafts/submissions and your own support submissions. Other people's content, staff/church operations, credentials, session data and security audit records are excluded. Reading preferences saved only on this browser are not in this account file.",
         account,
         ...collections
       },

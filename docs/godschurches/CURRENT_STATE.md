@@ -1,5 +1,19 @@
 # Godschurches current state
 
+## Community listings verified locally — September 10, 2026
+
+`codex/church-community-listings` adds search-first private drafts, explicit
+public previews, unofficial church pages, and independent correction/duplicate
+review without membership or management grants. Saved drafts enter the owner’s
+private account download. All 170 applicable isolated checks (172 total, zero
+failures, two intentional delivery skips), migration/restore/restart, final
+lint/types/build/runtime and fictional browser journeys passed. A browser-found
+review redirect race was corrected and the final create/save/review navigation
+passed. Phone/desktop reflow and public guest gates passed without browser errors.
+Publication and live checks are pending. Official claims, verification and the
+organization tree remain next in task 1; actual providers and physical acceptance
+remain separate. See [CHURCH_LISTING_REPORT.md](CHURCH_LISTING_REPORT.md).
+
 ## Shared church search published — September 9, 2026
 
 `codex/church-discovery-search` adds public name/description search and preserves
