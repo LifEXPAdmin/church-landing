@@ -16,9 +16,9 @@ export default function ForUsersPage() {
         "Read public testimonies, prayer requests, and updates.",
         "Create an account to post, comment, and react.",
         "Follow people whose posts you want to see on Home.",
-        "Search public posts and profiles to find people to connect with."
+        "Search public posts and author names; sign in to view member profiles."
       ]}
-      note="Posts, comments, and profile details are public. Share with care."
+      note="Posts and comments are public. Member profiles require sign-in. Share with care."
     />
   );
 }

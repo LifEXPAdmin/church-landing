@@ -1,15 +1,20 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
+import { GuestAccountPrompt } from "@/components/platform/guest-account-prompt";
 import { PlatformShell } from "@/components/platform/platform-shell";
 import { ProfileForm } from "@/components/platform/profile-form";
 import { getCurrentPlatformUser } from "@/lib/platform/session";
 export const metadata: Metadata = {
   title: { absolute: "Edit your Godschurches profile" },
-  description: "Choose what to share on your public profile."
+  description: "Choose what to share with other Godschurches members."
 };
 export default async function EditProfilePage() {
   const user = await getCurrentPlatformUser();
-  if (!user) redirect("/platform/login");
+  if (!user)
+    return (
+      <PlatformShell user={null}>
+        <GuestAccountPrompt next="/platform/profile/me" reason="profile" />
+      </PlatformShell>
+    );
   const { name, bio, location, website, interests } = user;
   return (
     <PlatformShell user={user}>

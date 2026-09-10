@@ -48,9 +48,10 @@ export default function HelpPage() {
         <section>
           <h2>What can other people see?</h2>
           <p>
-            Home, search, profile posts, and comments are public. Your sign-in
-            email and password are not public profile fields. Use care when
-            writing a bio or prayer request.
+            Public posts, comments and church pages are open to visitors. Member
+            profiles and participation require an account. Your sign-in email
+            and password stay private. Use care when writing a bio or prayer
+            request.
           </p>
           <p>
             Church directories, shared contact details, and support requests

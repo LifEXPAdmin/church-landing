@@ -34,6 +34,7 @@ import {
   requestEmailChange,
   confirmEmailChange
 } from "./account-email-change";
+import { safeAccountReturn } from "./account-entry";
 
 export const SESSION_COOKIE = "church_platform_session";
 export function sessionCookie(token: string, secure: boolean) {
@@ -423,7 +424,7 @@ async function processAccountRequest(
         "Signed in.",
         200,
         { "Set-Cookie": sessionCookie(token, config.secureCookie) },
-        "/platform"
+        safeAccountReturn(body.next)
       );
     }
     if (operation === "update-profile") {

@@ -139,7 +139,7 @@ test("actual community Server Actions bind authors to cookies and reject cross-o
   await deactivateAccount(db, a.token, password, true);
   const stale = await invoke(origin);
   assert.equal(stale.status, 303);
-  assert.equal(stale.headers.get("location"), "/platform/login");
+  assert.match(stale.headers.get("location")!, /^\/platform\/join\?/);
   assert.equal(await db.platformPost.count({ where: { content: marker } }), 1);
 });
 
@@ -447,7 +447,12 @@ test("inactive community content and relationships disappear from HTML and RSC, 
       "/platform/profile/" + b.user.username
     ]) {
       const response = await fetch(origin + path, {
-        headers: rsc ? { RSC: "1" } : {}
+        headers: {
+          ...(rsc ? { RSC: "1" } : {}),
+          ...(path.includes("/profile/")
+            ? { Cookie: "church_platform_session=" + b.token }
+            : {})
+        }
       });
       assert.equal(response.status, 200);
       const body = await response.text();
@@ -460,7 +465,9 @@ test("inactive community content and relationships disappear from HTML and RSC, 
         );
     }
   }
-  const profile = await fetch(origin + "/platform/profile/" + a.user.username);
+  const profile = await fetch(origin + "/platform/profile/" + a.user.username, {
+    headers: { Cookie: "church_platform_session=" + b.token }
+  });
   assert.equal(profile.status, 404);
   assert.ok(!(await profile.text()).includes(marker));
   const bProfile = await readAccountSession(db, b.token);
@@ -510,7 +517,9 @@ test("inactive community content and relationships disappear from HTML and RSC, 
   assert.ok(
     (
       await (
-        await fetch(origin + "/platform/profile/" + b.user.username)
+        await fetch(origin + "/platform/profile/" + b.user.username, {
+          headers: { Cookie: "church_platform_session=" + b.token }
+        })
       ).text()
     ).includes(commentMarker)
   );

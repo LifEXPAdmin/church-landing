@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { accountEntryHref } from "@/lib/platform/account-entry";
 import { logoutPlatformAccount } from "@/app/platform/actions";
 import { AccountForm } from "@/components/platform/account-form";
 import { PlatformShell } from "@/components/platform/platform-shell";
@@ -15,7 +16,8 @@ import { accountConfig } from "@/lib/platform/account-config";
 export const metadata: Metadata = { title: "Account settings" };
 export default async function PlatformSettingsPage() {
   const user = await getCurrentPlatformUser();
-  if (!user) redirect("/platform/login");
+  if (!user)
+    redirect(accountEntryHref("join", "/platform/settings", "settings"));
   let emailAvailable = false;
   try {
     emailAvailable = accountConfig().delivery !== "disabled";
@@ -31,7 +33,7 @@ export default async function PlatformSettingsPage() {
           <div className="gc-settings">
             <h2>Privacy and sharing</h2>
             <p className="text-gc-muted">
-              Your public profile, private account email, and church directory
+              Your member profile, private account email, and church directory
               choices are separate. You choose whether to share directory
               details with your approved church.
             </p>
@@ -39,7 +41,7 @@ export default async function PlatformSettingsPage() {
               href="/platform/profile/me"
               className="inline-flex min-h-11 items-center text-gc-action underline"
             >
-              Edit your public profile
+              Edit your member profile
             </Link>
             <Link
               href="/platform/my-church/sharing"

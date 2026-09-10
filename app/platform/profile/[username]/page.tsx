@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { prisma } from "@/lib/prisma";
 import { roleLabels } from "@/lib/platform/format";
 import { getCurrentPlatformUser } from "@/lib/platform/session";
+import { GuestAccountPrompt } from "@/components/platform/guest-account-prompt";
 
 export async function generateMetadata({
   params
@@ -26,7 +27,8 @@ export async function generateMetadata({
   const { username } = await params;
   return {
     title: { absolute: `@${username} | Godschurches` },
-    description: `View @${username}'s Godschurches platform profile.`
+    description: "Sign in to view member profiles on Godschurches.",
+    robots: { index: false, follow: false }
   };
 }
 
@@ -39,6 +41,15 @@ export default async function PublicProfilePage({
 }) {
   const currentUser = await getCurrentPlatformUser();
   const { username } = await params;
+  if (!currentUser)
+    return (
+      <PlatformShell user={null}>
+        <GuestAccountPrompt
+          next={`/platform/profile/${username}`}
+          reason="profile"
+        />
+      </PlatformShell>
+    );
   const profile = await prisma.platformUser.findUnique({
     where: { username, ...activePublicAccount },
     select: {

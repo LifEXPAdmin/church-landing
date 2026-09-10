@@ -1,6 +1,7 @@
 "use client";
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { safeAccountReturn } from "@/lib/platform/account-entry";
 
 type Operation =
   | "register"
@@ -53,10 +54,12 @@ export function PasswordField({
 export function AccountForm({
   operation,
   initialEmail = "",
+  returnTo = "/platform",
   onRegistered
 }: {
   operation: Operation;
   initialEmail?: string;
+  returnTo?: string;
   onRegistered?: (email: string) => void;
 }) {
   const [message, setMessage] = useState("");
@@ -100,7 +103,13 @@ export function AccountForm({
           const response = await fetch("/api/platform/account", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ ...values, operation })
+            body: JSON.stringify({
+              ...values,
+              operation,
+              ...(operation === "login"
+                ? { next: safeAccountReturn(returnTo) }
+                : {})
+            })
           });
           const result = await response.json();
           if (response.ok && registration && onRegistered) {
@@ -110,7 +119,7 @@ export function AccountForm({
           if (
             response.ok &&
             typeof result.redirect === "string" &&
-            result.redirect.startsWith("/platform")
+            /^\/platform(?:[/?]|$)/.test(result.redirect)
           ) {
             // Full navigation clears stale client data. Do not reset credential fields first.
             window.location.replace(result.redirect);

@@ -1,5 +1,5 @@
 import {
-  publicProfileSelect,
+  communityAuthorSelect,
   activePublicAccount
 } from "@/lib/platform/public-profile";
 import type { Metadata } from "next";
@@ -31,13 +31,15 @@ export default async function PlatformSearchPage({
   const [people, posts] = q
     ? await Promise.all([
         prisma.platformUser.findMany({
-          select: publicProfileSelect,
+          select: communityAuthorSelect,
           where: {
             ...activePublicAccount,
             OR: [
               { name: { contains: q, mode: "insensitive" } },
               { username: { contains: q.toLowerCase(), mode: "insensitive" } },
-              { bio: { contains: q, mode: "insensitive" } }
+              ...(currentUser
+                ? [{ bio: { contains: q, mode: "insensitive" as const } }]
+                : [])
             ]
           },
           take: 20
@@ -51,11 +53,11 @@ export default async function PlatformSearchPage({
             ]
           },
           include: {
-            author: { select: publicProfileSelect },
+            author: { select: communityAuthorSelect },
             likes: { where: { user: activePublicAccount } },
             comments: {
               where: { author: activePublicAccount },
-              include: { author: { select: publicProfileSelect } },
+              include: { author: { select: communityAuthorSelect } },
               orderBy: { createdAt: "desc" },
               take: 6
             }
@@ -90,6 +92,12 @@ export default async function PlatformSearchPage({
               <Search className="mr-2 h-4 w-4" /> Search
             </button>
           </form>
+          <Link
+            className="mt-4 inline-flex min-h-11 items-center text-gc-accent underline"
+            href="/platform/churches"
+          >
+            Browse church pages
+          </Link>
         </div>
 
         {q ? (

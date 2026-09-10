@@ -263,7 +263,10 @@ test("production HTTPS session controls revoke another login on its next request
     headers: { Cookie: cookie(other) }
   });
   assert.equal(signedOut.status, 307);
-  assert.equal(signedOut.headers.get("location"), "/platform/login");
+  assert.match(
+    signedOut.headers.get("location")!,
+    /^\/platform\/join\?next=%2Fplatform%2Fsettings&reason=settings$/
+  );
   for (const rsc of [false, true]) {
     const page = await fetch(origin + "/platform/settings", {
       headers: { Cookie: cookie(current), ...(rsc ? { RSC: "1" } : {}) }

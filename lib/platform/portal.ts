@@ -691,11 +691,17 @@ function entry(p: ChurchDirectoryPreference | null): DirectoryEntry | null {
       }
     : null;
 }
-export async function publicChurches(db: PrismaClient) {
+export async function publicChurches(
+  db: PrismaClient,
+  churchId?: string,
+  cursor?: string
+) {
   return db.church.findMany({
     select: churchSelect,
+    ...(churchId ? { where: { id: churchId } } : {}),
+    ...(!churchId && cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
     orderBy: [{ name: "asc" }, { id: "asc" }],
-    take: 100
+    take: 101
   });
 }
 export async function getPortalSnapshot(

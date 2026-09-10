@@ -163,7 +163,10 @@ test("public HTML/RSC and unauthenticated settings do not expose private account
     redirect: "manual"
   });
   assert.equal(response.status, 307);
-  assert.equal(response.headers.get("location"), "/platform/login");
+  assert.match(
+    response.headers.get("location")!,
+    /^\/platform\/join\?next=%2Fplatform%2Fsettings&reason=settings$/
+  );
   const rsc = await fetch(origin + "/platform/profile/http_account", {
     headers: { RSC: "1" }
   });

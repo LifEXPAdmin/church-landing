@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { accountEntryHref } from "@/lib/platform/account-entry";
 import {
   Church,
   CircleHelp,
@@ -23,10 +24,16 @@ export function PortalNavigation({
   const [open, setOpen] = useState(false);
   const links = [
     { href: "/platform", label: "Home", icon: Home },
-    { href: "/platform/my-church", label: "My church", icon: Church },
+    {
+      href: username ? "/platform/my-church" : "/platform/churches",
+      label: username ? "My church" : "Churches",
+      icon: Church
+    },
     { href: "/platform/search", label: "Explore", icon: Search },
     {
-      href: username ? `/platform/profile/${username}` : "/platform/login",
+      href: username
+        ? `/platform/profile/${username}`
+        : accountEntryHref("join", "/platform/profile/me", "profile"),
       label: "Profile",
       icon: UserRound
     },

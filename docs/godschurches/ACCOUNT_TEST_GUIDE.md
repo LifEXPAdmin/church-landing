@@ -1,5 +1,17 @@
 # Try your Godschurches account
 
+## Browse first
+
+You can read public posts and comments and explore public church pages without
+creating an account. Open **View post and comments** for a complete discussion;
+**Older comments** continues beyond the first page. Church discovery also has a
+**More churches** link when another page exists.
+
+An account is required to like, comment, view a member profile, connect with a
+church or manage settings. The Join/Sign in prompt lets you keep browsing or
+return to your intended destination after authentication. Signing in does not
+automatically like, comment or request church membership.
+
 ## Open these pages in your browser
 
 - Create an account: https://godschurches.com/platform/signup
@@ -27,7 +39,8 @@ separate demo does not create accounts or save its fictional information.
    the Save prompt or turn on password saving for you.
 5. Open **Edit profile**, write a short bio, and select **Save profile**. Refresh
    the page. Your saved bio should still be there. Optional fields start empty.
-   Profile fields are public; do not put private contact details in your bio.
+   Other signed-in members can view your profile. Your name and username identify
+   public posts/comments; do not put private contact details in your bio.
 6. Open a new tab, then close and reopen your browser. On a normal browser profile
    that retains cookies, you should still be signed in. A session lasts up to
    30 days, not forever. Private mode, clearing cookies, or browser policies can

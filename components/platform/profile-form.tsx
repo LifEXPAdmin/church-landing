@@ -60,8 +60,9 @@ export function ProfileForm({ profile }: { profile: Profile }) {
       <div>
         <h1 className="text-4xl text-gc-text sm:text-5xl">Edit your profile</h1>
         <p className="mt-3 text-gc-muted">
-          Share only what you want others to see. These profile fields are
-          public. Your account email and private church directory choices are
+          Share only what you want other members to see. Your name and username
+          identify public posts and comments; viewing your other profile details
+          requires sign-in. Your account email and church directory choices are
           separate.
         </p>
       </div>

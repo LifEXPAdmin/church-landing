@@ -7,6 +7,20 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false }
 };
 
-export default function Page() {
-  return <PortalPage view="discover" />;
+export default async function Page({
+  searchParams
+}: {
+  searchParams: Promise<{ cursor?: string }>;
+}) {
+  const { cursor } = await searchParams;
+  return (
+    <PortalPage
+      view="discover"
+      cursor={
+        typeof cursor === "string" && /^[a-zA-Z0-9_-]{1,100}$/.test(cursor)
+          ? cursor
+          : undefined
+      }
+    />
+  );
 }

@@ -15,6 +15,15 @@ export const publicProfileSelect = {
   website: true,
   interests: true
 } satisfies Prisma.PlatformUserSelect;
+export const communityAuthorSelect = {
+  id: true,
+  name: true,
+  username: true,
+  role: true
+} satisfies Prisma.PlatformUserSelect;
+export type CommunityAuthor = Prisma.PlatformUserGetPayload<{
+  select: typeof communityAuthorSelect;
+}>;
 export type PublicProfile = Prisma.PlatformUserGetPayload<{
   select: typeof publicProfileSelect;
 }>;

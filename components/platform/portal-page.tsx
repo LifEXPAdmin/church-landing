@@ -101,30 +101,51 @@ function PublicHelp() {
 
 async function PublicContent({
   view,
-  churchId
+  churchId,
+  cursor
 }: {
   view: PortalView;
   churchId?: string;
+  cursor?: string;
 }) {
   if (view === "help") return <PublicHelp />;
+  const result = await publicChurches(prisma, churchId, cursor);
+  const churches = result.slice(0, 100);
+  const last = churches.at(-1);
   return (
     <PortalPublicDiscover
-      churches={await publicChurches(prisma)}
+      churches={churches}
       churchId={churchId}
+      continued={!!cursor}
+      moreHref={
+        !churchId && result.length > 100 && last
+          ? `/platform/churches?cursor=${encodeURIComponent(last.id)}`
+          : undefined
+      }
     />
   );
 }
 
 export async function PortalPage({
   view,
-  churchId
+  churchId,
+  cursor
 }: {
   view: PortalView;
   churchId?: string;
+  cursor?: string;
 }) {
   // Next's development Flight debugger can serialize awaited request/DB values.
   // Do not read credentials or private portal data in that renderer.
   if (process.env.NODE_ENV !== "production") {
+    if (view === "discover")
+      return (
+        <PlatformShell user={null}>
+          <section className="container-shell py-8 sm:py-10">
+            <PublicContent view={view} churchId={churchId} cursor={cursor} />
+          </section>
+        </PlatformShell>
+      );
     return (
       <PlatformShell user={null}>
         <section className="container-shell py-8 sm:py-10">
@@ -150,7 +171,7 @@ export async function PortalPage({
   try {
     snapshot = (await readPortalPage(view, churchId)) ?? undefined;
     if (!snapshot && isPublic) {
-      content = await PublicContent({ view, churchId });
+      content = await PublicContent({ view, churchId, cursor });
     } else if (snapshot) {
       content = (
         <PortalViewContent
@@ -164,7 +185,7 @@ export async function PortalPage({
     failure = error instanceof PortalError ? error.status : 500;
     if (failure === 401 && isPublic) {
       try {
-        content = await PublicContent({ view, churchId });
+        content = await PublicContent({ view, churchId, cursor });
         failure = undefined;
       } catch {
         failure = 500;

@@ -1,5 +1,17 @@
 # Godschurches current state
 
+## Browse before joining verified locally — September 9, 2026
+
+Guest browsing is implemented on `codex/guest-browsing`: public posts and all
+comments, paginated church discovery and public church details are readable
+without signing in. Member profiles, settings and participation use contextual
+Join/Sign in with validated return destinations. Minimal author projections keep
+member biographies out of anonymous queries and responses. All 121 applicable
+isolated checks, final lint/types/build/runtime checks and fictional browser
+signup/return/reflow passed. Publication is next; see
+[GUEST_BROWSING_REPORT.md](GUEST_BROWSING_REPORT.md) for scope and evidence.
+Topic communities remain specified for the discussion/moderation workstream.
+
 ## Verified email-change release — September 9, 2026
 
 Current-password-confirmed sign-in email changes are implemented and locally
@@ -14,10 +26,10 @@ are intentionally skipped in the disabled production-mode pass. Application
 17 live checks passed. Delivery stays disabled until sender setup is ready.
 See [ACCOUNT_EMAIL_CHANGE_REPORT.md](ACCOUNT_EMAIL_CHANGE_REPORT.md).
 
-Next product work is guest browsing: public posts/comments and church pages are
-readable without an account; participation, settings and member-profile views
-require contextual account access. Topic communities are captured in the private
-canonical roadmap for implementation with discussion/moderation foundations.
+Guest browsing was the next product slice after this email-change release; its
+latest implementation and release status is recorded above. Topic communities
+are captured in the private canonical roadmap for implementation with
+discussion/moderation foundations.
 
 ## Account lifecycle published — September 9, 2026
 

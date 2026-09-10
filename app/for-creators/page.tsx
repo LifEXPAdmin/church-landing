@@ -16,7 +16,7 @@ export default function ForCreatorsPage() {
         "Share written teaching and testimony through public posts.",
         "Add Scripture references to your posts.",
         "Take part in conversations through comments and reactions.",
-        "Maintain a public profile and follow other people."
+        "Maintain a member profile and follow other people."
       ]}
       note="Video hosting, image uploads, monetization, and creator analytics remain planned. Selecting a Creator profile category does not unlock unpublished tools."
     />

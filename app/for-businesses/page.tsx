@@ -15,7 +15,7 @@ export default function ForBusinessesPage() {
       bullets={[
         "Participate in public conversations through a personal account.",
         "Share encouragement and get to know people in the community.",
-        "Use public profile information thoughtfully; avoid posting private contact details.",
+        "Use shared profile information thoughtfully; avoid posting private contact details.",
         "Read the manifesto to understand the convictions behind the project."
       ]}
       note="Sponsorship, payments, investments, and business partnership services are not available through Godschurches. A profile category creates no financial agreement or church authority."

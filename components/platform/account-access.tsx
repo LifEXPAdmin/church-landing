@@ -2,16 +2,25 @@
 import Link from "next/link";
 import { useRef, useState } from "react";
 import { AccountForm } from "./account-form";
+import {
+  accountEntryHref,
+  accountReasons,
+  type AccountReason
+} from "@/lib/platform/account-entry";
 export function AccountAccess({
   initialView,
   passwordChanged = false,
   reactivated = false,
-  emailChanged = false
+  emailChanged = false,
+  returnTo = "/platform",
+  reason
 }: {
   initialView: "login" | "register";
   passwordChanged?: boolean;
   reactivated?: boolean;
   emailChanged?: boolean;
+  returnTo?: string;
+  reason?: AccountReason;
 }) {
   const [view, setView] = useState(initialView);
   const [email, setEmail] = useState("");
@@ -31,6 +40,12 @@ export function AccountAccess({
         stays private. Create your account or sign in to pick up where you left
         off.
       </p>
+      {reason && (
+        <p className="mb-5 text-gc-accent">
+          {accountReasons[reason]} You’ll return to your destination after
+          signing in.
+        </p>
+      )}
       {registered && (
         <p
           role="status"
@@ -62,18 +77,27 @@ export function AccountAccess({
         key={view}
         operation={view}
         initialEmail={email}
+        returnTo={returnTo}
         onRegistered={(value) => {
           // Short-lived page state only. No identifiers in URLs, history state, or app storage.
           setEmail(value);
           setRegistered(true);
           setView("login");
-          window.history.replaceState(null, "", "/platform/login");
+          window.history.replaceState(
+            null,
+            "",
+            accountEntryHref("login", returnTo, reason)
+          );
           requestAnimationFrame(() => heading.current?.focus());
         }}
       />
       <p className="mt-6">
         <Link
-          href={view === "login" ? "/platform/signup" : "/platform/login"}
+          href={accountEntryHref(
+            view === "login" ? "signup" : "login",
+            returnTo,
+            reason
+          )}
           className="inline-flex min-h-11 items-center text-gc-accent underline"
         >
           {view === "login"

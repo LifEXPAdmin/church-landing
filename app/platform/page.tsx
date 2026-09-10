@@ -1,5 +1,5 @@
 import {
-  publicProfileSelect,
+  communityAuthorSelect,
   activePublicAccount
 } from "@/lib/platform/public-profile";
 import { publicMetadata } from "@/lib/site-metadata";
@@ -69,14 +69,14 @@ export default async function PlatformPage({
         : {})
     },
     include: {
-      author: { select: publicProfileSelect },
+      author: { select: communityAuthorSelect },
       likes: { where: { user: activePublicAccount } },
       _count: {
         select: { comments: { where: { author: activePublicAccount } } }
       },
       comments: {
         where: { author: activePublicAccount },
-        include: { author: { select: publicProfileSelect } },
+        include: { author: { select: communityAuthorSelect } },
         orderBy: { createdAt: "desc" },
         take: 6
       }
@@ -107,14 +107,17 @@ export default async function PlatformPage({
         </div>
         {!currentUser && (
           <div className="gc-welcome">
-            <h2>There is a place for you here.</h2>
+            <h2>Take a look around.</h2>
             <p>
-              Read public posts from people growing in faith. Create an account
-              to share a testimony, prayer request, or update, and follow people
-              you want to hear from.
+              Read public posts and comments, discover churches, and get to know
+              Godschurches at your own pace. Join whenever you’re ready to take
+              part.
             </p>
-            <Link href="/platform/signup" className="gc-button">
-              Create an account
+            <Link
+              href="/platform/churches"
+              className="gc-button gc-button-quiet"
+            >
+              Explore churches
               <ArrowRight aria-hidden="true" />
             </Link>
           </div>
@@ -158,13 +161,13 @@ export default async function PlatformPage({
                 <p>
                   {currentUser
                     ? "This space grows with the people you follow. Find someone to connect with, or share the first word of encouragement."
-                    : "Every community starts with a conversation. Create an account to share a testimony, prayer request, or update."}
+                    : "Public conversations will appear here as people share. You can explore church pages while this community grows."}
                 </p>
                 <Link
-                  href={currentUser ? "/platform/search" : "/platform/signup"}
+                  href={currentUser ? "/platform/search" : "/platform/churches"}
                   className="gc-button gc-button-quiet"
                 >
-                  {currentUser ? "Find your people" : "Join the conversation"}
+                  {currentUser ? "Find your people" : "Explore churches"}
                   <ArrowRight aria-hidden="true" />
                 </Link>
               </div>
@@ -178,8 +181,13 @@ export default async function PlatformPage({
                 Online connection is a beginning, not a replacement for
                 gathering together.
               </p>
-              <Link href="/platform/my-church">
-                My church connection <span aria-hidden="true">→</span>
+              <Link
+                href={
+                  currentUser ? "/platform/my-church" : "/platform/churches"
+                }
+              >
+                {currentUser ? "My church connection" : "Explore church pages"}{" "}
+                <span aria-hidden="true">→</span>
               </Link>
             </section>
             <section>

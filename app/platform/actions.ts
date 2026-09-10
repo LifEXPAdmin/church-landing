@@ -6,15 +6,16 @@ import { prisma } from "@/lib/prisma";
 import { AccountError } from "@/lib/platform/accounts";
 import { communityCommand } from "@/lib/platform/community";
 import {
+  safeAccountReturn,
+  accountEntryHref
+} from "@/lib/platform/account-entry";
+import {
   clearPlatformSession,
   PLATFORM_SESSION_COOKIE
 } from "@/lib/platform/session";
 
 function safeRedirectPath(value: FormDataEntryValue | null) {
-  const path = String(value ?? "/platform");
-  return /^\/platform(?:[/?]|$)/.test(path) && !/[\\\r\n]/.test(path)
-    ? path
-    : "/platform";
+  return safeAccountReturn(value);
 }
 async function command(
   operation: Parameters<typeof communityCommand>[2],
@@ -30,12 +31,23 @@ async function command(
     );
   } catch (error) {
     if (error instanceof AccountError && error.code === "session")
-      redirect("/platform/login");
+      redirect(
+        accountEntryHref(
+          "join",
+          formData.get("redirectTo"),
+          operation === "like"
+            ? "like"
+            : operation === "comment"
+              ? "comment"
+              : "participate"
+        )
+      );
     throw error;
   }
   revalidatePath("/platform");
   revalidatePath("/platform/search");
   revalidatePath("/platform/profile/[username]", "page");
+  revalidatePath("/platform/posts/[postId]", "page");
 }
 export async function logoutPlatformAccount() {
   await clearPlatformSession();

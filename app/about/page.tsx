@@ -21,13 +21,14 @@ export default function AboutPage() {
         <section>
           <h2>Start with a conversation</h2>
           <p>
-            Read public posts, or create an email account to share a testimony,
-            prayer request, or update. You can comment, react, follow people,
-            search public posts and profiles, and edit your own profile.
+            Read public posts and comments or explore church pages without an
+            account. Join when you want to share a testimony, prayer request or
+            update, comment, react, follow people, or view member profiles.
           </p>
           <p>
-            Posts, comments, and profile details are public. Keep private prayer
-            details and personal contact information out of those spaces.
+            Posts, comments and their author names are public. Other profile
+            details are available to signed-in members. Keep private prayer
+            details and personal contact information out of shared spaces.
           </p>
           <div className="gc-info-actions">
             <Link href="/platform" className="gc-button">

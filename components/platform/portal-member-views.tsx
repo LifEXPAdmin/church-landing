@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { accountEntryHref } from "@/lib/platform/account-entry";
 
 import {
   ADULT_POLICY,
@@ -215,10 +216,14 @@ export function PortalDiscover({
 
 export function PortalPublicDiscover({
   churches,
-  churchId
+  churchId,
+  moreHref,
+  continued = false
 }: {
   churches: ChurchSummary[];
   churchId?: string;
+  moreHref?: string;
+  continued?: boolean;
 }) {
   const visible = churchId
     ? churches.filter((church) => church.id === churchId)
@@ -233,7 +238,7 @@ export function PortalPublicDiscover({
         }
         description="Explore churches on Godschurches. Sign in to request a connection and manage your sharing."
       />
-      {churchId && (
+      {(churchId || continued) && (
         <Link href="/platform/churches" className={`${portalLinkClass} mb-4`}>
           All churches
         </Link>
@@ -245,14 +250,27 @@ export function PortalPublicDiscover({
               {church.summary || "Church information is pending."}
             </p>
             <Link
-              href={churchId ? "/platform/login" : churchPath(church.id)}
+              href={
+                churchId
+                  ? accountEntryHref(
+                      "join",
+                      churchPath(church.id),
+                      "connection"
+                    )
+                  : churchPath(church.id)
+              }
               className={portalLinkClass}
             >
-              {churchId ? "Sign in to request a connection" : "View church"}
+              {churchId ? "Connect with this church" : "View church"}
             </Link>
           </PortalCard>
         ))}
       </div>
+      {moreHref && (
+        <Link className={`${portalLinkClass} mt-5`} href={moreHref}>
+          More churches
+        </Link>
+      )}
       {visible.length === 0 && (
         <PortalEmpty>
           {churchId

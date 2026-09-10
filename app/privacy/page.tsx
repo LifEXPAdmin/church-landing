@@ -33,9 +33,10 @@ export default function PrivacyPage() {
             <p>
               We use account and session information to provide sign-in and
               account controls, display your public contributions, and enforce
-              access to church tools. Public posts, comments, and profile
-              details can be read by visitors. Your sign-in email and password
-              are not public profile fields.
+              access to church tools. Visitors can read public posts, comments,
+              church pages and basic author information such as names and
+              usernames. Viewing member profiles requires sign-in. Your account
+              email and password are excluded from profile and public content.
             </p>
           </section>
           <section>

@@ -1,4 +1,5 @@
-import type { PublicProfile } from "@/lib/platform/public-profile";
+import type { CommunityAuthor } from "@/lib/platform/public-profile";
+import { accountEntryHref } from "@/lib/platform/account-entry";
 import Link from "next/link";
 import type {
   PlatformPost,
@@ -16,18 +17,22 @@ import { formatDate, postTypeLabels } from "@/lib/platform/format";
 
 interface PostCardProps {
   post: PlatformPost & {
-    author: PublicProfile;
+    author: CommunityAuthor;
     likes: PlatformPostLike[];
-    comments: (PlatformPostComment & { author: PublicProfile })[];
+    comments: (PlatformPostComment & { author: CommunityAuthor })[];
     _count?: { comments: number };
   };
   currentUserId?: string;
   redirectTo?: string;
+  fullDiscussion?: boolean;
+  moreCommentsHref?: string;
 }
 export function PostCard({
   post,
   currentUserId,
-  redirectTo = "/platform"
+  redirectTo = "/platform",
+  fullDiscussion = false,
+  moreCommentsHref
 }: PostCardProps) {
   const liked =
     !!currentUserId && post.likes.some((like) => like.userId === currentUserId);
@@ -93,13 +98,28 @@ export function PostCard({
             </button>
           </form>
         ) : (
-          <Link className="gc-reaction" href="/platform/login">
+          <Link
+            className="gc-reaction"
+            href={accountEntryHref(
+              "join",
+              `/platform/posts/${post.id}`,
+              "like"
+            )}
+          >
             <Heart aria-hidden="true" />
-            Sign in to like<span>{post.likes.length}</span>
+            Like<span>{post.likes.length}</span>
           </Link>
         )}
       </div>
-      <details className="gc-discussion">
+      {!fullDiscussion && (
+        <Link
+          className="inline-flex min-h-11 items-center text-sm text-gc-accent underline"
+          href={`/platform/posts/${post.id}`}
+        >
+          View post and comments
+        </Link>
+      )}
+      <details className="gc-discussion" open={fullDiscussion}>
         <summary>
           <MessageCircle aria-hidden="true" />
           Discussion{" "}
@@ -110,7 +130,12 @@ export function PostCard({
         </summary>
         {count > post.comments.length && (
           <p className="text-sm text-gc-muted">
-            Showing the latest {post.comments.length} of {count} comments.
+            Showing {post.comments.length} of {count} comments.{" "}
+            {!fullDiscussion && (
+              <Link className="underline" href={`/platform/posts/${post.id}`}>
+                Read all comments
+              </Link>
+            )}
           </p>
         )}
         {!post.comments.length && (
@@ -144,6 +169,14 @@ export function PostCard({
             )}
           </div>
         ))}
+        {moreCommentsHref && (
+          <Link
+            className="inline-flex min-h-11 items-center text-gc-accent underline"
+            href={moreCommentsHref}
+          >
+            Older comments
+          </Link>
+        )}
         {currentUserId ? (
           <form action={createPlatformPostComment} className="gc-comment-form">
             <input type="hidden" name="postId" value={post.id} />
@@ -164,8 +197,15 @@ export function PostCard({
             </div>
           </form>
         ) : (
-          <Link className="gc-reaction text-gc-action" href="/platform/login">
-            Sign in to join the conversation
+          <Link
+            className="gc-reaction text-gc-action"
+            href={accountEntryHref(
+              "join",
+              `/platform/posts/${post.id}`,
+              "comment"
+            )}
+          >
+            Add a comment
           </Link>
         )}
       </details>
