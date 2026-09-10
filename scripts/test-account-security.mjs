@@ -53,6 +53,9 @@ const env = {
   MAILERLITE_API_KEY: "",
   RESEND_API_KEY: "",
   ACCOUNT_EMAIL_FROM: "",
+  ACCOUNT_GOOGLE_ENABLED: "false",
+  GOOGLE_CLIENT_ID: "",
+  GOOGLE_CLIENT_SECRET: "",
   SUPPORT_INTAKE_ENABLED: supportTests ? "true" : "false"
 };
 const log = join(dir, "setup.log");
@@ -162,6 +165,10 @@ try {
     ["PlatformFollow", "id"]
   ];
   const emailTables = [["PlatformEmailChange", "id"]];
+  const googleTables = [
+    ["PlatformGoogleIdentity", "id"],
+    ["PlatformGoogleAttempt", "id"]
+  ];
   const churchTables = [
     ["Church", "id"],
     ["ChurchConnection", "id"],
@@ -194,7 +201,12 @@ try {
       url
     );
   };
-  const churchNames = [...churchTables, ...supportTables, ...emailTables]
+  const churchNames = [
+    ...churchTables,
+    ...supportTables,
+    ...emailTables,
+    ...googleTables
+  ]
     .map(([name]) => `'${name}'`)
     .join(",");
   const constraintFingerprint = (url) =>
@@ -303,6 +315,7 @@ try {
   await runTests("tests/account-security.test.ts");
   await runTests("tests/account-delivery.test.ts");
   await runTests("tests/account-email-change.test.ts");
+  await runTests("tests/google-accounts.test.ts");
   if (portalTests) await runTests("tests/portal-service.test.ts");
   if (supportTests) await runTests("tests/support-service.test.ts");
   run(join(pg, "pg_dump"), [
@@ -330,6 +343,7 @@ try {
   for (const [table, key] of [
     ...accountTables,
     ...emailTables,
+    ...googleTables,
     ...churchTables,
     ...supportTables
   ]) {
@@ -369,6 +383,7 @@ try {
   for (const [table] of [
     ...accountTables,
     ...emailTables,
+    ...googleTables,
     ...churchTables,
     ...supportTables
   ]) {

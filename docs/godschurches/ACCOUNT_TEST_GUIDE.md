@@ -1,5 +1,17 @@
 # Try your Godschurches account
 
+## Google foundation test scope
+
+The Google account service is under local development; no public Google control
+is enabled. The isolated harness includes `tests/google-accounts.test.ts`, which
+uses the real library signature verifier with a fictional RSA certificate and
+substituted code exchange. It covers state/browser/nonce/expiry, matching-email
+non-takeover, onboarding/adult acknowledgment, owner linking, concurrent identity
+creation, suspension/revocation and the last-method rule. Database backup/restore
+and fresh migrations include the identity and attempt tables. This evidence does
+not establish a real Google redirect, live provider configuration or a complete
+Google-only account interface. See [GOOGLE_ACCOUNT_REPORT.md](GOOGLE_ACCOUNT_REPORT.md).
+
 ## Browse first
 
 You can read public posts and comments and explore public church pages without

@@ -1,5 +1,16 @@
 # Godschurches current state
 
+## Google account foundation verified locally — September 9, 2026
+
+The local `codex/google-account-foundation` branch adds library-verified Google
+identity proofs, browser-bound authorization attempts and transactional
+signup/link/session rules. All 130 applicable isolated checks, including nine new
+Google security groups, lint, TypeScript, upgrade/restore/fresh migrations and
+the final production build/runtime validation passed. Google controls, routes, real provider
+configuration and Google-only account controls are not enabled. See
+[GOOGLE_ACCOUNT_REPORT.md](GOOGLE_ACCOUNT_REPORT.md). The guest-browsing release
+below remains production; the foundation is not published.
+
 ## Browse before joining published — September 9, 2026
 
 Guest browsing is implemented on `codex/guest-browsing`: public posts and all

@@ -97,6 +97,8 @@ model PlatformUser {
   sessions  PlatformSession[]
   accountGrants PlatformAccountGrant[]
   emailChange PlatformEmailChange?
+  googleIdentity PlatformGoogleIdentity?
+  googleAttempts PlatformGoogleAttempt[]
   connections ChurchConnection[]
   churchGrants ChurchCapabilityGrant[]
   operatorGrants PlatformOperatorGrant[]
@@ -111,6 +113,38 @@ model PlatformUser {
 
   @@index([role])
   @@index([createdAt])
+}
+
+model PlatformGoogleIdentity {
+  id String @id @default(cuid())
+  createdAt DateTime @default(now())
+  userId String @unique
+  issuer String
+  subject String
+  user PlatformUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([issuer, subject])
+}
+
+model PlatformGoogleAttempt {
+  id String @id @default(cuid())
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  stateHash String @unique
+  browserHash String
+  nonceHash String
+  returnTo String
+  consumedAt DateTime?
+  completedAt DateTime?
+  linkUserId String?
+  linkSessionId String?
+  credentialVersion Int?
+  signupTokenHash String? @unique
+  subject String?
+  email String?
+  emailAuthoritative Boolean @default(false)
+  linkUser PlatformUser? @relation(fields: [linkUserId], references: [id], onDelete: Cascade)
+  @@index([expiresAt])
+  @@index([linkUserId])
 }
 
 model PlatformEmailChange {
