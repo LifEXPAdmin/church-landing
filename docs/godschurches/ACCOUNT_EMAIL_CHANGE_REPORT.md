@@ -3,8 +3,19 @@
 ## Implementation — September 9, 2026
 
 The `codex/account-email-change` branch adds a settings request and a separate
-confirmation page. Implementation and local verification are complete; production
-publication is pending at this checkpoint.
+confirmation page. Implementation, local verification and production publication
+are complete. Actual sender activation and mailbox receipt remain separate work.
+
+## Publication
+
+Application `0b885a7abfd736f45ee6f863ee22c9905c8c4ec5` was pushed to `main`
+and became READY on production deployment `dpl_BccPQgGhXJD98qd6wXXHRN8HwJKG`
+at **2026-09-10T00:18:53.804Z** (September 9 locally). The deployment metadata
+matched that Git SHA, and inspection of `godschurches.com` resolved to this exact
+deployment. Seventeen live HTTP checks passed at **00:20:05Z**, including public
+routes, the email-change availability page, the post-change sign-in notice,
+disabled operations and origin/forged-field rejection. Deployment-scoped error
+logs returned no matching entries. No real account or external email was used.
 
 The signed-in owner confirms the current password to request a new address. The
 old email remains usable until the owner opens the link delivered to the new
