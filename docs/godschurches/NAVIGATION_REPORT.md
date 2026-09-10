@@ -1,6 +1,6 @@
 # Navigation and Menu
 
-## Foundation verified locally — September 9, 2026
+## Foundation published — September 9, 2026
 
 The `codex/navigation-menu` branch adds a real Menu destination above the
 published Google-interface checkpoint `48957e7`. Home, church discovery/My church
@@ -56,7 +56,13 @@ restored and the fictional session signed out after testing.
 Final lint, TypeScript and production build passed. Runtime verification inspected
 59 traces, 4,292 entries and 141 server JavaScript files with no Prisma configuration
 loader in runtime paths. This slice adds no migration, provider or dependency.
-Publication and live verification are the next step.
+Application `2701b16c7e3c48f74ac4863f0dafa2e4b5cbc311` is published on READY
+deployment `dpl_Erx2D3CWEJyYuum5gds2syN9A6mC`. The canonical domain resolved to
+that exact commit. All 32 live route, guest-gate and disabled-Google checks passed
+at 2026-09-10T03:20:21Z. Live Menu fit 320/390px, the current-page label was correct,
+and the actual bottom Home button navigated successfully at 320px. No deployment
+error entries were returned. Production public lists remain empty; populated
+church/post behavior was tested only with fictional fixtures.
 
 Full navigation acceptance remains open for later Activity/ministry integration,
 contextual dialogs, draft/reading-state handling and actual Samsung/200% text tests.

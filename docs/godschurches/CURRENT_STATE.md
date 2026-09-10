@@ -1,6 +1,6 @@
 # Godschurches current state
 
-## Menu and phone navigation verified locally — September 9, 2026
+## Menu and phone navigation published — September 9, 2026
 
 `codex/navigation-menu` adds a guest-readable Menu for working account, church and
 help destinations. Home, Churches/My church, Explore and Menu remain visible at
@@ -8,7 +8,11 @@ help destinations. Home, Churches/My church, Explore and Menu remain visible at
 regressions, 22 additional production HTTPS route/privacy requests, final
 lint/types/build and runtime verification passed. Actual fictional browser checks
 covered account gates, login return, keyboard navigation, Back, search-state return
-and phone reflow. Publication is next. Full navigation acceptance remains open for
+and phone reflow. Application `2701b16c7e3c48f74ac4863f0dafa2e4b5cbc311` is live
+on READY deployment `dpl_Erx2D3CWEJyYuum5gds2syN9A6mC`, with exact canonical
+serving identity, 32 live checks and 320/390px guest navigation verified. No
+deployment error entries were returned. Continue shared church discovery and
+onboarding while actual provider setup waits. Full navigation acceptance remains open for
 later feature/dialog/draft integration and physical Samsung/200% text tests. See
 [NAVIGATION_REPORT.md](NAVIGATION_REPORT.md).
 
