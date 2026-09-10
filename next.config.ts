@@ -2,6 +2,9 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // Private/withdrawable media must never enter the shared image optimizer cache.
+  images: { localPatterns: [{ pathname: "/images/**", search: "" }] },
+  outputFileTracingExcludes: { "/*": ["./.account-test/**/*"] },
   async headers() {
     return ["/platform/:path*", "/api/platform/:path*"].map((source) => ({
       source,

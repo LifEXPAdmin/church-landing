@@ -22,6 +22,7 @@
     "@js-temporal/polyfill": "0.5.1",
     "@prisma/client": "^6.19.3",
     "@radix-ui/react-slot": "^1.1.1",
+    "@vercel/blob": "2.8.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "google-auth-library": "^11.0.2",
@@ -30,6 +31,7 @@
     "parse5": "8.0.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "sharp": "0.35.4",
     "tailwind-merge": "^3.0.1"
   },
   "devDependencies": {

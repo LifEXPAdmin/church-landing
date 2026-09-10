@@ -8,6 +8,59 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+enum MediaPurpose {
+  PROFILE_AVATAR
+  PROFILE_COVER
+  CHURCH_LOGO
+  CHURCH_COVER
+  POST_PHOTO
+}
+
+enum MediaStatus {
+  UPLOADING
+  READY
+  RETIRED
+}
+
+model MediaAsset {
+  id String @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  uploaderId String
+  requestKey String
+  fingerprint String
+  purpose MediaPurpose
+  profileUserId String?
+  churchId String?
+  postId String?
+  status MediaStatus @default(UPLOADING)
+  version Int @default(1)
+  storagePrefix String @unique
+  leaseUntil DateTime
+  replacesId String?
+  caption String @default("")
+  alt String @default("")
+  position Int @default(0)
+  variants Json @default("{}")
+  uploader PlatformUser @relation("ImageUploader", fields: [uploaderId], references: [id], onDelete: Restrict)
+  profileUser PlatformUser? @relation("ProfileImage", fields: [profileUserId], references: [id], onDelete: Restrict)
+  church Church? @relation(fields: [churchId], references: [id], onDelete: Restrict)
+  post PlatformPost? @relation(fields: [postId], references: [id], onDelete: Restrict)
+  @@unique([uploaderId, requestKey])
+  @@index([profileUserId, purpose, status])
+  @@index([churchId, purpose, status])
+  @@index([postId, status, position])
+  @@index([status, leaseUntil])
+}
+
+// Every external write is registered before I/O. Successful attachment removes
+// its entry; failed attempts and replaced/removed files remain for bounded cleanup.
+model MediaGarbage {
+  storagePrefix String @id
+  dueAt DateTime
+  @@index([dueAt])
+}
+
 enum WaitlistRole {
   BELIEVER
   CHURCH
@@ -90,6 +143,8 @@ model PlatformUser {
   location     String?
   website      String?
   interests    String[]     @default([])
+  uploadedImages MediaAsset[] @relation("ImageUploader")
+  profileImages MediaAsset[] @relation("ProfileImage")
 
   posts     PlatformPost[]
   postLikes PlatformPostLike[]
@@ -309,6 +364,7 @@ model Church {
   sharedPosts PlatformPost[] @relation("ChurchPostAudience")
   calendarShares CalendarShare[]
   eventShares CalendarEventShare[]
+  images MediaAsset[]
 }
 
 enum ChurchListingStatus {
@@ -820,6 +876,7 @@ model PlatformPost {
   audienceChurch Church? @relation("ChurchPostAudience", fields: [audienceChurchId], references: [id], onDelete: Restrict)
   eventOccurrence CalendarOccurrence? @relation(fields: [eventOccurrenceId], references: [id], onDelete: Restrict)
   audit PostAudit[]
+  images MediaAsset[]
   poll PostPoll?
   volunteerSlots PostVolunteerSlot[]
   likes    PlatformPostLike[]

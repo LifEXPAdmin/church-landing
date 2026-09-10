@@ -33,6 +33,12 @@ for (const path of traces) {
   for (const file of trace.files) {
     entries++;
     assert.ok(
+      !/\/(?:\.account-test|\.git)(?:\/|$)|\/\.env(?:\.[^/]+)?$/.test(
+        resolve(dirname(path), file)
+      ),
+      "Release blocked: private fixture, repository metadata or environment file entered a runtime trace"
+    );
+    assert.ok(
       !forbidden.test(resolve(dirname(path), file)),
       "Release blocked: Prisma configuration tooling entered a runtime trace"
     );
@@ -50,5 +56,5 @@ for (const path of serverJs) {
   );
 }
 console.log(
-  `Release runtime trace check passed: ${traces.length} traces, ${entries} entries, ${serverJs.length} server JS files; no Prisma configuration-loader path.`
+  `Release runtime trace check passed: ${traces.length} traces, ${entries} entries, ${serverJs.length} server JS files; no private fixtures/environment files or Prisma configuration-loader path.`
 );

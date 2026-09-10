@@ -1,0 +1,412 @@
+import { createHash, randomUUID } from "node:crypto";
+import type { MediaAsset, Prisma, PrismaClient } from "@prisma/client";
+import { withOwnedSession } from "./account-sessions";
+import {
+  postContext,
+  postField,
+  postId,
+  withPostRead,
+  type PostTx
+} from "./post-access";
+import { PortalError } from "./portal";
+import {
+  imageTarget,
+  readableImageTarget,
+  writableImageTarget,
+  type ImageTarget
+} from "./media-access";
+import {
+  IMAGE_VARIANTS,
+  imageVariant,
+  processImage,
+  type ImageManifest
+} from "./media-processing";
+import { imageStorage, type ImageStorage } from "./media-storage";
+
+const HOUR = 3600_000,
+  LEASE = 120_000;
+const paths = (prefix: string) =>
+  IMAGE_VARIANTS.map((v) => prefix + "/" + v + ".webp");
+const targetOf = (a: ImageTarget) => ({
+  purpose: a.purpose,
+  profileUserId: a.profileUserId,
+  churchId: a.churchId,
+  postId: a.postId
+});
+function project(asset: MediaAsset) {
+  const manifest = asset.variants as ImageManifest;
+  return {
+    id: asset.id,
+    version: asset.version,
+    purpose: asset.purpose,
+    caption: asset.caption,
+    alt: asset.alt,
+    position: asset.position,
+    variants: Object.fromEntries(
+      IMAGE_VARIANTS.map((v) => [
+        v,
+        { ...manifest[v], url: `/api/platform/images/${asset.id}/${v}` }
+      ])
+    ) as Record<
+      string,
+      { width: number; height: number; bytes: number; url: string }
+    >
+  };
+}
+export type ImageView = ReturnType<typeof project>;
+async function garbage(tx: PostTx, prefix: string) {
+  await tx.mediaGarbage.upsert({
+    where: { storagePrefix: prefix },
+    create: { storagePrefix: prefix, dueAt: new Date(Date.now() + 24 * HOUR) },
+    update: {}
+  });
+}
+async function retire(tx: PostTx, asset: MediaAsset) {
+  await tx.mediaAsset.update({
+    where: { id: asset.id },
+    data: { status: "RETIRED", version: { increment: 1 } }
+  });
+  await garbage(tx, asset.storagePrefix);
+}
+function mutation<T>(
+  db: PrismaClient,
+  token: unknown,
+  work: (tx: PostTx, actorId: string) => Promise<T>
+) {
+  return withOwnedSession(
+    db,
+    token,
+    (tx, session) => work(tx, session.userId),
+    true
+  );
+}
+export async function listImages(
+  db: PrismaClient,
+  token: unknown,
+  purpose: unknown,
+  targetId: unknown
+) {
+  const target = imageTarget(purpose, targetId);
+  return withPostRead(db, token, async (tx, context) => {
+    await readableImageTarget(tx, context, target);
+    return (
+      await tx.mediaAsset.findMany({
+        where: { ...target, status: "READY" },
+        orderBy: [{ position: "asc" }, { id: "asc" }],
+        take: 10
+      })
+    ).map(project);
+  });
+}
+export async function uploadImage(
+  db: PrismaClient,
+  token: unknown,
+  input: {
+    purpose: unknown;
+    targetId: unknown;
+    requestKey: unknown;
+    replacesId?: unknown;
+    caption?: unknown;
+    alt?: unknown;
+  },
+  bytes: Buffer,
+  store: ImageStorage = imageStorage(),
+  signal = AbortSignal.timeout(45_000)
+) {
+  const target = imageTarget(input.purpose, input.targetId);
+  const requestKey = postId(input.requestKey);
+  if (!/^[a-f0-9-]{36}$/.test(requestKey))
+    throw new PortalError(400, "Use a new image request reference.");
+  const replacesId = input.replacesId ? postId(input.replacesId) : null;
+  const caption = postField(input.caption ?? "", 500),
+    alt = postField(input.alt ?? "", 300);
+  const fingerprint = createHash("sha256")
+    .update(JSON.stringify({ target, replacesId, caption, alt }))
+    .update(bytes)
+    .digest("hex");
+  const reserved = await mutation(db, token, async (tx, actorId) => {
+    await writableImageTarget(tx, await postContext(tx, actorId), target);
+    const previous = await tx.mediaAsset.findUnique({
+      where: { uploaderId_requestKey: { uploaderId: actorId, requestKey } }
+    });
+    if (previous) {
+      if (previous.fingerprint !== fingerprint)
+        throw new PortalError(
+          409,
+          "This request belongs to another image. Keep the same file when retrying."
+        );
+      if (previous.status === "RETIRED")
+        throw new PortalError(
+          409,
+          "This image was removed. Choose a new upload to add it again."
+        );
+      if (previous.status === "READY") return { asset: previous, ready: true };
+      if (previous.leaseUntil > new Date())
+        throw new PortalError(
+          409,
+          "This upload is still processing. Wait briefly before retrying."
+        );
+    }
+    const old = replacesId
+      ? await tx.mediaAsset.findFirst({
+          where: { id: replacesId, ...target, status: "READY" }
+        })
+      : null;
+    if (replacesId && !old)
+      throw new PortalError(
+        409,
+        "The image changed. Refresh before replacing it."
+      );
+    if (
+      !target.postId &&
+      !old &&
+      (await tx.mediaAsset.count({ where: { ...target, status: "READY" } }))
+    )
+      throw new PortalError(
+        409,
+        "An image already exists. Refresh and explicitly replace it."
+      );
+    const now = new Date();
+    const occupied = await tx.mediaAsset.count({
+      where: {
+        ...target,
+        ...(previous ? { id: { not: previous.id } } : {}),
+        OR: [
+          { status: "READY" },
+          { status: "UPLOADING", leaseUntil: { gt: now } }
+        ]
+      }
+    });
+    if (occupied >= (target.postId ? 10 : 1) + (old ? 1 : 0))
+      throw new PortalError(
+        409,
+        target.postId
+          ? "A post holds up to ten photos, including active uploads."
+          : "Another image is processing here. Wait and refresh."
+      );
+    const storagePrefix = "images/" + randomUUID();
+    await garbage(tx, storagePrefix);
+    const data = {
+      storagePrefix,
+      leaseUntil: new Date(Date.now() + LEASE),
+      variants: {}
+    };
+    const asset = previous
+      ? await tx.mediaAsset.update({ where: { id: previous.id }, data })
+      : await tx.mediaAsset.create({
+          data: {
+            ...data,
+            ...target,
+            uploaderId: actorId,
+            requestKey,
+            fingerprint,
+            replacesId,
+            caption,
+            alt,
+            position: old?.position ?? occupied
+          }
+        });
+    return { asset, ready: false };
+  });
+  if (reserved.ready) return project(reserved.asset);
+  const asset = reserved.asset;
+  try {
+    signal.throwIfAborted();
+    const processed = await processImage(bytes);
+    signal.throwIfAborted();
+    for (const variant of IMAGE_VARIANTS) {
+      await store.put(
+        asset.storagePrefix + "/" + variant + ".webp",
+        processed.files[variant],
+        signal
+      );
+      signal.throwIfAborted();
+    }
+    return await mutation(db, token, async (tx, actorId) => {
+      await writableImageTarget(tx, await postContext(tx, actorId), target);
+      const current = await tx.mediaAsset.findUniqueOrThrow({
+        where: { id: asset.id }
+      });
+      if (
+        current.status !== "UPLOADING" ||
+        current.storagePrefix !== asset.storagePrefix ||
+        current.leaseUntil <= new Date()
+      )
+        throw new PortalError(
+          409,
+          "This upload expired or changed. Retry the same image."
+        );
+      const old = replacesId
+        ? await tx.mediaAsset.findFirst({
+            where: { id: replacesId, ...target, status: "READY" }
+          })
+        : null;
+      if (replacesId && !old)
+        throw new PortalError(
+          409,
+          "The image changed while uploading. Refresh before replacing it."
+        );
+      if (
+        !target.postId &&
+        !old &&
+        (await tx.mediaAsset.count({ where: { ...target, status: "READY" } }))
+      )
+        throw new PortalError(
+          409,
+          "Another image was saved. Refresh before replacing it."
+        );
+      if (
+        target.postId &&
+        !old &&
+        (await tx.mediaAsset.count({
+          where: { postId: target.postId, status: "READY" }
+        })) >= 10
+      )
+        throw new PortalError(409, "This post already has ten photos.");
+      if (old) await retire(tx, old);
+      const ready = await tx.mediaAsset.update({
+        where: { id: asset.id },
+        data: {
+          status: "READY",
+          variants: processed.manifest as unknown as Prisma.InputJsonValue
+        }
+      });
+      await tx.mediaGarbage.delete({
+        where: { storagePrefix: asset.storagePrefix }
+      });
+      if (target.postId)
+        await tx.platformPost.update({
+          where: { id: target.postId },
+          data: { version: { increment: 1 }, editedAt: new Date() }
+        });
+      return project(ready);
+    });
+  } catch (error) {
+    // Never delete here: a lost provider reply may still finish. The pre-write
+    // ledger collects this unique attempt after a grace period, even on a crash.
+    await db.mediaAsset
+      .updateMany({
+        where: {
+          id: asset.id,
+          storagePrefix: asset.storagePrefix,
+          status: "UPLOADING"
+        },
+        data: { leaseUntil: new Date(0) }
+      })
+      .catch(() => {});
+    throw error;
+  }
+}
+export function removeImage(
+  db: PrismaClient,
+  token: unknown,
+  id: unknown,
+  expectedVersion: unknown
+) {
+  return mutation(db, token, async (tx, actorId) => {
+    const asset = await tx.mediaAsset.findUnique({ where: { id: postId(id) } });
+    if (!asset) throw new PortalError(404, "Image unavailable.");
+    await writableImageTarget(
+      tx,
+      await postContext(tx, actorId),
+      targetOf(asset)
+    );
+    if (
+      asset.status === "RETIRED" &&
+      asset.version === Number(expectedVersion) + 1
+    )
+      return { removed: true };
+    if (!Number.isInteger(expectedVersion) || asset.version !== expectedVersion)
+      throw new PortalError(
+        409,
+        "The image changed. Refresh before removing it."
+      );
+    await retire(tx, asset);
+    if (asset.postId)
+      await tx.platformPost.update({
+        where: { id: asset.postId },
+        data: { version: { increment: 1 }, editedAt: new Date() }
+      });
+    return { removed: true };
+  });
+}
+export async function readImage(
+  db: PrismaClient,
+  token: unknown,
+  id: unknown,
+  variantValue: unknown,
+  store: ImageStorage = imageStorage(),
+  signal = AbortSignal.timeout(15_000)
+) {
+  const variant = imageVariant(variantValue),
+    assetId = postId(id);
+  const check = () =>
+    withPostRead(db, token, async (tx, context) => {
+      const asset = await tx.mediaAsset.findFirst({
+        where: { id: assetId, status: "READY" }
+      });
+      if (!asset) throw new PortalError(404, "Image unavailable.");
+      await readableImageTarget(tx, context, targetOf(asset));
+      return asset;
+    });
+  const before = await check();
+  const bytes = await store.get(
+    before.storagePrefix + "/" + variant + ".webp",
+    signal
+  );
+  const after = await check();
+  if (
+    after.storagePrefix !== before.storagePrefix ||
+    after.version !== before.version
+  )
+    throw new PortalError(404, "Image unavailable.");
+  if (
+    !bytes ||
+    bytes.length !== (after.variants as ImageManifest)[variant].bytes
+  )
+    throw new PortalError(503, "This image could not be loaded. Try again.");
+  return bytes;
+}
+// Bounded, idempotent maintenance entry point; no public cleanup endpoint. A
+// deployment must wire and verify its worker before enabling real uploads.
+export async function collectImageGarbage(
+  db: PrismaClient,
+  store: ImageStorage = imageStorage(),
+  now = new Date()
+) {
+  const candidates = await db.mediaGarbage.findMany({
+    where: { dueAt: { lte: now } },
+    orderBy: { dueAt: "asc" },
+    take: 20
+  });
+  let removed = 0;
+  for (const candidate of candidates) {
+    const eligible = await withPostRead(db, "", async (tx) => {
+      const row = await tx.mediaAsset.findUnique({
+        where: { storagePrefix: candidate.storagePrefix }
+      });
+      if (
+        row?.status === "READY" ||
+        (row?.status === "UPLOADING" && row.leaseUntil > now)
+      )
+        return false;
+      // Expire before external deletion so this attempt can never attach later.
+      if (row?.status === "UPLOADING")
+        await tx.mediaAsset.update({
+          where: { id: row.id },
+          data: { leaseUntil: new Date(0) }
+        });
+      return true;
+    });
+    if (!eligible) continue;
+    await store.delete(
+      paths(candidate.storagePrefix),
+      AbortSignal.timeout(15_000)
+    );
+    await db.mediaGarbage.deleteMany({
+      where: { storagePrefix: candidate.storagePrefix }
+    });
+    removed++;
+  }
+  return { removed };
+}

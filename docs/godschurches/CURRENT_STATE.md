@@ -1,5 +1,22 @@
 # Godschurches current state
 
+## Private image foundation verified locally — September 10, 2026
+
+`codex/image-foundations` adds bounded JPEG/PNG/WebP processing, orientation and
+metadata removal, responsive WebP sizes, stable upload/replacement/removal,
+durable orphan cleanup records, and current account/church/post permission checks
+for every delivery. Uploads and individual outputs fit the hosting payload limit;
+private media cannot enter the shared image optimizer. Across the full regression
+and corrected/final reruns, 296 distinct checks passed with two expected skips
+and no unresolved failures (298 total). The final build passed 89 runtime traces,
+6,784 entries and 219 server JavaScript files, with private fixture/environment
+files explicitly excluded and checked. Both final production HTTPS image groups,
+lint/types and migration/restore checks passed. The test-writer mode and fixture
+tracing issues found during verification were corrected. Storage remains disabled;
+actual provider delivery, the cleanup worker and image/profile UI are next.
+These changes are local and unpublished; calendar remains live. See
+[IMAGE_FOUNDATION_REPORT.md](IMAGE_FOUNDATION_REPORT.md).
+
 ## Bible-page reader verified locally — September 10, 2026
 
 `codex/bible-page-reader` adds literal rightward-next/leftward-previous gestures,

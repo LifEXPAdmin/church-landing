@@ -48,6 +48,10 @@ const env = {
   NEXT_PUBLIC_SITE_URL: `http://127.0.0.1:${appPort}`,
   ACCOUNT_TEST_ISOLATED: "1",
   ACCOUNT_TEST_SINK_DIR: join(dir, "sink"),
+  MEDIA_STORAGE_MODE: "local-test",
+  MEDIA_TEST_DIR: join(dir, "images"),
+  BLOB_READ_WRITE_TOKEN: "",
+  BLOB_STORE_ID: "",
   ACCOUNT_DELIVERY_MODE: "test-sink",
   AUTH_RATE_LIMIT_SECRET: randomBytes(32).toString("hex"),
   MAILERLITE_API_KEY: "",
@@ -201,7 +205,9 @@ try {
     ["PostPollOption", "id"],
     ["PostPollBallot", "id"],
     ["PostVolunteerSlot", "id"],
-    ["PostVolunteerSignup", "id"]
+    ["PostVolunteerSignup", "id"],
+    ["MediaAsset", "id"],
+    ["MediaGarbage", "storagePrefix"]
   ];
   const supportTables = [
     ["SupportCapabilityGrant", "id"],
@@ -371,6 +377,9 @@ try {
   if (portalTests) await runTests("tests/post-links.test.ts");
   if (portalTests) await runTests("tests/reader-navigation.test.ts");
   if (portalTests) await runTests("tests/post-reader.test.ts");
+  if (portalTests) await runTests("tests/media-processing.test.ts");
+  if (portalTests) await runTests("tests/media.test.ts");
+  if (portalTests) await runTests("tests/media-boundary.test.ts");
   if (supportTests) await runTests("tests/support-service.test.ts");
   run(join(pg, "pg_dump"), [
     database,
@@ -485,6 +494,7 @@ try {
   await runTests("tests/account-http.test.ts");
   await runTests("tests/account-email-http.test.ts");
   await runTests("tests/google-http.test.ts");
+  if (portalTests) await runTests("tests/media-http.test.ts");
   if (portalTests)
     await runTests("tests/church-listing-http.test.ts", {
       ...env,
@@ -755,6 +765,7 @@ try {
       { mode: 0o600 }
     );
     await runTests("tests/portal-http.test.ts", portalEnv);
+    await runTests("tests/media-http.test.ts", portalEnv);
     await runTests("tests/church-listing-http.test.ts", {
       ...portalEnv,
       LISTING_RENDER_PHASE: "production"
