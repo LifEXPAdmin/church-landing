@@ -185,7 +185,9 @@ try {
     ["ChurchListingSubmission", "id"],
     ["ChurchListingDecision", "id"],
     ["ChurchClaim", "id"],
-    ["ChurchClaimDecision", "id"]
+    ["ChurchClaimDecision", "id"],
+    ["ChurchPosition", "id"],
+    ["ChurchPositionAssignment", "id"]
   ];
   const supportTables = [
     ["SupportCapabilityGrant", "id"],
@@ -233,7 +235,8 @@ try {
       JOIN pg_namespace n ON n.oid = r.relnamespace
       WHERE n.nspname = 'public' AND r.relname IN (${churchNames})
       UNION ALL
-      SELECT 'trigger', t.tgname, pg_get_triggerdef(t.oid) FROM pg_trigger t JOIN pg_class r ON r.oid = t.tgrelid WHERE r.relname IN ('SupportCase','SupportCapabilityGrant') AND NOT t.tgisinternal
+      SELECT 'trigger', t.tgname, pg_get_triggerdef(t.oid) FROM pg_trigger t JOIN pg_class r ON r.oid = t.tgrelid WHERE r.relname IN ('SupportCase','SupportCapabilityGrant','ChurchPosition') AND NOT t.tgisinternal
+      UNION ALL SELECT 'function', p.proname, pg_get_functiondef(p.oid) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname='church_position_acyclic'
     ) t`
       ],
       url
@@ -330,6 +333,7 @@ try {
   if (portalTests) await runTests("tests/portal-service.test.ts");
   if (portalTests) await runTests("tests/church-listings.test.ts");
   if (portalTests) await runTests("tests/church-claims.test.ts");
+  if (portalTests) await runTests("tests/church-structure.test.ts");
   if (supportTests) await runTests("tests/support-service.test.ts");
   run(join(pg, "pg_dump"), [
     database,
@@ -453,6 +457,11 @@ try {
     await runTests("tests/church-claim-http.test.ts", {
       ...env,
       CLAIM_RENDER_PHASE: "development"
+    });
+  if (portalTests)
+    await runTests("tests/church-structure-http.test.ts", {
+      ...env,
+      STRUCTURE_RENDER_PHASE: "development"
     });
   if (portalTests) {
     run(
@@ -686,6 +695,10 @@ try {
     await runTests("tests/church-claim-http.test.ts", {
       ...portalEnv,
       CLAIM_RENDER_PHASE: "production"
+    });
+    await runTests("tests/church-structure-http.test.ts", {
+      ...portalEnv,
+      STRUCTURE_RENDER_PHASE: "production"
     });
     if (supportTests) await runTests("tests/support-http.test.ts", portalEnv);
     if (supportTests) await runTests("tests/entrance-http.test.ts", portalEnv);

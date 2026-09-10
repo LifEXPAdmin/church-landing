@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import type { StructureOperation } from "@/lib/platform/church-structure-types";
 
 export type PortalOperation =
   | "ack-adult"
@@ -41,6 +42,7 @@ export function PortalActionForm({
   confirmation,
   listingAction,
   claimAction,
+  structureAction,
   disabled = false
 }: {
   payload: {
@@ -53,15 +55,22 @@ export function PortalActionForm({
   confirmation?: string;
   disabled?: boolean;
 } & (
-  | { operation: PortalOperation; listingAction?: never; claimAction?: never }
+  | {
+      operation: PortalOperation;
+      listingAction?: never;
+      claimAction?: never;
+      structureAction?: never;
+    }
   | {
       operation?: never;
       listingAction: "create" | "save" | "publish" | "withdraw" | "review";
       claimAction?: never;
+      structureAction?: never;
     }
   | {
       operation?: never;
       listingAction?: never;
+      structureAction?: never;
       claimAction:
         | "create"
         | "save"
@@ -73,6 +82,12 @@ export function PortalActionForm({
         | "revoke"
         | "profile-save"
         | "profile-publish";
+    }
+  | {
+      operation?: never;
+      listingAction?: never;
+      claimAction?: never;
+      structureAction: StructureOperation;
     }
 )) {
   const id = useId();
@@ -115,11 +130,13 @@ export function PortalActionForm({
         setResult(null);
         try {
           const response = await fetch(
-            claimAction
-              ? "/api/platform/church-claims"
-              : listingAction
-                ? "/api/platform/church-listings"
-                : "/api/platform/portal",
+            structureAction
+              ? "/api/platform/church-structure"
+              : claimAction
+                ? "/api/platform/church-claims"
+                : listingAction
+                  ? "/api/platform/church-listings"
+                  : "/api/platform/portal",
             {
               method: "POST",
               credentials: "same-origin",
@@ -142,10 +159,13 @@ export function PortalActionForm({
                     }
                   : {}),
                 ...payload,
-                ...(listingAction === "create" || claimAction === "create"
+                ...(listingAction === "create" ||
+                claimAction === "create" ||
+                structureAction === "create"
                   ? { requestKey: creationKey.current }
                   : {}),
-                operation: claimAction ?? listingAction ?? operation
+                operation:
+                  structureAction ?? claimAction ?? listingAction ?? operation
               })
             }
           );
@@ -168,6 +188,26 @@ export function PortalActionForm({
                   ? "Your session has ended. Sign in again before continuing."
                   : message
           });
+          if (
+            response.ok &&
+            structureAction &&
+            body &&
+            typeof body === "object" &&
+            "id" in body &&
+            typeof body.id === "string"
+          ) {
+            const base = `/platform/churches/${encodeURIComponent(String(payload.churchId))}`;
+            window.location.assign(
+              structureAction === "grant" || structureAction === "revoke"
+                ? `${base}/access`
+                : structureAction === "archive"
+                  ? `${base}/structure`
+                  : structureAction === "step-down"
+                    ? `${base}/responsibilities`
+                    : `${base}/structure/${encodeURIComponent(body.id)}`
+            );
+            return;
+          }
           if (
             response.ok &&
             claimAction &&

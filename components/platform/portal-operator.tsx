@@ -20,7 +20,9 @@ type OperatorData = NonNullable<PortalSnapshot["operator"]>;
 type OperatorUser = OperatorData["users"][number];
 const capabilityLabels: Record<string, string> = {
   REVIEW_CONNECTIONS: "Review connections",
-  APPOINT_COORDINATORS: "Appoint coordinators"
+  APPOINT_COORDINATORS: "Appoint coordinators",
+  MANAGE_STRUCTURE: "Manage structure",
+  MANAGE_CHURCH_ACCESS: "Manage church access"
 };
 const slotLabels: Record<string, string> = {
   PRIMARY: "Primary coordinator",

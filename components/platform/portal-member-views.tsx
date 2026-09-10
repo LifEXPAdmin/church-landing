@@ -117,6 +117,18 @@ function ChurchConnection({
       {connection?.state === "APPROVED" && (
         <div className="flex flex-wrap gap-x-5">
           <Link
+            href={`${churchPath(church.id)}/overview`}
+            className={portalLinkClass}
+          >
+            Church overview
+          </Link>
+          <Link
+            href={`${churchPath(church.id)}/structure`}
+            className={portalLinkClass}
+          >
+            Structure
+          </Link>
+          <Link
             href={`${churchPath(church.id)}/directory`}
             className={portalLinkClass}
           >
@@ -389,6 +401,18 @@ export function PortalMyChurch({ snapshot }: { snapshot: PortalSnapshot }) {
               </Link>
               {connection.state === "APPROVED" && (
                 <>
+                  <Link
+                    href={`${churchPath(connection.churchId)}/overview`}
+                    className={portalLinkClass}
+                  >
+                    Church overview
+                  </Link>
+                  <Link
+                    href={`${churchPath(connection.churchId)}/responsibilities`}
+                    className={portalLinkClass}
+                  >
+                    My responsibilities
+                  </Link>
                   <Link
                     href={`${churchPath(connection.churchId)}/directory`}
                     className={portalLinkClass}

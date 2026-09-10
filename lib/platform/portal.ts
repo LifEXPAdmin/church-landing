@@ -150,7 +150,7 @@ export async function operator(
       "This action requires an explicitly assigned Godschurches capability."
     );
 }
-async function hasChurchCapability(
+export async function hasChurchCapability(
   tx: Tx,
   actor: Actor,
   churchId: string,
@@ -169,7 +169,7 @@ async function hasChurchCapability(
         grant.dependency.state === "APPROVED"))
   );
 }
-async function churchCapability(
+export async function churchCapability(
   tx: Tx,
   actor: Actor,
   churchId: string,
@@ -181,7 +181,7 @@ async function churchCapability(
       "You do not have this permission for this church."
     );
 }
-async function membership(tx: Tx, actor: Actor, churchId: string) {
+export async function membership(tx: Tx, actor: Actor, churchId: string) {
   eligibility(actor);
   const connection = await tx.churchConnection.findUnique({
     where: { userId_churchId: { userId: actor.id, churchId } }
@@ -228,6 +228,15 @@ export async function portal<T>(
   );
 }
 async function resetConnectionAccess(tx: Tx, connection: ChurchConnection) {
+  const appointments = await tx.churchPositionAssignment.updateMany({
+    where: { connectionId: connection.id, revokedAt: null },
+    data: { revokedAt: new Date() }
+  });
+  if (appointments.count)
+    await tx.church.update({
+      where: { id: connection.churchId },
+      data: { structureVersion: { increment: 1 } }
+    });
   await tx.churchDirectoryPreference.deleteMany({
     where: { connectionId: connection.id }
   });

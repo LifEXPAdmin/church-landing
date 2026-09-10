@@ -56,6 +56,9 @@ export async function deactivateAccount(
       // Role grants, appointments and case/intake ownership cannot be abandoned.
       // Check under the same transaction gate used to assign those duties.
       const duties = await Promise.all([
+        tx.churchPositionAssignment.count({
+          where: { connection: { userId }, revokedAt: null }
+        }),
         tx.churchCapabilityGrant.count({ where: { userId, revokedAt: null } }),
         tx.platformOperatorGrant.count({ where: { userId, revokedAt: null } }),
         tx.churchContactAssignment.count({

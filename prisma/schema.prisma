@@ -242,6 +242,7 @@ enum ChurchCapability {
   APPOINT_COORDINATORS
   MANAGE_CHURCH_PROFILE
   MANAGE_CHURCH_ACCESS
+  MANAGE_STRUCTURE
 }
 
 enum OperatorCapability {
@@ -271,6 +272,7 @@ model Church {
   summary String
   version Int @default(1)
   managementVersion Int @default(0)
+  structureVersion Int @default(0)
   communityListed Boolean @default(false)
   city String @default("")
   region String @default("")
@@ -291,6 +293,7 @@ model Church {
   supportCases SupportCase[]
   claims ChurchClaim[]
   listings ChurchListingSubmission[]
+  positions ChurchPosition[]
 }
 
 enum ChurchListingStatus {
@@ -351,8 +354,42 @@ model ChurchConnection {
   dependentGrants ChurchCapabilityGrant[]
   contacts ChurchContactAssignment[]
   supportShares SupportCoordinatorShare[]
+  positionAssignments ChurchPositionAssignment[]
   @@unique([userId, churchId])
+  @@unique([id, churchId])
   @@index([churchId, state])
+}
+
+model ChurchPosition {
+  id String @id @default(cuid())
+  churchId String
+  parentId String?
+  name String
+  description String @default("")
+  requestKey String
+  archivedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  church Church @relation(fields: [churchId], references: [id], onDelete: Restrict)
+  parent ChurchPosition? @relation("ChurchPositionTree", fields: [parentId, churchId], references: [id, churchId], onDelete: Restrict, onUpdate: Restrict)
+  children ChurchPosition[] @relation("ChurchPositionTree")
+  assignments ChurchPositionAssignment[]
+  @@unique([id, churchId])
+  @@unique([churchId, requestKey])
+  @@index([churchId, archivedAt])
+}
+
+model ChurchPositionAssignment {
+  id String @id @default(cuid())
+  churchId String
+  positionId String
+  connectionId String
+  createdAt DateTime @default(now())
+  revokedAt DateTime?
+  position ChurchPosition @relation(fields: [positionId, churchId], references: [id, churchId], onDelete: Restrict, onUpdate: Restrict)
+  connection ChurchConnection @relation(fields: [connectionId, churchId], references: [id, churchId], onDelete: Restrict, onUpdate: Restrict)
+  @@unique([positionId, connectionId])
+  @@index([connectionId, revokedAt])
 }
 
 model ChurchDirectoryPreference {

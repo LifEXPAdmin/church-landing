@@ -236,7 +236,16 @@ test("claims: private new setup, independent approval, explicit activation and s
     await db.churchCapabilityGrant.count({
       where: { sourceClaimId: row.id, revokedAt: null }
     }),
-    4
+    Object.keys(claimScopes).length
+  );
+  assert.ok(
+    await db.churchCapabilityGrant.findFirst({
+      where: {
+        sourceClaimId: row.id,
+        capability: "MANAGE_STRUCTURE",
+        revokedAt: null
+      }
+    })
   );
   const connection = await db.churchConnection.findFirstOrThrow({
     where: { userId: owner.id }

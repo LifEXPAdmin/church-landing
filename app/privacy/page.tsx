@@ -40,6 +40,27 @@ export default function PrivacyPage() {
             </p>
           </section>
           <section>
+            <h2 className="mb-2 text-3xl">
+              Church Structure and Responsibilities
+            </h2>
+            <p>
+              Church positions, reporting lines and assignments are available to
+              eligible approved members of that church. An unlisted member may
+              hold a position without showing their name or contact details.
+              Listed names and contact cards follow the member&apos;s directory
+              sharing choices; account sign-in email is not used as a contact
+              fallback. Position titles do not grant software permissions.
+            </p>
+            <p className="mt-3">
+              Authorized managers record position changes and explicit access
+              assignments. Members can step down from their own positions.
+              Leaving or being removed ends position assignments and related
+              church access; rejoining does not restore old appointments or
+              sharing consent. Historical church operations and audit records
+              are retained with restricted access.
+            </p>
+          </section>
+          <section>
             <h2 className="mb-2 text-3xl">Church Representative Setup</h2>
             <p>
               Representative requests store private role and contact

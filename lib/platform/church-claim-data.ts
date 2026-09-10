@@ -1,6 +1,7 @@
 export const claimScopes = {
   MANAGE_CHURCH_PROFILE: "Manage the public church profile",
-  MANAGE_CHURCH_ACCESS: "Review management access requests",
+  MANAGE_CHURCH_ACCESS: "Manage church access and review requests",
+  MANAGE_STRUCTURE: "Manage church positions and assignments",
   REVIEW_CONNECTIONS: "Review church connection requests",
   APPOINT_COORDINATORS: "Appoint church help coordinators"
 } as const;

@@ -89,7 +89,7 @@ function scopesData(value: unknown): ClaimScope[] {
           (value as Record<string, unknown>)[key] === true
       );
   if (
-    values.length > 4 ||
+    values.length > Object.keys(claimScopes).length ||
     values.some(
       (key) => typeof key !== "string" || !Object.hasOwn(claimScopes, key)
     )

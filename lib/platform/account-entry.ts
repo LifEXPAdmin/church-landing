@@ -11,7 +11,7 @@ export function safeAccountReturn(value: unknown): string {
   const url = new URL(value, "https://return.invalid");
   if (
     url.origin !== "https://return.invalid" ||
-    !/^\/platform(?:\/(?:search|menu|settings|profile(?:\/(?:me|[a-zA-Z0-9_]{3,24}))?|posts\/[a-zA-Z0-9_-]{1,100}|church-listings(?:\/[a-zA-Z0-9_-]{1,100})?|church-claims(?:\/(?:review(?:\/[a-zA-Z0-9_-]{1,100})?|[a-zA-Z0-9_-]{1,100}))?|churches(?:\/[a-zA-Z0-9_-]{1,100}(?:\/(?:directory|review))?)?|my-church(?:\/sharing)?|help|support(?:\/[a-zA-Z0-9_-]{1,100})?))?\/?$/.test(
+    !/^\/platform(?:\/(?:search|menu|settings|profile(?:\/(?:me|[a-zA-Z0-9_]{3,24}))?|posts\/[a-zA-Z0-9_-]{1,100}|church-listings(?:\/[a-zA-Z0-9_-]{1,100})?|church-claims(?:\/(?:review(?:\/[a-zA-Z0-9_-]{1,100})?|[a-zA-Z0-9_-]{1,100}))?|churches(?:\/[a-zA-Z0-9_-]{1,100}(?:\/(?:directory|review|overview|responsibilities|access|structure(?:\/[a-zA-Z0-9_-]{1,100})?|people\/[a-zA-Z0-9_-]{1,100}))?)?|my-church(?:\/sharing)?|help|support(?:\/[a-zA-Z0-9_-]{1,100})?))?\/?$/.test(
       url.pathname
     )
   )
@@ -26,7 +26,14 @@ export function safeAccountReturn(value: unknown): string {
     if (churchId && /^[a-zA-Z0-9_-]{1,100}$/.test(churchId))
       query.set("churchId", churchId);
   }
-  for (const key of ["q", "post", "mode", "before", "cursor"] as const) {
+  for (const key of [
+    "q",
+    "post",
+    "mode",
+    "before",
+    "cursor",
+    "candidateCursor"
+  ] as const) {
     const entry = url.searchParams.get(key);
     if (entry && entry.length <= 200 && !/[\u0000-\u001f\u007f]/.test(entry))
       query.set(key, entry);
@@ -35,6 +42,8 @@ export function safeAccountReturn(value: unknown): string {
 }
 
 export const accountReasons = {
+  structure:
+    "Join or sign in to view your church responsibilities and structure.",
   claim: "Join or sign in to prepare a church representative request.",
   listing: "Join or sign in to add a church listing.",
   account: "Join or sign in to use your account.",
