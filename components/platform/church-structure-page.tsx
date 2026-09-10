@@ -899,12 +899,15 @@ export async function ChurchStructurePage({
                 </ol>
               ) : (
                 <ChurchStructureChart
+                  key={churchId}
                   churchId={churchId}
+                  version={snapshot.version}
                   positions={snapshot.positions.map(
                     ({
                       id,
                       parentId,
                       placement,
+                      layout,
                       name,
                       description,
                       assignments
@@ -912,6 +915,7 @@ export async function ChurchStructurePage({
                       id,
                       parentId,
                       placement,
+                      layout,
                       name,
                       description,
                       assignments

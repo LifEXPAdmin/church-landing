@@ -8,12 +8,14 @@ export type ChartNode = {
   position: PositionSummary;
   x: number;
   y: number;
+  logicalX: number;
+  logicalY: number;
   height: number;
   children: number;
 };
 
-// Layout consumes only the existing member-safe projection. Coordinates never
-// enter a structure command or determine a reporting relationship.
+// Layout consumes only the member-safe projection. Saved coordinates place
+// cards, while parent IDs alone determine reporting relationships.
 export function churchChartLayout(
   positions: PositionSummary[],
   collapsed: ReadonlySet<string> = new Set(),
@@ -65,6 +67,8 @@ export function churchChartLayout(
       position: p,
       x: left + ((widths.get(p.id) ?? CHART_CARD_WIDTH) - CHART_CARD_WIDTH) / 2,
       y: offsets[depth],
+      logicalX: 0,
+      logicalY: 0,
       height: heights.get(p.id) ?? 340,
       children: children.get(p.id)?.length ?? 0
     });
@@ -80,15 +84,42 @@ export function churchChartLayout(
     left += (widths.get(root.id) ?? CHART_CARD_WIDTH) + GAP;
   }
   const byId = new Map(nodes.map((node) => [node.position.id, node]));
+  const translations = new Map<string, { x: number; y: number }>();
+  for (const node of nodes) {
+    const inherited = translations.get(node.position.parentId ?? "");
+    node.logicalX = node.position.layout?.x ?? node.x + (inherited?.x ?? 0);
+    node.logicalY = node.position.layout?.y ?? node.y + (inherited?.y ?? 0);
+    translations.set(node.position.id, {
+      x: node.logicalX - node.x,
+      y: node.logicalY - node.y
+    });
+  }
+  // Moving a parent carries automatically placed descendants with it. Their
+  // derived coordinates can extend left/up of zero; shift the view, not the
+  // persisted grid coordinates, so every card remains reachable.
+  const originX = Math.max(
+    0,
+    PADDING - Math.min(PADDING, ...nodes.map((n) => n.logicalX))
+  );
+  const originY = Math.max(
+    0,
+    PADDING - Math.min(PADDING, ...nodes.map((n) => n.logicalY))
+  );
+  for (const node of nodes) {
+    node.x = node.logicalX + originX;
+    node.y = node.logicalY + originY;
+  }
   return {
     nodes,
     connected,
     unconnected: positions.filter((p) => !connected.has(p.id)),
-    width: Math.max(CHART_CARD_WIDTH + PADDING * 2, left - GAP + PADDING),
-    height: Math.max(
-      200,
-      (offsets.at(-1) ?? PADDING) + (levels.at(-1) ?? 0) + PADDING
+    originX,
+    originY,
+    width: Math.max(
+      CHART_CARD_WIDTH + PADDING * 2,
+      ...nodes.map((n) => n.x + CHART_CARD_WIDTH + PADDING)
     ),
+    height: Math.max(200, ...nodes.map((n) => n.y + n.height + PADDING)),
     edges: nodes.flatMap((node) => {
       const parent = node.position.parentId
         ? byId.get(node.position.parentId)

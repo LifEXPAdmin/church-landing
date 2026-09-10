@@ -180,3 +180,67 @@ test("an empty or incomplete projection never invents a root or a reporting edge
   assert.equal(layout.unconnected.length, 3);
   assert.deepEqual(chartAncestors(positions, "cycle-a"), ["cycle-b"]);
 });
+
+test("saved grid anchors carry automatic descendants without clipping or changing reporting", () => {
+  const positions = [
+    position("root"),
+    position("left", "root"),
+    position("right", "root"),
+    position("leaf", "left")
+  ];
+  const automatic = churchChartLayout(
+    positions.map((p) => ({ ...p, layout: null }))
+  );
+  positions[0].layout = { x: 0, y: 100 };
+  const saved = structuredClone(positions);
+  const moved = churchChartLayout(positions);
+  const root = moved.nodes.find((n) => n.position.id === "root")!;
+  assert.equal(root.logicalX, 0);
+  assert.equal(root.logicalY, 100);
+  assert.ok(moved.originX > 0, "A left-extending descendant remains reachable");
+  for (const node of moved.nodes) {
+    const before = automatic.nodes.find(
+      (n) => n.position.id === node.position.id
+    )!;
+    assert.equal(
+      node.logicalX - before.logicalX,
+      root.logicalX - automatic.nodes[0].logicalX
+    );
+    assert.equal(
+      node.logicalY - before.logicalY,
+      root.logicalY - automatic.nodes[0].logicalY
+    );
+  }
+  noOverlap(moved);
+  assert.deepEqual(positions, saved);
+  assert.deepEqual(
+    churchChartLayout(structuredClone(positions)),
+    moved,
+    "Reload uses the same saved geometry"
+  );
+  assert.deepEqual(
+    churchChartLayout(positions.map((p) => ({ ...p, layout: null }))),
+    automatic,
+    "Auto-arrange restores connected spacing"
+  );
+});
+
+test("a separately placed child keeps its own anchor and carries its automatic descendants", () => {
+  const positions = [
+    position("root"),
+    position("child", "root"),
+    position("leaf", "child")
+  ];
+  positions[0].layout = { x: 200, y: 200 };
+  positions[1].layout = { x: 800, y: 1000 };
+  const layout = churchChartLayout(positions);
+  assert.equal(layout.nodes[1].logicalX, 800);
+  assert.equal(layout.nodes[1].logicalY, 1000);
+  assert.equal(layout.nodes[2].logicalX, 800);
+  assert.ok(layout.nodes[2].logicalY > 1000);
+  assert.equal(layout.edges.length, 2);
+  noOverlap(layout);
+  const collapsed = churchChartLayout(positions, new Set(["child"]));
+  assert.equal(collapsed.nodes[1].logicalX, 800);
+  assert.equal(collapsed.connected.size, 3);
+});

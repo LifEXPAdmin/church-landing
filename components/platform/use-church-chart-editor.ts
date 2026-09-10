@@ -1,0 +1,405 @@
+"use client";
+
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { PositionSummary } from "@/lib/platform/church-structure-types";
+import {
+  applyChartChanges,
+  chartChanges,
+  moveChartBranch,
+  type ChartChange,
+  type ChartPlacement
+} from "@/lib/platform/church-chart-model";
+
+type EditorPosition = PositionSummary & { layout: ChartPlacement["layout"] };
+type Base = {
+  positions: EditorPosition[];
+  version: number;
+  canManage: boolean;
+};
+type Review = {
+  operation: "chart-save";
+  churchId: string;
+  expectedVersion: number;
+  requestKey: string;
+  confirmed: true;
+  changes: ChartChange[];
+};
+const normalize = (positions: PositionSummary[]): EditorPosition[] =>
+  positions.map((p) => ({ ...p, layout: p.layout ?? null }));
+const geometry = (positions: ChartPlacement[]): ChartPlacement[] =>
+  positions.map(({ id, parentId, placement, layout }) => ({
+    id,
+    parentId,
+    placement,
+    layout
+  }));
+const errorText = (error: unknown) =>
+  error instanceof Error ? error.message : "This change is not available.";
+
+// Draft/undo history contains geometry only. Names and assignment projections
+// always come from the current server read, including after conflict recovery.
+export function useChurchChartEditor(
+  churchId: string,
+  initial: {
+    positions: PositionSummary[];
+    version: number;
+    canManage: boolean;
+  }
+) {
+  const [base, setBase] = useState<Base>(() => ({
+    ...initial,
+    positions: normalize(initial.positions)
+  }));
+  const [history, setHistory] = useState(() => ({
+    entries: [geometry(normalize(initial.positions))],
+    index: 0
+  }));
+  const [editing, setEditing] = useState(false);
+  const [review, setReview] = useState<Review | null>(null);
+  const [retained, setRetained] = useState<ChartChange[] | null>(null);
+  const [requiresReload, setRequiresReload] = useState(false);
+  const [uncertain, setUncertain] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const busyRef = useRef(false);
+  const allowLeave = useRef(false);
+  const [message, setMessage] = useState("");
+  const [leaveTarget, setLeaveTarget] = useState<string | null>(null);
+  const draft = history.entries[history.index];
+  const changes = useMemo(
+    () => retained ?? chartChanges(base.positions, draft),
+    [retained, base.positions, draft]
+  );
+  const positions = useMemo(
+    () =>
+      retained ? base.positions : applyChartChanges(base.positions, draft),
+    [retained, base.positions, draft]
+  );
+  const dirty = changes.length > 0;
+  const canChange =
+    editing &&
+    base.canManage &&
+    !busy &&
+    !review &&
+    !requiresReload &&
+    retained === null;
+  useEffect(() => {
+    if (!dirty && !uncertain) return;
+    const unload = (event: BeforeUnloadEvent) => {
+      if (!allowLeave.current) {
+        event.preventDefault();
+        event.returnValue = "";
+      }
+    };
+    const click = (event: MouseEvent) => {
+      if (
+        event.button !== 0 ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.shiftKey ||
+        event.altKey
+      )
+        return;
+      const link =
+        event.target instanceof Element
+          ? event.target.closest<HTMLAnchorElement>("a[href]")
+          : null;
+      if (
+        !link ||
+        link.target === "_blank" ||
+        link.hasAttribute("download") ||
+        link.getAttribute("href")?.startsWith("#")
+      )
+        return;
+      event.preventDefault();
+      event.stopPropagation();
+      setLeaveTarget(link.href);
+    };
+    window.addEventListener("beforeunload", unload);
+    document.addEventListener("click", click, true);
+    return () => {
+      window.removeEventListener("beforeunload", unload);
+      document.removeEventListener("click", click, true);
+    };
+  }, [dirty, uncertain]);
+  function resetDraft(next: Base) {
+    setBase(next);
+    setHistory({ entries: [geometry(next.positions)], index: 0 });
+    setReview(null);
+    setRetained(null);
+    setRequiresReload(false);
+    setUncertain(false);
+  }
+  function stage(next: EditorPosition[], description: string) {
+    if (!canChange || busyRef.current) return;
+    const values = geometry(next);
+    if (!chartChanges(draft, values).length) {
+      setMessage(
+        "This already matches the current chart. No change was needed."
+      );
+      return;
+    }
+    setHistory((current) => {
+      const entries = [
+        ...current.entries.slice(0, current.index + 1).slice(-99),
+        values
+      ];
+      return { entries, index: entries.length - 1 };
+    });
+    setMessage(
+      description +
+        (chartChanges(base.positions, values).length
+          ? " This change is not saved yet."
+          : " The chart now matches the saved version.")
+    );
+  }
+  function move(
+    id: string,
+    placement: ChartPlacement["placement"],
+    parentId: string | null
+  ) {
+    if (!canChange || busyRef.current) return;
+    try {
+      stage(
+        moveChartBranch(positions, id, placement, parentId),
+        "Reporting change staged."
+      );
+    } catch (error) {
+      setMessage(errorText(error));
+    }
+  }
+  function moveOnGrid(id: string, layout: ChartPlacement["layout"]) {
+    if (!canChange || busyRef.current) return;
+    const p = positions.find((p) => p.id === id);
+    if (!p) return;
+    try {
+      stage(
+        applyChartChanges(positions, [
+          { id, parentId: p.parentId, placement: p.placement, layout }
+        ]),
+        "Card layout changed. Reporting and privileges are unchanged."
+      );
+    } catch (error) {
+      setMessage(errorText(error));
+    }
+  }
+  function autoArrange() {
+    if (!canChange || busyRef.current) return;
+    stage(
+      positions.map((p) => ({ ...p, layout: null })),
+      "Automatic card placement restored."
+    );
+  }
+  function prepareReview() {
+    if (!canChange || !dirty) return;
+    setReview({
+      operation: "chart-save",
+      churchId,
+      expectedVersion: base.version,
+      requestKey: crypto.randomUUID(),
+      changes,
+      confirmed: true
+    });
+    setMessage("");
+  }
+  async function save() {
+    if (!review || requiresReload || busyRef.current || !base.canManage) return;
+    busyRef.current = true;
+    setBusy(true);
+    setMessage("");
+    try {
+      const response = await fetch("/api/platform/church-structure", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(review)
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        if ([400, 401, 403, 404, 409].includes(response.status)) {
+          setRequiresReload(true);
+          setUncertain(false);
+          setMessage(
+            "The saved chart or your access changed. Your choices are kept. Load current positions before reviewing again."
+          );
+        } else {
+          setUncertain(true);
+          setMessage(
+            "The save could not be confirmed. Your reviewed changes and retry reference are kept. Retry this same save."
+          );
+        }
+        return;
+      }
+      if (!Number.isSafeInteger(data.version) || data.version <= base.version)
+        throw new Error("Unconfirmed save result");
+      resetDraft({
+        ...base,
+        positions: applyChartChanges(base.positions, review.changes),
+        version: data.version
+      });
+      setMessage(
+        "Chart changes saved. Assignments and permissions are unchanged."
+      );
+    } catch {
+      setUncertain(true);
+      setMessage(
+        "The save could not be confirmed. Your reviewed changes and retry reference are kept. Retry this same save."
+      );
+    } finally {
+      busyRef.current = false;
+      setBusy(false);
+    }
+  }
+  async function reloadCurrent() {
+    if (busyRef.current) return;
+    busyRef.current = true;
+    setBusy(true);
+    const kept = review?.changes ?? changes;
+    try {
+      const response = await fetch(
+        `/api/platform/church-structure?churchId=${encodeURIComponent(churchId)}&view=structure`,
+        { cache: "no-store", credentials: "same-origin" }
+      );
+      if (!response.ok) {
+        setRequiresReload(true);
+        if ([401, 403].includes(response.status)) {
+          setBase({ positions: [], version: base.version, canManage: false });
+          setHistory({ entries: [[]], index: 0 });
+          setRetained(kept);
+          setMessage(
+            "Current church access is unavailable. The placement choices are kept without member details. Sign in or regain access before reviewing them."
+          );
+        } else
+          setMessage(
+            "Current positions could not be loaded. Your draft is kept. Try again."
+          );
+        return;
+      }
+      const data = await response.json();
+      if (
+        !Number.isSafeInteger(data.version) ||
+        !Array.isArray(data.positions) ||
+        !Array.isArray(data.capabilities)
+      )
+        throw new Error("Invalid current chart");
+      const next = {
+        positions: normalize(data.positions),
+        version: data.version,
+        canManage: data.capabilities.includes("MANAGE_STRUCTURE")
+      };
+      resetDraft(next);
+      setRetained(kept);
+      setMessage(
+        "Current positions are loaded. Review the retained changes below before applying them to this version."
+      );
+    } catch {
+      setMessage(
+        "Current positions could not be loaded. Your draft is kept. Try again."
+      );
+    } finally {
+      busyRef.current = false;
+      setBusy(false);
+    }
+  }
+  function applyRetained(next = retained) {
+    if (!next || !base.canManage || busyRef.current) return;
+    try {
+      const rebased = applyChartChanges(base.positions, next);
+      setHistory({
+        entries: [geometry(base.positions), geometry(rebased)],
+        index: 1
+      });
+      setRetained(null);
+      setRequiresReload(false);
+      setReview(null);
+      setUncertain(false);
+      setMessage(
+        chartChanges(base.positions, rebased).length
+          ? "Your choices are restored on the current chart. Review and save them again."
+          : "The current saved chart already matches these choices."
+      );
+    } catch (error) {
+      setMessage(
+        errorText(error) +
+          " Your draft is kept. Remove an unavailable change below or discard the draft."
+      );
+    }
+  }
+  function removeRetained(id: string) {
+    if (!retained || busyRef.current) return;
+    const next = retained.filter((change) => change.id !== id);
+    setRetained(next);
+    if (!next.length) {
+      resetDraft(base);
+      setMessage("Retained changes discarded.");
+    }
+  }
+  function discard() {
+    if (busyRef.current || uncertain) return;
+    resetDraft(base);
+    setMessage("Unsaved changes discarded.");
+  }
+  return {
+    positions,
+    basePositions: base.positions,
+    version: base.version,
+    canManage: base.canManage,
+    editing,
+    setEditing,
+    dirty,
+    changes,
+    canChange,
+    busy,
+    message,
+    setMessage,
+    review,
+    uncertain,
+    requiresReload,
+    retained,
+    move,
+    moveOnGrid,
+    autoArrange,
+    prepareReview,
+    save,
+    reloadCurrent,
+    applyRetained,
+    removeRetained,
+    discard,
+    cancelReview: () => {
+      if (!busy && !uncertain && !requiresReload) setReview(null);
+    },
+    canUndo: canChange && history.index > 0,
+    canRedo: canChange && history.index < history.entries.length - 1,
+    undo: () => {
+      if (canChange && !busyRef.current && history.index > 0) {
+        setHistory((current) => ({
+          ...current,
+          index: Math.max(0, current.index - 1)
+        }));
+        setMessage("Last chart change undone. Permissions are unchanged.");
+      }
+    },
+    redo: () => {
+      if (
+        canChange &&
+        !busyRef.current &&
+        history.index < history.entries.length - 1
+      ) {
+        setHistory((current) => ({
+          ...current,
+          index: Math.min(current.entries.length - 1, current.index + 1)
+        }));
+        setMessage("Chart change restored. Permissions are unchanged.");
+      }
+    },
+    leaveTarget,
+    cancelLeave: () => setLeaveTarget(null),
+    confirmLeave: () => {
+      if (leaveTarget && !busy) {
+        allowLeave.current = true;
+        resetDraft(base);
+        setLeaveTarget(null);
+        window.location.assign(leaveTarget);
+      }
+    }
+  };
+}

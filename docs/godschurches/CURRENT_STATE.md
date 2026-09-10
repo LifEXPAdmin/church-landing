@@ -1,5 +1,29 @@
 # Godschurches current state
 
+## Deliberate chart dragging verified locally — September 10, 2026
+
+The visual editor now stages reporting drag/drop, explicit root/detach targets
+and independent grid movement through the shared chart rules. The equivalent
+reporting picker, Undo/Redo, Auto-arrange, review and confirmed Save/Discard are
+available. Saved anchors carry automatically placed descendants while retaining
+their reporting links. Conflicts and uncertain saves keep reviewed choices.
+
+Twelve pure model/layout checks and 25 production HTTPS checks passed, together
+with production build, lint/types and the runtime audit. Chrome verified actual
+dragging, preserved branches/assignments, invalid descendant drops, grid save,
+same-save retry, two-editor conflict recovery, fresh confirmation, undo/discard,
+another-tab readback and 320/390-pixel layout. Browser checks caught and resolved
+an offscreen leave prompt and a first-selection shift during dragging. See
+[CHURCH_STRUCTURE_REPORT.md](CHURCH_STRUCTURE_REPORT.md).
+
+The drag/reporting task is complete locally. Continue with the unconnected-role
+staffing/lifecycle acceptance, then contact-return context and full save/recovery.
+History, browser Back/reload draft recovery, full native keyboard/touch/large-text
+and physical-device acceptance remain open before integrated release. The bundle
+is unpushed/unpublished; current main recovery/feed fixes still need integration
+without weakening post-audience checks. No new owner action blocks this coding.
+The complete batch and its final review remain open.
+
 ## Atomic chart-save foundation verified; drag controls next — September 10, 2026
 
 The server can now save a reviewed set of reporting and grid-layout changes

@@ -7,7 +7,8 @@ import {
   useId,
   useMemo,
   useRef,
-  useState
+  useState,
+  type ReactNode
 } from "react";
 import {
   ArrowDown,
@@ -27,6 +28,9 @@ import {
 } from "@/lib/platform/church-chart-layout";
 import { portalInputClass } from "./portal-action-form";
 import { portalLinkClass } from "./portal-ui";
+import { ChurchChartEditorControls } from "./church-chart-editor-controls";
+import { useChurchChartEditor } from "./use-church-chart-editor";
+import { useChurchChartDrag } from "./use-church-chart-drag";
 
 const control =
   "inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-xl border border-gc-divider bg-gc-surface px-3 py-2 text-sm font-semibold text-gc-text hover:bg-gc-selected focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gc-focus disabled:opacity-50";
@@ -45,7 +49,9 @@ function RoleCard({
   childrenCount = 0,
   collapsed = false,
   toggle,
-  placement
+  placement,
+  editControls,
+  dropState
 }: {
   position: PositionSummary;
   base: string;
@@ -57,6 +63,8 @@ function RoleCard({
   collapsed?: boolean;
   toggle?: () => void;
   placement?: string;
+  editControls?: ReactNode;
+  dropState?: "valid" | "invalid";
 }) {
   const ref = useRef<HTMLElement>(null);
   useEffect(() => {
@@ -76,7 +84,7 @@ function RoleCard({
       }}
       data-chart-card={p.id}
       aria-label={`${p.name} · ${p.assignments.length ? "Assigned" : "Vacant"}`}
-      className={`min-w-0 rounded-2xl border bg-gc-surface p-4 shadow-sm [overflow-wrap:anywhere] ${selected ? "border-gc-action ring-2 ring-gc-focus" : "border-gc-divider"}`}
+      className={`min-w-0 rounded-2xl border bg-gc-surface p-4 shadow-sm [overflow-wrap:anywhere] ${dropState === "invalid" ? "border-gc-error ring-2 ring-gc-error" : dropState === "valid" || selected ? "border-gc-action ring-2 ring-gc-focus" : "border-gc-divider"}`}
     >
       <div className="mb-3 flex flex-wrap items-center gap-2 text-xs font-semibold text-gc-muted">
         <span
@@ -88,6 +96,7 @@ function RoleCard({
         </span>
         {placement && <span>{placement}</span>}
       </div>
+      {editControls}
       <h3 className="text-2xl leading-tight">
         <Link
           href={`${base}/structure/${encodeURIComponent(p.id)}`}
@@ -165,13 +174,21 @@ function RoleCard({
 
 export function ChurchStructureChart({
   churchId,
-  positions,
-  canManage
+  positions: initialPositions,
+  canManage: initialCanManage,
+  version
 }: {
   churchId: string;
   positions: PositionSummary[];
   canManage: boolean;
+  version: number;
 }) {
+  const editor = useChurchChartEditor(churchId, {
+    positions: initialPositions,
+    canManage: initialCanManage,
+    version
+  });
+  const { positions, canManage } = editor;
   const base = `/platform/churches/${encodeURIComponent(churchId)}`;
   const id = useId();
   const viewport = useRef<HTMLDivElement>(null);
@@ -198,6 +215,49 @@ export function ChurchStructureChart({
     () => churchChartLayout(positions, collapsed, heights),
     [positions, collapsed, heights]
   );
+  const drag = useChurchChartDrag({
+    editor,
+    viewport,
+    nodes: layout.nodes,
+    zoom,
+    select: (key) => {
+      automaticFit.current = false;
+      setSelected(key);
+    }
+  });
+  function editControls(position: PositionSummary, connected: boolean) {
+    if (!editor.editing || !canManage) return undefined;
+    return (
+      <div className="mb-3 flex flex-col gap-2">
+        <button
+          type="button"
+          className={`${control} cursor-grab touch-none select-none text-left`}
+          disabled={!editor.canChange}
+          aria-label={`Change reporting for ${position.name}`}
+          {...drag.handlers(position.id, "reporting")}
+        >
+          Drag to change reporting
+        </button>
+        {connected && (
+          <button
+            type="button"
+            className={`${control} cursor-move touch-none select-none text-left`}
+            disabled={!editor.canChange}
+            aria-label={`Move ${position.name} card on grid`}
+            {...drag.handlers(position.id, "layout")}
+          >
+            Move card on grid
+          </button>
+        )}
+      </div>
+    );
+  }
+  const dropState = (key: string) =>
+    drag.feedback?.target === key
+      ? drag.feedback.valid
+        ? ("valid" as const)
+        : ("invalid" as const)
+      : undefined;
   const results = useMemo(
     () =>
       mine
@@ -313,6 +373,60 @@ export function ChurchStructureChart({
   const showResults = mine || query.trim().length > 0;
   return (
     <div className="min-w-0 space-y-6">
+      {(canManage || editor.editing || editor.dirty) && (
+        <ChurchChartEditorControls
+          editor={editor}
+          selectedId={selected ?? ""}
+          selectPosition={setSelected}
+        />
+      )}
+      {editor.canChange && (
+        <div
+          className="sticky top-2 z-20 grid grid-cols-2 gap-3 rounded-2xl bg-gc-surface p-3 shadow-sm"
+          aria-label="Reporting drop targets"
+        >
+          {(["ROOT", "UNCONNECTED"] as const).map((placement) => (
+            <div
+              key={placement}
+              data-chart-drop={placement}
+              className={`min-h-16 rounded-xl border-2 border-dashed p-3 text-center text-sm font-semibold ${dropState(placement) === "valid" ? "border-gc-action bg-gc-selected" : "border-gc-divider bg-gc-subtle"}`}
+            >
+              {placement === "ROOT" ? "Top of chart" : "Not connected yet"}
+              <span className="mt-1 block text-xs font-normal text-gc-muted">
+                Drop a reporting handle here
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+      {drag.feedback && (
+        <div
+          aria-hidden="true"
+          className={`pointer-events-none fixed z-50 max-w-[min(20rem,80vw)] rounded-xl border-2 bg-gc-surface p-3 text-sm font-semibold shadow-lg ${drag.feedback.valid ? "border-gc-action" : "border-gc-error"}`}
+          style={{
+            left: Math.max(
+              8,
+              Math.min(
+                drag.feedback.x + 18,
+                size.width
+                  ? window.innerWidth -
+                      Math.min(320, window.innerWidth * 0.8) -
+                      8
+                  : drag.feedback.x
+              )
+            ),
+            top: Math.max(
+              8,
+              Math.min(drag.feedback.y + 18, window.innerHeight - 130)
+            )
+          }}
+        >
+          {drag.feedback.label}
+        </div>
+      )}
+      <p className="sr-only" role="status">
+        {drag.feedback?.label}
+      </p>
       <section
         className="min-w-0 rounded-2xl border border-gc-divider bg-gc-surface"
         aria-labelledby={`${id}-heading`}
@@ -619,6 +733,8 @@ export function ChurchStructureChart({
                       canManage={canManage}
                       selected={selected === node.position.id}
                       register={register}
+                      editControls={editControls(node.position, true)}
+                      dropState={dropState(node.position.id)}
                       measure={measure}
                       childrenCount={node.children}
                       collapsed={collapsed.has(node.position.id)}
@@ -651,6 +767,7 @@ export function ChurchStructureChart({
         </div>
       </section>
       <section
+        data-chart-drop={editor.canChange ? "UNCONNECTED" : undefined}
         className="min-w-0 rounded-2xl border border-dashed border-gc-divider bg-gc-subtle p-4 sm:p-5"
         aria-labelledby={`${id}-tray`}
       >
@@ -679,6 +796,8 @@ export function ChurchStructureChart({
                   canManage={canManage}
                   selected={selected === p.id}
                   register={register}
+                  editControls={editControls(p, false)}
+                  dropState={dropState(p.id)}
                   placement={positionPlacementLabel(p, positions)}
                 />
               </div>

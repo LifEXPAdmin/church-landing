@@ -764,6 +764,8 @@ test("actual structure HTTP routes preserve private positions/contact projection
     assert.equal(chart.includes("Fill this position"), false);
     assert.equal(chart.includes("Review privileges"), false);
     assert.equal(chart.includes("Add another person"), false);
+    assert.equal(chart.includes("Edit structure"), false);
+    assert.equal(chart.includes("Review changes"), false);
     for (const secret of hidden) assert.equal(chart.includes(secret), false);
   }
   const c = await db.churchConnection.findUniqueOrThrow({

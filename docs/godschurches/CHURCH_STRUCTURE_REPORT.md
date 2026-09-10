@@ -2,6 +2,56 @@
 
 September 10, 2026 · Published structure foundation; local role library, assignment service and Privileges interface verified
 
+## Deliberate drag editor verified locally — September 10, 2026
+
+The editor extends atomic-save foundation `ff7b325` on
+`codex/role-privileges-interface`. Explicit reporting handles stage attachment to
+one current church position or the Top of chart / Not connected yet targets.
+Self/descendant/cycle, unavailable, depth and size checks use the shared model;
+the server repeats authorization and complete-graph validation. Reparenting clears
+the branch's manual anchors, preserves child edges and assignments, and arranges
+the branch beneath its new parent. Grid handles change coordinates independently.
+Saved anchors move automatically placed descendants, while separately positioned
+children retain their own anchors. View bounds keep all derived cards reachable.
+
+Edit mode provides an equivalent native-select reporting command, geometry-only
+Undo/Redo, Auto-arrange, an unsaved indicator and a per-position review. Repeated
+titles have a position reference and duties in the review. An explicit checkbox
+enables Save. Failed/stale saves retain choices; loading current positions and
+reapplying them requires another review. An uncertain response keeps the exact
+request for retry. Discard and ordinary link navigation have explicit prompts;
+review, discard and leave headings receive focus. Selecting a drag source is
+deferred until release so the picker cannot shift targets during a gesture.
+
+**Twelve pure layout/model checks and 25 actual production HTTPS checks passed**
+(nine portal, six structure, four account-entry and six guest groups). Two new
+layout cases cover saved anchors, inherited descendant movement, collapse,
+reachable bounds, reload and automatic arrangement. Production build, lint/types
+and the runtime audit passed: 92 traces, 7,270 entries and 225 server JavaScript
+files, with no private fixture/environment files or Prisma loader path. The prior
+`ff7b325` full 322-check migration/restore/restart and 31-check service receipts
+remain applicable; this UI checkpoint makes no schema or dependency change.
+
+Chrome verified first-use reporting and grid dragging, root placement, explicit
+detach, invalid descendant rejection, retained children and truthful assignments.
+A grid placement saved on the 20-unit grid and appeared in another tab. A dropped
+committed response retried to exactly one receipt. Two tabs produced a rejected
+stale save, retained/reapplied choice and fresh confirmed save. Undo/Redo and picker
+commands were activated with Enter. Cancel/confirm Discard, Auto-arrange, review
+focus, 320/390-pixel page bounds and explicit discard-and-leave passed. The final
+fixture retained all six original positions, assignments, role grants and parent
+links after three intended chart saves. No real church data or permissions changed.
+No warning/error browser logs were returned. Two browser findings—offscreen leave
+prompt and first-selection target shift—were fixed and rechecked on the final build.
+
+This completes the drag/reporting task locally, not the full editor release.
+Full native arrow-key selection was not established by automation; full keyboard,
+touch, large-text and physical-device acceptance remain separate. Browser Back
+and reload draft recovery, privacy-safe history, contact-return context and
+staffing/lifecycle acceptance remain open. The bundle is unpushed/unpublished;
+newer main recovery/feed changes still need integration with audience checks.
+No new owner action blocks code work; the complete batch and final review remain open.
+
 ## Atomic chart-save foundation verified locally — September 10, 2026
 
 The save prerequisite extends chart checkpoint `c1d8412` on
