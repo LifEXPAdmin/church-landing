@@ -2,6 +2,52 @@
 
 September 10, 2026 · Published structure foundation; local role library, assignment service and Privileges interface verified
 
+## Visual church chart verified locally — September 10, 2026
+
+The chart checkpoint extends `fee9509` on `codex/role-privileges-interface`.
+Connected positions render as distinct cards below their saved reporting parents,
+with curved connectors, multiple intentional roots and a separate unconnected
+area. Card heights are measured to accommodate different duties and assignment
+counts. Fit, zoom, directional pan controls, branch expansion and role/shared-name
+search make the chart navigable. Search opens collapsed ancestors and focuses the
+selected card; My positions includes the member's unconnected duties. The complete
+outline remains available. View coordinates do not change reporting or permissions.
+
+Cards reuse the existing member-safe projection. An unlisted assignee stays
+truthfully assigned, with no name, connection code or contact fallback exposed.
+One member in several positions appears in each distinct role. Managers can fill
+an explicitly selected vacancy, add another assignee or review an existing
+assignment through the shared mandatory Privileges route. Ordinary members receive
+none of those controls. The server still checks every review and write.
+
+Five new layout/search checks passed, covering preserved roots/branches, repeated
+roles, collapsed descendants, hidden identifiers, a 200-position variable-height
+layout, 12 levels and incomplete projections. All 24 affected production HTTPS
+checks passed (portal, structure, account entry and guest browsing), including
+private HTML/RSC, mixed listed/unlisted assignments and controls disappearing after
+revocation. Production build, lint, types and runtime audit passed: 92 traces,
+7,270 entries and 225 server JavaScript files, with no private fixtures/environment
+files or Prisma loader path. No schema or dependency changed in this checkpoint;
+the earlier placement migration/restore evidence remains applicable.
+
+Chrome verified collapse/search/expand/focus, role and listed-person search,
+separate own duties, manager/member views, keyboard pan/zoom buttons, fit,
+320/390-pixel and desktop layouts, and the full outline. Both a vacancy and a
+second-assignee entry went through Privileges and explicit confirmation, saved
+once, and appeared in another tab. Database readback retained the same six
+positions and reporting links; the two new fictional assignments supplied zero
+permissions and existing role grants stayed unchanged. Canceling an existing
+pastoral review made no access change. No browser errors or warnings appeared in
+the returned logs; unrelated extension informational logs were present.
+
+This completes the visual view and remaining mandatory Privileges chart entry.
+Dragging/reparenting, staged Save/Undo, contact-return context and full keyboard,
+touch, large-text and physical-device acceptance remain in the editor work.
+No real church record or permission changed. This bundle remains unpushed and
+unpublished; newer main recovery/feed changes need integration with the existing
+post-audience checks before release. Continue with deliberate drag connections and
+reviewable staged edits. The full batch and final review remain open.
+
 ## Explicit unconnected placement verified locally — September 10, 2026
 
 The placement prerequisite extends the mandatory Privileges checkpoint `38d6cdc`

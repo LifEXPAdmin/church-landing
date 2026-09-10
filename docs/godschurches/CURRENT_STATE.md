@@ -1,5 +1,28 @@
 # Godschurches current state
 
+## Visual chart and mandatory assignment integration verified — September 10, 2026
+
+The local church chart now has connected role cards, an unconnected area, pan/zoom,
+fit, branch expansion, role/shared-name search and the existing full outline. It
+preserves separate positions and private member projections. Chart staffing and
+existing assignment links use the mandatory Privileges review; that interface's
+remaining chart integration is complete.
+
+Five layout/search checks and 24 production HTTPS checks passed. Build, lint/types
+and runtime audit passed. Chrome verified manager/member views, collapsed-branch
+search and focus, keyboard pan/zoom, mixed listed/unlisted assignments, two roles
+for one person, explicit vacancy/second-assignee saves, another-tab readback and
+320/390-pixel layouts without page overflow. Readback preserved reporting and
+existing grants; the new fictional assignments added no permissions. See
+[CHURCH_STRUCTURE_REPORT.md](CHURCH_STRUCTURE_REPORT.md).
+
+Continue with snapping reporting connections and staged edit/save integration.
+Full touch/keyboard/large-text and physical-device acceptance remain separate.
+This bundle is unpushed/unpublished; integrate current main recovery/feed changes
+without removing audience checks before release. No new owner action blocks code
+work. The complete batch, provider-account/church-policy dependencies and final
+review remain open.
+
 ## Unconnected placement verified; visual chart next — September 10, 2026
 
 Positions now distinguish Not connected yet, an explicit chart root and a reporting

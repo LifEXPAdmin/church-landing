@@ -1,3 +1,4 @@
+import { ChurchStructureChart } from "./church-structure-chart";
 import { ChurchPositionPlacement } from "./church-position-placement";
 import { positionPlacementLabel } from "@/lib/platform/church-position-placement";
 import { ChurchRoleLibrary } from "./church-role-library";
@@ -70,83 +71,6 @@ function reportingPath(
     current = parent;
   }
   return path.join(" / ");
-}
-function PositionTree({
-  positions,
-  churchId,
-  parentId = null,
-  level = 0,
-  rootPlacement
-}: {
-  positions: PositionSummary[];
-  churchId: string;
-  parentId?: string | null;
-  level?: number;
-  rootPlacement?: "ROOT" | "UNCONNECTED";
-}) {
-  return (
-    <ul
-      className={
-        level > 0 && level < 3
-          ? "mt-3 space-y-3 border-l border-gc-divider pl-3"
-          : "space-y-3"
-      }
-    >
-      {positions
-        .filter(
-          (p) =>
-            p.parentId === parentId &&
-            (parentId !== null ||
-              !rootPlacement ||
-              p.placement === rootPlacement)
-        )
-        .map((p) => (
-          <li key={p.id} className="min-w-0">
-            <details
-              open={level === 0}
-              className={
-                level < 3
-                  ? "min-w-0 rounded-xl border border-gc-divider bg-gc-surface p-3"
-                  : "min-w-0 border-t border-gc-divider bg-gc-surface py-3"
-              }
-            >
-              <summary className="min-h-11 cursor-pointer break-words py-2 font-semibold text-gc-text [overflow-wrap:anywhere] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gc-focus">
-                {p.name}{" "}
-                <span className="text-sm font-normal text-gc-muted">
-                  · {p.assignments.length ? "Assigned" : "Vacant"}
-                </span>
-              </summary>
-              <div className="space-y-2 break-words [overflow-wrap:anywhere]">
-                {level >= 3 && (
-                  <p className="text-sm text-gc-muted">
-                    Reports to:{" "}
-                    {positions.find((parent) => parent.id === p.parentId)?.name}
-                  </p>
-                )}
-                <p className="whitespace-pre-wrap text-sm text-gc-muted">
-                  {p.description || "Responsibilities have not been added yet."}
-                </p>
-                {names(p, churchId)}
-                <Link
-                  href={positionPath(churchId, p.id)}
-                  className={portalLinkClass}
-                >
-                  View position
-                </Link>
-                {positions.some((c) => c.parentId === p.id) && (
-                  <PositionTree
-                    positions={positions}
-                    churchId={churchId}
-                    parentId={p.id}
-                    level={level + 1}
-                  />
-                )}
-              </div>
-            </details>
-          </li>
-        ))}
-    </ul>
-  );
 }
 function memberFields(snapshot: StructureSnapshot): PortalField[] {
   return [
@@ -916,7 +840,7 @@ export async function ChurchStructurePage({
                   className={portalLinkClass}
                   aria-current={!outline ? "page" : undefined}
                 >
-                  Expandable tree
+                  Visual chart
                 </a>
                 <a
                   href={`${root(churchId)}/structure?mode=outline`}
@@ -974,40 +898,27 @@ export async function ChurchStructurePage({
                   ))}
                 </ol>
               ) : (
-                <div className="space-y-6">
-                  <PortalCard title="Church chart">
-                    {snapshot.positions.some((p) => p.placement === "ROOT") ? (
-                      <PositionTree
-                        positions={snapshot.positions}
-                        churchId={churchId}
-                        rootPlacement="ROOT"
-                      />
-                    ) : (
-                      <p>
-                        No positions have been placed at the top of the chart
-                        yet.
-                      </p>
-                    )}
-                  </PortalCard>
-                  <PortalCard title="Not connected yet">
-                    <p className="mb-3 text-sm text-gc-muted">
-                      New positions and detached branches stay here until a
-                      manager explicitly places them. Their assignments, duties
-                      and reviewed permissions remain active.
-                    </p>
-                    {snapshot.positions.some(
-                      (p) => p.placement === "UNCONNECTED"
-                    ) ? (
-                      <PositionTree
-                        positions={snapshot.positions}
-                        churchId={churchId}
-                        rootPlacement="UNCONNECTED"
-                      />
-                    ) : (
-                      <p>Every position has been placed in the chart.</p>
-                    )}
-                  </PortalCard>
-                </div>
+                <ChurchStructureChart
+                  churchId={churchId}
+                  positions={snapshot.positions.map(
+                    ({
+                      id,
+                      parentId,
+                      placement,
+                      name,
+                      description,
+                      assignments
+                    }) => ({
+                      id,
+                      parentId,
+                      placement,
+                      name,
+                      description,
+                      assignments
+                    })
+                  )}
+                  canManage={snapshot.capabilities.includes("MANAGE_STRUCTURE")}
+                />
               )}
             </>
           ))}

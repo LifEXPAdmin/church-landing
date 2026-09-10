@@ -443,6 +443,11 @@ test("actual structure HTTP routes preserve private positions/contact projection
   });
   await cmd({
     operation: "place",
+    positionId: leadership.id,
+    placement: "ROOT"
+  });
+  await cmd({
+    operation: "place",
     positionId: outreach.id,
     placement: "REPORTING",
     parentId: leadership.id
@@ -466,7 +471,8 @@ test("actual structure HTTP routes preserve private positions/contact projection
   for (const [position, a] of [
     [outreach, lee],
     [coordinator, val],
-    [leadership, morgan]
+    [leadership, morgan],
+    [leadership, lee]
   ] as const)
     await cmd({
       operation: "assign",
@@ -484,7 +490,7 @@ test("actual structure HTTP routes preserve private positions/contact projection
   assert.equal(
     snapshot.positions.find((p: { id: string }) => p.id === leadership.id)
       .assignments.length,
-    1
+    2
   );
   const hidden = [
     "Hidden Morgan Canary",
@@ -549,6 +555,19 @@ test("actual structure HTTP routes preserve private positions/contact projection
         );
       assert.equal(html.includes("Hidden Morgan Canary"), false);
       if (production) {
+        if (suffix === "structure" && !rsc) {
+          assert.ok(html.includes("Connected church positions"));
+          assert.ok(html.includes("Find a role or listed person"));
+          assert.ok(html.includes('data-chart-card="' + leadership.id + '"'));
+          assert.ok(html.includes('data-chart-card="' + outreach.id + '"'));
+          assert.ok(html.includes("2 assigned"));
+          assert.ok(html.includes("Assigned · member is unlisted"));
+          assert.ok(html.includes("Fill this position"));
+          assert.ok(html.includes("Review privileges"));
+          assert.ok(
+            html.includes("structure/assign?positionId=" + outreach.id)
+          );
+        }
         if (suffix.startsWith("people/"))
           assert.ok(html.includes(val.user.username + ".shared@example.test"));
         if (suffix.startsWith("structure"))
@@ -654,6 +673,14 @@ test("actual structure HTTP routes preserve private positions/contact projection
     ).text();
     const visible = html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/g, "");
     assert.equal(visible.includes("Save position"), false);
+    const chart = await (
+      await get(`/platform/churches/${churchId}/structure`, lee.token)
+    ).text();
+    assert.ok(chart.includes("Connected church positions"));
+    assert.equal(chart.includes("Fill this position"), false);
+    assert.equal(chart.includes("Review privileges"), false);
+    assert.equal(chart.includes("Add another person"), false);
+    for (const secret of hidden) assert.equal(chart.includes(secret), false);
   }
   const c = await db.churchConnection.findUniqueOrThrow({
     where: { id: connections[val.user.id] }

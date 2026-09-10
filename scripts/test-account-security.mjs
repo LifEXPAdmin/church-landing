@@ -472,6 +472,7 @@ try {
   if (portalTests) await runTests("tests/church-listings.test.ts");
   if (portalTests) await runTests("tests/church-claims.test.ts");
   if (portalTests) await runTests("tests/church-structure.test.ts");
+  if (portalTests) await runTests("tests/church-chart-layout.test.ts");
   if (portalTests) await runTests("tests/church-role-templates.test.ts");
   if (portalTests)
     await runTests("tests/church-assignment-permissions.test.ts");
