@@ -2,22 +2,21 @@
 
 ## Google foundation test scope
 
-The Google account service is under local development; no public Google control
-is enabled. The isolated harness includes `tests/google-accounts.test.ts`, which
-uses the real library signature verifier with a fictional RSA certificate and
-substituted code exchange. It covers state/browser/nonce/expiry, matching-email
-non-takeover, onboarding/adult acknowledgment, owner linking, concurrent identity
-creation, suspension/revocation and the last-method rule. It also covers one-use
-session/action-bound Google confirmation, explicit reactivation, private identity
-export and password-backed unlinking. Database backup/restore and fresh migrations
-include identity, attempt and recent-authentication tables. This evidence does
-not establish a real Google redirect, live provider configuration or a complete
-Google-only account interface. Ten Request/Response boundary groups additionally
-test HttpOnly cookies, callback cleanup, explicit onboarding, reactivation and
-sensitive action confirmation. Real development and production HTTP tests keep
-unconfigured Google routes disabled. The enabled callback tests substitute only
-the provider transport/certificates and do not claim actual Google consent.
-See [GOOGLE_ACCOUNT_REPORT.md](GOOGLE_ACCOUNT_REPORT.md).
+The Google account service and interface are implemented but Google stays hidden
+without valid enabled server configuration. The isolated harness covers signed
+claims, account linking, one-use sensitive confirmation, onboarding/reactivation,
+HttpOnly callbacks, migrations/restore and private HTML/RSC cookie handling.
+Google service/boundary tests use the real signature verifier with fictional RSA
+certificates and substituted provider transport. Actual development and production
+HTTP tests keep public Google routes disabled.
+
+A separate local browser fixture exercises the interface with a simulated
+provider: explicit profile/adult signup, returning to a post without an automatic
+action, Google-only account controls, password addition, email changes,
+linking/unlinking and deactivation/reactivation. This does not establish actual
+Google consent or Google Cloud configuration. Real provider and device acceptance
+remain required before enabling Google publicly. See
+[GOOGLE_ACCOUNT_REPORT.md](GOOGLE_ACCOUNT_REPORT.md).
 
 ## Browse first
 

@@ -1,5 +1,19 @@
 # Godschurches current state
 
+## Google interface verified — September 9, 2026
+
+The `codex/google-account-interface` implementation completes explicit Google
+onboarding, sign-in-method management and sensitive account confirmations above
+`9199d7d`. All 156 applicable isolated checks passed (zero failures, two intentional
+delivery skips), plus actual fictional-provider browser journeys and 20 enabled
+privacy requests in each of development and production. Final lint/types/build,
+runtime traces and migration/restore/restart passed. A shared cookie reader
+prevents Next development diagnostics from serializing request credentials.
+Google remains disabled in production, with real provider/device acceptance
+still open. Publication verification follows. See
+[GOOGLE_ACCOUNT_REPORT.md](GOOGLE_ACCOUNT_REPORT.md).
+
+
 ## Google HTTP integration verified locally — September 9, 2026
 
 `codex/google-http-boundary` extends `83f4f1e` with origin/rate-limited routes,

@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { AccountLifecycle } from "@/components/platform/account-lifecycle";
 import { PlatformShell } from "@/components/platform/platform-shell";
 import { getCurrentPlatformUser } from "@/lib/platform/session";
+import { GoogleButton } from "@/components/platform/google-account";
+import { googleAvailable } from "@/lib/platform/google-availability";
 
 export const metadata: Metadata = {
   title: { absolute: "Reactivate your account | Godschurches" },
@@ -25,6 +27,16 @@ export default async function ReactivatePage({
               Your account is deactivated and all devices are signed out. You
               can leave this page and return whenever you are ready.
             </p>
+          )}
+          {!user && googleAvailable() && (
+            <div className="gc-settings">
+              <h2>Return with Google</h2>
+              <p className="text-gc-muted">
+                If Google is linked to your account, sign in with it and confirm
+                reactivation on the next page.
+              </p>
+              <GoogleButton body={{ operation: "start", next: "/platform" }} />
+            </div>
           )}
           <AccountLifecycle reactivate />
         </div>

@@ -437,6 +437,13 @@ export async function finishGoogleSignup(
           })
         )
           throw new GoogleAccountError();
+        if (
+          await tx.platformUser.findUnique({
+            where: { username },
+            select: { id: true }
+          })
+        )
+          throw new AccountError("handle-taken");
         const user = await tx.platformUser.create({
           data: {
             name,
@@ -471,8 +478,14 @@ export async function finishGoogleSignup(
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === "P2002"
-    )
+    ) {
+      if (
+        Array.isArray(error.meta?.target) &&
+        error.meta.target.includes("username")
+      )
+        throw new AccountError("handle-taken");
       throw new GoogleAccountError();
+    }
     throw error;
   }
 }

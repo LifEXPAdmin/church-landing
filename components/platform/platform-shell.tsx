@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { cookies } from "next/headers";
+import { privateCookies } from "@/lib/platform/private-cookies";
 import { ReadingProvider, AppearanceSelect } from "./reading-preferences";
 import {
   parseReadingPreferences,
@@ -22,11 +22,13 @@ export async function PlatformShell({
   children,
   reviewerNavigation = []
 }: PlatformShellProps) {
-  // The development Flight debugger can serialize awaited cookie jars. Keep
-  // presentation reads behind the same production boundary as account reads.
+  // Preserve the existing browser-restored preference defaults in development.
+  // Production cookie reads use the shared private serialization boundary.
   const initial =
     process.env.NODE_ENV === "production"
-      ? parseReadingPreferences((await cookies()).get(preferenceCookie)?.value)
+      ? parseReadingPreferences(
+          (await privateCookies()).get(preferenceCookie)?.value
+        )
       : defaultReadingPreferences;
   return (
     <ReadingProvider initial={initial}>

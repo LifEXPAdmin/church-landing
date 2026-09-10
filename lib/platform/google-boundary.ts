@@ -348,6 +348,11 @@ export async function handleGoogleRequest(db: PrismaClient, request: Request) {
         "Confirm that you understand the account change before continuing.",
         400
       );
+    if (error instanceof AccountError && error.code === "handle-taken")
+      return reply(
+        "That public username is already taken. Choose another.",
+        409
+      );
     if (error instanceof AccountError)
       return reply(
         error.code === "session"

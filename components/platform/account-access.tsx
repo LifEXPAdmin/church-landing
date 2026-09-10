@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useRef, useState } from "react";
 import { AccountForm } from "./account-form";
+import { GoogleButton } from "./google-account";
 import {
   accountEntryHref,
   accountReasons,
@@ -13,7 +14,9 @@ export function AccountAccess({
   reactivated = false,
   emailChanged = false,
   returnTo = "/platform",
-  reason
+  reason,
+  googleAvailable = false,
+  googleNotice
 }: {
   initialView: "login" | "register";
   passwordChanged?: boolean;
@@ -21,6 +24,8 @@ export function AccountAccess({
   emailChanged?: boolean;
   returnTo?: string;
   reason?: AccountReason;
+  googleAvailable?: boolean;
+  googleNotice?: "retry" | "link-required" | "unavailable";
 }) {
   const [view, setView] = useState(initialView);
   const [email, setEmail] = useState("");
@@ -70,8 +75,25 @@ export function AccountAccess({
       {emailChanged && (
         <p role="status" className="mb-6 text-gc-accent">
           Your sign-in email changed and all devices were signed out. Use your
-          new email and existing password to sign in.
+          new email and password, or your linked Google account, to sign in.
         </p>
+      )}
+      {googleNotice && (
+        <p role="status" className="mb-5 text-gc-muted">
+          {googleNotice === "link-required"
+            ? "Sign in to your existing Godschurches account first, then connect Google in Account settings. Google has not been linked to that account."
+            : googleNotice === "unavailable"
+              ? "Google sign-in is not available yet. You can use email sign-in or keep browsing."
+              : "Google sign-in was canceled or could not be completed. Try again, or use email sign-in. If an app browser blocks Google, open this page in your regular browser."}
+        </p>
+      )}
+      {googleAvailable && (
+        <div className="mb-6 space-y-3">
+          <GoogleButton body={{ operation: "start", next: returnTo }} />
+          <p className="text-sm text-gc-muted">
+            Or continue with your email below.
+          </p>
+        </div>
       )}
       <AccountForm
         key={view}

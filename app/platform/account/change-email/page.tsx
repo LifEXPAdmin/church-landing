@@ -3,6 +3,8 @@ import { AccountEmailChange } from "@/components/platform/account-email-change";
 import { PlatformShell } from "@/components/platform/platform-shell";
 import { getCurrentPlatformUser } from "@/lib/platform/session";
 import { accountConfig } from "@/lib/platform/account-config";
+import { GoogleAccountOptions } from "@/components/platform/google-account";
+import { googleAvailable } from "@/lib/platform/google-availability";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -23,7 +25,13 @@ export default async function ChangeEmailPage() {
       <section className="container-shell py-10">
         <div className="mx-auto max-w-2xl space-y-5">
           <h1 className="text-4xl text-gc-text">Your sign-in email</h1>
-          <AccountEmailChange available={available} signedIn={!!user} confirm />
+          <GoogleAccountOptions enabled={googleAvailable() && !!user}>
+            <AccountEmailChange
+              available={available}
+              signedIn={!!user}
+              confirm
+            />
+          </GoogleAccountOptions>
         </div>
       </section>
     </PlatformShell>

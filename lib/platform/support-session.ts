@@ -1,5 +1,5 @@
 import { cache } from "react";
-import { cookies } from "next/headers";
+import { privateCookies } from "./private-cookies";
 import { prisma } from "@/lib/prisma";
 import { PLATFORM_SESSION_COOKIE } from "./session";
 import { readSupport } from "./support";
@@ -11,7 +11,7 @@ export const readSupportPage = cache(
     churchId?: string,
     page?: string
   ) => {
-    const store = await cookies();
+    const store = await privateCookies();
     return readSupport(
       prisma,
       store.get(PLATFORM_SESSION_COOKIE)?.value,

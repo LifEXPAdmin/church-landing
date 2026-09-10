@@ -2,12 +2,14 @@
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { accountInputClass, PasswordField } from "./account-form";
+import { AccountConfirmation, useAccountConfirmation } from "./google-account";
 
 export function AccountLifecycle({
   reactivate = false
 }: {
   reactivate?: boolean;
 }) {
+  const confirmation = useAccountConfirmation("deactivate-account");
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState("");
   const busy = useRef(false);
@@ -49,9 +51,9 @@ export function AccountLifecycle({
               still access existing case records.
             </p>
             <p>
-              You can return using your existing email and password. Download
-              your data above first if you want a copy. Hand off any church,
-              contact, operator or support duties before deactivating.
+              You can return using your existing sign-in method. Download your
+              data above first if you want a copy. Hand off any church, contact,
+              operator or support duties before deactivating.
             </p>
           </>
         )}
@@ -81,7 +83,7 @@ export function AccountLifecycle({
                       email: values.get("email"),
                       password: values.get("password")
                     }
-                  : { currentPassword: values.get("currentPassword") })
+                  : confirmation.credentials(values))
               })
             });
             const result = await response.json();
@@ -103,6 +105,7 @@ export function AccountLifecycle({
               "We could not confirm the response. Refresh the page to check your account status before trying again."
             );
           } finally {
+            if (!reactivate) confirmation.finish();
             busy.current = false;
             setPending(false);
             requestAnimationFrame(() => feedback.current?.focus());
@@ -125,16 +128,24 @@ export function AccountLifecycle({
             />
           </div>
         )}
-        <PasswordField
-          id={`${prefix}-password`}
-          name={reactivate ? "password" : "currentPassword"}
-          label={
-            reactivate
-              ? "Existing password"
-              : "Current password for deactivation"
-          }
-          autocomplete="current-password"
-        />
+        {reactivate ? (
+          <PasswordField
+            id={`${prefix}-password`}
+            name={reactivate ? "password" : "currentPassword"}
+            label={
+              reactivate
+                ? "Existing password"
+                : "Current password for deactivation"
+            }
+            autocomplete="current-password"
+          />
+        ) : (
+          <AccountConfirmation
+            value={confirmation}
+            id="deactivate-password"
+            label="Current password for deactivation"
+          />
+        )}
         <label className="flex min-h-11 items-start gap-3">
           <input
             className="mt-1 h-5 w-5 shrink-0"
@@ -148,7 +159,11 @@ export function AccountLifecycle({
               : "I understand that this hides my account, ends access and sharing, and keeps my records stored."}
           </span>
         </label>
-        <button type="submit" className="gc-button" disabled={pending}>
+        <button
+          type="submit"
+          className="gc-button"
+          disabled={pending || (!reactivate && !confirmation.ready)}
+        >
           {pending ? "Please wait…" : action}
         </button>
         <noscript>JavaScript is needed to use this account control.</noscript>

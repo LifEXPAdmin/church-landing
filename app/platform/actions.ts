@@ -1,5 +1,5 @@
 "use server";
-import { cookies } from "next/headers";
+import { privateCookies } from "@/lib/platform/private-cookies";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
@@ -21,7 +21,7 @@ async function command(
   operation: Parameters<typeof communityCommand>[2],
   formData: FormData
 ) {
-  const token = (await cookies()).get(PLATFORM_SESSION_COOKIE)?.value;
+  const token = (await privateCookies()).get(PLATFORM_SESSION_COOKIE)?.value;
   try {
     await communityCommand(
       prisma,

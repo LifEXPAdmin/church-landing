@@ -13,6 +13,9 @@ import { AccountExport } from "@/components/platform/account-export";
 import { AccountLifecycle } from "@/components/platform/account-lifecycle";
 import { AccountEmailChange } from "@/components/platform/account-email-change";
 import { accountConfig } from "@/lib/platform/account-config";
+import { GoogleAccountOptions } from "@/components/platform/google-account";
+import { GoogleSignInMethods } from "@/components/platform/google-sign-in-methods";
+import { googleAvailable } from "@/lib/platform/google-availability";
 export const metadata: Metadata = { title: "Account settings" };
 export default async function PlatformSettingsPage() {
   const user = await getCurrentPlatformUser();
@@ -50,13 +53,16 @@ export default async function PlatformSettingsPage() {
               Manage church directory sharing
             </Link>
           </div>
-          <AccountSessions />
-          <AccountEmailChange available={emailAvailable} />
-          <AccountExport />
-          <AccountLifecycle />
-          <div className="rounded-xl border border-gc-divider bg-gc-surface p-6">
-            <AccountForm operation="change-password" />
-          </div>
+          <GoogleAccountOptions enabled={googleAvailable()}>
+            <GoogleSignInMethods />
+            <AccountSessions />
+            <AccountEmailChange available={emailAvailable} />
+            <AccountExport />
+            <AccountLifecycle />
+            <div className="rounded-xl border border-gc-divider bg-gc-surface p-6">
+              <AccountForm operation="change-password" />
+            </div>
+          </GoogleAccountOptions>
           <div className="gc-settings">
             <h2>Help and updates</h2>
             <p className="text-gc-muted">

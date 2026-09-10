@@ -1,8 +1,9 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { PasswordField } from "./account-form";
+import { AccountConfirmation, useAccountConfirmation } from "./google-account";
 
 export function AccountExport() {
+  const confirmation = useAccountConfirmation("prepare-export");
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState("");
   const [failed, setFailed] = useState(false);
@@ -17,7 +18,7 @@ export function AccountExport() {
     const timer = setTimeout(() => {
       setDownload(null);
       setMessage(
-        "This download has expired. Confirm your password to prepare another."
+        "This download has expired. Confirm your account to prepare another."
       );
     }, 60_000);
     return () => {
@@ -55,9 +56,7 @@ export function AccountExport() {
           busy.current = true;
           controller.current = new AbortController();
           const form = event.currentTarget;
-          const password = String(
-            new FormData(form).get("currentPassword") ?? ""
-          );
+          const credentials = confirmation.credentials(new FormData(form));
           setPending(true);
           setFailed(false);
           setDownload(null);
@@ -73,7 +72,7 @@ export function AccountExport() {
           try {
             const prepared = await post({
               operation: "prepare-export",
-              currentPassword: password
+              ...credentials
             });
             form.reset();
             const result = await prepared.json();
@@ -93,7 +92,7 @@ export function AccountExport() {
             }
             setDownload(URL.createObjectURL(await response.blob()));
             setMessage(
-              "Your file is ready. Select Save account data within one minute. After that, confirm your password to prepare a new file."
+              "Your file is ready. Select Save account data within one minute. After that, confirm your account to prepare a new file."
             );
           } catch (error) {
             form.reset();
@@ -104,22 +103,22 @@ export function AccountExport() {
                 : "The download could not be confirmed. Please try again."
             );
           } finally {
+            confirmation.finish();
             busy.current = false;
             setPending(false);
             requestAnimationFrame(() => feedback.current?.focus());
           }
         }}
       >
-        <PasswordField
+        <AccountConfirmation
+          value={confirmation}
           id="account-export-password"
-          name="currentPassword"
           label="Confirm your current password"
-          autocomplete="current-password"
         />
         <button
           type="submit"
           className="gc-button gc-button-quiet"
-          disabled={pending}
+          disabled={pending || !confirmation.ready}
         >
           {pending ? "Preparing your file…" : "Prepare account download"}
         </button>

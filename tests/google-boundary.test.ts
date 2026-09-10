@@ -357,6 +357,18 @@ test("authorization cookies are host-only and HttpOnly; signup completes once wi
     ).status,
     400
   );
+  const taken = await owner();
+  const takenResponse = await post(
+    {
+      operation: "signup",
+      name: "Fictional New Member",
+      username: taken.user.username,
+      adultAcknowledged: true
+    },
+    jar
+  );
+  assert.equal(takenResponse.status, 409);
+  assert.match(await takenResponse.text(), /username is already taken/);
   const replay = new Map(jar);
   const created = await post(
     {
@@ -696,6 +708,35 @@ test("email-change token survives Google redirect only in an owner-bound HttpOnl
   });
   assert.notEqual(updated.email, person.user.email);
   assert.equal(updated.passwordHash, null);
+});
+
+test("a password-backed owner may choose password confirmation after the Google email-link return", async () => {
+  const person = await owner();
+  let emailToken = "";
+  await (
+    await requestEmailChange(
+      db,
+      person.token,
+      password,
+      unique() + "@example.test",
+      async (_email, _purpose, token) => {
+        emailToken = token;
+      }
+    )
+  )();
+  await reauth(person, "confirm-email-change", { emailToken });
+  const wrong = await account(
+    { operation: "confirm-email-change", currentPassword: "wrong-password" },
+    person.jar
+  );
+  assert.equal(wrong.status, 400);
+  const changed = await account(
+    { operation: "confirm-email-change", currentPassword: password },
+    person.jar
+  );
+  assert.equal(changed.status, 200);
+  assert.equal(person.jar.size, 0);
+  assert.equal(await readAccountSession(db, person.token), null);
 });
 
 test("Google deactivation and reactivation require separate confirmation and never automatically restore sign-in", async () => {

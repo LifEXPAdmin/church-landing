@@ -369,10 +369,7 @@ async function processAccountRequest(
         db,
         requestSessionToken(request),
         credential,
-        body.token ??
-          (credentialUse.google
-            ? googleRequestToken(request, "email", config.secureCookie)
-            : undefined)
+        body.token ?? googleRequestToken(request, "email", config.secureCookie)
       );
       return reply(
         "Sign-in email changed. All devices are signed out. Sign in again using your new email and password or your linked Google account.",

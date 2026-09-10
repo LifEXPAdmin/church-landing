@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { accountInputClass, PasswordField } from "./account-form";
+import { accountInputClass } from "./account-form";
+import { AccountConfirmation, useAccountConfirmation } from "./google-account";
 
 export function AccountEmailChange({
   available,
@@ -12,6 +13,9 @@ export function AccountEmailChange({
   confirm?: boolean;
   signedIn?: boolean;
 }) {
+  const confirmation = useAccountConfirmation(
+    confirm ? "confirm-email-change" : "request-email-change"
+  );
   const [token, setToken] = useState<string | null>(null);
   const [ready, setReady] = useState(!confirm);
   const [pending, setPending] = useState(false);
@@ -65,7 +69,9 @@ export function AccountEmailChange({
             Sign in
           </Link>
         </p>
-      ) : confirm && !token ? (
+      ) : confirm && !token && confirmation.loading ? (
+        <p role="status">Checking your email confirmation…</p>
+      ) : confirm && !token && !confirmation.options?.emailConfirmationReady ? (
         <p>
           Open the confirmation link sent to your new address. You can request a
           fresh link in{" "}
@@ -95,9 +101,11 @@ export function AccountEmailChange({
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                   operation: prefix,
-                  currentPassword: values.get("currentPassword"),
+                  ...confirmation.credentials(values),
                   ...(confirm
-                    ? { token }
+                    ? token
+                      ? { token }
+                      : {}
                     : { newEmail: values.get("newEmail") })
                 })
               });
@@ -124,6 +132,7 @@ export function AccountEmailChange({
                 "We could not confirm the response. Check your inbox or try signing in with your existing and new email before requesting another change."
               );
             } finally {
+              confirmation.finish();
               busy.current = false;
               setPending(false);
               requestAnimationFrame(() => feedback.current?.focus());
@@ -150,19 +159,23 @@ export function AccountEmailChange({
               </p>
             </div>
           )}
-          <PasswordField
+          <AccountConfirmation
+            value={confirmation}
+            emailToken={token}
             id={`${prefix}-password`}
-            name="currentPassword"
             label="Current password for sign-in email"
-            autocomplete="current-password"
           />
           {confirm && (
             <p className="text-gc-muted">
-              Confirm your current password for the same account that requested
-              this change. Opening this page does not change your account.
+              Confirm the same account that requested this change. Opening this
+              page does not change your account.
             </p>
           )}
-          <button type="submit" disabled={pending} className="gc-button">
+          <button
+            type="submit"
+            disabled={pending || !confirmation.ready}
+            className="gc-button"
+          >
             {pending ? "Please wait…" : button}
           </button>
           <noscript>

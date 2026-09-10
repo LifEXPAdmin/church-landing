@@ -1,5 +1,61 @@
 # Google account foundation
 
+## Account interface and privacy verification — September 9, 2026
+
+The `codex/google-account-interface` branch completes the browser integration
+above local HTTP checkpoint `9199d7d`. Login/signup offer Google alongside email
+only when the server has a valid enabled configuration. A callback never renders
+provider credentials. Onboarding explicitly requires a name, available public
+username and adult acknowledgment; joining returns to the intended public post
+without automatically liking, commenting or joining a church.
+
+Settings show available sign-in methods. A Google-only member can add a password,
+confirm removal of other sessions, download their data, change sign-in email or
+deactivate using a fresh confirmation for that one action. The separate action
+still requires an explicit submission. Linking verifies the existing password;
+unlinking requires a usable password backup. Reactivation requires acknowledgment
+and does not automatically sign in. Wrong-identity confirmation leaves the
+original account and identity unchanged. Email-link proofs survive Google returns
+in HttpOnly cookies and also permit choosing password confirmation afterward.
+
+Enabled development testing found that Next.js could serialize its resolved
+request cookie store in RSC debug data, despite minimal component props. The
+shared server cookie reader now installs a non-enumerable JSON redaction hook
+before returning the store. Reads, writes, iteration and HTTP cookie behavior
+remain unchanged. Session, portal, support and server-action readers all use it.
+The added HTTP regression supplies random session, Google and unrelated private
+cookies to HTML/RSC requests, verifies their absence and separately checks that
+settings still recognize a valid account. Existing private portal/support
+development guards remain in place.
+
+The actual local browser, with fictional database accounts and a separate
+simulated provider, exercised signup/return, independent sensitive confirmations,
+password addition, email change, linking/unlinking, deactivation/reactivation,
+cancellation and server-action logout. An account export was downloaded and
+independently parsed. Settings fit 320, 390 and 1,440 pixel widths; login fits
+320 pixels, with a 44 pixel Google touch target. No browser errors or warnings
+were returned. Twenty enabled development HTML/RSC privacy checks passed.
+All 156 applicable isolated regressions passed with zero failures and two
+intentional disabled-delivery skips, including 32 cookie-privacy requests in each
+of development and production. The initial new test incorrectly expected a
+normal page status for the guest Settings redirect; its corrected assertion
+checks the intended Join destination as well as private-value absence. Twenty
+additional enabled production HTTPS privacy checks passed with a trusted fixture
+CA and verified Google controls. Lint, TypeScript, migration/restore/restart and
+the final build passed. Runtime validation covered 58 traces, 4,226 entries and
+139 server JavaScript files, without the Prisma configuration-loader path.
+Fixture servers are stopped. This verified implementation is ready for publication
+with Google disabled; the exact live release is recorded separately below.
+
+The Google button is the unchanged official light pill PNG, rendered at its
+original aspect ratio, from Google's
+[preapproved sign-in assets](https://developers.google.com/identity/branding-guidelines).
+No real Google transport, account, consent or external email was used in these
+browser tests. Real provider configuration, Google browser/device acceptance,
+back-cache restoration and 200% text zoom remain unverified. Google stays hidden
+on production until its provider setup and acceptance are complete.
+
+
 ## HTTP integration verified locally — September 9, 2026
 
 The `codex/google-http-boundary` branch extends verified local account controls

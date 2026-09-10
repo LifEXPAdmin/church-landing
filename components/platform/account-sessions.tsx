@@ -1,15 +1,18 @@
 "use client";
 import { useRef, useState } from "react";
 import type { AccountSessionList } from "@/lib/platform/account-sessions";
-import { PasswordField } from "./account-form";
+import { AccountConfirmation, useAccountConfirmation } from "./google-account";
 
-async function requestSessions(operation: string, currentPassword?: string) {
+async function requestSessions(
+  operation: string,
+  credentials: Record<string, string> = {}
+) {
   const response = await fetch("/api/platform/account", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       operation,
-      ...(currentPassword === undefined ? {} : { currentPassword })
+      ...credentials
     })
   });
   let result;
@@ -30,6 +33,7 @@ async function requestSessions(operation: string, currentPassword?: string) {
 }
 
 export function AccountSessions() {
+  const confirmation = useAccountConfirmation("revoke-other-sessions");
   const [listing, setListing] = useState<AccountSessionList | null>(null);
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState("");
@@ -135,14 +139,17 @@ export function AccountSessions() {
         onSubmit={(event) => {
           event.preventDefault();
           const form = event.currentTarget;
-          const password = String(
-            new FormData(form).get("currentPassword") ?? ""
-          );
+          const credentials = confirmation.credentials(new FormData(form));
           void run(async () => {
-            const result = await requestSessions(
-              "revoke-other-sessions",
-              password
-            );
+            let result;
+            try {
+              result = await requestSessions(
+                "revoke-other-sessions",
+                credentials
+              );
+            } finally {
+              confirmation.finish();
+            }
             form.reset();
             setListing(null);
             return result.message;
@@ -150,17 +157,20 @@ export function AccountSessions() {
         }}
       >
         <p id="other-sign-ins-help" className="text-gc-muted">
-          Confirm your current password to sign out every other session. This
-          one stays signed in. If you think someone knows your password, change
-          it below as well.
+          Confirm your account to sign out every other session. This one stays
+          signed in. If you think someone knows your password, change it below
+          as well.
         </p>
-        <PasswordField
+        <AccountConfirmation
+          value={confirmation}
           id="session-current-password"
-          name="currentPassword"
           label="Current password for other sign-ins"
-          autocomplete="current-password"
         />
-        <button type="submit" className="gc-button" disabled={pending}>
+        <button
+          type="submit"
+          className="gc-button"
+          disabled={pending || !confirmation.ready}
+        >
           {pending ? "Please wait…" : "Sign out other sessions"}
         </button>
         <noscript>JavaScript is needed to use these sign-in controls.</noscript>
