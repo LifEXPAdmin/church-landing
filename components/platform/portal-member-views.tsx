@@ -579,6 +579,16 @@ export function PortalDirectory({ snapshot }: { snapshot: PortalSnapshot }) {
       >
         Manage my directory sharing
       </Link>
+      {snapshot.directoryCanAssignRoles && snapshot.church && (
+        <div className="mb-5">
+          <Link
+            href={`${churchPath(snapshot.church.id)}/structure/assign`}
+            className={portalLinkClass}
+          >
+            Assign role and review privileges
+          </Link>
+        </div>
+      )}
       {snapshot.directory?.length ? (
         <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {snapshot.directory.map((entry, index) => (

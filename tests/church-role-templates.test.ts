@@ -152,6 +152,8 @@ test("role titles: custom defaults confer no access; revisions and multiple inde
   });
   await f.cmd({
     operation: "assign",
+    privilegesReviewed: true,
+    confirmed: true,
     positionId: second.id,
     connectionId: connection.id
   });

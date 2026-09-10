@@ -172,6 +172,14 @@ test("assignment permissions: explicit role-only review works for a structure-on
     p = await f.position();
   await f.grant("MANAGE_STRUCTURE", f.contact.id);
   await denied(
+    f.cmd({
+      operation: "assign",
+      positionId: p.id,
+      connectionId: f.connection.id
+    }),
+    400
+  );
+  await denied(
     f.save(p.id, [], { privilegesReviewed: false }, f.contact.token),
     400
   );
@@ -183,6 +191,8 @@ test("assignment permissions: explicit role-only review works for a structure-on
   await denied(
     f.cmd({
       operation: "assign",
+      privilegesReviewed: true,
+      confirmed: true,
       positionId: p.id,
       connectionId: f.connection.id,
       capabilities: ["MANAGE_STRUCTURE"]

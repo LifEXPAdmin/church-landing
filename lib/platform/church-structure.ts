@@ -28,6 +28,7 @@ import {
   type StructureSnapshot,
   type StructureView
 } from "./church-structure-types";
+import { rolePresets, type RolePresetKey } from "./church-role-library";
 
 type Tx = Prisma.TransactionClient;
 const MAX_POSITIONS = 200;
@@ -437,6 +438,11 @@ export async function churchStructureCommand(
         data: { archivedAt: new Date() }
       });
     } else if (op === "assign") {
+      if (input.privilegesReviewed !== true || input.confirmed !== true)
+        throw new PortalError(
+          400,
+          "Open the current assignment form, review Privileges and confirm before assigning a member."
+        );
       if (
         input.capabilities !== undefined ||
         input.presetKey !== undefined ||
@@ -549,6 +555,7 @@ export async function getChurchStructure(
     view?: StructureView;
     positionId?: string;
     connectionId?: string;
+    assignmentId?: string;
     query?: string;
     cursor?: string;
     candidateCursor?: string;
@@ -578,7 +585,7 @@ export async function getChurchStructure(
         "Church access management is not available to this account."
       );
     if (
-      ["roles", "privileges"].includes(options.view ?? "") &&
+      ["roles", "assign", "privileges"].includes(options.view ?? "") &&
       !capabilities.includes("MANAGE_STRUCTURE")
     )
       throw new PortalError(
@@ -682,7 +689,8 @@ export async function getChurchStructure(
     }
     if (
       (options.positionId && capabilities.includes("MANAGE_STRUCTURE")) ||
-      options.view === "access"
+      options.view === "access" ||
+      options.view === "assign"
     ) {
       const query = field(options.query ?? "", 100, true);
       const cursor = options.candidateCursor
@@ -712,7 +720,53 @@ export async function getChurchStructure(
     }
     if (options.view === "privileges") {
       const row = await position(tx, churchId, options.positionId);
-      const target = await targetConnection(tx, churchId, options.connectionId);
+      if (options.assignmentId && options.connectionId)
+        throw new PortalError(
+          400,
+          "Choose an assignment or a member, not both."
+        );
+      const selectedAssignment = options.assignmentId
+        ? await tx.churchPositionAssignment.findFirst({
+            where: {
+              id: identifier(options.assignmentId),
+              churchId,
+              positionId: row.id,
+              revokedAt: null
+            },
+            select: { connectionId: true }
+          })
+        : null;
+      if (options.assignmentId && !selectedAssignment)
+        throw new PortalError(
+          404,
+          "That current assignment is no longer available."
+        );
+      const target = await targetConnection(
+        tx,
+        churchId,
+        selectedAssignment?.connectionId ?? options.connectionId
+      );
+      const preference = await tx.churchDirectoryPreference.findUnique({
+        where: { connectionId: target.id },
+        select: preferenceSelect
+      });
+      const revision =
+        row.roleTemplateId && row.roleTemplateVersion
+          ? await tx.churchRoleRevision.findUnique({
+              where: {
+                templateId_churchId_version: {
+                  templateId: row.roleTemplateId,
+                  churchId,
+                  version: row.roleTemplateVersion
+                }
+              },
+              select: {
+                presetKey: true,
+                presetVersion: true,
+                recommendations: true
+              }
+            })
+          : null;
       const assignment = await tx.churchPositionAssignment.findUnique({
         where: {
           positionId_connectionId: {
@@ -729,6 +783,16 @@ export async function getChurchStructure(
       });
       const grants = await effectiveChurchGrants(tx, target.userId, [churchId]);
       snapshot.privileges = {
+        memberLabel: preference?.listed
+          ? preference.displayName
+          : "Member is unlisted",
+        isSelf: target.userId === actor.id,
+        recommendations: revision?.recommendations ?? [],
+        presetKey:
+          revision && Object.hasOwn(rolePresets, revision.presetKey)
+            ? (revision.presetKey as RolePresetKey)
+            : "G",
+        presetVersion: revision?.presetVersion ?? 1,
         positionId: row.id,
         connectionId: target.id,
         assignmentId: assignment?.id ?? null,
@@ -748,7 +812,14 @@ export async function getChurchStructure(
         effective: grants.map((g) => ({
           capability: g.capability,
           source: g.source,
-          assignmentId: g.assignmentId
+          assignmentId: g.assignmentId,
+          ...(g.assignmentId
+            ? {
+                positionName: rows.find((p) =>
+                  p.assignments.some((a) => a.id === g.assignmentId)
+                )?.name
+              }
+            : {})
         }))
       };
     }

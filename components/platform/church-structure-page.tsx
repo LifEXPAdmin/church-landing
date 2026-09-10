@@ -1,4 +1,5 @@
 import { ChurchRoleLibrary } from "./church-role-library";
+import { ChurchAssignmentReview } from "./church-assignment-review";
 import { ChurchRolePosition } from "./church-role-position";
 import { randomUUID } from "node:crypto";
 import Link from "next/link";
@@ -165,16 +166,23 @@ function memberFields(snapshot: StructureSnapshot): PortalField[] {
 function CandidateSearch({
   snapshot,
   path,
-  query
+  query,
+  context = {}
 }: {
   snapshot: StructureSnapshot;
   path: string;
   query: string;
+  context?: Record<string, string | undefined>;
 }) {
   const next = new URLSearchParams({
     q: query,
     candidateCursor: snapshot.candidatesCursor ?? ""
   });
+  const preserved = Object.entries(context).filter(
+    (entry): entry is [string, string] => Boolean(entry[1])
+  );
+  for (const [name, value] of preserved) next.set(name, value);
+  const clearQuery = new URLSearchParams(preserved);
   return (
     <div className="space-y-3">
       <form
@@ -184,6 +192,9 @@ function CandidateSearch({
         role="search"
         aria-label="Search listed church members"
       >
+        {preserved.map(([name, value]) => (
+          <input key={name} type="hidden" name={name} value={value} />
+        ))}
         <label
           className="block text-sm font-semibold"
           htmlFor="structure-member-search"
@@ -202,7 +213,10 @@ function CandidateSearch({
         </button>
       </form>
       {query && (
-        <Link href={path} className={portalLinkClass}>
+        <Link
+          href={path + (clearQuery.size ? `?${clearQuery}` : "")}
+          className={portalLinkClass}
+        >
           Clear member search
         </Link>
       )}
@@ -275,12 +289,10 @@ function PositionEditor({
 }
 function PositionDetail({
   snapshot,
-  row,
-  query
+  row
 }: {
   snapshot: StructureSnapshot;
   row: PositionSummary;
-  query: string;
 }) {
   const canManage = snapshot.capabilities.includes("MANAGE_STRUCTURE");
   const parent = snapshot.positions.find((p) => p.id === row.parentId);
@@ -340,6 +352,12 @@ function PositionDetail({
                   {a.name || "Assigned member is unlisted"}
                   {a.isSelf ? " (you)" : ""}
                 </p>
+                <Link
+                  className={portalLinkClass}
+                  href={`${root(snapshot.church.id)}/structure/assign?${new URLSearchParams({ positionId: row.id, assignmentId: a.id })}`}
+                >
+                  Review assignment privileges{a.name ? ` for ${a.name}` : ""}
+                </Link>
                 <PortalActionForm
                   structureAction="unassign"
                   payload={{
@@ -363,22 +381,16 @@ function PositionDetail({
             <PositionEditor snapshot={snapshot} row={row} />
           </PortalCard>
           <PortalCard title="Assign a member">
-            <CandidateSearch
-              snapshot={snapshot}
-              path={positionPath(snapshot.church.id, row.id)}
-              query={query}
-            />
-            <PortalActionForm
-              structureAction="assign"
-              payload={{
-                churchId: snapshot.church.id,
-                positionId: row.id,
-                expectedVersion: snapshot.version
-              }}
-              fields={memberFields(snapshot)}
-              label="Assign member"
-              description="Only eligible approved members of this church can be assigned. Their directory choices control whether their name and contact details appear."
-            />
+            <p>
+              Choose an eligible church member, review Privileges and confirm
+              before the assignment is saved.
+            </p>
+            <Link
+              className={portalLinkClass}
+              href={`${root(snapshot.church.id)}/structure/assign?positionId=${encodeURIComponent(row.id)}`}
+            >
+              Assign role and review privileges
+            </Link>
           </PortalCard>
           <PortalCard title="Archive position">
             <PortalActionForm
@@ -555,6 +567,14 @@ function Responsibilities({ snapshot }: { snapshot: StructureSnapshot }) {
         )}
         {snapshot.capabilities.includes("MANAGE_STRUCTURE") && (
           <Link
+            href={`${root(snapshot.church.id)}/structure/assign`}
+            className={portalLinkClass}
+          >
+            Assign a role and review privileges
+          </Link>
+        )}
+        {snapshot.capabilities.includes("MANAGE_STRUCTURE") && (
+          <Link
             href={`${root(snapshot.church.id)}/structure`}
             className={portalLinkClass}
           >
@@ -596,6 +616,7 @@ export async function ChurchStructurePage({
   view = "structure",
   positionId,
   connectionId,
+  assignmentId,
   create = false,
   outline = false,
   query = "",
@@ -606,13 +627,14 @@ export async function ChurchStructurePage({
   view?: StructureView;
   positionId?: string;
   connectionId?: string;
+  assignmentId?: string;
   create?: boolean;
   outline?: boolean;
   query?: string;
   cursor?: string;
   candidateCursor?: string;
 }) {
-  const path = `${root(churchId)}/${view === "roles" ? "structure/roles" : view === "person" ? `people/${encodeURIComponent(connectionId ?? "")}` : view === "structure" ? `structure${create ? "/new" : positionId ? `/${encodeURIComponent(positionId)}` : ""}` : view}`;
+  const path = `${root(churchId)}/${view === "roles" ? "structure/roles" : view === "assign" ? "structure/assign" : view === "person" ? `people/${encodeURIComponent(connectionId ?? "")}` : view === "structure" ? `structure${create ? "/new" : positionId ? `/${encodeURIComponent(positionId)}` : ""}` : view}`;
   // Do not read cookies or private church values inside development Flight diagnostics.
   if (process.env.NODE_ENV !== "production")
     return (
@@ -669,19 +691,21 @@ export async function ChurchStructurePage({
     ? snapshot.positions.find((p) => p.id === positionId)
     : undefined;
   const title =
-    view === "roles"
-      ? "Church role library"
-      : view === "person"
-        ? snapshot.person!.name
-        : view === "overview"
-          ? snapshot.church.name
-          : view === "responsibilities"
-            ? "My responsibilities"
-            : view === "access"
-              ? "Church access"
-              : create
-                ? "Create a position"
-                : (row?.name ?? "Church structure");
+    view === "assign"
+      ? "Assign role and review privileges"
+      : view === "roles"
+        ? "Church role library"
+        : view === "person"
+          ? snapshot.person!.name
+          : view === "overview"
+            ? snapshot.church.name
+            : view === "responsibilities"
+              ? "My responsibilities"
+              : view === "access"
+                ? "Church access"
+                : create
+                  ? "Create a position"
+                  : (row?.name ?? "Church structure");
   return (
     <PlatformShell user={snapshot.viewer}>
       <section className="container-shell min-w-0 space-y-6 py-8 [overflow-wrap:anywhere]">
@@ -799,12 +823,43 @@ export async function ChurchStructurePage({
               Contact sharing can change. Information already seen cannot be
               recalled.
             </p>
+            {snapshot.capabilities.includes("MANAGE_STRUCTURE") && (
+              <Link
+                className={portalLinkClass}
+                href={`${root(churchId)}/structure/assign?connectionId=${encodeURIComponent(connectionId ?? "")}`}
+              >
+                Assign role and review privileges
+              </Link>
+            )}
           </PortalCard>
         )}
         {view === "responsibilities" && (
           <Responsibilities snapshot={snapshot} />
         )}
         {view === "access" && <Access snapshot={snapshot} query={query} />}
+        {view === "assign" && (
+          <>
+            {!assignmentId && (
+              <CandidateSearch
+                snapshot={snapshot}
+                path={path}
+                query={query}
+                context={{ positionId, connectionId }}
+              />
+            )}
+            <ChurchAssignmentReview
+              church={{ id: snapshot.church.id, name: snapshot.church.name }}
+              positions={snapshot.positions.map(({ id, name }) => ({
+                id,
+                name
+              }))}
+              candidates={snapshot.candidates ?? []}
+              initialPositionId={positionId}
+              initialConnectionId={connectionId}
+              assignmentId={assignmentId}
+            />
+          </>
+        )}
         {view === "roles" && (
           <ChurchRoleLibrary
             snapshot={{
@@ -833,7 +888,7 @@ export async function ChurchStructurePage({
               </PortalCard>
             </div>
           ) : row ? (
-            <PositionDetail snapshot={snapshot} row={row} query={query} />
+            <PositionDetail snapshot={snapshot} row={row} />
           ) : (
             <>
               <div className="flex flex-wrap gap-x-5">
@@ -851,6 +906,14 @@ export async function ChurchStructurePage({
                 >
                   Full outline
                 </a>
+                {snapshot.capabilities.includes("MANAGE_STRUCTURE") && (
+                  <Link
+                    href={`${root(churchId)}/structure/assign`}
+                    className={portalLinkClass}
+                  >
+                    Assign role and review privileges
+                  </Link>
+                )}
                 {snapshot.capabilities.includes("MANAGE_STRUCTURE") && (
                   <Link
                     href={`${root(churchId)}/structure/new`}

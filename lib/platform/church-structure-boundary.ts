@@ -24,6 +24,7 @@ export async function handleChurchStructureRequest(
       if (
         ![
           "roles",
+          "assign",
           "privileges",
           "overview",
           "structure",
@@ -39,6 +40,7 @@ export async function handleChurchStructureRequest(
           view: view as import("./church-structure-types").StructureView,
           positionId: url.searchParams.get("positionId") ?? undefined,
           connectionId: url.searchParams.get("connectionId") ?? undefined,
+          assignmentId: url.searchParams.get("assignmentId") ?? undefined,
           query: url.searchParams.get("q") ?? undefined,
           cursor: url.searchParams.get("cursor") ?? undefined,
           candidateCursor: url.searchParams.get("candidateCursor") ?? undefined

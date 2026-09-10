@@ -28,6 +28,7 @@ export type StructureOperation =
   | "grant"
   | "revoke";
 export type StructureView =
+  | "assign"
   | "roles"
   | "privileges"
   | "overview"
@@ -58,6 +59,11 @@ export type StructureSnapshot = {
   positions: PositionSummary[];
   roleTemplates?: ChurchRoleSummary[];
   privileges?: {
+    memberLabel: string;
+    isSelf: boolean;
+    recommendations: StructureCapability[];
+    presetKey: import("./church-role-library").RolePresetKey;
+    presetVersion: number;
     positionId: string;
     connectionId: string;
     assignmentId: string | null;
@@ -69,6 +75,7 @@ export type StructureSnapshot = {
       capability: StructureCapability;
       source: "ASSIGNMENT" | "INDEPENDENT";
       assignmentId: string | null;
+      positionName?: string;
     }[];
   };
   candidates?: { id: string; name: string }[];

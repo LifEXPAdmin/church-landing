@@ -158,6 +158,170 @@ const cmd = async (
   return r.json();
 };
 
+test("assignment review entry protects member identity, preserves title revisions and resolves existing assignments within the selected position", async () => {
+  for (const [token, canAssign] of [
+    [ada.token, true],
+    [lee.token, false]
+  ] as const) {
+    const directory = await get(
+      `/api/platform/portal?view=directory&churchId=${churchId}`,
+      token
+    );
+    assert.equal(directory.status, 200);
+    assert.equal((await directory.json()).directoryCanAssignRoles, canAssign);
+    for (const rsc of [false, true]) {
+      const page = await (
+        await get(`/platform/churches/${churchId}/directory`, token, rsc)
+      ).text();
+      assert.equal(
+        page.includes("Assign role and review privileges"),
+        canAssign
+      );
+      assert.equal(page.includes(morgan.user.email), false);
+      assert.equal(page.includes("Hidden Morgan Canary"), false);
+    }
+  }
+  const title = await cmd({
+    operation: "template-create",
+    requestKey: randomUUID(),
+    name: "Private Privileges Review Title",
+    presetKey: "P"
+  });
+  const p = await cmd({
+    operation: "create",
+    requestKey: randomUUID(),
+    roleTemplateId: title.id,
+    roleTemplateVersion: 1
+  });
+  await cmd({
+    operation: "template-edit",
+    templateId: title.id,
+    templateVersion: 1,
+    name: "Future recommendations only",
+    presetKey: "G"
+  });
+  const path = `/platform/churches/${churchId}/structure/assign?positionId=${p.id}`;
+  for (const rsc of [false, true]) {
+    const visible = await (await get(path, ada.token, rsc)).text();
+    if (production) {
+      assert.ok(visible.includes("Private Privileges Review Title"));
+      if (!rsc) assert.ok(visible.includes("Continue to Privileges"));
+    } else
+      assert.ok(visible.includes("Open the private church structure preview"));
+    for (const marker of [
+      ada.user.email,
+      morgan.user.email,
+      "Hidden Morgan Canary",
+      connections[morgan.user.id]
+    ])
+      assert.equal(visible.includes(marker), false, marker);
+    for (const token of ["", lee.token, pat.token, blake.token]) {
+      const denied = await (await get(path, token, rsc)).text();
+      assert.equal(denied.includes("Private Privileges Review Title"), false);
+    }
+  }
+  const endpoint = `/api/platform/church-structure?churchId=${churchId}&view=privileges&positionId=${p.id}`;
+  assert.equal(
+    (
+      await post({
+        operation: "assign",
+        churchId,
+        expectedVersion: (await read()).version,
+        positionId: p.id,
+        connectionId: connections[morgan.user.id]
+      })
+    ).status,
+    400,
+    "An older form cannot bypass the mandatory review"
+  );
+  const preview = await (
+    await get(
+      `${endpoint}&connectionId=${connections[morgan.user.id]}`,
+      ada.token
+    )
+  ).json();
+  assert.equal(preview.privileges.memberLabel, "Member is unlisted");
+  assert.equal(preview.privileges.presetKey, "P");
+  assert.ok(
+    preview.privileges.recommendations.includes("PUBLISH_CHURCH_POSTS")
+  );
+  assert.equal(
+    await db.churchPositionAssignment.count({ where: { positionId: p.id } }),
+    0,
+    "Reading privileges never assigns a member"
+  );
+  const saved = await cmd({
+    operation: "assignment-privileges",
+    positionId: p.id,
+    connectionId: connections[morgan.user.id],
+    capabilities: ["MANAGE_STRUCTURE"],
+    privilegesReviewed: true,
+    confirmed: true,
+    requestKey: randomUUID(),
+    assignmentVersion: 0
+  });
+  const reopenedResponse = await get(
+    `${endpoint}&assignmentId=${saved.id}`,
+    ada.token
+  );
+  assert.equal(reopenedResponse.status, 200);
+  const reopenedText = await reopenedResponse.text();
+  assert.equal(reopenedText.includes("Hidden Morgan Canary"), false);
+  assert.equal(reopenedText.includes(morgan.user.email), false);
+  const reopened = JSON.parse(reopenedText).privileges;
+  assert.equal(reopened.assignmentId, saved.id);
+  assert.deepEqual(reopened.selected, ["MANAGE_STRUCTURE"]);
+  assert.ok(
+    reopened.effective.some(
+      (g: { assignmentId: string; positionName: string }) =>
+        g.assignmentId === saved.id &&
+        g.positionName === "Private Privileges Review Title"
+    )
+  );
+  assert.equal(
+    (
+      await get(
+        `${endpoint}&assignmentId=${saved.id}&connectionId=${connections[morgan.user.id]}`,
+        ada.token
+      )
+    ).status,
+    400
+  );
+  const other = await cmd({
+    operation: "create",
+    name: "Different position",
+    requestKey: randomUUID()
+  });
+  assert.equal(
+    (
+      await get(
+        `${endpoint.replace(p.id, other.id)}&assignmentId=${saved.id}`,
+        ada.token
+      )
+    ).status,
+    404
+  );
+  for (const token of [lee.token, pat.token, blake.token])
+    assert.equal(
+      (await get(`${endpoint}&assignmentId=${saved.id}`, token)).status,
+      403
+    );
+  await cmd({
+    operation: "unassign",
+    positionId: p.id,
+    id: saved.id,
+    confirmed: true
+  });
+  await cmd({ operation: "archive", positionId: p.id, confirmed: true });
+  await cmd({ operation: "archive", positionId: other.id, confirmed: true });
+  await cmd({
+    operation: "template-archive",
+    templateId: title.id,
+    templateVersion: 2,
+    confirmed: true
+  });
+});
+
 test("assignment privilege HTTP boundary requires current scope, explicit review and isolated source readback", async () => {
   const p = await cmd({
     operation: "create",
@@ -289,6 +453,8 @@ test("actual structure HTTP routes preserve private positions/contact projection
   ] as const)
     await cmd({
       operation: "assign",
+      privilegesReviewed: true,
+      confirmed: true,
       positionId: position.id,
       connectionId: connections[a.user.id]
     });
@@ -402,6 +568,8 @@ test("actual structure HTTP routes preserve private positions/contact projection
   await cmd(
     {
       operation: "assign",
+      privilegesReviewed: true,
+      confirmed: true,
       positionId: outreach.id,
       connectionId: connections[blake.user.id]
     },

@@ -1,5 +1,30 @@
 # Godschurches current state
 
+## Privileges interface verified; placement integration remains — September 10, 2026
+
+The saved `codex/role-privileges-interface` checkpoint provides the shared
+selection → Privileges → final confirmation flow from People, Structure, position
+controls, contact details and My responsibilities. It preserves reviewed choices
+on conflict or an uncertain response, shows other permission sources, and rechecks
+current delegation. Existing titles never silently change saved grants.
+
+The isolated full sweep passed 302 checks (300 pass/two expected skips), the final
+23 affected service checks and 24 production HTTPS checks passed, and build,
+lint/types and runtime audit passed. Chrome verified pastor/volunteer/custom role
+reviews, cancellation, competing editors, dropped-save retry, revoked delegation,
+unlisted privacy, keyboard and 320/390-pixel layouts. The People entry was added
+and verified during that walkthrough. See
+[CHURCH_STRUCTURE_REPORT.md](CHURCH_STRUCTURE_REPORT.md).
+
+Role-library acceptance is complete locally. Privileges chart integration stays
+open until new positions have explicit persisted unconnected state and the future
+chart uses this flow. No real church records or permissions changed; this saved
+bundle remains unpushed and unpublished. Integrate the current main recovery and
+focused-feed changes without removing post-audience checks before release.
+Password reset/sign-in/email verification are already owner-confirmed, and no new
+owner action blocks independent coding. Church-review policy and provider account
+choices remain separate dependencies; the full batch and final review are open.
+
 ## Role-library browser acceptance completed; permissions interface next — September 10, 2026
 
 Chrome completed the remaining fictional role-library walkthrough on saved

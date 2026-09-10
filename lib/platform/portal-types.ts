@@ -72,6 +72,7 @@ export type PortalSnapshot = {
   discovery?: { query: string; continued: boolean; moreCursor?: string };
   church?: ChurchSummary;
   directory?: DirectoryEntry[];
+  directoryCanAssignRoles?: boolean;
   sharing?: SharingSummary;
   queue?: ConnectionSummary[];
   contacts?: ContactSummary[];

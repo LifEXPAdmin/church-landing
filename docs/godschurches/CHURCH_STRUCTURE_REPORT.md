@@ -1,6 +1,61 @@
 # Church positions, responsibilities and access
 
-September 10, 2026 · Published structure foundation; local role library and assignment service verified
+September 10, 2026 · Published structure foundation; local role library, assignment service and Privileges interface verified
+
+## Mandatory Privileges interface verified locally — September 10, 2026
+
+The `codex/role-privileges-interface` checkpoint adds selection, a mandatory
+Privileges screen and explicit final confirmation. People, Structure, position
+assignment controls, contact details and My responsibilities management links use
+the same flow. Opening a review makes no assignment. Existing assignments can be
+reopened by their church-scoped assignment ID without exposing an unlisted
+member's name or contact details. The People management link uses current scoped
+authority; the server independently checks every review and save.
+
+New assignments use the exact immutable title revision's recommendations.
+Sensitive management starts off, unavailable choices remain disabled, and existing
+assignments start with their actual saved contributions. The review shows current
+and proposed permissions and access from other roles or independent grants.
+No title, name or reporting line implies authority. The legacy role-only command
+now also rejects submissions without explicit review and confirmation; no current
+interface uses it to skip the review flow.
+
+Final save commits the assignment and its reviewed contributions together through
+the existing service. An uncertain response retains its reviewed payload and retry
+reference. A conflict or revoked authority disables the stale save, keeps the draft
+and offers **Load current access and keep choices** before another explicit review.
+The conflict message was corrected after the browser walkthrough so it does not
+suggest a page refresh that would discard the draft.
+
+The full isolated portal sweep passed 302 checks (300 pass, two expected
+account-delivery-disabled skips). After the final service guard, the 23 affected
+structure/title/assignment service checks passed again. The final production build
+and 24 affected HTTPS checks passed, including private HTML/RSC, manager and
+ordinary-member directory entry behavior, account entry and guest browsing.
+Lint and types passed. Runtime audit found 92 traces, 7,270 entries and 225 server
+JavaScript files, with no private fixtures/environment files or Prisma loader path.
+An extra canonical-page check initially used the wrong fixture origin for the
+compiled static pages; rebuilding and testing against one matching origin fixed
+the test setup without weakening the assertion.
+
+Chrome exercised pastor, volunteer and custom roles, a structure-only manager,
+self-grant restrictions, an unlisted member, independent and overlapping role
+grants, Cancel/Back, two competing reviews, retained drafts and a dropped response
+after a committed save. Retrying created no duplicate assignment or grant.
+Revoking delegation defeated an already-open save. Canceling the volunteer review
+created no assignment. Keyboard and 320/390-pixel layouts were readable without
+horizontal overflow. People and My responsibilities opened the shared flow, and
+no browser errors or warnings were returned. All writes used fictional local
+records. Browser UI transport and certificate-verified production HTTPS checks
+were separate; no physical phone or real church acceptance is claimed.
+
+This is a verified interface checkpoint, not completed chart integration. A new
+position still lacks a persisted distinction between an unconnected position and
+an explicit root. The existing unconnected-area requirement must provide that
+model and interface; the future chart must use this same review route. Those
+acceptance criteria remain open. This branch is unpushed and unpublished with the
+saved social/profile/role bundle. Newer main recovery and focused-feed changes
+still need integration before release, retaining current post-audience checks.
 
 ## Role-library browser acceptance completed — September 10, 2026
 

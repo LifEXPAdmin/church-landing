@@ -125,6 +125,8 @@ async function team(f: Awaited<ReturnType<typeof fixture>>) {
   ] as const)
     await f.cmd(f.ada, {
       operation: "assign",
+      privilegesReviewed: true,
+      confirmed: true,
       positionId: position.id,
       connectionId: (await f.connection(actor)).id
     });
@@ -136,6 +138,8 @@ test("structure: positions, reporting lines, multiple appointments and unlisted 
   const t = await team(f);
   await f.cmd(f.ada, {
     operation: "assign",
+    privilegesReviewed: true,
+    confirmed: true,
     positionId: t.leadership.id,
     connectionId: (await f.connection(f.val)).id
   });
@@ -296,6 +300,8 @@ test("structure: explicit scoped delegation denies self-promotion, unrelated pow
   await denied(
     f.cmd(f.lee, {
       operation: "assign",
+      privilegesReviewed: true,
+      confirmed: true,
       positionId: t.outreach.id,
       connectionId: blake.id
     }),
@@ -304,6 +310,8 @@ test("structure: explicit scoped delegation denies self-promotion, unrelated pow
   await denied(
     f.cmd(f.lee, {
       operation: "assign",
+      privilegesReviewed: true,
+      confirmed: true,
       positionId: t.outreach.id,
       connectionId: (await f.connection(f.pat)).id
     }),

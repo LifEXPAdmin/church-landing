@@ -928,6 +928,10 @@ export async function getPortalSnapshot(
           preview: entry(pref)
         };
       } else {
+        snapshot.directoryCanAssignRoles = scoped(
+          church.id,
+          "MANAGE_STRUCTURE"
+        );
         // Filter eligibility and consent in SQL. Project optional fields before returning any DTO.
         const entries = await tx.churchDirectoryPreference.findMany({
           where: {
