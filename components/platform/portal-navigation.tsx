@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Church, Home, Search, Menu } from "lucide-react";
+import { Church, Home, Search, Menu, BookOpen } from "lucide-react";
 
 export function PortalNavigation({
   username,
@@ -13,6 +13,7 @@ export function PortalNavigation({
   const pathname = usePathname();
   const links = [
     { href: "/platform", label: "Home", icon: Home },
+    { href: "/platform/feed", label: "My feed", icon: BookOpen },
     {
       href: username ? "/platform/my-church" : "/platform/churches",
       label: username ? "My church" : "Churches",

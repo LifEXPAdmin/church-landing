@@ -1,0 +1,60 @@
+# Focused My feed reader
+
+## Implementation — September 10, 2026
+
+`codex/focused-feed-reader` builds on the published early-community/account release
+`3d931bd`. My feed has a dedicated public route, `/platform/feed`, and entries in
+primary navigation, Menu and the Home feed. Home keeps its normal List/Pages
+reading preferences and scrolling. Opening the reader from Home retains the
+selected post and captures the scroll position; Close, Escape, deliberate drag
+and browser Back restore ordinary Home browsing.
+
+The native modal fills the browser viewport, makes the background inert and
+locks document scrolling. It uses the existing public post cards and server
+query, with one rendered post at a time. Short left/right swipes turn posts;
+a larger outward vertical drag from a scroll boundary closes it. A gesture
+started inside a long post remains a reading scroll when it reaches the edge.
+The handle also supports mouse dragging. Horizontal trackpad gestures turn once
+per gesture; vertical wheel scrolling reads inside the post. Controls, text
+selection, multi-touch and browser edge gestures are protected. Visible
+Previous/Next/Close, arrow keys, focus restoration, safe-area padding and reduced
+motion are supported. No Fullscreen API permission is requested.
+
+Post IDs and finite pagination stay in the URL, older sets stay in My feed,
+and mutations return to the selected focused post. The account-return allowlist
+accepts only the known feed route; public author projections and all existing
+server authorization still apply. Missing posts and empty sets have useful
+states. No account, audience, ranking, schema or dependency changes are included.
+The previous Following switch and separate unpublished role/audience work remain.
+Broader Home design and future selectable/ranked feeds are separate work.
+
+## Verification checkpoint
+
+Three focused gesture/return-path checks passed. The development verified-HTTPS
+run passed 15 checks: gesture boundaries, both email entry checks, all six public
+browsing/privacy/account-return checks (including Home and My feed HTML/RSC),
+and all four entrance/legacy-route checks. No production writes were used.
+
+Actual fictional Chrome checks at default desktop, 390 x 844 and 320 x 640
+verified the modal, controls, no horizontal overflow, arrow paging, a small
+mouse drag returning in place, a larger mouse drag closing, trackpad paging,
+long-post internal scrolling, likes, comments and unchanged selection while
+typing arrow keys. Close/Escape and browser Back/Forward worked, focus returned
+to Open My feed, and a normal visible click restored the exact 317-pixel Home
+position. Semantic locator clicks initially moved the button into view before
+opening, so the exact restoration check used the already-visible button.
+No browser error/warning rows were returned. Physical iPhone/Android touch,
+browser chrome gestures and the desired feel still need real-device acceptance;
+resizing a desktop browser is not a physical-device test.
+
+Final production build, lint and TypeScript passed. Runtime audit passed with
+87 traces / 6,301 entries / 209 server JavaScript files. The production HTTPS
+run and corrected remaining entrance group passed the same 15 checks with no
+unresolved failures. The private runner initially supplied runtime production
+variables to fixture creation, which correctly refused them; the runner was
+corrected to keep its isolated test-sink contract while the actual server runs
+in production with email disabled. The application and fixture guard were not
+weakened. No schema/dependency changes required migration work for this reader.
+The built production app also passed actual browser end-of-set/older-page
+navigation: 30/30 exposed Read older posts, opened 1/19 in My feed, and keyboard
+paging advanced to 2/19. Live publication is next at this checkpoint.

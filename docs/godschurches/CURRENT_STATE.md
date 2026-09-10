@@ -1,5 +1,14 @@
 # Godschurches current state
 
+## Focused My feed reader — September 10, 2026
+
+The dedicated `/platform/feed` reader is implemented on `codex/focused-feed-reader`.
+Home remains scrollable; the modal pages horizontally and supports deliberate
+vertical dismissal, Close/Escape, keyboard/trackpad controls, long-post reading
+and restored Home position. Fifteen development and fifteen production HTTPS
+checks, final build/lint/types/runtime, and fictional browser checks passed;
+live publication is next. See [FEED_READER_REPORT.md](FEED_READER_REPORT.md).
+
 ## First-use account and early feed fixes — September 10, 2026
 
 The owner confirms password reset, original-account sign-in and email verification.
@@ -9,7 +18,9 @@ email buttons and same-tab fragment handling are verified locally on
 default, retaining the Following filter for later. The isolated suite/remainder
 has 219 passes and two expected delivery skips, plus focused checks and actual
 fictional browser acceptance. Sender-scoped DMARC resolves authoritatively; spam
-guidance is included. Publication is next. Phone verification is deferred.
+guidance is included. Application `06a0fdd` with CLI upload exclusions `3d931bd`
+is published on READY `dpl_4GdrKfA3ry117BCwVGkonGYuhhiW`; canonical identity
+and all 13 live read-only checks passed. Phone verification is deferred.
 The requested full-screen horizontal My feed reader follows this urgent fix;
 Home remains normally scrollable. See [ACCOUNT_DELIVERY_REPORT.md](ACCOUNT_DELIVERY_REPORT.md).
 

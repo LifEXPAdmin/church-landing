@@ -49,8 +49,18 @@ Actual fictional browser checks passed for separate forms, same-tab and legacy
 links, signup guidance, unfollowed posts, resend without retyping, explicit email
 verification and updated Settings on return. No real email was sent during these
 fixture checks; Yahoo's exact click handling remains a real-device follow-up.
-Production publication and full-screen reader follow-up are pending at this
-checkpoint. No schema or dependency changes were introduced.
+Application `06a0fdd`, with CLI upload exclusions at `3d931bd`, is published on
+READY production `dpl_4GdrKfA3ry117BCwVGkonGYuhhiW`. Canonical serving identity
+and all 13 live read-only HTTP checks passed at 19:51 UTC; the actual live browser
+showed the separate recovery route. Final build/lint/types/runtime passed (86
+traces / 6,232 entries / 206 server JavaScript files). No schema or dependency
+changes were introduced. The full-screen reader is the next separate task.
+
+Two unserved manual CLI candidates were blocked by team-author validation and
+removed. One upload also included local synthetic fixtures because CLI uploads
+have a separate ignore list. `.vercelignore` now explicitly excludes isolated
+fixtures and local configuration. The existing authenticated GitHub integration
+published the release; no blocked candidate served the public domain.
 
 ## Production sender activated — September 10, 2026
 
