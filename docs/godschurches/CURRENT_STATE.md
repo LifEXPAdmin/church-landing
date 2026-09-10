@@ -1,6 +1,6 @@
 # Godschurches current state
 
-## Calendar interface verified locally — September 10, 2026
+## Calendar interface published — September 10, 2026
 
 `codex/calendar-interface` adds real calendar/event pages, sharing/publication,
 RSVP and My commitments, with guest-readable public church events. All 214
@@ -8,8 +8,11 @@ applicable regressions passed (216 total, two expected delivery skips), includin
 eleven service groups and four actual HTTP groups each in development and
 production. Final lint/build/types/runtime and four final verified-HTTPS groups
 passed. Actual fictional browser sharing, revocation, recurrence, RSVP,
-validation/retry/conflict and 320/390/1440-pixel journeys passed. Publication and
-exact canonical live checks remain. Parent calendar work keeps later event-thread,
+validation/retry/conflict and 320/390/1440-pixel journeys passed. Application
+`f0fe0e92a68161d38e67593b62dccd37c3167f63` is live on READY
+`dpl_DoMvFu23uHdhaw8RAcg1YJrE3KSD`; exact canonical identity, all 113 live HTTP
+checks and 390-pixel guest/signup/Back navigation passed. No browser or deployment
+errors were returned. Parent calendar work keeps later event-thread,
 shift, outbox and physical-device acceptance open. See
 [CALENDAR_REPORT.md](CALENDAR_REPORT.md).
 

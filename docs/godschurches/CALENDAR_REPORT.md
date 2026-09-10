@@ -1,6 +1,6 @@
 # Calendars, sharing and events
 
-September 10, 2026 · Interface verified locally; publication pending
+September 10, 2026 · Calendar interface published and verified
 
 ## Calendar interface
 
@@ -55,9 +55,19 @@ and unavailable-page links have 20-pixel separation. Both browser error logs
 were empty. These are browser
 viewport checks, not physical-device acceptance.
 
-Publication and exact canonical live checks remain before release completion.
-The foundation checkpoint below is historical and superseded by these interface
-results.
+Application `f0fe0e92a68161d38e67593b62dccd37c3167f63` is live on READY
+`dpl_DoMvFu23uHdhaw8RAcg1YJrE3KSD`. Exact canonical serving identity and all
+113 live HTTP checks passed at 2026-09-10T09:18:23Z with zero production writes.
+Live public post/church lists are empty; populated event reading was verified
+with isolated fictional fixtures. Live phone Menu, calendar guest gate,
+signup destination and Back navigation passed at 390 pixels with no horizontal
+overflow or browser errors. Deployment error logs returned no entries.
+
+The original checkout was fast-forwarded, dependencies installed from the lock
+file and Prisma client regenerated. Fictional preview/database processes are
+stopped. Later event discussions, volunteer shifts, outbox delivery and physical
+pilot acceptance remain open. The foundation checkpoint below is historical and
+superseded by these interface results.
 
 ## Foundation scope
 
