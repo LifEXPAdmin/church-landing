@@ -1,6 +1,6 @@
 # Godschurches workflow guide
 
-Version 1.0 · Updated 9 September 2026
+Version 1.1 · Updated 10 September 2026
 
 This is the repository entry point for work that continues between ChatGPT, Codex,
 the private second brain, and the development workstation. Keep this file's path
@@ -47,6 +47,9 @@ In the Godschurches Todoist project, **Phone** means work possible on the phone,
 means a stated dependency is unresolved. These sections do not by themselves
 describe whether an action is in progress. Keep tasks open until their done
 criteria are met; capture evidence in the linked handoff.
+The **End of batch** section stays last and holds the final review. Add new
+implementation actions before it; priority does not move review ahead of its
+dependencies.
 
 ## Working routine
 
@@ -74,6 +77,53 @@ tested commit, deployment, and limits. They do not prove the current checkout,
 currently serving release, or a new test result. Read original evidence dates;
 import dates do not change approval or verification history.
 
+## Owner actions
+
+When active work requires the project owner to choose or create an account,
+sign in, accept terms, supply access or assets, decide a policy, or approve a
+purchase, first prepare the concrete choices and complete independent work.
+Search existing actions and answers before asking again. Create or update a
+concise owner-action task in **Phone**, label it `andrew_action`, and link its
+coding dependency. A blocked coding child keeps its technical parent.
+
+State the exact next action and official service link, the blocked feature,
+account or ownership choice, cost (free, verified price, or unknown), prepared
+artifact, observable done evidence, and next technical step. Prefer existing
+suitable resources; do not invent a purchase or a new deadline. Credentials and
+private account details stay in secure service flows. After the owner step is
+verified, complete only that step and resume technical acceptance. Continue
+independent authorized work while an answer remains pending.
+
+The private **Andrew Actions — Accounts, Access, Purchases and Batch Handoffs**
+page maintains exact owner-task links and current service handoffs.
+
+## Final batch review
+
+Keep the final review last in the agreed batch. Record its scope, actual task
+states, application commits, report-only commits and deployments. Do not drop
+later work or call blocked acceptance complete to close the review.
+
+Review completed work against current specifications, task evidence, code and
+the actual website. Reproduce and fix authorized defects or record a linked
+triage task. Use isolated fixtures for write-heavy checks and keep actual
+provider, consenting-user and physical-device evidence distinct. Earlier QA and
+pilot gates still apply; urgent fixes do not wait for the final review.
+
+Read future ideas, feedback and unresolved decisions. Prepare a coherent next
+prioritized batch with evidence, dependencies, bounded actions and acceptance;
+reuse unfinished tasks and preserve completed receipts. Reconcile and read back
+the private knowledge and task systems, surface owner actions, and create the
+following review last. Preserve the agreed batch scope until it is completed or
+explicitly changed.
+
+Notify the verified project owner through the requested channel with actual
+coded, tested and published status, evidence links, remaining dependencies and
+the next plan. Record the provider result; acceptance by a notification service
+does not prove a phone displayed it or its recipient read it. If delivery fails,
+leave the precise intended receipt and notification pending. A task convention
+does not configure a watcher or schedule. The private **33 — Final Batch Review,
+Next Build Plan and Andrew Notification** page maintains the detailed procedure.
+
 ## End-of-session handoff
 
 Use this compact outline in the appropriate private session record and relevant
@@ -87,6 +137,8 @@ engineering report. Include only public engineering facts in this repository.
 - Limits, unverified claims, and remaining blockers.
 - Workflow changes and affected instructions updated, or none.
 - Pending writes and intended destinations.
+- Owner-action dependencies and agreed batch status, when applicable.
+- Next-batch references, unfinished propagation and actual notification result.
 - One concrete next action and what will prove it is done.
 
 Update the current project summary in place; preserve original source snapshots
@@ -117,6 +169,10 @@ allow an authorized assistant to locate the context without publishing it.
 
 ## Change log
 
+- **1.1 — 10 September 2026:** Adopted the private workflow's owner-action and
+  final-review conventions, paired dependencies, End of batch ordering and
+  handoff evidence. Root instructions were updated. Reading the files in this
+  active session does not establish a fresh session's automatic loading.
 - **1.0 — 9 September 2026:** Added repository onboarding, source precedence,
   cross-system responsibilities, capture/action/handoff routines, workstation
   evidence requirements, and a workflow update procedure.

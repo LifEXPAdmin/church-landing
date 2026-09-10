@@ -16,10 +16,17 @@
 - Check the current implementation before reopening a design decision or rebuilding an older proposed preview.
 - For account, church, or support work, inspect the current boundaries and test contract before changing behavior. Publication alone does not establish real intake or pilot readiness.
 - Verify the serving identity when the task concerns deployment. A repository HEAD and a tested application release can differ because of report-only commits.
+- Surface unresolved account, access, terms, asset, policy or purchase dependencies as concrete owner-action tasks in the private task system, linked to the coding task. Reuse settled choices; include the prepared action, service, cost or unknown-cost label, and observable done evidence. Continue independent authorized work.
+
+## Review the batch
+
+Keep the final review last in each agreed batch. Review implemented work against current specifications, tasks, code and actual runtime evidence; fix or triage reproducible defects. Read future ideas and feedback, prepare the next coherent prioritized batch with dependencies and acceptance, and reconcile the private knowledge and task systems. Preserve the completed receipt and place the next review last. Notify the verified project owner through the requested channel with accurate coded, tested and published status; record the provider result without claiming delivery or readership it cannot prove. This convention does not configure a scheduler.
 
 ## Finish the session
 
 Record the outcome, changed files and branch/commit or PR, decisions, checks actually run, limitations, blockers, and next action. Update the affected repository report when engineering state changed. With authorized connector access, update the matching Notion context/handoff and Todoist task. Otherwise provide a compact pending handoff with its intended private destination; never claim the write succeeded.
+
+Include owner-action dependencies, agreed batch status, next-batch references, unfinished documentation propagation and notification outcome when applicable. Follow the current private **Workflow Guide for ChatGPT and Codex** and its owner-action and final-review procedures.
 
 When a workflow changes, update the existing guide or runbook in place, add a dated change entry, and propagate relevant changes to entry points, templates, task descriptions, and repository instructions. Name any propagation still pending.
 
