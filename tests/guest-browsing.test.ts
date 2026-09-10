@@ -308,6 +308,53 @@ test("public churches remain readable without account authority and detail looku
   );
 });
 
+test("public church search paginates for guests and members without searching private account fields", async () => {
+  const a = await owner();
+  const needle = unique();
+  await db.church.createMany({ data: Array.from({ length: 102 }, (_, index) => ({
+    name: `ZZZZ Search fixture ${String(index).padStart(3, "0")} ${needle}`,
+    slug: `${needle}-search-${index}`,
+    summary: `Public search result ${index} ${needle}`
+  })) });
+  const last = await db.church.findUniqueOrThrow({ where: { slug: `${needle}-search-101` } });
+  for (const token of ["", a.token]) {
+    for (const rsc of [false, true]) {
+      const response = await get("/platform/churches?q=" + encodeURIComponent(needle.toUpperCase()), token, rsc);
+      assert.equal(response.status, 200);
+      const source = await response.text();
+      assert.ok(source.includes(`Public search result 0 ${needle}`));
+      assert.ok(!source.includes(last.summary));
+      for (const privateValue of [a.user.email, a.user.bio!, a.user.location!, a.user.website!, a.token])
+        assert.ok(!source.includes(privateValue), "Discovery projects no private account data");
+      if (!rsc) {
+        const more = [...source.matchAll(/href="([^"]+)"[^>]*>More churches/g)][0]?.[1].replaceAll("&amp;", "&");
+        assert.ok(more);
+        assert.equal(new URL(more, origin).searchParams.get("q"), needle.toUpperCase());
+        const next = await (await get(more, token)).text();
+        assert.ok(next.includes(last.summary));
+        assert.ok(!next.includes(`Public search result 0 ${needle}`));
+      }
+      const detail = await (await get("/platform/churches/" + last.id, token, rsc)).text();
+      assert.ok(detail.includes(last.summary), "Detail works beyond the first 100 churches");
+      assert.ok(!detail.includes("Church unavailable"));
+    }
+    const noMatch = await (await get("/platform/churches?q=" + encodeURIComponent(a.user.email), token)).text();
+    assert.ok(noMatch.includes("No churches match this search."));
+    const denied = await get("/api/platform/portal?view=directory&churchId=" + last.id, token);
+    assert.equal(denied.status, token ? 403 : 401);
+  }
+  const literal = await db.church.create({data:{
+    name: `Literal ${needle}%_ church`, slug: `${needle}-literal`, summary: "Literal public punctuation"
+  }});
+  await db.church.create({data:{
+    name: `Literal ${needle}AB church`, slug: `${needle}-wildcard`, summary: "Do not match as a wildcard"
+  }});
+  const matches = await (await get("/api/platform/portal?view=public&q=" + encodeURIComponent(needle + "%_"))).json();
+  assert.deepEqual(matches.churches.map((c: {id: string}) => c.id), [literal.id]);
+  assert.deepEqual(Object.keys(matches.churches[0]).sort(), ["id", "name", "slug", "summary"]);
+  assert.equal(await db.churchConnection.count({where:{churchId:last.id}}), 0);
+});
+
 test("actual sign-in preserves the requested discussion or Menu without automatic actions or unsafe destinations", async () => {
   const a = await owner();
   const entry = await db.platformPost.create({

@@ -54,6 +54,7 @@ export type PortalSnapshot = {
   reviewerChurches: ChurchSummary[];
   coordinatorChurches: ChurchSummary[];
   operatorCapabilities: string[];
+  discovery?: { query: string; continued: boolean; moreCursor?: string };
   church?: ChurchSummary;
   directory?: DirectoryEntry[];
   sharing?: SharingSummary;

@@ -10,6 +10,7 @@ import {
   publicChurches
 } from "./portal";
 import type { PortalView } from "./portal-types";
+import { churchSearchQuery } from "./church-search";
 
 const headers = {
   "Cache-Control": "private, no-store, max-age=0",
@@ -23,9 +24,15 @@ export async function handlePortalRequest(db: PrismaClient, request: Request) {
     if (request.method === "GET") {
       const url = new URL(request.url);
       const view = url.searchParams.get("view") ?? "my-church";
+      const query = churchSearchQuery(url.searchParams.get("q"));
+      const rawCursor = url.searchParams.get("cursor");
+      const cursor =
+        rawCursor && /^[a-zA-Z0-9_-]{1,100}$/.test(rawCursor)
+          ? rawCursor
+          : undefined;
       if (view === "public")
         return Response.json(
-          { churches: await publicChurches(db) },
+          { churches: await publicChurches(db, undefined, cursor, query) },
           { headers }
         );
       if (
@@ -44,7 +51,14 @@ export async function handlePortalRequest(db: PrismaClient, request: Request) {
       if (churchId && churchId.length > 100)
         throw new PortalError(400, "Check the church link.");
       return Response.json(
-        await getPortalSnapshot(db, token, view as PortalView, churchId),
+        await getPortalSnapshot(
+          db,
+          token,
+          view as PortalView,
+          churchId,
+          query,
+          cursor
+        ),
         { headers }
       );
     }

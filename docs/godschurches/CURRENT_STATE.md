@@ -1,5 +1,16 @@
 # Godschurches current state
 
+## Shared church search verified locally — September 9, 2026
+
+`codex/church-discovery-search` adds public name/description search and preserves
+the query through pagination and Back. Signed-in members can now reach churches
+beyond the first 100 results; granted church tools remain independent from search.
+All 158 applicable isolated checks, final lint/types/build/runtime, 22 additional
+production Menu/card checks and actual public browser search/pagination/reflow
+passed. Publication is next. No church creation, claim, verification or grant is
+activated. The broader shared onboarding/roles/tree work remains open. See
+[CHURCH_DISCOVERY_REPORT.md](CHURCH_DISCOVERY_REPORT.md).
+
 ## Menu and phone navigation published — September 9, 2026
 
 `codex/navigation-menu` adds a guest-readable Menu for working account, church and

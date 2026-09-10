@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
 import { PortalError, publicChurches } from "@/lib/platform/portal";
+import { churchDiscoveryHref } from "@/lib/platform/church-search";
 import { readPortalPage } from "@/lib/platform/portal-session";
 import type { PortalSnapshot, PortalView } from "@/lib/platform/portal-types";
 import { PlatformShell } from "@/components/platform/platform-shell";
@@ -102,14 +103,16 @@ function PublicHelp() {
 async function PublicContent({
   view,
   churchId,
-  cursor
+  cursor,
+  query = ""
 }: {
   view: PortalView;
   churchId?: string;
   cursor?: string;
+  query?: string;
 }) {
   if (view === "help") return <PublicHelp />;
-  const result = await publicChurches(prisma, churchId, cursor);
+  const result = await publicChurches(prisma, churchId, cursor, query);
   const churches = result.slice(0, 100);
   const last = churches.at(-1);
   return (
@@ -117,9 +120,10 @@ async function PublicContent({
       churches={churches}
       churchId={churchId}
       continued={!!cursor}
+      query={query}
       moreHref={
         !churchId && result.length > 100 && last
-          ? `/platform/churches?cursor=${encodeURIComponent(last.id)}`
+          ? churchDiscoveryHref(query, last.id)
           : undefined
       }
     />
@@ -129,11 +133,13 @@ async function PublicContent({
 export async function PortalPage({
   view,
   churchId,
-  cursor
+  cursor,
+  query = ""
 }: {
   view: PortalView;
   churchId?: string;
   cursor?: string;
+  query?: string;
 }) {
   // Next's development Flight debugger can serialize awaited request/DB values.
   // Do not read credentials or private portal data in that renderer.
@@ -142,7 +148,12 @@ export async function PortalPage({
       return (
         <PlatformShell user={null}>
           <section className="container-shell py-8 sm:py-10">
-            <PublicContent view={view} churchId={churchId} cursor={cursor} />
+            <PublicContent
+              view={view}
+              churchId={churchId}
+              cursor={cursor}
+              query={query}
+            />
           </section>
         </PlatformShell>
       );
@@ -169,9 +180,10 @@ export async function PortalPage({
   const isPublic = view === "discover" || view === "help";
 
   try {
-    snapshot = (await readPortalPage(view, churchId)) ?? undefined;
+    snapshot =
+      (await readPortalPage(view, churchId, query, cursor)) ?? undefined;
     if (!snapshot && isPublic) {
-      content = await PublicContent({ view, churchId, cursor });
+      content = await PublicContent({ view, churchId, cursor, query });
     } else if (snapshot) {
       content = (
         <PortalViewContent
@@ -185,7 +197,7 @@ export async function PortalPage({
     failure = error instanceof PortalError ? error.status : 500;
     if (failure === 401 && isPublic) {
       try {
-        content = await PublicContent({ view, churchId, cursor });
+        content = await PublicContent({ view, churchId, cursor, query });
         failure = undefined;
       } catch {
         failure = 500;

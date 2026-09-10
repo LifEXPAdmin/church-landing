@@ -949,3 +949,26 @@ test("scoped grant and contact revocation applies to already authenticated sessi
     })
   );
 });
+
+test("church tools and scoped detail access remain independent from discovery searches", async () => {
+  const reviewer = await createPortalActor(db, "search_reviewer");
+  const church = await db.church.create({data:{
+    slug: `late-${reviewer.id}`, name: "ZZZZZ Fictional assigned church", summary: "Assigned outside the current search."
+  }});
+  await db.church.createMany({data:Array.from({length:101},(_,i)=>({
+    slug:`earlier-${reviewer.id}-${i}`, name:`! Earlier search fixture ${i}`, summary:"Public only."
+  }))});
+  const grant = await db.churchCapabilityGrant.create({data:{
+    userId:reviewer.id, churchId:church.id, capability:"REVIEW_CONNECTIONS"
+  }});
+  const snapshot = await getPortalSnapshot(db, reviewer.token, "discover", undefined, "no matching church " + reviewer.id);
+  assert.deepEqual(snapshot.churches, []);
+  assert.deepEqual(snapshot.reviewerChurches.map(c=>c.id), [church.id]);
+  const review = await getPortalSnapshot(db, reviewer.token, "review", church.id);
+  assert.equal(review.church?.id, church.id);
+  await denied(getPortalSnapshot(db, f.memberB.token, "review", church.id));
+  await db.churchCapabilityGrant.update({where:{id:grant.id},data:{revokedAt:new Date()}});
+  await denied(getPortalSnapshot(db, reviewer.token, "review", church.id));
+  const revoked = await getPortalSnapshot(db, reviewer.token, "discover", undefined, "no matching church " + reviewer.id);
+  assert.deepEqual(revoked.reviewerChurches, []);
+});

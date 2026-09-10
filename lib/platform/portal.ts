@@ -8,6 +8,7 @@ import {
 } from "@prisma/client";
 import { readAccountSession, normalizeEmail } from "./accounts";
 import { reconcileSupportAccess } from "./support-revocation";
+import { churchSearchQuery } from "./church-search";
 import {
   ADULT_POLICY,
   type PortalSnapshot,
@@ -694,11 +695,23 @@ function entry(p: ChurchDirectoryPreference | null): DirectoryEntry | null {
 export async function publicChurches(
   db: PrismaClient,
   churchId?: string,
-  cursor?: string
+  cursor?: string,
+  query = ""
 ) {
+  // Prisma's PostgreSQL contains filter uses LIKE; treat search punctuation literally.
+  const search = churchSearchQuery(query).replace(/[\\%_]/g, "\\$&");
   return db.church.findMany({
     select: churchSelect,
-    ...(churchId ? { where: { id: churchId } } : {}),
+    where: churchId
+      ? { id: churchId }
+      : search
+        ? {
+            OR: [
+              { name: { contains: search, mode: "insensitive" } },
+              { summary: { contains: search, mode: "insensitive" } }
+            ]
+          }
+        : {},
     ...(!churchId && cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
     orderBy: [{ name: "asc" }, { id: "asc" }],
     take: 101
@@ -708,14 +721,20 @@ export async function getPortalSnapshot(
   db: PrismaClient,
   token: unknown,
   view: PortalView,
-  churchId?: string
+  churchId?: string,
+  query = "",
+  cursor?: string
 ): Promise<PortalSnapshot> {
   return portal(db, token, async (tx, actor) => {
-    const churches = await tx.church.findMany({
-      select: churchSelect,
-      orderBy: [{ name: "asc" }, { id: "asc" }],
-      take: 100
-    });
+    const found =
+      view === "discover"
+        ? await publicChurches(tx as PrismaClient, churchId, cursor, query)
+        : await tx.church.findMany({
+            select: churchSelect,
+            orderBy: [{ name: "asc" }, { id: "asc" }],
+            take: 100
+          });
+    const churches = found.slice(0, 100);
     const own = await tx.churchConnection.findMany({
       where: { userId: actor.id },
       include: { church: { select: churchSelect } },
@@ -742,7 +761,7 @@ export async function getPortalSnapshot(
     const grants = isEligible(actor)
       ? await tx.churchCapabilityGrant.findMany({
           where: { userId: actor.id, revokedAt: null },
-          include: { dependency: true }
+          include: { dependency: true, church: { select: churchSelect } }
         })
       : [];
     const scoped = (churchId: string, capability: ChurchCapability) =>
@@ -755,10 +774,14 @@ export async function getPortalSnapshot(
               g.dependency.churchId === churchId &&
               g.dependency.state === "APPROVED"))
       );
-    const reviewerChurches = churches.filter((c) =>
+    // Search and pagination must not hide an independently assigned church tool.
+    const assignedChurches = [
+      ...new Map(grants.map((g) => [g.church.id, g.church])).values()
+    ];
+    const reviewerChurches = assignedChurches.filter((c) =>
       scoped(c.id, "REVIEW_CONNECTIONS")
     );
-    const coordinatorChurches = churches.filter((c) =>
+    const coordinatorChurches = assignedChurches.filter((c) =>
       scoped(c.id, "APPOINT_COORDINATORS")
     );
     const operatorCapabilities = isEligible(actor)
@@ -784,11 +807,23 @@ export async function getPortalSnapshot(
       connections: own.map(connectionSummary),
       reviewerChurches,
       coordinatorChurches,
-      operatorCapabilities
+      operatorCapabilities,
+      ...(view === "discover" && !churchId
+        ? {
+            discovery: {
+              query: churchSearchQuery(query),
+              continued: !!cursor,
+              moreCursor: found.length > 100 ? churches.at(-1)?.id : undefined
+            }
+          }
+        : {})
     };
     const active = own.find((c) => c.state === "APPROVED");
     const church = churchId
-      ? churches.find((c) => c.id === churchId)
+      ? ((await tx.church.findUnique({
+          where: { id: churchId },
+          select: churchSelect
+        })) ?? undefined)
       : active?.church;
     if (churchId && !church) throw new PortalError(404, "Church not found.");
     snapshot.church = church;

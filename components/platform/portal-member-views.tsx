@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { accountEntryHref } from "@/lib/platform/account-entry";
+import { churchDiscoveryHref } from "@/lib/platform/church-search";
+import { ChurchSearchForm } from "./church-search-form";
 
 import {
   ADULT_POLICY,
@@ -169,6 +171,7 @@ export function PortalDiscover({
       ? [snapshot.church]
       : []
     : snapshot.churches;
+  const query = snapshot.discovery?.query ?? "";
   return (
     <>
       <PortalHeading
@@ -179,10 +182,11 @@ export function PortalDiscover({
         }
         description="Choose your church and request a connection. Your directory sharing stays under your control."
       />
+      {!detail && <ChurchSearchForm query={query} />}
       <div className="mb-6">
         <PortalEligibility snapshot={snapshot} />
       </div>
-      {detail && (
+      {(detail || snapshot.discovery?.continued) && (
         <Link href="/platform/churches" className={`${portalLinkClass} mb-4`}>
           All churches
         </Link>
@@ -203,11 +207,23 @@ export function PortalDiscover({
           </PortalCard>
         ))}
       </div>
+      {!detail && snapshot.discovery?.moreCursor && (
+        <a
+          className={`${portalLinkClass} mt-5`}
+          href={churchDiscoveryHref(query, snapshot.discovery.moreCursor)}
+        >
+          More churches
+        </a>
+      )}
       {churches.length === 0 && (
         <PortalEmpty>
           {detail
             ? "This church is not available. Return to the church list to choose another church."
-            : "No churches are available to connect with yet. Church listings will appear here once established."}
+            : query
+              ? "No churches match this search. Try a different name or a broader search."
+              : snapshot.discovery?.continued
+                ? "There are no more churches in this list."
+                : "No churches are available to connect with yet. Church listings will appear here once established."}
         </PortalEmpty>
       )}
     </>
@@ -218,12 +234,14 @@ export function PortalPublicDiscover({
   churches,
   churchId,
   moreHref,
-  continued = false
+  continued = false,
+  query = ""
 }: {
   churches: ChurchSummary[];
   churchId?: string;
   moreHref?: string;
   continued?: boolean;
+  query?: string;
 }) {
   const visible = churchId
     ? churches.filter((church) => church.id === churchId)
@@ -238,6 +256,7 @@ export function PortalPublicDiscover({
         }
         description="Explore churches on Godschurches. Sign in to request a connection and manage your sharing."
       />
+      {!churchId && <ChurchSearchForm query={query} />}
       {(churchId || continued) && (
         <Link href="/platform/churches" className={`${portalLinkClass} mb-4`}>
           All churches
@@ -267,15 +286,19 @@ export function PortalPublicDiscover({
         ))}
       </div>
       {moreHref && (
-        <Link className={`${portalLinkClass} mt-5`} href={moreHref}>
+        <a className={`${portalLinkClass} mt-5`} href={moreHref}>
           More churches
-        </Link>
+        </a>
       )}
       {visible.length === 0 && (
         <PortalEmpty>
           {churchId
             ? "This church is not available. Return to the church list to choose another church."
-            : "No churches are available to connect with yet. Church listings will appear here once established."}
+            : query
+              ? "No churches match this search. Try a different name or a broader search."
+              : continued
+                ? "There are no more churches in this list."
+                : "No churches are available to connect with yet. Church listings will appear here once established."}
         </PortalEmpty>
       )}
     </>
