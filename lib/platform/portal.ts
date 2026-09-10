@@ -1,4 +1,9 @@
 import {
+  effectiveChurchGrants,
+  hasChurchReviewer,
+  endRoleContributions
+} from "./church-permissions";
+import {
   Prisma,
   type PrismaClient,
   type ChurchConnection,
@@ -168,16 +173,9 @@ export async function hasChurchCapability(
   capability: ChurchCapability
 ) {
   if (!isEligible(actor)) return false;
-  const grant = await tx.churchCapabilityGrant.findFirst({
-    where: { userId: actor.id, churchId, capability, revokedAt: null },
-    include: { dependency: true }
-  });
   return (
-    !!grant &&
-    (!grant.dependency ||
-      (grant.dependency.userId === actor.id &&
-        grant.dependency.churchId === churchId &&
-        grant.dependency.state === "APPROVED"))
+    (await effectiveChurchGrants(tx, actor.id, [churchId], [capability]))
+      .length > 0
   );
 }
 export async function churchCapability(
@@ -265,9 +263,10 @@ async function resetConnectionAccess(tx: Tx, connection: ChurchConnection) {
     },
     data: { state: "DECLINED", version: { increment: 1 } }
   });
+  await endRoleContributions(tx, { connectionId: connection.id });
   const appointments = await tx.churchPositionAssignment.updateMany({
     where: { connectionId: connection.id, revokedAt: null },
-    data: { revokedAt: new Date() }
+    data: { revokedAt: new Date(), version: { increment: 1 } }
   });
   if (appointments.count)
     await tx.church.update({
@@ -352,28 +351,7 @@ export async function portalCommand(
           429,
           "You have reached today's request limit. Please try tomorrow."
         );
-      const reviewers = await tx.churchCapabilityGrant.findMany({
-        where: {
-          churchId,
-          capability: "REVIEW_CONNECTIONS",
-          revokedAt: null,
-          userId: { not: actor.id },
-          user: eligibleWhere
-        },
-        select: {
-          userId: true,
-          dependency: { select: { userId: true, churchId: true, state: true } }
-        }
-      });
-      if (
-        !reviewers.some(
-          ({ userId, dependency }) =>
-            !dependency ||
-            (dependency.userId === userId &&
-              dependency.churchId === churchId &&
-              dependency.state === "APPROVED")
-        )
-      )
+      if (!(await hasChurchReviewer(tx, churchId, actor.id)))
         throw new PortalError(
           503,
           "Church connection setup is not ready. An eligible, assigned reviewer other than you is needed. No request was created. Contact Godschurches for help."
@@ -633,7 +611,7 @@ export async function portalCommand(
           data: { revokedAt: new Date(), version: { increment: 1 } }
         });
         await audit(tx, actor.id, grant.id, "REVOKE_CAPABILITY", churchId);
-        return "Capability revoked for existing sessions too.";
+        return "This independent grant is revoked for existing sessions. Permissions supplied by a separately reviewed role may remain.";
       }
       const userId = id(input.userId);
       const target = await tx.platformUser.findUnique({
@@ -760,15 +738,7 @@ async function connectionsAvailable(
   churchId: string,
   viewerId = ""
 ) {
-  const [result] = await db.$queryRaw<{ available: boolean }[]>`SELECT EXISTS (
-    SELECT 1 FROM "ChurchCapabilityGrant" g JOIN "PlatformUser" u ON u.id = g."userId"
-    LEFT JOIN "ChurchConnection" c ON c.id = g."dependencyConnectionId"
-    WHERE g."churchId" = ${churchId} AND g.capability = 'REVIEW_CONNECTIONS' AND g."revokedAt" IS NULL
-    AND u.id <> ${viewerId} AND u."suspendedAt" IS NULL AND u."deactivatedAt" IS NULL
-    AND u."emailVerifiedAt" IS NOT NULL AND u."adultAcknowledgedAt" IS NOT NULL AND u."adultPolicyVersion" = ${ADULT_POLICY}
-    AND (g."dependencyConnectionId" IS NULL OR (c."userId" = u.id AND c."churchId" = g."churchId" AND c.state = 'APPROVED'))
-  ) AS available`;
-  return result.available;
+  return hasChurchReviewer(db, churchId, viewerId);
 }
 export async function publicChurches(
   db: PrismaClient,
@@ -857,10 +827,7 @@ export async function getPortalSnapshot(
       isSelf: c.userId === actor.id
     });
     const grants = isEligible(actor)
-      ? await tx.churchCapabilityGrant.findMany({
-          where: { userId: actor.id, revokedAt: null },
-          include: { dependency: true, church: { select: churchSelect } }
-        })
+      ? await effectiveChurchGrants(tx, actor.id)
       : [];
     const scoped = (churchId: string, capability: ChurchCapability) =>
       grants.some(

@@ -1,3 +1,4 @@
+import { effectiveChurchGrants } from "./church-permissions";
 import type {
   Prisma,
   CalendarOccurrence,
@@ -67,15 +68,12 @@ export async function calendarContext(
       503,
       "Your church connections need an administrator to review their size."
     );
-  const grants = await tx.churchCapabilityGrant.findMany({
-    where: {
-      userId: actor.id,
-      revokedAt: null,
-      churchId: { in: connections.map((c) => c.church.id) },
-      capability: { in: ["EDIT_CHURCH_CALENDAR", "PUBLISH_CHURCH_EVENTS"] }
-    },
-    include: { dependency: true }
-  });
+  const grants = await effectiveChurchGrants(
+    tx,
+    actor.id,
+    connections.map((c) => c.church.id),
+    ["EDIT_CHURCH_CALENDAR", "PUBLISH_CHURCH_EVENTS"]
+  );
   return {
     actor,
     sharedNames: new Map(),

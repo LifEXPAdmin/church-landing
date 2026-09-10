@@ -1,6 +1,86 @@
 # Church positions, responsibilities and access
 
-September 10, 2026 · Published structure foundation; local role-library browser acceptance pending
+September 10, 2026 · Published structure foundation; local assignment service verified; role-library browser acceptance pending
+
+## Assignment permission service — September 10, 2026
+
+Local branch `codex/scoped-role-permissions` adds assignment-owned permission
+contributions on top of the role library. Existing independent and claim grants
+retain their rows and meaning. The additive migration gives appointments positive
+versions and adds separate contribution and save-receipt tables; it creates no
+permissions for existing positions or appointments. Composite foreign keys bind
+each contribution and receipt to its exact church, connection and assignment.
+Database constraints reject using a role contribution as public-profile claim
+authority.
+
+`assignment-privileges` requires current eligible membership, structure authority,
+explicit Privileges review and final confirmation, a bounded supported permission
+list, current church/appointment versions and an idempotency reference. A
+structure-only editor may explicitly save an empty permission list. Any reviewed
+nonempty or previously granted set additionally requires current access-delegation
+authority and each relevant capability. Self-grants and preset-shaped requests
+are denied. Assignment, permission changes, receipt, version and audit commit in
+one transaction. A retry rechecks current authority and must match its actor,
+content and unchanged resulting appointment; competing updates have one winner.
+
+| Supported capability | Current enforcement |
+| --- | --- |
+| Manage structure | Position, title and member-assignment commands and manager reads |
+| Edit church calendars / publish events | Calendar editor and publication commands |
+| Publish church posts | Church authorship, editing and publication |
+| Moderate church posts | Church-scoped moderation |
+| Manage church volunteers | Volunteer slots and protected rosters |
+| Manage church access | Scoped delegation and permitted independent access-request review |
+| Review connections | Member request availability, queue and decisions |
+| Appoint coordinators | Existing church help contact appointment workflow |
+
+The explicit delegation allowlist contains these nine capabilities. Public church
+profile/representative authority keeps the reviewed claim workflow. Draft-only,
+finance, safety and other unimplemented tools do not acquire grants. A new catalog
+label alone never expands the delegation allowlist.
+
+Current effective access is the union of eligible independent grants and active
+role contributions whose appointment, position and church membership remain
+active. Portal, calendar, posts, media checks and permitted claim-review tools
+use that current access. Verified representative status still requires its
+separate claim-backed source. The private manager review response exposes only
+the selected assignment, versions, grantable options and effective source
+references; authentication email and hidden directory identities are excluded.
+
+Ending an assignment, stepping down or archiving its position revokes that
+assignment's contributions, preserving other role and independent grants.
+Membership removal/suspension permanently ends the affected contributions;
+rejoining cannot revive them. Retitling, reparenting and editing a template never
+change permission contributions. Ending an independent grant can leave access
+from another role; the interface wording states that distinction.
+
+Verification passed across 333 distinct checks: 331 passing, two expected
+account-delivery-disabled skips and no unresolved failures. All eight new service
+groups and the actual development/production HTTP permission scenario passed,
+including real calendar/post writes before role removal and denial afterward.
+Populated upgrade, full backup/restore, fresh migrations, production restart,
+build, lint and types passed. The first expanded HTTP run hit the shared
+fictional IP request allowance; each scenario now resets only its isolated test
+budget. The affected and remaining 109 HTTP checks then passed (107 pass, two
+expected skips). Production request limits were not changed. The saved browser
+fixture separately upgraded without changing existing titles, positions,
+appointments or direct grants and acquired zero implicit permissions.
+
+The full mandatory Privileges screen and all entry
+paths remain the next interface task. Existing role-only assignment remains
+compatible and rejects supplied permission/preset fields. No new role permission
+interface or migration is published, and role-library browser acceptance remains
+open. A separate Chrome tab now accepts ordinary clicks; it can replace the old
+stalled Codex preview for the remaining fictional browser walkthrough. No real church record or permission has been changed.
+
+Original Legacy Steps 040–043 and 049–050 were reconciled with the newer
+specification. Membership/capability separation, explicit ordinary delegation,
+audit and isolation apply here. Step-up authentication, last-manager/self-lockout
+policy and critical ownership/finance/export dual approval remain separate open
+requirements; this service slice does not claim they are implemented. Ordinary
+publishing does not require a second approver under that source. Repository
+workflow 1.2 adopts the current private workflow's packet and legacy-source
+reading routes. Fresh-session automatic instruction loading is still unverified.
 
 ## Role library implementation — September 10, 2026
 

@@ -22,12 +22,14 @@ export type StructureOperation =
   | "edit"
   | "archive"
   | "assign"
+  | "assignment-privileges"
   | "unassign"
   | "step-down"
   | "grant"
   | "revoke";
 export type StructureView =
   | "roles"
+  | "privileges"
   | "overview"
   | "structure"
   | "responsibilities"
@@ -55,6 +57,20 @@ export type StructureSnapshot = {
   capabilities: StructureCapability[];
   positions: PositionSummary[];
   roleTemplates?: ChurchRoleSummary[];
+  privileges?: {
+    positionId: string;
+    connectionId: string;
+    assignmentId: string | null;
+    assignmentVersion: number;
+    assigned: boolean;
+    selected: StructureCapability[];
+    grantable: StructureCapability[];
+    effective: {
+      capability: StructureCapability;
+      source: "ASSIGNMENT" | "INDEPENDENT";
+      assignmentId: string | null;
+    }[];
+  };
   candidates?: { id: string; name: string }[];
   candidatesCursor?: string;
   grants?: {

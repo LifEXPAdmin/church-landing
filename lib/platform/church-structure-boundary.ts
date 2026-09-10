@@ -24,6 +24,7 @@ export async function handleChurchStructureRequest(
       if (
         ![
           "roles",
+          "privileges",
           "overview",
           "structure",
           "responsibilities",

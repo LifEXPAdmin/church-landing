@@ -159,6 +159,7 @@ model PlatformUser {
   recentAuthentications PlatformRecentAuthentication[]
   connections ChurchConnection[]
   churchGrants ChurchCapabilityGrant[]
+  issuedRoleGrants ChurchRoleGrant[]
   operatorGrants PlatformOperatorGrant[]
   churchClaims ChurchClaim[]
   churchListings ChurchListingSubmission[]
@@ -507,9 +508,13 @@ model ChurchPositionAssignment {
   connectionId String
   createdAt DateTime @default(now())
   revokedAt DateTime?
+  version Int @default(1)
+  roleGrants ChurchRoleGrant[]
+  saves ChurchAssignmentSave[]
   position ChurchPosition @relation(fields: [positionId, churchId], references: [id, churchId], onDelete: Restrict, onUpdate: Restrict)
   connection ChurchConnection @relation(fields: [connectionId, churchId], references: [id, churchId], onDelete: Restrict, onUpdate: Restrict)
   @@unique([positionId, connectionId])
+  @@unique([id, churchId, connectionId])
   @@index([connectionId, revokedAt])
 }
 
@@ -1118,4 +1123,35 @@ model ChurchClaimDecision {
   claim     ChurchClaim @relation(fields: [claimId], references: [id], onDelete: Restrict)
 
   @@index([claimId, createdAt])
+}
+
+// Each contribution belongs to one appointment, never its reusable title.
+model ChurchRoleGrant {
+  id String @id @default(cuid())
+  assignmentId String
+  churchId String
+  connectionId String
+  capability ChurchCapability
+  grantedById String
+  version Int @default(1)
+  createdAt DateTime @default(now())
+  revokedAt DateTime?
+  assignment ChurchPositionAssignment @relation(fields: [assignmentId, churchId, connectionId], references: [id, churchId, connectionId], onDelete: Restrict, onUpdate: Restrict)
+  grantedBy PlatformUser @relation(fields: [grantedById], references: [id], onDelete: Restrict)
+  @@unique([assignmentId, capability])
+  @@index([churchId, capability, revokedAt])
+}
+
+// A receipt binds retries to the exact reviewed result, not just a reused key.
+model ChurchAssignmentSave {
+  requestKey String @id
+  assignmentId String
+  churchId String
+  connectionId String
+  actorId String
+  inputHash String
+  resultVersion Int
+  createdAt DateTime @default(now())
+  assignment ChurchPositionAssignment @relation(fields: [assignmentId, churchId, connectionId], references: [id, churchId, connectionId], onDelete: Restrict, onUpdate: Restrict)
+  @@index([assignmentId])
 }

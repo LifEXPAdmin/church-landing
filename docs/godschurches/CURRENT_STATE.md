@@ -1,5 +1,34 @@
 # Godschurches current state
 
+## Assignment permission service verified locally; recovery takes priority — September 10, 2026
+
+`codex/scoped-role-permissions` adds separate assignment-owned permission
+contributions, explicit atomic review/save, current delegation checks, stable
+retry receipts and effective access shared by church, calendar and post tools.
+Removing a role ends only its contributions; independent and other role grants
+remain. Membership removal/suspension cannot revive grants on rejoining. Public
+representative authority remains in the reviewed claim workflow.
+
+The sweep and corrected remaining run passed 333 distinct checks: 331 pass,
+two expected disabled-email skips, no unresolved failures. This includes eight
+new service groups, development/production HTTP, populated additive upgrade,
+backup/restore, fresh migrations and restart. Build, lint and types passed.
+The expanded fictional HTTP scenario initially exhausted its shared rate budget;
+scenario isolation fixed the test without changing production limits. See
+[CHURCH_STRUCTURE_REPORT.md](CHURCH_STRUCTURE_REPORT.md).
+
+The role-library browser walkthrough remains open; normal Chrome navigation
+works and provides an alternative to the old stalled Codex preview. Its saved
+fictional fixture was upgraded without changing earlier records or creating
+permissions. The mandatory Privileges interface is the next code task after
+account access is restored. No role-service change has been pushed or published.
+
+The owner again requested immediate password recovery. Discretionary feature
+implementation is paused: the existing provider page still needs owner acceptance,
+production delivery remains disabled and the original account mailbox is still
+needed. No reset email or password change is claimed. Provider activation and
+same-account recovery remain the first priority.
+
 ## Role-library code verified; browser acceptance pending — September 10, 2026
 
 `codex/church-role-templates` preserves the unpublished post/profile work and

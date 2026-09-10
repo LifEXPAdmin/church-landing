@@ -195,6 +195,8 @@ try {
     ["ChurchPositionAssignment", "id"],
     ["ChurchRoleTemplate", "id"],
     ["ChurchRoleRevision", "templateId"],
+    ["ChurchRoleGrant", "id"],
+    ["ChurchAssignmentSave", "requestKey"],
     ["PlatformCalendar", "id"],
     ["CalendarEvent", "id"],
     ["CalendarOccurrence", "id"],
@@ -380,6 +382,34 @@ try {
       console.log(
         "Role-library additive upgrade preserved populated position IDs, reporting edges, responsibilities, appointments and independent grants."
       );
+    } else if (name === "20260910190000_church_assignment_permissions") {
+      const appointments = () =>
+        psql([
+          "-Atc",
+          `SELECT md5(jsonb_agg(to_jsonb(t) - 'version' ORDER BY id)::text) FROM "ChurchPositionAssignment" t`
+        ]);
+      const prior = [
+        appointments(),
+        fingerprint("ChurchCapabilityGrant", "id"),
+        fingerprint("ChurchPosition", "id")
+      ];
+      psql(["-f", `prisma/migrations/${name}/migration.sql`]);
+      const after = [
+        appointments(),
+        fingerprint("ChurchCapabilityGrant", "id"),
+        fingerprint("ChurchPosition", "id")
+      ];
+      if (JSON.stringify(prior) !== JSON.stringify(after))
+        throw new Error(
+          "Assignment permissions migration changed existing positions, appointments or independent grants"
+        );
+      if (
+        psql(["-Atc", `SELECT count(*) FROM "ChurchRoleGrant"`]).trim() !== "0"
+      )
+        throw new Error("Migration created implicit role permissions");
+      console.log(
+        "Assignment permissions additive upgrade preserves existing appointments and direct grants, with no inferred permissions."
+      );
     } else psql(["-f", `prisma/migrations/${name}/migration.sql`]);
   }
   for (const [i, [table, key]] of accountTables.entries()) {
@@ -413,6 +443,8 @@ try {
   if (portalTests) await runTests("tests/church-claims.test.ts");
   if (portalTests) await runTests("tests/church-structure.test.ts");
   if (portalTests) await runTests("tests/church-role-templates.test.ts");
+  if (portalTests)
+    await runTests("tests/church-assignment-permissions.test.ts");
   if (portalTests) await runTests("tests/calendars.test.ts");
   if (portalTests) await runTests("tests/post-publishing.test.ts");
   if (portalTests) await runTests("tests/post-participation.test.ts");

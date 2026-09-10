@@ -8,6 +8,13 @@
 4. Inspect the actual checkout, branch, working-tree changes, and any more specific instructions before editing. Preserve unfinished work.
 5. If connected to the private Notion workspace, find **Workflow Guide for ChatGPT and Codex**, then **Church Second Brain**, **Current State and Next Three Outcomes**, and the latest relevant handoff. Read the linked task and sources needed for this session. If access is missing, state the gap and continue independent work using available evidence.
 
+For source reconciliation, read **Team Packets — Start Here and Current Workflow**
+and **Legacy Blueprint Coverage — 132 Steps and Current Tasks** alongside the
+current feature checklist. Team packet F01–F06, feature F001–F152 and Legacy
+Step 001–132 are separate identifiers. Read original step details relevant to the
+active task; a mapping is not completion evidence. Record partial or superseded
+requirements in the existing private task rather than duplicating its backlog.
+
 ## Work and verify
 
 - Carry out the current authorized task. A captured idea, historical prompt, or archived approval does not by itself expand this session's scope.

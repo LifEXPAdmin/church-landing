@@ -1,4 +1,4 @@
-import test, { before, after } from "node:test";
+import test, { before, beforeEach, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { PrismaClient } from "@prisma/client";
@@ -110,6 +110,8 @@ before(async () => {
       }
     });
 });
+// Each scenario has its own isolated request allowance; production limits stay unchanged.
+beforeEach(() => db.platformAuthLimit.deleteMany());
 after(() => db.$disconnect());
 const get = (path: string, token = "", rsc = false) =>
   fetch(origin + path, {
@@ -155,6 +157,106 @@ const cmd = async (
   assert.match(r.headers.get("Cache-Control")!, /private, no-store/);
   return r.json();
 };
+
+test("assignment privilege HTTP boundary requires current scope, explicit review and isolated source readback", async () => {
+  const p = await cmd({
+    operation: "create",
+    name: "HTTP privileges position",
+    requestKey: randomUUID()
+  });
+  const reviewPath = `/api/platform/church-structure?churchId=${churchId}&view=privileges&positionId=${p.id}&connectionId=${connections[morgan.user.id]}`;
+  const review = await get(reviewPath, ada.token);
+  assert.equal(review.status, 200);
+  assert.match(review.headers.get("Cache-Control")!, /private, no-store/);
+  const reviewText = await review.text();
+  assert.equal(reviewText.includes("Hidden Morgan Canary"), false);
+  assert.equal(reviewText.includes(morgan.user.email), false);
+  const preview = JSON.parse(reviewText).privileges;
+  assert.deepEqual(preview.selected, []);
+  assert.equal(preview.assigned, false);
+  for (const [token, status] of [
+    ["", 401],
+    [lee.token, 403],
+    [pat.token, 403],
+    [blake.token, 403]
+  ] as const)
+    assert.equal((await get(reviewPath, token)).status, status);
+  const input = {
+    operation: "assignment-privileges",
+    churchId,
+    positionId: p.id,
+    connectionId: connections[morgan.user.id],
+    capabilities: ["MANAGE_STRUCTURE"],
+    privilegesReviewed: true,
+    confirmed: true,
+    requestKey: randomUUID(),
+    assignmentVersion: 0,
+    expectedVersion: (await read()).version
+  };
+  assert.equal(
+    (await post({ ...input, privilegesReviewed: false })).status,
+    400
+  );
+  assert.equal(
+    (
+      await post(input, ada.token, "church-structure", {
+        Origin: "https://elsewhere.example"
+      })
+    ).status,
+    403
+  );
+  assert.equal((await post(input, lee.token)).status, 403);
+  const result = await post(input);
+  assert.equal(result.status, 200, await result.clone().text());
+  const saved = await result.json();
+  assert.equal((await post(input)).status, 200);
+  assert.equal(
+    await db.churchRoleGrant.count({
+      where: { assignmentId: saved.id, revokedAt: null }
+    }),
+    1
+  );
+  const current = (await (await get(reviewPath, ada.token)).json()).privileges;
+  assert.deepEqual(current.selected, ["MANAGE_STRUCTURE"]);
+  assert.ok(
+    current.effective.some(
+      (g: { source: string; assignmentId: string }) =>
+        g.source === "ASSIGNMENT" && g.assignmentId === saved.id
+    )
+  );
+  await cmd(
+    { operation: "edit", positionId: p.id, name: "Role-supplied editor works" },
+    morgan.token
+  );
+  const stale = {
+    ...input,
+    requestKey: randomUUID(),
+    assignmentVersion: saved.version,
+    expectedVersion: (await read()).version
+  };
+  await cmd({
+    operation: "unassign",
+    positionId: p.id,
+    id: saved.id,
+    confirmed: true
+  });
+  assert.equal(
+    (
+      await post(
+        {
+          operation: "edit",
+          churchId,
+          positionId: p.id,
+          name: "Revoked role editor",
+          expectedVersion: stale.expectedVersion
+        },
+        morgan.token
+      )
+    ).status,
+    403
+  );
+  assert.equal((await post(input)).status, 409);
+});
 
 test("actual structure HTTP routes preserve private positions/contact projections and enforce current grants", async () => {
   const leadership = await cmd({

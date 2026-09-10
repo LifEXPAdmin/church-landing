@@ -1,6 +1,6 @@
 # Godschurches workflow guide
 
-Version 1.1 · Updated 10 September 2026
+Version 1.2 · Updated 10 September 2026
 
 This is the repository entry point for work that continues between ChatGPT, Codex,
 the private second brain, and the development workstation. Keep this file's path
@@ -50,6 +50,18 @@ criteria are met; capture evidence in the linked handoff.
 The **End of batch** section stays last and holds the final review. Add new
 implementation actions before it; priority does not move review ahead of its
 dependencies.
+
+## Requirement sources
+
+Use **Team Packets — Start Here and Current Workflow** and **Legacy Blueprint
+Coverage — 132 Steps and Current Tasks** in private Notion. The operational
+packets are version 2.1, Living Master 1.1.0 and private workflow 1.3 as of
+10 September 2026. Read the relevant original step briefs before implementing
+mapped requirements. Keep team packet F01–F06, feature F001–F152 and Legacy
+Step 001–132 identifiers distinct. Record covered, partial, deferred or superseded
+scope with evidence in the existing task; catalogs do not establish completion.
+Preserve private links in private systems. Workflow changes propagate to affected
+packets, templates, entry points and task descriptions with an actual readback.
 
 ## Working routine
 
@@ -168,6 +180,10 @@ test evidence in their appropriate private systems. The exact page titles above
 allow an authorized assistant to locate the context without publishing it.
 
 ## Change log
+
+- **1.2 — 10 September 2026:** Adopted private workflow 1.3 source reconciliation
+  and packet reading routes. Active-session reading is verified; fresh-session
+  automatic loading remains a separate acceptance check.
 
 - **1.1 — 10 September 2026:** Adopted the private workflow's owner-action and
   final-review conventions, paired dependencies, End of batch ordering and

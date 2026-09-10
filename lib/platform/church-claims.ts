@@ -1,3 +1,7 @@
+import {
+  effectiveChurchGrants,
+  activeRoleGrantWhere
+} from "./church-permissions";
 import { verifiedChurchManagement } from "./church-management";
 import { randomUUID } from "node:crypto";
 import { Prisma, type PrismaClient, type ChurchClaim } from "@prisma/client";
@@ -98,17 +102,7 @@ function scopesData(value: unknown): ClaimScope[] {
   return [...new Set(values)].sort() as ClaimScope[];
 }
 async function activeGrants(tx: Tx, userId: string, churchId?: string) {
-  const rows = await tx.churchCapabilityGrant.findMany({
-    where: { userId, churchId, revokedAt: null, user: eligibleWhere },
-    include: { dependency: true, church: { select: churchSelect } }
-  });
-  return rows.filter(
-    (row) =>
-      !row.dependency ||
-      (row.dependency.userId === userId &&
-        row.dependency.churchId === row.churchId &&
-        row.dependency.state === "APPROVED")
-  );
+  return effectiveChurchGrants(tx, userId, churchId ? [churchId] : undefined);
 }
 async function isOperator(tx: Tx, userId: string) {
   return !!(await tx.platformOperatorGrant.count({
@@ -163,8 +157,21 @@ async function reviewAvailable(tx: Tx, claim: ChurchClaim) {
       },
       select: { userId: true }
     });
-    for (const manager of managers)
-      if (await canReview(tx, manager.userId, claim)) return;
+    const roleManagers = await tx.churchRoleGrant.findMany({
+      where: {
+        ...activeRoleGrantWhere(),
+        churchId: claim.churchId,
+        capability: "MANAGE_CHURCH_ACCESS"
+      },
+      select: {
+        assignment: { select: { connection: { select: { userId: true } } } }
+      }
+    });
+    for (const userId of new Set([
+      ...managers.map((m) => m.userId),
+      ...roleManagers.map((g) => g.assignment.connection.userId)
+    ]))
+      if (await canReview(tx, userId, claim)) return;
   }
   throw new PortalError(
     503,
@@ -250,9 +257,13 @@ export async function getChurchClaims(
   return portal(db, token, async (tx, actor) => {
     const operator = await isOperator(tx, actor.id);
     const grants = await activeGrants(tx, actor.id);
-    const managed = grants
-      .filter((row) => row.capability === "MANAGE_CHURCH_ACCESS")
-      .map((row) => row.church);
+    const managed = [
+      ...new Map(
+        grants
+          .filter((row) => row.capability === "MANAGE_CHURCH_ACCESS")
+          .map((row) => [row.church.id, row.church])
+      ).values()
+    ];
     let selected: ChurchClaim | null = null;
     if (options.id) {
       selected = await tx.churchClaim.findUnique({ where: { id: options.id } });

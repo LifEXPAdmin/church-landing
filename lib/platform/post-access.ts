@@ -1,3 +1,4 @@
+import { effectiveChurchGrants } from "./church-permissions";
 import type { Prisma, PrismaClient, PlatformPost } from "@prisma/client";
 import { activePublicAccount, communityAuthorSelect } from "./public-profile";
 import { isEligible, PortalError } from "./portal";
@@ -48,21 +49,11 @@ export async function postContext(
       "Your church connections need an administrator to review their size."
     );
   context.churches = connections.map((c) => c.churchId);
-  const grants = await tx.churchCapabilityGrant.findMany({
-    where: {
-      userId,
-      churchId: { in: context.churches },
-      revokedAt: null,
-      capability: {
-        in: [
-          "PUBLISH_CHURCH_POSTS",
-          "MODERATE_CHURCH_POSTS",
-          "MANAGE_CHURCH_VOLUNTEERS"
-        ]
-      }
-    },
-    include: { dependency: true }
-  });
+  const grants = await effectiveChurchGrants(tx, userId, context.churches, [
+    "PUBLISH_CHURCH_POSTS",
+    "MODERATE_CHURCH_POSTS",
+    "MANAGE_CHURCH_VOLUNTEERS"
+  ]);
   for (const grant of grants) {
     if (
       grant.dependency &&

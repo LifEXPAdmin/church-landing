@@ -1,19 +1,22 @@
 import {
+  saveAssignmentPrivileges,
+  delegableChurchCapabilities
+} from "./church-assignment-permissions";
+import {
+  endRoleContributions,
+  effectiveChurchGrants
+} from "./church-permissions";
+import {
   roleTemplateCommand,
   readRoleTemplates,
   positionRoleRevision
 } from "./church-role-templates";
-import {
-  type Prisma,
-  type PrismaClient,
-  type ChurchCapability
-} from "@prisma/client";
+import { type Prisma, type PrismaClient } from "@prisma/client";
 import {
   churchSelect,
   eligibility,
   eligibleWhere,
   expected,
-  hasChurchCapability,
   churchCapability,
   membership,
   portal,
@@ -29,9 +32,6 @@ import {
 type Tx = Prisma.TransactionClient;
 const MAX_POSITIONS = 200;
 const MAX_DEPTH = 12;
-const capabilityNames = Object.keys(
-  structureCapabilities
-) as StructureCapability[];
 const preferenceSelect = { listed: true, displayName: true } as const;
 const activeMember = { state: "APPROVED" as const, user: eligibleWhere };
 function field(value: unknown, max = 100, optional = false): string {
@@ -139,6 +139,7 @@ export async function churchStructureCommand(
         "edit",
         "archive",
         "assign",
+        "assignment-privileges",
         "unassign",
         "step-down",
         "template-create",
@@ -158,6 +159,11 @@ export async function churchStructureCommand(
           throw new PortalError(
             400,
             "Public-profile management uses the reviewed representative setup journey."
+          );
+        if (!delegableChurchCapabilities.includes(scope))
+          throw new PortalError(
+            400,
+            "This permission is not available for church delegation."
           );
         await churchCapability(tx, actor, churchId, scope);
         const target = await targetConnection(
@@ -246,7 +252,7 @@ export async function churchStructureCommand(
       );
       return {
         message:
-          "That permission has ended for current sessions. Position assignments are unchanged.",
+          "That independent grant has ended. Permissions from other roles may remain; position assignments are unchanged.",
         id: grant.id
       };
     }
@@ -350,6 +356,45 @@ export async function churchStructureCommand(
         id: row.id
       };
     }
+    if (op === "assignment-privileges") {
+      const row = await position(tx, churchId, input.positionId);
+      if (input.listedConnection && input.connectionId)
+        throw new PortalError(
+          400,
+          "Choose a listed member or use an assignment code, not both."
+        );
+      const target = await targetConnection(
+        tx,
+        churchId,
+        input.listedConnection || input.connectionId
+      );
+      const result = await saveAssignmentPrivileges(
+        tx,
+        actor,
+        churchId,
+        church.structureVersion,
+        row.id,
+        target,
+        input
+      );
+      if (result.changed) {
+        await advance(tx, churchId);
+        await audit(
+          tx,
+          actor.id,
+          churchId,
+          result.id,
+          "SAVE_ASSIGNMENT_PRIVILEGES",
+          church.structureVersion + 1
+        );
+      }
+      return {
+        id: result.id,
+        version: result.version,
+        message:
+          "Assignment and reviewed privileges saved. Other grant sources are unchanged."
+      };
+    }
     expected(input.expectedVersion, church.structureVersion);
     const row = await position(tx, churchId, input.positionId);
     if (op === "edit") {
@@ -382,15 +427,25 @@ export async function churchStructureCommand(
           409,
           "Move or archive the positions that report here before archiving this position."
         );
+      await endRoleContributions(tx, { positionId: row.id });
       await tx.churchPositionAssignment.updateMany({
         where: { positionId: row.id, revokedAt: null },
-        data: { revokedAt: new Date() }
+        data: { revokedAt: new Date(), version: { increment: 1 } }
       });
       await tx.churchPosition.update({
         where: { id: row.id },
         data: { archivedAt: new Date() }
       });
     } else if (op === "assign") {
+      if (
+        input.capabilities !== undefined ||
+        input.presetKey !== undefined ||
+        input.recommendations !== undefined
+      )
+        throw new PortalError(
+          400,
+          "Use the reviewed privileges action to change permissions."
+        );
       const target = await targetConnection(
         tx,
         churchId,
@@ -428,7 +483,11 @@ export async function churchStructureCommand(
       if (prior)
         await tx.churchPositionAssignment.update({
           where: { id: prior.id },
-          data: { revokedAt: null, createdAt: new Date() }
+          data: {
+            revokedAt: null,
+            createdAt: new Date(),
+            version: { increment: 1 }
+          }
         });
       else
         await tx.churchPositionAssignment.create({
@@ -455,9 +514,10 @@ export async function churchStructureCommand(
           400,
           "Confirm that this position assignment should end."
         );
+      await endRoleContributions(tx, { id: assignment.id });
       await tx.churchPositionAssignment.update({
         where: { id: assignment.id },
-        data: { revokedAt: new Date() }
+        data: { revokedAt: new Date(), version: { increment: 1 } }
       });
     }
     await advance(tx, churchId);
@@ -472,8 +532,10 @@ export async function churchStructureCommand(
     return {
       message:
         op === "archive"
-          ? "Position archived. Its assignments have ended; software permissions are managed separately."
-          : "Church structure saved. Software permissions and directory sharing are unchanged.",
+          ? "Position archived. Its assignments and their permission contributions ended. Independent grants are unchanged."
+          : ["unassign", "step-down"].includes(String(op))
+            ? "Assignment ended with its permission contributions. Other roles, independent grants and directory sharing are unchanged."
+            : "Church structure saved. Software permissions and directory sharing are unchanged.",
       id: row.id
     };
   });
@@ -500,17 +562,13 @@ export async function getChurchStructure(
       where: { id: churchId },
       select: { ...churchSelect, structureVersion: true }
     });
-    const capabilities: StructureCapability[] = [];
-    for (const scope of capabilityNames)
-      if (
-        await hasChurchCapability(
-          tx,
-          actor,
-          churchId,
-          scope as ChurchCapability
+    const capabilities: StructureCapability[] = [
+      ...new Set(
+        (await effectiveChurchGrants(tx, actor.id, [churchId])).map(
+          (g) => g.capability
         )
       )
-        capabilities.push(scope);
+    ];
     if (
       options.view === "access" &&
       !capabilities.includes("MANAGE_CHURCH_ACCESS")
@@ -519,7 +577,10 @@ export async function getChurchStructure(
         403,
         "Church access management is not available to this account."
       );
-    if (options.view === "roles" && !capabilities.includes("MANAGE_STRUCTURE"))
+    if (
+      ["roles", "privileges"].includes(options.view ?? "") &&
+      !capabilities.includes("MANAGE_STRUCTURE")
+    )
       throw new PortalError(
         403,
         "Role title management is not available to this account."
@@ -648,6 +709,48 @@ export async function getChurchStructure(
         .map((c) => ({ id: c.id, name: c.preference!.displayName }));
       snapshot.candidatesCursor =
         candidates.length > 100 ? candidates[99].id : undefined;
+    }
+    if (options.view === "privileges") {
+      const row = await position(tx, churchId, options.positionId);
+      const target = await targetConnection(tx, churchId, options.connectionId);
+      const assignment = await tx.churchPositionAssignment.findUnique({
+        where: {
+          positionId_connectionId: {
+            positionId: row.id,
+            connectionId: target.id
+          }
+        },
+        include: {
+          roleGrants: {
+            where: { revokedAt: null },
+            select: { capability: true }
+          }
+        }
+      });
+      const grants = await effectiveChurchGrants(tx, target.userId, [churchId]);
+      snapshot.privileges = {
+        positionId: row.id,
+        connectionId: target.id,
+        assignmentId: assignment?.id ?? null,
+        assignmentVersion: assignment?.version ?? 0,
+        assigned: !!assignment && !assignment.revokedAt,
+        selected:
+          assignment && !assignment.revokedAt
+            ? assignment.roleGrants.map((g) => g.capability)
+            : [],
+        grantable:
+          target.userId !== actor.id &&
+          capabilities.includes("MANAGE_CHURCH_ACCESS")
+            ? delegableChurchCapabilities.filter((c) =>
+                capabilities.includes(c)
+              )
+            : [],
+        effective: grants.map((g) => ({
+          capability: g.capability,
+          source: g.source,
+          assignmentId: g.assignmentId
+        }))
+      };
     }
     if (options.view === "access") {
       const cursor = options.cursor ? identifier(options.cursor) : undefined;

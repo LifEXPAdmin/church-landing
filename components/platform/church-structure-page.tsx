@@ -269,7 +269,7 @@ function PositionEditor({
       }}
       fields={fields}
       label={row ? "Save position" : "Create position"}
-      description="A title or assignment does not grant software permissions. Church access is managed separately."
+      description="A title alone does not grant software permissions. Role permissions require a separate explicit review."
     />
   );
 }
@@ -350,7 +350,7 @@ function PositionDetail({
                     confirmed: true
                   }}
                   label={`End assignment${a.name ? ` for ${a.name}` : ""}`}
-                  confirmation="End this position assignment. Software permissions stay separate."
+                  confirmation="End this position assignment and permissions supplied by it. Other role and independent grants remain."
                 />
               </div>
             ))}
@@ -390,7 +390,7 @@ function PositionDetail({
                 confirmed: true
               }}
               label="Archive position"
-              confirmation="End this position and its assignments. Move or archive its child positions first. Software permissions are managed separately."
+              confirmation="End this position, its assignments and their permission contributions. Move or archive child positions first. Other grants remain."
             />
           </PortalCard>
         </div>
@@ -463,7 +463,7 @@ function Access({
                   confirmed: true
                 }}
                 label="End permission"
-                confirmation="End this permission for current sessions. Their church connection and position assignments remain unchanged."
+                confirmation="End this independent grant. Permissions from other roles may remain. Their church connection and positions remain unchanged."
               />
             )}
           </div>
@@ -513,7 +513,7 @@ function Responsibilities({ snapshot }: { snapshot: StructureSnapshot }) {
                 confirmed: true
               }}
               label={`Step down from ${p.name}`}
-              confirmation="End my position assignment. My software permissions remain separate."
+              confirmation="End my position assignment and its permissions. Access from my other roles and independent grants remains."
             />
           </div>
         ))}
@@ -532,8 +532,8 @@ function Responsibilities({ snapshot }: { snapshot: StructureSnapshot }) {
       </PortalCard>
       <PortalCard title="My software permissions">
         <p className="text-sm text-gc-muted">
-          These permissions are explicitly assigned and independent from your
-          positions.
+          These permissions come from explicit independent grants or reviewed
+          role assignments. Ending one source can leave access from another.
         </p>
         {snapshot.capabilities.length ? (
           <ul className="list-inside list-disc space-y-2">
