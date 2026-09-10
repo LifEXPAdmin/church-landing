@@ -9,6 +9,7 @@ export type PostContext = {
   churches: string[];
   publishers: Set<string>;
   moderators: Set<string>;
+  volunteers: Set<string>;
 };
 export async function postContext(
   tx: PostTx,
@@ -18,7 +19,8 @@ export async function postContext(
     actorId: null,
     churches: [],
     publishers: new Set(),
-    moderators: new Set()
+    moderators: new Set(),
+    volunteers: new Set()
   };
   if (!userId) return empty;
   const actor = await tx.platformUser.findUnique({
@@ -51,7 +53,13 @@ export async function postContext(
       userId,
       churchId: { in: context.churches },
       revokedAt: null,
-      capability: { in: ["PUBLISH_CHURCH_POSTS", "MODERATE_CHURCH_POSTS"] }
+      capability: {
+        in: [
+          "PUBLISH_CHURCH_POSTS",
+          "MODERATE_CHURCH_POSTS",
+          "MANAGE_CHURCH_VOLUNTEERS"
+        ]
+      }
     },
     include: { dependency: true }
   });
@@ -65,7 +73,9 @@ export async function postContext(
       continue;
     (grant.capability === "PUBLISH_CHURCH_POSTS"
       ? context.publishers
-      : context.moderators
+      : grant.capability === "MODERATE_CHURCH_POSTS"
+        ? context.moderators
+        : context.volunteers
     ).add(grant.churchId);
   }
   return context;
@@ -138,6 +148,8 @@ export function postCanReply(context: PostContext, post: PlatformPost) {
   );
 }
 export const postInclude = {
+  poll: { select: { id: true } },
+  volunteerSlots: { select: { id: true }, take: 1 },
   author: { select: communityAuthorSelect },
   authorChurch: { select: { id: true, name: true } },
   eventOccurrence: { select: { event: { select: { visibility: true } } } }

@@ -16,6 +16,7 @@ import { PlatformShell } from "./platform-shell";
 import { GuestAccountPrompt } from "./guest-account-prompt";
 import { PortalCard, PortalHeading, portalLinkClass } from "./portal-ui";
 import { CalendarForm, CalendarEventForm } from "./calendar-form";
+import { VolunteerCommitments } from "./post-participation-form";
 import {
   CalendarNavigation,
   CalendarRange,
@@ -98,7 +99,7 @@ export async function CalendarPage({
           >
             <PortalHeading
               title="My commitments"
-              description="Your Going and Maybe responses, with private conflict hints visible only to you. Canceled events stay clearly marked."
+              description="Your event responses and volunteer reservations, with private conflict hints visible only to you. Canceled events stay clearly marked."
             />
             <CalendarNavigation />
             <CalendarRange range={range} path={path} query={query} />
@@ -106,6 +107,10 @@ export async function CalendarPage({
               events={result.commitments}
               timeZone={range.timeZone}
               commitments
+            />
+            <VolunteerCommitments
+              rows={result.volunteerCommitments}
+              timeZone={range.timeZone}
             />
           </section>
         </PlatformShell>

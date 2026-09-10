@@ -196,7 +196,12 @@ try {
     ["CalendarEventShare", "id"],
     ["CalendarResponse", "id"],
     ["CalendarAudit", "id"],
-    ["PostAudit", "id"]
+    ["PostAudit", "id"],
+    ["PostPoll", "id"],
+    ["PostPollOption", "id"],
+    ["PostPollBallot", "id"],
+    ["PostVolunteerSlot", "id"],
+    ["PostVolunteerSignup", "id"]
   ];
   const supportTables = [
     ["SupportCapabilityGrant", "id"],
@@ -360,6 +365,7 @@ try {
   if (portalTests) await runTests("tests/church-structure.test.ts");
   if (portalTests) await runTests("tests/calendars.test.ts");
   if (portalTests) await runTests("tests/post-publishing.test.ts");
+  if (portalTests) await runTests("tests/post-participation.test.ts");
   if (supportTests) await runTests("tests/support-service.test.ts");
   run(join(pg, "pg_dump"), [
     database,
@@ -496,6 +502,11 @@ try {
     });
   if (portalTests)
     await runTests("tests/post-publishing-http.test.ts", {
+      ...env,
+      POST_RENDER_PHASE: "development"
+    });
+  if (portalTests)
+    await runTests("tests/post-participation-http.test.ts", {
       ...env,
       POST_RENDER_PHASE: "development"
     });
@@ -741,6 +752,10 @@ try {
       CALENDAR_RENDER_PHASE: "production"
     });
     await runTests("tests/post-publishing-http.test.ts", {
+      ...portalEnv,
+      POST_RENDER_PHASE: "production"
+    });
+    await runTests("tests/post-participation-http.test.ts", {
       ...portalEnv,
       POST_RENDER_PHASE: "production"
     });

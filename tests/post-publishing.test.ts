@@ -237,10 +237,22 @@ test("competing post edits conflict; withdrawal hides dependent discussion and r
     row.audit.every(
       (a) =>
         Object.keys(a).sort().join() ===
-        ["id", "createdAt", "postId", "actorId", "action", "version"]
+        [
+          "id",
+          "createdAt",
+          "postId",
+          "actorId",
+          "action",
+          "version",
+          "targetId"
+        ]
           .sort()
           .join()
     )
+  );
+  assert.ok(
+    row.audit.every((a) => a.targetId === null),
+    "Ordinary post changes do not acquire participation references"
   );
   await communityCommand(db, f.val.token, "comment", {
     postId: p.id,

@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { privateCookies } from "./private-cookies";
 import { PLATFORM_SESSION_COOKIE } from "./session";
+import { getPostParticipation } from "./post-participation-reads";
 import {
   getPost,
   getProfilePosts,
@@ -16,6 +17,9 @@ async function token() {
 }
 export async function readPosts(query: PostQuery = {}) {
   return listPosts(prisma, await token(), query);
+}
+export async function readPostParticipation(id: string) {
+  return getPostParticipation(prisma, await token(), id);
 }
 export async function readPost(
   id: string,

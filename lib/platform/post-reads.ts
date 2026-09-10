@@ -1,5 +1,6 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { activePublicAccount, communityAuthorSelect } from "./public-profile";
+import { canOrganize } from "./post-participation";
 import {
   postCanEdit,
   postCanModerate,
@@ -94,6 +95,8 @@ function project(post: PostRow, context: PostContext, now: Date) {
     canEdit: postCanEdit(context, post),
     canWithdraw: postCanEdit(context, post) || postCanModerate(context, post),
     canReply: postCanReply(context, post),
+    hasParticipation: !!post.poll || post.volunteerSlots.length > 0,
+    canOrganize: canOrganize(context, post),
     comments: post.comments.map((c) => ({
       id: c.id,
       createdAt: c.createdAt,

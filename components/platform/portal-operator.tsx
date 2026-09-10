@@ -23,6 +23,7 @@ const capabilityLabels: Record<string, string> = {
   PUBLISH_CHURCH_EVENTS: "Publish church events",
   PUBLISH_CHURCH_POSTS: "Publish church posts",
   MODERATE_CHURCH_POSTS: "Moderate church posts",
+  MANAGE_CHURCH_VOLUNTEERS: "Manage church volunteer roles and rosters",
   REVIEW_CONNECTIONS: "Review connections",
   APPOINT_COORDINATORS: "Appoint coordinators",
   MANAGE_STRUCTURE: "Manage structure",

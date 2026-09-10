@@ -9,6 +9,7 @@ import {
   togglePlatformPostLike
 } from "@/app/platform/actions";
 import { formatDate, postTypeLabels } from "@/lib/platform/format";
+import { PostParticipation } from "./post-participation";
 
 interface PostCardProps {
   post: PostView;
@@ -130,6 +131,10 @@ export function PostCard({
           </Link>
         )}
       </div>
+      {(post.hasParticipation ||
+        (fullDiscussion && (post.canEdit || post.canOrganize))) && (
+        <PostParticipation postId={post.id} manage={fullDiscussion} />
+      )}
       {!fullDiscussion && (
         <Link
           className="inline-flex min-h-11 items-center text-sm text-gc-accent underline"

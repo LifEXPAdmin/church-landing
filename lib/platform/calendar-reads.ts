@@ -1,5 +1,7 @@
 import type { Prisma, PrismaClient, CalendarOccurrence } from "@prisma/client";
 import { portal, PortalError, eligibleWhere } from "./portal";
+import { postContext } from "./post-access";
+import { volunteerCommitmentsIn } from "./post-participation-reads";
 import { calendarWindow, type CalendarSchedule } from "./calendar-time";
 import {
   calendarContext,
@@ -485,6 +487,11 @@ export async function getCalendarCommitments(
     const visible = responses.filter((r) =>
       eventAccess(context, r.occurrence.event)
     );
+    const volunteerRows = await volunteerCommitmentsIn(
+      tx,
+      await postContext(tx, actor.id),
+      timeWhere(range)
+    );
     await loadCalendarSourceNames(
       tx,
       context,
@@ -492,6 +499,9 @@ export async function getCalendarCommitments(
     );
     const busy = [
       ...ownTime,
+      ...volunteerRows.flatMap((r) =>
+        r.occurrence && !r.event?.canceled ? [r.occurrence] : []
+      ),
       ...visible
         .filter(
           (r) =>
@@ -505,6 +515,19 @@ export async function getCalendarCommitments(
       from: range.from,
       until: range.until,
       timeZone: range.timeZone,
+      volunteerCommitments: volunteerRows.map(({ occurrence, ...row }) => ({
+        ...row,
+        conflict:
+          occurrence &&
+          !row.event?.canceled &&
+          busy.some(
+            (other) =>
+              other.id !== occurrence.id &&
+              overlaps(occurrence, other, range.timeZone)
+          )
+            ? "You have another commitment or busy period at this time."
+            : null
+      })),
       commitments: visible
         .map((r) => {
           const row = r.occurrence,

@@ -348,6 +348,50 @@ export async function downloadAccountExport(
       select: { occurrenceId: true, state: true, updatedAt: true }
     });
     const collections = {
+      personalPolls: await tx.postPoll.findMany({
+        where: { post: { authorId: userId, authorChurchId: null } },
+        orderBy: { id: "asc" },
+        take: MAX_ROWS + 1,
+        select: {
+          postId: true,
+          question: true,
+          multiple: true,
+          closesAt: true,
+          closesLocal: true,
+          timeZone: true,
+          closedAt: true,
+          version: true,
+          options: {
+            select: { id: true, label: true, position: true },
+            orderBy: { position: "asc" }
+          }
+        }
+      }),
+      pollBallots: await tx.postPollBallot.findMany({
+        where: { userId },
+        orderBy: { id: "asc" },
+        take: MAX_ROWS + 1,
+        select: {
+          pollId: true,
+          optionIds: true,
+          version: true,
+          updatedAt: true
+        }
+      }),
+      volunteerSignups: await tx.postVolunteerSignup.findMany({
+        where: { userId },
+        orderBy: { id: "asc" },
+        take: MAX_ROWS + 1,
+        select: {
+          id: true,
+          slotId: true,
+          state: true,
+          version: true,
+          eventVersion: true,
+          occurrenceVersion: true,
+          updatedAt: true
+        }
+      }),
       personalCalendars,
       personalEvents,
       personalOccurrences,

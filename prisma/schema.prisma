@@ -109,6 +109,8 @@ model PlatformUser {
   calendars PlatformCalendar[] @relation("CalendarOwner")
   createdCalendars PlatformCalendar[] @relation("CalendarCreator")
   eventResponses CalendarResponse[]
+  pollBallots PostPollBallot[]
+  volunteerSignups PostVolunteerSignup[]
   supportGrants SupportCapabilityGrant[]
   supportCases SupportCase[]
   supportMessages SupportMessage[]
@@ -250,6 +252,7 @@ enum ChurchCapability {
   PUBLISH_CHURCH_EVENTS
   PUBLISH_CHURCH_POSTS
   MODERATE_CHURCH_POSTS
+  MANAGE_CHURCH_VOLUNTEERS
 }
 
 enum OperatorCapability {
@@ -813,6 +816,8 @@ model PlatformPost {
   audienceChurch Church? @relation("ChurchPostAudience", fields: [audienceChurchId], references: [id], onDelete: Restrict)
   eventOccurrence CalendarOccurrence? @relation(fields: [eventOccurrenceId], references: [id], onDelete: Restrict)
   audit PostAudit[]
+  poll PostPoll?
+  volunteerSlots PostVolunteerSlot[]
   likes    PlatformPostLike[]
   comments PlatformPostComment[]
 
@@ -830,9 +835,81 @@ model PostAudit {
   postId String
   actorId String
   action String
+  targetId String?
   version Int
   post PlatformPost @relation(fields: [postId], references: [id], onDelete: Restrict)
   @@index([postId, createdAt])
+}
+
+model PostPoll {
+  id String @id @default(cuid())
+  postId String @unique
+  question String
+  multiple Boolean @default(false)
+  closesAt DateTime @db.Timestamptz(3)
+  closesLocal String
+  timeZone String
+  closedAt DateTime?
+  lockedAt DateTime?
+  version Int @default(1)
+  post PlatformPost @relation(fields: [postId], references: [id], onDelete: Restrict)
+  options PostPollOption[]
+  ballots PostPollBallot[]
+}
+
+model PostPollOption {
+  id String @id @default(cuid())
+  pollId String
+  label String
+  position Int
+  poll PostPoll @relation(fields: [pollId], references: [id], onDelete: Restrict)
+  @@unique([pollId, position])
+}
+
+model PostPollBallot {
+  id String @id @default(cuid())
+  pollId String
+  userId String
+  optionIds String[]
+  version Int @default(1)
+  updatedAt DateTime @updatedAt
+  poll PostPoll @relation(fields: [pollId], references: [id], onDelete: Restrict)
+  user PlatformUser @relation(fields: [userId], references: [id], onDelete: Restrict)
+  @@unique([pollId, userId])
+  @@index([userId])
+}
+
+model PostVolunteerSlot {
+  id String @id @default(cuid())
+  postId String
+  requestKey String
+  role String
+  capacity Int
+  closedAt DateTime?
+  version Int @default(1)
+  post PlatformPost @relation(fields: [postId], references: [id], onDelete: Restrict)
+  signups PostVolunteerSignup[]
+  @@unique([postId, requestKey])
+}
+
+enum VolunteerSignupState {
+  ACTIVE
+  CANCELED
+}
+
+model PostVolunteerSignup {
+  id String @id @default(cuid())
+  slotId String
+  userId String
+  state VolunteerSignupState @default(ACTIVE)
+  version Int @default(1)
+  eventVersion Int
+  occurrenceVersion Int
+  updatedAt DateTime @updatedAt
+  slot PostVolunteerSlot @relation(fields: [slotId], references: [id], onDelete: Restrict)
+  user PlatformUser @relation(fields: [userId], references: [id], onDelete: Restrict)
+  @@unique([slotId, userId])
+  @@index([userId, state])
 }
 
 model PlatformPostLike {

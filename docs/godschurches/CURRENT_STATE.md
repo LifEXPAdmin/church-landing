@@ -1,5 +1,19 @@
 # Godschurches current state
 
+## Poll and volunteer participation verified locally — September 10, 2026
+
+`codex/post-participation` continues the verified local post foundation at
+`5d55274`. Poll ballots, event-linked volunteer roles/reservations, authorized
+rosters, My commitments integration and their interface are implemented locally.
+All 239 applicable checks passed (241 total, zero failures, two expected delivery
+skips), including migrations/restore and actual development/production HTTP.
+After browser-found availability and viewing-zone fixes, all ten final affected
+production HTTPS groups passed. Final lint/build/types/runtime and actual
+fictional voting, last-place contention, cancellation, roster, guest and
+phone/desktop browser checks passed. These changes are unpublished. Full
+publishing controls are next; the parent and full batch remain open. See
+[POST_PARTICIPATION_REPORT.md](POST_PARTICIPATION_REPORT.md).
+
 ## Post publishing foundation verified locally — September 10, 2026
 
 `codex/post-publishing-foundation` extends shared posts with explicit personal or

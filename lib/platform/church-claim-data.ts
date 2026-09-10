@@ -6,6 +6,7 @@ export const claimScopes = {
   PUBLISH_CHURCH_EVENTS: "Publish church events",
   PUBLISH_CHURCH_POSTS: "Publish church posts",
   MODERATE_CHURCH_POSTS: "Moderate church posts",
+  MANAGE_CHURCH_VOLUNTEERS: "Manage church volunteer roles and rosters",
   REVIEW_CONNECTIONS: "Review church connection requests",
   APPOINT_COORDINATORS: "Appoint church help coordinators"
 } as const;
