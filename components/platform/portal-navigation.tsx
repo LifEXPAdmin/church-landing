@@ -1,17 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
-import { accountEntryHref } from "@/lib/platform/account-entry";
-import {
-  Church,
-  CircleHelp,
-  Home,
-  Search,
-  UserRound,
-  Menu,
-  X
-} from "lucide-react";
+import { Church, Home, Search, Menu } from "lucide-react";
 
 export function PortalNavigation({
   username,
@@ -21,7 +11,6 @@ export function PortalNavigation({
   reviewerNavigation: { href: string; label: string }[];
 }) {
   const pathname = usePathname();
-  const [open, setOpen] = useState(false);
   const links = [
     { href: "/platform", label: "Home", icon: Home },
     {
@@ -30,49 +19,23 @@ export function PortalNavigation({
       icon: Church
     },
     { href: "/platform/search", label: "Explore", icon: Search },
-    {
-      href: username
-        ? `/platform/profile/${username}`
-        : accountEntryHref("join", "/platform/profile/me", "profile"),
-      label: "Profile",
-      icon: UserRound
-    },
-    { href: "/platform/help", label: "Help", icon: CircleHelp }
+    { href: "/platform/menu", label: "Menu", icon: Menu }
   ];
   const active = (href: string) =>
     pathname === href ||
     (href !== "/platform" && pathname.startsWith(`${href}/`));
   return (
-    <aside className="gc-navigation" data-open={open}>
-      <button
-        className="gc-compact-menu"
-        type="button"
-        aria-expanded={open}
-        aria-controls="platform-navigation"
-        onClick={() => setOpen(!open)}
-      >
-        {open ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}{" "}
-        {open ? "Close navigation" : "Menu"}
-      </button>
+    <aside className="gc-navigation">
       <nav
         aria-label="Platform"
         id="platform-navigation"
         className="gc-primary-nav"
-        onKeyDown={(e) => {
-          if (e.key === "Escape") {
-            setOpen(false);
-            e.currentTarget.parentElement
-              ?.querySelector<HTMLButtonElement>("button")
-              ?.focus();
-          }
-        }}
       >
         {links.map(({ href, label, icon: Icon }) => (
           <Link
             key={label}
             href={href}
             aria-current={active(href) ? "page" : undefined}
-            onClick={() => setOpen(false)}
           >
             <Icon aria-hidden="true" />
             <span>{label}</span>

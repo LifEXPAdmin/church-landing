@@ -1,5 +1,17 @@
 # Godschurches current state
 
+## Menu and phone navigation verified locally — September 9, 2026
+
+`codex/navigation-menu` adds a guest-readable Menu for working account, church and
+help destinations. Home, Churches/My church, Explore and Menu remain visible at
+320px; Activity follows the real notification service. All 156 applicable isolated
+regressions, 22 additional production HTTPS route/privacy requests, final
+lint/types/build and runtime verification passed. Actual fictional browser checks
+covered account gates, login return, keyboard navigation, Back, search-state return
+and phone reflow. Publication is next. Full navigation acceptance remains open for
+later feature/dialog/draft integration and physical Samsung/200% text tests. See
+[NAVIGATION_REPORT.md](NAVIGATION_REPORT.md).
+
 ## Google interface published, provider activation pending — September 9, 2026
 
 The `codex/google-account-interface` implementation completes explicit Google

@@ -11,7 +11,7 @@ export function safeAccountReturn(value: unknown): string {
   const url = new URL(value, "https://return.invalid");
   if (
     url.origin !== "https://return.invalid" ||
-    !/^\/platform(?:\/(?:search|settings|profile(?:\/(?:me|[a-zA-Z0-9_]{3,24}))?|posts\/[a-zA-Z0-9_-]{1,100}|churches(?:\/[a-zA-Z0-9_-]{1,100}(?:\/(?:directory|review))?)?|my-church(?:\/sharing)?|help|support(?:\/[a-zA-Z0-9_-]{1,100})?))?\/?$/.test(
+    !/^\/platform(?:\/(?:search|menu|settings|profile(?:\/(?:me|[a-zA-Z0-9_]{3,24}))?|posts\/[a-zA-Z0-9_-]{1,100}|churches(?:\/[a-zA-Z0-9_-]{1,100}(?:\/(?:directory|review))?)?|my-church(?:\/sharing)?|help|support(?:\/[a-zA-Z0-9_-]{1,100})?))?\/?$/.test(
       url.pathname
     )
   )
@@ -26,6 +26,7 @@ export function safeAccountReturn(value: unknown): string {
 }
 
 export const accountReasons = {
+  account: "Join or sign in to use your account.",
   profile: "Join or sign in to view member profiles.",
   like: "Join or sign in to like a post.",
   comment: "Join or sign in to add a comment.",

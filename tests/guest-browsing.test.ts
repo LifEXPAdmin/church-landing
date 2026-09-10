@@ -81,6 +81,7 @@ test("safe account returns reject external, encoded, traversal, authentication-l
     "/platform/%5cevil",
     "/platform/login?next=//evil.test",
     "/platform/signup",
+    "/platform/menu/unknown",
     "/platform/join",
     "/platform/account/recover#token=secret",
     "/platform\nLocation: https://evil.test"
@@ -99,6 +100,10 @@ test("safe account returns reject external, encoded, traversal, authentication-l
   assert.equal(
     safeAccountReturn("/platform/profile/me"),
     "/platform/profile/me"
+  );
+  assert.equal(
+    safeAccountReturn("/platform/menu?token=private#secret"),
+    "/platform/menu"
   );
   assert.equal(
     new URL(
@@ -303,7 +308,7 @@ test("public churches remain readable without account authority and detail looku
   );
 });
 
-test("actual sign-in returns to the requested public discussion without performing a like or following an unsafe destination", async () => {
+test("actual sign-in preserves the requested discussion or Menu without automatic actions or unsafe destinations", async () => {
   const a = await owner();
   const entry = await db.platformPost.create({
     data: {
@@ -319,6 +324,7 @@ test("actual sign-in returns to the requested public discussion without performi
   assert.ok(prompt.includes("next=" + encodeURIComponent(path)));
   for (const next of [
     path,
+    "/platform/menu",
     "https://evil.test",
     "/platform/login?next=//evil.test",
     "/platform/../../outside"
@@ -332,7 +338,10 @@ test("actual sign-in returns to the requested public discussion without performi
     });
     assert.equal(response.status, 200);
     const body = await response.json();
-    assert.equal(body.redirect, next === path ? path : "/platform");
+    assert.equal(
+      body.redirect,
+      next === path || next === "/platform/menu" ? next : "/platform"
+    );
     assert.match(response.headers.get("set-cookie")!, /HttpOnly/);
   }
   assert.equal(

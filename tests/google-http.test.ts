@@ -49,6 +49,7 @@ test("HTML and RSC keep request cookies private while preserving account recogni
       ].join("; ");
       for (const path of [
         "/platform",
+        "/platform/menu",
         "/platform/login",
         "/platform/signup",
         "/platform/account/google",
