@@ -195,7 +195,8 @@ try {
     ["CalendarShare", "id"],
     ["CalendarEventShare", "id"],
     ["CalendarResponse", "id"],
-    ["CalendarAudit", "id"]
+    ["CalendarAudit", "id"],
+    ["PostAudit", "id"]
   ];
   const supportTables = [
     ["SupportCapabilityGrant", "id"],
@@ -211,7 +212,9 @@ try {
     const row =
       beforeChurch && table === "PlatformUser"
         ? `to_jsonb(t) - ARRAY['deactivatedAt','suspendedAt','adultAcknowledgedAt','adultPolicyVersion','portalVersion']`
-        : "to_jsonb(t)";
+        : beforeChurch && table === "PlatformPost"
+          ? `jsonb_build_object('id',t.id,'createdAt',t."createdAt",'updatedAt',t."updatedAt",'authorId',t."authorId",'type',t.type,'content',t.content,'scripture',t.scripture)`
+          : "to_jsonb(t)";
     return psql(
       [
         "-Atc",
@@ -329,6 +332,19 @@ try {
     if (stage2a[i] !== fingerprint(table, key, database, true))
       throw new Error(`Stage2B upgrade changed prior account data: ${table}`);
   }
+  const changedLegacyPostMeaning = psql([
+    "-Atc",
+    `SELECT count(*) FROM "PlatformPost" WHERE
+      "audience" <> 'PUBLIC' OR "status" <> 'PUBLISHED' OR "version" <> 1
+      OR "authorChurchId" IS NOT NULL OR "audienceChurchId" IS NOT NULL
+      OR "eventOccurrenceId" IS NOT NULL OR "requestKey" IS NOT NULL
+      OR cardinality("topics") <> 0 OR "publishedAt" IS DISTINCT FROM "createdAt"
+      OR "withdrawnAt" IS NOT NULL OR "editedAt" IS NOT NULL
+      OR "discussionClosed" OR "replyAudience" <> 'VIEWERS' OR "allowReposts"
+      OR "pinUntil" IS NOT NULL OR "scheduleAt" IS NOT NULL OR "scheduledById" IS NOT NULL`
+  ]).trim();
+  if (changedLegacyPostMeaning !== "0")
+    throw new Error("Post migration changed legacy publication meaning.");
   checkChurchConstraints(database);
   console.log(
     "Synthetic Stage1 -> Stage2A -> Stage2B upgrade preserved all prior account data."
@@ -343,6 +359,7 @@ try {
   if (portalTests) await runTests("tests/church-claims.test.ts");
   if (portalTests) await runTests("tests/church-structure.test.ts");
   if (portalTests) await runTests("tests/calendars.test.ts");
+  if (portalTests) await runTests("tests/post-publishing.test.ts");
   if (supportTests) await runTests("tests/support-service.test.ts");
   run(join(pg, "pg_dump"), [
     database,
@@ -476,6 +493,11 @@ try {
     await runTests("tests/calendar-http.test.ts", {
       ...env,
       CALENDAR_RENDER_PHASE: "development"
+    });
+  if (portalTests)
+    await runTests("tests/post-publishing-http.test.ts", {
+      ...env,
+      POST_RENDER_PHASE: "development"
     });
   if (portalTests) {
     run(
@@ -717,6 +739,10 @@ try {
     await runTests("tests/calendar-http.test.ts", {
       ...portalEnv,
       CALENDAR_RENDER_PHASE: "production"
+    });
+    await runTests("tests/post-publishing-http.test.ts", {
+      ...portalEnv,
+      POST_RENDER_PHASE: "production"
     });
     if (supportTests) await runTests("tests/support-http.test.ts", portalEnv);
     if (supportTests) await runTests("tests/entrance-http.test.ts", portalEnv);

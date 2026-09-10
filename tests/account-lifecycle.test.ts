@@ -105,12 +105,12 @@ test("actual community Server Actions bind authors to cookies and reject cross-o
   assert.ok(composer);
   const action = composer[0].match(/name="(\$ACTION_ID_[^"]+)"/);
   assert.ok(action);
-  const invoke = (source: string) => {
+  const invoke = (source: string, forge = false) => {
     const form = new FormData();
     form.set(action[1], "");
     form.set("content", marker);
     form.set("type", "UPDATE");
-    form.set("authorId", b.user.id);
+    if (forge) form.set("authorId", b.user.id);
     return fetch(origin + "/platform", {
       method: "POST",
       redirect: "manual",
@@ -119,6 +119,8 @@ test("actual community Server Actions bind authors to cookies and reject cross-o
     });
   };
   assert.notEqual((await invoke("https://wrong.example")).status, 303);
+  assert.equal(await db.platformPost.count({ where: { content: marker } }), 0);
+  assert.notEqual((await invoke(origin, true)).status, 303);
   assert.equal(await db.platformPost.count({ where: { content: marker } }), 0);
   assert.equal((await invoke(origin)).status, 303);
   for (const rsc of [false, true]) {

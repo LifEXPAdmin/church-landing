@@ -3,11 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PostCard } from "@/components/platform/post-card";
 import { PlatformShell } from "@/components/platform/platform-shell";
-import { prisma } from "@/lib/prisma";
-import {
-  activePublicAccount,
-  communityAuthorSelect
-} from "@/lib/platform/public-profile";
+import { readPost } from "@/lib/platform/post-session";
 import { getCurrentPlatformUser } from "@/lib/platform/session";
 
 export const dynamic = "force-dynamic";
@@ -37,32 +33,7 @@ export default async function PostPage({
     /^[a-zA-Z0-9_-]{1,100}$/.test(query.cursor)
       ? query.cursor
       : null;
-  const post = await prisma.platformPost.findUnique({
-    where: { id: postId, author: activePublicAccount },
-    include: {
-      author: { select: communityAuthorSelect },
-      likes: { where: { user: activePublicAccount } },
-      _count: {
-        select: { comments: { where: { author: activePublicAccount } } }
-      },
-      comments: {
-        where: {
-          author: activePublicAccount,
-          ...(before && cursor
-            ? {
-                OR: [
-                  { createdAt: { lt: before } },
-                  { createdAt: before, id: { lt: cursor } }
-                ]
-              }
-            : {})
-        },
-        include: { author: { select: communityAuthorSelect } },
-        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-        take: 31
-      }
-    }
-  });
+  const post = await readPost(postId, { before, cursor });
   if (!post) notFound();
   const comments = post.comments.slice(0, 30);
   const last = comments.at(-1);

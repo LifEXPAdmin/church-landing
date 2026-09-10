@@ -4,6 +4,8 @@ export const structureCapabilities = {
   MANAGE_STRUCTURE: "Manage positions and assignments",
   EDIT_CHURCH_CALENDAR: "Edit church calendars and events",
   PUBLISH_CHURCH_EVENTS: "Publish church events",
+  PUBLISH_CHURCH_POSTS: "Publish church posts",
+  MODERATE_CHURCH_POSTS: "Moderate church posts",
   MANAGE_CHURCH_PROFILE: "Manage the public church profile",
   MANAGE_CHURCH_ACCESS: "Manage church access and review requests",
   REVIEW_CONNECTIONS: "Review church connections",

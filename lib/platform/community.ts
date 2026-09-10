@@ -1,4 +1,13 @@
-import { PlatformPostType, type PrismaClient } from "@prisma/client";
+import type { PrismaClient } from "@prisma/client";
+import { randomUUID } from "node:crypto";
+import { postCommandIn } from "./post-commands";
+import {
+  postContext,
+  postCanReply,
+  postReadableWhere,
+  postField
+} from "./post-access";
+import { PortalError } from "./portal";
 import { withOwnedSession } from "./account-sessions";
 import { activePublicAccount } from "./public-profile";
 
@@ -28,25 +37,22 @@ export async function communityCommand(
         typeof input[key] === "string" ? input[key].trim().slice(0, max) : "";
       const postId = value("postId", 100);
       const targetId = value("followingId", 100);
+      const context = await postContext(tx, actorId);
       if (operation === "post") {
-        const content = value("content", 900);
-        const type = (value("type", 20) as PlatformPostType) || "UPDATE";
-        if (
-          content.length < 3 ||
-          !Object.values(PlatformPostType).includes(type)
-        )
-          return;
-        await tx.platformPost.create({
-          data: {
-            authorId: actorId,
-            content,
-            scripture: value("scripture", 120) || null,
-            type
-          }
+        return postCommandIn(tx, context, {
+          ...input,
+          operation: "create",
+          requestKey: input.requestKey ?? randomUUID()
         });
       } else if (operation === "delete-post") {
-        await tx.platformPost.deleteMany({
-          where: { id: postId, authorId: actorId }
+        return postCommandIn(tx, context, {
+          operation: "withdraw",
+          postId,
+          expectedVersion:
+            typeof input.expectedVersion === "string"
+              ? Number(input.expectedVersion)
+              : input.expectedVersion,
+          confirmed: input.confirmed === true || input.confirmed === "on"
         });
       } else if (operation === "unfollow") {
         await tx.platformFollow.deleteMany({
@@ -77,14 +83,12 @@ export async function communityCommand(
           where: { id: value("commentId", 100), authorId: actorId }
         });
       } else {
-        if (
-          !postId ||
-          !(await tx.platformPost.findFirst({
-            where: { id: postId, author: activePublicAccount },
-            select: { id: true }
-          }))
-        )
-          return;
+        const post = postId
+          ? await tx.platformPost.findFirst({
+              where: { AND: [{ id: postId }, postReadableWhere(context)] }
+            })
+          : null;
+        if (!post) return;
         if (operation === "like") {
           const where = { postId_userId: { postId, userId: actorId } };
           if (await tx.platformPostLike.findUnique({ where }))
@@ -94,7 +98,12 @@ export async function communityCommand(
               data: { postId, userId: actorId }
             });
         } else if (operation === "comment") {
-          const content = value("content", 400);
+          if (!postCanReply(context, post))
+            throw new PortalError(
+              403,
+              "Replies are closed or limited to approved church members."
+            );
+          const content = postField(input.content, 400, 2);
           if (content.length >= 2)
             await tx.platformPostComment.create({
               data: { postId, authorId: actorId, content }

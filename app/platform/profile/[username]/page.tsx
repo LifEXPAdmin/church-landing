@@ -11,6 +11,7 @@ import {
   followPlatformUser,
   unfollowPlatformUser
 } from "@/app/platform/actions";
+import { readProfilePosts } from "@/lib/platform/post-session";
 import { PostCard } from "@/components/platform/post-card";
 import { PlatformShell } from "@/components/platform/platform-shell";
 import { Button } from "@/components/ui/button";
@@ -35,9 +36,11 @@ export async function generateMetadata({
 export const dynamic = "force-dynamic";
 
 export default async function PublicProfilePage({
-  params
+  params,
+  searchParams
 }: {
   params: Promise<{ username: string }>;
+  searchParams: Promise<{ before?: string; cursor?: string }>;
 }) {
   const currentUser = await getCurrentPlatformUser();
   const { username } = await params;
@@ -54,22 +57,8 @@ export default async function PublicProfilePage({
     where: { username, ...activePublicAccount },
     select: {
       ...publicProfileSelect,
-      posts: {
-        include: {
-          author: { select: publicProfileSelect },
-          likes: { where: { user: activePublicAccount } },
-          comments: {
-            where: { author: activePublicAccount },
-            include: { author: { select: publicProfileSelect } },
-            orderBy: { createdAt: "desc" },
-            take: 6
-          }
-        },
-        orderBy: { createdAt: "desc" }
-      },
       _count: {
         select: {
-          posts: true,
           followers: { where: { follower: activePublicAccount } },
           following: { where: { following: activePublicAccount } }
         }
@@ -80,6 +69,31 @@ export default async function PublicProfilePage({
   if (!profile) {
     notFound();
   }
+
+  const query = await searchParams;
+  const before =
+    typeof query.before === "string" &&
+    /^\d{4}-\d{2}-\d{2}T[\d:.]+Z$/.test(query.before) &&
+    Number.isFinite(Date.parse(query.before))
+      ? new Date(query.before)
+      : null;
+  const cursor =
+    typeof query.cursor === "string" &&
+    /^[A-Za-z0-9_-]{1,100}$/.test(query.cursor)
+      ? query.cursor
+      : null;
+  const postPage = await readProfilePosts(profile.id, { before, cursor });
+  const posts = postPage.posts.slice(0, 30),
+    last = posts.at(-1);
+  const profilePath = `/platform/profile/${profile.username}`;
+  const currentPath =
+    before && cursor
+      ? `${profilePath}?${new URLSearchParams({ before: before.toISOString(), cursor })}`
+      : profilePath;
+  const more =
+    postPage.posts.length > 30 && last
+      ? `${profilePath}?${new URLSearchParams({ before: last.createdAt.toISOString(), cursor: last.id })}`
+      : null;
 
   const isMe = currentUser?.id === profile.id;
   const isFollowing = currentUser
@@ -171,8 +185,8 @@ export default async function PublicProfilePage({
             </div>
             <div className="mt-5 flex flex-wrap gap-3 text-sm">
               <span className="inline-flex items-center gap-1 rounded-full bg-gc-subtle px-3 py-1 text-gc-text">
-                <Rss className="h-4 w-4 text-gc-accent" />{" "}
-                {profile._count.posts} posts
+                <Rss className="h-4 w-4 text-gc-accent" /> {postPage.count}{" "}
+                posts
               </span>
               <span className="inline-flex items-center gap-1 rounded-full bg-gc-subtle px-3 py-1 text-gc-text">
                 <UsersRound className="h-4 w-4 text-gc-accent" />{" "}
@@ -198,19 +212,35 @@ export default async function PublicProfilePage({
         </div>
 
         <div className="space-y-5">
-          {profile.posts.length ? (
-            profile.posts.map((post) => (
+          {before && cursor && (
+            <Link
+              className="inline-flex min-h-11 items-center text-gc-accent underline"
+              href={profilePath}
+            >
+              Latest posts
+            </Link>
+          )}
+          {posts.length ? (
+            posts.map((post) => (
               <PostCard
                 key={post.id}
                 post={post}
                 currentUserId={currentUser?.id}
-                redirectTo={`/platform/profile/${profile.username}`}
+                redirectTo={currentPath}
               />
             ))
           ) : (
             <div className="rounded-xl border border-gc-divider bg-gc-surface p-8 text-gc-muted">
               No posts yet.
             </div>
+          )}
+          {more && (
+            <Link
+              className="inline-flex min-h-11 items-center text-gc-accent underline"
+              href={more}
+            >
+              Older posts
+            </Link>
           )}
         </div>
       </section>

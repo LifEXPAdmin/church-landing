@@ -101,11 +101,20 @@ export async function downloadAccountExport(
       }
     });
     const posts = await tx.platformPost.findMany({
-      where: { authorId: userId },
+      where: { authorId: userId, authorChurchId: null },
       orderBy: { id: "asc" },
       take: MAX_ROWS + 1,
       select: {
         id: true,
+        audience: true,
+        audienceChurchId: true,
+        status: true,
+        version: true,
+        editedAt: true,
+        topics: true,
+        replyAudience: true,
+        discussionClosed: true,
+        allowReposts: true,
         createdAt: true,
         updatedAt: true,
         type: true,

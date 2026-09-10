@@ -248,6 +248,8 @@ enum ChurchCapability {
   MANAGE_STRUCTURE
   EDIT_CHURCH_CALENDAR
   PUBLISH_CHURCH_EVENTS
+  PUBLISH_CHURCH_POSTS
+  MODERATE_CHURCH_POSTS
 }
 
 enum OperatorCapability {
@@ -300,6 +302,8 @@ model Church {
   listings ChurchListingSubmission[]
   positions ChurchPosition[]
   calendars PlatformCalendar[]
+  authoredPosts PlatformPost[] @relation("ChurchPostAuthor")
+  sharedPosts PlatformPost[] @relation("ChurchPostAudience")
   calendarShares CalendarShare[]
   eventShares CalendarEventShare[]
 }
@@ -490,6 +494,7 @@ model CalendarOccurrence {
   responses CalendarResponse[]
   @@unique([eventId, ordinal])
   @@index([startAt, endAt])
+  discussionPost PlatformPost?
 }
 
 model CalendarShare {
@@ -758,22 +763,76 @@ model ChurchAuditEvent {
   @@index([churchId, createdAt])
 }
 
+enum PostAudience {
+  PUBLIC
+  CHURCH
+}
+
+enum PostStatus {
+  DRAFT
+  SCHEDULED
+  PUBLISHED
+  WITHDRAWN
+}
+
+enum PostReplyAudience {
+  VIEWERS
+  CHURCH_MEMBERS
+}
+
 model PlatformPost {
   id        String           @id @default(cuid())
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
   authorId  String
+  authorChurchId String?
+  audienceChurchId String?
+  audience PostAudience @default(PUBLIC)
+  status PostStatus @default(PUBLISHED)
+  version Int @default(1)
+  requestKey String?
   type      PlatformPostType @default(UPDATE)
   content   String
   scripture String?
+  topics String[] @default([])
+  editedAt DateTime?
+  publishedAt DateTime? @default(now())
+  withdrawnAt DateTime?
+  discussionClosed Boolean @default(false)
+  replyAudience PostReplyAudience @default(VIEWERS)
+  allowReposts Boolean @default(false)
+  pinUntil DateTime?
+  scheduleAt DateTime?
+  scheduledById String?
+  scheduleLocal String?
+  scheduleZone String?
+  eventOccurrenceId String? @unique
 
   author   PlatformUser          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  authorChurch Church? @relation("ChurchPostAuthor", fields: [authorChurchId], references: [id], onDelete: Restrict)
+  audienceChurch Church? @relation("ChurchPostAudience", fields: [audienceChurchId], references: [id], onDelete: Restrict)
+  eventOccurrence CalendarOccurrence? @relation(fields: [eventOccurrenceId], references: [id], onDelete: Restrict)
+  audit PostAudit[]
   likes    PlatformPostLike[]
   comments PlatformPostComment[]
 
+  @@unique([authorId, requestKey])
   @@index([authorId])
   @@index([type])
   @@index([createdAt])
+  @@index([audienceChurchId, status, publishedAt])
+  @@index([status, scheduleAt])
+}
+
+model PostAudit {
+  id String @id @default(cuid())
+  createdAt DateTime @default(now())
+  postId String
+  actorId String
+  action String
+  version Int
+  post PlatformPost @relation(fields: [postId], references: [id], onDelete: Restrict)
+  @@index([postId, createdAt])
 }
 
 model PlatformPostLike {

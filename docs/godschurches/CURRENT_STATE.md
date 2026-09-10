@@ -1,5 +1,22 @@
 # Godschurches current state
 
+## Post publishing foundation verified locally — September 10, 2026
+
+`codex/post-publishing-foundation` extends shared posts with explicit personal or
+church authorship, current audience and capability checks, bounded multiline
+text/topics, versioned editing/withdrawal, reply restrictions, pins, scheduling
+domain state and linked-event visibility. Existing feed/search/profile/direct
+reads and actions use the same rules. Upgrade/restore/fresh migrations and
+relevant regressions passed, with one stale Home-copy assertion corrected in a
+targeted rerun. After browser-found fixes, seven database groups and all 13 final
+production HTTPS checks passed, along with lint/build/types/runtime. Actual
+fictional posting, comment/like persistence, exact multiline limits, withdrawal,
+public/private reading and phone layouts passed. This foundation is local and
+unpublished; the calendar release below remains live. Polls and volunteer
+participation are next, followed by the publishing interface and Bible-page
+reader. The parent and full batch remain open. See
+[POST_PUBLISHING_REPORT.md](POST_PUBLISHING_REPORT.md).
+
 ## Calendar interface published — September 10, 2026
 
 `codex/calendar-interface` adds real calendar/event pages, sharing/publication,

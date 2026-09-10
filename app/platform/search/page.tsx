@@ -6,6 +6,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Search } from "lucide-react";
 
+import { readPosts } from "@/lib/platform/post-session";
 import { PostCard } from "@/components/platform/post-card";
 import { PlatformShell } from "@/components/platform/platform-shell";
 import { prisma } from "@/lib/prisma";
@@ -44,27 +45,7 @@ export default async function PlatformSearchPage({
           },
           take: 20
         }),
-        prisma.platformPost.findMany({
-          where: {
-            author: activePublicAccount,
-            OR: [
-              { content: { contains: q, mode: "insensitive" } },
-              { scripture: { contains: q, mode: "insensitive" } }
-            ]
-          },
-          include: {
-            author: { select: communityAuthorSelect },
-            likes: { where: { user: activePublicAccount } },
-            comments: {
-              where: { author: activePublicAccount },
-              include: { author: { select: communityAuthorSelect } },
-              orderBy: { createdAt: "desc" },
-              take: 6
-            }
-          },
-          orderBy: { createdAt: "desc" },
-          take: 20
-        })
+        readPosts({ search: q, limit: 20 })
       ])
     : [[], []];
 
