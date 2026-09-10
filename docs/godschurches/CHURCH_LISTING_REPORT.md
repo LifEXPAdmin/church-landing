@@ -60,7 +60,7 @@ Constraints preserve valid kinds, positive versions, correction references and
 published canonical references. Existing accounts, church links and grant records
 are retained. Listing review does not establish trusted verification evidence.
 
-## Locally verified — publication pending
+## Verified and published
 
 All 170 applicable checks passed (172 total, zero failures, two intentional
 disabled-delivery skips), including migrations, fresh setup, backup/restore and
@@ -70,7 +70,8 @@ public confirmation, no authority grants, duplicate/concurrent publication,
 independent correction review, canonical-version conflicts, revocation, partial
 drafts/validation, export/deactivation, request boundaries and public reviewer
 readiness. Actual development and production HTTPS listing checks passed in
-the final full regression run. Publication and live verification are pending.
+the final full regression run. Runtime verification inspected 65 traces, 4,712
+entries and 155 server JavaScript files, with no Prisma configuration loader.
 
 The actual fictional browser journey exercised sign-in return, search-first
 creation, incomplete draft persistence through reload, a ministry without a
@@ -90,3 +91,19 @@ production HTTPS tests verify cookies, headers and private HTML/RSC behavior.
 No fictional record is sent to production. Real representative verification,
 staffing, provider delivery and physical-phone acceptance are not established by
 these tests.
+
+## Production release
+
+Application `bb68c9f0c82b52a6a18e6e9333c8d1400c3b9016` is live on READY
+production `dpl_33DLfMj1NAQCRWAnvrTY5wvFBfa9`. The canonical domain's exact
+serving commit was verified. All 52 live route, guest-gate, search, privacy,
+disabled-provider and denied-write checks passed at 2026-09-10T05:10:12Z.
+Actual live 390px Church/Add navigation and 320px keyboard sign-in return/Back
+passed without overflow or browser warnings/errors. Public church/post lists
+remain empty; populated journeys used isolated fictional fixtures. No deployment
+error entries were returned. The fictional preview and verification tabs were
+stopped. Google, email delivery and support intake configuration were unchanged.
+
+This completes the community-listing slice. Official setup drafts, representative
+claims, scoped verified management and ministry structure remain next. No real
+representative was verified or granted access by this release.

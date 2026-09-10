@@ -1,6 +1,6 @@
 # Godschurches current state
 
-## Community listings verified locally — September 10, 2026
+## Community listings published — September 10, 2026
 
 `codex/church-community-listings` adds search-first private drafts, explicit
 public previews, unofficial church pages, and independent correction/duplicate
@@ -10,7 +10,10 @@ failures, two intentional delivery skips), migration/restore/restart, final
 lint/types/build/runtime and fictional browser journeys passed. A browser-found
 review redirect race was corrected and the final create/save/review navigation
 passed. Phone/desktop reflow and public guest gates passed without browser errors.
-Publication and live checks are pending. Official claims, verification and the
+Application `bb68c9f0c82b52a6a18e6e9333c8d1400c3b9016` is live on READY
+deployment `dpl_33DLfMj1NAQCRWAnvrTY5wvFBfa9`. Exact canonical identity, all
+52 live checks and live mobile guest navigation passed; no browser or deployment
+errors were returned. Official claims, verification and the
 organization tree remain next in task 1; actual providers and physical acceptance
 remain separate. See [CHURCH_LISTING_REPORT.md](CHURCH_LISTING_REPORT.md).
 
