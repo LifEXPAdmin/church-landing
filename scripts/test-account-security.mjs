@@ -197,6 +197,7 @@ try {
     ["ChurchRoleRevision", "templateId"],
     ["ChurchRoleGrant", "id"],
     ["ChurchAssignmentSave", "requestKey"],
+    ["ChurchChartSave", "requestKey"],
     ["PlatformCalendar", "id"],
     ["CalendarEvent", "id"],
     ["CalendarOccurrence", "id"],
@@ -440,6 +441,34 @@ try {
       console.log(
         "Placement additive upgrade preserved existing position, assignment and grant fingerprints; existing roots and reporting links keep their meaning."
       );
+    } else if (name === "20260910225000_church_chart_saves") {
+      const sources = () => [
+        psql([
+          "-Atc",
+          `SELECT md5(jsonb_agg(to_jsonb(t) - ARRAY['chartX','chartY'] ORDER BY id)::text) FROM "ChurchPosition" t`
+        ]),
+        fingerprint("ChurchPositionAssignment", "id"),
+        fingerprint("ChurchRoleGrant", "id"),
+        fingerprint("ChurchCapabilityGrant", "id")
+      ];
+      const prior = sources();
+      psql(["-f", `prisma/migrations/${name}/migration.sql`]);
+      if (JSON.stringify(prior) !== JSON.stringify(sources()))
+        throw new Error(
+          "Chart upgrade changed existing positions, assignments or grants"
+        );
+      if (
+        psql([
+          "-Atc",
+          `SELECT (SELECT count(*) FROM "ChurchChartSave") + (SELECT count(*) FROM "ChurchPosition" WHERE "chartX" IS NOT NULL OR "chartY" IS NOT NULL)`
+        ]).trim() !== "0"
+      )
+        throw new Error(
+          "Chart migration invented saved coordinates or history"
+        );
+      console.log(
+        "Chart migration preserves every prior position/assignment/grant field; automatic layout and empty save history remain the default."
+      );
     } else psql(["-f", `prisma/migrations/${name}/migration.sql`]);
   }
   for (const [i, [table, key]] of accountTables.entries()) {
@@ -473,6 +502,8 @@ try {
   if (portalTests) await runTests("tests/church-claims.test.ts");
   if (portalTests) await runTests("tests/church-structure.test.ts");
   if (portalTests) await runTests("tests/church-chart-layout.test.ts");
+  if (portalTests) await runTests("tests/church-chart-model.test.ts");
+  if (portalTests) await runTests("tests/church-chart-save.test.ts");
   if (portalTests) await runTests("tests/church-role-templates.test.ts");
   if (portalTests)
     await runTests("tests/church-assignment-permissions.test.ts");

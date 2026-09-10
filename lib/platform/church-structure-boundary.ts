@@ -64,7 +64,8 @@ export async function handleChurchStructureRequest(
       );
     let input: Record<string, unknown>;
     try {
-      input = await readBody(request);
+      // A reviewed chart can contain up to 200 bounded placement/layout changes.
+      input = await readBody(request, 96_000);
     } catch {
       throw new PortalError(400, "Check the church structure fields.");
     }

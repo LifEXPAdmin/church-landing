@@ -15,6 +15,7 @@ export const structureCapabilities = {
 } as const;
 export type StructureCapability = keyof typeof structureCapabilities;
 export type StructureOperation =
+  | "chart-save"
   | "place"
   | "template-create"
   | "template-edit"
@@ -41,6 +42,7 @@ export type PositionSummary = {
   id: string;
   parentId: string | null;
   placement: "UNCONNECTED" | "ROOT" | "REPORTING";
+  layout?: { x: number; y: number } | null;
   name: string;
   description: string;
   roleTemplateId?: string | null;

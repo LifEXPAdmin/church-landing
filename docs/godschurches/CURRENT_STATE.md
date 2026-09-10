@@ -1,5 +1,26 @@
 # Godschurches current state
 
+## Atomic chart-save foundation verified; drag controls next — September 10, 2026
+
+The server can now save a reviewed set of reporting and grid-layout changes
+atomically, with current authority/version checks, exact retry receipts and
+placement-only history. Shared draft rules preserve branch descendants and keep
+assignments/permissions out of undo data. Optional coordinates and save history
+use an additive migration that preserves existing records.
+
+The full isolated sweep passed 322 checks (320 pass/two expected skips); all 31
+targeted service checks and ten pure layout/model checks passed. Populated upgrade,
+restore/fresh migrations, restart, actual development/production HTTP,
+build/lint/types and runtime audit passed. See
+[CHURCH_STRUCTURE_REPORT.md](CHURCH_STRUCTURE_REPORT.md).
+
+Continue with deliberate drag handles and staged editor controls. The visual chart
+and mandatory Privileges tasks remain complete locally; drag, staffing/lifecycle,
+full save/recovery and accessibility/release acceptance remain open. This bundle
+is unpushed/unpublished, with no new owner action blocking code. Preserve current
+main recovery/feed fixes and existing post-audience checks during integration.
+The complete batch and final review remain open.
+
 ## Visual chart and mandatory assignment integration verified — September 10, 2026
 
 The local church chart now has connected role cards, an unconnected area, pan/zoom,

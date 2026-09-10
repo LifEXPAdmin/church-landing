@@ -160,6 +160,7 @@ model PlatformUser {
   connections ChurchConnection[]
   churchGrants ChurchCapabilityGrant[]
   issuedRoleGrants ChurchRoleGrant[]
+  churchChartSaves ChurchChartSave[]
   operatorGrants PlatformOperatorGrant[]
   churchClaims ChurchClaim[]
   churchListings ChurchListingSubmission[]
@@ -373,6 +374,7 @@ model Church {
   listings ChurchListingSubmission[]
   positions ChurchPosition[]
   roleTemplates ChurchRoleTemplate[]
+  chartSaves ChurchChartSave[]
   calendars PlatformCalendar[]
   authoredPosts PlatformPost[] @relation("ChurchPostAuthor")
   sharedPosts PlatformPost[] @relation("ChurchPostAudience")
@@ -458,6 +460,8 @@ model ChurchPosition {
   churchId String
   parentId String?
   placement ChurchPositionPlacement @default(UNCONNECTED)
+  chartX Int?
+  chartY Int?
   name String
   description String @default("")
   roleTemplateId String?
@@ -1161,4 +1165,19 @@ model ChurchAssignmentSave {
   createdAt DateTime @default(now())
   assignment ChurchPositionAssignment @relation(fields: [assignmentId, churchId, connectionId], references: [id, churchId, connectionId], onDelete: Restrict, onUpdate: Restrict)
   @@index([assignmentId])
+}
+
+// Chart retries and history contain placement/layout only, never assignment data.
+model ChurchChartSave {
+  requestKey String @id
+  churchId String
+  actorId String
+  inputHash String
+  resultVersion Int
+  changes Json
+  createdAt DateTime @default(now())
+  church Church @relation(fields: [churchId], references: [id], onDelete: Restrict)
+  actor PlatformUser @relation(fields: [actorId], references: [id], onDelete: Restrict)
+  @@unique([churchId, resultVersion])
+  @@index([churchId, createdAt])
 }

@@ -1,3 +1,4 @@
+import { saveChurchChart } from "./church-chart-save";
 import {
   saveAssignmentPrivileges,
   delegableChurchCapabilities
@@ -139,6 +140,7 @@ export async function churchStructureCommand(
         "create",
         "edit",
         "place",
+        "chart-save",
         "archive",
         "assign",
         "assignment-privileges",
@@ -260,6 +262,21 @@ export async function churchStructureCommand(
     }
     if (op !== "step-down")
       await churchCapability(tx, actor, churchId, "MANAGE_STRUCTURE");
+    if (op === "chart-save") {
+      const result = await saveChurchChart(
+        tx,
+        churchId,
+        actor.id,
+        church.structureVersion,
+        input
+      );
+      return {
+        id: churchId,
+        version: result.version,
+        message:
+          "Chart changes saved. Assignments and permissions are unchanged."
+      };
+    }
     if (String(op).startsWith("template-")) {
       // Idempotent title creation still rechecks current authority first.
       if (
@@ -643,6 +660,8 @@ export async function getChurchStructure(
         roleTemplateId: true,
         roleTemplateVersion: true,
         placement: true,
+        chartX: true,
+        chartY: true,
         assignments: {
           where: { revokedAt: null, connection: activeMember },
           orderBy: { id: "asc" },
@@ -678,6 +697,10 @@ export async function getChurchStructure(
         description: p.description,
         parentId: p.parentId,
         placement: p.placement,
+        layout:
+          p.chartX !== null && p.chartY !== null
+            ? { x: p.chartX, y: p.chartY }
+            : null,
         roleTemplateId: p.roleTemplateId,
         roleTemplateVersion: p.roleTemplateVersion,
         assignments: p.assignments.map((a) => ({

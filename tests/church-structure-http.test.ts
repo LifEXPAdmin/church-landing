@@ -429,6 +429,90 @@ test("assignment privilege HTTP boundary requires current scope, explicit review
   assert.equal((await post(input)).status, 409);
 });
 
+test("actual chart HTTP saves reviewed placement/layout atomically and protects retries and current scope", async () => {
+  const a = await cmd({
+    operation: "create",
+    name: "Chart HTTP root",
+    requestKey: randomUUID()
+  });
+  const b = await cmd({
+    operation: "create",
+    name: "Chart HTTP child",
+    requestKey: randomUUID()
+  });
+  const input = {
+    operation: "chart-save",
+    churchId,
+    expectedVersion: (await read()).version,
+    requestKey: randomUUID(),
+    confirmed: true,
+    changes: [
+      { id: a.id, placement: "ROOT", parentId: null, layout: null },
+      {
+        id: b.id,
+        placement: "REPORTING",
+        parentId: a.id,
+        layout: { x: 40, y: 600 }
+      }
+    ]
+  };
+  for (const [token, status] of [
+    ["", 401],
+    [lee.token, 403],
+    [pat.token, 403],
+    [blake.token, 403]
+  ] as const)
+    assert.equal((await post(input, token)).status, status);
+  assert.equal(
+    (
+      await post(input, ada.token, "church-structure", {
+        Origin: "https://other.example"
+      })
+    ).status,
+    403
+  );
+  assert.equal((await post({ ...input, confirmed: false })).status, 400);
+  assert.equal(
+    (await post({ ...input, capabilities: ["MANAGE_STRUCTURE"] })).status,
+    400
+  );
+  const response = await post(input);
+  assert.equal(response.status, 200, await response.clone().text());
+  const result = await response.json();
+  assert.deepEqual(await (await post(input)).json(), result);
+  const saved = (await read()).positions.find(
+    (p: { id: string }) => p.id === b.id
+  );
+  assert.equal(saved.parentId, a.id);
+  assert.deepEqual(saved.layout, { x: 40, y: 600 });
+  assert.equal(
+    await db.churchChartSave.count({
+      where: { churchId, requestKey: input.requestKey }
+    }),
+    1
+  );
+  assert.equal(
+    (await post({ ...input, requestKey: randomUUID() })).status,
+    409
+  );
+  assert.equal(
+    (
+      await post({
+        ...input,
+        changes: [
+          { ...input.changes[0], parentId: b.id, placement: "REPORTING" }
+        ],
+        requestKey: randomUUID(),
+        expectedVersion: result.version
+      })
+    ).status,
+    400
+  );
+  assert.equal((await read()).version, result.version);
+  await cmd({ operation: "archive", positionId: b.id, confirmed: true });
+  await cmd({ operation: "archive", positionId: a.id, confirmed: true });
+});
+
 test("actual structure HTTP routes preserve private positions/contact projections and enforce current grants", async () => {
   const leadership = await cmd({
     operation: "create",

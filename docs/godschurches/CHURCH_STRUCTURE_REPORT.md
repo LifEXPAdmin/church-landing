@@ -2,6 +2,49 @@
 
 September 10, 2026 · Published structure foundation; local role library, assignment service and Privileges interface verified
 
+## Atomic chart-save foundation verified locally — September 10, 2026
+
+The save prerequisite extends chart checkpoint `c1d8412` on
+`codex/role-privileges-interface`. A shared geometry-only draft model validates
+reporting changes, keeps descendants with a moved branch, snaps card coordinates
+and never includes assignments or permissions in its change/undo representation.
+The new `chart-save` command requires current membership and structure authority,
+explicit confirmation, a current church version and an exact retry reference.
+It validates the complete proposed graph and saves all placements/layouts in one
+serialized transaction. A deferred existing database cycle constraint checks the
+final graph, including valid multi-edge inversions, without accepting a cycle.
+
+Optional bounded grid coordinates default to automatic placement. The additive
+migration preserves prior fields, reporting, assignments and grants. Church-scoped
+save receipts bind actor, input and resulting version; retry rechecks current
+access and produces no duplicate save/history. History stores only before/after
+placement and geometry, with actor/time recorded separately. A privacy-safe history
+interface remains future work. Structure request bodies are bounded at 96,000
+bytes to support up to 200 reviewed changes; individual field/graph bounds and
+other service body limits remain in force.
+
+The full isolated sweep passed **322 checks: 320 pass, two expected disabled-email
+skips, zero failures**. All **31 targeted structure/title/assignment/chart-save
+checks** passed, as did ten pure layout/model checks. Evidence includes concurrent
+opposing saves, invalid/cross-church/self/descendant moves, lost-response retry,
+current revocation, a 200-change boundary request, database coordinate/cycle
+constraints and actual development/production chart HTTP. The populated upgrade,
+backup/restore, fresh Prisma migrations, production restart, build/lint/types and
+runtime audit passed. The audit found 92 traces, 7,270 entries and 225 server
+JavaScript files without private fixture/environment files or a Prisma loader
+path. The saved browser fixture's separate upgrade retained every earlier position,
+assignment and grant field. No real church record or permission changed.
+
+This is the save foundation for the drag editor, not completed editor acceptance.
+The existing visual chart remains the browser-verified interface from `c1d8412`.
+Drag handles, staged review/save controls, Undo/Redo/Discard, conflict recovery,
+history display and navigation/accessibility acceptance still need integration
+and browser verification. The drag, staffing/lifecycle and full save/recovery
+work remain open. This bundle is unpushed/unpublished; newer main recovery/feed
+changes still need integration with post-audience authorization before release.
+The full batch and final review remain open, with no new owner action blocking
+this coding.
+
 ## Visual church chart verified locally — September 10, 2026
 
 The chart checkpoint extends `fee9509` on `codex/role-privileges-interface`.
