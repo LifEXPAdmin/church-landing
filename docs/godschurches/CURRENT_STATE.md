@@ -1,5 +1,18 @@
 # Godschurches current state
 
+## First-use account and early feed fixes — September 10, 2026
+
+The owner confirms password reset, original-account sign-in and email verification.
+Dedicated verification/recovery screens, automatic signup verification, direct
+email buttons and same-tab fragment handling are verified locally on
+`codex/early-community-account-flow`. Home shows all active public posts by
+default, retaining the Following filter for later. The isolated suite/remainder
+has 219 passes and two expected delivery skips, plus focused checks and actual
+fictional browser acceptance. Sender-scoped DMARC resolves authoritatively; spam
+guidance is included. Publication is next. Phone verification is deferred.
+The requested full-screen horizontal My feed reader follows this urgent fix;
+Home remains normally scrollable. See [ACCOUNT_DELIVERY_REPORT.md](ACCOUNT_DELIVERY_REPORT.md).
+
 ## Password-recovery sender activated — September 10, 2026
 
 Production email recovery is enabled. The dedicated Resend sender is verified

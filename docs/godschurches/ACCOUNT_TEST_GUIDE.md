@@ -79,6 +79,22 @@ sign-in after choosing a new password are verified separately; check your spam
 folder if the message is missing. See
 [ACCOUNT_DELIVERY_REPORT.md](ACCOUNT_DELIVERY_REPORT.md).
 
+## Verify your email
+
+New accounts receive a verification email automatically when delivery is enabled.
+You can sign in and browse while waiting. Home shows a reminder until verified.
+**Email verification** in Settings and church eligibility opens its own page with
+your account email prefilled; request another link there without retyping it.
+Forgot password contains only password reset.
+
+Select **Verify email** in the message, then confirm on the website. An already-open
+verification tab should switch to the confirmation without a refresh. Return to
+account settings to see the updated status. Check Spam/Junk and mark legitimate
+account mail as not spam; copy the complete fallback link if a mail app blocks the
+button. Links expire in 30 minutes and never perform a change just by opening.
+The sender is authenticated, but inbox placement is not guaranteed. Optional
+phone verification is planned for later; no texts are sent by this flow.
+
 ## Review active sign-ins
 
 In **Account settings**, select **Show active sign-ins**. The list shows this
@@ -145,7 +161,7 @@ To return, select **Reactivate an account** from Sign in. Use the existing email
 and password and confirm that your community content will be visible again.
 Then sign in separately and review directory sharing before opting in again.
 Old sessions and sharing do not return. Administrator suspensions cannot be
-bypassed here. Recovery emails remain unavailable until sender setup is complete.
+bypassed here. Use Forgot password if you need a fresh recovery link.
 
 Use fictional accounts in the isolated environment for lifecycle tests. See
 [ACCOUNT_LIFECYCLE_REPORT.md](ACCOUNT_LIFECYCLE_REPORT.md) for implementation,
@@ -158,10 +174,8 @@ verification and remaining deletion work.
   registered with the same email.
 - Email/password do not match: check your saved email and password. Old accounts
   created before passwords were introduced cannot be claimed by registering
-  again. **Email recovery is not enabled yet.** Existing accounts are preserved;
-  a verified ownership-recovery setup is needed to restore access safely.
-  The transactional adapter is implemented; configuration and actual receipt
-  remain pending in [ACCOUNT_DELIVERY_REPORT.md](ACCOUNT_DELIVERY_REPORT.md).
+  again. **Email recovery is enabled.** Request a link for your existing email
+  through Forgot password and check your spam folder. See [ACCOUNT_DELIVERY_REPORT.md](ACCOUNT_DELIVERY_REPORT.md).
 - A highlighted field prevents submission: correct that field first. This can be
   browser validation, meaning no request was sent to the server.
 - A connection error appears: a request may have reached the server even when

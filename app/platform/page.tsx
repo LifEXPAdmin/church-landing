@@ -12,6 +12,8 @@ import { ComposePostButton } from "@/components/platform/compose-post-button";
 import { PlatformShell } from "@/components/platform/platform-shell";
 import { prisma } from "@/lib/prisma";
 import { getCurrentPlatformUser } from "@/lib/platform/session";
+import { homeFeedAudience, homeFeedMode } from "@/lib/platform/home-feed";
+import { accountDeliveryAvailable } from "@/lib/platform/account-availability";
 
 export const metadata = publicMetadata(
   "Home",
@@ -33,12 +35,7 @@ export default async function PlatformPage({
 }) {
   const currentUser = await getCurrentPlatformUser();
   const params = await searchParams;
-  const following = currentUser
-    ? await prisma.platformFollow.findMany({
-        where: { followerId: currentUser.id, following: activePublicAccount },
-        select: { followingId: true }
-      })
-    : [];
+  const community = homeFeedMode() === "community" || !currentUser;
   const before =
     params.before &&
     /^\d{4}-\d{2}-\d{2}T[\d:.]+Z$/.test(params.before) &&
@@ -51,14 +48,7 @@ export default async function PlatformPage({
       : null;
   const result = await prisma.platformPost.findMany({
     where: {
-      author: activePublicAccount,
-      ...(currentUser
-        ? {
-            authorId: {
-              in: [currentUser.id, ...following.map((f) => f.followingId)]
-            }
-          }
-        : {}),
+      ...(await homeFeedAudience(prisma, currentUser?.id)),
       ...(before && cursor
         ? {
             OR: [
@@ -98,13 +88,31 @@ export default async function PlatformPage({
             <p className="gc-eyebrow">Life together</p>
             <h1>Home</h1>
             <p className="text-gc-muted">
-              {currentUser
-                ? "From you and the people you follow."
-                : "Faith, fellowship, and everyday life."}
+              {community
+                ? "Public posts from everyone, newest first."
+                : "From you and the people you follow."}
             </p>
           </div>
           {currentUser && <ComposePostButton />}
         </div>
+        {currentUser &&
+          !currentUser.emailVerifiedAt &&
+          accountDeliveryAvailable() && (
+            <div className="gc-welcome">
+              <h2>Verify your email</h2>
+              <p>
+                Check your inbox and spam folder for your verification email.
+                You can keep browsing and posting while you get ready to use
+                church tools.
+              </p>
+              <Link
+                href="/platform/account/verify"
+                className="gc-button gc-button-quiet"
+              >
+                Verify email or resend link
+              </Link>
+            </div>
+          )}
         {!currentUser && (
           <div className="gc-welcome">
             <h2>Take a look around.</h2>
@@ -159,7 +167,7 @@ export default async function PlatformPage({
                 <MessageCircle aria-hidden="true" />
                 <h2>No posts yet.</h2>
                 <p>
-                  {currentUser
+                  {currentUser && !community
                     ? "This space grows with the people you follow. Find someone to connect with, or share the first word of encouragement."
                     : "Public conversations will appear here as people share. You can explore church pages while this community grows."}
                 </p>

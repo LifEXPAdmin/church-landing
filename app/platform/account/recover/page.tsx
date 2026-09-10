@@ -7,7 +7,7 @@ import { getCurrentPlatformUser } from "@/lib/platform/session";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
-  title: "Account recovery",
+  title: "Forgot password",
   robots: { index: false, follow: false },
   referrer: "no-referrer"
 };
@@ -17,8 +17,10 @@ export default async function RecoveryPage() {
     <PlatformShell user={user}>
       <section className="container-shell py-10">
         <div className="mx-auto max-w-xl rounded-xl border border-gc-divider bg-gc-surface p-6 text-gc-text sm:p-8">
-          <h1 className="mb-6 text-4xl text-gc-text">Account recovery</h1>
-          <RecoveryForm available={accountDeliveryAvailable()} />
+          <RecoveryForm
+            available={accountDeliveryAvailable()}
+            signedIn={!!user}
+          />
           <Link
             href="/platform/login"
             className="mt-8 block text-gc-accent underline"

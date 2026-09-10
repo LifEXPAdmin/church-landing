@@ -335,6 +335,7 @@ try {
   );
   await runTests("tests/account-security.test.ts");
   await runTests("tests/account-delivery.test.ts");
+  await runTests("tests/early-community.test.ts");
   await runTests("tests/account-email-change.test.ts");
   await runTests("tests/google-accounts.test.ts");
   await runTests("tests/google-boundary.test.ts");

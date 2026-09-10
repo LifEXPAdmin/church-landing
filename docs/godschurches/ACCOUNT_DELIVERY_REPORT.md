@@ -3,6 +3,55 @@
 Updated September 9, 2026. Branch: `codex/account-delivery`, based on published
 main `ab14cf9ba258517ce76a1f24be55b0fd9eff3fc3`.
 
+## First-use email and early feed repair — September 10, 2026
+
+The account owner confirmed actual receipt, private password reset, original-account
+sign-in and email verification. Minimal production reads confirmed the consumed
+grant, new credential version and session, and invalidated old sessions. No
+password or raw grant was recorded. Earlier owner-confirmation gaps below are
+historical.
+
+`codex/early-community-account-flow`, based on published `f82f116`, separates
+Forgot password from `/platform/account/verify`. Verification links from Settings,
+church eligibility and Home now use that dedicated page; only the signed-in
+owner's email is prefilled. A new signup schedules verification through the
+existing bounded post-response delivery callback; duplicate registration never
+sends a verification message or modifies the existing account. Ordinary reading
+and posting remain available while verification is pending.
+
+Email now includes a direct HTML button, a complete copyable link and plain text.
+New reset/verification links use their route to identify purpose and one fragment
+parameter for the token. Already-delivered purpose-bearing links remain valid.
+The client handles initial fragments and same-tab hash changes, strips grants
+without discarding router state, and prevents stale responses from completing a
+newer link. GET remains inert; explicit confirmation, purpose checks, expiry,
+one-use enforcement and session invalidation are retained. Spam/junk guidance is
+visible before and after requesting mail. Click tracking remains unconfigured.
+A sender-scoped DMARC TXT (`p=none`) was saved and verified on authoritative DNS;
+this improves authentication configuration but does not guarantee inbox placement.
+See [Resend DMARC guidance](https://resend.com/docs/dashboard/domains/dmarc).
+
+Home now defaults to all active public posts, newest first, with existing 30-post
+pages and cursor tie-breaking. `PLATFORM_HOME_FEED_MODE=following` retains the
+previous signed-in follower filter for later use. The current published post
+model is public-only; future audience-aware integration must keep authorization
+before this filter. Unpublished post/profile/role work is preserved separately.
+Phone verification is explicitly deferred.
+
+Verification: 219 passing isolated service/development/production HTTPS checks
+and two expected disabled-email skips across the initial sweep and resumed
+remainder. The build found a missing private-email property in the shared public
+DTO; it was corrected by fetching only the authenticated owner's address on the
+verification page. Migration upgrade, backup/restore and fresh-schema checks
+passed. Additional focused production HTTPS and development checks passed for
+non-followers' public posts, owner-only email prefilling and anonymous privacy.
+Actual fictional browser checks passed for separate forms, same-tab and legacy
+links, signup guidance, unfollowed posts, resend without retyping, explicit email
+verification and updated Settings on return. No real email was sent during these
+fixture checks; Yahoo's exact click handling remains a real-device follow-up.
+Production publication and full-screen reader follow-up are pending at this
+checkpoint. No schema or dependency changes were introduced.
+
 ## Production sender activated — September 10, 2026
 
 The existing Resend account is connected. The dedicated sending subdomain is

@@ -76,7 +76,8 @@ export async function registerAccount(
   const passwordHash = await hashPassword(input.password as string);
   try {
     // Insert only. Unique constraints settle duplicate/concurrent registrations without overwrites.
-    await db.platformUser.create({
+    return await db.platformUser.create({
+      select: { email: true },
       data: {
         email,
         name,

@@ -84,7 +84,10 @@ export function PortalHelpContact() {
         send your password or sign-in codes.
       </p>
       <Link href="/platform/account/recover" className={portalLinkClass}>
-        Account recovery and email verification
+        Forgot password?
+      </Link>
+      <Link href="/platform/account/verify" className={portalLinkClass}>
+        Verify your email
       </Link>
     </PortalCard>
   );

@@ -86,7 +86,7 @@ export default async function PlatformSettingsPage() {
             </p>
             {!user.emailVerifiedAt && (
               <Link
-                href="/platform/account/recover"
+                href="/platform/account/verify"
                 className="text-gc-accent underline"
               >
                 Email verification options
