@@ -1,6 +1,6 @@
 # Official church setup and representative claims
 
-September 10, 2026 · Implementation verified; publication pending
+September 10, 2026 · Published and verified
 
 ## Behavior
 
@@ -108,3 +108,18 @@ preview origin; fresh final pages returned no application errors.
 No real claims, messages, calls, verification evidence, church grants or public
 fixture content have been created. Physical-device and real operational pilot
 acceptance remain separate.
+
+## Production publication
+
+Application `a0ede60daa74cab6a8a12cadb9e6a59285cbe35d` is live on READY
+deployment `dpl_A746vaUDxw3umTnjPEzd4hqsfPC6`. Exact canonical serving
+identity was verified. All 71 live HTTP checks passed at
+2026-09-10T06:22:30Z, including guest HTML/RSC claim gates, anonymous and
+forged-origin denials, public navigation and disabled-provider behavior. Public
+post and church lists remain empty, so populated detail journeys were verified
+with the isolated fictional fixtures described above. No real record was written.
+
+Live 320/390px church setup, contextual signup return and Back navigation passed
+without horizontal overflow. No deployment error entries were returned. Real
+claim review remains disabled pending the policy and reviewer-operations decision.
+Structured roles and the organization tree are the next implementation work.

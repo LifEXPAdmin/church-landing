@@ -1,6 +1,6 @@
 # Godschurches current state
 
-## Official church setup verified — September 10, 2026
+## Official church setup published — September 10, 2026
 
 `codex/church-official-claims` implements private representative drafts, accessible
 review contact, independent scoped decisions, explicit activation on the same
@@ -8,8 +8,11 @@ church record, managed profile publication and grant-specific revocation. All
 182 applicable isolated checks passed (184 total, two intentional delivery skips),
 plus final targeted service and production HTTPS checks. Actual fictional
 browser setup, approval, activation, public-profile publication and stale-editor
-revocation passed across phone and desktop layouts. Production publication is
-next. Live claim review stays disabled pending the recorded verification-policy
+revocation passed across phone and desktop layouts. Application
+`a0ede60daa74cab6a8a12cadb9e6a59285cbe35d` is live on READY deployment
+`dpl_A746vaUDxw3umTnjPEzd4hqsfPC6`. Exact canonical identity, 71 live HTTP
+checks and live phone-width setup/signup/Back navigation passed without overflow.
+No deployment error entries were returned. Live claim review stays disabled pending the recorded verification-policy
 and reviewer-operations decision; no real powers or verification were granted.
 Roles and the organization tree remain next in task 1. See
 [CHURCH_CLAIM_REPORT.md](CHURCH_CLAIM_REPORT.md).
