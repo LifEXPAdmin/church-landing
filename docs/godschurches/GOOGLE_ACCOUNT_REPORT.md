@@ -1,5 +1,23 @@
 # Google account foundation
 
+## Verified production release — September 9, 2026
+
+Application `61ec62510686f881a93d6d742249954938d820db` is live on READY deployment
+`dpl_5WuUwEqsubosE4Jx8t41pb1m1rCA`. The exact Git SHA and canonical
+`godschurches.com` serving identity were verified. Twenty-nine live HTTP checks
+passed at 2026-09-10T02:51:04Z, covering guest reading, account gates, existing
+account pages, hidden Google controls and disabled/forged-origin Google requests.
+The live browser checked email sign-in, Home and public church discovery at
+390 pixels with no errors or warnings. The public lists are still empty;
+populated discussions and churches were verified only with isolated fixtures.
+
+Production Google variables are absent, account email delivery remains disabled
+and support intake remains false. Real Google Cloud account/project setup and
+consenting provider/device acceptance remain open; the completed implementation
+and fictional tests do not establish them. The original checkout is synchronized
+and its dependencies regenerated. Full roadmap parent acceptance remains open.
+
+
 ## Account interface and privacy verification — September 9, 2026
 
 The `codex/google-account-interface` branch completes the browser integration

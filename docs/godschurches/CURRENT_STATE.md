@@ -1,6 +1,6 @@
 # Godschurches current state
 
-## Google interface verified — September 9, 2026
+## Google interface published, provider activation pending — September 9, 2026
 
 The `codex/google-account-interface` implementation completes explicit Google
 onboarding, sign-in-method management and sensitive account confirmations above
@@ -10,7 +10,11 @@ privacy requests in each of development and production. Final lint/types/build,
 runtime traces and migration/restore/restart passed. A shared cookie reader
 prevents Next development diagnostics from serializing request credentials.
 Google remains disabled in production, with real provider/device acceptance
-still open. Publication verification follows. See
+still open. Application `61ec62510686f881a93d6d742249954938d820db` is live on
+READY deployment `dpl_5WuUwEqsubosE4Jx8t41pb1m1rCA`, with exact canonical
+serving identity, 29 live HTTP checks and mobile guest navigation verified.
+No browser errors or warnings were returned. Continue the navigation foundation
+while actual Google and email-provider setup remain pending. See
 [GOOGLE_ACCOUNT_REPORT.md](GOOGLE_ACCOUNT_REPORT.md).
 
 
