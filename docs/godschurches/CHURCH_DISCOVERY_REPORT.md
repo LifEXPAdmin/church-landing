@@ -1,6 +1,6 @@
 # Church discovery and search
 
-## Verified locally — September 9, 2026
+## Published — September 9, 2026
 
 `codex/church-discovery-search` adds search to the existing public church list for
 visitors and signed-in members. It matches names and public descriptions without
@@ -45,4 +45,12 @@ preview. Pagination now uses ordinary document links, matching the native GET
 search form; both click and Enter advanced to the remaining two matches in the
 final build. Final lint/types/build and 22 additional production Menu/card checks
 passed. Runtime verification inspected 59 traces, 4,292 entries and 141 server
-JavaScript files with no Prisma configuration loader. Publication is next.
+JavaScript files with no Prisma configuration loader.
+
+Application `b05974754e3a6715718fe31ab518126f11a6503f` is published on READY
+deployment `dpl_5GRGzNLo6MbATfTmt6Yvdastq1EK`. The canonical domain served that
+exact commit, and 36 live route/search/guest-gate/disabled-Google checks passed at
+2026-09-10T03:44:40Z. Actual live 320px search, no-match feedback and Clear search,
+then 390px Menu return, passed without browser errors or warnings. No deployment
+error entries were returned. Live public lists remain empty; populated search and
+pagination were tested with isolated fictional data only.
