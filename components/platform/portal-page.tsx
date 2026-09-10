@@ -18,6 +18,7 @@ import {
 } from "@/components/platform/portal-member-views";
 import { PortalOperator } from "@/components/platform/portal-operator";
 import { PortalRetry } from "@/components/platform/portal-retry";
+import { ChurchPosts } from "./church-posts";
 import {
   PortalEmpty,
   PortalHeading,
@@ -144,12 +145,16 @@ export async function PortalPage({
   view,
   churchId,
   cursor,
-  query = ""
+  query = "",
+  postBefore,
+  postCursor
 }: {
   view: PortalView;
   churchId?: string;
   cursor?: string;
   query?: string;
+  postBefore?: string;
+  postCursor?: string;
 }) {
   // Next's development Flight debugger can serialize awaited request/DB values.
   // Do not read credentials or private portal data in that renderer.
@@ -164,6 +169,13 @@ export async function PortalPage({
               cursor={cursor}
               query={query}
             />
+            {churchId && (
+              <ChurchPosts
+                churchId={churchId}
+                before={postBefore}
+                cursor={postCursor}
+              />
+            )}
           </section>
         </PlatformShell>
       );
@@ -266,7 +278,16 @@ export async function PortalPage({
       user={snapshot?.viewer ?? null}
       reviewerNavigation={snapshot ? reviewerNavigation(snapshot) : []}
     >
-      <section className="container-shell py-8 sm:py-10">{content}</section>
+      <section className="container-shell py-8 sm:py-10">
+        {content}
+        {view === "discover" && churchId && (
+          <ChurchPosts
+            churchId={churchId}
+            before={postBefore}
+            cursor={postCursor}
+          />
+        )}
+      </section>
     </PlatformShell>
   );
 }

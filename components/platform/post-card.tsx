@@ -4,12 +4,12 @@ import Link from "next/link";
 import { Heart, MessageCircle, Trash2, Globe } from "lucide-react";
 import {
   createPlatformPostComment,
-  deletePlatformPost,
   deletePlatformPostComment,
   togglePlatformPostLike
 } from "@/app/platform/actions";
 import { formatDate, postTypeLabels } from "@/lib/platform/format";
 import { PostParticipation } from "./post-participation";
+import { PostText } from "./post-text";
 
 interface PostCardProps {
   post: PostView;
@@ -48,27 +48,13 @@ export function PostCard({
             </span>
           </span>
         </Link>
-        {post.canWithdraw && (
-          <details className="gc-post-removal text-sm">
-            <summary className="cursor-pointer py-2">Remove post</summary>
-            <form action={deletePlatformPost} className="space-y-2">
-              <input
-                type="hidden"
-                name="expectedVersion"
-                value={post.version}
-              />
-              <label className="flex items-start gap-2">
-                <input type="checkbox" name="confirmed" required />
-                Remove this post and its discussion from view.
-              </label>
-              <input type="hidden" name="postId" value={post.id} />
-              <input type="hidden" name="redirectTo" value={redirectTo} />
-              <button className="gc-button text-gc-error" type="submit">
-                <Trash2 aria-hidden="true" />
-                Confirm removal
-              </button>
-            </form>
-          </details>
+        {post.canWithdraw && !fullDiscussion && (
+          <Link
+            href={`/platform/posts/${post.id}`}
+            className="inline-flex min-h-11 items-center text-sm text-gc-accent underline"
+          >
+            Manage post
+          </Link>
         )}
       </header>
       <div className="gc-post-meta">
@@ -96,7 +82,7 @@ export function PostCard({
           View event details and RSVP
         </Link>
       )}
-      <p className="gc-post-body">{post.content}</p>
+      <PostText content={post.content} />
       {post.scripture && (
         <p className="gc-scripture">
           <span>Scripture reference</span>

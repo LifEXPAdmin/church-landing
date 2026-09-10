@@ -1,5 +1,19 @@
 # Godschurches current state
 
+## Publishing controls verified locally — September 10, 2026
+
+`codex/post-publishing-interface` adds explicit personal/church authorship,
+controlled audiences and deliberate church sharing, visible text/topic limits,
+safe paragraphs/lists, recoverable versioned editing and management forms, and
+church posts with bounded expiring pins. All 247 applicable regressions passed
+across the sweep and corrected HTTPS reruns (249 distinct checks, two expected
+skips), including migrations/restore and actual development/production requests.
+Final lint/types/runtime and fictional browser publishing, two-session stale
+edits, participation preservation, withdrawal/cancellation, guest gates and
+phone/desktop reflow passed. These post changes remain local and unpublished;
+the calendar release below remains live. Safe link previews are next. The parent
+and full batch remain open. See [POST_EDITOR_REPORT.md](POST_EDITOR_REPORT.md).
+
 ## Poll and volunteer participation verified locally — September 10, 2026
 
 `codex/post-participation` continues the verified local post foundation at

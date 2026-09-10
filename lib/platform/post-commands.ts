@@ -19,18 +19,8 @@ import {
   type PostTx
 } from "./post-access";
 
-export const POST_TOPICS = [
-  "prayer",
-  "testimony",
-  "scripture",
-  "fasting",
-  "worship",
-  "service",
-  "community",
-  "family",
-  "questions",
-  "encouragement"
-] as const;
+import { POST_TOPICS } from "./post-options";
+export { POST_TOPICS } from "./post-options";
 function topics(value: unknown) {
   if (
     !Array.isArray(value) ||

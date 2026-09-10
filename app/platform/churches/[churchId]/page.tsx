@@ -8,10 +8,20 @@ export const metadata: Metadata = {
 };
 
 export default async function Page({
-  params
+  params,
+  searchParams
 }: {
   params: Promise<{ churchId: string }>;
+  searchParams: Promise<{ postBefore?: string; postCursor?: string }>;
 }) {
   const { churchId } = await params;
-  return <PortalPage view="discover" churchId={churchId} />;
+  const query = await searchParams;
+  return (
+    <PortalPage
+      view="discover"
+      churchId={churchId}
+      postBefore={query.postBefore}
+      postCursor={query.postCursor}
+    />
+  );
 }

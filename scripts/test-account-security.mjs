@@ -366,6 +366,7 @@ try {
   if (portalTests) await runTests("tests/calendars.test.ts");
   if (portalTests) await runTests("tests/post-publishing.test.ts");
   if (portalTests) await runTests("tests/post-participation.test.ts");
+  if (portalTests) await runTests("tests/post-editor.test.ts");
   if (supportTests) await runTests("tests/support-service.test.ts");
   run(join(pg, "pg_dump"), [
     database,
@@ -502,6 +503,11 @@ try {
     });
   if (portalTests)
     await runTests("tests/post-publishing-http.test.ts", {
+      ...env,
+      POST_RENDER_PHASE: "development"
+    });
+  if (portalTests)
+    await runTests("tests/post-editor-http.test.ts", {
       ...env,
       POST_RENDER_PHASE: "development"
     });
@@ -752,6 +758,10 @@ try {
       CALENDAR_RENDER_PHASE: "production"
     });
     await runTests("tests/post-publishing-http.test.ts", {
+      ...portalEnv,
+      POST_RENDER_PHASE: "production"
+    });
+    await runTests("tests/post-editor-http.test.ts", {
       ...portalEnv,
       POST_RENDER_PHASE: "production"
     });

@@ -3,7 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PostCard } from "@/components/platform/post-card";
 import { PlatformShell } from "@/components/platform/platform-shell";
-import { readPost } from "@/lib/platform/post-session";
+import { readPost, readPostEditor } from "@/lib/platform/post-session";
+import { PostControls } from "@/components/platform/post-controls";
 import { getCurrentPlatformUser } from "@/lib/platform/session";
 
 export const dynamic = "force-dynamic";
@@ -35,6 +36,11 @@ export default async function PostPage({
       : null;
   const post = await readPost(postId, { before, cursor });
   if (!post) notFound();
+  // An independent current-permission read may fail if access changed since the
+  // post read. Never render management data or a partial editor in that case.
+  const editor = post.canWithdraw
+    ? await readPostEditor(post.id).catch(() => null)
+    : null;
   const comments = post.comments.slice(0, 30);
   const last = comments.at(-1);
   const path = `/platform/posts/${post.id}`;
@@ -74,6 +80,7 @@ export default async function PostPage({
             fullDiscussion
             moreCommentsHref={more}
           />
+          {editor && <PostControls post={editor} />}
         </div>
       </section>
     </PlatformShell>

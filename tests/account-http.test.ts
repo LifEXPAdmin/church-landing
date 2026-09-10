@@ -137,6 +137,11 @@ test("public HTML/RSC and unauthenticated settings do not expose private account
   const user = await db.platformUser.findUniqueOrThrow({
     where: { username: "http_account" }
   });
+  // Keep this projection fixture on the current feed page. Other suites now
+  // deliberately create more than one page of posts to verify pagination.
+  await db.platformPost.create({
+    data: { authorId: user.id, content: "Synthetic testimony for HTTP privacy" }
+  });
   for (const path of [
     "/",
     "/platform",

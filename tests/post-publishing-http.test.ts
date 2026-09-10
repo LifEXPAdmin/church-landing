@@ -30,47 +30,37 @@ const get = (path: string, token = "", rsc = false) =>
       ...(rsc ? { RSC: "1" } : {})
     }
   });
-test("native multipart publishing accepts exactly 3000 multiline characters and rejects normalized overflow", async () => {
+test("publishing API accepts exactly 3000 normalized multiline characters and rejects overflow", async () => {
   const f = await fixture();
-  const html = await (await get("/platform", f.memberA.token)).text();
-  const composer = [...html.matchAll(/<form\b[^>]*>[\s\S]*?<\/form>/g)].find(
-    ([form]) => form.includes('name="content"') && form.includes('name="type"')
-  );
-  assert.ok(composer);
-  const action = composer[0].match(/name="(\$ACTION_ID_[^"]+)"/);
-  assert.ok(action);
   const content = "文".repeat(1499) + "\n\n" + "字".repeat(1499);
   const requestKey = randomUUID();
-  const submit = (value: string, key: string) => {
-    const form = new FormData();
-    form.set(action[1], "");
-    form.set("content", value);
-    form.set("requestKey", key);
-    form.set("type", "UPDATE");
-    return fetch(origin + "/platform", {
+  const submit = (value: string, key: string) =>
+    fetch(origin + "/api/platform/posts", {
       method: "POST",
-      redirect: "manual",
       headers: {
         Cookie: "church_platform_session=" + f.memberA.token,
-        Origin: origin
+        Origin: origin,
+        "Content-Type": "application/json"
       },
-      body: form
+      body: JSON.stringify({
+        operation: "create",
+        content: value.replace(/\n/g, "\r\n"),
+        requestKey: key,
+        type: "UPDATE"
+      })
     });
-  };
-  assert.equal((await submit(content, requestKey)).status, 303);
-  assert.equal((await submit(content, requestKey)).status, 303);
+  assert.equal((await submit(content, requestKey)).status, 200);
+  assert.equal((await submit(content, requestKey)).status, 200);
   const posts = await db.platformPost.findMany({
     where: { authorId: f.memberA.id, requestKey }
   });
   assert.equal(posts.length, 1);
   assert.equal(posts[0].content, content);
-  assert.ok(
-    (await (await get("/platform/posts/" + posts[0].id)).text()).includes(
-      content
-    )
-  );
+  const html = await (await get("/platform/posts/" + posts[0].id)).text();
+  assert.ok(html.includes("文".repeat(1499)));
+  assert.ok(html.includes("字".repeat(1499)));
   const overflowKey = randomUUID();
-  assert.notEqual((await submit(content + "字", overflowKey)).status, 303);
+  assert.equal((await submit(content + "字", overflowKey)).status, 400);
   assert.equal(
     await db.platformPost.count({ where: { requestKey: overflowKey } }),
     0

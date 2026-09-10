@@ -89,40 +89,32 @@ const sessionError = (e: unknown) =>
 const handoffError = (e: unknown) =>
   e instanceof AccountLifecycleError && e.code === "handoff";
 
-test("actual community Server Actions bind authors to cookies and reject cross-origin and deactivated submissions", async () => {
+test("actual publishing binds authors to cookies and rejects cross-origin and deactivated submissions", async () => {
   const a = await owner();
   const b = await owner();
   const marker = "Fictional action " + a.user.username;
-  const html = await (
-    await fetch(origin + "/platform", {
-      headers: { Cookie: "church_platform_session=" + a.token }
-    })
-  ).text();
-  const composer = [...html.matchAll(/<form\b[^>]*>[\s\S]*?<\/form>/g)].find(
-    (match) =>
-      match[0].includes('name="content"') && match[0].includes('name="type"')
-  );
-  assert.ok(composer);
-  const action = composer[0].match(/name="(\$ACTION_ID_[^"]+)"/);
-  assert.ok(action);
-  const invoke = (source: string, forge = false) => {
-    const form = new FormData();
-    form.set(action[1], "");
-    form.set("content", marker);
-    form.set("type", "UPDATE");
-    if (forge) form.set("authorId", b.user.id);
-    return fetch(origin + "/platform", {
+  const invoke = (source: string, forge = false) =>
+    fetch(origin + "/api/platform/posts", {
       method: "POST",
       redirect: "manual",
-      headers: { Cookie: "church_platform_session=" + a.token, Origin: source },
-      body: form
+      headers: {
+        Cookie: "church_platform_session=" + a.token,
+        Origin: source,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        operation: "create",
+        requestKey: a.user.id,
+        content: marker,
+        type: "UPDATE",
+        ...(forge ? { authorId: b.user.id } : {})
+      })
     });
-  };
-  assert.notEqual((await invoke("https://wrong.example")).status, 303);
+  assert.equal((await invoke("https://wrong.example")).status, 403);
   assert.equal(await db.platformPost.count({ where: { content: marker } }), 0);
-  assert.notEqual((await invoke(origin, true)).status, 303);
+  assert.equal((await invoke(origin, true)).status, 400);
   assert.equal(await db.platformPost.count({ where: { content: marker } }), 0);
-  assert.equal((await invoke(origin)).status, 303);
+  assert.equal((await invoke(origin)).status, 200);
   for (const rsc of [false, true]) {
     const demo = await fetch(origin + "/platform/demo/member", {
       headers: rsc ? { RSC: "1" } : {}
@@ -140,8 +132,8 @@ test("actual community Server Actions bind authors to cookies and reject cross-o
   );
   await deactivateAccount(db, a.token, password, true);
   const stale = await invoke(origin);
-  assert.equal(stale.status, 303);
-  assert.match(stale.headers.get("location")!, /^\/platform\/join\?/);
+  assert.equal(stale.status, 401);
+  assert.match((await stale.json()).message, /Sign in/);
   assert.equal(await db.platformPost.count({ where: { content: marker } }), 1);
 });
 

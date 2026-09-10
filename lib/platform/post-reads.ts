@@ -157,6 +157,14 @@ export async function listPostsIn(
     });
   if (query.pinned)
     filters.push({ authorChurchId: { not: null }, pinUntil: { gt: now } });
+  else if (query.pinned === false)
+    filters.push({
+      OR: [
+        { authorChurchId: null },
+        { pinUntil: null },
+        { pinUntil: { lte: now } }
+      ]
+    });
   if (query.before && query.cursor)
     filters.push({
       OR: [
@@ -181,6 +189,34 @@ export function listPosts(
   return withPostRead(db, token, (tx, context) =>
     listPostsIn(tx, context, query)
   );
+}
+export function getChurchPostFeed(
+  db: PrismaClient,
+  token: unknown,
+  churchId: string,
+  query: Pick<PostQuery, "before" | "cursor"> = {}
+) {
+  return withPostRead(db, token, async (tx, context) => {
+    const now = new Date();
+    const pinned = await listPostsIn(
+      tx,
+      context,
+      { churchId, pinned: true, limit: 3 },
+      now
+    );
+    const posts = await listPostsIn(
+      tx,
+      context,
+      { ...query, churchId, pinned: false },
+      now
+    );
+    return {
+      pinned,
+      posts,
+      viewerId: context.actorId,
+      canShare: context.churches.includes(churchId)
+    };
+  });
 }
 export function getPost(
   db: PrismaClient,
