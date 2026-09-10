@@ -12,7 +12,12 @@ session/action-bound Google confirmation, explicit reactivation, private identit
 export and password-backed unlinking. Database backup/restore and fresh migrations
 include identity, attempt and recent-authentication tables. This evidence does
 not establish a real Google redirect, live provider configuration or a complete
-Google-only account interface. See [GOOGLE_ACCOUNT_REPORT.md](GOOGLE_ACCOUNT_REPORT.md).
+Google-only account interface. Ten Request/Response boundary groups additionally
+test HttpOnly cookies, callback cleanup, explicit onboarding, reactivation and
+sensitive action confirmation. Real development and production HTTP tests keep
+unconfigured Google routes disabled. The enabled callback tests substitute only
+the provider transport/certificates and do not claim actual Google consent.
+See [GOOGLE_ACCOUNT_REPORT.md](GOOGLE_ACCOUNT_REPORT.md).
 
 ## Browse first
 

@@ -11,6 +11,29 @@ type Delivery = (
   token: string
 ) => Promise<void>;
 
+// Verify the incoming email link before placing it in a short-lived HttpOnly
+// cookie for a Google round trip. This does not confirm or consume the change.
+export async function checkPendingEmailChange(
+  db: PrismaClient,
+  sessionToken: unknown,
+  token: unknown
+) {
+  if (!validToken(token)) throw new AccountError("grant");
+  return withOwnedSession(db, sessionToken, async (tx, current) => {
+    const pending = await tx.platformEmailChange.findUnique({
+      where: { userId: current.userId },
+      select: { tokenHash: true, expiresAt: true, credentialVersion: true }
+    });
+    if (
+      !pending ||
+      pending.tokenHash !== hashSessionToken(token) ||
+      pending.expiresAt <= new Date() ||
+      pending.credentialVersion !== current.credentialVersion
+    )
+      throw new AccountError("grant");
+  });
+}
+
 // The returned work is for the server's response lifecycle, never a response DTO.
 // Recipient availability and provider latency occur after the neutral response.
 export async function requestEmailChange(

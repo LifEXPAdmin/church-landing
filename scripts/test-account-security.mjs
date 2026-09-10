@@ -317,6 +317,7 @@ try {
   await runTests("tests/account-delivery.test.ts");
   await runTests("tests/account-email-change.test.ts");
   await runTests("tests/google-accounts.test.ts");
+  await runTests("tests/google-boundary.test.ts");
   if (portalTests) await runTests("tests/portal-service.test.ts");
   if (supportTests) await runTests("tests/support-service.test.ts");
   run(join(pg, "pg_dump"), [
@@ -429,6 +430,7 @@ try {
   if (!ready) throw new Error("Isolated Next server did not start");
   await runTests("tests/account-http.test.ts");
   await runTests("tests/account-email-http.test.ts");
+  await runTests("tests/google-http.test.ts");
   if (portalTests) {
     run(
       process.execPath,
@@ -644,6 +646,7 @@ try {
     await runTests("tests/account-export.test.ts", productionEnv);
     await runTests("tests/account-lifecycle.test.ts", productionEnv);
     await runTests("tests/account-email-http.test.ts", productionEnv);
+    await runTests("tests/google-http.test.ts", productionEnv);
     console.log(
       "Account/profile/session persistence passed after a new production server process."
     );

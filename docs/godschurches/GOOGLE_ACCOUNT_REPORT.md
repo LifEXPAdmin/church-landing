@@ -1,5 +1,36 @@
 # Google account foundation
 
+## HTTP integration verified locally — September 9, 2026
+
+The `codex/google-http-boundary` branch extends verified local account controls
+`83f4f1e`. Exact-origin POST operations now start login, link and action-specific
+confirmation, complete onboarding/reactivation, expose minimal account options
+and cancel/unlink. All operations use durable rate limits. A separate GET
+callback validates the bound attempt and immediately redirects without rendering
+provider parameters. A login started anonymously cannot replace an account that
+was signed in during the redirect.
+
+Short-lived browser, onboarding, reactivation, recent-confirmation and email-link
+cookies use HttpOnly, SameSite=Lax and host-only Secure names on HTTPS. No raw
+proof is returned in page data or JSON. Email-link preparation checks the current
+owner and pending link before preserving it across Google confirmation; the
+separate email-change action still verifies and consumes both proofs. Existing
+sensitive account endpoints accept an explicit Google confirmation method only
+with the server's cookie, and successful use clears the confirmation cookie.
+
+Ten new boundary groups passed using actual Request/Response handlers, the real
+signature verifier and substituted certificate retrieval/code exchange. All 153
+applicable checks passed with zero failures and two intentional disabled-delivery
+skips. Real development and production HTTP checks prove disabled Google routes
+create no attempts/sessions and strip callback parameters. An initial test
+incorrectly required an exact cache-header string; it now checks the required
+no-store directive while allowing Next.js's additional privacy directives.
+Lint, TypeScript, migration/restore/restart and the final production build passed.
+Runtime validation covered 57 traces, 4,123 entries and 136 server JavaScript
+files, with no Prisma configuration-loader path. These tests do not claim a real
+Google redirect or browser acceptance. Google remains local and unpushed;
+interface integration and real provider setup follow.
+
 ## Recent authentication verified locally — September 9, 2026
 
 The `codex/google-reauthentication` branch extends local foundation `6030ba3`.

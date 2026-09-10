@@ -35,6 +35,14 @@ import {
   confirmEmailChange
 } from "./account-email-change";
 import { safeAccountReturn } from "./account-entry";
+import { googleConfig } from "./google-provider";
+import {
+  requestAccountCredential,
+  googleRequestToken,
+  googleCookie,
+  clearGoogleCookies
+} from "./google-cookies";
+import { isRecentAuthenticationPurpose } from "./account-credential";
 
 export const SESSION_COOKIE = "church_platform_session";
 export function sessionCookie(token: string, secure: boolean) {
@@ -113,12 +121,28 @@ export async function handleAccountRequest(
   afterResponse?: (work: () => Promise<void>) => void
 ): Promise<Response> {
   const requestId = randomUUID();
+  const credentialUse = { google: false };
   const response = await processAccountRequest(
     db,
     request,
     requestId,
-    afterResponse
+    afterResponse,
+    credentialUse
   );
+  if (response.ok) {
+    const sessionEnded = response.headers
+      .get("Set-Cookie")
+      ?.includes(`${SESSION_COOKIE}=;`);
+    if (credentialUse.google || sessionEnded) {
+      const secure = accountConfig().secureCookie;
+      if (sessionEnded) clearGoogleCookies(response, secure);
+      else
+        response.headers.append(
+          "Set-Cookie",
+          googleCookie("recent", "", secure)
+        );
+    }
+  }
   response.headers.set("X-Account-Request-Id", requestId);
   if (
     response.status === 503 &&
@@ -138,7 +162,8 @@ async function processAccountRequest(
   db: PrismaClient,
   request: Request,
   requestId: string,
-  afterResponse?: (work: () => Promise<void>) => void
+  afterResponse?: (work: () => Promise<void>) => void,
+  credentialUse = { google: false }
 ): Promise<Response> {
   if (request.method !== "POST")
     return reply("Use the account form to continue.", 405, { Allow: "POST" });
@@ -169,11 +194,18 @@ async function processAccountRequest(
     return reply("Check the fields and try again.", 400);
   }
   const operation = body.operation;
-  // Google proofs will come from the server's HttpOnly cookie integration,
-  // never from an object substituted into a password field.
+  // Google proofs come only from HttpOnly cookies, never password-field objects.
   if (
     body.currentPassword !== undefined &&
     typeof body.currentPassword !== "string"
+  )
+    return reply("Check the fields and try again.", 400);
+  if (
+    (body.credentialMethod !== undefined &&
+      body.credentialMethod !== "google") ||
+    (body.credentialMethod === "google" &&
+      (body.currentPassword !== undefined ||
+        !isRecentAuthenticationPurpose(operation)))
   )
     return reply("Check the fields and try again.", 400);
   if (
@@ -213,7 +245,12 @@ async function processAccountRequest(
   if (
     sessionOperation &&
     Object.keys(body).some(
-      (key) => key !== "operation" && !sessionFields[operation].includes(key)
+      (key) =>
+        key !== "operation" &&
+        !(
+          key === "credentialMethod" && isRecentAuthenticationPurpose(operation)
+        ) &&
+        !sessionFields[operation].includes(key)
     )
   )
     return reply("Use the controls on your account settings page.", 400);
@@ -228,6 +265,14 @@ async function processAccountRequest(
   const accepted =
     "If this address is eligible, a link will be sent. Check your inbox and spam folder.";
   try {
+    if (body.credentialMethod === "google" && !googleConfig())
+      return reply("Google account confirmation is not available yet.", 503);
+    credentialUse.google = body.credentialMethod === "google";
+    const credential = requestAccountCredential(
+      request,
+      body,
+      config.secureCookie
+    );
     // Vercel overwrites x-real-ip. Outside that deployment, use a shared bucket, not an untrusted XFF.
     const ip = process.env.VERCEL
       ? (request.headers.get("x-real-ip") ?? "unknown").slice(0, 64)
@@ -300,7 +345,7 @@ async function processAccountRequest(
         const send = await requestEmailChange(
           db,
           requestSessionToken(request),
-          body.currentPassword,
+          credential,
           body.newEmail,
           accountGrantDelivery(config)
         );
@@ -323,11 +368,14 @@ async function processAccountRequest(
       await confirmEmailChange(
         db,
         requestSessionToken(request),
-        body.currentPassword,
-        body.token
+        credential,
+        body.token ??
+          (credentialUse.google
+            ? googleRequestToken(request, "email", config.secureCookie)
+            : undefined)
       );
       return reply(
-        "Sign-in email changed. All devices are signed out. Sign in with your new email and existing password.",
+        "Sign-in email changed. All devices are signed out. Sign in again using your new email and password or your linked Google account.",
         200,
         { "Set-Cookie": sessionCookie("", config.secureCookie) },
         "/platform/login?notice=email-changed"
@@ -344,7 +392,7 @@ async function processAccountRequest(
       await deactivateAccount(
         db,
         requestSessionToken(request),
-        body.currentPassword,
+        credential,
         body.confirmed
       );
       return reply(
@@ -382,7 +430,7 @@ async function processAccountRequest(
       const prepared = await prepareAccountExport(
         db,
         requestSessionToken(request),
-        body.currentPassword,
+        credential,
         config.rateSecret
       );
       return Response.json(prepared, {
@@ -414,7 +462,7 @@ async function processAccountRequest(
       await revokeOtherAccountSessions(
         db,
         requestSessionToken(request),
-        body.currentPassword
+        credential
       );
       return reply(
         "Other sign-ins have been removed. This sign-in stays active."
@@ -451,7 +499,7 @@ async function processAccountRequest(
       await changeAccountPassword(
         db,
         requestSessionToken(request),
-        body.currentPassword,
+        credential,
         body.password,
         body.confirmPassword
       );
@@ -503,7 +551,7 @@ async function processAccountRequest(
       return reply(
         error.code === "size"
           ? "Your data exceeds this download's current size limit. No file was created and no partial export was returned."
-          : "This download authorization is invalid or expired. Confirm your password and try again.",
+          : "This download authorization is invalid or expired. Confirm your account and try again.",
         400
       );
     if (error instanceof AccountError) {
@@ -523,7 +571,9 @@ async function processAccountRequest(
           operation === "request-email-change" ||
           operation === "confirm-email-change" ||
           operation === "revoke-other-sessions"
-            ? "Your current password did not match."
+            ? credentialUse.google
+              ? "Google confirmation is missing, expired or already used. Confirm this action with Google again."
+              : "Your current password did not match."
             : "That email and password did not match.",
         registration:
           "Your registration could not be completed. Please try again later.",

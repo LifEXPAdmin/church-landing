@@ -1,5 +1,16 @@
 # Godschurches current state
 
+## Google HTTP integration verified locally — September 9, 2026
+
+`codex/google-http-boundary` extends `83f4f1e` with origin/rate-limited routes,
+callback cleanup, HttpOnly proof cookies and existing account-endpoint integration.
+All 153 applicable checks passed, including ten new boundary groups and real
+disabled development/production HTTP checks. Final lint/types/build/runtime and
+migration/restore/restart passed. UI/provider
+acceptance remains pending and all Google work is local and unpushed. Production
+continues serving the verified guest-browsing release below. See
+[GOOGLE_ACCOUNT_REPORT.md](GOOGLE_ACCOUNT_REPORT.md).
+
 ## Google account controls verified locally — September 9, 2026
 
 `codex/google-reauthentication` extends local foundation `6030ba3` with one-use,
