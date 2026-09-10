@@ -4,6 +4,7 @@ import { PlatformShell } from "@/components/platform/platform-shell";
 import { getCurrentPlatformUser } from "@/lib/platform/session";
 import { safeAccountReturn, accountReason } from "@/lib/platform/account-entry";
 import { googleAvailable } from "@/lib/platform/google-availability";
+import { accountDeliveryAvailable } from "@/lib/platform/account-availability";
 export const metadata: Metadata = {
   title: { absolute: "Sign in to Godschurches" },
   description: "Sign in securely with your email and password."
@@ -19,6 +20,7 @@ export default async function PlatformLoginPage({
     <PlatformShell user={user}>
       <section className="container-shell py-8 sm:py-10">
         <AccountAccess
+          recoveryAvailable={accountDeliveryAvailable()}
           googleAvailable={googleAvailable() && !user}
           googleNotice={
             notice === "google-link-required"

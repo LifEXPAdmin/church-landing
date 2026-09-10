@@ -1,5 +1,27 @@
 # Godschurches current state
 
+## Password-recovery entry verified locally — September 10, 2026
+
+`codex/account-recovery-activation` changes the account entry link to **Forgot
+password?** and makes the surrounding guidance follow the same validated
+availability setting as the recovery page. Help directs readers to that current
+status. Account ownership, reset and session behavior are unchanged. The work is
+based on the currently published calendar code, with no schema/dependency change.
+
+Across the sweep and corrected remaining checks, 216 of 218 checks passed with
+two expected disabled-email skips and no unresolved failures. Final build/types/
+lint, migrations/restore/restart and runtime checks passed (85 traces / 6,163
+entries / 204 server JS files), including an additional private-fixture audit.
+The rendered-text/RSC assertion and a mismatched fixture resume were corrected.
+Publication is being verified. See [ACCOUNT_DELIVERY_REPORT.md](ACCOUNT_DELIVERY_REPORT.md).
+
+Real sender activation is still pending: fresh hosting inspection found no
+Resend resource or sender variables and delivery remains disabled. The existing
+provider terms screen requires the owner step and an authorized account mailbox.
+No real recovery email, password or account-data change has occurred. The broader
+post/profile work remains saved on its separate local branch; the full batch and
+actual account-recovery acceptance remain open.
+
 ## Calendar interface published — September 10, 2026
 
 `codex/calendar-interface` adds real calendar/event pages, sharing/publication,

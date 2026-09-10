@@ -35,9 +35,8 @@ export default function HelpPage() {
           <p>
             The{" "}
             <Link href="/platform/account/recover">account recovery page</Link>{" "}
-            shows whether email recovery is available. Recovery and verification
-            email delivery are not enabled yet. Signing up again will not
-            restore access to an existing account.
+            shows whether email recovery is available and the next steps.
+            Signing up again will not restore access to an existing account.
           </p>
           <p>
             If a request fails, keep the visible error or reference code and
