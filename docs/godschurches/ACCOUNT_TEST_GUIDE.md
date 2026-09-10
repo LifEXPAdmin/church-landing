@@ -73,8 +73,11 @@ Select **Forgot password?** on Sign in to open the existing account-recovery pag
 It shows whether email recovery is available. When enabled, request a link using
 your existing account email and choose the new password privately on the linked
 page. Registration never replaces an existing account or resets its password.
-Actual delivery currently awaits sender setup; the label change alone does not
-enable it. See [ACCOUNT_DELIVERY_REPORT.md](ACCOUNT_DELIVERY_REPORT.md).
+Email recovery is enabled on production. The dedicated sender is verified, and
+the provider reported the authorized recovery email delivered. Inbox receipt and
+sign-in after choosing a new password are verified separately; check your spam
+folder if the message is missing. See
+[ACCOUNT_DELIVERY_REPORT.md](ACCOUNT_DELIVERY_REPORT.md).
 
 ## Review active sign-ins
 

@@ -1,5 +1,27 @@
 # Godschurches current state
 
+## Password-recovery sender activated — September 10, 2026
+
+Production email recovery is enabled. The dedicated Resend sender is verified
+with publicly resolving Cloudflare DNS, no tracking configuration, enforced TLS
+and a sending-only domain-restricted key stored as a Vercel production Secret.
+No paid plan was purchased. The actual account endpoint issued one authorized
+recovery email, which the provider reports delivered. Inbox receipt and the
+owner's private password reset/sign-in remain pending; no account was replaced.
+
+The existing application source `2e90f6fdfdda290f292a5c92dc06265f7dfc2c52` is on
+READY `dpl_9pCtiZ3yvcWu1px5AWVEbc1x6tCe`. Remote build/lint/types and runtime
+checks passed, with no pending migrations. Six candidate HTTP checks passed
+before the email test and promotion. All 13 live read-only HTTP checks passed.
+Canonical serving identity and actual browser navigation from Forgot password to the enabled recovery form passed;
+the deployment error scan returned no rows. Full lifecycle regressions were
+previously verified and were not rerun for this configuration-only activation.
+See [ACCOUNT_DELIVERY_REPORT.md](ACCOUNT_DELIVERY_REPORT.md).
+
+The sender/terms prerequisites are now resolved. Preserve the separately saved
+post/profile/role work and keep final account acceptance open for the owner's
+result. Earlier disabled-sender sections below are historical.
+
 ## Password-recovery entry published — September 10, 2026
 
 `codex/account-recovery-activation` changes the account entry link to **Forgot

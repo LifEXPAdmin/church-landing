@@ -3,6 +3,42 @@
 Updated September 9, 2026. Branch: `codex/account-delivery`, based on published
 main `ab14cf9ba258517ce76a1f24be55b0fd9eff3fc3`.
 
+## Production sender activated — September 10, 2026
+
+The existing Resend account is connected. The dedicated sending subdomain is
+verified against its actual DKIM TXT, return-path MX and SPF TXT records in
+Cloudflare. All three records resolve publicly; existing website records were
+preserved. No paid plan was purchased. Tracking is unconfigured for this sender,
+and TLS is enforced. A new sending-only key is restricted to this domain and
+stored as a production Vercel Secret; it was not put in source or logs.
+
+The previously tested source `2e90f6fdfdda290f292a5c92dc06265f7dfc2c52` was built
+with real delivery enabled on production candidate
+`dpl_9pCtiZ3yvcWu1px5AWVEbc1x6tCe`, initially without promoting the public domain.
+No code, dependencies or database migrations changed. Remote compilation,
+lint/types and runtime verification passed (85 traces, 6,072 entries, 204 server
+JavaScript files); there were no pending migrations. Six candidate HTTP checks
+confirmed recovery availability, account guidance, Help and health before sending.
+
+One authorized request for the existing account used the actual account API and
+post-response delivery callback. The provider reports the recovery email
+**delivered**. That is provider delivery evidence, not proof that the recipient
+read the inbox. The production delivery mode was then persisted and the exact
+tested deployment promoted. Canonical serving identity, all 13 live read-only HTTP checks, and actual browser
+navigation from **Forgot password?** to the enabled recovery form passed. The
+sent message has the expected sender/purpose and canonical fragment link, without
+a tracking redirect. A private live check corrected an HTML-versus-RSC assertion;
+no application fix was required.
+No deployment-scoped error log rows were returned during this check.
+
+The account owner must choose the password privately through the delivered link
+and confirm successful sign-in to the original account. That final acceptance is
+pending; no password change or completed sign-in is claimed. The original account
+was found eligible without replacing it. Prior isolated lifecycle tests remain
+the evidence for expiry, single use and session invalidation; those tests were
+not rerun as a full suite for this environment-only activation. Earlier disabled
+sender and pending provider sign-in statements below describe historical stages.
+
 ## Recovery entry clarification — September 10, 2026
 
 The verified change on `codex/account-recovery-activation` is based on published
@@ -48,7 +84,7 @@ No browser errors were returned. These checks did not submit an email address or
 change a live account. Real sender activation and account recovery remain open.
 A later report-only deployment may serve the same application code.
 
-## Current delivery result
+## Historical implementation result before activation
 
 Transactional recovery and verification delivery is implemented through Resend.
 **Real email delivery remains disabled.** Production inspection found
@@ -179,7 +215,7 @@ Sender setup must follow the current
 
 ## Next action
 
-Connect and verify the real sender and complete the authorized mailbox receipt
-test. Keep full recovery/account acceptance open until actual results are
-recorded. Email ownership changes, account export/deactivation/deletion and safe
-Google linking remain separate account-foundation work.
+Confirm actual inbox receipt and the account owner's successful reset/sign-in
+through the delivered link. Keep full account-recovery acceptance open until
+those results are recorded. Email ownership changes, account
+export/deactivation/deletion and safe Google linking retain separate acceptance.
