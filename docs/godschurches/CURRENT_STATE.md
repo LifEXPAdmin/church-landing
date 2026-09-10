@@ -1,5 +1,30 @@
 # Godschurches current state
 
+## Profile photos and customization verified locally — September 10, 2026
+
+`codex/profile-controls` adds saved avatar/cover crop, zoom, reposition, progress,
+retry, replacement/removal, readable appearance presets, About/Posts order and a
+pinned introduction. Versioned profile saves preserve competing drafts for
+explicit review. Guest profiles/media stay gated, and owner visitor previews use
+only minimal author identity, including in development responses. Account export
+includes personal image metadata and appearance within a 4 MiB total cap.
+
+Across the sweep and corrected remaining runs, 311 of 313 distinct checks passed
+with two expected disabled-email skips and no unresolved failures. All 86 final
+production HTTPS checks (84 passing, two skips), migrations/restore, lint/types,
+build and private-trace checks passed. The root build has 90 traces / 7,126 entries /
+221 server JS files. Actual fictional browser rotation/crop/retry/remove/replace,
+reload/second sign-in, conflict review/focus, previews, 320/390/1,226-pixel layouts
+and large text/dark/reduced-motion preferences were checked. Physical Samsung,
+OS 200%/motion and recordings remain separate acceptance. See
+[PROFILE_CONTROLS_REPORT.md](PROFILE_CONTROLS_REPORT.md).
+
+Profile/post/image changes remain local and unpublished; calendar remains live.
+Production image storage and subsequent galleries/church images/cleanup acceptance
+stay open. The next active priority is existing-account password recovery,
+including the requested Forgot password? label and verified sender delivery.
+The full batch and parent profile assignment remain open.
+
 ## Private image foundation verified locally — September 10, 2026
 
 `codex/image-foundations` adds bounded JPEG/PNG/WebP processing, orientation and

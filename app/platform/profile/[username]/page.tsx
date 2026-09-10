@@ -1,23 +1,22 @@
-import {
-  publicProfileSelect,
-  activePublicAccount
-} from "@/lib/platform/public-profile";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { MapPin, Pencil, Rss, UserPlus, UsersRound } from "lucide-react";
-
 import {
   followPlatformUser,
   unfollowPlatformUser
 } from "@/app/platform/actions";
-import { readProfilePosts } from "@/lib/platform/post-session";
 import { PostCard } from "@/components/platform/post-card";
+import { PostText } from "@/components/platform/post-text";
+import { ProfileImage } from "@/components/platform/profile-image";
 import { PlatformShell } from "@/components/platform/platform-shell";
 import { Button } from "@/components/ui/button";
-import { prisma } from "@/lib/prisma";
 import { roleLabels } from "@/lib/platform/format";
 import { getCurrentPlatformUser } from "@/lib/platform/session";
+import {
+  readMemberProfile,
+  readVisitorProfilePreview
+} from "@/lib/platform/profile-session";
+import { PortalError } from "@/lib/platform/portal";
 import { GuestAccountPrompt } from "@/components/platform/guest-account-prompt";
 
 export async function generateMetadata({
@@ -32,45 +31,85 @@ export async function generateMetadata({
     robots: { index: false, follow: false }
   };
 }
-
 export const dynamic = "force-dynamic";
-
-export default async function PublicProfilePage({
+function ProfilePreviews({
+  path,
+  preview
+}: {
+  path: string;
+  preview: "visitor" | "member" | null;
+}) {
+  return (
+    <nav
+      className="mb-5 flex flex-wrap gap-3"
+      aria-label="Profile audience previews"
+    >
+      {[
+        { value: null, label: "Your profile" },
+        { value: "visitor", label: "View as visitor" },
+        { value: "member", label: "View as member" }
+      ].map(({ value, label }) => (
+        <Link
+          key={label}
+          className="gc-profile-text-button"
+          href={path + (value ? `?preview=${value}` : "")}
+          aria-current={preview === value ? "page" : undefined}
+        >
+          {label}
+        </Link>
+      ))}
+    </nav>
+  );
+}
+export default async function MemberProfilePage({
   params,
   searchParams
 }: {
   params: Promise<{ username: string }>;
-  searchParams: Promise<{ before?: string; cursor?: string }>;
+  searchParams: Promise<{ before?: string; cursor?: string; preview?: string }>;
 }) {
-  const currentUser = await getCurrentPlatformUser();
   const { username } = await params;
-  if (!currentUser)
+  const profilePath = `/platform/profile/${encodeURIComponent(username)}`;
+  const gate = (
+    <PlatformShell user={null}>
+      <GuestAccountPrompt next={profilePath} reason="profile" />
+    </PlatformShell>
+  );
+  const query = await searchParams;
+  if (query.preview === "visitor") {
+    let identity;
+    try {
+      identity = await readVisitorProfilePreview(username);
+    } catch (error) {
+      if (error instanceof PortalError && error.status === 401) return gate;
+      if (error instanceof PortalError && error.status === 404) notFound();
+      throw error;
+    }
     return (
-      <PlatformShell user={null}>
-        <GuestAccountPrompt
-          next={`/platform/profile/${username}`}
-          reason="profile"
-        />
+      <PlatformShell user={identity}>
+        <section className="container-shell gc-profile-page py-8 sm:py-10">
+          <ProfilePreviews path={profilePath} preview="visitor" />
+          <section className="gc-profile-section">
+            <h1 className="text-4xl">Visitor preview</h1>
+            <p className="gc-profile-prose">
+              Visitors can see your name and username beside public posts and
+              comments.
+            </p>
+            <p className="gc-profile-prose">
+              <strong>{identity.name}</strong> · @{identity.username}
+            </p>
+            <p className="gc-profile-prose">
+              Opening your profile prompts them to join or sign in. Your bio,
+              introduction, interests, location, website, avatar and cover are
+              available to signed-in members.
+            </p>
+          </section>
+        </section>
       </PlatformShell>
     );
-  const profile = await prisma.platformUser.findUnique({
-    where: { username, ...activePublicAccount },
-    select: {
-      ...publicProfileSelect,
-      _count: {
-        select: {
-          followers: { where: { follower: activePublicAccount } },
-          following: { where: { following: activePublicAccount } }
-        }
-      }
-    }
-  });
-
-  if (!profile) {
-    notFound();
   }
-
-  const query = await searchParams;
+  const currentUser = await getCurrentPlatformUser();
+  if (!currentUser) return gate;
   const before =
     typeof query.before === "string" &&
     /^\d{4}-\d{2}-\d{2}T[\d:.]+Z$/.test(query.before) &&
@@ -82,167 +121,239 @@ export default async function PublicProfilePage({
     /^[A-Za-z0-9_-]{1,100}$/.test(query.cursor)
       ? query.cursor
       : null;
-  const postPage = await readProfilePosts(profile.id, { before, cursor });
-  const posts = postPage.posts.slice(0, 30),
+  let profile;
+  try {
+    profile = await readMemberProfile(username, {
+      before,
+      cursor,
+      preview: query.preview
+    });
+  } catch (error) {
+    if (error instanceof PortalError && error.status === 401) return gate;
+    if (error instanceof PortalError && error.status === 404) notFound();
+    throw error;
+  }
+  const preview = profile.memberPreview ? "member" : null;
+  const parameters = new URLSearchParams(preview ? { preview } : {});
+  if (before && cursor) {
+    parameters.set("before", before.toISOString());
+    parameters.set("cursor", cursor);
+  }
+  const currentPath = profilePath + (parameters.size ? `?${parameters}` : "");
+  const posts = profile.posts.slice(0, 30),
     last = posts.at(-1);
-  const profilePath = `/platform/profile/${profile.username}`;
-  const currentPath =
-    before && cursor
-      ? `${profilePath}?${new URLSearchParams({ before: before.toISOString(), cursor })}`
-      : profilePath;
+  const older = new URLSearchParams(preview ? { preview } : {});
+  if (last) {
+    older.set("before", last.createdAt.toISOString());
+    older.set("cursor", last.id);
+  }
   const more =
-    postPage.posts.length > 30 && last
-      ? `${profilePath}?${new URLSearchParams({ before: last.createdAt.toISOString(), cursor: last.id })}`
-      : null;
-
-  const isMe = currentUser?.id === profile.id;
-  const isFollowing = currentUser
-    ? Boolean(
-        await prisma.platformFollow.findUnique({
-          where: {
-            followerId_followingId: {
-              followerId: currentUser.id,
-              followingId: profile.id
-            }
-          }
-        })
-      )
-    : false;
-
+    profile.posts.length > 30 && last ? `${profilePath}?${older}#posts` : null;
+  const latest =
+    profilePath + (preview ? `?preview=${preview}` : "") + "#posts";
+  const hasAbout = !!(
+    profile.bio ||
+    profile.location ||
+    profile.website ||
+    profile.interests.length
+  );
+  const about = hasAbout ? (
+    <section
+      key="about"
+      id="about"
+      className="gc-profile-section"
+      aria-labelledby="profile-about-heading"
+    >
+      <h2 id="profile-about-heading">About</h2>
+      {profile.bio && <p className="gc-profile-prose">{profile.bio}</p>}
+      {profile.location && (
+        <p className="gc-profile-prose">Location: {profile.location}</p>
+      )}
+      {profile.website && (
+        <a
+          className="gc-profile-text-button"
+          href={profile.website}
+          rel="ugc nofollow"
+        >
+          Website
+        </a>
+      )}
+      {profile.interests.length > 0 && (
+        <div>
+          <h3 className="text-lg">Interests</h3>
+          <ul className="mt-2 flex flex-wrap gap-2">
+            {profile.interests.map((interest) => (
+              <li className="gc-profile-interest" key={interest}>
+                {interest}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </section>
+  ) : null;
+  const postSection = (
+    <section
+      key="posts"
+      id="posts"
+      className="space-y-5"
+      aria-labelledby="profile-posts-heading"
+    >
+      <h2 id="profile-posts-heading" className="text-3xl">
+        Posts
+      </h2>
+      {before && cursor && (
+        <Link className="gc-profile-text-button" href={latest}>
+          Latest posts
+        </Link>
+      )}
+      {posts.length ? (
+        posts.map((post) =>
+          profile.memberPreview ? (
+            <article
+              key={post.id}
+              className="gc-post"
+              aria-label={`Post by ${profile.name}`}
+            >
+              <p className="text-sm text-gc-muted">
+                Public post by {profile.name}
+              </p>
+              <PostText content={post.content} />
+              <Link
+                className="gc-profile-text-button"
+                href={`/platform/posts/${post.id}`}
+              >
+                Open post as yourself
+              </Link>
+            </article>
+          ) : (
+            <PostCard
+              key={post.id}
+              post={post}
+              currentUserId={currentUser.id}
+              redirectTo={currentPath}
+            />
+          )
+        )
+      ) : (
+        <p className="gc-profile-section">No posts to show here yet.</p>
+      )}
+      {more && (
+        <Link className="gc-profile-text-button" href={more}>
+          Older posts
+        </Link>
+      )}
+    </section>
+  );
   return (
     <PlatformShell user={currentUser}>
-      <section className="container-shell py-8 sm:py-10">
-        <div className="mb-6 overflow-hidden rounded-xl border border-gc-divider bg-gc-surface">
-          <div className="h-32 bg-gc-subtle" />
-          <div className="p-6 sm:p-8">
-            <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <div className="-mt-20 mb-4 grid h-24 w-24 place-items-center rounded-full border-4 border-gc-surface bg-gc-action text-4xl font-bold text-gc-text">
-                  {profile.name.charAt(0).toUpperCase()}
-                </div>
-                <h1 className="text-4xl text-gc-text">{profile.name}</h1>
-                <p className="text-gc-muted">
-                  @{profile.username} · {roleLabels[profile.role]}
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-3">
-                {isMe ? (
-                  <Button asChild className="rounded-full">
-                    <Link href="/platform/profile/me">
-                      <Pencil className="mr-2 h-4 w-4" /> Edit profile
-                    </Link>
-                  </Button>
-                ) : currentUser ? (
-                  <form
-                    action={
-                      isFollowing ? unfollowPlatformUser : followPlatformUser
-                    }
-                  >
-                    <input
-                      type="hidden"
-                      name="followingId"
-                      value={profile.id}
-                    />
-                    <input
-                      type="hidden"
-                      name="username"
-                      value={profile.username}
-                    />
-                    <Button type="submit" className="rounded-full">
-                      <UserPlus className="mr-2 h-4 w-4" />{" "}
-                      {isFollowing ? "Following" : "Follow"}
-                    </Button>
-                  </form>
-                ) : (
-                  <Button asChild className="rounded-full">
-                    <Link href="/platform/signup">
-                      Create account to follow
-                    </Link>
-                  </Button>
-                )}
-              </div>
-            </div>
-
-            {profile.bio ? (
-              <p className="mt-5 max-w-2xl text-lg leading-relaxed text-gc-text">
-                {profile.bio}
-              </p>
-            ) : null}
-            <div className="mt-5 flex flex-wrap gap-3 text-sm text-gc-muted">
-              {profile.location ? (
-                <span className="inline-flex items-center gap-1">
-                  <MapPin className="h-4 w-4" /> {profile.location}
-                </span>
-              ) : null}
-              {profile.website ? (
-                <a
-                  className="text-gc-accent hover:text-gc-muted"
-                  href={profile.website}
-                >
-                  Website
-                </a>
-              ) : null}
-            </div>
-            <div className="mt-5 flex flex-wrap gap-3 text-sm">
-              <span className="inline-flex items-center gap-1 rounded-full bg-gc-subtle px-3 py-1 text-gc-text">
-                <Rss className="h-4 w-4 text-gc-accent" /> {postPage.count}{" "}
-                posts
-              </span>
-              <span className="inline-flex items-center gap-1 rounded-full bg-gc-subtle px-3 py-1 text-gc-text">
-                <UsersRound className="h-4 w-4 text-gc-accent" />{" "}
-                {profile._count.followers} followers
-              </span>
-              <span className="rounded-full bg-gc-subtle px-3 py-1 text-gc-text">
-                {profile._count.following} following
-              </span>
-            </div>
-            {profile.interests.length ? (
-              <div className="mt-5 flex flex-wrap gap-2">
-                {profile.interests.map((interest) => (
-                  <span
-                    key={interest}
-                    className="rounded-full border border-gc-divider px-3 py-1 text-sm text-gc-accent"
-                  >
-                    {interest}
-                  </span>
-                ))}
-              </div>
-            ) : null}
+      <section
+        className="container-shell gc-profile-page py-8 sm:py-10"
+        data-profile-palette={profile.presentation.palette}
+      >
+        {profile.isMe && (
+          <ProfilePreviews path={profilePath} preview={preview} />
+        )}
+        {preview === "member" && (
+          <aside className="gc-profile-section mb-5">
+            <h2 className="text-2xl">Member preview</h2>
+            <p>
+              This shows your profile details and public post summaries for a
+              signed-in member with no shared church connections. Church posts
+              appear only for members with current access. Post interactions are
+              available outside this preview.
+            </p>
+          </aside>
+        )}
+        <header className="gc-profile-header">
+          <div
+            className="gc-profile-cover"
+            data-profile-background={profile.presentation.background}
+          >
+            <ProfileImage
+              image={profile.cover}
+              name={profile.name}
+              kind="cover"
+            />
           </div>
-        </div>
-
-        <div className="space-y-5">
-          {before && cursor && (
-            <Link
-              className="inline-flex min-h-11 items-center text-gc-accent underline"
-              href={profilePath}
-            >
-              Latest posts
-            </Link>
-          )}
-          {posts.length ? (
-            posts.map((post) => (
-              <PostCard
-                key={post.id}
-                post={post}
-                currentUserId={currentUser?.id}
-                redirectTo={currentPath}
-              />
-            ))
-          ) : (
-            <div className="rounded-xl border border-gc-divider bg-gc-surface p-8 text-gc-muted">
-              No posts yet.
+          <div className="gc-profile-identity">
+            <ProfileImage
+              image={profile.avatar}
+              name={profile.name}
+              kind="avatar"
+            />
+            <div className="min-w-0 flex-1">
+              <h1 className="text-4xl sm:text-5xl">{profile.name}</h1>
+              <p className="mt-2 text-gc-muted">
+                @{profile.username} · {roleLabels[profile.role]}
+              </p>
             </div>
-          )}
-          {more && (
-            <Link
-              className="inline-flex min-h-11 items-center text-gc-accent underline"
-              href={more}
+            {!preview &&
+              (profile.isMe ? (
+                <Button asChild className="rounded-full">
+                  <Link href="/platform/profile/me">Edit profile</Link>
+                </Button>
+              ) : (
+                <form
+                  action={
+                    profile.following
+                      ? unfollowPlatformUser
+                      : followPlatformUser
+                  }
+                >
+                  <input type="hidden" name="followingId" value={profile.id} />
+                  <input
+                    type="hidden"
+                    name="username"
+                    value={profile.username}
+                  />
+                  <Button type="submit" className="rounded-full">
+                    {profile.following ? "Following" : "Follow"}
+                  </Button>
+                </form>
+              ))}
+          </div>
+          <div className="gc-profile-summary">
+            <p className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-gc-muted">
+              <span>{profile.postCount} posts</span>
+              <span>{profile._count.followers} followers</span>
+              <span>{profile._count.following} following</span>
+            </p>
+            <nav
+              aria-label="Profile sections"
+              className="mt-4 flex flex-wrap gap-3"
             >
-              Older posts
-            </Link>
-          )}
-        </div>
+              {(profile.presentation.sectionOrder === "posts-first"
+                ? ["posts", "about"]
+                : ["about", "posts"]
+              )
+                .filter((section) => section !== "about" || hasAbout)
+                .map((section) => (
+                  <a
+                    key={section}
+                    className="gc-profile-text-button"
+                    href={`#${section}`}
+                  >
+                    {section === "about" ? "About" : "Posts"}
+                  </a>
+                ))}
+            </nav>
+          </div>
+        </header>
+        {profile.presentation.introduction && (
+          <section
+            className="gc-profile-section"
+            aria-labelledby="profile-intro-heading"
+          >
+            <h2 id="profile-intro-heading">Introduction</h2>
+            <p className="gc-profile-prose">
+              {profile.presentation.introduction}
+            </p>
+          </section>
+        )}
+        {profile.presentation.sectionOrder === "posts-first"
+          ? [postSection, about]
+          : [about, postSection]}
       </section>
     </PlatformShell>
   );

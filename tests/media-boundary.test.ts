@@ -172,7 +172,7 @@ test("direct delivery never forwards storage URLs, range or conditional caching 
   assert.equal(response.headers.get("content-type"), "image/webp");
   assert.equal(
     (await sharp(Buffer.from(await response.arrayBuffer())).metadata()).width,
-    40
+    20
   );
   assert.equal(
     (await handleImageDelivery(db, get(), uploaded.id, "thumb")).status,

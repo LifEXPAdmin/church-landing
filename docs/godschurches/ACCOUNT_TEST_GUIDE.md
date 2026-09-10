@@ -30,6 +30,14 @@ church or manage settings. The Join/Sign in prompt lets you keep browsing or
 return to your intended destination after authentication. Signing in does not
 automatically like, comment or request church membership.
 
+## Local profile photo and appearance checks
+
+The unpublished profile-controls checkpoint adds avatar/cover upload and crop,
+readable appearance presets, About/Posts order and an optional introduction.
+Use the isolated fictional environment for these checks; see
+[PROFILE_CONTROLS_REPORT.md](PROFILE_CONTROLS_REPORT.md) for the current evidence
+and release limits. Profile photos and full details require sign-in.
+
 ## Open these pages in your browser
 
 - Create an account: https://godschurches.com/platform/signup

@@ -5,6 +5,7 @@ import {
   type PrismaClient
 } from "@prisma/client";
 import { activePublicAccount } from "./public-profile";
+import { defaultProfileStyle, validProfileStyle } from "./profile-style";
 import {
   isGoogleCredential,
   requireAccountCredential
@@ -29,7 +30,8 @@ export class AccountError extends Error {
     | "grant"
     | "handle-invalid"
     | "handle-taken"
-    | "profile";
+    | "profile"
+    | "profile-conflict";
   constructor(code: AccountError["code"]) {
     super(code);
     this.code = code;
@@ -252,9 +254,29 @@ export async function updateAccountProfile(
     "bio",
     "location",
     "website",
-    "interests"
+    "interests",
+    "expectedVersion",
+    "palette",
+    "background",
+    "sectionOrder",
+    "introduction"
   ];
   if (Object.keys(input).some((key) => !allowed.includes(key)))
+    throw new AccountError("profile");
+  const customized = [
+    "palette",
+    "background",
+    "sectionOrder",
+    "introduction"
+  ].some((k) => input[k] !== undefined);
+  if (
+    (customized &&
+      (!validProfileStyle(input) ||
+        !Number.isInteger(input.expectedVersion))) ||
+    (input.expectedVersion !== undefined &&
+      (!Number.isInteger(input.expectedVersion) ||
+        Number(input.expectedVersion) < 0))
+  )
     throw new AccountError("profile");
   const field = (key: string, maximum: number) => {
     const value = input[key] ?? "";
@@ -292,10 +314,39 @@ export async function updateAccountProfile(
   const snapshot = await readAccountSession(db, token);
   if (!snapshot) throw new AccountError("session");
   return db.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(730221, 2)`;
     await lockUser(tx, snapshot.id);
     const current = await readAccountSession(tx, token);
     if (!current || current.id !== snapshot.id)
       throw new AccountError("session");
+    const presentation = await tx.profilePresentation.findUnique({
+      where: { userId: current.id }
+    });
+    if (
+      input.expectedVersion !== undefined &&
+      input.expectedVersion !== (presentation?.version ?? 0)
+    )
+      throw new AccountError("profile-conflict");
+    const style = customized
+      ? {
+          palette: String(input.palette),
+          background: String(input.background),
+          sectionOrder: String(input.sectionOrder),
+          introduction: String(input.introduction).trim()
+        }
+      : {
+          palette: presentation?.palette ?? defaultProfileStyle.palette,
+          background:
+            presentation?.background ?? defaultProfileStyle.background,
+          sectionOrder:
+            presentation?.sectionOrder ?? defaultProfileStyle.sectionOrder,
+          introduction: presentation?.introduction ?? ""
+        };
+    await tx.profilePresentation.upsert({
+      where: { userId: current.id },
+      create: { userId: current.id, ...style },
+      update: { ...style, version: { increment: 1 } }
+    });
     return tx.platformUser.update({
       where: { id: current.id },
       data: {

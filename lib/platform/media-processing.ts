@@ -1,5 +1,6 @@
 import sharp from "sharp";
 import { PortalError } from "./portal";
+import { imageCropRect, type ImageCrop } from "./image-crop";
 
 // One binary request stays below the hosting platform's 4.5 MB payload limit.
 export const IMAGE_INPUT_BYTES = 4 * 1024 * 1024;
@@ -19,7 +20,10 @@ export function imageVariant(value: unknown): ImageVariant {
     throw new PortalError(404, "Image unavailable.");
   return value as ImageVariant;
 }
-export async function processImage(input: Buffer): Promise<ProcessedImage> {
+export async function processImage(
+  input: Buffer,
+  framing?: { crop: ImageCrop; aspect: number }
+): Promise<ProcessedImage> {
   if (!input.length || input.length > IMAGE_INPUT_BYTES)
     throw new PortalError(413, "Choose an image no larger than 4 MiB.");
   const jpeg = input[0] === 0xff && input[1] === 0xd8 && input[2] === 0xff;
@@ -87,7 +91,17 @@ export async function processImage(input: Buffer): Promise<ProcessedImage> {
       ["medium", 800],
       ["thumb", 240]
     ] as const) {
-      const output = await sharp(original.data, options)
+      const derivative = sharp(original.data, options);
+      if (framing)
+        derivative.extract(
+          imageCropRect(
+            original.info.width,
+            original.info.height,
+            framing.aspect,
+            framing.crop
+          )
+        );
+      const output = await derivative
         .resize(size, size, { fit: "inside", withoutEnlargement: true })
         .webp({ quality: 80, effort: 3 })
         .timeout({ seconds: 4 })

@@ -1,5 +1,16 @@
 # Account data controls
 
+## Profile/image extension — September 10, 2026
+
+The local profile-controls work adds appearance and personal image metadata to
+the explicit export contract, including bounded crop coordinates and authorized
+relative delivery links. Provider paths, fingerprints and image bytes are
+excluded. The total archive limit is now 4 MiB to fit the hosting response limit;
+the per-collection cap remains 2,000. This extension is unpublished. See
+[PROFILE_CONTROLS_REPORT.md](PROFILE_CONTROLS_REPORT.md).
+
+## Historical account download checkpoint
+
 September 9, 2026 · `codex/account-data-controls`, based on published main
 `b9a2443240b1d52d96cd1be903c3257266ae230d`.
 
@@ -42,7 +53,7 @@ acting as support staff on someone else's case is not a personal submission.
 Browser-only reading preferences and unrelated historical waitlist subscriptions
 are separate from this authenticated account export.
 
-Current bounds are 2,000 rows per collection and 10 MB total. Exceeding either
+At this historical checkpoint, bounds were 2,000 rows per collection and 10 MB total. Exceeding either
 returns an explicit error with no partial archive. A scalable large-account
 export remains separate work; there is no fabricated complete export on overflow.
 The exported records are read during the short request transaction; the file is

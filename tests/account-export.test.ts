@@ -318,6 +318,26 @@ test("large exports fail explicitly without returning a silently truncated archi
   await db.platformPost.deleteMany({ where: { authorId: a.user.id } });
 });
 
+test("multibyte exports below the row cap still obey the 4 MiB hosting payload budget", async () => {
+  const a = await owner();
+  await db.platformPost.createMany({
+    data: Array.from({ length: 1100 }, () => ({
+      authorId: a.user.id,
+      content: "é".repeat(2000)
+    }))
+  });
+  try {
+    const proof = await prepareAccountExport(db, a.token, password, secret);
+    await assert.rejects(
+      downloadAccountExport(db, a.token, proof.authorization, secret),
+      (error: unknown) =>
+        error instanceof AccountExportError && error.code === "size"
+    );
+  } finally {
+    await db.platformPost.deleteMany({ where: { authorId: a.user.id } });
+  }
+});
+
 test("production HTTPS export is an owner-bound no-store attachment with strict origin and field checks", async () => {
   const a = await owner();
   const b = await owner();

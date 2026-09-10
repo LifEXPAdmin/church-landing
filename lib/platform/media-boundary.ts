@@ -123,7 +123,8 @@ export async function handleImageRequest(
               "requestKey",
               "replacesId",
               "caption",
-              "alt"
+              "alt",
+              "crop"
             ].includes(k)
         )
       )
@@ -152,7 +153,8 @@ export async function handleImageRequest(
         requestKey: input.requestKey,
         replacesId: input.replacesId,
         caption: input.caption,
-        alt: input.alt
+        alt: input.alt,
+        crop: input.crop
       },
       bytes,
       store,

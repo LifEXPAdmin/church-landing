@@ -207,7 +207,8 @@ try {
     ["PostVolunteerSlot", "id"],
     ["PostVolunteerSignup", "id"],
     ["MediaAsset", "id"],
-    ["MediaGarbage", "storagePrefix"]
+    ["MediaGarbage", "storagePrefix"],
+    ["ProfilePresentation", "userId"]
   ];
   const supportTables = [
     ["SupportCapabilityGrant", "id"],
@@ -380,6 +381,8 @@ try {
   if (portalTests) await runTests("tests/media-processing.test.ts");
   if (portalTests) await runTests("tests/media.test.ts");
   if (portalTests) await runTests("tests/media-boundary.test.ts");
+  if (portalTests) await runTests("tests/profile-style.test.ts");
+  if (portalTests) await runTests("tests/profiles.test.ts");
   if (supportTests) await runTests("tests/support-service.test.ts");
   run(join(pg, "pg_dump"), [
     database,
@@ -495,6 +498,7 @@ try {
   await runTests("tests/account-email-http.test.ts");
   await runTests("tests/google-http.test.ts");
   if (portalTests) await runTests("tests/media-http.test.ts");
+  if (portalTests) await runTests("tests/profiles-http.test.ts");
   if (portalTests)
     await runTests("tests/church-listing-http.test.ts", {
       ...env,
@@ -766,6 +770,7 @@ try {
     );
     await runTests("tests/portal-http.test.ts", portalEnv);
     await runTests("tests/media-http.test.ts", portalEnv);
+    await runTests("tests/profiles-http.test.ts", portalEnv);
     await runTests("tests/church-listing-http.test.ts", {
       ...portalEnv,
       LISTING_RENDER_PHASE: "production"

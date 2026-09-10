@@ -5,10 +5,11 @@ import { withOwnedSession } from "./account-sessions";
 import { hashSessionToken } from "./auth";
 import { requireAccountCredential } from "./account-credential";
 import { projectListingData } from "./church-listing-data";
+import { validImageCrop } from "./image-crop";
 
 const EXPORT_SECONDS = 60;
 const MAX_ROWS = 2000;
-const MAX_BYTES = 10 * 1024 * 1024;
+const MAX_BYTES = 4 * 1024 * 1024;
 export class AccountExportError extends Error {
   code: "authorization" | "size";
   constructor(code: "authorization" | "size") {
@@ -93,6 +94,15 @@ export async function downloadAccountExport(
         location: true,
         website: true,
         interests: true,
+        presentation: {
+          select: {
+            version: true,
+            palette: true,
+            background: true,
+            sectionOrder: true,
+            introduction: true
+          }
+        },
         adultAcknowledgedAt: true,
         adultPolicyVersion: true,
         googleIdentity: {
@@ -126,6 +136,71 @@ export async function downloadAccountExport(
         linkSourceUrl: true
       }
     });
+    const images = (
+      await tx.mediaAsset.findMany({
+        where: {
+          OR: [
+            { profileUserId: userId },
+            { post: { authorId: userId, authorChurchId: null } }
+          ]
+        },
+        orderBy: { id: "asc" },
+        take: MAX_ROWS + 1,
+        select: {
+          id: true,
+          purpose: true,
+          postId: true,
+          createdAt: true,
+          updatedAt: true,
+          status: true,
+          version: true,
+          caption: true,
+          alt: true,
+          position: true,
+          crop: true,
+          variants: true
+        }
+      })
+    ).map((image) => ({
+      id: image.id,
+      purpose: image.purpose,
+      postId: image.postId,
+      createdAt: image.createdAt,
+      updatedAt: image.updatedAt,
+      status: image.status,
+      version: image.version,
+      caption: image.caption,
+      alt: image.alt,
+      position: image.position,
+      crop: validImageCrop(image.crop)
+        ? { x: image.crop.x, y: image.crop.y, zoom: image.crop.zoom }
+        : null,
+      variants: Object.fromEntries(
+        ["original", "large", "medium", "thumb"].flatMap((variant) => {
+          const data = image.variants as Record<
+            string,
+            { width: number; height: number; bytes: number }
+          >;
+          const size = data[variant];
+          return size
+            ? [
+                [
+                  variant,
+                  {
+                    width: size.width,
+                    height: size.height,
+                    bytes: size.bytes,
+                    url:
+                      image.status === "READY"
+                        ? `/api/platform/images/${image.id}/${variant}`
+                        : null
+                  }
+                ]
+              ]
+            : [];
+        })
+      )
+    }));
     const comments = await tx.platformPostComment.findMany({
       where: { authorId: userId },
       orderBy: { id: "asc" },
@@ -406,6 +481,7 @@ export async function downloadAccountExport(
       churchClaims,
       churchListings,
       posts,
+      images,
       comments,
       likes,
       following,
@@ -421,7 +497,7 @@ export async function downloadAccountExport(
         version: 1,
         generatedAt: new Date().toISOString(),
         scope:
-          "Your account profile and linked Google identity, authored community content, likes/following, church directory choices, your own church representative setup and listing drafts/submissions, personal calendars/events and their sharing choices, your event responses and your own support submissions. Other people's content, staff/church operations, credentials, session data and security audit records are excluded. Reading preferences saved only on this browser are not in this account file.",
+          "Your account profile, presentation preferences and linked Google identity, authored community content and personal image metadata, likes/following, church directory choices, your own church representative setup and listing drafts/submissions, personal calendars/events and their sharing choices, your event responses and your own support submissions. Other people's content, staff/church operations, credentials, session data and security audit records are excluded. Image binaries are not embedded; image references still require current access. Reading preferences saved only on this browser are not in this account file.",
         account,
         ...collections
       },

@@ -554,12 +554,14 @@ async function processAccountRequest(
       );
     if (error instanceof AccountError) {
       const messages = {
+        "profile-conflict":
+          "Your profile changed in another tab. Your edits are still here. Review the saved profile before trying again.",
         "handle-invalid":
           "Choose a public username with 3 to 24 letters, numbers, or underscores. No spaces.",
         "handle-taken":
           "That public username is already taken. Choose another, or sign in if you already have an account.",
         profile:
-          "Check your profile: name 2 to 100 characters, bio up to 500, location up to 80, a full http:// or https:// website up to 120, and at most 8 interests of 40 characters each.",
+          "Check your profile: name 2 to 100 characters, bio up to 500, location up to 80, a full http:// or https:// website up to 120, and at most 8 interests of 40 characters each. Choose an available appearance preset and keep your introduction within 1,000 characters.",
         invalid:
           "Check every field. Passwords must match and contain 8 to 128 characters.",
         credentials:
@@ -581,7 +583,7 @@ async function processAccountRequest(
       };
       return reply(
         messages[error.code],
-        error.code === "handle-taken"
+        error.code === "handle-taken" || error.code === "profile-conflict"
           ? 409
           : sessionOperation && error.code === "session"
             ? 401

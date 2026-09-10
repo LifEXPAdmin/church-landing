@@ -42,6 +42,7 @@ model MediaAsset {
   alt String @default("")
   position Int @default(0)
   variants Json @default("{}")
+  crop Json?
   uploader PlatformUser @relation("ImageUploader", fields: [uploaderId], references: [id], onDelete: Restrict)
   profileUser PlatformUser? @relation("ProfileImage", fields: [profileUserId], references: [id], onDelete: Restrict)
   church Church? @relation(fields: [churchId], references: [id], onDelete: Restrict)
@@ -145,6 +146,7 @@ model PlatformUser {
   interests    String[]     @default([])
   uploadedImages MediaAsset[] @relation("ImageUploader")
   profileImages MediaAsset[] @relation("ProfileImage")
+  presentation ProfilePresentation?
 
   posts     PlatformPost[]
   postLikes PlatformPostLike[]
@@ -176,6 +178,16 @@ model PlatformUser {
 
   @@index([role])
   @@index([createdAt])
+}
+
+model ProfilePresentation {
+  userId String @id
+  version Int @default(1)
+  palette String @default("sage")
+  background String @default("plain")
+  sectionOrder String @default("about-first")
+  introduction String @default("")
+  user PlatformUser @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model PlatformGoogleIdentity {

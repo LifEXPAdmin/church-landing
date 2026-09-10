@@ -10,6 +10,12 @@ import {
 } from "./post-access";
 import { PortalError } from "./portal";
 import {
+  centeredCrop,
+  imageAspect,
+  validImageCrop,
+  type ImageCrop
+} from "./image-crop";
+import {
   imageTarget,
   readableImageTarget,
   writableImageTarget,
@@ -42,6 +48,7 @@ function project(asset: MediaAsset) {
     caption: asset.caption,
     alt: asset.alt,
     position: asset.position,
+    crop: asset.crop as ImageCrop | null,
     variants: Object.fromEntries(
       IMAGE_VARIANTS.map((v) => [
         v,
@@ -80,23 +87,31 @@ function mutation<T>(
     true
   );
 }
+export async function listImagesIn(
+  tx: PostTx,
+  context: Awaited<ReturnType<typeof postContext>>,
+  purpose: unknown,
+  targetId: unknown
+) {
+  const target = imageTarget(purpose, targetId);
+  await readableImageTarget(tx, context, target);
+  return (
+    await tx.mediaAsset.findMany({
+      where: { ...target, status: "READY" },
+      orderBy: [{ position: "asc" }, { id: "asc" }],
+      take: 10
+    })
+  ).map(project);
+}
 export async function listImages(
   db: PrismaClient,
   token: unknown,
   purpose: unknown,
   targetId: unknown
 ) {
-  const target = imageTarget(purpose, targetId);
-  return withPostRead(db, token, async (tx, context) => {
-    await readableImageTarget(tx, context, target);
-    return (
-      await tx.mediaAsset.findMany({
-        where: { ...target, status: "READY" },
-        orderBy: [{ position: "asc" }, { id: "asc" }],
-        take: 10
-      })
-    ).map(project);
-  });
+  return withPostRead(db, token, (tx, context) =>
+    listImagesIn(tx, context, purpose, targetId)
+  );
 }
 export async function uploadImage(
   db: PrismaClient,
@@ -108,12 +123,21 @@ export async function uploadImage(
     replacesId?: unknown;
     caption?: unknown;
     alt?: unknown;
+    crop?: unknown;
   },
   bytes: Buffer,
   store: ImageStorage = imageStorage(),
   signal = AbortSignal.timeout(45_000)
 ) {
   const target = imageTarget(input.purpose, input.targetId);
+  const aspect = imageAspect(target.purpose);
+  const suppliedCrop =
+    input.crop === undefined ? (aspect ? centeredCrop : null) : input.crop;
+  if (aspect ? !validImageCrop(suppliedCrop) : suppliedCrop !== null)
+    throw new PortalError(400, "Check the image crop and try again.");
+  const crop = validImageCrop(suppliedCrop)
+    ? { x: suppliedCrop.x, y: suppliedCrop.y, zoom: suppliedCrop.zoom }
+    : null;
   const requestKey = postId(input.requestKey);
   if (!/^[a-f0-9-]{36}$/.test(requestKey))
     throw new PortalError(400, "Use a new image request reference.");
@@ -121,7 +145,7 @@ export async function uploadImage(
   const caption = postField(input.caption ?? "", 500),
     alt = postField(input.alt ?? "", 300);
   const fingerprint = createHash("sha256")
-    .update(JSON.stringify({ target, replacesId, caption, alt }))
+    .update(JSON.stringify({ target, replacesId, caption, alt, crop }))
     .update(bytes)
     .digest("hex");
   const reserved = await mutation(db, token, async (tx, actorId) => {
@@ -203,6 +227,7 @@ export async function uploadImage(
             replacesId,
             caption,
             alt,
+            ...(crop ? { crop: crop as unknown as Prisma.InputJsonValue } : {}),
             position: old?.position ?? occupied
           }
         });
@@ -212,7 +237,10 @@ export async function uploadImage(
   const asset = reserved.asset;
   try {
     signal.throwIfAborted();
-    const processed = await processImage(bytes);
+    const processed = await processImage(
+      bytes,
+      crop && aspect ? { crop: crop as ImageCrop, aspect } : undefined
+    );
     signal.throwIfAborted();
     for (const variant of IMAGE_VARIANTS) {
       await store.put(
