@@ -1,6 +1,30 @@
 # Church positions, responsibilities and access
 
-September 10, 2026 · Published structure foundation; local assignment service verified; role-library browser acceptance pending
+September 10, 2026 · Published structure foundation; local role library and assignment service verified
+
+## Role-library browser acceptance completed — September 10, 2026
+
+The remaining walkthrough passed in Chrome against the built application at
+`a25e872`, using the upgraded isolated fictional fixture and real local account
+and structure boundaries. Custom creation, rename, clear duplicate handling,
+two-tab conflict review with retained drafts, and an explicit save against the
+reviewed version worked. A deliberately dropped response after a committed
+creation retained the retry key; retry returned the original title without
+creating a duplicate.
+
+Two separate positions used the same title revision. Applying a title kept the
+explicit reporting choice and returned focus to the position name. Archiving
+the reusable title required an in-page confirmation and left both position IDs,
+names, duties and the parent/child relationship intact. Cancel, discard, preset
+review, keyboard controls and desktop/390/320-pixel layouts were checked; the
+narrow layouts had no horizontal overflow. Earlier service and production HTTPS
+receipts below remain applicable; this follow-up made no application changes.
+
+The old Codex preview did not block this Chrome walkthrough. No real church
+records or permissions changed. The role library is complete locally and remains
+unpublished with the saved social/profile/role bundle. Mandatory assignment
+Privileges review is the next interface task; chart placement and integrated
+release acceptance remain separate work.
 
 ## Assignment permission service — September 10, 2026
 

@@ -1,5 +1,24 @@
 # Godschurches current state
 
+## Role-library browser acceptance completed; permissions interface next — September 10, 2026
+
+Chrome completed the remaining fictional role-library walkthrough on saved
+application `a25e872`: create/rename/archive, duplicate feedback, retained two-tab
+conflict drafts, stable retry after a dropped committed response, separate
+positions using one title and preserved reporting/duties after archive. Keyboard,
+inline confirmations and desktop/390/320-pixel layouts passed. No application
+change was needed and no real church record or permission changed. See
+[CHURCH_STRUCTURE_REPORT.md](CHURCH_STRUCTURE_REPORT.md).
+
+Work continues on `codex/role-privileges-interface`, preserving the unpublished
+social/profile/role bundle. The mandatory Privileges screen is next; chart and
+integrated acceptance stay open. Earlier recovery blockers below are historical:
+the owner confirmed password reset, sign-in and email verification. Production
+is the separately verified `9c19f348` release (application `7fdaf6a`), including
+email-flow fixes, all-public early community feed and full-screen My feed.
+Those newer main changes must be integrated without removing audience checks
+before this saved bundle can be released. No new owner action blocks coding.
+
 ## Assignment permission service verified locally; recovery takes priority — September 10, 2026
 
 `codex/scoped-role-permissions` adds separate assignment-owned permission
