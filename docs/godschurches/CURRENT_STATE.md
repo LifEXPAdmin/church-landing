@@ -1,5 +1,19 @@
 # Godschurches current state
 
+## Safe post link previews verified locally — September 10, 2026
+
+`codex/post-link-previews` adds optional removable public HTTPS text cards to the
+shared composer/editor and readers, with plain-link fallback. Bounded DNS and
+redirect validation, pinned TLS connections, signed actor-bound receipts and
+current post permissions protect fetching and saving; withdrawal clears all link
+fields. The full isolated run passed 261 checks with two expected skips and no
+failures. Final service checks (15) and production HTTPS checks (10) passed after
+the final retry change, bringing unique coverage to 264 checks, 262 passing and
+two expected skips. Final build/types/lint/runtime and actual fictional browser
+add/remove/edit/failure/guest/private/withdrawal and phone/desktop checks passed.
+The post changes remain local and unpublished; calendar remains live. The
+Bible-page reader is next. See [POST_LINK_REPORT.md](POST_LINK_REPORT.md).
+
 ## Publishing controls verified locally — September 10, 2026
 
 `codex/post-publishing-interface` adds explicit personal/church authorship,

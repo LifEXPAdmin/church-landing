@@ -16,7 +16,16 @@ function EditPost({ post }: { post: PostEditorView }) {
       scripture: post.scripture,
       type: post.type,
       topics: post.topics,
-      audience: post.audience
+      audience: post.audience,
+      linkUrl: post.linkUrl ?? "",
+      keepLinkPreview: !!post.linkSourceUrl,
+      linkPreview: post.linkSourceUrl
+        ? {
+            title: post.linkTitle,
+            description: post.linkDescription,
+            sourceUrl: post.linkSourceUrl
+          }
+        : null
     });
   const [baseAudience, setBaseAudience] = useState(post.audience),
     [confirmation, setConfirmation] = useState(false);

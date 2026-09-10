@@ -61,16 +61,14 @@ export function getPostEventOptions(
       orderBy: { id: "asc" },
       take: 31
     });
-    const events = rows
-      .slice(0, 30)
-      .map((r) => ({
-        id: r.id,
-        title: r.title,
-        startLocal: r.startLocal,
-        timeZone: r.timeZone,
-        visibility: r.event.visibility,
-        hasDiscussion: !!r.discussionPost
-      }));
+    const events = rows.slice(0, 30).map((r) => ({
+      id: r.id,
+      title: r.title,
+      startLocal: r.startLocal,
+      timeZone: r.timeZone,
+      visibility: r.event.visibility,
+      hasDiscussion: !!r.discussionPost
+    }));
     return { events, nextCursor: rows.length > 30 ? events.at(-1)!.id : null };
   });
 }
@@ -97,6 +95,10 @@ export function getPostEditor(db: PrismaClient, token: unknown, id: string) {
       version: post.version,
       content: post.content,
       scripture: post.scripture ?? "",
+      linkUrl: post.linkUrl,
+      linkTitle: post.linkTitle,
+      linkDescription: post.linkDescription,
+      linkSourceUrl: post.linkSourceUrl,
       type: post.type,
       topics: post.topics,
       audience: post.audience,

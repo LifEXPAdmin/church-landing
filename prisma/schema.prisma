@@ -797,6 +797,10 @@ model PlatformPost {
   type      PlatformPostType @default(UPDATE)
   content   String
   scripture String?
+  linkUrl String?
+  linkTitle String?
+  linkDescription String?
+  linkSourceUrl String?
   topics String[] @default([])
   editedAt DateTime?
   publishedAt DateTime? @default(now())

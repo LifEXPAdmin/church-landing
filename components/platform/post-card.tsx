@@ -1,4 +1,5 @@
 import type { PostView } from "@/lib/platform/post-reads";
+import { PostLink } from "./post-link";
 import { accountEntryHref } from "@/lib/platform/account-entry";
 import Link from "next/link";
 import { Heart, MessageCircle, Trash2, Globe } from "lucide-react";
@@ -83,6 +84,7 @@ export function PostCard({
         </Link>
       )}
       <PostText content={post.content} />
+      <PostLink {...post} />
       {post.scripture && (
         <p className="gc-scripture">
           <span>Scripture reference</span>

@@ -5,6 +5,7 @@ import { requestSessionToken, readBody } from "./account-boundary";
 import { AccountError, readAccountSession } from "./accounts";
 import { PortalError } from "./portal";
 import { postCommand } from "./post-commands";
+import { previewPostLink } from "./post-links";
 import {
   getPostComposer,
   getPostEditor,
@@ -60,9 +61,14 @@ export async function handlePostRequest(db: PrismaClient, request: Request) {
       );
     }
     if (
-      !["create", "edit", "withdraw", "discussion", "pin"].includes(
-        String(input.operation)
-      )
+      ![
+        "create",
+        "edit",
+        "withdraw",
+        "discussion",
+        "pin",
+        "preview-link"
+      ].includes(String(input.operation))
     )
       throw new PortalError(400, "Choose a supported publishing action.");
     if (input.userId !== undefined || input.authorId !== undefined)
@@ -88,8 +94,11 @@ export async function handlePostRequest(db: PrismaClient, request: Request) {
     if (
       !(await allowAccountAttempt(
         db,
-        config.rateSecret + ":posts",
-        String(input.operation),
+        config.rateSecret +
+          (input.operation === "preview-link" ? ":post-previews" : ":posts"),
+        input.operation === "preview-link"
+          ? "request-preview"
+          : String(input.operation),
         ip,
         actor.id
       ))
@@ -98,6 +107,21 @@ export async function handlePostRequest(db: PrismaClient, request: Request) {
         429,
         "Too many changes. Wait 15 minutes and try again. Your draft is still here."
       );
+    if (input.operation === "preview-link") {
+      const result = await previewPostLink(
+        actor.id,
+        input.linkUrl,
+        undefined,
+        request.signal
+      );
+      const current = await readAccountSession(db, token);
+      if (current?.id !== actor.id)
+        throw new PortalError(
+          401,
+          "Sign in to continue. Your draft is still here."
+        );
+      return Response.json(result, { headers });
+    }
     return Response.json(await postCommand(db, token, input), { headers });
   } catch (error) {
     const status =

@@ -119,7 +119,11 @@ export async function downloadAccountExport(
         updatedAt: true,
         type: true,
         content: true,
-        scripture: true
+        scripture: true,
+        linkUrl: true,
+        linkTitle: true,
+        linkDescription: true,
+        linkSourceUrl: true
       }
     });
     const comments = await tx.platformPostComment.findMany({

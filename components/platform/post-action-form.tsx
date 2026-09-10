@@ -214,6 +214,10 @@ export function PostActionForm({
           <h3 className="text-xl">Latest saved post</h3>
           <p className="whitespace-pre-wrap break-words">{latest.content}</p>
           <p>Scripture: {latest.scripture || "None"}</p>
+          <p className="[overflow-wrap:anywhere]">
+            Link: {latest.linkUrl || "None"}. Preview:{" "}
+            {latest.linkTitle || latest.linkDescription || "None"}
+          </p>
           <p>Topics: {latest.topics.join(", ") || "None"}</p>
           <p>
             Audience:{" "}

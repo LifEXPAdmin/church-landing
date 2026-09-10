@@ -1,15 +1,24 @@
 "use client";
-import { useId } from "react";
+import { useId, type Dispatch, type SetStateAction } from "react";
 import type { PlatformPostType } from "@prisma/client";
 import { POST_TOPICS, normalizedPostText } from "@/lib/platform/post-options";
 import { postTypeLabels } from "@/lib/platform/format";
 import { portalInputClass } from "./portal-action-form";
+import { PostLinkFields } from "./post-link-fields";
 export type PostDraft = {
   content: string;
   scripture: string;
   type: PlatformPostType;
   topics: string[];
   audience: "PUBLIC" | "CHURCH";
+  linkUrl?: string;
+  linkReceipt?: string;
+  keepLinkPreview?: boolean;
+  linkPreview?: {
+    title: string | null;
+    description: string | null;
+    sourceUrl: string;
+  } | null;
 };
 export function draftProblem(draft: PostDraft) {
   if (
@@ -27,7 +36,7 @@ export function PostDraftFields({
   change
 }: {
   draft: PostDraft;
-  change: (draft: PostDraft) => void;
+  change: Dispatch<SetStateAction<PostDraft>>;
 }) {
   const id = useId(),
     length = normalizedPostText(draft.content).length;
@@ -94,6 +103,7 @@ export function PostDraftFields({
           {normalizedPostText(draft.scripture).length} / 120 characters
         </p>
       </div>
+      <PostLinkFields draft={draft} change={change} />
       <fieldset className="min-w-0">
         <legend className="font-semibold">
           Topics ({draft.topics.length} / 5)

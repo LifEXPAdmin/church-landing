@@ -20,6 +20,7 @@ import {
 } from "./post-access";
 
 import { POST_TOPICS } from "./post-options";
+import { emptyPostLink, preparePostLink, type PostLink } from "./post-links";
 export { POST_TOPICS } from "./post-options";
 function topics(value: unknown) {
   if (
@@ -134,7 +135,8 @@ export function postSchedule(local: unknown, zone: unknown, now = new Date()) {
 export async function postCommandIn(
   tx: PostTx,
   context: PostContext,
-  input: Record<string, unknown>
+  input: Record<string, unknown>,
+  preparedLink?: PostLink
 ) {
   if (!context.actorId) throw new PortalError(401, "Sign in to continue.");
   if (input.authorId !== undefined)
@@ -145,6 +147,15 @@ export async function postCommandIn(
   const actorId = context.actorId,
     op = input.operation,
     now = new Date();
+  if (
+    (op === "create" || op === "edit") &&
+    input.linkUrl !== undefined &&
+    !preparedLink
+  )
+    throw new PortalError(
+      400,
+      "Use the publishing form to add or change a link."
+    );
   if (op === "create") {
     const authorChurchId = input.authorChurchId
       ? postId(input.authorChurchId)
@@ -205,6 +216,7 @@ export async function postCommandIn(
     const post = await tx.platformPost.create({
       data: {
         ...details(input),
+        ...preparedLink,
         authorId: actorId,
         authorChurchId,
         audienceChurchId,
@@ -283,6 +295,7 @@ export async function postCommandIn(
       where: { id: post.id },
       data: {
         ...details({ ...post, ...input }),
+        ...preparedLink,
         audience: nextAudience,
         allowReposts: boolean(input.allowReposts ?? post.allowReposts),
         editedAt: post.status === "PUBLISHED" ? now : post.editedAt,
@@ -310,6 +323,7 @@ export async function postCommandIn(
         discussionClosed: true,
         content: "",
         scripture: null,
+        ...emptyPostLink,
         topics: [],
         pinUntil: null,
         scheduleAt: null,
@@ -427,18 +441,93 @@ export async function postCommandIn(
   }
   throw new PortalError(400, "Choose a supported post action.");
 }
-export function postCommand(
+export async function postCommand(
   db: PrismaClient,
   token: unknown,
   input: Record<string, unknown>
 ) {
-  return withOwnedSession(
+  if (input.authorId !== undefined)
+    throw new PortalError(
+      400,
+      "The acting account comes from your current sign-in."
+    );
+  let preparedLink: PostLink | undefined;
+  if (
+    (input.operation === "create" || input.operation === "edit") &&
+    input.linkUrl !== undefined
+  ) {
+    const source = await withOwnedSession(
+      db,
+      token,
+      async (tx, session) => {
+        const context = await postContext(tx, session.userId);
+        if (input.operation === "create") {
+          const prior = await tx.platformPost.findUnique({
+            where: {
+              authorId_requestKey: {
+                authorId: session.userId,
+                requestKey: postId(input.requestKey)
+              }
+            }
+          });
+          if (prior && !postCanEdit(context, prior))
+            throw new PortalError(
+              403,
+              "This saved request is no longer editable."
+            );
+          return {
+            actorId: session.userId,
+            existing: undefined,
+            saved: prior
+              ? {
+                  id: prior.id,
+                  version: prior.version,
+                  message: "This post was already saved."
+                }
+              : null
+          };
+        }
+        const post = await tx.platformPost.findUnique({
+          where: { id: postId(input.postId) }
+        });
+        if (!post || !postCanEdit(context, post))
+          throw new PortalError(403, "You cannot change this post.");
+        expected(input.expectedVersion, post.version);
+        if (post.status === "WITHDRAWN")
+          throw new PortalError(409, "This post has been withdrawn.");
+        return { actorId: session.userId, existing: post, saved: null };
+      },
+      true
+    );
+    if (source.saved) return source.saved;
+    preparedLink = await preparePostLink(
+      source.actorId,
+      input,
+      source.existing
+    );
+  }
+  const result = await withOwnedSession(
     db,
     token,
     async (tx, session) =>
-      postCommandIn(tx, await postContext(tx, session.userId), input),
+      postCommandIn(
+        tx,
+        await postContext(tx, session.userId),
+        input,
+        preparedLink
+      ),
     true
   );
+  return preparedLink?.linkUrl &&
+    input.keepLinkPreview === true &&
+    !preparedLink.linkSourceUrl
+    ? {
+        ...result,
+        message:
+          result.message +
+          " The link was saved without a preview; you can edit the post to try again."
+      }
+    : result;
 }
 
 // Called only by a trusted durable worker. A saved plan is not proof that a
