@@ -98,6 +98,7 @@ export function PortalActionForm({
   const inFlight = useRef(false);
   const creationKey = useRef(payload.requestKey);
   const [pending, setPending] = useState(false);
+  const [structureReloadRequired, setStructureReloadRequired] = useState(false);
   const [refreshing, startRefresh] = useTransition();
   const [result, setResult] = useState<{
     failed: boolean;
@@ -119,7 +120,8 @@ export function PortalActionForm({
       className="space-y-4"
       onSubmit={async (event) => {
         event.preventDefault();
-        if (inFlight.current || busy || disabled) return;
+        if (inFlight.current || busy || disabled || structureReloadRequired)
+          return;
         const form = event.currentTarget;
         const data = new FormData(form);
         const values = Object.fromEntries(
@@ -187,7 +189,7 @@ export function PortalActionForm({
           setResult({
             failed: !response.ok,
             message:
-              response.status === 409
+              response.status === 409 && !structureAction
                 ? "This information changed since you opened it. The latest details are being loaded. Review them before trying again."
                 : response.status === 401
                   ? "Your session has ended. Sign in again before continuing."
@@ -211,6 +213,13 @@ export function PortalActionForm({
                     ? `${base}/responsibilities`
                     : `${base}/structure/${encodeURIComponent(body.id)}`
             );
+            return;
+          }
+          if (structureAction && !response.ok) {
+            // A conflict can mean a protected child branch, not just a stale
+            // version. Keep the server's explanation and avoid an indefinite
+            // route-refresh transition. Reload is explicit before another try.
+            setStructureReloadRequired(response.status !== 400);
             return;
           }
           if (
@@ -253,10 +262,12 @@ export function PortalActionForm({
         } catch {
           setResult({
             failed: true,
-            message:
-              "We could not confirm your change. Check the refreshed information before trying again."
+            message: structureAction
+              ? "We could not confirm your change. Load current church information before trying again."
+              : "We could not confirm your change. Check the refreshed information before trying again."
           });
-          startRefresh(() => router.refresh());
+          if (structureAction) setStructureReloadRequired(true);
+          else startRefresh(() => router.refresh());
         } finally {
           inFlight.current = false;
           setPending(false);
@@ -268,7 +279,7 @@ export function PortalActionForm({
       )}
       <fieldset
         key={JSON.stringify(payload)}
-        disabled={busy || disabled}
+        disabled={busy || disabled || structureReloadRequired}
         className="min-w-0 space-y-4"
       >
         <legend className="sr-only">{label}</legend>
@@ -367,7 +378,7 @@ export function PortalActionForm({
         )}
         <button
           type="submit"
-          disabled={busy || disabled}
+          disabled={busy || disabled || structureReloadRequired}
           className={`${portalButtonClass} w-full sm:w-auto`}
         >
           {busy ? "Please wait..." : label}
@@ -382,6 +393,21 @@ export function PortalActionForm({
         >
           {result.message}
         </p>
+      )}
+      {structureReloadRequired && (
+        <div className="space-y-2">
+          <p className="text-sm text-gc-muted">
+            Reload to review the saved positions and your current access. Any
+            unsaved values in this form will be cleared.
+          </p>
+          <button
+            type="button"
+            className={portalButtonClass}
+            onClick={() => window.location.reload()}
+          >
+            Load current church information
+          </button>
+        </div>
       )}
     </form>
   );

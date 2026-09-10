@@ -2,6 +2,43 @@
 
 September 10, 2026 · Published structure foundation; local role library, assignment service and Privileges interface verified
 
+## Unconnected-role staffing and lifecycle acceptance — September 10, 2026
+
+This checkpoint completes the remaining staffing/lifecycle walkthrough on drag
+editor `33822e0`, building on persisted placement `fee9509` and visual staffing
+`c1d8412`. The browser confirmed an own-assignment step-down while the member's
+other position and nine independent capabilities remained. Ending the remaining
+assignment left a vacant parent with its staffed child and reporting link intact.
+The affected member's permission contribution from a different pastoral role
+remained active. Both separate unconnected roles and their branch stayed intact.
+
+Archiving the vacant parent was rejected because its child still reports there.
+This exposed a generic form defect: every conflict was described as a stale
+version and started a route-refresh transition that remained busy. Structure
+forms now preserve the server's concrete explanation. Conflict/access errors and
+uncertain responses require an explicit reload before retry, with a warning that
+unsaved form values will clear. Correctable input errors remain editable. Other
+portal/claim/listing form behavior is unchanged. Reload cleared the confirmation,
+the exact child-protection explanation was visible, and the form was no longer
+busy. A confirmed vacant leaf archive then returned to the updated chart.
+
+All **25 affected production HTTPS checks** passed, along with production build,
+full lint, types and runtime audit (92 traces, 7,270 entries, 225 server JavaScript
+files; no private fixture/environment files or Prisma loader path). The browser
+verified the final error/reload and successful archive flow, plus 390-pixel bounds.
+Readback found precisely two intended fictional assignment endings and one
+intended archived leaf; unrelated positions, assignments, role grants, membership
+and chart receipts were unchanged. No real church data or permissions changed.
+The earlier separate same-title placement, vacancy-fill, second-assignee and
+reviewed detach receipts remain applicable; no schema or dependency changed here.
+
+The unconnected-role/staffing task is complete locally. Contact-return/current
+consent behavior, full draft/history recovery, full keyboard/touch/large-text and
+physical-device acceptance remain open before integrated release. The bundle is
+unpushed/unpublished and still requires integration of newer main recovery/feed
+fixes with post-audience checks. No new owner action blocks coding. The complete
+batch and final review remain open.
+
 ## Deliberate drag editor verified locally — September 10, 2026
 
 The editor extends atomic-save foundation `ff7b325` on

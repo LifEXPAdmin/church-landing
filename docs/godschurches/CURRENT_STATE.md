@@ -1,5 +1,27 @@
 # Godschurches current state
 
+## Staffing and position lifecycle verified locally — September 10, 2026
+
+The remaining unconnected-role staffing/lifecycle acceptance passed on the drag
+editor. Stepping down ends only that assignment; ending the last assignment leaves
+a vacant position with its staffed reporting branch. Another role's permission
+contribution remains active. Archiving a parent with children is rejected, while
+a confirmed leaf archive returns to the updated chart.
+
+Browser verification found and fixed a generic structure-form error path that
+hid the archive explanation and stayed busy during automatic refresh. These forms
+now retain the actual server explanation and offer explicit reload/current-review
+after conflicts, access changes or uncertain responses. The built routes passed
+25 HTTPS checks, build/lint/types and runtime audit. See
+[CHURCH_STRUCTURE_REPORT.md](CHURCH_STRUCTURE_REPORT.md).
+
+The unconnected-role/staffing task is complete locally. Continue with contact-card
+entry/return context and current-consent behavior, followed by full draft/history
+recovery and accessibility/release acceptance. This bundle is unpushed/unpublished.
+Integrate current main recovery/feed fixes while retaining audience checks before
+release. The complete batch and final review remain open; no new owner action
+blocks independent coding.
+
 ## Deliberate chart dragging verified locally — September 10, 2026
 
 The visual editor now stages reporting drag/drop, explicit root/detach targets
