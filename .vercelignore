@@ -1,0 +1,7 @@
+# CLI uploads do not inherit the repository's .gitignore.
+.account-test
+.env*
+!.env.example
+*.pem
+*.tsbuildinfo
+*.log
