@@ -173,10 +173,15 @@ test("assignment review entry protects member identity, preserves title revision
       const page = await (
         await get(`/platform/churches/${churchId}/directory`, token, rsc)
       ).text();
-      assert.equal(
-        page.includes("Assign role and review privileges"),
-        production && canAssign
-      );
+      if (production && rsc) {
+        // A client component's Flight payload carries its permitted props;
+        // its static button labels are verified in rendered HTML and the browser.
+        assert.ok(page.includes(`"canAssign":${canAssign}`));
+      } else
+        assert.equal(
+          page.includes("Assign role and review privileges"),
+          production && canAssign
+        );
       if (!production)
         assert.ok(page.includes("Open the private portal preview"));
       assert.equal(page.includes(morgan.user.email), false);
@@ -1002,4 +1007,238 @@ test("actual role library HTTP preserves revisions and separates templates from 
     }),
     grants
   );
+});
+
+test("contact cards expose chosen fields and relevant roles, preserve entry context, and remove withdrawn or inaccessible data", async () => {
+  const member = await actor("contact_member");
+  const connection = await db.churchConnection.create({
+    data: { userId: member.user.id, churchId, state: "APPROVED" }
+  });
+  const name = "Chosen contact canary " + randomUUID();
+  const email = "chosen-" + randomUUID() + "@example.test";
+  const phone = "+1 202 555 0198";
+  await db.churchDirectoryPreference.create({
+    data: {
+      connectionId: connection.id,
+      listed: true,
+      displayName: name,
+      contactEmail: email,
+      phone,
+      emailAudience: "SAME_CHURCH",
+      phoneAudience: "ONLY_ME"
+    }
+  });
+  const title = await cmd({
+    operation: "template-create",
+    requestKey: randomUUID(),
+    name: "Contact role " + randomUUID(),
+    presetKey: "P"
+  });
+  const positions = [];
+  for (const description of [
+    "First contact responsibilities",
+    "Second contact responsibilities"
+  ]) {
+    const position = await cmd({
+      operation: "create",
+      requestKey: randomUUID(),
+      roleTemplateId: title.id,
+      roleTemplateVersion: 1,
+      description
+    });
+    await cmd({
+      operation: "assign",
+      positionId: position.id,
+      connectionId: connection.id,
+      privilegesReviewed: true,
+      confirmed: true
+    });
+    positions.push(position.id);
+  }
+  const api = `/api/platform/church-structure?churchId=${churchId}&view=person&connectionId=${connection.id}`;
+  const page = `/platform/churches/${churchId}/people/${connection.id}`;
+  const card = await (await get(api, ada.token)).json();
+  assert.deepEqual(card.person, { connectionId: connection.id, name, email });
+  assert.deepEqual(
+    card.positions
+      .filter((p: { assignments: { connectionId?: string }[] }) =>
+        p.assignments.some((a) => a.connectionId === connection.id)
+      )
+      .map((p: { id: string }) => p.id)
+      .sort(),
+    positions.sort()
+  );
+  for (const rsc of [false, true]) {
+    const html = await (
+      await get(`${page}?from=chart&focus=${positions[0]}`, ada.token, rsc)
+    ).text();
+    for (const secret of [
+      member.user.email,
+      member.user.name,
+      phone,
+      member.token
+    ])
+      assert.equal(html.includes(secret), false);
+    if (production) {
+      for (const shown of [
+        name,
+        email,
+        "First contact responsibilities",
+        "Second contact responsibilities"
+      ])
+        assert.ok(html.includes(shown), shown);
+      if (!rsc) {
+        const rendered = html.replace(/<!--.*?-->/g, "");
+        assert.ok(rendered.includes("Back to church chart"));
+        assert.ok(rendered.includes("No phone number shared."));
+        assert.ok(rendered.includes(`structure?focus=${positions[0]}`));
+        assert.ok(rendered.includes("Review privileges for Contact role"));
+      } else {
+        assert.ok(html.includes('"canManage":true'));
+        assert.ok(html.includes(`"focus":"${positions[0]}"`));
+      }
+      const directory = await (
+        await get(
+          `/platform/churches/${churchId}/directory?focus=${connection.id}`,
+          ada.token,
+          rsc
+        )
+      ).text();
+      if (!rsc)
+        assert.ok(directory.includes(`people/${connection.id}?from=directory`));
+      else assert.ok(directory.includes(`"connectionId":"${connection.id}"`));
+      const responsibilities = await (
+        await get(
+          `/platform/churches/${churchId}/responsibilities`,
+          member.token,
+          rsc
+        )
+      ).text();
+      assert.ok(
+        responsibilities.includes(
+          `people/${connection.id}?from=responsibilities`
+        )
+      );
+      const chart = await (
+        await get(`/platform/churches/${churchId}/structure`, ada.token, rsc)
+      ).text();
+      if (!rsc) assert.ok(chart.includes(`people/${connection.id}?from=chart`));
+      else assert.ok(chart.includes(`"connectionId":"${connection.id}"`));
+      const outline = await (
+        await get(
+          `/platform/churches/${churchId}/structure?mode=outline`,
+          ada.token,
+          rsc
+        )
+      ).text();
+      assert.ok(outline.includes(`people/${connection.id}?from=outline`));
+    }
+  }
+  await db.churchDirectoryPreference.update({
+    where: { connectionId: connection.id },
+    data: { emailAudience: "ONLY_ME", phoneAudience: "SAME_CHURCH" }
+  });
+  assert.deepEqual((await (await get(api, ada.token)).json()).person, {
+    connectionId: connection.id,
+    name,
+    phone
+  });
+  for (const rsc of [false, true]) {
+    const html = await (await get(page, ada.token, rsc)).text();
+    assert.equal(html.includes(email), false);
+    assert.equal(html.includes(member.user.email), false);
+    if (production) {
+      assert.ok(html.includes(phone));
+      if (!rsc) assert.ok(html.includes("No contact email shared."));
+    }
+  }
+  await db.churchDirectoryPreference.update({
+    where: { connectionId: connection.id },
+    data: { listed: false }
+  });
+  assert.equal((await get(api, ada.token)).status, 404);
+  const paths = [
+    page,
+    `/platform/churches/${churchId}/directory`,
+    `/platform/churches/${churchId}/structure`,
+    `/platform/churches/${churchId}/structure?mode=outline`,
+    `/api/platform/portal?view=directory&churchId=${churchId}`,
+    `/api/platform/church-structure?view=structure&churchId=${churchId}`,
+    `/api/platform/church-structure?view=assign&churchId=${churchId}&q=${encodeURIComponent(name)}`
+  ];
+  for (const path of paths)
+    for (const rsc of [false, true]) {
+      const text = await (await get(path, ada.token, rsc)).text();
+      // A requested contact ID can occur in Next's route state; it must not be
+      // discovered through directory, chart or search responses after unlisting.
+      for (const secret of [
+        name,
+        email,
+        phone,
+        member.user.email,
+        ...(path === page ? [] : [connection.id])
+      ])
+        assert.equal(
+          text.includes(secret),
+          false,
+          `Withdrawn contact in ${path}`
+        );
+    }
+  await db.churchDirectoryPreference.update({
+    where: { connectionId: connection.id },
+    data: { listed: true }
+  });
+  const grant = await cmd({
+    operation: "grant",
+    listedConnection: connection.id,
+    capability: "MANAGE_STRUCTURE"
+  });
+  assert.equal(
+    (await (await get(api, member.token)).json()).capabilities.includes(
+      "MANAGE_STRUCTURE"
+    ),
+    true
+  );
+  const currentGrant = await db.churchCapabilityGrant.findUniqueOrThrow({
+    where: { id: grant.id }
+  });
+  await cmd({
+    operation: "revoke",
+    id: grant.id,
+    grantVersion: currentGrant.version,
+    confirmed: true
+  });
+  assert.equal(
+    (await (await get(api, member.token)).json()).capabilities.includes(
+      "MANAGE_STRUCTURE"
+    ),
+    false
+  );
+  if (production) {
+    const html = await (await get(page, member.token)).text();
+    assert.equal(html.includes("Review privileges for Contact role"), false);
+    assert.equal(html.includes("Assign role and review privileges"), false);
+  }
+  const currentConnection = await db.churchConnection.findUniqueOrThrow({
+    where: { id: connection.id }
+  });
+  const removed = await post(
+    {
+      operation: "transition",
+      action: "REMOVE",
+      churchId,
+      connectionId: connection.id,
+      expectedVersion: currentConnection.version
+    },
+    ada.token,
+    "portal"
+  );
+  assert.equal(removed.status, 200, await removed.text());
+  assert.equal((await get(api, member.token)).status, 403);
+  assert.equal((await get(api, ada.token)).status, 404);
+  for (const rsc of [false, true]) {
+    const html = await (await get(page, ada.token, rsc)).text();
+    for (const secret of [name, email, phone, member.user.email])
+      assert.equal(html.includes(secret), false);
+  }
 });

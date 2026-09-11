@@ -57,32 +57,76 @@ async function approve(actor: PortalActor) {
 test("requests require a different eligible assigned reviewer and never fake pending setup", async () => {
   const actor = await createPortalActor(db, "setup_member");
   const reviewer = await createPortalActor(db, "setup_review");
-  const church = await db.church.create({ data: {
-    name: "Fictional setup-pending church", slug: `setup-${actor.id}`,
-    summary: "Isolated test fixture only."
-  }});
-  const request = () => command(actor, { operation: "request", churchId: church.id, expectedVersion: 0 });
+  const church = await db.church.create({
+    data: {
+      name: "Fictional setup-pending church",
+      slug: `setup-${actor.id}`,
+      summary: "Isolated test fixture only."
+    }
+  });
+  const request = () =>
+    command(actor, {
+      operation: "request",
+      churchId: church.id,
+      expectedVersion: 0
+    });
   await denied(request(), 503);
-  const selfGrant = await db.churchCapabilityGrant.create({ data: {
-    churchId: church.id, userId: actor.id, capability: "REVIEW_CONNECTIONS"
-  }});
+  const selfGrant = await db.churchCapabilityGrant.create({
+    data: {
+      churchId: church.id,
+      userId: actor.id,
+      capability: "REVIEW_CONNECTIONS"
+    }
+  });
   await denied(request(), 503);
-  const grant = await db.churchCapabilityGrant.create({ data: {
-    churchId: church.id, userId: reviewer.id, capability: "REVIEW_CONNECTIONS", revokedAt: new Date()
-  }});
+  const grant = await db.churchCapabilityGrant.create({
+    data: {
+      churchId: church.id,
+      userId: reviewer.id,
+      capability: "REVIEW_CONNECTIONS",
+      revokedAt: new Date()
+    }
+  });
   await denied(request(), 503);
-  await db.churchCapabilityGrant.update({ where: { id: grant.id }, data: { revokedAt: null } });
-  await db.platformUser.update({ where: { id: reviewer.id }, data: { suspendedAt: new Date() } });
+  await db.churchCapabilityGrant.update({
+    where: { id: grant.id },
+    data: { revokedAt: null }
+  });
+  await db.platformUser.update({
+    where: { id: reviewer.id },
+    data: { suspendedAt: new Date() }
+  });
   await denied(request(), 503);
-  await db.platformUser.update({ where: { id: reviewer.id }, data: { suspendedAt: null, emailVerifiedAt: null } });
+  await db.platformUser.update({
+    where: { id: reviewer.id },
+    data: { suspendedAt: null, emailVerifiedAt: null }
+  });
   await denied(request(), 503);
-  assert.equal(await db.churchConnection.count({ where: { churchId: church.id } }), 0);
-  assert.equal(await db.churchAuditEvent.count({ where: { churchId: church.id, action: "REQUEST" } }), 0);
+  assert.equal(
+    await db.churchConnection.count({ where: { churchId: church.id } }),
+    0
+  );
+  assert.equal(
+    await db.churchAuditEvent.count({
+      where: { churchId: church.id, action: "REQUEST" }
+    }),
+    0
+  );
   // All identity setup in this file is guarded, fictional and loopback-only.
-  await db.platformUser.update({ where: { id: reviewer.id }, data: { emailVerifiedAt: new Date() } });
+  await db.platformUser.update({
+    where: { id: reviewer.id },
+    data: { emailVerifiedAt: new Date() }
+  });
   await request();
   assert.equal((await connection(actor, church.id)).state, "PENDING");
-  assert.equal((await db.churchCapabilityGrant.findUniqueOrThrow({ where: { id: selfGrant.id } })).revokedAt, null);
+  assert.equal(
+    (
+      await db.churchCapabilityGrant.findUniqueOrThrow({
+        where: { id: selfGrant.id }
+      })
+    ).revokedAt,
+    null
+  );
 });
 
 test("church upgrade preserves Stage2A credentials, sessions and grants without invented verification", async () => {
@@ -521,7 +565,11 @@ test("safe server DTOs expose only consented contact fields and never authentica
     f.churchA.id
   );
   assert.deepEqual(directory.directory, [
-    { name: f.sharing.displayName, email: f.sharing.contactEmail }
+    {
+      connectionId: (await connection(f.memberA)).id,
+      name: f.sharing.displayName,
+      email: f.sharing.contactEmail
+    }
   ]);
   for (const view of ["directory", "help", "my-church"] as const) {
     const serialized = JSON.stringify(
@@ -554,7 +602,10 @@ test("safe server DTOs expose only consented contact fields and never authentica
     f.churchA.id
   );
   assert.equal(own.sharing?.phone, f.sharing.phone);
-  assert.deepEqual(own.sharing?.preview, directory.directory![0]);
+  assert.deepEqual(own.sharing?.preview, {
+    name: directory.directory![0].name,
+    email: directory.directory![0].email
+  });
   await denied(
     getPortalSnapshot(db, f.memberB.token, "directory", f.churchA.id)
   );
@@ -952,23 +1003,58 @@ test("scoped grant and contact revocation applies to already authenticated sessi
 
 test("church tools and scoped detail access remain independent from discovery searches", async () => {
   const reviewer = await createPortalActor(db, "search_reviewer");
-  const church = await db.church.create({data:{
-    slug: `late-${reviewer.id}`, name: "ZZZZZ Fictional assigned church", summary: "Assigned outside the current search."
-  }});
-  await db.church.createMany({data:Array.from({length:101},(_,i)=>({
-    slug:`earlier-${reviewer.id}-${i}`, name:`! Earlier search fixture ${i}`, summary:"Public only."
-  }))});
-  const grant = await db.churchCapabilityGrant.create({data:{
-    userId:reviewer.id, churchId:church.id, capability:"REVIEW_CONNECTIONS"
-  }});
-  const snapshot = await getPortalSnapshot(db, reviewer.token, "discover", undefined, "no matching church " + reviewer.id);
+  const church = await db.church.create({
+    data: {
+      slug: `late-${reviewer.id}`,
+      name: "ZZZZZ Fictional assigned church",
+      summary: "Assigned outside the current search."
+    }
+  });
+  await db.church.createMany({
+    data: Array.from({ length: 101 }, (_, i) => ({
+      slug: `earlier-${reviewer.id}-${i}`,
+      name: `! Earlier search fixture ${i}`,
+      summary: "Public only."
+    }))
+  });
+  const grant = await db.churchCapabilityGrant.create({
+    data: {
+      userId: reviewer.id,
+      churchId: church.id,
+      capability: "REVIEW_CONNECTIONS"
+    }
+  });
+  const snapshot = await getPortalSnapshot(
+    db,
+    reviewer.token,
+    "discover",
+    undefined,
+    "no matching church " + reviewer.id
+  );
   assert.deepEqual(snapshot.churches, []);
-  assert.deepEqual(snapshot.reviewerChurches.map(c=>c.id), [church.id]);
-  const review = await getPortalSnapshot(db, reviewer.token, "review", church.id);
+  assert.deepEqual(
+    snapshot.reviewerChurches.map((c) => c.id),
+    [church.id]
+  );
+  const review = await getPortalSnapshot(
+    db,
+    reviewer.token,
+    "review",
+    church.id
+  );
   assert.equal(review.church?.id, church.id);
   await denied(getPortalSnapshot(db, f.memberB.token, "review", church.id));
-  await db.churchCapabilityGrant.update({where:{id:grant.id},data:{revokedAt:new Date()}});
+  await db.churchCapabilityGrant.update({
+    where: { id: grant.id },
+    data: { revokedAt: new Date() }
+  });
   await denied(getPortalSnapshot(db, reviewer.token, "review", church.id));
-  const revoked = await getPortalSnapshot(db, reviewer.token, "discover", undefined, "no matching church " + reviewer.id);
+  const revoked = await getPortalSnapshot(
+    db,
+    reviewer.token,
+    "discover",
+    undefined,
+    "no matching church " + reviewer.id
+  );
   assert.deepEqual(revoked.reviewerChurches, []);
 });

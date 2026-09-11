@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { PositionSummary } from "@/lib/platform/church-structure-types";
+import { useChurchRefresh } from "./use-church-refresh";
+import type {
+  StructureSnapshot,
+  PositionSummary
+} from "@/lib/platform/church-structure-types";
 import {
   applyChartChanges,
   chartChanges,
@@ -61,6 +65,8 @@ export function useChurchChartEditor(
   const [uncertain, setUncertain] = useState(false);
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
+  const readRevision = useRef(0);
+  const [unavailable, setUnavailable] = useState(false);
   const allowLeave = useRef(false);
   const [message, setMessage] = useState("");
   const [leaveTarget, setLeaveTarget] = useState<string | null>(null);
@@ -82,6 +88,71 @@ export function useChurchChartEditor(
     !review &&
     !requiresReload &&
     retained === null;
+  const currentRead = useChurchRefresh({
+    url: `/api/platform/church-structure?${new URLSearchParams({ churchId, view: "structure" })}`,
+    paused: () => busyRef.current,
+    revision: () => readRevision.current,
+    onData(value) {
+      const data = value as StructureSnapshot;
+      if (
+        data.church?.id !== churchId ||
+        !Number.isSafeInteger(data.version) ||
+        !Array.isArray(data.positions) ||
+        !Array.isArray(data.capabilities)
+      )
+        throw new Error("Invalid current chart");
+      const next: Base = {
+        positions: normalize(data.positions),
+        version: data.version,
+        canManage: data.capabilities.includes("MANAGE_STRUCTURE")
+      };
+      setUnavailable(false);
+      if (uncertain) {
+        // Refresh private projections while preserving the exact retry request.
+        setBase({ ...next, version: review?.expectedVersion ?? base.version });
+        setHistory({ entries: [geometry(next.positions)], index: 0 });
+        setRetained(review?.changes ?? changes);
+        return;
+      }
+      if (
+        next.version !== base.version ||
+        unavailable ||
+        next.canManage !== base.canManage
+      ) {
+        const kept = changes;
+        resetDraft(next);
+        if (kept.length) {
+          setRetained(kept);
+          setMessage(
+            next.canManage
+              ? "Current positions and sharing choices are loaded. Your placement choices are kept; apply them and review again."
+              : "Your church permissions changed. Placement choices are kept, but editing is unavailable without permission."
+          );
+        } else if (unavailable)
+          setMessage("Current church information is available again.");
+      } else {
+        // Consent can change without a chart version change. Keep geometry-only
+        // undo history, but replace all names and assignments from this read.
+        setBase(next);
+      }
+    },
+    onUnavailable() {
+      hideUnavailable();
+    }
+  });
+  function hideUnavailable() {
+    setBase({ positions: [], version: base.version, canManage: false });
+    setHistory({ entries: [[]], index: 0 });
+    setRetained(review?.changes ?? changes);
+    setUnavailable(true);
+    if (!uncertain) {
+      setReview(null);
+      setRequiresReload(true);
+    }
+    setMessage(
+      "Current church information could not be confirmed. Member details are hidden. Placement choices are kept; refresh when access is available."
+    );
+  }
   useEffect(() => {
     if (!dirty && !uncertain) return;
     const unload = (event: BeforeUnloadEvent) => {
@@ -204,6 +275,7 @@ export function useChurchChartEditor(
   async function save() {
     if (!review || requiresReload || busyRef.current || !base.canManage) return;
     busyRef.current = true;
+    readRevision.current += 1;
     setBusy(true);
     setMessage("");
     try {
@@ -252,6 +324,7 @@ export function useChurchChartEditor(
   async function reloadCurrent() {
     if (busyRef.current) return;
     busyRef.current = true;
+    readRevision.current += 1;
     setBusy(true);
     const kept = review?.changes ?? changes;
     try {
@@ -260,18 +333,7 @@ export function useChurchChartEditor(
         { cache: "no-store", credentials: "same-origin" }
       );
       if (!response.ok) {
-        setRequiresReload(true);
-        if ([401, 403].includes(response.status)) {
-          setBase({ positions: [], version: base.version, canManage: false });
-          setHistory({ entries: [[]], index: 0 });
-          setRetained(kept);
-          setMessage(
-            "Current church access is unavailable. The placement choices are kept without member details. Sign in or regain access before reviewing them."
-          );
-        } else
-          setMessage(
-            "Current positions could not be loaded. Your draft is kept. Try again."
-          );
+        hideUnavailable();
         return;
       }
       const data = await response.json();
@@ -287,14 +349,13 @@ export function useChurchChartEditor(
         canManage: data.capabilities.includes("MANAGE_STRUCTURE")
       };
       resetDraft(next);
-      setRetained(kept);
+      setUnavailable(false);
+      setRetained(kept.length ? kept : null);
       setMessage(
         "Current positions are loaded. Review the retained changes below before applying them to this version."
       );
     } catch {
-      setMessage(
-        "Current positions could not be loaded. Your draft is kept. Try again."
-      );
+      hideUnavailable();
     } finally {
       busyRef.current = false;
       setBusy(false);
@@ -340,6 +401,9 @@ export function useChurchChartEditor(
   }
   return {
     positions,
+    unavailable,
+    refreshing: currentRead.pending,
+    refresh: currentRead.refresh,
     basePositions: base.positions,
     version: base.version,
     canManage: base.canManage,

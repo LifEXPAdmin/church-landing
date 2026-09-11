@@ -3,6 +3,7 @@ import { accountEntryHref } from "@/lib/platform/account-entry";
 import { churchDiscoveryHref } from "@/lib/platform/church-search";
 import { ChurchSearchForm } from "./church-search-form";
 import { ChurchPublicDetails } from "./church-public-details";
+import { ChurchDirectory } from "./church-directory";
 
 import {
   ADULT_POLICY,
@@ -562,7 +563,13 @@ export function PortalSharing({ snapshot }: { snapshot: PortalSnapshot }) {
   );
 }
 
-export function PortalDirectory({ snapshot }: { snapshot: PortalSnapshot }) {
+export function PortalDirectory({
+  snapshot,
+  focus
+}: {
+  snapshot: PortalSnapshot;
+  focus?: string;
+}) {
   return (
     <>
       <PortalHeading
@@ -579,32 +586,14 @@ export function PortalDirectory({ snapshot }: { snapshot: PortalSnapshot }) {
       >
         Manage my directory sharing
       </Link>
-      {snapshot.directoryCanAssignRoles && snapshot.church && (
-        <div className="mb-5">
-          <Link
-            href={`${churchPath(snapshot.church.id)}/structure/assign`}
-            className={portalLinkClass}
-          >
-            Assign role and review privileges
-          </Link>
-        </div>
-      )}
-      {snapshot.directory?.length ? (
-        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {snapshot.directory.map((entry, index) => (
-            <li
-              key={index}
-              className="min-w-0 break-words rounded-xl border border-gc-divider bg-gc-surface p-5"
-            >
-              <h2 className="text-2xl text-gc-text">{entry.name}</h2>
-              <PortalContactDetails email={entry.email} phone={entry.phone} />
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <PortalEmpty>
-          No members have chosen to share a directory listing yet.
-        </PortalEmpty>
+      {snapshot.church && (
+        <ChurchDirectory
+          key={snapshot.church.id}
+          churchId={snapshot.church.id}
+          entries={snapshot.directory ?? []}
+          canAssign={snapshot.directoryCanAssignRoles === true}
+          focus={focus}
+        />
       )}
     </>
   );

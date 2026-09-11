@@ -8,10 +8,13 @@ export const metadata: Metadata = {
 };
 
 export default async function Page({
-  params
+  params,
+  searchParams
 }: {
   params: Promise<{ churchId: string }>;
+  searchParams: Promise<{ focus?: string }>;
 }) {
   const { churchId } = await params;
-  return <PortalPage view="directory" churchId={churchId} />;
+  const { focus } = await searchParams;
+  return <PortalPage view="directory" churchId={churchId} focus={focus} />;
 }

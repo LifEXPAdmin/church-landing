@@ -2,6 +2,77 @@
 
 September 10, 2026 · Published structure foundation; local role library, assignment service and Privileges interface verified
 
+## Contact integration and current consent acceptance — September 10, 2026
+
+Contact cards show only the chosen church directory name/email/phone and current
+roles with their duties and placement. No authentication-email, account-phone or
+profile-image fallback is introduced: the directory has no church-specific image
+consent projection. The directory now exposes the connection ID only for eligible,
+approved, explicitly listed people so their names can open the same scoped card.
+The sharing preview contract stays unchanged. Role titles open position details;
+people open contact cards. Assign/Privileges links preserve the originating view.
+A validated return-view/ID pair stays within the same church and restores focus to
+the exact chart, outline, responsibility or directory entry, including same-title
+role instances. Browser verification fixed a wrapped role title's non-clickable
+inter-line gap by making its full title area a link.
+
+Visible card/directory/chart reads refresh on mount, every 15 seconds and when
+returning to the tab, with a manual refresh and bounded request timeout. Fresh
+server membership, consent and authority checks supply every projection. Failed
+reads clear protected fields, and restored reads use current values. This is
+bounded refresh, not instantaneous push revocation; information already downloaded
+or seen cannot be recalled. Static structure views invalidate changed visible
+identities/authority and require explicit reload. Their privacy comparison ignores
+assignment IDs and chart versions so an ordinary committed assignment does not
+throw away an uncertain-save retry. Contact navigation itself does not call,
+message, drag or change any assignment.
+
+The chart replaces names/assignment projections while retaining geometry-only
+undo/drafts. Current-access or version changes retain placement choices for
+explicit reapplication and review; membership/read failure hides private cards,
+search results and announcements. In-flight background reads cannot overwrite a
+newer save. Uncertain saves retain the exact reviewed request while current
+private projections refresh; retry confirms the original receipt.
+
+Verification:
+
+- Full isolated services, populated upgrade, backup/restore, fresh migrations,
+  restart and development HTTP checks completed. The first production run stopped
+  on two HTML/Flight assertion assumptions after moving rendering into client
+  components. Those assertions now distinguish visible HTML from permitted Flight
+  props while retaining all private-field canaries. All **42 resumed production
+  HTTPS checks** passed, covering affected and remaining portal groups plus entry
+  and guest checks.
+- On the final title-target/privacy-comparison build, **26 affected production
+  HTTPS checks and 15 pure model/layout/return/privacy checks passed**. Full lint,
+  production build/types and runtime audit passed: 92 traces, 7,297 entries and
+  226 server JavaScript files, with no private fixture/environment files or Prisma
+  loader path. No schema or dependency changed.
+- Chrome verified chosen email withdrawal, phone-only and neither-field states,
+  automatic unlisting without reload, disappearance from the directory, unavailable
+  reads/recovery, actual role-versus-person clicks, current role/Privileges entry,
+  cancellation and directory/chart/outline/responsibility focus restoration.
+  A changed open responsibility view removed the withdrawn name.
+- With an unsaved chart placement, loss of edit permission disabled controls and
+  retained choices; loss of membership removed private names/roles/cards. Restoring
+  access required explicit reapplication. A same-version consent change removed
+  names while preserving the draft. Discard changed no saved data.
+- An unconfirmed committed chart response kept its exact retry through a background
+  refresh. Retry added no receipt or data changes. Two intended fictional chart
+  saves returned the chart to its original placement; final roles, assignments,
+  grant sources, membership and all sharing fields matched their starting values.
+  No real church data or permissions changed. Browser logs retained only known
+  prefetch failures from deliberately stopping the local preview during rebuild;
+  no new application exception was observed on the final walkthrough.
+
+The contact integration task is complete locally on
+`codex/role-privileges-interface`. Full navigation/reload draft recovery,
+privacy-safe history, keyboard/touch/large-text and physical-device acceptance
+remain separate open tasks before integrated release. The saved bundle is
+unpushed/unpublished and still requires newer main recovery/feed integration
+without weakening post-audience checks. No new owner action blocks coding; the
+complete batch and final review remain open.
+
 ## Unconnected-role staffing and lifecycle acceptance — September 10, 2026
 
 This checkpoint completes the remaining staffing/lifecycle walkthrough on drag

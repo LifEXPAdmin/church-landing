@@ -99,7 +99,7 @@ export function ChurchChartEditorControls({
               <button
                 type="button"
                 className={`${chartControlClass} mt-2`}
-                disabled={editor.busy}
+                disabled={editor.busy || editor.uncertain}
                 onClick={() => editor.removeRetained(change.id)}
               >
                 Remove this retained change
@@ -271,6 +271,16 @@ export function ChurchChartEditorControls({
           </fieldset>
         </>
       )}
+      <button
+        type="button"
+        className={chartControlClass}
+        disabled={editor.busy || editor.refreshing}
+        onClick={() => void editor.refresh()}
+      >
+        {editor.refreshing
+          ? "Checking church information…"
+          : "Refresh church information"}
+      </button>
       {editor.message && (
         <p role="status" className="rounded-xl bg-gc-subtle p-3 text-sm">
           {editor.message}
@@ -301,7 +311,7 @@ export function ChurchChartEditorControls({
           <button
             type="button"
             className={portalButtonClass}
-            disabled={!editor.canManage || editor.busy}
+            disabled={!editor.canManage || editor.busy || editor.uncertain}
             onClick={() => editor.applyRetained()}
           >
             Apply retained choices for review

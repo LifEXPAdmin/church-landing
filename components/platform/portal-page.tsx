@@ -58,11 +58,13 @@ function reviewerNavigation(snapshot: PortalSnapshot) {
 function PortalViewContent({
   snapshot,
   view,
-  churchId
+  churchId,
+  focus
 }: {
   snapshot: PortalSnapshot;
   view: PortalView;
   churchId?: string;
+  focus?: string;
 }) {
   switch (view) {
     case "discover":
@@ -72,7 +74,7 @@ function PortalViewContent({
     case "sharing":
       return <PortalSharing snapshot={snapshot} />;
     case "directory":
-      return <PortalDirectory snapshot={snapshot} />;
+      return <PortalDirectory snapshot={snapshot} focus={focus} />;
     case "review":
       return <PortalReview snapshot={snapshot} />;
     case "help":
@@ -147,7 +149,8 @@ export async function PortalPage({
   cursor,
   query = "",
   postBefore,
-  postCursor
+  postCursor,
+  focus
 }: {
   view: PortalView;
   churchId?: string;
@@ -155,6 +158,7 @@ export async function PortalPage({
   query?: string;
   postBefore?: string;
   postCursor?: string;
+  focus?: string;
 }) {
   // Next's development Flight debugger can serialize awaited request/DB values.
   // Do not read credentials or private portal data in that renderer.
@@ -212,6 +216,7 @@ export async function PortalPage({
           snapshot={snapshot}
           view={view}
           churchId={churchId}
+          focus={focus}
         />
       );
     }

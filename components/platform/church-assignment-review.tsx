@@ -15,6 +15,11 @@ import {
 } from "@/lib/platform/church-structure-types";
 import { portalButtonClass, portalInputClass } from "./portal-action-form";
 import { portalLinkClass } from "./portal-ui";
+import {
+  churchReturnHref,
+  churchReturnQuery,
+  type ChurchReturnContext
+} from "@/lib/platform/church-return-context";
 
 type Review = NonNullable<StructureSnapshot["privileges"]> & {
   version: number;
@@ -29,7 +34,8 @@ export function ChurchAssignmentReview({
   candidates,
   initialPositionId = "",
   initialConnectionId = "",
-  assignmentId = ""
+  assignmentId = "",
+  returnContext
 }: {
   church: { id: string; name: string };
   positions: { id: string; name: string }[];
@@ -37,6 +43,7 @@ export function ChurchAssignmentReview({
   initialPositionId?: string;
   initialConnectionId?: string;
   assignmentId?: string;
+  returnContext?: ChurchReturnContext;
 }) {
   const [positionId, setPositionId] = useState(initialPositionId);
   const [listed, setListed] = useState(
@@ -65,6 +72,9 @@ export function ChurchAssignmentReview({
   const feedbackRef = useRef<HTMLParagraphElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const base = `/platform/churches/${encodeURIComponent(church.id)}`;
+  const cancelHref = returnContext
+    ? churchReturnHref(church.id, returnContext)
+    : `${base}/structure`;
   useEffect(() => {
     if (feedback) feedbackRef.current?.focus();
   }, [feedback]);
@@ -351,8 +361,10 @@ export function ChurchAssignmentReview({
               . Those actions do not assign a member or grant permissions.
             </p>
           )}
-          <Link className={portalLinkClass} href={`${base}/structure`}>
-            Cancel and return to structure
+          <Link className={portalLinkClass} href={cancelHref}>
+            {returnContext
+              ? "Cancel and go back"
+              : "Cancel and return to structure"}
           </Link>
         </>
       )}
@@ -589,8 +601,10 @@ export function ChurchAssignmentReview({
             </form>
           )}
           {!busy && !uncertain && (
-            <Link className={portalLinkClass} href={`${base}/structure`}>
-              Cancel and return to structure
+            <Link className={portalLinkClass} href={cancelHref}>
+              {returnContext
+                ? "Cancel and go back"
+                : "Cancel and return to structure"}
             </Link>
           )}
         </>
@@ -598,7 +612,7 @@ export function ChurchAssignmentReview({
       {stage === "saved" && baseline && (
         <Link
           className={portalLinkClass}
-          href={`${base}/structure/${encodeURIComponent(baseline.positionId)}`}
+          href={`${base}/structure/${encodeURIComponent(baseline.positionId)}${returnContext ? `?${churchReturnQuery(returnContext)}` : ""}`}
         >
           View saved position and assignments
         </Link>

@@ -1,7 +1,11 @@
 import test, { after, before, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import { PrismaClient } from "@prisma/client";
-import { demoViews, demoFixture, DEMO_NOTICE } from "../lib/platform/demo-fixtures";
+import {
+  demoViews,
+  demoFixture,
+  DEMO_NOTICE
+} from "../lib/platform/demo-fixtures";
 import {
   assertPortalTestDatabase,
   createPortalActor,
@@ -28,15 +32,22 @@ after(async () => {
 const cookie = (actor: PortalActor) => `church_platform_session=${actor.token}`;
 
 test("public demo is fixture-only, signed-out and read-only across HTML/RSC", async () => {
-  const state = async () => JSON.stringify(await db.$queryRaw`
+  const state = async () =>
+    JSON.stringify(
+      await db.$queryRaw`
     SELECT (SELECT count(*) FROM "PlatformUser") AS users,
       (SELECT count(*) FROM "PlatformSession") AS sessions,
       (SELECT count(*) FROM "ChurchConnection") AS connections,
       (SELECT count(*) FROM "ChurchAuditEvent") AS events,
       (SELECT count(*) FROM "ChurchDirectoryPreference") AS preferences
-  `, (_key, value) => typeof value === "bigint" ? String(value) : value);
+  `,
+      (_key, value) => (typeof value === "bigint" ? String(value) : value)
+    );
   const beforeState = await state();
-  for (const path of ["/platform/demo", ...demoViews.map(v => `/platform/demo/${v.slug}`)]) {
+  for (const path of [
+    "/platform/demo",
+    ...demoViews.map((v) => `/platform/demo/${v.slug}`)
+  ]) {
     for (const rsc of [false, true]) {
       const response = await fetch(origin + path, {
         redirect: "manual",
@@ -53,7 +64,10 @@ test("public demo is fixture-only, signed-out and read-only across HTML/RSC", as
       assert.ok(!body.includes("<form"));
       for (const actor of fixtureActors()) {
         for (const privateValue of [actor.name, actor.email, actor.token])
-          assert.ok(!body.includes(privateValue), "Demo must not read a real fixture account");
+          assert.ok(
+            !body.includes(privateValue),
+            "Demo must not read a real fixture account"
+          );
       }
     }
   }
@@ -452,7 +466,11 @@ test("API, HTML and actual RSC project safe sharing; unexpected q cannot filter 
   assert.match(response.headers.get("vary")!, /Cookie/i);
   const baseline = await response.json();
   assert.deepEqual(baseline.directory, [
-    { name: f.sharing.displayName, email: f.sharing.contactEmail }
+    {
+      connectionId: (await connection(f.memberA)).id,
+      name: f.sharing.displayName,
+      email: f.sharing.contactEmail
+    }
   ]);
   privateFieldsAbsent(JSON.stringify(baseline));
   for (const q of [f.memberA.email, f.sharing.phone, "no-fictional-match"]) {

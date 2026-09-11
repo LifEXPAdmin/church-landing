@@ -1,5 +1,33 @@
 # Godschurches current state
 
+## Contact cards and current sharing verified locally — September 10, 2026
+
+Church contact cards now connect the directory, chart, unconnected roles and
+responsibilities to the same permitted person/role projections. They show chosen
+shared email/phone, truthful missing fields and relevant roles. Fixed same-church
+return contexts restore the selected person or position; role titles open duties,
+while person names open contacts. Wrapped chart titles have a continuous target.
+
+Visible contacts, directory entries and chart projections refresh every 15 seconds,
+on return to the tab and on request. Unavailable reads hide protected information.
+Chart drafts/undo retain geometry only across access loss and require current
+access plus a new review. Static structure views invalidate withdrawn identities
+or authority without discarding a retry merely because the chart version changed.
+
+Fifteen pure checks and 26 final production HTTPS checks passed, with build,
+lint/types and runtime audit. The broader isolated service/migration/development
+sweep and resumed production groups passed after correcting two HTML/Flight test
+expectations. Browser checks covered chosen-contact changes, unlisting, directory/
+chart/outline/responsibility return focus, lost authority/membership, geometry-only
+retention and exact retry after an unconfirmed committed save. See
+[CHURCH_STRUCTURE_REPORT.md](CHURCH_STRUCTURE_REPORT.md).
+
+The contact integration task is complete locally. Full browser Back/reload draft
+recovery, history, accessibility and integrated release acceptance remain open.
+The bundle is unpushed/unpublished; integrate current main recovery/feed changes
+while preserving post-audience checks before release. No new owner action blocks
+coding. The complete batch and final review remain open.
+
 ## Staffing and position lifecycle verified locally — September 10, 2026
 
 The remaining unconnected-role staffing/lifecycle acceptance passed on the drag

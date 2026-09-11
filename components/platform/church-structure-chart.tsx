@@ -31,6 +31,7 @@ import { portalLinkClass } from "./portal-ui";
 import { ChurchChartEditorControls } from "./church-chart-editor-controls";
 import { useChurchChartEditor } from "./use-church-chart-editor";
 import { useChurchChartDrag } from "./use-church-chart-drag";
+import { churchReturnQuery } from "@/lib/platform/church-return-context";
 
 const control =
   "inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-xl border border-gc-divider bg-gc-surface px-3 py-2 text-sm font-semibold text-gc-text hover:bg-gc-selected focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gc-focus disabled:opacity-50";
@@ -67,6 +68,7 @@ function RoleCard({
   dropState?: "valid" | "invalid";
 }) {
   const ref = useRef<HTMLElement>(null);
+  const returnQuery = churchReturnQuery({ from: "chart", focus: p.id });
   useEffect(() => {
     const element = ref.current;
     if (!element || !measure) return;
@@ -99,8 +101,8 @@ function RoleCard({
       {editControls}
       <h3 className="text-2xl leading-tight">
         <Link
-          href={`${base}/structure/${encodeURIComponent(p.id)}`}
-          className="rounded text-gc-text hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gc-focus"
+          href={`${base}/structure/${encodeURIComponent(p.id)}?${returnQuery}`}
+          className="block rounded text-gc-text hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gc-focus"
         >
           {p.name}
         </Link>
@@ -117,7 +119,7 @@ function RoleCard({
             <li key={a.id} className="text-sm">
               {a.name && a.connectionId ? (
                 <Link
-                  href={`${base}/people/${encodeURIComponent(a.connectionId)}`}
+                  href={`${base}/people/${encodeURIComponent(a.connectionId)}?${returnQuery}`}
                   className={portalLinkClass}
                 >
                   {a.name}
@@ -130,7 +132,7 @@ function RoleCard({
               )}
               {canManage && (
                 <Link
-                  href={`${base}/structure/assign?positionId=${encodeURIComponent(p.id)}&assignmentId=${encodeURIComponent(a.id)}`}
+                  href={`${base}/structure/assign?positionId=${encodeURIComponent(p.id)}&assignmentId=${encodeURIComponent(a.id)}&${returnQuery}`}
                   className={`${portalLinkClass} block`}
                   aria-label={`Review privileges for ${a.name || `assigned member ${index + 1}`} in ${p.name}`}
                 >
@@ -143,14 +145,14 @@ function RoleCard({
       )}
       <div className="mt-3 flex flex-col items-start border-t border-gc-divider pt-2">
         <Link
-          href={`${base}/structure/${encodeURIComponent(p.id)}`}
+          href={`${base}/structure/${encodeURIComponent(p.id)}?${returnQuery}`}
           className={portalLinkClass}
         >
           Position details
         </Link>
         {canManage && (
           <Link
-            href={`${base}/structure/assign?positionId=${encodeURIComponent(p.id)}`}
+            href={`${base}/structure/assign?positionId=${encodeURIComponent(p.id)}&${returnQuery}`}
             className={portalLinkClass}
           >
             {p.assignments.length ? "Add another person" : "Fill this position"}
@@ -176,12 +178,14 @@ export function ChurchStructureChart({
   churchId,
   positions: initialPositions,
   canManage: initialCanManage,
-  version
+  version,
+  initialFocus
 }: {
   churchId: string;
   positions: PositionSummary[];
   canManage: boolean;
   version: number;
+  initialFocus?: string;
 }) {
   const editor = useChurchChartEditor(churchId, {
     positions: initialPositions,
@@ -194,6 +198,7 @@ export function ChurchStructureChart({
   const viewport = useRef<HTMLDivElement>(null);
   const cards = useRef(new Map<string, HTMLElement>());
   const automaticFit = useRef(true);
+  const returnedFocus = useRef<string | undefined>(undefined);
   const pan = useRef<{
     pointer: number;
     x: number;
@@ -326,23 +331,35 @@ export function ChurchStructureChart({
       ?.focus({ preventScroll: true });
     setPendingCenter(null);
   }, [pendingCenter, layout, heights, leftOffset, zoom, size]);
-  function center(position: PositionSummary) {
-    automaticFit.current = false;
-    setCollapsed((current) => {
-      const next = new Set(current);
-      chartAncestors(positions, position.id).forEach((ancestor) =>
-        next.delete(ancestor)
+  const center = useCallback(
+    (position: PositionSummary) => {
+      automaticFit.current = false;
+      setCollapsed((current) => {
+        const next = new Set(current);
+        chartAncestors(positions, position.id).forEach((ancestor) =>
+          next.delete(ancestor)
+        );
+        return next;
+      });
+      setSelected(position.id);
+      if (layout.connected.has(position.id))
+        setZoom(
+          Math.min(1, Math.max(0.3, (size.width - 32) / CHART_CARD_WIDTH))
+        );
+      setPendingCenter(position.id);
+      setAnnouncement(
+        `Showing ${position.name}. ${positionPlacementLabel(position, positions)}.`
       );
-      return next;
-    });
-    setSelected(position.id);
-    if (layout.connected.has(position.id))
-      setZoom(Math.min(1, Math.max(0.3, (size.width - 32) / CHART_CARD_WIDTH)));
-    setPendingCenter(position.id);
-    setAnnouncement(
-      `Showing ${position.name}. ${positionPlacementLabel(position, positions)}.`
-    );
-  }
+    },
+    [positions, layout.connected, size.width]
+  );
+  useEffect(() => {
+    if (!initialFocus || returnedFocus.current === initialFocus) return;
+    const position = positions.find((p) => p.id === initialFocus);
+    if (!position || !size.width) return;
+    returnedFocus.current = initialFocus;
+    center(position);
+  }, [initialFocus, positions, size.width, center]);
   function changeZoom(next: number) {
     automaticFit.current = false;
     const element = viewport.current;
@@ -373,7 +390,7 @@ export function ChurchStructureChart({
   const showResults = mine || query.trim().length > 0;
   return (
     <div className="min-w-0 space-y-6">
-      {(canManage || editor.editing || editor.dirty) && (
+      {(canManage || editor.editing || editor.dirty || editor.unavailable) && (
         <ChurchChartEditorControls
           editor={editor}
           selectedId={selected ?? ""}
@@ -616,7 +633,7 @@ export function ChurchStructureChart({
             </>
           )}
           <p role="status" className="sr-only">
-            {announcement}
+            {editor.unavailable ? "" : announcement}
           </p>
         </div>
         <div

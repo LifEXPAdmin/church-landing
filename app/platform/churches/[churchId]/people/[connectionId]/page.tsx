@@ -15,6 +15,8 @@ export default async function Page({
     mode?: string;
     cursor?: string;
     candidateCursor?: string;
+    from?: string;
+    focus?: string;
   }>;
 }) {
   const route = await params;
@@ -28,6 +30,8 @@ export default async function Page({
       query={query.q}
       cursor={query.cursor}
       candidateCursor={query.candidateCursor}
+      returnFrom={query.from}
+      focus={query.focus}
     />
   );
 }

@@ -16,6 +16,8 @@ export default async function Page({
     assignmentId?: string;
     q?: string;
     candidateCursor?: string;
+    from?: string;
+    focus?: string;
   }>;
 }) {
   const route = await params;
@@ -29,6 +31,8 @@ export default async function Page({
       assignmentId={query.assignmentId}
       query={query.q}
       candidateCursor={query.candidateCursor}
+      returnFrom={query.from}
+      focus={query.focus}
     />
   );
 }

@@ -943,6 +943,7 @@ export async function getPortalSnapshot(
             }
           },
           select: {
+            connectionId: true,
             displayName: true,
             contactEmail: true,
             phone: true,
@@ -953,6 +954,7 @@ export async function getPortalSnapshot(
           take: 100
         });
         snapshot.directory = entries.map((p) => ({
+          connectionId: p.connectionId,
           name: p.displayName,
           ...(p.emailAudience === "SAME_CHURCH" && p.contactEmail
             ? { email: p.contactEmail }
