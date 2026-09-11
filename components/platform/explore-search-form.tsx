@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 import { Search } from "lucide-react";
 import { churchDiscoveryHref } from "@/lib/platform/church-search";
@@ -33,12 +32,26 @@ export function ExploreSearchForm({ query }: { query: string }) {
           <Search aria-hidden="true" /> Search
         </button>
       </div>
-      <Link
+      <a
         className="mt-4 inline-flex min-h-11 items-center text-gc-accent underline"
         href={churchDiscoveryHref(value)}
+        onClick={(event) => {
+          if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
+            return;
+          // Preserve a newly typed query in the source history entry before
+          // document navigation, so Back also works without submitting Explore.
+          const query = value.trim().slice(0, 200);
+          const params = new URLSearchParams();
+          if (query) params.set("q", query);
+          window.history.replaceState(
+            null,
+            "",
+            `/platform/search${params.size ? `?${params}` : ""}`
+          );
+        }}
       >
         Search churches
-      </Link>
+      </a>
       <p className="text-sm text-gc-muted">
         Church search uses the first 100 characters.
       </p>

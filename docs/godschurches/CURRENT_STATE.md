@@ -1,5 +1,20 @@
 # Godschurches current state
 
+## Medium bundle published; query-return correction — September 11, 2026
+
+The Medium bundle `6b1d814` reached production in READY deployment
+`dpl_2GzD3eLJHvHHJ6oeDXEu9MnZLwNb` at 14:26:09 UTC. The canonical domain
+matched and 17 read-only HTTP checks passed. All 25 migrations were present;
+none were pending. Production records and provider settings were not changed.
+
+The live browser pass found that a newly typed, unsubmitted Explore query was
+lost on Back from church search. This follow-up saves the query in the source
+history entry and adds the missing browser regression. Fresh build/runtime,
+lint and all ten isolated browser groups passed. The private release handoff
+records the final follow-up deployment and live verification. See
+[Medium refinement acceptance](MEDIUM_REFINEMENTS_REPORT.md) for the exact
+evidence and retained limits. Earlier local-only statements below are historical.
+
 ## Medium presentation refinements verified locally — September 11, 2026
 
 Guest gate titles, Explore query transfer, Home entry/empty copy and native

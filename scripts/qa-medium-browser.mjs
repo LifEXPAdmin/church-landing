@@ -354,6 +354,15 @@ try {
     );
   }
   await go("/platform/search?q=" + actor.username);
+  const transferredQuery = "Grace & café + 100%";
+  await page.getByRole("searchbox").fill(transferredQuery);
+  await page.getByRole("link", { name: "Search churches", exact: true }).click();
+  await page.waitForURL("**/platform/churches?**");
+  assert.equal(new URL(page.url()).searchParams.get("q"), transferredQuery);
+  await page.goBack();
+  await page.waitForURL("**/platform/search?**");
+  assert.equal(await page.getByRole("searchbox").inputValue(), transferredQuery);
+  await go("/platform/search?q=" + actor.username);
   await page.getByRole("link", { name: new RegExp(actor.name) }).click();
   await page.waitForFunction(
     () => document.title === "Join or sign in to view member profiles."

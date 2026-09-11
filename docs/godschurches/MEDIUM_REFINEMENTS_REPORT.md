@@ -1,5 +1,39 @@
 # Medium refinement acceptance
 
+## Production release and query-return correction — 11 September 2026
+
+The Medium bundle was pushed to main as `6b1d814e55607662c70be50efd1147faae70d571`.
+Production deployment `dpl_2GzD3eLJHvHHJ6oeDXEu9MnZLwNb` reached READY at
+14:26:09 UTC, and the canonical `godschurches.com` alias independently matched.
+The remote build passed compilation, lint/types and runtime tracing (95 traces,
+7,427 entries, 233 server JavaScript files). All 25 migrations were present with
+none pending; this release adds no schema or provider changes.
+
+Seventeen live read-only HTTP checks passed, including guest title/heading pairs,
+private/noindex headers, redirects, Explore scope and byte-for-byte matches for
+nine brand assets. The initial live browser check exposed a narrower missed case:
+typing a new Explore query, opening church search and pressing Back lost the
+unsubmitted query. Submitted-query Back had passed the earlier acceptance.
+
+This follow-up preserves the bounded Explore query in its source history entry
+before ordinary document navigation to church search. Modified/new-tab clicks
+retain their normal behavior. It uses the supported
+[Next.js native history API](https://nextjs.org/docs/app/getting-started/linking-and-navigating#native-history-api).
+The isolated browser regression now covers this previously missing journey.
+Fresh build/runtime, lint and all ten browser groups passed after the correction,
+with no browser page errors. The earlier 374-pass/two-skip full sweep remains the
+service evidence. An unnecessary repeat sweep was stopped to focus on this
+navigation-only change; it is not claimed as a completed fresh sweep.
+
+The initial deployment error-log scan returned no errors. Final follow-up serving
+identity and live-check results are recorded in the private release handoff.
+Live verification uses read-only navigation; fictional mutations remain confined
+to the isolated fixture database. Physical Samsung acceptance, the separately
+observed intermittent hydration issue and existing foundation gates remain open.
+The local-only statements below preserve the earlier pre-release checkpoint.
+
+## Earlier local acceptance
+
 11 September 2026. Local branch `codex/medium-workflow`, based on main `7a5a9ab`
 and the reported integrated application `c7067ae8`. Prior worktrees were preserved.
 Application/UI commit `70bd3bc`; brand commit `db70799`; taxonomy/metadata inventory
