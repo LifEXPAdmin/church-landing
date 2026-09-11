@@ -1,5 +1,21 @@
 # Godschurches current state
 
+## Medium presentation refinements verified locally — September 11, 2026
+
+Guest gate titles, Explore query transfer, Home entry/empty copy and native
+profile-dialog scroll locking are implemented in `70bd3bc`. Shared icons and a
+static branded share-card renderer are in `db70799`; existing taxonomy and all
+67 page metadata routes are inventoried in `1011cf0`. Branch
+`codex/medium-workflow` is local, unpushed and unpublished.
+
+The isolated sweep passed 374 checks with two expected disabled-email skips.
+Final rebuild/runtime, lint/types and ten browser acceptance groups passed.
+One earlier transient React 418 remains an explicit navigation-investigation
+handoff; it did not recur in the diagnostic run. Physical-device, manifest/provider,
+resource-preview and broader integrated gates remain open. See
+[Medium refinement acceptance](MEDIUM_REFINEMENTS_REPORT.md) for scope and limits.
+
+
 ## Integrated release published — September 10, 2026
 
 Application `c7067ae8d0d1dd14b1da7bb3ab3537cb65fe3c5c` is live on
