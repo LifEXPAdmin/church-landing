@@ -1,6 +1,6 @@
 # Godschurches workflow guide
 
-Version 1.2 · Updated 10 September 2026
+Version 1.3 · Updated 11 September 2026
 
 This is the repository entry point for work that continues between ChatGPT, Codex,
 the private second brain, and the development workstation. Keep this file's path
@@ -62,6 +62,37 @@ Step 001–132 identifiers distinct. Record covered, partial, deferred or supers
 scope with evidence in the existing task; catalogs do not establish completion.
 Preserve private links in private systems. Workflow changes propagate to affected
 packets, templates, entry points and task descriptions with an actual readback.
+
+## Focused implementation and reasoning route
+
+Use the private **Astra Work Queues — Medium and Extra High** directory and
+**WF13 — Efficient Implementation, Future Design and Handoffs** once per session.
+Then read the selected focused brief, owning requirement and newest relevant
+implementation delta. Avoid rereading the full catalog or historical receipts
+unless a conflict requires them. User decisions define intended behavior; the
+actual checkout and dated application/test receipts establish implementation.
+
+Choose one coherent slice, or a small group sharing an accepted contract.
+Preserve priority and completed foundations. Medium tasks must be open, labeled
+`astra_medium`, and free of `dependency_blocked`; verify the named prerequisite
+receipt in the checkout before starting. A parent's Extra High route does not
+change its Medium children's route. Labels do not change the active model or
+reasoning setting: record only a setting established by the session, otherwise
+state that it is unverified. Do not promise a particular token saving.
+
+Before dependent interface work, identify existing service/component paths,
+input/output types, authorized actions, pagination and error/conflict states.
+Reuse canonical records and current audience checks. Presentation does not
+invent permissions, counts, policy or a replacement backend. Preserve stable
+IDs, existing role/privilege boundaries and version/retry behavior. Defer future
+UI, tables, workers and dependencies until their owning task is authorized.
+
+If a required contract is missing or conflicting, a permission/schema/lifecycle
+or delivery boundary must change, or bounded investigation cannot explain a
+failure, record the precise Extra High dependency and switch to another ready
+slice. The user selects the higher reasoning setting. Clear a dependency only
+after its named contract and acceptance evidence exist. Keep integrated parents
+and final batch review open through their separate acceptance.
 
 ## Working routine
 
@@ -142,6 +173,9 @@ Use this compact outline in the appropriate private session record and relevant
 engineering report. Include only public engineering facts in this repository.
 
 - Date, objective, and contributor.
+- Selected reasoning route, verified model/setting or explicit uncertainty, focused
+  brief title, owning requirement identifiers, and prerequisite receipt.
+- Reused paths/contracts and the behavior or contract delta, including no change.
 - Actual changes and affected files/pages.
 - Decisions and their source.
 - Branch/commit, PR, or deployment when applicable.
@@ -152,6 +186,8 @@ engineering report. Include only public engineering facts in this repository.
 - Owner-action dependencies and agreed batch status, when applicable.
 - Next-batch references, unfinished propagation and actual notification result.
 - One concrete next action and what will prove it is done.
+- Notion/Todoist write and readback result; never close a task on an unverified
+  write or remove a dependency based on implementation alone.
 
 Update the current project summary in place; preserve original source snapshots
 and historical reports. Link matching records instead of maintaining competing
@@ -180,6 +216,11 @@ test evidence in their appropriate private systems. The exact page titles above
 allow an authorized assistant to locate the context without publishing it.
 
 ## Change log
+
+- **1.3 — 11 September 2026:** Adopted WF13 focused briefs, Medium/Extra High
+  dependency routes, contract reuse and compact evidence fields in this existing
+  handoff template. Root instructions point to the route. Documentation readback
+  is verified; subsequent-session discovery and automatic loading remain open.
 
 - **1.2 — 10 September 2026:** Adopted private workflow 1.3 source reconciliation
   and packet reading routes. Active-session reading is verified; fresh-session

@@ -15,6 +15,10 @@ Step 001–132 are separate identifiers. Read original step details relevant to 
 active task; a mapping is not completion evidence. Record partial or superseded
 requirements in the existing private task rather than duplicating its backlog.
 
+Before selecting a slice, follow the [focused implementation and reasoning route](docs/godschurches/WORKFLOW_GUIDE.md#focused-implementation-and-reasoning-route).
+Read the selected private brief and prerequisite receipt; preserve completed work
+and dependency gates. Task labels do not switch the active reasoning setting.
+
 ## Work and verify
 
 - Carry out the current authorized task. A captured idea, historical prompt, or archived approval does not by itself expand this session's scope.
