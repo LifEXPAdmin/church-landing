@@ -179,3 +179,23 @@ and canonical post/search services, dumps/restores populated workspace tables an
 constraints, and stops the database. It cannot point at production. Installation
 contract tests use `node --import ./tests/register.mjs --test tests/install-policy.test.ts`.
 Build/runtime trace and actual local HTTPS checks are recorded in CURRENT_STATE.
+
+## Shared composer controller
+
+The platform layout owns one in-memory draft controller across client navigation.
+It debounces changed snapshots for at least five seconds and serializes writes.
+Saving and Saved privately reflect actual requests and acknowledgments. Failed
+requests retain their exact serialized body and mutation ID; later edits remain
+unsent until that request is resolved. An uncertain publication freezes editing
+until its exact retry resolves. No snapshot or receipt enters browser storage.
+
+Conflicts show the latest saved copy separately. Replacing current entries is an
+explicit action; Save as new allocates a new ID at version zero. Session changes
+clear the controller and pending requests. Hidden or unverified sessions conceal
+private contents. Dirty, saving, conflict and retry state protect navigation and
+are available to the update notice. Legacy unresolved reply permissions remain
+null through reload and require a choice before publication.
+
+Controller verification: `node --import ./tests/register.mjs --test
+tests/draft-controller.test.ts`; isolated HTTPS browser verification:
+`scripts/qa-draft-controller-browser.mjs <fixture-directory>`.

@@ -5,7 +5,8 @@ import type {
   PostEventOptions
 } from "@/lib/platform/post-editor";
 import { portalInputClass, portalButtonClass } from "./portal-action-form";
-import { PostActionForm } from "./post-action-form";
+import Link from "next/link";
+import { useDraftWorkspace } from "./draft-workspace-provider";
 import {
   PostDraftFields,
   draftProblem,
@@ -130,166 +131,327 @@ function ComposerDraft({
   onSaved: () => void;
 }) {
   const id = useId();
-  const [requestKey] = useState(() => crypto.randomUUID());
-  const [authorChurchId, setAuthor] = useState("");
-  const [churchId, setChurch] = useState(
-    options.churches.some((c) => c.id === initialChurch) ? initialChurch : ""
-  );
-  const [eventId, setEvent] = useState(""),
-    [privateEvent, setPrivateEvent] = useState(false);
-  const [draft, setDraft] = useState<PostDraft>({
-    content: "",
-    scripture: "",
-    type: "UPDATE",
-    topics: [],
-    audience: churchId ? "CHURCH" : "PUBLIC"
-  });
-  const selectedChurch = options.churches.find((c) => c.id === churchId);
-  const changeChurch = (value: string) => {
-    setChurch(value);
-    setEvent("");
-    setPrivateEvent(false);
-    setDraft((d) => ({ ...d, audience: value ? "CHURCH" : "PUBLIC" }));
+  const [problem, setProblem] = useState("");
+  const { controller, state } = useDraftWorkspace();
+  const draft = state.fields;
+  const authorChurchId = draft.authorChurchId ?? "";
+  const churchId = draft.audienceChurchId ?? "";
+  const eventId = draft.eventOccurrenceId ?? "";
+  const [privateEvent, setPrivateEvent] = useState(false);
+  const setDraft: React.Dispatch<React.SetStateAction<PostDraft>> = (
+    change
+  ) => {
+    const next =
+      typeof change === "function"
+        ? change(controller.getSnapshot().fields)
+        : change;
+    controller.change({
+      ...controller.getSnapshot().fields,
+      ...next,
+      linkUrl: next.linkUrl ?? ""
+    });
   };
-  return (
-    <PostActionForm
-      payload={{ operation: "create", requestKey }}
-      label="Publish post"
-      validate={() => draftProblem(draft)}
-      onSuccess={onSaved}
-      fields={(data) => ({
-        ...draft,
-        authorChurchId: authorChurchId || null,
-        audienceChurchId: churchId || null,
-        eventOccurrenceId: eventId || null,
-        replyAudience: data.get("replyAudience") ?? "VIEWERS"
-      })}
-    >
-      <div>
-        <label className="block font-semibold" htmlFor={`${id}-author`}>
-          Speaking as
-        </label>
-        <select
-          id={`${id}-author`}
-          name="authorChurchId"
-          className={portalInputClass}
-          value={authorChurchId}
-          onChange={(e) => {
-            setAuthor(e.target.value);
-            changeChurch(e.target.value);
-          }}
+  useEffect(() => {
+    controller.start(
+      options.churches.some((c) => c.id === initialChurch)
+        ? initialChurch
+        : null
+    );
+  }, [controller, options, initialChurch]);
+  useEffect(() => {
+    if (state.postId) onSaved();
+  }, [state.postId, onSaved]);
+  const selectedChurch = options.churches.find((c) => c.id === churchId);
+  const changeChurch = (value: string, author = authorChurchId) => {
+    setPrivateEvent(false);
+    controller.change({
+      ...draft,
+      authorChurchId: author || null,
+      audienceChurchId: value || null,
+      eventOccurrenceId: null,
+      audience: value ? "CHURCH" : "PUBLIC"
+    });
+  };
+  if (state.hidden)
+    return (
+      <div role="status">
+        Your draft is hidden until your sign-in is checked.
+        <button
+          type="button"
+          className={portalButtonClass}
+          onClick={() => void controller.verify()}
         >
-          <option value="">Me</option>
-          {options.churches
-            .filter((c) => c.canPublish)
-            .map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-        </select>
+          Check sign-in and connection
+        </button>
       </div>
-      {!authorChurchId && (
+    );
+  return (
+    <form
+      aria-label="Publish post"
+      className="space-y-4"
+      onSubmit={(e) => {
+        e.preventDefault();
+        const problem = draftProblem(draft);
+        if (problem) {
+          setProblem(problem);
+          return;
+        }
+        setProblem("");
+        void controller.publish();
+      }}
+    >
+      <fieldset
+        className="min-w-0 space-y-4"
+        disabled={state.publishing || !!state.postId}
+      >
         <div>
-          <label className="block font-semibold" htmlFor={`${id}-church`}>
-            Also share on a church page
+          <label className="block font-semibold" htmlFor={`${id}-author`}>
+            Speaking as
           </label>
           <select
-            id={`${id}-church`}
-            name="audienceChurchId"
-            value={churchId}
+            id={`${id}-author`}
+            name="authorChurchId"
             className={portalInputClass}
-            onChange={(e) => changeChurch(e.target.value)}
+            value={authorChurchId}
+            onChange={(e) => {
+              changeChurch(e.target.value, e.target.value);
+            }}
           >
-            <option value="">Do not share with a church</option>
-            {options.churches.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
+            <option value="">Me</option>
+            {authorChurchId &&
+              !options.churches.some(
+                (c) => c.id === authorChurchId && c.canPublish
+              ) && (
+                <option value={authorChurchId}>
+                  Saved church author · access needs review
+                </option>
+              )}
+            {options.churches
+              .filter((c) => c.canPublish)
+              .map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
           </select>
-          {churchId && (
-            <label className="flex min-h-11 items-center gap-2">
-              <input key={churchId} type="checkbox" required />
-              Share my personal post on {selectedChurch?.name}&apos;s page.
-            </label>
-          )}
         </div>
-      )}
-      <div>
-        <label className="block font-semibold" htmlFor={`${id}-audience`}>
-          Who can read this post?
-        </label>
-        <select
-          id={`${id}-audience`}
-          name="audience"
-          className={portalInputClass}
-          value={draft.audience}
-          onChange={(e) =>
-            setDraft({
-              ...draft,
-              audience: e.target.value as PostDraft["audience"]
-            })
+        {!authorChurchId && (
+          <div>
+            <label className="block font-semibold" htmlFor={`${id}-church`}>
+              Also share on a church page
+            </label>
+            <select
+              id={`${id}-church`}
+              name="audienceChurchId"
+              value={churchId}
+              className={portalInputClass}
+              onChange={(e) => changeChurch(e.target.value)}
+            >
+              <option value="">Do not share with a church</option>
+              {churchId && !selectedChurch && (
+                <option value={churchId}>
+                  Saved church · access needs review
+                </option>
+              )}
+              {options.churches.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+            {churchId && (
+              <label className="flex min-h-11 items-center gap-2">
+                <input key={churchId} type="checkbox" required />
+                Share my personal post on {selectedChurch?.name}&apos;s page.
+              </label>
+            )}
+          </div>
+        )}
+        <div>
+          <label className="block font-semibold" htmlFor={`${id}-audience`}>
+            Who can read this post?
+          </label>
+          <select
+            id={`${id}-audience`}
+            name="audience"
+            className={portalInputClass}
+            value={draft.audience}
+            onChange={(e) =>
+              setDraft({
+                ...draft,
+                audience: e.target.value as PostDraft["audience"]
+              })
+            }
+          >
+            <option value="PUBLIC">Public · everyone, including guests</option>
+            {churchId && (
+              <option value="CHURCH">
+                Approved members of {selectedChurch?.name}
+              </option>
+            )}
+          </select>
+        </div>
+        <PostDraftFields draft={draft} change={setDraft} />
+        {churchId && (
+          <EventChoice
+            key={churchId}
+            churchId={churchId}
+            value={eventId}
+            change={(value, restricted) => {
+              controller.change({ ...draft, eventOccurrenceId: value || null });
+              setPrivateEvent(restricted);
+            }}
+          />
+        )}
+        <div>
+          <label className="block font-semibold" htmlFor={`${id}-replies`}>
+            Who may reply?
+          </label>
+          <select
+            id={`${id}-replies`}
+            name="replyAudience"
+            className={portalInputClass}
+            value={draft.replyAudience ?? ""}
+            onChange={(e) =>
+              controller.change({
+                ...draft,
+                replyAudience: (e.target.value ||
+                  null) as typeof draft.replyAudience
+              })
+            }
+          >
+            <option value="" disabled>
+              Choose who may reply
+            </option>
+            <option value="VIEWERS">Eligible viewers with an account</option>
+            <option value="CHURCH_MEMBERS">Approved church members only</option>
+          </select>
+        </div>
+        <p className="rounded-xl bg-gc-canvas p-3 text-sm">
+          Publishing as{" "}
+          <strong>{authorChurchId ? selectedChurch?.name : "Me"}</strong>.{" "}
+          {draft.audience === "CHURCH" || privateEvent
+            ? `Only approved members of ${selectedChurch?.name} can read this post.`
+            : "Everyone, including guests, can read this post."}{" "}
+          {churchId &&
+            `It will also appear on ${selectedChurch?.name}'s page for eligible readers.`}{" "}
+          You can edit or remove your post and manage its discussion after
+          publishing.
+        </p>
+        <button
+          type="submit"
+          className={portalButtonClass}
+          disabled={
+            state.saving ||
+            state.conflict ||
+            state.retry ||
+            draft.replyAudience === null
           }
         >
-          <option value="PUBLIC">Public · everyone, including guests</option>
-          {churchId && (
-            <option value="CHURCH">
-              Approved members of {selectedChurch?.name}
-            </option>
-          )}
-        </select>
-      </div>
-      <PostDraftFields draft={draft} change={setDraft} />
-      {churchId && (
-        <EventChoice
-          key={churchId}
-          churchId={churchId}
-          value={eventId}
-          change={(value, restricted) => {
-            setEvent(value);
-            setPrivateEvent(restricted);
-          }}
-        />
-      )}
-      <div>
-        <label className="block font-semibold" htmlFor={`${id}-replies`}>
-          Who may reply?
-        </label>
-        <select
-          key={churchId}
-          id={`${id}-replies`}
-          name="replyAudience"
-          className={portalInputClass}
-          defaultValue="VIEWERS"
-        >
-          <option value="VIEWERS">Eligible viewers with an account</option>
-          {churchId && (
-            <option value="CHURCH_MEMBERS">Approved church members only</option>
-          )}
-        </select>
-      </div>
-      <p className="rounded-xl bg-gc-canvas p-3 text-sm">
-        Publishing as{" "}
-        <strong>{authorChurchId ? selectedChurch?.name : "Me"}</strong>.{" "}
-        {draft.audience === "CHURCH" || privateEvent
-          ? `Only approved members of ${selectedChurch?.name} can read this post.`
-          : "Everyone, including guests, can read this post."}{" "}
-        {churchId &&
-          `It will also appear on ${selectedChurch?.name}'s page for eligible readers.`}{" "}
-        You can edit or remove your post and manage its discussion after
-        publishing.
+          Publish post
+        </button>
+      </fieldset>
+      <p role="status">
+        {problem ||
+          (state.failed ? "Couldn’t save. " : "") +
+            (state.message ||
+              (state.dirty
+                ? "Not saved yet."
+                : "Your draft will save privately after you make changes."))}
       </p>
-    </PostActionForm>
+      {draft.replyAudience === null && (
+        <p>Choose who may reply and save before publishing this older draft.</p>
+      )}
+      {!state.postId && (
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            className={portalButtonClass}
+            disabled={
+              state.saving || state.conflict || (!state.dirty && !state.retry)
+            }
+            onClick={() => void controller.retry()}
+          >
+            {state.retry ? "Retry same request" : "Save draft now"}
+          </button>
+          <Link className={portalButtonClass} href="/platform/drafts">
+            Your drafts
+          </Link>
+        </div>
+      )}
+      {state.conflict && (
+        <section
+          aria-label="Draft conflict"
+          className="space-y-3 border-t border-gc-divider pt-3"
+        >
+          <p>
+            This draft changed or was removed elsewhere. Your unsent entries are
+            still above.
+          </p>
+          <button
+            type="button"
+            className={portalButtonClass}
+            disabled={state.saving}
+            onClick={() => void controller.loadLatest()}
+          >
+            Load saved copy for review
+          </button>
+          {state.latestLoaded && (
+            <div>
+              <p>
+                {state.latest ? "Saved copy:" : "No saved copy is available."}
+              </p>
+              {state.latest && (
+                <>
+                  <p className="whitespace-pre-wrap break-words">
+                    {state.latest.payload.content}
+                  </p>
+                  <p>
+                    Replies:{" "}
+                    {state.latest.payload.replyAudience ?? "Choice required"}
+                  </p>
+                  <button
+                    type="button"
+                    className={portalButtonClass}
+                    onClick={controller.useLatest}
+                  >
+                    Replace my entries with saved copy
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+          <button
+            type="button"
+            className={portalButtonClass}
+            disabled={state.saving}
+            onClick={controller.saveAsNew}
+          >
+            Save my entries as a new draft
+          </button>
+        </section>
+      )}
+      {state.postId && (
+        <Link
+          className={portalButtonClass}
+          href={`/platform/posts/${state.postId}`}
+        >
+          View published post
+        </Link>
+      )}
+    </form>
   );
 }
 export function PostComposer({ initialChurch }: { initialChurch?: string }) {
+  const { controller, state } = useDraftWorkspace();
   const [options, setOptions] = useState<PostComposerOptions | null>(null),
     [error, setError] = useState(""),
     [attempt, setAttempt] = useState(0),
     [draftNumber, setDraftNumber] = useState(0);
   const [finished, setFinished] = useState(false);
   useEffect(() => {
+    setOptions(null);
+    if (!state.ownerId) return;
     const controller = new AbortController();
     fetch("/api/platform/posts?view=composer", {
       credentials: "same-origin",
@@ -302,6 +464,7 @@ export function PostComposer({ initialChurch }: { initialChurch?: string }) {
           throw new Error(
             result.message ?? "Your publishing choices could not be loaded."
           );
+        if (controller.signal.aborted) return;
         setOptions(result);
         setError("");
       })
@@ -314,7 +477,7 @@ export function PostComposer({ initialChurch }: { initialChurch?: string }) {
           );
       });
     return () => controller.abort();
-  }, [attempt]);
+  }, [attempt, state.ownerId]);
   return (
     <section
       aria-label="Create a post"
@@ -346,6 +509,7 @@ export function PostComposer({ initialChurch }: { initialChurch?: string }) {
           className={portalButtonClass}
           onClick={() => {
             setFinished(false);
+            controller.newDraft();
             setDraftNumber((v) => v + 1);
           }}
         >
