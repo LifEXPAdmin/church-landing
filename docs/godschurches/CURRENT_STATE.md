@@ -3,15 +3,18 @@
 ## Private draft library and manifest — September 11, 2026
 
 The Medium batch adds a signed-in private draft library/discard interface and
-wires the approved web app manifest. Local build/lint/runtime, 22 service/policy
-checks, eight HTTPS checks and ten browser groups passed. Production publication
-and live verification are the next release step; earlier published identity below
-remains authoritative until the release receipt is recorded.
+wires the approved web app manifest. Application `a230b36104507f6918217fc753218c7924b440a0`
+is live in READY deployment `dpl_EfZ2CynF7cxXmr9jZmyB8uUZmZ9z`; canonical domain
+and release SHA match. Local build/lint/runtime, 22 service/policy checks, eight
+workspace/export checks and ten browser groups passed. All 17 existing live API
+checks and ten new draft/manifest checks passed with no browser errors or
+application mutation requests. The deployment error scan was empty. All 27
+production migrations match with none pending; no migration was applied.
 
 See [Draft library and manifest report](DRAFT_LIBRARY_MANIFEST_REPORT.md).
 Autosave/resume now waits for an explicit Extra High reply-permission snapshot
 contract repair. Continue independent Medium saved/collection/search/comment work;
-installation help becomes ready after live manifest verification. No schema or
+installation help is now ready after live manifest verification. No schema or
 provider changes are needed. Physical and parent integration gates remain open.
 
 ## Social foundations published — September 11, 2026

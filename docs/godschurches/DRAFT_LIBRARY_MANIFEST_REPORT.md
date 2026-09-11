@@ -1,8 +1,11 @@
 # Private draft library and app manifest
 
 September 11, 2026. Medium interface batch on `codex/medium-private-library`,
-based on published `777c594`. This report records local acceptance before release;
-the verified deployment receipt is recorded separately after production checks.
+based on published `777c594`. Application `a230b36104507f6918217fc753218c7924b440a0`
+is published in READY deployment `dpl_EfZ2CynF7cxXmr9jZmyB8uUZmZ9z`.
+Separate canonical-domain inspection and the live release endpoint match.
+The report-only follow-up keeps the same application; its serving identity is
+recorded in the private release handoff after verification.
 
 ## Implemented
 
@@ -44,6 +47,16 @@ suite created its own fictional posts. The assertion now checks the draft-test
 owner, and the final browser run passed. An initial test-harness certificate
 path was corrected to use the isolated certificate; TLS verification stays on.
 
+## Live verification
+
+At 18:39 UTC, all 17 existing live API checks and ten draft/manifest browser/HTTP
+checks passed. The new guest route retains no-store/noindex behavior and safe
+sign-in return at 320/390px. Manifest metadata is present once across Home, Menu
+and Drafts; live icon MIME/dimensions match and the browser parses the manifest.
+The browser reported no errors and sent no application mutation requests. The
+specific production deployment error-log scan returned no entries. Authenticated
+discard/retry acceptance used isolated local accounts, not production fixtures.
+
 ## Remaining scope and next action
 
 Draft creation/autosave and resume are separate Medium slices. Code inspection
@@ -53,8 +66,8 @@ now assigns preservation/backward compatibility of reply permissions to a P2
 Extra High contract repair. Do not start dependent autosave/resume work until
 that contract is verified. Existing completed foundations remain complete.
 
-Manifest completion unlocks the existing Medium installation-help task after
-live verification. Saved collections, post Save/Remove, search and comment
+Manifest completion and live verification unlock the existing Medium
+installation-help task. Saved collections, post Save/Remove, search and comment
 interfaces remain ready independent work. Physical Samsung/iOS installation,
 provider activation, broader parent integration and the final expanded-batch
 review remain open. This slice covers the private-library subset of the post
