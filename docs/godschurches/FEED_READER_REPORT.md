@@ -1,5 +1,15 @@
 # Focused My feed reader
 
+## Integrated application published
+
+The candidate below is published as application
+`c7067ae8d0d1dd14b1da7bb3ab3537cb65fe3c5c`, READY deployment
+`dpl_4ibe716oCJhfJRuBFJS1Gmuia1cc`. Canonical identity and 17 live read-only
+HTTP checks passed at 2026-09-11 03:15 UTC. Live guest paging exposed both
+available public authors; My feed locked the background, and Close restored
+Home interaction and opener focus. No real posts, likes, comments or accounts
+were changed. Report-only follow-ups can redeploy this same application.
+
 ## Integrated reader candidate — September 10, 2026
 
 Home and My feed now use the audience-aware post service, including frozen

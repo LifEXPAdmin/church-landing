@@ -1,6 +1,22 @@
 # Church positions, responsibilities and access
 
-September 10, 2026 · Published structure foundation; local role library, assignment service and Privileges interface verified
+September 10, 2026 · Integrated church editor, role library and Privileges interface published
+
+## Published integrated application
+
+`c7067ae8d0d1dd14b1da7bb3ab3537cb65fe3c5c` reached READY production
+`dpl_4ibe716oCJhfJRuBFJS1Gmuia1cc`. The canonical domain matched that exact
+release; all 17 live read-only HTTP checks passed at 2026-09-11 03:15 UTC.
+Actual guest browser paging and Close verified the integrated reader and Home
+on the public domain, without live account/content writes. Production reports
+25 completed migrations and none unfinished. Remote Linux compilation,
+lint/types and runtime checks passed (95 traces, 7,363 entries, 233 server JS).
+The encrypted backup/restore rehearsal below preceded migration deployment.
+Report-only follow-ups may redeploy the same application; the private current
+handoff keeps the final canonical serving receipt. Real church operations,
+physical Samsung/spoken screen-reader acceptance and the wider QA/pilot/batch
+review remain separate. Image uploads remain explicitly unavailable until
+private storage is configured.
 
 ## Integrated release acceptance — September 10, 2026
 

@@ -1,5 +1,27 @@
 # Godschurches current state
 
+## Integrated release published — September 10, 2026
+
+Application `c7067ae8d0d1dd14b1da7bb3ab3537cb65fe3c5c` is live on
+`https://godschurches.com`, through READY deployment
+`dpl_4ibe716oCJhfJRuBFJS1Gmuia1cc`. Canonical alias identity matched that
+application, and all 17 live read-only HTTP checks passed at
+2026-09-11 03:15 UTC (September 10 local time). Live guest browsing paged through
+both public authors, kept the background inert/locked in My feed and restored
+Home scrolling and opener focus on close. No live post, reaction or account was
+changed by these checks. The nine additive migrations are applied: 25 complete,
+none unfinished. Production email delivery remains enabled; support intake,
+Google sign-in and photo uploads retain their existing inactive settings.
+
+This supersedes the local/unpublished statuses in the earlier checkpoints below.
+The candidate's 374 passing isolated checks, two expected disabled-email skips,
+29 final HTTPS checks and backup/restore evidence remain the release evidence.
+The remote Linux build also passed lint/types and runtime verification (95 traces,
+7,363 entries, 233 server JS files). A report-only follow-up may deploy the same
+application; the IDs above identify the application release actually checked.
+The private handoff records the final serving receipt. The wider batch, real
+reviewer/policy operations, physical-device checks and final review remain open.
+
 ## Integrated church, community and reader release candidate — September 10, 2026
 
 Current main recovery/verification and focused-feed changes are integrated with
