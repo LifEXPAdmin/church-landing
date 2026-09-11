@@ -1,5 +1,23 @@
 # Godschurches current state
 
+## Shared draft composer, resume and safe updates — September 11, 2026
+
+Application `4951b9fefec0064a7e92bbb2c0cf0975ac467281` is published in READY
+deployment `dpl_CTjS9VAETdBh5TCUMZyJV32i2zPB`; canonical-domain and release
+identity checks match. The composer now autosaves private snapshots, retries
+exact requests, handles conflicts deliberately and resumes saved drafts with
+permissions and versions intact. The update notice preserves unresolved work
+and offers only explicit clean refresh, with connection recovery in the open tab.
+
+Fresh verification: 24 service checks, ten controller/policy tests, ten HTTPS/export
+checks, twenty browser groups, lint/types/build/runtime traces and populated
+upgrade/dump-restore passed. All 24 read-only live checks passed at 23:17 UTC;
+zero production mutation requests or migrations. All 27 migration checksums match.
+No service worker, private offline storage or push behavior was added.
+See [the batch report](DRAFT_COMPOSER_UPDATE_REPORT.md). Parent integration,
+rich draft types, physical-device and owner acceptance remain open. The next
+recommended interface slice is installation help at the Medium reasoning route.
+
 ## Private draft reply permission repair — September 11, 2026
 
 The existing private-draft service now preserves both reply modes and blocks

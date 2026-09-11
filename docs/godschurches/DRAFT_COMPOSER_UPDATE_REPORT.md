@@ -24,7 +24,7 @@ are reused without backend or migration changes.
 
 ## Verification
 
-- Nine controller/installation policy checks passed, including legacy null reply
+- Ten controller/installation policy checks passed, including legacy null reply
   choices, both explicit modes, debounce, exact response-loss retry, conflict
   recovery, publish-once and account switching.
 - Twenty-four workspace, canonical publishing and search service checks passed;
@@ -45,7 +45,13 @@ are reused without backend or migration changes.
   checksums match; zero production application writes or migrations.
 
 The final rebuilt ten-group browser run and ten existing draft-library/manifest
-browser regression groups passed. Production release verification is pending at
-this checkpoint; deployment identity and live evidence will be recorded after release. Parent integration, rich image/poll/scheduled draft foundations,
+browser regression groups passed. Application `4951b9fefec0064a7e92bbb2c0cf0975ac467281`
+is published in READY deployment `dpl_CTjS9VAETdBh5TCUMZyJV32i2zPB`.
+Canonical-domain inspection and the rendered/API release identity match.
+At 23:17 UTC, 24 read-only live checks passed: 17 existing API checks,
+four workspace/guest/identity checks and three update-notice browser checks.
+No application mutation requests, browser errors, worker registrations or cache
+entries were observed. The later report/test-only follow-up does not change
+application behavior; its final serving identity is recorded in the private handoff. Parent integration, rich image/poll/scheduled draft foundations,
 physical Samsung/iOS installation and owner acceptance remain open. No owner
 notification was sent by this batch.

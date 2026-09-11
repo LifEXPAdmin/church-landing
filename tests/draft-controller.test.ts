@@ -244,3 +244,24 @@ test("resume protects dirty entries, keeps legacy unresolved permission and stor
   assert.equal(await c.publish(), false);
   c.dispose();
 });
+
+test("resumed publication saves an explicit legacy choice then retries the same publish once", async () => {
+  const f = fixture(),
+    c = f.controller;
+  await c.verify();
+  c.start();
+  f.replace();
+  await c.resume("draft-1");
+  c.change({ ...c.getSnapshot().fields, replyAudience: "CHURCH_MEMBERS" });
+  await c.save();
+  assert.equal(JSON.parse(f.bodies[0]).expectedVersion, 8);
+  f.lose();
+  await c.publish();
+  const body = f.bodies.at(-1);
+  assert.equal(JSON.parse(body!).expectedVersion, 9);
+  await c.retry();
+  assert.equal(f.bodies.at(-1), body);
+  assert.equal(f.posts, 1);
+  assert.equal(c.getSnapshot().fields.replyAudience, "CHURCH_MEMBERS");
+  c.dispose();
+});
