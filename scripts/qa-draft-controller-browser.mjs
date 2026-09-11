@@ -22,7 +22,7 @@ Object.assign(process.env, {
   VERCEL: ""
 });
 const { PrismaClient } = await import("@prisma/client");
-const { createPortalActor, assertPortalTestDatabase, seedPortal } =
+const { assertPortalTestDatabase, seedPortal } =
   await import("../tests/seed-portal.ts");
 const db = new PrismaClient();
 await assertPortalTestDatabase(db);
@@ -79,8 +79,6 @@ const bounded = async () =>
     "No horizontal page overflow"
   );
 
-const { privateDraftPayload } =
-  await import("../lib/platform/post-workspace.ts");
 const signIn = async (actor) =>
   context.addCookies([
     {
@@ -420,6 +418,151 @@ try {
   );
   ok(
     "Account switch clears old draft and pending work without copying it to the new owner"
+  );
+  const notice = () =>
+    page.getByRole("complementary", { name: "Updates and connection" });
+  const loaded = await page
+    .locator(".platform-design[data-release]")
+    .first()
+    .getAttribute("data-release");
+  assert.match(loaded, /^[a-f0-9]{40}$/);
+  let available = "2".repeat(40),
+    checks = 0,
+    offlineTest = false;
+  await page.route("**/api/platform/release", async (route) => {
+    checks++;
+    if (offlineTest) {
+      await route.abort("internetdisconnected");
+      return;
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ release: available })
+    });
+  });
+  const checkUpdate = async () => {
+    await notice()
+      .getByRole("button", { name: "Check for updates", exact: true })
+      .click();
+    await page.waitForFunction(
+      () =>
+        !document
+          .querySelector('[aria-label="Updates and connection"]')
+          ?.textContent.includes("Checking for updates")
+    );
+  };
+  await checkUpdate();
+  assert.equal(
+    await notice().getAttribute("data-update-decision"),
+    "offer-refresh"
+  );
+  await page.getByRole("link", { name: "Menu", exact: true }).first().click();
+  await checkUpdate();
+  assert.equal(
+    await notice().getAttribute("data-update-decision"),
+    "offer-refresh"
+  );
+  const countBefore = checks;
+  await page.evaluate(() => {
+    for (let i = 0; i < 5; i++) window.dispatchEvent(new Event("focus"));
+  });
+  await page.waitForTimeout(200);
+  assert.equal(checks, countBefore);
+  available = loaded;
+  await checkUpdate();
+  assert.equal(await notice().getAttribute("data-update-decision"), "current");
+  available = null;
+  await checkUpdate();
+  assert.equal(await notice().getAttribute("data-update-decision"), "unknown");
+  available = "2".repeat(40);
+  await checkUpdate();
+  const navigation = page.waitForEvent("domcontentloaded");
+  await notice()
+    .getByRole("button", { name: "Refresh now", exact: true })
+    .click();
+  await navigation;
+  ok(
+    "Rendered build identity survives navigation, compares current/unknown/new releases, throttles foreground checks and refreshes only on explicit clean action"
+  );
+  await go("/platform");
+  await page.locator("#compose-post > summary").click();
+  await field().waitFor();
+  await field().fill("Retain me through connection loss");
+  await checkUpdate();
+  assert.equal(
+    await notice().getAttribute("data-update-decision"),
+    "keep-work"
+  );
+  assert.equal(
+    await notice().getByRole("button", { name: "Refresh now" }).count(),
+    0
+  );
+  offlineTest = true;
+  await context.setOffline(true);
+  await page.evaluate(() => window.dispatchEvent(new Event("offline")));
+  await notice().getByRole("button", { name: "Retry connection" }).click();
+  await page.waitForTimeout(200);
+  assert.equal(await notice().getAttribute("data-update-decision"), "unknown");
+  offlineTest = false;
+  await context.setOffline(false);
+  await notice().getByRole("button", { name: "Retry connection" }).click();
+  await field().waitFor();
+  assert.equal(await field().inputValue(), "Retain me through connection loss");
+  let releaseSave;
+  const holdSave = new Promise((resolve) => {
+    releaseSave = resolve;
+  });
+  await page.route("**/api/platform/post-workspace", async (route) => {
+    if (route.request().method() === "POST") await holdSave;
+    await route.continue();
+  });
+  await save();
+  await page.waitForFunction(() =>
+    document
+      .querySelector('form[aria-label="Publish post"]')
+      ?.textContent.includes("Saving…")
+  );
+  assert.equal(
+    await notice().getAttribute("data-update-decision"),
+    "keep-work"
+  );
+  releaseSave();
+  await waitSaved();
+  await page.unroute("**/api/platform/post-workspace");
+  const bDraft = await db.privatePostDraft.findFirstOrThrow({
+    where: { ownerId: b.id }
+  });
+  await postWorkspaceCommand(db, b.token, {
+    operation: "save-draft",
+    id: bDraft.id,
+    expectedVersion: bDraft.version,
+    mutationId: randomUUID(),
+    payload: { ...bDraft.payload, content: "Other tab B" }
+  });
+  await field().fill("My conflict B");
+  await save();
+  await page.getByRole("region", { name: "Draft conflict" }).waitFor();
+  assert.equal(
+    await notice().getAttribute("data-update-decision"),
+    "keep-work"
+  );
+  assert.equal(
+    await notice().getByRole("button", { name: "Refresh now" }).count(),
+    0
+  );
+  assert.equal(
+    await page.evaluate(
+      async () => (await navigator.serviceWorker.getRegistrations()).length
+    ),
+    0
+  );
+  assert.equal(
+    await page.evaluate(async () => (await caches.keys()).length),
+    0
+  );
+  ok(
+    "Update notice retains dirty/offline/in-flight/conflicted work and recovers in the open tab without worker or cache storage"
   );
   assert.deepEqual(errors, []);
   writeFileSync(

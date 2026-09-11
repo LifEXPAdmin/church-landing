@@ -458,6 +458,7 @@ export function PostComposer({
   resumeId?: string;
 }) {
   const { controller, state } = useDraftWorkspace();
+  const [optionsOwner, setOptionsOwner] = useState<string | null>(null);
   const [options, setOptions] = useState<PostComposerOptions | null>(null),
     [error, setError] = useState(""),
     [attempt, setAttempt] = useState(0),
@@ -492,6 +493,7 @@ export function PostComposer({
             result.message ?? "Your publishing choices could not be loaded."
           );
         if (controller.signal.aborted) return;
+        setOptionsOwner(state.ownerId);
         setOptions(result);
         setError("");
       })
@@ -543,7 +545,7 @@ export function PostComposer({
           Open selected draft again
         </button>
       )}
-      {options ? (
+      {options && optionsOwner === state.ownerId ? (
         <ComposerDraft
           key={`${draftNumber}:${state.id}:${state.loadNumber}`}
           options={options}

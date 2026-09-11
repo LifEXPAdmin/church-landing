@@ -53,3 +53,20 @@ Sources reviewed: [Web Application Manifest](https://www.w3.org/TR/appmanifest/)
 for identity/start/scope/display; [MDN service worker lifecycle](https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API/Using_Service_Workers)
 for later worker activation implications. The online-first/no-worker choice is
 this project's scoped implementation decision, not a browser requirement.
+
+## Update notice implementation
+
+The persistent platform layout passes its server-rendered release identity to
+UpdateNotice. The component captures that value once, independently of later
+endpoint responses and client navigation. Explicit checks and foreground returns
+use no-store reads; foreground requests are serialized and limited to one per
+minute. Missing metadata and failed reads remain unknown. Offline recovery asks
+the user to keep the current tab open and retry the connection; it rechecks the
+session before revealing private work.
+
+Refresh now is offered only for a different known release with clean controller
+state. Dirty, saving, publishing, conflict, uncertain retry and pending replacement
+choices suppress it. The click handler rechecks current controller state before
+reloading. No automatic reload, service worker, CacheStorage or push permission
+is introduced. This notice works in ordinary browser tabs; physical installation
+and owner acceptance remain separate checks.

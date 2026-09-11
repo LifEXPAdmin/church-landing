@@ -192,7 +192,13 @@ export class DraftController {
       fields,
       dirty,
       ...(!this.state.failed && !this.state.conflict
-        ? { message: dirty ? "Not saved yet." : "Saved privately." }
+        ? {
+            message: dirty
+              ? "Not saved yet."
+              : this.state.version
+                ? "Saved privately."
+                : "No unsaved changes."
+          }
         : {})
     });
     this.schedule();

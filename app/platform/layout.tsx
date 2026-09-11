@@ -1,3 +1,5 @@
+import { UpdateNotice } from "@/components/platform/update-notice";
+import { publicReleaseId } from "@/lib/platform/install-policy";
 import type { Metadata } from "next";
 import { DraftWorkspaceProvider } from "@/components/platform/draft-workspace-provider";
 
@@ -9,9 +11,17 @@ export default function PlatformLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const release = publicReleaseId(process.env.VERCEL_GIT_COMMIT_SHA);
   return (
-    <div className="platform-design" data-appearance="system">
-      <DraftWorkspaceProvider>{children}</DraftWorkspaceProvider>
+    <div
+      className="platform-design"
+      data-appearance="system"
+      data-release={release ?? ""}
+    >
+      <DraftWorkspaceProvider>
+        <UpdateNotice release={release} />
+        {children}
+      </DraftWorkspaceProvider>
     </div>
   );
 }
