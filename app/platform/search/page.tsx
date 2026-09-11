@@ -1,7 +1,3 @@
-import {
-  communityAuthorSelect,
-  activePublicAccount
-} from "@/lib/platform/public-profile";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ExploreSearchForm } from "@/components/platform/explore-search-form";
@@ -9,7 +5,7 @@ import { ExploreSearchForm } from "@/components/platform/explore-search-form";
 import { readPosts } from "@/lib/platform/post-session";
 import { PostCard } from "@/components/platform/post-card";
 import { PlatformShell } from "@/components/platform/platform-shell";
-import { prisma } from "@/lib/prisma";
+import { readPeopleSearch } from "@/lib/platform/profile-session";
 import { roleLabels } from "@/lib/platform/format";
 import { getCurrentPlatformUser } from "@/lib/platform/session";
 
@@ -31,20 +27,7 @@ export default async function PlatformSearchPage({
 
   const [people, posts] = q
     ? await Promise.all([
-        prisma.platformUser.findMany({
-          select: communityAuthorSelect,
-          where: {
-            ...activePublicAccount,
-            OR: [
-              { name: { contains: q, mode: "insensitive" } },
-              { username: { contains: q.toLowerCase(), mode: "insensitive" } },
-              ...(currentUser
-                ? [{ bio: { contains: q, mode: "insensitive" as const } }]
-                : [])
-            ]
-          },
-          take: 20
-        }),
+        readPeopleSearch(q),
         readPosts({ search: q, limit: 20 })
       ])
     : [[], []];

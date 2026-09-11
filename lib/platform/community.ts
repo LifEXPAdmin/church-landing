@@ -1,15 +1,11 @@
+import { socialUserWhere } from "./social-policy";
 import type { PrismaClient } from "@prisma/client";
 import { randomUUID } from "node:crypto";
 import { postCommandIn } from "./post-commands";
-import {
-  postContext,
-  postCanReply,
-  postReadableWhere,
-  postField
-} from "./post-access";
-import { PortalError } from "./portal";
+import { createCommentIn } from "./comment-commands";
+import { deleteCommentIn, canDeleteComment } from "./comment-policy";
+import { postContext, postReadableWhere, postField } from "./post-access";
 import { withOwnedSession } from "./account-sessions";
-import { activePublicAccount } from "./public-profile";
 
 type CommunityOperation =
   | "post"
@@ -58,12 +54,16 @@ export async function communityCommand(
         await tx.platformFollow.deleteMany({
           where: { followerId: actorId, followingId: targetId }
         });
+        await tx.socialRelationship.updateMany({
+          where: { ownerId: actorId, targetUserId: targetId },
+          data: { favorite: false, version: { increment: 1 } }
+        });
       } else if (operation === "follow") {
         if (
           !targetId ||
           targetId === actorId ||
           !(await tx.platformUser.findFirst({
-            where: { id: targetId, ...activePublicAccount },
+            where: { AND: [{ id: targetId }, socialUserWhere(context)] },
             select: { id: true }
           }))
         )
@@ -78,10 +78,19 @@ export async function communityCommand(
           create: { followerId: actorId, followingId: targetId },
           update: {}
         });
-      } else if (operation === "delete-comment") {
-        await tx.platformPostComment.deleteMany({
-          where: { id: value("commentId", 100), authorId: actorId }
+        await tx.socialRelationship.updateMany({
+          where: { ownerId: actorId, targetUserId: targetId },
+          data: { version: { increment: 1 } }
         });
+      } else if (operation === "delete-comment") {
+        const comment = await tx.platformPostComment.findFirst({
+          where: {
+            id: value("commentId", 100),
+            post: postReadableWhere(context)
+          }
+        });
+        if (comment && canDeleteComment(context, comment))
+          await deleteCommentIn(tx, comment);
       } else {
         const post = postId
           ? await tx.platformPost.findFirst({
@@ -98,16 +107,8 @@ export async function communityCommand(
               data: { postId, userId: actorId }
             });
         } else if (operation === "comment") {
-          if (!postCanReply(context, post))
-            throw new PortalError(
-              403,
-              "Replies are closed or limited to approved church members."
-            );
           const content = postField(input.content, 400, 2);
-          if (content.length >= 2)
-            await tx.platformPostComment.create({
-              data: { postId, authorId: actorId, content }
-            });
+          await createCommentIn(tx, context, { postId, content });
         }
       }
     },

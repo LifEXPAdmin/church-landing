@@ -1,3 +1,4 @@
+import { searchPeople } from "./relationships";
 import { prisma } from "@/lib/prisma";
 import { privateCookies } from "./private-cookies";
 import { PLATFORM_SESSION_COOKIE } from "./session";
@@ -30,4 +31,9 @@ export const readMemberProfile = (
       username,
       query
     )
+  );
+
+export const readPeopleSearch = (query: string) =>
+  privateCookies().then((store) =>
+    searchPeople(prisma, store.get(PLATFORM_SESSION_COOKIE)?.value, query)
   );

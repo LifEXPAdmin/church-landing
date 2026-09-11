@@ -205,7 +205,18 @@ export async function downloadAccountExport(
       where: { authorId: userId },
       orderBy: { id: "asc" },
       take: MAX_ROWS + 1,
-      select: { id: true, postId: true, createdAt: true, content: true }
+      select: {
+        id: true,
+        postId: true,
+        createdAt: true,
+        content: true,
+        parentId: true,
+        rootId: true,
+        authorChurchId: true,
+        version: true,
+        editedAt: true,
+        deletedAt: true
+      }
     });
     const likes = await tx.platformPostLike.findMany({
       where: { userId },
@@ -519,6 +530,59 @@ export async function downloadAccountExport(
       churchListings,
       posts,
       images,
+      socialPreferences: await tx.socialPreferences.findMany({
+        where: { ownerId: userId },
+        select: {
+          mentions: true,
+          showRelationships: true,
+          version: true,
+          updatedAt: true
+        },
+        take: 1
+      }),
+      socialRelationships: await tx.socialRelationship.findMany({
+        where: { ownerId: userId },
+        select: {
+          targetUserId: true,
+          churchId: true,
+          followingChurch: true,
+          favorite: true,
+          muted: true,
+          snoozedUntil: true,
+          blocked: true,
+          version: true,
+          updatedAt: true
+        },
+        orderBy: { id: "asc" },
+        take: MAX_ROWS + 1
+      }),
+      commentDrafts: await tx.privateCommentDraft.findMany({
+        where: { ownerId: userId, deletedAt: null },
+        select: {
+          id: true,
+          postId: true,
+          replyToId: true,
+          authorChurchId: true,
+          content: true,
+          mentionIds: true,
+          version: true,
+          updatedAt: true
+        },
+        orderBy: { id: "asc" },
+        take: MAX_ROWS + 1
+      }),
+      commentLikes: await tx.commentLike.findMany({
+        where: { userId, active: true },
+        select: { commentId: true, version: true, updatedAt: true },
+        orderBy: { id: "asc" },
+        take: MAX_ROWS + 1
+      }),
+      conversationPreferences: await tx.conversationPreference.findMany({
+        where: { ownerId: userId },
+        select: { postId: true, mode: true, version: true, updatedAt: true },
+        orderBy: { id: "asc" },
+        take: MAX_ROWS + 1
+      }),
       comments,
       likes,
       following,
@@ -534,7 +598,7 @@ export async function downloadAccountExport(
         version: 1,
         generatedAt: new Date().toISOString(),
         scope:
-          "Your account profile, presentation preferences and linked Google identity, authored community content and personal image metadata, likes/following, private post drafts and saved collection organization (source posts excluded), church directory choices, your own church representative setup and listing drafts/submissions, personal calendars/events and their sharing choices, your event responses and your own support submissions. Other people's content, staff/church operations, credentials, session data and security audit records are excluded. Image binaries are not embedded; image references still require current access. Reading preferences saved only on this browser are not in this account file.",
+          "Your account profile, presentation preferences and linked Google identity, authored community content and personal image metadata, likes/following, private social and conversation choices, private comment drafts and comment Likes, private post drafts and saved collection organization (source posts excluded), church directory choices, your own church representative setup and listing drafts/submissions, personal calendars/events and their sharing choices, your event responses and your own support submissions. Other people's content, staff/church operations, credentials, session data and security audit records are excluded. Image binaries are not embedded; image references still require current access. Reading preferences saved only on this browser are not in this account file.",
         account,
         ...collections
       },

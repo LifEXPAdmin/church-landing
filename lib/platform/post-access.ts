@@ -1,11 +1,16 @@
+import {
+  socialPolicy,
+  socialUserWhere,
+  type SocialPolicy
+} from "./social-policy";
 import { effectiveChurchGrants } from "./church-permissions";
 import type { Prisma, PrismaClient, PlatformPost } from "@prisma/client";
-import { activePublicAccount, communityAuthorSelect } from "./public-profile";
+import { communityAuthorSelect } from "./public-profile";
 import { isEligible, PortalError } from "./portal";
 import { readAccountSession } from "./accounts";
 
 export type PostTx = Prisma.TransactionClient;
-export type PostContext = {
+export type PostContext = SocialPolicy & {
   actorId: string | null;
   churches: string[];
   publishers: Set<string>;
@@ -36,7 +41,11 @@ export async function postContext(
     }
   });
   if (!actor || actor.suspendedAt || actor.deactivatedAt) return empty;
-  const context = { ...empty, actorId: actor.id };
+  const context = {
+    ...empty,
+    ...(await socialPolicy(tx, actor.id)),
+    actorId: actor.id
+  };
   if (!isEligible(actor)) return context;
   const connections = await tx.churchConnection.findMany({
     where: { userId, state: "APPROVED" },
@@ -84,7 +93,7 @@ export function postReadableWhere(
       {
         OR: [
           { authorChurchId: { not: null } },
-          { authorChurchId: null, author: activePublicAccount }
+          { authorChurchId: null, author: socialUserWhere(context) }
         ]
       },
       {

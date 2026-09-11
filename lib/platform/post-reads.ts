@@ -1,7 +1,9 @@
+import { socialUserWhere, socialDiscoveryWhere } from "./social-policy";
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { activePublicAccount, communityAuthorSelect } from "./public-profile";
 import { homeFeedMode } from "./home-feed";
 import { canOrganize } from "./post-participation";
+import { commentVisibleWhere } from "./comment-policy";
 import {
   postCanEdit,
   postCanModerate,
@@ -19,6 +21,8 @@ const commentSelect = {
   createdAt: true,
   content: true,
   authorId: true,
+  authorChurchId: true,
+  authorChurch: { select: { id: true, name: true } },
   author: { select: communityAuthorSelect }
 } as const;
 function include(
@@ -30,18 +34,18 @@ function include(
   return {
     ...postInclude,
     likes: {
-      where: { userId: context.actorId ?? "", user: activePublicAccount },
+      where: { userId: context.actorId ?? "", user: socialUserWhere(context) },
       select: { id: true }
     },
     _count: {
       select: {
-        likes: { where: { user: activePublicAccount } },
-        comments: { where: { author: activePublicAccount } }
+        likes: { where: { user: socialUserWhere(context) } },
+        comments: { where: commentVisibleWhere(context) }
       }
     },
     comments: {
       where: {
-        author: activePublicAccount,
+        AND: [commentVisibleWhere(context)],
         ...(before && cursor
           ? {
               OR: [
@@ -106,8 +110,17 @@ function project(post: PostRow, context: PostContext, now: Date) {
       id: c.id,
       createdAt: c.createdAt,
       content: c.content,
-      author: c.author,
-      canDelete: context.actorId === c.authorId
+      author: c.authorChurch
+        ? {
+            id: c.authorChurch.id,
+            name: c.authorChurch.name,
+            username: null,
+            role: "CHURCH" as const
+          }
+        : c.author,
+      canDelete: c.authorChurchId
+        ? context.publishers.has(c.authorChurchId)
+        : context.actorId === c.authorId
     }))
   };
 }
@@ -133,14 +146,27 @@ export async function listPostsIn(
   const filters: Prisma.PlatformPostWhereInput[] = [
     postReadableWhere(context, now)
   ];
+  if (query.feed || query.search) filters.push(socialDiscoveryWhere(context));
   // Community mode broadens selection only after the audience/status boundary.
   if (query.feed && context.actorId && homeFeedMode() === "following") {
     const following = await tx.platformFollow.findMany({
       where: { followerId: context.actorId, following: activePublicAccount },
       select: { followingId: true }
     });
+    const followedChurches = await tx.socialRelationship.findMany({
+      where: { ownerId: context.actorId, followingChurch: true },
+      select: { churchId: true },
+      take: 2000
+    });
     filters.push({
       OR: [
+        {
+          authorChurchId: {
+            in: followedChurches.flatMap((r) =>
+              r.churchId ? [r.churchId] : []
+            )
+          }
+        },
         {
           authorChurchId: null,
           authorId: {

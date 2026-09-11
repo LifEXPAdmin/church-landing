@@ -320,8 +320,14 @@ export default async function MemberProfilePage({
           <div className="gc-profile-summary">
             <p className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-gc-muted">
               <span>{profile.postCount} posts</span>
-              <span>{profile._count.followers} followers</span>
-              <span>{profile._count.following} following</span>
+              <span>
+                {profile.relationshipsVisible
+                  ? `${profile._count.followers} followers`
+                  : "Relationship counts are private"}
+              </span>
+              {profile.relationshipsVisible && (
+                <span>{profile._count.following} following</span>
+              )}
             </p>
             <nav
               aria-label="Profile sections"

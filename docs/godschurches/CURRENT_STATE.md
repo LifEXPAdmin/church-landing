@@ -1,5 +1,14 @@
 # Godschurches current state
 
+## Social foundations release candidate — September 11, 2026
+
+Relationship/privacy, threaded conversation, gallery-control and permission-safe
+sharing foundations are implemented and tested on `codex/foundation-unlocks`.
+They include the earlier private workspace/search/install foundation. The final
+production migration and serving verification are pending; see
+[Social foundations release](SOCIAL_FOUNDATIONS_REPORT.md) for fresh checks and
+the expanded Medium queue. Historical local-only sections below are checkpoints.
+
 ## Private workspace and installation foundations — September 11, 2026
 
 A new foundation batch is implemented on `codex/foundation-unlocks`, based on

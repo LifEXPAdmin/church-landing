@@ -7,7 +7,7 @@ import {
   type PostTx
 } from "./post-access";
 import { hasChurchCapability, PortalError } from "./portal";
-import { activePublicAccount } from "./public-profile";
+import { socialUserWhere } from "./social-policy";
 
 export type ImageTarget = Pick<
   MediaAsset,
@@ -35,7 +35,9 @@ export async function readableImageTarget(
     allowed =
       !!context.actorId &&
       !!(await tx.platformUser.findFirst({
-        where: { id: target.profileUserId, ...activePublicAccount },
+        where: {
+          AND: [{ id: target.profileUserId }, socialUserWhere(context)]
+        },
         select: { id: true }
       }));
   else if (target.churchId)

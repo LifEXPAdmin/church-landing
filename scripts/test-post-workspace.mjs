@@ -92,13 +92,13 @@ try {
     sql(["-f", `prisma/migrations/${name}/migration.sql`]);
   sql([
     "-c",
-    `INSERT INTO "PlatformUser" (id,email,username,name,"passwordHash",role,"updatedAt") VALUES ('fixture-upgrade','fixture-upgrade@example.test','fixture_upgrade','Fictional retained account','not-a-login-hash','BELIEVER',CURRENT_TIMESTAMP); INSERT INTO "PlatformPost" (id,"authorId",content,"updatedAt") VALUES ('fixture-retained-post','fixture-upgrade','Retained published content',CURRENT_TIMESTAMP);`
+    `INSERT INTO "PlatformUser" (id,email,username,name,"passwordHash",role,"updatedAt") VALUES ('fixture-upgrade','fixture-upgrade@example.test','fixture_upgrade','Fictional retained account','not-a-login-hash','BELIEVER',CURRENT_TIMESTAMP); INSERT INTO "PlatformUser" (id,email,username,name,role,"updatedAt") VALUES ('fixture-upgrade-second','fixture-upgrade-second@example.test','fixture_second','Fictional second account','BELIEVER',CURRENT_TIMESTAMP); INSERT INTO "PlatformFollow" (id,"followerId","followingId") VALUES ('fixture-retained-follow','fixture-upgrade','fixture-upgrade-second'); INSERT INTO "PlatformPost" (id,"authorId",content,"updatedAt") VALUES ('fixture-retained-post','fixture-upgrade','Retained published content',CURRENT_TIMESTAMP); INSERT INTO "PlatformPostComment" (id,"postId","authorId",content) VALUES ('fixture-retained-comment','fixture-retained-post','fixture-upgrade-second','Retained legacy comment');`
   ]);
   const fingerprint = (url) =>
     sql(
       [
         "-Atc",
-        `SELECT md5(string_agg(row::text, '' ORDER BY row::text)) FROM (SELECT to_jsonb(t) AS row FROM "PlatformUser" t WHERE id='fixture-upgrade' UNION ALL SELECT to_jsonb(t) FROM "PlatformPost" t WHERE id='fixture-retained-post') t`
+        `SELECT md5(string_agg(row::text, '' ORDER BY row::text)) FROM (SELECT to_jsonb(t) AS row FROM "PlatformUser" t WHERE id='fixture-upgrade' UNION ALL SELECT to_jsonb(t) FROM "PlatformPost" t WHERE id='fixture-retained-post' UNION ALL SELECT to_jsonb(t) - ARRAY['parentId','rootId','version','editedAt','deletedAt','authorChurchId'] FROM "PlatformPostComment" t WHERE id='fixture-retained-comment' UNION ALL SELECT to_jsonb(t) FROM "PlatformFollow" t WHERE id='fixture-retained-follow') t`
       ],
       url
     );
@@ -110,7 +110,9 @@ try {
     `PASS: ${migrations.length} migrations and populated upgrade preservation`
   );
   for (const file of [
-    "tests/post-workspace.test.ts",
+    ...(process.argv.includes("--social")
+      ? ["tests/social-foundations.test.ts", "tests/gallery-sharing.test.ts"]
+      : ["tests/post-workspace.test.ts"]),
     "tests/post-publishing.test.ts",
     "tests/community-search.test.ts"
   ]) {
@@ -136,6 +138,32 @@ try {
     restored,
     dump
   ]);
+  const socialTables = [
+    "SocialRelationship",
+    "SocialPreferences",
+    "SocialOperation",
+    "PlatformPostComment",
+    "CommentLike",
+    "CommentMention",
+    "CommentPin",
+    "ConversationPreference",
+    "PrivateCommentDraft",
+    "SocialEvent"
+  ];
+  const socialEvidence = (url) =>
+    socialTables
+      .map((table) =>
+        sql(
+          [
+            "-Atc",
+            `SELECT md5(COALESCE(jsonb_agg(to_jsonb(t) ORDER BY to_jsonb(t)::text)::text, '[]')) FROM "${table}" t`
+          ],
+          url
+        )
+      )
+      .join("\n");
+  if (socialEvidence() !== socialEvidence(restored))
+    throw Error("Restore changed social records");
   const evidence = (url) =>
     sql(
       [

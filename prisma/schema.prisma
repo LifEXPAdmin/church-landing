@@ -147,6 +147,14 @@ model PlatformUser {
   uploadedImages MediaAsset[] @relation("ImageUploader")
   profileImages MediaAsset[] @relation("ProfileImage")
   presentation ProfilePresentation?
+  socialPreferences SocialPreferences?
+  socialRelations SocialRelationship[] @relation("SocialOwner")
+  socialTargets SocialRelationship[] @relation("SocialTarget")
+  socialOperations SocialOperation[]
+  commentLikes CommentLike[]
+  commentMentions CommentMention[]
+  conversationPreferences ConversationPreference[]
+  commentDrafts PrivateCommentDraft[]
   privatePostDrafts PrivatePostDraft[]
   savedPostCollections SavedPostCollection[]
   savedPostItems SavedPostItem[]
@@ -349,6 +357,8 @@ enum DirectoryAudience {
 }
 
 model Church {
+  socialRelations SocialRelationship[]
+  authoredComments PlatformPostComment[]
   id String @id @default(cuid())
   slug String @unique
   name String
@@ -949,6 +959,9 @@ model PlatformPost {
   volunteerSlots PostVolunteerSlot[]
   likes    PlatformPostLike[]
   comments PlatformPostComment[]
+  commentPin CommentPin?
+  conversationPreferences ConversationPreference[]
+  commentDrafts PrivateCommentDraft[]
 
   savedItems SavedPostItem[]
 
@@ -1062,13 +1075,107 @@ model PlatformPostComment {
   createdAt DateTime @default(now())
   postId    String
   authorId  String
+  authorChurchId String?
+  authorChurch Church? @relation(fields: [authorChurchId], references: [id], onDelete: Restrict)
   content   String
+  parentId String?
+  rootId String?
+  version Int @default(1)
+  editedAt DateTime?
+  deletedAt DateTime?
+  parent PlatformPostComment? @relation("CommentParent", fields: [parentId, postId], references: [id, postId], onDelete: NoAction, onUpdate: NoAction)
+  children PlatformPostComment[] @relation("CommentParent")
+  root PlatformPostComment? @relation("CommentRoot", fields: [rootId, postId], references: [id, postId], onDelete: NoAction, onUpdate: NoAction)
+  replies PlatformPostComment[] @relation("CommentRoot")
+  likes CommentLike[]
+  mentions CommentMention[]
+  pin CommentPin?
 
   post   PlatformPost @relation(fields: [postId], references: [id], onDelete: Cascade)
   author PlatformUser @relation(fields: [authorId], references: [id], onDelete: Cascade)
 
   @@index([postId, createdAt])
   @@index([authorId])
+  @@unique([id, postId])
+  @@index([postId, rootId, createdAt, id])
+}
+
+model CommentLike {
+  id String @id @default(cuid())
+  commentId String
+  userId String
+  active Boolean @default(true)
+  version Int @default(1)
+  updatedAt DateTime @updatedAt
+  comment PlatformPostComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user PlatformUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([commentId, userId])
+  @@index([userId])
+}
+
+model CommentMention {
+  id String @id @default(cuid())
+  commentId String
+  recipientId String
+  active Boolean @default(true)
+  createdAt DateTime @default(now())
+  comment PlatformPostComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  recipient PlatformUser @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+  @@unique([commentId, recipientId])
+  @@index([recipientId])
+}
+
+model CommentPin {
+  postId String @id
+  commentId String? @unique
+  version Int @default(1)
+  post PlatformPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  comment PlatformPostComment? @relation(fields: [commentId, postId], references: [id, postId], onDelete: NoAction, onUpdate: NoAction)
+  @@unique([commentId, postId])
+}
+
+model ConversationPreference {
+  id String @id @default(cuid())
+  ownerId String
+  postId String
+  mode String @default("DEFAULT")
+  version Int @default(1)
+  updatedAt DateTime @updatedAt
+  owner PlatformUser @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  post PlatformPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  @@unique([ownerId, postId])
+}
+
+model PrivateCommentDraft {
+  ownerId String
+  id String
+  postId String
+  replyToId String?
+  authorChurchId String?
+  content String
+  mentionIds String[] @default([])
+  version Int @default(1)
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+  owner PlatformUser @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  post PlatformPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  @@id([ownerId, id])
+  @@index([ownerId, deletedAt, postId, replyToId])
+}
+
+// Canonical event intents, not a notification delivery queue. Never copy text,
+// private recipient preferences or credential data into these records.
+model SocialEvent {
+  id String @id @default(cuid())
+  key String @unique
+  kind String
+  actorId String
+  postId String
+  commentId String
+  recipientId String?
+  createdAt DateTime @default(now())
+  @@index([postId, createdAt])
+  @@index([recipientId, createdAt])
 }
 
 model PlatformFollow {
@@ -1243,4 +1350,47 @@ model PostWorkspaceOperation {
   createdAt DateTime @default(now())
   owner PlatformUser @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   @@id([ownerId, key])
+}
+
+
+model SocialPreferences {
+  ownerId String @id
+  version Int @default(1)
+  mentions String @default("EVERYONE")
+  showRelationships Boolean @default(true)
+  updatedAt DateTime @updatedAt
+  owner PlatformUser @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+}
+
+model SocialRelationship {
+  id String @id @default(cuid())
+  ownerId String
+  targetUserId String?
+  churchId String?
+  followingChurch Boolean @default(false)
+  favorite Boolean @default(false)
+  muted Boolean @default(false)
+  snoozedUntil DateTime?
+  blocked Boolean @default(false)
+  version Int @default(1)
+  updatedAt DateTime @updatedAt
+  owner PlatformUser @relation("SocialOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  targetUser PlatformUser? @relation("SocialTarget", fields: [targetUserId], references: [id], onDelete: Cascade)
+  church Church? @relation(fields: [churchId], references: [id], onDelete: Cascade)
+  @@unique([ownerId, targetUserId])
+  @@unique([ownerId, churchId])
+  @@index([targetUserId, blocked])
+  @@index([ownerId, blocked])
+  @@index([ownerId, id])
+}
+
+model SocialOperation {
+  ownerId String
+  key String
+  fingerprint String
+  result Json
+  createdAt DateTime @default(now())
+  owner PlatformUser @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  @@id([ownerId, key])
+  @@index([ownerId, createdAt])
 }

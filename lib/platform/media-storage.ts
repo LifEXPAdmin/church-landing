@@ -46,6 +46,14 @@ export async function boundedBytes(
     reader.releaseLock();
   }
 }
+export function imagesAvailable() {
+  try {
+    imageStorage();
+    return true;
+  } catch {
+    return false;
+  }
+}
 export function imageStorage(): ImageStorage {
   if (
     process.env.MEDIA_STORAGE_MODE === "private-blob" &&

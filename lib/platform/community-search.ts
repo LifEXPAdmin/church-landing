@@ -1,7 +1,8 @@
+import { socialUserWhere, socialDiscoveryWhere } from "./social-policy";
 import { createHash } from "node:crypto";
 import { Prisma, type PrismaClient } from "@prisma/client";
 import { withPostRead, postReadableWhere, postId } from "./post-access";
-import { activePublicAccount, communityAuthorSelect } from "./public-profile";
+import { communityAuthorSelect } from "./public-profile";
 import { POST_TOPICS } from "./post-options";
 import { PortalError } from "./portal";
 
@@ -92,6 +93,7 @@ export function communitySearch(
         where: {
           AND: [
             postReadableWhere(context),
+            socialDiscoveryWhere(context),
             cursorWhere,
             ...(q
               ? [{ OR: [{ content: contains }, { scripture: contains }] }]
@@ -123,8 +125,11 @@ export function communitySearch(
     if (kind === "people") {
       const rows = await tx.platformUser.findMany({
         where: {
-          ...activePublicAccount,
-          ...cursorWhere,
+          AND: [
+            socialUserWhere(context),
+            cursorWhere,
+            { id: { notIn: context.mutedIds ?? [] } }
+          ],
           OR: [{ name: contains }, { username: contains }]
         },
         select: communityAuthorSelect,

@@ -17,6 +17,7 @@
     "preview:portal": "node scripts/test-account-security.mjs --portal --preview",
     "test:support": "node scripts/test-account-security.mjs --support",
     "preview:support": "node scripts/test-account-security.mjs --support --preview",
+    "test:social-foundations": "node scripts/test-post-workspace.mjs --social",
     "test:post-workspace": "node scripts/test-post-workspace.mjs"
   },
   "dependencies": {

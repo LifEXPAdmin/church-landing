@@ -19,6 +19,10 @@ export function safeAccountReturn(value: unknown): string {
   )
     return "/platform";
   const query = new URLSearchParams();
+  if (/^\/platform\/posts\/[a-zA-Z0-9_-]{1,100}\/?$/.test(url.pathname)) {
+    const comment = readerId(url.searchParams.get("comment"));
+    if (comment) query.set("comment", comment);
+  }
   if (
     ["/platform/church-listings/new", "/platform/church-claims/new"].includes(
       url.pathname

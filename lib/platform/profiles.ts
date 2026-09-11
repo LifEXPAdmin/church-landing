@@ -1,3 +1,4 @@
+import { socialUserWhere } from "./social-policy";
 import type { PrismaClient } from "@prisma/client";
 import { activePublicAccount, publicProfileSelect } from "./public-profile";
 import { defaultProfileStyle } from "./profile-style";
@@ -5,7 +6,7 @@ import { listImagesIn } from "./media";
 import { listPostsIn } from "./post-reads";
 import { postReadableWhere, withPostRead } from "./post-access";
 import { PortalError } from "./portal";
-import { imageStorage } from "./media-storage";
+import { imagesAvailable } from "./media-storage";
 
 export const profilePresentationSelect = {
   version: true,
@@ -42,14 +43,15 @@ export function getMemberProfile(
     if (!context.actorId)
       throw new PortalError(401, "Sign in to view member profiles.");
     const profile = await tx.platformUser.findFirst({
-      where: { username, ...activePublicAccount },
+      where: { username, ...socialUserWhere(context) },
       select: {
         ...publicProfileSelect,
+        socialPreferences: { select: { showRelationships: true } },
         presentation: { select: profilePresentationSelect },
         _count: {
           select: {
-            followers: { where: { follower: activePublicAccount } },
-            following: { where: { following: activePublicAccount } }
+            followers: { where: { follower: socialUserWhere(context) } },
+            following: { where: { following: socialUserWhere(context) } }
           }
         }
       }
@@ -95,8 +97,16 @@ export function getMemberProfile(
       },
       select: { id: true }
     }));
+    const { socialPreferences, ...visibleProfile } = profile;
+    const relationshipsVisible =
+      (profile.id === context.actorId && !memberPreview) ||
+      socialPreferences?.showRelationships !== false;
     return {
-      ...profile,
+      ...visibleProfile,
+      relationshipsVisible,
+      _count: relationshipsVisible
+        ? profile._count
+        : { followers: null, following: null },
       presentation: profile.presentation ?? defaultProfileStyle,
       avatar,
       cover,
@@ -119,17 +129,10 @@ export function getProfileEditor(db: PrismaClient, token: unknown) {
         presentation: { select: profilePresentationSelect }
       }
     });
-    let imagesAvailable = false;
-    try {
-      imageStorage();
-      imagesAvailable = true;
-    } catch {
-      /* Server configuration is not ready. */
-    }
     return {
       ...profile,
       presentation: profile.presentation ?? defaultProfileStyle,
-      imagesAvailable,
+      imagesAvailable: imagesAvailable(),
       avatar:
         (await listImagesIn(tx, context, "PROFILE_AVATAR", profile.id))[0] ??
         null,

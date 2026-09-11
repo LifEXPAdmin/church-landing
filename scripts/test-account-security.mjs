@@ -217,7 +217,27 @@ try {
     ["PrivatePostDraft", "id"],
     ["SavedPostCollection", "id"],
     ["SavedPostItem", "id"],
-    ["PostWorkspaceOperation", "key"]
+    ["PostWorkspaceOperation", "key"],
+    ...[
+      "SocialRelationship",
+      "SocialOperation",
+      "SocialPreferences",
+      "CommentLike",
+      "CommentMention",
+      "CommentPin",
+      "ConversationPreference",
+      "PrivateCommentDraft",
+      "SocialEvent"
+    ].map((name) => [
+      name,
+      name === "SocialPreferences"
+        ? "ownerId"
+        : name === "CommentPin"
+          ? "postId"
+          : name === "SocialOperation"
+            ? "key"
+            : "id"
+    ])
   ];
   const supportTables = [
     ["SupportCapabilityGrant", "id"],
@@ -233,9 +253,11 @@ try {
     const row =
       beforeChurch && table === "PlatformUser"
         ? `to_jsonb(t) - ARRAY['deactivatedAt','suspendedAt','adultAcknowledgedAt','adultPolicyVersion','portalVersion']`
-        : beforeChurch && table === "PlatformPost"
-          ? `jsonb_build_object('id',t.id,'createdAt',t."createdAt",'updatedAt',t."updatedAt",'authorId',t."authorId",'type',t.type,'content',t.content,'scripture',t.scripture)`
-          : "to_jsonb(t)";
+        : beforeChurch && table === "PlatformPostComment"
+          ? `to_jsonb(t) - ARRAY['parentId','rootId','version','editedAt','deletedAt','authorChurchId']`
+          : beforeChurch && table === "PlatformPost"
+            ? `jsonb_build_object('id',t.id,'createdAt',t."createdAt",'updatedAt',t."updatedAt",'authorId',t."authorId",'type',t.type,'content',t.content,'scripture',t.scripture)`
+            : "to_jsonb(t)";
     return psql(
       [
         "-Atc",
@@ -267,8 +289,8 @@ try {
       JOIN pg_namespace n ON n.oid = r.relnamespace
       WHERE n.nspname = 'public' AND r.relname IN (${churchNames})
       UNION ALL
-      SELECT 'trigger', t.tgname, pg_get_triggerdef(t.oid) FROM pg_trigger t JOIN pg_class r ON r.oid = t.tgrelid WHERE r.relname IN ('SupportCase','SupportCapabilityGrant','ChurchPosition') AND NOT t.tgisinternal
-      UNION ALL SELECT 'function', p.proname, pg_get_functiondef(p.oid) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname='church_position_acyclic'
+      SELECT 'trigger', t.tgname, pg_get_triggerdef(t.oid) FROM pg_trigger t JOIN pg_class r ON r.oid = t.tgrelid WHERE r.relname IN ('SupportCase','SupportCapabilityGrant','ChurchPosition','PlatformPostComment') AND NOT t.tgisinternal
+      UNION ALL SELECT 'function', p.proname, pg_get_functiondef(p.oid) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname IN ('church_position_acyclic','comment_thread_shape')
     ) t`
       ],
       url
@@ -519,6 +541,8 @@ try {
   if (portalTests) await runTests("tests/post-publishing.test.ts");
   if (portalTests) await runTests("tests/post-workspace.test.ts");
   if (portalTests) await runTests("tests/community-search.test.ts");
+  if (portalTests) await runTests("tests/social-foundations.test.ts");
+  if (portalTests) await runTests("tests/gallery-sharing.test.ts");
   if (portalTests) await runTests("tests/install-policy.test.ts");
   if (portalTests) await runTests("tests/post-participation.test.ts");
   if (portalTests) await runTests("tests/post-editor.test.ts");
@@ -938,6 +962,7 @@ try {
       CALENDAR_RENDER_PHASE: "production"
     });
     await runTests("tests/post-workspace-http.test.ts", portalEnv);
+    await runTests("tests/social-foundations-http.test.ts", portalEnv);
     await runTests("tests/post-publishing-http.test.ts", {
       ...portalEnv,
       POST_RENDER_PHASE: "production"
