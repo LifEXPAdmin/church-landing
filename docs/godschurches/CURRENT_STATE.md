@@ -1,5 +1,19 @@
 # Godschurches current state
 
+## Private draft library and manifest — September 11, 2026
+
+The Medium batch adds a signed-in private draft library/discard interface and
+wires the approved web app manifest. Local build/lint/runtime, 22 service/policy
+checks, eight HTTPS checks and ten browser groups passed. Production publication
+and live verification are the next release step; earlier published identity below
+remains authoritative until the release receipt is recorded.
+
+See [Draft library and manifest report](DRAFT_LIBRARY_MANIFEST_REPORT.md).
+Autosave/resume now waits for an explicit Extra High reply-permission snapshot
+contract repair. Continue independent Medium saved/collection/search/comment work;
+installation help becomes ready after live manifest verification. No schema or
+provider changes are needed. Physical and parent integration gates remain open.
+
 ## Social foundations published — September 11, 2026
 
 Application `2e58ac913227efa22e8dcb0a0e9445668465d0d0` is live through READY
