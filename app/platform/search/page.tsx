@@ -4,7 +4,7 @@ import {
 } from "@/lib/platform/public-profile";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Search } from "lucide-react";
+import { ExploreSearchForm } from "@/components/platform/explore-search-form";
 
 import { readPosts } from "@/lib/platform/post-session";
 import { PostCard } from "@/components/platform/post-card";
@@ -15,7 +15,7 @@ import { getCurrentPlatformUser } from "@/lib/platform/session";
 
 export const metadata: Metadata = {
   title: { absolute: "Explore | Godschurches" },
-  description: "Find people and public posts on Godschurches."
+  description: "Find people and posts you can view on Godschurches."
 };
 
 export const dynamic = "force-dynamic";
@@ -59,26 +59,7 @@ export default async function PlatformSearchPage({
           <h1 className="text-5xl text-gc-text">
             Find your people. Discover their stories.
           </h1>
-          <form className="mt-6 flex flex-col gap-3 sm:flex-row">
-            <input
-              name="q"
-              type="search"
-              aria-label="Search people and public posts"
-              maxLength={200}
-              defaultValue={q}
-              placeholder="Search prayer, creators, churches, testimony"
-              className="min-w-0 flex-1 rounded-full border border-gc-divider bg-gc-canvas px-5 py-3 outline-none focus:border-gc-action"
-            />
-            <button className="inline-flex items-center justify-center rounded-full bg-gc-action px-6 py-3 font-semibold text-gc-text hover:bg-gc-hover">
-              <Search className="mr-2 h-4 w-4" /> Search
-            </button>
-          </form>
-          <Link
-            className="mt-4 inline-flex min-h-11 items-center text-gc-accent underline"
-            href="/platform/churches"
-          >
-            Browse church pages
-          </Link>
+          <ExploreSearchForm key={q} query={q} />
         </div>
 
         {q ? (
@@ -105,7 +86,7 @@ export default async function PlatformSearchPage({
               )}
             </aside>
             <div className="space-y-5">
-              <h2 className="text-3xl text-gc-text">Posts</h2>
+              <h2 className="text-3xl text-gc-text">Matching posts</h2>
               {posts.length ? (
                 posts.map((post) => (
                   <PostCard
@@ -124,8 +105,8 @@ export default async function PlatformSearchPage({
           </div>
         ) : (
           <div className="rounded-xl border border-gc-divider bg-gc-surface p-8 text-gc-muted">
-            Try searching for prayer, testimony, church, creator, or a
-            person&apos;s name.
+            Search for a person’s name or words in a post. Church pages have
+            their own search.
           </div>
         )}
       </section>

@@ -9,6 +9,7 @@ import { ComposePostButton } from "@/components/platform/compose-post-button";
 import { PlatformShell } from "@/components/platform/platform-shell";
 import { getCurrentPlatformUser } from "@/lib/platform/session";
 import { homeFeedMode } from "@/lib/platform/home-feed";
+import { accountEntryHref } from "@/lib/platform/account-entry";
 import { accountDeliveryAvailable } from "@/lib/platform/account-availability";
 
 export type FeedParams = {
@@ -90,17 +91,20 @@ export default async function HomeFeedPage({
           <div className="gc-welcome">
             <h2>Take a look around.</h2>
             <p>
-              Read public posts and comments, discover churches, and get to know
-              Godschurches at your own pace. Join whenever you’re ready to take
-              part.
+              Read public conversations and discover churches. Join when you’re
+              ready to take part.
             </p>
-            <Link
-              href="/platform/churches"
-              className="gc-button gc-button-quiet"
-            >
-              Explore churches
-              <ArrowRight aria-hidden="true" />
-            </Link>
+            <div className="flex flex-wrap gap-3">
+              <Link href={accountEntryHref("signup")} className="gc-button">
+                Join Godschurches
+              </Link>
+              <Link
+                href="/platform/search"
+                className="gc-button gc-button-quiet"
+              >
+                Explore <ArrowRight aria-hidden="true" />
+              </Link>
+            </div>
           </div>
         )}
         <div className="gc-home-columns">
@@ -151,15 +155,13 @@ export default async function HomeFeedPage({
                   <p>
                     {currentUser && !community
                       ? "This space grows with the people you follow. Find someone to connect with, or share the first word of encouragement."
-                      : "Public conversations will appear here as people share. You can explore church pages while this community grows."}
+                      : "Conversations will appear here as people share. In the meantime, learn how this community works."}
                   </p>
                   <Link
-                    href={
-                      currentUser ? "/platform/search" : "/platform/churches"
-                    }
+                    href={currentUser ? "/platform/search" : "/about"}
                     className="gc-button gc-button-quiet"
                   >
-                    {currentUser ? "Find your people" : "Explore churches"}
+                    {currentUser ? "Find your people" : "About Godschurches"}
                     <ArrowRight aria-hidden="true" />
                   </Link>
                 </div>

@@ -17,6 +17,7 @@ import {
   readVisitorProfilePreview
 } from "@/lib/platform/profile-session";
 import { PortalError } from "@/lib/platform/portal";
+import { accountReasons } from "@/lib/platform/account-entry";
 import { GuestAccountPrompt } from "@/components/platform/guest-account-prompt";
 
 export async function generateMetadata({
@@ -25,8 +26,11 @@ export async function generateMetadata({
   params: Promise<{ username: string }>;
 }): Promise<Metadata> {
   const { username } = await params;
+  const user = await getCurrentPlatformUser();
   return {
-    title: { absolute: `@${username} | Godschurches` },
+    title: {
+      absolute: user ? `@${username} | Godschurches` : accountReasons.profile
+    },
     description: "Sign in to view member profiles on Godschurches.",
     robots: { index: false, follow: false }
   };

@@ -2,13 +2,24 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { PlatformShell } from "@/components/platform/platform-shell";
 import { GuestAccountPrompt } from "@/components/platform/guest-account-prompt";
-import { safeAccountReturn } from "@/lib/platform/account-entry";
+import {
+  accountReasons,
+  accountReason,
+  safeAccountReturn
+} from "@/lib/platform/account-entry";
 import { getCurrentPlatformUser } from "@/lib/platform/session";
 
-export const metadata: Metadata = {
-  title: "Join the conversation",
-  robots: { index: false, follow: false }
-};
+export async function generateMetadata({
+  searchParams
+}: {
+  searchParams: Promise<{ reason?: string }>;
+}): Promise<Metadata> {
+  const { reason } = await searchParams;
+  return {
+    title: { absolute: accountReasons[accountReason(reason)] },
+    robots: { index: false, follow: false }
+  };
+}
 export default async function JoinPage({
   searchParams
 }: {
