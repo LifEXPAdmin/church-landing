@@ -42,3 +42,15 @@ export async function allowAccountAttempt(
     900
   );
 }
+
+// Autosave needs a separate budget from password and publishing attempts.
+export async function allowWorkspaceAttempt(
+  db: PrismaClient,
+  secret: string,
+  ownerId: string
+) {
+  const key = createHmac("sha256", secret)
+    .update(`post-workspace:${ownerId}`)
+    .digest("hex");
+  return hit(db, key, 240, 900);
+}

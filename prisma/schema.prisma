@@ -147,6 +147,10 @@ model PlatformUser {
   uploadedImages MediaAsset[] @relation("ImageUploader")
   profileImages MediaAsset[] @relation("ProfileImage")
   presentation ProfilePresentation?
+  privatePostDrafts PrivatePostDraft[]
+  savedPostCollections SavedPostCollection[]
+  savedPostItems SavedPostItem[]
+  postWorkspaceOperations PostWorkspaceOperation[]
 
   posts     PlatformPost[]
   postLikes PlatformPostLike[]
@@ -946,6 +950,8 @@ model PlatformPost {
   likes    PlatformPostLike[]
   comments PlatformPostComment[]
 
+  savedItems SavedPostItem[]
+
   @@unique([authorId, requestKey])
   @@index([authorId])
   @@index([type])
@@ -1180,4 +1186,61 @@ model ChurchChartSave {
   actor PlatformUser @relation(fields: [actorId], references: [id], onDelete: Restrict)
   @@unique([churchId, resultVersion])
   @@index([churchId, createdAt])
+}
+
+// Author-private unfinished composer input, separate from published post status.
+// Tombstones prevent a delayed autosave from recreating discarded/published work.
+model PrivatePostDraft {
+  publicationKey String @default(cuid())
+  id String
+  ownerId String
+  version Int @default(1)
+  payload Json
+  publishedPostId String?
+  deletedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  owner PlatformUser @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  @@id([ownerId, id])
+  @@index([ownerId, deletedAt, id])
+}
+
+model SavedPostCollection {
+  id String
+  ownerId String
+  name String
+  version Int @default(1)
+  deletedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  owner PlatformUser @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  items SavedPostItem[]
+  @@id([ownerId, id])
+  @@index([ownerId, deletedAt, id])
+}
+
+model SavedPostItem {
+  id String @id @default(cuid())
+  ownerId String
+  postId String?
+  collectionId String?
+  version Int @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  owner PlatformUser @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  post PlatformPost? @relation(fields: [postId], references: [id], onDelete: SetNull)
+  collection SavedPostCollection? @relation(fields: [ownerId, collectionId], references: [ownerId, id], onDelete: Restrict)
+  @@unique([ownerId, postId])
+  @@index([ownerId, collectionId, id])
+}
+
+// Receipts contain only IDs/versions, never draft text or source excerpts.
+model PostWorkspaceOperation {
+  ownerId String
+  key String
+  fingerprint String
+  result Json
+  createdAt DateTime @default(now())
+  owner PlatformUser @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  @@id([ownerId, key])
 }

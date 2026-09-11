@@ -427,6 +427,43 @@ export async function downloadAccountExport(
       select: { occurrenceId: true, state: true, updatedAt: true }
     });
     const collections = {
+      privatePostDrafts: await tx.privatePostDraft.findMany({
+        where: { ownerId: userId, deletedAt: null },
+        orderBy: { id: "asc" },
+        take: MAX_ROWS + 1,
+        select: {
+          id: true,
+          payload: true,
+          version: true,
+          createdAt: true,
+          updatedAt: true
+        }
+      }),
+      savedPostCollections: await tx.savedPostCollection.findMany({
+        where: { ownerId: userId, deletedAt: null },
+        orderBy: { id: "asc" },
+        take: MAX_ROWS + 1,
+        select: {
+          id: true,
+          name: true,
+          version: true,
+          createdAt: true,
+          updatedAt: true
+        }
+      }),
+      savedPostItems: await tx.savedPostItem.findMany({
+        where: { ownerId: userId },
+        orderBy: { id: "asc" },
+        take: MAX_ROWS + 1,
+        // Export the owner's organization only, never a source's former content or identity.
+        select: {
+          id: true,
+          collectionId: true,
+          version: true,
+          createdAt: true,
+          updatedAt: true
+        }
+      }),
       personalPolls: await tx.postPoll.findMany({
         where: { post: { authorId: userId, authorChurchId: null } },
         orderBy: { id: "asc" },
@@ -497,7 +534,7 @@ export async function downloadAccountExport(
         version: 1,
         generatedAt: new Date().toISOString(),
         scope:
-          "Your account profile, presentation preferences and linked Google identity, authored community content and personal image metadata, likes/following, church directory choices, your own church representative setup and listing drafts/submissions, personal calendars/events and their sharing choices, your event responses and your own support submissions. Other people's content, staff/church operations, credentials, session data and security audit records are excluded. Image binaries are not embedded; image references still require current access. Reading preferences saved only on this browser are not in this account file.",
+          "Your account profile, presentation preferences and linked Google identity, authored community content and personal image metadata, likes/following, private post drafts and saved collection organization (source posts excluded), church directory choices, your own church representative setup and listing drafts/submissions, personal calendars/events and their sharing choices, your event responses and your own support submissions. Other people's content, staff/church operations, credentials, session data and security audit records are excluded. Image binaries are not embedded; image references still require current access. Reading preferences saved only on this browser are not in this account file.",
         account,
         ...collections
       },

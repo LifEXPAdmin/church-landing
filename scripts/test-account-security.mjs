@@ -213,7 +213,11 @@ try {
     ["PostVolunteerSignup", "id"],
     ["MediaAsset", "id"],
     ["MediaGarbage", "storagePrefix"],
-    ["ProfilePresentation", "userId"]
+    ["ProfilePresentation", "userId"],
+    ["PrivatePostDraft", "id"],
+    ["SavedPostCollection", "id"],
+    ["SavedPostItem", "id"],
+    ["PostWorkspaceOperation", "key"]
   ];
   const supportTables = [
     ["SupportCapabilityGrant", "id"],
@@ -513,6 +517,9 @@ try {
     await runTests("tests/church-assignment-permissions.test.ts");
   if (portalTests) await runTests("tests/calendars.test.ts");
   if (portalTests) await runTests("tests/post-publishing.test.ts");
+  if (portalTests) await runTests("tests/post-workspace.test.ts");
+  if (portalTests) await runTests("tests/community-search.test.ts");
+  if (portalTests) await runTests("tests/install-policy.test.ts");
   if (portalTests) await runTests("tests/post-participation.test.ts");
   if (portalTests) await runTests("tests/post-editor.test.ts");
   if (portalTests) await runTests("tests/post-link-fetch.test.ts");
@@ -662,10 +669,10 @@ try {
       CALENDAR_RENDER_PHASE: "development"
     });
   if (portalTests)
-    await runTests("tests/post-publishing-http.test.ts", {
-      ...env,
-      POST_RENDER_PHASE: "development"
-    });
+  await runTests("tests/post-publishing-http.test.ts", {
+    ...env,
+    POST_RENDER_PHASE: "development"
+  });
   if (portalTests)
     await runTests("tests/post-editor-http.test.ts", {
       ...env,
@@ -930,6 +937,7 @@ try {
       ...portalEnv,
       CALENDAR_RENDER_PHASE: "production"
     });
+    await runTests("tests/post-workspace-http.test.ts", portalEnv);
     await runTests("tests/post-publishing-http.test.ts", {
       ...portalEnv,
       POST_RENDER_PHASE: "production"

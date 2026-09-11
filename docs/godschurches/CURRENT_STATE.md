@@ -1,5 +1,54 @@
 # Godschurches current state
 
+## Private workspace and installation foundations — September 11, 2026
+
+A new foundation batch is implemented on `codex/foundation-unlocks`, based on
+published application `46c6567`. It is not deployed and the new migration has not
+been applied to production. The prior section remains the latest production
+receipt; this batch reports isolated local checks only.
+
+- Private versioned draft snapshots, stale-tab conflicts, exact retries,
+  discard tombstones and atomic publish-once behavior now have session-owned APIs.
+- Private saved collections/items enforce ownership in both services and database
+  keys. Reads recheck current source access and redact unavailable sources.
+- Community search supplies bounded, permission-filtered posts, author labels,
+  churches, published church event occurrences and explicit topic vocabulary.
+- Installation identity/start/scope/icons and online-first caching/update policy
+  are settled. The server embeds its public build identity for safe update
+  comparison; a no-store endpoint and tested decision helper support the next UI.
+- Account export includes the owner's active workspace data with explicit fields.
+
+Contracts: [Private post workspace and community search](POST_WORKSPACE_CONTRACT.md)
+and [Installation and update foundation](INSTALLATION_CONTRACT.md). They define
+actual API paths, inputs/results, limits, versions/retries, errors, pagination,
+permission checks and focused interface acceptance. Medium work should continue
+from this branch in the existing medium checkout, not an older main checkout.
+
+Verification: 20 isolated workspace/search/canonical-post service tests passed;
+two installation-policy tests passed; two actual production-mode local HTTPS API
+tests and six account-export regressions passed. All 26 migrations applied to a
+fresh isolated database, the populated upgrade preserved existing account/post
+rows, and dump/restore preserved populated workspace records and constraints.
+Lint, TypeScript, final production build and runtime tracing passed (98 traces,
+7,710 entries, 240 server JS files). The shared full account harness now includes
+the new checks and restore tables; that entire broad suite was not rerun here.
+
+Ten existing browser regression groups passed on the initial foundation build.
+After adding the server-rendered release marker, fresh HTTPS checks and twelve
+cold/warm guest navigation cycles passed at 390/1280px across system/light/dark
+appearance with network throttling: structure to signup and Back, Home to Explore
+and Back, zero browser page errors. Local release-marker checks used a clearly
+synthetic public SHA; it is not a deployment identity. The intermittent hydration
+error remains unconfirmed, with no reproduced cause or claimed fix. Physical
+phone installation and account-switch pilot acceptance remain open.
+
+The private queue is being reconciled to six immediately executable P2 Medium
+slices plus four dependent P2 Medium follow-ons. Parent integrations remain open:
+rich image/poll/scheduled draft snapshots, receipt retention/compaction, future
+block/mute propagation, manifest/help/update UI, physical devices and push are not
+claimed complete. End-of-batch review stays last. No production writes, migrations,
+new service activation or messages to other people occurred in this batch.
+
 ## Medium bundle published; query-return correction — September 11, 2026
 
 The Medium bundle `6b1d814` reached production in READY deployment

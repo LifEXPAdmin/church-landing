@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { publicReleaseId } from "@/lib/platform/install-policy";
 import { privateCookies } from "@/lib/platform/private-cookies";
 import { ReadingProvider, AppearanceSelect } from "./reading-preferences";
 import {
@@ -31,7 +32,10 @@ export async function PlatformShell({
         )
       : defaultReadingPreferences;
   return (
-    <ReadingProvider initial={initial}>
+    <ReadingProvider
+      initial={initial}
+      release={publicReleaseId(process.env.VERCEL_GIT_COMMIT_SHA)}
+    >
       <div className="gc-shell">
         <a href="#platform-content" className="gc-skip">
           Skip to content

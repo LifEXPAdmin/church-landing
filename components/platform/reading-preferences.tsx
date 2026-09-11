@@ -16,9 +16,11 @@ const ReadingContext = createContext<{
 
 export function ReadingProvider({
   initial,
+  release = null,
   children
 }: {
   initial: ReadingPreferences;
+  release?: string | null;
   children: React.ReactNode;
 }) {
   const [preferences, setPreferences] = useState(initial);
@@ -54,6 +56,7 @@ export function ReadingProvider({
     <ReadingContext.Provider value={{ preferences, update, saved }}>
       <div
         className="platform-design"
+        data-release={release ?? undefined}
         data-appearance={preferences.appearance}
         data-reader-size={preferences.size}
         data-reduce-motion={preferences.reduceMotion}
