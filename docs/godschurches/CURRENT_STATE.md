@@ -1,13 +1,30 @@
 # Godschurches current state
 
-## Social foundations release candidate — September 11, 2026
+## Social foundations published — September 11, 2026
 
-Relationship/privacy, threaded conversation, gallery-control and permission-safe
-sharing foundations are implemented and tested on `codex/foundation-unlocks`.
-They include the earlier private workspace/search/install foundation. The final
-production migration and serving verification are pending; see
-[Social foundations release](SOCIAL_FOUNDATIONS_REPORT.md) for fresh checks and
-the expanded Medium queue. Historical local-only sections below are checkpoints.
+Application `2e58ac913227efa22e8dcb0a0e9445668465d0d0` is live through READY
+production deployment `dpl_5qHAUY1rJqstXfy493WcPrNWcLni`; canonical-domain
+assignment and the live release SHA match. It includes the earlier private
+workspace/search/install foundation and new relationship/privacy, threaded
+conversation, gallery-control and permission-safe sharing foundations.
+
+Fresh acceptance: 406 full-suite passes with two expected skips; 26 final focused
+service checks, two final local HTTPS checks, ten local browser groups; all 34
+live HTTP checks and seven live browser groups passed. The new deployment error
+scan was empty. All 27 production migrations match their checksums; one additive
+migration was applied in this release and original-column fingerprints remained
+unchanged across all 60 existing tables. No application row writes were made by
+the migration or live verification. Uploads remain provider-inactive.
+
+See [Social foundations release](SOCIAL_FOUNDATIONS_REPORT.md) for implementation,
+backup/build/live evidence and retained limits. The private Medium queue contains
+17 immediately executable P2 slices and 10 follow-ons with Medium dependencies.
+Start with draft save/recovery and comment thread/composer work, then continue
+through their linked interface tasks. Broader integration, provider and physical
+acceptance remain open. The intermittent hydration issue was not reproduced and
+is not claimed fixed. Report-only publication identity is kept in the private
+handoff. Earlier local-only statuses below are historical checkpoints superseded
+by this production receipt.
 
 ## Private workspace and installation foundations — September 11, 2026
 

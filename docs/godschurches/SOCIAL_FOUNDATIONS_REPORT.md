@@ -52,9 +52,32 @@ are separately scoped Medium work.
 
 ## Release status
 
-The candidate is ready for the authorized production migration and deployment.
-The final serving identity, live checks and migration receipt will be recorded
-following deployment; local checks above do not themselves establish publication.
+Application `2e58ac913227efa22e8dcb0a0e9445668465d0d0` is published on
+`https://godschurches.com` through READY production deployment
+`dpl_5qHAUY1rJqstXfy493WcPrNWcLni`. A separate canonical-domain inspection
+matched that deployment, and `/api/platform/release` returned the exact SHA.
+The remote Linux build also passed runtime verification: 103 traces, 8,299
+entries and 253 server JavaScript files.
+
+At 16:45 UTC, all 34 live read-only HTTP checks and seven browser groups passed.
+The checks include account HTML/RSC and return paths, public feed/navigation,
+new private endpoint gates, actual public post thread/gallery/preview reads,
+generic missing targets, bounded search and the real 1200 × 630 PNG. No currently
+listed church was selected by the live search; permitted church-image behavior
+is covered by the isolated tests, not claimed as a real church upload acceptance.
+There were zero application mutation requests and zero browser page errors; the
+new deployment's error-log query returned no entries.
+
+Production has all 27 complete migrations with matching checksums and no pending
+migration. This release applied one additive schema migration; the 26th migration
+was already present when production was inspected. Before/after original-column
+fingerprints match across all 60 existing tables. Application row writes from
+migration and live checks: zero. The new opt-in social tables are empty.
+Existing provider settings were retained; production photo uploads remain inactive.
+
+This document is a report follow-up to that tested application. Any subsequent
+report-only deployment is identified in the private release handoff; the application
+commit above identifies the implementation and full acceptance evidence.
 
 ## Next Medium batch and retained boundaries
 
