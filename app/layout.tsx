@@ -30,6 +30,19 @@ export const metadata: Metadata = {
   },
   description:
     "Faith, fellowship, and everyday life. Read public posts and connect with people on Godschurches.",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "16x16 32x32 48x48", type: "image/x-icon" },
+      { url: "/brand/search-icon.png", sizes: "96x96", type: "image/png" }
+    ],
+    apple: [
+      {
+        url: "/brand/apple-touch-icon.png",
+        sizes: "180x180",
+        type: "image/png"
+      }
+    ]
+  },
   keywords: [
     "church",
     "revival",
