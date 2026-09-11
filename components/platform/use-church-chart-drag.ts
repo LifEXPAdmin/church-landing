@@ -55,13 +55,15 @@ export function useChurchChartDrag({
   viewport,
   nodes,
   zoom,
-  select
+  select,
+  chooseWithoutDragging
 }: {
   editor: ChartEditor;
   viewport: RefObject<HTMLDivElement | null>;
   nodes: ChartNode[];
   zoom: number;
   select: (id: string) => void;
+  chooseWithoutDragging: (id: string) => void;
 }) {
   const active = useRef<Drag | null>(null);
   const frame = useRef<number | null>(null);
@@ -234,10 +236,10 @@ export function useChurchChartDrag({
     return {
       onClick: (event: ReactMouseEvent<HTMLButtonElement>) => {
         if (event.detail !== 0) return;
-        select(id);
+        chooseWithoutDragging(id);
         if (!active.current)
           current.current.editor.setMessage(
-            "Position selected. Use the reporting picker or drag its handle to stage a change."
+            "Position selected. Use the reporting picker or card movement buttons to stage a change."
           );
       },
       onPointerDown: (event: ReactPointerEvent<HTMLButtonElement>) => {

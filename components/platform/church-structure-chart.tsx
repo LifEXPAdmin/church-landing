@@ -198,6 +198,7 @@ export function ChurchStructureChart({
   const base = `/platform/churches/${encodeURIComponent(churchId)}`;
   const id = useId();
   const viewport = useRef<HTMLDivElement>(null);
+  const positionPicker = useRef<HTMLSelectElement>(null);
   const cards = useRef(new Map<string, HTMLElement>());
   const automaticFit = useRef(true);
   const returnedFocus = useRef<string | undefined>(undefined);
@@ -212,6 +213,7 @@ export function ChurchStructureChart({
   const [heights, setHeights] = useState(new Map<string, number>());
   const [collapsed, setCollapsed] = useState(new Set<string>());
   const [zoom, setZoom] = useState(1);
+  const [fullSizeHandles, setFullSizeHandles] = useState(false);
   const [panMode, setPanMode] = useState(false);
   const [query, setQuery] = useState("");
   const [mine, setMine] = useState(false);
@@ -230,10 +232,19 @@ export function ChurchStructureChart({
     select: (key) => {
       automaticFit.current = false;
       setSelected(key);
+    },
+    chooseWithoutDragging: (key) => {
+      automaticFit.current = false;
+      setSelected(key);
+      setPanMode(false);
+      requestAnimationFrame(() => positionPicker.current?.focus());
     }
   });
   function editControls(position: PositionSummary, connected: boolean) {
-    if (!editor.editing || !canManage) return undefined;
+    // Overview zoom must not shrink touch handles below their 44px targets.
+    // Full-size commands above the canvas remain available at every zoom.
+    if (!editor.editing || !canManage || (connected && !fullSizeHandles))
+      return undefined;
     return (
       <div className="mb-3 flex flex-col gap-2">
         <button
@@ -344,6 +355,7 @@ export function ChurchStructureChart({
         return next;
       });
       setSelected(position.id);
+      setFullSizeHandles(false);
       if (layout.connected.has(position.id))
         setZoom(
           Math.min(1, Math.max(0.3, (size.width - 32) / CHART_CARD_WIDTH))
@@ -371,6 +383,7 @@ export function ChurchStructureChart({
     automaticFit.current = false;
     const element = viewport.current;
     const value = clampZoom(next);
+    setFullSizeHandles(value >= 1);
     const centerX =
       ((element?.scrollLeft ?? 0) + size.width / 2 - leftOffset) / zoom;
     const centerY = ((element?.scrollTop ?? 0) + size.height / 2) / zoom;
@@ -388,6 +401,7 @@ export function ChurchStructureChart({
   }
   function fit() {
     automaticFit.current = true;
+    setFullSizeHandles(false);
     setZoom(fittedZoom);
     viewport.current?.scrollTo({ left: 0, top: 0, behavior: "instant" });
     setAnnouncement(
@@ -395,13 +409,44 @@ export function ChurchStructureChart({
     );
   }
   const showResults = mine || query.trim().length > 0;
+  function finishPanning() {
+    setPanMode(false);
+    pan.current = null;
+    setAnnouncement(
+      "Chart panning finished. Normal page scrolling is available."
+    );
+  }
   return (
-    <div className="min-w-0 space-y-6">
+    <div
+      className="gc-chart-workspace min-w-0 space-y-6"
+      onKeyDown={(event) => {
+        if (event.key === "Escape" && panMode) finishPanning();
+      }}
+    >
+      {panMode && (
+        <button
+          type="button"
+          className={`${control} fixed bottom-[calc(8rem+env(safe-area-inset-bottom))] right-4 z-40 max-w-[calc(100vw-2rem)] shadow-lg`}
+          onClick={() => {
+            finishPanning();
+            viewport.current?.focus({ preventScroll: true });
+          }}
+        >
+          Finish chart panning
+        </button>
+      )}
       {(canManage || editor.editing || editor.dirty || editor.unavailable) && (
         <ChurchChartEditorControls
           editor={editor}
           selectedId={selected ?? ""}
           selectPosition={setSelected}
+          positionPicker={positionPicker}
+          selectedGrid={(() => {
+            const node = layout.nodes.find(
+              (node) => node.position.id === selected
+            );
+            return node ? { x: node.logicalX, y: node.logicalY } : undefined;
+          })()}
         />
       )}
       {editor.canChange && (
@@ -455,7 +500,7 @@ export function ChurchStructureChart({
         className="min-w-0 rounded-2xl border border-gc-divider bg-gc-surface"
         aria-labelledby={`${id}-heading`}
       >
-        <div className="space-y-4 p-4 sm:p-5">
+        <div className="gc-chart-controls space-y-4 p-4 sm:p-5">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h2 id={`${id}-heading`} className="text-3xl">
               Church chart
@@ -585,7 +630,7 @@ export function ChurchStructureChart({
                   type="button"
                   className={control}
                   aria-pressed={panMode}
-                  onClick={() => setPanMode(!panMode)}
+                  onClick={() => (panMode ? finishPanning() : setPanMode(true))}
                 >
                   {panMode ? "Finish panning" : "Pan chart"}
                 </button>
@@ -595,6 +640,7 @@ export function ChurchStructureChart({
                   onClick={() => {
                     setCollapsed(new Set());
                     automaticFit.current = true;
+                    setFullSizeHandles(false);
                   }}
                 >
                   Expand all
@@ -605,6 +651,13 @@ export function ChurchStructureChart({
                 On touch screens, Pan chart enables deliberate dragging; finish
                 panning to use normal scrolling. Search brings a card into
                 readable view. The full outline is also available above.
+                {editor.editing && !fullSizeHandles && (
+                  <>
+                    {" "}
+                    Choose 100% to use full-size drag handles, or use the
+                    reporting and card movement controls above.
+                  </>
+                )}
               </p>
               <div
                 className="flex flex-wrap items-center gap-2"
@@ -657,12 +710,6 @@ export function ChurchStructureChart({
           }}
           onWheelCapture={() => {
             automaticFit.current = false;
-          }}
-          onKeyDown={(event) => {
-            if (event.key === "Escape") {
-              setPanMode(false);
-              pan.current = null;
-            }
           }}
           onPointerDown={(event) => {
             if (
@@ -792,7 +839,7 @@ export function ChurchStructureChart({
       </section>
       <section
         data-chart-drop={editor.canChange ? "UNCONNECTED" : undefined}
-        className="min-w-0 rounded-2xl border border-dashed border-gc-divider bg-gc-subtle p-4 sm:p-5"
+        className="gc-chart-tray min-w-0 rounded-2xl border border-dashed border-gc-divider bg-gc-subtle p-4 sm:p-5"
         aria-labelledby={`${id}-tray`}
       >
         <h2 id={`${id}-tray`} className="text-3xl">

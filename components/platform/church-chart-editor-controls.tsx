@@ -1,8 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 import type { PositionSummary } from "@/lib/platform/church-structure-types";
 import type { ChartPlacement } from "@/lib/platform/church-chart-model";
+import {
+  CHART_GRID,
+  snapChartCoordinate
+} from "@/lib/platform/church-chart-model";
 import {
   positionPlacementLabel,
   canReportTo
@@ -26,27 +30,38 @@ function placementText(
 export function ChurchChartEditorControls({
   editor,
   selectedId,
-  selectPosition
+  selectPosition,
+  positionPicker,
+  selectedGrid
 }: {
   editor: ChartEditor;
   selectedId: string;
   selectPosition: (id: string) => void;
+  positionPicker: RefObject<HTMLSelectElement | null>;
+  selectedGrid?: { x: number; y: number };
 }) {
   const [confirmed, setConfirmed] = useState(false);
   const [discarding, setDiscarding] = useState(false);
+  const editorHeading = useRef<HTMLHeadingElement>(null);
   const reviewHeading = useRef<HTMLHeadingElement>(null);
   const reviewButton = useRef<HTMLButtonElement>(null);
   const leaveHeading = useRef<HTMLHeadingElement>(null);
   const discardHeading = useRef<HTMLHeadingElement>(null);
   const recoveryHeading = useRef<HTMLHeadingElement>(null);
+  const hadRecovery = useRef(false);
+  const hadReview = useRef(false);
   useEffect(() => {
     if (editor.recoveredDraft) recoveryHeading.current?.focus();
+    else if (hadRecovery.current) editorHeading.current?.focus();
+    hadRecovery.current = !!editor.recoveredDraft;
   }, [editor.recoveredDraft]);
   const [destination, setDestination] = useState("UNCONNECTED");
   const selected = editor.positions.find((p) => p.id === selectedId);
   useEffect(() => {
     setConfirmed(false);
     if (editor.review) reviewHeading.current?.focus();
+    else if (hadReview.current) editorHeading.current?.focus();
+    hadReview.current = !!editor.review;
   }, [editor.review]);
   useEffect(() => {
     if (editor.leaveTarget) leaveHeading.current?.focus();
@@ -116,7 +131,7 @@ export function ChurchChartEditorControls({
   );
   return (
     <section
-      className="space-y-4 rounded-2xl border border-gc-divider bg-gc-surface p-4 sm:p-5"
+      className="gc-chart-editor space-y-4 rounded-2xl border border-gc-divider bg-gc-surface p-4 sm:p-5"
       aria-label="Edit church structure"
     >
       {editor.recoveredDraft && (
@@ -176,7 +191,11 @@ export function ChurchChartEditorControls({
       )}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-2xl">
+          <h2
+            ref={editorHeading}
+            tabIndex={-1}
+            className="text-2xl outline-none"
+          >
             {editor.editing ? "Edit structure" : "View church structure"}
           </h2>
           <p className="mt-1 text-sm text-gc-muted">
@@ -278,6 +297,7 @@ export function ChurchChartEditorControls({
             <label className="block text-sm">
               Position to move
               <select
+                ref={positionPicker}
                 className={portalInputClass}
                 value={selectedId}
                 onChange={(event) => selectPosition(event.target.value)}
@@ -336,6 +356,52 @@ export function ChurchChartEditorControls({
               </>
             )}
           </fieldset>
+          {selected && selectedGrid && (
+            <fieldset
+              disabled={!editor.canChange}
+              className="space-y-3 rounded-xl border border-gc-divider p-3"
+            >
+              <legend className="px-1 text-sm font-semibold">
+                Move the selected card without dragging
+              </legend>
+              <p className="text-sm text-gc-muted">
+                Move {selected.name} one grid step. Reporting and assignments
+                stay the same. Undo or review these changes before saving.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {(
+                  [
+                    ["left", -CHART_GRID, 0],
+                    ["up", 0, -CHART_GRID],
+                    ["down", 0, CHART_GRID],
+                    ["right", CHART_GRID, 0]
+                  ] as const
+                ).map(([direction, x, y]) => (
+                  <button
+                    key={direction}
+                    type="button"
+                    className={chartControlClass}
+                    onClick={() =>
+                      editor.moveOnGrid(selected.id, {
+                        x: snapChartCoordinate(selectedGrid.x + x),
+                        y: snapChartCoordinate(selectedGrid.y + y)
+                      })
+                    }
+                  >
+                    Move card {direction}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  className={chartControlClass}
+                  disabled={!selected.layout}
+                  onClick={() => editor.moveOnGrid(selected.id, null)}
+                >
+                  Use automatic card placement
+                </button>
+              </div>
+            </fieldset>
+          )}
         </>
       )}
       <button
@@ -475,7 +541,10 @@ export function ChurchChartEditorControls({
             <button
               type="button"
               className={chartControlClass}
-              onClick={() => setDiscarding(false)}
+              onClick={() => {
+                editorHeading.current?.focus();
+                setDiscarding(false);
+              }}
             >
               Keep editing
             </button>
@@ -484,6 +553,7 @@ export function ChurchChartEditorControls({
               className={portalButtonClass}
               disabled={editor.busy || editor.uncertain}
               onClick={() => {
+                editorHeading.current?.focus();
                 editor.discard();
                 setDiscarding(false);
               }}
@@ -512,7 +582,10 @@ export function ChurchChartEditorControls({
             <button
               type="button"
               className={chartControlClass}
-              onClick={editor.cancelLeave}
+              onClick={() => {
+                editorHeading.current?.focus();
+                editor.cancelLeave();
+              }}
             >
               Stay and keep editing
             </button>

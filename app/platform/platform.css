@@ -1127,6 +1127,42 @@
   }
 }
 
+/* Font-relative breakpoints also accommodate supported OS text enlargement. */
+@media (max-width: 20em) {
+  .gc-workspace {
+    padding-inline: 12px;
+  }
+  .gc-main .container-shell {
+    padding-inline: 0;
+  }
+  .gc-chart-editor,
+  .gc-chart-editor :is(fieldset, section, li),
+  .gc-chart-controls,
+  .gc-chart-tray,
+  .gc-chart-workspace [data-chart-card] {
+    min-width: 0;
+    padding-inline: 12px;
+  }
+  .gc-chart-workspace :is(button, select) {
+    max-width: 100%;
+    padding-inline: 12px;
+  }
+  .gc-primary-nav {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .gc-primary-nav a {
+    flex-direction: row;
+    justify-content: center;
+  }
+  .gc-platform-footer {
+    padding-bottom: calc(10rem + env(safe-area-inset-bottom));
+  }
+  .platform-design :is(input, textarea, button, a, summary) {
+    scroll-margin-block-end: 10rem;
+  }
+}
+
 /* Bounded profile presets preserve each reader's appearance and text size. */
 .platform-design [data-profile-palette] {
   --profile-paper: #e7efe8;

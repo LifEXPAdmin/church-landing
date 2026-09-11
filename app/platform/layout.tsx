@@ -1,3 +1,8 @@
+import type { Metadata } from "next";
+
+// Keep font-relative platform controls in step with supported OS text settings.
+export const metadata: Metadata = { other: { "text-scale": "scale" } };
+
 export default function PlatformLayout({
   children
 }: {

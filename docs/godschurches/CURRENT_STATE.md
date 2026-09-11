@@ -1,5 +1,28 @@
 # Godschurches current state
 
+## Phone and keyboard chart controls — September 10, 2026
+
+The chart now provides full-size non-drag card movement buttons, keyboard handle
+activation that moves focus to the reporting picker, and a persistent panning
+exit. Escape exits panning from any chart control. Review, recovery and editing
+decisions restore focus to the editor. Connected drag handles appear only at
+explicit 100% or greater zoom; the fitted overview retains non-drag alternatives.
+
+Platform text honors supported OS text enlargement. Narrow layouts reduce nested
+padding and reflow navigation into two columns without reducing enlarged text.
+Chrome's actual mobile emulation covered 320/390px, 200% OS text and reduced
+motion; ordinary page scrolling, deliberate touch-style dragging, non-drag
+movement/Undo, reviewed saving and panning exits were exercised. Desktop keyboard
+checks covered reporting changes, handles, assignment review/save, contact and
+outline navigation, and restoration of the selected role's focus. Physical
+Samsung testing remains separate. See
+[CHURCH_STRUCTURE_REPORT.md](CHURCH_STRUCTURE_REPORT.md) for final check evidence.
+
+The church editor bundle remains local and unpublished. Integrated release
+acceptance and current main recovery/feed integration follow, preserving existing
+post-audience authorization. No new owner action blocks coding. The complete
+batch and final review remain open.
+
 ## Chart draft recovery and saved history verified locally — September 10, 2026
 
 Unsaved chart choices can now survive ordinary navigation, browser Back/Forward

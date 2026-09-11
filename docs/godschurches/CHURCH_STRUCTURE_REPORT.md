@@ -2,6 +2,75 @@
 
 September 10, 2026 · Published structure foundation; local role library, assignment service and Privileges interface verified
 
+## Phone, keyboard and enlarged-text acceptance — September 10, 2026
+
+Selected connected cards have four directional grid commands and an automatic
+placement command, using the same geometry-only draft, Undo/Redo and reviewed
+save as dragging. Keyboard activation of a reporting or layout handle selects
+that position, focuses the reporting picker and announces the alternatives.
+Connected drag handles appear only at explicit zoom of 100% or more, preventing
+the fitted overview from presenting tiny drag targets. The full outline remains
+available and unconnected roles retain their unscaled reporting controls.
+
+Panning has a persistent exit above mobile navigation. Escape works from any
+chart control; the visible exit returns focus to the canvas. Review/recovery
+closure, canceling discard, confirmed discard and choosing to stay return focus
+to the editor. Normal page scrolling remains available outside deliberate pan
+mode. Native controls, named regions, headings and live announcements expose the
+same workflow without requiring a pointer gesture.
+
+Platform pages opt into supported OS text enlargement using text-scale metadata,
+with rem-based text and controls. This follows the documented browser opt-in
+([Chrome 146](https://developer.chrome.com/release-notes/146),
+[MDN text-scale](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/meta/name/text-scale)).
+At narrow font-relative widths, navigation reflows to two columns and chart
+panels/cards reduce nested side padding. Text retains the requested size.
+Existing reduced-motion rules disable decorative transitions and animations;
+chart positioning uses immediate scrolling. Support for the OS metadata varies
+by browser; ordinary browser zoom and the accessible outline remain available.
+
+Verification:
+
+- Fifteen final pure chart layout/model/draft checks passed. The final production
+  build, TypeScript validation, targeted lint and **27 actual HTTPS checks**
+  passed (portal 9, structure 8, entrance 4, guest 6). Runtime audit passed with
+  93 traces, 7,370 entries and 228 server JavaScript files, without private fixture,
+  environment or Prisma configuration-loader paths. No schema or service boundary
+  changed; the preceding 32 targeted service checks remain applicable.
+- Chrome's native DevTools Mobile mode exercised actual 320/390px layouts, 200%
+  OS text and reduced motion. An initial generic viewport override did not change
+  the effective page size and was excluded from acceptance. Native settings and
+  visible rendering confirmed the subsequent mobile checks. Enlarged-text checks
+  caught and corrected cramped navigation, nested editor and unconnected-card
+  spacing. All emulation settings were restored afterward.
+- Touch-style reporting-handle dragging staged a move and Undo restored it.
+  Panning moved the canvas independently; Escape from the toggle and the persistent
+  exit returned normal page scrolling. Non-drag movement and Undo worked at 390px
+  with enlarged text. At 320px, the keyboard confirmation and Save restored the
+  fictional card's automatic layout, then Tab resumed at Finish editing.
+- Desktop keyboard checks exercised detach/root/reparent choices, grid movement,
+  Undo/Redo, reviewed save, full-size handle activation and picker focus. Directional
+  targets measured 44px high. Privileges review and a no-permission-change assignment
+  save completed by keyboard. Contact and Privileges return links focused the
+  relevant role; the full outline exposed each position and its permitted members.
+- Final browser checks confirmed editor focus after Keep editing, Stay and keep
+  editing, confirmed discard and stored-draft discard. Reload focused the recovery
+  heading. No warning/error entries appeared after the final server restart;
+  earlier prefetch failures occurred while the local test server was intentionally
+  stopped for rebuilds.
+- All original fictional chart placements, assignments, role-grant contributions
+  and chosen sharing fields match the starting values. Two intended chart saves
+  increased receipts from nine to eleven; temporary drafts were discarded or
+  undone. One existing assignment was explicitly reviewed and saved with unchanged
+  permissions. No real church records or permissions changed.
+
+Phone/keyboard acceptance is complete locally. These are simulated phone and
+screen-reader-relevant semantic/focus checks, not a physical Samsung or spoken
+screen-reader pass. Integrated two-church release acceptance is next. The bundle
+remains unpushed/unpublished, with current main recovery/feed integration still
+required before release. Existing owner policy/reviewer and physical-device tasks
+remain separate; no new owner action blocks coding.
+
 ## Navigation recovery and saved history acceptance — September 10, 2026
 
 The editor keeps a bounded, strictly validated geometry-only recovery record in
