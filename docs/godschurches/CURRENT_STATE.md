@@ -1,5 +1,20 @@
 # Godschurches current state
 
+## Private draft reply permission repair — September 11, 2026
+
+The existing private-draft service now preserves both reply modes and blocks
+publication of legacy snapshots until the author explicitly saves a choice.
+Original request fingerprints, versions, atomic publish-once and current church
+access checks remain intact. No schema/provider changes are needed.
+
+Fresh local verification: 24 workspace/post/search checks, ten HTTPS/export checks,
+ten draft-library browser groups, TypeScript/lint/build/runtime tracing, isolated
+upgrade and dump/restore all passed. Production inspection found 27 matching
+migrations and none pending; no application writes or migration occurred.
+Publication is pending. See [the focused report](DRAFT_REPLY_PERMISSIONS_REPORT.md)
+and [contract](POST_WORKSPACE_CONTRACT.md). Autosave/resume interfaces and parent
+integration/owner acceptance remain open.
+
 ## Private draft library and manifest — September 11, 2026
 
 The Medium batch adds a signed-in private draft library/discard interface and

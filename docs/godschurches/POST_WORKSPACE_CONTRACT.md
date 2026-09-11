@@ -43,7 +43,7 @@ server-generated request key, independent of a caller-chosen draft ID.
 Receipt responses retain identifiers and generic messages, never draft text,
 collection names, excerpts, link-preview credentials or thumbnails.
 
-Payload fields: `content`, `scripture`, `type`, `topics`, `audience`,
+Payload fields: `content`, `scripture`, `type`, `topics`, `audience`, `replyAudience`,
 `authorChurchId`, `audienceChurchId`, `eventOccurrenceId`, `linkUrl`. Types use
 existing PlatformPostType; topics use POST_TOPICS (up to five distinct values);
 audience is PUBLIC or CHURCH. Null/empty optional references are accepted.
@@ -51,6 +51,40 @@ Incomplete and whitespace-only text is preserved exactly. Draft limits are 20,00
 content characters, 1,000 scripture characters and 2,048 URL characters; these
 recovery limits do not relax canonical publication validation (3–3,000 content,
 120 scripture). Nothing is silently shortened. Unknown payload fields fail 400.
+
+### Reply permissions and older snapshots
+
+`PrivateDraftPayload.replyAudience` is `VIEWERS | CHURCH_MEMBERS | null`.
+Both explicit modes survive complete snapshot saves, single/list reads, retries,
+version conflicts, resume and atomic publication. Publication still revalidates
+current church membership, church publishing grants and linked event access.
+`CHURCH_MEMBERS` may be saved before selecting a church, but cannot publish until
+the canonical post service accepts that church and the current actor's access.
+
+Older snapshots omitted the field, so their original choice cannot be recovered.
+Missing/null means **unresolved**, never `VIEWERS`. Private reads project `null`
+without rewriting stored JSON, timestamps or versions. Old save bodies remain
+accepted and store `null`; explicit null also permits saving incomplete work.
+A complete replacement save that omits the choice likewise becomes unresolved.
+Other values fail 400. No database migration, permission inference or backfill
+is performed. Existing account exports retain the stored snapshot as recorded.
+
+Publication of an unresolved draft returns 400 with instructions to choose who
+may reply and save first; no post, tombstone, version increment or successful
+receipt is written. This check runs both before link preparation and inside the
+locked publishing transaction. The composer must display an unselected choice
+for null, preserve it through conflict recovery/resume, and require deliberate
+selection before publishing. Never replace missing/null with a form default.
+Save the explicit choice using a new mutationId and the acknowledged version,
+then publish that new version. Future autosave/resume UI consumes this contract.
+
+Retry fingerprints continue to cover the original complete request body, before
+payload normalization. An old successful retry returns its existing receipt
+without changing the draft, even after newer work or publication. Adding null,
+adding/changing the reply mode, or otherwise changing the body with that key
+still returns 409. Do not normalize a queued retry body during an app update;
+fetch the latest snapshot separately when resolving a conflict. Completed
+publication receipts remain replayable without republishing or changing access.
 
 Do not persist a short-lived link receipt or preview object. The current composer
 must explicitly separate those ephemeral fields. Renew the preview before

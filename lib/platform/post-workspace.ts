@@ -19,6 +19,7 @@ export type PrivateDraftPayload = {
   type: PlatformPostType;
   topics: string[];
   audience: "PUBLIC" | "CHURCH";
+  replyAudience: "VIEWERS" | "CHURCH_MEMBERS" | null;
   authorChurchId: string | null;
   audienceChurchId: string | null;
   eventOccurrenceId: string | null;
@@ -30,6 +31,7 @@ const draftFields = [
   "type",
   "topics",
   "audience",
+  "replyAudience",
   "authorChurchId",
   "audienceChurchId",
   "eventOccurrenceId",
@@ -75,6 +77,14 @@ export function privateDraftPayload(value: unknown): PrivateDraftPayload {
   const audience = p.audience ?? "PUBLIC";
   if (audience !== "PUBLIC" && audience !== "CHURCH")
     throw new PortalError(400, "Choose Public or Church.");
+  // Old snapshots never recorded this choice. Keep it unresolved, not public.
+  const replyAudience = p.replyAudience ?? null;
+  if (
+    replyAudience !== null &&
+    replyAudience !== "VIEWERS" &&
+    replyAudience !== "CHURCH_MEMBERS"
+  )
+    throw new PortalError(400, "Choose a supported reply permission.");
   const reference = (v: unknown) => (v == null || v === "" ? null : postId(v));
   return {
     content: text(p.content ?? "", 20000),
@@ -82,11 +92,21 @@ export function privateDraftPayload(value: unknown): PrivateDraftPayload {
     type: type as PlatformPostType,
     topics,
     audience,
+    replyAudience,
     authorChurchId: reference(p.authorChurchId),
     audienceChurchId: reference(p.audienceChurchId),
     eventOccurrenceId: reference(p.eventOccurrenceId),
     linkUrl: text(p.linkUrl ?? "", 2048)
   };
+}
+function publicationPayload(value: unknown) {
+  const payload = privateDraftPayload(value);
+  if (payload.replyAudience === null)
+    throw new PortalError(
+      400,
+      "This draft has no saved reply permission. Choose who may reply and save the draft before publishing."
+    );
+  return payload;
 }
 function fingerprint(value: unknown): string {
   function ordered(v: unknown, depth = 0): unknown {
@@ -160,24 +180,33 @@ export function readPostWorkspace(
         orderBy: { id: "asc" as const },
         take: WORKSPACE_PAGE_SIZE + 1
       };
-      if (query.view === "draft")
+      if (query.view === "draft") {
+        const draft = await tx.privatePostDraft.findFirst({
+          where: { ownerId, id: key(query.id), deletedAt: null },
+          select: draftSelect
+        });
         return {
-          draft: await tx.privatePostDraft.findFirst({
-            where: { ownerId, id: key(query.id), deletedAt: null },
-            select: draftSelect
-          })
+          draft: draft
+            ? { ...draft, payload: privateDraftPayload(draft.payload) }
+            : null
         };
+      }
       if (query.view === "drafts")
         return page(
-          await tx.privatePostDraft.findMany({
-            where: {
-              ownerId,
-              deletedAt: null,
-              ...(after ? { id: { gt: after } } : {})
-            },
-            select: draftSelect,
-            ...paging
-          })
+          (
+            await tx.privatePostDraft.findMany({
+              where: {
+                ownerId,
+                deletedAt: null,
+                ...(after ? { id: { gt: after } } : {})
+              },
+              select: draftSelect,
+              ...paging
+            })
+          ).map((draft) => ({
+            ...draft,
+            payload: privateDraftPayload(draft.payload)
+          }))
         );
       if (query.view === "collections")
         return page(
@@ -332,7 +361,7 @@ export async function postWorkspaceCommand(
       expected(input.expectedVersion, row.version);
       return {
         ownerId: session.userId,
-        payload: privateDraftPayload(row.payload)
+        payload: publicationPayload(row.payload)
       };
     });
     if (preflight.receipt) return preflight.receipt;
@@ -416,7 +445,7 @@ export async function postWorkspaceCommand(
               tx,
               await postContext(tx, ownerId),
               {
-                ...privateDraftPayload(row!.payload),
+                ...publicationPayload(row!.payload),
                 operation: "create",
                 requestKey: `draft-${row!.publicationKey}`
               },

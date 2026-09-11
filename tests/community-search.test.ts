@@ -247,6 +247,7 @@ test("draft publish rechecks church authority and keeps private work when author
     expectedVersion: 0,
     payload: {
       content: "Unsent church fixture",
+      replyAudience: "CHURCH_MEMBERS",
       authorChurchId: f.churchA.id,
       audience: "CHURCH",
       audienceChurchId: f.churchA.id

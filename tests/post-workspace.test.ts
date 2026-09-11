@@ -2,8 +2,14 @@ import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { PrismaClient } from "@prisma/client";
-import { createPortalActor, assertPortalTestDatabase } from "./seed-portal";
-import { PortalError } from "../lib/platform/portal";
+import {
+  createPortalActor,
+  assertPortalTestDatabase,
+  seedPortal
+} from "./seed-portal";
+import { PortalError, portalCommand } from "../lib/platform/portal";
+import { loginAccount } from "../lib/platform/accounts";
+import { communityCommand } from "../lib/platform/community";
 import {
   privateDraftPayload,
   postWorkspaceCommand as command,
@@ -152,7 +158,11 @@ test("draft publish is atomic, validated, exactly once across concurrent retries
     mutation("save-draft", {
       id,
       expectedVersion: 1,
-      payload: { content: "Publication fixture", topics: ["community"] }
+      payload: {
+        content: "Publication fixture",
+        topics: ["community"],
+        replyAudience: "VIEWERS"
+      }
     })
   );
   await db.platformPost.create({
@@ -376,4 +386,304 @@ test("database ownership constraint rejects a cross-owner saved collection refer
     db.savedPostItem.create({ data: { ownerId: b.id, collectionId: id } })
   );
   assert.equal(await db.savedPostItem.count({ where: { ownerId: b.id } }), 0);
+});
+
+test("reply modes survive save, list, a new session, exact retries, conflicts and publish-once with actual reply enforcement", async () => {
+  const f = await seedPortal(db),
+    a = f.memberA;
+  const secondToken = await loginAccount(
+    db,
+    a.email,
+    a.password,
+    "draft-resume"
+  );
+  for (const replyAudience of ["VIEWERS", "CHURCH_MEMBERS"] as const) {
+    const id = randomUUID();
+    const payload = privateDraftPayload({
+      content: "  Reply permission recovery\r\n  ",
+      audience: "PUBLIC",
+      audienceChurchId: f.churchA.id,
+      replyAudience
+    });
+    const save = mutation("save-draft", { id, expectedVersion: 0, payload });
+    const receipt = await command(db, a.token, save);
+    assert.deepEqual(await command(db, secondToken, save), receipt);
+    await denied(
+      command(db, a.token, {
+        ...save,
+        payload: {
+          ...payload,
+          replyAudience:
+            replyAudience === "VIEWERS" ? "CHURCH_MEMBERS" : "VIEWERS"
+        }
+      }),
+      409
+    );
+    const resumed = await read(db, secondToken, { view: "draft", id });
+    assert.ok("draft" in resumed && resumed.draft);
+    assert.equal(resumed.draft.version, 1);
+    assert.deepEqual(resumed.draft.payload, payload);
+    const library = await read(db, secondToken, { view: "drafts" });
+    assert.ok("items" in library);
+    assert.deepEqual(
+      library.items.find((row) => row.id === id),
+      resumed.draft
+    );
+    const updated = { ...payload, content: "Recovered and edited post" };
+    const saved = await command(
+      db,
+      secondToken,
+      mutation("save-draft", {
+        id,
+        expectedVersion: resumed.draft.version,
+        payload: updated
+      })
+    );
+    await denied(
+      command(
+        db,
+        a.token,
+        mutation("save-draft", {
+          id,
+          expectedVersion: 1,
+          payload
+        })
+      ),
+      409
+    );
+    // A delayed successful retry returns its old receipt without reverting newer work.
+    assert.deepEqual(await command(db, a.token, save), receipt);
+    const latest = await read(db, a.token, { view: "draft", id });
+    assert.ok("draft" in latest && latest.draft);
+    assert.deepEqual(latest.draft.payload, updated);
+    assert.equal(latest.draft.version, saved.version);
+    const publish = mutation("publish-draft", {
+      id,
+      expectedVersion: saved.version
+    });
+    const [first, retry] = await Promise.all([
+      command(db, secondToken, publish),
+      command(db, a.token, publish)
+    ]);
+    assert.deepEqual(first, retry);
+    const post = await db.platformPost.findUniqueOrThrow({
+      where: { id: first.postId }
+    });
+    assert.equal(post.replyAudience, replyAudience);
+    assert.equal(post.audience, "PUBLIC");
+    assert.equal(
+      await db.platformPost.count({
+        where: { authorId: a.id, replyAudience, content: updated.content }
+      }),
+      1
+    );
+    await communityCommand(db, f.coordinator.token, "comment", {
+      postId: post.id,
+      content: "Approved member reply"
+    });
+    const outsiderReply = communityCommand(db, f.memberB.token, "comment", {
+      postId: post.id,
+      content: "Outsider reply"
+    });
+    if (replyAudience === "CHURCH_MEMBERS") await denied(outsiderReply, 403);
+    else await outsiderReply;
+    assert.equal(
+      await db.platformPostComment.count({ where: { postId: post.id } }),
+      replyAudience === "VIEWERS" ? 2 : 1
+    );
+  }
+});
+
+test("legacy snapshots remain unresolved and unchanged on reads/retries until an explicit versioned choice is saved", async () => {
+  const f = await seedPortal(db),
+    a = f.memberA;
+  for (const audienceChurchId of [null, f.churchA.id]) {
+    const id = randomUUID();
+    const oldPayload = {
+      content: "  Legacy exact recovery\r\n ",
+      audienceChurchId
+    };
+    const oldSave = mutation("save-draft", {
+      id,
+      expectedVersion: 0,
+      payload: oldPayload
+    });
+    const originalReceipt = await command(db, a.token, oldSave);
+    // Reproduce the pre-upgrade stored JSON, retaining its original request fingerprint.
+    await db.privatePostDraft.update({
+      where: { ownerId_id: { ownerId: a.id, id } },
+      data: { payload: oldPayload }
+    });
+    const before = await db.privatePostDraft.findUniqueOrThrow({
+      where: { ownerId_id: { ownerId: a.id, id } }
+    });
+    for (const view of ["draft", "drafts"]) {
+      const result = await read(db, a.token, { view, id });
+      const draft =
+        "draft" in result
+          ? result.draft
+          : "items" in result
+            ? result.items.find((row) => row.id === id)
+            : null;
+      assert.ok(draft && "payload" in draft);
+      assert.equal(
+        (draft.payload as { replyAudience: unknown }).replyAudience,
+        null
+      );
+    }
+    assert.deepEqual(await command(db, a.token, oldSave), originalReceipt);
+    await denied(
+      command(db, a.token, {
+        ...oldSave,
+        payload: { ...oldPayload, replyAudience: null }
+      }),
+      409
+    );
+    const publish = mutation("publish-draft", { id, expectedVersion: 1 });
+    await assert.rejects(
+      command(db, a.token, publish),
+      (e: unknown) =>
+        e instanceof PortalError &&
+        e.status === 400 &&
+        /Choose who may reply/.test(e.message)
+    );
+    assert.deepEqual(
+      await db.privatePostDraft.findUniqueOrThrow({
+        where: { ownerId_id: { ownerId: a.id, id } }
+      }),
+      before
+    );
+    assert.equal(
+      await db.postWorkspaceOperation.count({
+        where: { ownerId: a.id, key: String(publish.mutationId) }
+      }),
+      0
+    );
+    const replyAudience = audienceChurchId ? "CHURCH_MEMBERS" : "VIEWERS";
+    await command(
+      db,
+      a.token,
+      mutation("save-draft", {
+        id,
+        expectedVersion: 1,
+        payload: { ...oldPayload, replyAudience }
+      })
+    );
+    await denied(command(db, a.token, publish), 409);
+    const published = await command(
+      db,
+      a.token,
+      mutation("publish-draft", {
+        id,
+        expectedVersion: 2
+      })
+    );
+    assert.equal(
+      (
+        await db.platformPost.findUniqueOrThrow({
+          where: { id: published.postId }
+        })
+      ).replyAudience,
+      replyAudience
+    );
+  }
+});
+
+test("unresolved and incomplete reply settings never fall through to the canonical public default", async () => {
+  const a = await createPortalActor(db, "replybad");
+  for (const invalid of ["", "EVERYONE", false, 1, {}, []])
+    assert.throws(
+      () => privateDraftPayload({ replyAudience: invalid }),
+      (e: unknown) => e instanceof PortalError && e.status === 400
+    );
+  for (const replyAudience of [null, "CHURCH_MEMBERS"]) {
+    const id = randomUUID(),
+      payload = { content: "Incomplete reply selection", replyAudience };
+    await command(
+      db,
+      a.token,
+      mutation("save-draft", { id, expectedVersion: 0, payload })
+    );
+    await denied(
+      command(
+        db,
+        a.token,
+        mutation("publish-draft", { id, expectedVersion: 1 })
+      ),
+      400
+    );
+    const row = await db.privatePostDraft.findUniqueOrThrow({
+      where: { ownerId_id: { ownerId: a.id, id } }
+    });
+    assert.equal(row.version, 1);
+    assert.equal(row.deletedAt, null);
+    assert.equal(
+      (row.payload as { replyAudience: unknown }).replyAudience,
+      replyAudience
+    );
+  }
+  assert.equal(await db.platformPost.count({ where: { authorId: a.id } }), 0);
+});
+
+test("publication rechecks revoked membership and church publishing grants for both reply modes without consuming drafts", async () => {
+  const f = await seedPortal(db),
+    a = f.memberA;
+  await portalCommand(db, f.operator.token, {
+    operation: "grant",
+    churchId: f.churchA.id,
+    userId: a.id,
+    capability: "PUBLISH_CHURCH_POSTS",
+    expectedVersion: 0
+  });
+  for (const revocation of ["grant", "membership"]) {
+    const drafts = [];
+    for (const replyAudience of ["VIEWERS", "CHURCH_MEMBERS"]) {
+      const id = randomUUID(),
+        payload = {
+          content: "Revoked church publication",
+          audience: "PUBLIC",
+          audienceChurchId: f.churchA.id,
+          authorChurchId: revocation === "grant" ? f.churchA.id : null,
+          replyAudience
+        };
+      await command(
+        db,
+        a.token,
+        mutation("save-draft", { id, expectedVersion: 0, payload })
+      );
+      drafts.push({ id, payload });
+    }
+    if (revocation === "grant")
+      await db.churchCapabilityGrant.updateMany({
+        where: {
+          userId: a.id,
+          churchId: f.churchA.id,
+          capability: "PUBLISH_CHURCH_POSTS"
+        },
+        data: { revokedAt: new Date() }
+      });
+    else
+      await db.churchConnection.updateMany({
+        where: { userId: a.id, churchId: f.churchA.id },
+        data: { state: "REMOVED" }
+      });
+    for (const { id, payload } of drafts) {
+      const publish = mutation("publish-draft", { id, expectedVersion: 1 });
+      await denied(command(db, a.token, publish), 403);
+      await denied(command(db, a.token, publish), 403);
+      const row = await db.privatePostDraft.findUniqueOrThrow({
+        where: { ownerId_id: { ownerId: a.id, id } }
+      });
+      assert.equal(row.version, 1);
+      assert.equal(row.deletedAt, null);
+      assert.deepEqual(row.payload, privateDraftPayload(payload));
+      assert.equal(
+        await db.postWorkspaceOperation.count({
+          where: { ownerId: a.id, key: String(publish.mutationId) }
+        }),
+        0
+      );
+    }
+  }
+  assert.equal(await db.platformPost.count({ where: { authorId: a.id } }), 0);
 });
