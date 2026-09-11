@@ -272,6 +272,12 @@ export function DraftLibrary({ ownerId }: { ownerId: string }) {
                     {draft.payload.scripture}
                   </p>
                 )}
+                <Link
+                  className="gc-button gc-button-quiet"
+                  href={`/platform/drafts?resume=${encodeURIComponent(draft.id)}#resume`}
+                >
+                  Resume draft
+                </Link>
                 <button
                   type="button"
                   className="gc-button gc-button-quiet"

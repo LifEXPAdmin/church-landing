@@ -1,13 +1,19 @@
 import type { Metadata } from "next";
 import { PlatformShell } from "@/components/platform/platform-shell";
 import { GuestAccountPrompt } from "@/components/platform/guest-account-prompt";
+import { PostComposer } from "@/components/platform/post-composer";
 import { DraftLibrary } from "@/components/platform/draft-library";
 import { getCurrentPlatformUser } from "@/lib/platform/session";
 export const metadata: Metadata = {
   title: "Your drafts",
   robots: { index: false, follow: false }
 };
-export default async function DraftsPage() {
+export default async function DraftsPage({
+  searchParams
+}: {
+  searchParams: Promise<{ resume?: string }>;
+}) {
+  const { resume } = await searchParams;
   const user = await getCurrentPlatformUser();
   return (
     <PlatformShell user={user}>
@@ -16,6 +22,11 @@ export default async function DraftsPage() {
           <div className="mx-auto max-w-2xl space-y-6">
             <h1 className="text-4xl">Your drafts</h1>
             <DraftLibrary key={user.id} ownerId={user.id} />
+            {resume && (
+              <div id="resume">
+                <PostComposer resumeId={resume} />
+              </div>
+            )}
           </div>
         </section>
       ) : (

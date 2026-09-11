@@ -199,3 +199,11 @@ null through reload and require a choice before publication.
 Controller verification: `node --import ./tests/register.mjs --test
 tests/draft-controller.test.ts`; isolated HTTPS browser verification:
 `scripts/qa-draft-controller-browser.mjs <fixture-directory>`.
+
+Draft-library Resume opens the shared composer after checking the current
+session. It retains the acknowledged ID/version and all supported fields. Dirty
+or conflicted entries require Keep current draft or Replace with selected draft;
+an uncertain mutation must be resolved first. Unavailable/deleted drafts leave
+current entries intact. Reloaded snapshots remount the input fields to cancel
+stale preview requests; link previews require a fresh explicit request. Resumed
+publication uses only publish-draft and its existing access checks.

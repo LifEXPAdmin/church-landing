@@ -24,6 +24,8 @@ export type DraftState = {
   failed: boolean;
   retry: boolean;
   postId: string | null;
+  resumeId: string | null;
+  loadNumber: number;
 };
 type Reply = { status: number; data: Record<string, unknown> };
 export type DraftTransport = (path: string, body?: string) => Promise<Reply>;
@@ -71,7 +73,9 @@ const initialState = (): DraftState => ({
   message: "",
   failed: false,
   retry: false,
-  postId: null
+  postId: null,
+  resumeId: null,
+  loadNumber: 0
 });
 
 /** One in-memory controller per mounted platform layout, never browser storage. */
@@ -117,6 +121,7 @@ export class DraftController {
       !this.state.hidden &&
       !this.state.saving &&
       !this.state.conflict &&
+      !this.state.resumeId &&
       !this.state.failed &&
       !this.pending
     )
@@ -198,7 +203,8 @@ export class DraftController {
       !this.state.ownerId ||
       this.state.hidden ||
       this.state.conflict ||
-      this.state.postId
+      this.state.postId ||
+      this.state.resumeId
     )
       return false;
     this.busy = true;
@@ -358,6 +364,7 @@ export class DraftController {
       id: row.id,
       version: row.version,
       fields: row.payload,
+      loadNumber: this.state.loadNumber + 1,
       dirty: false,
       conflict: false,
       latest: null,
@@ -384,6 +391,81 @@ export class DraftController {
       message: "Your unsent copy will be saved as a new private draft."
     });
     void this.save();
+  };
+  cancelResume = () => {
+    this.set({ resumeId: null });
+    this.schedule();
+  };
+  resume = async (id: string, replace = false) => {
+    if (this.busy || this.pending || this.state.publishing) {
+      this.set({
+        message:
+          "Resolve the current save or publication before opening another draft."
+      });
+      return;
+    }
+    if ((this.state.dirty || this.state.conflict) && !replace) {
+      this.stopTimer();
+      this.set({ resumeId: id });
+      return;
+    }
+    this.stopTimer();
+    this.busy = true;
+    const generation = this.generation;
+    const before = JSON.stringify(this.state.fields);
+    this.set({ saving: true, resumeId: null });
+    try {
+      if (!(await this.verify()) || generation !== this.generation) return;
+      const r = await this.transport(
+        `/api/platform/post-workspace?view=draft&id=${encodeURIComponent(id)}`
+      );
+      if (!(await this.verify()) || generation !== this.generation) return;
+      if (r.status !== 200) throw Error();
+      const row = r.data.draft as DraftSnapshot | null;
+      if (!row) {
+        this.set({
+          message:
+            "This draft is no longer available. Your current entries are unchanged."
+        });
+        return;
+      }
+      if (JSON.stringify(this.state.fields) !== before) {
+        this.set({
+          resumeId: id,
+          message:
+            "Your entries changed while loading. Choose whether to replace them."
+        });
+        return;
+      }
+      this.acknowledged = JSON.stringify(row.payload);
+      this.set({
+        id: row.id,
+        version: row.version,
+        fields: row.payload,
+        loadNumber: this.state.loadNumber + 1,
+        dirty: false,
+        conflict: false,
+        latest: null,
+        latestLoaded: false,
+        failed: false,
+        retry: false,
+        postId: null,
+        message:
+          "Draft resumed. Review its audience and reply permissions. Renew any link preview before publishing."
+      });
+    } catch {
+      if (generation === this.generation)
+        this.set({
+          message:
+            "Draft could not be loaded. Your current entries are unchanged. Try opening it again."
+        });
+    } finally {
+      this.busy = false;
+      if (generation === this.generation) {
+        this.set({ saving: false });
+        this.schedule();
+      }
+    }
   };
   newDraft = () => {
     if (this.busy || !this.state.postId) return;

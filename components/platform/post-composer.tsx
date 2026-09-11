@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type {
   PostComposerOptions,
   PostEventOptions
@@ -52,6 +52,9 @@ function EventChoice({
   }
   return (
     <div className="space-y-2">
+      {value && !data && (
+        <p>A saved event is linked. Load current events to review it.</p>
+      )}
       {!data && (
         <button
           className={portalButtonClass}
@@ -80,6 +83,11 @@ function EventChoice({
             }
           >
             <option value="">No linked event</option>
+            {value && !data.events.some((event) => event.id === value) && (
+              <option value={value}>
+                Saved event · availability needs review
+              </option>
+            )}
             {data.events.map((event) => (
               <option
                 key={event.id}
@@ -442,13 +450,32 @@ function ComposerDraft({
     </form>
   );
 }
-export function PostComposer({ initialChurch }: { initialChurch?: string }) {
+export function PostComposer({
+  initialChurch,
+  resumeId
+}: {
+  initialChurch?: string;
+  resumeId?: string;
+}) {
   const { controller, state } = useDraftWorkspace();
   const [options, setOptions] = useState<PostComposerOptions | null>(null),
     [error, setError] = useState(""),
     [attempt, setAttempt] = useState(0),
     [draftNumber, setDraftNumber] = useState(0);
   const [finished, setFinished] = useState(false);
+  const requested = useRef("");
+  useEffect(() => {
+    if (
+      !resumeId ||
+      !state.ownerId ||
+      state.hidden ||
+      requested.current === `${state.ownerId}:${resumeId}`
+    )
+      return;
+    requested.current = `${state.ownerId}:${resumeId}`;
+    void controller.resume(resumeId);
+  }, [controller, resumeId, state.ownerId, state.hidden]);
+
   useEffect(() => {
     setOptions(null);
     if (!state.ownerId) return;
@@ -484,9 +511,41 @@ export function PostComposer({ initialChurch }: { initialChurch?: string }) {
       className="space-y-4 rounded-xl border border-gc-divider bg-gc-surface p-5"
     >
       <h2 className="text-3xl">What is God doing?</h2>
+      {state.resumeId && !state.hidden && (
+        <section aria-label="Replace current draft" className="space-y-3">
+          <p>
+            You have current work in this tab. Keep it, or replace it with the
+            selected saved draft?
+          </p>
+          <button
+            type="button"
+            className={portalButtonClass}
+            onClick={controller.cancelResume}
+          >
+            Keep current draft
+          </button>
+          <button
+            type="button"
+            className={portalButtonClass}
+            onClick={() => void controller.resume(state.resumeId!, true)}
+          >
+            Replace with selected draft
+          </button>
+        </section>
+      )}
+      {resumeId && !state.resumeId && !state.hidden && (
+        <button
+          type="button"
+          className={portalButtonClass}
+          disabled={state.saving || state.publishing}
+          onClick={() => void controller.resume(resumeId)}
+        >
+          Open selected draft again
+        </button>
+      )}
       {options ? (
         <ComposerDraft
-          key={draftNumber}
+          key={`${draftNumber}:${state.id}:${state.loadNumber}`}
           options={options}
           initialChurch={initialChurch}
           onSaved={() => setFinished(true)}
@@ -503,7 +562,7 @@ export function PostComposer({ initialChurch }: { initialChurch?: string }) {
           Retry publishing choices
         </button>
       )}
-      {finished && (
+      {finished && state.postId && (
         <button
           type="button"
           className={portalButtonClass}

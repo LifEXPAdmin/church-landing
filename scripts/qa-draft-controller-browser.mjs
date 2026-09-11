@@ -243,6 +243,152 @@ try {
     "Draft publication retries once, freezes uncertain publication, and retains reply audience"
   );
   await page.getByRole("button", { name: "Write another post" }).click();
+  await field().fill("Keep my current unsent draft");
+  await form().getByRole("link", { name: "Your drafts" }).click();
+  await page
+    .getByRole("link", { name: "Resume draft", exact: true })
+    .first()
+    .click();
+  await page.getByRole("region", { name: "Replace current draft" }).waitFor();
+  assert.equal(await field().inputValue(), "Keep my current unsent draft");
+  await page
+    .getByRole("button", { name: "Keep current draft", exact: true })
+    .click();
+  assert.equal(await field().inputValue(), "Keep my current unsent draft");
+  await page.getByRole("button", { name: "Open selected draft again" }).click();
+  await page
+    .getByRole("button", { name: "Replace with selected draft" })
+    .click();
+  await page.waitForFunction(
+    () =>
+      document.querySelector('textarea[name="content"]')?.value ===
+      "Saved elsewhere"
+  );
+  assert.equal(
+    await form().getByLabel("Who may reply?").inputValue(),
+    "VIEWERS"
+  );
+  const resumeUrl = page.url();
+  const second = await browser.newContext();
+  await second.addCookies(await context.cookies());
+  const other = await second.newPage();
+  await other.goto(resumeUrl);
+  await other.waitForFunction(
+    () =>
+      document.querySelector('textarea[name="content"]')?.value ===
+      "Saved elsewhere"
+  );
+  assert.equal(
+    await other.getByLabel("Who may reply?").inputValue(),
+    "VIEWERS"
+  );
+  await second.close();
+  await page.bringToFront();
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  ok(
+    "Resume protects dirty work and reopens the saved VIEWERS snapshot in a second context"
+  );
+  await postWorkspaceCommand(db, a.token, {
+    operation: "delete-draft",
+    id: row.id,
+    expectedVersion: row.version + 1,
+    mutationId: randomUUID()
+  });
+  await page.getByRole("button", { name: "Open selected draft again" }).click();
+  await form()
+    .getByText(
+      "This draft is no longer available. Your current entries are unchanged."
+    )
+    .waitFor();
+  assert.equal(await field().inputValue(), "Saved elsewhere");
+  ok("Draft deleted elsewhere leaves the current resumed entries intact");
+  const richId = randomUUID();
+  const richPayload = {
+    ...row.payload,
+    content: "Resume all supported fields",
+    scripture: "Psalm 23",
+    topics: ["prayer"],
+    linkUrl: "https://example.com/",
+    replyAudience: "CHURCH_MEMBERS"
+  };
+  await postWorkspaceCommand(db, a.token, {
+    operation: "save-draft",
+    id: richId,
+    expectedVersion: 0,
+    mutationId: randomUUID(),
+    payload: richPayload
+  });
+  await go(`/platform/drafts?resume=${richId}#resume`);
+  await page.waitForFunction(
+    () =>
+      document.querySelector('textarea[name="content"]')?.value ===
+      "Resume all supported fields"
+  );
+  assert.equal(
+    await form().getByLabel("Who may reply?").inputValue(),
+    "CHURCH_MEMBERS"
+  );
+  assert.equal(
+    await form().getByLabel("Optional public HTTPS link").inputValue(),
+    "https://example.com/"
+  );
+  assert.equal(
+    await form()
+      .getByRole("button", { name: "Remove preview", exact: true })
+      .count(),
+    0
+  );
+  let previewRequest;
+  await page.route("**/api/platform/posts", async (route) => {
+    previewRequest = JSON.parse(route.request().postData());
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        url: "https://example.com/",
+        receipt: "synthetic-new-preview",
+        preview: {
+          title: "Renewed preview",
+          description: "Preview fixture",
+          sourceUrl: "https://example.com/"
+        }
+      })
+    });
+  });
+  await form()
+    .getByRole("button", { name: "Get link preview", exact: true })
+    .click();
+  await form()
+    .getByRole("button", { name: "Remove preview", exact: true })
+    .waitFor();
+  assert.equal(previewRequest.operation, "preview-link");
+  await form()
+    .getByRole("button", { name: "Remove preview", exact: true })
+    .click();
+  await page.unroute("**/api/platform/posts");
+  await db.churchConnection.updateMany({
+    where: { userId: a.id, churchId: f.churchA.id },
+    data: { state: "REMOVED" }
+  });
+  await form()
+    .getByLabel("Share my personal post on", { exact: false })
+    .check();
+  const deniedResponse = page.waitForResponse(
+    (r) => r.url().includes("post-workspace") && r.request().method() === "POST"
+  );
+  await form()
+    .getByRole("button", { name: "Publish post", exact: true })
+    .click();
+  assert.equal((await deniedResponse).status(), 403);
+  assert.equal(await db.platformPost.count({ where: { authorId: a.id } }), 1);
+  assert.deepEqual(
+    (await db.privatePostDraft.findFirstOrThrow({ where: { id: richId } }))
+      .payload,
+    richPayload
+  );
+  ok(
+    "Resumed link previews are renewed explicitly; revoked church access prevents publication and preserves the complete snapshot"
+  );
   await field().fill("Private old-account unsent text");
   await signIn(b);
   await page.evaluate(() => {
@@ -250,8 +396,15 @@ try {
     window.dispatchEvent(new Event("focus"));
   });
   await page.waitForFunction(
-    () => document.querySelector('textarea[name="content"]')?.value === ""
+    () =>
+      !document.body.textContent.includes("Private old-account unsent text") &&
+      !document.querySelector('textarea[name="content"]')?.value
   );
+  await page.waitForURL(config.origin + "/platform/drafts");
+  await go("/platform");
+  await page.locator("#compose-post > summary").click();
+  await field().waitFor();
+  assert.equal(await field().inputValue(), "");
   assert.equal(
     await db.privatePostDraft.count({ where: { ownerId: b.id } }),
     0

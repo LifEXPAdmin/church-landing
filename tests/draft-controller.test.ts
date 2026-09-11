@@ -219,3 +219,28 @@ test("account switching clears old drafts and pending requests before any new-ac
   assert.equal(c.getSnapshot().hidden, true);
   c.dispose();
 });
+
+test("resume protects dirty entries, keeps legacy unresolved permission and stored version", async () => {
+  const f = fixture(),
+    c = f.controller;
+  await c.verify();
+  c.start();
+  c.change({
+    ...c.getSnapshot().fields,
+    content: "Unsent",
+    linkReceipt: "old-preview"
+  });
+  f.replace();
+  await c.resume("draft-1");
+  assert.equal(c.getSnapshot().resumeId, "draft-1");
+  assert.equal(c.getSnapshot().fields.content, "Unsent");
+  c.cancelResume();
+  assert.equal(c.getSnapshot().fields.content, "Unsent");
+  await c.resume("draft-1", true);
+  assert.equal(c.getSnapshot().version, 8);
+  assert.equal(c.getSnapshot().fields.content, "Other tab");
+  assert.equal(c.getSnapshot().fields.replyAudience, null);
+  assert.equal(c.getSnapshot().fields.linkReceipt, undefined);
+  assert.equal(await c.publish(), false);
+  c.dispose();
+});
