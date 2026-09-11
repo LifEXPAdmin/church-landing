@@ -1,5 +1,6 @@
 import { UpdateNotice } from "@/components/platform/update-notice";
 import { publicReleaseId } from "@/lib/platform/install-policy";
+import { InstallationProvider } from "@/components/platform/installation-help";
 import type { Metadata } from "next";
 import { DraftWorkspaceProvider } from "@/components/platform/draft-workspace-provider";
 
@@ -18,10 +19,12 @@ export default function PlatformLayout({
       data-appearance="system"
       data-release={release ?? ""}
     >
-      <DraftWorkspaceProvider>
-        <UpdateNotice release={release} />
-        {children}
-      </DraftWorkspaceProvider>
+      <InstallationProvider>
+        <DraftWorkspaceProvider>
+          <UpdateNotice release={release} />
+          {children}
+        </DraftWorkspaceProvider>
+      </InstallationProvider>
     </div>
   );
 }

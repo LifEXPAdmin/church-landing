@@ -1,3 +1,4 @@
+import { InstallationHelp } from "@/components/platform/installation-help";
 import type { Metadata } from "next";
 import Link from "next/link";
 import {
@@ -173,6 +174,9 @@ export default async function PlatformMenuPage() {
                 icon={CircleHelp}
               />
             </ul>
+          </section>
+          <section aria-label="Installation">
+            <InstallationHelp />
           </section>
           <section aria-labelledby="menu-about">
             <h2 id="menu-about">About Godschurches</h2>

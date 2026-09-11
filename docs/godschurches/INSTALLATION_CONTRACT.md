@@ -70,3 +70,22 @@ choices suppress it. The click handler rechecks current controller state before
 reloading. No automatic reload, service worker, CacheStorage or push permission
 is introduced. This notice works in ordinary browser tabs; physical installation
 and owner acceptance remain separate checks.
+
+## Menu installation help
+
+The platform layout captures the browser's beforeinstallprompt event for later
+explicit use from Menu. A dismissed or used prompt is consumed; userChoice
+acceptance alone is not labeled installed. appinstalled or an actual standalone
+signal establishes the displayed installed state. Missing capability remains
+unknown and shows Android Chrome, iPhone Safari and desktop Chrome instructions,
+plus an ordinary-browser fallback. The native help dialog restores focus and
+scroll state. No notification request or account operation is triggered.
+
+Instructions checked 11 September 2026 against
+[Apple's iPhone guide](https://support.apple.com/guide/iphone/open-as-web-app-iphea86e5236/ios),
+[Chrome Android help](https://support.google.com/chrome/answer/9658361?co=GENIE.Platform%3DAndroid&hl=en),
+[Chrome computer help](https://support.google.com/chrome/answer/9658361?co=GENIE.Platform%3DDesktop&hl=en)
+and the [browser event contract](https://developer.mozilla.org/en-US/docs/Web/API/Window/beforeinstallprompt_event).
+The four isolated browser groups in `scripts/qa-installation-browser.mjs` cover
+capability and dialog behavior using synthetic events; they do not establish
+physical-device installation acceptance.
