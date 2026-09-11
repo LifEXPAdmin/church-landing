@@ -2,6 +2,70 @@
 
 September 10, 2026 · Published structure foundation; local role library, assignment service and Privileges interface verified
 
+## Navigation recovery and saved history acceptance — September 10, 2026
+
+The editor keeps a bounded, strictly validated geometry-only recovery record in
+session storage, scoped to the church and member connection and expiring after
+24 hours. It does not retain names, contact data, assignments, permission grants,
+confirmation checkboxes or the full undo stack. Current access must be read again
+before recovery is enabled. Recovered choices are explicitly applied to current
+positions and reviewed. An uncertain save retains its original request reference
+and changes, with a new confirmation required after reload. Nothing autosaves.
+Normal leave offers keep, discard or stay; browser Back/Forward remains usable.
+Unavailable browser storage produces an honest warning and prevents a false
+keep-and-leave success. Confirmed save and explicit discard remove the draft.
+
+The church-scoped history view exposes saved time/version and before/after
+placement from existing atomic save receipts. It uses only current eligible,
+approved members' chosen listed names; other editors have a generic label.
+Unavailable positions and reporting parents have no historical name fallback.
+Neither authentication fields nor raw request references enter the history DTO.
+Twenty-entry pagination, cursor validation and malformed-receipt fallback are
+covered. Reads require current membership and MANAGE_STRUCTURE in the transaction.
+Visible history refreshes and clears on unavailable access. History never restores
+assignments or privileges. No schema or dependency changed.
+
+Verification:
+
+- **18 pure checks** passed, including strict draft scope, expiry, size, malformed
+  input and exact retry preservation without authority or confirmation data.
+- **32 targeted service checks** passed for atomic chart saves, structure, role
+  templates and assignment boundaries. Added history checks cover scope, consent
+  withdrawal, current role names, unavailable positions, cursor paging, malformed
+  receipts and revoked authority. An initial fixture setup failed because an
+  unlisted coordinator had no directory preference; the corrected fixture uses
+  upsert, and the complete targeted rerun passed.
+- **Eight actual development structure HTTP checks and 27 final production HTTPS
+  checks** passed, including history HTML/Flight/JSON privacy and entry/guest
+  regressions. Production build/types and full lint passed. Runtime audit found
+  93 traces, 7,370 entries and 228 server JavaScript files with no private fixture,
+  environment or Prisma configuration-loader paths. The prior broader migration/
+  lifecycle/permission-source receipts remain applicable; this adds no migration.
+- Chrome verified keep-and-leave, focused recovery, reload, browser Back/Forward,
+  fresh review, discard after recovery, explicit discard-and-leave and no recovery
+  after a confirmed save. Recovery stayed disabled when current edit permission
+  was withdrawn, then became available after a fresh authorized read. The open
+  history view hid saved details on permission loss and recovered after refresh.
+- An intentionally unconfirmed committed response survived reload. Browser
+  verification caught a comparison against the already-loaded version instead
+  of the original reviewed version; the fix confirms the original receipt and
+  clears the draft without duplicating a save. A second editor's newer save caused
+  the older receipt to return conflict, retained the draft and left the newer
+  chart intact. Explicit reload/review then saved the chosen restoration.
+- Four intended fictional saves returned every starting position, reporting line,
+  assignment and role-grant contribution to its original value. Nine total
+  receipts remained, versus five at the start; retries added none. All fixture
+  membership/sharing/authority fields were restored. The final browser walkthrough
+  reported no warning or error entries. No real church data changed.
+
+The saved-change/undo/conflict task is complete locally, incorporating prior
+atomic persistence, opposing-operation concurrency, restart, another-tab readback
+and permission-source acceptance. Full keyboard/touch/large-text and integrated
+release acceptance follow. The bundle remains unpushed/unpublished pending those
+checks and current main recovery/feed integration with post-audience safeguards.
+Physical Samsung testing remains separately unverified. No new owner action
+blocks independent coding; the complete batch and final review stay open.
+
 ## Contact integration and current consent acceptance — September 10, 2026
 
 Contact cards show only the chosen church directory name/email/phone and current

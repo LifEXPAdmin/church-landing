@@ -176,18 +176,20 @@ function RoleCard({
 
 export function ChurchStructureChart({
   churchId,
+  connectionId,
   positions: initialPositions,
   canManage: initialCanManage,
   version,
   initialFocus
 }: {
   churchId: string;
+  connectionId: string;
   positions: PositionSummary[];
   canManage: boolean;
   version: number;
   initialFocus?: string;
 }) {
-  const editor = useChurchChartEditor(churchId, {
+  const editor = useChurchChartEditor(churchId, connectionId, {
     positions: initialPositions,
     canManage: initialCanManage,
     version
@@ -354,12 +356,17 @@ export function ChurchStructureChart({
     [positions, layout.connected, size.width]
   );
   useEffect(() => {
-    if (!initialFocus || returnedFocus.current === initialFocus) return;
+    if (
+      editor.recoveredDraft ||
+      !initialFocus ||
+      returnedFocus.current === initialFocus
+    )
+      return;
     const position = positions.find((p) => p.id === initialFocus);
     if (!position || !size.width) return;
     returnedFocus.current = initialFocus;
     center(position);
-  }, [initialFocus, positions, size.width, center]);
+  }, [initialFocus, positions, size.width, center, editor.recoveredDraft]);
   function changeZoom(next: number) {
     automaticFit.current = false;
     const element = viewport.current;

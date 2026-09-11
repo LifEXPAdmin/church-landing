@@ -1,3 +1,4 @@
+import { ChurchChartHistory } from "./church-chart-history";
 import { ChurchStructureChart } from "./church-structure-chart";
 import { ChurchReturnFocus } from "./church-return-focus";
 import { churchContactPrivacy } from "@/lib/platform/church-contact-privacy";
@@ -617,7 +618,7 @@ export async function ChurchStructurePage({
   focus?: string;
 }) {
   const back = churchReturnContext(returnFrom, focus);
-  const path = `${root(churchId)}/${view === "roles" ? "structure/roles" : view === "assign" ? "structure/assign" : view === "person" ? `people/${encodeURIComponent(connectionId ?? "")}` : view === "structure" ? `structure${create ? "/new" : positionId ? `/${encodeURIComponent(positionId)}` : ""}` : view}`;
+  const path = `${root(churchId)}/${view === "history" ? "structure/history" : view === "roles" ? "structure/roles" : view === "assign" ? "structure/assign" : view === "person" ? `people/${encodeURIComponent(connectionId ?? "")}` : view === "structure" ? `structure${create ? "/new" : positionId ? `/${encodeURIComponent(positionId)}` : ""}` : view}`;
   // Do not read cookies or private church values inside development Flight diagnostics.
   if (process.env.NODE_ENV !== "production")
     return (
@@ -676,19 +677,21 @@ export async function ChurchStructurePage({
   const title =
     view === "assign"
       ? "Assign role and review privileges"
-      : view === "roles"
-        ? "Church role library"
-        : view === "person"
-          ? "Church contact"
-          : view === "overview"
-            ? snapshot.church.name
-            : view === "responsibilities"
-              ? "My responsibilities"
-              : view === "access"
-                ? "Church access"
-                : create
-                  ? "Create a position"
-                  : (row?.name ?? "Church structure");
+      : view === "history"
+        ? "Chart change history"
+        : view === "roles"
+          ? "Church role library"
+          : view === "person"
+            ? "Church contact"
+            : view === "overview"
+              ? snapshot.church.name
+              : view === "responsibilities"
+                ? "My responsibilities"
+                : view === "access"
+                  ? "Church access"
+                  : create
+                    ? "Create a position"
+                    : (row?.name ?? "Church structure");
   const guardQuery = new URLSearchParams({ churchId, view });
   for (const [key, value] of Object.entries({
     positionId,
@@ -737,6 +740,15 @@ export async function ChurchStructurePage({
             aria-current={view === "roles" ? "page" : undefined}
           >
             Role library
+          </Link>
+        )}
+        {snapshot.capabilities.includes("MANAGE_STRUCTURE") && (
+          <Link
+            href={`${root(churchId)}/structure/history`}
+            className={portalLinkClass}
+            aria-current={view === "history" ? "page" : undefined}
+          >
+            Chart history
           </Link>
         )}
         {snapshot.capabilities.includes("MANAGE_CHURCH_ACCESS") && (
@@ -802,6 +814,14 @@ export async function ChurchStructurePage({
             </p>
           </PortalCard>
         </div>
+      )}
+      {view === "history" && snapshot.chartHistory && (
+        <ChurchChartHistory
+          key={`${churchId}:${cursor ?? "latest"}`}
+          churchId={churchId}
+          initial={snapshot.chartHistory}
+          cursor={cursor}
+        />
       )}
       {view === "person" && (
         <ChurchContactCard
@@ -951,8 +971,9 @@ export async function ChurchStructurePage({
               </ol>
             ) : (
               <ChurchStructureChart
-                key={churchId}
+                key={`${churchId}:${snapshot.ownConnectionId}`}
                 churchId={churchId}
+                connectionId={snapshot.ownConnectionId}
                 version={snapshot.version}
                 initialFocus={churchFocus(focus)}
                 positions={snapshot.positions.map(
@@ -983,6 +1004,7 @@ export async function ChurchStructurePage({
   );
   const liveContent =
     view === "person" ||
+    view === "history" ||
     (view === "structure" && !positionId && !outline && !create);
   return (
     <PlatformShell user={snapshot.viewer}>

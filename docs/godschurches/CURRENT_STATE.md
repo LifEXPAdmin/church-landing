@@ -1,5 +1,32 @@
 # Godschurches current state
 
+## Chart draft recovery and saved history verified locally — September 10, 2026
+
+Unsaved chart choices can now survive ordinary navigation, browser Back/Forward
+and reload in the same tab for up to 24 hours. Recovery retains only placement
+geometry and an exact uncertain-save reference; current church access, member
+details and a fresh confirmation are required. Save or explicit discard clears
+the copy. Storage failure is reported rather than claiming a draft was kept.
+
+Managers can view paginated saved chart history with time, current permitted
+editor names and before/after placement. Unlisted or unavailable people/positions
+remain unnamed. Current membership and authority protect HTML, Flight and JSON;
+open history clears when access cannot be confirmed.
+
+Eighteen pure checks, 32 targeted service checks, eight development structure HTTP
+checks and 27 final production HTTPS checks passed, alongside build, lint/types
+and runtime audit. Chrome verified navigation/reload recovery, fresh confirmation,
+discard/save cleanup, access loss/restoration and exact retry after reload. That
+walkthrough fixed an acknowledgement comparison that had rejected an already
+loaded save. A superseded receipt retains choices for review without overwriting
+the newer chart. See [CHURCH_STRUCTURE_REPORT.md](CHURCH_STRUCTURE_REPORT.md).
+
+Draft/history acceptance is complete locally. Phone/keyboard/large-text checks
+are next, followed by integrated release acceptance. The bundle remains
+unpushed/unpublished; integrate current main recovery/feed changes while keeping
+post-audience checks before release. No new owner action blocks coding. The
+complete batch and final review remain open.
+
 ## Contact cards and current sharing verified locally — September 10, 2026
 
 Church contact cards now connect the directory, chart, unconnected roles and

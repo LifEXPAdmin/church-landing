@@ -30,6 +30,7 @@ export type StructureOperation =
   | "grant"
   | "revoke";
 export type StructureView =
+  | "history"
   | "assign"
   | "roles"
   | "privileges"
@@ -62,6 +63,7 @@ export type StructureSnapshot = {
   capabilities: StructureCapability[];
   positions: PositionSummary[];
   roleTemplates?: ChurchRoleSummary[];
+  chartHistory?: import("./church-chart-history").ChartHistoryPage;
   privileges?: {
     memberLabel: string;
     isSelf: boolean;

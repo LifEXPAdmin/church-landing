@@ -1242,3 +1242,84 @@ test("contact cards expose chosen fields and relevant roles, preserve entry cont
       assert.equal(html.includes(secret), false);
   }
 });
+
+test("saved chart history HTML, Flight and JSON require current church authority and conceal unlisted editors", async () => {
+  const position = await cmd({
+    operation: "create",
+    requestKey: randomUUID(),
+    name: "History position " + randomUUID()
+  });
+  await db.churchCapabilityGrant.create({
+    data: {
+      churchId,
+      userId: morgan.user.id,
+      dependencyConnectionId: connections[morgan.user.id],
+      capability: "MANAGE_STRUCTURE"
+    }
+  });
+  await cmd(
+    {
+      operation: "chart-save",
+      requestKey: randomUUID(),
+      confirmed: true,
+      changes: [
+        {
+          id: position.id,
+          parentId: null,
+          placement: "ROOT",
+          layout: { x: 20, y: 40 }
+        }
+      ]
+    },
+    morgan.token
+  );
+  const api = `/api/platform/church-structure?churchId=${churchId}&view=history`;
+  const response = await get(api, ada.token);
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get("Cache-Control")!, /private, no-store/);
+  const history = (await response.json()).chartHistory;
+  assert.equal(history.entries[0].actor, "Unlisted or former member");
+  assert.deepEqual(history.entries[0].changes[0].after.layout, {
+    x: 20,
+    y: 40
+  });
+  assert.equal(history.entries[0].changes[0].positionId, position.id);
+  const forbidden = [
+    morgan.user.name,
+    morgan.user.email,
+    "Hidden Morgan Canary",
+    connections[morgan.user.id],
+    morgan.token,
+    "inputHash",
+    "requestKey",
+    "actorId"
+  ];
+  for (const secret of forbidden)
+    assert.equal(JSON.stringify(history).includes(secret), false);
+  for (const rsc of [false, true]) {
+    const html = await (
+      await get(
+        `/platform/churches/${churchId}/structure/history`,
+        ada.token,
+        rsc
+      )
+    ).text();
+    for (const secret of forbidden)
+      assert.equal(html.includes(secret), false, secret);
+    if (production) assert.ok(html.includes("Unlisted or former member"));
+    else assert.ok(html.includes("Open the private church structure preview"));
+  }
+  for (const token of [pat.token, blake.token])
+    assert.equal((await get(api, token)).status, 403);
+  assert.equal((await get(api)).status, 401);
+  assert.equal((await get(api + "&cursor=bad", ada.token)).status, 400);
+  await db.churchCapabilityGrant.updateMany({
+    where: { churchId, userId: morgan.user.id, capability: "MANAGE_STRUCTURE" },
+    data: { revokedAt: new Date() }
+  });
+  assert.equal((await get(api, morgan.token)).status, 403);
+  const denied = await (
+    await get(`/platform/churches/${churchId}/structure/history`, morgan.token)
+  ).text();
+  assert.equal(denied.includes("History position"), false);
+});

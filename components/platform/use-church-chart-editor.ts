@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useChurchChartDraft } from "./use-church-chart-draft";
 import { useChurchRefresh } from "./use-church-refresh";
 import type {
   StructureSnapshot,
@@ -44,6 +45,7 @@ const errorText = (error: unknown) =>
 // always come from the current server read, including after conflict recovery.
 export function useChurchChartEditor(
   churchId: string,
+  connectionId: string,
   initial: {
     positions: PositionSummary[];
     version: number;
@@ -67,6 +69,7 @@ export function useChurchChartEditor(
   const busyRef = useRef(false);
   const readRevision = useRef(0);
   const [unavailable, setUnavailable] = useState(false);
+  const [accessChecked, setAccessChecked] = useState(false);
   const allowLeave = useRef(false);
   const [message, setMessage] = useState("");
   const [leaveTarget, setLeaveTarget] = useState<string | null>(null);
@@ -80,14 +83,28 @@ export function useChurchChartEditor(
       retained ? base.positions : applyChartChanges(base.positions, draft),
     [retained, base.positions, draft]
   );
-  const dirty = changes.length > 0;
+  const draftStorage = useChurchChartDraft(churchId, connectionId, {
+    version: base.version,
+    changes,
+    retry:
+      review && (uncertain || (busy && !requiresReload))
+        ? {
+            expectedVersion: review.expectedVersion,
+            requestKey: review.requestKey,
+            changes: review.changes
+          }
+        : null
+  });
+  const dirty = changes.length > 0 || !!draftStorage.recovered;
   const canChange =
     editing &&
+    accessChecked &&
     base.canManage &&
     !busy &&
     !review &&
     !requiresReload &&
-    retained === null;
+    retained === null &&
+    !draftStorage.recovered;
   const currentRead = useChurchRefresh({
     url: `/api/platform/church-structure?${new URLSearchParams({ churchId, view: "structure" })}`,
     paused: () => busyRef.current,
@@ -96,6 +113,7 @@ export function useChurchChartEditor(
       const data = value as StructureSnapshot;
       if (
         data.church?.id !== churchId ||
+        data.ownConnectionId !== connectionId ||
         !Number.isSafeInteger(data.version) ||
         !Array.isArray(data.positions) ||
         !Array.isArray(data.capabilities)
@@ -107,9 +125,10 @@ export function useChurchChartEditor(
         canManage: data.capabilities.includes("MANAGE_STRUCTURE")
       };
       setUnavailable(false);
+      setAccessChecked(true);
       if (uncertain) {
         // Refresh private projections while preserving the exact retry request.
-        setBase({ ...next, version: review?.expectedVersion ?? base.version });
+        setBase(next);
         setHistory({ entries: [geometry(next.positions)], index: 0 });
         setRetained(review?.changes ?? changes);
         return;
@@ -141,6 +160,7 @@ export function useChurchChartEditor(
     }
   });
   function hideUnavailable() {
+    setAccessChecked(false);
     setBase({ positions: [], version: base.version, canManage: false });
     setHistory({ entries: [[]], index: 0 });
     setRetained(review?.changes ?? changes);
@@ -202,6 +222,7 @@ export function useChurchChartEditor(
   }
   function stage(next: EditorPosition[], description: string) {
     if (!canChange || busyRef.current) return;
+    draftStorage.allowNewDraft();
     const values = geometry(next);
     if (!chartChanges(draft, values).length) {
       setMessage(
@@ -277,6 +298,15 @@ export function useChurchChartEditor(
     busyRef.current = true;
     readRevision.current += 1;
     setBusy(true);
+    draftStorage.persist({
+      version: base.version,
+      changes: review.changes,
+      retry: {
+        expectedVersion: review.expectedVersion,
+        requestKey: review.requestKey,
+        changes: review.changes
+      }
+    });
     setMessage("");
     try {
       const response = await fetch("/api/platform/church-structure", {
@@ -301,15 +331,25 @@ export function useChurchChartEditor(
         }
         return;
       }
-      if (!Number.isSafeInteger(data.version) || data.version <= base.version)
+      if (
+        !Number.isSafeInteger(data.version) ||
+        data.version <= review.expectedVersion
+      )
         throw new Error("Unconfirmed save result");
+      // An exact retry may acknowledge an older receipt after reload already
+      // loaded that save or a newer chart. Do not roll the current chart back.
+      const alreadyLoaded = data.version <= base.version;
       resetDraft({
         ...base,
-        positions: applyChartChanges(base.positions, review.changes),
-        version: data.version
+        positions: alreadyLoaded
+          ? base.positions
+          : applyChartChanges(base.positions, review.changes),
+        version: Math.max(base.version, data.version)
       });
       setMessage(
-        "Chart changes saved. Assignments and permissions are unchanged."
+        alreadyLoaded
+          ? "Your earlier chart save is confirmed. The current saved chart is shown."
+          : "Chart changes saved. Assignments and permissions are unchanged."
       );
     } catch {
       setUncertain(true);
@@ -338,6 +378,8 @@ export function useChurchChartEditor(
       }
       const data = await response.json();
       if (
+        data.church?.id !== churchId ||
+        data.ownConnectionId !== connectionId ||
         !Number.isSafeInteger(data.version) ||
         !Array.isArray(data.positions) ||
         !Array.isArray(data.capabilities)
@@ -350,6 +392,7 @@ export function useChurchChartEditor(
       };
       resetDraft(next);
       setUnavailable(false);
+      setAccessChecked(true);
       setRetained(kept.length ? kept : null);
       setMessage(
         "Current positions are loaded. Review the retained changes below before applying them to this version."
@@ -396,12 +439,60 @@ export function useChurchChartEditor(
   }
   function discard() {
     if (busyRef.current || uncertain) return;
+    draftStorage.discard();
     resetDraft(base);
     setMessage("Unsaved changes discarded.");
+  }
+  function recoverDraft() {
+    const saved = draftStorage.recovered;
+    if (
+      !saved ||
+      !base.canManage ||
+      busyRef.current ||
+      unavailable ||
+      !accessChecked
+    )
+      return;
+    draftStorage.allowNewDraft();
+    setEditing(true);
+    setRetained(saved.changes);
+    setHistory({ entries: [geometry(base.positions)], index: 0 });
+    setRequiresReload(false);
+    if (saved.retry) {
+      setReview({
+        operation: "chart-save",
+        churchId,
+        confirmed: true,
+        ...saved.retry
+      });
+      setUncertain(true);
+      setMessage(
+        "Your previous save could not be confirmed before leaving. Current chart information is shown. Confirm the retained request before retrying; it will not create a second save."
+      );
+    } else {
+      setReview(null);
+      setUncertain(false);
+      setMessage(
+        "Your placement choices were recovered from this tab. Apply them to the current chart and review before saving."
+      );
+    }
+    draftStorage.consume();
   }
   return {
     positions,
     unavailable,
+    recoveredDraft: draftStorage.recovered,
+    recoveryAvailable: draftStorage.available,
+    recoveryAccessChecked: accessChecked,
+    recoverDraft,
+    discardRecoveredDraft: () => {
+      draftStorage.discard();
+      setMessage("Stored draft discarded. The saved chart is unchanged.");
+    },
+    retryMatchesCurrent:
+      !!review &&
+      uncertain &&
+      !chartChanges(base.positions, review.changes).length,
     refreshing: currentRead.pending,
     refresh: currentRead.refresh,
     basePositions: base.positions,
@@ -456,9 +547,21 @@ export function useChurchChartEditor(
       }
     },
     leaveTarget,
+    keepDraftAndLeave: () => {
+      if (!leaveTarget || busyRef.current) return;
+      if (!draftStorage.persist()) {
+        setMessage(
+          "This browser could not keep the draft. Stay here until you save it, or explicitly discard it."
+        );
+        return;
+      }
+      allowLeave.current = true;
+      window.location.assign(leaveTarget);
+    },
     cancelLeave: () => setLeaveTarget(null),
     confirmLeave: () => {
       if (leaveTarget && !busy) {
+        draftStorage.discard();
         allowLeave.current = true;
         resetDraft(base);
         setLeaveTarget(null);

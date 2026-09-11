@@ -504,6 +504,7 @@ try {
   if (portalTests) await runTests("tests/church-chart-layout.test.ts");
   if (portalTests) await runTests("tests/church-chart-model.test.ts");
   if (portalTests) await runTests("tests/church-return-context.test.ts");
+  if (portalTests) await runTests("tests/church-chart-draft.test.ts");
   if (portalTests) await runTests("tests/church-chart-save.test.ts");
   if (portalTests) await runTests("tests/church-role-templates.test.ts");
   if (portalTests)

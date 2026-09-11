@@ -1,3 +1,4 @@
+import { readChurchChartHistory } from "./church-chart-history";
 import { saveChurchChart } from "./church-chart-save";
 import {
   saveAssignmentPrivileges,
@@ -641,12 +642,14 @@ export async function getChurchStructure(
         "Church access management is not available to this account."
       );
     if (
-      ["roles", "assign", "privileges"].includes(options.view ?? "") &&
+      ["roles", "assign", "privileges", "history"].includes(
+        options.view ?? ""
+      ) &&
       !capabilities.includes("MANAGE_STRUCTURE")
     )
       throw new PortalError(
         403,
-        "Role title management is not available to this account."
+        "Church structure management is not available to this account."
       );
     const rows = await tx.churchPosition.findMany({
       where: { churchId, archivedAt: null },
@@ -722,6 +725,14 @@ export async function getChurchStructure(
         options.view === "structure")
     )
       snapshot.roleTemplates = await readRoleTemplates(tx, churchId);
+    if (options.view === "history")
+      snapshot.chartHistory = await readChurchChartHistory(
+        tx,
+        churchId,
+        actor.id,
+        snapshot.positions,
+        options.cursor
+      );
     if (options.view === "person") {
       const id = identifier(options.connectionId);
       const pref = await tx.churchDirectoryPreference.findFirst({

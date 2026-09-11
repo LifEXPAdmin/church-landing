@@ -357,3 +357,140 @@ test("database rejects half coordinates and out-of-grid layouts without changing
   assert.equal((await f.read()).positions[0].layout, null);
   assert.equal((await f.read()).positions[0].placement, "UNCONNECTED");
 });
+
+test("chart history is church-scoped, permission checked, paginated and labeled only with current shared identities", async () => {
+  const f = await fixture();
+  const a = await f.create("Current role A");
+  const b = await f.create("Current role B");
+  const history = (token = f.memberA.token, cursor?: string) =>
+    getChurchStructure(db, token, {
+      churchId: f.churchA.id,
+      view: "history",
+      cursor
+    });
+  assert.deepEqual((await history()).chartHistory, { entries: [] });
+  await f.save(
+    [{ ...change(a.id), placement: "ROOT" }],
+    {},
+    f.coordinator.token
+  );
+  await f.save([change(b.id, a.id)]);
+  let rows = (await history()).chartHistory!.entries;
+  assert.equal(rows.length, 2);
+  assert.equal(rows[0].actor, "You");
+  assert.equal(rows[1].actor, "Unlisted or former member");
+  assert.equal(rows[0].changes[0].after.parentName, "Current role A");
+  assert.equal(rows[0].changes[0].before.placement, "UNCONNECTED");
+  assert.equal(rows[0].changes[0].after.placement, "REPORTING");
+  assert.ok(Number.isFinite(Date.parse(rows[0].savedAt)));
+  for (const secret of [
+    f.coordinator.email,
+    f.coordinator.name,
+    f.memberA.email,
+    f.memberA.token,
+    "inputHash",
+    "requestKey",
+    "actorId"
+  ])
+    assert.equal(JSON.stringify(rows).includes(secret), false, secret);
+  await denied(history(f.memberB.token), 403);
+  await denied(history(f.pending.token), 403);
+  await denied(history(""), 401);
+  for (const cursor of ["-1", "0", "1.5", "elsewhere", "2147483648"])
+    await denied(history(f.memberA.token, cursor), 400);
+  const actorConnection = await db.churchConnection.findUniqueOrThrow({
+    where: {
+      userId_churchId: { userId: f.coordinator.id, churchId: f.churchA.id }
+    }
+  });
+  await db.churchDirectoryPreference.upsert({
+    where: { connectionId: actorConnection.id },
+    create: {
+      connectionId: actorConnection.id,
+      listed: true,
+      displayName: "Chosen history editor"
+    },
+    update: { listed: true, displayName: "Chosen history editor" }
+  });
+  assert.equal(
+    (await history()).chartHistory!.entries[1].actor,
+    "Chosen history editor"
+  );
+  await db.churchDirectoryPreference.update({
+    where: { connectionId: actorConnection.id },
+    data: { listed: false }
+  });
+  assert.equal(
+    JSON.stringify((await history()).chartHistory).includes(
+      "Chosen history editor"
+    ),
+    false
+  );
+  await f.cmd({
+    operation: "edit",
+    positionId: a.id,
+    name: "Renamed current role"
+  });
+  rows = (await history()).chartHistory!.entries;
+  assert.equal(rows[0].changes[0].after.parentName, "Renamed current role");
+  assert.equal(JSON.stringify(rows).includes("Current role A"), false);
+  await f.cmd({ operation: "archive", positionId: b.id, confirmed: true });
+  const archived = (await history()).chartHistory!.entries[0].changes[0];
+  assert.equal(archived.name, "Unavailable position");
+  assert.equal(archived.positionId, undefined);
+  const lastVersion = (await f.read()).version;
+  await db.churchChartSave.createMany({
+    data: Array.from({ length: 21 }, (_, i) => ({
+      requestKey: randomUUID(),
+      churchId: f.churchA.id,
+      actorId: f.memberA.id,
+      inputHash: "fictional-history-fixture",
+      resultVersion: lastVersion + i + 1,
+      changes: [
+        {
+          id: a.id,
+          before: { parentId: null, placement: "UNCONNECTED", layout: null },
+          after: { parentId: null, placement: "ROOT", layout: null }
+        }
+      ]
+    }))
+  });
+  const first = (await history()).chartHistory!;
+  assert.equal(first.entries.length, 20);
+  assert.ok(first.cursor);
+  const second = (await history(f.memberA.token, first.cursor)).chartHistory!;
+  assert.equal(second.entries.length, 3);
+  assert.equal(second.cursor, undefined);
+  assert.equal(
+    first.entries.some((entry) =>
+      second.entries.some((other) => other.version === entry.version)
+    ),
+    false
+  );
+  const corrupt = await db.churchChartSave.findFirstOrThrow({
+    where: { churchId: f.churchA.id },
+    orderBy: { resultVersion: "desc" }
+  });
+  await db.churchChartSave.update({
+    where: { requestKey: corrupt.requestKey },
+    data: {
+      changes: [{ name: "Private history canary", email: f.coordinator.email }]
+    }
+  });
+  const unavailable = (await history()).chartHistory!.entries[0];
+  assert.equal(unavailable.changesUnavailable, true);
+  assert.deepEqual(unavailable.changes, []);
+  assert.equal(
+    JSON.stringify(unavailable).includes("Private history canary"),
+    false
+  );
+  await db.churchCapabilityGrant.updateMany({
+    where: {
+      userId: f.memberA.id,
+      churchId: f.churchA.id,
+      capability: "MANAGE_STRUCTURE"
+    },
+    data: { revokedAt: new Date() }
+  });
+  await denied(history(), 403);
+});

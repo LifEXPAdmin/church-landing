@@ -72,6 +72,7 @@ export function useChurchRefresh({
     const interval = window.setInterval(() => void refresh(), 15_000);
     document.addEventListener("visibilitychange", visible);
     window.addEventListener("focus", focus);
+    window.addEventListener("pageshow", focus);
     void refresh();
     return () => {
       mounted.current = false;
@@ -80,6 +81,7 @@ export function useChurchRefresh({
       window.clearInterval(interval);
       document.removeEventListener("visibilitychange", visible);
       window.removeEventListener("focus", focus);
+      window.removeEventListener("pageshow", focus);
     };
   }, [refresh]);
   return { pending, refresh };

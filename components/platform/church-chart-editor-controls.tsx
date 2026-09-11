@@ -38,6 +38,10 @@ export function ChurchChartEditorControls({
   const reviewButton = useRef<HTMLButtonElement>(null);
   const leaveHeading = useRef<HTMLHeadingElement>(null);
   const discardHeading = useRef<HTMLHeadingElement>(null);
+  const recoveryHeading = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    if (editor.recoveredDraft) recoveryHeading.current?.focus();
+  }, [editor.recoveredDraft]);
   const [destination, setDestination] = useState("UNCONNECTED");
   const selected = editor.positions.find((p) => p.id === selectedId);
   useEffect(() => {
@@ -115,15 +119,72 @@ export function ChurchChartEditorControls({
       className="space-y-4 rounded-2xl border border-gc-divider bg-gc-surface p-4 sm:p-5"
       aria-label="Edit church structure"
     >
+      {editor.recoveredDraft && (
+        <section
+          aria-label="Recover chart draft"
+          className="space-y-3 rounded-xl border border-gc-action p-4"
+        >
+          <h3
+            ref={recoveryHeading}
+            tabIndex={-1}
+            className="text-2xl outline-none"
+          >
+            Recover your chart draft
+          </h3>
+          <p className="text-sm text-gc-muted">
+            This tab kept {editor.recoveredDraft.changes.length} placement{" "}
+            {editor.recoveredDraft.changes.length === 1 ? "choice" : "choices"}{" "}
+            from before you left. Member details and permissions are loaded
+            fresh. Nothing will be saved automatically.
+          </p>
+          {editor.recoveredDraft.retry && (
+            <p className="text-sm">
+              The previous save may already have completed. Its original retry
+              reference is kept.
+            </p>
+          )}
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              className={portalButtonClass}
+              disabled={
+                !editor.canManage ||
+                editor.busy ||
+                editor.unavailable ||
+                !editor.recoveryAccessChecked
+              }
+              onClick={editor.recoverDraft}
+            >
+              Recover choices for review
+            </button>
+            <button
+              type="button"
+              className={chartControlClass}
+              disabled={editor.busy}
+              onClick={editor.discardRecoveredDraft}
+            >
+              Discard stored draft
+            </button>
+          </div>
+        </section>
+      )}
+      {!editor.recoveryAvailable && (
+        <p role="status" className="rounded-xl bg-gc-subtle p-3 text-sm">
+          This browser could not keep a recovery copy. Keep this tab open until
+          your changes are saved.
+        </p>
+      )}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-2xl">
             {editor.editing ? "Edit structure" : "View church structure"}
           </h2>
           <p className="mt-1 text-sm text-gc-muted">
-            {editor.dirty
-              ? `${editor.changes.length} unsaved position ${editor.changes.length === 1 ? "change" : "changes"}`
-              : "No unsaved chart changes"}
+            {editor.recoveredDraft
+              ? "A stored draft is waiting for review"
+              : editor.dirty
+                ? `${editor.changes.length} unsaved position ${editor.changes.length === 1 ? "change" : "changes"}`
+                : "No unsaved chart changes"}
           </p>
         </div>
         {!editor.editing && editor.canManage && (
@@ -145,6 +206,12 @@ export function ChurchChartEditorControls({
           </button>
         )}
       </div>
+      {editor.recoveryAvailable && (editor.editing || editor.dirty) && (
+        <p className="text-sm text-gc-muted">
+          A recovery copy stays in this tab for up to 24 hours. Save changes to
+          keep them permanently.
+        </p>
+      )}
       {editor.editing && (
         <>
           <p className="text-sm text-gc-muted">
@@ -296,7 +363,7 @@ export function ChurchChartEditorControls({
           Load current positions and keep choices
         </button>
       )}
-      {editor.retained !== null && (
+      {editor.retained !== null && !editor.uncertain && (
         <section
           className="space-y-3 rounded-xl border border-gc-divider p-4"
           aria-label="Retained chart changes"
@@ -335,12 +402,18 @@ export function ChurchChartEditorControls({
             These changes move positions or their cards. They do not assign
             people, change duties or grant permissions.
           </p>
+          {editor.retryMatchesCurrent && (
+            <p className="rounded-xl bg-gc-subtle p-3 text-sm">
+              The latest chart matches this save. Retry to confirm its existing
+              receipt.
+            </p>
+          )}
           <label className="flex min-h-11 items-start gap-3 text-sm">
             <input
               type="checkbox"
               className="mt-1 h-5 w-5 shrink-0 accent-gc-action"
               checked={confirmed}
-              disabled={editor.busy || editor.uncertain}
+              disabled={editor.busy}
               onChange={(event) => setConfirmed(event.target.checked)}
             />
             I reviewed these reporting and layout changes.
@@ -429,7 +502,8 @@ export function ChurchChartEditorControls({
             Leave this chart?
           </h3>
           <p className="text-sm text-gc-muted">
-            Your unsaved choices will be discarded.{" "}
+            Keep your choices in this tab to recover when you return, or discard
+            them.{" "}
             {editor.uncertain
               ? "The last save may already have completed; check the current chart when you return."
               : "Changes already saved on the server remain."}
@@ -445,6 +519,14 @@ export function ChurchChartEditorControls({
             <button
               type="button"
               className={portalButtonClass}
+              disabled={editor.busy || !editor.recoveryAvailable}
+              onClick={editor.keepDraftAndLeave}
+            >
+              Keep draft and leave
+            </button>
+            <button
+              type="button"
+              className={chartControlClass}
               disabled={editor.busy}
               onClick={editor.confirmLeave}
             >
