@@ -11,9 +11,13 @@ Fresh local verification: 24 workspace/post/search checks, ten HTTPS/export chec
 ten draft-library browser groups, TypeScript/lint/build/runtime tracing, isolated
 upgrade and dump/restore all passed. Production inspection found 27 matching
 migrations and none pending; no application writes or migration occurred.
-Publication is pending. See [the focused report](DRAFT_REPLY_PERMISSIONS_REPORT.md)
-and [contract](POST_WORKSPACE_CONTRACT.md). Autosave/resume interfaces and parent
-integration/owner acceptance remain open.
+Application `b58d4004f2c0a5f74962016d32d2bc4f0c446c2f` is live through READY
+deployment `dpl_3cDcS8DoiaiJVMagfuvQ4xGooc1o`; canonical assignment and release
+SHA match. All 21 live read-only checks passed at 22:40 UTC, with zero mutation
+requests and no deployment error-log entries. See [the focused report](DRAFT_REPLY_PERMISSIONS_REPORT.md)
+and [contract](POST_WORKSPACE_CONTRACT.md). The autosave controller's prerequisite
+is satisfied; its implementation, resume integration and parent/owner acceptance
+remain open.
 
 ## Private draft library and manifest — September 11, 2026
 

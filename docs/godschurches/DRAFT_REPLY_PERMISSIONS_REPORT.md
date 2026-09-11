@@ -1,8 +1,11 @@
 # Private draft reply permissions
 
 September 11, 2026. Focused contract repair on `codex/draft-reply-permissions`,
-based on released `bbbe500`. Implemented and verified locally; production
-publication and canonical serving verification are pending at this checkpoint.
+based on released `bbbe500`. Application `b58d4004f2c0a5f74962016d32d2bc4f0c446c2f`
+is published in READY deployment `dpl_3cDcS8DoiaiJVMagfuvQ4xGooc1o`.
+Canonical-domain inspection and live release SHA match. A report-only successor
+may carry this same application; its final serving identity is in the private
+handoff.
 
 ## Change
 
@@ -46,10 +49,21 @@ church-publishing grants block publication for both modes. Initial fixture field
 and explicit-choice corrections and local certificate setup are excluded from
 passing-run evidence; normal TLS verification remained enabled.
 
+## Live verification
+
+At 22:40 UTC, 17 existing live API checks and four focused private-workspace
+checks passed: guest single/list denial, no-store/noindex/Cookie boundaries,
+draft-library guest gate, server-rendered build identity and release endpoint.
+The exact deployment error-log scan returned no entries. The remote production
+build passed (105 traces, 8,423 entries, 257 server JavaScript files), and all
+27 migrations were already applied. No production mutation requests, fixture
+records or backfill were made. Authenticated save/retry/publish acceptance used
+isolated local HTTPS fixtures; no owner or physical-device acceptance is claimed.
+
 ## Remaining scope
 
-Production verification is the remaining prerequisite before declaring the
-shared autosave controller ready. Autosave/conflict status and composer resume
+The reply-permission prerequisite for the shared autosave controller is now
+satisfied and that focused Medium work is ready. Autosave/conflict status and composer resume
 interfaces remain separate work. Rich media/poll/scheduled snapshots, parent
 integration, owner acceptance and physical-device checks remain open. This
 repair neither reopens the completed foundation nor completes those later gates.
