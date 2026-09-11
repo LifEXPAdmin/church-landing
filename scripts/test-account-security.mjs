@@ -669,10 +669,10 @@ try {
       CALENDAR_RENDER_PHASE: "development"
     });
   if (portalTests)
-  await runTests("tests/post-publishing-http.test.ts", {
-    ...env,
-    POST_RENDER_PHASE: "development"
-  });
+    await runTests("tests/post-publishing-http.test.ts", {
+      ...env,
+      POST_RENDER_PHASE: "development"
+    });
   if (portalTests)
     await runTests("tests/post-editor-http.test.ts", {
       ...env,

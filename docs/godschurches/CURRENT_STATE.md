@@ -42,8 +42,9 @@ synthetic public SHA; it is not a deployment identity. The intermittent hydratio
 error remains unconfirmed, with no reproduced cause or claimed fix. Physical
 phone installation and account-switch pilot acceptance remain open.
 
-The private queue is being reconciled to six immediately executable P2 Medium
-slices plus four dependent P2 Medium follow-ons. Parent integrations remain open:
+The private queue is reconciled to six immediately executable P2 Medium slices
+plus four dependent P2 Medium follow-ons, with focused briefs and readback.
+Foundation application commit: `b49385c`, pushed on `codex/foundation-unlocks`. Parent integrations remain open:
 rich image/poll/scheduled draft snapshots, receipt retention/compaction, future
 block/mute propagation, manifest/help/update UI, physical devices and push are not
 claimed complete. End-of-batch review stays last. No production writes, migrations,
