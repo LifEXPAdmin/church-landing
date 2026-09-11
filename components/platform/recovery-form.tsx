@@ -1,13 +1,29 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import {
+  readAccountLink,
+  type RecoveryPurpose
+} from "@/lib/platform/account-link";
 import { AccountForm } from "./account-form";
 import { Button } from "@/components/ui/button";
 
-export function RecoveryForm({ available }: { available: boolean }) {
-  const router = useRouter();
+export function RecoveryForm({
+  available,
+  purpose = "RESET_PASSWORD",
+  initialEmail = "",
+  verified = false,
+  signedIn = false
+}: {
+  available: boolean;
+  purpose?: RecoveryPurpose;
+  initialEmail?: string;
+  verified?: boolean;
+  signedIn?: boolean;
+}) {
+  const busy = useRef(false);
+  const linkVersion = useRef(0);
   const [grant, setGrant] = useState<{ token: string; purpose: string } | null>(
     null
   );
@@ -16,21 +32,35 @@ export function RecoveryForm({ available }: { available: boolean }) {
   const [pending, setPending] = useState(false);
   const [complete, setComplete] = useState(false);
   useEffect(() => {
-    // Fragments never reach the server. Remove them before any outgoing navigation.
-    const params = new URLSearchParams(window.location.hash.slice(1));
-    const token = params.get("token");
-    const purpose = params.get("purpose");
-    if (
-      token &&
-      /^[A-Za-z0-9_-]{43}$/.test(token) &&
-      ["RESET_PASSWORD", "VERIFY_EMAIL"].includes(purpose ?? "")
-    )
-      setGrant({ token, purpose: purpose! });
-    else if (window.location.hash)
-      setMessage("This link is incomplete. Request a new one.");
-    window.history.replaceState(null, "", window.location.pathname);
-    setReady(true);
-  }, []);
+    const read = () => {
+      if (window.location.hash) {
+        linkVersion.current++;
+        const incoming = readAccountLink(window.location.hash, purpose);
+        setGrant(incoming);
+        setComplete(false);
+        setMessage(
+          incoming ? "" : "This link is incomplete. Request a new one below."
+        );
+        // Keep Next's navigation state; never put grants in storage or server URLs.
+        window.history.replaceState(
+          window.history.state,
+          "",
+          window.location.pathname + window.location.search
+        );
+      }
+      setReady(true);
+    };
+    read();
+    window.addEventListener("hashchange", read);
+    window.addEventListener("popstate", read);
+    return () => {
+      window.removeEventListener("hashchange", read);
+      window.removeEventListener("popstate", read);
+    };
+  }, [purpose]);
+  const verification = (grant?.purpose ?? purpose) === "VERIFY_EMAIL";
+  const returnHref =
+    signedIn && verification ? "/platform/settings" : "/platform/login";
   if (!ready) return <p role="status">Loading account options...</p>;
   if (!available)
     return (
@@ -41,10 +71,34 @@ export function RecoveryForm({ available }: { available: boolean }) {
     );
   if (!grant)
     return (
-      <div className="space-y-10">
+      <div className="space-y-5">
+        <h1 className="text-4xl">
+          {verification ? "Email verification" : "Forgot password?"}
+        </h1>
         <p role="status">{message}</p>
-        <AccountForm operation="request-reset" />
-        <AccountForm operation="request-verification" />
+        {verification && verified ? (
+          <p>Your account email is already verified.</p>
+        ) : (
+          <>
+            <p className="text-gc-muted">
+              {verification
+                ? "Confirm that this email belongs to you. Verification lets you use church setup and other account features."
+                : "Enter your account email and we’ll send a link to choose a new password."}
+            </p>
+            <AccountForm
+              key={purpose}
+              operation={
+                verification ? "request-verification" : "request-reset"
+              }
+              initialEmail={initialEmail}
+            />
+            <p className="text-sm text-gc-muted">
+              Check your inbox and spam or junk folder. If the message is in
+              Spam, mark it as not spam. If a link does not open, copy the
+              complete link into your browser. Links expire after 30 minutes.
+            </p>
+          </>
+        )}
       </div>
     );
   return (
@@ -52,6 +106,9 @@ export function RecoveryForm({ available }: { available: boolean }) {
       className="space-y-5"
       onSubmit={async (event) => {
         event.preventDefault();
+        if (busy.current) return;
+        busy.current = true;
+        const version = linkVersion.current;
         setPending(true);
         setMessage("");
         const form = event.currentTarget;
@@ -69,27 +126,32 @@ export function RecoveryForm({ available }: { available: boolean }) {
             })
           });
           const body = await result.json();
+          if (version !== linkVersion.current) return;
           setMessage(body.message);
           if (result.ok) {
             form.reset();
             setComplete(true);
-            if (body.redirect) {
-              router.replace(body.redirect);
-              router.refresh();
+            if (
+              typeof body.redirect === "string" &&
+              /^\/platform(?:[/?]|$)/.test(body.redirect)
+            ) {
+              window.location.replace(body.redirect);
             }
           }
         } catch {
-          setMessage("We could not confirm the change. Please try again.");
+          if (version === linkVersion.current)
+            setMessage("We could not confirm the change. Please try again.");
         } finally {
+          busy.current = false;
           setPending(false);
         }
       }}
     >
-      <h2 className="text-3xl text-gc-text">
+      <h1 className="text-3xl text-gc-text">
         {grant.purpose === "RESET_PASSWORD"
           ? "Choose a new password"
           : "Confirm your email"}
-      </h2>
+      </h1>
       {grant.purpose === "RESET_PASSWORD" && (
         <>
           <p>
@@ -136,9 +198,28 @@ export function RecoveryForm({ available }: { available: boolean }) {
               : "Verify my email"}
         </Button>
       )}
-      <Link href="/platform/login" className="block text-gc-accent underline">
-        Return to sign in
-      </Link>
+      <a href={returnHref} className="block text-gc-accent underline">
+        {signedIn && verification
+          ? "Return to account settings"
+          : "Return to sign in"}
+      </a>
+      {!complete && (
+        <Link
+          href={
+            verification
+              ? "/platform/account/verify"
+              : "/platform/account/recover"
+          }
+          onClick={() => {
+            linkVersion.current++;
+            setGrant(null);
+            setMessage("");
+          }}
+          className="block text-gc-accent underline"
+        >
+          Request a new link
+        </Link>
+      )}
     </form>
   );
 }

@@ -681,6 +681,151 @@
 .gc-feed {
   scroll-margin-top: 1rem;
 }
+.gc-feed-entry {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+.gc-feed-entry p {
+  font-size: 0.875rem;
+  color: var(--gc-muted);
+  margin-top: 0.25rem;
+}
+.gc-focused-feed {
+  position: fixed;
+  inset: 0;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  height: 100dvh;
+  max-width: none;
+  max-height: none;
+  border: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+  background: rgb(13 23 17 / 0.55);
+  color: var(--gc-text);
+  z-index: 1000;
+}
+.gc-feed [hidden] {
+  display: none;
+}
+.gc-inline-feed {
+  min-width: 0;
+}
+.gc-focused-panel {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  height: 100%;
+  background: var(--gc-canvas);
+  padding-top: env(safe-area-inset-top);
+  padding-inline: max(0.75rem, env(safe-area-inset-left))
+    max(0.75rem, env(safe-area-inset-right));
+  padding-bottom: env(safe-area-inset-bottom);
+  transition: transform 180ms ease-out;
+}
+.gc-focused-panel[data-dragging] {
+  transition: none;
+}
+.gc-focused-header,
+.gc-focused-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  max-width: 52rem;
+  margin-inline: auto;
+  padding-block: 0.5rem;
+}
+.gc-focused-header h2 {
+  font-size: 1.25rem;
+}
+.gc-feed-grip {
+  flex: 1;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.gc-feed-grip:active {
+  cursor: grabbing;
+}
+.gc-feed-grip-mark {
+  display: block;
+  width: 2rem;
+  height: 5px;
+  border-radius: 1rem;
+  background: var(--gc-border);
+}
+.gc-focused-help {
+  color: var(--gc-muted);
+  font-size: 0.8125rem;
+  max-width: 52rem;
+  width: 100%;
+  margin: 0 auto;
+  padding-bottom: 0.75rem;
+}
+.gc-focused-scroll {
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  touch-action: pan-y pinch-zoom;
+  min-height: 0;
+  width: 100%;
+  max-width: 52rem;
+  margin-inline: auto;
+  padding: 0.25rem;
+  scrollbar-gutter: stable;
+}
+.gc-focused-post {
+  min-height: 100%;
+}
+.gc-focused-post .gc-post {
+  min-height: 100%;
+}
+.gc-focused-post .gc-post-page:not([hidden]) {
+  animation: gc-page-next 180ms ease-out;
+}
+.gc-focused-panel[data-direction="previous"] .gc-post-page:not([hidden]) {
+  animation-name: gc-page-previous;
+}
+.gc-focused-footer {
+  border-top: 1px solid var(--gc-divider);
+}
+.gc-focused-footer p {
+  color: var(--gc-muted);
+  font-size: 0.875rem;
+}
+.gc-focused-footer .gc-button {
+  padding-inline: 0.5rem;
+  gap: 0.375rem;
+}
+.gc-focused-feed [aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: default;
+}
+@media (prefers-reduced-motion: reduce) {
+  .gc-focused-panel {
+    transition: none;
+  }
+  .gc-focused-feed .gc-focused-post .gc-post-page:not([hidden]) {
+    animation: none;
+  }
+}
+[data-reduce-motion="true"] .gc-focused-panel {
+  transition: none;
+}
+[data-reduce-motion="true"] .gc-focused-post .gc-post-page:not([hidden]) {
+  animation: none;
+}
 .gc-feed-toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -1129,6 +1274,59 @@
 
 /* Font-relative breakpoints also accommodate supported OS text enlargement. */
 @media (max-width: 20em) {
+  .gc-focused-panel,
+  .gc-feed .gc-post {
+    padding-inline: 12px;
+  }
+  .gc-focused-header h2 {
+    font-size: 1rem;
+    white-space: nowrap;
+  }
+  .gc-focused-header .gc-button {
+    flex-shrink: 0;
+    padding-inline: 12px;
+    white-space: nowrap;
+  }
+  .gc-feed-grip {
+    gap: 0;
+  }
+  .gc-feed-grip-mark,
+  .gc-focused-footer svg,
+  .gc-page-navigation svg,
+  .gc-mode-picker svg {
+    display: none;
+  }
+  .gc-focused-scroll {
+    scrollbar-gutter: auto;
+  }
+  .gc-focused-footer,
+  .gc-page-navigation {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.25rem;
+  }
+  .gc-focused-footer p,
+  .gc-page-navigation > span {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    text-align: center;
+  }
+  .gc-focused-footer .gc-button,
+  .gc-page-navigation .gc-button {
+    font-size: 0.875rem;
+    padding-inline: 0.25rem;
+    white-space: nowrap;
+  }
+  .gc-mode-picker {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+  .gc-mode-picker button {
+    justify-content: center;
+    padding-inline: 0.25rem;
+    white-space: nowrap;
+  }
   .gc-workspace {
     padding-inline: 12px;
   }

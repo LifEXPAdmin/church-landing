@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import {
   ArrowRight,
+  BookOpen,
   Church,
   CalendarDays,
   CalendarCheck,
@@ -74,6 +75,17 @@ export default async function PlatformMenuPage() {
               </Link>
             </div>
           )}
+          <section aria-labelledby="menu-reading">
+            <h2 id="menu-reading">Read and explore</h2>
+            <ul className="gc-menu-links">
+              <MenuLink
+                href="/platform/feed"
+                title="My feed"
+                description="Open a full-screen reader. Swipe left or right between posts."
+                icon={BookOpen}
+              />
+            </ul>
+          </section>
           <section aria-labelledby="menu-account">
             <h2 id="menu-account">Your account</h2>
             <ul className="gc-menu-links">

@@ -1,5 +1,38 @@
 # Godschurches current state
 
+## Integrated church, community and reader release candidate — September 10, 2026
+
+Current main recovery/verification and focused-feed changes are integrated with
+the church editor, role/privilege, post-audience and profile work. Community
+selection runs after current post eligibility; private church posts stay scoped.
+Home and My feed share mounted forms and a frozen reading set, preserving unsent
+entries across opening, paging, closing and browser Back/Forward. Enlarged-text
+feed controls now reflow without splitting their labels into narrow columns.
+
+The full isolated suite passed **374 checks with two expected disabled-email
+skips**. After the final CSS adjustment, the production build and **29 HTTPS
+checks** passed, including chart, portal, reader, entrance and guest routes.
+Runtime audit passed: 95 traces, 7,518 entries and 233 server JavaScript files.
+Actual Chrome checks covered guest engagement prompts, draft preservation,
+keyboard/focus restoration, 320/390px Mobile emulation, 200% OS text, reduced
+motion, both swipe directions, long-post scrolling and deliberate pull to close.
+All browser emulation settings were restored; physical Samsung remains separate.
+
+A new encrypted PostgreSQL 17 backup was authenticated and restored privately.
+All 16 existing migration checksums matched; nine pending migrations applied on
+the isolated restore. Original column fingerprints across 42 tables matched,
+new post/chart defaults were correct and no role grants were created. The
+plaintext restore was removed. Production has not been modified at this
+candidate checkpoint. Publication and serving verification are the next step.
+See [CHURCH_STRUCTURE_REPORT.md](CHURCH_STRUCTURE_REPORT.md) and
+[FEED_READER_REPORT.md](FEED_READER_REPORT.md).
+
+Photo uploads remain disabled with explicit interface guidance because no Blob
+store is configured. Real church review operations, physical-device acceptance,
+Google sign-in and Search Console retain their separate existing dependencies.
+These do not block publishing the verified editor/feed changes. The complete
+batch, pilot/QA gates and final batch review remain open.
+
 ## Phone and keyboard chart controls — September 10, 2026
 
 The chart now provides full-size non-drag card movement buttons, keyboard handle
@@ -286,6 +319,56 @@ The next independent code action is scoped permission delegation and assignment
 grant ownership, while the owner/browser step and real account email activation
 remain explicitly pending. The visual chart, social release and final batch
 review stay open.
+## Focused My feed reader — September 10, 2026
+
+The dedicated `/platform/feed` reader is implemented on `codex/focused-feed-reader`.
+Home remains scrollable; the modal pages horizontally and supports deliberate
+vertical dismissal, Close/Escape, keyboard/trackpad controls, long-post reading
+and restored Home position. Fifteen development and fifteen production HTTPS
+checks, final build/lint/types/runtime, and fictional browser checks passed;
+application `7fdaf6a` is live on READY `dpl_DrpPVcC5FY7yVth5RfsDaM5h5zBU`.
+Exact canonical identity, all 17 live read-only checks and actual guest paging
+through both public authors passed. Native Chrome touch emulation also passed
+both swipe directions, short/large vertical drags and long-post scrolling.
+Physical-device feel, broader Home planning and later ranking remain separate.
+See [FEED_READER_REPORT.md](FEED_READER_REPORT.md).
+
+## First-use account and early feed fixes — September 10, 2026
+
+The owner confirms password reset, original-account sign-in and email verification.
+Dedicated verification/recovery screens, automatic signup verification, direct
+email buttons and same-tab fragment handling are verified locally on
+`codex/early-community-account-flow`. Home shows all active public posts by
+default, retaining the Following filter for later. The isolated suite/remainder
+has 219 passes and two expected delivery skips, plus focused checks and actual
+fictional browser acceptance. Sender-scoped DMARC resolves authoritatively; spam
+guidance is included. Application `06a0fdd` with CLI upload exclusions `3d931bd`
+is published on READY `dpl_4GdrKfA3ry117BCwVGkonGYuhhiW`; canonical identity
+and all 13 live read-only checks passed. Phone verification is deferred.
+The requested full-screen horizontal My feed reader follows this urgent fix;
+Home remains normally scrollable. See [ACCOUNT_DELIVERY_REPORT.md](ACCOUNT_DELIVERY_REPORT.md).
+
+## Password-recovery sender activated — September 10, 2026
+
+Production email recovery is enabled. The dedicated Resend sender is verified
+with publicly resolving Cloudflare DNS, no tracking configuration, enforced TLS
+and a sending-only domain-restricted key stored as a Vercel production Secret.
+No paid plan was purchased. The actual account endpoint issued one authorized
+recovery email, which the provider reports delivered. Inbox receipt and the
+owner's private password reset/sign-in remain pending; no account was replaced.
+
+The existing application source `2e90f6fdfdda290f292a5c92dc06265f7dfc2c52` is on
+READY `dpl_9pCtiZ3yvcWu1px5AWVEbc1x6tCe`. Remote build/lint/types and runtime
+checks passed, with no pending migrations. Six candidate HTTP checks passed
+before the email test and promotion. All 13 live read-only HTTP checks passed.
+Canonical serving identity and actual browser navigation from Forgot password to the enabled recovery form passed;
+the deployment error scan returned no rows. Full lifecycle regressions were
+previously verified and were not rerun for this configuration-only activation.
+See [ACCOUNT_DELIVERY_REPORT.md](ACCOUNT_DELIVERY_REPORT.md).
+
+The sender/terms prerequisites are now resolved. Preserve the separately saved
+post/profile/role work and keep final account acceptance open for the owner's
+result. Earlier disabled-sender sections below are historical.
 
 ## Password-recovery entry published — September 10, 2026
 

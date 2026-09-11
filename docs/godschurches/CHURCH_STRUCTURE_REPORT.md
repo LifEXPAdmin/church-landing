@@ -2,6 +2,68 @@
 
 September 10, 2026 · Published structure foundation; local role library, assignment service and Privileges interface verified
 
+## Integrated release acceptance — September 10, 2026
+
+The current main account/recovery and full-screen feed changes are merged with
+the verified church editor, role library, assignment-owned grants, private post
+audiences and profile controls. The audience-aware read service remains the
+entry point for Home and My feed. Community selection expands eligible posts
+without bypassing private church membership, publication or active-author rules;
+the existing following mode remains available.
+
+Fresh integrated acceptance passed 374 isolated tests with two expected
+disabled-email skips, covering accounts, email changes, Google boundaries,
+church review/roles/structure, calendars, posts, participation, images, profiles
+and support. Upgrade/fresh migrations, synthetic restore, development HTTP,
+production HTTPS and account persistence after a new server process passed.
+The first sweep selected a signup-verification email in an old reset test;
+selecting the fictional recipient's RESET_PASSWORD message fixed the test.
+Purpose enforcement was correct, and the complete rerun had no failures.
+
+The O1/O2/O3 coverage combines the recorded browser journeys below with fresh
+chart layout/model/draft/save, role-template, assignment-permission, structure
+service/HTTP and privacy checks. These cover independent/repeated positions,
+vacant and unlisted occupancy, scoped delegation and overlapping grant sources,
+geometry-only moves, stale saves, concurrent cycles, history, authority loss and
+current consent. The merged browser page retained the expected connected and
+unconnected positions, chosen listed identity and concealed unlisted identities.
+No real church appointment or permission was altered.
+
+The integrated reader preserved an unsent comment across full-screen entry,
+Next/Previous, Close and browser Back/Forward. Typing arrow keys stayed in the
+comment. Tab/Shift+Tab wrapped inside the modal; Close restored the opener and
+background interaction. Guest Like opened the contextual Join/Sign in page with
+the post return target, without performing the action. Native Chrome Mobile
+checks at 320/390px with 200% OS text and reduced motion caught cramped feed
+labels; final CSS reflows the counter and navigation, reduces nested side
+padding and keeps Close readable. Both touch swipe directions, internal long
+post scrolling, a short pull staying open and a deliberate pull closing passed.
+Representative screenshots are retained in the private session evidence.
+Emulation was restored. No browser warning/error occurred after the integrated
+server started; older prefetch failures coincide with intentional shutdowns.
+
+After that CSS correction, a fresh production build, lint/types and 29 final
+HTTPS checks passed (portal 9, structure 8, reader 2, entrance 4, guest 6).
+Runtime traces passed: 95 traces, 7,518 entries, 233 server JS files, no private
+fixture/environment or Prisma configuration-loader paths. A separate local
+Node benchmark ran 200-position wide, balanced and deep layouts 100 times each:
+p95 calculation times were 0.208, 0.226 and 0.267 milliseconds respectively.
+This is bounded layout calculation evidence, not phone rendering or load testing.
+
+A verified-TLS PostgreSQL 17 backup was encrypted with authenticated AES-256-GCM,
+then decrypted and restored to a temporary loopback-only database. All 16 source
+migration checksums matched; all nine pending additive migrations applied to
+reach 25. Every original column fingerprint across 42 tables matched before and
+after. Existing post publication dates and chart placement were derived correctly;
+no new role grants appeared. The plaintext restore was stopped and removed;
+the encrypted backup and separate key remain owner-readable outside Git.
+
+This is the locally verified release candidate. Production publication and
+canonical serving verification follow. Photo uploads stay explicitly unavailable
+until private storage is configured. Physical Samsung/spoken screen-reader
+acceptance, real reviewer/policy operations and QA/pilot/final batch review remain
+separate open work; fixture results do not establish real intake readiness.
+
 ## Phone, keyboard and enlarged-text acceptance — September 10, 2026
 
 Selected connected cards have four directional grid commands and an automatic

@@ -1,5 +1,6 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { activePublicAccount, communityAuthorSelect } from "./public-profile";
+import { homeFeedMode } from "./home-feed";
 import { canOrganize } from "./post-participation";
 import {
   postCanEdit,
@@ -132,7 +133,8 @@ export async function listPostsIn(
   const filters: Prisma.PlatformPostWhereInput[] = [
     postReadableWhere(context, now)
   ];
-  if (query.feed && context.actorId) {
+  // Community mode broadens selection only after the audience/status boundary.
+  if (query.feed && context.actorId && homeFeedMode() === "following") {
     const following = await tx.platformFollow.findMany({
       where: { followerId: context.actorId, following: activePublicAccount },
       select: { followingId: true }

@@ -129,6 +129,7 @@ test("anonymous HTML and RSC expose public reading and minimal author labels but
   for (const rsc of [false, true]) {
     for (const path of [
       "/platform",
+      "/platform/feed",
       "/platform/search?q=" + a.user.username,
       "/platform/posts/" + entry.id
     ]) {

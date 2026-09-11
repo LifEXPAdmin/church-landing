@@ -3,6 +3,101 @@
 Updated September 9, 2026. Branch: `codex/account-delivery`, based on published
 main `ab14cf9ba258517ce76a1f24be55b0fd9eff3fc3`.
 
+## First-use email and early feed repair — September 10, 2026
+
+The account owner confirmed actual receipt, private password reset, original-account
+sign-in and email verification. Minimal production reads confirmed the consumed
+grant, new credential version and session, and invalidated old sessions. No
+password or raw grant was recorded. Earlier owner-confirmation gaps below are
+historical.
+
+`codex/early-community-account-flow`, based on published `f82f116`, separates
+Forgot password from `/platform/account/verify`. Verification links from Settings,
+church eligibility and Home now use that dedicated page; only the signed-in
+owner's email is prefilled. A new signup schedules verification through the
+existing bounded post-response delivery callback; duplicate registration never
+sends a verification message or modifies the existing account. Ordinary reading
+and posting remain available while verification is pending.
+
+Email now includes a direct HTML button, a complete copyable link and plain text.
+New reset/verification links use their route to identify purpose and one fragment
+parameter for the token. Already-delivered purpose-bearing links remain valid.
+The client handles initial fragments and same-tab hash changes, strips grants
+without discarding router state, and prevents stale responses from completing a
+newer link. GET remains inert; explicit confirmation, purpose checks, expiry,
+one-use enforcement and session invalidation are retained. Spam/junk guidance is
+visible before and after requesting mail. Click tracking remains unconfigured.
+A sender-scoped DMARC TXT (`p=none`) was saved and verified on authoritative DNS;
+this improves authentication configuration but does not guarantee inbox placement.
+See [Resend DMARC guidance](https://resend.com/docs/dashboard/domains/dmarc).
+
+Home now defaults to all active public posts, newest first, with existing 30-post
+pages and cursor tie-breaking. `PLATFORM_HOME_FEED_MODE=following` retains the
+previous signed-in follower filter for later use. The current published post
+model is public-only; future audience-aware integration must keep authorization
+before this filter. Unpublished post/profile/role work is preserved separately.
+Phone verification is explicitly deferred.
+
+Verification: 219 passing isolated service/development/production HTTPS checks
+and two expected disabled-email skips across the initial sweep and resumed
+remainder. The build found a missing private-email property in the shared public
+DTO; it was corrected by fetching only the authenticated owner's address on the
+verification page. Migration upgrade, backup/restore and fresh-schema checks
+passed. Additional focused production HTTPS and development checks passed for
+non-followers' public posts, owner-only email prefilling and anonymous privacy.
+Actual fictional browser checks passed for separate forms, same-tab and legacy
+links, signup guidance, unfollowed posts, resend without retyping, explicit email
+verification and updated Settings on return. No real email was sent during these
+fixture checks; Yahoo's exact click handling remains a real-device follow-up.
+Application `06a0fdd`, with CLI upload exclusions at `3d931bd`, is published on
+READY production `dpl_4GdrKfA3ry117BCwVGkonGYuhhiW`. Canonical serving identity
+and all 13 live read-only HTTP checks passed at 19:51 UTC; the actual live browser
+showed the separate recovery route. Final build/lint/types/runtime passed (86
+traces / 6,232 entries / 206 server JavaScript files). No schema or dependency
+changes were introduced. The full-screen reader is the next separate task.
+
+Two unserved manual CLI candidates were blocked by team-author validation and
+removed. One upload also included local synthetic fixtures because CLI uploads
+have a separate ignore list. `.vercelignore` now explicitly excludes isolated
+fixtures and local configuration. The existing authenticated GitHub integration
+published the release; no blocked candidate served the public domain.
+
+## Production sender activated — September 10, 2026
+
+The existing Resend account is connected. The dedicated sending subdomain is
+verified against its actual DKIM TXT, return-path MX and SPF TXT records in
+Cloudflare. All three records resolve publicly; existing website records were
+preserved. No paid plan was purchased. Tracking is unconfigured for this sender,
+and TLS is enforced. A new sending-only key is restricted to this domain and
+stored as a production Vercel Secret; it was not put in source or logs.
+
+The previously tested source `2e90f6fdfdda290f292a5c92dc06265f7dfc2c52` was built
+with real delivery enabled on production candidate
+`dpl_9pCtiZ3yvcWu1px5AWVEbc1x6tCe`, initially without promoting the public domain.
+No code, dependencies or database migrations changed. Remote compilation,
+lint/types and runtime verification passed (85 traces, 6,072 entries, 204 server
+JavaScript files); there were no pending migrations. Six candidate HTTP checks
+confirmed recovery availability, account guidance, Help and health before sending.
+
+One authorized request for the existing account used the actual account API and
+post-response delivery callback. The provider reports the recovery email
+**delivered**. That is provider delivery evidence, not proof that the recipient
+read the inbox. The production delivery mode was then persisted and the exact
+tested deployment promoted. Canonical serving identity, all 13 live read-only HTTP checks, and actual browser
+navigation from **Forgot password?** to the enabled recovery form passed. The
+sent message has the expected sender/purpose and canonical fragment link, without
+a tracking redirect. A private live check corrected an HTML-versus-RSC assertion;
+no application fix was required.
+No deployment-scoped error log rows were returned during this check.
+
+The account owner must choose the password privately through the delivered link
+and confirm successful sign-in to the original account. That final acceptance is
+pending; no password change or completed sign-in is claimed. The original account
+was found eligible without replacing it. Prior isolated lifecycle tests remain
+the evidence for expiry, single use and session invalidation; those tests were
+not rerun as a full suite for this environment-only activation. Earlier disabled
+sender and pending provider sign-in statements below describe historical stages.
+
 ## Recovery entry clarification — September 10, 2026
 
 The verified change on `codex/account-recovery-activation` is based on published
@@ -48,7 +143,7 @@ No browser errors were returned. These checks did not submit an email address or
 change a live account. Real sender activation and account recovery remain open.
 A later report-only deployment may serve the same application code.
 
-## Current delivery result
+## Historical implementation result before activation
 
 Transactional recovery and verification delivery is implemented through Resend.
 **Real email delivery remains disabled.** Production inspection found
@@ -179,7 +274,7 @@ Sender setup must follow the current
 
 ## Next action
 
-Connect and verify the real sender and complete the authorized mailbox receipt
-test. Keep full recovery/account acceptance open until actual results are
-recorded. Email ownership changes, account export/deactivation/deletion and safe
-Google linking remain separate account-foundation work.
+Confirm actual inbox receipt and the account owner's successful reset/sign-in
+through the delivered link. Keep full account-recovery acceptance open until
+those results are recorded. Email ownership changes, account
+export/deactivation/deletion and safe Google linking retain separate acceptance.

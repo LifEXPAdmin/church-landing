@@ -41,7 +41,7 @@ export function PortalEligibility({
         are at least 18.
       </p>
       {!snapshot.viewer.verified && (
-        <Link href="/platform/account/recover" className={portalLinkClass}>
+        <Link href="/platform/account/verify" className={portalLinkClass}>
           Verify your account email
         </Link>
       )}

@@ -54,6 +54,69 @@ async function login(username: string) {
   return response.headers.get("set-cookie")!;
 }
 
+test("signup sends verification once for a new account; duplicate email does not resend or reset; opening the link never verifies", async () => {
+  const username = "signup_email_fixture";
+  const response = await signup(username);
+  assert.equal(response.status, 200);
+  assert.match((await response.json()).message, /spam folder/);
+  const email = `${username}@example.test`;
+  const messages = async () => {
+    const dir = process.env.ACCOUNT_TEST_SINK_DIR!;
+    return (
+      await Promise.all(
+        (await readdir(dir)).map(async (file) =>
+          JSON.parse(await readFile(join(dir, file), "utf8"))
+        )
+      )
+    ).filter((v) => v.email === email);
+  };
+  for (let i = 0; i < 40 && !(await messages()).length; i++) await delay(100);
+  const sent = await messages();
+  assert.equal(sent.length, 1);
+  assert.equal(sent[0].purpose, "VERIFY_EMAIL");
+  const url = new URL(sent[0].url);
+  assert.equal(url.pathname, "/platform/account/verify");
+  assert.equal(url.search, "");
+  const before = await db.platformUser.findUniqueOrThrow({ where: { email } });
+  assert.equal(before.emailVerifiedAt, null);
+  const page = await fetch(url);
+  assert.equal(page.status, 200);
+  assert.equal(
+    (await db.platformUser.findUniqueOrThrow({ where: { email } }))
+      .emailVerifiedAt,
+    null
+  );
+  const duplicate = await post({
+    operation: "register",
+    username: "duplicate_email_fixture",
+    email,
+    name: "Other name",
+    role: "BELIEVER",
+    password,
+    confirmPassword: password
+  });
+  assert.equal(duplicate.status, 200);
+  assert.deepEqual(
+    await db.platformUser.findUniqueOrThrow({ where: { email } }),
+    before
+  );
+  await delay(500);
+  assert.equal((await messages()).length, 1);
+  const token = new URLSearchParams(url.hash.slice(1)).get("token");
+  assert.equal(
+    (await post({ operation: "consume-verification", token })).status,
+    200
+  );
+  assert.ok(
+    (await db.platformUser.findUniqueOrThrow({ where: { email } }))
+      .emailVerifiedAt
+  );
+  assert.equal(
+    (await post({ operation: "consume-verification", token })).status,
+    400
+  );
+});
+
 test("actual HTTP registration/login rejects origin forgery, duplicates and forged category", async () => {
   assert.equal((await signup("http_account")).status, 200);
   const before = await db.platformUser.findUniqueOrThrow({
@@ -258,7 +321,11 @@ test("HTTP recovery uses sink delivery, link preview is inert, purpose enforced,
         } // A newly created sink file may still be writing.
       })
     );
-    message = messages.find((m) => m?.email === "http_recovery@example.test");
+    message = messages.find(
+      (m) =>
+        m?.email === "http_recovery@example.test" &&
+        m.purpose === "RESET_PASSWORD"
+    );
     if (!message) await delay(100);
   }
   assert.ok(message);

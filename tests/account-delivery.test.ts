@@ -120,7 +120,9 @@ test("provider payload delivers only the requested purpose and fragment link; tr
   const body = JSON.parse(String(calls[0].body));
   assert.deepEqual(body.to, ["owner@example.test"]);
   assert.equal(body.from, `Godschurches <${senderEnv.ACCOUNT_EMAIL_FROM}>`);
-  assert.equal(body.html, undefined);
+  assert.match(body.html, /<a href="https:\/\/[^\"]+#token=[A-Za-z0-9_-]{43}"/);
+  assert.match(body.html, />Reset password<\/a>/);
+  assert.ok(!body.html.includes("<img"));
   assert.match(body.subject, /Reset/);
   const link = new URL(
     body.text.split("\n").find((line: string) => line.startsWith("https://"))
@@ -129,16 +131,15 @@ test("provider payload delivers only the requested purpose and fragment link; tr
   assert.equal(link.pathname, "/platform/account/recover");
   assert.equal(link.search, "");
   assert.equal(new URLSearchParams(link.hash.slice(1)).get("token"), token);
-  assert.equal(
-    new URLSearchParams(link.hash.slice(1)).get("purpose"),
-    "RESET_PASSWORD"
-  );
+  assert.equal(new URLSearchParams(link.hash.slice(1)).get("purpose"), null);
   assert.match(body.text, /30 minutes/);
   assert.ok(!JSON.stringify(body).includes(senderEnv.RESEND_API_KEY));
   await accountGrantDelivery(config, async (_url, init) => {
     const verification = JSON.parse(String(init!.body));
     assert.match(verification.subject, /Verify/);
-    assert.match(verification.text, /purpose=VERIFY_EMAIL/);
+    assert.match(verification.text, /\/platform\/account\/verify#token=/);
+    assert.match(verification.html, />Verify email<\/a>/);
+    assert.ok(!verification.text.includes("purpose="));
     assert.match(verification.text, /does not change your password/);
     return Response.json({ id: "synthetic-verification-id" });
   })("owner@example.test", "VERIFY_EMAIL", createSessionToken());

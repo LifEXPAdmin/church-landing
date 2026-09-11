@@ -380,9 +380,31 @@ async function processAccountRequest(
       );
     }
     if (operation === "register") {
-      await registerAccount(db, body);
+      const created = await registerAccount(db, body);
+      // Only a new insert can trigger signup mail. Duplicate registration must
+      // neither overwrite an account nor send unsolicited verification mail.
+      if (created && config.delivery !== "disabled") {
+        const work = async () => {
+          try {
+            await requestAccountGrant(
+              db,
+              created.email,
+              "VERIFY_EMAIL",
+              accountGrantDelivery(config)
+            );
+          } catch {
+            console.error(
+              JSON.stringify({ event: "account_delivery_failed", requestId })
+            );
+          }
+        };
+        if (afterResponse) afterResponse(work);
+        else if (config.delivery === "test-sink") await work();
+      }
       return reply(
-        "Continue by signing in with your email and password. Registration never changes an existing account or resets its password.",
+        config.delivery === "disabled"
+          ? "Continue by signing in with your email and password. Registration never changes an existing account or resets its password."
+          : "Continue by signing in with your email and password. If this is a new account, a verification email will be sent. Check your inbox and spam folder.",
         200
       );
     }

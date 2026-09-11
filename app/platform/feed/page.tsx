@@ -4,13 +4,13 @@ import HomeFeedPage, {
 import { publicMetadata } from "@/lib/site-metadata";
 
 export const metadata = publicMetadata(
-  "Home",
-  "Grow in faith, connect with your community, and share everyday life on Godschurches.",
-  "/platform"
+  "My feed",
+  "Read public posts one at a time, at your own pace.",
+  "/platform/feed"
 );
 export const dynamic = "force-dynamic";
 
-export default function PlatformPage({
+export default function MyFeedPage({
   searchParams
 }: {
   searchParams: Promise<FeedParams>;

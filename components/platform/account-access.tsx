@@ -60,6 +60,8 @@ export function AccountAccess({
         >
           Continue by signing in with your email and password. Registration
           never changes an existing account or resets its password.
+          {recoveryAvailable &&
+            " If this is a new account, a verification email will be sent. Check your inbox and spam folder. You can sign in while you wait."}
         </p>
       )}
       {passwordChanged && (

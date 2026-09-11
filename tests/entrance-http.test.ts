@@ -92,7 +92,7 @@ test("root reaches existing Home in one redirect for visitors and members, witho
     assert.ok(
       body.includes(
         signedIn
-          ? "From you, the people you follow and your church communities."
+          ? "From across the community, newest first."
           : "Take a look around."
       )
     );
