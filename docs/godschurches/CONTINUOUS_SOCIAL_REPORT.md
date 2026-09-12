@@ -151,3 +151,22 @@ post-draft reply-permission changes. Release identity will follow verification.
 The five shared-reader regression groups pass with the Save menu, including exact
 edit retry, gesture isolation, sign-in return, feed-position restoration and
 revoked event access. Nine safe-navigation tests pass.
+
+## Saved interface release
+
+Application `40369c21bc598405a44d7bfdfafe06eb1ef71457` is live in READY
+`dpl_EL2zagXz2iJGaNFxR5w472Wc8udH`, assigned to `godschurches.com`.
+At 01:06 UTC on 12 September, 36 read-only live checks passed with zero writes,
+page errors or runtime error rows. All 27 migration checksums match; none pending
+or applied. Collection and Save interface tasks are complete; parent acceptance
+and remaining source coverage remain open.
+
+## Typed Explore checkpoint
+
+Explore now uses the five-category community search service. Five local HTTPS
+browser groups pass: 23 unique permitted post results with pagination/Back;
+Unicode/literal wildcard queries, minimal guest author labels, church results and
+topic actions; occurrence links/timezone and revoked event visibility; failed-read
+retry, 320px layout and church handoff/Back; and account-change clearing of private
+results. Production build/type/runtime checks pass. Topic/church filter controls
+and expanded history acceptance are the next dependent interface slice.

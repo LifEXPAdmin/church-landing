@@ -228,3 +228,14 @@ sign-in returns to the canonical post and never automatically saves it. Pending
 saves participate in the shared safe-update/navigation guard. Every write keeps
 current authorization, expectedVersion and mutationId semantics; no post-draft
 payload, legacy replyAudience handling or publication behavior changes.
+
+## Typed Explore results
+
+Explore reads only `/api/platform/search` for posts, public community author
+labels, churches, church-event occurrences and public topic vocabulary. It renders
+canonical source links and server-supplied next cursors without totals or ranking.
+Guest people results explain that profiles require sign-in. Topics link to a posts
+query with that topic and an empty text query. Foreground, account and relationship
+changes conceal and re-read current projections. Failed reads retain query and
+category with retry; invalid cursors offer a first-page restart. The existing
+church-discovery handoff preserves newly typed text and category on Back.

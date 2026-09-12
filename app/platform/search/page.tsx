@@ -1,97 +1,63 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { ExploreSearchForm } from "@/components/platform/explore-search-form";
-
-import { readPosts } from "@/lib/platform/post-session";
-import { PostCard } from "@/components/platform/post-card";
+import { CommunitySearchResults } from "@/components/platform/community-search-results";
 import { PlatformShell } from "@/components/platform/platform-shell";
-import { readPeopleSearch } from "@/lib/platform/profile-session";
-import { roleLabels } from "@/lib/platform/format";
 import { getCurrentPlatformUser } from "@/lib/platform/session";
-
+import {
+  searchCategories,
+  type SearchCategory
+} from "@/lib/platform/search-navigation";
 export const metadata: Metadata = {
   title: { absolute: "Explore | Godschurches" },
-  description: "Find people and posts you can view on Godschurches."
+  description:
+    "Find community posts, author labels, churches, events and topics you can view."
 };
-
 export const dynamic = "force-dynamic";
-
 export default async function PlatformSearchPage({
   searchParams
 }: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{
+    q?: string;
+    kind?: string;
+    after?: string;
+    topic?: string;
+    churchId?: string;
+  }>;
 }) {
-  const currentUser = await getCurrentPlatformUser();
-  const params = await searchParams;
-  const q = typeof params.q === "string" ? params.q.trim().slice(0, 200) : "";
-
-  const [people, posts] = q
-    ? await Promise.all([
-        readPeopleSearch(q),
-        readPosts({ search: q, limit: 20 })
-      ])
-    : [[], []];
-
+  const user = await getCurrentPlatformUser(),
+    p = await searchParams;
+  const query = {
+    q: typeof p.q === "string" ? p.q.trim().slice(0, 200) : "",
+    kind: searchCategories.includes(p.kind as SearchCategory)
+      ? (p.kind as SearchCategory)
+      : ("posts" as const),
+    ...(typeof p.after === "string" ? { after: p.after.slice(0, 257) } : {}),
+    ...(typeof p.topic === "string" ? { topic: p.topic.slice(0, 100) } : {}),
+    ...(typeof p.churchId === "string"
+      ? { churchId: p.churchId.slice(0, 101) }
+      : {})
+  };
   return (
-    <PlatformShell user={currentUser}>
-      <section className="container-shell py-8 sm:py-10">
-        <div className="mb-6 rounded-xl border border-gc-divider bg-gc-surface p-6 text-gc-text sm:p-8">
-          <p className="mb-3 text-sm uppercase tracking-[0.16em] text-gc-accent">
+    <PlatformShell user={user}>
+      <section className="container-shell space-y-6 py-8 sm:py-10">
+        <div className="rounded-xl border border-gc-divider bg-gc-surface p-6 text-gc-text sm:p-8">
+          <p className="mb-3 text-sm uppercase tracking-widest text-gc-accent">
             Explore
           </p>
-          <h1 className="text-5xl text-gc-text">
-            Find your people. Discover their stories.
-          </h1>
-          <ExploreSearchForm key={q} query={q} />
+          <h1 className="text-4xl">Find your community.</h1>
+          <ExploreSearchForm
+            key={JSON.stringify(query)}
+            query={query.q}
+            category={query.kind}
+            topic={query.topic}
+            churchId={query.churchId}
+          />
         </div>
-
-        {q ? (
-          <div className="grid gap-6 lg:grid-cols-[20rem_1fr]">
-            <aside className="space-y-3">
-              <h2 className="text-3xl text-gc-text">People</h2>
-              {people.length ? (
-                people.map((person) => (
-                  <Link
-                    key={person.id}
-                    href={`/platform/profile/${person.username}`}
-                    className="block rounded-xl border border-gc-divider bg-gc-surface p-4 hover:border-gc-action"
-                  >
-                    <p className="font-semibold text-gc-text">{person.name}</p>
-                    <p className="text-sm text-gc-muted">
-                      @{person.username} · {roleLabels[person.role]}
-                    </p>
-                  </Link>
-                ))
-              ) : (
-                <p className="rounded-xl bg-gc-surface p-4 text-gc-muted">
-                  No people found.
-                </p>
-              )}
-            </aside>
-            <div className="space-y-5">
-              <h2 className="text-3xl text-gc-text">Matching posts</h2>
-              {posts.length ? (
-                posts.map((post) => (
-                  <PostCard
-                    key={post.id}
-                    post={post}
-                    currentUserId={currentUser?.id}
-                    redirectTo={`/platform/search?q=${encodeURIComponent(q)}`}
-                  />
-                ))
-              ) : (
-                <p className="rounded-xl bg-gc-surface p-4 text-gc-muted">
-                  No posts found.
-                </p>
-              )}
-            </div>
-          </div>
-        ) : (
-          <div className="rounded-xl border border-gc-divider bg-gc-surface p-8 text-gc-muted">
-            Search for a person’s name or words in a post. Church pages have
-            their own search.
-          </div>
-        )}
+        <CommunitySearchResults
+          key={`${user?.id ?? "guest"}:${JSON.stringify(query)}`}
+          owner={user?.id ?? null}
+          query={query}
+        />
       </section>
     </PlatformShell>
   );
