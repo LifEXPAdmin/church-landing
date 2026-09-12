@@ -1,5 +1,30 @@
 # Godschurches current state
 
+## Personal photo library — September 12, 2026
+
+Product `2026.09.12.6`, application `42f62219c3d9c1faabc35fcd9c70ea99c4786353`,
+is live in READY deployment `dpl_GV1ZG2UaUysw4eaneJhgfZuQRcaW`; the canonical
+assignment and serving release match. Profile Photos now provides bounded pages,
+retained profile/cover history, explicit direct uploads and shared-composer reuse.
+Personal post photos retain their source audience. Gallery upload/order/caption
+controls preserve per-file progress, exact retries, conflicts and navigation work.
+Reduced photo data uses smaller previews and deliberate large-image loading.
+
+Fifteen core/return browser groups, focused processed-image/controller/privacy
+regressions, reading/release checks, types/lint and production builds pass. The
+fresh encrypted backup/restore and additive 28-to-29 migration preserved original
+column data in 71 tables; production created two derived photo associations with
+zero user-content writes. Compatible deployment and a drained handover preceded
+retention activation. Fifteen final live checks at 06:58 UTC passed with zero
+application writes, browser errors or runtime error rows. See the
+[photo ownership and release contract](PERSONAL_PHOTO_LIBRARY_CONTRACT.md).
+
+The preceding photo viewer, already-friends QR state and visible iPhone installation
+help remain live. Physical device reports remain distinct from automated browser
+checks. Church management readiness, permitted church image controls, named albums
+and the remaining focused enhancements continue independently. Parent integration
+and owner acceptance remain open; legitimate church appointments are unchanged.
+
 ## Profile photo activation — September 12, 2026
 
 Product `2026.09.12.4`, application `225bf5bf5ddf299c2d68606e174b6db7701dfdfd`,

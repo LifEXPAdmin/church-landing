@@ -1,8 +1,8 @@
 # Personal photo library ownership and retention
 
-12 September 2026 · Additive service contract. The photo-library switch defaults
-off. Production activation still requires the verified migration, interface and
-release checks; the existing photo viewer release does not enable retention.
+12 September 2026 · The verified photo library is active in product 2026.09.12.6.
+The feature switch still defaults off in an unconfigured environment. Earlier
+local-only checkpoints below remain historical; final activation evidence follows.
 
 ## Canonical records and bounds
 
@@ -174,3 +174,24 @@ audiences, hidden/deleted state and retired objects must never be reset. Confirm
 zero missing eligible associations before enabling retention. Disabling the library
 later still enforces every stored photo audience and preserves retained history.
 Production release identity and activation evidence are recorded after deployment.
+
+## Verified production activation
+
+Application `42f62219c3d9c1faabc35fcd9c70ea99c4786353`, product `2026.09.12.6`,
+serves from READY deployment `dpl_GV1ZG2UaUysw4eaneJhgfZuQRcaW` on the independently
+verified canonical domain. Included service/interface checkpoints are `5c475bf`
+and `16512aa`. The live return-path check found that account-entry normalization
+removed the Photos tab; its narrow allowlist now preserves that tab on profile
+routes while discarding other arbitrary queries. Twelve navigation and two release
+checks, the final production build and two real sign-in-entry browser checks pass.
+
+The fresh encrypted production backup restored and upgraded successfully. One
+additive production migration brought the database to 29 matching migrations;
+original-column fingerprints in 71 existing tables matched. Two derived personal
+associations were inserted; no user content was created or altered. Compatible code
+was deployed with retention off, old requests drained, and zero active uploads or
+missing eligible associations were found. Only then was retention enabled in the
+existing private Blob environment. The final 15 live read/browser checks passed at
+06:58 UTC with zero application mutation requests, browser errors or runtime error
+rows. Authenticated editing/privacy proof uses isolated fictional accounts. Physical
+phone rehearsal and later named-album acceptance remain separate requirements.
