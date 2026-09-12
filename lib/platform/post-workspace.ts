@@ -1,3 +1,7 @@
+import {
+  savedPhotoReferences,
+  type SavedPhotoReference
+} from "./post-photo-references";
 import { createHash } from "node:crypto";
 import { Prisma, PlatformPostType, type PrismaClient } from "@prisma/client";
 import { withOwnedSession } from "./account-sessions";
@@ -24,6 +28,7 @@ export type PrivateDraftPayload = {
   audienceChurchId: string | null;
   eventOccurrenceId: string | null;
   linkUrl: string;
+  photos?: SavedPhotoReference[];
 };
 const draftFields = [
   "content",
@@ -35,7 +40,8 @@ const draftFields = [
   "authorChurchId",
   "audienceChurchId",
   "eventOccurrenceId",
-  "linkUrl"
+  "linkUrl",
+  "photos"
 ];
 function plain(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value))
@@ -96,7 +102,10 @@ export function privateDraftPayload(value: unknown): PrivateDraftPayload {
     authorChurchId: reference(p.authorChurchId),
     audienceChurchId: reference(p.audienceChurchId),
     eventOccurrenceId: reference(p.eventOccurrenceId),
-    linkUrl: text(p.linkUrl ?? "", 2048)
+    linkUrl: text(p.linkUrl ?? "", 2048),
+    ...(p.photos !== undefined
+      ? { photos: savedPhotoReferences(p.photos) }
+      : {})
   };
 }
 function publicationPayload(value: unknown) {

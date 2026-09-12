@@ -1,3 +1,4 @@
+import { readableAssetWhere } from "./personal-photo-policy";
 import { socialUserWhere, socialDiscoveryWhere } from "./social-policy";
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { activePublicAccount, communityAuthorSelect } from "./public-profile";
@@ -43,6 +44,7 @@ function include(
         images: {
           where: { purpose: "POST_PHOTO" as const, status: "READY" as const }
         },
+        photoReferences: { where: { asset: readableAssetWhere(context) } },
         comments: { where: commentVisibleWhere(context) }
       }
     },
@@ -104,7 +106,7 @@ function project(post: PostRow, context: PostContext, now: Date) {
     likeCount: post._count.likes,
     liked: post.likes.length > 0,
     commentCount: post._count.comments,
-    photoCount: post._count.images,
+    photoCount: post._count.images + post._count.photoReferences,
     canEdit: postCanEdit(context, post),
     canWithdraw: postCanEdit(context, post) || postCanModerate(context, post),
     canReply: postCanReply(context, post),

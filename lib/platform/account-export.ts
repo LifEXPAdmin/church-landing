@@ -136,6 +136,15 @@ export async function downloadAccountExport(
         linkSourceUrl: true
       }
     });
+    const photoReferences = await tx.postPhotoReference.findMany({
+      where: {
+        ownerId: userId,
+        post: { authorId: userId, authorChurchId: null }
+      },
+      select: { postId: true, assetId: true, position: true },
+      orderBy: [{ postId: "asc" }, { assetId: "asc" }],
+      take: MAX_ROWS + 1
+    });
     const images = (
       await tx.mediaAsset.findMany({
         where: {
@@ -158,6 +167,16 @@ export async function downloadAccountExport(
           alt: true,
           position: true,
           crop: true,
+          isCurrent: true,
+          personalPhoto: {
+            select: {
+              audience: true,
+              audienceChurchId: true,
+              hiddenAt: true,
+              deletedAt: true,
+              version: true
+            }
+          },
           variants: true
         }
       })
@@ -169,6 +188,8 @@ export async function downloadAccountExport(
       updatedAt: image.updatedAt,
       status: image.status,
       version: image.version,
+      isCurrent: image.isCurrent,
+      personalPhoto: image.personalPhoto,
       caption: image.caption,
       alt: image.alt,
       position: image.position,
@@ -530,6 +551,7 @@ export async function downloadAccountExport(
       churchListings,
       posts,
       images,
+      photoReferences,
       socialPreferences: await tx.socialPreferences.findMany({
         where: { ownerId: userId },
         select: {

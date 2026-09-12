@@ -291,3 +291,39 @@ test("independent social work aggregates into update protection without changing
   assert.equal(c.getSnapshot().fields, before);
   c.dispose();
 });
+
+test("saved photo references survive the composer whitelist, immutable retry body and resume without altering reply permissions", async () => {
+  const f = fixture(),
+    c = f.controller;
+  await c.verify();
+  c.start();
+  const photos = [
+    { id: "saved-photo-1", version: 3 },
+    { id: "saved-photo-2", version: 8 }
+  ];
+  const fields = {
+    ...c.getSnapshot().fields,
+    content: "Photo draft",
+    replyAudience: "CHURCH_MEMBERS" as const,
+    audienceChurchId: "church-1",
+    photos
+  };
+  const payload = composerPayload(fields);
+  photos[0].version = 99;
+  assert.equal(payload.photos![0].version, 3, "Snapshot references are copied");
+  c.change({ ...fields, photos: payload.photos });
+  f.lose();
+  await c.save();
+  const body = f.bodies.at(-1)!;
+  assert.deepEqual(JSON.parse(body).payload.photos, payload.photos);
+  await c.retry();
+  assert.equal(f.bodies.at(-1), body);
+  await c.resume("draft-1");
+  assert.deepEqual(c.getSnapshot().fields.photos, payload.photos);
+  assert.equal(c.getSnapshot().fields.replyAudience, "CHURCH_MEMBERS");
+  assert.ok(
+    !("photos" in composerPayload(emptyComposer())),
+    "Older empty snapshots remain unchanged"
+  );
+  c.dispose();
+});

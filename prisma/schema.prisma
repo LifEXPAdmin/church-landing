@@ -14,6 +14,7 @@ enum MediaPurpose {
   CHURCH_LOGO
   CHURCH_COVER
   POST_PHOTO
+  PROFILE_PHOTO
 }
 
 enum MediaStatus {
@@ -33,6 +34,9 @@ model MediaAsset {
   profileUserId String?
   churchId String?
   postId String?
+  isCurrent Boolean @default(true)
+  personalPhoto PersonalPhoto?
+  postReferences PostPhotoReference[]
   status MediaStatus @default(UPLOADING)
   version Int @default(1)
   storagePrefix String @unique
@@ -60,6 +64,44 @@ model MediaGarbage {
   storagePrefix String @id
   dueAt DateTime
   @@index([dueAt])
+}
+
+enum PersonalPhotoAudience {
+  ONLY_ME
+  MEMBERS
+  PUBLIC
+  CHURCH
+  SOURCE
+}
+
+// A library association never replaces the asset's original source boundary.
+model PersonalPhoto {
+  assetId String @id
+  ownerId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  version Int @default(1)
+  audience PersonalPhotoAudience
+  audienceChurchId String?
+  hiddenAt DateTime?
+  deletedAt DateTime?
+  asset MediaAsset @relation(fields: [assetId], references: [id], onDelete: Restrict)
+  owner PlatformUser @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  audienceChurch Church? @relation(fields: [audienceChurchId], references: [id], onDelete: Restrict)
+  @@index([ownerId, deletedAt, createdAt, assetId])
+}
+
+// Explicitly selected saved photos reuse their existing processed bytes.
+model PostPhotoReference {
+  postId String
+  assetId String
+  ownerId String
+  position Int
+  post PlatformPost @relation(fields: [postId], references: [id], onDelete: Restrict)
+  asset MediaAsset @relation(fields: [assetId], references: [id], onDelete: Restrict)
+  owner PlatformUser @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  @@id([postId, assetId])
+  @@index([assetId])
 }
 
 enum WaitlistRole {
@@ -146,6 +188,8 @@ model PlatformUser {
   interests    String[]     @default([])
   uploadedImages MediaAsset[] @relation("ImageUploader")
   profileImages MediaAsset[] @relation("ProfileImage")
+  personalPhotos PersonalPhoto[]
+  postPhotoReferences PostPhotoReference[]
   presentation ProfilePresentation?
   socialPreferences SocialPreferences?
   socialRelations SocialRelationship[] @relation("SocialOwner")
@@ -397,6 +441,7 @@ model Church {
   sharedPosts PlatformPost[] @relation("ChurchPostAudience")
   calendarShares CalendarShare[]
   eventShares CalendarEventShare[]
+  personalPhotoAudiences PersonalPhoto[]
   images MediaAsset[]
 }
 
@@ -958,6 +1003,7 @@ model PlatformPost {
   eventOccurrence CalendarOccurrence? @relation(fields: [eventOccurrenceId], references: [id], onDelete: Restrict)
   audit PostAudit[]
   images MediaAsset[]
+  photoReferences PostPhotoReference[]
   poll PostPoll?
   volunteerSlots PostVolunteerSlot[]
   likes    PlatformPostLike[]

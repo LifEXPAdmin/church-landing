@@ -8,6 +8,7 @@ import {
   withPostRead
 } from "./post-access";
 import { readableConversation } from "./comment-policy";
+import { readableAssetWhere } from "./personal-photo-policy";
 import { listImagesIn } from "./media";
 import { imagesAvailable } from "./media-storage";
 import { socialCommand, socialInput } from "./social-operations";
@@ -15,18 +16,33 @@ export function readPostGallery(db: PrismaClient, token: unknown, id: unknown) {
   return withPostRead(db, token, async (tx, context) => {
     const post = await readableConversation(tx, context, id),
       canManage = postCanEdit(context, post);
+    const images = await listImagesIn(tx, context, "POST_PHOTO", post.id);
+    const references = canManage
+      ? await tx.postPhotoReference.findMany({
+          where: { postId: post.id },
+          select: { assetId: true },
+          take: 11
+        })
+      : [];
     return {
       postId: post.id,
       postVersion: post.version,
       canManage,
       imagesAvailable: imagesAvailable(),
-      images: await listImagesIn(tx, context, "POST_PHOTO", post.id),
+      images,
+      savedPhotoIds: references
+        .filter((row) => images.some((image) => image.id === row.assetId))
+        .map((row) => row.assetId),
+      unavailableReferences: references
+        .filter((row) => !images.some((image) => image.id === row.assetId))
+        .map((row) => row.assetId),
       pendingUploads: canManage
         ? await tx.mediaAsset.count({
             where: {
               postId: post.id,
               purpose: "POST_PHOTO",
-              status: "UPLOADING"
+              status: "UPLOADING",
+              leaseUntil: { gt: new Date() }
             }
           })
         : 0,
@@ -56,17 +72,45 @@ export async function postGalleryCommand(
     if (!postCanEdit(context, post))
       throw new PortalError(403, "You cannot change this photo gallery.");
     expected(input.expectedVersion, post.version);
-    const images = await tx.mediaAsset.findMany({
+    const native = await tx.mediaAsset.findMany({
       where: { postId: post.id, purpose: "POST_PHOTO", status: "READY" },
       orderBy: [{ position: "asc" }, { id: "asc" }],
       take: 11
     });
+    const references = await tx.postPhotoReference.findMany({
+      where: { postId: post.id },
+      include: { asset: true },
+      take: 11
+    });
+    const images = [
+      ...native,
+      ...references.map((row) => ({ ...row.asset, position: row.position }))
+    ];
     if (images.length > 10)
       throw new PortalError(409, "This gallery needs a size review.");
-    if (input.operation === "reorder") {
+    if (input.operation === "remove-reference") {
+      const reference = references.find(
+        (row) => row.assetId === postId(input.imageId)
+      );
+      if (!reference)
+        throw new PortalError(
+          404,
+          "This saved photo is no longer attached to the post."
+        );
+      await tx.postPhotoReference.delete({
+        where: {
+          postId_assetId: { postId: post.id, assetId: reference.assetId }
+        }
+      });
+    } else if (input.operation === "reorder") {
       if (
         await tx.mediaAsset.count({
-          where: { postId: post.id, purpose: "POST_PHOTO", status: "UPLOADING" }
+          where: {
+            postId: post.id,
+            purpose: "POST_PHOTO",
+            status: "UPLOADING",
+            leaseUntil: { gt: new Date() }
+          }
         })
       )
         throw new PortalError(
@@ -96,14 +140,31 @@ export async function postGalleryCommand(
       });
       if (new Set(order.map((i) => i.id)).size !== images.length)
         throw new PortalError(400, "Include every photo exactly once.");
-      for (const [position, image] of order.entries())
-        await tx.mediaAsset.update({
-          where: { id: image.id },
-          data: { position, version: { increment: 1 } }
-        });
+      for (const [position, image] of order.entries()) {
+        if (references.some((row) => row.assetId === image.id))
+          await tx.postPhotoReference.update({
+            where: { postId_assetId: { postId: post.id, assetId: image.id } },
+            data: { position }
+          });
+        else
+          await tx.mediaAsset.update({
+            where: { id: image.id },
+            data: { position, version: { increment: 1 } }
+          });
+      }
     } else if (input.operation === "metadata") {
       const image = images.find((i) => i.id === postId(input.imageId));
       if (!image) throw new PortalError(404, "This photo is unavailable.");
+      if (
+        !(await tx.mediaAsset.findFirst({
+          where: { AND: [{ id: image.id }, readableAssetWhere(context)] },
+          select: { id: true }
+        }))
+      )
+        throw new PortalError(
+          404,
+          "This photo is unavailable. Refresh your current access."
+        );
       expected(input.imageVersion, image.version);
       await tx.mediaAsset.update({
         where: { id: image.id },

@@ -29,6 +29,18 @@ import {
 } from "./media-processing";
 import { imageStorage, type ImageStorage } from "./media-storage";
 
+import {
+  associatePersonalPhoto,
+  checkPhotoAudience,
+  directPhotoAudience,
+  personalOwner,
+  photoCapacity,
+  photoLibraryEnabled,
+  profilePicture,
+  readableAssetWhere,
+  requirePhotoLibrary
+} from "./personal-photo-policy";
+
 const HOUR = 3600_000,
   LEASE = 120_000;
 const paths = (prefix: string) =>
@@ -39,7 +51,7 @@ const targetOf = (a: ImageTarget) => ({
   churchId: a.churchId,
   postId: a.postId
 });
-function project(asset: MediaAsset) {
+export function projectImage(asset: MediaAsset) {
   const manifest = asset.variants as ImageManifest;
   return {
     id: asset.id,
@@ -60,7 +72,7 @@ function project(asset: MediaAsset) {
     >
   };
 }
-export type ImageView = ReturnType<typeof project>;
+export type ImageView = ReturnType<typeof projectImage>;
 async function garbage(tx: PostTx, prefix: string) {
   await tx.mediaGarbage.upsert({
     where: { storagePrefix: prefix },
@@ -68,10 +80,14 @@ async function garbage(tx: PostTx, prefix: string) {
     update: {}
   });
 }
-async function retire(tx: PostTx, asset: MediaAsset) {
+export async function retireImage(tx: PostTx, asset: MediaAsset) {
   await tx.mediaAsset.update({
     where: { id: asset.id },
     data: { status: "RETIRED", version: { increment: 1 } }
+  });
+  await tx.personalPhoto.updateMany({
+    where: { assetId: asset.id, deletedAt: null },
+    data: { deletedAt: new Date(), version: { increment: 1 } }
   });
   await garbage(tx, asset.storagePrefix);
 }
@@ -95,13 +111,32 @@ export async function listImagesIn(
 ) {
   const target = imageTarget(purpose, targetId);
   await readableImageTarget(tx, context, target);
-  return (
-    await tx.mediaAsset.findMany({
-      where: { ...target, status: "READY" },
-      orderBy: [{ position: "asc" }, { id: "asc" }],
-      take: 10
-    })
-  ).map(project);
+  const native = await tx.mediaAsset.findMany({
+    where: {
+      AND: [target, readableAssetWhere(context)],
+      ...(profilePicture(target.purpose) ? { isCurrent: true } : {})
+    },
+    orderBy: [{ position: "asc" }, { id: "asc" }],
+    take: 11
+  });
+  const references = target.postId
+    ? await tx.postPhotoReference.findMany({
+        where: { postId: target.postId, asset: readableAssetWhere(context) },
+        include: { asset: true },
+        orderBy: [{ position: "asc" }, { assetId: "asc" }],
+        take: 11
+      })
+    : [];
+  const images = [
+    ...native,
+    ...references.map((row) => ({ ...row.asset, position: row.position }))
+  ].sort((a, b) => a.position - b.position || a.id.localeCompare(b.id));
+  if (images.length > 10)
+    throw new PortalError(
+      409,
+      "This image list needs a size review. Use the paginated Photos library for saved photos."
+    );
+  return images.map(projectImage);
 }
 export async function listImages(
   db: PrismaClient,
@@ -124,12 +159,29 @@ export async function uploadImage(
     caption?: unknown;
     alt?: unknown;
     crop?: unknown;
+    audience?: unknown;
+    audienceChurchId?: unknown;
   },
   bytes: Buffer,
   store: ImageStorage = imageStorage(),
   signal = AbortSignal.timeout(45_000)
 ) {
   const target = imageTarget(input.purpose, input.targetId);
+  const direct = target.purpose === "PROFILE_PHOTO";
+  if (direct) requirePhotoLibrary();
+  else if (input.audience !== undefined || input.audienceChurchId !== undefined)
+    throw new PortalError(
+      400,
+      "This image inherits its original profile, church or post audience."
+    );
+  const privacy = direct
+    ? directPhotoAudience(input.audience, input.audienceChurchId)
+    : undefined;
+  const single = !target.postId && !direct;
+  const currentTarget = {
+    ...target,
+    ...(profilePicture(target.purpose) ? { isCurrent: true } : {})
+  };
   const aspect = imageAspect(target.purpose);
   const suppliedCrop =
     input.crop === undefined ? (aspect ? centeredCrop : null) : input.crop;
@@ -142,14 +194,30 @@ export async function uploadImage(
   if (!/^[a-f0-9-]{36}$/.test(requestKey))
     throw new PortalError(400, "Use a new image request reference.");
   const replacesId = input.replacesId ? postId(input.replacesId) : null;
+  if (direct && replacesId)
+    throw new PortalError(
+      400,
+      "Save a separate photo or change its details in Photos."
+    );
   const caption = postField(input.caption ?? "", 500),
     alt = postField(input.alt ?? "", 300);
   const fingerprint = createHash("sha256")
-    .update(JSON.stringify({ target, replacesId, caption, alt, crop }))
+    .update(
+      JSON.stringify({
+        target,
+        replacesId,
+        caption,
+        alt,
+        crop,
+        ...(privacy ? { privacy } : {})
+      })
+    )
     .update(bytes)
     .digest("hex");
   const reserved = await mutation(db, token, async (tx, actorId) => {
-    await writableImageTarget(tx, await postContext(tx, actorId), target);
+    const context = await postContext(tx, actorId);
+    await writableImageTarget(tx, context, target);
+    if (privacy) checkPhotoAudience(context, privacy);
     const previous = await tx.mediaAsset.findUnique({
       where: { uploaderId_requestKey: { uploaderId: actorId, requestKey } }
     });
@@ -173,7 +241,7 @@ export async function uploadImage(
     }
     const old = replacesId
       ? await tx.mediaAsset.findFirst({
-          where: { id: replacesId, ...target, status: "READY" }
+          where: { id: replacesId, ...currentTarget, status: "READY" }
         })
       : null;
     if (replacesId && !old)
@@ -182,9 +250,11 @@ export async function uploadImage(
         "The image changed. Refresh before replacing it."
       );
     if (
-      !target.postId &&
+      single &&
       !old &&
-      (await tx.mediaAsset.count({ where: { ...target, status: "READY" } }))
+      (await tx.mediaAsset.count({
+        where: { ...currentTarget, status: "READY" }
+      }))
     )
       throw new PortalError(
         409,
@@ -193,7 +263,7 @@ export async function uploadImage(
     const now = new Date();
     const occupied = await tx.mediaAsset.count({
       where: {
-        ...target,
+        ...currentTarget,
         ...(previous ? { id: { not: previous.id } } : {}),
         OR: [
           { status: "READY" },
@@ -201,13 +271,22 @@ export async function uploadImage(
         ]
       }
     });
-    if (occupied >= (target.postId ? 10 : 1) + (old ? 1 : 0))
+    const references = target.postId
+      ? await tx.postPhotoReference.count({ where: { postId: target.postId } })
+      : 0;
+    if (
+      occupied + references >=
+      (direct ? 1000 : target.postId ? 10 : 1) + (old ? 1 : 0)
+    )
       throw new PortalError(
         409,
         target.postId
           ? "A post holds up to ten photos, including active uploads."
           : "Another image is processing here. Wait and refresh."
       );
+    const ownerId = await personalOwner(tx, target);
+    if (ownerId && photoLibraryEnabled()) await photoCapacity(tx, ownerId);
+    if (previous) await garbage(tx, previous.storagePrefix);
     const storagePrefix = "images/" + randomUUID();
     await garbage(tx, storagePrefix);
     const data = {
@@ -228,12 +307,41 @@ export async function uploadImage(
             caption,
             alt,
             ...(crop ? { crop: crop as unknown as Prisma.InputJsonValue } : {}),
-            position: old?.position ?? occupied
+            position:
+              old?.position ??
+              (target.postId
+                ? Math.max(
+                    -1,
+                    ...(
+                      await tx.mediaAsset.findMany({
+                        where: {
+                          postId: target.postId,
+                          OR: [
+                            { status: "READY" },
+                            {
+                              status: "UPLOADING",
+                              leaseUntil: { gt: new Date() }
+                            }
+                          ]
+                        },
+                        select: { position: true },
+                        take: 11
+                      })
+                    ).map((row) => row.position),
+                    ...(
+                      await tx.postPhotoReference.findMany({
+                        where: { postId: target.postId },
+                        select: { position: true },
+                        take: 11
+                      })
+                    ).map((row) => row.position)
+                  ) + 1
+                : occupied)
           }
         });
     return { asset, ready: false };
   });
-  if (reserved.ready) return project(reserved.asset);
+  if (reserved.ready) return projectImage(reserved.asset);
   const asset = reserved.asset;
   try {
     signal.throwIfAborted();
@@ -251,7 +359,9 @@ export async function uploadImage(
       signal.throwIfAborted();
     }
     return await mutation(db, token, async (tx, actorId) => {
-      await writableImageTarget(tx, await postContext(tx, actorId), target);
+      const context = await postContext(tx, actorId);
+      await writableImageTarget(tx, context, target);
+      if (privacy) checkPhotoAudience(context, privacy);
       const current = await tx.mediaAsset.findUniqueOrThrow({
         where: { id: asset.id }
       });
@@ -266,7 +376,7 @@ export async function uploadImage(
         );
       const old = replacesId
         ? await tx.mediaAsset.findFirst({
-            where: { id: replacesId, ...target, status: "READY" }
+            where: { id: replacesId, ...currentTarget, status: "READY" }
           })
         : null;
       if (replacesId && !old)
@@ -275,9 +385,11 @@ export async function uploadImage(
           "The image changed while uploading. Refresh before replacing it."
         );
       if (
-        !target.postId &&
+        single &&
         !old &&
-        (await tx.mediaAsset.count({ where: { ...target, status: "READY" } }))
+        (await tx.mediaAsset.count({
+          where: { ...currentTarget, status: "READY" }
+        }))
       )
         throw new PortalError(
           409,
@@ -288,10 +400,22 @@ export async function uploadImage(
         !old &&
         (await tx.mediaAsset.count({
           where: { postId: target.postId, status: "READY" }
-        })) >= 10
+        })) +
+          (await tx.postPhotoReference.count({
+            where: { postId: target.postId }
+          })) >=
+          10
       )
         throw new PortalError(409, "This post already has ten photos.");
-      if (old) await retire(tx, old);
+      if (old) {
+        if (profilePicture(old.purpose) && photoLibraryEnabled()) {
+          await associatePersonalPhoto(tx, old);
+          await tx.mediaAsset.update({
+            where: { id: old.id },
+            data: { isCurrent: false, version: { increment: 1 } }
+          });
+        } else await retireImage(tx, old);
+      }
       const ready = await tx.mediaAsset.update({
         where: { id: asset.id },
         data: {
@@ -299,6 +423,7 @@ export async function uploadImage(
           variants: processed.manifest as unknown as Prisma.InputJsonValue
         }
       });
+      await associatePersonalPhoto(tx, ready, privacy);
       await tx.mediaGarbage.delete({
         where: { storagePrefix: asset.storagePrefix }
       });
@@ -307,9 +432,21 @@ export async function uploadImage(
           where: { id: target.postId },
           data: { version: { increment: 1 }, editedAt: new Date() }
         });
-      return project(ready);
+      return projectImage(ready);
     });
   } catch (error) {
+    // Renew the ledger after an uncertain failure: an expired attempt may have
+    // raced cleanup while its provider was still completing a write.
+    await db.mediaGarbage
+      .upsert({
+        where: { storagePrefix: asset.storagePrefix },
+        create: {
+          storagePrefix: asset.storagePrefix,
+          dueAt: new Date(Date.now() + 24 * HOUR)
+        },
+        update: { dueAt: new Date(Date.now() + 24 * HOUR) }
+      })
+      .catch(() => {});
     // Never delete here: a lost provider reply may still finish. The pre-write
     // ledger collects this unique attempt after a grace period, even on a crash.
     await db.mediaAsset
@@ -340,7 +477,8 @@ export function removeImage(
       targetOf(asset)
     );
     if (
-      asset.status === "RETIRED" &&
+      (asset.status === "RETIRED" ||
+        (profilePicture(asset.purpose) && !asset.isCurrent)) &&
       asset.version === Number(expectedVersion) + 1
     )
       return { removed: true };
@@ -349,7 +487,30 @@ export function removeImage(
         409,
         "The image changed. Refresh before removing it."
       );
-    await retire(tx, asset);
+    if (profilePicture(asset.purpose) && !asset.isCurrent)
+      throw new PortalError(
+        409,
+        "Use Photos to review a retained picture before deleting it."
+      );
+    if (profilePicture(asset.purpose) && photoLibraryEnabled()) {
+      if (!asset.isCurrent || asset.status !== "READY")
+        throw new PortalError(
+          409,
+          "The current picture changed. Refresh before removing it."
+        );
+      await associatePersonalPhoto(tx, asset);
+      await tx.mediaAsset.update({
+        where: { id: asset.id },
+        data: { isCurrent: false, version: { increment: 1 } }
+      });
+    } else {
+      if (asset.purpose === "PROFILE_PHOTO")
+        throw new PortalError(
+          400,
+          "Use the photo library to review and delete a saved photo."
+        );
+      await retireImage(tx, asset);
+    }
     if (asset.postId)
       await tx.platformPost.update({
         where: { id: asset.postId },
@@ -371,10 +532,9 @@ export async function readImage(
   const check = () =>
     withPostRead(db, token, async (tx, context) => {
       const asset = await tx.mediaAsset.findFirst({
-        where: { id: assetId, status: "READY" }
+        where: { AND: [{ id: assetId }, readableAssetWhere(context)] }
       });
       if (!asset) throw new PortalError(404, "Image unavailable.");
-      await readableImageTarget(tx, context, targetOf(asset));
       return asset;
     });
   const before = await check();
@@ -438,7 +598,7 @@ export async function collectImageGarbage(
     // A lost/aborted provider response retains the durable record for retry.
     signal.throwIfAborted();
     const result = await db.mediaGarbage.deleteMany({
-      where: { storagePrefix: candidate.storagePrefix }
+      where: { storagePrefix: candidate.storagePrefix, dueAt: candidate.dueAt }
     });
     removed += result.count;
   }

@@ -44,7 +44,8 @@ Receipt responses retain identifiers and generic messages, never draft text,
 collection names, excerpts, link-preview credentials or thumbnails.
 
 Payload fields: `content`, `scripture`, `type`, `topics`, `audience`, `replyAudience`,
-`authorChurchId`, `audienceChurchId`, `eventOccurrenceId`, `linkUrl`. Types use
+`authorChurchId`, `audienceChurchId`, `eventOccurrenceId`, `linkUrl`, and optional
+`photos`. Types use
 existing PlatformPostType; topics use POST_TOPICS (up to five distinct values);
 audience is PUBLIC or CHURCH. Null/empty optional references are accepted.
 Incomplete and whitespace-only text is preserved exactly. Draft limits are 20,000
@@ -88,8 +89,18 @@ publication receipts remain replayable without republishing or changing access.
 
 Do not persist a short-lived link receipt or preview object. The current composer
 must explicitly separate those ephemeral fields. Renew the preview before
-publication if desired; otherwise publish the URL without preview. Rich image,
-poll, volunteer and scheduled-draft payloads are not covered by this contract.
+publication if desired; otherwise publish the URL without preview. Saved personal photos use optional `photos: [{ id, version }]` (at most ten
+different canonical asset IDs). Older snapshots keep their original shape when
+this field is absent; omission means no selected saved photos. Both service and
+composer whitelists preserve explicit references, including order, retries and
+conflicts. Publication validates READY status, personal owner, current asset
+versions and source/destination audience compatibility before creating references
+in the same transaction as the post. No bytes, derivative URLs or staged upload
+state enter the snapshot. Referenced files are reused without uploading again.
+Missing/revoked/private/incompatible photos fail publication without consuming the
+draft. Photo choices do not change the unresolved-legacy reply-permission rule.
+
+Poll, volunteer and scheduled-draft payloads are not covered by this contract.
 Those remain explicit parent acceptance/future foundation work, not silently
 saved partial snapshots. Existing published media/poll controls remain available.
 

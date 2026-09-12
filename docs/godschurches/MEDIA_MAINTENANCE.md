@@ -115,3 +115,12 @@ remain separate acceptance work.
 
 References: [Vercel cron operation and authentication](https://vercel.com/docs/cron-jobs/manage-cron-jobs),
 [cron usage and limits](https://vercel.com/docs/cron-jobs/usage-and-pricing).
+
+## Personal photo retention compatibility
+
+The personal photo contract separates current selection from READY retention.
+Cleanup skips all READY history, independently of the current-picture flag.
+An uncertain failed upload renews its ledger grace, and retries register any old
+attempt prefix before replacing it. The worker removes a ledger only if its due
+time still matches the inspected candidate, preserving a concurrent renewal.
+This does not change the existing 24-hour grace or authorize source revival.

@@ -70,6 +70,12 @@ export async function handleImageRequest(
       );
     const actor = await readAccountSession(db, token);
     if (!actor) throw new PortalError(401, "Sign in to manage images.");
+    const expectedAccount = request.headers.get("x-expected-account");
+    if (expectedAccount && expectedAccount !== actor.id)
+      throw new PortalError(
+        401,
+        "Your sign-in changed. Reload before continuing."
+      );
     const ip = process.env.VERCEL
       ? (request.headers.get("x-real-ip") ?? "unknown").slice(0, 64)
       : "local";
@@ -124,7 +130,9 @@ export async function handleImageRequest(
               "replacesId",
               "caption",
               "alt",
-              "crop"
+              "crop",
+              "audience",
+              "audienceChurchId"
             ].includes(k)
         )
       )
@@ -154,7 +162,9 @@ export async function handleImageRequest(
         replacesId: input.replacesId,
         caption: input.caption,
         alt: input.alt,
-        crop: input.crop
+        crop: input.crop,
+        audience: input.audience,
+        audienceChurchId: input.audienceChurchId
       },
       bytes,
       store,

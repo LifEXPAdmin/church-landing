@@ -1,4 +1,8 @@
 import {
+  attachPostPhotosIn,
+  validatePostPhotosIn
+} from "./post-photo-references";
+import {
   PlatformPostType,
   type PrismaClient,
   type PlatformPost,
@@ -237,6 +241,7 @@ export async function postCommandIn(
         ...schedule
       }
     });
+    await attachPostPhotosIn(tx, context, post, input.photos);
     await audit(tx, post, actorId, scheduled ? "scheduled" : "published");
     return {
       id: post.id,
@@ -265,6 +270,11 @@ export async function postCommandIn(
   if (post.status === "WITHDRAWN")
     throw new PortalError(409, "This post has been withdrawn.");
   if (op === "edit") {
+    if (input.photos !== undefined)
+      throw new PortalError(
+        400,
+        "Use the published photo gallery to change its images."
+      );
     if (
       (input.authorChurchId !== undefined &&
         input.authorChurchId !== post.authorChurchId) ||
@@ -291,6 +301,24 @@ export async function postCommandIn(
         403,
         "Church membership is required to edit this shared post."
       );
+    if (nextAudience !== post.audience) {
+      const references = await tx.postPhotoReference.findMany({
+        where: { postId: post.id },
+        include: { asset: { select: { version: true } } },
+        take: 11
+      });
+      if (references.length > 10)
+        throw new PortalError(409, "This gallery needs a size review.");
+      await validatePostPhotosIn(
+        tx,
+        context,
+        { ...post, audience: nextAudience },
+        references.map((row) => ({
+          id: row.assetId,
+          version: row.asset.version
+        }))
+      );
+    }
     const updated = await tx.platformPost.update({
       where: { id: post.id },
       data: {

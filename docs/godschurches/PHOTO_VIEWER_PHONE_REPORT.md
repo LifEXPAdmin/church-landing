@@ -43,3 +43,15 @@ passed after using the fixture certificate through NODE_EXTRA_CA_CERTS. There
 were no final browser page errors. Automated tests use fictional isolated data;
 physical-device acceptance remains separate. No schema, provider configuration,
 church permissions or production application records changed for this slice.
+
+## Production receipt
+
+Product `2026.09.12.5`, application
+`14b31e1b10c4ea1e068d13e2b1ff594d3864d3e8`, is live on READY deployment
+`dpl_GGvKFZ1q8jY7xXXb9MUWQzG7Rmu6`. The canonical domain independently
+matched it. Twelve live checks passed at 05:18 UTC on 12 September 2026, including
+version/notes/guide, downloaded QR decoding, safe signup return, simulated iPhone
+help, private media and maintenance gates. Zero application writes, browser page
+errors or deployment error entries were observed. All 28 production migration
+checksums match; no migration was applied. Physical enlargement/installation
+acceptance and operational church verification remain separate.

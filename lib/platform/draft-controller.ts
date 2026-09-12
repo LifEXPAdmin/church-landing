@@ -56,7 +56,15 @@ export function composerPayload(f: ComposerFields): PrivateDraftPayload {
     authorChurchId: f.authorChurchId,
     audienceChurchId: f.audienceChurchId,
     eventOccurrenceId: f.eventOccurrenceId,
-    linkUrl: f.linkUrl
+    linkUrl: f.linkUrl,
+    ...(f.photos !== undefined
+      ? {
+          photos: f.photos.map((photo) => ({
+            id: photo.id,
+            version: photo.version
+          }))
+        }
+      : {})
   };
 }
 const initialState = (): DraftState => ({
