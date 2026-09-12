@@ -253,3 +253,25 @@ disabled album flag preserves the existing library and gives honest guide copy.
 The fresh encrypted 29-to-30 restore rehearsal preserved original columns in
 73 tables and created empty album tables. All 30 migrations apply from empty.
 Production migration, activation and live verification are recorded separately.
+
+## Named album release — September 12, 2026
+
+Product `2026.09.12.8`, application `1b07696de1aa858940032fe2a4968e4a3a1e2375`,
+is live from READY deployment `dpl_AHwoMEdjSS6pr2wRAP1RoUukjXZU` on the verified
+canonical domain. Named albums organize owned photos without copying uploads.
+Album and source audiences both apply; current access gates covers, counts,
+pages and enlarged images. Removal/deletion keeps photos; retirement cannot
+break existing album references. Exact retries and deliberate conflict review
+preserve editing work across connection failures and navigation.
+
+Five album, nine core photo, seven media and two release test groups passed.
+Eight album/pagination/disabled/personal browser groups, types/lint/build and
+119 runtime traces passed. The encrypted backup/restore and additive 29-to-30
+migration preserved original columns in 73 tables; production added no content
+or derived rows. Compatible deployment, drained requests and zero active uploads
+preceded activation. Ten live checks at 08:17 UTC passed with no application
+writes or browser errors. Physical-device and owner acceptance remain separate.
+See the [photo contract](PERSONAL_PHOTO_LIBRARY_CONTRACT.md).
+
+The first scheduled image cleanup was also observed at 07:35 UTC: HTTP 200,
+zero objects due for removal. See [maintenance evidence](MEDIA_MAINTENANCE.md).

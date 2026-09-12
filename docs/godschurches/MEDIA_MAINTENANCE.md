@@ -124,3 +124,14 @@ An uncertain failed upload renews its ledger grace, and retries register any old
 attempt prefix before replacing it. The worker removes a ledger only if its due
 time still matches the inspected candidate, preserving a concurrent renewal.
 This does not change the existing 24-hour grace or authorize source revival.
+
+## First scheduled invocation — September 12, 2026
+
+The registered daily `0 7 * * *` production schedule ran at 07:35:36 UTC in
+deployment `dpl_AY9dWXNNoZmWLjisUkGedbUwUQqk`. Vercel records GET
+`/api/maintenance/images`, HTTP 200 and `image_cleanup_completed { removed: 0 }`.
+The active project cron definition and host match that deployment; no manual
+authenticated worker call was made during this session. Nothing was due for
+removal. This establishes the first scheduled invocation, supplementing the
+earlier explicit provider deletion acceptance; it does not establish external
+object backups or a due-object deletion during this particular invocation.
