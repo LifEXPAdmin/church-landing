@@ -1,5 +1,20 @@
 # Godschurches current state
 
+## Installation and comment interface release — September 12, 2026
+
+Application `2eabdecf2d205f1bfc4bb7c40be4f3d1a37540b8` is live in READY deployment
+`dpl_7XPNvsK174YQ4sN71CC1zUNUrgFX`, assigned to godschurches.com. Menu installation
+help, threaded comments, reliable private comment drafts/recovery, mentions,
+individual links, conversation preferences and shared reader/event discussion
+are verified. At 00:32 UTC, 28 read-only live checks passed with zero writes,
+browser errors or deployment error-log entries. All 27 migration checksums match.
+Twenty local installation/comment browser groups, 27 controller/navigation checks,
+26 service checks, upgrade/dump-restore, lint and production build passed.
+See [the continuous social report](CONTINUOUS_SOCIAL_REPORT.md). Parent/source,
+physical-device and owner acceptance remain open. Continuous work proceeds to
+ready relationship controls; subsequent local changes are not part of this release.
+
+
 ## Shared draft composer, resume and safe updates — September 11, 2026
 
 Application `4951b9fefec0064a7e92bbb2c0cf0975ac467281` is published in READY
