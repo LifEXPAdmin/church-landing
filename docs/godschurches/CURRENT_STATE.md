@@ -1,3 +1,9 @@
+## Attributed reposts and quotes verified live — 12 September 2026
+
+Product `2026.09.12.22`, application `6859cb075006f05c59680c0e582621bb9102742e`, is READY in `dpl_C9ZRqD7Lu2uzbxMiTGY9uKBhzwNG` and independently assigned to Godschurches.com. Plain Repost/Undo and quotes use current source permission and existing draft/reply recovery. See [the complete release evidence](REPOST_REPORT.md) and [contract](REPOST_CONTRACT.md). Fifty-four focused tests, twenty distinct built-browser groups (including five referral integration groups) and five live read-only groups pass. Live checks observed zero writes/page errors/runtime error rows. One additive migration brought production to thirty-one matching migrations while preserving original columns across all 75 existing tables.
+
+The next coding prerequisite is the scoped reporting/evidence/abuse-limit foundation for contact requests and messaging. Real reviewer appointment and operational coverage remain explicit gates. Physical-phone referral/share acceptance, the unreproduced hydration issue and legitimate church-management owner actions remain open; automated checks do not replace prior reported device results.
+
 ## Attributed repost release candidate — 12 September 2026
 
 The repost/quote service checkpoint and focused UI are locally verified. See [the repost contract](REPOST_CONTRACT.md) and [verification report](REPOST_REPORT.md). Private quote drafts retain original source references and reply permissions; author opt-in, current church publishing rights, source revocation and exact retries are enforced. Candidate product 2026.09.12.22 has 54 passing focused tests, fifteen built browser groups and a passing production-backup migration rehearsal. Production still serves 2026.09.12.21 until the subsequent live receipt confirms the migration, READY deployment and canonical identity. Parent referral/device acceptance and independent access/moderation owners remain open.
