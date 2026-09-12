@@ -207,3 +207,29 @@ blocks through legacy/direct paths, exact retries, concurrent edits/Likes,
 mention consent/audience, speaker grants, own drafts and database constraints.
 The common restore harness includes all new tables, indexes, checks and triggers.
 Physical phone interactions are separate from browser emulation.
+
+## Comment discussion client
+
+The full post route uses `CommentThread` and the canonical comment endpoints.
+Roots default to Oldest; Newest changes roots only. Root and reply pages merge by
+stable ID, replies remain one visible level, and a validated comment query loads
+the exact context endpoint. Unavailable rows retain only the server tombstone.
+Foreground reads recheck the signed-in account and current access before showing
+content. Compact feed previews and reader-sheet integration remain separate work.
+
+`CommentDraftController` serializes saves after at least five idle seconds or an
+explicit Save/Send. It restores the active account/post/reply-target snapshot,
+keeps exact text, selected mention IDs and church identity, and sends only after
+the matching complete snapshot is acknowledged. Network/unknown responses retain
+the exact serialized mutation and ID; uncertain publication freezes its fields.
+Conflicts retain unsent text and present the saved copy separately before explicit
+replacement. The recovery library and discard lifecycle are separate UI work.
+
+Create, versioned edit/delete and desired Like use the existing service. Like's
+version is independent of the comment version. Receipts trigger canonical reads;
+there is no optimistic permission or author inference. Edit work stays mounted
+through foreground reads. Dirty/uncertain/conflicted social work participates in
+the shared update/reload guard; it does not modify post-draft fields or their
+reply-audience contract. Mention selections store eligible account IDs, never
+infer recipients from typed text, and cap selections at five. Church identities
+come from current composer grants and are checked again by the command service.

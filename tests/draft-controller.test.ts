@@ -265,3 +265,29 @@ test("resumed publication saves an explicit legacy choice then retries the same 
   assert.equal(c.getSnapshot().fields.replyAudience, "CHURCH_MEMBERS");
   c.dispose();
 });
+
+test("independent social work aggregates into update protection without changing post fields", () => {
+  const c = new DraftController(async () => ({ status: 401, data: {} }));
+  const before = c.getSnapshot().fields;
+  c.setExternalWork("comment", { dirty: true, saving: false, conflict: false });
+  c.setExternalWork("edit", { dirty: false, saving: true, conflict: true });
+  assert.deepEqual(c.getSnapshot().externalWork, {
+    dirty: true,
+    saving: true,
+    conflict: true
+  });
+  c.setExternalWork("comment", null);
+  assert.deepEqual(c.getSnapshot().externalWork, {
+    dirty: false,
+    saving: true,
+    conflict: true
+  });
+  c.setExternalWork("edit", null);
+  assert.deepEqual(c.getSnapshot().externalWork, {
+    dirty: false,
+    saving: false,
+    conflict: false
+  });
+  assert.equal(c.getSnapshot().fields, before);
+  c.dispose();
+});

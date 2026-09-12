@@ -1,3 +1,4 @@
+import { CommentThread } from "./comment-thread";
 import type { PostView } from "@/lib/platform/post-reads";
 import { PostLink } from "./post-link";
 import { PostActionPending } from "./post-action-pending";
@@ -19,13 +20,15 @@ interface PostCardProps {
   redirectTo?: string;
   fullDiscussion?: boolean;
   moreCommentsHref?: string;
+  commentId?: string;
 }
 export function PostCard({
   post,
   currentUserId,
   redirectTo = "/platform",
   fullDiscussion = false,
-  moreCommentsHref
+  moreCommentsHref,
+  commentId
 }: PostCardProps) {
   const liked = post.liked;
   const count = post.commentCount;
@@ -133,100 +136,107 @@ export function PostCard({
           View post and comments
         </Link>
       )}
-      <details className="gc-discussion" open={fullDiscussion}>
-        <summary>
-          <MessageCircle aria-hidden="true" />
-          Discussion <span>{count}</span>
-        </summary>
-        {count > post.comments.length && (
-          <p className="text-sm text-gc-muted">
-            Showing {post.comments.length} of {count} comments.{" "}
-            {!fullDiscussion && (
-              <Link className="underline" href={`/platform/posts/${post.id}`}>
-                Read all comments
-              </Link>
-            )}
-          </p>
-        )}
-        {!post.comments.length && (
-          <p className="text-sm text-gc-muted">
-            No comments yet. Make room for a thoughtful conversation.
-          </p>
-        )}
-        {post.comments.map((comment) => (
-          <div key={comment.id} className="gc-comment">
-            <div>
-              <Link
-                href={`/platform/profile/${comment.author.username}`}
-                className="font-semibold text-gc-action"
-              >
-                {comment.author.name}
-              </Link>
-              <p>{comment.content}</p>
-            </div>
-            {comment.canDelete && (
-              <form action={deletePlatformPostComment}>
-                <PostActionPending />
-                <input type="hidden" name="commentId" value={comment.id} />
-                <input type="hidden" name="redirectTo" value={redirectTo} />
-                <button
-                  className="gc-icon-button text-gc-error"
-                  type="submit"
-                  aria-label="Delete comment"
+      {fullDiscussion ? (
+        <CommentThread postId={post.id} commentId={commentId} />
+      ) : (
+        <details className="gc-discussion">
+          <summary>
+            <MessageCircle aria-hidden="true" />
+            Discussion <span>{count}</span>
+          </summary>
+          {count > post.comments.length && (
+            <p className="text-sm text-gc-muted">
+              Showing {post.comments.length} of {count} comments.{" "}
+              {!fullDiscussion && (
+                <Link className="underline" href={`/platform/posts/${post.id}`}>
+                  Read all comments
+                </Link>
+              )}
+            </p>
+          )}
+          {!post.comments.length && (
+            <p className="text-sm text-gc-muted">
+              No comments yet. Make room for a thoughtful conversation.
+            </p>
+          )}
+          {post.comments.map((comment) => (
+            <div key={comment.id} className="gc-comment">
+              <div>
+                <Link
+                  href={`/platform/profile/${comment.author.username}`}
+                  className="font-semibold text-gc-action"
                 >
-                  <Trash2 aria-hidden="true" />
-                </button>
-              </form>
-            )}
-          </div>
-        ))}
-        {moreCommentsHref && (
-          <Link
-            className="inline-flex min-h-11 items-center text-gc-accent underline"
-            href={moreCommentsHref}
-          >
-            Older comments
-          </Link>
-        )}
-        {post.canReply ? (
-          <form action={createPlatformPostComment} className="gc-comment-form">
-            <PostActionPending />
-            <input type="hidden" name="postId" value={post.id} />
-            <input type="hidden" name="redirectTo" value={redirectTo} />
-            <label htmlFor={`comment-${post.id}`}>Add a comment</label>
-            <div>
-              <input
-                id={`comment-${post.id}`}
-                name="content"
-                minLength={2}
-                maxLength={400}
-                required
-                placeholder="Write with kindness"
-              />
-              <button type="submit" className="gc-button">
-                Send
-              </button>
+                  {comment.author.name}
+                </Link>
+                <p>{comment.content}</p>
+              </div>
+              {comment.canDelete && (
+                <form action={deletePlatformPostComment}>
+                  <PostActionPending />
+                  <input type="hidden" name="commentId" value={comment.id} />
+                  <input type="hidden" name="redirectTo" value={redirectTo} />
+                  <button
+                    className="gc-icon-button text-gc-error"
+                    type="submit"
+                    aria-label="Delete comment"
+                  >
+                    <Trash2 aria-hidden="true" />
+                  </button>
+                </form>
+              )}
             </div>
-          </form>
-        ) : post.discussionClosed || currentUserId ? (
-          <p className="text-sm text-gc-muted">
-            {post.discussionClosed
-              ? "This discussion is closed to new replies."
-              : "Replies are limited to approved church members."}
-          </p>
-        ) : (
-          <Link
-            className="gc-reaction text-gc-action"
-            href={accountEntryHref(
-              "join",
-              `/platform/posts/${post.id}`,
-              "comment"
-            )}
-          >
-            Add a comment
-          </Link>
-        )}
-      </details>
+          ))}
+          {moreCommentsHref && (
+            <Link
+              className="inline-flex min-h-11 items-center text-gc-accent underline"
+              href={moreCommentsHref}
+            >
+              Older comments
+            </Link>
+          )}
+          {post.canReply ? (
+            <form
+              action={createPlatformPostComment}
+              className="gc-comment-form"
+            >
+              <PostActionPending />
+              <input type="hidden" name="postId" value={post.id} />
+              <input type="hidden" name="redirectTo" value={redirectTo} />
+              <label htmlFor={`comment-${post.id}`}>Add a comment</label>
+              <div>
+                <input
+                  id={`comment-${post.id}`}
+                  name="content"
+                  minLength={2}
+                  maxLength={400}
+                  required
+                  placeholder="Write with kindness"
+                />
+                <button type="submit" className="gc-button">
+                  Send
+                </button>
+              </div>
+            </form>
+          ) : post.discussionClosed || currentUserId ? (
+            <p className="text-sm text-gc-muted">
+              {post.discussionClosed
+                ? "This discussion is closed to new replies."
+                : "Replies are limited to approved church members."}
+            </p>
+          ) : (
+            <Link
+              className="gc-reaction text-gc-action"
+              href={accountEntryHref(
+                "join",
+                `/platform/posts/${post.id}`,
+                "comment"
+              )}
+            >
+              Add a comment
+            </Link>
+          )}
+        </details>
+      )}
     </article>
   );
 }

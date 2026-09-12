@@ -17,7 +17,7 @@ export default async function PostPage({
   searchParams
 }: {
   params: Promise<{ postId: string }>;
-  searchParams: Promise<{ before?: string; cursor?: string }>;
+  searchParams: Promise<{ before?: string; cursor?: string; comment?: string }>;
 }) {
   const { postId } = await params;
   if (!/^[a-zA-Z0-9_-]{1,100}$/.test(postId)) notFound();
@@ -78,6 +78,12 @@ export default async function PostPage({
             currentUserId={user?.id}
             redirectTo={currentPath}
             fullDiscussion
+            commentId={
+              typeof query.comment === "string" &&
+              /^[a-zA-Z0-9_-]{1,100}$/.test(query.comment)
+                ? query.comment
+                : undefined
+            }
             moreCommentsHref={more}
           />
           {editor && <PostControls post={editor} />}

@@ -41,7 +41,15 @@ export function DraftWorkspaceProvider({
       document.visibilityState === "hidden" ? controller.conceal() : restore();
     const beforeUnload = (e: BeforeUnloadEvent) => {
       const s = controller.getSnapshot();
-      if (s.dirty || s.saving || s.conflict || s.retry) {
+      if (
+        s.dirty ||
+        s.saving ||
+        s.conflict ||
+        s.retry ||
+        s.externalWork.dirty ||
+        s.externalWork.saving ||
+        s.externalWork.conflict
+      ) {
         e.preventDefault();
         e.returnValue = "";
       }

@@ -20,9 +20,9 @@ export function UpdateNotice({ release }: { release: string | null }) {
   const work = () => {
     const s = controller.getSnapshot();
     return {
-      dirty: s.dirty || s.retry || !!s.resumeId,
-      saving: s.saving || s.publishing,
-      conflict: s.conflict
+      dirty: s.dirty || s.retry || !!s.resumeId || s.externalWork.dirty,
+      saving: s.saving || s.publishing || s.externalWork.saving,
+      conflict: s.conflict || s.externalWork.conflict
     };
   };
   const check = useCallback(async (explicit: boolean) => {

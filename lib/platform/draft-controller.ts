@@ -26,6 +26,7 @@ export type DraftState = {
   postId: string | null;
   resumeId: string | null;
   loadNumber: number;
+  externalWork: { dirty: boolean; saving: boolean; conflict: boolean };
 };
 type Reply = { status: number; data: Record<string, unknown> };
 export type DraftTransport = (path: string, body?: string) => Promise<Reply>;
@@ -75,6 +76,7 @@ const initialState = (): DraftState => ({
   retry: false,
   postId: null,
   resumeId: null,
+  externalWork: { dirty: false, saving: false, conflict: false },
   loadNumber: 0
 });
 
@@ -99,6 +101,25 @@ export class DraftController {
     this.uuid = uuid;
   }
 
+  private external = new Map<
+    string,
+    { dirty: boolean; saving: boolean; conflict: boolean }
+  >();
+  setExternalWork = (
+    key: string,
+    work: { dirty: boolean; saving: boolean; conflict: boolean } | null
+  ) => {
+    if (work) this.external.set(key, work);
+    else this.external.delete(key);
+    const values = [...this.external.values()];
+    this.set({
+      externalWork: {
+        dirty: values.some((v) => v.dirty),
+        saving: values.some((v) => v.saving),
+        conflict: values.some((v) => v.conflict)
+      }
+    });
+  };
   getSnapshot = () => this.state;
   subscribe = (listener: () => void) => {
     this.listeners.add(listener);
@@ -141,6 +162,7 @@ export class DraftController {
     this.stopTimer();
     this.generation++;
     this.pending = null;
+    this.external.clear();
     this.acknowledged = JSON.stringify(composerPayload(emptyComposer()));
     this.set({ ...initialState(), ownerId, hidden: !ownerId });
   }
