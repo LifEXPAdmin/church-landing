@@ -4,6 +4,7 @@ import { PortalError } from "./portal";
 import {
   postCanEdit,
   postCanModerate,
+  postCanWithdraw,
   postId,
   postReadableWhere,
   withPostRead
@@ -89,8 +90,9 @@ export function getPostEditor(db: PrismaClient, token: unknown, id: string) {
     });
     if (!post) throw new PortalError(404, "Post unavailable.");
     const canEdit = postCanEdit(context, post),
-      canModerate = postCanModerate(context, post);
-    if (!canEdit && !canModerate)
+      canModerate = postCanModerate(context, post),
+      canWithdraw = postCanWithdraw(context, post);
+    if (!canEdit && !canModerate && !canWithdraw)
       throw new PortalError(403, "You cannot manage this post.");
     return {
       id: post.id,
@@ -115,8 +117,8 @@ export function getPostEditor(db: PrismaClient, token: unknown, id: string) {
       repostKind: post.repostKind,
       pinUntil: post.pinUntil?.toISOString() ?? null,
       canEdit,
-      canDiscuss: canEdit || canModerate,
-      canWithdraw: canEdit || canModerate,
+      canDiscuss: post.repostKind !== "PLAIN" && (canEdit || canModerate),
+      canWithdraw,
       canPin: canEdit && !!post.authorChurchId
     };
   });

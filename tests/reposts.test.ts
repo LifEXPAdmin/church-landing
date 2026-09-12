@@ -1,6 +1,10 @@
+import { postCommand } from "../lib/platform/post-commands";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
+import sharp from "sharp";
+import { uploadImage, readImage } from "../lib/platform/media";
+import { readPostGallery } from "../lib/platform/post-gallery";
 import { PrismaClient } from "@prisma/client";
 import {
   assertPortalTestDatabase,
@@ -17,8 +21,8 @@ import {
   getProfilePosts,
   listPosts
 } from "../lib/platform/post-reads";
-import { postCommand } from "../lib/platform/post-commands";
 import { publicSharePreview } from "../lib/platform/public-sharing";
+import { handlePostWorkspaceRequest } from "../lib/platform/post-workspace-boundary";
 import { handleRepostRequest } from "../lib/platform/repost-boundary";
 import { allowWorkspaceAttempt } from "../lib/platform/account-limits";
 import { accountConfig } from "../lib/platform/account-config";
@@ -85,6 +89,11 @@ test("plain repost is one attributed reference across concurrent exact retries, 
     })
   );
   assert.equal(duplicate.id, one.id);
+  const options = await readRepostOptions(db, actor.token, {
+    sourceId: source.id
+  });
+  assert.equal(options.existing?.id, one.id);
+  assert.equal(options.canRepost, true);
   const row = await db.platformPost.findUniqueOrThrow({
     where: { id: one.id }
   });
@@ -394,6 +403,14 @@ test("church destinations require current publishing authority; logical church i
     )
   );
   assert.equal(made[0].id, made[1].id);
+  await denied(
+    command(
+      db,
+      f.memberA.token,
+      mutation("repost", { ...fields, audience: "CHURCH" })
+    ),
+    409
+  );
   assert.equal((await getPost(db, null, made[0].id!))?.author.id, f.churchA.id);
   await db.churchCapabilityGrant.update({
     where: {
@@ -515,6 +532,33 @@ test("quote drafts retain source and both reply modes through save/read/conflict
     ),
     403
   );
+
+  const publishedQuote = await db.platformPost.findFirstOrThrow({
+    where: {
+      authorId: f.memberA.id,
+      authorChurchId: null,
+      repostKind: "QUOTE",
+      repostSourceId: source.id
+    }
+  });
+  const readableQuote = await getPost(db, f.memberA.token, publishedQuote.id);
+  assert.equal(readableQuote?.canEdit, false);
+  assert.equal(readableQuote?.canWithdraw, true);
+  await denied(
+    postCommand(db, f.memberA.token, {
+      operation: "edit",
+      postId: publishedQuote.id,
+      expectedVersion: publishedQuote.version,
+      content: "Revoked publisher cannot replace church content"
+    }),
+    403
+  );
+  await postCommand(db, f.memberA.token, {
+    operation: "withdraw",
+    postId: publishedQuote.id,
+    expectedVersion: publishedQuote.version,
+    confirmed: true
+  });
   const retained = await db.privatePostDraft.findUniqueOrThrow({
     where: { ownerId_id: { ownerId: f.memberA.id, id } }
   });
@@ -588,6 +632,34 @@ test("boundary rejects cross-site, guests, forged actors, changed accounts and r
     (await handleRepostRequest(db, request({ ...body, ownerId: "other" })))
       .status,
     400
+  );
+  const quoteId = randomUUID();
+  const switched = new Request(origin + "/api/platform/post-workspace", {
+    method: "POST",
+    headers: {
+      origin,
+      "content-type": "application/json",
+      cookie: `church_platform_session=${actor.token}`,
+      "x-expected-account": "previous-account"
+    },
+    body: JSON.stringify(
+      mutation("save-draft", {
+        id: quoteId,
+        expectedVersion: 0,
+        payload: {
+          content: "",
+          quoteSourceId: source.id,
+          replyAudience: "VIEWERS"
+        }
+      })
+    )
+  });
+  assert.equal((await handlePostWorkspaceRequest(db, switched)).status, 401);
+  assert.equal(
+    await db.privatePostDraft.count({
+      where: { ownerId: actor.id, id: quoteId }
+    }),
+    0
   );
   const first = await handleRepostRequest(db, request(body));
   assert.equal(first.status, 200);
@@ -780,4 +852,73 @@ test("restricted event sources cannot be reposted even by approved members; cycl
       data: { repostSourceId: one.id }
     })
   );
+});
+
+test("reposting a processed source photo stores no duplicate upload and source withdrawal revokes its deliveries", async () => {
+  const { sourceAuthor, actor, source } = await fixture();
+  const files = new Map<string, Buffer>();
+  const storage = {
+    async put(path: string, data: Buffer) {
+      files.set(path, data);
+    },
+    async get(path: string) {
+      return files.get(path) ?? null;
+    },
+    async delete(paths: string[]) {
+      paths.forEach((p) => files.delete(p));
+    }
+  };
+  const bytes = await sharp({
+    create: { width: 80, height: 60, channels: 3, background: "blue" }
+  })
+    .png()
+    .toBuffer();
+  await uploadImage(
+    db,
+    sourceAuthor.token,
+    {
+      purpose: "POST_PHOTO",
+      targetId: source.id,
+      requestKey: randomUUID(),
+      alt: "Fictional source photo"
+    },
+    bytes,
+    storage
+  );
+  const gallery = await readPostGallery(db, actor.token, source.id),
+    before = files.size;
+  assert.equal(gallery.images.length, 1);
+  const current = await db.platformPost.findUniqueOrThrow({
+    where: { id: source.id }
+  });
+  const made = await command(
+    db,
+    actor.token,
+    mutation("repost", {
+      sourceId: source.id,
+      expectedSourceVersion: current.version
+    })
+  );
+  assert.equal(files.size, before);
+  assert.equal(await db.mediaAsset.count({ where: { postId: made.id } }), 0);
+  const view = await getPost(db, actor.token, made.id!);
+  assert.equal(view?.photoCount, 0);
+  assert.equal(view?.repost?.source?.photoCount, 1);
+  assert.ok(
+    await readImage(db, actor.token, gallery.images[0].id, "thumb", storage)
+  );
+  await db.platformPost.update({
+    where: { id: source.id },
+    data: { status: "WITHDRAWN", withdrawnAt: new Date() }
+  });
+  assert.equal(
+    (await getPost(db, actor.token, made.id!))?.repost?.source,
+    null
+  );
+  for (const token of [actor.token, null])
+    for (const variant of ["thumb", "medium", "large", "original"] as const)
+      await denied(
+        readImage(db, token, gallery.images[0].id, variant, storage),
+        404
+      );
 });

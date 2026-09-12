@@ -1,3 +1,7 @@
+## Attributed repost release candidate — 12 September 2026
+
+The repost/quote service checkpoint and focused UI are locally verified. See [the repost contract](REPOST_CONTRACT.md) and [verification report](REPOST_REPORT.md). Private quote drafts retain original source references and reply permissions; author opt-in, current church publishing rights, source revocation and exact retries are enforced. Candidate product 2026.09.12.22 has 54 passing focused tests, fifteen built browser groups and a passing production-backup migration rehearsal. Production still serves 2026.09.12.21 until the subsequent live receipt confirms the migration, READY deployment and canonical identity. Parent referral/device acceptance and independent access/moderation owners remain open.
+
 # Godschurches current state
 
 ## Shared post and reply editor — September 12, 2026

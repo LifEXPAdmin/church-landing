@@ -20,6 +20,7 @@ import { expected, PortalError } from "./portal";
 import { calendarZone } from "./calendar-time";
 import {
   postCanEdit,
+  postCanWithdraw,
   postCanModerate,
   postContext,
   postField,
@@ -278,11 +279,10 @@ export async function postCommandIn(
   });
   if (!post) throw new PortalError(404, "Post unavailable.");
   if (
-    !postCanEdit(context, post) &&
-    !(
-      (op === "withdraw" || op === "discussion") &&
-      postCanModerate(context, post)
-    )
+    op === "withdraw"
+      ? !postCanWithdraw(context, post)
+      : !postCanEdit(context, post) &&
+        !(op === "discussion" && postCanModerate(context, post))
   )
     throw new PortalError(
       403,
@@ -291,6 +291,12 @@ export async function postCommandIn(
   expected(input.expectedVersion, post.version);
   if (post.status === "WITHDRAWN")
     throw new PortalError(409, "This post has been withdrawn.");
+  if (post.repostKind === "PLAIN" && op !== "withdraw")
+    throw new PortalError(
+      400,
+      "Use the original post for editing and discussion settings."
+    );
+
   if (op === "edit") {
     if (
       input.quoteSourceId !== undefined &&

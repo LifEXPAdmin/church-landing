@@ -127,6 +127,9 @@ export function postReadableWhere(
 export function postCanEdit(context: PostContext, post: PlatformPost) {
   return (
     post.repostKind !== "PLAIN" &&
+    (post.repostKind !== "QUOTE" ||
+      !post.audienceChurchId ||
+      context.publishers.has(post.audienceChurchId)) &&
     post.status !== "WITHDRAWN" &&
     (post.authorChurchId
       ? context.publishers.has(post.authorChurchId)
@@ -138,6 +141,15 @@ export function postCanModerate(context: PostContext, post: PlatformPost) {
     post.authorChurchId ??
     (post.audience === "CHURCH" ? post.audienceChurchId : null);
   return !!churchId && context.moderators.has(churchId);
+}
+export function postCanWithdraw(context: PostContext, post: PlatformPost) {
+  return (
+    postCanEdit(context, post) ||
+    postCanModerate(context, post) ||
+    (post.repostKind === "QUOTE" &&
+      !post.authorChurchId &&
+      context.actorId === post.authorId)
+  );
 }
 export function postCanReply(context: PostContext, post: PlatformPost) {
   return (

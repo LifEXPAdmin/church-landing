@@ -11,6 +11,7 @@ import {
   ComposerFrame,
   ComposerCloseChoice
 } from "./composer-shell";
+import { QuoteDraftPreview } from "./quote-source-preview";
 import { ComposerPhotos } from "./composer-photos";
 import { useDraftWorkspace } from "./draft-workspace-provider";
 import {
@@ -162,6 +163,7 @@ function ComposerDraft({
   }, []);
   const { controller, state } = useDraftWorkspace();
   const draft = state.fields;
+  const [quoteAvailable, setQuoteAvailable] = useState(false);
   const authorChurchId = draft.authorChurchId ?? "";
   const churchId = draft.audienceChurchId ?? "";
   const eventId = draft.eventOccurrenceId ?? "";
@@ -189,7 +191,9 @@ function ComposerDraft({
   useEffect(() => {
     if (state.postId) onSaved();
   }, [state.postId, onSaved]);
-  const selectedChurch = options.churches.find((c) => c.id === churchId);
+  const selectedChurch = options.churches.find(
+    (c) => c.id === churchId && (!draft.quoteSourceId || c.canPublish)
+  );
   const changeChurch = (value: string, author = authorChurchId) => {
     setPrivateEvent(false);
     controller.change({
@@ -245,6 +249,12 @@ function ComposerDraft({
           setProblem(problem);
           return;
         }
+        if (draft.quoteSourceId && !quoteAvailable) {
+          setProblem(
+            "Check the original post before publishing. Your words can still be saved as a draft."
+          );
+          return;
+        }
         setProblem("");
         void controller.publish();
       }}
@@ -280,7 +290,8 @@ function ComposerDraft({
               state.conflict ||
               state.retry ||
               !!state.postId ||
-              draft.replyAudience === null
+              draft.replyAudience === null ||
+              (!!draft.quoteSourceId && !quoteAvailable)
             }
           >
             Post
@@ -315,6 +326,14 @@ function ComposerDraft({
           disabled={state.publishing || !!state.postId}
         >
           <PostDraftFields draft={draft} change={setDraft} />
+          {draft.quoteSourceId && state.ownerId && (
+            <QuoteDraftPreview
+              key={draft.quoteSourceId}
+              sourceId={draft.quoteSourceId}
+              accountId={state.ownerId}
+              onAvailability={setQuoteAvailable}
+            />
+          )}
           <p className="text-sm text-gc-muted">
             {authorChurchId ? "Church identity" : "My personal profile"} ·{" "}
             {draft.audience === "CHURCH" ? "Church members" : "Public"} ·{" "}
@@ -377,11 +396,13 @@ function ComposerDraft({
                       Saved church · access needs review
                     </option>
                   )}
-                  {options.churches.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
+                  {options.churches
+                    .filter((c) => !draft.quoteSourceId || c.canPublish)
+                    .map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
                 </select>
                 {churchId && (
                   <label className="flex min-h-11 items-center gap-2">

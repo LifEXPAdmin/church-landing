@@ -41,7 +41,7 @@ export function readRepostOptions(
         audienceChurchId: destination.audienceChurchId,
         ...(destination.authorChurchId ? {} : { authorId: context.actorId })
       },
-      select: { id: true, version: true }
+      select: { id: true, version: true, audience: true }
     });
     return {
       source,
@@ -131,6 +131,11 @@ export function repostCommand(
         ...(destination.authorChurchId ? {} : { authorId: ownerId })
       }
     });
+    if (existing && existing.audience !== destination.audience)
+      throw new PortalError(
+        409,
+        "This destination already has a repost with a different audience. Review and undo that entry before creating another."
+      );
     if (existing)
       return {
         id: existing.id,

@@ -66,6 +66,12 @@ export async function handlePostWorkspaceRequest(
         401,
         "Sign in to continue. Keep your unsaved entries."
       );
+    const expectedAccount = request.headers.get("x-expected-account");
+    if (expectedAccount && expectedAccount !== actor.id)
+      throw new PortalError(
+        401,
+        "Your sign-in changed. Reload before continuing."
+      );
     let input: Record<string, unknown>;
     try {
       input = await readBody(request, 65536);

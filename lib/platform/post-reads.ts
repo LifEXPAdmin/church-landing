@@ -9,7 +9,7 @@ import { canOrganize } from "./post-participation";
 import { commentVisibleWhere } from "./comment-policy";
 import {
   postCanEdit,
-  postCanModerate,
+  postCanWithdraw,
   postCanReply,
   postId,
   postInclude,
@@ -110,7 +110,7 @@ function project(post: PostRow, context: PostContext, now: Date) {
     commentCount: post._count.comments,
     photoCount: post._count.images + post._count.photoReferences,
     canEdit: postCanEdit(context, post),
-    canWithdraw: postCanEdit(context, post) || postCanModerate(context, post),
+    canWithdraw: postCanWithdraw(context, post),
     canReply: postCanReply(context, post),
     hasParticipation: !!post.poll || post.volunteerSlots.length > 0,
     canOrganize: canOrganize(context, post),

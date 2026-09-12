@@ -11,6 +11,19 @@ export type Feature = {
 };
 export const features: Feature[] = [
   {
+    id: "reposts",
+    category: "Posts and conversations",
+    name: "Repost and add your thoughts",
+    description:
+      "Bring an eligible public post to your profile or add your own words above it.",
+    steps:
+      "Open Repost, then choose Repost or Add your thoughts. A plain repost keeps the original author and offers Undo. A quote opens a private draft in the shared composer. To allow others to repost your original post, open Edit post and enable reposting.",
+    href: "/platform",
+    eligibility:
+      "Verified adult accounts; the source must remain public and its author must allow reposts. Church destinations require current publishing permission. Source withdrawal or restricted access hides the original preview. Share sends a link; Bookmark saves privately.",
+    availability: "conditional"
+  },
+  {
     id: "mission",
     category: "Getting started",
     name: "Our mission",
@@ -424,6 +437,22 @@ export type ReleaseEntry = {
   featureIds: string[];
 };
 export const releases: ReleaseEntry[] = [
+  {
+    id: "attributed-reposts-and-quotes",
+    version: "2026.09.12.22",
+    date: "2026-09-12",
+    summary:
+      "Repost public conversations with attribution or add your own thoughts.",
+    added: [
+      "Choose Repost for an attributed entry on your profile and eligible feed, with Undo that leaves the original intact.",
+      "Choose Add your thoughts to write above the original in a private quote draft, then resume and publish in the shared composer."
+    ],
+    improved: [
+      "Authors can explicitly allow reposting from Edit post. Sources keep their original identity, photos and permissions; unavailable originals show a neutral preview."
+    ],
+    fixed: [],
+    featureIds: ["reposts", "drafts", "sharing"]
+  },
   {
     id: "shared-post-reply-composer",
     version: "2026.09.12.21",
