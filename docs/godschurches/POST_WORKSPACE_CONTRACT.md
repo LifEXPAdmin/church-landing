@@ -207,3 +207,24 @@ an uncertain mutation must be resolved first. Unavailable/deleted drafts leave
 current entries intact. Reloaded snapshots remount the input fields to cancel
 stale preview requests; link previews require a fresh explicit request. Resumed
 publication uses only publish-draft and its existing access checks.
+
+## Saved collection and post controls
+
+The Menu links to `/platform/saved`. Its owner-bound client reads collections
+and saved items through the existing service, preserving collection/cursor URL
+state across Back and safe sign-in returns. Collection names stay intact through
+validation and version conflicts; adopting the current saved name is explicit.
+Create, rename, delete, move and remove freeze their exact serialized request
+until acknowledged or definitively rejected. Response loss exposes an exact retry.
+Deleting the selected collection navigates to Unfiled after acknowledgement.
+Unavailable sources render only a neutral saved-item row, with no source link,
+excerpt or thumbnail. Their bookmark remains removable. Account changes conceal
+and clear prior private rows and unsent names before reading the new account.
+
+Post cards expose a lazy, keyboard-operable Save menu. Opening it only reads
+current saved status. Saving an unsaved post creates an unfiled bookmark; an
+existing bookmark offers removal without moving it from its collection. Guest
+sign-in returns to the canonical post and never automatically saves it. Pending
+saves participate in the shared safe-update/navigation guard. Every write keeps
+current authorization, expectedVersion and mutationId semantics; no post-draft
+payload, legacy replyAudience handling or publication behavior changes.

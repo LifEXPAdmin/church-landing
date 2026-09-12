@@ -122,3 +122,32 @@ open; deployment is recorded at the next checkpoint.
 The five shared-reader browser regression groups also pass with the new
 relationship menus, including gesture isolation, exact edit retry, source access
 revocation, sign-in return and feed-position recovery. Full repository lint passes.
+
+## Relationship release
+
+Application `07b645ef78ea55132a826ffe1e0069a679b05c6a` is live in READY
+`dpl_236681Pr23zn1S5sh8bZLWygTFM7`, assigned to `godschurches.com`.
+At 00:58 UTC on 12 September, 32 read-only live checks passed, including private
+relationship guest gates and the public compact menu. Zero application writes,
+browser errors or runtime error rows were observed. All 27 migration checksums
+match, with none pending or applied. The local seven relationship browser groups,
+five reader regressions, eight navigation tests, lint and build passed. Parent
+integration, owner acceptance and remaining source coverage remain open.
+
+## Private Saved interface checkpoint
+
+Menu now opens private collection management; post cards expose current Save and
+Remove choices. Both use the existing owner-bound workspace service and exact
+serialized retries. Collection conflicts preserve the unsent name, deletion moves
+bookmarks to Unfiled, and unavailable sources have neutral removable rows.
+
+Six local HTTPS browser groups pass: guest return and lost-save retry; create,
+move, name validation and conflict review; deletion to Unfiled and withdrawn-source
+removal; 25-item pagination/Back and account-switch clearing; exact collection
+create retry and 25-collection pagination; concurrent save, removal and revoked
+source rejection. Production build/type/runtime checks pass (108 traces, 8,839
+entries, 267 server JavaScript files), and full lint passes. No backend, schema or
+post-draft reply-permission changes. Release identity will follow verification.
+The five shared-reader regression groups pass with the Save menu, including exact
+edit retry, gesture isolation, sign-in return, feed-position restoration and
+revoked event access. Nine safe-navigation tests pass.

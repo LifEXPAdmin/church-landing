@@ -188,3 +188,16 @@ test("relationship return retains validated view and cursor without granting aut
     "/platform/relationships"
   );
 });
+
+test("saved return preserves only valid collection and cursor state", () => {
+  assert.equal(
+    safeAccountReturn(
+      "/platform/saved?collectionId=unfiled&after=item-123&owner=other&token=secret"
+    ),
+    "/platform/saved?collectionId=unfiled&after=item-123"
+  );
+  assert.equal(
+    safeAccountReturn("/platform/saved?collectionId=%2Foutside"),
+    "/platform/saved"
+  );
+});

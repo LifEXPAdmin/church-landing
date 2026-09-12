@@ -1,3 +1,4 @@
+import { SavePostControl } from "./save-post-control";
 import { RelationshipControls } from "./relationship-controls";
 import { CommentSheet } from "./comment-sheet";
 import { CommentThread } from "./comment-thread";
@@ -99,6 +100,7 @@ export function PostCard({
           {post.scripture}
         </p>
       )}
+      <SavePostControl postId={post.id} />
       <div className="gc-post-actions">
         {currentUserId ? (
           <form action={togglePlatformPostLike}>

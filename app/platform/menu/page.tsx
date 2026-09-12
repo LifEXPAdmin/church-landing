@@ -109,12 +109,20 @@ export default async function PlatformMenuPage() {
                 />
               )}
               {user && (
-                <MenuLink
-                  href="/platform/drafts"
-                  title="Your drafts"
-                  description="Review and discard your private saved drafts."
-                  icon={FileText}
-                />
+                <>
+                  <MenuLink
+                    href="/platform/saved"
+                    title="Your saved posts"
+                    description="Organize posts into private collections."
+                    icon={BookOpen}
+                  />
+                  <MenuLink
+                    href="/platform/drafts"
+                    title="Your drafts"
+                    description="Review and discard your private saved drafts."
+                    icon={FileText}
+                  />
+                </>
               )}
               <MenuLink
                 href="/platform/calendars"
