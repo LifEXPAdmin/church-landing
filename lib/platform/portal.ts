@@ -16,6 +16,7 @@ import {
   finishVerifiedFriendInvitation,
   revokeAccountFriendInvitations
 } from "./friend-invitations";
+import { revokeAccountContact } from "./adult-contact-policy";
 import {
   effectiveChurchGrants,
   hasChurchReviewer,
@@ -521,6 +522,7 @@ export async function portalCommand(
       });
       if (input.suspended) {
         await revokeAccountFriendInvitations(tx, userId);
+        await revokeAccountContact(tx, userId);
         await tx.supportCapabilityGrant.updateMany({
           where: { userId, revokedAt: null },
           data: { revokedAt: new Date(), version: { increment: 1 } }

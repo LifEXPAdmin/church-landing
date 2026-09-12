@@ -2,14 +2,16 @@ export const communityReportTargets = [
   "POST",
   "COMMENT",
   "PROFILE",
-  "CHURCH"
+  "CHURCH",
+  "CONTACT_REQUEST"
 ] as const;
 export type CommunityReportTarget = (typeof communityReportTargets)[number];
 export const communityReportTargetLabels = {
   POST: "post",
   COMMENT: "comment",
   PROFILE: "profile",
-  CHURCH: "church representation"
+  CHURCH: "church representation",
+  CONTACT_REQUEST: "contact request"
 } as const;
 export function reportEntryHref(type: CommunityReportTarget, id: string) {
   return `/platform/reports?${new URLSearchParams({ targetType: type, targetId: id })}`;

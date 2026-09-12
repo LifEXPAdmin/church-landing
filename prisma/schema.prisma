@@ -231,6 +231,10 @@ model PlatformUser {
   socialOperations SocialOperation[]
   communityReports CommunityReport[]
   communityReportDecisions CommunityReportDecision[]
+  sentContactRequests AdultContactRequest[] @relation("ContactSender")
+  receivedContactRequests AdultContactRequest[] @relation("ContactRecipient")
+  adultConversationsA AdultConversation[] @relation("ConversationAdultA")
+  adultConversationsB AdultConversation[] @relation("ConversationAdultB")
   friendInvitation FriendInvitation?
   sentFriendAcceptances FriendAcceptance[] @relation("FriendInviter")
   receivedFriendAcceptances FriendAcceptance[] @relation("FriendRecipient")
@@ -434,6 +438,7 @@ enum CommunityReportTarget {
   COMMENT
   PROFILE
   CHURCH
+  CONTACT_REQUEST
 }
 
 enum CommunityReportReason {
@@ -1518,9 +1523,63 @@ model SocialPreferences {
   ownerId String @id
   version Int @default(1)
   mentions String @default("EVERYONE")
+  contactRequests AdultContactAudience @default(NOBODY)
   showRelationships Boolean @default(true)
   updatedAt DateTime @updatedAt
   owner PlatformUser @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+}
+
+enum AdultContactAudience {
+  NOBODY
+  FOLLOWED
+  EVERYONE
+}
+
+enum AdultContactStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  WITHDRAWN
+  EXPIRED
+  REVOKED
+}
+
+model AdultContactRequest {
+  id String @id @default(cuid())
+  senderId String
+  recipientId String
+  purpose String
+  status AdultContactStatus @default(PENDING)
+  version Int @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  expiresAt DateTime
+  conversationId String?
+  sender PlatformUser @relation("ContactSender", fields: [senderId], references: [id], onDelete: Restrict)
+  recipient PlatformUser @relation("ContactRecipient", fields: [recipientId], references: [id], onDelete: Restrict)
+  conversation AdultConversation? @relation(fields: [conversationId], references: [id], onDelete: Restrict)
+  @@index([senderId, status, expiresAt])
+  @@index([recipientId, status, expiresAt])
+  @@index([senderId, createdAt, id])
+  @@index([recipientId, createdAt, id])
+  @@index([conversationId])
+  // The migration additionally enforces one pending unordered pair and no self request.
+}
+
+model AdultConversation {
+  id String @id @default(cuid())
+  participantAId String
+  participantBId String
+  sendingAllowed Boolean @default(false)
+  version Int @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  participantA PlatformUser @relation("ConversationAdultA", fields: [participantAId], references: [id], onDelete: Restrict)
+  participantB PlatformUser @relation("ConversationAdultB", fields: [participantBId], references: [id], onDelete: Restrict)
+  requests AdultContactRequest[]
+  @@unique([participantAId, participantBId])
+  @@index([participantBId])
+  // Sorted, distinct IDs are the canonical two-person membership; no third-member table.
 }
 
 model SocialRelationship {

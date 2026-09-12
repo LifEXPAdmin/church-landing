@@ -115,10 +115,20 @@ activity allowance. The existing transport flood limit remains independent.
 Quota rejection returns 429 and `Retry-After` seconds; the form must retain its
 entries. The existing social operation storage ceiling still bounds new keys.
 
-Future contact-request and message targets must be added through this same
-contract with participant eligibility and deliberately selected evidence. A
-report must never grant access to the rest of a private conversation. Those
-targets and their intake UI are not implemented merely by this foundation.
+The contact foundation adds `CONTACT_REQUEST`: only its sender or recipient
+with current adult eligibility can submit its stable ID and version, including
+retained requests after a block. Report review requires the explicit global
+report capability; church or support permissions do not open personal requests.
+The authorized single-case review projects only that selected immutable request
+purpose, participant IDs and creation time from its canonical record. It makes
+no copied evidence store and never queries another request or conversation.
+Reporter receipts/export still contain only the deliberately submitted report
+details, without that reviewer projection. Revocation denies further reviewer
+reads. Request intake reuses the same actual global report-operations boundary.
+
+Future message targets must follow this participant-selected contract. A report
+must never grant access to the rest of a private conversation. Request service
+and UI verification are recorded separately from the earlier reporting release.
 
 ## Verification and release boundary
 

@@ -67,6 +67,35 @@ async function targetIn(
 ): Promise<Target | null> {
   const type = targetType(kind),
     id = postId(value);
+  if (type === "CONTACT_REQUEST") {
+    const row = await tx.adultContactRequest.findFirst({
+      where: {
+        id,
+        ...(review
+          ? {}
+          : {
+              OR: [
+                { senderId: context.actorId ?? "" },
+                { recipientId: context.actorId ?? "" }
+              ]
+            })
+      },
+      select: { id: true, version: true }
+    });
+    return (
+      row && {
+        type,
+        id: row.id,
+        version: row.version,
+        contextVersion: 0,
+        scopeChurchId: null,
+        source: {
+          label: "Selected contact request",
+          href: `/platform/messages/requests?id=${encodeURIComponent(row.id)}`
+        }
+      }
+    );
+  }
   if (type === "POST") {
     const row = await tx.platformPost.findFirst({
       where: { AND: [{ id }, ...(review ? [] : [postReadableWhere(context)])] },
@@ -191,13 +220,16 @@ function reportLimit() {
     : null;
 }
 
-async function intakeAvailable(tx: PostTx, target: Target) {
+export async function communityReportIntakeAvailable(
+  tx: PostTx,
+  scopeChurchId: string | null
+) {
   if (
     process.env.COMMUNITY_REPORTS_ENABLED !== "true" ||
     reportLimit() === null
   )
     return false;
-  if (!target.scopeChurchId)
+  if (!scopeChurchId)
     return !!(await tx.platformOperatorGrant.findFirst({
       where: {
         capability: "REVIEW_COMMUNITY_REPORTS",
@@ -206,7 +238,7 @@ async function intakeAvailable(tx: PostTx, target: Target) {
       },
       select: { id: true }
     }));
-  const churchId = target.scopeChurchId;
+  const churchId = scopeChurchId;
   const direct = await tx.churchCapabilityGrant.findMany({
     where: {
       churchId,
@@ -312,7 +344,14 @@ export function readCommunityReports(
         query.targetType,
         query.targetId
       );
-      return { ownerId, target, available: await intakeAvailable(tx, target) };
+      return {
+        ownerId,
+        target,
+        available: await communityReportIntakeAvailable(
+          tx,
+          target.scopeChurchId
+        )
+      };
     }
     if (query.view === "review") {
       const report = await requireReview(tx, ownerId, query.id);
@@ -328,7 +367,28 @@ export function readCommunityReports(
           createdAt: true
         }
       });
-      return { ownerId, report: receipt(report), decisions };
+      const selectedRequest =
+        report.targetType === "CONTACT_REQUEST"
+          ? await tx.adultContactRequest.findUnique({
+              where: { id: report.targetId },
+              select: {
+                purpose: true,
+                senderId: true,
+                recipientId: true,
+                createdAt: true
+              }
+            })
+          : undefined;
+      return {
+        ownerId,
+        report: receipt(report),
+        decisions,
+        ...(selectedRequest
+          ? {
+              evidence: { type: "CONTACT_REQUEST" as const, ...selectedRequest }
+            }
+          : {})
+      };
     }
     if (query.view === "receipt") {
       const report = await tx.communityReport.findFirst({
@@ -465,7 +525,7 @@ export function communityReportCommand(
           message:
             "You already reported this version. Your original private receipt is available."
         };
-      if (!(await intakeAvailable(tx, target)))
+      if (!(await communityReportIntakeAvailable(tx, target.scopeChurchId)))
         throw new PortalError(
           503,
           "Reporting is unavailable for this item right now. Your report has not been submitted."

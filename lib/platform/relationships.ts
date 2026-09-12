@@ -11,6 +11,10 @@ import { postId } from "./post-input";
 import { socialCommand, socialInput } from "./social-operations";
 import { socialPolicy, socialUserWhere } from "./social-policy";
 import { socialPrivacyIn } from "./social-privacy";
+import {
+  revokeBlockedContact,
+  revokeUnfollowedRequests
+} from "./adult-contact-policy";
 const PAGE = 20;
 function target(kind: unknown, id: unknown) {
   if (kind !== "person" && kind !== "church")
@@ -148,8 +152,11 @@ export async function relationshipCommand(
         } else data.followingChurch = on;
         if (!on) {
           data.favorite = false;
-          if (keys.targetUserId)
+          if (keys.targetUserId) {
             await removeFriendConnection(tx, ownerId, keys.targetUserId);
+            await revokeUnfollowedRequests(tx, ownerId, keys.targetUserId);
+            await revokeUnfollowedRequests(tx, keys.targetUserId, ownerId);
+          }
         }
       } else if (op === "favorite") {
         const on = desired(input.desired);
@@ -180,6 +187,7 @@ export async function relationshipCommand(
           throw new PortalError(400, "Use church mute for church content.");
         data.blocked = desired(input.desired);
         if (data.blocked) {
+          await revokeBlockedContact(tx, ownerId, keys.targetUserId);
           await removeFriendConnection(tx, ownerId, keys.targetUserId);
           await tx.platformFollow.deleteMany({
             where: {

@@ -85,9 +85,10 @@ Successful receipts contain only IDs/versions, not private message content.
 Acceptance atomically changes one current PENDING request and creates or reuses
 one canonical conversation for its two sorted participants. The database owns
 pair uniqueness. Server-derived participant IDs prevent injected third parties;
-concurrent or exact acceptance cannot create another conversation or first
-message. The accepted request purpose becomes the immutable opening message
-once, linked by the request ID rather than copied through a second send/upload.
+concurrent or exact acceptance cannot create another conversation or duplicate
+opening context. The accepted purpose remains in its immutable request record,
+linked to the conversation once. Render it as the accepted contact context;
+do not insert a second automatic message or duplicate its body in another store.
 
 Bilateral block always wins over preferences, follows, request acceptance and
 existing conversation state. The existing canonical block command atomically
@@ -162,7 +163,9 @@ actual reviewer coverage, independent escalation/recovery and retention/erasure
 policy are unresolved. This is an existing common safety boundary, not a new
 arbitrary messaging flag. Implement and test the core locally while these owner
 actions proceed. Do not invent a legal retention period or advertise automated
-erasure. Account deactivation immediately revokes its access; any later physical
+erasure. Account deactivation and suspension immediately revoke its access,
+pending requests and conversation sending consent. Reactivation cannot revive
+that old consent. Any later physical
 erasure must reconcile the other participant's record, selected evidence and
 the actual backup policy through the established account-erasure owner.
 

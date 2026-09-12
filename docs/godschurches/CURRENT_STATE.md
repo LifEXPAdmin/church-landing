@@ -1,3 +1,15 @@
+## Adult contact service verified locally — 12 September 2026
+
+The focused contact, conversation-membership and preference contracts are
+recorded in [the adult contact contract](ADULT_CONTACT_CONTRACT.md). The first
+service milestone passes 47 focused tests and eight HTTPS groups, plus
+types/lint/build. It preserves the existing relationship, account, report and
+retry owners; its migration is isolated-only. See
+[the service receipt](ADULT_CONTACT_REPORT.md). Request/preference UI,
+conversation messages, in-app indicators and release verification are next.
+Production remains the reporting release below; real operations and parent/
+owner acceptance remain open.
+
 ## Private report forms and receipts verified live — 12 September 2026
 
 Product `2026.09.12.24`, application `e710170d653672b885b491c8c523b9d54c6f51f8`,

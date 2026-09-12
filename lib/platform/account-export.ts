@@ -582,11 +582,28 @@ export async function downloadAccountExport(
         where: { ownerId: userId },
         select: {
           mentions: true,
+          contactRequests: true,
           showRelationships: true,
           version: true,
           updatedAt: true
         },
         take: 1
+      }),
+      sentContactRequests: await tx.adultContactRequest.findMany({
+        where: { senderId: userId },
+        select: {
+          id: true,
+          recipientId: true,
+          purpose: true,
+          status: true,
+          version: true,
+          createdAt: true,
+          updatedAt: true,
+          expiresAt: true,
+          conversationId: true
+        },
+        orderBy: { id: "asc" },
+        take: MAX_ROWS + 1
       }),
       friendInvitations: await tx.friendInvitation.findMany({
         where: { ownerId: userId },
@@ -687,7 +704,7 @@ export async function downloadAccountExport(
         version: 1,
         generatedAt: new Date().toISOString(),
         scope:
-          "Your account profile, presentation preferences and linked Google identity, authored community content and personal image metadata and photo albums, personal polls and your own ballots and volunteer signups, likes/following, private social and conversation choices and friend invitation records, private comment drafts and comment Likes, private post drafts and saved collection organization (source posts excluded), church directory choices, your own church representative setup and listing drafts/submissions, personal calendars/events and their sharing choices, your event responses, your own community reports and your own support submissions. Other people's content, staff/church operations, credentials, session data and security audit records and private report-review notes are excluded. Image binaries are not embedded; image references still require current access. Reading preferences saved only on this browser are not in this account file.",
+          "Your account profile, presentation preferences and linked Google identity, authored community content and personal image metadata and photo albums, personal polls and your own ballots and volunteer signups, likes/following, private social and conversation choices and friend invitation records, private comment drafts and comment Likes, private post drafts and saved collection organization (source posts excluded), church directory choices, your own church representative setup and listing drafts/submissions, personal calendars/events and their sharing choices, your event responses, your own sent contact requests, your own community reports and your own support submissions. Other people's content, staff/church operations, credentials, session data and security audit records and private report-review notes are excluded. Image binaries are not embedded; image references still require current access. Reading preferences saved only on this browser are not in this account file.",
         account,
         ...collections
       },
