@@ -44,6 +44,13 @@ all 30 migration checksums. No migration or production data write was applied.
 
 ## Release
 
-Product content is prepared for `2026.09.12.21`; it is not yet live. The previous
-verified release remains authoritative until deployment and canonical-domain
-checks complete. Parent integration and owner acceptance remain open.
+Product `2026.09.12.21`, application `4c515835cc54c4bafef9a8f083e27d556f64c6a5`,
+is live on READY deployment `dpl_E3KFyqpXTGLTkbDU73WRMgRRC2oA`. Independent
+canonical assignment and serving identity match. Six live read-only checks at
+16:56:30 UTC passed with zero application writes or browser errors; runtime error
+rows were zero. Live checks cover the serving version, public reading and actions,
+private composer/draft API rejection for guests, Explore and account returns,
+current/retained notes and safe update. Authenticated save/publication behavior was
+verified against the isolated production build, without creating production posts.
+No schema, provider or permission change. Parent integration and physical owner
+acceptance remain open.
