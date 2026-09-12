@@ -1,10 +1,13 @@
 # Social reliability and runtime review
 
-## Release candidate — 12 September 2026
+## Verified live — 12 September 2026
 
-Candidate product `2026.09.12.23` follows application `6859cb0` and the clean
-review checkout `fe36256`. Implementation and focused verification are local.
-The complete regression gate and production publication are still pending.
+Product `2026.09.12.23`, application
+`4a11762af55439f6e3964366eab99a57b12eaae8`, is READY in
+`dpl_C2Z5hciXqzkcQQ3q6Jgq1NSmAarb`. The independent canonical alias and serving
+release endpoint match. The implementation checkpoint is `2756651`; `4a11762`
+finishes test expectations and public recovery guidance. This follows application
+`6859cb0` and the clean review checkout `fe36256`.
 
 ## Changes
 
@@ -38,14 +41,21 @@ The complete regression gate and production publication are still pending.
   the unused native-action pending helper. Release-note parsing is separate from
   the feature catalog so the update notice can load details on opening.
 
-## Verification so far
+## Verification
+
+The complete `npm run test:support -- --preview` gate passed: all 84 discovered
+test files, 528 passing executions, zero failures and two production-phase skips
+for development-only email delivery checks that passed in development. It includes
+synthetic legacy upgrades, restore, fresh migrations, production compilation,
+development HTTP, production HTTPS and a new production server process.
 
 Fresh production compilation, TypeScript and runtime trace exclusion pass.
 ESLint reports zero errors and the same 37 existing fixture/QA unused-variable
 warnings. The install audit reports zero vulnerabilities. Focused service and
 actual HTTPS tests cover retry fingerprints, conflict versions, stale accounts,
 source withdrawal, original repost targets, session revocation, draft reply
-permissions and cleanup. The complete run must pass before a full-green claim.
+permissions and cleanup. The full gate also verifies the previously omitted
+invitation, photo history, album, settings and controller tests.
 
 The broad harness now discovers every `.test.ts` under `tests` and `lib`, retaining
 its explicit development, production HTTPS and restart stages. Older assertions
@@ -53,12 +63,15 @@ now exercise current APIs and routes while preserving private-field, no-write,
 pagination and account-isolation checks. Original failed runs remain in private
 evidence; diagnostic continuations are not accepted as the full gate.
 
-The built browser verifies exact Like bytes after a lost acknowledgement, stale
+Ten existing built-browser scripts pass. The final built browser verifies exact
+Like bytes after a lost acknowledgement, stale
 tab recovery, account replacement and narrow-screen guest entry. Shared composer
 checks include both reply modes, legacy review, conflicts and revoked church
 publication. Photo, sharing, installation and relationship regression receipts
-are being completed in the isolated fixture. These are automated Chrome checks,
-not new physical-device acceptance.
+pass in the isolated fixture. Two additional final browser groups verify that
+release details and their feature catalog load only on opening, preserve unsaved
+text/address/focus, and remain usable at 320, 390 and 1440 pixels. These are
+automated Chrome checks, not new physical-device acceptance.
 
 ## Measured local costs
 
@@ -72,17 +85,29 @@ Four read callbacks with 80 ms of simulated work now overlap (maximum concurrenc
 4, about 89 ms total), versus concurrency 1/about 333 ms before. A held exclusive
 writer still blocks a guest reader, and read callbacks reject attempted writes.
 The inspected runtime import graph has no cycles; the original nine-module cycle
-is removed. Final bundle measurements remain pending.
+is removed. Combining layout and page manifest chunks once, Home is 13,033 raw /
+4,073 gzipped bytes smaller; Settings and Search are each 15,906 raw bytes smaller
+(4,840 and 4,900 gzipped bytes respectively). These are emitted-file measurements,
+not a claim about production response time or negotiated network compression.
 
 The encrypted production backup restored successfully, and the local 31→32
 migration rehearsal preserved original-column fingerprints in all 75 tables.
-Plaintext restored data was removed. This rehearsal made no production changes.
+Plaintext restored data was removed. The subsequent production migration also
+preserved all 75 original-column table fingerprints. Existing Likes
+retained the expected active/version-1 defaults. Production has 32 completed,
+checksum-matching migrations; this release applied one schema migration and made
+zero user-content writes.
 
 ## Release and remaining gates
 
-No new production deployment or migration is recorded yet. After the complete
-gate, record the application commit, migration receipt, READY deployment,
-independent canonical alias, serving version/SHA and read-only live checks here.
+At 20:54 UTC, six live read-only groups passed: serving version/SHA, protected
+Repost entry, guest/private-draft rejection, Like entry and unavailable-source
+privacy, Explore recovery instructions, retained patch notes and safe update
+status. Browser errors, application writes and scoped runtime error/fatal rows
+were all zero. Public destinations include
+[the release notes](https://godschurches.com/platform/releases/reliable-likes-and-lighter-loading)
+and [Explore features](https://godschurches.com/platform/features).
+
 An older application that counts all Like rows cannot interpret Unlike tombstones;
 use a forward fix or a compatible rollback, not an unreviewed old deployment.
 

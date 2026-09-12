@@ -1,3 +1,29 @@
+## Social reliability and runtime repairs verified live — 12 September 2026
+
+Product `2026.09.12.23`, application `4a11762af55439f6e3964366eab99a57b12eaae8`,
+is READY in `dpl_C2Z5hciXqzkcQQ3q6Jgq1NSmAarb`; the independent canonical alias
+and serving endpoint match. Likes now use explicit state, versions and exact
+retries. Retired native mutations are removed, photo-discard navigation settles
+before confirmation, and protected reads/visible avatars avoid unnecessary work.
+Closed-discussion copy, CSV escaping, dependency remediation and import ownership
+are repaired. See [the complete repair evidence](AUDIT_REPAIR_REPORT.md).
+
+The full gate passes all 84 discovered test files: 528 passes, zero failures and
+two development-only delivery checks skipped in the production phase. Ten
+existing browser scripts, four Like scenarios, two final release-detail groups
+and six live read-only groups pass. The migration preserves original columns
+across 75 tables and brings production to 32 matching migrations. Live application
+writes, browser errors and scoped runtime error/fatal rows are zero. Measured
+Home requests fell 95→8 in the same fixture; combined initial Home JavaScript is
+4,073 gzipped bytes smaller. These local measurements are not a production
+latency claim.
+
+Next is the scoped reporting, evidence and abuse-limit foundation for contact
+requests and messaging. Portal/support read-side reconciliation remains a
+scalability limit. Real reviewer/provider, church-management, phone acceptance
+and parent integration gates remain open; historical phone observations are
+preserved separately from automated verification.
+
 ## Attributed reposts and quotes verified live — 12 September 2026
 
 Product `2026.09.12.22`, application `6859cb075006f05c59680c0e582621bb9102742e`, is READY in `dpl_C9ZRqD7Lu2uzbxMiTGY9uKBhzwNG` and independently assigned to Godschurches.com. Plain Repost/Undo and quotes use current source permission and existing draft/reply recovery. See [the complete release evidence](REPOST_REPORT.md) and [contract](REPOST_CONTRACT.md). Fifty-four focused tests, twenty distinct built-browser groups (including five referral integration groups) and five live read-only groups pass. Live checks observed zero writes/page errors/runtime error rows. One additive migration brought production to thirty-one matching migrations while preserving original columns across all 75 existing tables.

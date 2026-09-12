@@ -155,6 +155,13 @@ No service worker, original prefetch, new storage association or retention is
 introduced by this presentation layer. History and personal photo libraries
 require their separate lifecycle contract.
 
+Pending photo panels share one Back guard. After profile-photo Discard, its
+asynchronous history cleanup must finish before completion is announced. A
+same-window link clicked during cleanup waits for settlement. Discarding one
+selection preserves other pending panels, unsaved profile text, upload state and
+the viewer's independent history entry. Successful saves use the same settlement
+boundary before allowing navigation.
+
 ## Church management navigation and identity controls
 
 The public church detail and approved-member overview project current church
