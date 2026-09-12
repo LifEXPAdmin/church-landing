@@ -1,14 +1,21 @@
-## Private reporting candidate — verified locally, 12 September 2026
+## Private report forms and receipts verified live — 12 September 2026
 
-The canonical report/receipt and scoped review foundation and contextual UI are
-locally verified: 86 discovered test files, 543 passes, zero failures, two
-production-phase delivery skips and 18 final browser groups. The encrypted
-production-backup migration rehearsal preserves all 75 original-table column
-fingerprints. Intake defaults off and the new migration is isolated-only. The current live
-application remains the audit-repair release below. See
+Product `2026.09.12.24`, application `e710170d653672b885b491c8c523b9d54c6f51f8`,
+is READY in `dpl_9QusbmKcg7v8ERjbYeLpsZjJSmKp`; the independent canonical alias
+and serving endpoint match. Contextual forms, exact retries and private receipts
+are published. New intake stays disabled pending actual reviewer operations and
+retention/erasure policy; no report, decision or reviewer grant was created.
+
+The complete gate passes 86 discovered test files: 543 passes, zero failures and
+two production-phase delivery skips. Eighteen final built-browser groups and six
+live read-only groups pass. The encrypted-backup rehearsal and actual additive
+migration preserve original-column fingerprints across all 75 existing tables;
+production has 33 checksum-matching migrations. Live application write requests,
+browser errors and scoped runtime error/fatal rows are zero. See
 [the reporting receipt](COMMUNITY_REPORTING_REPORT.md) and
-[its contract](COMMUNITY_REPORTING_CONTRACT.md) for exact checks,
-reviewer/retention gates and broader moderation scope.
+[its contract](COMMUNITY_REPORTING_CONTRACT.md). Next is the prioritized adult
+contact-request contract. Broader moderation and parent/owner acceptance remain
+open, with prior physical-phone observations preserved.
 
 ## Social reliability and runtime repairs verified live — 12 September 2026
 

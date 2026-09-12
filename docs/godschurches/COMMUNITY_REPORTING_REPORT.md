@@ -1,5 +1,34 @@
 # Private reporting implementation receipt
 
+## Verified live release — 12 September 2026
+
+Product `2026.09.12.24`, application
+`e710170d653672b885b491c8c523b9d54c6f51f8`, is READY on
+`dpl_9QusbmKcg7v8ERjbYeLpsZjJSmKp`. The independent canonical alias and
+serving endpoint match. The contextual form and owner receipt UI are published;
+new intake remains disabled until actual reviewer operations and retention policy
+are ready. No real report or reviewer appointment was created by this release.
+
+The complete 86-file gate and all 18 final browser groups below pass. Six live
+read-only groups at 22:23 UTC pass, including report/draft guest rejection,
+safe account return, accurate conditional Explore content, current and retained
+patch notes, safe updates and narrow/desktop layout. Observed application write
+requests, browser errors and scoped runtime error/fatal rows are zero.
+
+The rehearsed additive migration brought production from 32 to 33 completed,
+checksum-matching migrations. All 75 existing tables' original-column data
+fingerprints match before/after. Report, decision and new reviewer-grant counts
+remain zero. The encrypted backup restored and rehearsed successfully before
+publication. No user-content writes were performed.
+
+Visible destinations: [private reports](https://godschurches.com/platform/reports),
+[release notes](https://godschurches.com/platform/releases/private-report-forms-and-receipts)
+and [Explore features](https://godschurches.com/platform/features).
+The bounded report UI is complete; broader moderation, reviewer operations,
+retention/erasure, selected-message evidence and parent/owner acceptance remain
+open. The next prioritized coding slice is the adult contact-request contract.
+Historical phone observations are unchanged; the new browser checks are automated.
+
 ## Contextual UI candidate — 12 September 2026
 
 The report page, owner receipt/history views, More links on posts/comments/
