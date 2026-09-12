@@ -10,13 +10,15 @@ type Preview = {
 export function PublicShareControls({
   kind,
   id,
-  siteUrl
+  siteUrl,
+  showSiteQr = false
 }: {
   kind: "post" | "church" | "event" | "site";
   id: string;
   siteUrl?: string;
+  showSiteQr?: boolean;
 }) {
-  const [open, setOpen] = useState(false),
+  const [open, setOpen] = useState(showSiteQr && kind === "site"),
     [preview, setPreview] = useState<Preview | null>(null),
     [busy, setBusy] = useState(false),
     [message, setMessage] = useState(""),
@@ -164,92 +166,105 @@ export function PublicShareControls({
     }
   }
   return (
-    <details
-      open={open}
-      onToggle={(e) => setOpen(e.currentTarget.open)}
-      className="rounded border border-gc-divider p-2"
-    >
-      <summary className="min-h-11 cursor-pointer py-2 font-semibold">
-        {kind === "site" ? "Share Godschurches" : "Share publicly"}
-      </summary>
-      {open && (
-        <div
-          role="group"
-          aria-label="Public sharing choices"
-          className="space-y-3"
-        >
-          <p role="status">{busy ? "Checking the public link…" : message}</p>
-          {preview?.available && (
-            <>
-              <p>
-                A link grants no membership, management rights or permission to
-                RSVP.
-              </p>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  className="gc-button gc-button-quiet"
-                  disabled={busy}
-                  onClick={() => void act("copy")}
-                >
-                  Copy public link
-                </button>
-                {native ? (
+    <>
+      {showSiteQr && kind === "site" && siteUrl && (
+        <ShareQr url={siteUrl} inline />
+      )}
+      <details
+        open={open}
+        onToggle={(e) => setOpen(e.currentTarget.open)}
+        className="rounded border border-gc-divider p-2"
+      >
+        <summary className="min-h-11 cursor-pointer py-2 font-semibold">
+          {kind === "site" ? "Share Godschurches" : "Share publicly"}
+        </summary>
+        {open && (
+          <div
+            role="group"
+            aria-label="Public sharing choices"
+            className="space-y-3"
+          >
+            <p role="status">{busy ? "Checking the public link…" : message}</p>
+            {preview?.available && (
+              <>
+                <p>
+                  A link grants no membership, management rights or permission
+                  to RSVP.
+                </p>
+                <div className="flex flex-wrap gap-2">
                   <button
                     type="button"
                     className="gc-button gc-button-quiet"
                     disabled={busy}
-                    onClick={() => void act("share")}
+                    onClick={() => void act("copy")}
                   >
-                    Open share dialog
+                    Copy public link
                   </button>
-                ) : (
-                  <p>Native sharing is unavailable. Use Copy public link.</p>
-                )}
-                <button
-                  type="button"
-                  className="gc-button gc-button-quiet"
-                  disabled={busy}
-                  onClick={() => void act("qr")}
-                >
-                  Show QR code
-                </button>
-              </div>
-              <label className="block">
-                Public link
-                <input
-                  aria-label="Public link"
-                  className="block w-full rounded border p-2"
-                  readOnly
-                  value={preview.url}
-                  onFocus={(e) => e.currentTarget.select()}
-                />
-              </label>
-            </>
-          )}
-          <button
-            type="button"
-            className="gc-button gc-button-quiet"
-            disabled={busy}
-            onClick={() => void load()}
-          >
-            Refresh public link
-          </button>
-          {qr && (
-            <ShareQr
-              url={qr}
-              onClose={() => {
-                setQr(null);
-                returnFocus.current?.focus();
-              }}
-            />
-          )}
-        </div>
-      )}
-    </details>
+                  {native ? (
+                    <button
+                      type="button"
+                      className="gc-button gc-button-quiet"
+                      disabled={busy}
+                      onClick={() => void act("share")}
+                    >
+                      Open share dialog
+                    </button>
+                  ) : (
+                    <p>Native sharing is unavailable. Use Copy public link.</p>
+                  )}
+                  <button
+                    type="button"
+                    className="gc-button gc-button-quiet"
+                    disabled={busy}
+                    onClick={() => void act("qr")}
+                  >
+                    Show QR code
+                  </button>
+                </div>
+                <label className="block">
+                  Public link
+                  <input
+                    aria-label="Public link"
+                    className="block w-full rounded border p-2"
+                    readOnly
+                    value={preview.url}
+                    onFocus={(e) => e.currentTarget.select()}
+                  />
+                </label>
+              </>
+            )}
+            <button
+              type="button"
+              className="gc-button gc-button-quiet"
+              disabled={busy}
+              onClick={() => void load()}
+            >
+              Refresh public link
+            </button>
+            {qr && (
+              <ShareQr
+                url={qr}
+                onClose={() => {
+                  setQr(null);
+                  returnFocus.current?.focus();
+                }}
+              />
+            )}
+          </div>
+        )}
+      </details>
+    </>
   );
 }
-function ShareQr({ url, onClose }: { url: string; onClose: () => void }) {
+function ShareQr({
+  url,
+  onClose,
+  inline = false
+}: {
+  url: string;
+  onClose?: () => void;
+  inline?: boolean;
+}) {
   const dialog = useRef<HTMLDialogElement>(null),
     canvas = useRef<HTMLCanvasElement>(null),
     [error, setError] = useState(""),
@@ -282,13 +297,8 @@ function ShareQr({ url, onClose }: { url: string; onClose: () => void }) {
       if (node?.open) node.close();
     };
   }, [url]);
-  return (
-    <dialog
-      ref={dialog}
-      aria-label="Public link QR code"
-      className="max-h-[90dvh] w-[min(90vw,36rem)] overflow-auto rounded-xl border border-gc-divider bg-gc-surface p-4 text-gc-text backdrop:bg-black/50"
-      onClose={onClose}
-    >
+  const content = (
+    <>
       <h2 className="text-2xl">Open the public page</h2>
       <p>Scan with your phone camera. Sign in normally to join or respond.</p>
       {error ? (
@@ -302,13 +312,15 @@ function ShareQr({ url, onClose }: { url: string; onClose: () => void }) {
         />
       )}
       <p className="break-all text-sm">{url}</p>
-      <button
-        type="button"
-        className="gc-button gc-button-quiet"
-        onClick={() => dialog.current?.close()}
-      >
-        Close QR code
-      </button>
+      {!inline && (
+        <button
+          type="button"
+          className="gc-button gc-button-quiet"
+          onClick={() => dialog.current?.close()}
+        >
+          Close QR code
+        </button>
+      )}
       <button
         type="button"
         className="gc-button gc-button-quiet"
@@ -323,6 +335,23 @@ function ShareQr({ url, onClose }: { url: string; onClose: () => void }) {
       >
         Download QR PNG
       </button>
+    </>
+  );
+  return inline ? (
+    <section
+      aria-label="Public link QR code"
+      className="rounded-xl border border-gc-divider p-4"
+    >
+      {content}
+    </section>
+  ) : (
+    <dialog
+      ref={dialog}
+      aria-label="Public link QR code"
+      onClose={onClose}
+      className="max-h-[90dvh] w-[min(90vw,36rem)] overflow-auto rounded-xl border border-gc-divider bg-gc-surface p-4 text-gc-text backdrop:bg-black/50"
+    >
+      {content}
     </dialog>
   );
 }

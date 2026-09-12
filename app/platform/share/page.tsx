@@ -10,7 +10,12 @@ export const metadata: Metadata = {
   description: "Open the community, create an account and find your church."
 };
 export const dynamic = "force-dynamic";
-export default async function SharePage() {
+export default async function SharePage({
+  searchParams
+}: {
+  searchParams: Promise<{ qr?: string }>;
+}) {
+  const showQr = (await searchParams).qr === "1";
   const user = await getCurrentPlatformUser();
   const url = new URL("/platform", accountConfig().origin).href;
   return (
@@ -22,7 +27,12 @@ export default async function SharePage() {
           Scan the QR to read public conversations, create an account and find
           your church. Joining a church follows its normal approval process.
         </p>
-        <PublicShareControls kind="site" id="godschurches" siteUrl={url} />
+        <PublicShareControls
+          kind="site"
+          id="godschurches"
+          siteUrl={url}
+          showSiteQr={showQr}
+        />
         <div className="flex flex-wrap gap-3">
           {!user && (
             <>

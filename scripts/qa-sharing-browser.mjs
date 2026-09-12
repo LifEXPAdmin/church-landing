@@ -346,6 +346,62 @@ try {
   ok(
     "App-level downloaded QR PNG independently decodes to canonical public entry at phone width"
   );
+  for (const actor of [null, f.memberA]) {
+    await context.clearCookies();
+    if (actor) await signIn(actor);
+    for (const width of [320, 390]) {
+      await page.setViewportSize({ width, height: 844 });
+      await go("/platform/menu");
+      const shortcut = page
+        .getByRole("list", { name: "Quick sharing" })
+        .getByRole("link");
+      const rect = await shortcut.boundingBox();
+      assert.ok(
+        rect && rect.y >= 0 && rect.y + rect.height < 844,
+        "QR shortcut is visible without scrolling"
+      );
+      assert.match(await shortcut.innerText(), /Share Godschurches/);
+      await shortcut.focus();
+      assert.ok(await shortcut.evaluate((el) => el === document.activeElement));
+      await page.keyboard.press("Enter");
+      await page.waitForURL("**/platform/share?qr=1");
+      const qr = page.getByRole("region", { name: "Public link QR code" });
+      await qr.getByRole("button", { name: "Download QR PNG" }).waitFor();
+      await page.waitForFunction(
+        () =>
+          !document.querySelector(
+            'section[aria-label="Public link QR code"] button'
+          )?.disabled
+      );
+      const pixels = await qr
+        .locator("canvas")
+        .evaluate((c) => ({
+          data: Array.from(
+            c.getContext("2d").getImageData(0, 0, c.width, c.height).data
+          ),
+          width: c.width,
+          height: c.height
+        }));
+      assert.equal(
+        jsQR(new Uint8ClampedArray(pixels.data), pixels.width, pixels.height)
+          ?.data,
+        config.origin + "/platform"
+      );
+      await bounded();
+      await page.evaluate(
+        () => (document.documentElement.style.fontSize = "200%")
+      );
+      await bounded();
+      await page.goBack();
+      await page.waitForURL("**/platform/menu");
+      await bounded();
+    }
+  }
+  await context.clearCookies();
+  await page.setViewportSize({ width: 390, height: 844 });
+  ok(
+    "Menu QR shortcut visible at 320/390 signed in and out; keyboard one-tap QR decodes correctly, enlarged text and Back work"
+  );
   await go("/platform/features");
   await page.getByRole("searchbox", { name: "Search features" }).fill("photo");
   await page
@@ -406,14 +462,11 @@ try {
   })
     .png()
     .toBuffer();
-  await page
-    .locator("input[type=file]")
-    .first()
-    .setInputFiles({
-      name: "fictional.png",
-      mimeType: "image/png",
-      buffer: photoBytes
-    });
+  await page.locator("input[type=file]").first().setInputFiles({
+    name: "fictional.png",
+    mimeType: "image/png",
+    buffer: photoBytes
+  });
   await page.getByRole("button", { name: "Save avatar", exact: true }).click();
   await page
     .getByRole("button", { name: "Remove avatar", exact: true })
@@ -422,14 +475,11 @@ try {
   await page
     .getByRole("button", { name: "Remove avatar", exact: true })
     .waitFor();
-  await page
-    .locator("input[type=file]")
-    .first()
-    .setInputFiles({
-      name: "fictional2.png",
-      mimeType: "image/png",
-      buffer: photoBytes
-    });
+  await page.locator("input[type=file]").first().setInputFiles({
+    name: "fictional2.png",
+    mimeType: "image/png",
+    buffer: photoBytes
+  });
   await page.getByRole("button", { name: "Discard selected photo" }).click();
   await page
     .getByRole("button", { name: "Remove avatar", exact: true })
@@ -440,9 +490,17 @@ try {
     const img = document.querySelector(".gc-post-author .gc-avatar img");
     return img?.complete && img.naturalWidth > 0;
   });
-  const photoComment = await db.platformPostComment.create({ data: { postId: post.id, authorId: f.memberA.id, content: "Fictional avatar comment" } });
+  const photoComment = await db.platformPostComment.create({
+    data: {
+      postId: post.id,
+      authorId: f.memberA.id,
+      content: "Fictional avatar comment"
+    }
+  });
   await page.reload();
-  await page.locator(`[data-comment-id="${photoComment.id}"] .gc-avatar img`).waitFor();
+  await page
+    .locator(`[data-comment-id="${photoComment.id}"] .gc-avatar img`)
+    .waitFor();
   await go("/platform/profile/me");
   await page
     .getByRole("button", { name: "Remove avatar", exact: true })

@@ -11,6 +11,7 @@ import {
   CircleHelp,
   FileText,
   LifeBuoy,
+  QrCode,
   Settings,
   Shield,
   UserRound
@@ -61,6 +62,14 @@ export default async function PlatformMenuPage() {
                 : "Look around at your own pace. Join when you want to take part."}
             </p>
           </header>
+          <ul className="gc-menu-links" aria-label="Quick sharing">
+            <MenuLink
+              href="/platform/share?qr=1"
+              title="Share Godschurches"
+              description="Open the website QR code. Copy, share or save it."
+              icon={QrCode}
+            />
+          </ul>
           {!user && (
             <div className="flex flex-wrap gap-3">
               <Link
@@ -91,12 +100,6 @@ export default async function PlatformMenuPage() {
                 title="What’s new"
                 description="Read release notes and app changes."
                 icon={FileText}
-              />
-              <MenuLink
-                href="/platform/share"
-                title="Share Godschurches"
-                description="Copy the website link or download its QR code."
-                icon={Church}
               />
               <MenuLink
                 href="/platform/feed"

@@ -199,8 +199,8 @@ export const features: Feature[] = [
     description:
       "Share the website or an eligible public post, church or event.",
     steps:
-      "Choose Share publicly on a page, or Share Godschurches in Menu. Copy, share or download a QR PNG.",
-    href: "/platform/share",
+      "Open Menu and tap Share Godschurches near the top to see the website QR immediately. Copy, share or download its PNG. Use Share publicly on individual pages.",
+    href: "/platform/share?qr=1",
     eligibility:
       "Only eligible public pages have public share links. A QR code grants no account or church permissions.",
     availability: "available"
@@ -266,6 +266,19 @@ export type ReleaseEntry = {
   featureIds: string[];
 };
 export const releases: ReleaseEntry[] = [
+  {
+    id: "menu-qr-shortcut",
+    version: "2026.09.12.2",
+    date: "2026-09-12",
+    summary: "Open the website QR straight from Menu.",
+    added: [],
+    improved: [
+      "Share Godschurches is near the top of Menu and opens the website QR in one tap.",
+      "The QR page keeps Copy, Share and PNG download available alongside the code."
+    ],
+    fixed: [],
+    featureIds: ["sharing"]
+  },
   {
     id: "community-demo",
     version: "2026.09.12.1",
