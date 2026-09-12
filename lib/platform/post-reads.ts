@@ -1,3 +1,5 @@
+import { PortalError } from "./portal";
+import { repostSourceWhere } from "./repost-policy";
 import { readableAssetWhere } from "./personal-photo-policy";
 import { socialUserWhere, socialDiscoveryWhere } from "./social-policy";
 import type { Prisma, PrismaClient } from "@prisma/client";
@@ -130,7 +132,76 @@ function project(post: PostRow, context: PostContext, now: Date) {
     }))
   };
 }
-export type PostView = ReturnType<typeof project>;
+export type OriginalPostView = ReturnType<typeof project>;
+export type PostView = OriginalPostView & {
+  repost: null | {
+    kind: "PLAIN" | "QUOTE";
+    source: OriginalPostView | null;
+    canUndo: boolean;
+  };
+};
+async function projectRows(
+  tx: PostTx,
+  rows: PostRow[],
+  context: PostContext,
+  now: Date
+): Promise<PostView[]> {
+  const ids = [
+    ...new Set(
+      rows.flatMap((row) => (row.repostSourceId ? [row.repostSourceId] : []))
+    )
+  ];
+  const sources = ids.length
+    ? await tx.platformPost.findMany({
+        where: { AND: [{ id: { in: ids } }, repostSourceWhere(context, now)] },
+        include: include(context)
+      })
+    : [];
+  // A personal source blocking the original acting account also revokes the
+  // retained reference. Never expose the underlying church publisher identity.
+  const pairs = rows.flatMap((row) => {
+    const source = sources.find((source) => source.id === row.repostSourceId);
+    return source && !source.authorChurchId && source.authorId !== row.authorId
+      ? [
+          { ownerId: source.authorId, targetUserId: row.authorId },
+          { ownerId: row.authorId, targetUserId: source.authorId }
+        ]
+      : [];
+  });
+  const blocks = pairs.length
+    ? await tx.socialRelationship.findMany({
+        where: { blocked: true, OR: pairs },
+        select: { ownerId: true, targetUserId: true }
+      })
+    : [];
+  const sourceFor = (row: PostRow) =>
+    sources.find(
+      (source) =>
+        source.id === row.repostSourceId &&
+        (source.authorChurchId ||
+          !blocks.some(
+            (block) =>
+              (block.ownerId === row.authorId &&
+                block.targetUserId === source.authorId) ||
+              (block.ownerId === source.authorId &&
+                block.targetUserId === row.authorId)
+          ))
+    );
+  return rows.map((row) => ({
+    ...project(row, context, now),
+    repost: row.repostKind
+      ? {
+          kind: row.repostKind,
+          canUndo:
+            row.repostKind === "PLAIN" &&
+            (row.authorChurchId
+              ? context.publishers.has(row.authorChurchId)
+              : row.authorId === context.actorId),
+          source: sourceFor(row) ? project(sourceFor(row)!, context, now) : null
+        }
+      : null
+  }));
+}
 export type PostQuery = {
   feed?: boolean;
   authorId?: string;
@@ -152,7 +223,14 @@ export async function listPostsIn(
   const filters: Prisma.PlatformPostWhereInput[] = [
     postReadableWhere(context, now)
   ];
-  if (query.feed || query.search) filters.push(socialDiscoveryWhere(context));
+  if (query.feed || query.search)
+    filters.push(socialDiscoveryWhere(context), {
+      OR: [
+        { repostKind: null },
+        { repostSourceId: null },
+        { repostSource: { is: socialDiscoveryWhere(context) } }
+      ]
+    });
   // Community mode broadens selection only after the audience/status boundary.
   if (query.feed && context.actorId && homeFeedMode() === "following") {
     const following = await tx.platformFollow.findMany({
@@ -226,7 +304,7 @@ export async function listPostsIn(
     orderBy: [{ publishedAt: "desc" }, { id: "desc" }],
     take: limit
   });
-  return rows.map((row) => project(row, context, now));
+  return projectRows(tx, rows, context, now);
 }
 export function listPosts(
   db: PrismaClient,
@@ -282,7 +360,7 @@ export function getPost(
         query.cursor ?? undefined
       )
     });
-    return row ? project(row, context, now) : null;
+    return row ? (await projectRows(tx, [row], context, now))[0] : null;
   });
 }
 export function getProfilePosts(
@@ -309,4 +387,32 @@ export function getProfilePosts(
     });
     return { posts, count };
   });
+}
+
+export async function getPostViewIn(
+  tx: PostTx,
+  context: PostContext,
+  id: string
+): Promise<PostView | null> {
+  const now = new Date();
+  const row = await tx.platformPost.findFirst({
+    where: { AND: [{ id }, postReadableWhere(context, now)] },
+    include: include(context)
+  });
+  return row ? (await projectRows(tx, [row], context, now))[0] : null;
+}
+
+/** Plain distribution entries reuse the original interaction and Bookmark IDs. */
+export async function postInteractionIdIn(
+  tx: PostTx,
+  context: PostContext,
+  id: string
+): Promise<string> {
+  const view = await getPostViewIn(tx, context, id);
+  if (!view) throw new PortalError(404, "Post unavailable.");
+  if (view.repost?.kind === "PLAIN") {
+    if (!view.repost.source) throw new PortalError(404, "Post unavailable.");
+    return view.repost.source.id;
+  }
+  return view.id;
 }

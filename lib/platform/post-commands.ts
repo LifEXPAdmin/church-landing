@@ -1,4 +1,9 @@
 import {
+  originalForRepost,
+  repostDestination,
+  requireRepostActor
+} from "./repost-policy";
+import {
   attachPostPhotosIn,
   validatePostPhotosIn
 } from "./post-photo-references";
@@ -148,6 +153,11 @@ export async function postCommandIn(
       400,
       "The acting account comes from your current sign-in."
     );
+  if (input.repostKind !== undefined || input.repostSourceId !== undefined)
+    throw new PortalError(
+      400,
+      "Use the supported repost action or quote draft."
+    );
   const actorId = context.actorId,
     op = input.operation,
     now = new Date();
@@ -189,6 +199,16 @@ export async function postCommandIn(
         version: prior.version,
         message: "This post was already saved."
       };
+    }
+    let quoteSourceId: string | null = null;
+    if (input.quoteSourceId) {
+      await requireRepostActor(tx, context);
+      repostDestination(context, input);
+      quoteSourceId = (
+        await originalForRepost(tx, context, input.quoteSourceId)
+      ).id;
+      if (input.scheduleLocal || input.scheduleZone)
+        throw new PortalError(400, "Quote posts cannot be scheduled.");
     }
     const eventOccurrenceId = input.eventOccurrenceId
       ? postId(input.eventOccurrenceId)
@@ -234,6 +254,8 @@ export async function postCommandIn(
           audienceChurchId
         ),
         allowReposts: boolean(input.allowReposts ?? false),
+        repostKind: quoteSourceId ? "QUOTE" : null,
+        repostSourceId: quoteSourceId,
         eventOccurrenceId,
         scheduledById: scheduled ? actorId : null,
         status: scheduled ? "SCHEDULED" : "PUBLISHED",
@@ -270,6 +292,14 @@ export async function postCommandIn(
   if (post.status === "WITHDRAWN")
     throw new PortalError(409, "This post has been withdrawn.");
   if (op === "edit") {
+    if (
+      input.quoteSourceId !== undefined &&
+      input.quoteSourceId !== post.repostSourceId
+    )
+      throw new PortalError(
+        400,
+        "A published quote keeps its original source. Start a new post to quote another source."
+      );
     if (input.photos !== undefined)
       throw new PortalError(
         400,

@@ -1,3 +1,4 @@
+import { postInteractionIdIn } from "./post-reads";
 import {
   savedPhotoReferences,
   type SavedPhotoReference
@@ -29,6 +30,7 @@ export type PrivateDraftPayload = {
   eventOccurrenceId: string | null;
   linkUrl: string;
   photos?: SavedPhotoReference[];
+  quoteSourceId?: string | null;
 };
 const draftFields = [
   "content",
@@ -41,7 +43,8 @@ const draftFields = [
   "audienceChurchId",
   "eventOccurrenceId",
   "linkUrl",
-  "photos"
+  "photos",
+  "quoteSourceId"
 ];
 function plain(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value))
@@ -103,6 +106,9 @@ export function privateDraftPayload(value: unknown): PrivateDraftPayload {
     audienceChurchId: reference(p.audienceChurchId),
     eventOccurrenceId: reference(p.eventOccurrenceId),
     linkUrl: text(p.linkUrl ?? "", 2048),
+    ...(p.quoteSourceId !== undefined
+      ? { quoteSourceId: reference(p.quoteSourceId) }
+      : {}),
     ...(p.photos !== undefined
       ? { photos: savedPhotoReferences(p.photos) }
       : {})
@@ -229,13 +235,27 @@ export function readPostWorkspace(
             ...paging
           })
         );
-      if (query.view === "saved-status")
+      if (query.view === "saved-status") {
+        const requested = postId(query.postId);
+        const entry = await tx.platformPost.findUnique({
+          where: { id: requested },
+          select: { repostKind: true }
+        });
+        const id =
+          entry?.repostKind === "PLAIN"
+            ? await postInteractionIdIn(
+                tx,
+                await postContext(tx, ownerId),
+                requested
+              )
+            : requested;
         return {
           item: await tx.savedPostItem.findFirst({
-            where: { ownerId, postId: postId(query.postId) },
+            where: { ownerId, postId: id },
             select: { id: true, version: true, collectionId: true }
           })
         };
+      }
       if (query.view !== "saved")
         throw new PortalError(
           400,
@@ -541,8 +561,12 @@ export async function postWorkspaceCommand(
         if (collectionId && op !== "remove-item")
           await ownedCollection(tx, ownerId, collectionId);
         if (op === "save-item") {
-          const id = postId(input.postId),
-            context = await postContext(tx, ownerId);
+          const context = await postContext(tx, ownerId);
+          const id = await postInteractionIdIn(
+            tx,
+            context,
+            postId(input.postId)
+          );
           if (
             !(await tx.platformPost.findFirst({
               where: { AND: [{ id }, postReadableWhere(context)] },

@@ -1,3 +1,4 @@
+import { postInteractionIdIn } from "./post-reads";
 import { removeFriendConnection } from "./friend-invitations";
 import { socialUserWhere } from "./social-policy";
 import type { PrismaClient } from "@prisma/client";
@@ -101,12 +102,15 @@ export async function communityCommand(
           : null;
         if (!post) return;
         if (operation === "like") {
-          const where = { postId_userId: { postId, userId: actorId } };
+          const targetPostId = await postInteractionIdIn(tx, context, postId);
+          const where = {
+            postId_userId: { postId: targetPostId, userId: actorId }
+          };
           if (await tx.platformPostLike.findUnique({ where }))
             await tx.platformPostLike.delete({ where });
           else
             await tx.platformPostLike.create({
-              data: { postId, userId: actorId }
+              data: { postId: targetPostId, userId: actorId }
             });
         } else if (operation === "comment") {
           const content = postField(input.content, 400, 2);

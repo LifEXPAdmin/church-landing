@@ -448,3 +448,38 @@ test("starting another post after publication retains independent unsent-work gu
   assert.equal(c.getSnapshot().externalWork.dirty, false);
   c.dispose();
 });
+
+test("quote source survives controller lost-response retry, conflict, resume and publication without changing reply permission", async () => {
+  for (const mode of ["VIEWERS", "CHURCH_MEMBERS"] as const) {
+    const f = fixture(),
+      c = f.controller;
+    await c.verify();
+    c.start();
+    c.change({
+      ...c.getSnapshot().fields,
+      content: "Quote thoughts",
+      quoteSourceId: "source-original",
+      replyAudience: mode
+    });
+    f.lose();
+    await c.save();
+    assert.equal(c.getSnapshot().retry, true);
+    await c.retry();
+    assert.equal(f.bodies[0], f.bodies[1]);
+    await c.resume("draft-1");
+    assert.equal(c.getSnapshot().fields.quoteSourceId, "source-original");
+    assert.equal(c.getSnapshot().fields.replyAudience, mode);
+    f.conflict(true);
+    c.change({ ...c.getSnapshot().fields, content: "Unsent quote changes" });
+    await c.save();
+    assert.equal(c.getSnapshot().conflict, true);
+    assert.equal(c.getSnapshot().fields.quoteSourceId, "source-original");
+    f.conflict(false);
+    await c.loadLatest();
+    c.useLatest();
+    assert.equal(c.getSnapshot().fields.quoteSourceId, "source-original");
+    await c.publish();
+    assert.equal(f.posts, 1);
+    c.dispose();
+  }
+});

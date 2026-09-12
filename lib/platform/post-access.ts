@@ -126,6 +126,7 @@ export function postReadableWhere(
 }
 export function postCanEdit(context: PostContext, post: PlatformPost) {
   return (
+    post.repostKind !== "PLAIN" &&
     post.status !== "WITHDRAWN" &&
     (post.authorChurchId
       ? context.publishers.has(post.authorChurchId)
@@ -141,6 +142,7 @@ export function postCanModerate(context: PostContext, post: PlatformPost) {
 export function postCanReply(context: PostContext, post: PlatformPost) {
   return (
     !!context.actorId &&
+    post.repostKind !== "PLAIN" &&
     !post.discussionClosed &&
     (post.replyAudience === "VIEWERS" ||
       (!!post.audienceChurchId &&

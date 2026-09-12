@@ -1000,6 +1000,11 @@ enum PostReplyAudience {
   CHURCH_MEMBERS
 }
 
+enum PostRepostKind {
+  PLAIN
+  QUOTE
+}
+
 model PlatformPost {
   id        String           @id @default(cuid())
   createdAt DateTime         @default(now())
@@ -1025,6 +1030,10 @@ model PlatformPost {
   discussionClosed Boolean @default(false)
   replyAudience PostReplyAudience @default(VIEWERS)
   allowReposts Boolean @default(false)
+  repostKind PostRepostKind?
+  repostSourceId String?
+  repostSource PlatformPost? @relation("RepostSource", fields: [repostSourceId], references: [id], onDelete: SetNull)
+  repostCopies PlatformPost[] @relation("RepostSource")
   pinUntil DateTime?
   scheduleAt DateTime?
   scheduledById String?
@@ -1049,6 +1058,7 @@ model PlatformPost {
 
   savedItems SavedPostItem[]
 
+  @@index([repostSourceId])
   @@unique([authorId, requestKey])
   @@index([authorId])
   @@index([type])

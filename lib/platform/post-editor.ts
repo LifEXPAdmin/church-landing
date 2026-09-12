@@ -111,6 +111,8 @@ export function getPostEditor(db: PrismaClient, token: unknown, id: string) {
       eventAudience: post.eventOccurrence?.event.visibility ?? null,
       discussionClosed: post.discussionClosed,
       replyAudience: post.replyAudience,
+      allowReposts: post.allowReposts,
+      repostKind: post.repostKind,
       pinUntil: post.pinUntil?.toISOString() ?? null,
       canEdit,
       canDiscuss: canEdit || canModerate,

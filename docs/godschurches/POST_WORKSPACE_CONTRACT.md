@@ -289,3 +289,8 @@ older post snapshot still requires an explicit reply choice; discard restores
 its unresolved value instead of widening permissions. Photos retain existing
 source IDs/versions, and church/event, author, audience and reply checks remain
 canonical publication checks. This visual shell adds no quote-source contract.
+
+
+## Attributed quote draft references
+
+The snapshot whitelist includes optional `quoteSourceId` using the existing private draft service. Older snapshots omit it and stay ordinary posts. Source text and media are never copied into snapshots. Save, list, read, resume, conflict recovery and exact-body retries preserve the reference and the existing reply permission. Publishing resolves the original again and rechecks public author opt-in, source access and current church publishing rights atomically; denial leaves the draft intact. See [the repost contract](REPOST_CONTRACT.md).

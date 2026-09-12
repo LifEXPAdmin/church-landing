@@ -125,6 +125,8 @@ export async function downloadAccountExport(
         replyAudience: true,
         discussionClosed: true,
         allowReposts: true,
+        repostKind: true,
+        repostSourceId: true,
         createdAt: true,
         updatedAt: true,
         type: true,

@@ -29,7 +29,8 @@ function EditPost({ post }: { post: PostEditorView }) {
         : null
     });
   const [baseAudience, setBaseAudience] = useState(post.audience),
-    [confirmation, setConfirmation] = useState(false);
+    [confirmation, setConfirmation] = useState(false),
+    [allowReposts, setAllowReposts] = useState(post.allowReposts);
   return (
     <PostActionForm
       payload={{
@@ -38,7 +39,11 @@ function EditPost({ post }: { post: PostEditorView }) {
         expectedVersion: post.version
       }}
       label="Save post changes"
-      fields={() => ({ ...draft, confirmAudienceChange: confirmation })}
+      fields={() => ({
+        ...draft,
+        allowReposts,
+        confirmAudienceChange: confirmation
+      })}
       validate={() => draftProblem(draft)}
       onLatest={(latest) => {
         setBaseAudience(latest.audience);
@@ -54,6 +59,23 @@ function EditPost({ post }: { post: PostEditorView }) {
         {post.churchName && `Shared on ${post.churchName}'s page.`}
       </p>
       <PostDraftFields draft={draft} change={setDraft} />
+      {!post.repostKind && (
+        <label className="flex min-h-11 items-start gap-2">
+          <input
+            type="checkbox"
+            checked={allowReposts}
+            onChange={(e) => setAllowReposts(e.target.checked)}
+          />
+          <span>
+            Allow people to repost this public post
+            <span className="block text-sm font-normal text-gc-muted">
+              Reposts keep your attribution. Turning this off hides the original
+              in existing reposts. Church-only or restricted event posts cannot
+              be reposted.
+            </span>
+          </span>
+        </label>
+      )}
       <label htmlFor={id} className="block font-semibold">
         Who can read this post?
       </label>

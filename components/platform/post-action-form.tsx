@@ -231,6 +231,11 @@ export function PostActionForm({
               : "Approved church members"}
             .
           </p>
+          <p>
+            Reposting:{" "}
+            {latest.allowReposts ? "Allowed for public sources" : "Not allowed"}
+            .
+          </p>
           <p>Pinned until: {latest.pinUntil ?? "Not pinned"}</p>
           <button
             type="button"

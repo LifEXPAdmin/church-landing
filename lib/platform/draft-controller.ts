@@ -57,6 +57,9 @@ export function composerPayload(f: ComposerFields): PrivateDraftPayload {
     audienceChurchId: f.audienceChurchId,
     eventOccurrenceId: f.eventOccurrenceId,
     linkUrl: f.linkUrl,
+    ...(f.quoteSourceId !== undefined
+      ? { quoteSourceId: f.quoteSourceId }
+      : {}),
     ...(f.photos !== undefined
       ? {
           photos: f.photos.map((photo) => ({

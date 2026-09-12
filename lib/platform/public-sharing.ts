@@ -1,3 +1,4 @@
+import { getPostViewIn } from "./post-reads";
 import { accountConfig } from "./account-config";
 import {
   postId,
@@ -74,6 +75,7 @@ export function publicSharePreview(
         },
         select: {
           id: true,
+          repostKind: true,
           type: true,
           content: true,
           authorChurchId: true,
@@ -82,6 +84,33 @@ export function publicSharePreview(
         }
       });
       if (!row) return fallback;
+      if (row.repostKind === "PLAIN") {
+        if (query.kind !== "post") return fallback;
+        const entry = await getPostViewIn(tx, context, row.id);
+        const source = entry?.repost?.source;
+        if (!source) return fallback;
+        const sourcePath = canonicalSharePath("post", source.id);
+        return {
+          ...fallback,
+          available: true,
+          path: sourcePath,
+          url: new URL(sourcePath, origin).href,
+          title: short(
+            `${source.type === "PRAYER" ? "A prayer" : "A public post"} from ${source.author.name}`,
+            110
+          ),
+          description:
+            source.type === "PRAYER"
+              ? "Read this public conversation on Godschurches."
+              : short(source.content, 160),
+          author: {
+            name: short(source.author.name, 100),
+            kind: source.author.churchId
+              ? ("church" as const)
+              : ("person" as const)
+          }
+        };
+      }
       let name = row.authorChurch?.name ?? row.author.name,
         kind: "person" | "church" = row.authorChurch ? "church" : "person";
       if (query.kind === "comment") {
