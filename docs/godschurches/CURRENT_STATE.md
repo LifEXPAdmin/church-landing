@@ -1,5 +1,25 @@
 # Godschurches current state
 
+## Safety choices and private relationship search — September 12, 2026
+
+Product `2026.09.12.16`, application `a5eac27559abc655658d07f8f0d598038d99c09c`,
+is live on READY deployment `dpl_96vxCDgVJLwiEyZtm1587X1WzKH6`; independent
+canonical assignment and serving identity match. Safety explains current choices;
+blocked/muted lists support private name/username search before pagination and
+neutral unavailable-account labels. Unblocking requires confirmation and preserves
+existing command, version and exact retry behavior without restoring connections.
+
+Four search and ten social service groups, twenty-two navigation/Settings/release
+tests, five Safety and four relationship browser groups, types, scoped lint and
+production build pass. Thirteen live checks at 14:48:22 UTC passed with zero
+application writes or browser errors. All 30 migration checksums and the protected
+backup/restore are verified; no migration/provider change. See
+[Safety evidence and recovery limitation](SAFETY_SETTINGS_REPORT.md).
+
+Contextual reporting and report history remain gated by their moderation
+authority. Next is the focused Data folder and export/lifecycle presentation.
+Parent integration and physical owner acceptance remain open.
+
 ## Display preview before Save — September 12, 2026
 
 Product `2026.09.12.15`, application `77f8b40cf629572f99f27ee1114aa383a22dec0b`,

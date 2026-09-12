@@ -40,9 +40,11 @@ private fixtures/environment files. All mutations are isolated fictional fixture
 
 ## Release status and remaining scope
 
-Product `2026.09.12.16` is prepared; READY deployment, canonical assignment and
-live checks remain required. The last verified live application is the Display
-release. The 14:29 preflight verified all 30 migration checksums and the protected
+Product `2026.09.12.16`, application `a5eac27559abc655658d07f8f0d598038d99c09c`,
+is live on READY deployment `dpl_96vxCDgVJLwiEyZtm1587X1WzKH6`. Independent
+canonical assignment and serving identity match. Thirteen live checks at
+14:48:22 UTC passed with zero application writes or browser errors. The 14:29
+preflight verified all 30 migration checksums and the protected
 backup/restore with zero application writes or migrations. No provider, schema
 or production account/permission change is part of this milestone.
 
