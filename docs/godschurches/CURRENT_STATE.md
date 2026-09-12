@@ -1,5 +1,26 @@
 # Godschurches current state
 
+## Display preview before Save — September 12, 2026
+
+Product `2026.09.12.15`, application `77f8b40cf629572f99f27ee1114aa383a22dec0b`,
+is live on READY deployment `dpl_Fm8mii86UtYsojZUvQfsSsHHR22c`; independent
+canonical assignment and serving identity match. Display previews theme, text and
+List/Pages before saving through the original browser cookie. Exact retry,
+confirmed discard/reset, native Back and safe-update protection remain intact.
+Device appearance and reduced motion work independently of profile presentation.
+
+Six new Display, six Settings and five photo-recovery browser groups passed,
+with twenty contract/navigation/release tests, types, lint (zero errors) and
+production build. Twelve live checks at 14:15:20 UTC passed with zero application
+writes, browser errors or runtime error rows. All 30 migration checksums and the
+protected backup/restore were verified; no migration/provider change. See
+[Display evidence](DISPLAY_SETTINGS_REPORT.md).
+
+Feed and notification capability maps document their actual service gates; no
+unsupported preference was enabled. Next is the focused language/location audit
+and supported Safety controls. Parent and owner/device acceptance remain open.
+
+
 ## Current Privacy choices — September 12, 2026
 
 Product `2026.09.12.14`, application `2bc0948c1b69c121918518b9dfb7978171199ff7`,

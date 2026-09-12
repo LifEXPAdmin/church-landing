@@ -36,7 +36,10 @@ checks do not replace physical phone or assistive-device acceptance.
 
 ## Release status
 
-Product `2026.09.12.15` is prepared. Exact READY deployment, canonical assignment
-and live read-only checks remain required before marking it live. Existing
-Privacy release remains live until that verification. No migration or production
-application-data change is part of this milestone.
+Product `2026.09.12.15`, application `77f8b40cf629572f99f27ee1114aa383a22dec0b`,
+is live on READY deployment `dpl_Fm8mii86UtYsojZUvQfsSsHHR22c`. Independent
+canonical-domain assignment and serving identity match. Twelve live checks at
+14:15:20 UTC passed with zero application writes, browser errors or scoped runtime
+error rows. The 14:09 preflight verified the protected backup/restore and all
+30 migration checksums. No migration, provider or production application-data
+change was performed. Parent and owner/device acceptance remain open.
