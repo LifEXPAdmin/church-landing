@@ -1,5 +1,22 @@
 # Godschurches current state
 
+## Church tools and identity — September 12, 2026
+
+Product `2026.09.12.7`, application `71ee8ced5f5633577d6d74be3920d9c9d243170a`,
+serves from READY deployment `dpl_AY9dWXNNoZmWLjisUkGedbUwUQqk` on the verified
+canonical domain. Current-capability links reuse profile, organization, roles,
+privileges and history; contributors see their own claim status without appointment.
+Church image managers can crop, replace and remove logos/covers through existing
+media services. Public/unlisted visibility, revoked access and provider gates hold.
+
+Two church and seven media service groups, seven church/disabled/personal browser
+groups, two release checks, types/lint/build and 118 runtime traces pass. Eight live
+checks at 07:28 UTC passed with no application writes or browser errors. Production
+remains on 29 migrations, with no content or authorization changes. See the
+[media contract](MEDIA_SHARING_CONTRACT.md). Actual church representative approval,
+content activation and physical/owner acceptance remain separate. Named albums and
+focused participation improvements continue after this verified milestone.
+
 ## Personal photo library — September 12, 2026
 
 Product `2026.09.12.6`, application `42f62219c3d9c1faabc35fcd9c70ea99c4786353`,
