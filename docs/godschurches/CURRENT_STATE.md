@@ -1,5 +1,39 @@
 # Godschurches current state
 
+## Community next steps — September 12, 2026
+
+Product `2026.09.12.9`, application `f4fdc30ab73c15a2079d768a87a5a55422ce2dd6`,
+is live from READY deployment `dpl_91PJ2T1iG6RfwfZFDVL4mxG43ArM`; its canonical
+assignment and serving identity match. Poll setup links from the composer after
+publication, preserving the private reply-permission contract. Results, local
+event times, RSVP links and volunteer capacity/actions are clearer on phones.
+Church welcome panels reuse current optional profile, follow, connection and
+member-team state. Church-specific content and appointments still require the
+legitimate claim/review/activation workflow.
+
+Six participation service groups, three actual HTTPS groups, eleven draft checks,
+three church access/welcome groups, two release checks and ten participation/
+welcome/phone browser groups passed. Types/lint/build passed (lint retains unused
+fixture-helper warnings, no errors). The final build verified 119 runtime traces,
+9,995 entries and 295 server JavaScript files. Narrow church action spacing was
+repaired and checked with doubled text at 320/390/1024px, reduced motion and
+photo-viewer keyboard/Back navigation. iPhone Safari emulation verifies Menu
+installation guidance; physical-device reports are distinct from these checks.
+
+Twelve live checks at 08:48 UTC passed with zero application mutation requests,
+browser errors or runtime error rows. The downloaded QR independently decodes to
+the canonical public entry. Production remains on 30 matching migrations; none
+were needed for this increment. The current encrypted backup and prior restore
+proof remain available. Earlier photo migrations created two derived associations
+and no user-content rows; no real account, content, role or event was created.
+The daily cleanup ran successfully at 07:35 UTC with zero due objects removed.
+
+All independent work in the selected overnight packet is complete. Prepared
+church content, actual representative/reviewer appointment and owner/device
+acceptance remain open. No external notification or form submission was sent.
+Isolated preview/database processes are stopped. See the [participation report](POST_PARTICIPATION_REPORT.md),
+[photo contract](PERSONAL_PHOTO_LIBRARY_CONTRACT.md) and [maintenance evidence](MEDIA_MAINTENANCE.md).
+
 ## Named album release — September 12, 2026
 
 Product `2026.09.12.8`, application `1b07696de1aa858940032fe2a4968e4a3a1e2375`,

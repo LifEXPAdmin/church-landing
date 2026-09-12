@@ -28,8 +28,9 @@ connections, completed optional steps, account changes, 320/390/1024px layouts
 with doubled root text and reduced motion, photo-viewer keyboard/Back behavior
 and iPhone Menu guidance. A reproduced 320px enlarged-text overflow in nested
 church tools was fixed with flatter spacing and bounded wrapping links.
-Types/lint and production builds pass. Final release identity is
-recorded in Current State after deployment. All earlier receipts below are
+Types/lint and production builds pass. Application `f4fdc30` / product `2026.09.12.9` is live in READY deployment
+`dpl_91PJ2T1iG6RfwfZFDVL4mxG43ArM`; twelve live checks at 08:48 UTC passed
+with zero application writes, browser errors or runtime error rows. All earlier receipts below are
 historical; physical-device and owner acceptance remain separate.
 
 September 10, 2026 · Participation checkpoint verified locally; not published
