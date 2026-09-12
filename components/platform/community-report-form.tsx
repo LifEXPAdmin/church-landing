@@ -150,7 +150,9 @@ export function CommunityReportForm({
     } catch (error) {
       if (seq !== generation.current) return;
       const status = error instanceof SocialClientError ? error.status : 503;
-      if ([400, 401, 403, 404, 409, 429].includes(status)) setPending(null);
+      // Identity can change after a committed response. Only the original owner
+      // can reveal and retry that retained receipt key.
+      if ([400, 403, 404, 409, 429].includes(status)) setPending(null);
       if ([403, 404, 409].includes(status)) {
         setTarget(null);
         setAvailable(false);

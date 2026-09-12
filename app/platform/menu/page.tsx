@@ -212,6 +212,13 @@ export default async function PlatformMenuPage() {
                     description="Private receipts for concerns you have submitted."
                     icon={Shield}
                   />
+                  <MenuLink
+                    href="/platform/messages/requests"
+                    prefetch={false}
+                    title="Contact requests"
+                    description="Review private requests to start an adult conversation."
+                    icon={UserRound}
+                  />
                 </>
               )}
               <MenuLink

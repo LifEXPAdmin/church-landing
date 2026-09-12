@@ -1,5 +1,46 @@
 # Adult contact implementation receipt
 
+## Request and preference interface verified locally — 12 September 2026
+
+The shared contact workspace now provides received/sent lists, private request
+receipts, a short purpose composer and recipient accept/decline or sender
+withdraw actions. It uses the verified contact service and current versions.
+The existing Settings registry owns contact preferences; Menu links to requests.
+Missing preferences remain No one, broader choices require current availability,
+and No one, decline and withdraw still work while new intake is paused.
+
+The feature reuses social transport, unsaved-work/Back protection, safe update
+blocking, compact relationship controls and selected private reporting. Unknown
+responses retain identical request bytes; conflicts retain unsent choices.
+Account replacement conceals private entries, including when detected after a
+committed response. The same verified recovery edge case is repaired in the
+existing report form. Failed preference reads do not present old saved values
+as current. Block events immediately refresh the request's available actions.
+No global request polling, duplicated permission service or dependency is added.
+
+Fresh browser acceptance passes eight enabled contact groups and five paused
+intake groups, plus eight report regression groups. Checks cover actual database
+outcomes, exact retries, stale preferences, account replacement before/after
+commit, decisions/expiry, block/report, Back/discard, Retry-After and failed reads.
+Screenshots cover 320/390/1440 widths and dark appearance with largest text and
+keyboard entry; page errors are zero. Closed Menu and Settings make zero contact
+requests and do not load the contact workspace chunk. These are isolated desktop
+browser checks, not new physical-phone results. The first paused test used a
+Playwright disabled-state assertion that did not recognize an option; checking
+the native option's disabled property and rerunning verifies the actual control.
+
+Twenty-two navigation/settings contract tests, types, scoped lint and the
+production build pass. Runtime tracing passes 127 traces, 10,827 entries and 320
+server JavaScript files with no private fixture/environment or Prisma loader
+paths. No speed improvement is claimed. The service's 47 focused and eight HTTPS
+checks remain the foundation receipt below; the complete release gate is pending.
+
+This interface is local only. Profile Message/resume entry, persistent text
+history, in-app indicators and integrated publication remain next. Production
+still serves reporting version `2026.09.12.24` / `e710170`, with 33 migrations;
+the contact migration has not run there. Common real reviewer/retention/erasure
+requirements and separate parent/owner acceptance remain open.
+
 ## Service foundation verified locally — 12 September 2026
 
 The contact-request service implements the

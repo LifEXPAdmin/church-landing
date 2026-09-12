@@ -294,6 +294,52 @@ try {
     );
 
     await resetBudget();
+    const switched = await newPost();
+    await form("POST", switched.id);
+    await ready();
+    await fill("SPAM", "Private response owner changed");
+    let replaceOwner = true;
+    await page.route("**/api/platform/community-reports", async (route) => {
+      if (route.request().method() === "POST" && replaceOwner) {
+        replaceOwner = false;
+        const response = await route.fetch();
+        assert.equal(response.status(), 200);
+        await login(f.memberB);
+        await route.fulfill({ response });
+      } else await route.continue();
+    });
+    const switchedBefore = bodies.length;
+    await page
+      .getByRole("button", { name: "Send private report", exact: true })
+      .click();
+    await page
+      .getByText("Your sign-in changed. Reload before continuing.", {
+        exact: true
+      })
+      .waitFor();
+    assert.equal(await page.getByLabel("Report details").count(), 0);
+    await login(f.memberA);
+    await page
+      .getByRole("button", { name: "Check reporting access", exact: true })
+      .click();
+    await ready();
+    await page
+      .getByRole("button", { name: "Retry same report", exact: true })
+      .click();
+    await receipt();
+    assert.equal(bodies[switchedBefore], bodies[switchedBefore + 1]);
+    assert.equal(
+      await db.communityReport.count({
+        where: { reporterId: f.memberA.id, targetId: switched.id }
+      }),
+      1
+    );
+    await page.unroute("**/api/platform/community-reports");
+    groups.push(
+      "identity changed after a committed report conceals details and preserves the original retry key"
+    );
+
+    await resetBudget();
     const stale = await newPost(true);
     await form("POST", stale.id);
     await ready();

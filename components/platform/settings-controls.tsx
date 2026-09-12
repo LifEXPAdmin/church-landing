@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import type { SettingsContext } from "@/lib/platform/settings-context";
 import type { SettingsControl } from "@/lib/platform/settings-registry";
 import { ReadingSettings } from "./reading-preferences";
@@ -17,6 +18,9 @@ import {
   canConfirmSettings,
   SettingsCredentialHelp
 } from "./settings-security";
+const ContactWorkspace = dynamic(() =>
+  import("./contact-workspace").then((m) => m.ContactWorkspace)
+);
 
 export function SettingsControls({
   control,
@@ -31,6 +35,8 @@ export function SettingsControls({
       return <ReadingSettings allowReset />;
     case "privacy":
       return <RelationshipPrivacy owner={data.ownerId} />;
+    case "contact":
+      return <ContactWorkspace owner={data.ownerId} view="preferences" />;
     case "sessions":
       return (
         <AccountSessions

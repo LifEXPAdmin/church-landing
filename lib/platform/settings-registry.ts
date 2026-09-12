@@ -69,6 +69,7 @@ export type SettingsControl =
   | "password"
   | "reading"
   | "privacy"
+  | "contact"
   | "notifications"
   | "export"
   | "deactivate"
@@ -559,14 +560,18 @@ export const settingsRegistry: readonly SettingRegistration[] = Object.freeze([
     { capability: "future", state: "future", valueType: "information" }
   ),
   entry(
-    "future.messages",
+    "privacy.messages",
     "privacy",
-    "Direct messages",
-    "Unavailable until its contact and safety contracts are ready.",
-    [],
-    { href: "/platform/settings" },
-    linked("inactive messaging contract"),
-    { capability: "future", state: "future", valueType: "information" }
+    "Contact requests",
+    "Choose who can request an adult conversation. Acceptance and blocks still apply.",
+    ["messages", "requests", "contact", "who can message", "conversation"],
+    { control: "contact" },
+    {
+      persistenceOwner: "SocialPreferences.contactRequests",
+      read: "adult-contact.ts readAdultContact view=preferences",
+      write: "adult-contact.ts adultContactCommand operation=preferences"
+    },
+    { defaultValue: "NOBODY" }
   )
 ]);
 

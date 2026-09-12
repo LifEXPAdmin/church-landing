@@ -31,6 +31,7 @@ export function RelationshipControls({
   name,
   compact = false,
   management,
+  menuLabel,
   reportTarget
 }: {
   kind: "person" | "church";
@@ -38,6 +39,7 @@ export function RelationshipControls({
   name: string;
   compact?: boolean;
   management?: React.ReactNode;
+  menuLabel?: string;
   reportTarget?: { type: CommunityReportTarget; id: string; label: string };
 }) {
   const [open, setOpen] = useState(false),
@@ -364,7 +366,7 @@ export function RelationshipControls({
   );
   return compact ? (
     <ActionPopover
-      label={`More options for ${name}'s post`}
+      label={menuLabel ?? `More options for ${name}'s post`}
       trigger={<Ellipsis aria-hidden="true" />}
       className="gc-icon-button"
       open={open}

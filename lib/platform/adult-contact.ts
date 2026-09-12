@@ -13,6 +13,7 @@ import { withPostRead, type PostTx } from "./post-access";
 import { postField, postId } from "./post-input";
 import { expected, isEligible, PortalError } from "./portal-policy";
 import { socialCommand, socialInput } from "./social-operations";
+import type { ContactRequest, ContactView } from "./adult-contact-types";
 
 const PAGE = 30,
   DAY = 86400000;
@@ -287,7 +288,7 @@ export function readAdultContact(
   db: PrismaClient,
   token: unknown,
   query: Record<string, unknown>
-) {
+): Promise<ContactView> {
   socialInput(query, ["view", "recipientId", "id", "after"]);
   return withPostRead(db, token, async (tx, context) => {
     const ownerId = context.actorId;
@@ -373,7 +374,7 @@ export function readAdultContact(
             ).map((r) => r.followingId)
           )
         : new Set<string>();
-    const project = (row: (typeof rows)[number]) => {
+    const project = (row: (typeof rows)[number]): ContactRequest => {
       const other = row.senderId === ownerId ? row.recipient : row.sender;
       const reachable =
         isEligible(other) && !context.blockedIds?.includes(other.id);

@@ -14,6 +14,30 @@ import {
 } from "../lib/platform/account-entry";
 import { parseReadingPreferences } from "../lib/platform/reading-preferences";
 
+test("contact account return preserves only validated navigation and strips private purposes", () => {
+  for (const [input, output] of [
+    [
+      "recipientId=person-one&purpose=private&id=request-other",
+      "recipientId=person-one"
+    ],
+    ["id=request-one&senderId=other&token=secret", "id=request-one"],
+    ["view=sent&after=request-one&q=private", "view=sent&after=request-one"],
+    ["view=admin&recipientId=%2Fbad&after=%2Fbad", ""]
+  ])
+    assert.equal(
+      safeAccountReturn(`/platform/messages/requests?${input}`),
+      `/platform/messages/requests${output ? `?${output}` : ""}`
+    );
+  assert.equal(
+    safeAccountReturn("//elsewhere.test/platform/messages/requests?id=one"),
+    "/platform"
+  );
+  assert.equal(
+    safeAccountReturn("/platform/messages/unregistered?purpose=secret"),
+    "/platform"
+  );
+});
+
 test("report account return preserves only validated targets or private receipt IDs", () => {
   assert.equal(
     safeAccountReturn(

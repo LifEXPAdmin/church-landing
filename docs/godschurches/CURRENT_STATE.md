@@ -1,3 +1,14 @@
+## Adult contact request interface verified locally — 12 September 2026
+
+Received/sent requests, persisted recipient decisions and contact preferences
+now use the verified service. Eight enabled contact, five paused contact and
+eight report browser groups pass, including exact retries, account replacement,
+block/report, stale choices and failed reads. Types/lint/build and 22 navigation/
+settings checks pass. See [the local receipt](ADULT_CONTACT_REPORT.md).
+Production remains the reporting release below. Next is the prioritized
+persistent-conversation service and its profile/inbox integration; no contact
+migration, activation, parent acceptance or new phone test is claimed yet.
+
 ## Adult contact service verified locally — 12 September 2026
 
 The focused contact, conversation-membership and preference contracts are

@@ -184,11 +184,13 @@ writes; never represent them as actual reviewer or physical-phone acceptance.
 
 ## Settings integration and current gap audit
 
-The existing Settings registry, grouped navigation and Privacy projection are
-implemented and verified. `SocialPreferences` currently stores mentions and
-relationship visibility only; `future.messages` has no enabled control. There
-is no personal request/conversation/message model or service. These are actual
-gaps, not replacements for completed behavior.
+The initial gap audit found no personal request/conversation/message service;
+the Settings registry held an unavailable `future.messages` row. The verified
+service milestone now extends the existing `SocialPreferences` with a distinct
+request audience and adds canonical requests and two-person conversation
+membership. The request UI uses `privacy.messages` and the same Settings shell.
+See [the implementation receipt](ADULT_CONTACT_REPORT.md) for its current local
+and release status. Text history and in-app indicators remain the next slice.
 
 | Choice | Authority and persistence | Effective behavior |
 | --- | --- | --- |
