@@ -11,6 +11,44 @@ export type Feature = {
 };
 export const features: Feature[] = [
   {
+    id: "polls",
+    category: "Posts and conversations",
+    name: "Community polls",
+    description:
+      "Ask a question and choose one or several answers with readable vote totals.",
+    steps:
+      "Write and publish a post, then choose Add a poll from the composer. Set 2–8 choices and a closing time. Members can change their vote before closing; authorized post editors can close voting.",
+    href: "/platform",
+    eligibility:
+      "Verified adult accounts; church polls also require current church approval. Private drafts retain the post and reply permissions; poll setup happens after publication. Other members see totals, not your ballot.",
+    availability: "available"
+  },
+  {
+    id: "volunteering",
+    category: "Events and calendars",
+    name: "Volunteer roles",
+    description: "See available places and offer to help at an existing event.",
+    steps:
+      "Open an event’s volunteer post and choose I can help for an available role. Review or cancel your signup in My commitments. Event RSVP is a separate choice. Church and feed cards label times in your device’s time zone.",
+    href: "/platform/commitments",
+    eligibility:
+      "Current eligible church members and authorized organizers. Full, closed or canceled roles cannot accept new signups. No waitlist or reminder delivery is implied.",
+    availability: "available"
+  },
+  {
+    id: "church-welcome",
+    category: "Churches and community",
+    name: "Church welcome and next steps",
+    description:
+      "Find relevant ways to get to know a church and take your next step.",
+    steps:
+      "Open a church page for upcoming events, its published website and your available next steps. Optional profile and follow prompts disappear once completed; pending connection requests are acknowledged. Approved members can open ministries, teams and responsibilities.",
+    href: "/platform/churches",
+    eligibility:
+      "Actions reflect current account and church access. Following grants no membership. Community listings still require legitimate representative review before management; published program content depends on that church’s records.",
+    availability: "available"
+  },
+  {
     id: "friend-invitations",
     category: "People and churches",
     name: "Personal friend invitations",
@@ -342,6 +380,24 @@ export type ReleaseEntry = {
   featureIds: string[];
 };
 export const releases: ReleaseEntry[] = [
+  {
+    id: "community-next-steps",
+    version: "2026.09.12.9",
+    date: "2026-09-12",
+    summary: "Find poll setup, local event times and useful church next steps.",
+    added: [
+      "The composer links directly to poll setup after publishing. Readable results show vote counts, percentages and your own saved choices.",
+      "Church welcome panels offer current next steps, optional profile improvements, published website links and permitted member tools."
+    ],
+    improved: [
+      "Church and feed event cards show labeled device-local times and direct RSVP links. Volunteer roles display available places and an I can help action, with cancellation and capacity checks preserved.",
+      "Unsaved participation entries protect navigation and safe updates. Completed optional welcome steps disappear; pending membership requests are not repeated."
+    ],
+    fixed: [
+      "All-day volunteer commitments display their inclusive dates without exposing the storage end-date convention."
+    ],
+    featureIds: ["polls", "volunteering", "rsvp", "church-welcome", "drafts"]
+  },
   {
     id: "named-photo-albums",
     version: "2026.09.12.8",

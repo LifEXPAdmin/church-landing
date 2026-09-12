@@ -140,6 +140,7 @@ export function PostCard({
         )}
       </div>
       {(post.hasParticipation ||
+        !!post.eventOccurrenceId ||
         (fullDiscussion && (post.canEdit || post.canOrganize))) && (
         <PostParticipation postId={post.id} manage={fullDiscussion} />
       )}

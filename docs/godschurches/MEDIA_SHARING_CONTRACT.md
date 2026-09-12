@@ -187,3 +187,20 @@ manager access. Processed media checks cover public/unlisted reads and lifecycle
 mobile browser checks exercise both crop ratios, cancel, replacement, removal,
 exact lost-response retry, concurrent edits and revoked-access cleanup. Production
 release evidence is recorded separately after the deployment is verified.
+
+## Current-account church welcome projection — September 12, 2026
+
+The existing uncached church-tools read now projects optional introduction/photo
+steps, current follow state, own connection state and a boolean for a connection
+elsewhere. It returns no bio, other church ID or additional private member data.
+Guests receive no personalized steps. The shared client conceals and rechecks
+on account/visibility/relationship changes. Member team links still require
+current approved eligible membership, and every destination checks access again.
+
+Welcome copy uses the church's existing published website; optional steps stop
+being offered after completion. Pending connections are acknowledged and disabled
+review intake is stated. No representative, ministry record, external form
+submission or source-content publication is inferred. Prepared church-specific
+content remains subject to the normal claim/correction and approval workflow.
+Three service groups cover own-state projection, contributor/claim privacy and
+current grants/revocation; the latest release/browser evidence is in Current State.

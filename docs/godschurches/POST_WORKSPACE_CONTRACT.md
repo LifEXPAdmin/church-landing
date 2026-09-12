@@ -103,6 +103,9 @@ draft. Photo choices do not change the unresolved-legacy reply-permission rule.
 Poll, volunteer and scheduled-draft payloads are not covered by this contract.
 Those remain explicit parent acceptance/future foundation work, not silently
 saved partial snapshots. Existing published media/poll controls remain available.
+The composer explicitly offers Add a poll only after publication and links to the
+authorized published-post editor. Its explanatory step contains no unsaved poll
+question or choices; it does not expand the private snapshot whitelist.
 
 Limits: 100 active drafts, 100 active collections, 2,000 saved items per owner;
 collection names 1–80 trimmed characters. The private workspace limiter permits

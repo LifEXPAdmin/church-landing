@@ -50,10 +50,18 @@ export async function ChurchUpcoming({
           Upcoming events
         </h2>
         <p className="text-gc-muted">
-          The next 30 days, shown in UTC. Open an event for local times and
-          RSVP.
+          Upcoming events in the next 30 days. Times use your device’s time
+          zone; all-day events keep their original dates. Open an event to RSVP.
         </p>
-        <CalendarAgenda events={events.slice(0, 5)} timeZone="UTC" />
+        {events.length ? (
+          <CalendarAgenda
+            events={events.slice(0, 5)}
+            timeZone="UTC"
+            deviceLocal
+          />
+        ) : (
+          <p>No upcoming events are available to you in the next 30 days.</p>
+        )}
         <Link
           className="gc-button gc-button-quiet"
           href={`/platform/churches/${encodeURIComponent(churchId)}/calendar`}

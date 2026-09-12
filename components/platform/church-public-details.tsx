@@ -15,7 +15,9 @@ export function ChurchPublicDetails({
 }) {
   return (
     <div className="space-y-4 break-words">
-      {detail && !preview && <ChurchTools churchId={church.id} />}
+      {detail && !preview && (
+        <ChurchTools churchId={church.id} welcome={church} />
+      )}
       {detail && !preview && (
         <ChurchIdentity churchId={church.id} name={church.name} />
       )}

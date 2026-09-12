@@ -7,9 +7,72 @@ import { readChurchTools } from "../lib/platform/church-tools";
 import { readChurchImages } from "../lib/platform/church-images";
 import { PortalError } from "../lib/platform/portal";
 import { seedManagedChurch } from "./seed-church-management";
+import { relationshipCommand } from "../lib/platform/relationships";
 const db = new PrismaClient();
 before(() => assertPortalTestDatabase(db));
 after(() => db.$disconnect());
+test("welcome steps project only the current account and distinguish following, pending membership and optional profile details", async () => {
+  const actor = await createPortalActor(db, "welcomesteps");
+  const church = await db.church.create({
+    data: {
+      slug: randomUUID(),
+      name: "Fictional welcome church",
+      communityListed: true,
+      summary: ""
+    }
+  });
+  const other = await db.church.create({
+    data: {
+      slug: randomUUID(),
+      name: "Fictional other connection",
+      communityListed: true,
+      summary: ""
+    }
+  });
+  await db.platformUser.update({
+    where: { id: actor.id },
+    data: { bio: null }
+  });
+  let view = await readChurchTools(db, actor.token, church.id);
+  assert.equal(view.welcome?.needsIntroduction, true);
+  assert.equal(view.welcome?.following, false);
+  assert.equal(view.welcome?.eligible, true);
+  assert.equal(view.welcome?.connectionState, null);
+  assert.equal((await readChurchTools(db, null, church.id)).welcome, null);
+  await relationshipCommand(db, actor.token, {
+    operation: "follow",
+    kind: "church",
+    targetId: church.id,
+    desired: true,
+    expectedVersion: 0,
+    mutationId: randomUUID()
+  });
+  await db.platformUser.update({
+    where: { id: actor.id },
+    data: { bio: "Private fixture introduction, never returned here." }
+  });
+  await db.churchConnection.create({
+    data: { userId: actor.id, churchId: church.id, state: "PENDING" }
+  });
+  view = await readChurchTools(db, actor.token, church.id);
+  assert.equal(view.welcome?.needsIntroduction, false);
+  assert.equal(view.welcome?.following, true);
+  assert.equal(view.welcome?.connectionState, "PENDING");
+  assert.equal(view.member, false);
+  assert.deepEqual(view.capabilities, []);
+  assert.doesNotMatch(JSON.stringify(view), /Private fixture introduction/);
+  const elsewhere = await readChurchTools(db, actor.token, other.id);
+  assert.equal(elsewhere.welcome?.connectedElsewhere, true);
+  assert.ok(!JSON.stringify(elsewhere.welcome).includes(church.id));
+  await db.platformUser.update({
+    where: { id: actor.id },
+    data: { adultPolicyVersion: null }
+  });
+  assert.equal(
+    (await readChurchTools(db, actor.token, church.id)).welcome?.eligible,
+    false
+  );
+});
 test("church contributors and pending claimants get only their own status, never appointment or private authority fields", async () => {
   const actor = await createPortalActor(db, "churchtools"),
     other = await createPortalActor(db, "foreignclaim");

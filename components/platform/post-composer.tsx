@@ -441,13 +441,34 @@ function ComposerDraft({
           </button>
         </section>
       )}
-      {state.postId && (
-        <Link
-          className={portalButtonClass}
-          href={`/platform/posts/${state.postId}`}
+      {!state.postId && (
+        <aside
+          className="space-y-2 rounded-xl border border-gc-divider p-4"
+          aria-label="Add a poll"
         >
-          View published post
-        </Link>
+          <h3 className="font-semibold">Ask your community with a poll</h3>
+          <p className="text-sm text-gc-muted">
+            Publish your post, then choose Add a poll below to set its question,
+            choices and closing time. Poll setup happens on the published post;
+            your private draft saves the post, without poll settings.
+          </p>
+        </aside>
+      )}
+      {state.postId && (
+        <div className="flex flex-wrap gap-3">
+          <Link
+            className={portalButtonClass}
+            href={`/platform/posts/${state.postId}`}
+          >
+            View published post
+          </Link>
+          <Link
+            className={portalButtonClass}
+            href={`/platform/posts/${state.postId}#poll-create`}
+          >
+            Add a poll
+          </Link>
+        </div>
       )}
     </form>
   );

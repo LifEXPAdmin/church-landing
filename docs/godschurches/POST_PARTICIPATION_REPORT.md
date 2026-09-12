@@ -1,5 +1,37 @@
 # Poll and volunteer participation
 
+## Phone and discovery increment — September 12, 2026
+
+The current checkout contains the previously released canonical poll, calendar,
+RSVP and volunteer services. This increment adds a direct Add a poll entry from
+the composer after publishing, opening the existing authorized post editor.
+Poll settings remain outside private draft snapshots; the post's reply-audience,
+version and retry contract is unchanged. Results show counts, the current member's
+saved choices and percentages per voter, including explicit multiple-choice copy.
+Unsaved participation entries now use the shared navigation/update work guard.
+
+Church upcoming and linked-post event cards label device-local times, preserve
+all-day source dates and link to the existing event/RSVP page. Volunteer cards
+show available capacity and I can help, with separate RSVP, existing cancellation,
+current permissions and canonical last-place behavior. No new vote, signup,
+waitlist, reminder or event-data service was introduced. Dates in commitments
+reuse the existing inclusive all-day presentation helper.
+
+Fresh evidence: six participation service groups, three actual HTTPS groups,
+eleven draft-controller checks, five phone browser groups and two release-content
+checks pass. The browser tests cover shared composer/church-sharing consent,
+member-only replies, interrupted committed votes/retry/change, multiple-choice
+results, closing, guest/private church access, local times, the final volunteer
+place, cancellation and no implicit RSVP. Phone layouts fit 320/390px with zero
+browser errors. Five additional welcome/phone groups cover guest/member/pending
+connections, completed optional steps, account changes, 320/390/1024px layouts
+with doubled root text and reduced motion, photo-viewer keyboard/Back behavior
+and iPhone Menu guidance. A reproduced 320px enlarged-text overflow in nested
+church tools was fixed with flatter spacing and bounded wrapping links.
+Types/lint and production builds pass. Final release identity is
+recorded in Current State after deployment. All earlier receipts below are
+historical; physical-device and owner acceptance remain separate.
+
 September 10, 2026 · Participation checkpoint verified locally; not published
 
 The `codex/post-participation` branch continues the verified publishing foundation

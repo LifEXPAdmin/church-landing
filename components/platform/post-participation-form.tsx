@@ -13,6 +13,9 @@ import type { ParticipationView } from "@/lib/platform/post-participation-reads"
 import type { getCalendarCommitments } from "@/lib/platform/calendar-reads";
 import { accountEntryHref } from "@/lib/platform/account-entry";
 import { portalInputClass, portalButtonClass } from "./portal-action-form";
+import { useUnsavedSocialWork } from "./use-unsaved-social-work";
+import { LocalEventTime } from "./local-event-time";
+import { eventWhen } from "@/lib/platform/calendar-view";
 
 function ParticipationForm({
   payload,
@@ -42,6 +45,16 @@ function ParticipationForm({
   useEffect(() => {
     if (result) resultRef.current?.focus();
   }, [result]);
+  useUnsavedSocialWork(
+    { dirty, saving: pending || refreshing, conflict: false },
+    () =>
+      setResult({
+        message:
+          "Save or discard your participation entries before leaving or updating this tab.",
+        failed: true
+      }),
+    true
+  );
   return (
     <form
       className="space-y-3"
@@ -130,6 +143,20 @@ function ParticipationForm({
           Add another role
         </button>
       )}
+      {dirty && !pending && !refreshing && (
+        <button
+          type="button"
+          className={portalButtonClass}
+          onClick={(e) => {
+            e.currentTarget.form?.reset();
+            setDirty(false);
+            setResult(null);
+            refresh(() => router.refresh());
+          }}
+        >
+          Discard entries and check saved state
+        </button>
+      )}
     </form>
   );
 }
@@ -169,18 +196,10 @@ function EventTime({
   event: NonNullable<ParticipationView["event"]>;
   timeZone?: string;
 }) {
-  const time = (value: string) =>
-    new Intl.DateTimeFormat("en-US", {
-      dateStyle: "medium",
-      timeStyle: "short",
-      timeZone
-    }).format(new Date(value));
   return (
     <p className="text-sm text-gc-muted">
-      {event.allDay
-        ? `${event.startLocal} through ${event.endLocal} (end date exclusive)`
-        : `${time(event.startAt)} – ${time(event.endAt)}`}{" "}
-      · {timeZone}
+      {eventWhen(event, timeZone)}
+      {!event.allDay && ` · ${timeZone}`}
       {event.organizer && ` · Organized by ${event.organizer}`}
     </p>
   );
@@ -260,6 +279,39 @@ function Roster({ slotId }: { slotId: string }) {
     </div>
   );
 }
+function PollResult({
+  option,
+  total,
+  selected
+}: {
+  option: { label: string; count: number };
+  total: number;
+  selected: boolean;
+}) {
+  const percent = total ? Math.round((option.count / total) * 100) : 0;
+  return (
+    <span className="block min-w-0 flex-1 space-y-2 [overflow-wrap:anywhere]">
+      <span className="block font-semibold">
+        {option.label}
+        {selected && (
+          <span className="ml-2 text-sm text-gc-action">Your vote</span>
+        )}
+      </span>
+      <span className="block text-sm text-gc-muted">
+        {option.count} vote{option.count === 1 ? "" : "s"} · {percent}%
+      </span>
+      <span
+        aria-hidden="true"
+        className="block h-2 overflow-hidden rounded-full bg-gc-canvas"
+      >
+        <span
+          className="block h-full rounded-full bg-gc-action"
+          style={{ width: `${percent}%` }}
+        />
+      </span>
+    </span>
+  );
+}
 function ConfigurePoll({
   view,
   defaultClose
@@ -269,8 +321,26 @@ function ConfigurePoll({
 }) {
   const poll = view.poll,
     id = useId();
+  const details = useRef<HTMLDetailsElement>(null);
+  useEffect(() => {
+    const open = () => {
+      if (!poll && location.hash === "#poll-create" && details.current) {
+        details.current.open = true;
+        details.current
+          .querySelector<HTMLInputElement>('input[name="question"]')
+          ?.focus();
+      }
+    };
+    open();
+    window.addEventListener("hashchange", open);
+    return () => window.removeEventListener("hashchange", open);
+  }, [poll]);
   return (
-    <details className="space-y-3">
+    <details
+      ref={details}
+      id={!poll ? "poll-create" : undefined}
+      className="scroll-mt-24 space-y-3"
+    >
       <summary className="cursor-pointer py-3 font-semibold">
         {poll ? "Edit poll" : "Add a poll"}
       </summary>
@@ -440,17 +510,20 @@ export function PostParticipationControls({
                 {poll.options.map((o) => (
                   <label
                     key={o.id}
-                    className="flex min-h-11 items-center gap-3 py-2"
+                    className="flex min-h-11 items-center gap-3 rounded-lg border border-gc-divider p-3"
                   >
                     <input
                       type={poll.multiple ? "checkbox" : "radio"}
                       name="optionIds"
                       value={o.id}
                       defaultChecked={poll.ballot?.optionIds.includes(o.id)}
+                      className="h-6 w-6 shrink-0 accent-gc-action"
                     />
-                    <span>
-                      {o.label} — {o.count}
-                    </span>
+                    <PollResult
+                      option={o}
+                      total={poll.total}
+                      selected={!!poll.ballot?.optionIds.includes(o.id)}
+                    />
                   </label>
                 ))}
               </fieldset>
@@ -463,10 +536,23 @@ export function PostParticipationControls({
             <ul className="space-y-2">
               {poll.options.map((o) => (
                 <li key={o.id}>
-                  {o.label} — {o.count}
+                  <PollResult
+                    option={o}
+                    total={poll.total}
+                    selected={!!poll.ballot?.optionIds.includes(o.id)}
+                  />
                 </li>
               ))}
             </ul>
+          )}
+          {!poll.total && (
+            <p className="text-sm text-gc-muted">No votes yet.</p>
+          )}
+          {poll.multiple && poll.total > 0 && (
+            <p className="text-sm text-gc-muted">
+              Percentages show the share of voters choosing each option and may
+              add up to more than 100%.
+            </p>
           )}
           {manage && view.canEdit && !poll.closed && (
             <ParticipationForm
@@ -502,10 +588,33 @@ export function PostParticipationControls({
           )}
         </p>
       )}
+      {view.event && (
+        <section
+          aria-label="Linked event"
+          className="space-y-2 rounded-xl bg-gc-canvas p-4"
+        >
+          <h3 className="font-semibold">{view.event.title}</h3>
+          <LocalEventTime event={view.event} rsvp />
+          {view.event.organizer && (
+            <p className="text-sm text-gc-muted">
+              Organized by {view.event.organizer}
+            </p>
+          )}
+          {view.event.canceled && (
+            <p role="status">
+              This event is canceled. No new RSVPs or volunteer places are
+              available.
+            </p>
+          )}
+        </section>
+      )}
       {view.slots.length > 0 && view.event && (
         <section className="space-y-4" aria-label="Volunteer roles">
           <h3 className="font-semibold">Volunteer for {view.event.title}</h3>
-          <EventTime event={view.event} />
+          <p className="text-sm text-gc-muted">
+            Choose a role to help. A volunteer signup is separate from your
+            event RSVP.
+          </p>
           {view.event.canceled && (
             <p role="status">
               This event is canceled. No new places can be reserved.
@@ -545,9 +654,7 @@ export function PostParticipationControls({
               ) : view.eligible && view.active && !slot.closed ? (
                 <ParticipationForm
                   label={
-                    slot.filled >= slot.capacity
-                      ? "Role full"
-                      : "Reserve a place"
+                    slot.filled >= slot.capacity ? "Role full" : "I can help"
                   }
                   disabled={slot.filled >= slot.capacity}
                   payload={{
@@ -576,7 +683,11 @@ export function PostParticipationControls({
         </section>
       )}
       {manage && view.canEdit && (!poll || (!poll.locked && !poll.closed)) && (
-        <ConfigurePoll view={view} defaultClose={defaultClose} />
+        <ConfigurePoll
+          key={poll?.version ?? 0}
+          view={view}
+          defaultClose={defaultClose}
+        />
       )}
       {manage && view.canOrganize && view.active && view.slots.length < 12 && (
         <ConfigureSlot view={view} requestKey={requestKey} />

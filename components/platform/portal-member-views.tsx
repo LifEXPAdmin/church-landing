@@ -109,7 +109,7 @@ function ChurchConnection({
   );
   const eligible = snapshot.viewer.verified && snapshot.viewer.adult;
   return (
-    <div className="space-y-4">
+    <div id="church-connection" className="scroll-mt-24 space-y-4">
       <Link
         href={`${churchPath(church.id)}/calendar`}
         className={portalLinkClass}
@@ -236,7 +236,10 @@ export function PortalDiscover({
           </Link>
         </>
       )}
-      <div className="mb-6">
+      <div
+        id={detail ? "church-eligibility" : undefined}
+        className="mb-6 scroll-mt-24"
+      >
         <PortalEligibility snapshot={snapshot} />
       </div>
       {(detail || snapshot.discovery?.continued) && (
@@ -247,11 +250,16 @@ export function PortalDiscover({
       <div className={detail ? "grid gap-5" : "grid gap-5 md:grid-cols-2"}>
         {churches.map((church) => (
           <PortalCard key={church.id} title={church.name}>
-            <RelationshipControls
-              kind="church"
-              targetId={church.id}
-              name={church.name}
-            />
+            <div
+              id={detail ? "church-relationships" : undefined}
+              className="scroll-mt-24"
+            >
+              <RelationshipControls
+                kind="church"
+                targetId={church.id}
+                name={church.name}
+              />
+            </div>
             <PublicShareControls kind="church" id={church.id} />
             <ChurchPublicDetails church={church} detail={detail} />
             {detail ? (
@@ -338,11 +346,16 @@ export function PortalPublicDiscover({
       <div className={churchId ? "grid gap-5" : "grid gap-5 md:grid-cols-2"}>
         {visible.map((church) => (
           <PortalCard key={church.id} title={church.name}>
-            <RelationshipControls
-              kind="church"
-              targetId={church.id}
-              name={church.name}
-            />
+            <div
+              id={churchId ? "church-relationships" : undefined}
+              className="scroll-mt-24"
+            >
+              <RelationshipControls
+                kind="church"
+                targetId={church.id}
+                name={church.name}
+              />
+            </div>
             <PublicShareControls kind="church" id={church.id} />
             <ChurchPublicDetails church={church} detail={!!churchId} />
             {churchId && (

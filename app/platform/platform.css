@@ -430,6 +430,11 @@
   width: 18px;
   height: 18px;
 }
+.gc-church-tools a {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
 .gc-button:hover {
   background: var(--gc-hover);
   color: var(--gc-on-action);

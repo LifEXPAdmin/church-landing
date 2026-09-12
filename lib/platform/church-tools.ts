@@ -3,6 +3,9 @@ import { withPostRead, postId } from "./post-access";
 import { imageTarget, readableImageTarget } from "./media-access";
 import { effectiveChurchGrants } from "./church-permissions";
 import { claimReviewEnabled } from "./church-claims";
+import { isEligible } from "./portal";
+import { listImagesIn } from "./media";
+import { imagesAvailable } from "./media-storage";
 
 /** Navigation projects existing permissions; it never appoints a contributor. */
 export function readChurchTools(db: PrismaClient, token: unknown, id: unknown) {
@@ -46,6 +49,41 @@ export function readChurchTools(db: PrismaClient, token: unknown, id: unknown) {
           select: { id: true }
         })
       : null;
+    const profile = ownerId
+      ? await tx.platformUser.findUnique({
+          where: { id: ownerId },
+          select: {
+            bio: true,
+            emailVerifiedAt: true,
+            adultAcknowledgedAt: true,
+            adultPolicyVersion: true,
+            suspendedAt: true,
+            deactivatedAt: true
+          }
+        })
+      : null;
+    const connection = ownerId
+      ? await tx.churchConnection.findUnique({
+          where: { userId_churchId: { userId: ownerId, churchId } },
+          select: { state: true }
+        })
+      : null;
+    const elsewhere = ownerId
+      ? await tx.churchConnection.findFirst({
+          where: {
+            userId: ownerId,
+            churchId: { not: churchId },
+            state: { in: ["APPROVED", "PENDING"] }
+          },
+          select: { id: true }
+        })
+      : null;
+    const following = ownerId
+      ? await tx.socialRelationship.findUnique({
+          where: { ownerId_churchId: { ownerId, churchId } },
+          select: { followingChurch: true }
+        })
+      : null;
     return {
       churchId,
       ownerId,
@@ -56,7 +94,21 @@ export function readChurchTools(db: PrismaClient, token: unknown, id: unknown) {
         ? { id: claim.id, status: claim.status, activated: !!claim.activatedAt }
         : null,
       profileClaimId: profileClaim?.id ?? null,
-      reviewEnabled: claimReviewEnabled()
+      reviewEnabled: claimReviewEnabled(),
+      welcome:
+        ownerId && profile
+          ? {
+              eligible: isEligible(profile),
+              needsIntroduction: !profile.bio?.trim(),
+              needsPhoto:
+                imagesAvailable() &&
+                !(await listImagesIn(tx, context, "PROFILE_AVATAR", ownerId))
+                  .length,
+              following: !!following?.followingChurch,
+              connectionState: connection?.state ?? null,
+              connectedElsewhere: !!elsewhere
+            }
+          : null
     };
   });
 }

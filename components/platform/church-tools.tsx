@@ -4,7 +4,15 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { socialRequest } from "@/lib/platform/social-client";
 import { claimStatusLabels } from "@/lib/platform/church-claim-data";
 import type { ChurchToolsView } from "@/lib/platform/church-tools";
-export function ChurchTools({ churchId }: { churchId: string }) {
+import type { ChurchSummary } from "@/lib/platform/portal-types";
+import { ChurchWelcome } from "./church-welcome";
+export function ChurchTools({
+  churchId,
+  welcome
+}: {
+  churchId: string;
+  welcome?: ChurchSummary;
+}) {
   const [data, setData] = useState<ChurchToolsView | null>(null),
     [message, setMessage] = useState("");
   const generation = useRef(0);
@@ -42,16 +50,18 @@ export function ChurchTools({ churchId }: { churchId: string }) {
     window.addEventListener("blur", hide);
     window.addEventListener("focus", refresh);
     window.addEventListener("online", refresh);
+    window.addEventListener("social-relationships-changed", refresh);
     document.addEventListener("visibilitychange", visibility);
     return () => {
       invalidate();
       window.removeEventListener("blur", hide);
       window.removeEventListener("focus", refresh);
       window.removeEventListener("online", refresh);
+      window.removeEventListener("social-relationships-changed", refresh);
       document.removeEventListener("visibilitychange", visibility);
     };
   }, [load, invalidate]);
-  if (!data?.ownerId && !message) return null;
+  if (!data?.ownerId && !message && !(data && welcome)) return null;
   const root = `/platform/churches/${encodeURIComponent(churchId)}`,
     caps = data?.capabilities ?? [];
   const structure = caps.includes("MANAGE_STRUCTURE"),
@@ -61,9 +71,10 @@ export function ChurchTools({ churchId }: { churchId: string }) {
   return (
     <section
       id="church-tools"
-      className="space-y-3 rounded-xl border border-gc-divider p-4"
+      className={`gc-church-tools space-y-3 ${welcome ? "" : "rounded-xl border border-gc-divider p-4"}`}
       aria-label="Your church tools"
     >
+      {welcome && data && <ChurchWelcome church={welcome} data={data} />}
       {message && (
         <>
           <p role="status">{message}</p>
@@ -201,7 +212,8 @@ export function ChurchTools({ churchId }: { churchId: string }) {
               {data.claim.activated && !caps.length && (
                 <p className="text-sm text-gc-muted">
                   This request does not currently provide management access.
-                  Check your membership and the request&apos;s current permissions.
+                  Check your membership and the request&apos;s current
+                  permissions.
                 </p>
               )}
             </div>

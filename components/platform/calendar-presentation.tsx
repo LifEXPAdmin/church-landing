@@ -16,6 +16,7 @@ import {
 } from "./calendar-form";
 import { PortalEmpty, portalLinkClass } from "./portal-ui";
 import { portalInputClass, portalButtonClass } from "./portal-action-form";
+import { LocalEventTime } from "./local-event-time";
 
 export type CalendarSummary = Awaited<
   ReturnType<typeof getCalendars>
@@ -181,11 +182,13 @@ export function CalendarRange({
 export function CalendarAgenda({
   events,
   timeZone,
-  commitments = false
+  commitments = false,
+  deviceLocal = false
 }: {
   events: (CalendarEvent | Commitment)[];
   timeZone: string;
   commitments?: boolean;
+  deviceLocal?: boolean;
 }) {
   if (!events.length)
     return (
@@ -217,7 +220,11 @@ export function CalendarAgenda({
               {event.title}
             </Link>
           </h3>
-          <p>{eventWhen(event, timeZone)}</p>
+          {deviceLocal ? (
+            <LocalEventTime event={event} rsvp />
+          ) : (
+            <p>{eventWhen(event, timeZone)}</p>
+          )}
           {event.canceled && (
             <p className="font-semibold text-gc-error">
               Canceled · no new RSVPs
