@@ -1,5 +1,26 @@
 # Godschurches current state
 
+## Searchable Settings — September 12, 2026
+
+Product `2026.09.12.10`, application `59c520bcc0904718a38182334edf48fc689194df`,
+is live from READY deployment `dpl_6SFfSMrdA4GuX9YJLszaBTjGCSEd`, with independent
+canonical and serving identity verification. Grouped folders, approved synonym
+search and detail routes reuse existing account, privacy, directory, reading and
+church controls. Back retains query/scroll; retries, conflict review, discard and
+display-only reset preserve confirmed and unsaved choices. Current access refresh
+conceals stale controls and retains edits through a transient read failure.
+
+Six isolated browser groups, three private-context groups, 13 focused unit groups
+and 23 draft/navigation regressions passed. Types/build passed; lint has no errors
+and 37 existing fixture-helper warnings. Fresh encrypted backup/restore preserved
+75 tables and 30 migration checksums; no migration or production data change.
+Nine live checks at 12:25:51 UTC passed with zero application writes or browser
+errors, and no scoped runtime errors. See [Settings report](SETTINGS_REPORT.md).
+
+The next focused increment audits existing account/session controls in these
+folders and implements only missing presentation/navigation. Church appointments,
+owner/device acceptance and parent integration remain open.
+
 ## Community next steps — September 12, 2026
 
 Product `2026.09.12.9`, application `f4fdc30ab73c15a2079d768a87a5a55422ce2dd6`,

@@ -1,6 +1,6 @@
 # Searchable Settings
 
-## September 12, 2026 candidate
+## Published — September 12, 2026
 
 Product `2026.09.12.10` adds a grouped Settings home, account summary, folder and
 detail routes, approved synonym search, and desktop folder navigation. Existing
@@ -42,6 +42,14 @@ Verification actually run:
   fingerprints through a no-op migration rehearsal. Plaintext restore files were
   removed. No production data or permission was changed.
 
-The candidate is verified locally; publication and canonical serving identity are
-pending. No schema, dependency, provider, policy or real account/content mutation
-is required. Parent integration and owner/device acceptance remain separate.
+Application `59c520bcc0904718a38182334edf48fc689194df` is live from READY
+deployment `dpl_6SFfSMrdA4GuX9YJLszaBTjGCSEd`. The canonical domain independently
+matches this deployment and its serving product/build identity. Nine live checks
+passed at 12:25:51 UTC with zero application writes or browser errors; a scoped
+runtime query returned no error rows. Public notes, guide, Menu version, deep-link
+sign-in returns and private API guards passed. The live checker corrected two
+initial expectations to the actual feature name and existing draft route.
+
+The deployed build verified 121 runtime traces, 10,198 entries and 299 server
+JavaScript files. No schema, dependency, provider, policy or real account/content
+mutation occurred. Parent integration and owner/device acceptance remain separate.
