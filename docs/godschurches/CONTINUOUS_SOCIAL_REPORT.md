@@ -243,3 +243,19 @@ follow-up. The isolated signup test was extended through explicit adult
 eligibility, a pending church request with no directory grant, and installation
 help. It passed. This does not establish the missing real church content,
 physical-phone rehearsal or production photo-maintenance acceptance.
+
+Final application follow-up `a1c4f02a8a27b02f81c8c13d6398d88041db1e20` reached
+READY as `dpl_EdARDtV4wChaxBRSLgKrbsRPbk2b` and canonical assignment was verified.
+At 02:24 UTC, all nine live demo checks passed again, including the actual QR PNG,
+version/build/notes agreement, retained notes, truthful photo availability,
+Menu/Help/About links and 320px layout. Browser/mutation/error-log counts were
+zero. Visual review confirmed separate readable search labels and update controls.
+The same product release includes this layout fix; the API always records its
+actual serving SHA. No additional broad test suite or migration was needed for
+this spacing-only follow-up.
+
+Private Notion/Todoist receipts distinguish the completed interface slices from
+the still-open church-content, photo-maintenance and physical/owner rehearsal
+requirements. The canonical private workflow also records release-content
+maintenance. The session's independently decoded QR and prepared three-minute
+walkthrough are retained in the private handoff. No owner message was sent.

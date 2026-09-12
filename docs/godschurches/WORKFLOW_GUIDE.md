@@ -243,7 +243,8 @@ links to the maintained feature inventory. The initial documented baseline maps
 to application build `5502f7dbd1dcfd8d563bc0b23c20e7ca976751d3`; no earlier version
 history is inferred. The serving release endpoint pairs the product version with
 its actual immutable application SHA. Record that pair in the verified deployment
-receipt. A loaded layout captures its own pair once; detection never relabels it.
+receipt. Internal fixes within the same release may retain the product version;
+the exact serving SHA still distinguishes each build. A loaded layout captures its own pair once; detection never relabels it.
 
 Run `node --import ./tests/register.mjs --test tests/release-content.test.ts`
 with the project's supported Node runtime. Review new feature claims against

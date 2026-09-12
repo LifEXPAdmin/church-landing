@@ -2,19 +2,27 @@
 
 ## Current continuous interface session — September 12, 2026
 
-Application `5b892ad36142a581dfe968f58630708655e3f91e` is live in READY deployment
-`dpl_64KF5xHU8RrJF96bURsYnHuirfyL` on godschurches.com as product version
-`2026.09.12.1`. Installation, comments, relationships, Saved, typed search,
-public sharing/QR, church upcoming events, release notes and the feature guide
-are published. At 02:18 UTC, 33 read-only live checks passed with zero writes,
-browser errors or deployment error rows. All 27 migration checksums match;
-zero migrations were applied. A small phone-layout follow-up is local.
+Latest verified application: `a1c4f02a8a27b02f81c8c13d6398d88041db1e20`, READY
+deployment `dpl_EdARDtV4wChaxBRSLgKrbsRPbk2b`, canonical godschurches.com,
+product version `2026.09.12.1`. The 02:24 UTC receipt includes nine read-only demo
+checks and visual review of the corrected 320px layout, zero writes/browser
+errors/runtime error rows. The feature release `5b892ad` also passed 33 live
+checks. All 27 migration checksums match; none were applied.
 
-Personal photo UI/authorized avatars are verified in isolation; public uploads
-remain disabled until the required cleanup worker is deployed. Private storage
-connectivity and test-object cleanup passed. The approved demo church record and
-content were not found in public search. Physical rehearsal and owner acceptance
-remain open. See [continuous evidence](CONTINUOUS_SOCIAL_REPORT.md).
+This continuous session completed installation help, comment/recovery/reader
+interfaces, relationship/privacy/library controls, Saved collections, typed
+search/filters/history, public Copy/Share/QR, the website QR/signup flow, app
+versions, retained notes, safe What's new, the feature guide and release-content
+maintenance. The church overview now reuses current-access upcoming events.
+
+Photo editor/post/comment avatars are verified in isolation. Private Blob
+connectivity passed, but public uploads remain disabled until the required
+cleanup worker is deployed. The approved demo church record/content was not
+found in public search. These operational/content prerequisites, the physical
+rehearsal, parent integration and owner acceptance remain open. The next focused
+engineering task is the existing image-maintenance gate at High reasoning;
+owner-supplied church content can proceed independently. See
+[continuous evidence](CONTINUOUS_SOCIAL_REPORT.md).
 Earlier sections below describe historical release checkpoints.
 
 ## Installation and comment interface release — September 12, 2026
