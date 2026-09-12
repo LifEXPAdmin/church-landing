@@ -14,6 +14,7 @@ import {
 
 import { CommentComposer } from "./comment-composer";
 import { CommentActions } from "./comment-actions";
+import { reportEntryHref } from "@/lib/platform/community-report-types";
 import { useUnsavedSocialWork } from "./use-unsaved-social-work";
 
 export function CommentThread({
@@ -270,77 +271,81 @@ export function CommentThread({
               <time className="text-sm text-gc-muted" dateTime={row.createdAt}>
                 {new Date(row.createdAt).toLocaleDateString()}
               </time>
-              {owner &&
-                (row.canEdit ||
-                  row.canDelete ||
-                  (!row.rootId && data?.canPin)) && (
-                  <span className="ml-auto self-start">
-                    <MoreActions
-                      label={`More comment options for ${row.author?.name ?? "this comment"}`}
+              {owner && (
+                <span className="ml-auto self-start">
+                  <MoreActions
+                    label={`More comment options for ${row.author?.name ?? "this comment"}`}
+                  >
+                    <Link
+                      prefetch={false}
+                      className="gc-button gc-button-quiet"
+                      href={reportEntryHref("COMMENT", row.id)}
                     >
-                      {row.canEdit && (
-                        <button
-                          type="button"
-                          className="gc-button gc-button-quiet"
-                          disabled={!!editing}
-                          onClick={() => setEditing(row)}
-                        >
-                          Edit
-                        </button>
-                      )}
-                      {row.canDelete && (
-                        <button
-                          type="button"
-                          className="gc-button gc-button-quiet"
-                          disabled={!!mutation}
-                          onClick={() => {
-                            if (
-                              window.confirm(
-                                "Delete this comment? Replies may remain beneath an unavailable comment."
-                              )
+                      Report this comment
+                    </Link>
+                    {row.canEdit && (
+                      <button
+                        type="button"
+                        className="gc-button gc-button-quiet"
+                        disabled={!!editing}
+                        onClick={() => setEditing(row)}
+                      >
+                        Edit
+                      </button>
+                    )}
+                    {row.canDelete && (
+                      <button
+                        type="button"
+                        className="gc-button gc-button-quiet"
+                        disabled={!!mutation}
+                        onClick={() => {
+                          if (
+                            window.confirm(
+                              "Delete this comment? Replies may remain beneath an unavailable comment."
                             )
-                              void act(
-                                JSON.stringify({
-                                  operation: "delete",
-                                  mutationId: crypto.randomUUID(),
-                                  postId,
-                                  commentId: row.id,
-                                  expectedVersion: row.version
-                                }),
-                                "delete"
-                              );
-                          }}
-                        >
-                          Delete
-                        </button>
-                      )}
-                      {owner && !row.rootId && data?.canPin && (
-                        <button
-                          type="button"
-                          className="gc-button gc-button-quiet"
-                          disabled={!!mutation}
-                          onClick={() =>
+                          )
                             void act(
                               JSON.stringify({
-                                operation: "pin",
+                                operation: "delete",
                                 mutationId: crypto.randomUUID(),
                                 postId,
-                                commentId:
-                                  data.pinned?.id === row.id ? null : row.id,
-                                expectedVersion: data.pinVersion
+                                commentId: row.id,
+                                expectedVersion: row.version
                               }),
-                              "pin"
-                            )
-                          }
-                        >
-                          {data.pinned?.id === row.id
-                            ? "Unpin comment"
-                            : "Pin helpful comment"}
-                        </button>
-                      )}
-                    </MoreActions>
-                  </span>
-                )}
+                              "delete"
+                            );
+                        }}
+                      >
+                        Delete
+                      </button>
+                    )}
+                    {owner && !row.rootId && data?.canPin && (
+                      <button
+                        type="button"
+                        className="gc-button gc-button-quiet"
+                        disabled={!!mutation}
+                        onClick={() =>
+                          void act(
+                            JSON.stringify({
+                              operation: "pin",
+                              mutationId: crypto.randomUUID(),
+                              postId,
+                              commentId:
+                                data.pinned?.id === row.id ? null : row.id,
+                              expectedVersion: data.pinVersion
+                            }),
+                            "pin"
+                          )
+                        }
+                      >
+                        {data.pinned?.id === row.id
+                          ? "Unpin comment"
+                          : "Pin helpful comment"}
+                      </button>
+                    )}
+                  </MoreActions>
+                </span>
+              )}
             </div>
             {row.replyTo && (
               <p className="text-sm text-gc-muted">

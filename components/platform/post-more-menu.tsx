@@ -63,6 +63,7 @@ export function PostMoreMenu({
         targetId={targetId}
         name={name}
         management={management}
+        reportTarget={{ type: "POST", id: postId, label: "Report this post" }}
       />
     );
   if (!canEdit && !canWithdraw) return null;

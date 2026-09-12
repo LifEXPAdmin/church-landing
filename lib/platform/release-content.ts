@@ -14,6 +14,19 @@ export type Feature = {
 };
 export const features: Feature[] = [
   {
+    id: "private-reports",
+    category: "Privacy and account",
+    name: "Private reports and receipts",
+    description:
+      "Check reporting availability from a post, comment, profile or church, and revisit your own private receipts.",
+    steps:
+      "Open More, choose Report, then select a reason and optional details. If reporting is available, send once and open your private receipt. A lost response offers Retry same report. Menu > Your reports lists your own submissions.",
+    href: "/platform/reports",
+    eligibility:
+      "Verified adult accounts with current access to the item. New intake remains unavailable until reviewer operations are enabled for that scope. No report is submitted when intake is unavailable. Reporting does not automatically restrict content or accounts; church representation disputes use the existing claim review.",
+    availability: "conditional"
+  },
+  {
     id: "reposts",
     category: "Posts and conversations",
     name: "Repost and add your thoughts",
@@ -430,6 +443,23 @@ export const features: Feature[] = [
   }
 ];
 export const releases: ReleaseEntry[] = [
+  {
+    id: "private-report-forms-and-receipts",
+    version: "2026.09.12.24",
+    date: "2026-09-12",
+    summary:
+      "Contextual report forms with private receipts and honest availability.",
+    added: [
+      "Open Report from More on posts, comments, profiles and churches. Menu now includes Your reports for private receipts."
+    ],
+    improved: [
+      "Report forms retain details during conflicts and connection failures, and retry an uncertain submission without creating another report."
+    ],
+    fixed: [
+      "Reporting clearly says when intake is unavailable. New intake remains off until actual reviewer coverage and operations are established."
+    ],
+    featureIds: ["private-reports"]
+  },
   {
     id: "reliable-likes-and-lighter-loading",
     version: "2026.09.12.23",

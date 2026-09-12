@@ -172,6 +172,12 @@ try {
   await menu.focus();
   await page.keyboard.press("Tab");
   assert.equal(
+    await menu.getByRole("link", { name: "Report this post", exact: true })
+      .evaluate((el) => el === document.activeElement),
+    true
+  );
+  await page.keyboard.press("Tab");
+  assert.equal(
     await page.evaluate(() => document.activeElement.textContent.trim()),
     "Follow"
   );

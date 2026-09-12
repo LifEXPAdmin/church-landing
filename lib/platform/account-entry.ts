@@ -1,3 +1,4 @@
+import { communityReportTargets } from "./community-report-types";
 import { relationshipSearch } from "./relationship-navigation";
 import { isSettingsPath } from "./settings-registry";
 import { readerDate, readerId } from "./reader-navigation";
@@ -15,7 +16,7 @@ export function safeAccountReturn(value: unknown): string {
   const url = new URL(value, "https://return.invalid");
   if (
     url.origin !== "https://return.invalid" ||
-    !/^\/platform(?:\/(?:feed|search|share|invitations|invite\/[A-Za-z0-9_-]{43}|features|releases(?:\/[a-zA-Z0-9_-]{1,100})?|menu|drafts|comment-drafts|relationships|saved|settings(?:\/[a-z]+(?:\/[a-z]+)?)?|calendars(?:\/[a-zA-Z0-9_-]{1,100})?|commitments|events\/[a-zA-Z0-9_-]{1,100}|profile(?:\/(?:me|[a-zA-Z0-9_]{3,24}))?|posts\/[a-zA-Z0-9_-]{1,100}|church-listings(?:\/[a-zA-Z0-9_-]{1,100})?|church-claims(?:\/(?:review(?:\/[a-zA-Z0-9_-]{1,100})?|[a-zA-Z0-9_-]{1,100}))?|churches(?:\/[a-zA-Z0-9_-]{1,100}(?:\/(?:directory|review|overview|calendar|responsibilities|access|structure(?:\/[a-zA-Z0-9_-]{1,100})?|people\/[a-zA-Z0-9_-]{1,100}))?)?|my-church(?:\/sharing)?|help|support(?:\/[a-zA-Z0-9_-]{1,100})?))?\/?$/.test(
+    !/^\/platform(?:\/(?:feed|search|share|invitations|invite\/[A-Za-z0-9_-]{43}|features|releases(?:\/[a-zA-Z0-9_-]{1,100})?|menu|drafts|comment-drafts|relationships|saved|reports|settings(?:\/[a-z]+(?:\/[a-z]+)?)?|calendars(?:\/[a-zA-Z0-9_-]{1,100})?|commitments|events\/[a-zA-Z0-9_-]{1,100}|profile(?:\/(?:me|[a-zA-Z0-9_]{3,24}))?|posts\/[a-zA-Z0-9_-]{1,100}|church-listings(?:\/[a-zA-Z0-9_-]{1,100})?|church-claims(?:\/(?:review(?:\/[a-zA-Z0-9_-]{1,100})?|[a-zA-Z0-9_-]{1,100}))?|churches(?:\/[a-zA-Z0-9_-]{1,100}(?:\/(?:directory|review|overview|calendar|responsibilities|access|structure(?:\/[a-zA-Z0-9_-]{1,100})?|people\/[a-zA-Z0-9_-]{1,100}))?)?|my-church(?:\/sharing)?|help|support(?:\/[a-zA-Z0-9_-]{1,100})?))?\/?$/.test(
       url.pathname
     )
   )
@@ -50,6 +51,23 @@ export function safeAccountReturn(value: unknown): string {
     for (const key of ["collectionId", "after"]) {
       const value = readerId(url.searchParams.get(key));
       if (value) query.set(key, value);
+    }
+  }
+  if (url.pathname === "/platform/reports") {
+    const type = url.searchParams.get("targetType"),
+      target = readerId(url.searchParams.get("targetId"));
+    if (
+      type &&
+      communityReportTargets.some((value) => value === type) &&
+      target
+    ) {
+      query.set("targetType", type);
+      query.set("targetId", target);
+    } else {
+      for (const key of ["receipt", "after"]) {
+        const value = readerId(url.searchParams.get(key));
+        if (value) query.set(key, value);
+      }
     }
   }
   if (url.pathname === "/platform/relationships") {

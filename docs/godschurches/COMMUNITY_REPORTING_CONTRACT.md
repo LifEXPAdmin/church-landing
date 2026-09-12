@@ -122,6 +122,30 @@ targets and their intake UI are not implemented merely by this foundation.
 
 ## Verification and release boundary
 
+The contextual UI lives at `/platform/reports`, with validated `targetType` and
+`targetId` parameters for a new form, `receipt` for one private receipt and
+`after` for an older page of the owner's list. Account entry preserves these
+known IDs and strips report details and unsupported identity fields. More menus
+link to this route without prefetching its form or making per-card report calls.
+Menu and Safety settings provide the owner's report-history entry.
+
+Source lookups return only a current label/link in addition to the version
+metadata; that label is never saved as a copied source snapshot. The form
+rechecks its expected account before and after requests, conceals private state
+on blur, and preserves local entries when the same account returns. A changed
+account cannot see or send the earlier account's details. Stale versions and
+revoked source access keep the local text; an explicit access refresh is needed
+before sending against a new version. Private receipts also conceal on blur and
+recheck their owner before displaying refreshed data.
+
+Uncertain submissions retain their exact serialized body and mutation key for
+Retry same report. Rate rejections honor the server's Retry-After value. Back,
+links and the existing safe update notice respect unsent/pending report work.
+Discard clears only unsent browser entries. Stopping an uncertain retry requires
+an explicit warning that the report may already have been accepted, then points
+to the private receipt list; it does not retract a stored report or claim that
+the server did not receive it.
+
 The focused service suite covers source versions, all four target kinds, owner
 privacy and export, concurrency, quota expiry, exact/changed/duplicate retries,
 revoked reviewers, current scope changes, target removal and the existing claim

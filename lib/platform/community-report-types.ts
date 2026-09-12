@@ -5,6 +5,15 @@ export const communityReportTargets = [
   "CHURCH"
 ] as const;
 export type CommunityReportTarget = (typeof communityReportTargets)[number];
+export const communityReportTargetLabels = {
+  POST: "post",
+  COMMENT: "comment",
+  PROFILE: "profile",
+  CHURCH: "church representation"
+} as const;
+export function reportEntryHref(type: CommunityReportTarget, id: string) {
+  return `/platform/reports?${new URLSearchParams({ targetType: type, targetId: id })}`;
+}
 export const communityReportReasons = {
   SPAM: "Spam or misleading promotion",
   HARASSMENT: "Harassment or bullying",

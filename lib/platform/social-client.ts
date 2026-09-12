@@ -1,9 +1,11 @@
 /** Browser transport for existing social APIs. Never caches private responses. */
 export class SocialClientError extends Error {
   status: number;
-  constructor(status: number, message: string) {
+  retryAfter?: number;
+  constructor(status: number, message: string, retryAfter?: number) {
     super(message);
     this.status = status;
+    this.retryAfter = retryAfter;
   }
 }
 export async function currentSocialOwner(): Promise<string | null> {
@@ -56,7 +58,11 @@ export async function socialRequest<T>(
     throw new SocialClientError(
       response.status,
       data.message ??
-        "This action could not be confirmed. Your entries are unchanged."
+        "This action could not be confirmed. Your entries are unchanged.",
+      response.status === 429 &&
+        /^\d+$/.test(response.headers.get("retry-after") ?? "")
+        ? Number(response.headers.get("retry-after"))
+        : undefined
     );
   return { owner, data };
 }

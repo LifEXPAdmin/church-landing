@@ -60,6 +60,17 @@ export function PostCard({
             </time>
             {post.audience === "CHURCH" ? " · Church members" : ""}
           </span>
+          {!post.repost.canUndo && (
+            <PostMoreMenu
+              postId={post.id}
+              name={post.author.name}
+              kind={post.author.churchId ? "church" : "person"}
+              targetId={post.author.churchId ?? post.author.id}
+              own={currentUserId === post.author.id}
+              canEdit={false}
+              canWithdraw={false}
+            />
+          )}
           {post.repost.canUndo && (
             <RepostControl
               postId={source?.id ?? post.id}

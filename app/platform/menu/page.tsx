@@ -29,16 +29,18 @@ function MenuLink({
   href,
   title,
   description,
-  icon: Icon
+  icon: Icon,
+  prefetch
 }: {
   href: string;
   title: string;
   description: string;
   icon: typeof Church;
+  prefetch?: false;
 }) {
   return (
     <li>
-      <Link href={href} className="gc-menu-link">
+      <Link href={href} prefetch={prefetch} className="gc-menu-link">
         <Icon aria-hidden="true" />
         <span>
           <span className="gc-menu-link-title">{title}</span>
@@ -202,6 +204,13 @@ export default async function PlatformMenuPage() {
                     title="Your help requests"
                     description="Revisit your private requests and replies."
                     icon={LifeBuoy}
+                  />
+                  <MenuLink
+                    href="/platform/reports"
+                    prefetch={false}
+                    title="Your reports"
+                    description="Private receipts for concerns you have submitted."
+                    icon={Shield}
                   />
                 </>
               )}

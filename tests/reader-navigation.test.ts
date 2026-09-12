@@ -14,6 +14,29 @@ import {
 } from "../lib/platform/account-entry";
 import { parseReadingPreferences } from "../lib/platform/reading-preferences";
 
+test("report account return preserves only validated targets or private receipt IDs", () => {
+  assert.equal(
+    safeAccountReturn(
+      "/platform/reports?targetType=COMMENT&targetId=comment-one&details=secret&token=secret"
+    ),
+    "/platform/reports?targetType=COMMENT&targetId=comment-one"
+  );
+  assert.equal(
+    safeAccountReturn("/platform/reports?receipt=case-one&reporterId=someone"),
+    "/platform/reports?receipt=case-one"
+  );
+  assert.equal(
+    safeAccountReturn(
+      "/platform/reports?targetType=ADMIN&targetId=%2Felsewhere&after=%2Fbad"
+    ),
+    "/platform/reports"
+  );
+  assert.equal(
+    safeAccountReturn("//elsewhere.test/platform/reports?receipt=case-one"),
+    "/platform"
+  );
+});
+
 test("reader touch direction is literal and rejects slow, short, vertical and invalid gestures", () => {
   assert.equal(touchTurn(80, 19, 650), 1);
   assert.equal(touchTurn(-80, -19, 650), -1);

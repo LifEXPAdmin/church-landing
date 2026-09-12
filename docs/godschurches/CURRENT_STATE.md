@@ -1,10 +1,13 @@
-## Private reporting foundation — local checkpoint, 12 September 2026
+## Private reporting candidate — verified locally, 12 September 2026
 
-The canonical report/receipt and scoped review foundation is locally verified;
-intake defaults off and the new migration is isolated-only. The current live
+The canonical report/receipt and scoped review foundation and contextual UI are
+locally verified: 86 discovered test files, 543 passes, zero failures, two
+production-phase delivery skips and 18 final browser groups. The encrypted
+production-backup migration rehearsal preserves all 75 original-table column
+fingerprints. Intake defaults off and the new migration is isolated-only. The current live
 application remains the audit-repair release below. See
 [the reporting receipt](COMMUNITY_REPORTING_REPORT.md) and
-[its contract](COMMUNITY_REPORTING_CONTRACT.md) for exact checks, remaining UI,
+[its contract](COMMUNITY_REPORTING_CONTRACT.md) for exact checks,
 reviewer/retention gates and broader moderation scope.
 
 ## Social reliability and runtime repairs verified live — 12 September 2026

@@ -34,13 +34,21 @@ export function SettingsSafety() {
         <div>
           <dt className="font-semibold">Reporting a concern</dt>
           <dd>
-            Reporting from a post or reply and a personal report-history screen
-            are unavailable. For current help routes, open Help and support.
-            Blocking or muting does not submit a report.
+            Open More on a post, comment, profile or church to check reporting
+            availability. New reports require active reviewer coverage. Accepted
+            submissions have private receipts in Your reports. Blocking or
+            muting does not submit a report.
           </dd>
         </div>
       </dl>
       <div className="flex flex-wrap gap-3">
+        <Link
+          prefetch={false}
+          className="gc-button gc-button-quiet"
+          href="/platform/reports"
+        >
+          Your reports
+        </Link>
         <Link
           className="gc-button gc-button-quiet"
           href="/platform/settings/privacy/relationships"

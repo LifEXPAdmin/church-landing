@@ -26,6 +26,7 @@ type Target = {
   version: number;
   contextVersion: number;
   scopeChurchId: string | null;
+  source: { label: string; href: string };
 };
 
 function targetType(value: unknown): CommunityReportTarget {
@@ -83,6 +84,7 @@ async function targetIn(
         id,
         version: row.version,
         contextVersion: 0,
+        source: { label: "Selected post", href: `/platform/posts/${id}` },
         scopeChurchId: churchScope(row)
       }
     );
@@ -105,6 +107,7 @@ async function targetIn(
         version: true,
         post: {
           select: {
+            id: true,
             version: true,
             authorChurchId: true,
             audience: true,
@@ -119,6 +122,10 @@ async function targetIn(
         id,
         version: row.version,
         contextVersion: row.post.version,
+        source: {
+          label: "Selected comment",
+          href: `/platform/posts/${row.post.id}?comment=${id}`
+        },
         scopeChurchId: churchScope(row.post)
       }
     );
@@ -126,13 +133,18 @@ async function targetIn(
   if (type === "PROFILE") {
     const row = await tx.platformUser.findFirst({
       where: { AND: [{ id }, ...(review ? [] : [socialUserWhere(context)])] },
-      select: { presentation: { select: { version: true } } }
+      select: {
+        name: true,
+        username: true,
+        presentation: { select: { version: true } }
+      }
     });
     return (
       row && {
         type,
         id,
         version: row.presentation?.version ?? 0,
+        source: { label: row.name, href: `/platform/profile/${row.username}` },
         contextVersion: 0,
         scopeChurchId: null
       }
@@ -141,7 +153,7 @@ async function targetIn(
   if (type === "CHURCH") {
     const row = await tx.church.findUnique({
       where: { id },
-      select: { version: true, managementVersion: true }
+      select: { name: true, version: true, managementVersion: true }
     });
     return (
       row && {
@@ -149,6 +161,7 @@ async function targetIn(
         id,
         version: row.version,
         contextVersion: row.managementVersion,
+        source: { label: row.name, href: `/platform/churches/${id}` },
         scopeChurchId: null
       }
     );

@@ -12,6 +12,10 @@ import {
 import { accountEntryHref } from "@/lib/platform/account-entry";
 import { useDraftWorkspace } from "./draft-workspace-provider";
 import { useUnsavedSocialWork } from "./use-unsaved-social-work";
+import {
+  reportEntryHref,
+  type CommunityReportTarget
+} from "@/lib/platform/community-report-types";
 export type RelationshipStatus = {
   version: number;
   following: boolean;
@@ -26,13 +30,15 @@ export function RelationshipControls({
   targetId,
   name,
   compact = false,
-  management
+  management,
+  reportTarget
 }: {
   kind: "person" | "church";
   targetId: string;
   name: string;
   compact?: boolean;
   management?: React.ReactNode;
+  reportTarget?: { type: CommunityReportTarget; id: string; label: string };
 }) {
   const [open, setOpen] = useState(false),
     [owner, setOwner] = useState<string | null | undefined>(),
@@ -209,6 +215,21 @@ export function RelationshipControls({
       aria-label={`Relationship choices for ${name}`}
     >
       {management}
+      {!hidden && data && !data.blocked && (
+        <Link
+          prefetch={false}
+          className="gc-button gc-button-quiet"
+          href={reportEntryHref(
+            reportTarget?.type ?? (kind === "person" ? "PROFILE" : "CHURCH"),
+            reportTarget?.id ?? targetId
+          )}
+        >
+          {reportTarget?.label ??
+            (kind === "person"
+              ? "Report this profile"
+              : "Report church representation")}
+        </Link>
+      )}
       <p role="status">{busy ? "Checking relationship choices…" : message}</p>
       {!hidden && owner === null && (
         <Link

@@ -1,5 +1,40 @@
 # Private reporting implementation receipt
 
+## Contextual UI candidate — 12 September 2026
+
+The report page, owner receipt/history views, More links on posts/comments/
+profiles/churches, Menu and Safety links are implemented locally. Forms reuse
+the checked social transport and unsaved-work guard. Source labels are fetched
+only when opened; no body or media snapshot is copied. Exact pending bodies,
+conflicts, Retry-After, account replacement and explicit discard are handled.
+Patch notes and Explore describe reporting as conditional, with new intake off
+until reviewer operations are ready.
+
+Seven enabled browser groups passed on the final local production build: contextual
+targets/optional details/actual receipts, lost responses and account switching,
+source-version and church revocation, Back/links/discard, comment and church
+claim routing, actual quota expiry, and guest/privacy/layout checks. Widths
+320/390/1440 passed; screenshots were inspected and there were no browser page
+errors. The report form chunk and report requests were absent before opening
+Report, including while More was open. A test timing race was corrected to wait
+for the real lost-response completion before checking persistence.
+
+The complete release gate passed all 86 discovered test files: 545 executions,
+543 passes, zero failures and two development-only delivery skips in the
+production phase. Its preview was intentionally interrupted after completion.
+Types, production build and runtime trace verification pass; lint has zero
+errors and 37 existing QA warnings. Final built-browser verification passes
+18 groups: seven enabled reporting, two disabled reporting, four existing compact
+action and five comment-reader groups. The compact-action test now checks both
+Report and Follow in keyboard order. No new runtime dependency was added.
+
+The fresh encrypted production backup has restored successfully and rehearsed
+32→33 migrations, preserving all 75 original-table column fingerprints; new
+report/decision/reviewer-grant counts are zero. Production has not been migrated
+or deployed for this candidate.
+The current serving release remains the audit-repair version below. Browser
+checks are automated Chrome, not new physical-phone evidence.
+
 ## Foundation checkpoint — 12 September 2026
 
 Local implementation on `codex/continuous-medium-social` adds four canonical
