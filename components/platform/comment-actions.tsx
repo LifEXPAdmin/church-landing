@@ -63,6 +63,8 @@ export function CommentActions({
   if (hidden) return null;
   return (
     <form
+      data-reader-dirty={dirty || !!pending || conflict}
+      data-reader-busy={busy}
       aria-label="Edit comment"
       className="space-y-3 rounded border p-3"
       onSubmit={(e) => {
@@ -85,7 +87,7 @@ export function CommentActions({
         Edited comment text
         <textarea
           aria-label="Edited comment text"
-          className="block min-h-28 w-full rounded border p-2"
+          className="block min-h-28 w-full rounded border p-2 text-[length:var(--gc-reader-size)] leading-relaxed"
           maxLength={10000}
           value={content}
           disabled={busy || !!pending}

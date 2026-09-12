@@ -54,3 +54,21 @@ switch concealment. Seventeen combined controller checks pass, including idle
 save timing and discarded-ID recovery. Focused lint and production build/runtime
 traces pass (106 traces, 8,656 entries, 261 server JavaScript files). Release is
 still pending the integrated checkpoint.
+
+## Reader and conversation integration checkpoint
+
+The full thread now also serves the native reader discussion sheet and authorized
+church-event discussion. Individual links focus/highlight their exact target,
+return through sign-in and preserve the prior feed position. Pin and conversation
+preferences use independent canonical versions and exact retries. The separate
+pin does not increase the chronological count. Saved reading size applies to
+comment prose and entry text.
+
+Five additional local HTTPS browser groups pass: pin/version/conflict/deletion;
+real credential sign-in return to the comment; Bible/List/focused reader with
+same IDs, add/edit/delete and exact lost-edit retry, dirty closure protection,
+focus restoration and no gesture page turn; detail return to the same List URL
+and scroll; and event audience revocation. Widths 390/1280, actual computed 24px
+comment text, dark appearance and reduced motion are verified. Physical phones
+remain owner acceptance. Ten reader/navigation checks pass. Final production
+build/runtime traces pass: 106 traces, 8,658 entries, 261 server JavaScript files.

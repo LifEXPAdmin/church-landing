@@ -97,7 +97,7 @@ export function CommentComposer({
           aria-label="Your unsent comment text"
           readOnly
           value={state.fields.content}
-          className="block min-h-28 w-full rounded border p-2"
+          className="block min-h-28 w-full rounded border p-2 text-[length:var(--gc-reader-size)] leading-relaxed"
         />
         <button
           type="button"
@@ -136,6 +136,8 @@ export function CommentComposer({
     );
   return (
     <form
+      data-reader-dirty={state.dirty || state.retry || state.conflict}
+      data-reader-busy={state.busy}
       aria-label={replyToId ? "Write a reply" : "Write a comment"}
       className="space-y-3 rounded-lg border border-gc-divider p-3"
       onSubmit={(e) => {
@@ -154,7 +156,7 @@ export function CommentComposer({
         Comment text
         <textarea
           aria-label="Comment text"
-          className="mt-1 block min-h-28 w-full rounded border p-2"
+          className="mt-1 block min-h-28 w-full rounded border p-2 text-[length:var(--gc-reader-size)] leading-relaxed"
           value={state.fields.content}
           maxLength={10000}
           disabled={disabled}

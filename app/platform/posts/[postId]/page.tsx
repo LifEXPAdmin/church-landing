@@ -1,3 +1,4 @@
+import { DiscussionBack } from "@/components/platform/discussion-back";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -58,6 +59,7 @@ export default async function PostPage({
         <div className="mx-auto max-w-3xl space-y-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h1 className="text-4xl text-gc-text">Post and discussion</h1>
+            <DiscussionBack />
             <Link
               className="inline-flex min-h-11 items-center text-gc-accent underline"
               href="/platform"

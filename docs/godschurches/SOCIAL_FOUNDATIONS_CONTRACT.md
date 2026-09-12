@@ -242,3 +242,22 @@ appear only after a current authorized comment read. Unavailable targets retain
 only the owner's saved/working text with explicit copy and discard choices.
 Discard uses its own exact serialized body and expected version; foreground and
 account changes conceal previous-owner data before rechecking access.
+
+## Shared reader discussion and conversation controls
+
+Bible/Pages, List and focused feeds open `CommentSheet`, a native dialog containing
+the same `CommentThread` used by post detail and authorized church-event discussion.
+Dirty/uncertain/conflicted work blocks sheet closure; clean closure restores focus
+without changing the feed anchor. Nested dialog gestures cannot turn the outer
+reader. Comment prose and entry text honor the saved reading size, including 24px.
+
+Individual links use the server's canonical comment href. Validated targets load
+through context, merge by ID, receive focus/highlight, and survive sign-in return.
+The detail Back control preserves browser history/scroll and protects unsaved work.
+Private comment-draft entry is also an explicitly allowed account-return route.
+
+Pin/Unpin uses `pinVersion`; the separate pinned summary does not change counts or
+create a second chronological row. Follow conversation/Mute/Default uses the
+independent conversation version and explicit desired mode. Both share exact-body
+retry handling; a conflict requires a canonical refresh before another decision.
+The controls save in-app preferences only and do not activate delivery providers.

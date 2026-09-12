@@ -166,3 +166,10 @@ test("first use chooses Pages while prior List, appearance, size and reduced-mot
     prior
   );
 });
+
+test("private comment draft entry remains an allowed sign-in return", () => {
+  assert.equal(
+    safeAccountReturn("/platform/comment-drafts"),
+    "/platform/comment-drafts"
+  );
+});

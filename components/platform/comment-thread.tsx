@@ -181,10 +181,11 @@ export function CommentThread({
     };
   }, []);
   useEffect(() => {
-    if (context?.target && !hidden)
-      document
-        .getElementById(`comment-${context.target.id}`)
-        ?.scrollIntoView({ block: "nearest" });
+    if (context?.target && !hidden) {
+      const element = document.getElementById(`comment-${context.target.id}`);
+      element?.focus({ preventScroll: true });
+      element?.scrollIntoView({ block: "nearest" });
+    }
   }, [context, hidden]);
   async function act(body: string, label: string) {
     if (mutationBusy.current || hidden || !owner) return;
@@ -214,7 +215,9 @@ export function CommentThread({
         id={`comment-${row.id}`}
         key={row.id}
         data-comment-id={row.id}
-        className={`min-w-0 space-y-2 rounded-lg border border-gc-divider p-3 ${nested ? "ml-3 border-l-4" : ""}`}
+        tabIndex={-1}
+        data-linked-comment={row.id === context?.target?.id || undefined}
+        className={`${row.id === context?.target?.id ? "ring-2 ring-gc-accent" : ""} min-w-0 space-y-2 rounded-lg border border-gc-divider p-3 ${nested ? "ml-3 border-l-4" : ""}`}
       >
         {row.unavailable ? (
           <p className="text-gc-muted">Comment unavailable</p>
@@ -252,7 +255,39 @@ export function CommentThread({
                 Replying to {row.replyTo.name ?? "an unavailable comment"}
               </p>
             )}
-            <p className="whitespace-pre-wrap break-words">{row.content}</p>
+            <p className="whitespace-pre-wrap break-words text-[length:var(--gc-reader-size)] leading-relaxed">
+              {row.content}
+            </p>
+            <Link
+              prefetch={false}
+              className="inline-flex min-h-11 items-center text-sm underline"
+              href={row.href}
+            >
+              Link to comment
+            </Link>
+            {owner && !row.rootId && data?.canPin && (
+              <button
+                type="button"
+                className="gc-button gc-button-quiet"
+                disabled={!!mutation}
+                onClick={() =>
+                  void act(
+                    JSON.stringify({
+                      operation: "pin",
+                      mutationId: crypto.randomUUID(),
+                      postId,
+                      commentId: data.pinned?.id === row.id ? null : row.id,
+                      expectedVersion: data.pinVersion
+                    }),
+                    "pin"
+                  )
+                }
+              >
+                {data.pinned?.id === row.id
+                  ? "Unpin comment"
+                  : "Pin helpful comment"}
+              </button>
+            )}
             {owner && (
               <div className="flex flex-wrap gap-2">
                 <button
@@ -377,6 +412,97 @@ export function CommentThread({
         </label>
       </div>
       {error && <p role="status">{error}</p>}
+      {!hidden && data && (
+        <div className="space-y-2">
+          <button
+            type="button"
+            className="gc-button gc-button-quiet"
+            disabled={pending || !!mutation}
+            onClick={() => void load()}
+          >
+            Refresh discussion
+          </button>
+          {owner && (
+            <fieldset className="space-y-2" disabled={!!mutation}>
+              <legend>Conversation preference</legend>
+              <p className="text-sm text-gc-muted">
+                Saved for your account. These controls do not enable email or
+                push delivery.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {(
+                  [
+                    ["DEFAULT", "Default"],
+                    ["FOLLOW", "Follow conversation"],
+                    ["MUTE", "Mute conversation"]
+                  ] as const
+                ).map(([mode, label]) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    className="gc-button gc-button-quiet"
+                    aria-pressed={data.conversation.mode === mode}
+                    onClick={() =>
+                      void act(
+                        JSON.stringify({
+                          operation: "conversation",
+                          mutationId: crypto.randomUUID(),
+                          postId,
+                          mode,
+                          expectedVersion: data.conversation.version
+                        }),
+                        "conversation preference"
+                      )
+                    }
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+          )}
+          {data.pinned && (
+            <aside
+              aria-label="Pinned helpful comment"
+              className="space-y-2 rounded border p-3"
+            >
+              <p className="font-semibold">Pinned helpful comment</p>
+              <p>{data.pinned.author?.name}</p>
+              <p className="whitespace-pre-wrap break-words text-[length:var(--gc-reader-size)] leading-relaxed">
+                {data.pinned.content}
+              </p>
+              <Link
+                prefetch={false}
+                className="underline"
+                href={data.pinned.href}
+              >
+                Open pinned comment
+              </Link>
+              {data.canPin && (
+                <button
+                  type="button"
+                  className="gc-button gc-button-quiet"
+                  disabled={!!mutation}
+                  onClick={() =>
+                    void act(
+                      JSON.stringify({
+                        operation: "pin",
+                        mutationId: crypto.randomUUID(),
+                        postId,
+                        commentId: null,
+                        expectedVersion: data.pinVersion
+                      }),
+                      "unpin"
+                    )
+                  }
+                >
+                  Unpin helpful comment
+                </button>
+              )}
+            </aside>
+          )}
+        </div>
+      )}
       {pending && <p role="status">Loading discussion…</p>}
       {mutation && !hidden && (
         <button

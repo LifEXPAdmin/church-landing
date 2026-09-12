@@ -15,7 +15,7 @@ import {
 } from "@/lib/platform/feed-gesture";
 
 const controls =
-  "a,button,input,textarea,select,summary,video,audio,[contenteditable],[role=slider]";
+  "a,button,input,textarea,select,summary,video,audio,[contenteditable],[role=slider],dialog,[data-comment-thread]";
 type Gesture = {
   x: number;
   y: number;

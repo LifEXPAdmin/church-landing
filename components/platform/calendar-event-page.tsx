@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { readPost } from "@/lib/platform/post-session";
+import { CommentThread } from "./comment-thread";
 import { prisma } from "@/lib/prisma";
 import { PortalError } from "@/lib/platform/portal";
 import { getCurrentPlatformUser } from "@/lib/platform/session";
@@ -48,6 +50,18 @@ export async function CalendarEventPage({
     const event =
       privateData?.event ?? (await getPublicCalendarEvent(prisma, id)).event;
     if (!event) throw new PortalError(404, "Event unavailable.");
+    const discussionReference =
+      event.access !== "BUSY" &&
+      event.source.kind === "CHURCH" &&
+      !event.canceled
+        ? await prisma.platformPost.findUnique({
+            where: { eventOccurrenceId: event.id },
+            select: { id: true }
+          })
+        : null;
+    const discussion = discussionReference
+      ? await readPost(discussionReference.id)
+      : null;
     const zone = calendarZone(timeZone ?? event.timeZone);
     const draft: EventDraft | undefined = event.version
       ? {
@@ -135,6 +149,11 @@ export async function CalendarEventPage({
               </>
             )}
           </PortalCard>
+          {discussion && (
+            <PortalCard title="Event discussion">
+              <CommentThread postId={discussion.id} />
+            </PortalCard>
+          )}
           {privateData && privateData.occurrences.length > 1 && (
             <details className="rounded-xl border border-gc-divider p-5">
               <summary className="min-h-11 cursor-pointer py-2 font-semibold">
@@ -202,7 +221,11 @@ export async function CalendarEventPage({
                       href={
                         user
                           ? "/platform/my-church"
-                          : accountEntryHref("signup", eventPath(id), "calendar")
+                          : accountEntryHref(
+                              "signup",
+                              eventPath(id),
+                              "calendar"
+                            )
                       }
                     >
                       {user ? "Review account eligibility" : "Join to respond"}
@@ -210,7 +233,11 @@ export async function CalendarEventPage({
                     {!user && (
                       <Link
                         className={portalLinkClass}
-                        href={accountEntryHref("login", eventPath(id), "calendar")}
+                        href={accountEntryHref(
+                          "login",
+                          eventPath(id),
+                          "calendar"
+                        )}
                       >
                         Sign in
                       </Link>
