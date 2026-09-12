@@ -335,7 +335,7 @@ export const releases: ReleaseEntry[] = [
     ],
     fixed: [
       "Pending photo uploads and edits survive navigation attempts, while a changed sign-in clears stale local work.",
-      "Opening a photo draft remains reliable when a foreground account check overlaps the resume request."
+      "Opening a photo draft remains reliable when a foreground account check overlaps the resume request. Signing in from a Photos link returns to that tab."
     ],
     featureIds: [
       "photo-library",

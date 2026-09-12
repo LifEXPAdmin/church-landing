@@ -19,6 +19,11 @@ export function safeAccountReturn(value: unknown): string {
   )
     return "/platform";
   const query = new URLSearchParams();
+  if (
+    /^\/platform\/profile\/(?:me|[a-zA-Z0-9_]{3,24})\/?$/.test(url.pathname) &&
+    url.searchParams.get("tab") === "photos"
+  )
+    query.set("tab", "photos");
   if (url.pathname === "/platform/search") {
     const kind = url.searchParams.get("kind");
     if (

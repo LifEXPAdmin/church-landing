@@ -69,13 +69,16 @@ export default async function MemberProfilePage({
   }>;
 }) {
   const { username } = await params;
+  const query = await searchParams;
   const profilePath = `/platform/profile/${encodeURIComponent(username)}`;
   const gate = (
     <PlatformShell user={null}>
-      <GuestAccountPrompt next={profilePath} reason="profile" />
+      <GuestAccountPrompt
+        next={profilePath + (query.tab === "photos" ? "?tab=photos" : "")}
+        reason="profile"
+      />
     </PlatformShell>
   );
-  const query = await searchParams;
   if (query.preview === "visitor") {
     let identity;
     try {

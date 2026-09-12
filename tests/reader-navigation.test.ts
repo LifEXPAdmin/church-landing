@@ -163,7 +163,7 @@ test("first use chooses Pages while prior List, appearance, size and reduced-mot
   };
   assert.deepEqual(
     parseReadingPreferences(encodeURIComponent(JSON.stringify(prior))),
-    prior
+    { ...prior, reduceData: false }
   );
 });
 
@@ -229,5 +229,31 @@ test("personal invitation navigation survives sign-in without accepting arbitrar
   assert.equal(
     safeAccountReturn("https://elsewhere.invalid/platform/invitations"),
     "/platform"
+  );
+});
+
+test("account entry preserves only the known Photos tab on profile return paths", () => {
+  for (const path of [
+    "/platform/profile/me",
+    "/platform/profile/example_member"
+  ]) {
+    assert.equal(
+      safeAccountReturn(
+        path + "?tab=photos&token=secret&preview=member#private"
+      ),
+      path + "?tab=photos"
+    );
+    assert.equal(safeAccountReturn(path + "?tab=admin"), path);
+    assert.equal(
+      new URL(
+        accountEntryHref("login", path + "?tab=photos", "profile"),
+        "https://example.test"
+      ).searchParams.get("next"),
+      path + "?tab=photos"
+    );
+  }
+  assert.equal(
+    safeAccountReturn("/platform/settings?tab=photos"),
+    "/platform/settings"
   );
 });
