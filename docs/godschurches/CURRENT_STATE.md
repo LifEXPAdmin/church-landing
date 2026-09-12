@@ -1,5 +1,27 @@
 # Godschurches current state
 
+## Current Privacy choices — September 12, 2026
+
+Product `2026.09.12.14`, application `2bc0948c1b69c121918518b9dfb7978171199ff7`,
+is live on READY deployment `dpl_EyXgyxvCHUupWfYafQh594yT1EHM`; independent
+canonical assignment and serving identity match. Privacy summarizes actual saved
+mention permissions and follower/following count visibility. Current People
+search uses names/usernames; profile, directory and post audiences remain
+separate. Failed reads conceal stale values and unknown values never imply a
+permissive default.
+
+Five private-context and ten social service groups, twenty Settings/navigation/
+release groups, five Privacy and six Settings browser groups pass. Types, scoped
+lint and production build pass. Eleven live checks at 13:40:30 UTC passed with
+zero application writes, browser errors or scoped runtime error rows. Fresh
+backup/restore and all 30 migration checksums remain verified. No schema or
+provider change. See [Privacy contract and evidence](PRIVACY_SETTINGS_REPORT.md).
+
+Search opt-out/QR-only accounts, future-post defaults/activity controls and family
+management remain gated by their absent authorities. The next focused audits
+cover feed/notification capability maps and existing display controls. Parent and
+owner/device acceptance remain open.
+
 ## Profile Settings and save continuity — September 12, 2026
 
 Product `2026.09.12.13`, application `13344d9e865e37e74dac2f2f724b5e6921f72160`,

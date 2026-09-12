@@ -45,7 +45,15 @@ actual editor saves and summary readback, failed/unknown reads concealed without
 a fallback, account replacement and expired access, private contacts, canonical
 links, keyboard/Back, 320/390/1440px doubled text, dirty/reset/conflict and exact
 retry behavior. No browser errors. Twenty Settings/navigation/release groups,
-types, scoped lint and production build pass. Publication is pending.
+types, scoped lint and production build pass (121 traces, 10,292 entries and 300
+server JavaScript files).
+
+Product `2026.09.12.14`, application `2bc0948c1b69c121918518b9dfb7978171199ff7`,
+is live on READY deployment `dpl_EyXgyxvCHUupWfYafQh594yT1EHM`. Independent
+canonical assignment and serving identity match. Eleven live checks at
+13:40:30 UTC passed, with zero application writes, browser errors or scoped
+runtime error rows. Fresh backup/restore and all 30 migration checksums passed
+before push. No production migration, identity or provider change was performed.
 
 See the existing
 [Settings contract](SETTINGS_CONTRACT.md), [profile disclosure](PROFILE_SETTINGS_REPORT.md)
