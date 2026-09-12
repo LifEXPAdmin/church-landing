@@ -72,3 +72,15 @@ and scroll; and event audience revocation. Widths 390/1280, actual computed 24px
 comment text, dark appearance and reduced motion are verified. Physical phones
 remain owner acceptance. Ten reader/navigation checks pass. Final production
 build/runtime traces pass: 106 traces, 8,658 entries, 261 server JavaScript files.
+
+## First integrated release
+
+Application `2eabdecf2d205f1bfc4bb7c40be4f3d1a37540b8` is live in READY deployment
+`dpl_7XPNvsK174YQ4sN71CC1zUNUrgFX`, assigned to `godschurches.com`.
+At 00:32 UTC on 12 September, 28 read-only live checks passed: 17 social API,
+four private-workspace/identity, three update-notice and four installation/comment
+browser checks. No mutation requests, browser errors or deployment error-log
+entries were observed. All 27 production migrations are complete and checksum
+matched; none pending or applied. Eight scoped installation/comment interface
+slices were reconciled with verified evidence. Parent/source/physical-device
+and owner acceptance remain open. Continuous work proceeds to relationship UI.
