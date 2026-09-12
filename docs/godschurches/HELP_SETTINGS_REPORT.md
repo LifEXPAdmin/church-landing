@@ -31,9 +31,12 @@ Fixture recipient setup and account creation were confined to isolated records.
 
 ## Release and remaining scope
 
-Product `2026.09.12.18` is prepared. Exact READY deployment, canonical assignment,
-serving identity and live verification remain required. No migration, provider or
-permission change is included.
+Product `2026.09.12.18`, application `a77bf8caa5a7bce048f8c9f7071426fd5bdf37d3`,
+is live on READY deployment `dpl_wQUitNXMH8rYJQC9vc9tB7jggZpE`. Independent
+canonical assignment and serving identity match. Fifteen live checks at
+15:12:19 UTC passed with zero application writes or browser errors. The 15:09
+preflight verified all 30 migration checksums and the protected backup/restore.
+No migration, provider or permission change is included.
 
 Expanded feedback types/rating, removable diagnostic context, private attachments,
 feedback drafts and receipts require their owning feedback contract. Ordinary

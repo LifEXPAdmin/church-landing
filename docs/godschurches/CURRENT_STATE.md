@@ -1,5 +1,23 @@
 # Godschurches current state
 
+## Searchable help and current product information — September 12, 2026
+
+Product `2026.09.12.18`, application `a77bf8caa5a7bce048f8c9f7071426fd5bdf37d3`,
+is live on READY deployment `dpl_wQUitNXMH8rYJQC9vc9tB7jggZpE`; independent
+canonical assignment and serving identity match. Help and About adds searchable
+explanations of current settings and reuses the existing Help/contact, private
+request, policy, loaded-version, release-note and feature destinations.
+
+Ten focused tests, four Help browser groups, types, scoped lint and production
+build pass. Fifteen live checks at 15:12:19 UTC passed with zero application writes
+or browser errors. All 30 migration checksums and the protected backup/restore
+are verified; no migration/provider change. See [Help evidence](HELP_SETTINGS_REPORT.md).
+
+Expanded private feedback/attachments, public roadmap/suggestion credit and
+parent/physical owner acceptance remain gated. The next P1 Extra High
+investigation is the previously observed intermittent navigation hydration error;
+the older unexplained observation is not closed by these clean browser checks.
+
 ## Data, browser permissions and lifecycle guidance — September 12, 2026
 
 Product `2026.09.12.17`, application `4113c7ef7fbe6bf4af82fc4276a924d5da1c031b`,
