@@ -55,34 +55,8 @@ export function imagesAvailable() {
   }
 }
 export function imageStorage(): ImageStorage {
-  if (
-    process.env.MEDIA_STORAGE_MODE === "private-blob" &&
-    (process.env.BLOB_READ_WRITE_TOKEN || process.env.BLOB_STORE_ID)
-  ) {
-    return {
-      async put(path, bytes, signal) {
-        await put(key(path), bytes, {
-          access: "private",
-          addRandomSuffix: false,
-          allowOverwrite: false,
-          contentType: "image/webp",
-          abortSignal: signal
-        });
-      },
-      async get(path, signal) {
-        const result = await get(key(path), {
-          access: "private",
-          useCache: false,
-          abortSignal: signal
-        });
-        if (!result || result.statusCode !== 200) return null;
-        return boundedBytes(result.stream, IMAGE_VARIANT_BYTES, signal);
-      },
-      async delete(paths, signal) {
-        await del(paths.map(key), { abortSignal: signal });
-      }
-    };
-  }
+  if (process.env.MEDIA_STORAGE_MODE === "private-blob")
+    return privateImageStorage();
   if (
     process.env.MEDIA_STORAGE_MODE === "local-test" &&
     process.env.ACCOUNT_TEST_ISOLATED === "1" &&
@@ -122,4 +96,34 @@ export function imageStorage(): ImageStorage {
     503,
     "Image uploads are not available yet. Your existing images are unchanged."
   );
+}
+
+// Maintenance remains available while public uploads are disabled, including
+// during activation checks and a later operational shutdown of uploads.
+export function privateImageStorage(): ImageStorage {
+  if (process.env.BLOB_READ_WRITE_TOKEN || process.env.BLOB_STORE_ID)
+    return {
+      async put(path, bytes, signal) {
+        await put(key(path), bytes, {
+          access: "private",
+          addRandomSuffix: false,
+          allowOverwrite: false,
+          contentType: "image/webp",
+          abortSignal: signal
+        });
+      },
+      async get(path, signal) {
+        const result = await get(key(path), {
+          access: "private",
+          useCache: false,
+          abortSignal: signal
+        });
+        if (!result || result.statusCode !== 200) return null;
+        return boundedBytes(result.stream, IMAGE_VARIANT_BYTES, signal);
+      },
+      async delete(paths, signal) {
+        await del(paths.map(key), { abortSignal: signal });
+      }
+    };
+  throw new Error("Private image storage is not configured");
 }

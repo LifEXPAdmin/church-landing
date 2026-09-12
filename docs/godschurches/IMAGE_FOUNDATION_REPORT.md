@@ -2,6 +2,10 @@
 
 Engineering checkpoint 6.1 · September 10, 2026 · `codex/image-foundations`
 
+For the September 12 maintenance integration and activation gate, see
+[Image maintenance and activation](MEDIA_MAINTENANCE.md). The original evidence
+and limitations below are historical; use the newest dated operational receipt.
+
 ## Implemented
 
 The shared image service supports personal avatars/covers, church logos/covers

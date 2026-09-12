@@ -109,15 +109,29 @@ try {
   console.log(
     `PASS: ${migrations.length} migrations and populated upgrade preservation`
   );
-  for (const file of [
-    ...(process.argv.includes("--invitations")
-      ? ["tests/friend-invitations.test.ts", "tests/social-foundations.test.ts"]
-      : process.argv.includes("--social")
-        ? ["tests/social-foundations.test.ts", "tests/gallery-sharing.test.ts"]
-        : ["tests/post-workspace.test.ts"]),
-    "tests/post-publishing.test.ts",
-    "tests/community-search.test.ts"
-  ]) {
+  const files = process.argv.includes("--media")
+    ? [
+        "tests/media-processing.test.ts",
+        "tests/media.test.ts",
+        "tests/media-boundary.test.ts",
+        "tests/media-maintenance.test.ts"
+      ]
+    : [
+        ...(process.argv.includes("--invitations")
+          ? [
+              "tests/friend-invitations.test.ts",
+              "tests/social-foundations.test.ts"
+            ]
+          : process.argv.includes("--social")
+            ? [
+                "tests/social-foundations.test.ts",
+                "tests/gallery-sharing.test.ts"
+              ]
+            : ["tests/post-workspace.test.ts"]),
+        "tests/post-publishing.test.ts",
+        "tests/community-search.test.ts"
+      ];
+  for (const file of files) {
     sql(["-c", 'TRUNCATE "PlatformAuthLimit"']);
     run(
       process.execPath,

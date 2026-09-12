@@ -1,5 +1,23 @@
 # Godschurches current state
 
+## Personal invitation release — September 12, 2026
+
+Application `4fb52ed12e8eab94b786fdf572fce3da0ffa9434`, product `2026.09.12.3`,
+is live in READY deployment `dpl_fYMmbx1ueDJAa7mjW1JpJswVEoq1` on the canonical
+domain. Menu now opens personal QR sharing. New members knowingly accept an
+invitation during signup; verified eligible accounts connect through both
+canonical follow edges. Removal, blocks and lifecycle changes prevent stale
+callbacks from restoring the friendship. No additional private or church access
+is granted. [The focused report](FRIEND_INVITATIONS_REPORT.md) records service,
+HTTPS, browser, QR, release and backup/upgrade evidence. Fourteen live checks
+passed without application writes or errors. Production has 28 complete matching
+migrations; the additive migration preserved original data in all 69 old tables.
+
+The next P1 engineering slice connects the existing bounded photo cleanup worker
+and verifies it before enabling uploads. Private storage already exists. Approved
+demo church content, physical/device rehearsal and parent/owner acceptance remain
+open; earlier live receipts below remain historical checkpoints.
+
 ## Current continuous interface session — September 12, 2026
 
 Latest verified application: `a1c4f02a8a27b02f81c8c13d6398d88041db1e20`, READY

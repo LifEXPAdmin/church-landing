@@ -223,3 +223,11 @@ are Secure, HttpOnly, SameSite=Lax and scoped to this host with Path=/. Logout
 revokes this device's session. A password change/reset revokes every session.
 There is no application password store in localStorage and no cosmetic
 "Keep me signed in" switch. Social sign-in and passkeys are separate future work.
+## Image maintenance verification
+
+The portal harness includes `tests/media-maintenance.test.ts` alongside image
+processing, service and boundary checks. The focused service run is
+`node scripts/test-post-workspace.mjs --media`; actual image HTTPS cases require
+the existing isolated production preview. All fixture writers enforce loopback
+PostgreSQL and the test-sink boundary. Maintenance tests inject isolated storage;
+they do not call a real provider or use a production cron secret.

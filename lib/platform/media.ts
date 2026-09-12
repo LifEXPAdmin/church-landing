@@ -395,20 +395,23 @@ export async function readImage(
     throw new PortalError(503, "This image could not be loaded. Try again.");
   return bytes;
 }
-// Bounded, idempotent maintenance entry point; no public cleanup endpoint. A
-// deployment must wire and verify its worker before enabling real uploads.
+// Used by the secret-protected maintenance route. Immutable prefixes and the
+// existing lifecycle gate make duplicate invocations safe without a new queue.
 export async function collectImageGarbage(
   db: PrismaClient,
   store: ImageStorage = imageStorage(),
-  now = new Date()
+  now = new Date(),
+  signal = AbortSignal.timeout(40_000)
 ) {
+  signal.throwIfAborted();
   const candidates = await db.mediaGarbage.findMany({
     where: { dueAt: { lte: now } },
-    orderBy: { dueAt: "asc" },
+    orderBy: [{ dueAt: "asc" }, { storagePrefix: "asc" }],
     take: 20
   });
   let removed = 0;
   for (const candidate of candidates) {
+    signal.throwIfAborted();
     const eligible = await withPostRead(db, "", async (tx) => {
       const row = await tx.mediaAsset.findUnique({
         where: { storagePrefix: candidate.storagePrefix }
@@ -427,14 +430,17 @@ export async function collectImageGarbage(
       return true;
     });
     if (!eligible) continue;
+    signal.throwIfAborted();
     await store.delete(
       paths(candidate.storagePrefix),
-      AbortSignal.timeout(15_000)
+      AbortSignal.any([signal, AbortSignal.timeout(15_000)])
     );
-    await db.mediaGarbage.deleteMany({
+    // A lost/aborted provider response retains the durable record for retry.
+    signal.throwIfAborted();
+    const result = await db.mediaGarbage.deleteMany({
       where: { storagePrefix: candidate.storagePrefix }
     });
-    removed++;
+    removed += result.count;
   }
   return { removed };
 }
