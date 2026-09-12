@@ -152,7 +152,13 @@ test("initial registry has stable unique IDs, service owners and real linked des
     if ("href" in s.destination) {
       const path = new URL(s.destination.href, "https://fixture.invalid")
         .pathname;
-      assert.ok(existsSync("app" + path + "/page.tsx"), path);
+      assert.ok(
+        existsSync("app" + path + "/page.tsx") ||
+          (path.startsWith("/platform/settings/") &&
+            safeAccountReturn(path) === path &&
+            existsSync("app/platform/settings/[...path]/page.tsx")),
+        path
+      );
     } else {
       assert.equal(controls.has(s.destination.control), false);
       controls.add(s.destination.control);

@@ -35,18 +35,23 @@ export function AccountExport() {
       <h2 id="account-data-title">Download your account data</h2>
       <p className="text-gc-muted">
         Get a JSON file containing your profile and appearance, personal image
-        metadata, posts, comments, likes, follows, church directory choices,
-        your private church setup, listing drafts and submissions, and your own
-        support submissions. It contains personal information, so save it
+        metadata and photo albums, posts, comments, likes and follows. It also
+        includes your private drafts, saved collection organization, social
+        choices, friend invitation records, personal polls and your votes,
+        volunteer signups, personal calendars and event responses, church
+        directory choices, your private church setup and listing submissions,
+        and your own support submissions. Save this personal information
         somewhere private.
       </p>
       <p className="text-sm text-gc-muted">
+        Saved collections include your organization, not copies of source posts.
         Other people’s content, church administration, staff replies, passwords
         and security records are excluded. Reading preferences saved only on
         this browser are separate. Downloads support up to 2,000 records per
-        category and 4 MiB; larger exports stop with a message instead of
-        leaving data out. Image files are referenced through links that require
-        current access; the image bytes are not included in this JSON file.
+        category and 4 MiB, with up to 50 photo albums and 100 entries per
+        album; larger exports stop with a message instead of leaving data out.
+        Image files are referenced through links that require current access;
+        the image bytes are not included in this JSON file.
       </p>
       <form
         method="post"

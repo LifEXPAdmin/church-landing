@@ -24,6 +24,19 @@ export const features: Feature[] = [
     availability: "available"
   },
   {
+    id: "data-controls",
+    category: "Privacy and account",
+    name: "Your data and browser permissions",
+    description:
+      "Understand your account export, browser permissions and taking a break.",
+    steps:
+      "Open Settings, then Your data. Review camera, microphone and location status without requesting access. Use the browser help links to change those permissions. Confirm your account to prepare a private export; save it within one minute or prepare a new file. Review deactivation and any duty handoff separately.",
+    href: "/platform/settings/data",
+    eligibility:
+      "Signed-in account. Exports and deactivation require current account confirmation. Browser status may be unavailable and does not grant church access or publish your location. Permanent deletion and general connected-app permissions are unavailable.",
+    availability: "available"
+  },
+  {
     id: "polls",
     category: "Posts and conversations",
     name: "Community polls",
@@ -396,6 +409,22 @@ export type ReleaseEntry = {
   featureIds: string[];
 };
 export const releases: ReleaseEntry[] = [
+  {
+    id: "data-and-permissions",
+    version: "2026.09.12.17",
+    date: "2026-09-12",
+    summary:
+      "Understand browser permissions, your data download and taking a break.",
+    added: [
+      "Your data settings show camera, microphone and location permission status with links to browser guidance, without asking for access."
+    ],
+    improved: [
+      "Account downloads explain their current scope, including albums, private drafts, collections, polls, calendars and volunteer signups.",
+      "Deactivation is separate from other data controls and explains retained photos, revoked invitation and calendar sharing, and required duty handoff."
+    ],
+    fixed: [],
+    featureIds: ["data-controls", "settings"]
+  },
   {
     id: "safety-list-review",
     version: "2026.09.12.16",

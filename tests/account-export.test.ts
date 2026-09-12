@@ -403,11 +403,14 @@ test("production HTTPS export is an owner-bound no-store attachment with strict 
   assert.equal(JSON.parse(content).account.email, a.user.email);
   assert.ok(!content.includes(b.user.email));
   assert.ok(!content.includes(authorization));
-  const page = await fetch(origin + "/platform/settings", {
+  const page = await fetch(origin + "/platform/settings/data/export", {
     headers: { Cookie: "church_platform_session=" + a.token }
   });
   const html = await page.text();
-  assert.match(html, /Download your account data/);
+  assert.equal(page.status, 200);
+  assert.match(html, /Download your data/);
+  // The authenticated context and confirmation form load in the browser.
+  // The built Data browser suite exercises the actual preparation and expiry.
   assert.ok(!html.includes(a.user.email));
   assert.ok(!html.includes(authorization));
 });

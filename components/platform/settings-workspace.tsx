@@ -17,6 +17,7 @@ import { AccountIdentitySummary, SettingsControls } from "./settings-controls";
 import { SettingsSecurity } from "./settings-security";
 import { SettingsPrivacy } from "./settings-privacy";
 import { SettingsSafety } from "./settings-safety";
+import { SettingsData } from "./settings-data";
 
 const positions = new Map<string, { y: number; focus: string }>();
 let positionOwner: string | null = null;
@@ -349,9 +350,34 @@ export function SettingsWorkspace({
                 <SettingsPrivacy data={data} />
               )}
               {folder === "safety" && !active && <SettingsSafety />}
+              {folder === "data" && !active && <SettingsData />}
               {folder &&
                 !active &&
-                rows(entries.filter((s) => s.folder === folder))}
+                rows(
+                  entries.filter(
+                    (s) =>
+                      s.folder === folder &&
+                      !(
+                        folder === "data" &&
+                        ["data.permissions", "data.deactivate"].includes(s.id)
+                      )
+                  )
+                )}
+              {folder === "data" && !active && (
+                <section
+                  className="gc-settings mt-6 space-y-3 border-2"
+                  aria-label="Take a break from your account"
+                >
+                  <h2 className="text-2xl">Take a break from your account</h2>
+                  <p>
+                    Deactivation hides personal content and ends access while
+                    retaining your records for reactivation. Review its effects
+                    and any duty handoff before confirming. Permanent account
+                    deletion is unavailable.
+                  </p>
+                  {rows(entries.filter((s) => s.id === "data.deactivate"))}
+                </section>
+              )}
               {active && "control" in active.destination && (
                 <SettingsControls
                   control={active.destination.control}

@@ -32,8 +32,10 @@ export function AccountLifecycle({
               again. You will then sign in separately.
             </p>
             <p>
-              Old sign-ins and directory or coordinator sharing stay off. An
-              account suspended by an administrator cannot be restored here.
+              Old sign-ins, friend invitations, calendar sharing and directory
+              or coordinator sharing stay off. Declined event responses are not
+              restored. An account suspended by an administrator cannot be
+              restored here.
             </p>
           </>
         ) : (
@@ -45,14 +47,23 @@ export function AccountLifecycle({
               sharing will be removed.
             </p>
             <p>
-              Your account, community content, church connections and support
+              Your account, community content, personal photos and albums,
+              private drafts and collections, church connections and support
               records remain stored. This does not delete your account or erase
               content someone already saw or saved. Authorized support staff can
               still access existing case records.
             </p>
             <p>
+              Friend invitation codes and calendar or event sharing are revoked.
+              Going and Maybe event responses become Declined. Reactivation does
+              not turn these back on. Personal photos are hidden while
+              deactivated and retained for your return; church-owned media is
+              separate. Your own poll votes and volunteer signup records remain
+              stored. Review active volunteer commitments before taking a break.
+            </p>
+            <p>
               You can return using your existing sign-in method. Download your
-              data above first if you want a copy. Hand off any church, contact,
+              data first if you want a copy. Hand off any church, contact,
               operator or support duties before deactivating.
             </p>
           </>

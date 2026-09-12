@@ -50,7 +50,7 @@ export const settingsFolders = [
   {
     id: "data",
     label: "Your data",
-    description: "Export your information or take a break."
+    description: "Browser permissions, account export and taking a break."
   },
   {
     id: "help",
@@ -457,6 +457,20 @@ export const settingsRegistry: readonly SettingRegistration[] = Object.freeze([
       "relationships.ts readRelationships",
       "relationships.ts relationshipCommand"
     )
+  ),
+  entry(
+    "data.permissions",
+    "data",
+    "Browser permissions",
+    "Check this website’s camera, microphone and location permission status.",
+    ["camera", "microphone", "location permission", "device permission"],
+    { href: "/platform/settings/data#browser-permissions" },
+    {
+      persistenceOwner: "browser and device permission settings",
+      read: "navigator.permissions.query",
+      write: null
+    },
+    { scope: "browser", valueType: "information", state: "explanation" }
   ),
   entry(
     "data.export",
