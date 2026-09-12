@@ -1,3 +1,6 @@
+import type { ReleaseEntry } from "./release-notes";
+export type { ReleaseEntry } from "./release-notes";
+export { parseReleaseNotes } from "./release-notes";
 /** Public product content. Build identity is supplied separately by the serving deployment. */
 export type Feature = {
   id: string;
@@ -426,17 +429,24 @@ export const features: Feature[] = [
     availability: "available"
   }
 ];
-export type ReleaseEntry = {
-  id: string;
-  version: string;
-  date: string;
-  summary: string;
-  added: string[];
-  improved: string[];
-  fixed: string[];
-  featureIds: string[];
-};
 export const releases: ReleaseEntry[] = [
+  {
+    id: "reliable-likes-and-lighter-loading",
+    version: "2026.09.12.23",
+    date: "2026-09-12",
+    summary: "Reliable Like retries and lighter community loading.",
+    added: [],
+    improved: [
+      "Visible author photos load on demand, and opening What’s new loads its feature details only when needed.",
+      "Independent post and photo reads can run together while permission changes still wait for protected reads."
+    ],
+    fixed: [
+      "Retrying a Like keeps the same choice. A stale choice from another tab asks you to refresh its status.",
+      "Closed discussions clearly explain that replies are closed.",
+      "Discarding a selected profile photo finishes navigation cleanup before confirming completion."
+    ],
+    featureIds: ["comments", "profile-photos", "installation"]
+  },
   {
     id: "attributed-reposts-and-quotes",
     version: "2026.09.12.22",
@@ -863,32 +873,4 @@ export function releaseMetadata(build: string | null) {
   return build
     ? { id: currentRelease.id, version: currentRelease.version, build }
     : null;
-}
-
-export function parseReleaseNotes(value: unknown): ReleaseEntry | null {
-  if (!value || typeof value !== "object") return null;
-  const r = value as Record<string, unknown>;
-  if (
-    !["id", "version", "date", "summary"].every(
-      (k) => typeof r[k] === "string" && (r[k] as string).length <= 500
-    )
-  )
-    return null;
-  if (
-    !/^[a-z0-9-]{1,80}$/.test(r.id as string) ||
-    !/^\d{4}-\d{2}-\d{2}$/.test(r.date as string)
-  )
-    return null;
-  if (
-    !["added", "improved", "fixed", "featureIds"].every(
-      (k) =>
-        Array.isArray(r[k]) &&
-        r[k].length <= 30 &&
-        r[k].every((v: unknown) => typeof v === "string" && v.length <= 500)
-    )
-  )
-    return null;
-  if (!(r.featureIds as string[]).every((id) => /^[a-z0-9-]{1,80}$/.test(id)))
-    return null;
-  return r as ReleaseEntry;
 }

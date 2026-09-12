@@ -1,7 +1,8 @@
 import type { PrismaClient } from "@prisma/client";
-import { eligibleWhere, expected, PortalError } from "./portal";
+import { eligibleWhere, expected, PortalError } from "./portal-policy";
 import { socialCommand, socialInput } from "./social-operations";
-import { postContext, postId, withPostRead } from "./post-access";
+import { postContext, withPostRead } from "./post-access";
+import { postId } from "./post-input";
 import {
   originalForRepost,
   repostDestination,

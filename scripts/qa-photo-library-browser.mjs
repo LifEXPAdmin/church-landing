@@ -195,9 +195,11 @@ try {
   const openDraft = library.getByRole("link", { name: "Open photo draft in composer", exact: true }); await openDraft.waitFor();
   await openDraft.click();
   const composer = page.getByRole("form", { name: "Publish post", exact: true });
+  await composer.getByText(/^Draft resumed\./).waitFor();
+  await composer.locator("summary").filter({ hasText: /^Photos/ }).click();
   await composer.getByRole("region", { name: "Draft photos", exact: true }).getByRole("img").waitFor();
   await composer.getByLabel("Post content", { exact: true }).fill("A photo saved privately first, now deliberately published in this isolated fixture.");
-  const publishButton = composer.getByRole("button", { name: "Publish post", exact: true });
+  const publishButton = composer.getByRole("button", { name: "Post", exact: true });
   await publishButton.click();
   await pauseUntil(async () => await db.platformPost.count({ where: { authorId: owner.id } }) === beforePosts + 1, "photo draft publication");
   const published = await db.platformPost.findFirstOrThrow({ where: { authorId: owner.id, content: { startsWith: "A photo saved privately first" } } });

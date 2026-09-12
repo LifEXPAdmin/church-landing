@@ -2,7 +2,6 @@ import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { PrismaClient } from "@prisma/client";
-import { parse } from "parse5";
 import { assertPortalTestDatabase } from "./seed-portal";
 import { seedParticipation } from "./seed-post-participation";
 import { postCommand } from "../lib/platform/post-commands";
@@ -74,7 +73,7 @@ test("actual reader HTML and Flight keep a selected bounded set while new posts 
   );
   assert.ok(!removed.includes('data-post="' + b.id + '"'));
 });
-test("actual native comment action keeps the selected post and feed anchor and writes only to that post", async () => {
+test("canonical comment API writes only to the selected reader post without altering its feed anchor", async () => {
   if (!production) return; // Private form rendering is intentionally production-only.
   const f = await seedParticipation(db);
   const a = await postCommand(db, f.lee.token, {
@@ -93,66 +92,29 @@ test("actual native comment action keeps the selected post and feed anchor and w
     at: row.publishedAt!.toISOString()
   });
   const html = await (await get(path, f.lee.token)).text();
-  const document = parse(html);
-  type Node =
-    | typeof document
-    | {
-        nodeName: string;
-        attrs?: Array<{ name: string; value: string }>;
-        childNodes?: Node[];
-      };
-  const nodes: Node[] = [];
-  const walk = (node: Node) => {
-    nodes.push(node);
-    if ("childNodes" in node) node.childNodes?.forEach(walk);
-  };
-  walk(document);
-  const attr = (node: Node, name: string) =>
-    "attrs" in node
-      ? node.attrs?.find((a) => a.name === name)?.value
-      : undefined;
-  const forms = nodes.filter(
-    (node) =>
-      node.nodeName === "form" &&
-      attr(node, "class")?.includes("gc-comment-form")
-  );
-  const fields = (form: Node) => {
-    const out: Record<string, string> = {};
-    const visit = (node: Node) => {
-      if (node.nodeName === "input") {
-        const name = attr(node, "name");
-        if (name) out[name] = attr(node, "value") ?? "";
-      }
-      if ("childNodes" in node) node.childNodes?.forEach(visit);
-    };
-    visit(form);
-    return out;
-  };
-  const original = forms.map(fields).find((form) => form.postId === a.id);
-  assert.ok(
-    original &&
-      Object.keys(original).some((name) => name.startsWith("$ACTION_ID_"))
-  );
-  const form = new FormData();
-  for (const [key, value] of Object.entries(original)) form.set(key, value);
+  assert.ok(html.includes(a.id) && html.includes(b.id));
   const content = "Reader action target " + randomUUID();
-  form.set("content", content);
-  form.set("redirectTo", path);
-  const response = await fetch(origin + path, {
-    method: "POST",
-    redirect: "manual",
-    headers: {
-      Origin: origin,
-      Cookie: "church_platform_session=" + f.lee.token
-    },
-    body: form
+  const body = JSON.stringify({
+    operation: "create",
+    postId: a.id,
+    content,
+    mutationId: randomUUID()
   });
-  assert.equal(response.status, 303);
-  const returned = new URL(response.headers.get("location")!, origin);
-  assert.deepEqual(
-    Object.fromEntries(returned.searchParams),
-    Object.fromEntries(new URL(path, origin).searchParams)
-  );
+  for (let retry = 0; retry < 2; retry++) {
+    const response = await fetch(origin + "/api/platform/comments", {
+      method: "POST",
+      headers: {
+        Origin: origin,
+        Cookie: "church_platform_session=" + f.lee.token,
+        "Content-Type": "application/json",
+        "X-Expected-Account": f.lee.id
+      },
+      body
+    });
+    assert.equal(response.status, 200);
+  }
+  const returned = await get(path, f.lee.token);
+  assert.equal(returned.url, origin + path);
   assert.equal(
     await db.platformPostComment.count({
       where: { postId: a.id, authorId: f.lee.id, content }

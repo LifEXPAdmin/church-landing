@@ -1,14 +1,14 @@
 import type { Prisma, PlatformPostComment, PlatformPost } from "@prisma/client";
-import { PortalError } from "./portal";
+import { PortalError } from "./portal-policy";
 import {
   postCanEdit,
   postCanModerate,
   postCanReply,
-  postId,
   postReadableWhere,
   type PostContext,
   type PostTx
 } from "./post-access";
+import { postId } from "./post-input";
 import { socialUserWhere } from "./social-policy";
 
 export function commentVisibleWhere(

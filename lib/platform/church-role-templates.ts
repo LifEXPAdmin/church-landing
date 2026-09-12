@@ -1,5 +1,5 @@
 import type { Prisma } from "@prisma/client";
-import { expected, PortalError } from "./portal";
+import { expected, PortalError } from "./portal-policy";
 import {
   rolePresets,
   roleRecommendationChoices,

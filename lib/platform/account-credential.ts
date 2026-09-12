@@ -1,5 +1,5 @@
 import type { Prisma } from "@prisma/client";
-import { AccountError } from "./accounts";
+import { AccountError } from "./account-error";
 import { hashSessionToken, validToken, verifyPassword } from "./auth";
 
 export const recentAuthenticationPurposes = [

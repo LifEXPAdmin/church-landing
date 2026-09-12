@@ -4,13 +4,13 @@ import type {
   PersonalPhotoAudience,
   Prisma
 } from "@prisma/client";
-import { PortalError } from "./portal";
+import { PortalError } from "./portal-policy";
 import {
-  postId,
   postReadableWhere,
   type PostContext,
   type PostTx
 } from "./post-access";
+import { postId } from "./post-input";
 import { socialUserWhere } from "./social-policy";
 
 export const PHOTO_LIBRARY_LIMIT = 1000;

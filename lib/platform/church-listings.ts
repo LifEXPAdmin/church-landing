@@ -1,16 +1,13 @@
 import { randomUUID } from "node:crypto";
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { normalizeEmail } from "./accounts";
+import { ADULT_POLICY, eligibility, operator, portal } from "./portal";
 import {
-  ADULT_POLICY,
   churchSelect,
-  eligibility,
   eligibleWhere,
   expected,
-  operator,
-  portal,
   PortalError
-} from "./portal";
+} from "./portal-policy";
 import {
   listingFields,
   projectListingData,

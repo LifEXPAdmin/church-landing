@@ -1,5 +1,6 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
-import { AccountError, SESSION_SECONDS } from "./accounts";
+import { SESSION_SECONDS } from "./accounts";
+import { AccountError } from "./account-error";
 import { withOwnedSession } from "./account-sessions";
 import {
   AccountLifecycleError,

@@ -1,5 +1,11 @@
 # Try your Godschurches account
 
+The complete `npm run test:support` gate retains its staged development,
+production HTTPS and restart checks, then discovers every remaining `.test.ts`
+file under `tests` and `lib` and runs it in the isolated HTTPS fixture. Its final
+coverage count must include all discovered files. A diagnostic continuation after
+a failure is useful evidence but does not replace a passing complete gate.
+
 ## Google foundation test scope
 
 The Google account service and interface are implemented but Google stays hidden
@@ -223,6 +229,7 @@ are Secure, HttpOnly, SameSite=Lax and scoped to this host with Path=/. Logout
 revokes this device's session. A password change/reset revokes every session.
 There is no application password store in localStorage and no cosmetic
 "Keep me signed in" switch. Social sign-in and passkeys are separate future work.
+
 ## Image maintenance verification
 
 The portal harness includes `tests/media-maintenance.test.ts` alongside image

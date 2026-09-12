@@ -1,9 +1,10 @@
 import type { PrismaClient } from "@prisma/client";
-import { withPostRead, postId } from "./post-access";
+import { withPostRead } from "./post-access";
+import { postId } from "./post-input";
 import { imageTarget, readableImageTarget } from "./media-access";
 import { effectiveChurchGrants } from "./church-permissions";
 import { claimReviewEnabled } from "./church-claims";
-import { isEligible } from "./portal";
+import { isEligible } from "./portal-policy";
 import { listImagesIn } from "./media";
 import { imagesAvailable } from "./media-storage";
 

@@ -1,10 +1,11 @@
 import { socialUserWhere, socialDiscoveryWhere } from "./social-policy";
 import { createHash } from "node:crypto";
 import { Prisma, type PrismaClient } from "@prisma/client";
-import { withPostRead, postReadableWhere, postId } from "./post-access";
+import { withPostRead, postReadableWhere } from "./post-access";
+import { postId } from "./post-input";
 import { communityAuthorSelect } from "./public-profile";
 import { POST_TOPICS } from "./post-options";
-import { PortalError } from "./portal";
+import { PortalError } from "./portal-policy";
 
 export const SEARCH_KINDS = [
   "posts",

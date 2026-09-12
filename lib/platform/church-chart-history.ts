@@ -1,5 +1,5 @@
 import type { Prisma } from "@prisma/client";
-import { eligibleWhere, PortalError } from "./portal";
+import { eligibleWhere, PortalError } from "./portal-policy";
 import { parseChartChanges, type ChartPlacement } from "./church-chart-model";
 import type { PositionSummary } from "./church-structure-types";
 

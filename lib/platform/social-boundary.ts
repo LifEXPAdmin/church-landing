@@ -2,7 +2,7 @@ import type { PrismaClient } from "@prisma/client";
 import { accountConfig } from "./account-config";
 import { readBody, requestSessionToken } from "./account-boundary";
 import { readAccountSession } from "./accounts";
-import { PortalError } from "./portal";
+import { PortalError } from "./portal-policy";
 import { allowWorkspaceAttempt } from "./account-limits";
 export { workspaceError as socialError } from "./post-workspace-boundary";
 import { workspaceHeaders } from "./post-workspace-boundary";
@@ -34,7 +34,10 @@ export async function socialWriteInput(
     );
   const expectedAccount = request.headers.get("x-expected-account");
   if (expectedAccount && expectedAccount !== actor.id)
-    throw new PortalError(401, "Your sign-in changed. Reload before continuing.");
+    throw new PortalError(
+      401,
+      "Your sign-in changed. Reload before continuing."
+    );
   if (
     !(await allowWorkspaceAttempt(
       db,

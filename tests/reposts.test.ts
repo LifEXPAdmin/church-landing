@@ -26,7 +26,7 @@ import { handlePostWorkspaceRequest } from "../lib/platform/post-workspace-bound
 import { handleRepostRequest } from "../lib/platform/repost-boundary";
 import { allowWorkspaceAttempt } from "../lib/platform/account-limits";
 import { accountConfig } from "../lib/platform/account-config";
-import { communityCommand } from "../lib/platform/community";
+import { communityCommand } from "./community-fixture";
 import {
   postWorkspaceCommand as workspace,
   readPostWorkspace,

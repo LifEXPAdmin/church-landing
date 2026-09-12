@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import type { ChurchCapability, Prisma } from "@prisma/client";
-import { type Actor, churchCapability, expected, PortalError } from "./portal";
+import { type Actor, churchCapability } from "./portal";
+import { expected, PortalError } from "./portal-policy";
 
 type Tx = Prisma.TransactionClient;
 // Deliberate allowlist: adding a new product capability never makes it delegable.

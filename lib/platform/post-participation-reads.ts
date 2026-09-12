@@ -1,13 +1,13 @@
 import type { PrismaClient, Prisma } from "@prisma/client";
-import { eligibleWhere, PortalError } from "./portal";
+import { eligibleWhere, PortalError } from "./portal-policy";
 import {
   postCanEdit,
-  postId,
   postReadableWhere,
   withPostRead,
   type PostContext,
   type PostTx
 } from "./post-access";
+import { postId } from "./post-input";
 import {
   canOrganize,
   canParticipate,

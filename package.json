@@ -57,6 +57,9 @@
   "overrides": {
     "next": {
       "postcss": "$postcss"
+    },
+    "@prisma/config": {
+      "deepmerge-ts": "8.0.2"
     }
   }
 }

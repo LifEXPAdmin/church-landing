@@ -1,6 +1,7 @@
 import { revokeAccountFriendInvitations } from "./friend-invitations";
 import type { Prisma, PrismaClient } from "@prisma/client";
-import { AccountError, normalizeEmail } from "./accounts";
+import { normalizeEmail } from "./accounts";
+import { AccountError } from "./account-error";
 import { withOwnedSession } from "./account-sessions";
 import { validatePassword, verifyPassword } from "./auth";
 import { reconcileSupportAccess } from "./support-revocation";

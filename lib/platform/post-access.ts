@@ -1,3 +1,4 @@
+export { postField, postId } from "./post-input";
 import {
   socialPolicy,
   socialUserWhere,
@@ -6,7 +7,7 @@ import {
 import { effectiveChurchGrants } from "./church-permissions";
 import type { Prisma, PrismaClient, PlatformPost } from "@prisma/client";
 import { communityAuthorSelect } from "./public-profile";
-import { isEligible, PortalError } from "./portal";
+import { isEligible, PortalError } from "./portal-policy";
 import { readAccountSession } from "./accounts";
 
 export type PostTx = Prisma.TransactionClient;
@@ -175,28 +176,14 @@ export async function withPostRead<T>(
 ) {
   return db.$transaction(
     async (tx) => {
-      await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(730221, 2)`;
+      // Readers may overlap, but a lifecycle/permission writer still excludes
+      // every reader until its revocation commits. Read-only transactions also
+      // prevent a future callback from upgrading this shared lock to a writer.
+      await tx.$executeRaw`SET TRANSACTION READ ONLY`;
+      await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock_shared(730221, 2)`;
       const user = await readAccountSession(tx as PrismaClient, token);
       return work(tx, await postContext(tx, user?.id));
     },
     { maxWait: 10000, timeout: 15000 }
   );
-}
-
-export function postField(value: unknown, maximum: number, minimum = 0) {
-  // Native multipart forms encode textarea newlines as CRLF. Count and store
-  // the same logical newlines the textarea's length limit presents to people.
-  const text = typeof value === "string" ? value.replace(/\r\n?/g, "\n") : null;
-  if (text === null || text.length > maximum || text.trim().length < minimum)
-    throw new PortalError(
-      400,
-      `Use ${minimum}–${maximum} characters for this field. Your text has not been shortened.`
-    );
-  return text.trim();
-}
-export function postId(value: unknown) {
-  const id = postField(value, 100, 1);
-  if (!/^[A-Za-z0-9_-]+$/.test(id))
-    throw new PortalError(400, "Use a valid post or church reference.");
-  return id;
 }

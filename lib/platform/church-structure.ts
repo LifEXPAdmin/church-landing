@@ -14,16 +14,13 @@ import {
   positionRoleRevision
 } from "./church-role-templates";
 import { type Prisma, type PrismaClient } from "@prisma/client";
+import { eligibility, churchCapability, membership, portal } from "./portal";
 import {
   churchSelect,
-  eligibility,
   eligibleWhere,
   expected,
-  churchCapability,
-  membership,
-  portal,
   PortalError
-} from "./portal";
+} from "./portal-policy";
 import {
   structureCapabilities,
   type StructureCapability,

@@ -93,7 +93,7 @@ test("root reaches existing Home in one redirect for visitors and members, witho
       body.includes(
         signedIn
           ? "From across the community, newest first."
-          : "Take a look around."
+          : "Jesus gave us a mission."
       )
     );
     assert.ok(!body.includes("Join Waitlist"));

@@ -3,7 +3,7 @@ import { withOwnedSession } from "./account-sessions";
 import { accountDeliveryAvailable } from "./account-availability";
 import { googleAvailable } from "./google-availability";
 import { photoLibraryEnabled } from "./personal-photo-policy";
-import { isEligible, PortalError } from "./portal";
+import { isEligible, PortalError } from "./portal-policy";
 import { accountSignInMethods } from "./google-accounts";
 import { socialPrivacyIn } from "./social-privacy";
 

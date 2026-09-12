@@ -1,5 +1,6 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
-import { AccountError, normalizeEmail } from "./accounts";
+import { normalizeEmail } from "./accounts";
+import { AccountError } from "./account-error";
 import { withOwnedSession } from "./account-sessions";
 import { requireAccountCredential } from "./account-credential";
 import { createSessionToken, hashSessionToken, validToken } from "./auth";

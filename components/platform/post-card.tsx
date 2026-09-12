@@ -10,11 +10,10 @@ import { CommentSheet } from "./comment-sheet";
 import { CommentThread } from "./comment-thread";
 import type { PostView } from "@/lib/platform/post-reads";
 import { PostLink } from "./post-link";
-import { PostActionPending } from "./post-action-pending";
+import { PostLikeControl } from "./post-like-control";
 import { accountEntryHref } from "@/lib/platform/account-entry";
 import Link from "next/link";
 import { Heart, Globe, MessageCircle } from "lucide-react";
-import { togglePlatformPostLike } from "@/app/platform/actions";
 import { formatDate, postTypeLabels } from "@/lib/platform/format";
 import { PostParticipation } from "./post-participation";
 import { PostText } from "./post-text";
@@ -92,7 +91,6 @@ export function PostCard({
       </section>
     );
   }
-  const liked = post.liked;
   const count = post.commentCount;
   return (
     <article className="gc-post" aria-label={`Post by ${post.author.name}`}>
@@ -207,26 +205,16 @@ export function PostCard({
         )}
 
         {currentUserId ? (
-          <form action={togglePlatformPostLike}>
-            <PostActionPending />
-            <input type="hidden" name="postId" value={post.id} />
-            <input type="hidden" name="redirectTo" value={redirectTo} />
-            <button
-              className="gc-post-action"
-              type="submit"
-              aria-pressed={liked}
-              aria-label={liked ? "Unlike post" : "Like post"}
-            >
-              <Heart
-                aria-hidden="true"
-                className={liked ? "fill-current" : ""}
-              />
-              <span className="gc-post-action-label">
-                {liked ? "Liked" : "Like"}
-              </span>
-              <span>{post.likeCount}</span>
-            </button>
-          </form>
+          <PostLikeControl
+            key={`${currentUserId}-${post.id}`}
+            postId={post.id}
+            owner={currentUserId}
+            initial={{
+              liked: post.liked,
+              version: post.likeVersion,
+              count: post.likeCount
+            }}
+          />
         ) : (
           <Link
             className="gc-post-action"
@@ -264,7 +252,11 @@ export function PostCard({
       )}
       {fullDiscussion && (
         <div id={`discussion-${post.id}`} className="scroll-mt-4">
-          <CommentThread postId={post.id} commentId={commentId} />
+          <CommentThread
+            postId={post.id}
+            commentId={commentId}
+            initiallyClosed={post.discussionClosed}
+          />
         </div>
       )}
     </article>

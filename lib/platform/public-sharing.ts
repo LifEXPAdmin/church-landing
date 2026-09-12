@@ -1,13 +1,9 @@
 import { getPostViewIn } from "./post-reads";
 import { accountConfig } from "./account-config";
-import {
-  postId,
-  postContext,
-  postReadableWhere,
-  withPostRead
-} from "./post-access";
+import { postContext, postReadableWhere, withPostRead } from "./post-access";
+import { postId } from "./post-input";
 import { commentVisibleWhere } from "./comment-policy";
-import { PortalError } from "./portal";
+import { PortalError } from "./portal-policy";
 import type { PrismaClient } from "@prisma/client";
 
 export type ShareKind = "post" | "comment" | "church" | "event" | "profile";

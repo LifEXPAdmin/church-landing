@@ -85,7 +85,7 @@ test("HTML and RSC keep request cookies private while preserving account recogni
               `${path}: credentials stay private`
             );
           if (path === "/platform/settings" && !rsc)
-            assert.equal(body.includes("Show active sign-ins"), signedIn);
+            assert.equal(body.includes("Security"), signedIn);
           if (!signedIn) assert.ok(!body.includes(account.email));
         }
       }

@@ -6,15 +6,13 @@ import { verifiedChurchManagement } from "./church-management";
 import { randomUUID } from "node:crypto";
 import { Prisma, type PrismaClient, type ChurchClaim } from "@prisma/client";
 import { normalizeEmail } from "./accounts";
+import { portal, eligibility, ADULT_POLICY } from "./portal";
 import {
-  portal,
   PortalError,
-  eligibility,
   eligibleWhere,
   expected,
-  churchSelect,
-  ADULT_POLICY
-} from "./portal";
+  churchSelect
+} from "./portal-policy";
 import { listingData, likelyChurchMatches } from "./church-listings";
 import { projectListingData } from "./church-listing-data";
 import {

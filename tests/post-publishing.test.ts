@@ -19,7 +19,7 @@ import {
   listPosts,
   getProfilePosts
 } from "../lib/platform/post-reads";
-import { communityCommand } from "../lib/platform/community";
+import { communityCommand } from "./community-fixture";
 import { calendarCommand } from "../lib/platform/calendar-commands";
 
 const db = new PrismaClient();
@@ -104,11 +104,17 @@ test("post authorship, church audience and projections apply across direct, feed
     role: "CHURCH"
   });
   await denied(f.create(categorized, { authorChurchId: f.churchA.id }));
-  await communityCommand(db, f.blake.token, "like", { postId: post.id });
-  await communityCommand(db, f.blake.token, "comment", {
-    postId: post.id,
-    content: "Forbidden outsider reply"
-  });
+  await denied(
+    communityCommand(db, f.blake.token, "like", { postId: post.id }),
+    404
+  );
+  await denied(
+    communityCommand(db, f.blake.token, "comment", {
+      postId: post.id,
+      content: "Forbidden outsider reply"
+    }),
+    404
+  );
   assert.equal(
     await db.platformPostLike.count({ where: { postId: post.id } }),
     0
@@ -218,8 +224,8 @@ test("competing post edits conflict; withdrawal hides dependent discussion and r
   );
   await communityCommand(db, f.lee.token, "delete-post", {
     postId: p.id,
-    expectedVersion: "2",
-    confirmed: "on"
+    expectedVersion: 2,
+    confirmed: true
   });
   assert.equal(await getPost(db, f.lee.token, p.id), null);
   assert.equal(
@@ -254,10 +260,13 @@ test("competing post edits conflict; withdrawal hides dependent discussion and r
     row.audit.every((a) => a.targetId === null),
     "Ordinary post changes do not acquire participation references"
   );
-  await communityCommand(db, f.val.token, "comment", {
-    postId: p.id,
-    content: "Cannot append after withdrawal"
-  });
+  await denied(
+    communityCommand(db, f.val.token, "comment", {
+      postId: p.id,
+      content: "Cannot append after withdrawal"
+    }),
+    404
+  );
   assert.equal(
     await db.platformPostComment.count({ where: { postId: p.id } }),
     1
@@ -537,10 +546,13 @@ test("one event discussion uses the intersection of post and current calendar au
     confirmed: true
   });
   assert.equal(await getPost(db, f.lee.token, post.id), null);
-  await communityCommand(db, f.lee.token, "comment", {
-    postId: post.id,
-    content: "No longer visible through its event"
-  });
+  await denied(
+    communityCommand(db, f.lee.token, "comment", {
+      postId: post.id,
+      content: "No longer visible through its event"
+    }),
+    404
+  );
   assert.equal(
     await db.platformPostComment.count({ where: { postId: post.id } }),
     0

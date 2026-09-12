@@ -1,12 +1,12 @@
 import type { Prisma, PlatformPost } from "@prisma/client";
-import { eligibleWhere, PortalError } from "./portal";
+import { eligibleWhere, PortalError } from "./portal-policy";
 import {
   postContext,
-  postId,
   postReadableWhere,
   type PostContext,
   type PostTx
 } from "./post-access";
+import { postId } from "./post-input";
 
 /** The source must remain public even when the viewer can read church content. */
 export function repostSourceWhere(

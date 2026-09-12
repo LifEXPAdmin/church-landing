@@ -1,4 +1,4 @@
-import { PortalError } from "./portal";
+import { PortalError } from "./portal-policy";
 import { repostSourceWhere } from "./repost-policy";
 import { readableAssetWhere } from "./personal-photo-policy";
 import { socialUserWhere, socialDiscoveryWhere } from "./social-policy";
@@ -11,13 +11,13 @@ import {
   postCanEdit,
   postCanWithdraw,
   postCanReply,
-  postId,
   postInclude,
   postReadableWhere,
   withPostRead,
   type PostContext,
   type PostTx
 } from "./post-access";
+import { postId } from "./post-input";
 
 const commentSelect = {
   id: true,
@@ -38,11 +38,11 @@ function include(
     ...postInclude,
     likes: {
       where: { userId: context.actorId ?? "", user: socialUserWhere(context) },
-      select: { id: true }
+      select: { active: true, version: true }
     },
     _count: {
       select: {
-        likes: { where: { user: socialUserWhere(context) } },
+        likes: { where: { active: true, user: socialUserWhere(context) } },
         images: {
           where: { purpose: "POST_PHOTO" as const, status: "READY" as const }
         },
@@ -106,7 +106,8 @@ function project(post: PostRow, context: PostContext, now: Date) {
     allowReposts: post.allowReposts,
     pinned: !!post.pinUntil && post.pinUntil > now,
     likeCount: post._count.likes,
-    liked: post.likes.length > 0,
+    liked: post.likes[0]?.active ?? false,
+    likeVersion: post.likes[0]?.version ?? 0,
     commentCount: post._count.comments,
     photoCount: post._count.images + post._count.photoReferences,
     canEdit: postCanEdit(context, post),

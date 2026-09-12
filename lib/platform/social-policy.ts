@@ -1,6 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import { activePublicAccount } from "./public-profile";
-import { PortalError } from "./portal";
+import { PortalError } from "./portal-policy";
 export type SocialPolicy = {
   blockedIds?: string[];
   mutedIds?: string[];

@@ -11,7 +11,7 @@ import {
 import { socialPolicy } from "../lib/platform/social-policy";
 import { commentCommand as comment } from "../lib/platform/comment-commands";
 import { readComments, readCommentDrafts } from "../lib/platform/comment-reads";
-import { communityCommand } from "../lib/platform/community";
+import { communityCommand } from "./community-fixture";
 import { getPost, listPosts } from "../lib/platform/post-reads";
 import { getMemberProfile } from "../lib/platform/profiles";
 import { communitySearch } from "../lib/platform/community-search";
@@ -255,17 +255,29 @@ test("bilateral block reaches legacy writes, direct reads, paginated search, sav
     await readPostWorkspace(db, f.memberA.token, { view: "saved" })
   );
   assert.ok(!saved.includes(personal.content));
-  await communityCommand(db, f.memberA.token, "follow", {
-    followingId: f.memberB.id
-  });
-  await communityCommand(db, f.memberB.token, "follow", {
-    followingId: f.memberA.id
-  });
-  await communityCommand(db, f.memberA.token, "like", { postId: personal.id });
-  await communityCommand(db, f.memberA.token, "comment", {
-    postId: personal.id,
-    content: "Blocked reply"
-  });
+  await denied(
+    communityCommand(db, f.memberA.token, "follow", {
+      followingId: f.memberB.id
+    }),
+    404
+  );
+  await denied(
+    communityCommand(db, f.memberB.token, "follow", {
+      followingId: f.memberA.id
+    }),
+    404
+  );
+  await denied(
+    communityCommand(db, f.memberA.token, "like", { postId: personal.id }),
+    404
+  );
+  await denied(
+    communityCommand(db, f.memberA.token, "comment", {
+      postId: personal.id,
+      content: "Blocked reply"
+    }),
+    404
+  );
   assert.equal(
     await db.platformFollow.count({
       where: {

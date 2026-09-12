@@ -18,10 +18,12 @@ import { useUnsavedSocialWork } from "./use-unsaved-social-work";
 
 export function CommentThread({
   postId,
-  commentId
+  commentId,
+  initiallyClosed = false
 }: {
   postId: string;
   commentId?: string;
+  initiallyClosed?: boolean;
 }) {
   const [sort, setSort] = useState<"oldest" | "newest">("oldest");
   const [data, setData] = useState<CommentThreadPage | null>(null);
@@ -586,6 +588,9 @@ export function CommentThread({
           }}
         />
       )}
+      {(data?.discussionClosed ?? initiallyClosed) && (
+        <p>This discussion is closed. You can still read its comments.</p>
+      )}
       {hidden || !data ? (
         <button
           type="button"
@@ -607,7 +612,11 @@ export function CommentThread({
             .filter((row) => row.id !== context?.root?.id)
             .map((row) => item(row))}
           {!data.items.length && !context && (
-            <p>No comments yet. Make room for a thoughtful conversation.</p>
+            <p>
+              {data.discussionClosed
+                ? "No comments were added."
+                : "No comments yet. Make room for a thoughtful conversation."}
+            </p>
           )}
           {data.nextCursor && (
             <button
@@ -619,7 +628,7 @@ export function CommentThread({
               More comments
             </button>
           )}
-          {!owner && (
+          {!owner && !data.discussionClosed && (
             <Link
               className="gc-button gc-button-quiet"
               href={accountEntryHref(

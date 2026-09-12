@@ -1,3 +1,5 @@
+import { AccountError } from "./account-error";
+export { AccountError } from "./account-error";
 import {
   bindSignupFriendInvitation,
   finishVerifiedFriendInvitation
@@ -25,22 +27,6 @@ import {
 
 export const SESSION_SECONDS = 60 * 60 * 24 * 30;
 const txOptions = { maxWait: 5000, timeout: 15000 };
-export class AccountError extends Error {
-  code:
-    | "invalid"
-    | "credentials"
-    | "registration"
-    | "session"
-    | "grant"
-    | "handle-invalid"
-    | "handle-taken"
-    | "profile"
-    | "profile-conflict";
-  constructor(code: AccountError["code"]) {
-    super(code);
-    this.code = code;
-  }
-}
 export function normalizeEmail(value: unknown) {
   if (typeof value !== "string" || value.length > 254) return null;
   const email = value.trim().toLowerCase();

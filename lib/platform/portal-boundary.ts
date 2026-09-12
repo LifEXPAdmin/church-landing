@@ -3,12 +3,8 @@ import { accountConfig } from "./account-config";
 import { allowAccountAttempt } from "./account-limits";
 import { requestSessionToken, readBody } from "./account-boundary";
 import { readAccountSession } from "./accounts";
-import {
-  getPortalSnapshot,
-  portalCommand,
-  PortalError,
-  publicChurches
-} from "./portal";
+import { getPortalSnapshot, portalCommand, publicChurches } from "./portal";
+import { PortalError } from "./portal-policy";
 import type { PortalView } from "./portal-types";
 import { churchSearchQuery } from "./church-search";
 

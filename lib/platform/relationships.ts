@@ -4,9 +4,10 @@ import {
 } from "./friend-invitations";
 import type { PrismaClient } from "@prisma/client";
 import { withOwnedSession } from "./account-sessions";
-import { expected, PortalError } from "./portal";
+import { expected, PortalError } from "./portal-policy";
 import { activePublicAccount, communityAuthorSelect } from "./public-profile";
-import { postId, withPostRead } from "./post-access";
+import { withPostRead } from "./post-access";
+import { postId } from "./post-input";
 import { socialCommand, socialInput } from "./social-operations";
 import { socialPolicy, socialUserWhere } from "./social-policy";
 import { socialPrivacyIn } from "./social-privacy";

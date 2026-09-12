@@ -447,12 +447,14 @@ try {
       exact: true
     })
     .waitFor();
-  assert.equal(
-    await page
-      .getByRole("region", { name: "Your church tools", exact: true })
-      .count(),
-    0
-  );
+  // The shared region now also contains public welcome information. Guests
+  // must never receive management actions or private management projections.
+  assert.equal(await page.getByRole("navigation", { name: "Manage church", exact: true }).count(), 0);
+  const guestTools = await page.request.get(config.origin + "/api/platform/church-tools?churchId=" + church.id);
+  assert.equal(guestTools.status(), 200);
+  const guestProjection = await guestTools.json();
+  assert.equal(guestProjection.ownerId, null);
+  assert.deepEqual(guestProjection.capabilities, []);
   await db.church.update({
     where: { id: church.id },
     data: { communityListed: false }

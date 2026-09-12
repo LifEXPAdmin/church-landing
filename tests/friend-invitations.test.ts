@@ -359,7 +359,7 @@ test("legacy community unfollow records permanent removal and stale signup compl
     grant = t;
   });
   await consumeAccountGrant(db, grant, "VERIFY_EMAIL");
-  const { communityCommand } = await import("../lib/platform/community");
+  const { communityCommand } = await import("./community-fixture");
   await communityCommand(db, a.token, "unfollow", {
     followingId: b.account.id
   });

@@ -1,14 +1,9 @@
 import { createHash, randomUUID } from "node:crypto";
 import type { MediaAsset, Prisma, PrismaClient } from "@prisma/client";
 import { withOwnedSession } from "./account-sessions";
-import {
-  postContext,
-  postField,
-  postId,
-  withPostRead,
-  type PostTx
-} from "./post-access";
-import { PortalError } from "./portal";
+import { postContext, withPostRead, type PostTx } from "./post-access";
+import { postField, postId } from "./post-input";
+import { PortalError } from "./portal-policy";
 import {
   centeredCrop,
   imageAspect,
@@ -579,23 +574,28 @@ export async function collectImageGarbage(
   let removed = 0;
   for (const candidate of candidates) {
     signal.throwIfAborted();
-    const eligible = await withPostRead(db, "", async (tx) => {
-      const row = await tx.mediaAsset.findUnique({
-        where: { storagePrefix: candidate.storagePrefix }
-      });
-      if (
-        row?.status === "READY" ||
-        (row?.status === "UPLOADING" && row.leaseUntil > now)
-      )
-        return false;
-      // Expire before external deletion so this attempt can never attach later.
-      if (row?.status === "UPLOADING")
-        await tx.mediaAsset.update({
-          where: { id: row.id },
-          data: { leaseUntil: new Date(0) }
+    const eligible = await db.$transaction(
+      async (tx) => {
+        // Expiring an upload is a lifecycle write, not a shared media read.
+        await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(730221, 2)`;
+        const row = await tx.mediaAsset.findUnique({
+          where: { storagePrefix: candidate.storagePrefix }
         });
-      return true;
-    });
+        if (
+          row?.status === "READY" ||
+          (row?.status === "UPLOADING" && row.leaseUntil > now)
+        )
+          return false;
+        // Expire before external deletion so this attempt can never attach later.
+        if (row?.status === "UPLOADING")
+          await tx.mediaAsset.update({
+            where: { id: row.id },
+            data: { leaseUntil: new Date(0) }
+          });
+        return true;
+      },
+      { maxWait: 10000, timeout: 15000 }
+    );
     if (!eligible) continue;
     signal.throwIfAborted();
     await store.delete(

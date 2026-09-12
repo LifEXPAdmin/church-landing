@@ -1,12 +1,13 @@
 import { MediaPurpose, type MediaAsset } from "@prisma/client";
 import {
-  postId,
   postCanEdit,
   postReadableWhere,
   type PostContext,
   type PostTx
 } from "./post-access";
-import { hasChurchCapability, PortalError } from "./portal";
+import { postId } from "./post-input";
+import { hasChurchCapability } from "./portal";
+import { PortalError } from "./portal-policy";
 import { socialUserWhere } from "./social-policy";
 
 export type ImageTarget = Pick<

@@ -1,6 +1,7 @@
 import type { PlatformPost } from "@prisma/client";
-import { expected, PortalError } from "./portal";
-import { postId, type PostContext, type PostTx } from "./post-access";
+import { expected, PortalError } from "./portal-policy";
+import { type PostContext, type PostTx } from "./post-access";
+import { postId } from "./post-input";
 import {
   readableAssetWhere,
   requirePhotoLibrary

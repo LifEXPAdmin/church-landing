@@ -224,8 +224,16 @@ test("public HTML/RSC and unauthenticated settings do not expose private account
     );
     assert.ok(!html.includes('"tokenHash"'), `${path}: tokenHash absent`);
     if (path === "/platform") assert.ok(html.includes("Synthetic testimony"));
-    if (path.includes("search"))
-      assert.ok(html.includes("Synthetic testimony"));
+    if (path.includes("search")) {
+      const search = await fetch(
+        origin + "/api/platform/search?kind=posts&q=Synthetic"
+      );
+      assert.equal(search.status, 200);
+      const results = await search.text();
+      assert.ok(results.includes("Synthetic testimony"));
+      for (const secret of [user.email, user.passwordHash!, '"tokenHash"'])
+        assert.ok(!results.includes(secret));
+    }
   }
   const response = await fetch(origin + "/platform/settings", {
     redirect: "manual"
@@ -257,7 +265,13 @@ test("HTTP password change invalidates cookie and all DB sessions; signed-in int
     headers: { Cookie: cookie }
   });
   assert.equal(settings.status, 200);
-  assert.ok((await settings.text()).includes("Current password"));
+  assert.ok((await settings.text()).includes("Security"));
+  const security = await fetch(
+    origin + "/platform/settings/security/password",
+    { headers: { Cookie: cookie } }
+  );
+  assert.equal(security.status, 200);
+  assert.ok((await security.text()).includes("Password"));
   assert.equal(
     (
       await post(

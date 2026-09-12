@@ -1,16 +1,15 @@
 import type { PrismaClient, PlatformPost } from "@prisma/client";
 import { withOwnedSession } from "./account-sessions";
 import { postSchedule } from "./post-commands";
-import { eligibleWhere, expected, PortalError } from "./portal";
+import { eligibleWhere, expected, PortalError } from "./portal-policy";
 import {
   postCanEdit,
   postContext,
-  postField,
-  postId,
   postReadableWhere,
   type PostContext,
   type PostTx
 } from "./post-access";
+import { postField, postId } from "./post-input";
 
 export const participationInclude = {
   eventOccurrence: { include: { event: { include: { calendar: true } } } }

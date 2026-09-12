@@ -265,7 +265,7 @@ export async function downloadAccountExport(
       }
     });
     const likes = await tx.platformPostLike.findMany({
-      where: { userId },
+      where: { userId, active: true },
       orderBy: { id: "asc" },
       take: MAX_ROWS + 1,
       select: { postId: true, createdAt: true }

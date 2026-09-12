@@ -1,4 +1,6 @@
 "use client";
+import { flushSync } from "react-dom";
+import { settlePhotoNavigation } from "./use-photo-back-guard";
 /* eslint-disable @next/next/no-img-element -- Local crop previews and authorized images cannot use the shared optimizer. */
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -121,12 +123,16 @@ export function ProfileImageControl({
     },
     []
   );
-  const reset = () => {
+  const reset = async () => {
     generation.current++;
-    setFile(null);
-    setDimensions({ width: 0, height: 0 });
-    attempt.current = null;
-    if (input.current) input.current.value = "";
+    flushSync(() => {
+      setFile(null);
+      setDimensions({ width: 0, height: 0 });
+      attempt.current = null;
+      if (input.current) input.current.value = "";
+      onState(kind, { busy: busy || preparing, dirty: false });
+    });
+    await settlePhotoNavigation();
   };
   async function choose(
     selected: File,
@@ -256,7 +262,7 @@ export function ProfileImageControl({
         ) {
           const latest = await currentImage();
           setSaved(latest);
-          reset();
+          await reset();
           setMessage(
             latest?.id === result.id
               ? `${title} saved.${retainsHistory ? " Previous pictures remain in Photos." : ""}`
@@ -274,7 +280,7 @@ export function ProfileImageControl({
       } catch (error) {
         if (error instanceof SocialClientError && error.status === 401) {
           setSaved(null);
-          reset();
+          await reset();
         }
         setMessage(
           error instanceof Error
@@ -579,8 +585,8 @@ export function ProfileImageControl({
                 type="button"
                 className="gc-profile-text-button"
                 disabled={disabled}
-                onClick={() => {
-                  reset();
+                onClick={async () => {
+                  await reset();
                   setMessage(
                     "Selected photo discarded. Your saved photo is unchanged."
                   );

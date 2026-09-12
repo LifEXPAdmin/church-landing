@@ -2,8 +2,9 @@ import type { PrismaClient } from "@prisma/client";
 import { accountConfig } from "./account-config";
 import { allowAccountAttempt } from "./account-limits";
 import { requestSessionToken, readBody } from "./account-boundary";
-import { AccountError, readAccountSession } from "./accounts";
-import { PortalError } from "./portal";
+import { readAccountSession } from "./accounts";
+import { AccountError } from "./account-error";
+import { PortalError } from "./portal-policy";
 import { participationCommand } from "./post-participation";
 import {
   getPostParticipation,

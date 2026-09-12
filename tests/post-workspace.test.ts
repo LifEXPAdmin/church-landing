@@ -9,7 +9,7 @@ import {
 } from "./seed-portal";
 import { PortalError, portalCommand } from "../lib/platform/portal";
 import { loginAccount } from "../lib/platform/accounts";
-import { communityCommand } from "../lib/platform/community";
+import { communityCommand } from "./community-fixture";
 import {
   privateDraftPayload,
   postWorkspaceCommand as command,

@@ -6,7 +6,7 @@ import { defaultProfileStyle } from "./profile-style";
 import { listImagesIn } from "./media";
 import { listPostsIn } from "./post-reads";
 import { postReadableWhere, withPostRead } from "./post-access";
-import { PortalError } from "./portal";
+import { PortalError } from "./portal-policy";
 import { imagesAvailable } from "./media-storage";
 
 export const profilePresentationSelect = {

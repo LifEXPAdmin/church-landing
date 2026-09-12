@@ -7,7 +7,7 @@ export class SocialClientError extends Error {
   }
 }
 export async function currentSocialOwner(): Promise<string | null> {
-  const response = await fetch("/api/platform/profile", {
+  const response = await fetch("/api/platform/profile?view=identity", {
     cache: "no-store",
     credentials: "same-origin"
   });
@@ -99,6 +99,7 @@ export type CommentThreadPage = {
   pinned: CommentItem | null;
   pinVersion: number;
   canPin: boolean;
+  discussionClosed: boolean;
   canReply: boolean;
   visibleCount: number;
   conversation: { mode: "DEFAULT" | "FOLLOW" | "MUTE"; version: number };

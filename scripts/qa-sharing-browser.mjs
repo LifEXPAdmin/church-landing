@@ -513,6 +513,7 @@ try {
       buffer: photoBytes
     });
     await page.getByRole("button", { name: "Discard selected photo" }).click();
+    await page.getByText("Selected photo discarded. Your saved photo is unchanged.", { exact: true }).waitFor();
     await page
       .getByRole("button", { name: "Remove avatar", exact: true })
       .waitFor();
@@ -530,6 +531,7 @@ try {
       }
     });
     await page.reload();
+    await page.locator(`[data-comment-id="${photoComment.id}"]`).scrollIntoViewIfNeeded();
     await page
       .locator(`[data-comment-id="${photoComment.id}"] .gc-avatar img`)
       .waitFor();

@@ -2,7 +2,12 @@ import { randomBytes } from "node:crypto";
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { accountConfig } from "./account-config";
 import { withOwnedSession } from "./account-sessions";
-import { eligibleWhere, expected, isEligible, PortalError } from "./portal";
+import {
+  eligibleWhere,
+  expected,
+  isEligible,
+  PortalError
+} from "./portal-policy";
 import { ADULT_POLICY } from "./portal-types";
 import { socialCommand, socialInput } from "./social-operations";
 type Tx = Prisma.TransactionClient;

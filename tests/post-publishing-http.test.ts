@@ -87,9 +87,23 @@ test("actual post HTML and RSC filter church audiences before feed, search, prof
           body = await response.text();
         assert.equal(
           body.includes(marker),
-          production && token === f.coordinator.token,
+          production &&
+            token === f.coordinator.token &&
+            !path.includes("search"),
           `${path}, rsc=${rsc}, authorized=${token === f.coordinator.token}`
         );
+        if (path.includes("search")) {
+          const response = await get(
+            "/api/platform/search?kind=posts&q=" +
+              encodeURIComponent(marker.replace("PRIVATE CHURCH POST ", "")),
+            token
+          );
+          assert.equal(response.status, 200);
+          const results = await response.text();
+          assert.equal(results.includes(marker), token === f.coordinator.token);
+          assert.ok(!results.includes(f.memberA.email));
+          assert.ok(!results.includes(f.memberA.username));
+        }
         assert.ok(!body.includes(f.memberA.email));
         if (path.includes("/posts/") || path === "/platform") {
           assert.ok(

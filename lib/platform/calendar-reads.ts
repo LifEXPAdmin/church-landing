@@ -1,5 +1,6 @@
 import type { Prisma, PrismaClient, CalendarOccurrence } from "@prisma/client";
-import { portal, PortalError, eligibleWhere } from "./portal";
+import { portal } from "./portal";
+import { PortalError, eligibleWhere } from "./portal-policy";
 import { postContext } from "./post-access";
 import { volunteerCommitmentsIn } from "./post-participation-reads";
 import { calendarWindow, type CalendarSchedule } from "./calendar-time";

@@ -1,5 +1,5 @@
 import { Temporal } from "@js-temporal/polyfill";
-import { PortalError } from "./portal";
+import { PortalError } from "./portal-policy";
 
 export type CalendarSchedule = {
   allDay: boolean;

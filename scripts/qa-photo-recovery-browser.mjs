@@ -202,6 +202,7 @@ try {
   const firstImage=await db.mediaAsset.findFirstOrThrow({where:{postId:post.id,status:"READY"}});
   await db.platformPost.update({where:{id:post.id},data:{status:"WITHDRAWN",withdrawnAt:new Date()}});
   await page.evaluate(()=>window.dispatchEvent(new Event("focus")));
+  await photos.getByText("Photos are unavailable. Reconnect and try again.", {exact:true}).waitFor();
   await photos.getByRole("button",{name:"Check photos",exact:true}).waitFor();assert.equal(await photos.locator("img").count(),0);
   const denied=await context.request.get(config.origin+"/api/platform/images/"+firstImage.id+"/large");assert.equal(denied.status(),404);
   await db.platformPost.update({where:{id:post.id},data:{status:"PUBLISHED",withdrawnAt:null}});

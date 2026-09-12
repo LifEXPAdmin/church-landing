@@ -2,7 +2,6 @@ import type { PrismaClient } from "@prisma/client";
 import { setTimeout as delay } from "node:timers/promises";
 import { randomUUID } from "node:crypto";
 import {
-  AccountError,
   changeAccountPassword,
   consumeAccountGrant,
   loginAccount,
@@ -12,6 +11,7 @@ import {
   updateAccountProfile,
   SESSION_SECONDS
 } from "./accounts";
+import { AccountError } from "./account-error";
 import { accountConfig } from "./account-config";
 import { accountGrantDelivery } from "./account-delivery";
 import { allowAccountAttempt } from "./account-limits";

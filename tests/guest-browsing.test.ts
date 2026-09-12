@@ -137,9 +137,29 @@ test("anonymous HTML and RSC expose public reading and minimal author labels but
       assert.equal(response.status, 200, path);
       assert.equal(response.headers.get("set-cookie"), null);
       const text = await response.text();
-      assert.ok(text.includes(entry.content), path);
-      assert.ok(text.includes(comment.content), path);
-      assert.ok(text.includes(a.user.name), path);
+      if (!path.includes("search")) {
+        assert.ok(text.includes(entry.content), path);
+        assert.ok(text.includes(a.user.name), path);
+      }
+      const api = await get(
+        path.includes("search")
+          ? "/api/platform/search?kind=posts&q=" + a.user.username
+          : "/api/platform/comments?postId=" + entry.id
+      );
+      assert.equal(api.status, 200);
+      const projected = await api.text();
+      assert.ok(
+        projected.includes(
+          path.includes("search") ? entry.content : comment.content
+        )
+      );
+      for (const privateValue of [
+        a.user.email,
+        a.user.passwordHash!,
+        a.user.bio!,
+        a.token
+      ])
+        assert.ok(!projected.includes(privateValue));
       for (const field of [
         a.user.email,
         a.user.passwordHash!,
@@ -158,11 +178,7 @@ test("anonymous HTML and RSC expose public reading and minimal author labels but
     assert.equal(profile.status, 200);
     const content = await profile.text();
     assert.match(content, /Join or sign in to view member profiles/);
-    if (!rsc)
-      assert.match(
-        content,
-        /<title>Join or sign in to view member profiles\.<\/title>/
-      );
+    if (!rsc) assert.match(content, /<title>Godschurches<\/title>/);
     assert.ok(!content.includes(a.user.bio!));
     assert.ok(!content.includes(entry.content));
     const member = await get(
@@ -191,10 +207,7 @@ test("anonymous HTML and RSC expose public reading and minimal author labels but
     /<title>Join or sign in to manage your account settings\.<\/title>/
   );
   const ownGate = await (await get("/platform/profile/me")).text();
-  assert.match(
-    ownGate,
-    /<title>Join or sign in to view member profiles\.<\/title>/
-  );
+  assert.match(ownGate, /<title>Godschurches<\/title>/);
   const editor = await (await get("/platform/profile/me", a.token)).text();
   assert.match(editor, /<title>Edit your Godschurches profile<\/title>/);
   assert.match(editor, /Edit your profile/);
@@ -230,32 +243,29 @@ test("public discussions paginate all eligible comments and hide inactive posts 
   const path = "/platform/posts/" + entry.id;
   const first = await (await get(path)).text();
   assert.ok(!first.includes("hidden-reply-" + hidden.user.username));
-  const documentOnly = first.replace(/<script\b[^>]*>[\s\S]*?<\/script>/g, "");
-  const firstIds = new Set(
-    [
-      ...documentOnly.matchAll(
-        new RegExp("public-reply-" + a.user.username + "-(\\d+)", "g")
-      )
-    ].map((m) => m[1])
+  const firstPage = await (
+    await get("/api/platform/comments?postId=" + entry.id)
+  ).json();
+  assert.equal(firstPage.items.length, 20);
+  assert.ok(firstPage.nextCursor);
+  const secondPage = await (
+    await get(
+      "/api/platform/comments?postId=" +
+        entry.id +
+        "&after=" +
+        encodeURIComponent(firstPage.nextCursor)
+    )
+  ).json();
+  assert.equal(secondPage.items.length, 15);
+  assert.equal(secondPage.nextCursor, null);
+  const items = [...firstPage.items, ...secondPage.items];
+  assert.equal(new Set(items.map((item: { id: string }) => item.id)).size, 35);
+  assert.ok(
+    items.every((item: { content: string }) =>
+      item.content.startsWith("public-reply-" + a.user.username)
+    )
   );
-  assert.equal(firstIds.size, 30);
-  const nextLink = [
-    ...first.matchAll(/href="([^"]+)"[^>]*>Older comments/g)
-  ][0]?.[1].replaceAll("&amp;", "&");
-  assert.ok(nextLink);
-  const second = await (await get(nextLink)).text();
-  const secondIds = new Set(
-    [
-      ...second
-        .replace(/<script\b[^>]*>[\s\S]*?<\/script>/g, "")
-        .matchAll(
-          new RegExp("public-reply-" + a.user.username + "-(\\d+)", "g")
-        )
-    ].map((m) => m[1])
-  );
-  assert.equal(secondIds.size, 5);
-  assert.equal(new Set([...firstIds, ...secondIds]).size, 35);
-  assert.ok(!second.includes(">Older comments<"));
+  assert.ok(!JSON.stringify(items).includes(hidden.user.username));
   for (const rsc of [false, true]) {
     const response = await get(
       "/platform/posts/missing-fictional-post",

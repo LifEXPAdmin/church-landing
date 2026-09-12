@@ -8,6 +8,44 @@ survive the additive migration `20260911161000_social_conversations`.
 
 ## Shared write protocol
 
+### Post Likes and retired mutations — 12 September 2026
+
+`/api/platform/post-likes` uses the same social write protocol. POST accepts only
+`postId`, `mutationId`, `expectedVersion` and boolean `desired`. GET with `postId`
+returns `{id,liked,version,count}` after current source access checks. A plain
+repost targets its original; a quote has its own reactions. Counts include only
+active Likes from currently visible accounts. Unlike retains the canonical row
+and increments its version, so stale changes cannot overwrite a newer choice.
+The additive migration preserves existing Like IDs and timestamps, marking them
+active at version 1. Account exports contain active Likes only.
+
+An exact retry returns its prior receipt even after a later Unlike, without
+rewriting that newer state. A new mutation rechecks current source permission.
+Every request rechecks the session; account-switch headers and origin checks
+apply at the HTTP boundary. The control retains the exact body after uncertain
+responses and requires a current status read after conflicts. Seven old native
+post/comment/follow/Like action exports are retired. The only export remaining
+in the former community action module is logout; current service APIs own writes.
+
+### Read concurrency and browser projections
+
+Post/media read transactions use the existing shared advisory gate in database
+read-only mode. Lifecycle and permission writers retain the exclusive gate;
+cleanup that expires upload leases is explicitly a writer. No lock upgrades or
+permission caches are introduced. Portal/support reconciliation remains under
+its existing exclusive write gate and is not claimed as concurrent read work.
+
+The browser's before/after identity checks use the minimal `profile?view=identity`
+projection from the existing owned-session service. Author avatars load only
+while visible. Identical simultaneous avatar reads may share one promise within
+the expected account; results are not cached, and focus/visibility/relationship
+changes invalidate in-flight sharing. Individual image bytes still recheck
+current authorization before and after delivery.
+
+Comment thread responses include the authorized post's `discussionClosed`
+state. Closed discussions explain that replies are closed and do not invite
+guests to sign in to reply. Other reply restrictions retain their existing rules.
+
 Relationships, comments and galleries use POST JSON on the same origin with the
 existing session cookie. Ownership comes from the revalidated session under the
 account/church lifecycle transaction gate. Never supply an owner or acting user
@@ -45,13 +83,13 @@ reviewed contract. No silent receipt or tombstone pruning is implemented.
 
 GET views:
 
-| View                                | Query                        | Response                                                                                  |
-| ----------------------------------- | ---------------------------- | ----------------------------------------------------------------------------------------- |
+| View                                | Query                        | Response                                                                                                                |
+| ----------------------------------- | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
 | status                              | kind=person/church, targetId | Own version, following, consented reciprocal friends, favorite, muted, snoozedUntil and blocked state; absent version 0 |
-| privacy                             | none                         | Own mentions, showRelationships and version; absent version 0                             |
-| following                           | optional after               | Canonical person-follow IDs, public author labels and own settings                        |
-| controls                            | optional after               | All own explicit relationship settings                                                    |
-| favorites, muted, blocked, churches | optional after               | Filtered own settings; churches means followed churches                                   |
+| privacy                             | none                         | Own mentions, showRelationships and version; absent version 0                                                           |
+| following                           | optional after               | Canonical person-follow IDs, public author labels and own settings                                                      |
+| controls                            | optional after               | All own explicit relationship settings                                                                                  |
+| favorites, muted, blocked, churches | optional after               | Filtered own settings; churches means followed churches                                                                 |
 
 Lists return `{items,nextCursor}`, at most 20 rows in ascending ID order. Pass
 `after=nextCursor` unchanged. Empty pages/unknown targets contain no other user's

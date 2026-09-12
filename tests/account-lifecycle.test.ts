@@ -17,7 +17,7 @@ import {
   reactivateAccount,
   AccountLifecycleError
 } from "../lib/platform/account-lifecycle";
-import { communityCommand } from "../lib/platform/community";
+import { communityCommand } from "./community-fixture";
 import {
   prepareAccountExport,
   downloadAccountExport
@@ -491,12 +491,21 @@ test("inactive community content and relationships disappear from HTML and RSC, 
       }),
       sessionError
     );
-  await communityCommand(db, b.token, "follow", { followingId: a.user.id });
-  await communityCommand(db, b.token, "comment", {
-    postId: own.id,
-    content: "Blocked inactive target"
-  });
-  await communityCommand(db, b.token, "like", { postId: own.id });
+  await assert.rejects(
+    communityCommand(db, b.token, "follow", { followingId: a.user.id }),
+    (e: unknown) => e instanceof Error && "status" in e && e.status === 404
+  );
+  await assert.rejects(
+    communityCommand(db, b.token, "comment", {
+      postId: own.id,
+      content: "Blocked inactive target"
+    }),
+    (e: unknown) => e instanceof Error && "status" in e && e.status === 404
+  );
+  await assert.rejects(
+    communityCommand(db, b.token, "like", { postId: own.id }),
+    (e: unknown) => e instanceof Error && "status" in e && e.status === 404
+  );
   assert.equal(
     await db.platformPostComment.count({ where: { postId: own.id } }),
     0

@@ -1,7 +1,7 @@
 import { put, get, del } from "@vercel/blob";
 import { mkdir, readFile, writeFile, rm } from "node:fs/promises";
 import { dirname, resolve, sep } from "node:path";
-import { PortalError } from "./portal";
+import { PortalError } from "./portal-policy";
 import { IMAGE_VARIANT_BYTES } from "./media-processing";
 
 export interface ImageStorage {

@@ -18,6 +18,13 @@ const root = process.cwd();
 const supportTests = process.argv.includes("--support");
 const portalTests = supportTests || process.argv.includes("--portal");
 const preview = process.argv.includes("--preview");
+const coveredTests = new Set();
+function discoverTests(directory) {
+  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const path = join(directory, entry.name);
+    return entry.isDirectory() ? discoverTests(path) : path.endsWith(".test.ts") ? [path] : [];
+  }).sort();
+}
 const pg = process.env.TEST_PG_BIN ?? "/opt/homebrew/opt/postgresql@16/bin";
 if (!existsSync(join(pg, "initdb")))
   throw new Error(
@@ -159,6 +166,7 @@ try {
       );
     });
     testProcess = undefined;
+    coveredTests.add(file);
     clearLimits();
   };
   const accountTables = [
@@ -253,7 +261,9 @@ try {
     const row =
       beforeChurch && table === "PlatformUser"
         ? `to_jsonb(t) - ARRAY['deactivatedAt','suspendedAt','adultAcknowledgedAt','adultPolicyVersion','portalVersion']`
-        : beforeChurch && table === "PlatformPostComment"
+        : beforeChurch && table === "PlatformPostLike"
+          ? "to_jsonb(t) - 'active' - 'version'"
+          : beforeChurch && table === "PlatformPostComment"
           ? `to_jsonb(t) - ARRAY['parentId','rootId','version','editedAt','deletedAt','authorChurchId']`
           : beforeChurch && table === "PlatformPost"
             ? `jsonb_build_object('id',t.id,'createdAt',t."createdAt",'updatedAt',t."updatedAt",'authorId',t."authorId",'type',t.type,'content',t.content,'scripture',t.scripture)`
@@ -501,6 +511,8 @@ try {
     if (stage2a[i] !== fingerprint(table, key, database, true))
       throw new Error(`Stage2B upgrade changed prior account data: ${table}`);
   }
+  if (psql(["-Atc", 'SELECT count(*) FROM "PlatformPostLike" WHERE NOT active OR version <> 1']).trim() !== "0")
+    throw new Error("Like migration changed existing Like meaning.");
   const changedLegacyPostMeaning = psql([
     "-Atc",
     `SELECT count(*) FROM "PlatformPost" WHERE
@@ -987,6 +999,14 @@ try {
     if (supportTests) await runTests("tests/support-http.test.ts", portalEnv);
     if (supportTests) await runTests("tests/entrance-http.test.ts", portalEnv);
     if (supportTests) await runTests("tests/guest-browsing.test.ts", portalEnv);
+    if (supportTests) {
+      // The full gate includes new files automatically. Explicit stages above
+      // still preserve development/production and restart-specific coverage.
+      const discovered = [...discoverTests("tests"), ...discoverTests("lib")];
+      for (const file of discovered)
+        if (!coveredTests.has(file)) await runTests(file, portalEnv);
+      console.log(`Full regression coverage: ${discovered.length} discovered test files passed.`);
+    }
     if (supportTests)
       console.log(
         run(

@@ -2,15 +2,15 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import type { Prisma, PrismaClient, PlatformPost } from "@prisma/client";
 import { accountConfig } from "./account-config";
 import { withOwnedSession } from "./account-sessions";
-import { PortalError } from "./portal";
+import { PortalError } from "./portal-policy";
 import { communityAuthorSelect } from "./public-profile";
 import {
-  postId,
   postCanReply,
   withPostRead,
   type PostContext,
   type PostTx
 } from "./post-access";
+import { postId } from "./post-input";
 import { socialUserWhere } from "./social-policy";
 import {
   commentVisibleWhere,
@@ -327,6 +327,7 @@ export function readComments(db: PrismaClient, token: unknown, query: Query) {
       pinVersion: pin?.version ?? 0,
       canPin: canPinComment(context, post),
       canReply: postCanReply(context, post),
+      discussionClosed: post.discussionClosed,
       visibleCount: await tx.platformPostComment.count({
         where: { AND: [{ postId: post.id }, commentVisibleWhere(context)] }
       }),

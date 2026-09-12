@@ -1,14 +1,14 @@
 import { photoLibraryEnabled } from "./personal-photo-policy";
 import type { PrismaClient } from "@prisma/client";
-import { PortalError } from "./portal";
+import { PortalError } from "./portal-policy";
 import {
   postCanEdit,
   postCanModerate,
   postCanWithdraw,
-  postId,
   postReadableWhere,
   withPostRead
 } from "./post-access";
+import { postId } from "./post-input";
 
 export function getPostComposer(db: PrismaClient, token: unknown) {
   return withPostRead(db, token, async (tx, context) => {

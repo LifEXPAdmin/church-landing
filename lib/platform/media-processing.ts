@@ -1,5 +1,5 @@
 import sharp from "sharp";
-import { PortalError } from "./portal";
+import { PortalError } from "./portal-policy";
 import { imageCropRect, type ImageCrop } from "./image-crop";
 
 // One binary request stays below the hosting platform's 4.5 MB payload limit.

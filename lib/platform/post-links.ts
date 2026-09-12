@@ -1,6 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { accountConfig } from "./account-config";
-import { PortalError } from "./portal";
+import { PortalError } from "./portal-policy";
 import {
   fetchPostPreview,
   publicPostUrl,

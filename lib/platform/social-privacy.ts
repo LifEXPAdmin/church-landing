@@ -1,5 +1,5 @@
 import type { Prisma } from "@prisma/client";
-import { PortalError } from "./portal";
+import { PortalError } from "./portal-policy";
 
 export type SocialPrivacy = {
   version: number;

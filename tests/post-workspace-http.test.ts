@@ -1,3 +1,7 @@
+import {
+  releaseMetadata,
+  currentRelease
+} from "../lib/platform/release-content";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -101,7 +105,11 @@ test("actual HTTPS search validates query and categories, uses private caching, 
   assert.equal(release.status, 200);
   assert.match(release.headers.get("cache-control")!, /no-store/);
   const expected = publicReleaseId(process.env.VERCEL_GIT_COMMIT_SHA);
-  assert.deepEqual(await release.json(), { release: expected });
+  assert.deepEqual(await release.json(), {
+    release: expected,
+    product: releaseMetadata(expected),
+    notes: expected ? currentRelease : null
+  });
   if (expected)
     assert.ok(
       (await (await get("/platform")).text()).includes(

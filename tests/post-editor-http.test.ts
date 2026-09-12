@@ -191,7 +191,12 @@ test("actual editor conflict, discussion, pin and withdrawal endpoints enforce c
   for (const rsc of [false, true]) {
     const guest = await (await get("/platform/posts/" + p.id, "", rsc)).text();
     assert.ok(guest.includes("Edited"));
-    assert.ok(guest.includes("This discussion is closed"));
+    if (!rsc) assert.ok(guest.includes("This discussion is closed"));
+    const thread = await (
+      await get("/api/platform/comments?postId=" + p.id)
+    ).json();
+    assert.equal(thread.discussionClosed, true);
+    assert.equal(thread.canReply, false);
     assert.ok(!guest.includes("Save post changes"));
     const own = await (
       await get("/platform/posts/" + p.id, f.ada.token, rsc)

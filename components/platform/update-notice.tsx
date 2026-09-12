@@ -1,10 +1,16 @@
 "use client";
 import { LoadedVersion, useLoadedRelease } from "./loaded-release";
-import { ReleaseDetails } from "./release-details";
+import dynamic from "next/dynamic";
+const ReleaseDetails = dynamic(
+  () => import("./release-details").then((module) => module.ReleaseDetails),
+  {
+    loading: () => <p role="status">Loading release notes…</p>
+  }
+);
 import {
   parseReleaseNotes,
   type ReleaseEntry
-} from "@/lib/platform/release-content";
+} from "@/lib/platform/release-notes";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   installationUpdateDecision,
@@ -171,7 +177,7 @@ export function UpdateNotice({ release }: { release: string | null }) {
               {loadedProduct.version ?? "an unknown version"}. Reading these
               notes does not refresh it.
             </p>
-            {notes ? (
+            {notes && notesOpen ? (
               <ReleaseDetails entry={notes} />
             ) : (
               <p>

@@ -6,13 +6,9 @@ import {
 import { createHash } from "node:crypto";
 import { Prisma, PlatformPostType, type PrismaClient } from "@prisma/client";
 import { withOwnedSession } from "./account-sessions";
-import { expected, PortalError } from "./portal";
-import {
-  postContext,
-  postId,
-  postReadableWhere,
-  type PostTx
-} from "./post-access";
+import { expected, PortalError } from "./portal-policy";
+import { postContext, postReadableWhere, type PostTx } from "./post-access";
+import { postId } from "./post-input";
 import { postCommandIn } from "./post-commands";
 import { preparePostLink, type PostLink } from "./post-links";
 import { POST_TOPICS } from "./post-options";

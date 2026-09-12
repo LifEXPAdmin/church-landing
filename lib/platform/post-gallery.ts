@@ -1,12 +1,7 @@
 import type { PrismaClient } from "@prisma/client";
-import { expected, PortalError } from "./portal";
-import {
-  postContext,
-  postCanEdit,
-  postField,
-  postId,
-  withPostRead
-} from "./post-access";
+import { expected, PortalError } from "./portal-policy";
+import { postContext, postCanEdit, withPostRead } from "./post-access";
+import { postField, postId } from "./post-input";
 import { readableConversation } from "./comment-policy";
 import { readableAssetWhere } from "./personal-photo-policy";
 import { listImagesIn } from "./media";

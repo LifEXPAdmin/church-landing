@@ -4,13 +4,8 @@ import type {
   CalendarOccurrence,
   ChurchCapability
 } from "@prisma/client";
-import {
-  type Actor,
-  eligibility,
-  eligibleWhere,
-  isEligible,
-  PortalError
-} from "./portal";
+import { type Actor, eligibility } from "./portal";
+import { eligibleWhere, isEligible, PortalError } from "./portal-policy";
 
 export type CalendarTx = Prisma.TransactionClient;
 export const calendarInclude = {

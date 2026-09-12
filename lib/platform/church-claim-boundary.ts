@@ -3,7 +3,7 @@ import { accountConfig } from "./account-config";
 import { allowAccountAttempt } from "./account-limits";
 import { requestSessionToken, readBody } from "./account-boundary";
 import { readAccountSession } from "./accounts";
-import { PortalError } from "./portal";
+import { PortalError } from "./portal-policy";
 import { churchClaimCommand, getChurchClaims } from "./church-claims";
 
 const headers = {

@@ -3,7 +3,8 @@ import type {
   CalendarVisibility,
   CalendarShareLevel
 } from "@prisma/client";
-import { portal, expected, PortalError } from "./portal";
+import { portal } from "./portal";
+import { expected, PortalError } from "./portal-policy";
 import { calendarZone, expandCalendarSchedule } from "./calendar-time";
 import {
   calendarContext,

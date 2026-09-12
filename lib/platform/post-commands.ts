@@ -16,18 +16,17 @@ import {
 } from "@prisma/client";
 import { Temporal } from "@js-temporal/polyfill";
 import { withOwnedSession } from "./account-sessions";
-import { expected, PortalError } from "./portal";
+import { expected, PortalError } from "./portal-policy";
 import { calendarZone } from "./calendar-time";
 import {
   postCanEdit,
   postCanWithdraw,
   postCanModerate,
   postContext,
-  postField,
-  postId,
   type PostContext,
   type PostTx
 } from "./post-access";
+import { postField, postId } from "./post-input";
 
 import { POST_TOPICS } from "./post-options";
 import { emptyPostLink, preparePostLink, type PostLink } from "./post-links";

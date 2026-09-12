@@ -1,13 +1,12 @@
 import type { PrismaClient } from "@prisma/client";
 import {
   postContext,
-  postField,
-  postId,
   postReadableWhere,
   type PostContext,
   type PostTx
 } from "./post-access";
-import { expected, PortalError } from "./portal";
+import { postField, postId } from "./post-input";
+import { expected, PortalError } from "./portal-policy";
 import { mentionAllowed } from "./social-policy";
 import { socialCommand, socialInput, socialKey } from "./social-operations";
 import {

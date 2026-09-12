@@ -22,13 +22,18 @@ const demoSources = [
   "app/platform/demo/[view]/page.tsx",
   "components/platform/demo-shell.tsx",
   "components/platform/demo-views.tsx",
-  "lib/platform/demo-fixtures.ts"
+  "lib/platform/demo-fixtures.ts",
+  "components/platform/support-demo.tsx",
+  "components/platform/support-presentation.tsx"
 ];
 
-test("all seven implemented views have fixed, demo-only links", () => {
+test("all implemented views have fixed, demo-only links", () => {
   assert.deepEqual(
     demoViews.map((view) => view.slug),
     [
+      "support-requests",
+      "support-case",
+      "support-inbox",
       "member",
       "pending",
       "approved",
@@ -102,6 +107,11 @@ test("directory and sharing examples consistently omit unshared and pending deta
 test("demo source has no live shell, mutation, session, database, mail, or persistence boundary", () => {
   const allowedImports = new Set([
     "next",
+    "next/link",
+    "./support-demo",
+    "./portal-ui",
+    "./support-presentation",
+    "@/lib/platform/support-types",
     "next/navigation",
     "lucide-react",
     "@/components/platform/demo-shell",
@@ -145,8 +155,5 @@ test("routes are static, bounded, noindex, and absent from the sitemap", () => {
     /generateStaticParams/
   );
   assert.doesNotMatch(source("app/sitemap.ts"), /\/platform\/demo/);
-  assert.match(
-    source("components/analytics/analytics-tracker.tsx"),
-    /pathname\.startsWith\("\/platform"\)/
-  );
+  assert.match(source("app/api/track/route.ts"), /status: 410/);
 });

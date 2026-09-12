@@ -1,5 +1,6 @@
 import type { PrismaClient } from "@prisma/client";
-import { withPostRead, postId } from "./post-access";
+import { withPostRead } from "./post-access";
+import { postId } from "./post-input";
 import {
   imageTarget,
   readableImageTarget,
@@ -7,7 +8,7 @@ import {
 } from "./media-access";
 import { listImagesIn } from "./media";
 import { imagesAvailable } from "./media-storage";
-import { PortalError } from "./portal";
+import { PortalError } from "./portal-policy";
 export function readChurchImages(
   db: PrismaClient,
   token: unknown,

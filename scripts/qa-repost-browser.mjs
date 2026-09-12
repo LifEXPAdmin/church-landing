@@ -261,10 +261,11 @@ try {
   assert.ok(
     await entry.getByRole("link", { name: new RegExp(f.memberB.name) }).count()
   );
-  assert.equal(
-    await entry.locator('input[name="postId"]').inputValue(),
-    source.id
-  );
+  const likeRequest = page.waitForRequest(request => new URL(request.url()).pathname === "/api/platform/post-likes" && request.method() === "POST");
+  await entry.getByRole("button", { name: "Like post", exact: true }).click();
+  assert.equal(JSON.parse((await likeRequest).postData()).postId, source.id);
+  await entry.getByRole("button", { name: "Unlike post", exact: true }).waitFor();
+  assert.equal(await db.platformPostLike.count({ where: { postId: source.id, userId: f.memberA.id, active: true } }), 1);
   await bounded();
   await page.screenshot({ path: output + "/plain-mobile.png", fullPage: true });
   ok(

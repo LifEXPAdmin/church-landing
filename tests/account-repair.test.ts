@@ -159,6 +159,22 @@ test("ambiguous P2002 is rechecked, unrelated unique failures are not reported a
   await registerAccount(db, input);
   const fake = (target: unknown) =>
     ({
+      $transaction: async (run: (tx: unknown) => Promise<unknown>) =>
+        run({
+          $queryRaw: async () => [],
+          platformUser: {
+            create: async () => {
+              throw new Prisma.PrismaClientKnownRequestError(
+                "Synthetic conflict",
+                {
+                  code: "P2002",
+                  clientVersion: "fixture",
+                  meta: { target }
+                }
+              );
+            }
+          }
+        }),
       platformUser: {
         create: async () => {
           throw new Prisma.PrismaClientKnownRequestError("Synthetic conflict", {

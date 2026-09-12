@@ -1,5 +1,6 @@
 import type { PrismaClient } from "@prisma/client";
-import { AccountError, readAccountSession } from "./accounts";
+import { readAccountSession } from "./accounts";
+import { AccountError } from "./account-error";
 import { accountConfig } from "./account-config";
 import { allowAccountAttempt } from "./account-limits";
 import {

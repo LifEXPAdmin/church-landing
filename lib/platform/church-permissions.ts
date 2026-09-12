@@ -1,5 +1,5 @@
 import type { ChurchCapability, Prisma, PrismaClient } from "@prisma/client";
-import { churchSelect, eligibleWhere } from "./portal";
+import { churchSelect, eligibleWhere } from "./portal-policy";
 
 type Db = Prisma.TransactionClient | PrismaClient;
 

@@ -1,8 +1,9 @@
 import { createHash } from "node:crypto";
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { withOwnedSession } from "./account-sessions";
-import { PortalError } from "./portal";
-import { postId, type PostTx } from "./post-access";
+import { PortalError } from "./portal-policy";
+import { type PostTx } from "./post-access";
+import { postId } from "./post-input";
 export type SocialReceipt = { id: string; version: number; message: string };
 export function socialInput(input: Record<string, unknown>, allowed: string[]) {
   if (
