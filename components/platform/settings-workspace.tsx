@@ -13,7 +13,7 @@ import {
   type SettingRegistration
 } from "@/lib/platform/settings-registry";
 import { GoogleAccountOptions } from "./google-account";
-import { SettingsControls } from "./settings-controls";
+import { AccountIdentitySummary, SettingsControls } from "./settings-controls";
 
 const positions = new Map<string, { y: number; focus: string }>();
 let positionOwner: string | null = null;
@@ -317,6 +317,11 @@ export function SettingsWorkspace({
                     </div>
                   )}
                 </>
+              )}
+              {folder === "account" && !active && (
+                <div className="gc-settings">
+                  <AccountIdentitySummary data={data} />
+                </div>
               )}
               {folder &&
                 !active &&

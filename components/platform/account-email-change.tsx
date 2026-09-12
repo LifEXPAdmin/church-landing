@@ -75,8 +75,11 @@ export function AccountEmailChange({
         <p>
           Open the confirmation link sent to your new address. You can request a
           fresh link in{" "}
-          <Link className="text-gc-accent underline" href="/platform/settings">
-            Account settings
+          <Link
+            className="text-gc-accent underline"
+            href="/platform/settings/account/email"
+          >
+            Sign-in email settings
           </Link>
           .
         </p>

@@ -107,7 +107,7 @@ test("actual email-change HTTP rejects forged origins/owner fields and advertise
     );
     assert.equal(confirm.status, 503);
     for (const path of [
-      "/platform/settings",
+      "/platform/settings/account/email",
       "/platform/account/change-email"
     ]) {
       const html = await (
@@ -115,7 +115,16 @@ test("actual email-change HTTP rejects forged origins/owner fields and advertise
           headers: { Cookie: "church_platform_session=" + a.token }
         })
       ).text();
-      assert.match(html, /Sign-in email changes are not available/);
+      if (path === "/platform/account/change-email")
+        assert.match(html, /Sign-in email changes are not available/);
+      else {
+        // Settings loads private capability context after hydration.
+        const context = await fetch(origin + "/api/platform/settings", {
+          headers: { Cookie: "church_platform_session=" + a.token }
+        });
+        assert.equal(context.status, 200);
+        assert.equal((await context.json()).emailAvailable, false);
+      }
       assert.ok(!html.includes('name="newEmail"'));
       assert.ok(!html.includes('id="confirm-email-change-password"'));
     }

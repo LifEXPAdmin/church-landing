@@ -268,13 +268,14 @@ test("production HTTPS session controls revoke another login on its next request
     /^\/platform\/join\?next=%2Fplatform%2Fsettings&reason=settings$/
   );
   for (const rsc of [false, true]) {
-    const page = await fetch(origin + "/platform/settings", {
+    const page = await fetch(origin + "/platform/settings/account/sessions", {
       headers: { Cookie: cookie(current), ...(rsc ? { RSC: "1" } : {}) }
     });
     assert.equal(page.status, 200);
     const html = await page.text();
-    // Flight data references the client component; its text is rendered in HTML.
-    if (!rsc) assert.ok(html.includes("Active sign-ins"));
+    // The private context loads after hydration; the folder route still has its
+    // public title. The browser suite verifies the hydrated session controls.
+    if (!rsc) assert.ok(html.includes("Devices and sessions"));
     for (const secret of [
       user.email,
       user.passwordHash!,

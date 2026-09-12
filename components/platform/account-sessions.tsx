@@ -1,5 +1,6 @@
 "use client";
 import { useRef, useState } from "react";
+import Link from "next/link";
 import type { AccountSessionList } from "@/lib/platform/account-sessions";
 import { AccountConfirmation, useAccountConfirmation } from "./google-account";
 
@@ -72,7 +73,8 @@ export function AccountSessions() {
       <p className="text-gc-muted">
         Review your sign-ins and remove access on other browsers. Browser and
         device labels are approximate; dates show when a sign-in started and
-        expires, not recent activity.
+        expires, not recent activity. Location and last-used information are
+        unavailable.
       </p>
       <button
         type="button"
@@ -87,7 +89,7 @@ export function AccountSessions() {
       >
         {pending
           ? "Please wait…"
-          : listing
+          : listing || failed
             ? "Refresh sign-in list"
             : "Show active sign-ins"}
       </button>
@@ -152,14 +154,27 @@ export function AccountSessions() {
             }
             form.reset();
             setListing(null);
+            try {
+              setListing(await requestSessions("list-sessions"));
+            } catch {
+              throw new Error(
+                "Other sessions were signed out, but the updated list could not be loaded. Refresh the sign-in list to check."
+              );
+            }
             return result.message;
           });
         }}
       >
         <p id="other-sign-ins-help" className="text-gc-muted">
           Confirm your account to sign out every other session. This one stays
-          signed in. If you think someone knows your password, change it below
-          as well.
+          signed in. If you think someone knows your password, also{" "}
+          <Link
+            className="underline"
+            href="/platform/settings/security/password"
+          >
+            change your password
+          </Link>
+          .
         </p>
         <AccountConfirmation
           value={confirmation}

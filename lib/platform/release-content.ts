@@ -363,7 +363,8 @@ export const features: Feature[] = [
     name: "Account and privacy",
     description:
       "Manage account security, privacy and available data controls.",
-    steps: "Open Settings and select the account or privacy control you need.",
+    steps:
+      "Open Settings, then Account to review masked sign-in contact, email verification and active sessions. Confirm your account to sign out other sessions; the list refreshes after confirmation. Profile contact and church directory sharing stay separate.",
     href: "/platform/settings",
     eligibility:
       "Your signed-in account; sensitive changes may require verification.",
@@ -393,6 +394,23 @@ export type ReleaseEntry = {
   featureIds: string[];
 };
 export const releases: ReleaseEntry[] = [
+  {
+    id: "account-settings-clarity",
+    version: "2026.09.12.11",
+    date: "2026-09-12",
+    summary:
+      "Review your private account details and signed-in devices with clearer status.",
+    added: [
+      "The Account folder shows masked sign-in contact, email verification status and supported edit links."
+    ],
+    improved: [
+      "Signing out other sessions refreshes the list after confirmation and distinguishes an uncertain response from a failed list refresh."
+    ],
+    fixed: [
+      "Session security guidance links to the Password folder, and email-change guidance returns directly to sign-in email settings."
+    ],
+    featureIds: ["settings", "account"]
+  },
   {
     id: "searchable-settings",
     version: "2026.09.12.10",

@@ -84,23 +84,7 @@ export function SettingsControls({
     case "summary":
       return (
         <div className="gc-settings">
-          <dl className="space-y-3">
-            <div>
-              <dt>Name</dt>
-              <dd>{data.name}</dd>
-            </div>
-            <div>
-              <dt>Username</dt>
-              <dd>@{data.username}</dd>
-            </div>
-            <div>
-              <dt>Private sign-in email</dt>
-              <dd>{data.emailLabel}</dd>
-            </div>
-          </dl>
-          <Link className="underline" href="/platform/profile/me">
-            Edit member profile
-          </Link>
+          <AccountIdentitySummary data={data} />
           <form action={logoutPlatformAccount}>
             <button className="gc-button gc-button-quiet" type="submit">
               Log out on this device
@@ -128,6 +112,53 @@ export function SettingsControls({
     case "organization":
       return <OrganizationSettings data={data} />;
   }
+}
+export function AccountIdentitySummary({ data }: { data: SettingsContext }) {
+  return (
+    <section aria-label="Private account summary" className="space-y-4">
+      <dl className="space-y-3">
+        <div>
+          <dt>Name</dt>
+          <dd>{data.name}</dd>
+        </div>
+        <div>
+          <dt>Username</dt>
+          <dd>@{data.username}</dd>
+        </div>
+        <div>
+          <dt>Private sign-in email</dt>
+          <dd>{data.emailLabel}</dd>
+        </div>
+        <div>
+          <dt>Email verification</dt>
+          <dd>{data.emailVerified ? "Verified" : "Not verified"}</dd>
+        </div>
+      </dl>
+      <p className="text-sm text-gc-muted">
+        Your sign-in email is separate from your member profile and church
+        directory contacts. Username changes are not available after signup.
+      </p>
+      <div className="flex flex-wrap gap-3">
+        {!data.emailVerified && (
+          <Link
+            className="gc-button gc-button-quiet"
+            href="/platform/account/verify"
+          >
+            Review email verification
+          </Link>
+        )}
+        <Link
+          className="gc-button gc-button-quiet"
+          href="/platform/settings/account/email"
+        >
+          Manage sign-in email
+        </Link>
+        <Link className="gc-button gc-button-quiet" href="/platform/profile/me">
+          Edit member profile
+        </Link>
+      </div>
+    </section>
+  );
 }
 function OrganizationSettings({ data }: { data: SettingsContext }) {
   const [selected, setSelected] = useState("");
