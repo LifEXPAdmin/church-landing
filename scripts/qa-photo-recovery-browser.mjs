@@ -171,6 +171,7 @@ try {
   await page.getByLabel("Reduce photo data", { exact: false }).check();
   await page.getByLabel("Post text size", { exact: true }).selectOption("largest");
   await page.getByLabel("Reduce motion", { exact: false }).check();
+  await page.getByRole("button", { name: "Save display choices", exact: true }).click();
   await page.reload();
   assert.equal(await page.getByLabel("Reduce photo data", { exact: false }).isChecked(), true);
   requestImages.length=0;
@@ -194,6 +195,7 @@ try {
   await page.screenshot({path:output+"/reduced-data-post-390.png"});
   ok("Reduced-data settings persist with largest text and reduced motion, load one thumbnail per deliberate step and one large image only on open");
   await go("/platform/settings/display/reading");await page.getByLabel("Reduce photo data",{exact:false}).uncheck();
+  await page.getByRole("button", { name: "Save display choices", exact: true }).click();
   requestImages.length=0;await go("/platform/posts/"+post.id);await photos.getByRole("button",{name:"Open photo 1 of 3",exact:true}).scrollIntoViewIfNeeded();
   await pauseUntil(async()=>new Set(requestImages).size>=3,"normal gallery thumbnail loading");
   assert.equal(await photos.locator("img").count(),3);assert.ok(requestImages.every(path=>/\/(thumb|medium)$/.test(path)));

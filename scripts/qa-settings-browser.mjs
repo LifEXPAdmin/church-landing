@@ -163,6 +163,9 @@ try {
     .getByLabel("Post text size", { exact: true })
     .selectOption("largest");
   await page
+    .getByRole("button", { name: "Save display choices", exact: true })
+    .click();
+  await page
     .getByText("Reading preferences saved in this browser.", { exact: true })
     .waitFor();
   await page
@@ -199,6 +202,9 @@ try {
   });
   await page.getByLabel("Appearance", { exact: true }).selectOption("dark");
   await page
+    .getByRole("button", { name: "Save display choices", exact: true })
+    .click();
+  await page
     .getByRole("button", {
       name: "Retry saving reading preferences",
       exact: true
@@ -230,6 +236,9 @@ try {
     0
   );
   await page.getByLabel("Appearance", { exact: true }).selectOption("dark");
+  await page
+    .getByRole("button", { name: "Save display choices", exact: true })
+    .click();
   await page.evaluate(() => window.restoreReadingCookie());
   await page
     .getByRole("button", {

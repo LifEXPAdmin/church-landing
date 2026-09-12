@@ -17,7 +17,7 @@ export const features: Feature[] = [
     description:
       "Find account, privacy, reading and church choices in clear folders.",
     steps:
-      "Open Menu, then Settings. Search words such as password, alerts or hide phone, or choose a folder. Changes use their existing account and privacy controls. Reading preferences can be restored separately on this browser.",
+      "Open Menu, then Settings. Search words such as password, alerts or hide phone, or choose a folder. Changes use their existing account and privacy controls. Preview text, theme and reading layout in Display before saving. Reading preferences can be restored separately on this browser.",
     href: "/platform/settings",
     eligibility:
       "Sign in to your account. Browser appearance is separate from personal and selected-church settings. Church tools require current access; notification categories, family, payments and direct messaging are not enabled here.",
@@ -205,7 +205,7 @@ export const features: Feature[] = [
     name: "Focused reading",
     description: "Read one post at a time with adjustable reading preferences.",
     steps:
-      "Open My feed. Swipe or use navigation controls; use reading controls for text and appearance.",
+      "Open My feed. Swipe or use navigation controls; open Settings, then Appearance and reading, to preview text and theme before saving on this browser.",
     href: "/platform/feed",
     eligibility:
       "Public posts are available to guests; private posts require access.",
@@ -396,6 +396,24 @@ export type ReleaseEntry = {
   featureIds: string[];
 };
 export const releases: ReleaseEntry[] = [
+  {
+    id: "display-preview",
+    version: "2026.09.12.15",
+    date: "2026-09-12",
+    summary:
+      "Preview text, appearance and reading layout before saving your display choices.",
+    added: [
+      "Sample reading cards show your chosen theme, text size and List or Pages layout before you apply them."
+    ],
+    improved: [
+      "Display keeps your preview through navigation attempts and supports confirmed storage retry, discard and browser-only reset.",
+      "Device theme and reduced-motion preferences remain supported, with keyboard-accessible controls and comfortable spacing."
+    ],
+    fixed: [
+      "The List and Pages choice is clearly labeled as Home reading layout."
+    ],
+    featureIds: ["settings", "reader"]
+  },
   {
     id: "privacy-settings-overview",
     version: "2026.09.12.14",

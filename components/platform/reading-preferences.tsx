@@ -13,6 +13,7 @@ import {
   parseReadingPreferences,
   type ReadingPreferences
 } from "@/lib/platform/reading-preferences";
+import { DisplayPreview } from "./display-preview";
 import { useUnsavedSocialWork } from "./use-unsaved-social-work";
 
 const ReadingContext = createContext<{
@@ -134,10 +135,30 @@ export function ReadingSettings({
 }) {
   const { preferences, update, saved, attempted, discard } =
     useReadingPreferences();
+  const [draft, setDraft] = useState<ReadingPreferences | null>(null);
+  const choices = draft ?? preferences;
+  const previewChanged =
+    draft !== null &&
+    Object.keys(preferences).some(
+      (key) =>
+        choices[key as keyof ReadingPreferences] !==
+        preferences[key as keyof ReadingPreferences]
+    );
+  const saveFailed = attempted && !saved;
+  const dirty = previewChanged || saveFailed;
+  function preview(change: Partial<ReadingPreferences>) {
+    setDraft((previous) => ({ ...(previous ?? preferences), ...change }));
+    setNotice("");
+  }
+  function discardChoices() {
+    setDraft(null);
+    if (saveFailed) discard();
+    setNotice("");
+  }
   const [resetPreview, setResetPreview] = useState(false);
   const [notice, setNotice] = useState("");
   useUnsavedSocialWork(
-    { dirty: attempted && !saved, saving: false, conflict: false },
+    { dirty, saving: false, conflict: false },
     () =>
       setNotice(
         "Retry saving or discard your unsaved reading choices before leaving."
@@ -149,113 +170,137 @@ export function ReadingSettings({
       <p className="gc-eyebrow">Make room to read</p>
       <h2 id="reading-heading">Appearance and reading</h2>
       <p className="text-gc-muted">
-        Choose what feels comfortable. These choices are saved in this browser,
-        not to your account or other devices.
+        Preview what feels comfortable, then save your choices in this browser.
+        These preferences do not sync to your account or other devices.
       </p>
-      <div className="gc-setting-row">
-        <label htmlFor="appearance">Appearance</label>
-        <select
-          id="appearance"
-          value={preferences.appearance}
-          onChange={(e) =>
-            update({
-              appearance: e.target.value as ReadingPreferences["appearance"]
-            })
-          }
-        >
-          <option value="system">Use device setting</option>
-          <option value="light">Light</option>
-          <option value="dark">Dark</option>
-        </select>
-      </div>
-      <div className="gc-setting-row">
-        <label htmlFor="reader-size">Post text size</label>
-        <select
-          id="reader-size"
-          value={preferences.size}
-          onChange={(e) =>
-            update({ size: e.target.value as ReadingPreferences["size"] })
-          }
-        >
-          <option value="standard">Standard</option>
-          <option value="comfortable">Comfortable</option>
-          <option value="large">Large</option>
-          <option value="largest">Largest</option>
-        </select>
-      </div>
-      <div className="gc-setting-row">
-        <label htmlFor="feed-mode">Preferred home feed</label>
-        <select
-          id="feed-mode"
-          value={preferences.mode}
-          onChange={(e) =>
-            update({ mode: e.target.value as ReadingPreferences["mode"] })
-          }
-        >
-          <option value="list">List: scroll through posts</option>
-          <option value="pages">Pages: one post at a time</option>
-        </select>
-      </div>
-      <label className="gc-setting-row" htmlFor="reduce-motion">
-        <span>
-          Reduce motion
-          <br />
-          <span className="text-sm font-normal text-gc-muted">
-            Your device&apos;s reduced-motion setting is always respected.
+      <fieldset disabled={saveFailed} className="space-y-3">
+        <legend className="sr-only">Display choices</legend>
+        <div className="gc-setting-row">
+          <label htmlFor="appearance">Appearance</label>
+          <select
+            id="appearance"
+            value={choices.appearance}
+            onChange={(e) =>
+              preview({
+                appearance: e.target.value as ReadingPreferences["appearance"]
+              })
+            }
+          >
+            <option value="system">System</option>
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+          </select>
+        </div>
+        <div className="gc-setting-row">
+          <label htmlFor="reader-size">Post text size</label>
+          <select
+            id="reader-size"
+            value={choices.size}
+            onChange={(e) =>
+              preview({ size: e.target.value as ReadingPreferences["size"] })
+            }
+          >
+            <option value="standard">Standard</option>
+            <option value="comfortable">Comfortable</option>
+            <option value="large">Large</option>
+            <option value="largest">Largest</option>
+          </select>
+        </div>
+        <div className="gc-setting-row">
+          <label htmlFor="feed-mode">Home reading layout</label>
+          <select
+            id="feed-mode"
+            value={choices.mode}
+            onChange={(e) =>
+              preview({ mode: e.target.value as ReadingPreferences["mode"] })
+            }
+          >
+            <option value="list">List</option>
+            <option value="pages">Pages</option>
+          </select>
+        </div>
+        <p className="text-sm text-gc-muted">
+          List scrolls through posts; Pages shows one post at a time. Your feed
+          sources stay the same. System appearance follows your device’s light
+          or dark theme. Comfortable spacing and keyboard access are always
+          included.
+        </p>
+        <label className="gc-setting-row" htmlFor="reduce-motion">
+          <span>
+            Reduce motion
+            <br />
+            <span className="text-sm font-normal text-gc-muted">
+              Your device&apos;s reduced-motion setting is always respected.
+            </span>
           </span>
-        </span>
-        <input
-          id="reduce-motion"
-          type="checkbox"
-          checked={preferences.reduceMotion}
-          onChange={(e) => update({ reduceMotion: e.target.checked })}
-        />
-      </label>
-      <label className="gc-setting-row" htmlFor="reduce-data">
-        <span>
-          Reduce photo data
-          <br />
-          <span className="text-sm font-normal text-gc-muted">
-            Load smaller previews. Post galleries show one photo at a time;
-            large images load only when you open them.
+          <input
+            id="reduce-motion"
+            type="checkbox"
+            checked={choices.reduceMotion}
+            onChange={(e) => preview({ reduceMotion: e.target.checked })}
+          />
+        </label>
+        <label className="gc-setting-row" htmlFor="reduce-data">
+          <span>
+            Reduce photo data
+            <br />
+            <span className="text-sm font-normal text-gc-muted">
+              Load smaller previews. Post galleries show one photo at a time;
+              large images load only when you open them.
+            </span>
           </span>
-        </span>
-        <input
-          id="reduce-data"
-          type="checkbox"
-          checked={preferences.reduceData}
-          onChange={(e) => update({ reduceData: e.target.checked })}
-        />
-      </label>
-      <p className="gc-reader-sample">
-        A little space to listen. A place to belong.
-      </p>
+          <input
+            id="reduce-data"
+            type="checkbox"
+            checked={choices.reduceData}
+            onChange={(e) => preview({ reduceData: e.target.checked })}
+          />
+        </label>
+      </fieldset>
+      <DisplayPreview preferences={choices} />
       <p role="status" className="text-sm text-gc-muted">
-        {saved
-          ? "Reading preferences saved in this browser."
-          : attempted
-            ? "Your choices are applied, but could not be saved in this browser. Enable browser storage and retry."
-            : "Changes apply immediately. Browser storage must be enabled to remember them."}
+        {previewChanged
+          ? "Preview only. Save display choices to apply them across this browser."
+          : saved
+            ? "Reading preferences saved in this browser."
+            : attempted
+              ? "Your choices are applied, but could not be saved in this browser. Enable browser storage and retry."
+              : "Try the preview, then save. Browser storage must be enabled to remember your choices."}
       </p>
-      {notice && attempted && !saved && <p role="status">{notice}</p>}
-      {attempted && !saved && (
-        <div className="flex flex-wrap gap-3">
+      {notice && dirty && <p role="status">{notice}</p>}
+      <div className="flex flex-wrap gap-3">
+        {saveFailed ? (
           <button
             type="button"
-            className="gc-button gc-button-quiet"
+            className="gc-button"
             onClick={() => update(preferences)}
           >
             Retry saving reading preferences
           </button>
+        ) : (
+          <button
+            type="button"
+            className="gc-button"
+            disabled={!previewChanged}
+            onClick={() => {
+              update(choices);
+              setDraft(null);
+              setNotice("");
+            }}
+          >
+            Save display choices
+          </button>
+        )}
+        {dirty && (
           <button
             type="button"
             className="gc-button gc-button-quiet"
-            onClick={discard}
+            onClick={discardChoices}
           >
             Discard unsaved reading choices
           </button>
-        </div>
-      )}
+        )}
+      </div>
       {allowReset && (
         <div className="space-y-3">
           {!resetPreview ? (
@@ -286,6 +331,8 @@ export function ReadingSettings({
                 className="gc-button"
                 type="button"
                 onClick={() => {
+                  setDraft(null);
+                  setNotice("");
                   update({ ...defaultReadingPreferences });
                   setResetPreview(false);
                 }}

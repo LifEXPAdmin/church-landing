@@ -78,6 +78,21 @@
 .platform-design[data-reader-size="largest"] {
   --gc-reader-size: 1.5rem;
 }
+.platform-design.gc-display-preview {
+  min-height: 0;
+  border: 1px solid var(--gc-border);
+  border-radius: 1rem;
+  padding: 1rem;
+}
+.gc-display-preview-card {
+  padding: 1rem;
+  border: 1px solid var(--gc-divider);
+  border-radius: 0.75rem;
+  background: var(--gc-surface);
+}
+.gc-display-preview-card .gc-reader-sample {
+  padding: 0;
+}
 .platform-design :is(h1, h2, h3, h4) {
   color: var(--gc-text);
   font-weight: 600;
@@ -530,6 +545,9 @@
   background: var(--gc-surface);
   border: 1px solid var(--gc-divider);
   border-radius: 0.75rem;
+}
+.gc-settings fieldset {
+  min-width: 0;
 }
 .gc-setting-row {
   display: flex;
@@ -1707,6 +1725,11 @@ body:has(dialog:modal) {
   .gc-settings-sidebar a[aria-current="page"] { background: var(--gc-surface); font-weight: 600; }
 }
 @media (max-width: 420px) {
+  .gc-settings-main .gc-settings,
+  .platform-design.gc-display-preview,
+  .gc-display-preview-card {
+    padding-inline: 12px;
+  }
   .gc-settings-search { grid-template-columns: minmax(0, 1fr); }
   .gc-settings-destination { padding: 1rem .75rem; gap: .5rem; }
 }

@@ -76,8 +76,12 @@ email addresses, hidden roles or private church details.
 
 ## Saving, upgrade and reset
 
-Keep the existing operation boundaries. Browser presentation choices persist
-immediately and say saved only after the cookie can be read back. Independent
+Keep the existing operation boundaries. The advanced Display form stages a
+local preview before explicit Save; the footer appearance shortcut persists
+immediately. Both use the same five-field browser cookie and say saved only
+after exact readback. Failed saves retain the applied choices, lock form edits
+until retry/discard and resend the same choices. Preview/discard never writes.
+Independent
 safe toggles may use their current immediate-save path. Multi-field privacy and
 directory/profile forms retain explicit Save, versions and current validation.
 
