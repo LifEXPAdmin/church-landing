@@ -9,6 +9,7 @@ import { activePublicAccount, communityAuthorSelect } from "./public-profile";
 import { postId, withPostRead } from "./post-access";
 import { socialCommand, socialInput } from "./social-operations";
 import { socialPolicy, socialUserWhere } from "./social-policy";
+import { socialPrivacyIn } from "./social-privacy";
 const PAGE = 20;
 function target(kind: unknown, id: unknown) {
   if (kind !== "person" && kind !== "church")
@@ -242,13 +243,7 @@ export function readRelationships(
         nextCursor: rows.length > PAGE ? rows[PAGE - 1].id : null
       });
       if (query.view === "privacy") {
-        const row = await tx.socialPreferences.findUnique({
-          where: { ownerId },
-          select: { version: true, mentions: true, showRelationships: true }
-        });
-        return (
-          row ?? { version: 0, mentions: "EVERYONE", showRelationships: true }
-        );
+        return socialPrivacyIn(tx, ownerId);
       }
       if (query.view === "status") {
         const keys = target(query.kind, query.targetId);

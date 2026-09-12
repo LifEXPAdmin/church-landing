@@ -271,7 +271,7 @@ export const settingsRegistry: readonly SettingRegistration[] = Object.freeze([
     "privacy.relationships",
     "privacy",
     "Mentions and relationship visibility",
-    "Choose who may mention you and whether members see your relationship list.",
+    "Choose who may mention you and whether members see your follower and following counts.",
     [
       "tags",
       "mentions",

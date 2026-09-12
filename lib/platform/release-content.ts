@@ -366,7 +366,7 @@ export const features: Feature[] = [
     description:
       "Review your actual sign-in methods, account security, privacy and available data controls.",
     steps:
-      "Open Settings, then Account to review masked sign-in contact, email verification and active sessions. Confirm your account to sign out other sessions; the list refreshes after confirmation. Profile contact and church directory sharing stay separate.",
+      "Open Settings, then Account to review masked sign-in contact, email verification and active sessions. Confirm your account to sign out other sessions; the list refreshes after confirmation. Open Privacy to review saved mention permissions and follower/following count visibility, with separate profile, directory and post-audience guidance.",
     href: "/platform/settings",
     eligibility:
       "Your signed-in account; sensitive changes may require verification.",
@@ -396,6 +396,23 @@ export type ReleaseEntry = {
   featureIds: string[];
 };
 export const releases: ReleaseEntry[] = [
+  {
+    id: "privacy-settings-overview",
+    version: "2026.09.12.14",
+    date: "2026-09-12",
+    summary:
+      "Privacy settings show your saved mention choices and relationship-count visibility.",
+    added: [
+      "A Privacy overview explains current profile discovery, optional contacts, post audiences and reply permissions with links to existing controls."
+    ],
+    improved: [
+      "Privacy summaries refresh with current account access and do not assume a saved value when a read fails."
+    ],
+    fixed: [
+      "Relationship visibility guidance accurately describes follower and following counts."
+    ],
+    featureIds: ["settings", "account"]
+  },
   {
     id: "profile-settings-clarity",
     version: "2026.09.12.13",

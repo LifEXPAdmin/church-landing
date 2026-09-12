@@ -5,8 +5,9 @@ import { googleAvailable } from "./google-availability";
 import { photoLibraryEnabled } from "./personal-photo-policy";
 import { isEligible, PortalError } from "./portal";
 import { accountSignInMethods } from "./google-accounts";
+import { socialPrivacyIn } from "./social-privacy";
 
-/** Private navigation context only; values remain in their owning service. */
+/** Private settings summaries; mutations remain in their owning services. */
 export function readSettingsContext(
   db: PrismaClient,
   token: unknown,
@@ -61,6 +62,7 @@ export function readSettingsContext(
         emailAvailable: accountDeliveryAvailable(),
         googleAvailable: googleAvailable(),
         methods: await accountSignInMethods(tx, session),
+        privacy: await socialPrivacyIn(tx, user.id),
         photosAvailable: photoLibraryEnabled(),
         churches,
         churchError

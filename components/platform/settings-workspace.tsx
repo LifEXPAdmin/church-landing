@@ -15,6 +15,7 @@ import {
 import { GoogleAccountOptions } from "./google-account";
 import { AccountIdentitySummary, SettingsControls } from "./settings-controls";
 import { SettingsSecurity } from "./settings-security";
+import { SettingsPrivacy } from "./settings-privacy";
 
 const positions = new Map<string, { y: number; focus: string }>();
 let positionOwner: string | null = null;
@@ -67,6 +68,14 @@ export function SettingsWorkspace({
       )
         throw new Error(
           "Sign-in options could not be checked. Retry settings."
+        );
+      if (
+        !r.data.privacy ||
+        !["EVERYONE", "FOLLOWED", "NOBODY"].includes(r.data.privacy.mentions) ||
+        typeof r.data.privacy.showRelationships !== "boolean"
+      )
+        throw new Error(
+          "Privacy choices could not be checked. Retry settings."
         );
       setData(r.data);
       setHidden(false);
@@ -334,6 +343,9 @@ export function SettingsWorkspace({
               )}
               {folder === "security" && !active && (
                 <SettingsSecurity data={data} />
+              )}
+              {folder === "privacy" && !active && (
+                <SettingsPrivacy data={data} />
               )}
               {folder &&
                 !active &&
