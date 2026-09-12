@@ -233,3 +233,23 @@ allow an authorized assistant to locate the context without publishing it.
 - **1.0 — 9 September 2026:** Added repository onboarding, source precedence,
   cross-system responsibilities, capture/action/handoff routines, workstation
   evidence requirements, and a workflow update procedure.
+
+### Public release content maintenance
+
+Each user-visible release updates `lib/platform/release-content.ts` in the same
+reviewed batch: retain old notes, add a stable release ID and date-based product
+version (`YYYY.MM.DD.sequence`), and describe Added/Improved/Fixed behavior with
+links to the maintained feature inventory. The initial documented baseline maps
+to application build `5502f7dbd1dcfd8d563bc0b23c20e7ca976751d3`; no earlier version
+history is inferred. The serving release endpoint pairs the product version with
+its actual immutable application SHA. Record that pair in the verified deployment
+receipt. A loaded layout captures its own pair once; detection never relabels it.
+
+Run `node --import ./tests/register.mjs --test tests/release-content.test.ts`
+with the project's supported Node runtime. Review new feature claims against
+actual behavior and deployment gates; record conditional provider/access limits
+in the public guide. Keep private task links, fixture identities and planned
+features out of public notes. Check Menu/footer links, release detail URLs,
+unknown metadata and the update dialog with unsaved work. Reading or dismissing
+notes must not refresh, publish, save or resolve a draft. Complete live identity
+verification before marking release content or its owning task live.

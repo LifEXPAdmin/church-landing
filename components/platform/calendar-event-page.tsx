@@ -1,3 +1,4 @@
+import { PublicShareControls } from "./public-share-controls";
 import Link from "next/link";
 import { readPost } from "@/lib/platform/post-session";
 import { CommentThread } from "./comment-thread";
@@ -91,6 +92,7 @@ export async function CalendarEventPage({
         >
           <PortalHeading title={event.title} description={event.source.label} />
           <CalendarNavigation churchId={event.source.churchId} />
+          <PublicShareControls kind="event" id={event.id} />
           {privateData && (
             <Link
               className={portalLinkClass}

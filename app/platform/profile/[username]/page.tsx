@@ -1,3 +1,4 @@
+import { publicResourceMetadata } from "@/lib/platform/share-metadata";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -14,7 +15,6 @@ import {
   readVisitorProfilePreview
 } from "@/lib/platform/profile-session";
 import { PortalError } from "@/lib/platform/portal";
-import { accountReasons } from "@/lib/platform/account-entry";
 import { GuestAccountPrompt } from "@/components/platform/guest-account-prompt";
 
 export async function generateMetadata({
@@ -23,14 +23,7 @@ export async function generateMetadata({
   params: Promise<{ username: string }>;
 }): Promise<Metadata> {
   const { username } = await params;
-  const user = await getCurrentPlatformUser();
-  return {
-    title: {
-      absolute: user ? `@${username} | Godschurches` : accountReasons.profile
-    },
-    description: "Sign in to view member profiles on Godschurches.",
-    robots: { index: false, follow: false }
-  };
+  return publicResourceMetadata("profile", username);
 }
 export const dynamic = "force-dynamic";
 function ProfilePreviews({

@@ -1,3 +1,4 @@
+import { publicResourceMetadata } from "@/lib/platform/share-metadata";
 import { DiscussionBack } from "@/components/platform/discussion-back";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -9,10 +10,13 @@ import { PostControls } from "@/components/platform/post-controls";
 import { getCurrentPlatformUser } from "@/lib/platform/session";
 
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = {
-  title: "Post and discussion",
-  description: "Read a public post and its comments on Godschurches."
-};
+export async function generateMetadata({
+  params
+}: {
+  params: Promise<{ postId: string }>;
+}): Promise<Metadata> {
+  return publicResourceMetadata("post", (await params).postId);
+}
 export default async function PostPage({
   params,
   searchParams

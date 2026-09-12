@@ -57,10 +57,10 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "/hero.jpg",
-        width: 1600,
-        height: 1067,
-        alt: "Sunrise over mountains and clouds"
+        url: "/brand/share-card.png",
+        width: 1200,
+        height: 630,
+        alt: "Godschurches — faith and community"
       }
     ]
   },
@@ -68,7 +68,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Godschurches | The Revival",
     description: "Faith, fellowship, and everyday life.",
-    images: ["/hero.jpg"]
+    images: ["/brand/share-card.png"]
   }
 };
 

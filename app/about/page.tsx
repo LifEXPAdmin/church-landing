@@ -91,6 +91,14 @@ export default function AboutPage() {
           </p>
         </section>
       </article>
+      <nav aria-label="App guide" className="mt-8 flex flex-wrap gap-4">
+        <Link className="underline" href="/platform/features">
+          Explore features
+        </Link>
+        <Link className="underline" href="/platform/releases">
+          App version and what’s new
+        </Link>
+      </nav>
     </section>
   );
 }

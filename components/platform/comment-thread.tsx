@@ -1,4 +1,5 @@
 "use client";
+import { AuthorAvatar } from "./author-avatar";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { accountEntryHref } from "@/lib/platform/account-entry";
@@ -246,6 +247,11 @@ export function CommentThread({
                       : `/platform/profile/${row.author.username}`
                   }
                 >
+                  <AuthorAvatar
+                    id={row.author.id}
+                    name={row.author.name}
+                    owner={row.author.churchId ? null : owner}
+                  />
                   {row.author.name}
                 </Link>
               )}

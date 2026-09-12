@@ -498,6 +498,20 @@ try {
     await notice().getByRole("button", { name: "Refresh now" }).count(),
     0
   );
+  await notice().getByRole("button", { name: "See what’s new" }).click();
+  await page
+    .getByRole("dialog")
+    .getByText("Release notes are unavailable for this build.", {
+      exact: false
+    })
+    .waitFor();
+  assert.equal(await field().inputValue(), "Retain me through connection loss");
+  await page.getByRole("button", { name: "Close notes", exact: true }).click();
+  assert.equal(await field().inputValue(), "Retain me through connection loss");
+  assert.equal(
+    await notice().getByRole("button", { name: "Refresh now" }).count(),
+    0
+  );
   offlineTest = true;
   await context.setOffline(true);
   await page.evaluate(() => window.dispatchEvent(new Event("offline")));

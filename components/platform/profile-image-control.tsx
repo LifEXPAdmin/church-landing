@@ -317,7 +317,7 @@ export function ProfileImageControl({
       aria-busy={busy || preparing}
     >
       <h2 id={`${kind}-heading`} className="text-2xl">
-        {title}
+        {kind === "avatar" ? "Profile photo" : title}
       </h2>
       <p className="text-sm text-gc-muted">
         Visible to signed-in members. JPEG, PNG or WebP, up to 4 MiB.

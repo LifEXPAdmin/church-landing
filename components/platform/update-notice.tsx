@@ -1,4 +1,10 @@
 "use client";
+import { LoadedVersion, useLoadedRelease } from "./loaded-release";
+import { ReleaseDetails } from "./release-details";
+import {
+  parseReleaseNotes,
+  type ReleaseEntry
+} from "@/lib/platform/release-content";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   installationUpdateDecision,
@@ -10,6 +16,16 @@ export function UpdateNotice({ release }: { release: string | null }) {
   // The server-rendered identity belongs to this loaded layout, even if a new
   // deployment appears before our first request or during client navigation.
   const [loaded] = useState(release);
+  const loadedProduct = useLoadedRelease();
+  const [notes, setNotes] = useState<ReleaseEntry | null>(null);
+  const [notesOpen, setNotesOpen] = useState(false);
+  const [viewed, setViewed] = useState(false);
+  const notesDialog = useRef<HTMLDialogElement>(null);
+  const notesButton = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (notesOpen) notesDialog.current?.showModal();
+    else if (notesDialog.current?.open) notesDialog.current.close();
+  }, [notesOpen]);
   const [available, setAvailable] = useState<string | null>(null);
   const [checked, setChecked] = useState(false);
   const [connectionNeeded, setConnectionNeeded] = useState(false);
@@ -46,12 +62,28 @@ export function UpdateNotice({ release }: { release: string | null }) {
       if (!response.ok) throw Error();
       const data = await response.json();
       if (abort.signal.aborted) return;
-      setAvailable(publicReleaseId(data.release));
+      const found = publicReleaseId(data.release);
+      setAvailable(found);
+      const entry = parseReleaseNotes(data.notes);
+      const matched =
+        found &&
+        data.product?.build === found &&
+        data.product?.id === entry?.id &&
+        data.product?.version === entry?.version
+          ? entry
+          : null;
+      setNotes(matched);
+      const last = document.cookie
+        .split("; ")
+        .find((v) => v.startsWith("gc_release_viewed="))
+        ?.split("=")[1];
+      setViewed(!!matched && last === matched.id);
       setConnectionNeeded(false);
       setChecked(true);
     } catch {
       if (!abort.signal.aborted) {
         setAvailable(null);
+        setNotes(null);
         setConnectionNeeded(true);
         setChecked(true);
       }
@@ -71,6 +103,7 @@ export function UpdateNotice({ release }: { release: string | null }) {
       active.current = null;
       setChecking(false);
       setAvailable(null);
+      setNotes(null);
       setConnectionNeeded(true);
       setChecked(true);
     };
@@ -102,6 +135,59 @@ export function UpdateNotice({ release }: { release: string | null }) {
       data-update-decision={decision}
       className="border-b border-gc-divider bg-gc-surface px-4 py-2 text-sm"
     >
+      <LoadedVersion />
+      {available && (
+        <p className="text-xs text-gc-muted">
+          Loaded: {loadedProduct.version ?? "unknown"} · Available:{" "}
+          {notes?.version ?? "unknown"}
+        </p>
+      )}
+      {available && available !== loaded && (
+        <>
+          <button
+            ref={notesButton}
+            className="gc-button gc-button-quiet"
+            onClick={() => {
+              setNotesOpen(true);
+              if (notes) {
+                document.cookie = `gc_release_viewed=${notes.id}; Path=/platform; Max-Age=31536000; SameSite=Lax; Secure`;
+                setViewed(true);
+              }
+            }}
+          >
+            {viewed ? "Read what’s new again" : "See what’s new"}
+          </button>
+          <dialog
+            ref={notesDialog}
+            aria-label="What’s new in the available release"
+            className="max-h-[85dvh] w-[min(92vw,42rem)] overflow-auto rounded-xl border border-gc-divider bg-gc-surface p-5 text-gc-text backdrop:bg-black/50"
+            onClose={() => {
+              setNotesOpen(false);
+              notesButton.current?.focus();
+            }}
+          >
+            <p className="mb-4">
+              This tab is still running{" "}
+              {loadedProduct.version ?? "an unknown version"}. Reading these
+              notes does not refresh it.
+            </p>
+            {notes ? (
+              <ReleaseDetails entry={notes} />
+            ) : (
+              <p>
+                Release notes are unavailable for this build. Your current work
+                is unchanged. Reconnect and check again.
+              </p>
+            )}
+            <button
+              className="gc-button mt-5"
+              onClick={() => notesDialog.current?.close()}
+            >
+              Close notes
+            </button>
+          </dialog>
+        </>
+      )}
       {(checked || checking) && (
         <p role="status">{checking ? "Checking for updates…" : message}</p>
       )}

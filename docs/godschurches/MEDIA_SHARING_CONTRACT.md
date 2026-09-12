@@ -117,3 +117,20 @@ and safe authentication returns. `tests/social-foundations-http.test.ts` exercis
 the actual production-mode local HTTPS API, CSRF, session revocation, ownership,
 public image delivery and generic crawler responses. These run in the full
 isolated account harness; they do not create production fixture records.
+
+## Shared controls and demo entry
+
+Public post/church/event pages use `PublicShareControls` and anonymous metadata
+reads. Each Copy/Share/QR action rechecks the existing preview; native completion
+means the dialog completed, not that another person received anything. QR codes
+are generated locally and PNG download remains disabled until drawing completes.
+`/platform/share` is a separate app-level entry using the configured canonical
+`/platform` URL. It grants no additional permissions. Public metadata uses the
+existing 1200 by 630 branded card; unavailable/private targets remain generic.
+
+Post/comment personal avatars use the account-gated image list and derivative
+routes with owner checks and no-store delivery. Initials remain for guests,
+church publishers or unavailable images. No raw storage URL enters public HTML.
+Private Blob connectivity was exercised, but public upload mode remains disabled
+until the existing image cleanup-worker gate is satisfied. The feature guide
+explicitly records this limitation.

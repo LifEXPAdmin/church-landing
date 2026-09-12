@@ -1,3 +1,4 @@
+import { LoadedVersion } from "./loaded-release";
 import Link from "next/link";
 import { publicReleaseId } from "@/lib/platform/install-policy";
 import { privateCookies } from "@/lib/platform/private-cookies";
@@ -81,6 +82,9 @@ export async function PlatformShell({
         </div>
         <footer className="gc-platform-footer">
           <AppearanceSelect />
+          <LoadedVersion />
+          <Link href="/platform/features">Explore features</Link>
+          <Link href="/platform/releases">What’s new</Link>
           <span>Built on faith. Made for connection.</span>
           <Link href="/about">About Godschurches</Link>
           <Link href="/help">Help</Link>

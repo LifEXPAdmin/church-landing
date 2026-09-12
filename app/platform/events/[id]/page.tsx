@@ -1,10 +1,14 @@
+import { publicResourceMetadata } from "@/lib/platform/share-metadata";
 import type { Metadata } from "next";
 import { CalendarEventPage } from "@/components/platform/calendar-event-page";
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = {
-  title: { absolute: "Event | Godschurches" },
-  robots: { index: false, follow: false }
-};
+export async function generateMetadata({
+  params
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  return publicResourceMetadata("event", (await params).id);
+}
 export default async function Page({
   params,
   searchParams

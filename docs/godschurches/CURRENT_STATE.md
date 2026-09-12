@@ -2,14 +2,15 @@
 
 ## Current continuous interface session — September 12, 2026
 
-Application `40369c21bc598405a44d7bfdfafe06eb1ef71457` is live in READY deployment
-`dpl_EL2zagXz2iJGaNFxR5w472Wc8udH` on godschurches.com. It includes the installation,
-comment/recovery/reader, relationship/privacy/library and private Saved interfaces.
-At 01:06 UTC, 36 read-only live checks passed, zero writes/page errors/runtime
-error rows; all 27 migration checksums match. Six Saved browser groups and five
-reader regressions passed. Typed Explore and filter/history work is the next local
-batch. See [continuous evidence](CONTINUOUS_SOCIAL_REPORT.md). Parent integration,
-source coverage, physical-device/provider and owner acceptance remain open.
+Application `5502f7dbd1dcfd8d563bc0b23c20e7ca976751d3` is live in READY deployment
+`dpl_A77eR9snnCSVpTXoeBke88qVNhsH` on godschurches.com. Installation, comments,
+relationships, Saved collections and typed search/filter/history are live. The
+search release passed 29 read-only checks with zero writes/errors and 27 matching
+migration checksums. The next local batch adds sharing/QR, church overview,
+authorized avatars, version/release notes and the feature guide. Photo uploads
+remain disabled until the required cleanup worker is deployed. Demo church
+content, physical rehearsal and owner acceptance remain open. See
+[continuous evidence](CONTINUOUS_SOCIAL_REPORT.md).
 Earlier sections below describe historical release checkpoints.
 
 ## Installation and comment interface release — September 12, 2026

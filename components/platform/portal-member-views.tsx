@@ -1,3 +1,4 @@
+import { PublicShareControls } from "./public-share-controls";
 import { RelationshipControls } from "./relationship-controls";
 import Link from "next/link";
 import { accountEntryHref } from "@/lib/platform/account-entry";
@@ -243,7 +244,7 @@ export function PortalDiscover({
           All churches
         </Link>
       )}
-      <div className="grid gap-5 md:grid-cols-2">
+      <div className={detail ? "grid gap-5" : "grid gap-5 md:grid-cols-2"}>
         {churches.map((church) => (
           <PortalCard key={church.id} title={church.name}>
             <RelationshipControls
@@ -251,6 +252,7 @@ export function PortalDiscover({
               targetId={church.id}
               name={church.name}
             />
+            <PublicShareControls kind="church" id={church.id} />
             <ChurchPublicDetails church={church} detail={detail} />
             {detail ? (
               <ChurchConnection church={church} snapshot={snapshot} />
@@ -333,7 +335,7 @@ export function PortalPublicDiscover({
           All churches
         </Link>
       )}
-      <div className="grid gap-5 md:grid-cols-2">
+      <div className={churchId ? "grid gap-5" : "grid gap-5 md:grid-cols-2"}>
         {visible.map((church) => (
           <PortalCard key={church.id} title={church.name}>
             <RelationshipControls
@@ -341,6 +343,7 @@ export function PortalPublicDiscover({
               targetId={church.id}
               name={church.name}
             />
+            <PublicShareControls kind="church" id={church.id} />
             <ChurchPublicDetails church={church} detail={!!churchId} />
             {churchId && (
               <Link

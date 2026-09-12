@@ -96,7 +96,7 @@ export default async function HomeFeedPage({
             </p>
             <div className="flex flex-wrap gap-3">
               <Link href={accountEntryHref("signup")} className="gc-button">
-                Join Godschurches
+                Create account
               </Link>
               <Link
                 href="/platform/search"

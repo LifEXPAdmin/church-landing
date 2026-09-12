@@ -1,3 +1,5 @@
+import { AuthorAvatar } from "./author-avatar";
+import { PublicShareControls } from "./public-share-controls";
 import { SavePostControl } from "./save-post-control";
 import { RelationshipControls } from "./relationship-controls";
 import { CommentSheet } from "./comment-sheet";
@@ -41,9 +43,11 @@ export function PostCard({
           }
           className="gc-post-author"
         >
-          <span aria-hidden="true" className="gc-avatar">
-            {post.author.name.charAt(0).toUpperCase()}
-          </span>
+          <AuthorAvatar
+            id={post.author.id}
+            name={post.author.name}
+            owner={post.author.churchId ? null : currentUserId}
+          />
           <span>
             <strong>{post.author.name}</strong>
             <span className="gc-post-handle">
@@ -101,6 +105,7 @@ export function PostCard({
         </p>
       )}
       <SavePostControl postId={post.id} />
+      <PublicShareControls kind="post" id={post.id} />
       <div className="gc-post-actions">
         {currentUserId ? (
           <form action={togglePlatformPostLike}>

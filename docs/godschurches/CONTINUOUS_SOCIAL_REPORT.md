@@ -181,3 +181,48 @@ revocation between pages, invalid cursor restart, empty-query topic and keyboard
 controls at 320/390px. Ten safe-navigation tests, full lint and production
 build/type/runtime checks pass (108 traces, 8,741 entries, 267 server JavaScript
 files). No search service, schema or authorization behavior changed.
+
+## Community demo expansion — local implementation
+
+The public sharing controls now provide fresh authorized previews, truthful
+copy/native-share feedback and locally generated downloadable QR codes. Public
+resource metadata uses anonymous permission checks and safe branding fallbacks.
+A distinct website-sharing page links to the existing account and church flows.
+
+The church overview reuses current calendar readers for a compact upcoming-events
+section alongside existing posts and relationship/membership controls. Personal
+profile images reuse the existing crop/upload editor and authorized image API;
+post and comment avatars fall back to initials when access or delivery fails.
+
+A maintained public release/feature source provides dated product versions,
+retained notes, a searchable categorized guide and normal Menu/footer links.
+The loaded layout captures its version/build once. The update notice reads notes
+for the exact detected build in a dialog without refreshing or replacing drafts.
+Public viewed-release IDs use a bounded cookie; no private draft content is stored.
+
+The production private media store passed one isolated object upload/read,
+unsigned-access denial and deletion, with zero objects remaining and zero database
+writes. The private store is connected, but upload mode remains disabled: the existing
+contract requires a deployed cleanup worker, which is still missing. Public church search
+found no matching approved demo listing; no church content or approval was
+fabricated. Owner setup and physical rehearsal remain separate prerequisites.
+
+Local validation: production build passed with 112 traces, 9074 entries and 277
+server JavaScript files; no private fixture/environment files or Prisma config
+loader. Release-content integrity and guarded-refresh tests passed. Full lint
+passed. Combined browser verification and live release receipt follow below.
+
+Ten draft-controller browser groups passed again, including preserved reply
+permissions, exact save/publication retries, stale/deleted drafts, revoked church
+access, owner changes and dirty/offline/in-flight/conflict update protection. The
+notes dialog was opened and closed while unsent text remained unchanged.
+Nine sharing/demo browser groups and the separate real signup/account-boundary
+verification/sign-in return check passed. Verification delivery used an isolated
+sink; no external mail or physical phone scan is claimed.
+
+Final local checks also passed: authorized comment avatars; 12 navigation/install
+policy checks; 2 public release-content checks; and 18 media processing/service/
+boundary checks. Two initial boundary failures were a test-launch configuration
+error (missing isolated local storage); all three boundary tests passed with the
+required isolated configuration. Final build retained the same clean 112-trace
+runtime result. No schema migration was introduced.

@@ -1,3 +1,4 @@
+import { LoadedVersion } from "@/components/platform/loaded-release";
 import { InstallationHelp } from "@/components/platform/installation-help";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -79,6 +80,24 @@ export default async function PlatformMenuPage() {
           <section aria-labelledby="menu-reading">
             <h2 id="menu-reading">Read and explore</h2>
             <ul className="gc-menu-links">
+              <MenuLink
+                href="/platform/features"
+                title="Explore features"
+                description="A guide to current capabilities and how to use them."
+                icon={BookOpen}
+              />
+              <MenuLink
+                href="/platform/releases"
+                title="What’s new"
+                description="Read release notes and app changes."
+                icon={FileText}
+              />
+              <MenuLink
+                href="/platform/share"
+                title="Share Godschurches"
+                description="Copy the website link or download its QR code."
+                icon={Church}
+              />
               <MenuLink
                 href="/platform/feed"
                 title="My feed"
@@ -213,6 +232,7 @@ export default async function PlatformMenuPage() {
             Back to Home
           </Link>
         </div>
+        <LoadedVersion />
       </section>
     </PlatformShell>
   );

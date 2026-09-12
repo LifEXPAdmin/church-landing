@@ -1,3 +1,4 @@
+import { ChurchUpcoming } from "./church-upcoming";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
@@ -285,6 +286,9 @@ export async function PortalPage({
     >
       <section className="container-shell py-8 sm:py-10">
         {content}
+        {view === "discover" && churchId && (
+          <ChurchUpcoming churchId={churchId} signedIn={!!snapshot} />
+        )}
         {view === "discover" && churchId && (
           <ChurchPosts
             churchId={churchId}

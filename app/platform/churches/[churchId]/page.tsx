@@ -1,11 +1,15 @@
+import { publicResourceMetadata } from "@/lib/platform/share-metadata";
 import type { Metadata } from "next";
 import { PortalPage } from "@/components/platform/portal-page";
 
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = {
-  title: { absolute: "Church details | Godschurches" },
-  robots: { index: false, follow: false }
-};
+export async function generateMetadata({
+  params
+}: {
+  params: Promise<{ churchId: string }>;
+}): Promise<Metadata> {
+  return publicResourceMetadata("church", (await params).churchId);
+}
 
 export default async function Page({
   params,
