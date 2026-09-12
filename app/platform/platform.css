@@ -433,6 +433,7 @@
 .gc-church-tools a {
   min-width: 0;
   max-width: 100%;
+  padding-inline: 12px;
   overflow-wrap: anywhere;
 }
 .gc-button:hover {
