@@ -278,7 +278,7 @@ export const features: Feature[] = [
     description:
       "Choose the people and churches you follow and manage relationship preferences.",
     steps:
-      "Use the controls on a person or church, or open Relationships to review and change them.",
+      "Open Settings, then Safety, to review blocked or muted accounts. Search your private list by name, open Connections controls and confirm an unblock when wanted. Unblocking does not restore friendship or follows.",
     href: "/platform/relationships",
     eligibility:
       "Signed-in account. Private preferences are visible only to you.",
@@ -396,6 +396,24 @@ export type ReleaseEntry = {
   featureIds: string[];
 };
 export const releases: ReleaseEntry[] = [
+  {
+    id: "safety-list-review",
+    version: "2026.09.12.16",
+    date: "2026-09-12",
+    summary:
+      "Review your safety choices and find blocked or muted accounts more easily.",
+    added: [
+      "Safety settings explain blocking, muting and mention choices with links to the existing controls and Help.",
+      "Search your private blocked and muted lists by an available account or church name."
+    ],
+    improved: [
+      "Unblocking asks for confirmation and explains that follows, favorites, friendships and conversation subscriptions stay removed."
+    ],
+    fixed: [
+      "Empty safety lists explain where to find the controls, and unavailable accounts keep a neutral label."
+    ],
+    featureIds: ["settings", "relationships"]
+  },
   {
     id: "display-preview",
     version: "2026.09.12.15",

@@ -230,7 +230,13 @@ export async function relationshipCommand(
 export function readRelationships(
   db: PrismaClient,
   token: unknown,
-  query: { view?: string; kind?: unknown; targetId?: unknown; after?: unknown }
+  query: {
+    view?: string;
+    kind?: unknown;
+    targetId?: unknown;
+    after?: unknown;
+    q?: unknown;
+  }
 ) {
   return withOwnedSession(
     db,
@@ -238,6 +244,17 @@ export function readRelationships(
     async (tx, session) => {
       const ownerId = session.userId,
         after = query.after ? postId(query.after) : undefined;
+      if (
+        query.q != null &&
+        (typeof query.q !== "string" ||
+          query.q.length > 100 ||
+          /[\u0000-\u001f\u007f]/.test(query.q))
+      )
+        throw new PortalError(400, "Search using up to 100 characters.");
+      const search = typeof query.q === "string" ? query.q.trim() : "";
+      if (search && query.view !== "blocked" && query.view !== "muted")
+        throw new PortalError(400, "Search your blocked or muted list.");
+      const literal = search.replace(/[\\%_]/g, "\\$&");
       const page = <T extends { id: string }>(rows: T[]) => ({
         items: rows.slice(0, PAGE),
         nextCursor: rows.length > PAGE ? rows[PAGE - 1].id : null
@@ -334,6 +351,43 @@ export function readRelationships(
         where: {
           ownerId,
           ...(after ? { id: { gt: after } } : {}),
+          ...(search
+            ? {
+                OR: [
+                  {
+                    targetUser: {
+                      is: {
+                        ...activePublicAccount,
+                        OR: [
+                          {
+                            name: {
+                              contains: literal,
+                              mode: "insensitive" as const
+                            }
+                          },
+                          {
+                            username: {
+                              contains: literal,
+                              mode: "insensitive" as const
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    church: {
+                      is: {
+                        name: {
+                          contains: literal,
+                          mode: "insensitive" as const
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            : {}),
           ...(query.view === "favorites"
             ? { favorite: true }
             : query.view === "blocked"
@@ -342,9 +396,13 @@ export function readRelationships(
                 ? { followingChurch: true }
                 : query.view === "muted"
                   ? {
-                      OR: [
-                        { muted: true },
-                        { snoozedUntil: { gt: new Date() } }
+                      AND: [
+                        {
+                          OR: [
+                            { muted: true },
+                            { snoozedUntil: { gt: new Date() } }
+                          ]
+                        }
                       ]
                     }
                   : {})

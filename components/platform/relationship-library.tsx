@@ -31,13 +31,19 @@ type Page = { items: Row[]; nextCursor: string | null };
 export function RelationshipLibrary({
   owner,
   view,
-  after
+  after,
+  search = ""
 }: {
   owner: string;
   view: RelationshipView;
   after?: string;
+  search?: string;
 }) {
   const router = useRouter();
+  const [query, setQuery] = useState(search);
+  const searchable = view === "blocked" || view === "muted";
+  const listHref = (cursor?: string) =>
+    `/platform/relationships?${new URLSearchParams({ view, ...(search ? { q: search } : {}), ...(cursor ? { after: cursor } : {}) })}`;
   const [data, setData] = useState<Page | null>(null),
     [hidden, setHidden] = useState(true),
     [busy, setBusy] = useState(false),
@@ -53,7 +59,7 @@ export function RelationshipLibrary({
     setMessage("");
     try {
       const r = await socialRequest<Page>(
-        `/api/platform/relationships?${new URLSearchParams({ view, ...(after ? { after } : {}) })}`,
+        `/api/platform/relationships?${new URLSearchParams({ view, ...(after ? { after } : {}), ...(search ? { q: search } : {}) })}`,
         undefined,
         owner
       );
@@ -77,7 +83,7 @@ export function RelationshipLibrary({
         setBusy(false);
       }
     }
-  }, [owner, view, after, router]);
+  }, [owner, view, after, search, router]);
   useEffect(() => {
     void load();
     const conceal = () => {
@@ -107,6 +113,11 @@ export function RelationshipLibrary({
   }, [load]);
   return (
     <section aria-label="Private relationship library" className="space-y-4">
+      {searchable && (
+        <Link className="underline" href="/platform/settings/safety">
+          Back to Safety settings
+        </Link>
+      )}
       <p>
         These lists belong to your account. Following a church is separate from
         membership and church access.
@@ -124,6 +135,43 @@ export function RelationshipLibrary({
           </Link>
         ))}
       </nav>
+      {searchable && (
+        <form
+          role="search"
+          className="gc-settings-search"
+          onSubmit={(e) => {
+            e.preventDefault();
+            router.push(
+              `/platform/relationships?${new URLSearchParams({ view, ...(query.trim() ? { q: query.trim() } : {}) })}`
+            );
+          }}
+        >
+          <label htmlFor="relationship-search">
+            Search{" "}
+            {view === "blocked"
+              ? "blocked accounts"
+              : "muted accounts and churches"}
+          </label>
+          <input
+            id="relationship-search"
+            type="search"
+            maxLength={100}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+          <button className="gc-button gc-button-quiet" type="submit">
+            Search this list
+          </button>
+          {search && (
+            <Link
+              className="underline"
+              href={`/platform/relationships?view=${view}`}
+            >
+              Clear list search
+            </Link>
+          )}
+        </form>
+      )}
       <p role="status">{busy ? "Loading your connections…" : message}</p>
       <button
         type="button"
@@ -136,7 +184,17 @@ export function RelationshipLibrary({
       {!hidden && data && (
         <>
           <h2 className="text-2xl">{labels[view]}</h2>
-          {!data.items.length && <p>No connections in this view.</p>}
+          {!data.items.length && (
+            <p>
+              {search
+                ? "No matching accounts in this list. Try another name or clear your search."
+                : view === "blocked"
+                  ? "You haven’t blocked any accounts. Open a person’s profile and their Connections controls to block them."
+                  : view === "muted"
+                    ? "You haven’t muted or snoozed any accounts or churches. Open their Connections controls to choose Mute or Snooze."
+                    : "No connections in this view."}
+            </p>
+          )}
           <div className="space-y-3">
             {data.items.map((row) => {
               const person = row.following ?? row.target;
@@ -183,7 +241,11 @@ export function RelationshipLibrary({
                       />
                     </>
                   ) : (
-                    <p>Account or church unavailable</p>
+                    <p>
+                      {kind === "church"
+                        ? "Church unavailable"
+                        : "Account unavailable"}
+                    </p>
                   )}
                 </article>
               );
@@ -194,7 +256,7 @@ export function RelationshipLibrary({
               <Link
                 prefetch={false}
                 className="gc-button gc-button-quiet"
-                href={`/platform/relationships?view=${view}`}
+                href={listHref()}
               >
                 First page
               </Link>
@@ -203,7 +265,7 @@ export function RelationshipLibrary({
               <Link
                 prefetch={false}
                 className="gc-button gc-button-quiet"
-                href={`/platform/relationships?${new URLSearchParams({ view, after: data.nextCursor })}`}
+                href={listHref(data.nextCursor)}
               >
                 More connections
               </Link>

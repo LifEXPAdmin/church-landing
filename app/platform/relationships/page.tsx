@@ -2,7 +2,10 @@ import type { Metadata } from "next";
 import { PlatformShell } from "@/components/platform/platform-shell";
 import { GuestAccountPrompt } from "@/components/platform/guest-account-prompt";
 import { RelationshipLibrary } from "@/components/platform/relationship-library";
-import { relationshipView } from "@/lib/platform/relationship-navigation";
+import {
+  relationshipView,
+  relationshipSearch
+} from "@/lib/platform/relationship-navigation";
 import { getCurrentPlatformUser } from "@/lib/platform/session";
 import { readerId } from "@/lib/platform/reader-navigation";
 export const metadata: Metadata = {
@@ -12,12 +15,13 @@ export const metadata: Metadata = {
 export default async function RelationshipsPage({
   searchParams
 }: {
-  searchParams: Promise<{ view?: string; after?: string }>;
+  searchParams: Promise<{ view?: string; after?: string; q?: string }>;
 }) {
   const user = await getCurrentPlatformUser(),
     q = await searchParams;
   const view = relationshipView(q.view),
-    after = readerId(q.after) ?? undefined;
+    after = readerId(q.after) ?? undefined,
+    search = relationshipSearch(view, q.q);
   return (
     <PlatformShell user={user}>
       {user ? (
@@ -25,16 +29,17 @@ export default async function RelationshipsPage({
           <div className="mx-auto max-w-2xl space-y-5">
             <h1 className="text-4xl">Your connections</h1>
             <RelationshipLibrary
-              key={`${user.id}-${view}-${after ?? "first"}`}
+              key={`${user.id}-${view}-${after ?? "first"}-${search}`}
               owner={user.id}
               view={view}
               after={after}
+              search={search}
             />
           </div>
         </section>
       ) : (
         <GuestAccountPrompt
-          next={`/platform/relationships?${new URLSearchParams({ view, ...(after ? { after } : {}) })}`}
+          next={`/platform/relationships?${new URLSearchParams({ view, ...(after ? { after } : {}), ...(search ? { q: search } : {}) })}`}
           reason="account"
         />
       )}

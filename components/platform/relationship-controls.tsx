@@ -174,6 +174,14 @@ export function RelationshipControls({
       )
     )
       return;
+    if (
+      operation === "block" &&
+      desired === false &&
+      !window.confirm(
+        "Unblock this personal account? Your block will be removed, but following, favorites, friendship and conversation subscriptions will not be restored. Other access restrictions still apply."
+      )
+    )
+      return;
     void send(
       JSON.stringify({
         operation,

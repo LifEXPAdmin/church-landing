@@ -97,7 +97,7 @@ const { relationshipCommand } =
 try {
   const f = await seedPortal(db);
   await signIn(f.memberA);
-  await go("/platform/settings");
+  await go("/platform/settings/privacy/relationships");
   const privacy = () =>
     page.getByRole("region", { name: "Relationship privacy", exact: true });
   const mentions = () =>
@@ -148,12 +148,13 @@ try {
     }),
     otherPage = await other.newPage();
   await otherPage.goto(
-    config.origin + "/platform/login?next=%2Fplatform%2Fsettings"
+    config.origin +
+      "/platform/login?next=%2Fplatform%2Fsettings%2Fprivacy%2Frelationships"
   );
   await otherPage.locator("#account-login-email").fill(f.memberA.email);
   await otherPage.locator("#account-login-password").fill(f.memberA.password);
   await otherPage.locator("#account-login-form button[type=submit]").click();
-  await otherPage.waitForURL("**/platform/settings");
+  await otherPage.waitForURL("**/platform/settings/privacy/relationships");
   const otherPrivacy = otherPage.getByRole("region", {
     name: "Relationship privacy",
     exact: true
@@ -199,6 +200,7 @@ try {
     .click();
   assert.equal(await mentions().inputValue(), "FOLLOWED");
   await other.close();
+  await page.bringToFront();
   ok(
     "Privacy choices all save and reload in a second signed-in session; exact retry and two-session conflict preserve selected input"
   );
@@ -210,11 +212,31 @@ try {
   await page.waitForFunction(
     () =>
       document.querySelector('select[aria-label="Who may mention you"]')
+        ?.value === "EVERYONE" ||
+      Array.from(document.querySelectorAll("button")).some(
+        (b) => b.textContent === "Retry settings"
+      )
+  );
+  const retrySettings = page.getByRole("button", {
+    name: "Retry settings",
+    exact: true
+  });
+  if (await retrySettings.isVisible()) {
+    assert.equal(
+      await mentions().isVisible(),
+      false,
+      "A changed account never retains the previous account's privacy values"
+    );
+    await retrySettings.click();
+  }
+  await page.waitForFunction(
+    () =>
+      document.querySelector('select[aria-label="Who may mention you"]')
         ?.value === "EVERYONE"
   );
   assert.equal(await counts().isChecked(), true);
   await context.clearCookies({ name: "church_platform_session" });
-  await go("/platform/settings");
+  await go("/platform/settings/privacy/relationships");
   assert.equal(await privacy().count(), 0);
   ok(
     "Privacy values clear on account change and are absent from the guest settings gate"
@@ -311,15 +333,17 @@ try {
     .getByRole("button", { name: "Restore in feed", exact: true })
     .click();
   await library()
-    .getByText("No connections in this view.", { exact: true })
+    .getByText(
+      "You haven’t muted or snoozed any accounts or churches. Open their Connections controls to choose Mute or Snooze.",
+      { exact: true }
+    )
     .waitFor();
   await library().getByRole("link", { name: "Blocked", exact: true }).click();
-  await library()
-    .getByText("Account or church unavailable", { exact: true })
-    .waitFor();
+  await library().getByText("Account unavailable", { exact: true }).waitFor();
   await page
     .getByText(`Connections with ${targets[0].name}`, { exact: true })
     .click();
+  page.once("dialog", (d) => d.accept());
   await page.getByRole("button", { name: "Unblock", exact: true }).click();
   await page
     .getByText(targets[0].name, { exact: true })
@@ -350,6 +374,24 @@ try {
     output + "/receipt.json",
     JSON.stringify({ results, pageErrors: errors }, null, 2)
   );
+} catch (error) {
+  await page
+    .screenshot({ path: output + "/failure.png", fullPage: true })
+    .catch(() => {});
+  writeFileSync(
+    output + "/failure.txt",
+    String(error) +
+      "\n" +
+      JSON.stringify(
+        await page.evaluate(() => ({
+          url: location.href,
+          visibility: document.visibilityState
+        }))
+      ) +
+      "\n" +
+      (await page.locator("body").innerText())
+  );
+  throw error;
 } finally {
   await context.close();
   await browser.close();

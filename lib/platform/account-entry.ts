@@ -1,3 +1,4 @@
+import { relationshipSearch } from "./relationship-navigation";
 import { isSettingsPath } from "./settings-registry";
 import { readerDate, readerId } from "./reader-navigation";
 
@@ -60,6 +61,8 @@ export function safeAccountReturn(value: unknown): string {
     )
       query.set("view", view);
     if (after) query.set("after", after);
+    const search = relationshipSearch(view ?? "", url.searchParams.get("q"));
+    if (search) query.set("q", search);
   }
   if (/^\/platform\/posts\/[a-zA-Z0-9_-]{1,100}\/?$/.test(url.pathname)) {
     const comment = readerId(url.searchParams.get("comment"));
@@ -84,6 +87,7 @@ export function safeAccountReturn(value: unknown): string {
     "cursor",
     "candidateCursor"
   ] as const) {
+    if (key === "q" && url.pathname === "/platform/relationships") continue;
     const entry = url.searchParams.get(key);
     if (entry && entry.length <= 200 && !/[\u0000-\u001f\u007f]/.test(entry))
       query.set(key, entry);

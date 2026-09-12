@@ -19,7 +19,8 @@ export async function GET(request: Request) {
         view: q.get("view") ?? "controls",
         kind: q.get("kind"),
         targetId: q.get("targetId"),
-        after: q.get("after")
+        after: q.get("after"),
+        q: q.get("q")
       }),
       { headers: socialHeaders }
     );

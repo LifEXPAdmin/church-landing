@@ -16,6 +16,7 @@ import { GoogleAccountOptions } from "./google-account";
 import { AccountIdentitySummary, SettingsControls } from "./settings-controls";
 import { SettingsSecurity } from "./settings-security";
 import { SettingsPrivacy } from "./settings-privacy";
+import { SettingsSafety } from "./settings-safety";
 
 const positions = new Map<string, { y: number; focus: string }>();
 let positionOwner: string | null = null;
@@ -347,6 +348,7 @@ export function SettingsWorkspace({
               {folder === "privacy" && !active && (
                 <SettingsPrivacy data={data} />
               )}
+              {folder === "safety" && !active && <SettingsSafety />}
               {folder &&
                 !active &&
                 rows(entries.filter((s) => s.folder === folder))}
