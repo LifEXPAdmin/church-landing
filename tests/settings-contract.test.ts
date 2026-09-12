@@ -74,11 +74,11 @@ test("denied, unavailable and temporary errors contain no private values", () =>
     version: 3
   };
   assert.equal(locked.effective, "ONLY_ME");
-  // @ts-expect-error A denied result cannot carry a hidden private value.
   const denied: SettingValueState = {
     status: "forbidden",
     editable: false,
     reason: "No access",
+    // @ts-expect-error A denied result cannot carry a hidden private value.
     effective: "private-contact"
   };
   void denied;

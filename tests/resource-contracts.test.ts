@@ -84,15 +84,15 @@ function typedAddresses() {
   };
   // @ts-expect-error Image addresses are not post addresses.
   const wrongPost: ResourceReference<"post"> = image;
-  // @ts-expect-error Settings require an explicit scope, not a generic row ID.
   const unscoped: ResourceReference<"setting"> = {
     kind: "setting",
+    // @ts-expect-error Settings require an explicit scope, not a generic row ID.
     id: "appearance"
   };
-  // @ts-expect-error Inactive family policy is not an active scope.
   const family: ResourceReference<"setting"> = {
     kind: "setting",
     settingId: "appearance",
+    // @ts-expect-error Inactive family policy is not an active scope.
     scope: { kind: "family" }
   };
   return [post, setting, wrongPost, unscoped, family];
