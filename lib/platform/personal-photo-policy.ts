@@ -15,6 +15,9 @@ import { socialUserWhere } from "./social-policy";
 
 export const PHOTO_LIBRARY_LIMIT = 1000;
 export const PHOTO_PAGE_SIZE = 24;
+export function photoAlbumsEnabled() {
+  return process.env.PHOTO_ALBUMS_ENABLED === "true";
+}
 export function photoLibraryEnabled() {
   return process.env.PERSONAL_PHOTO_LIBRARY_ENABLED === "true";
 }

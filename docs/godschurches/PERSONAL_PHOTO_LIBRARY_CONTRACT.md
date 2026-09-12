@@ -195,3 +195,44 @@ existing private Blob environment. The final 15 live read/browser checks passed 
 06:58 UTC with zero application mutation requests, browser errors or runtime error
 rows. Authenticated editing/privacy proof uses isolated fictional accounts. Physical
 phone rehearsal and later named-album acceptance remain separate requirements.
+
+## Named album extension — contract before activation
+
+Named albums are owned reference collections inside profile Photos. A signed-in
+reader must pass current profile, album and each source-photo predicate. Album
+audiences are Only me (default), signed-in Members, or an approved Church; this
+slice introduces no public profile/album navigation. A Public source photo remains
+public elsewhere even when its album is private. Album title, cover, counts,
+thumbnail pages and enlarged views apply the same intersection. Block, source
+withdrawal, Church removal and account lifecycle changes apply on every read.
+
+The bounds are 50 owned albums, 100 distinct owned photos per album and 24 visible
+photos per page. Album lists are capped at 50; only one permitted cover and filtered
+count per album are returned. Photo cursors bind viewer, album and version, so
+reordering invalidates stale pages. No storage write occurs when adding a reference.
+An unreadable chosen cover falls back to a currently readable member or a neutral
+empty state. Owner management may show a neutral unavailable-reference row so it
+can be removed, without projecting inaccessible source content.
+
+Create, rename, audience/cover changes and add/remove/reorder use one versioned
+snapshot and the existing exact-body social receipt. New members must be current
+readable owned PersonalPhoto records at their expected photo/image versions.
+Existing unavailable references can be removed without a new source grant. Shared
+contributors, tagging and album conversations are outside this slice.
+
+Deleting an album explicitly removes its references and metadata, preserving the
+underlying photos. Retiring a referenced asset requires first removing its album
+references; this applies to personal deletion and source gallery removal, and
+explains the required action rather than silently deleting an album. Source post
+withdrawal continues to deny reads while retaining its original byte lifecycle.
+Album reference creation and image retirement use the existing shared lifecycle
+lock. A retired/deleted asset cannot acquire a new reference; a prior album
+reference prevents retirement. Only an explicit separate last-use photo deletion
+queues the unchanged 24-hour cleanup grace. Export includes only the owner's album
+metadata and ordered references; deactivation stays reversible and denies reads.
+
+The additive album schema has no data backfill or user-content mutation. New album
+operations remain off behind PHOTO_ALBUMS_ENABLED until processed privacy/race
+fixtures, browser recovery checks, fresh backup/restore and migration rehearsal,
+compatible deployment and old-request drain are verified. The flag never bypasses
+existing source privacy or the reference guard once records exist.

@@ -88,7 +88,40 @@ model PersonalPhoto {
   asset MediaAsset @relation(fields: [assetId], references: [id], onDelete: Restrict)
   owner PlatformUser @relation(fields: [ownerId], references: [id], onDelete: Restrict)
   audienceChurch Church? @relation(fields: [audienceChurchId], references: [id], onDelete: Restrict)
+  albumReferences PhotoAlbumEntry[]
+  albumCovers PhotoAlbum[] @relation("AlbumCover")
+  @@unique([assetId, ownerId])
   @@index([ownerId, deletedAt, createdAt, assetId])
+}
+
+// Albums narrow discovery; referenced bytes retain their current source boundary.
+model PhotoAlbum {
+  id String @id @default(cuid())
+  ownerId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  version Int @default(1)
+  name String
+  audience PersonalPhotoAudience @default(ONLY_ME)
+  audienceChurchId String?
+  coverAssetId String?
+  owner PlatformUser @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  audienceChurch Church? @relation(fields: [audienceChurchId], references: [id], onDelete: Restrict)
+  cover PersonalPhoto? @relation("AlbumCover", fields: [coverAssetId, ownerId], references: [assetId, ownerId], onDelete: Restrict)
+  entries PhotoAlbumEntry[]
+  @@unique([id, ownerId])
+  @@index([ownerId, createdAt, id])
+}
+model PhotoAlbumEntry {
+  albumId String
+  assetId String
+  ownerId String
+  position Int
+  album PhotoAlbum @relation(fields: [albumId, ownerId], references: [id, ownerId], onDelete: Restrict)
+  photo PersonalPhoto @relation(fields: [assetId, ownerId], references: [assetId, ownerId], onDelete: Restrict)
+  @@id([albumId, assetId])
+  @@unique([albumId, position])
+  @@index([assetId])
 }
 
 // Explicitly selected saved photos reuse their existing processed bytes.
@@ -189,6 +222,7 @@ model PlatformUser {
   uploadedImages MediaAsset[] @relation("ImageUploader")
   profileImages MediaAsset[] @relation("ProfileImage")
   personalPhotos PersonalPhoto[]
+  photoAlbums PhotoAlbum[]
   postPhotoReferences PostPhotoReference[]
   presentation ProfilePresentation?
   socialPreferences SocialPreferences?
@@ -442,6 +476,7 @@ model Church {
   calendarShares CalendarShare[]
   eventShares CalendarEventShare[]
   personalPhotoAudiences PersonalPhoto[]
+  photoAlbumAudiences PhotoAlbum[]
   images MediaAsset[]
 }
 

@@ -9,6 +9,7 @@ import { projectImage, retireImage } from "./media";
 import { imagesAvailable } from "./media-storage";
 import {
   checkPhotoAudience,
+  photoAlbumsEnabled,
   directPhotoAudience,
   PHOTO_LIBRARY_LIMIT,
   PHOTO_PAGE_SIZE,
@@ -183,6 +184,7 @@ export function readPersonalPhotos(
       profileId,
       canManage,
       imagesAvailable: imagesAvailable(),
+      albumsAvailable: photoAlbumsEnabled(),
       total,
       limit: PHOTO_LIBRARY_LIMIT,
       capacityRemaining:

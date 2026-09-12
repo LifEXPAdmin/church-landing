@@ -136,6 +136,29 @@ export async function downloadAccountExport(
         linkSourceUrl: true
       }
     });
+    const photoAlbums = await tx.photoAlbum.findMany({
+      where: { ownerId: userId },
+      orderBy: { id: "asc" },
+      take: 51,
+      select: {
+        id: true,
+        name: true,
+        version: true,
+        audience: true,
+        audienceChurchId: true,
+        coverAssetId: true,
+        entries: {
+          orderBy: { position: "asc" },
+          take: 101,
+          select: { assetId: true, position: true }
+        }
+      }
+    });
+    if (
+      photoAlbums.length > 50 ||
+      photoAlbums.some((album) => album.entries.length > 100)
+    )
+      throw new AccountExportError("size");
     const photoReferences = await tx.postPhotoReference.findMany({
       where: {
         ownerId: userId,
@@ -552,6 +575,7 @@ export async function downloadAccountExport(
       posts,
       images,
       photoReferences,
+      photoAlbums,
       socialPreferences: await tx.socialPreferences.findMany({
         where: { ownerId: userId },
         select: {
