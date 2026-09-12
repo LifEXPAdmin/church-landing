@@ -627,6 +627,24 @@ export async function downloadAccountExport(
         orderBy: { id: "asc" },
         take: MAX_ROWS + 1
       }),
+      communityReports: await tx.communityReport.findMany({
+        where: { reporterId: userId },
+        select: {
+          id: true,
+          targetType: true,
+          targetId: true,
+          targetVersion: true,
+          contextVersion: true,
+          reason: true,
+          details: true,
+          status: true,
+          version: true,
+          createdAt: true,
+          updatedAt: true
+        },
+        orderBy: { id: "asc" },
+        take: MAX_ROWS + 1
+      }),
       commentDrafts: await tx.privateCommentDraft.findMany({
         where: { ownerId: userId, deletedAt: null },
         select: {
@@ -669,7 +687,7 @@ export async function downloadAccountExport(
         version: 1,
         generatedAt: new Date().toISOString(),
         scope:
-          "Your account profile, presentation preferences and linked Google identity, authored community content and personal image metadata and photo albums, personal polls and your own ballots and volunteer signups, likes/following, private social and conversation choices and friend invitation records, private comment drafts and comment Likes, private post drafts and saved collection organization (source posts excluded), church directory choices, your own church representative setup and listing drafts/submissions, personal calendars/events and their sharing choices, your event responses and your own support submissions. Other people's content, staff/church operations, credentials, session data and security audit records are excluded. Image binaries are not embedded; image references still require current access. Reading preferences saved only on this browser are not in this account file.",
+          "Your account profile, presentation preferences and linked Google identity, authored community content and personal image metadata and photo albums, personal polls and your own ballots and volunteer signups, likes/following, private social and conversation choices and friend invitation records, private comment drafts and comment Likes, private post drafts and saved collection organization (source posts excluded), church directory choices, your own church representative setup and listing drafts/submissions, personal calendars/events and their sharing choices, your event responses, your own community reports and your own support submissions. Other people's content, staff/church operations, credentials, session data and security audit records and private report-review notes are excluded. Image binaries are not embedded; image references still require current access. Reading preferences saved only on this browser are not in this account file.",
         account,
         ...collections
       },

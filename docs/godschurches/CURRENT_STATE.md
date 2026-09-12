@@ -1,3 +1,12 @@
+## Private reporting foundation — local checkpoint, 12 September 2026
+
+The canonical report/receipt and scoped review foundation is locally verified;
+intake defaults off and the new migration is isolated-only. The current live
+application remains the audit-repair release below. See
+[the reporting receipt](COMMUNITY_REPORTING_REPORT.md) and
+[its contract](COMMUNITY_REPORTING_CONTRACT.md) for exact checks, remaining UI,
+reviewer/retention gates and broader moderation scope.
+
 ## Social reliability and runtime repairs verified live — 12 September 2026
 
 Product `2026.09.12.23`, application `4a11762af55439f6e3964366eab99a57b12eaae8`,

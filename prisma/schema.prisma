@@ -229,6 +229,8 @@ model PlatformUser {
   socialRelations SocialRelationship[] @relation("SocialOwner")
   socialTargets SocialRelationship[] @relation("SocialTarget")
   socialOperations SocialOperation[]
+  communityReports CommunityReport[]
+  communityReportDecisions CommunityReportDecision[]
   friendInvitation FriendInvitation?
   sentFriendAcceptances FriendAcceptance[] @relation("FriendInviter")
   receivedFriendAcceptances FriendAcceptance[] @relation("FriendRecipient")
@@ -424,6 +426,68 @@ enum OperatorCapability {
   MANAGE_CHURCH_ACCESS
   MANAGE_ACCOUNTS
   ASSIGN_RELATIONSHIP_OWNER
+  REVIEW_COMMUNITY_REPORTS
+}
+
+enum CommunityReportTarget {
+  POST
+  COMMENT
+  PROFILE
+  CHURCH
+}
+
+enum CommunityReportReason {
+  SPAM
+  HARASSMENT
+  PRIVACY
+  SAFETY
+  IMPERSONATION
+  OTHER
+}
+
+enum CommunityReportStatus {
+  RECEIVED
+  CLOSED
+  FOLLOW_UP_REQUIRED
+}
+
+model CommunityReport {
+  id String @id @default(cuid())
+  reporterId String
+  targetType CommunityReportTarget
+  targetId String
+  targetVersion Int
+  contextVersion Int @default(0)
+  scopeChurchId String?
+  reason CommunityReportReason
+  details String @default("")
+  status CommunityReportStatus @default(RECEIVED)
+  version Int @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  reporter PlatformUser @relation(fields: [reporterId], references: [id], onDelete: Restrict)
+  scopeChurch Church? @relation(fields: [scopeChurchId], references: [id], onDelete: Restrict)
+  decisions CommunityReportDecision[]
+
+  // A stable reference survives source withdrawal or removal without copying its body.
+  @@unique([reporterId, targetType, targetId, targetVersion, contextVersion])
+  @@index([reporterId, createdAt, id])
+  @@index([scopeChurchId, status, createdAt])
+  @@index([targetType, targetId])
+}
+
+model CommunityReportDecision {
+  id String @id @default(cuid())
+  reportId String
+  actorId String
+  fromStatus CommunityReportStatus
+  toStatus CommunityReportStatus
+  reason String
+  version Int
+  createdAt DateTime @default(now())
+  report CommunityReport @relation(fields: [reportId], references: [id], onDelete: Restrict)
+  actor PlatformUser @relation(fields: [actorId], references: [id], onDelete: Restrict)
+  @@index([reportId, createdAt])
 }
 
 enum ChurchContactSlot {
@@ -438,6 +502,7 @@ enum DirectoryAudience {
 }
 
 model Church {
+  communityReports CommunityReport[]
   socialRelations SocialRelationship[]
   authoredComments PlatformPostComment[]
   id String @id @default(cuid())

@@ -1,8 +1,8 @@
 import { createHmac } from "node:crypto";
-import type { PrismaClient } from "@prisma/client";
+import type { Prisma, PrismaClient } from "@prisma/client";
 
 async function hit(
-  db: PrismaClient,
+  db: Pick<Prisma.TransactionClient, "$queryRaw">,
   key: string,
   maximum: number,
   seconds: number
@@ -53,4 +53,22 @@ export async function allowWorkspaceAttempt(
     .update(`post-workspace:${ownerId}`)
     .digest("hex");
   return hit(db, key, 240, 900);
+}
+
+// New-activity budgets run inside the command transaction, after receipt replay.
+// Transport flood limits remain independent of this per-account activity quota.
+export async function activityBudget(
+  db: Prisma.TransactionClient,
+  secret: string,
+  ownerId: string,
+  activity: string,
+  maximum: number,
+  seconds: number
+) {
+  const key = createHmac("sha256", secret)
+    .update(`activity:${activity}:${ownerId}`)
+    .digest("hex");
+  if (await hit(db, key, maximum, seconds)) return 0;
+  const row = await db.platformAuthLimit.findUniqueOrThrow({ where: { key } });
+  return Math.max(1, Math.ceil((row.expiresAt.getTime() - Date.now()) / 1000));
 }

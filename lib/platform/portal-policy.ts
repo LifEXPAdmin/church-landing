@@ -1,9 +1,11 @@
 import type { PlatformUser } from "@prisma/client";
 import { ADULT_POLICY } from "./portal-types";
 export class PortalError extends Error {
+  readonly retryAfter?: number;
   status: number;
-  constructor(status: number, message: string) {
+  constructor(status: number, message: string, retryAfter?: number) {
     super(message);
+    this.retryAfter = retryAfter;
     this.status = status;
   }
 }

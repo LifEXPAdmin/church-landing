@@ -49,7 +49,8 @@ export function socialCommand(
   token: unknown,
   domain: string,
   input: Record<string, unknown>,
-  run: (tx: PostTx, ownerId: string) => Promise<SocialReceipt>
+  run: (tx: PostTx, ownerId: string) => Promise<SocialReceipt>,
+  beforeReplay?: (tx: PostTx, ownerId: string) => Promise<void>
 ) {
   const key = `${domain}:${socialKey(input.mutationId)}`,
     fingerprint = digest(input);
@@ -58,6 +59,9 @@ export function socialCommand(
     token,
     async (tx, session) => {
       const ownerId = session.userId;
+      // Privileged workflows can require current authority even for a receipt
+      // replay. The check shares the command's revocation/permission lock.
+      if (beforeReplay) await beforeReplay(tx, ownerId);
       const prior = await tx.socialOperation.findUnique({
         where: { ownerId_key: { ownerId, key } }
       });

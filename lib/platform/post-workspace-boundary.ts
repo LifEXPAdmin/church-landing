@@ -29,7 +29,15 @@ export function workspaceError(error: unknown) {
             ? "Sign in to continue. Keep your unsaved entries."
             : "This work could not be loaded or saved. Keep your entries and try again."
     },
-    { status, headers: workspaceHeaders }
+    {
+      status,
+      headers: {
+        ...workspaceHeaders,
+        ...(status === 429 && error instanceof PortalError && error.retryAfter
+          ? { "Retry-After": String(error.retryAfter) }
+          : {})
+      }
+    }
   );
 }
 export async function handlePostWorkspaceRequest(
