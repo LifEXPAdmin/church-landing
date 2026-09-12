@@ -12,6 +12,9 @@ export default function ManifestoPage() {
     <section className="container-shell py-16 sm:py-20">
       <article className="gc-info-article">
         <h1 className="mb-8 text-5xl">The Godschurches Manifesto</h1>
+        <p className="gc-info-intro">
+          A worldwide Church. A shared mission. Every believer has a part.
+        </p>
         <p>
           This is our founding vision. Some tools described below remain
           planned. <Link href="/about">See what you can use today.</Link>
@@ -70,7 +73,8 @@ export default function ManifestoPage() {
             <p>
               Our vision is for Godschurches to help local churches be
               discovered, share messages and events, connect with believers, and
-              find practical support. Event and funding tools remain planned.
+              find practical support. Calendar and event tools are available
+              with current permissions; funding tools remain planned.
             </p>
             <p>When churches are strengthened, the Body is strengthened.</p>
           </section>

@@ -14,7 +14,7 @@ test("public release content has stable unique identities, valid references and 
   assert.equal(new Set(releases.map((r) => r.version)).size, releases.length);
   assert.match(baselineBuild, /^[a-f0-9]{40}$/);
   for (const f of features) {
-    assert.match(f.href, /^\/platform(?:\/|$)/);
+    assert.match(f.href, /^\/(?:platform(?:\/|$)|about#our-mission$)/);
     assert.doesNotMatch(
       JSON.stringify(f),
       /notion\.|todoist\.|GC-DEMO|example\.test/

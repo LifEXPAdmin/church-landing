@@ -11,6 +11,18 @@ export type Feature = {
 };
 export const features: Feature[] = [
   {
+    id: "mission",
+    category: "Getting started",
+    name: "Our mission",
+    description: "Jesus gave us a mission. You have a part to play.",
+    steps:
+      "Read our shared calling, then explore believers and churches. Create an account when you are ready to participate.",
+    href: "/about#our-mission",
+    eligibility:
+      "Mission pages and public conversations are available without an account. Participation and church tools retain their current account and access requirements.",
+    availability: "available"
+  },
+  {
     id: "settings",
     category: "Privacy and account",
     name: "Searchable settings",
@@ -410,6 +422,24 @@ export type ReleaseEntry = {
   featureIds: string[];
 };
 export const releases: ReleaseEntry[] = [
+  {
+    id: "our-shared-mission",
+    version: "2026.09.12.19",
+    date: "2026-09-12",
+    summary: "Our mission is front and center, with a clear way to take part.",
+    added: [
+      "Visitors see the Great Commission mission before the Home feed, with direct ways to create an account, explore the community and read Our mission."
+    ],
+    improved: [
+      "About, the manifesto, registration welcome and shared footer express the same calling. Menu includes a direct Our mission link.",
+      "Returning members retain their normal feed, composer and reading choices."
+    ],
+    fixed: [
+      "About and the manifesto now distinguish available calendar and photo tools from future funding features.",
+      "Back restores Home after opening another page from a newly loaded feed."
+    ],
+    featureIds: ["mission"]
+  },
   {
     id: "settings-help-guide",
     version: "2026.09.12.18",

@@ -220,9 +220,9 @@ export default async function PlatformMenuPage() {
             <h2 id="menu-about">About Godschurches</h2>
             <ul className="gc-menu-links">
               <MenuLink
-                href="/about"
-                title="Our purpose"
-                description="Faith, fellowship and everyday life."
+                href="/about#our-mission"
+                title="Our mission"
+                description="Christ’s authority. Our shared calling. Your part to play."
                 icon={Church}
               />
               <MenuLink

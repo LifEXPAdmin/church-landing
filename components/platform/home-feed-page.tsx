@@ -57,10 +57,43 @@ export default async function HomeFeedPage({
   return (
     <PlatformShell user={currentUser}>
       <section className="container-shell">
+        {!currentUser && (
+          <section className="gc-mission" aria-labelledby="home-mission-title">
+            <p className="gc-eyebrow">
+              A CHRISTIAN COMMUNITY FOR FAITH IN ACTION
+            </p>
+            <h1 id="home-mission-title">
+              <span>Jesus gave us a mission.</span>{" "}
+              <span>You have a part to play.</span>
+            </h1>
+            <p className="gc-mission-description">
+              We’re building Godschurches to equip everyday believers to share
+              the gospel, serve their neighbors, and make disciples—together.
+            </p>
+            <p>
+              Connect with believers, discover churches, and build relationships
+              that carry your faith into everyday life.
+            </p>
+            <div className="gc-mission-actions">
+              <Link href={accountEntryHref("signup")} className="gc-button">
+                Create an account
+              </Link>
+              <Link
+                href="/platform/search"
+                className="gc-button gc-button-quiet"
+              >
+                Explore the community <ArrowRight aria-hidden="true" />
+              </Link>
+              <Link href="/about#our-mission" className="gc-mission-link">
+                Our mission
+              </Link>
+            </div>
+          </section>
+        )}
         <div className="gc-screen-heading">
           <div>
             <p className="gc-eyebrow">Life together</p>
-            <h1>Home</h1>
+            {currentUser ? <h1>Home</h1> : <h2 className="text-3xl">Home</h2>}
             <p className="text-gc-muted">
               {community
                 ? "From across the community, newest first."
@@ -87,26 +120,6 @@ export default async function HomeFeedPage({
               </Link>
             </div>
           )}
-        {!currentUser && (
-          <div className="gc-welcome">
-            <h2>Take a look around.</h2>
-            <p>
-              Read public conversations and discover churches. Join when you’re
-              ready to take part.
-            </p>
-            <div className="flex flex-wrap gap-3">
-              <Link href={accountEntryHref("signup")} className="gc-button">
-                Create account
-              </Link>
-              <Link
-                href="/platform/search"
-                className="gc-button gc-button-quiet"
-              >
-                Explore <ArrowRight aria-hidden="true" />
-              </Link>
-            </div>
-          </div>
-        )}
         <div className="gc-home-columns">
           <div className="min-w-0">
             {currentUser && (

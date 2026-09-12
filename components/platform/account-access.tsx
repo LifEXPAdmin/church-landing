@@ -42,7 +42,9 @@ export function AccountAccess({
         tabIndex={-1}
         className="text-4xl text-gc-text sm:text-5xl"
       >
-        Your Godschurches account
+        {registered
+          ? "You have a place in this mission."
+          : "Your Godschurches account"}
       </h1>
       <p className="my-5 text-gc-muted">
         A place to grow in faith and connect with others. Your account email
@@ -54,6 +56,27 @@ export function AccountAccess({
           {accountReasons[reason]} You’ll return to your destination after
           signing in.
         </p>
+      )}
+      {registered && (
+        <div className="mb-5 space-y-3">
+          <p>
+            Find your church, connect with someone, or share an introduction.
+          </p>
+          <div className="flex flex-wrap gap-x-5 gap-y-2">
+            <Link
+              className="inline-flex min-h-11 items-center underline"
+              href="/platform/churches"
+            >
+              Find a church
+            </Link>
+            <Link
+              className="inline-flex min-h-11 items-center underline"
+              href="/platform/search?kind=people"
+            >
+              Explore people
+            </Link>
+          </div>
+        </div>
       )}
       {registered && (
         <p

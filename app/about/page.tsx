@@ -11,13 +11,24 @@ export default function AboutPage() {
   return (
     <section className="container-shell py-10 sm:py-16">
       <article className="gc-info-article">
-        <p className="gc-eyebrow">The Revival</p>
-        <h1>Faith that carries into everyday life.</h1>
+        <p className="gc-eyebrow">Our mission</p>
+        <h1 id="our-mission" className="scroll-mt-6">
+          His authority. Our shared calling.
+        </h1>
         <p className="gc-info-intro">
-          Godschurches is a place to share encouragement, grow in faith, and
-          stay connected to people. Local churches remain at the heart of that
-          life together.
+          Jesus Christ holds all authority in heaven and on earth. Under His
+          authority, He commissions His followers to go and make
+          disciples—baptizing them and teaching them to obey His commands.
         </p>
+        <p>
+          Godschurches exists to help believers put that calling into practice.
+          We’re building connections and tools that strengthen local churches,
+          support service, and help people share their faith and grow together.
+        </p>
+        <p>
+          The mission comes from Christ. Our part is to help you take yours.
+        </p>
+        <p className="text-sm text-gc-muted">Rooted in Matthew 28:18–20.</p>
         <section>
           <h2>Start with a conversation</h2>
           <p>
@@ -26,9 +37,11 @@ export default function AboutPage() {
             update, comment, react, follow people, or view member profiles.
           </p>
           <p>
-            Posts, comments and their author names are public. Other profile
-            details are available to signed-in members. Keep private prayer
-            details and personal contact information out of shared spaces.
+            Public posts, comments and their author names are readable without
+            an account. Church-only content retains its current audience. Other
+            profile details are available to permitted signed-in members. Keep
+            private prayer details and personal contact information out of
+            shared spaces.
           </p>
           <div className="gc-info-actions">
             <Link href="/platform" className="gc-button">
@@ -58,9 +71,10 @@ export default function AboutPage() {
           <h2>A shared direction</h2>
           <p>
             Our longer-term vision connects believers, churches, creators,
-            businesses, and people who want to serve. Event calendars, media
-            uploads, sponsorships, and funding tools are still planned; they are
-            not available through these information pages.
+            businesses, and people who want to serve. Calendars, events and
+            personal photo tools are available with their current account and
+            church permissions. Sponsorships and funding tools remain planned.
+            <Link href="/platform/features"> Explore current features.</Link>
           </p>
           <ul className="gc-info-list">
             <li>

@@ -138,12 +138,18 @@ export function FeedReader({
       (!readerId(search.get("post")) ||
         !readerDate(search.get("through")) ||
         !readerId(search.get("anchor")))
-    )
-      history.replaceState(
-        null,
-        "",
-        readerHref(location.href, selected ?? current.id, homeMode, anchor)
+    ) {
+      // Let the router install its history integration before recording the
+      // initial position. An earlier native write can erase its Back state.
+      const frame = requestAnimationFrame(() =>
+        history.replaceState(
+          null,
+          "",
+          readerHref(location.href, selected ?? current.id, homeMode, anchor)
+        )
       );
+      return () => cancelAnimationFrame(frame);
+    }
   }, [current, selected, homeMode, anchor, search]);
   useEffect(() => {
     // Draft content stays in its mounted form, never in a URL or browser storage.
