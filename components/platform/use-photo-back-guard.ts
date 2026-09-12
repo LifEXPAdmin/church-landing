@@ -50,15 +50,28 @@ function start() {
 /** A same-address history entry lets normal browser Back preserve selected files. */
 export function usePhotoBackGuard(blocked: boolean, onBlocked: () => void) {
   const notice = useRef(onBlocked);
+  const registration = useRef<symbol | null>(null);
   notice.current = onBlocked;
   useEffect(() => {
     if (!blocked) return;
     const key = Symbol();
+    registration.current = key;
     pending.set(key, () => notice.current());
     start();
     return () => {
+      // A confirmed full-page navigation has already released this entry.
+      // Do not race its redirect with the usual same-address history cleanup.
+      if (registration.current !== key) return;
+      registration.current = null;
       pending.delete(key);
       release();
     };
   }, [blocked]);
+  return () => {
+    const key = registration.current;
+    if (!key) return;
+    registration.current = null;
+    pending.delete(key);
+    if (!pending.size) stop();
+  };
 }

@@ -238,6 +238,24 @@ export const settingsRegistry: readonly SettingRegistration[] = Object.freeze([
     )
   ),
   entry(
+    "profile.contacts",
+    "profile",
+    "Optional church contact details",
+    "Review your separate directory email and phone choices; sign-in email stays private.",
+    [
+      "phone",
+      "contact email",
+      "contact details",
+      "contact visibility",
+      "address"
+    ],
+    { href: "/platform/my-church/sharing" },
+    linked(
+      "portal.ts getPortalSnapshot sharing",
+      "portal.ts portalCommand operation=share"
+    )
+  ),
+  entry(
     "profile.photos",
     "profile",
     "Your photos and albums",

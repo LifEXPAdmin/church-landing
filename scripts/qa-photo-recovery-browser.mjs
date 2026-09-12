@@ -167,7 +167,7 @@ try {
 
   const post = await postCommand(db, owner.token, { operation: "create", requestKey: randomUUID(), content: "Reduced data gallery fixture" });
   for(let index=0; index<3; index++) await uploadImage(db, owner.token, makeUpload(post.id, "POST_PHOTO"), bytes);
-  await signIn(owner); await go("/platform/settings");
+  await signIn(owner); await go("/platform/settings/display/reading");
   await page.getByLabel("Reduce photo data", { exact: false }).check();
   await page.getByLabel("Post text size", { exact: true }).selectOption("largest");
   await page.getByLabel("Reduce motion", { exact: false }).check();
@@ -193,7 +193,7 @@ try {
   await dialog.waitFor({state:"hidden"}); await bounded();
   await page.screenshot({path:output+"/reduced-data-post-390.png"});
   ok("Reduced-data settings persist with largest text and reduced motion, load one thumbnail per deliberate step and one large image only on open");
-  await go("/platform/settings");await page.getByLabel("Reduce photo data",{exact:false}).uncheck();
+  await go("/platform/settings/display/reading");await page.getByLabel("Reduce photo data",{exact:false}).uncheck();
   requestImages.length=0;await go("/platform/posts/"+post.id);await photos.getByRole("button",{name:"Open photo 1 of 3",exact:true}).scrollIntoViewIfNeeded();
   await pauseUntil(async()=>new Set(requestImages).size>=3,"normal gallery thumbnail loading");
   assert.equal(await photos.locator("img").count(),3);assert.ok(requestImages.every(path=>/\/(thumb|medium)$/.test(path)));

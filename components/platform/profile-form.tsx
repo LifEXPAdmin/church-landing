@@ -125,71 +125,119 @@ export function ProfileForm({
           </p>
         </div>
         <input type="hidden" name="expectedVersion" value={version} />
-        <div>
-          <label htmlFor="profile-name">Name</label>
-          <input
-            id="profile-name"
-            name="name"
-            required
-            minLength={2}
-            maxLength={100}
-            autoComplete="name"
-            defaultValue={profile.name}
-            className={accountInputClass}
-          />
-        </div>
-        <div>
-          <label htmlFor="profile-bio">Bio (optional)</label>
-          <textarea
-            id="profile-bio"
-            name="bio"
-            rows={5}
-            maxLength={500}
-            defaultValue={profile.bio ?? ""}
-            className={accountInputClass}
-          />
-          <p className="mt-2 text-sm text-gc-muted">
-            Up to 500 characters. A little about you, in your own words.
+        <fieldset className="min-w-0 space-y-4">
+          <legend className="text-2xl">Identity</legend>
+          <p className="text-sm text-gc-muted">
+            Name is the only required profile field. Use 2 to 100 characters.
+            Your username is @{profile.username}; it cannot be changed here.
           </p>
-        </div>
-        <div className="grid gap-5 sm:grid-cols-2">
           <div>
-            <label htmlFor="profile-location">Location (optional)</label>
+            <label htmlFor="profile-name">Name (required)</label>
             <input
-              id="profile-location"
-              name="location"
-              maxLength={80}
-              defaultValue={profile.location ?? ""}
+              id="profile-name"
+              name="name"
+              required
+              minLength={2}
+              maxLength={100}
+              autoComplete="name"
+              defaultValue={profile.name}
               className={accountInputClass}
             />
           </div>
+        </fieldset>
+        <fieldset className="min-w-0 space-y-4">
+          <legend className="text-2xl">Introduction and about you</legend>
+          <p className="text-sm text-gc-muted">
+            Everything in this section is optional and visible to permitted
+            signed-in members. Leave any field empty if you prefer.
+          </p>
           <div>
-            <label htmlFor="profile-website">Website (optional)</label>
-            <input
-              id="profile-website"
-              name="website"
-              type="url"
-              maxLength={120}
-              placeholder="https://"
-              defaultValue={profile.website ?? ""}
+            <label htmlFor="profile-bio">Bio (optional)</label>
+            <textarea
+              id="profile-bio"
+              name="bio"
+              rows={5}
+              maxLength={500}
+              defaultValue={profile.bio ?? ""}
               className={accountInputClass}
             />
+            <p className="mt-2 text-sm text-gc-muted">
+              Up to 500 characters. A little about you, in your own words.
+            </p>
           </div>
-        </div>
-        <div>
-          <label htmlFor="profile-interests">Interests (optional)</label>
-          <input
-            id="profile-interests"
-            name="interests"
-            maxLength={334}
-            defaultValue={profile.interests.join(", ")}
-            aria-describedby="profile-interests-help"
-            className={accountInputClass}
-          />
-          <p id="profile-interests-help" className="mt-2 text-sm text-gc-muted">
-            Separate up to 8 interests with commas. Up to 40 characters each.
+          <label className="block" htmlFor="profile-introduction">
+            Pinned introduction (optional)
+            <textarea
+              id="profile-introduction"
+              name="introduction"
+              rows={4}
+              maxLength={1000}
+              className={accountInputClass}
+              defaultValue={profile.presentation.introduction}
+              aria-describedby="profile-introduction-help"
+            />
+          </label>
+          <p id="profile-introduction-help" className="text-sm text-gc-muted">
+            A welcome above your About and Posts sections. Up to 1,000
+            characters.
           </p>
-        </div>
+          <div className="grid gap-5 sm:grid-cols-2">
+            <div>
+              <label htmlFor="profile-location">Location (optional)</label>
+              <input
+                id="profile-location"
+                name="location"
+                maxLength={80}
+                defaultValue={profile.location ?? ""}
+                aria-describedby="profile-location-help"
+                className={accountInputClass}
+              />
+              <p
+                id="profile-location-help"
+                className="mt-2 text-sm text-gc-muted"
+              >
+                A general place, such as your city. Up to 80 characters. Avoid
+                sharing your home address here.
+              </p>
+            </div>
+            <div>
+              <label htmlFor="profile-website">Website (optional)</label>
+              <input
+                id="profile-website"
+                name="website"
+                type="url"
+                maxLength={120}
+                placeholder="https://"
+                defaultValue={profile.website ?? ""}
+                aria-describedby="profile-website-help"
+                className={accountInputClass}
+              />
+              <p
+                id="profile-website-help"
+                className="mt-2 text-sm text-gc-muted"
+              >
+                A full http:// or https:// link, up to 120 characters.
+              </p>
+            </div>
+          </div>
+          <div>
+            <label htmlFor="profile-interests">Interests (optional)</label>
+            <input
+              id="profile-interests"
+              name="interests"
+              maxLength={334}
+              defaultValue={profile.interests.join(", ")}
+              aria-describedby="profile-interests-help"
+              className={accountInputClass}
+            />
+            <p
+              id="profile-interests-help"
+              className="mt-2 text-sm text-gc-muted"
+            >
+              Separate up to 8 interests with commas. Up to 40 characters each.
+            </p>
+          </div>
+        </fieldset>
         <p
           ref={feedback}
           tabIndex={-1}
@@ -260,21 +308,6 @@ export function ProfileForm({
               ))}
             </select>
           </label>
-          <label className="block" htmlFor="profile-introduction">
-            Pinned introduction (optional)
-            <textarea
-              id="profile-introduction"
-              name="introduction"
-              rows={4}
-              maxLength={1000}
-              className={accountInputClass}
-              defaultValue={profile.presentation.introduction}
-            />
-          </label>
-          <p className="text-sm text-gc-muted">
-            A welcome above your About and Posts sections. Up to 1,000
-            characters; visible to signed-in members.
-          </p>
         </fieldset>
         {conflict && (
           <div className="gc-profile-confirm">

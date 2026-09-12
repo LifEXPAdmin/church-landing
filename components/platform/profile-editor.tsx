@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { usePhotoBackGuard } from "./use-photo-back-guard";
 import { ProfileForm } from "./profile-form";
 import { ProfileImageControl } from "./profile-image-control";
@@ -26,7 +27,7 @@ export function ProfileEditor({ profile }: { profile: ProfileEditorView }) {
     (image) => image.busy || image.dirty
   );
   dirty.current = textDirty || textBusy || selectedPhoto;
-  usePhotoBackGuard(dirty.current, () =>
+  const releaseForNavigation = usePhotoBackGuard(dirty.current, () =>
     setBackNotice(
       "Your unsaved profile changes are still here. Finish or discard them before leaving."
     )
@@ -80,6 +81,12 @@ export function ProfileEditor({ profile }: { profile: ProfileEditorView }) {
   }, [leave]);
   return (
     <div className="gc-profile-editor space-y-6">
+      <Link
+        className="gc-profile-text-button"
+        href="/platform/settings/profile"
+      >
+        Back to Profile settings
+      </Link>
       <p role="status">{backNotice}</p>
       <header>
         <h1 className="text-4xl sm:text-5xl">Edit your profile</h1>
@@ -90,29 +97,39 @@ export function ProfileEditor({ profile }: { profile: ProfileEditorView }) {
           separate.
         </p>
       </header>
-      {profile.photoLibraryEnabled && (
-        <a
-          className="gc-profile-text-button"
-          href={`/platform/profile/${encodeURIComponent(profile.username)}?tab=photos`}
-        >
-          Manage your Photos, profile pictures and covers
-        </a>
-      )}
-      <div className="grid items-start gap-5 lg:grid-cols-2">
-        {(["avatar", "cover"] as const).map((kind) => (
-          <ProfileImageControl
-            key={kind}
-            initial={profile[kind]}
-            userId={profile.id}
-            name={profile.name}
-            kind={kind}
-            available={profile.imagesAvailable}
-            retainsHistory={profile.photoLibraryEnabled}
-            disabled={textBusy}
-            onState={onImageState}
-          />
-        ))}
-      </div>
+      <section aria-labelledby="profile-photos-heading" className="space-y-4">
+        <h2 id="profile-photos-heading" className="text-2xl">
+          Profile photos (optional)
+        </h2>
+        <p className="text-sm text-gc-muted">
+          Profile pictures and covers are visible to permitted signed-in
+          members. Each photo saves separately. Your unsaved text stays here
+          while you edit a photo.
+        </p>
+        {profile.photoLibraryEnabled && (
+          <a
+            className="gc-profile-text-button"
+            href={`/platform/profile/${encodeURIComponent(profile.username)}?tab=photos`}
+          >
+            Manage your Photos, profile pictures and covers
+          </a>
+        )}
+        <div className="grid items-start gap-5 lg:grid-cols-2">
+          {(["avatar", "cover"] as const).map((kind) => (
+            <ProfileImageControl
+              key={kind}
+              initial={profile[kind]}
+              userId={profile.id}
+              name={profile.name}
+              kind={kind}
+              available={profile.imagesAvailable}
+              retainsHistory={profile.photoLibraryEnabled}
+              disabled={textBusy}
+              onState={onImageState}
+            />
+          ))}
+        </div>
+      </section>
       <ProfileForm
         profile={profile}
         imagesPending={selectedPhoto}
@@ -120,8 +137,42 @@ export function ProfileEditor({ profile }: { profile: ProfileEditorView }) {
         onBusy={setTextBusy}
         onSaved={() => {
           allowLeave.current = true;
+          releaseForNavigation();
         }}
       />
+      <section
+        aria-labelledby="profile-contact-heading"
+        className="gc-settings space-y-4"
+      >
+        <h2 id="profile-contact-heading" className="text-2xl">
+          Optional contact details
+        </h2>
+        <p>
+          Your member profile has no phone or contact-email field. You can
+          choose a separate email and phone for your church directory, or leave
+          both empty. Directory sharing does not change your private sign-in
+          email.
+        </p>
+        <p>
+          Directory participation is optional. Each contact starts with Only me;
+          sharing requires a current approved church connection and verified
+          adult eligibility. Street-address sharing is unavailable.
+        </p>
+        <div className="flex flex-wrap gap-3">
+          <Link
+            className="gc-profile-text-button"
+            href="/platform/my-church/sharing"
+          >
+            Review church directory contacts
+          </Link>
+          <Link
+            className="gc-profile-text-button"
+            href="/platform/settings/account/email"
+          >
+            Manage private sign-in email
+          </Link>
+        </div>
+      </section>
       <dialog
         ref={dialog}
         className="gc-profile-leave-dialog"
@@ -153,6 +204,7 @@ export function ProfileEditor({ profile }: { profile: ProfileEditorView }) {
             onClick={() => {
               if (leave) {
                 allowLeave.current = true;
+                releaseForNavigation();
                 window.location.assign(leave);
               }
             }}

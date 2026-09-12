@@ -78,11 +78,13 @@ export const features: Feature[] = [
     id: "profile",
     category: "Profiles",
     name: "Your profile",
-    description: "Introduce yourself and choose how your profile looks.",
+    description:
+      "Introduce yourself with optional details and a clear choice of what to share.",
     steps:
-      "Open your profile, choose Edit profile, then save your details or appearance.",
+      "Open Settings, then Profile. Edit your identity, introduction, photos and appearance in the shared editor. Name is required; other profile details are optional. Review optional church directory contacts separately. Unsaved text stays in the editor if a photo upload fails.",
     href: "/platform/profile/me",
-    eligibility: "Signed-in account; visibility follows your profile settings.",
+    eligibility:
+      "Signed-in account. Name and username identify public contributions; other profile details require permitted member access. Directory contacts require a current approved church connection and verified adult eligibility. Sign-in email stays private; street-address sharing is unavailable.",
     availability: "available"
   },
   {
@@ -394,6 +396,24 @@ export type ReleaseEntry = {
   featureIds: string[];
 };
 export const releases: ReleaseEntry[] = [
+  {
+    id: "profile-settings-clarity",
+    version: "2026.09.12.13",
+    date: "2026-09-12",
+    summary:
+      "Profile settings make optional details and separate church contacts easier to understand.",
+    added: [
+      "Profile settings links directly to your optional church directory email and phone choices."
+    ],
+    improved: [
+      "The shared editor groups identity, introduction and appearance with clearer character guidance and a return to Profile settings.",
+      "Profile photos remain optional and save separately, preserving unsaved text through an upload failure."
+    ],
+    fixed: [
+      "A confirmed profile save now finishes its redirect without racing the protection for unsaved Back navigation."
+    ],
+    featureIds: ["settings", "profile", "profile-photos"]
+  },
   {
     id: "security-settings-clarity",
     version: "2026.09.12.12",
