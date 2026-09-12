@@ -22,10 +22,10 @@ export default async function RecoveryPage() {
             signedIn={!!user}
           />
           <Link
-            href="/platform/login"
+            href={user ? "/platform/settings/security" : "/platform/login"}
             className="mt-8 block text-gc-accent underline"
           >
-            Back to sign in
+            {user ? "Back to Security" : "Back to sign in"}
           </Link>
         </div>
       </section>

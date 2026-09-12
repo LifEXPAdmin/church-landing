@@ -10,6 +10,7 @@ import {
 import { accountEntryHref } from "./account-entry";
 import { createSessionToken, hashSessionToken, validToken } from "./auth";
 import { isRecentAuthenticationPurpose } from "./account-credential";
+import { accountConfirmationReturn } from "./account-settings-navigation";
 import { AccountLifecycleError } from "./account-lifecycle";
 import { checkPendingEmailChange } from "./account-email-change";
 import {
@@ -305,13 +306,13 @@ export async function handleGoogleRequest(db: PrismaClient, request: Request) {
         sessionToken,
         newBrowser,
         body.purpose,
-        "/platform/settings"
+        accountConfirmationReturn(body.purpose)
       );
     } else {
       attempt = await beginGoogleAttempt(
         db,
         newBrowser,
-        operation === "link" ? "/platform/settings" : body.next,
+        operation === "link" ? "/platform/settings/account/methods" : body.next,
         operation === "link"
           ? { sessionToken, password: body.currentPassword }
           : undefined
@@ -458,7 +459,7 @@ export async function handleGoogleCallback(
       const response = redirect(
         result.purpose === "confirm-email-change"
           ? "/platform/account/change-email"
-          : "/platform/settings"
+          : accountConfirmationReturn(result.purpose)
       );
       response.headers.append(
         "Set-Cookie",
@@ -476,7 +477,7 @@ export async function handleGoogleCallback(
             (accountEntryHref("login", result.next).includes("?") ? "&" : "?") +
             "notice=google-link-required"
         : result.kind === "linked"
-          ? "/platform/settings?notice=google-linked"
+          ? "/platform/settings/account/methods?notice=google-linked"
           : result.next
     );
     clearGoogleCookies(response, account.secureCookie);

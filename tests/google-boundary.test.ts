@@ -216,7 +216,16 @@ async function reauth(
     response.headers.get("location"),
     purpose === "confirm-email-change"
       ? "/platform/account/change-email"
-      : "/platform/settings"
+      : (
+          {
+            "change-password": "/platform/settings/security/password",
+            "revoke-other-sessions": "/platform/settings/account/sessions",
+            "prepare-export": "/platform/settings/data/export",
+            "deactivate-account": "/platform/settings/data/deactivate",
+            "request-email-change": "/platform/settings/account/email",
+            "unlink-google": "/platform/settings/account/methods"
+          } as Record<string, string>
+        )[purpose]
   );
   return response;
 }
@@ -274,6 +283,45 @@ test("Google boundary rejects forged origins, methods, fields, body overflow and
     "/platform/login?notice=google-unavailable"
   );
   assert.equal(await db.platformGoogleAttempt.count(), before);
+});
+
+test("expired Google confirmation cannot change a password and a fresh confirmation returns to the original Settings detail", async () => {
+  const person = await owner(true);
+  await reauth(person, "change-password");
+  const proof = person.jar.get(googleCookieName("recent", true))!;
+  await db.platformRecentAuthentication.update({
+    where: { tokenHash: hashSessionToken(proof) },
+    data: { expiresAt: new Date(0) }
+  });
+  const state = await (await post({ operation: "status" }, person.jar)).json();
+  assert.equal(state.recentPurpose, null);
+  const denied = await account(
+    {
+      operation: "change-password",
+      credentialMethod: "google",
+      password,
+      confirmPassword: password
+    },
+    person.jar
+  );
+  assert.equal(denied.status, 400);
+  assert.equal(
+    (await db.platformUser.findUniqueOrThrow({ where: { id: person.user.id } }))
+      .passwordHash,
+    null
+  );
+  assert.ok(await readAccountSession(db, person.token));
+  await reauth(person, "change-password");
+  const renewed = await (
+    await post({ operation: "status" }, person.jar)
+  ).json();
+  assert.equal(renewed.recentPurpose, "change-password");
+  assert.notEqual(person.jar.get(googleCookieName("recent", true)), proof);
+  assert.equal(
+    (await db.platformUser.findUniqueOrThrow({ where: { id: person.user.id } }))
+      .passwordHash,
+    null
+  );
 });
 
 test("authorization cookies are host-only and HttpOnly; signup completes once with only explicit profile and adult fields", async () => {
@@ -826,7 +874,7 @@ test("authenticated link and unlink use the original session and preserve a usab
   );
   assert.equal(
     result.headers.get("location"),
-    "/platform/settings?notice=google-linked"
+    "/platform/settings/account/methods?notice=google-linked"
   );
   await reauth(person, "unlink-google");
   assert.equal(

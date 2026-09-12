@@ -52,7 +52,11 @@ export default async function VerificationPage({
             </div>
           )}
           <Link
-            href={user ? "/platform/settings" : "/platform/login"}
+            href={
+              user
+                ? "/platform/settings/account/verification"
+                : "/platform/login"
+            }
             className="inline-flex min-h-11 items-center text-gc-accent underline"
           >
             {user ? "Back to account settings" : "Back to sign in"}

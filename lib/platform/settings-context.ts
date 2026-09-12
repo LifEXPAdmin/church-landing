@@ -4,6 +4,7 @@ import { accountDeliveryAvailable } from "./account-availability";
 import { googleAvailable } from "./google-availability";
 import { photoLibraryEnabled } from "./personal-photo-policy";
 import { isEligible, PortalError } from "./portal";
+import { accountSignInMethods } from "./google-accounts";
 
 /** Private navigation context only; values remain in their owning service. */
 export function readSettingsContext(
@@ -59,6 +60,7 @@ export function readSettingsContext(
         emailVerified: !!user.emailVerifiedAt,
         emailAvailable: accountDeliveryAvailable(),
         googleAvailable: googleAvailable(),
+        methods: await accountSignInMethods(tx, session),
         photosAvailable: photoLibraryEnabled(),
         churches,
         churchError

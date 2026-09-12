@@ -59,14 +59,22 @@ export function RecoveryForm({
     };
   }, [purpose]);
   const verification = (grant?.purpose ?? purpose) === "VERIFY_EMAIL";
-  const returnHref = signedIn && verification ? "/platform/settings" : "/platform/login";
+  const returnHref =
+    signedIn && verification
+      ? "/platform/settings/account/verification"
+      : "/platform/login";
   if (!ready) return <p role="status">Loading account options...</p>;
   if (!available)
     return (
-      <p role="status">
-        Email recovery and verification are not available yet. Your account and
-        posts are unchanged. Existing password accounts can still sign in.
-      </p>
+      <div className="space-y-4">
+        <h1 className="text-4xl">
+          {verification ? "Email verification" : "Password recovery"}
+        </h1>
+        <p role="status">
+          Email recovery and verification are not available yet. Your account
+          and posts are unchanged. Existing password accounts can still sign in.
+        </p>
+      </div>
     );
   if (!grant)
     return (
@@ -197,7 +205,14 @@ export function RecoveryForm({
               : "Verify my email"}
         </Button>
       )}
-      {complete && verification && <Link className="block text-gc-accent underline" href="/platform/invitations">Check your signup connection</Link>}
+      {complete && verification && (
+        <Link
+          className="block text-gc-accent underline"
+          href="/platform/invitations"
+        >
+          Check your signup connection
+        </Link>
+      )}
       <a href={returnHref} className="block text-gc-accent underline">
         {signedIn && verification
           ? "Return to account settings"

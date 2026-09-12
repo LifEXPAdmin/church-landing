@@ -13,6 +13,10 @@ import { AccountForm } from "./account-form";
 import { GoogleSignInMethods } from "./google-sign-in-methods";
 import { ChurchTools } from "./church-tools";
 import { logoutPlatformAccount } from "@/app/platform/actions";
+import {
+  canConfirmSettings,
+  SettingsCredentialHelp
+} from "./settings-security";
 
 export function SettingsControls({
   control,
@@ -21,18 +25,34 @@ export function SettingsControls({
   control: SettingsControl;
   data: SettingsContext;
 }) {
+  const canConfirm = canConfirmSettings(data);
   switch (control) {
     case "reading":
       return <ReadingSettings allowReset />;
     case "privacy":
       return <RelationshipPrivacy owner={data.ownerId} />;
     case "sessions":
-      return <AccountSessions />;
+      return (
+        <AccountSessions
+          confirmationUnavailable={
+            canConfirm ? undefined : <SettingsCredentialHelp data={data} />
+          }
+        />
+      );
     case "email":
-      return <AccountEmailChange available={data.emailAvailable} />;
+      return !data.emailAvailable || canConfirm ? (
+        <AccountEmailChange available={data.emailAvailable} />
+      ) : (
+        <SettingsCredentialHelp data={data} />
+      );
     case "export":
-      return <AccountExport />;
+      return canConfirm ? (
+        <AccountExport />
+      ) : (
+        <SettingsCredentialHelp data={data} />
+      );
     case "deactivate":
+      if (!canConfirm) return <SettingsCredentialHelp data={data} />;
       return (
         <>
           <p className="my-4">
@@ -45,8 +65,13 @@ export function SettingsControls({
         </>
       );
     case "password":
-      return <AccountForm operation="change-password" />;
+      return canConfirm ? (
+        <AccountForm operation="change-password" />
+      ) : (
+        <SettingsCredentialHelp data={data} />
+      );
     case "methods":
+      if (!canConfirm) return <SettingsCredentialHelp data={data} />;
       return data.googleAvailable ? (
         <>
           <GoogleSignInMethods />

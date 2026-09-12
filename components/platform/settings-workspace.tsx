@@ -14,6 +14,7 @@ import {
 } from "@/lib/platform/settings-registry";
 import { GoogleAccountOptions } from "./google-account";
 import { AccountIdentitySummary, SettingsControls } from "./settings-controls";
+import { SettingsSecurity } from "./settings-security";
 
 const positions = new Map<string, { y: number; focus: string }>();
 let positionOwner: string | null = null;
@@ -59,6 +60,14 @@ export function SettingsWorkspace({
           "Your sign-in changed. Reload settings before continuing."
         );
       }
+      if (
+        !r.data.methods ||
+        typeof r.data.methods.password !== "boolean" ||
+        typeof r.data.methods.google !== "boolean"
+      )
+        throw new Error(
+          "Sign-in options could not be checked. Retry settings."
+        );
       setData(r.data);
       setHidden(false);
     } catch (e) {
@@ -322,6 +331,9 @@ export function SettingsWorkspace({
                 <div className="gc-settings">
                   <AccountIdentitySummary data={data} />
                 </div>
+              )}
+              {folder === "security" && !active && (
+                <SettingsSecurity data={data} />
               )}
               {folder &&
                 !active &&

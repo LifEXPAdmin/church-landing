@@ -594,11 +594,19 @@ export async function finishGoogleReactivation(
 }
 
 export async function googleSignInMethods(db: PrismaClient, token: unknown) {
-  return withOwnedSession(db, token, async (tx, current) => ({
+  return withOwnedSession(db, token, accountSignInMethods);
+}
+
+/** Read only inside the existing owner/session transaction. Never expose hashes. */
+export async function accountSignInMethods(
+  tx: Prisma.TransactionClient,
+  current: { userId: string; user: { passwordHash: string | null } }
+) {
+  return {
     password: usablePasswordHash(current.user.passwordHash),
     google: !!(await tx.platformGoogleIdentity.findUnique({
       where: { userId: current.userId },
       select: { id: true }
     }))
-  }));
+  };
 }

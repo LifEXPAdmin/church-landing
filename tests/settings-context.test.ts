@@ -25,6 +25,7 @@ test("settings context projects only the current account and current approved ch
   });
   const v = await readSettingsContext(db, a.token, a.id);
   assert.equal(v.ownerId, a.id);
+  assert.deepEqual(v.methods, { password: true, google: false });
   assert.deepEqual(v.churches, [{ id: church.id, name: church.name }]);
   assert.doesNotMatch(
     JSON.stringify(v),
@@ -41,6 +42,32 @@ test("settings context projects only the current account and current approved ch
     data: { state: "LEFT", version: { increment: 1 } }
   });
   assert.deepEqual((await readSettingsContext(db, a.token)).churches, []);
+});
+
+test("method metadata distinguishes password, linked provider and legacy passwordless accounts without exposing credentials", async () => {
+  const a = await createPortalActor(db, "methodscope");
+  await db.platformUser.update({
+    where: { id: a.id },
+    data: { passwordHash: null }
+  });
+  assert.deepEqual((await readSettingsContext(db, a.token)).methods, {
+    password: false,
+    google: false
+  });
+  const subject = randomUUID();
+  await db.platformGoogleIdentity.create({
+    data: { userId: a.id, issuer: "https://accounts.google.com", subject }
+  });
+  const provider = await readSettingsContext(db, a.token);
+  assert.deepEqual(provider.methods, { password: false, google: true });
+  assert.equal(provider.googleAvailable, false);
+  assert.ok(!JSON.stringify(provider).includes(subject));
+  assert.ok(!JSON.stringify(provider).includes(a.token));
+  await db.platformGoogleIdentity.deleteMany({ where: { userId: a.id } });
+  assert.deepEqual((await readSettingsContext(db, a.token)).methods, {
+    password: false,
+    google: false
+  });
 });
 test("unverified accounts retain personal settings without exposing church selection", async () => {
   const a = await createPortalActor(db, "settingsunverified");

@@ -33,7 +33,11 @@ async function requestSessions(
   return result;
 }
 
-export function AccountSessions() {
+export function AccountSessions({
+  confirmationUnavailable
+}: {
+  confirmationUnavailable?: React.ReactNode;
+} = {}) {
   const confirmation = useAccountConfirmation("revoke-other-sessions");
   const [listing, setListing] = useState<AccountSessionList | null>(null);
   const [pending, setPending] = useState(false);
@@ -133,63 +137,67 @@ export function AccountSessions() {
           </ul>
         </div>
       )}
-      <form
-        method="post"
-        action="/api/platform/account"
-        className="space-y-4"
-        aria-describedby="other-sign-ins-help session-feedback"
-        onSubmit={(event) => {
-          event.preventDefault();
-          const form = event.currentTarget;
-          const credentials = confirmation.credentials(new FormData(form));
-          void run(async () => {
-            let result;
-            try {
-              result = await requestSessions(
-                "revoke-other-sessions",
-                credentials
-              );
-            } finally {
-              confirmation.finish();
-            }
-            form.reset();
-            setListing(null);
-            try {
-              setListing(await requestSessions("list-sessions"));
-            } catch {
-              throw new Error(
-                "Other sessions were signed out, but the updated list could not be loaded. Refresh the sign-in list to check."
-              );
-            }
-            return result.message;
-          });
-        }}
-      >
-        <p id="other-sign-ins-help" className="text-gc-muted">
-          Confirm your account to sign out every other session. This one stays
-          signed in. If you think someone knows your password, also{" "}
-          <Link
-            className="underline"
-            href="/platform/settings/security/password"
-          >
-            change your password
-          </Link>
-          .
-        </p>
-        <AccountConfirmation
-          value={confirmation}
-          id="session-current-password"
-          label="Current password for other sign-ins"
-        />
-        <button
-          type="submit"
-          className="gc-button"
-          disabled={pending || !confirmation.ready}
+      {confirmationUnavailable ?? (
+        <form
+          method="post"
+          action="/api/platform/account"
+          className="space-y-4"
+          aria-describedby="other-sign-ins-help session-feedback"
+          onSubmit={(event) => {
+            event.preventDefault();
+            const form = event.currentTarget;
+            const credentials = confirmation.credentials(new FormData(form));
+            void run(async () => {
+              let result;
+              try {
+                result = await requestSessions(
+                  "revoke-other-sessions",
+                  credentials
+                );
+              } finally {
+                confirmation.finish();
+              }
+              form.reset();
+              setListing(null);
+              try {
+                setListing(await requestSessions("list-sessions"));
+              } catch {
+                throw new Error(
+                  "Other sessions were signed out, but the updated list could not be loaded. Refresh the sign-in list to check."
+                );
+              }
+              return result.message;
+            });
+          }}
         >
-          {pending ? "Please wait…" : "Sign out other sessions"}
-        </button>
-        <noscript>JavaScript is needed to use these sign-in controls.</noscript>
-      </form>
+          <p id="other-sign-ins-help" className="text-gc-muted">
+            Confirm your account to sign out every other session. This one stays
+            signed in. If you think someone knows your password, also{" "}
+            <Link
+              className="underline"
+              href="/platform/settings/security/password"
+            >
+              change your password
+            </Link>
+            .
+          </p>
+          <AccountConfirmation
+            value={confirmation}
+            id="session-current-password"
+            label="Current password for other sign-ins"
+          />
+          <button
+            type="submit"
+            className="gc-button"
+            disabled={pending || !confirmation.ready}
+          >
+            {pending ? "Please wait…" : "Sign out other sessions"}
+          </button>
+          <noscript>
+            JavaScript is needed to use these sign-in controls.
+          </noscript>
+        </form>
+      )}
       <p
         id="session-feedback"
         ref={feedback}

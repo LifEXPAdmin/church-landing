@@ -362,7 +362,7 @@ export const features: Feature[] = [
     category: "Privacy and account",
     name: "Account and privacy",
     description:
-      "Manage account security, privacy and available data controls.",
+      "Review your actual sign-in methods, account security, privacy and available data controls.",
     steps:
       "Open Settings, then Account to review masked sign-in contact, email verification and active sessions. Confirm your account to sign out other sessions; the list refreshes after confirmation. Profile contact and church directory sharing stay separate.",
     href: "/platform/settings",
@@ -394,6 +394,24 @@ export type ReleaseEntry = {
   featureIds: string[];
 };
 export const releases: ReleaseEntry[] = [
+  {
+    id: "security-settings-clarity",
+    version: "2026.09.12.12",
+    date: "2026-09-12",
+    summary:
+      "Security settings now reflect your actual sign-in methods and recovery options.",
+    added: [
+      "A Security overview shows password, linked Google and verified-email status without implying unsupported protection."
+    ],
+    improved: [
+      "Accounts without an available confirmation method receive recovery guidance while retaining read-only session review."
+    ],
+    fixed: [
+      "Supported Google confirmation returns to the setting that requested it; expired confirmation still requires a new proof.",
+      "Recovery and verification pages link back to their relevant Settings folders."
+    ],
+    featureIds: ["settings", "account"]
+  },
   {
     id: "account-settings-clarity",
     version: "2026.09.12.11",
