@@ -565,7 +565,9 @@ test("selected request reports expose only authorized evidence and exports retai
     view: "review",
     id: report.id
   });
-  assert.ok("evidence" in reviewed && reviewed.evidence);
+  assert.ok(
+    "evidence" in reviewed && reviewed.evidence?.type === "CONTACT_REQUEST"
+  );
   assert.equal(reviewed.evidence.purpose, "Selected private purpose");
   assert.doesNotMatch(
     JSON.stringify(reviewed),

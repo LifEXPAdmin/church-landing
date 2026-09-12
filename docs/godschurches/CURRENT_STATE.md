@@ -1,3 +1,14 @@
+## Adult message service verified locally — 12 September 2026
+
+Persistent text, bounded history/inbox reads, exact receipts, monotonic personal
+read positions and mute/archive/hidden-prefix choices now use the existing
+accepted two-person membership. Sixteen message groups, 32 shared regression
+checks and 18 contact/message HTTPS groups pass; types/lint/build and runtime
+import/tracing checks pass. See [the service receipt](ADULT_MESSAGES_REPORT.md).
+Both messaging migrations remain isolated-only. Next is profile resume and the
+inbox/history UI with scoped durable activity and reconnect integration. Live
+production remains the reporting version below; owner and parent gates remain.
+
 ## Adult contact request interface verified locally — 12 September 2026
 
 Received/sent requests, persisted recipient decisions and contact preferences

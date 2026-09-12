@@ -13,7 +13,8 @@ The current reporting foundation is verified live; see
 The first version supports one request and an accepted text conversation between
 two different adult personal accounts. No child, parent bypass, church identity,
 group, attachment, typing/presence or external delivery feature is implied.
-SupportMessage remains separate. Reuse withOwnedSession, withPostRead, the
+SupportMessage remains separate. Reuse withOwnedSession and the withAccountRead
+shared read boundary (withPostRead adds post/church context), the
 exclusive permission gate, SocialOperation, PlatformAuthLimit, PlatformFollow
 and bilateral SocialRelationship blocks. Reuse the existing settings registry
 and private-report service. Do not create a second relationship or notification
@@ -79,6 +80,13 @@ different input conflicts. Fresh keys cannot bypass pair uniqueness, eligibility
 cooldown or budget. Pending text stays local when a response is uncertain; retry
 the same body first. Clearing local retry never claims to retract server work.
 Successful receipts contain only IDs/versions, not private message content.
+
+The text-service implementation additionally bounds new message creation to
+30 messages per minute and 500 per day per sender through the existing activity
+budget. These are conservative implementation defaults, not an owner-approved
+legal limit or delivery promise. Exact receipts do not charge either budget.
+Transport flood protection remains independent. A blocked or over-budget send
+retains its browser text and never becomes a background delivery job.
 
 ## Acceptance, block and source revocation
 

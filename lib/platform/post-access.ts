@@ -8,7 +8,7 @@ import { effectiveChurchGrants } from "./church-permissions";
 import type { Prisma, PrismaClient, PlatformPost } from "@prisma/client";
 import { communityAuthorSelect } from "./public-profile";
 import { isEligible, PortalError } from "./portal-policy";
-import { readAccountSession } from "./accounts";
+import { withAccountRead } from "./account-read";
 
 export type PostTx = Prisma.TransactionClient;
 export type PostContext = SocialPolicy & {
@@ -174,16 +174,7 @@ export async function withPostRead<T>(
   token: unknown,
   work: (tx: PostTx, context: PostContext) => Promise<T>
 ) {
-  return db.$transaction(
-    async (tx) => {
-      // Readers may overlap, but a lifecycle/permission writer still excludes
-      // every reader until its revocation commits. Read-only transactions also
-      // prevent a future callback from upgrading this shared lock to a writer.
-      await tx.$executeRaw`SET TRANSACTION READ ONLY`;
-      await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock_shared(730221, 2)`;
-      const user = await readAccountSession(tx as PrismaClient, token);
-      return work(tx, await postContext(tx, user?.id));
-    },
-    { maxWait: 10000, timeout: 15000 }
+  return withAccountRead(db, token, async (tx, ownerId) =>
+    work(tx, await postContext(tx, ownerId))
   );
 }

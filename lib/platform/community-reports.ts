@@ -19,6 +19,7 @@ import { postField, postId } from "./post-input";
 import { eligibleWhere, expected, PortalError } from "./portal-policy";
 import { socialCommand, socialInput } from "./social-operations";
 import { socialUserWhere } from "./social-policy";
+import { adultMemberWhere } from "./adult-message-policy";
 
 type Target = {
   type: CommunityReportTarget;
@@ -67,6 +68,47 @@ async function targetIn(
 ): Promise<Target | null> {
   const type = targetType(kind),
     id = postId(value);
+  if (type === "MESSAGE") {
+    const row = await tx.adultMessage.findFirst({
+      where: {
+        id,
+        ...(review
+          ? {}
+          : { conversation: adultMemberWhere(context.actorId ?? "") })
+      },
+      select: {
+        id: true,
+        sequence: true,
+        conversationId: true,
+        conversation: {
+          select: {
+            states: {
+              where: { ownerId: context.actorId ?? "" },
+              take: 1,
+              select: { hiddenThrough: true }
+            }
+          }
+        }
+      }
+    });
+    if (
+      !row ||
+      (!review &&
+        row.sequence <= (row.conversation.states[0]?.hiddenThrough ?? 0))
+    )
+      return null;
+    return {
+      type,
+      id: row.id,
+      version: 1,
+      contextVersion: 0,
+      scopeChurchId: null,
+      source: {
+        label: "Selected private message",
+        href: `/platform/messages/${row.conversationId}?message=${row.id}`
+      }
+    };
+  }
   if (type === "CONTACT_REQUEST") {
     const row = await tx.adultContactRequest.findFirst({
       where: {
@@ -379,6 +421,18 @@ export function readCommunityReports(
               }
             })
           : undefined;
+      const selectedMessage =
+        report.targetType === "MESSAGE"
+          ? await tx.adultMessage.findUnique({
+              where: { id: report.targetId },
+              select: {
+                content: true,
+                senderId: true,
+                conversationId: true,
+                createdAt: true
+              }
+            })
+          : undefined;
       return {
         ownerId,
         report: receipt(report),
@@ -387,6 +441,9 @@ export function readCommunityReports(
           ? {
               evidence: { type: "CONTACT_REQUEST" as const, ...selectedRequest }
             }
+          : {}),
+        ...(selectedMessage
+          ? { evidence: { type: "MESSAGE" as const, ...selectedMessage } }
           : {})
       };
     }

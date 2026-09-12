@@ -6,6 +6,8 @@ import { hashSessionToken } from "./auth";
 import { requireAccountCredential } from "./account-credential";
 import { projectListingData } from "./church-listing-data";
 import { validImageCrop } from "./image-crop";
+import { isEligible } from "./portal-policy";
+import { adultMemberWhere } from "./adult-message-policy";
 
 const EXPORT_SECONDS = 60;
 const MAX_ROWS = 2000;
@@ -605,6 +607,41 @@ export async function downloadAccountExport(
         orderBy: { id: "asc" },
         take: MAX_ROWS + 1
       }),
+      adultConversationChoices: await tx.adultConversationState.findMany({
+        where: { ownerId: userId, conversation: adultMemberWhere(userId) },
+        select: {
+          conversationId: true,
+          muted: true,
+          archivedAt: true,
+          readThrough: true,
+          hiddenThrough: true,
+          version: true
+        },
+        orderBy: { conversationId: "asc" },
+        take: MAX_ROWS + 1
+      }),
+      adultMessages: isEligible({
+        ...account,
+        suspendedAt: null,
+        deactivatedAt: null
+      })
+        ? await tx.$queryRaw<
+            Array<{
+              id: string;
+              conversationId: string;
+              senderId: string;
+              sequence: number;
+              content: string;
+              createdAt: Date;
+            }>
+          >`
+            SELECT m."id", m."conversationId", m."senderId", m."sequence", m."content", m."createdAt"
+            FROM "AdultMessage" m JOIN "AdultConversation" c ON c."id" = m."conversationId"
+            LEFT JOIN "AdultConversationState" s ON s."conversationId" = c."id" AND s."ownerId" = ${userId}
+            WHERE (c."participantAId" = ${userId} OR c."participantBId" = ${userId})
+              AND m."sequence" > COALESCE(s."hiddenThrough", 0)
+            ORDER BY m."conversationId", m."sequence" LIMIT ${MAX_ROWS + 1}`
+        : [],
       friendInvitations: await tx.friendInvitation.findMany({
         where: { ownerId: userId },
         select: {
@@ -704,7 +741,7 @@ export async function downloadAccountExport(
         version: 1,
         generatedAt: new Date().toISOString(),
         scope:
-          "Your account profile, presentation preferences and linked Google identity, authored community content and personal image metadata and photo albums, personal polls and your own ballots and volunteer signups, likes/following, private social and conversation choices and friend invitation records, private comment drafts and comment Likes, private post drafts and saved collection organization (source posts excluded), church directory choices, your own church representative setup and listing drafts/submissions, personal calendars/events and their sharing choices, your event responses, your own sent contact requests, your own community reports and your own support submissions. Other people's content, staff/church operations, credentials, session data and security audit records and private report-review notes are excluded. Image binaries are not embedded; image references still require current access. Reading preferences saved only on this browser are not in this account file.",
+          "Your account profile, presentation preferences and linked Google identity, authored community content and personal image metadata and photo albums, personal polls and your own ballots and volunteer signups, likes/following, private social and conversation choices and friend invitation records, private comment drafts and comment Likes, private post drafts and saved collection organization (source posts excluded), church directory choices, your own church representative setup and listing drafts/submissions, personal calendars/events and their sharing choices, your event responses, your own sent contact requests and currently authorized accepted conversation messages, your own community reports and your own support submissions. Other people's content outside your accepted conversations, staff/church operations, credentials, session data and security audit records and private report-review notes are excluded. Cleared message history is excluded from your view; this does not erase the other participant's history. Image binaries are not embedded; image references still require current access. Reading preferences saved only on this browser are not in this account file.",
         account,
         ...collections
       },

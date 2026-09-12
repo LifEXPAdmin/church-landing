@@ -235,6 +235,8 @@ model PlatformUser {
   receivedContactRequests AdultContactRequest[] @relation("ContactRecipient")
   adultConversationsA AdultConversation[] @relation("ConversationAdultA")
   adultConversationsB AdultConversation[] @relation("ConversationAdultB")
+  adultMessages AdultMessage[]
+  adultConversationStates AdultConversationState[]
   friendInvitation FriendInvitation?
   sentFriendAcceptances FriendAcceptance[] @relation("FriendInviter")
   receivedFriendAcceptances FriendAcceptance[] @relation("FriendRecipient")
@@ -439,6 +441,7 @@ enum CommunityReportTarget {
   PROFILE
   CHURCH
   CONTACT_REQUEST
+  MESSAGE
 }
 
 enum CommunityReportReason {
@@ -1574,12 +1577,45 @@ model AdultConversation {
   version Int @default(1)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  lastSequence Int @default(0)
   participantA PlatformUser @relation("ConversationAdultA", fields: [participantAId], references: [id], onDelete: Restrict)
   participantB PlatformUser @relation("ConversationAdultB", fields: [participantBId], references: [id], onDelete: Restrict)
   requests AdultContactRequest[]
+  messages AdultMessage[]
+  states AdultConversationState[]
   @@unique([participantAId, participantBId])
   @@index([participantBId])
+  @@index([participantAId, updatedAt, id])
+  @@index([participantBId, updatedAt, id])
   // Sorted, distinct IDs are the canonical two-person membership; no third-member table.
+}
+
+model AdultMessage {
+  id String @id @default(cuid())
+  conversationId String
+  senderId String
+  sequence Int
+  content String
+  createdAt DateTime @default(now())
+  conversation AdultConversation @relation(fields: [conversationId], references: [id], onDelete: Restrict)
+  sender PlatformUser @relation(fields: [senderId], references: [id], onDelete: Restrict)
+  @@unique([conversationId, sequence])
+  @@index([senderId, createdAt])
+}
+
+// Personal viewing/alert state is never conversation membership or send consent.
+model AdultConversationState {
+  conversationId String
+  ownerId String
+  muted Boolean @default(false)
+  archivedAt DateTime?
+  readThrough Int @default(0)
+  hiddenThrough Int @default(0)
+  version Int @default(1)
+  conversation AdultConversation @relation(fields: [conversationId], references: [id], onDelete: Restrict)
+  owner PlatformUser @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  @@id([conversationId, ownerId])
+  @@index([ownerId, archivedAt])
 }
 
 model SocialRelationship {

@@ -9,7 +9,9 @@ import {
   requireContactActor
 } from "./adult-contact-policy";
 import { communityReportIntakeAvailable } from "./community-reports";
-import { withPostRead, type PostTx } from "./post-access";
+import type { PostTx } from "./post-access";
+import { withAccountRead } from "./account-read";
+import { socialPolicy } from "./social-policy";
 import { postField, postId } from "./post-input";
 import { expected, isEligible, PortalError } from "./portal-policy";
 import { socialCommand, socialInput } from "./social-operations";
@@ -290,8 +292,7 @@ export function readAdultContact(
   query: Record<string, unknown>
 ): Promise<ContactView> {
   socialInput(query, ["view", "recipientId", "id", "after"]);
-  return withPostRead(db, token, async (tx, context) => {
-    const ownerId = context.actorId;
+  return withAccountRead(db, token, async (tx, ownerId) => {
     if (!ownerId)
       throw new PortalError(401, "Sign in to use private contact requests.");
     await requireContactActor(tx, ownerId);
@@ -359,6 +360,7 @@ export function readAdultContact(
       throw new PortalError(404, "This request is unavailable.");
     const page = rows.slice(0, PAGE),
       now = new Date();
+    const context = await socialPolicy(tx, ownerId);
     const choice = (await preferences(tx, ownerId)).audience;
     const followed =
       choice === "FOLLOWED"
