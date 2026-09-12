@@ -111,6 +111,21 @@ queued request fields.
 
 ## Verification and release
 
+The initial interface uses `/platform/settings`, registered folder paths and
+registered control detail paths. Existing feature-owned editors keep their own
+destinations. `/api/platform/settings` is a private, current-session read of
+navigation context only; it has no generic write operation. Its expected-account
+check and the existing church-tools adapter prevent a stale page from selecting
+another account or retaining revoked management links. Context read failures
+conceal controls while retaining local edits for retry. Account switches discard
+the old account's mounted context instead of transferring its state.
+
+Search and Back history contain only static setting names and the user's bounded
+query, never preference values or church-role details. A bounded in-memory map
+restores folder scroll and focus and is cleared when the account changes. The
+new controls reuse existing reauthentication and draft/update protection providers.
+See [Settings verification](SETTINGS_REPORT.md) for actual runtime evidence.
+
 Verify the initial registrations against actual service/component paths and
 current gates before opening dependent navigation work. Test scope separation,
 denied/error shape, inactive modules, aliases and reset boundaries. Then verify

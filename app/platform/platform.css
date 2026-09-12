@@ -1676,3 +1676,37 @@ html:has(dialog:modal),
 body:has(dialog:modal) {
   overflow: hidden;
 }
+
+/* Settings navigation shares canonical controls and keeps narrow rows readable. */
+.gc-settings-workspace { display: grid; gap: 2rem; min-width: 0; }
+.gc-settings-main { min-width: 0; max-width: 48rem; width: 100%; }
+.gc-settings-main > * + *, .gc-settings-main .gc-settings, .gc-settings-rows { margin-top: 1.5rem; }
+.gc-settings-sidebar { display: none; }
+.gc-settings-breadcrumb a { display: inline-flex; min-height: 44px; align-items: center; text-decoration: underline; }
+.gc-settings-account { display: grid; gap: .4rem; padding: 1.25rem; margin-block: 1.5rem; border: 1px solid var(--gc-divider); border-radius: 1rem; }
+.gc-settings-account strong { font-size: 1.3rem; }
+.gc-settings-account p, .gc-settings-account > span { color: var(--gc-muted); }
+.gc-settings-search { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: .75rem; margin-bottom: 1.5rem; }
+.gc-settings-search label { grid-column: 1 / -1; font-weight: 600; }
+.gc-settings-search input { min-width: 0; width: 100%; min-height: 48px; padding: .7rem 1rem; border: 1px solid var(--gc-divider); border-radius: 1rem; background: var(--gc-surface); color: var(--gc-text); }
+.gc-settings-rows, .gc-settings-folder-list { border: 1px solid var(--gc-divider); border-radius: 1rem; overflow: clip; }
+.gc-settings-destination { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem 1.15rem; min-height: 56px; background: var(--gc-surface); }
+.gc-settings-destination + .gc-settings-destination { border-top: 1px solid var(--gc-divider); }
+.gc-settings-destination > span { display: grid; gap: .35rem; min-width: 0; overflow-wrap: anywhere; }
+.gc-settings-destination strong { font-size: 1.08rem; }
+.gc-settings-destination span span, .gc-settings-destination small { color: var(--gc-muted); line-height: 1.5; }
+.gc-settings-destination svg { width: 1.1rem; height: 1.1rem; flex: 0 0 auto; }
+.gc-settings-destination:hover { background: var(--gc-canvas); }
+.gc-settings-main button, .gc-settings-main input, .gc-settings-main select, .gc-settings-main form, .gc-settings-main .gc-settings { min-width: 0; max-width: 100%; }
+.gc-settings-main button { white-space: normal; overflow-wrap: anywhere; }
+.gc-settings-main a:focus-visible { outline: 2px solid var(--gc-focus); outline-offset: -3px; }
+@media (min-width: 1280px) {
+  .gc-settings-workspace { grid-template-columns: 12rem minmax(0, 1fr); }
+  .gc-settings-sidebar { display: flex; flex-direction: column; align-self: start; position: sticky; top: 6rem; gap: .15rem; }
+  .gc-settings-sidebar a { display: flex; align-items: center; min-height: 44px; padding: .65rem .75rem; border-radius: .6rem; overflow-wrap: anywhere; }
+  .gc-settings-sidebar a[aria-current="page"] { background: var(--gc-surface); font-weight: 600; }
+}
+@media (max-width: 420px) {
+  .gc-settings-search { grid-template-columns: minmax(0, 1fr); }
+  .gc-settings-destination { padding: 1rem .75rem; gap: .5rem; }
+}

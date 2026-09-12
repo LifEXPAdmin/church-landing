@@ -35,7 +35,8 @@ export function RelationshipPrivacy({ owner }: { owner: string }) {
       setState((s) => ({
         ...s,
         message: "Save or resolve your privacy choices before leaving."
-      }))
+      })),
+    true
   );
   const load = useCallback(async () => {
     if (inFlight.current) return;
@@ -287,6 +288,29 @@ export function RelationshipPrivacy({ owner }: { owner: string }) {
               onClick={() => void load()}
             >
               Review saved privacy choices
+            </button>
+            <button
+              type="button"
+              className="gc-button gc-button-quiet"
+              disabled={
+                state.busy ||
+                !!state.pending ||
+                !state.dirty ||
+                (state.conflict && !state.latest)
+              }
+              onClick={() =>
+                setState((s) => ({
+                  ...s,
+                  saved: s.latest ?? s.saved,
+                  fields: s.latest ?? s.saved,
+                  latest: null,
+                  dirty: false,
+                  conflict: false,
+                  message: "Unsaved privacy choices discarded."
+                }))
+              }
+            >
+              Discard unsaved privacy choices
             </button>
           </div>
           {state.latest && (

@@ -17,6 +17,7 @@ import {
   parseReadingPreferences,
   defaultReadingPreferences
 } from "../lib/platform/reading-preferences";
+import { safeAccountReturn } from "../lib/platform/account-entry";
 
 test("settings keep browser, account and selected church scopes separate", () => {
   assert.equal(
@@ -162,4 +163,25 @@ test("initial registry has stable unique IDs, service owners and real linked des
     settingsRegistry.find((s) => s.id === "church.organization")!.scope,
     "church"
   );
+});
+
+test("settings sign-in returns accept only registered folders and controls", () => {
+  for (const s of settingsRegistry) {
+    if (s.state === "future" || !("control" in s.destination)) continue;
+    const href = settingHref(s);
+    assert.equal(safeAccountReturn(href + "?token=secret#private"), href);
+  }
+  assert.equal(
+    safeAccountReturn(
+      "/platform/settings/privacy?q=hide%20phone&ownerId=other"
+    ),
+    "/platform/settings/privacy?q=hide+phone"
+  );
+  for (const path of [
+    "/platform/settings/family/child",
+    "/platform/settings/account/unknown",
+    "/platform/settings/help/future",
+    "/platform/settings/account/email/more"
+  ])
+    assert.equal(safeAccountReturn(path), "/platform");
 });

@@ -11,6 +11,19 @@ export type Feature = {
 };
 export const features: Feature[] = [
   {
+    id: "settings",
+    category: "Privacy and account",
+    name: "Searchable settings",
+    description:
+      "Find account, privacy, reading and church choices in clear folders.",
+    steps:
+      "Open Menu, then Settings. Search words such as password, alerts or hide phone, or choose a folder. Changes use their existing account and privacy controls. Reading preferences can be restored separately on this browser.",
+    href: "/platform/settings",
+    eligibility:
+      "Sign in to your account. Browser appearance is separate from personal and selected-church settings. Church tools require current access; notification categories, family, payments and direct messaging are not enabled here.",
+    availability: "available"
+  },
+  {
     id: "polls",
     category: "Posts and conversations",
     name: "Community polls",
@@ -380,6 +393,25 @@ export type ReleaseEntry = {
   featureIds: string[];
 };
 export const releases: ReleaseEntry[] = [
+  {
+    id: "searchable-settings",
+    version: "2026.09.12.10",
+    date: "2026-09-12",
+    summary:
+      "Find your account, privacy and reading choices in searchable Settings folders.",
+    added: [
+      "Searchable Settings folders with clear personal, browser and church scope.",
+      "A browser-only display reset with a preview of exactly what changes."
+    ],
+    improved: [
+      "Existing account, profile, directory, calendar and privacy controls are easier to find.",
+      "Reading choices have explicit retry and discard actions when browser storage fails."
+    ],
+    fixed: [
+      "Unsaved privacy choices remain protected when using Back; discarding restores confirmed choices."
+    ],
+    featureIds: ["settings", "account", "updates"]
+  },
   {
     id: "community-next-steps",
     version: "2026.09.12.9",

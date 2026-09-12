@@ -550,6 +550,24 @@ export function settingsInFolder(folder: string) {
   );
 }
 
+export function isSettingsPath(pathname: string) {
+  if (/^\/platform\/settings\/?$/.test(pathname)) return true;
+  const match = /^\/platform\/settings\/([a-z]+)(?:\/([a-z]+))?\/?$/.exec(
+    pathname
+  );
+  if (!match || !settingsFolders.some((f) => f.id === match[1])) return false;
+  return (
+    !match[2] ||
+    settingsRegistry.some(
+      (s) =>
+        s.folder === match[1] &&
+        s.id.split(".")[1] === match[2] &&
+        "control" in s.destination &&
+        s.state !== "future"
+    )
+  );
+}
+
 export function searchSettings(query: string, entries = settingsRegistry) {
   const normalized = (s: string) =>
     s.normalize("NFKD").replace(/\p{M}/gu, "").toLowerCase();

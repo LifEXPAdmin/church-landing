@@ -1,18 +1,33 @@
 "use client";
 
-import { createContext, useContext, useState, useLayoutEffect } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useLayoutEffect,
+  useRef
+} from "react";
 import {
   defaultReadingPreferences,
   preferenceCookie,
   parseReadingPreferences,
   type ReadingPreferences
 } from "@/lib/platform/reading-preferences";
+import { useUnsavedSocialWork } from "./use-unsaved-social-work";
 
 const ReadingContext = createContext<{
   preferences: ReadingPreferences;
   update: (change: Partial<ReadingPreferences>) => void;
   saved: boolean;
-}>({ preferences: defaultReadingPreferences, update: () => {}, saved: false });
+  attempted: boolean;
+  discard: () => void;
+}>({
+  preferences: defaultReadingPreferences,
+  update: () => {},
+  saved: false,
+  attempted: false,
+  discard: () => {}
+});
 
 export function ReadingProvider({
   initial,
@@ -25,35 +40,56 @@ export function ReadingProvider({
 }) {
   const [preferences, setPreferences] = useState(initial);
   const [saved, setSaved] = useState(false);
+  const [attempted, setAttempted] = useState(false);
+  const current = useRef(preferences);
+  const confirmed = useRef(initial),
+    unsaved = useRef(false);
+  current.current = preferences;
   useLayoutEffect(() => {
+    if (unsaved.current) return;
     // Reconcile browser Back/prefetched documents before paint without an account read.
     const entry = document.cookie
       .split("; ")
       .find((value) => value.startsWith(`${preferenceCookie}=`));
-    setPreferences(
-      parseReadingPreferences(entry?.slice(preferenceCookie.length + 1))
+    const next = parseReadingPreferences(
+      entry?.slice(preferenceCookie.length + 1)
     );
+    confirmed.current = next;
+    setPreferences(next);
   }, [initial]);
   function update(change: Partial<ReadingPreferences>) {
-    const next = { ...preferences, ...change };
+    const next = { ...current.current, ...change };
+    current.current = next;
+    setAttempted(true);
     setPreferences(next);
     try {
       document.cookie = `${preferenceCookie}=${encodeURIComponent(JSON.stringify(next))}; Path=/platform; Max-Age=31536000; SameSite=Lax${location.protocol === "https:" ? "; Secure" : ""}`;
-      setSaved(
-        document.cookie
-          .split("; ")
-          .some(
-            (entry) =>
-              entry ===
-              `${preferenceCookie}=${encodeURIComponent(JSON.stringify(next))}`
-          )
-      );
+      const stored = document.cookie
+        .split("; ")
+        .some(
+          (entry) =>
+            entry ===
+            `${preferenceCookie}=${encodeURIComponent(JSON.stringify(next))}`
+        );
+      setSaved(stored);
+      unsaved.current = !stored;
+      if (stored) confirmed.current = next;
     } catch {
       setSaved(false);
+      unsaved.current = true;
     }
   }
+  function discard() {
+    current.current = confirmed.current;
+    setPreferences(confirmed.current);
+    setAttempted(false);
+    setSaved(false);
+    unsaved.current = false;
+  }
   return (
-    <ReadingContext.Provider value={{ preferences, update, saved }}>
+    <ReadingContext.Provider
+      value={{ preferences, update, saved, attempted, discard }}
+    >
       <div
         className="platform-design"
         data-release={release ?? undefined}
@@ -91,8 +127,23 @@ export function AppearanceSelect() {
   );
 }
 
-export function ReadingSettings() {
-  const { preferences, update, saved } = useReadingPreferences();
+export function ReadingSettings({
+  allowReset = false
+}: {
+  allowReset?: boolean;
+}) {
+  const { preferences, update, saved, attempted, discard } =
+    useReadingPreferences();
+  const [resetPreview, setResetPreview] = useState(false);
+  const [notice, setNotice] = useState("");
+  useUnsavedSocialWork(
+    { dirty: attempted && !saved, saving: false, conflict: false },
+    () =>
+      setNotice(
+        "Retry saving or discard your unsaved reading choices before leaving."
+      ),
+    true
+  );
   return (
     <section className="gc-settings" aria-labelledby="reading-heading">
       <p className="gc-eyebrow">Make room to read</p>
@@ -182,8 +233,76 @@ export function ReadingSettings() {
       <p role="status" className="text-sm text-gc-muted">
         {saved
           ? "Reading preferences saved in this browser."
-          : "Changes apply immediately. Browser storage must be enabled to remember them."}
+          : attempted
+            ? "Your choices are applied, but could not be saved in this browser. Enable browser storage and retry."
+            : "Changes apply immediately. Browser storage must be enabled to remember them."}
       </p>
+      {notice && attempted && !saved && <p role="status">{notice}</p>}
+      {attempted && !saved && (
+        <div className="flex flex-wrap gap-3">
+          <button
+            type="button"
+            className="gc-button gc-button-quiet"
+            onClick={() => update(preferences)}
+          >
+            Retry saving reading preferences
+          </button>
+          <button
+            type="button"
+            className="gc-button gc-button-quiet"
+            onClick={discard}
+          >
+            Discard unsaved reading choices
+          </button>
+        </div>
+      )}
+      {allowReset && (
+        <div className="space-y-3">
+          {!resetPreview ? (
+            <button
+              className="gc-button gc-button-quiet"
+              type="button"
+              onClick={() => setResetPreview(true)}
+            >
+              Restore display defaults
+            </button>
+          ) : (
+            <section
+              aria-label="Review display defaults"
+              className="space-y-3 rounded-xl border border-gc-divider p-4"
+            >
+              <h3 className="text-xl">Restore defaults on this browser?</h3>
+              <p>
+                Use the device appearance, comfortable text, and Pages
+                navigation. Turn off the extra reduced-motion and
+                reduced-photo-data choices. Your device&apos;s reduced-motion
+                setting still applies.
+              </p>
+              <p>
+                Account security, contact sharing, relationship privacy and
+                church settings stay as they are.
+              </p>
+              <button
+                className="gc-button"
+                type="button"
+                onClick={() => {
+                  update({ ...defaultReadingPreferences });
+                  setResetPreview(false);
+                }}
+              >
+                Confirm display reset
+              </button>{" "}
+              <button
+                className="gc-button gc-button-quiet"
+                type="button"
+                onClick={() => setResetPreview(false)}
+              >
+                Keep my display choices
+              </button>
+            </section>
+          )}
+        </div>
+      )}
     </section>
   );
 }
