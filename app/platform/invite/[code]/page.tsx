@@ -3,6 +3,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { PlatformShell } from "@/components/platform/platform-shell";
 import { FriendInvitations } from "@/components/platform/friend-invitations";
+import { InstallationBanner } from "@/components/platform/installation-help";
 import { publicFriendInvitation } from "@/lib/platform/friend-invitations";
 import { getCurrentPlatformUser } from "@/lib/platform/session";
 export const dynamic = "force-dynamic";
@@ -27,16 +28,21 @@ export default async function Page({
       <section className="container-shell mx-auto max-w-2xl space-y-5 py-8">
         <h1 className="text-4xl">
           {invitation
-            ? `${invitation.owner.name} invited you`
+            ? user
+              ? "Your invitation and connection"
+              : `${invitation.owner.name} invited you`
             : "This invitation is unavailable"}
         </h1>
+        <InstallationBanner />
         {invitation ? (
           <>
-            <p>
-              You can join and become friends with {invitation.owner.name}, or
-              join without connecting. Friendship adds no church or
-              private-content permissions.
-            </p>
+            {!user && (
+              <p>
+                You can join and become friends with {invitation.owner.name}, or
+                join without connecting. Friendship adds no church or
+                private-content permissions.
+              </p>
+            )}
             {user ? (
               <FriendInvitations
                 accountId={user.id}

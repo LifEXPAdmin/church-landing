@@ -1,5 +1,12 @@
 "use client";
-import { createContext, useContext, useEffect, useRef, useState } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useId,
+  useRef,
+  useState
+} from "react";
 import { Download } from "lucide-react";
 
 type InstallPrompt = Event & {
@@ -11,6 +18,9 @@ type InstallState = {
   installed: boolean;
   pending: boolean;
   message: string;
+  apple: boolean;
+  bannerDismissed: boolean;
+  dismissBanner: () => void;
   install: () => Promise<void>;
 };
 const InstallContext = createContext<InstallState | null>(null);
@@ -24,8 +34,22 @@ export function InstallationProvider({
   const [available, setAvailable] = useState(false),
     [installed, setInstalled] = useState(false),
     [pending, setPending] = useState(false),
+    [apple, setApple] = useState(false),
+    [bannerDismissed, setBannerDismissed] = useState(true),
     [message, setMessage] = useState("");
   useEffect(() => {
+    // Device hints choose instructions only; they never establish install capability.
+    setApple(
+      /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+        (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
+    );
+    try {
+      setBannerDismissed(
+        localStorage.getItem("gc-install-help-dismissed-v1") === "yes"
+      );
+    } catch {
+      setBannerDismissed(false);
+    }
     const display = window.matchMedia("(display-mode: standalone)");
     const detect = () =>
       setInstalled(
@@ -56,6 +80,14 @@ export function InstallationProvider({
       window.removeEventListener("appinstalled", done);
     };
   }, []);
+  function dismissBanner() {
+    setBannerDismissed(true);
+    try {
+      localStorage.setItem("gc-install-help-dismissed-v1", "yes");
+    } catch {
+      /* The current visit still remembers dismissal. */
+    }
+  }
   async function install() {
     const event = prompt.current;
     if (!event || busy.current || installed) return;
@@ -82,22 +114,73 @@ export function InstallationProvider({
   }
   return (
     <InstallContext.Provider
-      value={{ available, installed, pending, message, install }}
+      value={{
+        available,
+        installed,
+        pending,
+        message,
+        install,
+        apple,
+        bannerDismissed,
+        dismissBanner
+      }}
     >
       {children}
     </InstallContext.Provider>
   );
 }
-export function InstallationHelp() {
+export function InstallationBanner() {
   const state = useContext(InstallContext);
+  if (
+    !state ||
+    state.installed ||
+    state.bannerDismissed ||
+    (!state.apple && !state.available)
+  )
+    return null;
+  return (
+    <aside
+      aria-label="Home Screen installation"
+      className="space-y-3 rounded-xl border border-gc-divider bg-gc-surface p-4"
+    >
+      <h2 className="text-xl">Add Godschurches to your Home Screen</h2>
+      <p>
+        {state.apple
+          ? "On iPhone or iPad, use Safari’s Share menu. We’ll show you the steps."
+          : "Your browser offers an app shortcut. Install when you are ready."}
+      </p>
+      <div className="flex flex-wrap gap-2">
+        <InstallationHelp compact />
+        <button
+          type="button"
+          className="gc-button gc-button-quiet"
+          onClick={state.dismissBanner}
+        >
+          Dismiss installation banner
+        </button>
+      </div>
+      <p className="text-sm text-gc-muted">
+        Installation help stays in Menu after dismissal.
+      </p>
+    </aside>
+  );
+}
+export function InstallationHelp({ compact = false }: { compact?: boolean }) {
+  const state = useContext(InstallContext);
+  const titleId = useId();
   const dialog = useRef<HTMLDialogElement>(null),
     trigger = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
+  const [copyMessage, setCopyMessage] = useState("");
+  const [copyUrl, setCopyUrl] = useState("");
   useEffect(() => {
     if (!open) return;
     const element = dialog.current!;
     const opener = trigger.current;
     const overflow = document.body.style.overflow;
+    setCopyUrl(
+      window.location.origin + window.location.pathname + window.location.search
+    );
     document.body.style.overflow = "hidden";
     element.showModal();
     return () => {
@@ -112,26 +195,30 @@ export function InstallationHelp() {
       <button
         ref={trigger}
         type="button"
-        className="gc-menu-link w-full text-left"
+        className={compact ? "gc-button" : "gc-menu-link w-full text-left"}
         onClick={() => setOpen(true)}
       >
         <Download aria-hidden="true" />
-        <span>
-          <span className="gc-menu-link-title">Install Godschurches</span>
-          <span className="gc-menu-link-description">
-            Add an app shortcut, or keep using your browser.
+        {compact ? (
+          <span>Show installation steps</span>
+        ) : (
+          <span>
+            <span className="gc-menu-link-title">Install Godschurches</span>
+            <span className="gc-menu-link-description">
+              Add an app shortcut, or keep using your browser.
+            </span>
           </span>
-        </span>
+        )}
       </button>
       <dialog
         ref={dialog}
         className="gc-profile-leave-dialog max-h-[85dvh] overflow-y-auto"
-        aria-labelledby="installation-title"
+        aria-labelledby={titleId}
         onCancel={() => setOpen(false)}
       >
         <div className="space-y-4 p-2">
           <div className="flex items-start justify-between gap-3">
-            <h2 id="installation-title" className="text-2xl">
+            <h2 id={titleId} className="text-2xl">
               Install Godschurches
             </h2>
             <button
@@ -183,7 +270,7 @@ export function InstallationHelp() {
                   Google’s Android instructions
                 </a>
               </details>
-              <details>
+              <details open={state.apple}>
                 <summary className="cursor-pointer font-semibold">
                   iPhone · Safari
                 </summary>
@@ -201,6 +288,43 @@ export function InstallationHelp() {
                 >
                   Apple’s iPhone instructions
                 </a>
+              </details>
+              <details open={state.apple}>
+                <summary className="cursor-pointer font-semibold">
+                  Opened inside another app?
+                </summary>
+                <p className="mt-2">
+                  If you opened this page inside a mail, social or QR app, use
+                  its menu to open in Safari on iPhone, or your usual browser on
+                  Android. If that option is missing, copy this link and paste
+                  it into the browser. Then follow the installation steps above.
+                </p>
+                <button
+                  type="button"
+                  className="gc-button gc-button-quiet"
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(copyUrl);
+                      setCopyMessage(
+                        "Link copied. Paste it into Safari or your usual browser."
+                      );
+                    } catch {
+                      setCopyMessage("Select and copy the link below.");
+                    }
+                  }}
+                >
+                  Copy this page link
+                </button>
+                <label className="mt-2 block">
+                  Page link
+                  <input
+                    readOnly
+                    value={copyUrl}
+                    className="block w-full rounded border p-2"
+                    onFocus={(e) => e.currentTarget.select()}
+                  />
+                </label>
+                <p role="status">{copyMessage}</p>
               </details>
               <details>
                 <summary className="cursor-pointer font-semibold">

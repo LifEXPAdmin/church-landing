@@ -323,7 +323,13 @@ export function ProfileImageControl({
         Visible to signed-in members. JPEG, PNG or WebP, up to 4 MiB.
       </p>
       <div className="gc-profile-saved-photo">
-        <ProfileImage image={saved} name={name} kind={kind} />
+        <ProfileImage
+          image={saved}
+          name={name}
+          kind={kind}
+          accountId={userId}
+          profileId={userId}
+        />
       </div>
       {!available && (
         <p className="text-sm text-gc-muted">

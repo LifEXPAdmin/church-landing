@@ -208,6 +208,79 @@ try {
   await login.click();
   await page.waitForURL((url) => url.pathname === "/platform/login");
   assert.ok(new URL(page.url()).searchParams.get("next") === "/platform/menu");
+  const iphone = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    isMobile: true,
+    hasTouch: true,
+    userAgent:
+      "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 Safari/604.1"
+  });
+  const phone = await iphone.newPage();
+  await phone.goto(config.origin + "/platform/menu");
+  const banner = phone.getByRole("complementary", {
+    name: "Home Screen installation"
+  });
+  await banner.waitFor();
+  await banner
+    .getByRole("button", { name: "Show installation steps", exact: true })
+    .click();
+  const help = phone.getByRole("dialog", {
+    name: "Install Godschurches",
+    exact: true
+  });
+  await help.getByText(/turn on Open as Web App/).waitFor();
+  await help.getByText(/If you opened this page inside a mail/).waitFor();
+  assert.equal(
+    await help
+      .getByRole("button", { name: "Install app", exact: true })
+      .count(),
+    0
+  );
+  await phone.evaluate(() =>
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: {
+        writeText: async () => {
+          throw new Error("denied");
+        }
+      }
+    })
+  );
+  await help
+    .getByRole("button", { name: "Copy this page link", exact: true })
+    .click();
+  await help
+    .getByText("Select and copy the link below.", { exact: true })
+    .waitFor();
+  assert.equal(
+    await help
+      .getByRole("textbox", { name: "Page link", exact: true })
+      .inputValue(),
+    config.origin + "/platform/menu"
+  );
+  for (const width of [320, 390, 1440]) {
+    await phone.setViewportSize({ width, height: 844 });
+    assert.ok(
+      await phone.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth + 1
+      )
+    );
+  }
+  await phone.keyboard.press("Escape");
+  await banner
+    .getByRole("button", { name: "Dismiss installation banner", exact: true })
+    .click();
+  await banner.waitFor({ state: "detached" });
+  await phone.reload();
+  assert.equal(await banner.count(), 0);
+  await phone
+    .getByRole("button", { name: /Install Godschurches Add an app/ })
+    .click();
+  await help.waitFor();
+  await iphone.close();
+  ok(
+    "Simulated iPhone shows dismissible guidance with open Safari steps, embedded-browser copy fallback, persistent dismissal and permanent Menu help"
+  );
   assert.deepEqual(errors, []);
   assert.equal(
     await page.evaluate(

@@ -17,7 +17,7 @@ export const features: Feature[] = [
     description:
       "Invite someone to join Godschurches and become friends with you.",
     steps:
-      "Open Menu, then My QR code. Enable your invitation, then copy, share or download it. Your guest chooses whether to connect and finishes account verification and adult eligibility. Either person can remove the friendship in profile relationship controls.",
+      "Open Menu, then My QR code. Enable your invitation, then copy, share or download it. Your guest chooses whether to connect and finishes account verification and adult eligibility. Scanning an existing friend's code shows your current friendship and a link to share your own QR. Either person can remove the friendship in profile relationship controls.",
     href: "/platform/invitations",
     eligibility:
       "Verified adult accounts. Codes expire after 30 days and can be replaced or revoked. Friendship grants no extra private or church access.",
@@ -40,11 +40,23 @@ export const features: Feature[] = [
     name: "Profile photos",
     description: "Choose, crop, replace or remove a personal photo.",
     steps:
-      "Open Edit profile, then Profile photo. Choose a file, adjust the crop and save. Cancel keeps your saved photo.",
+      "Open Edit profile, then Profile photo. Choose a file, adjust the crop and save. Cancel keeps your saved photo. Tap a readable profile photo or cover to enlarge it; Close or Back returns to the page.",
     href: "/platform/profile/me",
     eligibility:
       "Signed-in accounts can manage their own photo. Profile, post and comment photos remain visible only to permitted signed-in readers; initials appear when unavailable.",
     availability: "conditional"
+  },
+  {
+    id: "photo-viewer",
+    category: "Posts and conversations",
+    name: "View photos",
+    description: "Open readable photos, move through a gallery and zoom in.",
+    steps:
+      "Tap a profile photo, cover or post photo. Use Previous and Next, swipe or arrow keys to move through a post's photos. Zoom in for detail, then Fit photo. Close, Escape or Back returns to your place.",
+    href: "/platform",
+    eligibility:
+      "Each photo keeps its current source audience. Member profiles require sign-in. Unavailable photos remain private; opening the viewer adds no access.",
+    availability: "available"
   },
   {
     id: "posts",
@@ -225,7 +237,7 @@ export const features: Feature[] = [
     description:
       "Add Godschurches to your device when your browser supports it.",
     steps:
-      "Open Menu and Installation help for instructions appropriate to your device.",
+      "Open Menu and Install Godschurches. On iPhone, the Home Screen banner opens Safari's More or Share steps, including Open as Web App when shown. Help remains in Menu after dismissal. If you opened the site inside another app, copy its link into Safari or your usual browser.",
     href: "/platform/menu",
     eligibility:
       "Browser and device support vary; the website works without installation.",
@@ -279,6 +291,29 @@ export type ReleaseEntry = {
   featureIds: string[];
 };
 export const releases: ReleaseEntry[] = [
+  {
+    id: "photos-and-phone-guidance",
+    version: "2026.09.12.5",
+    date: "2026-09-12",
+    summary: "Enlarge photos and find clearer QR and Home Screen guidance.",
+    added: [
+      "Tap profile photos and covers to enlarge them. The shared photo viewer also shows readable post galleries with captions, navigation and zoom.",
+      "A dismissible Home Screen banner makes iPhone installation steps visible near the top of Menu and invitation pages."
+    ],
+    improved: [
+      "Photo controls support keyboard, Escape and Back while keeping your place. Full-size views load only when opened.",
+      "Installation help includes Safari menu variants and a copy-link fallback for pages opened inside another app."
+    ],
+    fixed: [
+      "Scanning an existing friend's QR now shows the current friendship, Open profile and Share your own QR. Account verification is explained separately and refreshes when you return."
+    ],
+    featureIds: [
+      "photo-viewer",
+      "profile-photos",
+      "friend-invitations",
+      "installation"
+    ]
+  },
   {
     id: "profile-photos",
     version: "2026.09.12.4",

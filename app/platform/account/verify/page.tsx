@@ -5,6 +5,7 @@ import { accountDeliveryAvailable } from "@/lib/platform/account-availability";
 import { PlatformShell } from "@/components/platform/platform-shell";
 import { getCurrentPlatformUser } from "@/lib/platform/session";
 import { prisma } from "@/lib/prisma";
+import { safeAccountReturn } from "@/lib/platform/account-entry";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -12,7 +13,12 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
   referrer: "no-referrer"
 };
-export default async function VerificationPage() {
+export default async function VerificationPage({
+  searchParams
+}: {
+  searchParams: Promise<{ next?: string }>;
+}) {
+  const next = safeAccountReturn((await searchParams).next);
   const user = await getCurrentPlatformUser();
   // The shared user projection deliberately omits private account email.
   // Fetch only this signed-in owner's address for their verification form.
@@ -33,6 +39,18 @@ export default async function VerificationPage() {
             verified={!!user?.emailVerifiedAt}
             signedIn={!!user}
           />
+          {next !== "/platform" && (
+            <div className="space-y-2">
+              <p>
+                After verifying, return here to refresh your account and
+                connection. If the email opens in another browser, keep this tab
+                open.
+              </p>
+              <Link className="gc-button" href={next}>
+                Return to your invitation or previous page
+              </Link>
+            </div>
+          )}
           <Link
             href={user ? "/platform/settings" : "/platform/login"}
             className="inline-flex min-h-11 items-center text-gc-accent underline"

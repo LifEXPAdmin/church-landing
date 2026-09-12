@@ -268,6 +268,8 @@ export default async function MemberProfilePage({
               image={profile.cover}
               name={profile.name}
               kind="cover"
+              accountId={currentUser.id}
+              profileId={profile.id}
             />
           </div>
           <div className="gc-profile-identity">
@@ -275,6 +277,8 @@ export default async function MemberProfilePage({
               image={profile.avatar}
               name={profile.name}
               kind="avatar"
+              accountId={currentUser.id}
+              profileId={profile.id}
             />
             <div className="min-w-0 flex-1">
               <h1 className="text-4xl sm:text-5xl">{profile.name}</h1>

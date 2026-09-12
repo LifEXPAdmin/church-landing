@@ -375,13 +375,70 @@ try {
     .getByRole("button", { name: `Connect with ${owner.name}`, exact: true })
     .click();
   await page
-    .getByRole("heading", { name: `You’re connected with ${owner.name}` })
+    .getByRole("heading", { name: `You’re already friends with ${owner.name}` })
     .waitFor();
   assert.equal(await edges(owner.id, member.id), 2);
   await page.reload();
   await page
-    .getByRole("heading", { name: `You’re connected with ${owner.name}` })
+    .getByRole("heading", { name: `You’re already friends with ${owner.name}` })
     .waitFor();
+  assert.equal(
+    await page
+      .getByRole("button", { name: `Connect with ${owner.name}`, exact: true })
+      .count(),
+    0
+  );
+  await page
+    .getByRole("link", { name: "Share your own QR", exact: true })
+    .waitFor();
+  const acceptanceCount = await db.friendAcceptance.count({
+    where: { inviterId: owner.id, recipientId: member.id }
+  });
+  await db.platformUser.update({
+    where: { id: member.id },
+    data: { emailVerifiedAt: null }
+  });
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await page
+    .getByRole("heading", { name: "Your account verification", exact: true })
+    .waitFor();
+  await page
+    .getByRole("heading", {
+      name: `You’re already friends with ${owner.name}`,
+      exact: true
+    })
+    .waitFor();
+  assert.equal(await edges(owner.id, member.id), 2);
+  const verifyHref = await page
+    .getByRole("link", { name: "Verify your account email", exact: true })
+    .getAttribute("href");
+  assert.equal(
+    new URL(verifyHref, config.origin).searchParams.get("next"),
+    new URL(url).pathname
+  );
+  await db.platformUser.update({
+    where: { id: member.id },
+    data: { emailVerifiedAt: new Date() }
+  });
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await page
+    .getByRole("heading", { name: "Your account verification", exact: true })
+    .waitFor({ state: "detached" });
+  await page
+    .getByRole("heading", {
+      name: `You’re already friends with ${owner.name}`,
+      exact: true
+    })
+    .waitFor();
+  assert.equal(
+    await db.friendAcceptance.count({
+      where: { inviterId: owner.id, recipientId: member.id }
+    }),
+    acceptanceCount
+  );
+  ok(
+    "Already-friends scan separates account verification, refreshes without reload and creates no duplicate acceptance"
+  );
   const current = await readRelationships(db, member.token, {
     view: "status",
     kind: "person",
@@ -449,7 +506,7 @@ try {
     .getByRole("button", { name: "Retry unchanged request", exact: true })
     .click();
   await page
-    .getByRole("heading", { name: `You’re connected with ${owner.name}` })
+    .getByRole("heading", { name: `You’re already friends with ${owner.name}` })
     .waitFor();
   assert.equal(bodies.length, 2);
   assert.equal(bodies[0], bodies[1]);

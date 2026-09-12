@@ -86,3 +86,14 @@ fix; a UI rollback must retain these services, lifecycle hooks, consent records
 and removal history. Never drop the tables or restore an old database to undo a
 UI change. Existing private-draft reply permissions and publication access checks
 remain unchanged and covered by their original contract.
+
+## Existing-friend scan presentation
+
+The invitation page reads current relationship status before offering Connect.
+An active friendship shows Already friends, Open profile and Share your own QR;
+it creates no new acceptance or follow edge. Account verification is explained
+separately when still required. The verification-entry link preserves a validated
+in-app return path, and foreground/online/relationship refreshes re-read current
+eligibility and friendship under the expected account. Expired or revoked codes
+remain unavailable, and removal/block tombstones still prevent reconnection.
+Uncertain commands retain their exact serialized retry body throughout refreshes.

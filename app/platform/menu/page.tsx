@@ -1,5 +1,8 @@
 import { LoadedVersion } from "@/components/platform/loaded-release";
-import { InstallationHelp } from "@/components/platform/installation-help";
+import {
+  InstallationBanner,
+  InstallationHelp
+} from "@/components/platform/installation-help";
 import type { Metadata } from "next";
 import Link from "next/link";
 import {
@@ -74,6 +77,7 @@ export default async function PlatformMenuPage() {
               icon={QrCode}
             />
           </ul>
+          <InstallationBanner />
           {!user && (
             <div className="flex flex-wrap gap-3">
               <Link

@@ -89,3 +89,19 @@ and the [browser event contract](https://developer.mozilla.org/en-US/docs/Web/AP
 The four isolated browser groups in `scripts/qa-installation-browser.mjs` cover
 capability and dialog behavior using synthetic events; they do not establish
 physical-device installation acceptance.
+
+### Visible Home Screen guidance
+
+Menu and invitation pages offer a dismissible banner for Apple mobile device
+guidance or an actual available browser install prompt. Device hints choose
+instructions only; they never establish installation capability. The banner is
+suppressed in standalone mode and after dismissal. A versioned, non-account
+localStorage preference remembers dismissal; blocked storage still allows the
+current visit to dismiss it. Permanent Menu help remains available.
+
+The shared dialog expands Safari instructions for Apple devices and explains
+opening embedded mail/social/QR pages in a regular browser. Explicit Copy uses
+the current page path/query without its fragment; a selectable link remains if
+clipboard access fails. It neither redirects nor changes unsent work, account
+state, invitation consent or notification permissions. Browser acceptance still
+does not prove installation; actual standalone/appinstalled signals are required.

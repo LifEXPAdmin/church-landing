@@ -134,3 +134,23 @@ church publishers or unavailable images. No raw storage URL enters public HTML.
 Private Blob connectivity was exercised, but public upload mode remains disabled
 until the existing image cleanup-worker gate is satisfied. The feature guide
 explicitly records this limitation.
+
+## Permitted photo presentation
+
+The reusable PhotoViewer re-reads the existing image or gallery endpoint before
+showing the selected photo. It preserves persisted order, caption and alt text,
+supports up to ten gallery images, and requests only the opened large derivative.
+Zoom is bounded to three times the fitted display; it does not eagerly request
+originals. Profile-header avatar/cover buttons reuse it, while feed avatars retain
+their existing profile navigation. Post reads expose a READY photo count only
+after the current post audience check. Visible post galleries load thumbnail
+lists on approach to the viewport; photos do not add a new access rule.
+
+Native dialog focus, scroll restoration and a same-URL history entry let Close,
+Escape and Back return to the page. Previous/Next, arrow keys and horizontal
+single-touch gestures move only inside the viewer. Foreground, relationship and
+connection refreshes recheck the expected signed-in account. Concealed or revoked
+sources are cleared; a removed selected ID does not silently show a replacement.
+No service worker, original prefetch, new storage association or retention is
+introduced by this presentation layer. History and personal photo libraries
+require their separate lifecycle contract.

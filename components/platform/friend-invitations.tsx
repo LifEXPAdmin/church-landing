@@ -90,11 +90,15 @@ export function FriendInvitations({
       document.visibilityState === "hidden" ? hide() : refresh();
     window.addEventListener("blur", hide);
     window.addEventListener("focus", refresh);
+    window.addEventListener("online", refresh);
+    window.addEventListener("social-relationships-changed", refresh);
     document.addEventListener("visibilitychange", visibility);
     return () => {
       hide();
       window.removeEventListener("blur", hide);
       window.removeEventListener("focus", refresh);
+      window.removeEventListener("online", refresh);
+      window.removeEventListener("social-relationships-changed", refresh);
       document.removeEventListener("visibilitychange", visibility);
     };
   }, [load]);
@@ -243,6 +247,34 @@ export function FriendInvitations({
       ) : (
         <>
           <p>Signed in as {data.name}.</p>
+          {invitation && connected && (
+            <section
+              aria-label="Current friendship"
+              className="space-y-3 rounded border p-4"
+            >
+              <h2 className="text-2xl">
+                You’re already friends with {invitation.name}
+              </h2>
+              <p>
+                Scanning again keeps your existing friendship. There is no new
+                connection to accept.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Link
+                  className="gc-button"
+                  href={`/platform/profile/${invitation.username}`}
+                >
+                  Open profile
+                </Link>
+                <Link
+                  className="gc-button gc-button-quiet"
+                  href="/platform/invitations"
+                >
+                  Share your own QR
+                </Link>
+              </div>
+            </section>
+          )}
           {data.signup && (
             <section
               aria-label="Signup connection"
@@ -285,13 +317,19 @@ export function FriendInvitations({
           )}
           {!data.eligible && (
             <section className="space-y-3">
-              <h2 className="text-2xl">Before connecting</h2>
+              <h2 className="text-2xl">
+                {connected ? "Your account verification" : "Before connecting"}
+              </h2>
               <p>
-                Verify your email and confirm you are at least 18. Invitations
-                do not bypass account eligibility.
+                {connected
+                  ? "Your friendship is already in place. Email verification and adult confirmation are account requirements, not a request to become friends again."
+                  : "Verify your email and confirm you are at least 18. Invitations do not bypass account eligibility."}
               </p>
               {!data.emailVerified && (
-                <Link className="gc-button" href="/platform/account/verify">
+                <Link
+                  className="gc-button"
+                  href={`/platform/account/verify?next=${encodeURIComponent(invitation ? `/platform/invite/${invitation.code}` : "/platform/invitations")}`}
+                >
                   Verify your account email
                 </Link>
               )}
@@ -318,23 +356,13 @@ export function FriendInvitations({
             </section>
           )}
           {invitation ? (
-            <section className="space-y-3">
-              <p>
-                Connect with {invitation.name}? Both of you will become friends.
-                Either person can remove the friendship or block. No church or
-                private-content access is added.
-              </p>
-              {connected ? (
-                <>
-                  <h2>You’re connected with {invitation.name}</h2>
-                  <Link
-                    className="gc-button"
-                    href={`/platform/profile/${invitation.username}`}
-                  >
-                    Open profile
-                  </Link>
-                </>
-              ) : (
+            !connected && (
+              <section className="space-y-3">
+                <p>
+                  Connect with {invitation.name}? Both of you will become
+                  friends. Either person can remove the friendship or block. No
+                  church or private-content access is added.
+                </p>
                 <button
                   className="gc-button"
                   disabled={!data.eligible || busy || !!pending}
@@ -342,8 +370,8 @@ export function FriendInvitations({
                 >
                   Connect with {invitation.name}
                 </button>
-              )}
-            </section>
+              </section>
+            )
           ) : (
             <>
               {data.url ? (

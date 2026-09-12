@@ -1,4 +1,5 @@
 import { AuthorAvatar } from "./author-avatar";
+import { PostPhotos } from "./post-photos";
 import { PublicShareControls } from "./public-share-controls";
 import { SavePostControl } from "./save-post-control";
 import { RelationshipControls } from "./relationship-controls";
@@ -98,6 +99,9 @@ export function PostCard({
       )}
       <PostText content={post.content} />
       <PostLink {...post} />
+      {post.photoCount > 0 && (
+        <PostPhotos postId={post.id} accountId={currentUserId ?? null} />
+      )}
       {post.scripture && (
         <p className="gc-scripture">
           <span>Scripture reference</span>
