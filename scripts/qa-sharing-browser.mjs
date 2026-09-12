@@ -346,6 +346,16 @@ try {
   ok(
     "App-level downloaded QR PNG independently decodes to canonical public entry at phone width"
   );
+  const { friendInvitationCommand, readFriendInvitations } =
+    await import("../lib/platform/friend-invitations.ts");
+  await friendInvitationCommand(db, f.memberA.token, {
+    operation: "enable",
+    mutationId: randomUUID(),
+    accountId: f.memberA.id,
+    expectedVersion: 0,
+    consent: true
+  });
+  const personalUrl = (await readFriendInvitations(db, f.memberA.token)).url;
   for (const actor of [null, f.memberA]) {
     await context.clearCookies();
     if (actor) await signIn(actor);
@@ -360,32 +370,36 @@ try {
         rect && rect.y >= 0 && rect.y + rect.height < 844,
         "QR shortcut is visible without scrolling"
       );
-      assert.match(await shortcut.innerText(), /Share Godschurches/);
+      assert.match(
+        await shortcut.innerText(),
+        actor ? /My QR code/ : /Share Godschurches/
+      );
       await shortcut.focus();
       assert.ok(await shortcut.evaluate((el) => el === document.activeElement));
       await page.keyboard.press("Enter");
-      await page.waitForURL("**/platform/share?qr=1");
-      const qr = page.getByRole("region", { name: "Public link QR code" });
+      await page.waitForURL(
+        actor ? "**/platform/invitations" : "**/platform/share?qr=1"
+      );
+      const qr = page.getByRole("region", {
+        name: actor ? "Personal invitation QR code" : "Public link QR code"
+      });
       await qr.getByRole("button", { name: "Download QR PNG" }).waitFor();
       await page.waitForFunction(
         () =>
-          !document.querySelector(
-            'section[aria-label="Public link QR code"] button'
-          )?.disabled
+          !document.querySelector('section[aria-label$="QR code"] button')
+            ?.disabled
       );
-      const pixels = await qr
-        .locator("canvas")
-        .evaluate((c) => ({
-          data: Array.from(
-            c.getContext("2d").getImageData(0, 0, c.width, c.height).data
-          ),
-          width: c.width,
-          height: c.height
-        }));
+      const pixels = await qr.locator("canvas").evaluate((c) => ({
+        data: Array.from(
+          c.getContext("2d").getImageData(0, 0, c.width, c.height).data
+        ),
+        width: c.width,
+        height: c.height
+      }));
       assert.equal(
         jsQR(new Uint8ClampedArray(pixels.data), pixels.width, pixels.height)
           ?.data,
-        config.origin + "/platform"
+        actor ? personalUrl : config.origin + "/platform"
       );
       await bounded();
       await page.evaluate(
@@ -436,9 +450,10 @@ try {
     .getByRole("dialog")
     .getByRole("heading", { name: "Version 2026.09.13.1" })
     .waitFor();
-  assert.match(
-    await page.getByRole("dialog").innerText(),
-    /still running 2026.09.12.1/
+  assert.ok(
+    (await page.getByRole("dialog").innerText()).includes(
+      `still running ${currentRelease.version}`
+    )
   );
   await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "Read what’s new again" }).waitFor();

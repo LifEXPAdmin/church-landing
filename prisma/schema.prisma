@@ -151,6 +151,9 @@ model PlatformUser {
   socialRelations SocialRelationship[] @relation("SocialOwner")
   socialTargets SocialRelationship[] @relation("SocialTarget")
   socialOperations SocialOperation[]
+  friendInvitation FriendInvitation?
+  sentFriendAcceptances FriendAcceptance[] @relation("FriendInviter")
+  receivedFriendAcceptances FriendAcceptance[] @relation("FriendRecipient")
   commentLikes CommentLike[]
   commentMentions CommentMention[]
   conversationPreferences ConversationPreference[]
@@ -1393,4 +1396,32 @@ model SocialOperation {
   owner PlatformUser @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   @@id([ownerId, key])
   @@index([ownerId, createdAt])
+}
+
+// Consent records supplement, but never replace, the canonical PlatformFollow graph.
+model FriendInvitation {
+  ownerId String @id
+  token String @unique
+  version Int @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  expiresAt DateTime
+  revokedAt DateTime?
+  owner PlatformUser @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+}
+
+model FriendAcceptance {
+  id String @id @default(cuid())
+  inviterId String
+  recipientId String
+  // Unique only for signup-bound consent; ordinary explicit member acceptances use null.
+  signupRecipientId String? @unique
+  invitationVersion Int
+  state String @default("PENDING")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  inviter PlatformUser @relation("FriendInviter", fields: [inviterId], references: [id], onDelete: Cascade)
+  recipient PlatformUser @relation("FriendRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  @@unique([inviterId, recipientId])
+  @@index([recipientId, state])
 }

@@ -1,3 +1,7 @@
+import {
+  removeFriendConnection,
+  hasFriendConnection
+} from "./friend-invitations";
 import type { PrismaClient } from "@prisma/client";
 import { withOwnedSession } from "./account-sessions";
 import { expected, PortalError } from "./portal";
@@ -140,7 +144,11 @@ export async function relationshipCommand(
               where: { followerId: ownerId, followingId: keys.targetUserId }
             });
         } else data.followingChurch = on;
-        if (!on) data.favorite = false;
+        if (!on) {
+          data.favorite = false;
+          if (keys.targetUserId)
+            await removeFriendConnection(tx, ownerId, keys.targetUserId);
+        }
       } else if (op === "favorite") {
         const on = desired(input.desired);
         if (
@@ -170,6 +178,7 @@ export async function relationshipCommand(
           throw new PortalError(400, "Use church mute for church content.");
         data.blocked = desired(input.desired);
         if (data.blocked) {
+          await removeFriendConnection(tx, ownerId, keys.targetUserId);
           await tx.platformFollow.deleteMany({
             where: {
               OR: [
@@ -275,7 +284,10 @@ export function readRelationships(
             snoozedUntil: null,
             blocked: false
           }),
-          following
+          following,
+          friends: keys.targetUserId
+            ? await hasFriendConnection(tx, ownerId, keys.targetUserId)
+            : false
         };
       }
       if (query.view === "following") {

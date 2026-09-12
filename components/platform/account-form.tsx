@@ -14,11 +14,13 @@ import { PasswordField, accountInputClass } from "./account-fields";
 export { PasswordField, accountInputClass } from "./account-fields";
 export function AccountForm({
   operation,
+  invitation,
   initialEmail = "",
   returnTo = "/platform",
   onRegistered
 }: {
   operation: Operation;
+  invitation?: { code: string; name: string };
   initialEmail?: string;
   returnTo?: string;
   onRegistered?: (email: string) => void;
@@ -34,7 +36,9 @@ export function AccountForm({
   const request = operation.startsWith("request-");
   const id = (name: string) => `account-${operation}-${name}`;
   const title = {
-    register: "Create account",
+    register: invitation
+      ? `Create account and connect with ${invitation.name}`
+      : "Create account",
     login: "Sign in",
     "change-password":
       confirmation.methods && !confirmation.methods.password
@@ -74,6 +78,9 @@ export function AccountForm({
                 ? confirmation.credentials(new FormData(event.currentTarget))
                 : {}),
               operation,
+              ...(registration && invitation
+                ? { friendInvitation: invitation.code, friendConsent: true }
+                : {}),
               ...(operation === "login"
                 ? { next: safeAccountReturn(returnTo) }
                 : {})
@@ -113,6 +120,17 @@ export function AccountForm({
       }}
     >
       <h2 className="text-3xl text-gc-text">{title}</h2>
+      {registration && invitation && (
+        <p>
+          You are choosing to become friends with {invitation.name} after email
+          verification and adult eligibility. Either of you can remove the
+          connection.{" "}
+          <a className="underline" href="/platform/signup">
+            Join without connecting instead
+          </a>
+          .
+        </p>
+      )}
       {registration && (
         <>
           <div>

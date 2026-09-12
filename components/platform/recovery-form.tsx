@@ -59,8 +59,7 @@ export function RecoveryForm({
     };
   }, [purpose]);
   const verification = (grant?.purpose ?? purpose) === "VERIFY_EMAIL";
-  const returnHref =
-    signedIn && verification ? "/platform/settings" : "/platform/login";
+  const returnHref = signedIn && verification ? "/platform/settings" : "/platform/login";
   if (!ready) return <p role="status">Loading account options...</p>;
   if (!available)
     return (
@@ -198,6 +197,7 @@ export function RecoveryForm({
               : "Verify my email"}
         </Button>
       )}
+      {complete && verification && <Link className="block text-gc-accent underline" href="/platform/invitations">Check your signup connection</Link>}
       <a href={returnHref} className="block text-gc-accent underline">
         {signedIn && verification
           ? "Return to account settings"

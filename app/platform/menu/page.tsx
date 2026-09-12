@@ -64,9 +64,13 @@ export default async function PlatformMenuPage() {
           </header>
           <ul className="gc-menu-links" aria-label="Quick sharing">
             <MenuLink
-              href="/platform/share?qr=1"
-              title="Share Godschurches"
-              description="Open the website QR code. Copy, share or save it."
+              href={user ? "/platform/invitations" : "/platform/share?qr=1"}
+              title={user ? "My QR code" : "Share Godschurches"}
+              description={
+                user
+                  ? "Invite someone to connect with you."
+                  : "Open the website QR code. Copy, share or save it."
+              }
               icon={QrCode}
             />
           </ul>

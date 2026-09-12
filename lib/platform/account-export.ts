@@ -540,6 +540,29 @@ export async function downloadAccountExport(
         },
         take: 1
       }),
+      friendInvitations: await tx.friendInvitation.findMany({
+        where: { ownerId: userId },
+        select: {
+          version: true,
+          createdAt: true,
+          updatedAt: true,
+          expiresAt: true,
+          revokedAt: true
+        },
+        take: 1
+      }),
+      friendAcceptances: await tx.friendAcceptance.findMany({
+        where: { recipientId: userId },
+        select: {
+          inviterId: true,
+          invitationVersion: true,
+          state: true,
+          createdAt: true,
+          updatedAt: true
+        },
+        orderBy: { id: "asc" },
+        take: MAX_ROWS + 1
+      }),
       socialRelationships: await tx.socialRelationship.findMany({
         where: { ownerId: userId },
         select: {

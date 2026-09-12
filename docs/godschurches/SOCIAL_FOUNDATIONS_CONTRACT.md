@@ -47,7 +47,7 @@ GET views:
 
 | View                                | Query                        | Response                                                                                  |
 | ----------------------------------- | ---------------------------- | ----------------------------------------------------------------------------------------- |
-| status                              | kind=person/church, targetId | Own version, following, favorite, muted, snoozedUntil and blocked state; absent version 0 |
+| status                              | kind=person/church, targetId | Own version, following, consented reciprocal friends, favorite, muted, snoozedUntil and blocked state; absent version 0 |
 | privacy                             | none                         | Own mentions, showRelationships and version; absent version 0                             |
 | following                           | optional after               | Canonical person-follow IDs, public author labels and own settings                        |
 | controls                            | optional after               | All own explicit relationship settings                                                    |
@@ -92,6 +92,19 @@ mute. Blocking cannot stop signed-out access to material already public on the
 internet. The block confirmation must explain that limit plainly. Full member
 profiles and profile media still require an account. Relationship counts are
 omitted from another viewer's profile when showRelationships is false.
+
+## Personal invitation extension
+
+[Personal friend invitations](FRIEND_INVITATIONS_CONTRACT.md) reuse both canonical
+follow edges plus consent metadata. Ordinary one-way follows remain unchanged.
+Both relationship Unfollow and the legacy community Unfollow remove an invited
+friendship in both directions and retain permanent removal records. Blocking,
+suspension and deactivation also invalidate pending signup consent. Old successful
+receipts never establish that a friendship is still active; read current status.
+
+The separate invitation endpoint accepts `accountId` only as an equality guard
+against browser account switches; authorization still comes exclusively from the
+locked session. No invitation can grant church or private-content access.
 
 ## Comment read API
 

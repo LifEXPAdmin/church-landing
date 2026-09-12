@@ -1,3 +1,4 @@
+import { revokeAccountFriendInvitations } from "./friend-invitations";
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { AccountError, normalizeEmail } from "./accounts";
 import { withOwnedSession } from "./account-sessions";
@@ -71,6 +72,7 @@ export async function deactivateAccount(
         })
       ]);
       if (duties.some(Boolean)) throw new AccountLifecycleError("handoff");
+      await revokeAccountFriendInvitations(tx, userId);
       const now = new Date();
       await tx.calendarShare.updateMany({
         where: { calendar: { ownerId: userId }, revokedAt: null },

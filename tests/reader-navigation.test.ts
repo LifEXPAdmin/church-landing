@@ -214,3 +214,20 @@ test("search return retains bounded query/category/filter/cursor without owner a
     "/platform/search"
   );
 });
+
+test("personal invitation navigation survives sign-in without accepting arbitrary routes or credentials", () => {
+  const code = "a".repeat(43);
+  assert.equal(
+    safeAccountReturn("/platform/invitations"),
+    "/platform/invitations"
+  );
+  assert.equal(
+    safeAccountReturn(`/platform/invite/${code}?token=secret`),
+    `/platform/invite/${code}`
+  );
+  assert.equal(safeAccountReturn("/platform/invite/bad"), "/platform");
+  assert.equal(
+    safeAccountReturn("https://elsewhere.invalid/platform/invitations"),
+    "/platform"
+  );
+});

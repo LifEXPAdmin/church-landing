@@ -431,8 +431,16 @@ test("inactive community content and relationships disappear from HTML and RSC, 
   await communityCommand(db, a.token, "follow", { followingId: b.user.id });
   const homeBefore = await (await fetch(origin + "/platform")).text();
   assert.ok(homeBefore.includes(marker));
-  assert.ok(homeBefore.includes(commentMarker));
+  // Comments now load through the shared thread API rather than inline feed HTML.
+  const comments = async () =>
+    (
+      await fetch(
+        origin + "/api/platform/comments?view=roots&postId=" + other.id
+      )
+    ).text();
+  assert.ok((await comments()).includes(commentMarker));
   await deactivateAccount(db, a.token, password, true);
+  assert.ok(!(await comments()).includes(commentMarker));
   for (const rsc of [false, true]) {
     for (const path of [
       "/platform",
@@ -508,15 +516,7 @@ test("inactive community content and relationships disappear from HTML and RSC, 
   assert.ok(
     (await (await fetch(origin + "/platform")).text()).includes(marker)
   );
-  assert.ok(
-    (
-      await (
-        await fetch(origin + "/platform/profile/" + b.user.username, {
-          headers: { Cookie: "church_platform_session=" + b.token }
-        })
-      ).text()
-    ).includes(commentMarker)
-  );
+  assert.ok((await comments()).includes(commentMarker));
   assert.equal((await readAccountSession(db, b.token))!._count.followers, 1);
 });
 

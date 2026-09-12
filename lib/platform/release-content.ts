@@ -11,6 +11,19 @@ export type Feature = {
 };
 export const features: Feature[] = [
   {
+    id: "friend-invitations",
+    category: "People and churches",
+    name: "Personal friend invitations",
+    description:
+      "Invite someone to join Godschurches and become friends with you.",
+    steps:
+      "Open Menu, then My QR code. Enable your invitation, then copy, share or download it. Your guest chooses whether to connect and finishes account verification and adult eligibility. Either person can remove the friendship in profile relationship controls.",
+    href: "/platform/invitations",
+    eligibility:
+      "Verified adult accounts. Codes expire after 30 days and can be replaced or revoked. Friendship grants no extra private or church access.",
+    availability: "available"
+  },
+  {
     id: "profile",
     category: "Profiles",
     name: "Your profile",
@@ -266,6 +279,22 @@ export type ReleaseEntry = {
   featureIds: string[];
 };
 export const releases: ReleaseEntry[] = [
+  {
+    id: "personal-friend-invitations",
+    version: "2026.09.12.3",
+    date: "2026-09-12",
+    summary: "Invite someone to join and connect with you.",
+    added: [
+      "My QR code in Menu creates a personal invitation after you agree to automatic connections.",
+      "New members can choose to connect during signup. Verified eligible accounts become friends on both sides."
+    ],
+    improved: [
+      "Copy, Share and downloaded QR codes use the same personal invitation. General website sharing remains available.",
+      "Invitations expire after 30 days and can be replaced or revoked. Removed friendships stay removed."
+    ],
+    fixed: [],
+    featureIds: ["friend-invitations", "sharing"]
+  },
   {
     id: "menu-qr-shortcut",
     version: "2026.09.12.2",

@@ -256,32 +256,43 @@ export function PublicShareControls({
     </>
   );
 }
-function ShareQr({
+export function ShareQr({
   url,
   onClose,
-  inline = false
+  inline = false,
+  personal = false,
+  onDownload
 }: {
   url: string;
   onClose?: () => void;
   inline?: boolean;
+  personal?: boolean;
+  onDownload?: (url: string) => Promise<boolean>;
 }) {
   const dialog = useRef<HTMLDialogElement>(null),
     canvas = useRef<HTMLCanvasElement>(null),
     [error, setError] = useState(""),
-    [ready, setReady] = useState(false);
+    [ready, setReady] = useState(false),
+    [downloading, setDownloading] = useState(false);
   useEffect(() => {
     let active = true;
     const node = dialog.current;
     node?.showModal();
     void import("qrcode")
       .then(async (module) => {
-        if (active && canvas.current)
+        if (active && canvas.current) {
           await module.toCanvas(canvas.current, url, {
             errorCorrectionLevel: "M",
             margin: 4,
             width: 512,
             color: { dark: "#000000", light: "#ffffff" }
           });
+          // The renderer sets inline pixel dimensions; keep the displayed code
+          // square when its container is narrower than the PNG resolution.
+          canvas.current.style.width = "100%";
+          canvas.current.style.maxWidth = "512px";
+          canvas.current.style.height = "auto";
+        }
       })
       .then(() => {
         if (active) setReady(true);
@@ -299,15 +310,25 @@ function ShareQr({
   }, [url]);
   const content = (
     <>
-      <h2 className="text-2xl">Open the public page</h2>
-      <p>Scan with your phone camera. Sign in normally to join or respond.</p>
+      <h2 className="text-2xl">
+        {personal ? "My QR code" : "Open the public page"}
+      </h2>
+      <p>
+        {personal
+          ? "Scan to review the invitation. Connecting is your choice."
+          : "Scan with your phone camera. Sign in normally to join or respond."}
+      </p>
       {error ? (
         <p role="alert">{error}</p>
       ) : (
         <canvas
           ref={canvas}
           role="img"
-          aria-label="QR code for the public link"
+          aria-label={
+            personal
+              ? "QR code for your personal invitation"
+              : "QR code for the public link"
+          }
           className="mx-auto my-3 h-auto max-w-full"
         />
       )}
@@ -324,12 +345,23 @@ function ShareQr({
       <button
         type="button"
         className="gc-button gc-button-quiet"
-        disabled={!ready || !!error}
-        onClick={() => {
+        disabled={!ready || !!error || downloading}
+        onClick={async () => {
+          if (!canvas.current || downloading) return;
+          if (onDownload) {
+            setDownloading(true);
+            try {
+              if (!(await onDownload(url))) return;
+            } finally {
+              setDownloading(false);
+            }
+          }
           if (!canvas.current) return;
           const link = document.createElement("a");
           link.href = canvas.current.toDataURL("image/png");
-          link.download = "godschurches-qr.png";
+          link.download = personal
+            ? "godschurches-invitation-qr.png"
+            : "godschurches-qr.png";
           link.click();
         }}
       >
@@ -339,7 +371,9 @@ function ShareQr({
   );
   return inline ? (
     <section
-      aria-label="Public link QR code"
+      aria-label={
+        personal ? "Personal invitation QR code" : "Public link QR code"
+      }
       className="rounded-xl border border-gc-divider p-4"
     >
       {content}

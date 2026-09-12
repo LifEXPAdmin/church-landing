@@ -1,4 +1,8 @@
 import {
+  finishVerifiedFriendInvitation,
+  revokeAccountFriendInvitations
+} from "./friend-invitations";
+import {
   effectiveChurchGrants,
   hasChurchReviewer,
   endRoleContributions
@@ -294,7 +298,8 @@ export async function portalCommand(
   token: unknown,
   input: Record<string, unknown>
 ): Promise<string> {
-  return portal(db, token, async (tx, actor) => {
+  let signupId: string | undefined;
+  const result = await portal(db, token, async (tx, actor) => {
     const op = input.operation;
     if (op === "ack-adult") {
       expected(input.expectedVersion, actor.portalVersion);
@@ -312,6 +317,7 @@ export async function portalCommand(
         }
       });
       await audit(tx, actor.id, actor.id, "ADULT_ACKNOWLEDGED");
+      signupId = actor.id;
       return "Adult eligibility recorded for this preview. Email verification is also required.";
     }
     eligibility(actor);
@@ -555,6 +561,7 @@ export async function portalCommand(
         data: { consumedAt: new Date() }
       });
       if (input.suspended) {
+        await revokeAccountFriendInvitations(tx, userId);
         await tx.supportCapabilityGrant.updateMany({
           where: { userId, revokedAt: null },
           data: { revokedAt: new Date(), version: { increment: 1 } }
@@ -719,6 +726,16 @@ export async function portalCommand(
     }
     throw new PortalError(400, "Unknown church action.");
   });
+  // Connection failure must not roll back ordinary account eligibility. The
+  // completion transaction revalidates eligibility and removal under its gate.
+  if (signupId) {
+    try {
+      await finishVerifiedFriendInvitation(db, signupId);
+    } catch {
+      console.error(JSON.stringify({ event: "signup_connection_pending" }));
+    }
+  }
+  return result;
 }
 function entry(p: ChurchDirectoryPreference | null): DirectoryEntry | null {
   return p?.listed

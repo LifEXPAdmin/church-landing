@@ -103,6 +103,17 @@ button. Links expire in 30 minutes and never perform a change just by opening.
 The sender is authenticated, but inbox placement is not guaranteed. Optional
 phone verification is planned for later; no texts are sent by this flow.
 
+## Personal invitation signup
+
+Open an invitation and choose **Create account and connect** to accept it, or
+**Join without connecting** for ordinary signup. The selected inviter is bound
+to the new account; another browser or duplicate signup cannot replace it.
+Verification and the normal adult acknowledgement complete an accepted eligible
+connection. Menu → My QR code shows the current signup status and a safe retry
+if completion could not be confirmed. Existing members must explicitly Connect.
+A scan or normal signin alone never accepts an invitation. Either participant
+can remove the friendship; an old invitation or delayed callback cannot restore it.
+
 ## Review active sign-ins
 
 In **Account settings**, select **Show active sign-ins**. The list shows this

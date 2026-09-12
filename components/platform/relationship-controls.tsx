@@ -13,6 +13,7 @@ import { useUnsavedSocialWork } from "./use-unsaved-social-work";
 export type RelationshipStatus = {
   version: number;
   following: boolean;
+  friends?: boolean;
   favorite: boolean;
   muted: boolean;
   snoozedUntil: string | null;
@@ -239,9 +240,16 @@ export function RelationshipControls({
                   type="button"
                   className="gc-button gc-button-quiet"
                   disabled={busy || !!pending || conflict || data.blocked}
+                  aria-label={
+                    data.friends ? "Friends — remove friendship" : undefined
+                  }
                   onClick={() => change("follow", !data.following)}
                 >
-                  {data.following ? "Unfollow" : "Follow"}
+                  {data.friends
+                    ? "Remove friendship"
+                    : data.following
+                      ? "Unfollow"
+                      : "Follow"}
                 </button>
                 <button
                   type="button"

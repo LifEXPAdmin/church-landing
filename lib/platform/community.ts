@@ -1,3 +1,4 @@
+import { removeFriendConnection } from "./friend-invitations";
 import { socialUserWhere } from "./social-policy";
 import type { PrismaClient } from "@prisma/client";
 import { randomUUID } from "node:crypto";
@@ -51,6 +52,7 @@ export async function communityCommand(
           confirmed: input.confirmed === true || input.confirmed === "on"
         });
       } else if (operation === "unfollow") {
+        await removeFriendConnection(tx, actorId, targetId);
         await tx.platformFollow.deleteMany({
           where: { followerId: actorId, followingId: targetId }
         });

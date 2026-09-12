@@ -110,9 +110,11 @@ try {
     `PASS: ${migrations.length} migrations and populated upgrade preservation`
   );
   for (const file of [
-    ...(process.argv.includes("--social")
-      ? ["tests/social-foundations.test.ts", "tests/gallery-sharing.test.ts"]
-      : ["tests/post-workspace.test.ts"]),
+    ...(process.argv.includes("--invitations")
+      ? ["tests/friend-invitations.test.ts", "tests/social-foundations.test.ts"]
+      : process.argv.includes("--social")
+        ? ["tests/social-foundations.test.ts", "tests/gallery-sharing.test.ts"]
+        : ["tests/post-workspace.test.ts"]),
     "tests/post-publishing.test.ts",
     "tests/community-search.test.ts"
   ]) {
@@ -139,6 +141,8 @@ try {
     dump
   ]);
   const socialTables = [
+    "FriendInvitation",
+    "FriendAcceptance",
     "SocialRelationship",
     "SocialPreferences",
     "SocialOperation",
@@ -168,7 +172,7 @@ try {
     sql(
       [
         "-Atc",
-        `SELECT jsonb_build_object('drafts',(SELECT jsonb_agg(to_jsonb(t) ORDER BY "ownerId",id) FROM "PrivatePostDraft" t),'collections',(SELECT jsonb_agg(to_jsonb(t) ORDER BY "ownerId",id) FROM "SavedPostCollection" t),'items',(SELECT jsonb_agg(to_jsonb(t) ORDER BY id) FROM "SavedPostItem" t),'operations',(SELECT jsonb_agg(to_jsonb(t) ORDER BY "ownerId",key) FROM "PostWorkspaceOperation" t),'constraints',(SELECT jsonb_agg(pg_get_constraintdef(oid) ORDER BY conname) FROM pg_constraint WHERE conrelid IN ('"PrivatePostDraft"'::regclass,'"SavedPostCollection"'::regclass,'"SavedPostItem"'::regclass,'"PostWorkspaceOperation"'::regclass)))`
+        `SELECT jsonb_build_object('drafts',(SELECT jsonb_agg(to_jsonb(t) ORDER BY "ownerId",id) FROM "PrivatePostDraft" t),'collections',(SELECT jsonb_agg(to_jsonb(t) ORDER BY "ownerId",id) FROM "SavedPostCollection" t),'items',(SELECT jsonb_agg(to_jsonb(t) ORDER BY id) FROM "SavedPostItem" t),'operations',(SELECT jsonb_agg(to_jsonb(t) ORDER BY "ownerId",key) FROM "PostWorkspaceOperation" t),'constraints',(SELECT jsonb_agg(pg_get_constraintdef(oid) ORDER BY conname) FROM pg_constraint WHERE conrelid IN ('"FriendInvitation"'::regclass,'"FriendAcceptance"'::regclass,'"PrivatePostDraft"'::regclass,'"SavedPostCollection"'::regclass,'"SavedPostItem"'::regclass,'"PostWorkspaceOperation"'::regclass)))`
       ],
       url
     );

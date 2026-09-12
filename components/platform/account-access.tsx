@@ -9,6 +9,7 @@ import {
   type AccountReason
 } from "@/lib/platform/account-entry";
 export function AccountAccess({
+  invitation,
   initialView,
   passwordChanged = false,
   reactivated = false,
@@ -19,6 +20,7 @@ export function AccountAccess({
   recoveryAvailable = false,
   googleNotice
 }: {
+  invitation?: { code: string; name: string };
   initialView: "login" | "register";
   passwordChanged?: boolean;
   reactivated?: boolean;
@@ -91,7 +93,7 @@ export function AccountAccess({
               : "Google sign-in was canceled or could not be completed. Try again, or use email sign-in. If an app browser blocks Google, open this page in your regular browser."}
         </p>
       )}
-      {googleAvailable && (
+      {googleAvailable && !invitation && (
         <div className="mb-6 space-y-3">
           <GoogleButton body={{ operation: "start", next: returnTo }} />
           <p className="text-sm text-gc-muted">
@@ -102,6 +104,7 @@ export function AccountAccess({
       <AccountForm
         key={view}
         operation={view}
+        invitation={invitation}
         initialEmail={email}
         returnTo={returnTo}
         onRegistered={(value) => {

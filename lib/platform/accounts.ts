@@ -1,4 +1,8 @@
 import {
+  bindSignupFriendInvitation,
+  finishVerifiedFriendInvitation
+} from "./friend-invitations";
+import {
   Prisma,
   PlatformRole,
   type AccountGrantPurpose,
@@ -78,17 +82,27 @@ export async function registerAccount(
   const passwordHash = await hashPassword(input.password as string);
   try {
     // Insert only. Unique constraints settle duplicate/concurrent registrations without overwrites.
-    return await db.platformUser.create({
-      select: { email: true },
-      data: {
-        email,
-        name,
-        username,
-        passwordHash,
-        role: input.role as PlatformRole,
-        interests: []
-      }
-    });
+    return await db.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(730221, 2)`;
+      const created = await tx.platformUser.create({
+        select: { id: true, email: true },
+        data: {
+          email,
+          name,
+          username,
+          passwordHash,
+          role: input.role as PlatformRole,
+          interests: []
+        }
+      });
+      await bindSignupFriendInvitation(
+        tx,
+        created.id,
+        input.friendInvitation,
+        input.friendConsent
+      );
+      return { email: created.email };
+    }, txOptions);
   } catch (error) {
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -539,4 +553,11 @@ export async function consumeAccountGrant(
       });
     }
   }, txOptions);
+  if (purpose === "VERIFY_EMAIL") {
+    try {
+      await finishVerifiedFriendInvitation(db, snapshot.userId);
+    } catch {
+      console.error(JSON.stringify({ event: "signup_connection_pending" }));
+    }
+  }
 }
