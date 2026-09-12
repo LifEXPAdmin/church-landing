@@ -92,5 +92,26 @@ and one deleted, four private objects created and four deleted, zero user/profil
 or asset records changed. The existing private store was reused. No schema or
 plan change was needed. Public activation follows this verified worker gate.
 
+## Live photo activation — September 12, 2026
+
+After worker acceptance, production `MEDIA_STORAGE_MODE=private-blob` was enabled
+for application `225bf5bf5ddf299c2d68606e174b6db7701dfdfd`, product `2026.09.12.4`.
+READY deployment `dpl_4ixDABUdx8igK36ae7Dzrbn9qpeE` is assigned to the canonical
+domain. At 03:48 UTC, all ten live read/browser checks passed: exact release and
+notes, independently decoded QR, ordinary signup entry, current/retained notes,
+available photo guide, 320px layout, Menu update check, guide entry points,
+account-gated uncached media and unauthorized maintenance denial. No application
+mutation requests, browser errors or runtime error rows occurred in these checks.
+The project cron remains enabled and points to the activation deployment.
+
+The final local application passed ten sharing/photo browser groups, including
+upload/reload, cancellation, removal and fully loaded post/comment avatars; the
+guide was checked with uploads both enabled and disabled. Two release-content
+tests and lint/types/build passed. Runtime tracing inspected 116 traces, 9,385
+entries and 283 server JavaScript files without private fixtures/environment
+files or a Prisma configuration loader. No migration accompanied activation.
+Actual consenting-owner photos, real device scans and the full demonstration
+remain separate acceptance work.
+
 References: [Vercel cron operation and authentication](https://vercel.com/docs/cron-jobs/manage-cron-jobs),
 [cron usage and limits](https://vercel.com/docs/cron-jobs/usage-and-pricing).

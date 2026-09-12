@@ -1,5 +1,30 @@
 # Godschurches current state
 
+## Profile photo activation — September 12, 2026
+
+Product `2026.09.12.4`, application `225bf5bf5ddf299c2d68606e174b6db7701dfdfd`,
+is live on the canonical domain in READY deployment
+`dpl_4ixDABUdx8igK36ae7Dzrbn9qpeE`. Public photo uploads use the existing private
+store after verified deployed cleanup. The existing personal editor and permitted
+profile/post/comment avatars remain unchanged; the guide reflects the live upload
+switch and retained notes describe the release. Personal invitations from the
+preceding release remain available through Menu → My QR code.
+
+Twenty-five media/maintenance checks, ten sharing/photo browser groups, enabled
+and disabled guide rendering, two release-content tests, lint/types/build and
+runtime tracing passed. At 03:48 UTC, ten live read/browser checks passed with
+zero application mutation requests, browser errors or runtime error rows. The
+deployed worker's separate provider acceptance created/deleted four tiny private
+objects and one maintenance record, leaving no probe data or changed user/profile
+records. Its daily schedule is registered; the first scheduled run has not yet
+occurred. Production remains on 28 matching migrations; photos needed no schema
+change. See [maintenance and activation evidence](MEDIA_MAINTENANCE.md).
+
+Approved demo church identity/content and the physical/owner rehearsal remain
+open. Broader parent acceptance and external object backup remain separate.
+Local fixture services are stopped at this checkpoint. No delivery test message
+or owner notification was sent.
+
 ## Personal invitation release — September 12, 2026
 
 Application `4fb52ed12e8eab94b786fdf572fce3da0ffa9434`, product `2026.09.12.3`,
