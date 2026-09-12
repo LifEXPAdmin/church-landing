@@ -55,7 +55,17 @@ photo recovery browser regressions pass. The recovery script now opens the curre
 Display detail; its old monolithic Settings route assumption was updated. Largest
 text/reduced motion and deliberate thumbnail loading, access withdrawal/recovery,
 changed-account concealment and stopped-upload exact retry remain intact. Types,
-scoped lint and production build pass. Publication is pending.
+scoped lint and production build pass (121 traces, 10,292 entries and 300 server
+JavaScript files).
+
+Product `2026.09.12.13`, application `13344d9e865e37e74dac2f2f724b5e6921f72160`,
+is live on READY deployment `dpl_2R8cQiAh2WCBgtXemEeqvt4qaLXE`. Independent
+canonical assignment and serving identity match. Eleven live checks at
+13:22:46 UTC passed with zero application writes, browser errors or scoped
+runtime error rows. Release notes, Explore links, Settings/profile sign-in
+returns, private APIs, the safe update notice and existing draft/photo gates
+were checked. Fresh backup/restore and all 30 migration checksums passed before
+push; no production migration or content/permission change was performed.
 
 Address/age-policy expansion and broader directory integration remain open. No
 schema, permission, provider or production identity change is included. Physical

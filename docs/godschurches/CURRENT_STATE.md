@@ -1,5 +1,26 @@
 # Godschurches current state
 
+## Profile Settings and save continuity — September 12, 2026
+
+Product `2026.09.12.13`, application `13344d9e865e37e74dac2f2f724b5e6921f72160`,
+is live on READY deployment `dpl_2R8cQiAh2WCBgtXemEeqvt4qaLXE`; canonical
+assignment and serving identity match. The existing profile editor groups
+identity and optional introduction/contact guidance, with direct Settings and
+directory links. Confirmed saves release their Back guard before redirecting;
+unsaved text/photos retain normal navigation protection and exact upload retry.
+
+Five profile service groups, eighteen directory groups across appropriate
+fixtures, two HTTPS groups, thirteen Settings/style/release groups and ten built
+profile/photo-recovery browser groups passed. Types, scoped lint and build pass.
+Eleven live checks at 13:22:46 UTC passed with zero application writes, browser
+errors or scoped runtime error rows. Backup/restore and all 30 migration
+checksums were verified; no schema, provider or production identity change.
+See [profile verification and fixture limits](PROFILE_SETTINGS_REPORT.md).
+
+Next is the focused adult Privacy overview. Street-address/age-policy disclosure,
+username rename and unsupported security/discovery/default-preference services
+retain their own gates. Parent and owner/device acceptance remain open.
+
 ## Method-aware Security — September 12, 2026
 
 Product `2026.09.12.12`, application `246e6f758656bbdb9acceb85613dacaa62006e14`,
