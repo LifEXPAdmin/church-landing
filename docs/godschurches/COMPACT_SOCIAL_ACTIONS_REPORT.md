@@ -52,4 +52,14 @@ traces, 10,298 entries and 301 server JavaScript files, excluding private artifa
 Native sharing uses browser simulation; these results are separate from physical
 phone or provider acceptance. All writes are confined to isolated fictional data.
 
-Production status is recorded after exact deployment and canonical live checks.
+## Release
+
+Product `2026.09.12.20`, application `8b8219bb30f5301c1ee092e11a698133acc21927`,
+is live on READY deployment `dpl_8m5GJ3kzzou2Hj5EmRoLvgG8W9eb`. Independent
+canonical assignment and serving identity match. Eight live read-only checks at
+16:16:06 UTC passed with zero application writes or browser errors; runtime error
+rows were zero. Live checks include public actions, public-link validation,
+viewport/focus, protected Bookmarks entry, comment-anchor Back and current/retained
+release notes. The 16:10 preflight verified all 30 migration checksums and the
+protected backup/restore. No migration, provider or permission change. Parent
+integration and physical owner acceptance remain open.

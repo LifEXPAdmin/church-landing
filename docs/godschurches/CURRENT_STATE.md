@@ -1,5 +1,17 @@
 # Godschurches current state
 
+## Compact social controls — September 12, 2026
+
+Product `2026.09.12.20`, application `8b8219bb30f5301c1ee092e11a698133acc21927`,
+is live on READY deployment `dpl_8m5GJ3kzzou2Hj5EmRoLvgG8W9eb`; independent
+canonical assignment and serving identity match. Post/comment More menus reuse
+existing handlers; the compact action row links to private Bookmarks and external
+Share. Repost, quotes and contextual reporting remain with their owning contracts.
+Nineteen browser groups, 14 focused tests, scoped lint/types/build and eight live
+read-only checks pass with zero application writes or browser errors. See
+[Compact action evidence](COMPACT_SOCIAL_ACTIONS_REPORT.md). Parent and physical
+acceptance remain open.
+
 ## Mission and Home return — September 12, 2026
 
 Product `2026.09.12.19`, application `b82424fb37d22352ff4951e5e9f2e4cbbed4424d`,
