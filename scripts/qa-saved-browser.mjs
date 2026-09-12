@@ -106,12 +106,11 @@ try {
     }
   });
   await go("/platform/posts/" + post.id);
-  await page.getByText("Save post", { exact: true }).click();
   await page
-    .getByRole("link", { name: "Sign in to save this post", exact: true })
+    .getByRole("link", { name: "Sign in to bookmark this post", exact: true })
     .waitFor();
   const href = await page
-    .getByRole("link", { name: "Sign in to save this post", exact: true })
+    .getByRole("link", { name: "Sign in to bookmark this post", exact: true })
     .getAttribute("href");
   assert.equal(
     new URL(href, config.origin).searchParams.get("next"),
@@ -119,7 +118,6 @@ try {
   );
   await signIn(f.memberA);
   await go("/platform/posts/" + post.id);
-  await page.getByText("Save post", { exact: true }).click();
   const bodies = [];
   let lose = true;
   await page.route("**/api/platform/post-workspace", async (route) => {
@@ -133,14 +131,12 @@ try {
       } else await route.fulfill({ response });
     } else await route.continue();
   });
-  await page
-    .getByRole("button", { name: "Save privately", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Bookmark", exact: true }).click();
   await page
     .getByRole("button", { name: "Retry same save choice", exact: true })
     .click();
   await page
-    .getByRole("button", { name: "Remove from saved", exact: true })
+    .getByRole("button", { name: "Remove bookmark", exact: true })
     .waitFor();
   assert.equal(bodies.length, 2);
   assert.equal(bodies[0], bodies[1]);
@@ -152,9 +148,8 @@ try {
     1
   );
   ok("Guest safe return and canonical save with exact lost-response retry");
-  await page
-    .getByRole("link", { name: "Manage saved collections", exact: true })
-    .click();
+  await go("/platform/menu");
+  await page.getByRole("link", { name: /Bookmarks/ }).click();
   const name = () =>
     page.getByRole("textbox", { name: "Collection name", exact: true });
   await name().fill("Private reading");
@@ -197,7 +192,7 @@ try {
   await page.getByText("Your name is preserved.", { exact: false }).waitFor();
   assert.equal(await name().inputValue(), "My unsent rename");
   await page
-    .getByRole("button", { name: "Refresh saved posts", exact: true })
+    .getByRole("button", { name: "Refresh bookmarks", exact: true })
     .click();
   await page
     .getByText("Saved name: Other session name", { exact: true })
@@ -250,7 +245,7 @@ try {
     data: { status: "WITHDRAWN", withdrawnAt: new Date() }
   });
   await page
-    .getByRole("button", { name: "Refresh saved posts", exact: true })
+    .getByRole("button", { name: "Refresh bookmarks", exact: true })
     .click();
   await page.getByText("Saved post unavailable", { exact: true }).waitFor();
   assert.equal(
@@ -268,9 +263,7 @@ try {
   await item()
     .getByRole("button", { name: "Remove saved post", exact: true })
     .click();
-  await page
-    .getByText("No saved posts in this view.", { exact: true })
-    .waitFor();
+  await page.getByText("No bookmarks in this view.", { exact: true }).waitFor();
   ok(
     "Deleting selected collection preserves unfiled bookmark; withdrawn source is neutral and removable"
   );
@@ -289,15 +282,13 @@ try {
   }
   await go("/platform/saved");
   await page
-    .getByRole("link", { name: "More saved posts", exact: true })
+    .getByRole("link", { name: "More bookmarks", exact: true })
     .waitFor();
   const first = await page
     .locator("[data-saved-id]")
     .evaluateAll((es) => es.map((e) => e.dataset.savedId));
   assert.equal(first.length, 20);
-  await page
-    .getByRole("link", { name: "More saved posts", exact: true })
-    .click();
+  await page.getByRole("link", { name: "More bookmarks", exact: true }).click();
   await page.waitForURL("**after=*");
   await page.waitForFunction(
     () => document.querySelectorAll("[data-saved-id]").length === 5
@@ -308,7 +299,7 @@ try {
   assert.equal(new Set([...first, ...last]).size, 25);
   await page.goBack();
   await page
-    .getByRole("link", { name: "More saved posts", exact: true })
+    .getByRole("link", { name: "More bookmarks", exact: true })
     .waitFor();
   assert.equal(await page.locator("[data-saved-id]").count(), 20);
   await name().fill("Unsent owner name");
@@ -317,9 +308,7 @@ try {
     window.dispatchEvent(new Event("blur"));
     window.dispatchEvent(new Event("focus"));
   });
-  await page
-    .getByText("No saved posts in this view.", { exact: true })
-    .waitFor();
+  await page.getByText("No bookmarks in this view.", { exact: true }).waitFor();
   assert.equal(await name().inputValue(), "");
   await bounded();
   ok(
@@ -358,7 +347,7 @@ try {
       name: "Extra collection " + i
     });
   await page
-    .getByRole("button", { name: "Refresh saved posts", exact: true })
+    .getByRole("button", { name: "Refresh bookmarks", exact: true })
     .click();
   await page
     .getByRole("button", { name: "More collections", exact: true })
@@ -381,29 +370,27 @@ try {
     }
   });
   await go("/platform/posts/" + fresh.id);
-  await page.getByText("Save post", { exact: true }).click();
-  await page
-    .getByRole("button", { name: "Save privately", exact: true })
-    .waitFor();
+  await page.getByRole("button", { name: "Bookmark", exact: true }).waitFor();
+  await page.waitForFunction(
+    () =>
+      document.querySelector('button[aria-label="Bookmark"]')?.disabled ===
+      false
+  );
   await change(f.memberB.token, "save-item", {
     postId: fresh.id,
     expectedVersion: 0
   });
-  await page
-    .getByRole("button", { name: "Save privately", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Bookmark", exact: true }).click();
   await page
     .getByRole("button", { name: "Refresh saved status", exact: true })
     .click();
   await page
-    .getByRole("button", { name: "Remove from saved", exact: true })
+    .getByRole("button", { name: "Remove bookmark", exact: true })
     .waitFor();
   await page
-    .getByRole("button", { name: "Remove from saved", exact: true })
+    .getByRole("button", { name: "Remove bookmark", exact: true })
     .click();
-  await page
-    .getByRole("button", { name: "Save privately", exact: true })
-    .waitFor();
+  await page.getByRole("button", { name: "Bookmark", exact: true }).waitFor();
   assert.equal(
     await db.savedPostItem.count({
       where: { ownerId: f.memberB.id, postId: fresh.id }
@@ -414,9 +401,7 @@ try {
     where: { id: fresh.id },
     data: { status: "WITHDRAWN", withdrawnAt: new Date() }
   });
-  await page
-    .getByRole("button", { name: "Save privately", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Bookmark", exact: true }).click();
   await page
     .getByText("Concurrent saved source", { exact: true })
     .waitFor({ state: "detached" });

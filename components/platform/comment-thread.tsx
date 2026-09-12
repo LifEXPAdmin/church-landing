@@ -1,4 +1,5 @@
 "use client";
+import { MoreActions } from "./action-popover";
 import { AuthorAvatar } from "./author-avatar";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
@@ -267,6 +268,77 @@ export function CommentThread({
               <time className="text-sm text-gc-muted" dateTime={row.createdAt}>
                 {new Date(row.createdAt).toLocaleDateString()}
               </time>
+              {owner &&
+                (row.canEdit ||
+                  row.canDelete ||
+                  (!row.rootId && data?.canPin)) && (
+                  <span className="ml-auto self-start">
+                    <MoreActions
+                      label={`More comment options for ${row.author?.name ?? "this comment"}`}
+                    >
+                      {row.canEdit && (
+                        <button
+                          type="button"
+                          className="gc-button gc-button-quiet"
+                          disabled={!!editing}
+                          onClick={() => setEditing(row)}
+                        >
+                          Edit
+                        </button>
+                      )}
+                      {row.canDelete && (
+                        <button
+                          type="button"
+                          className="gc-button gc-button-quiet"
+                          disabled={!!mutation}
+                          onClick={() => {
+                            if (
+                              window.confirm(
+                                "Delete this comment? Replies may remain beneath an unavailable comment."
+                              )
+                            )
+                              void act(
+                                JSON.stringify({
+                                  operation: "delete",
+                                  mutationId: crypto.randomUUID(),
+                                  postId,
+                                  commentId: row.id,
+                                  expectedVersion: row.version
+                                }),
+                                "delete"
+                              );
+                          }}
+                        >
+                          Delete
+                        </button>
+                      )}
+                      {owner && !row.rootId && data?.canPin && (
+                        <button
+                          type="button"
+                          className="gc-button gc-button-quiet"
+                          disabled={!!mutation}
+                          onClick={() =>
+                            void act(
+                              JSON.stringify({
+                                operation: "pin",
+                                mutationId: crypto.randomUUID(),
+                                postId,
+                                commentId:
+                                  data.pinned?.id === row.id ? null : row.id,
+                                expectedVersion: data.pinVersion
+                              }),
+                              "pin"
+                            )
+                          }
+                        >
+                          {data.pinned?.id === row.id
+                            ? "Unpin comment"
+                            : "Pin helpful comment"}
+                        </button>
+                      )}
+                    </MoreActions>
+                  </span>
+                )}
             </div>
             {row.replyTo && (
               <p className="text-sm text-gc-muted">
@@ -283,29 +355,6 @@ export function CommentThread({
             >
               Link to comment
             </Link>
-            {owner && !row.rootId && data?.canPin && (
-              <button
-                type="button"
-                className="gc-button gc-button-quiet"
-                disabled={!!mutation}
-                onClick={() =>
-                  void act(
-                    JSON.stringify({
-                      operation: "pin",
-                      mutationId: crypto.randomUUID(),
-                      postId,
-                      commentId: data.pinned?.id === row.id ? null : row.id,
-                      expectedVersion: data.pinVersion
-                    }),
-                    "pin"
-                  )
-                }
-              >
-                {data.pinned?.id === row.id
-                  ? "Unpin comment"
-                  : "Pin helpful comment"}
-              </button>
-            )}
             {owner && (
               <div className="flex flex-wrap gap-2">
                 <button
@@ -336,42 +385,6 @@ export function CommentThread({
                     onClick={() => setReply(row)}
                   >
                     Reply
-                  </button>
-                )}
-                {row.canEdit && (
-                  <button
-                    type="button"
-                    className="gc-button gc-button-quiet"
-                    disabled={!!editing}
-                    onClick={() => setEditing(row)}
-                  >
-                    Edit
-                  </button>
-                )}
-                {row.canDelete && (
-                  <button
-                    type="button"
-                    className="gc-button gc-button-quiet"
-                    disabled={!!mutation}
-                    onClick={() => {
-                      if (
-                        window.confirm(
-                          "Delete this comment? Replies may remain beneath an unavailable comment."
-                        )
-                      )
-                        void act(
-                          JSON.stringify({
-                            operation: "delete",
-                            mutationId: crypto.randomUUID(),
-                            postId,
-                            commentId: row.id,
-                            expectedVersion: row.version
-                          }),
-                          "delete"
-                        );
-                    }}
-                  >
-                    Delete
                   </button>
                 )}
               </div>

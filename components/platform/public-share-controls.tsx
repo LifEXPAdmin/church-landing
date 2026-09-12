@@ -1,5 +1,7 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Share2, Copy } from "lucide-react";
+import { ActionPopover } from "./action-popover";
 import { socialRequest } from "@/lib/platform/social-client";
 type Preview = {
   available: boolean;
@@ -11,12 +13,14 @@ export function PublicShareControls({
   kind,
   id,
   siteUrl,
-  showSiteQr = false
+  showSiteQr = false,
+  compact = false
 }: {
   kind: "post" | "church" | "event" | "site";
   id: string;
   siteUrl?: string;
   showSiteQr?: boolean;
+  compact?: boolean;
 }) {
   const [open, setOpen] = useState(showSiteQr && kind === "site"),
     [preview, setPreview] = useState<Preview | null>(null),
@@ -128,7 +132,10 @@ export function PublicShareControls({
             "The link was not copied. Select and copy the public link below."
           );
         }
-        if (seq === generation.current) setMessage("Public link copied.");
+        if (seq === generation.current) {
+          setMessage("Public link copied.");
+          if (compact) setOpen(false);
+        }
       }
       if (action === "share") {
         if (!navigator.share) {
@@ -137,7 +144,10 @@ export function PublicShareControls({
         }
         try {
           await navigator.share({ title: p.title, url: p.url });
-          if (seq === generation.current) setMessage("Share dialog completed.");
+          if (seq === generation.current) {
+            setMessage("Share dialog completed.");
+            if (compact) setOpen(false);
+          }
         } catch (e) {
           if (seq === generation.current)
             setMessage(
@@ -165,94 +175,116 @@ export function PublicShareControls({
       }
     }
   }
-  return (
-    <>
-      {showSiteQr && kind === "site" && siteUrl && (
-        <ShareQr url={siteUrl} inline />
-      )}
-      <details
-        open={open}
-        onToggle={(e) => setOpen(e.currentTarget.open)}
-        className="rounded border border-gc-divider p-2"
-      >
-        <summary className="min-h-11 cursor-pointer py-2 font-semibold">
-          {kind === "site" ? "Share Godschurches" : "Share publicly"}
-        </summary>
-        {open && (
-          <div
-            role="group"
-            aria-label="Public sharing choices"
-            className="space-y-3"
-          >
-            <p role="status">{busy ? "Checking the public link…" : message}</p>
-            {preview?.available && (
-              <>
-                <p>
-                  A link grants no membership, management rights or permission
-                  to RSVP.
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    className="gc-button gc-button-quiet"
-                    disabled={busy}
-                    onClick={() => void act("copy")}
-                  >
-                    Copy public link
-                  </button>
-                  {native ? (
-                    <button
-                      type="button"
-                      className="gc-button gc-button-quiet"
-                      disabled={busy}
-                      onClick={() => void act("share")}
-                    >
-                      Open share dialog
-                    </button>
-                  ) : (
-                    <p>Native sharing is unavailable. Use Copy public link.</p>
-                  )}
-                  <button
-                    type="button"
-                    className="gc-button gc-button-quiet"
-                    disabled={busy}
-                    onClick={() => void act("qr")}
-                  >
-                    Show QR code
-                  </button>
-                </div>
-                <label className="block">
-                  Public link
-                  <input
-                    aria-label="Public link"
-                    className="block w-full rounded border p-2"
-                    readOnly
-                    value={preview.url}
-                    onFocus={(e) => e.currentTarget.select()}
-                  />
-                </label>
-              </>
+  const choices = open && (
+    <div role="group" aria-label="Public sharing choices" className="space-y-3">
+      <p role="status">{busy ? "Checking the public link…" : message}</p>
+      {preview?.available && (
+        <>
+          {!compact && (
+            <p>
+              A link grants no membership, management rights or permission to
+              RSVP.
+            </p>
+          )}
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              className="gc-button gc-button-quiet"
+              disabled={busy}
+              onClick={() => void act("copy")}
+            >
+              <Copy aria-hidden="true" />
+              {compact ? "Copy link" : "Copy public link"}
+            </button>
+            {native ? (
+              <button
+                type="button"
+                className="gc-button gc-button-quiet"
+                disabled={busy}
+                onClick={() => void act("share")}
+              >
+                <Share2 aria-hidden="true" />
+                {compact ? "Share externally" : "Open share dialog"}
+              </button>
+            ) : (
+              <p>Native sharing is unavailable. Use Copy public link.</p>
             )}
             <button
               type="button"
               className="gc-button gc-button-quiet"
               disabled={busy}
-              onClick={() => void load()}
+              onClick={() => void act("qr")}
             >
-              Refresh public link
+              Show QR code
             </button>
-            {qr && (
-              <ShareQr
-                url={qr}
-                onClose={() => {
-                  setQr(null);
-                  returnFocus.current?.focus();
-                }}
-              />
-            )}
           </div>
-        )}
-      </details>
+          <label className="block">
+            Public link
+            <input
+              aria-label="Public link"
+              className="block w-full rounded border p-2"
+              readOnly
+              value={preview.url}
+              onFocus={(e) => e.currentTarget.select()}
+            />
+          </label>
+        </>
+      )}
+      <button
+        type="button"
+        className="gc-button gc-button-quiet"
+        disabled={busy}
+        onClick={() => void load()}
+      >
+        {compact ? "Refresh link" : "Refresh public link"}
+      </button>
+      {qr && (
+        <ShareQr
+          url={qr}
+          onClose={() => {
+            setQr(null);
+            returnFocus.current?.focus();
+          }}
+        />
+      )}
+    </div>
+  );
+  return (
+    <>
+      {showSiteQr && kind === "site" && siteUrl && (
+        <ShareQr url={siteUrl} inline />
+      )}
+      {compact ? (
+        <>
+          <ActionPopover
+            label="Share post"
+            trigger={
+              <>
+                <Share2 aria-hidden="true" />
+                <span className="gc-post-action-label">Share</span>
+              </>
+            }
+            open={open}
+            onOpenChange={setOpen}
+          >
+            {choices}
+          </ActionPopover>
+          <span role="status" className="sr-only">
+            {!open && message}
+          </span>
+        </>
+      ) : (
+        <details
+          open={open}
+          onToggle={(e) => setOpen(e.currentTarget.open)}
+          className="rounded border border-gc-divider p-2"
+        >
+          <summary className="min-h-11 cursor-pointer py-2 font-semibold">
+            {kind === "site" ? "Share Godschurches" : "Share publicly"}
+          </summary>
+          {choices}
+        </details>
+      )}
     </>
   );
 }

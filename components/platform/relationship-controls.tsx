@@ -1,5 +1,7 @@
 "use client";
 import Link from "next/link";
+import { Ellipsis, UserPlus, VolumeX, Ban } from "lucide-react";
+import { ActionPopover } from "./action-popover";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -22,11 +24,15 @@ export type RelationshipStatus = {
 export function RelationshipControls({
   kind,
   targetId,
-  name
+  name,
+  compact = false,
+  management
 }: {
   kind: "person" | "church";
   targetId: string;
   name: string;
+  compact?: boolean;
+  management?: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false),
     [owner, setOwner] = useState<string | null | undefined>(),
@@ -196,7 +202,156 @@ export function RelationshipControls({
   }
   const snoozed =
     data?.snoozedUntil && Date.parse(data.snoozedUntil) > Date.now();
-  return (
+  const choices = open && (
+    <div
+      role="group"
+      className="space-y-3"
+      aria-label={`Relationship choices for ${name}`}
+    >
+      {management}
+      <p role="status">{busy ? "Checking relationship choices…" : message}</p>
+      {!hidden && owner === null && (
+        <Link
+          className="gc-button gc-button-quiet"
+          href={accountEntryHref(
+            "join",
+            location.pathname + location.search,
+            "follow"
+          )}
+        >
+          Sign in for relationship choices
+        </Link>
+      )}
+      {!hidden && owner === targetId && <p>This is your own profile.</p>}
+      {!hidden && data && (
+        <>
+          {!compact && (
+            <p className="text-sm text-gc-muted">
+              {kind === "church"
+                ? "Following a church does not grant membership or access to private church content."
+                : "Favorites and these controls are private to your account."}
+            </p>
+          )}
+          {snoozed && (
+            <p>
+              Snoozed until{" "}
+              <time dateTime={data.snoozedUntil!}>
+                {new Date(data.snoozedUntil!).toLocaleString()}
+              </time>
+            </p>
+          )}
+          {!snoozed && data.snoozedUntil && <p>Your snooze has ended.</p>}
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              className="gc-button gc-button-quiet"
+              disabled={busy || !!pending || conflict || data.blocked}
+              aria-label={
+                data.friends ? "Friends — remove friendship" : undefined
+              }
+              onClick={() => change("follow", !data.following)}
+            >
+              {compact && <UserPlus aria-hidden="true" />}
+              {data.friends
+                ? "Remove friendship"
+                : data.following
+                  ? "Unfollow"
+                  : "Follow"}
+            </button>
+            {!compact && (
+              <button
+                type="button"
+                className="gc-button gc-button-quiet"
+                disabled={
+                  busy ||
+                  !!pending ||
+                  conflict ||
+                  !data.following ||
+                  data.blocked
+                }
+                onClick={() => change("favorite", !data.favorite)}
+              >
+                {data.favorite ? "Remove favorite" : "Add private favorite"}
+              </button>
+            )}
+            <button
+              type="button"
+              className="gc-button gc-button-quiet"
+              disabled={busy || !!pending || conflict}
+              onClick={() => change("mute", !data.muted && !snoozed)}
+            >
+              {compact && <VolumeX aria-hidden="true" />}
+              {data.muted || snoozed
+                ? compact
+                  ? "Unmute"
+                  : "Restore in feed"
+                : compact
+                  ? "Mute"
+                  : "Mute in feed"}
+            </button>
+            {!compact &&
+              [1, 7, 30].map((days) => (
+                <button
+                  key={days}
+                  type="button"
+                  className="gc-button gc-button-quiet"
+                  disabled={busy || !!pending || conflict}
+                  onClick={() => change("snooze", undefined, days)}
+                >
+                  Snooze {days} {days === 1 ? "day" : "days"}
+                </button>
+              ))}
+            {kind === "person" && (
+              <button
+                type="button"
+                className="gc-button gc-button-quiet"
+                disabled={busy || !!pending || conflict}
+                onClick={() => change("block", !data.blocked)}
+              >
+                {compact && <Ban aria-hidden="true" />}
+                {data.blocked
+                  ? "Unblock"
+                  : compact
+                    ? "Block"
+                    : "Block personal account"}
+              </button>
+            )}
+          </div>
+        </>
+      )}
+      {pending && !hidden && (
+        <button
+          type="button"
+          className="gc-button gc-button-quiet"
+          disabled={busy}
+          onClick={() => void send(pending)}
+        >
+          Retry same relationship change
+        </button>
+      )}
+      {!pending && (
+        <button
+          type="button"
+          className="gc-button gc-button-quiet"
+          disabled={busy}
+          onClick={() => void load()}
+        >
+          {compact ? "Refresh" : "Refresh relationship choices"}
+        </button>
+      )}
+    </div>
+  );
+  return compact ? (
+    <ActionPopover
+      label={`More options for ${name}'s post`}
+      trigger={<Ellipsis aria-hidden="true" />}
+      className="gc-icon-button"
+      open={open}
+      onOpenChange={setOpen}
+    >
+      {choices}
+    </ActionPopover>
+  ) : (
     <details
       open={open}
       className="relative rounded-lg border border-gc-divider p-2"
@@ -205,128 +360,7 @@ export function RelationshipControls({
       <summary className="min-h-11 cursor-pointer py-2 font-semibold">
         Connections with {name}
       </summary>
-      {open && (
-        <div
-          role="group"
-          className="space-y-3"
-          aria-label={`Relationship choices for ${name}`}
-        >
-          <p role="status">
-            {busy ? "Checking relationship choices…" : message}
-          </p>
-          {!hidden && owner === null && (
-            <Link
-              className="gc-button gc-button-quiet"
-              href={accountEntryHref(
-                "join",
-                location.pathname + location.search,
-                "follow"
-              )}
-            >
-              Sign in for relationship choices
-            </Link>
-          )}
-          {!hidden && owner === targetId && <p>This is your own profile.</p>}
-          {!hidden && data && (
-            <>
-              <p className="text-sm text-gc-muted">
-                {kind === "church"
-                  ? "Following a church does not grant membership or access to private church content."
-                  : "Favorites and these controls are private to your account."}
-              </p>
-              {snoozed && (
-                <p>
-                  Snoozed until{" "}
-                  <time dateTime={data.snoozedUntil!}>
-                    {new Date(data.snoozedUntil!).toLocaleString()}
-                  </time>
-                </p>
-              )}
-              {!snoozed && data.snoozedUntil && <p>Your snooze has ended.</p>}
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  className="gc-button gc-button-quiet"
-                  disabled={busy || !!pending || conflict || data.blocked}
-                  aria-label={
-                    data.friends ? "Friends — remove friendship" : undefined
-                  }
-                  onClick={() => change("follow", !data.following)}
-                >
-                  {data.friends
-                    ? "Remove friendship"
-                    : data.following
-                      ? "Unfollow"
-                      : "Follow"}
-                </button>
-                <button
-                  type="button"
-                  className="gc-button gc-button-quiet"
-                  disabled={
-                    busy ||
-                    !!pending ||
-                    conflict ||
-                    !data.following ||
-                    data.blocked
-                  }
-                  onClick={() => change("favorite", !data.favorite)}
-                >
-                  {data.favorite ? "Remove favorite" : "Add private favorite"}
-                </button>
-                <button
-                  type="button"
-                  className="gc-button gc-button-quiet"
-                  disabled={busy || !!pending || conflict}
-                  onClick={() => change("mute", !data.muted && !snoozed)}
-                >
-                  {data.muted || snoozed ? "Restore in feed" : "Mute in feed"}
-                </button>
-                {[1, 7, 30].map((days) => (
-                  <button
-                    key={days}
-                    type="button"
-                    className="gc-button gc-button-quiet"
-                    disabled={busy || !!pending || conflict}
-                    onClick={() => change("snooze", undefined, days)}
-                  >
-                    Snooze {days} {days === 1 ? "day" : "days"}
-                  </button>
-                ))}
-                {kind === "person" && (
-                  <button
-                    type="button"
-                    className="gc-button gc-button-quiet"
-                    disabled={busy || !!pending || conflict}
-                    onClick={() => change("block", !data.blocked)}
-                  >
-                    {data.blocked ? "Unblock" : "Block personal account"}
-                  </button>
-                )}
-              </div>
-            </>
-          )}
-          {pending && !hidden && (
-            <button
-              type="button"
-              className="gc-button gc-button-quiet"
-              disabled={busy}
-              onClick={() => void send(pending)}
-            >
-              Retry same relationship change
-            </button>
-          )}
-          {!pending && (
-            <button
-              type="button"
-              className="gc-button gc-button-quiet"
-              disabled={busy}
-              onClick={() => void load()}
-            >
-              Refresh relationship choices
-            </button>
-          )}
-        </div>
-      )}
+      {choices}
     </details>
   );
 }

@@ -1772,3 +1772,26 @@ body:has(dialog:modal) {
   .gc-settings-search { grid-template-columns: minmax(0, 1fr); }
   .gc-settings-destination { padding: 1rem .75rem; gap: .5rem; }
 }
+
+/* Compact post controls retain readable labels and independent recovery state. */
+.gc-post-header { flex-wrap: nowrap; }
+.gc-post-header > .gc-icon-button { flex-shrink: 0; }
+.gc-post-author { overflow-wrap: anywhere; }
+.gc-post-actions { align-items: center; justify-content: space-between; gap: .25rem; }
+.gc-post-action { display: inline-flex; align-items: center; justify-content: center; gap: .35rem; min-width: 44px; min-height: 44px; padding: .4rem; border-radius: .5rem; font-size: .875rem; }
+.gc-post-action:hover { background: var(--gc-subtle); }
+.gc-post-action[aria-pressed="true"] { color: var(--gc-action); background: var(--gc-selected); }
+.gc-post-action svg { width: 19px; height: 19px; flex-shrink: 0; }
+.gc-bookmark-control { display: inline-flex; align-items: center; }
+.gc-action-popover { position: fixed; z-index: 90; overflow-y: auto; overscroll-behavior: contain; border: 1px solid var(--gc-divider); border-radius: .75rem; background: var(--gc-surface); color: var(--gc-text); padding: .5rem; box-shadow: 0 8px 30px rgb(0 0 0 / .18); font-size: .9375rem; overflow-wrap: anywhere; }
+.gc-action-popover button, .gc-action-popover a { display: flex; align-items: center; justify-content: flex-start; gap: .6rem; width: 100%; min-height: 44px; padding: .6rem; border-radius: .4rem; text-align: left; white-space: normal; }
+.gc-action-popover button:hover, .gc-action-popover a:hover { background: var(--gc-subtle); }
+.gc-action-popover svg { width: 18px; height: 18px; flex-shrink: 0; }
+.gc-action-popover p { padding: .25rem; }
+.gc-action-popover p:empty { display: none; }
+.gc-action-popover input { min-width: 0; max-width: 100%; }
+@media (max-width: 600px) {
+  .gc-post-action-label { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+}
+
+.gc-action-popover .gc-button { border: 0; background: transparent; box-shadow: none; font-weight: 400; }

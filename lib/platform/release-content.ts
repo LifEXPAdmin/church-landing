@@ -251,9 +251,10 @@ export const features: Feature[] = [
   {
     id: "saved",
     category: "Posts and conversations",
-    name: "Saved posts and collections",
+    name: "Bookmarks and collections",
     description: "Keep posts in a private library and organize collections.",
-    steps: "Choose Save on a post, then open Saved to organize or remove it.",
+    steps:
+      "Tap Bookmark on a post. Open Bookmarks from Menu to organize private collections, or tap the filled bookmark again to remove it.",
     href: "/platform/saved",
     eligibility:
       "Signed-in account. Saving never grants access to a withdrawn or restricted post.",
@@ -353,7 +354,7 @@ export const features: Feature[] = [
     description:
       "Share the website or an eligible public post, church or event.",
     steps:
-      "Open Menu and tap Share Godschurches near the top to see the website QR immediately. Copy, share or download its PNG. Use Share publicly on individual pages.",
+      "Open Menu and tap Share Godschurches near the top to see the website QR immediately. Copy, share or download its PNG. Use Share on posts and Share publicly on church or event pages.",
     href: "/platform/share?qr=1",
     eligibility:
       "Only eligible public pages have public share links. A QR code grants no account or church permissions.",
@@ -422,6 +423,20 @@ export type ReleaseEntry = {
   featureIds: string[];
 };
 export const releases: ReleaseEntry[] = [
+  {
+    id: "compact-post-actions",
+    version: "2026.09.12.20",
+    date: "2026-09-12",
+    summary: "Comment, bookmark and share from a simpler post action row.",
+    added: [],
+    improved: [
+      "Bookmark privately with one tap and find your existing collections under Bookmarks in Menu.",
+      "Share opens a small external sharing menu with Copy link. It never creates a feed post.",
+      "Post and comment More menus keep available management actions together, with existing edit and deletion safeguards."
+    ],
+    fixed: [],
+    featureIds: ["saved", "sharing", "comments"]
+  },
   {
     id: "our-shared-mission",
     version: "2026.09.12.19",

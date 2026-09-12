@@ -5,10 +5,12 @@ import { CommentThread } from "./comment-thread";
 import { useDraftWorkspace } from "./draft-workspace-provider";
 export function CommentSheet({
   postId,
-  count
+  count,
+  compact = false
 }: {
   postId: string;
   count: number;
+  compact?: boolean;
 }) {
   const [open, setOpen] = useState(false),
     [notice, setNotice] = useState("");
@@ -42,12 +44,20 @@ export function CommentSheet({
       <button
         ref={opener}
         type="button"
-        className="gc-button gc-button-quiet"
+        className={compact ? "gc-post-action" : "gc-button gc-button-quiet"}
+        aria-label={compact ? `Comment, ${count} comments` : undefined}
         aria-haspopup="dialog"
         onClick={() => setOpen(true)}
       >
         <MessageCircle aria-hidden="true" />
-        Discussion ({count})
+        {compact ? (
+          <>
+            <span className="gc-post-action-label">Comment</span>
+            <span>{count}</span>
+          </>
+        ) : (
+          `Discussion (${count})`
+        )}
       </button>
       {open && (
         <dialog

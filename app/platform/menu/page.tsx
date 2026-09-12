@@ -142,7 +142,7 @@ export default async function PlatformMenuPage() {
                 <>
                   <MenuLink
                     href="/platform/saved"
-                    title="Your saved posts"
+                    title="Bookmarks"
                     description="Organize posts into private collections."
                     icon={BookOpen}
                   />

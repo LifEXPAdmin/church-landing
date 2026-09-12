@@ -148,6 +148,10 @@ try {
   const row = () => page.locator(`[data-comment-id="${root.id}"]`);
   await row().waitFor();
   await row()
+    .getByRole("button", { name: /More comment options/ })
+    .click();
+  await page
+    .getByRole("dialog", { name: /More comment options/ })
     .getByRole("button", { name: "Pin helpful comment", exact: true })
     .click();
   await page
@@ -241,16 +245,22 @@ try {
   await signIn(f.memberB);
   await go(`/platform/posts/${post.id}?comment=${shared.id}`);
   await page.locator(`[data-comment-id="${shared.id}"]`).waitFor();
-  assert.equal(
-    await thread()
-      .getByRole("button", { name: "Pin helpful comment", exact: true })
-      .count(),
-    0
-  );
   await page.waitForFunction(
     (id) => document.activeElement?.id === `comment-${id}`,
     shared.id
   );
+  await page
+    .locator(`[data-comment-id="${shared.id}"]`)
+    .getByRole("button", { name: /More comment options/ })
+    .click();
+  assert.equal(
+    await page
+      .getByRole("dialog", { name: /More comment options/ })
+      .getByRole("button", { name: "Pin helpful comment", exact: true })
+      .count(),
+    0
+  );
+  await page.keyboard.press("Escape");
   await context.clearCookies({ name: "church_platform_session" });
   await go(`/platform/posts/${post.id}?comment=${shared.id}`);
   await thread()
@@ -297,7 +307,7 @@ try {
     await go(path);
     const card = page.locator(`[data-post="${post.id}"]`);
     await card.waitFor();
-    const button = card.getByRole("button", { name: /^Discussion \(/ });
+    const button = card.getByRole("button", { name: /^Comment, / });
     await button.click();
     const dialog = page.getByRole("dialog", {
       name: "Post discussion",
@@ -361,7 +371,10 @@ try {
       });
       const sentRow = dialog.locator(`[data-comment-id="${sent.id}"]`);
       await sentRow.waitFor();
-      await sentRow.getByRole("button", { name: "Edit", exact: true }).click();
+      await sentRow
+        .getByRole("button", { name: /More comment options/ })
+        .click();
+      await dialog.getByRole("button", { name: "Edit", exact: true }).click();
       const edit = dialog.getByRole("form", {
         name: "Edit comment",
         exact: true
@@ -395,8 +408,9 @@ try {
       await page.unroute("**/api/platform/comments");
       page.once("dialog", (d) => d.accept());
       await sentRow
-        .getByRole("button", { name: "Delete", exact: true })
+        .getByRole("button", { name: /More comment options/ })
         .click();
+      await dialog.getByRole("button", { name: "Delete", exact: true }).click();
       await dialog
         .getByText("Reader edited after lost response", { exact: true })
         .waitFor({ state: "detached" });
@@ -450,6 +464,10 @@ try {
     output + "/receipt.json",
     JSON.stringify({ results, pageErrors: errors }, null, 2)
   );
+} catch (error) {
+  await page.screenshot({path:output+"/failure.png"}).catch(()=>{});
+  writeFileSync(output+"/failure.txt",await page.locator("body").innerText().catch(()=>""));
+  throw error;
 } finally {
   await context.close();
   await browser.close();

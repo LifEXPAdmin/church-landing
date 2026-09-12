@@ -1,5 +1,5 @@
 "use client";
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import type { PostEditorView } from "@/lib/platform/post-editor";
 import { PostGalleryManager } from "./post-gallery-manager";
 import { PostActionForm } from "./post-action-form";
@@ -108,6 +108,23 @@ export function PostControls({
   ownerId?: string;
 }) {
   const [photosOpened, setPhotosOpened] = useState(false);
+  useEffect(() => {
+    const reveal = () => {
+      if (!["#post-edit", "#post-remove"].includes(location.hash)) return;
+      const section = document.getElementById(location.hash.slice(1));
+      if (section instanceof HTMLDetailsElement) {
+        section.open = true;
+        section.scrollIntoView({ block: "start" });
+        section
+          .querySelector<HTMLElement>("textarea, input, button")
+          ?.focus({ preventScroll: true });
+      }
+    };
+    reveal();
+    window.addEventListener("hashchange", reveal);
+    return () => window.removeEventListener("hashchange", reveal);
+  }, []);
+
   const id = useId();
   return (
     <section
@@ -116,7 +133,7 @@ export function PostControls({
     >
       <h2 className="text-2xl">Manage post</h2>
       {post.canEdit && (
-        <details>
+        <details id="post-edit" className="scroll-mt-4">
           <summary className="min-h-11 cursor-pointer py-3 font-semibold">
             Edit post
           </summary>
@@ -225,7 +242,7 @@ export function PostControls({
         </details>
       )}
       {post.canWithdraw && (
-        <details>
+        <details id="post-remove" className="scroll-mt-4">
           <summary className="min-h-11 cursor-pointer py-3 font-semibold">
             Remove post
           </summary>

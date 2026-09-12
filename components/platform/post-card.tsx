@@ -2,7 +2,7 @@ import { AuthorAvatar } from "./author-avatar";
 import { PostPhotos } from "./post-photos";
 import { PublicShareControls } from "./public-share-controls";
 import { SavePostControl } from "./save-post-control";
-import { RelationshipControls } from "./relationship-controls";
+import { PostMoreMenu } from "./post-more-menu";
 import { CommentSheet } from "./comment-sheet";
 import { CommentThread } from "./comment-thread";
 import type { PostView } from "@/lib/platform/post-reads";
@@ -10,7 +10,7 @@ import { PostLink } from "./post-link";
 import { PostActionPending } from "./post-action-pending";
 import { accountEntryHref } from "@/lib/platform/account-entry";
 import Link from "next/link";
-import { Heart, Globe } from "lucide-react";
+import { Heart, Globe, MessageCircle } from "lucide-react";
 import { togglePlatformPostLike } from "@/app/platform/actions";
 import { formatDate, postTypeLabels } from "@/lib/platform/format";
 import { PostParticipation } from "./post-participation";
@@ -56,22 +56,16 @@ export function PostCard({
             </span>
           </span>
         </Link>
-        {post.canWithdraw && !fullDiscussion && (
-          <Link
-            href={`/platform/posts/${post.id}`}
-            className="inline-flex min-h-11 items-center text-sm text-gc-accent underline"
-          >
-            Manage post
-          </Link>
-        )}
-      </header>
-      {currentUserId !== post.author.id && (
-        <RelationshipControls
+        <PostMoreMenu
+          postId={post.id}
+          name={post.author.name}
           kind={post.author.churchId ? "church" : "person"}
           targetId={post.author.churchId ?? post.author.id}
-          name={post.author.name}
+          own={currentUserId === post.author.id}
+          canEdit={post.canEdit}
+          canWithdraw={post.canWithdraw}
         />
-      )}
+      </header>
       <div className="gc-post-meta">
         <time dateTime={post.createdAt.toISOString()}>
           {formatDate(post.createdAt)}
@@ -108,26 +102,46 @@ export function PostCard({
           {post.scripture}
         </p>
       )}
-      <SavePostControl postId={post.id} />
-      <PublicShareControls kind="post" id={post.id} />
-      <div className="gc-post-actions">
+      <div className="gc-post-actions" aria-label="Post actions">
+        {fullDiscussion ? (
+          <Link
+            className="gc-post-action"
+            href={`#discussion-${post.id}`}
+            aria-label={`Comment, ${count} comments`}
+          >
+            <MessageCircle aria-hidden="true" />
+            <span className="gc-post-action-label">Comment</span>
+            <span>{count}</span>
+          </Link>
+        ) : (
+          <CommentSheet postId={post.id} count={count} compact />
+        )}
+
         {currentUserId ? (
           <form action={togglePlatformPostLike}>
             <PostActionPending />
             <input type="hidden" name="postId" value={post.id} />
             <input type="hidden" name="redirectTo" value={redirectTo} />
-            <button className="gc-reaction" type="submit" aria-pressed={liked}>
+            <button
+              className="gc-post-action"
+              type="submit"
+              aria-pressed={liked}
+              aria-label={liked ? "Unlike post" : "Like post"}
+            >
               <Heart
                 aria-hidden="true"
                 className={liked ? "fill-current" : ""}
               />
-              {liked ? "Liked" : "Like"}
+              <span className="gc-post-action-label">
+                {liked ? "Liked" : "Like"}
+              </span>
               <span>{post.likeCount}</span>
             </button>
           </form>
         ) : (
           <Link
-            className="gc-reaction"
+            className="gc-post-action"
+            aria-label="Sign in to like this post"
             href={accountEntryHref(
               "join",
               `/platform/posts/${post.id}`,
@@ -135,9 +149,12 @@ export function PostCard({
             )}
           >
             <Heart aria-hidden="true" />
-            Like<span>{post.likeCount}</span>
+            <span className="gc-post-action-label">Like</span>
+            <span>{post.likeCount}</span>
           </Link>
         )}
+        <SavePostControl postId={post.id} accountId={currentUserId ?? null} />
+        <PublicShareControls kind="post" id={post.id} compact />
       </div>
       {(post.hasParticipation ||
         !!post.eventOccurrenceId ||
@@ -152,10 +169,10 @@ export function PostCard({
           View post and comments
         </Link>
       )}
-      {fullDiscussion ? (
-        <CommentThread postId={post.id} commentId={commentId} />
-      ) : (
-        <CommentSheet postId={post.id} count={count} />
+      {fullDiscussion && (
+        <div id={`discussion-${post.id}`} className="scroll-mt-4">
+          <CommentThread postId={post.id} commentId={commentId} />
+        </div>
       )}
     </article>
   );

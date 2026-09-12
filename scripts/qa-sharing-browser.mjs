@@ -143,14 +143,16 @@ try {
       publishedAt: new Date()
     }
   });
+  const sourcePostCount = await db.platformPost.count({
+    where: { authorId: f.memberA.id }
+  });
   const canonical = config.origin + "/platform/posts/" + post.id;
   await go("/platform/posts/" + post.id);
-  await page.getByText("Share publicly", { exact: true }).click();
-  await page
-    .getByRole("button", { name: "Copy public link", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Share post", exact: true }).click();
+  await page.getByRole("button", { name: "Copy link", exact: true }).click();
   await page.getByText("Public link copied.", { exact: true }).waitFor();
   assert.deepEqual(await page.evaluate(() => window.__copied), [canonical]);
+  await page.getByRole("button", { name: "Share post", exact: true }).click();
   assert.equal(
     await page
       .getByRole("textbox", { name: "Public link", exact: true })
@@ -158,9 +160,7 @@ try {
     canonical
   );
   await page.evaluate(() => (window.__clipboardFail = true));
-  await page
-    .getByRole("button", { name: "Copy public link", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Copy link", exact: true }).click();
   await page
     .getByText(
       "The link was not copied. Select and copy the public link below.",
@@ -169,18 +169,19 @@ try {
     .waitFor();
   assert.equal((await page.evaluate(() => window.__copied)).length, 1);
   await page
-    .getByRole("button", { name: "Open share dialog", exact: true })
+    .getByRole("button", { name: "Share externally", exact: true })
     .click();
   await page.getByText("Sharing canceled.", { exact: true }).waitFor();
   await page.evaluate(() => (window.__shareMode = "success"));
   await page
-    .getByRole("button", { name: "Open share dialog", exact: true })
+    .getByRole("button", { name: "Share externally", exact: true })
     .click();
   await page.getByText("Share dialog completed.", { exact: true }).waitFor();
   assert.equal((await page.evaluate(() => window.__shared))[0].url, canonical);
   ok(
     "Copy success/failure and native cancel/completion report truthfully using the same canonical URL"
   );
+  await page.getByRole("button", { name: "Share post", exact: true }).click();
   await page.getByRole("button", { name: "Show QR code", exact: true }).click();
   const dialog = page.getByRole("dialog", {
     name: "Public link QR code",
@@ -214,9 +215,7 @@ try {
     where: { id: post.id },
     data: { status: "WITHDRAWN", withdrawnAt: new Date() }
   });
-  await page
-    .getByRole("button", { name: "Copy public link", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Copy link", exact: true }).click();
   await page
     .getByText("A public share link is not available for this page.", {
       exact: true
@@ -249,16 +248,14 @@ try {
   );
   await signIn(f.memberA);
   await go("/platform/posts/" + privatePost.id);
-  await page.getByText("Share publicly", { exact: true }).click();
+  await page.getByRole("button", { name: "Share post", exact: true }).click();
   await page
     .getByText("A public share link is not available for this page.", {
       exact: true
     })
     .waitFor();
   assert.equal(
-    await page
-      .getByRole("button", { name: "Copy public link", exact: true })
-      .count(),
+    await page.getByRole("button", { name: "Copy link", exact: true }).count(),
     0
   );
   ok(
@@ -323,304 +320,322 @@ try {
     "Shared occurrence URL follows normal sign-in return to authorized RSVP controls without granting membership"
   );
   await context.clearCookies();
-  await go("/platform/share");
-  await page.getByText("Share Godschurches", { exact: true }).last().click();
-  await page.getByRole("button", { name: "Show QR code" }).click();
-  const downloadPromise = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Download QR PNG" }).click();
-  const download = await downloadPromise;
-  const pngPath = output + "/site-qr.png";
-  await download.saveAs(pngPath);
-  const sharp = (await import("sharp")).default;
-  const raw = await sharp(pngPath)
-    .ensureAlpha()
-    .raw()
-    .toBuffer({ resolveWithObject: true });
   assert.equal(
-    jsQR(new Uint8ClampedArray(raw.data), raw.info.width, raw.info.height)
-      ?.data,
-    config.origin + "/platform"
+    await db.platformPost.count({ where: { authorId: f.memberA.id } }),
+    sourcePostCount
   );
-  await page.getByRole("button", { name: "Close QR code" }).click();
-  await bounded();
-  ok(
-    "App-level downloaded QR PNG independently decodes to canonical public entry at phone width"
-  );
-  const { friendInvitationCommand, readFriendInvitations } =
-    await import("../lib/platform/friend-invitations.ts");
-  await friendInvitationCommand(db, f.memberA.token, {
-    operation: "enable",
-    mutationId: randomUUID(),
-    accountId: f.memberA.id,
-    expectedVersion: 0,
-    consent: true
-  });
-  const personalUrl = (await readFriendInvitations(db, f.memberA.token)).url;
-  for (const actor of [null, f.memberA]) {
-    await context.clearCookies();
-    if (actor) await signIn(actor);
-    for (const width of [320, 390]) {
-      await page.setViewportSize({ width, height: 844 });
-      await go("/platform/menu");
-      const shortcut = page
-        .getByRole("list", { name: "Quick sharing" })
-        .getByRole("link");
-      const rect = await shortcut.boundingBox();
-      assert.ok(
-        rect && rect.y >= 0 && rect.y + rect.height < 844,
-        "QR shortcut is visible without scrolling"
-      );
-      assert.match(
-        await shortcut.innerText(),
-        actor ? /My QR code/ : /Share Godschurches/
-      );
-      await shortcut.focus();
-      assert.ok(await shortcut.evaluate((el) => el === document.activeElement));
-      await page.keyboard.press("Enter");
-      await page.waitForURL(
-        actor ? "**/platform/invitations" : "**/platform/share?qr=1"
-      );
-      const qr = page.getByRole("region", {
-        name: actor ? "Personal invitation QR code" : "Public link QR code"
-      });
-      await qr.getByRole("button", { name: "Download QR PNG" }).waitFor();
-      await page.waitForFunction(
-        () =>
-          !document.querySelector('section[aria-label$="QR code"] button')
-            ?.disabled
-      );
-      const pixels = await qr.locator("canvas").evaluate((c) => ({
-        data: Array.from(
-          c.getContext("2d").getImageData(0, 0, c.width, c.height).data
-        ),
-        width: c.width,
-        height: c.height
-      }));
-      assert.equal(
-        jsQR(new Uint8ClampedArray(pixels.data), pixels.width, pixels.height)
-          ?.data,
-        actor ? personalUrl : config.origin + "/platform"
-      );
-      await bounded();
-      await page.evaluate(
-        () => (document.documentElement.style.fontSize = "200%")
-      );
-      await bounded();
-      await page.goBack();
-      await page.waitForURL("**/platform/menu");
-      await bounded();
-    }
-  }
-  await context.clearCookies();
-  await page.setViewportSize({ width: 390, height: 844 });
-  ok(
-    "Menu QR shortcut visible at 320/390 signed in and out; keyboard one-tap QR decodes correctly, enlarged text and Back work"
-  );
-  await go("/platform/features");
-  await page.getByRole("searchbox", { name: "Search features" }).fill("photo");
-  await page
-    .getByRole("heading", { name: "Profile photos", exact: true })
-    .waitFor();
-  await page
-    .getByText(/^Signed-in accounts can manage their own photo/)
-    .waitFor();
-  assert.equal(await page.locator("main article").count(), 4);
-  await go("/platform/releases/community-baseline");
-  await page.getByRole("heading", { name: "Version 2026.09.12.0" }).waitFor();
-  await bounded();
-  const { currentRelease } = await import("../lib/platform/release-content.ts");
-  const changed = {
-    ...currentRelease,
-    id: "future-fixture",
-    version: "2026.09.13.1"
-  };
-  await page.route("**/api/platform/release", (route) =>
-    route.fulfill({
-      json: {
-        release: "2".repeat(40),
-        product: {
-          build: "2".repeat(40),
-          id: changed.id,
-          version: changed.version
-        },
-        notes: changed
-      }
-    })
-  );
-  await page.getByRole("button", { name: "Check for updates" }).click();
-  await page.getByRole("button", { name: "See what’s new" }).click();
-  await page
-    .getByRole("dialog")
-    .getByRole("heading", { name: "Version 2026.09.13.1" })
-    .waitFor();
-  assert.ok(
-    (await page.getByRole("dialog").innerText()).includes(
-      `still running ${currentRelease.version}`
-    )
-  );
-  await page.keyboard.press("Escape");
-  await page.getByRole("button", { name: "Read what’s new again" }).waitFor();
-  assert.match(
-    (await context.cookies()).find((c) => c.name === "gc_release_viewed")
-      ?.value ?? "",
-    /^future-fixture$/
-  );
-  await page.unroute("**/api/platform/release");
-  ok(
-    "Feature filtering, retained baseline notes and exact detected-release dialog preserve loaded version and viewed identity"
-  );
-  await db.platformPost.update({
-    where: { id: post.id },
-    data: { status: "PUBLISHED", withdrawnAt: null }
-  });
-  await signIn(f.memberA);
-  await go("/platform/profile/me");
-  const photoBytes = await sharp({
-    create: { width: 100, height: 100, channels: 3, background: "blue" }
-  })
-    .png()
-    .toBuffer();
-  await page.locator("input[type=file]").first().setInputFiles({
-    name: "fictional.png",
-    mimeType: "image/png",
-    buffer: photoBytes
-  });
-  await page.getByRole("button", { name: "Save avatar", exact: true }).click();
-  await page
-    .getByRole("button", { name: "Remove avatar", exact: true })
-    .waitFor();
-  await page.reload();
-  await page
-    .getByRole("button", { name: "Remove avatar", exact: true })
-    .waitFor();
-  await page.locator("input[type=file]").first().setInputFiles({
-    name: "fictional2.png",
-    mimeType: "image/png",
-    buffer: photoBytes
-  });
-  await page.getByRole("button", { name: "Discard selected photo" }).click();
-  await page
-    .getByRole("button", { name: "Remove avatar", exact: true })
-    .waitFor();
-  await go("/platform/posts/" + post.id);
-  await page.locator(".gc-post-author .gc-avatar img").waitFor();
-  await page.waitForFunction(() => {
-    const img = document.querySelector(".gc-post-author .gc-avatar img");
-    return img?.complete && img.naturalWidth > 0;
-  });
-  const photoComment = await db.platformPostComment.create({
-    data: {
-      postId: post.id,
-      authorId: f.memberA.id,
-      content: "Fictional avatar comment"
-    }
-  });
-  await page.reload();
-  await page
-    .locator(`[data-comment-id="${photoComment.id}"] .gc-avatar img`)
-    .waitFor();
-  await page.waitForFunction((id) => {
-    const img = document.querySelector(
-      `[data-comment-id="${id}"] .gc-avatar img`
+  if (!process.argv.includes("--core")) {
+    await go("/platform/share");
+    await page.getByText("Share Godschurches", { exact: true }).last().click();
+    await page.getByRole("button", { name: "Show QR code" }).click();
+    const downloadPromise = page.waitForEvent("download");
+    await page.getByRole("button", { name: "Download QR PNG" }).click();
+    const download = await downloadPromise;
+    const pngPath = output + "/site-qr.png";
+    await download.saveAs(pngPath);
+    const sharp = (await import("sharp")).default;
+    const raw = await sharp(pngPath)
+      .ensureAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+    assert.equal(
+      jsQR(new Uint8ClampedArray(raw.data), raw.info.width, raw.info.height)
+        ?.data,
+      config.origin + "/platform"
     );
-    return img?.complete && img.naturalWidth > 0;
-  }, photoComment.id);
-  await go("/platform/profile/me");
-  await page
-    .getByRole("button", { name: "Remove avatar", exact: true })
-    .click();
-  await page
-    .getByRole("button", { name: "Confirm remove avatar", exact: true })
-    .click();
-  await page.getByText(/^Avatar removed from current selection\./).waitFor();
-  ok(
-    "Existing photo editor uploads, persists on reload, preserves saved photo on cancel, serves authorized post avatar and removes it"
-  );
-  await context.clearCookies();
-  await go("/platform/churches/" + f.churchA.id);
-  await page
-    .getByRole("heading", { name: "Upcoming events", exact: true })
-    .waitFor();
-  await page.getByText("PUBLIC EVENT " + marker, { exact: true }).waitFor();
-  await bounded();
-  ok(
-    "Guest church overview includes actual authorized upcoming fixture event at phone width"
-  );
-  const metadata = async (path) => {
-    const r = await context.request.get(config.origin + path, {
-      headers: { "User-Agent": "Twitterbot/1.0" }
+    await page.getByRole("button", { name: "Close QR code" }).click();
+    await bounded();
+    ok(
+      "App-level downloaded QR PNG independently decodes to canonical public entry at phone width"
+    );
+    const { friendInvitationCommand, readFriendInvitations } =
+      await import("../lib/platform/friend-invitations.ts");
+    await friendInvitationCommand(db, f.memberA.token, {
+      operation: "enable",
+      mutationId: randomUUID(),
+      accountId: f.memberA.id,
+      expectedVersion: 0,
+      consent: true
     });
-    assert.match(r.headers()["cache-control"] ?? "", /no-store|private/);
-    const html = await r.text();
-    const tags = Object.fromEntries(
-      [
-        ...html.matchAll(
-          /<meta[^>]+(?:property|name)="([^"]+)"[^>]*content="([^"]*)"/g
-        )
-      ].map((m) => [m[1], m[2]])
+    const personalUrl = (await readFriendInvitations(db, f.memberA.token)).url;
+    for (const actor of [null, f.memberA]) {
+      await context.clearCookies();
+      if (actor) await signIn(actor);
+      for (const width of [320, 390]) {
+        await page.setViewportSize({ width, height: 844 });
+        await go("/platform/menu");
+        const shortcut = page
+          .getByRole("list", { name: "Quick sharing" })
+          .getByRole("link");
+        const rect = await shortcut.boundingBox();
+        assert.ok(
+          rect && rect.y >= 0 && rect.y + rect.height < 844,
+          "QR shortcut is visible without scrolling"
+        );
+        assert.match(
+          await shortcut.innerText(),
+          actor ? /My QR code/ : /Share Godschurches/
+        );
+        await shortcut.focus();
+        assert.ok(
+          await shortcut.evaluate((el) => el === document.activeElement)
+        );
+        await page.keyboard.press("Enter");
+        await page.waitForURL(
+          actor ? "**/platform/invitations" : "**/platform/share?qr=1"
+        );
+        const qr = page.getByRole("region", {
+          name: actor ? "Personal invitation QR code" : "Public link QR code"
+        });
+        await qr.getByRole("button", { name: "Download QR PNG" }).waitFor();
+        await page.waitForFunction(
+          () =>
+            !document.querySelector('section[aria-label$="QR code"] button')
+              ?.disabled
+        );
+        const pixels = await qr.locator("canvas").evaluate((c) => ({
+          data: Array.from(
+            c.getContext("2d").getImageData(0, 0, c.width, c.height).data
+          ),
+          width: c.width,
+          height: c.height
+        }));
+        assert.equal(
+          jsQR(new Uint8ClampedArray(pixels.data), pixels.width, pixels.height)
+            ?.data,
+          actor ? personalUrl : config.origin + "/platform"
+        );
+        await bounded();
+        await page.evaluate(
+          () => (document.documentElement.style.fontSize = "200%")
+        );
+        await bounded();
+        await page.goBack();
+        await page.waitForURL("**/platform/menu");
+        await bounded();
+      }
+    }
+    await context.clearCookies();
+    await page.setViewportSize({ width: 390, height: 844 });
+    ok(
+      "Menu QR shortcut visible at 320/390 signed in and out; keyboard one-tap QR decodes correctly, enlarged text and Back work"
     );
-    return { tags, html };
-  };
-  await db.platformPost.update({
-    where: { id: post.id },
-    data: { status: "PUBLISHED", withdrawnAt: null }
-  });
-  const pub = await metadata("/platform/posts/" + post.id);
-  assert.ok(pub.tags["og:description"].includes(marker));
-  assert.equal(pub.tags["og:image"], config.origin + "/brand/share-card.png");
-  assert.equal(pub.tags["og:image:width"], "1200");
-  assert.equal(pub.tags["og:image:height"], "630");
-  assert.equal(pub.tags["twitter:card"], "summary_large_image");
-  const churchMeta = await metadata("/platform/churches/" + f.churchA.id);
-  assert.ok(churchMeta.tags["og:title"].includes(f.churchA.name));
-  const eventMeta = await metadata(
-    "/platform/events/" + event.occurrences[0].id
-  );
-  assert.ok(eventMeta.tags["og:title"].includes("PUBLIC EVENT"));
-  for (const path of [
-    "/platform/posts/" + privatePost.id,
-    "/platform/posts/missing-share-resource",
-    "/platform/profile/" + f.memberA.username
-  ]) {
-    const r = await metadata(path);
-    assert.match(r.tags["og:title"], /^Godschurches(?: \| The Revival)?$/);
-    assert.equal(r.tags["og:image"], config.origin + "/brand/share-card.png");
-    assert.ok(!JSON.stringify(r.tags).includes("PRIVATE SHARE SECRET"));
-    assert.ok(!JSON.stringify(r.tags).includes(f.memberA.email));
+    await go("/platform/features");
+    await page
+      .getByRole("searchbox", { name: "Search features" })
+      .fill("photo");
+    await page
+      .getByRole("heading", { name: "Profile photos", exact: true })
+      .waitFor();
+    await page
+      .getByText(/^Signed-in accounts can manage their own photo/)
+      .waitFor();
+    assert.equal(
+      await page
+        .getByRole("heading", { name: "Our mission", exact: true })
+        .count(),
+      0
+    );
+    await go("/platform/releases/community-baseline");
+    await page.getByRole("heading", { name: "Version 2026.09.12.0" }).waitFor();
+    await bounded();
+    const { currentRelease } =
+      await import("../lib/platform/release-content.ts");
+    const changed = {
+      ...currentRelease,
+      id: "future-fixture",
+      version: "2026.09.13.1"
+    };
+    await page.route("**/api/platform/release", (route) =>
+      route.fulfill({
+        json: {
+          release: "2".repeat(40),
+          product: {
+            build: "2".repeat(40),
+            id: changed.id,
+            version: changed.version
+          },
+          notes: changed
+        }
+      })
+    );
+    await page.getByRole("button", { name: "Check for updates" }).click();
+    await page.getByRole("button", { name: "See what’s new" }).click();
+    await page
+      .getByRole("dialog")
+      .getByRole("heading", { name: "Version 2026.09.13.1" })
+      .waitFor();
+    assert.ok(
+      (await page.getByRole("dialog").innerText()).includes(
+        `still running ${currentRelease.version}`
+      )
+    );
+    await page.keyboard.press("Escape");
+    await page.getByRole("button", { name: "Read what’s new again" }).waitFor();
+    assert.match(
+      (await context.cookies()).find((c) => c.name === "gc_release_viewed")
+        ?.value ?? "",
+      /^future-fixture$/
+    );
+    await page.unroute("**/api/platform/release");
+    ok(
+      "Feature filtering, retained baseline notes and exact detected-release dialog preserve loaded version and viewed identity"
+    );
+    await db.platformPost.update({
+      where: { id: post.id },
+      data: { status: "PUBLISHED", withdrawnAt: null }
+    });
+    await signIn(f.memberA);
+    await go("/platform/profile/me");
+    const photoBytes = await sharp({
+      create: { width: 100, height: 100, channels: 3, background: "blue" }
+    })
+      .png()
+      .toBuffer();
+    await page.locator("input[type=file]").first().setInputFiles({
+      name: "fictional.png",
+      mimeType: "image/png",
+      buffer: photoBytes
+    });
+    await page
+      .getByRole("button", { name: "Save avatar", exact: true })
+      .click();
+    await page
+      .getByRole("button", { name: "Remove avatar", exact: true })
+      .waitFor();
+    await page.reload();
+    await page
+      .getByRole("button", { name: "Remove avatar", exact: true })
+      .waitFor();
+    await page.locator("input[type=file]").first().setInputFiles({
+      name: "fictional2.png",
+      mimeType: "image/png",
+      buffer: photoBytes
+    });
+    await page.getByRole("button", { name: "Discard selected photo" }).click();
+    await page
+      .getByRole("button", { name: "Remove avatar", exact: true })
+      .waitFor();
+    await go("/platform/posts/" + post.id);
+    await page.locator(".gc-post-author .gc-avatar img").waitFor();
+    await page.waitForFunction(() => {
+      const img = document.querySelector(".gc-post-author .gc-avatar img");
+      return img?.complete && img.naturalWidth > 0;
+    });
+    const photoComment = await db.platformPostComment.create({
+      data: {
+        postId: post.id,
+        authorId: f.memberA.id,
+        content: "Fictional avatar comment"
+      }
+    });
+    await page.reload();
+    await page
+      .locator(`[data-comment-id="${photoComment.id}"] .gc-avatar img`)
+      .waitFor();
+    await page.waitForFunction((id) => {
+      const img = document.querySelector(
+        `[data-comment-id="${id}"] .gc-avatar img`
+      );
+      return img?.complete && img.naturalWidth > 0;
+    }, photoComment.id);
+    await go("/platform/profile/me");
+    await page
+      .getByRole("button", { name: "Remove avatar", exact: true })
+      .click();
+    await page
+      .getByRole("button", { name: "Confirm remove avatar", exact: true })
+      .click();
+    await page.getByText(/^Avatar removed from current selection\./).waitFor();
+    ok(
+      "Existing photo editor uploads, persists on reload, preserves saved photo on cancel, serves authorized post avatar and removes it"
+    );
+    await context.clearCookies();
+    await go("/platform/churches/" + f.churchA.id);
+    await page
+      .getByRole("heading", { name: "Upcoming events", exact: true })
+      .waitFor();
+    await page.getByText("PUBLIC EVENT " + marker, { exact: true }).waitFor();
+    await bounded();
+    ok(
+      "Guest church overview includes actual authorized upcoming fixture event at phone width"
+    );
+    const metadata = async (path) => {
+      const r = await context.request.get(config.origin + path, {
+        headers: { "User-Agent": "Twitterbot/1.0" }
+      });
+      assert.match(r.headers()["cache-control"] ?? "", /no-store|private/);
+      const html = await r.text();
+      const tags = Object.fromEntries(
+        [
+          ...html.matchAll(
+            /<meta[^>]+(?:property|name)="([^"]+)"[^>]*content="([^"]*)"/g
+          )
+        ].map((m) => [m[1], m[2]])
+      );
+      return { tags, html };
+    };
+    await db.platformPost.update({
+      where: { id: post.id },
+      data: { status: "PUBLISHED", withdrawnAt: null }
+    });
+    const pub = await metadata("/platform/posts/" + post.id);
+    assert.ok(pub.tags["og:description"].includes(marker));
+    assert.equal(pub.tags["og:image"], config.origin + "/brand/share-card.png");
+    assert.equal(pub.tags["og:image:width"], "1200");
+    assert.equal(pub.tags["og:image:height"], "630");
+    assert.equal(pub.tags["twitter:card"], "summary_large_image");
+    const churchMeta = await metadata("/platform/churches/" + f.churchA.id);
+    assert.ok(churchMeta.tags["og:title"].includes(f.churchA.name));
+    const eventMeta = await metadata(
+      "/platform/events/" + event.occurrences[0].id
+    );
+    assert.ok(eventMeta.tags["og:title"].includes("PUBLIC EVENT"));
+    for (const path of [
+      "/platform/posts/" + privatePost.id,
+      "/platform/posts/missing-share-resource",
+      "/platform/profile/" + f.memberA.username
+    ]) {
+      const r = await metadata(path);
+      assert.match(r.tags["og:title"], /^Godschurches(?: \| The Revival)?$/);
+      assert.equal(r.tags["og:image"], config.origin + "/brand/share-card.png");
+      assert.ok(!JSON.stringify(r.tags).includes("PRIVATE SHARE SECRET"));
+      assert.ok(!JSON.stringify(r.tags).includes(f.memberA.email));
+    }
+    await db.platformPost.update({
+      where: { id: post.id },
+      data: { status: "WITHDRAWN", withdrawnAt: new Date() }
+    });
+    assert.match(
+      (await metadata("/platform/posts/" + post.id)).tags["og:title"],
+      /^Godschurches(?: \| The Revival)?$/
+    );
+    await db.calendarEvent.update({
+      where: { id: event.id },
+      data: { visibility: "PRIVATE" }
+    });
+    assert.equal(
+      (await metadata("/platform/events/" + event.occurrences[0].id)).tags[
+        "og:title"
+      ],
+      "Godschurches"
+    );
+    const png = await context.request.get(
+      config.origin + "/brand/share-card.png"
+    );
+    assert.equal(png.status(), 200);
+    const bytes = await png.body();
+    assert.equal(bytes.readUInt32BE(16), 1200);
+    assert.equal(bytes.readUInt32BE(20), 630);
+    ok(
+      "Actual crawler HTML has public-safe metadata and generic private/missing/withdrawn/profile branding; absolute PNG is 1200x630"
+    );
+    await context.clearCookies();
+    assert.match(
+      (await metadata("/platform/posts/" + privatePost.id)).tags["og:title"],
+      /^Godschurches(?: \| The Revival)?$/
+    );
   }
-  await db.platformPost.update({
-    where: { id: post.id },
-    data: { status: "WITHDRAWN", withdrawnAt: new Date() }
-  });
-  assert.match(
-    (await metadata("/platform/posts/" + post.id)).tags["og:title"],
-    /^Godschurches(?: \| The Revival)?$/
-  );
-  await db.calendarEvent.update({
-    where: { id: event.id },
-    data: { visibility: "PRIVATE" }
-  });
-  assert.equal(
-    (await metadata("/platform/events/" + event.occurrences[0].id)).tags[
-      "og:title"
-    ],
-    "Godschurches"
-  );
-  const png = await context.request.get(
-    config.origin + "/brand/share-card.png"
-  );
-  assert.equal(png.status(), 200);
-  const bytes = await png.body();
-  assert.equal(bytes.readUInt32BE(16), 1200);
-  assert.equal(bytes.readUInt32BE(20), 630);
-  ok(
-    "Actual crawler HTML has public-safe metadata and generic private/missing/withdrawn/profile branding; absolute PNG is 1200x630"
-  );
-  await context.clearCookies();
-  assert.match(
-    (await metadata("/platform/posts/" + privatePost.id)).tags["og:title"],
-    /^Godschurches(?: \| The Revival)?$/
-  );
   assert.deepEqual(errors, []);
   writeFileSync(
     output + "/receipt.json",

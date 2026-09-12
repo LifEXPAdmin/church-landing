@@ -241,9 +241,9 @@ export function SavedLibrary({
         disabled={busy || !!pending}
         onClick={() => void refresh()}
       >
-        Refresh saved posts
+        Refresh bookmarks
       </button>
-      {busy && <p role="status">Checking your saved posts…</p>}
+      {busy && <p role="status">Checking your bookmarks…</p>}
       {!hidden && (
         <>
           <form
@@ -347,7 +347,7 @@ export function SavedLibrary({
               className="gc-button gc-button-quiet"
               href="/platform/saved"
             >
-              All saved posts
+              All bookmarks
             </Link>
             <Link
               prefetch={false}
@@ -423,9 +423,9 @@ export function SavedLibrary({
                 : collectionId
                   ? (collections?.items.find((c) => c.id === collectionId)
                       ?.name ?? "Selected collection")
-                  : "All saved posts"}
+                  : "All bookmarks"}
             </h2>
-            {!saved?.items.length && <p>No saved posts in this view.</p>}
+            {!saved?.items.length && <p>No bookmarks in this view.</p>}
             {saved?.items.map((row) => (
               <SavedItem
                 key={`${row.id}:${row.version}`}
@@ -441,7 +441,7 @@ export function SavedLibrary({
                 className="gc-button gc-button-quiet"
                 href={`/platform/saved?${new URLSearchParams({ ...(collectionId ? { collectionId } : {}), after: saved.nextCursor })}`}
               >
-                More saved posts
+                More bookmarks
               </Link>
             )}
           </section>

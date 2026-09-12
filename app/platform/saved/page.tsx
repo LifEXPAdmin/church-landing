@@ -5,7 +5,7 @@ import { SavedLibrary } from "@/components/platform/saved-library";
 import { getCurrentPlatformUser } from "@/lib/platform/session";
 import { readerId } from "@/lib/platform/reader-navigation";
 export const metadata: Metadata = {
-  title: "Your saved posts",
+  title: "Bookmarks",
   robots: { index: false, follow: false }
 };
 export default async function SavedPage({
@@ -22,7 +22,7 @@ export default async function SavedPage({
       {user ? (
         <section className="container-shell py-10">
           <div className="mx-auto max-w-2xl space-y-5">
-            <h1 className="text-4xl">Your saved posts</h1>
+            <h1 className="text-4xl">Bookmarks</h1>
             <SavedLibrary
               key={`${user.id}-${collectionId ?? "all"}-${after ?? "first"}`}
               owner={user.id}
