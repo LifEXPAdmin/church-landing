@@ -112,8 +112,11 @@ try {
   const f = await seedParticipation(db);
   await signIn(f.ada);
   await go("/platform");
-  await page.locator("#compose-post > summary").click();
+  await page.locator("#compose-post").click();
   const composer = page.getByRole("form", { name: "Publish post" });
+  await composer
+    .getByText("Author, audience and replies", { exact: true })
+    .click();
   await composer
     .getByLabel("Also share on a church page")
     .selectOption(f.churchA.id);
@@ -123,7 +126,7 @@ try {
     .fill("Fictional poll composer preserves draft permission.");
   await composer.getByRole("complementary", { name: "Add a poll" }).waitFor();
   await composer
-    .getByRole("button", { name: "Save draft now", exact: true })
+    .getByRole("button", { name: "Save draft", exact: true })
     .click();
   await waitUntil(
     async () =>
@@ -140,9 +143,7 @@ try {
   await composer
     .getByLabel("Share my personal post on", { exact: false })
     .check();
-  await composer
-    .getByRole("button", { name: "Publish post", exact: true })
-    .click();
+  await composer.getByRole("button", { name: "Post", exact: true }).click();
   await composer
     .getByRole("link", { name: "Add a poll", exact: true })
     .waitFor();

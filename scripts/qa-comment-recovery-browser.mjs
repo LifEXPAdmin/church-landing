@@ -146,9 +146,7 @@ try {
     mentionIds: [],
     authorChurchId: null
   });
-  await form()
-    .getByRole("button", { name: "Save comment draft", exact: true })
-    .click();
+  await form().getByRole("button", { name: "Save draft", exact: true }).click();
   await form()
     .getByRole("button", { name: "Review saved copy", exact: true })
     .click();
@@ -172,9 +170,7 @@ try {
     await form().getByLabel("Comment text", { exact: true }).inputValue(),
     "Other tab saved"
   );
-  await form()
-    .getByRole("button", { name: "Send comment", exact: true })
-    .click();
+  await form().getByRole("button", { name: "Reply", exact: true }).click();
   await row().waitFor({ state: "detached" });
   assert.equal(
     await db.platformPostComment.count({

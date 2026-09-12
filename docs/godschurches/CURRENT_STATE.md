@@ -1,5 +1,17 @@
 # Godschurches current state
 
+## Shared post and reply editor — September 12, 2026
+
+Product `2026.09.12.21` is locally verified and prepared for release. Posts and
+replies share a responsive Close/Save draft/Post-or-Reply frame, compact optional
+tools, exact-request recovery and explicit close choices. Saved drafts, reply
+permissions, photo sources and publication access checks retain their authority.
+Twenty browser groups, 26 controller/release tests, 12 workspace service tests,
+scoped lint/types/build and a fresh backup/restore pass. See
+[Shared composer evidence](SHARED_COMPOSER_REPORT.md). Canonical deployment
+verification remains pending; the live compact-actions receipt below still
+identifies the serving application. Parent and physical acceptance remain open.
+
 ## Compact social controls — September 12, 2026
 
 Product `2026.09.12.20`, application `8b8219bb30f5301c1ee092e11a698133acc21927`,

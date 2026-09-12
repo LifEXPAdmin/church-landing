@@ -42,24 +42,6 @@ export function PostDraftFields({
     length = normalizedPostText(draft.content).length;
   return (
     <>
-      <label className="block font-semibold" htmlFor={`${id}-type`}>
-        Post category
-      </label>
-      <select
-        id={`${id}-type`}
-        name="type"
-        className={portalInputClass}
-        value={draft.type}
-        onChange={(e) =>
-          change({ ...draft, type: e.target.value as PlatformPostType })
-        }
-      >
-        {Object.entries(postTypeLabels).map(([value, label]) => (
-          <option key={value} value={value}>
-            {label}
-          </option>
-        ))}
-      </select>
       <div>
         <label className="block font-semibold" htmlFor={`${id}-content`}>
           Post content
@@ -87,55 +69,78 @@ export function PostDraftFields({
           “1. ”. Text and Scripture references appear as written.
         </p>
       </div>
-      <div>
-        <label className="block font-semibold" htmlFor={`${id}-scripture`}>
-          Optional Scripture reference
+      <details className="space-y-3">
+        <summary className="cursor-pointer py-2 font-semibold">
+          Category, Scripture, link and topics
+        </summary>
+        <label className="block font-semibold" htmlFor={`${id}-type`}>
+          Post category
         </label>
-        <input
-          id={`${id}-scripture`}
-          name="scripture"
+        <select
+          id={`${id}-type`}
+          name="type"
           className={portalInputClass}
-          value={draft.scripture}
-          aria-describedby={`${id}-scripture-count`}
-          onChange={(e) => change({ ...draft, scripture: e.target.value })}
-        />
-        <p id={`${id}-scripture-count`} className="text-sm text-gc-muted">
-          {normalizedPostText(draft.scripture).length} / 120 characters
-        </p>
-      </div>
-      <PostLinkFields draft={draft} change={change} />
-      <fieldset className="min-w-0">
-        <legend className="font-semibold">
-          Topics ({draft.topics.length} / 5)
-        </legend>
-        <div className="flex flex-wrap gap-x-4 gap-y-1">
-          {POST_TOPICS.map((topic) => (
-            <label
-              key={topic}
-              className="flex min-h-11 items-center gap-2 capitalize"
-            >
-              <input
-                type="checkbox"
-                name="topics"
-                value={topic}
-                checked={draft.topics.includes(topic)}
-                disabled={
-                  draft.topics.length >= 5 && !draft.topics.includes(topic)
-                }
-                onChange={(e) =>
-                  change({
-                    ...draft,
-                    topics: e.target.checked
-                      ? [...draft.topics, topic]
-                      : draft.topics.filter((t) => t !== topic)
-                  })
-                }
-              />
-              {topic}
-            </label>
+          value={draft.type}
+          onChange={(e) =>
+            change({ ...draft, type: e.target.value as PlatformPostType })
+          }
+        >
+          {Object.entries(postTypeLabels).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
           ))}
+        </select>
+        <div>
+          <label className="block font-semibold" htmlFor={`${id}-scripture`}>
+            Optional Scripture reference
+          </label>
+          <input
+            id={`${id}-scripture`}
+            name="scripture"
+            className={portalInputClass}
+            value={draft.scripture}
+            aria-describedby={`${id}-scripture-count`}
+            onChange={(e) => change({ ...draft, scripture: e.target.value })}
+          />
+          <p id={`${id}-scripture-count`} className="text-sm text-gc-muted">
+            {normalizedPostText(draft.scripture).length} / 120 characters
+          </p>
         </div>
-      </fieldset>
+        <PostLinkFields draft={draft} change={change} />
+        <fieldset className="min-w-0">
+          <legend className="font-semibold">
+            Topics ({draft.topics.length} / 5)
+          </legend>
+          <div className="flex flex-wrap gap-x-4 gap-y-1">
+            {POST_TOPICS.map((topic) => (
+              <label
+                key={topic}
+                className="flex min-h-11 items-center gap-2 capitalize"
+              >
+                <input
+                  type="checkbox"
+                  name="topics"
+                  value={topic}
+                  checked={draft.topics.includes(topic)}
+                  disabled={
+                    draft.topics.length >= 5 && !draft.topics.includes(topic)
+                  }
+                  onChange={(e) =>
+                    change({
+                      ...draft,
+                      topics: e.target.checked
+                        ? [...draft.topics, topic]
+                        : draft.topics.filter((t) => t !== topic)
+                    })
+                  }
+                />
+                {topic}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      </details>
     </>
   );
 }

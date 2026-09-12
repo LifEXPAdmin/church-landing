@@ -333,6 +333,9 @@ try {
       });
     await page.keyboard.press("ArrowRight");
     assert.equal(page.url(), before);
+    await dialog
+      .getByRole("button", { name: "Write a comment", exact: true })
+      .click();
     const composer = dialog.getByRole("form", {
       name: "Write a comment",
       exact: true
@@ -340,17 +343,17 @@ try {
     await composer
       .getByLabel("Comment text", { exact: true })
       .fill(`Reader draft ${width} ${path}`);
-    await dialog
-      .getByRole("button", { name: "Close discussion", exact: true })
+    await composer
+      .getByRole("button", { name: "Close composer", exact: true })
       .click();
-    await dialog
-      .getByText(
-        "Save or resolve your comment before closing this discussion.",
-        { exact: true }
-      )
+    await composer
+      .getByRole("group", { name: "Keep your draft", exact: true })
       .waitFor();
     await composer
-      .getByRole("button", { name: "Save comment draft", exact: true })
+      .getByRole("button", { name: "Keep writing", exact: true })
+      .click();
+    await composer
+      .getByRole("button", { name: "Save draft", exact: true })
       .click();
     await composer.getByText("Saved privately.", { exact: true }).waitFor();
     await dialog.screenshot({
@@ -360,7 +363,7 @@ try {
     });
     if (width === 1280) {
       await composer
-        .getByRole("button", { name: "Send comment", exact: true })
+        .getByRole("button", { name: "Reply", exact: true })
         .click();
       await dialog
         .locator("article[data-comment-id]")
@@ -415,6 +418,10 @@ try {
         .getByText("Reader edited after lost response", { exact: true })
         .waitFor({ state: "detached" });
     }
+    if (await composer.isVisible())
+      await composer
+        .getByRole("button", { name: "Close composer", exact: true })
+        .click();
     await dialog
       .getByRole("button", { name: "Close discussion", exact: true })
       .click();
@@ -465,8 +472,14 @@ try {
     JSON.stringify({ results, pageErrors: errors }, null, 2)
   );
 } catch (error) {
-  await page.screenshot({path:output+"/failure.png"}).catch(()=>{});
-  writeFileSync(output+"/failure.txt",await page.locator("body").innerText().catch(()=>""));
+  await page.screenshot({ path: output + "/failure.png" }).catch(() => {});
+  writeFileSync(
+    output + "/failure.txt",
+    await page
+      .locator("body")
+      .innerText()
+      .catch(() => "")
+  );
   throw error;
 } finally {
   await context.close();

@@ -49,12 +49,10 @@ export async function ChurchPosts({
         Each post keeps its own audience.
       </p>
       {result.canShare && (
-        <details className="gc-composer">
-          <summary className="min-h-11 cursor-pointer py-3">
-            Share on this church page
-          </summary>
-          <PostComposer initialChurch={churchId} />
-        </details>
+        <PostComposer
+          initialChurch={churchId}
+          label="Share on this church page"
+        />
       )}
       {result.pinned.length > 0 && (
         <section aria-label="Pinned church notices" className="space-y-4">

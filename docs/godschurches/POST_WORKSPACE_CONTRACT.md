@@ -261,3 +261,31 @@ and category. URL links retain the opaque cursor exactly. Back/Forward and an
 unchanged church-discovery handoff restore the same query/category/filter/page.
 Invalid or mismatched page references offer Restart search with the same filters.
 Safe sign-in returns preserve only bounded search state, never authority fields.
+
+## Shared composer presentation and closing
+
+Posts and comments use the same responsive dialog frame. Close is at the top
+left, Save draft at the top right, and Post or Reply at the bottom. The frame
+keeps its primary action outside the scrolling fields and follows the visual
+viewport when an on-screen keyboard reduces the available space. Desktop width
+is bounded to 600px. The shell supplies presentation and focus/Back handling;
+post and comment controllers retain their distinct service protocols.
+
+Close, Escape and browser Back preserve unsent work. A dirty editor offers Save
+and close, Discard unsent changes, and Keep writing. Ordinary discard restores
+the last acknowledged complete snapshot in memory, retaining its ID and version;
+it does not call delete-draft. A known rejected conflict can instead discard only
+that local working copy: posts start an empty new identity at version zero, and
+comments require a fresh target read on reopening. Existing saved copies and
+tombstones remain untouched. The wording distinguishes this from deleting a saved
+draft in the library. An uncertain request cannot be abandoned through this path:
+its exact-body retry must first resolve the outcome. In-flight writes, concealed
+identity and independent unsaved photo work retain their guards.
+
+Saving while typing does not close the editor if newer changes are still dirty.
+Successful comment publication consumes only its submitted draft. Starting a new
+post after publication preserves registered unsent work from other controls. An
+older post snapshot still requires an explicit reply choice; discard restores
+its unresolved value instead of widening permissions. Photos retain existing
+source IDs/versions, and church/event, author, audience and reply checks remain
+canonical publication checks. This visual shell adds no quote-source contract.

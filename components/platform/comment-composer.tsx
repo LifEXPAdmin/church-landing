@@ -1,11 +1,22 @@
 "use client";
-import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore
+} from "react";
 import { CommentDraftController } from "@/lib/platform/comment-draft-controller";
 import { socialRequest } from "@/lib/platform/social-client";
+import {
+  ComposerDialog,
+  ComposerFrame,
+  ComposerCloseChoice
+} from "./composer-shell";
 import { CommentMentions } from "./comment-mentions";
 import { useUnsavedSocialWork } from "./use-unsaved-social-work";
 
-export function CommentComposer({
+function OpenCommentComposer({
   postId,
   owner,
   replyToId = null,
@@ -13,7 +24,8 @@ export function CommentComposer({
   draftId,
   hidden,
   unavailable = false,
-  onSent
+  onSent,
+  onClose
 }: {
   postId: string;
   owner: string;
@@ -23,6 +35,7 @@ export function CommentComposer({
   hidden: boolean;
   unavailable?: boolean;
   onSent: () => void;
+  onClose: () => void;
 }) {
   const controller = useMemo(
     () =>
@@ -41,10 +54,23 @@ export function CommentComposer({
     controller.getSnapshot,
     controller.getSnapshot
   );
+  const formRef = useRef<HTMLFormElement>(null);
+  useEffect(() => {
+    if (state.ready)
+      formRef.current
+        ?.querySelector<HTMLTextAreaElement>("textarea")
+        ?.focus({ preventScroll: true });
+  }, [state.ready]);
   const [churches, setChurches] = useState<
     { id: string; name: string; canPublish: boolean }[]
   >([]);
   const [notice, setNotice] = useState("");
+  const [closeChoice, setCloseChoice] = useState(false);
+  const close = () => {
+    const s = controller.getSnapshot();
+    if (s.dirty || s.busy || s.retry || s.conflict) setCloseChoice(true);
+    else onClose();
+  };
   useEffect(() => {
     void controller.start();
     return controller.dispose;
@@ -76,10 +102,7 @@ export function CommentComposer({
       saving: state.busy || state.retry,
       conflict: state.conflict
     },
-    () =>
-      setNotice(
-        "Save or resolve this comment before leaving. Your text is still here."
-      )
+    () => setCloseChoice(true)
   );
   const disabled = !state.ready || state.sending || !!state.createdId;
   if (hidden) return null;
@@ -135,176 +158,251 @@ export function CommentComposer({
       </div>
     );
   return (
-    <form
-      data-reader-dirty={state.dirty || state.retry || state.conflict}
-      data-reader-busy={state.busy}
-      aria-label={replyToId ? "Write a reply" : "Write a comment"}
-      className="space-y-3 rounded-lg border border-gc-divider p-3"
-      onSubmit={(e) => {
-        e.preventDefault();
-        void controller.send().then((sent) => {
-          if (sent) onSent();
-        });
-      }}
+    <ComposerDialog
+      title={replyToId ? "Write a reply" : "Write a comment"}
+      onClose={close}
     >
-      <h3 className="font-semibold">
-        {replyToId
-          ? `Reply to ${replyName ?? "this comment"}`
-          : "Write a comment"}
-      </h3>
-      <label className="block">
-        Comment text
-        <textarea
-          aria-label="Comment text"
-          className="mt-1 block min-h-28 w-full rounded border p-2 text-[length:var(--gc-reader-size)] leading-relaxed"
-          value={state.fields.content}
-          maxLength={10000}
-          disabled={disabled}
-          onChange={(e) =>
-            controller.change({ ...state.fields, content: e.target.value })
+      <form
+        ref={formRef}
+        data-reader-dirty={state.dirty || state.retry || state.conflict}
+        data-reader-busy={state.busy}
+        aria-label={replyToId ? "Write a reply" : "Write a comment"}
+        className="h-full min-h-0"
+        onSubmit={(e) => {
+          e.preventDefault();
+          void controller.send().then((sent) => {
+            if (sent) onSent();
+          });
+        }}
+      >
+        <ComposerFrame
+          title={replyToId ? "Write a reply" : "Write a comment"}
+          onClose={close}
+          save={
+            <button
+              type="button"
+              className="gc-button gc-button-quiet"
+              disabled={
+                disabled ||
+                state.busy ||
+                state.conflict ||
+                state.retry ||
+                !state.dirty
+              }
+              onClick={() => {
+                setNotice("");
+                void controller.save();
+              }}
+            >
+              {state.busy && !state.sending ? "Saving…" : "Save draft"}
+            </button>
           }
-        />
-      </label>
-      <p className="text-sm text-gc-muted">
-        {state.fields.content.replace(/\r\n?/g, "\n").trim().length}/1,500
-        characters to send. Drafts can keep up to 10,000.
-      </p>
-      <label className="block">
-        Speaking as
-        <select
-          className="ml-2 max-w-full rounded border p-2"
-          disabled={disabled}
-          value={state.fields.authorChurchId ?? ""}
-          onChange={(e) =>
-            controller.change({
-              ...state.fields,
-              authorChurchId: e.target.value || null
-            })
+          footer={
+            <button
+              type="submit"
+              className="gc-button gc-button-primary"
+              disabled={
+                disabled ||
+                state.busy ||
+                state.conflict ||
+                state.retry ||
+                state.fields.content.trim().length < 2 ||
+                state.fields.content.trim().length > 1500
+              }
+            >
+              Reply
+            </button>
           }
         >
-          <option value="">My personal profile</option>
-          {state.fields.authorChurchId &&
-            !churches.some((c) => c.id === state.fields.authorChurchId) && (
-              <option value={state.fields.authorChurchId}>
-                Saved church identity · access must be checked
-              </option>
+          {closeChoice && (
+            <ComposerCloseChoice
+              busy={state.busy}
+              conflict={state.conflict}
+              recover={state.retry || !state.ready}
+              onCancel={() => setCloseChoice(false)}
+              onSave={() =>
+                void controller.save().then((saved) => {
+                  if (saved && !controller.getSnapshot().dirty) onClose();
+                })
+              }
+              onDiscard={() => {
+                if (controller.discardChanges()) onClose();
+              }}
+            />
+          )}
+          <p className="text-sm text-gc-muted">
+            Replying to{" "}
+            {replyToId ? (replyName ?? "this comment") : "this post"}
+          </p>
+          <label className="block">
+            Comment text
+            <textarea
+              aria-label="Comment text"
+              className="mt-1 block min-h-28 w-full rounded border p-2 text-[length:var(--gc-reader-size)] leading-relaxed"
+              value={state.fields.content}
+              maxLength={10000}
+              disabled={disabled}
+              onChange={(e) =>
+                controller.change({ ...state.fields, content: e.target.value })
+              }
+            />
+          </label>
+          <p className="text-sm text-gc-muted">
+            {state.fields.content.replace(/\r\n?/g, "\n").trim().length}/1,500
+            characters to send. Drafts can keep up to 10,000.
+          </p>
+          <details className="space-y-3">
+            <summary className="cursor-pointer py-2 font-semibold">
+              Identity and mentions
+            </summary>
+            <label className="block">
+              Speaking as
+              <select
+                className="ml-2 max-w-full rounded border p-2"
+                disabled={disabled}
+                value={state.fields.authorChurchId ?? ""}
+                onChange={(e) =>
+                  controller.change({
+                    ...state.fields,
+                    authorChurchId: e.target.value || null
+                  })
+                }
+              >
+                <option value="">My personal profile</option>
+                {state.fields.authorChurchId &&
+                  !churches.some(
+                    (c) => c.id === state.fields.authorChurchId
+                  ) && (
+                    <option value={state.fields.authorChurchId}>
+                      Saved church identity · access must be checked
+                    </option>
+                  )}
+                {churches.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <CommentMentions
+              postId={postId}
+              owner={owner}
+              ids={state.fields.mentionIds}
+              disabled={disabled}
+              onChange={(mentionIds, person) =>
+                controller.change({
+                  ...state.fields,
+                  mentionIds,
+                  content: person
+                    ? `${state.fields.content}${state.fields.content ? " " : ""}@${person.username}`
+                    : state.fields.content
+                })
+              }
+            />
+          </details>
+          <p role="status">{notice || state.message}</p>
+          {state.conflict && (
+            <div className="space-y-2">
+              <p>
+                The saved draft changed or became unavailable. Your unsent text
+                stays above. Copy it before replacing it with a saved copy.
+              </p>
+              <button
+                type="button"
+                className="gc-button gc-button-quiet"
+                onClick={() => void controller.review()}
+              >
+                Review saved copy
+              </button>
+            </div>
+          )}
+          {state.latest && (
+            <aside
+              aria-label="Saved comment copy"
+              className="space-y-2 rounded border p-3"
+            >
+              <p className="whitespace-pre-wrap break-words">
+                {state.latest.content}
+              </p>
+              <p>
+                {state.latest.mentionIds.length} selected mentions ·{" "}
+                {state.latest.authorChurchId
+                  ? "Church identity"
+                  : "Personal profile"}
+              </p>
+              <button
+                type="button"
+                className="gc-button gc-button-quiet"
+                onClick={controller.useLatest}
+              >
+                Replace my text with saved copy
+              </button>
+            </aside>
+          )}
+          <div className="flex flex-wrap gap-2">
+            {!state.ready && (
+              <button
+                type="button"
+                className="gc-button gc-button-quiet"
+                onClick={() => void controller.start()}
+              >
+                Retry loading draft
+              </button>
             )}
-          {churches.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </select>
-      </label>
-      <CommentMentions
-        postId={postId}
-        owner={owner}
-        ids={state.fields.mentionIds}
-        disabled={disabled}
-        onChange={(mentionIds, person) =>
-          controller.change({
-            ...state.fields,
-            mentionIds,
-            content: person
-              ? `${state.fields.content}${state.fields.content ? " " : ""}@${person.username}`
-              : state.fields.content
-          })
-        }
-      />
-      <p role="status">{notice || state.message}</p>
-      {state.conflict && (
-        <div className="space-y-2">
-          <p>
-            The saved draft changed or became unavailable. Your unsent text
-            stays above. Copy it before replacing it with a saved copy.
-          </p>
-          <button
-            type="button"
-            className="gc-button gc-button-quiet"
-            onClick={() => void controller.review()}
-          >
-            Review saved copy
-          </button>
-        </div>
-      )}
-      {state.latest && (
-        <aside
-          aria-label="Saved comment copy"
-          className="space-y-2 rounded border p-3"
-        >
-          <p className="whitespace-pre-wrap break-words">
-            {state.latest.content}
-          </p>
-          <p>
-            {state.latest.mentionIds.length} selected mentions ·{" "}
-            {state.latest.authorChurchId
-              ? "Church identity"
-              : "Personal profile"}
-          </p>
-          <button
-            type="button"
-            className="gc-button gc-button-quiet"
-            onClick={controller.useLatest}
-          >
-            Replace my text with saved copy
-          </button>
-        </aside>
-      )}
-      <div className="flex flex-wrap gap-2">
-        {!state.ready && (
-          <button
-            type="button"
-            className="gc-button gc-button-quiet"
-            onClick={() => void controller.start()}
-          >
-            Retry loading draft
-          </button>
-        )}
-        {state.retry && (
-          <button
-            type="button"
-            className="gc-button gc-button-quiet"
-            disabled={state.busy}
-            onClick={() =>
-              void controller.retry().then((ok) => {
-                if (ok && controller.getSnapshot().createdId) onSent();
-              })
-            }
-          >
-            Retry same request
-          </button>
-        )}
-        <button
-          type="button"
-          className="gc-button gc-button-quiet"
-          disabled={
-            disabled ||
-            state.busy ||
-            state.conflict ||
-            state.retry ||
-            !state.dirty
-          }
-          onClick={() => {
-            setNotice("");
-            void controller.save();
-          }}
-        >
-          Save comment draft
-        </button>
-        <button
-          className="gc-button gc-button-primary"
-          disabled={
-            disabled ||
-            state.busy ||
-            state.conflict ||
-            state.retry ||
-            state.fields.content.trim().length < 2 ||
-            state.fields.content.trim().length > 1500
-          }
-        >
-          Send comment
-        </button>
-      </div>
-    </form>
+            {state.retry && (
+              <button
+                type="button"
+                className="gc-button gc-button-quiet"
+                disabled={state.busy}
+                onClick={() =>
+                  void controller.retry().then((ok) => {
+                    if (ok && controller.getSnapshot().createdId) onSent();
+                  })
+                }
+              >
+                Retry same request
+              </button>
+            )}
+          </div>
+        </ComposerFrame>
+      </form>
+    </ComposerDialog>
+  );
+}
+
+export function CommentComposer(props: {
+  postId: string;
+  owner: string;
+  replyToId?: string | null;
+  replyName?: string;
+  draftId?: string;
+  hidden: boolean;
+  unavailable?: boolean;
+  onSent: () => void;
+}) {
+  const [open, setOpen] = useState(!!props.replyToId || !!props.draftId);
+  if (!open)
+    return props.hidden ? null : (
+      <button
+        type="button"
+        className="gc-button gc-button-quiet"
+        disabled={props.unavailable}
+        onClick={() => setOpen(true)}
+      >
+        Write a comment
+      </button>
+    );
+  return (
+    <OpenCommentComposer
+      {...props}
+      onClose={() => {
+        setOpen(false);
+        if (props.replyToId || props.draftId) props.onSent();
+      }}
+      onSent={() => {
+        setOpen(false);
+        props.onSent();
+      }}
+    />
   );
 }

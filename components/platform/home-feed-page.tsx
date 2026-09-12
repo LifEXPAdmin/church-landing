@@ -1,7 +1,7 @@
 import { readPosts } from "@/lib/platform/post-session";
 import { readerDate, readerId } from "@/lib/platform/reader-navigation";
 import Link from "next/link";
-import { ArrowRight, MessageCircle, PenLine } from "lucide-react";
+import { ArrowRight, MessageCircle } from "lucide-react";
 import { PostCard } from "@/components/platform/post-card";
 import { PostComposer } from "@/components/platform/post-composer";
 import { FeedReader } from "@/components/platform/feed-reader";
@@ -122,15 +122,7 @@ export default async function HomeFeedPage({
           )}
         <div className="gc-home-columns">
           <div className="min-w-0">
-            {currentUser && (
-              <details id="compose-post" className="gc-composer">
-                <summary>
-                  <PenLine aria-hidden="true" />
-                  Share what&apos;s on your heart
-                </summary>
-                <PostComposer />
-              </details>
-            )}
+            {currentUser && <PostComposer id="compose-post" />}
             <FeedReader
               items={posts.map((post) => ({
                 id: post.id,

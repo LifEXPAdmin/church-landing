@@ -194,7 +194,7 @@ export const features: Feature[] = [
     name: "Private drafts",
     description: "Save work and resume it in the shared composer.",
     steps:
-      "Save a draft, open Drafts and resume. Resolve conflicts or retry the unchanged request before continuing.",
+      "Choose Share a post to open the editor. Save draft is at the top right; Post is at the bottom. Open Drafts to resume the same saved copy. Close or Back offers save, discard unsent changes or keep writing; resolve conflicts and uncertain retries before closing.",
     href: "/platform/drafts",
     eligibility:
       "Only your account can read its drafts. Publishing rechecks current access and reply permissions.",
@@ -206,7 +206,7 @@ export const features: Feature[] = [
     name: "Comments and replies",
     description: "Join a conversation, react and reply to someone.",
     steps:
-      "Open a post's comments. Choose Reply, write your response and send when ready.",
+      "Open a post's comments, then Write a comment or Reply. The editor shows who you are replying to, with Save draft at the top right and Reply at the bottom.",
     href: "/platform",
     eligibility:
       "Sign in; the post's current reply permissions apply. Authors can edit or remove their own comments.",
@@ -218,7 +218,8 @@ export const features: Feature[] = [
     name: "Unsent comments",
     description:
       "Return to saved comment work with clear save and retry status.",
-    steps: "Open Comment drafts and resume the target conversation.",
+    steps:
+      "Open Comment drafts and resume the target conversation in the shared editor. Save draft keeps your text privately; closing can save or discard only unsent changes.",
     href: "/platform/comment-drafts",
     eligibility:
       "Private to your account; unavailable conversations cannot be posted to.",
@@ -423,6 +424,23 @@ export type ReleaseEntry = {
   featureIds: string[];
 };
 export const releases: ReleaseEntry[] = [
+  {
+    id: "shared-post-reply-composer",
+    version: "2026.09.12.21",
+    date: "2026-09-12",
+    summary:
+      "A focused editor for posts and replies, with clear draft recovery.",
+    added: [],
+    improved: [
+      "Write posts and replies in a shared editor with Close at the top left, Save draft at the top right and Post or Reply at the bottom.",
+      "Author, audience, reply permissions and optional tools stay available without crowding your writing. The editor fits the space available above the mobile keyboard.",
+      "Close or Back lets you save, discard unsent changes or keep writing. Previously saved drafts remain available; uncertain requests and conflicts keep their recovery controls."
+    ],
+    fixed: [
+      "Starting another post preserves independent unsent-work protection."
+    ],
+    featureIds: ["drafts", "comments", "comment-drafts"]
+  },
   {
     id: "compact-post-actions",
     version: "2026.09.12.20",

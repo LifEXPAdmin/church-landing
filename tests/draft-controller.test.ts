@@ -372,3 +372,79 @@ test("a route verification overlapping resume cannot silently abandon the select
   assert.equal(c.getSnapshot().dirty, false);
   c.dispose();
 });
+
+test("discard restores the acknowledged audience, source references and version without touching other work", async () => {
+  const f = fixture(),
+    c = f.controller;
+  await c.verify();
+  c.start();
+  c.change({
+    ...c.getSnapshot().fields,
+    content: "Saved member text",
+    replyAudience: "CHURCH_MEMBERS",
+    photos: [{ id: "photo", version: 4 }]
+  });
+  await c.save();
+  const saved = c.getSnapshot(),
+    count = f.bodies.length;
+  c.change({
+    ...saved.fields,
+    content: "Unsent",
+    replyAudience: "VIEWERS",
+    photos: []
+  });
+  c.setExternalWork("reply", { dirty: true, saving: false, conflict: false });
+  assert.equal(c.discardChanges(), false);
+  c.setExternalWork("reply", null);
+  assert.equal(c.discardChanges(), true);
+  assert.deepEqual(c.getSnapshot().fields, saved.fields);
+  assert.equal(c.getSnapshot().id, saved.id);
+  assert.equal(c.getSnapshot().version, saved.version);
+  assert.equal(f.bodies.length, count);
+  f.replace();
+  await c.resume("draft-1");
+  c.change({ ...c.getSnapshot().fields, replyAudience: "VIEWERS" });
+  assert.equal(c.discardChanges(), true);
+  assert.equal(c.getSnapshot().fields.replyAudience, null);
+  c.dispose();
+});
+
+test("discard cannot abandon an uncertain mutation and discards a conflicting copy without overwriting its saved version", async () => {
+  const f = fixture(),
+    c = f.controller;
+  await c.verify();
+  c.start();
+  c.change({ ...c.getSnapshot().fields, content: "Keep unknown response" });
+  f.lose();
+  await c.save();
+  assert.equal(c.discardChanges(), false);
+  await c.retry();
+  assert.equal(f.bodies[0], f.bodies[1]);
+  c.change({ ...c.getSnapshot().fields, content: "Keep conflict" });
+  f.conflict(true);
+  await c.save();
+  const previousId = c.getSnapshot().id,
+    writes = f.bodies.length;
+  assert.equal(c.discardChanges(), true);
+  assert.equal(c.getSnapshot().fields.content, "");
+  assert.notEqual(c.getSnapshot().id, previousId);
+  assert.equal(c.getSnapshot().version, 0);
+  assert.equal(f.bodies.length, writes);
+  c.dispose();
+});
+
+test("starting another post after publication retains independent unsent-work guards", async () => {
+  const f = fixture(),
+    c = f.controller;
+  await c.verify();
+  c.start();
+  c.change({ ...c.getSnapshot().fields, content: "Published post" });
+  await c.publish();
+  c.setExternalWork("comment", { dirty: true, saving: false, conflict: false });
+  c.newDraft();
+  assert.equal(c.getSnapshot().fields.content, "");
+  assert.equal(c.getSnapshot().externalWork.dirty, true);
+  c.setExternalWork("comment", null);
+  assert.equal(c.getSnapshot().externalWork.dirty, false);
+  c.dispose();
+});

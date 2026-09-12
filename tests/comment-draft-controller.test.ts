@@ -192,3 +192,49 @@ test("autosave waits five idle seconds and restarts after new edits", async (t) 
   assert.equal(JSON.parse(bodies[0]).content, "second");
   c.dispose();
 });
+
+test("discard keeps the exact saved reply target, identity, mentions and version without a write", async () => {
+  const bodies: string[] = [];
+  const c = fixture(
+    async (body) => {
+      bodies.push(body);
+      return {};
+    },
+    [
+      {
+        id: "kept",
+        version: 7,
+        postId: "post",
+        replyToId: "reply",
+        ...fields("saved reply")
+      }
+    ]
+  );
+  await c.start();
+  c.change({ content: "unsent", authorChurchId: null, mentionIds: [] });
+  assert.equal(c.discardChanges(), true);
+  assert.deepEqual(c.getSnapshot().fields, fields("saved reply"));
+  assert.equal(c.getSnapshot().id, "kept");
+  assert.equal(c.getSnapshot().version, 7);
+  assert.deepEqual(bodies, []);
+  c.dispose();
+});
+
+test("discard cannot clear an uncertain comment request; a rejected conflicting copy may be discarded without a write", async () => {
+  let mode = "lost";
+  const c = fixture(async () => {
+    if (mode === "lost") throw Error("lost");
+    throw new SocialClientError(409, "Changed elsewhere");
+  });
+  await c.start();
+  c.change(fields("keep my words"));
+  await c.save();
+  assert.equal(c.discardChanges(), false);
+  mode = "conflict";
+  await c.retry();
+  assert.equal(c.discardChanges(), true);
+  assert.equal(c.getSnapshot().fields.content, "");
+  assert.equal(c.getSnapshot().ready, false);
+  assert.equal(c.getSnapshot().version, 0);
+  c.dispose();
+});

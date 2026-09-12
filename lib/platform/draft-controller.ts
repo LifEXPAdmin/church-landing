@@ -166,13 +166,19 @@ export class DraftController {
     this.stopTimer();
     this.identitySequence++;
   };
-  private clear(ownerId: string | null) {
+  private clear(ownerId: string | null, preserveExternal = false) {
     this.stopTimer();
     this.generation++;
     this.pending = null;
-    this.external.clear();
+    const externalWork = this.state.externalWork;
+    if (!preserveExternal) this.external.clear();
     this.acknowledged = JSON.stringify(composerPayload(emptyComposer()));
-    this.set({ ...initialState(), ownerId, hidden: !ownerId });
+    this.set({
+      ...initialState(),
+      ownerId,
+      hidden: !ownerId,
+      ...(preserveExternal ? { externalWork } : {})
+    });
   }
   verify = async (): Promise<boolean> => {
     const sequence = ++this.identitySequence,
@@ -518,10 +524,48 @@ export class DraftController {
       }
     }
   };
+  /** Drop only unacknowledged edits; keep the saved draft and its version. */
+  discardChanges = () => {
+    if (
+      this.busy ||
+      this.pending ||
+      this.state.hidden ||
+      this.state.postId ||
+      this.state.externalWork.dirty ||
+      this.state.externalWork.saving ||
+      this.state.externalWork.conflict
+    )
+      return false;
+    this.stopTimer();
+    const conflicted = this.state.conflict;
+    const fields: ComposerFields =
+      !conflicted && this.acknowledged
+        ? JSON.parse(this.acknowledged)
+        : emptyComposer();
+    this.acknowledged = JSON.stringify(composerPayload(fields));
+    this.set({
+      fields,
+      ...(conflicted
+        ? {
+            id: this.uuid(),
+            version: 0,
+            conflict: false,
+            latest: null,
+            latestLoaded: false
+          }
+        : {}),
+      dirty: false,
+      failed: false,
+      message:
+        "Unsent changes discarded. Any saved draft is still in Your drafts.",
+      loadNumber: this.state.loadNumber + 1
+    });
+    return true;
+  };
   newDraft = () => {
     if (this.busy || !this.state.postId) return;
     const owner = this.state.ownerId;
-    this.clear(owner);
+    this.clear(owner, true);
     this.start();
   };
 }

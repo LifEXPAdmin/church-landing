@@ -304,6 +304,31 @@ export class CommentDraftController {
       });
     }
   };
+  /** Restores this target's acknowledged copy without deleting a saved draft. */
+  discardChanges = () => {
+    if (
+      !this.state.ready ||
+      this.inFlight ||
+      this.pending ||
+      this.state.hidden ||
+      this.state.createdId
+    )
+      return false;
+    this.stop();
+    const conflicted = this.state.conflict;
+    if (conflicted) this.acknowledged = JSON.stringify(empty());
+    this.set({
+      fields: JSON.parse(this.acknowledged),
+      ...(conflicted
+        ? { id: "", version: 0, ready: false, conflict: false, latest: null }
+        : {}),
+      dirty: false,
+      failed: false,
+      message:
+        "Unsent changes discarded. Your saved comment draft remains available."
+    });
+    return true;
+  };
   useLatest = () => {
     const row = this.state.latest;
     if (!row || this.inFlight || this.state.hidden) return;

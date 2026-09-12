@@ -9,10 +9,7 @@ export function ComposePostButton() {
       className="gc-button gc-compose-trigger"
       onClick={() => {
         const composer = document.getElementById("compose-post");
-        if (composer instanceof HTMLDetailsElement) {
-          composer.open = true;
-          composer.querySelector("textarea")?.focus();
-        }
+        if (composer instanceof HTMLButtonElement) composer.click();
       }}
     >
       <PenLine aria-hidden="true" />
