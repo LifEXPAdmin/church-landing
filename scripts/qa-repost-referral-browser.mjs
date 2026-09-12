@@ -70,14 +70,6 @@ mkdirSync(output, { recursive: true });
 const go = async (path) => {
   await page.goto(config.origin + path);
 };
-const bounded = async () =>
-  assert.ok(
-    await page.evaluate(
-      () => document.documentElement.scrollWidth <= innerWidth + 1
-    ),
-    "No horizontal page overflow"
-  );
-
 const signIn = async (actor) => {
   await context.clearCookies();
   await context.addCookies([
