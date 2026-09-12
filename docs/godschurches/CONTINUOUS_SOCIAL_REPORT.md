@@ -84,3 +84,20 @@ entries were observed. All 27 production migrations are complete and checksum
 matched; none pending or applied. Eight scoped installation/comment interface
 slices were reconciled with verified evidence. Parent/source/physical-device
 and owner acceptance remain open. Continuous work proceeds to relationship UI.
+
+## Relationship controls local checkpoint
+
+Compact profile, church and post-card menus use the existing status/version
+service for Follow, private Favorite, Mute/Restore, Snooze and personal Block.
+Unfollow clears favorite; church follow grants no membership; snooze shows its
+actual expiry. Block explains public-viewing limits and separate church identity.
+A canonical router refresh clears the route/prefetch cache while preserving
+unrelated client drafts; open comment projections recheck current access.
+
+Three local HTTPS browser groups pass for exact lost-follow retry, favorites,
+unfollow, mute/restore, snooze expiry, concurrent-version conflict, account change,
+church follow without membership and post projection removal after personal block.
+Build/runtime traces and focused lint pass. The private relationship library will
+provide the persistent blocked-account entry and integrated unblock check before
+this relationship batch is released. Privacy settings are an independent local
+work item; neither is part of the live installation/comment release above.

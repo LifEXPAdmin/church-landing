@@ -1,3 +1,4 @@
+import { RelationshipControls } from "./relationship-controls";
 import Link from "next/link";
 import { accountEntryHref } from "@/lib/platform/account-entry";
 import { churchDiscoveryHref } from "@/lib/platform/church-search";
@@ -245,6 +246,11 @@ export function PortalDiscover({
       <div className="grid gap-5 md:grid-cols-2">
         {churches.map((church) => (
           <PortalCard key={church.id} title={church.name}>
+            <RelationshipControls
+              kind="church"
+              targetId={church.id}
+              name={church.name}
+            />
             <ChurchPublicDetails church={church} detail={detail} />
             {detail ? (
               <ChurchConnection church={church} snapshot={snapshot} />
@@ -330,6 +336,11 @@ export function PortalPublicDiscover({
       <div className="grid gap-5 md:grid-cols-2">
         {visible.map((church) => (
           <PortalCard key={church.id} title={church.name}>
+            <RelationshipControls
+              kind="church"
+              targetId={church.id}
+              name={church.name}
+            />
             <ChurchPublicDetails church={church} detail={!!churchId} />
             {churchId && (
               <Link

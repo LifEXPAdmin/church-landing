@@ -1,3 +1,4 @@
+import { RelationshipControls } from "./relationship-controls";
 import { CommentSheet } from "./comment-sheet";
 import { CommentThread } from "./comment-thread";
 import type { PostView } from "@/lib/platform/post-reads";
@@ -58,6 +59,13 @@ export function PostCard({
           </Link>
         )}
       </header>
+      {currentUserId !== post.author.id && (
+        <RelationshipControls
+          kind={post.author.churchId ? "church" : "person"}
+          targetId={post.author.churchId ?? post.author.id}
+          name={post.author.name}
+        />
+      )}
       <div className="gc-post-meta">
         <time dateTime={post.createdAt.toISOString()}>
           {formatDate(post.createdAt)}

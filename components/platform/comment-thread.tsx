@@ -171,10 +171,22 @@ export function CommentThread({
     };
     const visibility = () =>
       document.visibilityState === "hidden" ? conceal() : restore();
+    const relationshipsChanged = () => {
+      conceal();
+      restore();
+    };
+    window.addEventListener(
+      "social-relationships-changed",
+      relationshipsChanged
+    );
     window.addEventListener("blur", conceal);
     window.addEventListener("focus", restore);
     document.addEventListener("visibilitychange", visibility);
     return () => {
+      window.removeEventListener(
+        "social-relationships-changed",
+        relationshipsChanged
+      );
       window.removeEventListener("blur", conceal);
       window.removeEventListener("focus", restore);
       document.removeEventListener("visibilitychange", visibility);

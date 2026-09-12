@@ -1,10 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import {
-  followPlatformUser,
-  unfollowPlatformUser
-} from "@/app/platform/actions";
+import { RelationshipControls } from "@/components/platform/relationship-controls";
 import { PostCard } from "@/components/platform/post-card";
 import { PostText } from "@/components/platform/post-text";
 import { ProfileImage } from "@/components/platform/profile-image";
@@ -298,23 +295,11 @@ export default async function MemberProfilePage({
                   <Link href="/platform/profile/me">Edit profile</Link>
                 </Button>
               ) : (
-                <form
-                  action={
-                    profile.following
-                      ? unfollowPlatformUser
-                      : followPlatformUser
-                  }
-                >
-                  <input type="hidden" name="followingId" value={profile.id} />
-                  <input
-                    type="hidden"
-                    name="username"
-                    value={profile.username}
-                  />
-                  <Button type="submit" className="rounded-full">
-                    {profile.following ? "Following" : "Follow"}
-                  </Button>
-                </form>
+                <RelationshipControls
+                  kind="person"
+                  targetId={profile.id}
+                  name={profile.name}
+                />
               ))}
           </div>
           <div className="gc-profile-summary">
