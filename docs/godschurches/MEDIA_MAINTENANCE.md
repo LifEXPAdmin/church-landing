@@ -70,8 +70,27 @@ Five new isolated cases cover fail-closed authorization/method checks, the
 20-prefix bound and grace, overlapping invocations, provider failure/abort,
 retry during deletion, READY-image preservation, and maintenance independent
 of the upload switch. Existing processing, image service, boundary and HTTPS
-checks also pass. Production worker/provider acceptance is pending until its
-dated receipt is added below.
+checks also pass. The focused command passed 23 cases and populated
+upgrade/dump-restore; two final production-mode local HTTPS cases passed. Lint,
+types and the production runtime-trace gate also passed.
+
+## Deployed worker acceptance — September 12, 2026
+
+Worker application `8ef6c199f297fa9da70c8e1473643be043da4d5c` is READY in
+deployment `dpl_7CRhJ1MPJvWVnKBSDr4AGr6VNEdL`. The canonical release endpoint
+matched the application SHA during the 03:40 UTC provider check. The project
+reports cron enabled with this deployment's host, `/api/maintenance/images`
+and `0 7 * * *`. Its first scheduled time has not yet occurred; acceptance used
+authenticated manual invocations of the actual deployed endpoint.
+
+All six operational groups passed: 28 complete migration checksums with none
+applied; uncached unauthorized denial; authenticated empty-queue completion while
+uploads stayed disabled; four tiny private variants uploaded/read with unsigned
+access denied; actual worker deletion followed by an inert repeat; and no
+remaining probe objects or records. Exact writes: one maintenance record created
+and one deleted, four private objects created and four deleted, zero user/profile
+or asset records changed. The existing private store was reused. No schema or
+plan change was needed. Public activation follows this verified worker gate.
 
 References: [Vercel cron operation and authentication](https://vercel.com/docs/cron-jobs/manage-cron-jobs),
 [cron usage and limits](https://vercel.com/docs/cron-jobs/usage-and-pricing).

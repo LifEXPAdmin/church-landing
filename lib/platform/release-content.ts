@@ -43,7 +43,7 @@ export const features: Feature[] = [
       "Open Edit profile, then Profile photo. Choose a file, adjust the crop and save. Cancel keeps your saved photo.",
     href: "/platform/profile/me",
     eligibility:
-      "Photo uploads are currently unavailable while image maintenance is prepared. Existing photos require sign-in; initials appear when unavailable.",
+      "Signed-in accounts can manage their own photo. Profile, post and comment photos remain visible only to permitted signed-in readers; initials appear when unavailable.",
     availability: "conditional"
   },
   {
@@ -279,6 +279,21 @@ export type ReleaseEntry = {
   featureIds: string[];
 };
 export const releases: ReleaseEntry[] = [
+  {
+    id: "profile-photos",
+    version: "2026.09.12.4",
+    date: "2026-09-12",
+    summary: "Add a personal photo to your profile and conversations.",
+    added: [],
+    improved: [
+      "Open your profile, choose Edit profile, then Profile photo to select, crop and save a picture. You can replace or remove it later.",
+      "Your saved photo appears on permitted profile, post and comment views. Canceling or a failed replacement keeps the previous photo."
+    ],
+    fixed: [
+      "Photo uploads are available after private storage and scheduled cleanup verification. The feature guide reflects the current upload setting."
+    ],
+    featureIds: ["profile-photos", "profile", "comments"]
+  },
   {
     id: "personal-friend-invitations",
     version: "2026.09.12.3",

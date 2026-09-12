@@ -2,7 +2,11 @@
 import { useState } from "react";
 import Link from "next/link";
 import { features } from "@/lib/platform/release-content";
-export function FeatureGuide() {
+export function FeatureGuide({
+  imagesEnabled = false
+}: {
+  imagesEnabled?: boolean;
+}) {
   const [query, setQuery] = useState("");
   const selected = features.filter((f) =>
     `${f.name} ${f.category} ${f.description} ${f.steps}`
@@ -37,7 +41,11 @@ export function FeatureGuide() {
                 <h3 className="text-xl">{f.name}</h3>
                 <p>{f.description}</p>
                 <p>{f.steps}</p>
-                <p className="text-sm text-gc-muted">{f.eligibility}</p>
+                <p className="text-sm text-gc-muted">
+                  {f.id === "profile-photos" && !imagesEnabled
+                    ? "Photo uploads are currently unavailable. Initials appear when an image cannot be loaded."
+                    : f.eligibility}
+                </p>
                 <Link className="gc-button gc-button-quiet" href={f.href}>
                   Open {f.name}
                 </Link>

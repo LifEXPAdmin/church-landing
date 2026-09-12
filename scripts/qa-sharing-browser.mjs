@@ -421,6 +421,9 @@ try {
   await page
     .getByRole("heading", { name: "Profile photos", exact: true })
     .waitFor();
+  await page
+    .getByText(/^Signed-in accounts can manage their own photo/)
+    .waitFor();
   assert.equal(await page.locator("main article").count(), 1);
   await go("/platform/releases/community-baseline");
   await page.getByRole("heading", { name: "Version 2026.09.12.0" }).waitFor();
@@ -516,6 +519,12 @@ try {
   await page
     .locator(`[data-comment-id="${photoComment.id}"] .gc-avatar img`)
     .waitFor();
+  await page.waitForFunction((id) => {
+    const img = document.querySelector(
+      `[data-comment-id="${id}"] .gc-avatar img`
+    );
+    return img?.complete && img.naturalWidth > 0;
+  }, photoComment.id);
   await go("/platform/profile/me");
   await page
     .getByRole("button", { name: "Remove avatar", exact: true })
