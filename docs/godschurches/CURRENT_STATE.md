@@ -1,5 +1,23 @@
 # Godschurches current state
 
+## Account Settings — September 12, 2026
+
+Product `2026.09.12.11`, application `1d085e68273de74354607fa4a60b34c10018cec1`,
+is live on READY deployment `dpl_7mnPaWncWJK5YGaar5jB1XKoy47A`; canonical assignment
+and serving identity match. Account shows masked contact and verified status;
+session sign-out refreshes confirmed state and separates an uncertain command
+from a failed list read. Folder links reuse existing identity/security services.
+
+Fourteen service/HTTPS groups, one disabled-email HTTP group, two release groups
+and five built browser groups passed. Types/build/scoped lint pass. Nine live
+checks at 12:41:56 UTC passed with zero application writes/browser errors/runtime
+errors. Current backup/restore and all 30 migration checksums are verified; no
+schema/provider/production identity change. See [account integration](ACCOUNT_SETTINGS_REPORT.md).
+
+Account username changes still need an authoritative rename contract. The next
+independent increment is method-aware Security and confirmation/recovery return
+navigation. Parent/global and owner/device acceptance remain open.
+
 ## Searchable Settings — September 12, 2026
 
 Product `2026.09.12.10`, application `59c520bcc0904718a38182334edf48fc689194df`,

@@ -34,7 +34,7 @@ refresh. An uncertain revocation still offers a read before another deliberate
 action and is never automatically retried. Password and email-change guidance
 point directly to their Settings detail routes.
 
-Product `2026.09.12.11` is verified locally; publication is pending. Fourteen
+Product `2026.09.12.11` is live. Fourteen
 focused session/email service and HTTPS groups passed, along with the disabled
 email HTTP group (two enabled-delivery groups deliberately skipped) and two
 release-content groups. Five built-HTTPS browser groups cover masked summary,
@@ -51,3 +51,19 @@ initial assertion used an incorrect expected route title; its corrected current
 label passed. No backend, schema, provider or production identity change is part
 of this increment. Full enabled-delivery/provider and physical-device acceptance
 are distinct from these local checks.
+
+
+## Publication
+
+Application `1d085e68273de74354607fa4a60b34c10018cec1` serves from READY
+deployment `dpl_7mnPaWncWJK5YGaar5jB1XKoy47A`. Independent canonical assignment
+and serving product/build identity match. Nine live read/browser checks passed
+at 12:41:56 UTC with zero application writes or browser errors; the scoped runtime
+query returned zero error rows. Account identity, sessions and email detail links
+preserve sign-in returns; public release notes, guide, Menu version and private
+API gates hold. The protected encrypted backup/restore remains current, with
+30 matching migrations and no production data/permission change.
+
+Account username changes remain an unimplemented contract requirement. Next is
+method-aware Security navigation through the existing confirmation/recovery
+services. Parent and owner/device acceptance stay open.
