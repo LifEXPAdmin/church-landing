@@ -133,7 +133,7 @@ export function UpdateNotice({ release }: { release: string | null }) {
     <aside
       aria-label="Updates and connection"
       data-update-decision={decision}
-      className="border-b border-gc-divider bg-gc-surface px-4 py-2 text-sm"
+      className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-gc-divider bg-gc-surface px-4 py-2 text-sm"
     >
       <LoadedVersion />
       {available && (

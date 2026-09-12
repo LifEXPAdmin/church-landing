@@ -14,13 +14,15 @@ export function FeatureGuide() {
       <label className="block">
         Search features
         <input
-          className="gc-input mt-2"
+          className="gc-input mt-2 block w-full"
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
       </label>
-      <p role="status">{selected.length} features</p>
+      <p role="status">
+        {selected.length} {selected.length === 1 ? "feature" : "features"}
+      </p>
       {[...new Set(selected.map((f) => f.category))].map((category) => (
         <section key={category} className="space-y-4">
           <h2 className="text-2xl">{category}</h2>

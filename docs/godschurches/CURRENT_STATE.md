@@ -2,15 +2,19 @@
 
 ## Current continuous interface session — September 12, 2026
 
-Application `5502f7dbd1dcfd8d563bc0b23c20e7ca976751d3` is live in READY deployment
-`dpl_A77eR9snnCSVpTXoeBke88qVNhsH` on godschurches.com. Installation, comments,
-relationships, Saved collections and typed search/filter/history are live. The
-search release passed 29 read-only checks with zero writes/errors and 27 matching
-migration checksums. The next local batch adds sharing/QR, church overview,
-authorized avatars, version/release notes and the feature guide. Photo uploads
-remain disabled until the required cleanup worker is deployed. Demo church
-content, physical rehearsal and owner acceptance remain open. See
-[continuous evidence](CONTINUOUS_SOCIAL_REPORT.md).
+Application `5b892ad36142a581dfe968f58630708655e3f91e` is live in READY deployment
+`dpl_64KF5xHU8RrJF96bURsYnHuirfyL` on godschurches.com as product version
+`2026.09.12.1`. Installation, comments, relationships, Saved, typed search,
+public sharing/QR, church upcoming events, release notes and the feature guide
+are published. At 02:18 UTC, 33 read-only live checks passed with zero writes,
+browser errors or deployment error rows. All 27 migration checksums match;
+zero migrations were applied. A small phone-layout follow-up is local.
+
+Personal photo UI/authorized avatars are verified in isolation; public uploads
+remain disabled until the required cleanup worker is deployed. Private storage
+connectivity and test-object cleanup passed. The approved demo church record and
+content were not found in public search. Physical rehearsal and owner acceptance
+remain open. See [continuous evidence](CONTINUOUS_SOCIAL_REPORT.md).
 Earlier sections below describe historical release checkpoints.
 
 ## Installation and comment interface release — September 12, 2026

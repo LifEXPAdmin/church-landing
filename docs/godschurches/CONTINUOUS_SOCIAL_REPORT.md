@@ -226,3 +226,20 @@ boundary checks. Two initial boundary failures were a test-launch configuration
 error (missing isolated local storage); all three boundary tests passed with the
 required isolated configuration. Final build retained the same clean 112-trace
 runtime result. No schema migration was introduced.
+
+## Community demo release
+
+Application `5b892ad36142a581dfe968f58630708655e3f91e` reached READY as
+`dpl_64KF5xHU8RrJF96bURsYnHuirfyL` and the canonical domain is assigned to it.
+At 02:18 UTC, the public release endpoint paired that application identity with
+product version `2026.09.12.1` and release entry `community-demo`. Seventeen
+read-only API checks, four workspace checks, three update checks and nine demo
+checks passed (33 total), with zero mutation requests/browser errors/runtime
+error rows. The live downloaded QR decoded independently to the canonical public
+entry. All 27 migration checksums match, zero pending and zero applied.
+
+Phone screenshot review prompted a small search-label/update-control spacing
+follow-up. The isolated signup test was extended through explicit adult
+eligibility, a pending church request with no directory grant, and installation
+help. It passed. This does not establish the missing real church content,
+physical-phone rehearsal or production photo-maintenance acceptance.

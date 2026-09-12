@@ -22,7 +22,7 @@ Object.assign(process.env, {
   VERCEL: ""
 });
 const { PrismaClient } = await import("@prisma/client");
-const { assertPortalTestDatabase } =
+const { seedPortal, assertPortalTestDatabase } =
   await import("../tests/seed-portal.ts");
 const db = new PrismaClient();
 await assertPortalTestDatabase(db);
@@ -80,6 +80,8 @@ const bounded = async () =>
 
 const { randomUUID } = await import("node:crypto");
 try {
+  const fixture = await seedPortal(db);
+  await db.church.update({ where: { id: fixture.churchA.id }, data: { communityListed: true } });
   await db.platformAuthLimit.deleteMany();
   await go("/platform/share");
   await page
@@ -149,9 +151,21 @@ try {
   await page.locator("#account-login-password").fill(password);
   await page.locator("#account-login-form button[type=submit]").click();
   await page.waitForURL("**/platform/churches");
+  assert.equal(await db.churchConnection.count({ where: { userId: user.id } }), 0);
+  await go("/platform/churches?q=" + encodeURIComponent(fixture.churchA.name));
+  await page.getByRole("link", { name: "View church and connection options", exact: true }).click();
+  await page.getByRole("checkbox", { name: "I confirm that I am at least 18 years old.", exact: true }).check();
+  await page.getByRole("button", { name: "Confirm adult eligibility", exact: true }).click();
+  await page.getByRole("button", { name: "Request church connection", exact: true }).click();
+  await page.getByText("Your request is awaiting review.", { exact: false }).waitFor();
+  assert.equal((await db.churchConnection.findFirstOrThrow({ where: { userId: user.id, churchId: fixture.churchA.id } })).state, "PENDING");
+  assert.equal(await page.getByRole("link", { name: "Member directory", exact: true }).count(), 0);
+  await page.getByRole("link", { name: "Menu", exact: true }).first().click();
+  await page.getByRole("button", { name: "Install Godschurches Add an app shortcut, or keep using your browser." }).click();
+  await page.getByRole("dialog", { name: "Install Godschurches", exact: true }).waitFor();
   await bounded();
   ok(
-    "Actual signup, isolated verification link consumption and sign-in preserve church destination without automatic membership"
+    "Actual signup, isolated verification link consumption and sign-in preserve the church destination; an explicit eligible request stays pending without directory access"
   );
   assert.deepEqual(errors, []);
   writeFileSync(
