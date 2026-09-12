@@ -79,7 +79,7 @@ export function CommunitySearchResults({
     window.addEventListener("social-relationships-changed", restore);
     document.addEventListener("visibilitychange", visibility);
     return () => {
-      seq.current++;
+      conceal();
       window.removeEventListener("blur", conceal);
       window.removeEventListener("focus", restore);
       window.removeEventListener("social-relationships-changed", restore);

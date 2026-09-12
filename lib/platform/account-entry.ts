@@ -19,6 +19,21 @@ export function safeAccountReturn(value: unknown): string {
   )
     return "/platform";
   const query = new URLSearchParams();
+  if (url.pathname === "/platform/search") {
+    const kind = url.searchParams.get("kind");
+    if (
+      kind &&
+      ["posts", "people", "churches", "events", "topics"].includes(kind)
+    )
+      query.set("kind", kind);
+    const after = url.searchParams.get("after");
+    if (after && /^[a-zA-Z0-9_-]{1,256}$/.test(after))
+      query.set("after", after);
+    for (const key of ["topic", "churchId"]) {
+      const value = readerId(url.searchParams.get(key));
+      if (value) query.set(key, value);
+    }
+  }
   if (url.pathname === "/platform/saved") {
     for (const key of ["collectionId", "after"]) {
       const value = readerId(url.searchParams.get(key));

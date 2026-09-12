@@ -51,6 +51,7 @@ export default async function PlatformSearchPage({
             category={query.kind}
             topic={query.topic}
             churchId={query.churchId}
+            after={query.after}
           />
         </div>
         <CommunitySearchResults

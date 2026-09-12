@@ -1,5 +1,17 @@
 # Godschurches current state
 
+## Current continuous interface session — September 12, 2026
+
+Application `40369c21bc598405a44d7bfdfafe06eb1ef71457` is live in READY deployment
+`dpl_EL2zagXz2iJGaNFxR5w472Wc8udH` on godschurches.com. It includes the installation,
+comment/recovery/reader, relationship/privacy/library and private Saved interfaces.
+At 01:06 UTC, 36 read-only live checks passed, zero writes/page errors/runtime
+error rows; all 27 migration checksums match. Six Saved browser groups and five
+reader regressions passed. Typed Explore and filter/history work is the next local
+batch. See [continuous evidence](CONTINUOUS_SOCIAL_REPORT.md). Parent integration,
+source coverage, physical-device/provider and owner acceptance remain open.
+Earlier sections below describe historical release checkpoints.
+
 ## Installation and comment interface release — September 12, 2026
 
 Application `2eabdecf2d205f1bfc4bb7c40be4f3d1a37540b8` is live in READY deployment

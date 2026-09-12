@@ -313,6 +313,150 @@ try {
   ok(
     "Account change clears private search projection and rechecks guest access"
   );
+  const filterMarker = "Filter ñ " + randomUUID(),
+    base = "filter-" + randomUUID();
+  const filterPosts = [];
+  for (let i = 0; i < 23; i++)
+    filterPosts.push(
+      await db.platformPost.create({
+        data: {
+          id: base + "-" + String(i).padStart(2, "0"),
+          authorId: f.memberA.id,
+          authorChurchId: f.churchA.id,
+          audienceChurchId: f.churchA.id,
+          content: filterMarker + " " + i,
+          topics: ["community"],
+          publishedAt: new Date()
+        }
+      })
+    );
+  await db.platformPost.create({
+    data: {
+      authorId: f.memberA.id,
+      authorChurchId: f.churchB.id,
+      audienceChurchId: f.churchB.id,
+      content: filterMarker + " other church",
+      topics: ["community"],
+      publishedAt: new Date()
+    }
+  });
+  await search(filterMarker);
+  await page.getByRole("link", { name: "More posts", exact: true }).waitFor();
+  await page.getByText("Search filters", { exact: true }).click();
+  await page
+    .getByRole("combobox", { name: "Search topic", exact: true })
+    .selectOption("community");
+  await page
+    .getByRole("textbox", { name: "Find a church by name", exact: true })
+    .fill(f.churchA.name);
+  await page
+    .getByRole("button", { name: "Find churches for filter", exact: true })
+    .click();
+  await page
+    .getByRole("button")
+    .filter({ hasText: "Choose " + f.churchA.name })
+    .click();
+  await page.getByRole("button", { name: "Search", exact: true }).click();
+  await page.getByRole("link", { name: "More posts", exact: true }).waitFor();
+  assert.equal(new URL(page.url()).searchParams.get("churchId"), f.churchA.id);
+  assert.equal(new URL(page.url()).searchParams.get("topic"), "community");
+  await page.getByRole("link", { name: "More posts", exact: true }).click();
+  await page.waitForURL("**after=*");
+  await page.waitForFunction(
+    () => document.querySelectorAll("[data-search-id]").length === 3
+  );
+  const secondUrl = page.url();
+  await page.goBack();
+  await page.getByRole("link", { name: "More posts", exact: true }).waitFor();
+  await page.goForward();
+  await page.waitForFunction(
+    () => document.querySelectorAll("[data-search-id]").length === 3
+  );
+  assert.deepEqual(
+    Object.fromEntries(new URL(page.url()).searchParams),
+    Object.fromEntries(new URL(secondUrl).searchParams)
+  );
+  assert.equal(
+    await page
+      .getByRole("combobox", { name: "Search topic", exact: true })
+      .inputValue(),
+    "community"
+  );
+  await page
+    .getByRole("link", { name: "Search churches", exact: true })
+    .click();
+  await page.waitForURL("**/platform/churches?*");
+  await page.goBack();
+  await page.waitForFunction(
+    () => document.querySelectorAll("[data-search-id]").length === 3
+  );
+  assert.deepEqual(
+    Object.fromEntries(new URL(page.url()).searchParams),
+    Object.fromEntries(new URL(secondUrl).searchParams)
+  );
+  await page
+    .getByRole("combobox", { name: "Search topic", exact: true })
+    .selectOption("prayer");
+  await page.getByRole("button", { name: "Search", exact: true }).click();
+  await page
+    .getByText("No matching posts available to you.", { exact: true })
+    .waitFor();
+  assert.equal(new URL(page.url()).searchParams.has("after"), false);
+  await page
+    .getByRole("button", { name: "Clear search filters", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Search", exact: true }).click();
+  await page.getByRole("link", { name: "More posts", exact: true }).waitFor();
+  assert.equal(new URL(page.url()).searchParams.has("churchId"), false);
+  assert.equal(new URL(page.url()).searchParams.get("topic") ?? "", "");
+  ok(
+    "Topic/church filters preserve Unicode query and page through Back/Forward; changed filter clears cursor"
+  );
+  await go(
+    "/platform/search?" +
+      new URLSearchParams({
+        q: filterMarker,
+        kind: "posts",
+        churchId: f.churchA.id,
+        topic: "community"
+      })
+  );
+  await page.getByRole("link", { name: "More posts", exact: true }).waitFor();
+  await db.platformPost.updateMany({
+    where: { id: { in: filterPosts.slice(20).map((p) => p.id) } },
+    data: { status: "WITHDRAWN", withdrawnAt: new Date() }
+  });
+  await page.getByRole("link", { name: "More posts", exact: true }).click();
+  await page.waitForURL("**after=*");
+  await page
+    .getByText("No matching posts available to you.", { exact: true })
+    .waitFor();
+  assert.equal(await rows().count(), 0);
+  await go(
+    "/platform/search?" +
+      new URLSearchParams({ q: filterMarker, kind: "posts", after: "bogus" })
+  );
+  await page
+    .getByRole("link", { name: "Restart search", exact: true })
+    .waitFor();
+  await page.getByRole("link", { name: "Restart search", exact: true }).click();
+  await page.getByRole("link", { name: "More posts", exact: true }).waitFor();
+  assert.equal(new URL(page.url()).searchParams.has("after"), false);
+  await go("/platform/search?kind=posts&topic=community");
+  await page.getByRole("link", { name: "More posts", exact: true }).waitFor();
+  assert.equal(await page.getByRole("searchbox").inputValue(), "");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await bounded();
+  await page
+    .getByRole("combobox", { name: "Search topic", exact: true })
+    .focus();
+  await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("Tab");
+  await page.setViewportSize({ width: 320, height: 844 });
+  await bounded();
+  ok(
+    "Revoked sources disappear between pages; invalid cursor restarts safely; empty-query topic and keyboard filters fit phone widths"
+  );
   assert.deepEqual(errors, []);
   writeFileSync(
     output + "/receipt.json",

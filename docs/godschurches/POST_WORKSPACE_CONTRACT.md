@@ -239,3 +239,11 @@ query with that topic and an empty text query. Foreground, account and relations
 changes conceal and re-read current projections. Failed reads retain query and
 category with retry; invalid cursors offer a first-page restart. The existing
 church-discovery handoff preserves newly typed text and category on Back.
+
+Explore filter controls support topics for posts and a public church-name picker
+for posts/events. The picker consumes the same bounded search endpoint. Changes
+apply through the Search form with no old cursor; Clear filters retains the text
+and category. URL links retain the opaque cursor exactly. Back/Forward and an
+unchanged church-discovery handoff restore the same query/category/filter/page.
+Invalid or mismatched page references offer Restart search with the same filters.
+Safe sign-in returns preserve only bounded search state, never authority fields.

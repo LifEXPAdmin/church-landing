@@ -4,6 +4,8 @@ import {
   searchCategories,
   type SearchCategory
 } from "@/lib/platform/search-navigation";
+import { POST_TOPICS } from "@/lib/platform/post-options";
+import { SearchChurchFilter } from "./search-church-filter";
 import { useState } from "react";
 import { Search } from "lucide-react";
 import { churchDiscoveryHref } from "@/lib/platform/church-search";
@@ -12,15 +14,20 @@ export function ExploreSearchForm({
   query,
   category = "posts",
   topic,
-  churchId
+  churchId,
+  after
 }: {
   query: string;
   category?: SearchCategory;
   topic?: string;
   churchId?: string;
+  after?: string;
 }) {
   const [kind, setKind] = useState<SearchCategory>(category);
   const [value, setValue] = useState(query);
+  const [selectedTopic, setSelectedTopic] = useState(topic ?? "");
+  const [selectedChurch, setSelectedChurch] = useState(churchId ?? "");
+  const [filtersOpen, setFiltersOpen] = useState(Boolean(topic || churchId));
   // Keyed by the server query so Back and new searches restore their own input.
   return (
     <form action="/platform/search" method="get" role="search" className="mt-6">
@@ -47,15 +54,57 @@ export function ExploreSearchForm({
           ))}
         </select>
       </label>
-      {topic && kind === "posts" && (
-        <>
-          <input type="hidden" name="topic" value={topic} />
-          <p>Topic: {topic}</p>
-        </>
-      )}
-      {churchId && ["posts", "events"].includes(kind) && (
-        <input type="hidden" name="churchId" value={churchId} />
-      )}
+      <details
+        className="mb-4 rounded border border-gc-divider p-3"
+        open={filtersOpen}
+        onToggle={(e) => setFiltersOpen(e.currentTarget.open)}
+      >
+        <summary className="min-h-11 cursor-pointer py-2 font-semibold">
+          Search filters
+        </summary>
+        <div className="space-y-3">
+          {kind === "posts" && (
+            <label className="block">
+              Topic
+              <select
+                name="topic"
+                aria-label="Search topic"
+                className="ml-3 max-w-full rounded border border-gc-divider bg-gc-canvas p-2"
+                value={selectedTopic}
+                onChange={(e) => setSelectedTopic(e.target.value)}
+              >
+                <option value="">All topics</option>
+                {POST_TOPICS.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          {["posts", "events"].includes(kind) ? (
+            <SearchChurchFilter
+              value={selectedChurch}
+              onChange={setSelectedChurch}
+            />
+          ) : (
+            <p>No additional filters for this category.</p>
+          )}
+          <button
+            type="button"
+            className="gc-button gc-button-quiet"
+            onClick={() => {
+              setSelectedTopic("");
+              setSelectedChurch("");
+            }}
+          >
+            Clear search filters
+          </button>
+          <p className="text-sm text-gc-muted">
+            Select Search to apply changes and start at the first page.
+          </p>
+        </div>
+      </details>
       <div className="flex flex-col gap-3 sm:flex-row">
         <input
           id="explore-search"
@@ -80,13 +129,22 @@ export function ExploreSearchForm({
             return;
           // Preserve a newly typed query in the source history entry before
           // document navigation, so Back also works without submitting Explore.
-          const query = value.trim().slice(0, 200);
+          const submittedQuery = value.trim().slice(0, 200);
           const params = new URLSearchParams();
-          if (query) params.set("q", query);
+          if (submittedQuery) params.set("q", submittedQuery);
           params.set("kind", kind);
-          if (topic && kind === "posts") params.set("topic", topic);
-          if (churchId && ["posts", "events"].includes(kind))
-            params.set("churchId", churchId);
+          if (selectedTopic && kind === "posts")
+            params.set("topic", selectedTopic);
+          if (selectedChurch && ["posts", "events"].includes(kind))
+            params.set("churchId", selectedChurch);
+          if (
+            after &&
+            query === value.trim() &&
+            kind === category &&
+            selectedTopic === (topic ?? "") &&
+            selectedChurch === (churchId ?? "")
+          )
+            params.set("after", after);
           window.history.replaceState(
             null,
             "",

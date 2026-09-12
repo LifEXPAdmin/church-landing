@@ -170,3 +170,14 @@ topic actions; occurrence links/timezone and revoked event visibility; failed-re
 retry, 320px layout and church handoff/Back; and account-change clearing of private
 results. Production build/type/runtime checks pass. Topic/church filter controls
 and expanded history acceptance are the next dependent interface slice.
+
+## Search filters and history checkpoint
+
+The same Explore renderer now supports topic and church filters, explicit clearing,
+bounded church lookup and opaque cursor preservation. Changed queries/categories/
+filters start at the first page. Seven HTTPS browser groups pass, including the
+five typed-result groups plus Unicode filter/history/church handoff, Back/Forward,
+revocation between pages, invalid cursor restart, empty-query topic and keyboard
+controls at 320/390px. Ten safe-navigation tests, full lint and production
+build/type/runtime checks pass (108 traces, 8,741 entries, 267 server JavaScript
+files). No search service, schema or authorization behavior changed.
