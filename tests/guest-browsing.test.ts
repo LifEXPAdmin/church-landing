@@ -207,7 +207,10 @@ test("anonymous HTML and RSC expose public reading and minimal author labels but
     /<title>Join or sign in to manage your account settings\.<\/title>/
   );
   const ownGate = await (await get("/platform/profile/me")).text();
-  assert.match(ownGate, /<title>Godschurches<\/title>/);
+  assert.match(
+    ownGate,
+    /<title>Join or sign in to view member profiles\.<\/title>/
+  );
   const editor = await (await get("/platform/profile/me", a.token)).text();
   assert.match(editor, /<title>Edit your Godschurches profile<\/title>/);
   assert.match(editor, /Edit your profile/);

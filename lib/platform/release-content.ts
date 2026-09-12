@@ -222,7 +222,7 @@ export const features: Feature[] = [
     name: "Comments and replies",
     description: "Join a conversation, react and reply to someone.",
     steps:
-      "Open a post's comments, then Write a comment or Reply. The editor shows who you are replying to, with Save draft at the top right and Reply at the bottom.",
+      "Open a post's comments, then Write a comment or Reply. The editor shows who you are replying to, with Save draft at the top right and Reply at the bottom. For a lost Like response, choose Retry same Like choice. After a conflict, use Refresh Like status before choosing again.",
     href: "/platform",
     eligibility:
       "Sign in; the post's current reply permissions apply. Authors can edit or remove their own comments.",
@@ -437,8 +437,7 @@ export const releases: ReleaseEntry[] = [
     summary: "Reliable Like retries and lighter community loading.",
     added: [],
     improved: [
-      "Visible author photos load on demand, and opening What’s new loads its feature details only when needed.",
-      "Independent post and photo reads can run together while permission changes still wait for protected reads."
+      "Visible author photos load on demand, and opening What’s new loads its feature details only when needed."
     ],
     fixed: [
       "Retrying a Like keeps the same choice. A stale choice from another tab asks you to refresh its status.",
