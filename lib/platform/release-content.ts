@@ -181,6 +181,18 @@ export const features: Feature[] = [
     availability: "available"
   },
   {
+    id: "church-management",
+    category: "Churches and community",
+    name: "Your church tools",
+    description: "Find the church tools available to your current role.",
+    steps:
+      "Open a church page. Manage church links to its profile, logo and cover, team, roles and privileges when your permissions allow them. Contributors and representatives can check their own request and next action. Church image managers can choose, crop, replace or remove a logo and cover.",
+    href: "/platform/my-church",
+    eligibility:
+      "Approved membership and current permissions are required for management. Contributing a listing or saving a claim does not appoint a manager. A logo and verified management are separate facts.",
+    availability: "conditional"
+  },
+  {
     id: "membership",
     category: "Churches and community",
     name: "Home Church and directory",
@@ -317,6 +329,25 @@ export type ReleaseEntry = {
   featureIds: string[];
 };
 export const releases: ReleaseEntry[] = [
+  {
+    id: "church-tools-and-identity",
+    version: "2026.09.12.7",
+    date: "2026-09-12",
+    summary:
+      "Reach your church tools and edit permitted church identity photos.",
+    added: [
+      "Church pages show management links for your current permissions, with your own representative request status and next action.",
+      "Church profile managers can crop, replace and remove a logo or cover using the shared photo editor. Readable identity photos open in the photo viewer."
+    ],
+    improved: [
+      "Team, roles, privileges and chart history link to the existing organization tools. Ordinary members keep their existing member links.",
+      "Church photo controls preserve selected files through connection failures, offer exact retries and conflict review, and refresh current permissions when you return."
+    ],
+    fixed: [
+      "Contributing a listing is clearly distinguished from approved management access. Revoked access clears stale editing controls."
+    ],
+    featureIds: ["church-management", "membership", "photo-viewer"]
+  },
   {
     id: "personal-photo-library",
     version: "2026.09.12.6",

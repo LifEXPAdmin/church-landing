@@ -1,3 +1,5 @@
+import { ChurchTools } from "./church-tools";
+import { ChurchIdentity } from "./church-identity";
 import Link from "next/link";
 import type { ChurchSummary } from "@/lib/platform/portal-types";
 import { portalLinkClass, PortalContactDetails } from "./portal-ui";
@@ -13,6 +15,10 @@ export function ChurchPublicDetails({
 }) {
   return (
     <div className="space-y-4 break-words">
+      {detail && !preview && <ChurchTools churchId={church.id} />}
+      {detail && !preview && (
+        <ChurchIdentity churchId={church.id} name={church.name} />
+      )}
       <div>
         <p className="inline-flex rounded-full border border-gc-divider px-3 py-1 text-sm text-gc-accent">
           {church.representativeVerified

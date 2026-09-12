@@ -19,8 +19,10 @@ export function ProfileImageControl({
   name,
   kind,
   available,
-  disabled,
+  disabled: externallyDisabled,
   onState,
+  onSaved,
+  churchId,
   retainsHistory = false
 }: {
   initial: ImageView | null;
@@ -29,9 +31,13 @@ export function ProfileImageControl({
   kind: "avatar" | "cover";
   available: boolean;
   retainsHistory?: boolean;
+  churchId?: string;
+  onSaved?: () => void;
   disabled: boolean;
   onState: (kind: "avatar" | "cover", state: State) => void;
 }) {
+  const [accessLost, setAccessLost] = useState(false);
+  const disabled = externallyDisabled || accessLost;
   const [saved, setSaved] = useState(initial),
     [file, setFile] = useState<File | null>(null);
   const [source, setSource] = useState(""),
@@ -52,8 +58,41 @@ export function ProfileImageControl({
   );
   const feedback = useRef<HTMLParagraphElement>(null),
     generation = useRef(0);
-  const title = kind === "avatar" ? "Avatar" : "Cover photo",
-    purpose = kind === "avatar" ? "PROFILE_AVATAR" : "PROFILE_COVER";
+  const control = churchId && kind === "avatar" ? "logo" : kind;
+  const title = churchId
+    ? kind === "avatar"
+      ? "Church logo"
+      : "Church cover"
+    : kind === "avatar"
+      ? "Avatar"
+      : "Cover photo";
+  const purpose = churchId
+    ? kind === "avatar"
+      ? "CHURCH_LOGO"
+      : "CHURCH_COVER"
+    : kind === "avatar"
+      ? "PROFILE_AVATAR"
+      : "PROFILE_COVER";
+  const endpoint = churchId
+    ? `/api/platform/church-images?churchId=${encodeURIComponent(churchId)}`
+    : "/api/platform/profile";
+  const slot = churchId && kind === "avatar" ? "logo" : kind;
+  async function currentImage() {
+    const latest = await socialRequest<{
+      avatar?: ImageView | null;
+      logo?: ImageView | null;
+      cover?: ImageView | null;
+      canManage?: boolean;
+    }>(endpoint, undefined, userId);
+    if (churchId && !latest.data.canManage) {
+      setAccessLost(true);
+      throw new SocialClientError(
+        403,
+        "Your church photo permission changed. Reload to check current access."
+      );
+    }
+    return latest.data[slot] ?? null;
+  }
   const aspect = kind === "avatar" ? 1 : 3;
   useEffect(() => {
     if (!file) {
@@ -166,7 +205,7 @@ export function ProfileImageControl({
     setConflict(false);
     const details = {
       purpose,
-      targetId: userId,
+      targetId: churchId ?? userId,
       replacesId: saved?.id,
       alt,
       crop
@@ -215,18 +254,16 @@ export function ProfileImageControl({
           result.id &&
           result.variants
         ) {
-          const latest = await socialRequest<{
-            avatar: ImageView | null;
-            cover: ImageView | null;
-          }>("/api/platform/profile", undefined, userId);
-          setSaved(latest.data[kind]);
+          const latest = await currentImage();
+          setSaved(latest);
           reset();
           setMessage(
-            latest.data[kind]?.id === result.id
+            latest?.id === result.id
               ? `${title} saved.${retainsHistory ? " Previous pictures remain in Photos." : ""}`
               : "Upload confirmed. Your current picture changed since that upload; the latest saved picture is shown."
           );
           setRemoveConfirm(false);
+          onSaved?.();
         } else {
           setMessage(
             result.message ??
@@ -288,12 +325,9 @@ export function ProfileImageControl({
         setConflict(response.status === 409);
         return;
       }
-      const latest = await socialRequest<{
-        avatar: ImageView | null;
-        cover: ImageView | null;
-      }>("/api/platform/profile", undefined, userId);
-      setSaved(latest.data[kind]);
+      setSaved(await currentImage());
       setRemoveConfirm(false);
+      onSaved?.();
       setMessage(
         `${title} removed from current selection.${retainsHistory ? " The saved picture remains in Photos." : ""}`
       );
@@ -309,15 +343,7 @@ export function ProfileImageControl({
     lock.current = true;
     setBusy(true);
     try {
-      const response = await fetch("/api/platform/profile", {
-        cache: "no-store"
-      });
-      const result = await response.json();
-      if (!response.ok)
-        throw new Error(
-          result.message ?? "The saved photo could not be loaded."
-        );
-      setSaved(result[kind]);
+      setSaved(await currentImage());
       attempt.current = null;
       setConflict(false);
       setMessage(
@@ -344,10 +370,13 @@ export function ProfileImageControl({
       aria-busy={busy || preparing}
     >
       <h2 id={`${kind}-heading`} className="text-2xl">
-        {kind === "avatar" ? "Profile photo" : title}
+        {churchId ? title : kind === "avatar" ? "Profile photo" : title}
       </h2>
       <p className="text-sm text-gc-muted">
-        Visible to signed-in members. JPEG, PNG or WebP, up to 4 MiB.
+        {churchId
+          ? "Visible wherever this church listing is readable. A logo does not establish verified management."
+          : "Visible to signed-in members."}{" "}
+        JPEG, PNG or WebP, up to 4 MiB.
         {retainsHistory &&
           " New replacements keep previous pictures in Photos. Removing the current picture keeps its history; delete a saved picture separately in Photos."}
       </p>
@@ -357,18 +386,25 @@ export function ProfileImageControl({
           name={name}
           kind={kind}
           accountId={userId}
-          profileId={userId}
+          profileId={churchId ?? userId}
+          imageLabel={
+            churchId
+              ? kind === "avatar"
+                ? "church logo"
+                : "church cover"
+              : undefined
+          }
         />
       </div>
       {!available && (
         <p className="text-sm text-gc-muted">
-          Photo uploads are not available yet. You can still edit your profile.
+          Photo uploads are not available yet. Your saved images are unchanged.
         </p>
       )}
       <div className="flex flex-wrap gap-3">
         {available && (
           <label className="gc-profile-file-label">
-            Choose {kind === "avatar" ? "avatar" : "cover"}
+            Choose {control}
             <input
               ref={input}
               type="file"
@@ -393,7 +429,7 @@ export function ProfileImageControl({
             disabled={disabled || busy}
             onClick={() => void adjust()}
           >
-            Adjust {kind} crop
+            Adjust {control} crop
           </button>
         )}
         {saved && !file && (
@@ -403,13 +439,13 @@ export function ProfileImageControl({
             disabled={disabled || busy}
             onClick={() => setRemoveConfirm(true)}
           >
-            Remove {kind}
+            Remove {control}
           </button>
         )}
       </div>
       {removeConfirm && (
         <div className="gc-profile-confirm">
-          <p>Remove this {kind}? You can choose another photo later.</p>
+          <p>Remove this {control}? You can choose another photo later.</p>
           <div className="flex flex-wrap gap-3">
             <button
               type="button"
@@ -417,7 +453,7 @@ export function ProfileImageControl({
               disabled={busy || disabled}
               onClick={() => void remove()}
             >
-              Confirm remove {kind}
+              Confirm remove {control}
             </button>
             <button
               type="button"
@@ -536,7 +572,7 @@ export function ProfileImageControl({
               disabled={disabled || busy || !dimensions.width}
               onClick={upload}
             >
-              Save {kind}
+              Save {control}
             </Button>
             {!busy && (
               <button
@@ -580,7 +616,7 @@ export function ProfileImageControl({
           disabled={disabled || busy}
           onClick={() => void reviewLatest()}
         >
-          Review latest saved {kind}
+          Review latest saved {control}
         </button>
       )}
     </section>

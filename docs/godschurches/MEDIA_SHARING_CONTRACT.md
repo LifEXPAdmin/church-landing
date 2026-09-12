@@ -154,3 +154,36 @@ sources are cleared; a removed selected ID does not silently show a replacement.
 No service worker, original prefetch, new storage association or retention is
 introduced by this presentation layer. History and personal photo libraries
 require their separate lifecycle contract.
+
+## Church management navigation and identity controls
+
+The public church detail and approved-member overview project current church
+capabilities through `church-tools.ts`. Manage church links reuse the existing
+profile claim, organization, roles, privileges, chart history, access and review
+routes. A profile editing link requires an owned activated approved claim in
+addition to current profile management permission. Contributors and pending
+claimants receive only their own status and next action; authority/contact data
+and other people's claims never enter this navigation projection. A community
+listing does not appoint its contributor. Ordinary member links remain separate.
+
+`ChurchIdentity` uses the existing church-images adapter and shared crop editor
+for CHURCH_LOGO and CHURCH_COVER. `canManage` and `imagesAvailable` remain server
+facts; approved membership and current MANAGE_CHURCH_PROFILE are required on
+every mutation. Images on public listings remain public; unlisted identity
+requires current approved membership, including every derivative and viewer read.
+Logo imagery never implies a verified-management badge. Church replacements use
+the existing retirement policy and do not enter a personal history or library.
+
+Selection/crop and immutable upload retry bodies survive uncertain connections.
+A conflict explicitly reloads current saved identity before the user retries
+their edits. Foreground/sign-in checks hide stale projections, clear selected
+files on changed account or lost management, and recheck access at the write
+boundary. Provider-disabled controls explain unavailable uploads. Existing
+personal picture history and reply-permission behavior remain unchanged.
+
+Isolated verification covers real independent claim review/activation, contributor
+and pending claimant privacy, scoped managers, ordinary members and revoked
+manager access. Processed media checks cover public/unlisted reads and lifecycle;
+mobile browser checks exercise both crop ratios, cancel, replacement, removal,
+exact lost-response retry, concurrent edits and revoked-access cleanup. Production
+release evidence is recorded separately after the deployment is verified.

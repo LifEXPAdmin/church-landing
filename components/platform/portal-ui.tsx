@@ -5,13 +5,18 @@ export const portalLinkClass =
 
 export function PortalCard({
   title,
-  children
+  children,
+  id
 }: {
   title: string;
   children: React.ReactNode;
+  id?: string;
 }) {
   return (
-    <section className="min-w-0 rounded-xl border border-gc-divider bg-gc-surface p-5 sm:p-6">
+    <section
+      id={id}
+      className="min-w-0 rounded-xl border border-gc-divider bg-gc-surface p-5 sm:p-6"
+    >
       <h2 className="mb-4 text-3xl leading-tight text-gc-text">{title}</h2>
       <div className="space-y-4 break-words">{children}</div>
     </section>

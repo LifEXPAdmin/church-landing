@@ -734,7 +734,10 @@ export async function ChurchClaimPage({
                   </PortalCard>
                 )}
                 {active && snapshot.canManageProfile && (
-                  <PortalCard title="Manage the public church profile">
+                  <PortalCard
+                    id="church-profile"
+                    title="Manage the public church profile"
+                  >
                     {!preview && (
                       <PortalActionForm
                         claimAction="profile-save"

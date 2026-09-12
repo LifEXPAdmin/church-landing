@@ -1,3 +1,4 @@
+import { ChurchTools } from "./church-tools";
 import { ChurchChartHistory } from "./church-chart-history";
 import { ChurchStructureChart } from "./church-structure-chart";
 import { ChurchReturnFocus } from "./church-return-focus";
@@ -764,6 +765,7 @@ export async function ChurchStructurePage({
           Public church page
         </Link>
       </nav>
+      {view === "overview" && <ChurchTools churchId={churchId} />}
       {view === "overview" && (
         <div className="grid gap-6 md:grid-cols-2">
           <PortalCard title="Our church">

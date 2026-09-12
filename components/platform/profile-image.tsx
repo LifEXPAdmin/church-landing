@@ -11,13 +11,15 @@ export function ProfileImage({
   name,
   kind,
   accountId,
-  profileId
+  profileId,
+  imageLabel
 }: {
   image: ImageView | null;
   name: string;
   kind: "avatar" | "cover";
-  accountId: string;
+  accountId?: string | null;
   profileId: string;
+  imageLabel?: string;
 }) {
   const { preferences } = useReadingPreferences();
   const [failed, setFailed] = useState<string | null>(null);
@@ -36,7 +38,7 @@ export function ProfileImage({
             onClick={() => setFailed(null)}
             className="gc-profile-photo-retry"
           >
-            Retry {kind === "avatar" ? "avatar" : "cover"}
+            Retry {imageLabel ?? (kind === "avatar" ? "avatar" : "cover")}
           </button>
         )}
       </div>
@@ -52,7 +54,7 @@ export function ProfileImage({
         type="button"
         className={className + " gc-profile-photo-open"}
         aria-haspopup="dialog"
-        aria-label={`Enlarge ${name}’s ${kind === "avatar" ? "profile photo" : "cover photo"}`}
+        aria-label={`Enlarge ${name}’s ${imageLabel ?? (kind === "avatar" ? "profile photo" : "cover photo")}`}
         onClick={() => setOpen(true)}
       >
         <img
@@ -70,7 +72,11 @@ export function ProfileImage({
           height={small.height}
           alt={
             image.alt ||
-            (kind === "avatar" ? `${name}'s avatar` : `${name}'s cover photo`)
+            (imageLabel
+              ? `${name} ${imageLabel}`
+              : kind === "avatar"
+                ? `${name}'s avatar`
+                : `${name}'s cover photo`)
           }
           loading={kind === "avatar" ? "eager" : "lazy"}
           decoding="async"

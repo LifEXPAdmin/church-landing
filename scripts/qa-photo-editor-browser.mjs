@@ -143,8 +143,8 @@ try {
   assert.equal(await page.getByText("The photo library is currently unavailable. Existing photo permissions remain in effect.",{exact:true}).count(),0);
   await page.setViewportSize({width:320,height:844});await bounded();await page.screenshot({path:output+"/features-320.png"});
   await go("/platform/releases/personal-photo-library"); await page.getByRole("heading",{name:"Version 2026.09.12.6",exact:true}).waitFor(); await bounded();
-  const r=await context.request.get(config.origin+"/api/platform/release"); const release=await r.json();assert.equal(release.product.version,"2026.09.12.6");
-  ok("New release and four photo guide entries are reachable and fit 320px; the serving release maps to version 2026.09.12.6");
+  const r=await context.request.get(config.origin+"/api/platform/release"); const release=await r.json();const { releases } = await import("../lib/platform/release-content.ts"); assert.equal(release.product.version,releases[0].version);
+  ok("Retained photo release and photo guide entries are reachable at 320px; serving version matches current release content");
   assert.equal(errors.length,0);writeFileSync(output+"/result.json",JSON.stringify({passed:results.length,checks:results,errors,productionWrites:0},null,2));
 } catch(error) {await page.screenshot({path:output+"/failure.png",fullPage:true}).catch(()=>{});writeFileSync(output+"/failure.txt",String(error?.stack??error));throw error;}
 finally {await context.close();await browser.close();await db.$disconnect();}
