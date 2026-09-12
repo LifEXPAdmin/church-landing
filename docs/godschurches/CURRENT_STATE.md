@@ -1,5 +1,26 @@
 # Godschurches current state
 
+## Data, browser permissions and lifecycle guidance — September 12, 2026
+
+Product `2026.09.12.17`, application `4113c7ef7fbe6bf4af82fc4276a924d5da1c031b`,
+is live on READY deployment `dpl_CPR6eNoprjMMJTSQNMgZJdbKTbrf`; independent
+canonical assignment and serving identity match. Data shows browser-reported
+permissions without requesting access, current export scope and separate
+deactivation guidance. Existing confirmation, owner projection, retention,
+source audiences, private draft reply permissions and duty gates remain intact.
+
+Six export, nine lifecycle and three focused resource groups pass, along with
+eight contract/release tests, five Data and six Settings browser groups, types,
+scoped lint and production build. Fourteen live checks at 15:04:24 UTC passed with
+zero application writes or browser errors. All 30 migration checksums and the
+protected backup/restore are verified; no migration/provider change. See
+[Data evidence](DATA_SETTINGS_REPORT.md).
+
+Optional consent, general connected-app access, permanent deletion and new
+resource transfer/lifecycle integration retain their separate gates. Next is
+focused Help and policy navigation. Parent and physical owner acceptance remain
+open.
+
 ## Safety choices and private relationship search — September 12, 2026
 
 Product `2026.09.12.16`, application `a5eac27559abc655658d07f8f0d598038d99c09c`,

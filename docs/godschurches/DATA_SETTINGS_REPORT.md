@@ -41,8 +41,11 @@ The 14:59:35 UTC release preflight confirmed the protected backup/restore and al
 
 ## Release status
 
-Product `2026.09.12.17` is prepared; exact READY deployment, canonical assignment
-and live checks remain required. No migration, production account/permission,
+Product `2026.09.12.17`, application `4113c7ef7fbe6bf4af82fc4276a924d5da1c031b`,
+is live on READY deployment `dpl_CPR6eNoprjMMJTSQNMgZJdbKTbrf`. Independent
+canonical assignment and serving identity match. Fourteen live checks at
+15:04:24 UTC passed with zero application writes or browser errors.
+No migration, production account/permission,
 provider, retention or permanent-deletion change is included.
 
 General connected-app access and optional data-use consent require approved
