@@ -236,3 +236,20 @@ operations remain off behind PHOTO_ALBUMS_ENABLED until processed privacy/race
 fixtures, browser recovery checks, fresh backup/restore and migration rehearsal,
 compatible deployment and old-request drain are verified. The flag never bypasses
 existing source privacy or the reference guard once records exist.
+
+Once an album reference exists, a release without the album retirement guard is
+not a safe rollback, even if the album flag is disabled. Use a compatible forward
+fix or a release retaining both history and album-reference checks.
+
+Album candidate verification includes five processed album groups, nine core-photo
+groups, seven existing media groups and two release-content checks. The tests
+exercise source-gallery removal while referenced, foreign ownership, exact
+receipts, cover/count omission, block and Church removal, 25-photo cursor paging,
+export/deactivation and concurrent reference/retirement. The interface rechecks
+selected-photo previews on return so unsaved references do not display a revoked
+source. Four editing/recovery/privacy browser groups and a separate 25-photo
+pagination group pass; two personal editor/history groups remain green. The
+disabled album flag preserves the existing library and gives honest guide copy.
+The fresh encrypted 29-to-30 restore rehearsal preserved original columns in
+73 tables and created empty album tables. All 30 migrations apply from empty.
+Production migration, activation and live verification are recorded separately.

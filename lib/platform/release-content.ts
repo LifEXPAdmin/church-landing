@@ -60,6 +60,19 @@ export const features: Feature[] = [
     availability: "conditional"
   },
   {
+    id: "photo-albums",
+    category: "Profiles",
+    name: "Named photo albums",
+    description:
+      "Organize your saved photos into albums without another upload.",
+    steps:
+      "Open your profile, then Photos and Named albums. Create an album, choose saved photos, arrange their order and choose a cover. Save the album with Only me, Members or an approved Church audience. Delete an album to remove its organization while keeping the photos.",
+    href: "/platform/profile/me?tab=photos",
+    eligibility:
+      "Signed-in readers need access to the profile, album and each source photo. Albums never widen source audiences. Keep up to 50 albums with 100 photos each and browse in pages of 24. Remove a photo from its albums before deleting the saved photo.",
+    availability: "conditional"
+  },
+  {
     id: "post-photo-management",
     category: "Posts and conversations",
     name: "Add and arrange post photos",
@@ -329,6 +342,25 @@ export type ReleaseEntry = {
   featureIds: string[];
 };
 export const releases: ReleaseEntry[] = [
+  {
+    id: "named-photo-albums",
+    version: "2026.09.12.8",
+    date: "2026-09-12",
+    summary:
+      "Organize saved photos into named albums with source privacy intact.",
+    added: [
+      "Create and rename albums, choose a cover, and add, remove or reorder up to 100 of your own photos without uploading files again.",
+      "Album audiences start as Only me and can use Members or an approved Church. Counts, covers and enlarged views reveal only currently permitted source photos."
+    ],
+    improved: [
+      "Album saves preserve exact retries and give a review step for conflicting edits. Unsaved choices are protected during navigation and safe app updates.",
+      "Deleting an album keeps its photos. Deleting a photo used in an album explains that its album references must be removed first."
+    ],
+    fixed: [
+      "Changed source audiences, membership, blocks and account state apply to album previews and photo delivery. Export includes your own album names and ordered references."
+    ],
+    featureIds: ["photo-albums", "photo-library", "photo-viewer"]
+  },
   {
     id: "church-tools-and-identity",
     version: "2026.09.12.7",

@@ -8,6 +8,7 @@ import type { PostComposerOptions } from "@/lib/platform/post-editor";
 import type { ImageView } from "@/lib/platform/media";
 import { socialRequest, SocialClientError } from "@/lib/platform/social-client";
 import { PhotoViewer } from "./photo-viewer";
+import { PhotoAlbums } from "./photo-albums";
 import { PhotoUploadManager } from "./photo-upload-manager";
 import { useReadingPreferences } from "./reading-preferences";
 import { useUnsavedSocialWork } from "./use-unsaved-social-work";
@@ -543,6 +544,13 @@ export function ProfilePhotos({
             </button>
           ))}
         </nav>
+        <PhotoAlbums
+          profileId={profileId}
+          ownerId={ownerId}
+          preview={preview}
+          churches={churches}
+          available={!!data?.albumsAvailable}
+        />
         {data && (
           <>
             <p>
