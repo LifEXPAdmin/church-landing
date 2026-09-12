@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Metadata } from "next";
 import { PlatformShell } from "@/components/platform/platform-shell";
 import { GuestAccountPrompt } from "@/components/platform/guest-account-prompt";
@@ -21,6 +22,12 @@ export default async function DraftsPage({
         <section className="container-shell py-10">
           <div className="mx-auto max-w-2xl space-y-6">
             <h1 className="text-4xl">Your drafts</h1>
+            <Link
+              className="gc-button gc-button-quiet"
+              href="/platform/comment-drafts"
+            >
+              Your comment drafts
+            </Link>
             <DraftLibrary key={user.id} ownerId={user.id} />
             {resume && (
               <div id="resume">

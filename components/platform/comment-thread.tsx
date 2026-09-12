@@ -393,7 +393,8 @@ export function CommentThread({
           key={`${owner}-root-${composerEpoch}`}
           postId={postId}
           owner={owner}
-          hidden={hidden || !data?.canReply}
+          hidden={hidden}
+          unavailable={!data?.canReply}
           onSent={() => {
             setComposerEpoch((n) => n + 1);
             void load();
@@ -407,7 +408,8 @@ export function CommentThread({
           owner={owner}
           replyToId={reply.id}
           replyName={reply.author?.name}
-          hidden={hidden || !data?.canReply}
+          hidden={hidden}
+          unavailable={!data?.canReply}
           onSent={() => {
             setReply(null);
             void load();

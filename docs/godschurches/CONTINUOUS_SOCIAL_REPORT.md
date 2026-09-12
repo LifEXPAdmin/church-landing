@@ -41,3 +41,16 @@ These are local implementation receipts. Release identity and live checks are
 recorded at the release checkpoint. Parent integration, remaining reader and
 recovery interfaces, source/owner acceptance and physical-device requirements
 remain open until their own evidence is present.
+
+## Private comment recovery checkpoint
+
+The private recovery list reuses the composer, restores exact whitespace, checks
+current target access, retains owner text for unavailable targets, and supports
+versioned discard with exact retry. Explicit resume cannot resurrect a consumed
+or discarded ID. Three additional local HTTPS browser groups pass: stale save
+and explicit conflict review followed by consume-once publication; withdrawn
+source with owner-only copy/discard and lost-response discard retry; and account
+switch concealment. Seventeen combined controller checks pass, including idle
+save timing and discarded-ID recovery. Focused lint and production build/runtime
+traces pass (106 traces, 8,656 entries, 261 server JavaScript files). Release is
+still pending the integrated checkpoint.

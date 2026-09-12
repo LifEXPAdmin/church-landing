@@ -10,14 +10,18 @@ export function CommentComposer({
   owner,
   replyToId = null,
   replyName,
+  draftId,
   hidden,
+  unavailable = false,
   onSent
 }: {
   postId: string;
   owner: string;
   replyToId?: string | null;
   replyName?: string;
+  draftId?: string;
   hidden: boolean;
+  unavailable?: boolean;
   onSent: () => void;
 }) {
   const controller = useMemo(
@@ -26,9 +30,11 @@ export function CommentComposer({
         async <T,>(path: string, body?: string) =>
           (await socialRequest<T>(path, body, owner)).data,
         postId,
-        replyToId
+        replyToId,
+        undefined,
+        draftId
       ),
-    [postId, owner, replyToId]
+    [postId, owner, replyToId, draftId]
   );
   const state = useSyncExternalStore(
     controller.subscribe,
@@ -44,8 +50,8 @@ export function CommentComposer({
     return controller.dispose;
   }, [controller]);
   useEffect(() => {
-    controller.visibility(hidden);
-  }, [controller, hidden]);
+    controller.visibility(hidden || unavailable);
+  }, [controller, hidden, unavailable]);
   useEffect(() => {
     let active = true;
     if (!hidden)
@@ -77,6 +83,44 @@ export function CommentComposer({
   );
   const disabled = !state.ready || state.sending || !!state.createdId;
   if (hidden) return null;
+  if (unavailable)
+    return (
+      <section
+        aria-label="Unavailable comment target"
+        className="space-y-2 rounded border p-3"
+      >
+        <p>
+          The target is unavailable or replies are no longer permitted. Your own
+          text is preserved here.
+        </p>
+        <textarea
+          aria-label="Your unsent comment text"
+          readOnly
+          value={state.fields.content}
+          className="block min-h-28 w-full rounded border p-2"
+        />
+        <button
+          type="button"
+          className="gc-button gc-button-quiet"
+          onClick={() =>
+            void navigator.clipboard.writeText(state.fields.content).then(
+              () => setNotice("Text copied."),
+              () => setNotice("Select the text and copy it manually.")
+            )
+          }
+        >
+          Copy unsent text
+        </button>
+        <button
+          type="button"
+          className="gc-button gc-button-quiet"
+          onClick={onSent}
+        >
+          Close this working copy
+        </button>
+        <p role="status">{notice}</p>
+      </section>
+    );
   if (state.createdId)
     return (
       <div role="status" className="space-y-2">

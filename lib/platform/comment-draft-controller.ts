@@ -22,6 +22,7 @@ export class CommentDraftController {
   private postId: string;
   private replyToId: string | null;
   private uuid: () => string;
+  private resumeId: string | undefined;
   private timer: ReturnType<typeof setTimeout> | undefined;
   private listeners = new Set<() => void>();
   private pending: {
@@ -53,12 +54,14 @@ export class CommentDraftController {
     transport: CommentTransport,
     postId: string,
     replyToId: string | null = null,
-    uuid = () => crypto.randomUUID()
+    uuid = () => crypto.randomUUID(),
+    resumeId?: string
   ) {
     this.transport = transport;
     this.postId = postId;
     this.replyToId = replyToId;
     this.uuid = uuid;
+    this.resumeId = resumeId;
   }
   getSnapshot = () => this.state;
   subscribe = (fn: () => void) => {
@@ -110,6 +113,11 @@ export class CommentDraftController {
       );
       if (seq !== this.sequence) return;
       const row = data.items[0];
+      if (this.resumeId && row?.id !== this.resumeId)
+        throw new SocialClientError(
+          404,
+          "This saved draft was sent or discarded. It cannot be restored."
+        );
       const fields = row
         ? {
             content: row.content,

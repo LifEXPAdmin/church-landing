@@ -233,3 +233,12 @@ the shared update/reload guard; it does not modify post-draft fields or their
 reply-audience contract. Mention selections store eligible account IDs, never
 infer recipients from typed text, and cap selections at five. Church identities
 come from current composer grants and are checked again by the command service.
+
+The private comment-draft library is at `/platform/comment-drafts`, linked from
+Your drafts. It uses owner-scoped cursor reads and the same composer controller.
+An explicit resume ID must still name the active target draft; a sent/discarded
+snapshot cannot silently start a new draft. Target labels and discussion links
+appear only after a current authorized comment read. Unavailable targets retain
+only the owner's saved/working text with explicit copy and discard choices.
+Discard uses its own exact serialized body and expected version; foreground and
+account changes conceal previous-owner data before rechecking access.

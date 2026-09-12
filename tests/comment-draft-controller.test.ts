@@ -157,3 +157,38 @@ test("double send serializes one save and one create", async () => {
   assert.deepEqual(operations, ["draft-save", "create"]);
   c.dispose();
 });
+
+test("a consumed or discarded explicit resume ID cannot restore a different target draft", async () => {
+  const c = new CommentDraftController(
+    async <T>() => ({ items: [] }) as T,
+    "post",
+    null,
+    () => "fresh-id",
+    "discarded-id"
+  );
+  await c.start();
+  assert.equal(c.getSnapshot().ready, false);
+  assert.match(c.getSnapshot().message, /cannot be restored/);
+  c.dispose();
+});
+
+test("autosave waits five idle seconds and restarts after new edits", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const bodies: string[] = [];
+  const c = fixture(async (body) => {
+    bodies.push(body);
+    return { id: "draft", version: 1, message: "ok" };
+  });
+  await c.start();
+  c.change(fields("first"));
+  t.mock.timers.tick(4999);
+  assert.equal(bodies.length, 0);
+  c.change(fields("second"));
+  t.mock.timers.tick(4999);
+  assert.equal(bodies.length, 0);
+  t.mock.timers.tick(1);
+  await Promise.resolve();
+  assert.equal(bodies.length, 1);
+  assert.equal(JSON.parse(bodies[0]).content, "second");
+  c.dispose();
+});
