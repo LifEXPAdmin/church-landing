@@ -18,6 +18,7 @@ import { SettingsSecurity } from "./settings-security";
 import { SettingsPrivacy } from "./settings-privacy";
 import { SettingsSafety } from "./settings-safety";
 import { SettingsData } from "./settings-data";
+import { SettingsHelp } from "./settings-help";
 
 const positions = new Map<string, { y: number; focus: string }>();
 let positionOwner: string | null = null;
@@ -351,6 +352,7 @@ export function SettingsWorkspace({
               )}
               {folder === "safety" && !active && <SettingsSafety />}
               {folder === "data" && !active && <SettingsData />}
+              {folder === "help" && !active && <SettingsHelp />}
               {folder &&
                 !active &&
                 rows(

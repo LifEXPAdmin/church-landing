@@ -391,7 +391,8 @@ export const features: Feature[] = [
     name: "Help and support",
     description:
       "Find help and contact the support team through the available intake.",
-    steps: "Open Help and choose the relevant contact or support option.",
+    steps:
+      "Open Settings, then Help and about. Search current help for audiences, calendar sharing, display or quiet hours. Open Help and contacts for the relevant route; the same folder links to policies, the loaded app version and retained release notes.",
     href: "/platform/help",
     eligibility:
       "Church-only contacts require approved access. Delivery and response are separate from submitting a request.",
@@ -409,6 +410,20 @@ export type ReleaseEntry = {
   featureIds: string[];
 };
 export const releases: ReleaseEntry[] = [
+  {
+    id: "settings-help-guide",
+    version: "2026.09.12.18",
+    date: "2026-09-12",
+    summary: "Find clear help for settings and the right support route.",
+    added: [
+      "Search Help and about for answers about audiences, calendar sharing, profile appearance, display resets and current notification controls."
+    ],
+    improved: [
+      "Help brings support contacts, private requests, the loaded app version and existing policy, release-note and feature pages together."
+    ],
+    fixed: [],
+    featureIds: ["settings", "support"]
+  },
   {
     id: "data-and-permissions",
     version: "2026.09.12.17",
