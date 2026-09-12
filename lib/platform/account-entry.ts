@@ -13,12 +13,22 @@ export function safeAccountReturn(value: unknown): string {
   const url = new URL(value, "https://return.invalid");
   if (
     url.origin !== "https://return.invalid" ||
-    !/^\/platform(?:\/(?:feed|search|menu|drafts|comment-drafts|settings|calendars(?:\/[a-zA-Z0-9_-]{1,100})?|commitments|events\/[a-zA-Z0-9_-]{1,100}|profile(?:\/(?:me|[a-zA-Z0-9_]{3,24}))?|posts\/[a-zA-Z0-9_-]{1,100}|church-listings(?:\/[a-zA-Z0-9_-]{1,100})?|church-claims(?:\/(?:review(?:\/[a-zA-Z0-9_-]{1,100})?|[a-zA-Z0-9_-]{1,100}))?|churches(?:\/[a-zA-Z0-9_-]{1,100}(?:\/(?:directory|review|overview|calendar|responsibilities|access|structure(?:\/[a-zA-Z0-9_-]{1,100})?|people\/[a-zA-Z0-9_-]{1,100}))?)?|my-church(?:\/sharing)?|help|support(?:\/[a-zA-Z0-9_-]{1,100})?))?\/?$/.test(
+    !/^\/platform(?:\/(?:feed|search|menu|drafts|comment-drafts|relationships|settings|calendars(?:\/[a-zA-Z0-9_-]{1,100})?|commitments|events\/[a-zA-Z0-9_-]{1,100}|profile(?:\/(?:me|[a-zA-Z0-9_]{3,24}))?|posts\/[a-zA-Z0-9_-]{1,100}|church-listings(?:\/[a-zA-Z0-9_-]{1,100})?|church-claims(?:\/(?:review(?:\/[a-zA-Z0-9_-]{1,100})?|[a-zA-Z0-9_-]{1,100}))?|churches(?:\/[a-zA-Z0-9_-]{1,100}(?:\/(?:directory|review|overview|calendar|responsibilities|access|structure(?:\/[a-zA-Z0-9_-]{1,100})?|people\/[a-zA-Z0-9_-]{1,100}))?)?|my-church(?:\/sharing)?|help|support(?:\/[a-zA-Z0-9_-]{1,100})?))?\/?$/.test(
       url.pathname
     )
   )
     return "/platform";
   const query = new URLSearchParams();
+  if (url.pathname === "/platform/relationships") {
+    const view = url.searchParams.get("view"),
+      after = readerId(url.searchParams.get("after"));
+    if (
+      view &&
+      ["following", "favorites", "muted", "blocked", "churches"].includes(view)
+    )
+      query.set("view", view);
+    if (after) query.set("after", after);
+  }
   if (/^\/platform\/posts\/[a-zA-Z0-9_-]{1,100}\/?$/.test(url.pathname)) {
     const comment = readerId(url.searchParams.get("comment"));
     if (comment) query.set("comment", comment);

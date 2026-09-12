@@ -173,3 +173,18 @@ test("private comment draft entry remains an allowed sign-in return", () => {
     "/platform/comment-drafts"
   );
 });
+
+test("relationship return retains validated view and cursor without granting authority", () => {
+  assert.equal(
+    safeAccountReturn(
+      "/platform/relationships?view=blocked&after=cursor-123&owner=another&token=secret"
+    ),
+    "/platform/relationships?view=blocked&after=cursor-123"
+  );
+  assert.equal(
+    safeAccountReturn(
+      "/platform/relationships?view=private-admin&after=%2Foutside"
+    ),
+    "/platform/relationships"
+  );
+});

@@ -261,3 +261,27 @@ create a second chronological row. Follow conversation/Mute/Default uses the
 independent conversation version and explicit desired mode. Both share exact-body
 retry handling; a conflict requires a canonical refresh before another decision.
 The controls save in-app preferences only and do not activate delivery providers.
+
+## Relationship interface
+
+`RelationshipControls` is shared by profile, church and post-card menus and the
+private library. Opening a menu checks the current owner and status. Commands
+send explicit desired values, the returned relationship version and a stable
+serialized mutation body. Unknown responses retain the same request; version
+conflicts require refresh. Account changes clear pending choices. Current draft
+work must be saved/resolved before changing relationships. Success refreshes the
+canonical route/prefetch cache and rechecks open comment projections. Personal
+blocking never substitutes a church identity or infers church membership.
+
+Settings contains `RelationshipPrivacy`, with EVERYONE, FOLLOWED (people the
+owner follows), NOBODY and the existing profile-count visibility setting. Private
+choices are fetched after owner verification, not included in guest props.
+Uncertain saves freeze exact retry input; conflicts retain selected input and
+show the saved choices separately before explicit replacement.
+
+`/platform/relationships` is an account-private paginated library for Following,
+Favorites, Muted/Snoozed, Blocked and Churches. The URL preserves the validated
+view and page cursor across Back/sign-in. It renders only server-returned target
+labels, including the service's unavailable-target case. Restore/unfollow/
+unfavorite/unblock reuse the same controls. Unblock does not restore follows.
+No public relationship list, notification delivery or permission change is added.

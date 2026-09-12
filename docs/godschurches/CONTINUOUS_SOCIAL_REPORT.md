@@ -101,3 +101,24 @@ Build/runtime traces and focused lint pass. The private relationship library wil
 provide the persistent blocked-account entry and integrated unblock check before
 this relationship batch is released. Privacy settings are an independent local
 work item; neither is part of the live installation/comment release above.
+
+## Private relationship settings and library checkpoint
+
+Settings now provides mention eligibility and profile-count visibility with
+exact retries and deliberate conflict review. The private relationship page
+paginates all five existing views and reuses the controls for restoration and
+unblock. Account changes conceal private values/rows before rechecking ownership.
+
+Four additional local HTTPS browser groups pass: all privacy choices, exact
+lost-response retry and conflict across two separately signed-in sessions;
+account change/guest privacy exclusion; 25 unique follows with cursor/Back
+preservation; mute restore, unavailable targets, unblock without refollowing and
+private-list account change. Combined with the three controls groups, all seven
+relationship groups pass. Safe return tests include validated relationship view
+and cursor without foreign-owner or token authority. Production build/runtime
+traces pass: 107 traces, 8,754 entries, 264 server JavaScript files. No schema or
+backend policy changed. Relationship parent/integrated privacy acceptance remains
+open; deployment is recorded at the next checkpoint.
+The five shared-reader browser regression groups also pass with the new
+relationship menus, including gesture isolation, exact edit retry, source access
+revocation, sign-in return and feed-position recovery. Full repository lint passes.

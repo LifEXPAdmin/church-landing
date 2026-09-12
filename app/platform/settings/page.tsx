@@ -1,3 +1,4 @@
+import { RelationshipPrivacy } from "@/components/platform/relationship-privacy";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -33,8 +34,15 @@ export default async function PlatformSettingsPage() {
         <div className="mx-auto max-w-2xl space-y-6">
           <h1 className="text-5xl text-gc-text">Account settings</h1>
           <ReadingSettings />
+          <RelationshipPrivacy key={user.id} owner={user.id} />
           <div className="gc-settings">
             <h2>Privacy and sharing</h2>
+            <Link
+              className="gc-button gc-button-quiet"
+              href="/platform/relationships"
+            >
+              Your follows, favorites and blocked accounts
+            </Link>
             <p className="text-gc-muted">
               Your member profile, private account email, and church directory
               choices are separate. You choose whether to share directory
