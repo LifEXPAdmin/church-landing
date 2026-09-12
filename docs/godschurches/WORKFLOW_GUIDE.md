@@ -1,6 +1,6 @@
 # Godschurches workflow guide
 
-Version 1.3 · Updated 11 September 2026
+Version 1.4 · Updated 12 September 2026
 
 This is the repository entry point for work that continues between ChatGPT, Codex,
 the private second brain, and the development workstation. Keep this file's path
@@ -80,6 +80,14 @@ change its Medium children's route. Labels do not change the active model or
 reasoning setting: record only a setting established by the session, otherwise
 state that it is unverified. Do not promise a particular token saving.
 
+At Extra High, complete lower-reasoning tasks (including Medium and High/Hard)
+when they are necessary prerequisites, integration, regression repairs or
+acceptance work for the active feature, patch or release. Keep their existing
+labels and verify their own criteria. Leave unrelated Medium tasks for a separate
+lower-reasoning session; readiness alone does not put them in the Extra High
+batch. Do not execute an Extra High task at a lower reasoning setting. Record
+the precise dependency and continue independent work that fits the active scope.
+
 Before dependent interface work, identify existing service/component paths,
 input/output types, authorized actions, pagination and error/conflict states.
 Reuse canonical records and current audience checks. Presentation does not
@@ -93,6 +101,27 @@ failure, record the precise Extra High dependency and switch to another ready
 slice. The user selects the higher reasoning setting. Clear a dependency only
 after its named contract and acceptance evidence exist. Keep integrated parents
 and final batch review open through their separate acceptance.
+
+## Keep the application lean and fast
+
+Before adding code, find the existing service, component and canonical record
+that owns the behavior. Reuse or extend it within its authority boundary. Add
+only what the current acceptance criteria require; defer speculative frameworks,
+duplicate stores, background work and dependencies. Share genuinely repeated
+behavior when that simplifies the callers without coupling separate permissions.
+
+Review the runtime cost of affected paths: shipped client code and dependencies,
+request frequency, bounded database reads, image loading, and repeated rendering
+or computation. Preserve pagination and batch related reads where appropriate.
+Keep fixture, test and build tooling outside runtime bundles. Remove redundant
+work in the touched scope when the behavior can be preserved and verified.
+
+Measure before claiming a speed or size improvement. Choose focused evidence
+suited to the change, such as bundle bytes, request/query counts or representative
+timings. Code inspection, passing functional tests and total source line counts
+do not establish performance. Avoid speculative rewrites or repeated broad
+benchmarks without a concrete concern. Preserve authorization, source revocation,
+exact retries, conflict handling and accessibility while optimizing.
 
 ## Working routine
 
@@ -176,6 +205,9 @@ engineering report. Include only public engineering facts in this repository.
 - Selected reasoning route, verified model/setting or explicit uncertainty, focused
   brief title, owning requirement identifiers, and prerequisite receipt.
 - Reused paths/contracts and the behavior or contract delta, including no change.
+- Necessary lower-reasoning dependencies completed in the active batch; unrelated
+  Medium work left for a lower-reasoning session.
+- Relevant runtime-cost review, measurements actually made, and unresolved limits.
 - Actual changes and affected files/pages.
 - Decisions and their source.
 - Branch/commit, PR, or deployment when applicable.
@@ -216,6 +248,11 @@ test evidence in their appropriate private systems. The exact page titles above
 allow an authorized assistant to locate the context without publishing it.
 
 ## Change log
+
+- **1.4 — 12 September 2026:** Adopted the owner's dependency-only use of
+  lower-reasoning tasks within Extra High work. Added scoped reuse and measured
+  runtime-cost review to implementation and handoff guidance. Documentation
+  readback is verified; no runtime or deployment change is implied.
 
 - **1.3 — 11 September 2026:** Adopted WF13 focused briefs, Medium/Extra High
   dependency routes, contract reuse and compact evidence fields in this existing
