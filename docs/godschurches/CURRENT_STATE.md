@@ -1,5 +1,16 @@
 # Godschurches current state
 
+## Mission and Home return — September 12, 2026
+
+Product `2026.09.12.19`, application `b82424fb37d22352ff4951e5e9f2e4cbbed4424d`,
+is live on READY deployment `dpl_FtKKJjzqj2ug5iiKL229LHacBB2z`; canonical
+assignment and serving identity match. Visitor Home, About, manifesto, existing
+registration acknowledgement and shared footer carry the approved mission.
+An initial feed-history write now preserves Back restoration. Four browser groups,
+14 focused tests, types/lint/build and nine read-only live checks pass with zero
+application writes or browser errors. See [Mission evidence](MISSION_PRESENTATION_REPORT.md).
+The separate historical hydration warning and parent/physical acceptance stay open.
+
 ## Searchable help and current product information — September 12, 2026
 
 Product `2026.09.12.18`, application `a77bf8caa5a7bce048f8c9f7071426fd5bdf37d3`,

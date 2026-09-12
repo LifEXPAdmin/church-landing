@@ -32,4 +32,11 @@ browser checks, separate from physical phone acceptance.
 
 Fourteen focused navigation/release tests, scoped lint, types and production build
 pass. Runtime trace verification excludes private artifacts. No schema change.
-Release status is recorded after independent deployment and canonical live checks.
+Product `2026.09.12.19`, application
+`b82424fb37d22352ff4951e5e9f2e4cbbed4424d`, is live on READY deployment
+`dpl_FtKKJjzqj2ug5iiKL229LHacBB2z`. Independent canonical assignment and serving
+identity match. Nine live checks at 15:38:51 UTC passed, including actual Home
+restoration through Back, with zero application writes or browser errors. Runtime
+error rows were zero. The 15:34 preflight verified all 30 migration checksums
+and the protected backup/restore. Parent integration and physical owner acceptance
+remain open.
