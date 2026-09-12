@@ -44,7 +44,7 @@ with isolated fictional identities and substituted provider transport. They cove
 method privacy, changed/revoked access, existing sensitive actions and an expired
 proof followed by a fresh proof returning to the intended detail. Actual Google
 Cloud configuration, provider consent and physical device acceptance are separate.
-Product `2026.09.12.12` is verified locally; publication is pending. Seven built
+Product `2026.09.12.12` is verified locally and live. Seven built
 browser groups passed, including unavailable/unknown metadata, passwordless and
 provider-disabled controls, actual verification-state refresh and two explicitly
 simulated enabled-provider UI cases. The real signature/boundary groups above
@@ -56,3 +56,12 @@ build pass: 121 traces, 10,292 entries and 300 server JavaScript files. Phone/de
 320/390/1440px doubled text, keyboard and screenshots were checked without browser
 errors. No actual provider redirect, production email, account change or device
 acceptance is inferred from the isolated simulations.
+
+Application `246e6f758656bbdb9acceb85613dacaa62006e14` is serving on READY
+deployment `dpl_F7rEWec2e8XZFoaFJBT1aNQ8dLdW`; the independently read canonical
+assignment matches. Ten read-only live checks at 13:00:32 UTC passed with zero
+application writes, browser errors or scoped runtime error rows. Exact product
+and commit, release notes, Explore links, protected Settings routes/context,
+recovery/verification navigation and preserved private photo/draft gates were
+checked. Fresh backup/restore and all 30 migration checksums passed before push;
+no production migration, identity, provider or permission change was needed.

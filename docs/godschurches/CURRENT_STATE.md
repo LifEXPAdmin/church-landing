@@ -1,5 +1,24 @@
 # Godschurches current state
 
+## Method-aware Security — September 12, 2026
+
+Product `2026.09.12.12`, application `246e6f758656bbdb9acceb85613dacaa62006e14`,
+is live on READY deployment `dpl_F7rEWec2e8XZFoaFJBT1aNQ8dLdW`; canonical
+assignment and serving identity match. Security reflects actual sign-in methods
+and recovery availability. Existing Google confirmation returns to the intended
+Settings detail and retains its purpose, expiry and one-use protections.
+
+Thirty-four isolated context/Google groups, seven Security browser groups, five
+Account browser regressions and twenty Settings/navigation/release groups pass.
+Types, scoped lint and production build pass. Ten live checks at 13:00:32 UTC
+pass with zero application writes, browser errors or scoped runtime error rows.
+Backup/restore and all 30 migration checksums remain verified; no schema or
+provider change. See [Security verification](SECURITY_SETTINGS_REPORT.md).
+
+Next is the focused Profile/contact Settings audit. Username rename, configurable
+security alerts, MFA and passkeys retain their separate capability gates. Church
+appointments and parent/global/owner/device acceptance remain open.
+
 ## Account Settings — September 12, 2026
 
 Product `2026.09.12.11`, application `1d085e68273de74354607fa4a60b34c10018cec1`,
