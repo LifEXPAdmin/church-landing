@@ -1,3 +1,4 @@
+import { photoLibraryEnabled } from "./personal-photo-policy";
 import { socialUserWhere } from "./social-policy";
 import type { PrismaClient } from "@prisma/client";
 import { activePublicAccount, publicProfileSelect } from "./public-profile";
@@ -37,7 +38,12 @@ export function getMemberProfile(
   db: PrismaClient,
   token: unknown,
   username: string,
-  query: { before?: Date | null; cursor?: string | null; preview?: string } = {}
+  query: {
+    before?: Date | null;
+    cursor?: string | null;
+    preview?: string;
+    photos?: boolean;
+  } = {}
 ) {
   return withPostRead(db, token, async (tx, context) => {
     if (!context.actorId)
@@ -74,12 +80,15 @@ export function getMemberProfile(
       null;
     const cover =
       (await listImagesIn(tx, context, "PROFILE_COVER", profile.id))[0] ?? null;
-    const posts = await listPostsIn(tx, reader, {
-      before: query.before,
-      cursor: query.cursor,
-      authorId: profile.id,
-      limit: 31
-    });
+    const posts =
+      query.photos && photoLibraryEnabled()
+        ? []
+        : await listPostsIn(tx, reader, {
+            before: query.before,
+            cursor: query.cursor,
+            authorId: profile.id,
+            limit: 31
+          });
     const count = await tx.platformPost.count({
       where: {
         AND: [
@@ -114,7 +123,8 @@ export function getMemberProfile(
       postCount: count,
       following,
       isMe: profile.id === context.actorId,
-      memberPreview
+      memberPreview,
+      photoLibraryEnabled: photoLibraryEnabled()
     };
   });
 }
@@ -133,6 +143,7 @@ export function getProfileEditor(db: PrismaClient, token: unknown) {
       ...profile,
       presentation: profile.presentation ?? defaultProfileStyle,
       imagesAvailable: imagesAvailable(),
+      photoLibraryEnabled: photoLibraryEnabled(),
       avatar:
         (await listImagesIn(tx, context, "PROFILE_AVATAR", profile.id))[0] ??
         null,

@@ -1,3 +1,5 @@
+import { redirect } from "next/navigation";
+import { photoLibraryEnabled } from "@/lib/platform/personal-photo-policy";
 import type { Metadata } from "next";
 import { GuestAccountPrompt } from "@/components/platform/guest-account-prompt";
 import { PlatformShell } from "@/components/platform/platform-shell";
@@ -18,12 +20,26 @@ export async function generateMetadata(): Promise<Metadata> {
     robots: { index: false, follow: false }
   };
 }
-export default async function EditProfilePage() {
+export default async function EditProfilePage({
+  searchParams
+}: {
+  searchParams: Promise<{ tab?: string }>;
+}) {
   const user = await getCurrentPlatformUser();
+  const photos = (await searchParams).tab === "photos" && photoLibraryEnabled();
+  if (user && photos)
+    redirect(
+      `/platform/profile/${encodeURIComponent(user.username)}?tab=photos`
+    );
   if (!user)
     return (
       <PlatformShell user={null}>
-        <GuestAccountPrompt next="/platform/profile/me" reason="profile" />
+        <GuestAccountPrompt
+          next={
+            photos ? "/platform/profile/me?tab=photos" : "/platform/profile/me"
+          }
+          reason="profile"
+        />
       </PlatformShell>
     );
   let profile;
@@ -33,7 +49,14 @@ export default async function EditProfilePage() {
     if (error instanceof PortalError && error.status === 401)
       return (
         <PlatformShell user={null}>
-          <GuestAccountPrompt next="/platform/profile/me" reason="profile" />
+          <GuestAccountPrompt
+            next={
+              photos
+                ? "/platform/profile/me?tab=photos"
+                : "/platform/profile/me"
+            }
+            reason="profile"
+          />
         </PlatformShell>
       );
     throw error;

@@ -59,12 +59,20 @@ function photoCursor(scope: string) {
 export function readPersonalPhotos(
   db: PrismaClient,
   token: unknown,
-  input: { profileId: unknown; view?: unknown; after?: unknown; id?: unknown }
+  input: {
+    profileId: unknown;
+    view?: unknown;
+    after?: unknown;
+    id?: unknown;
+    ids?: unknown;
+    preview?: unknown;
+  }
 ) {
   requirePhotoLibrary();
   return withPostRead(db, token, async (tx, context) => {
     if (!context.actorId)
       throw new PortalError(401, "Sign in to view profile photos.");
+    const actorId = context.actorId;
     const profileId = postId(input.profileId),
       view = input.view ?? "all";
     if (!["all", "profile", "cover", "hidden"].includes(String(view)))
@@ -74,13 +82,39 @@ export function readPersonalPhotos(
       select: { id: true }
     });
     if (!profile) throw new PortalError(404, "These photos are unavailable.");
-    const canManage = context.actorId === profileId;
+    const memberPreview = input.preview === "member" && actorId === profileId;
+    if (memberPreview)
+      context = {
+        actorId: "member-preview",
+        churches: [],
+        publishers: new Set(),
+        moderators: new Set(),
+        volunteers: new Set()
+      };
+    const canManage = actorId === profileId && !memberPreview;
+    let selectedIds: string[] | undefined;
+    if (input.ids != null) {
+      if (typeof input.ids !== "string")
+        throw new PortalError(400, "Choose saved photo references.");
+      selectedIds = input.ids.split(",").map(postId);
+      if (
+        !selectedIds.length ||
+        selectedIds.length > 10 ||
+        new Set(selectedIds).size !== selectedIds.length
+      )
+        throw new PortalError(400, "Choose up to ten different saved photos.");
+    }
     if (view === "hidden" && !canManage)
       throw new PortalError(404, "These photos are unavailable.");
     const where: Prisma.PersonalPhotoWhereInput = {
       ownerId: profileId,
       deletedAt: null,
-      hiddenAt: view === "hidden" ? { not: null } : null,
+      hiddenAt:
+        input.id || selectedIds
+          ? undefined
+          : view === "hidden"
+            ? { not: null }
+            : null,
       asset: {
         AND: [
           readableAssetWhere(context),
@@ -96,12 +130,12 @@ export function readPersonalPhotos(
         `${context.actorId}:${profileId}:${view}:newest-v1`
       ),
       after = cursor.decode(input.after);
-    if (
-      canManage &&
-      (await tx.personalPhoto.count({
-        where: { ownerId: profileId, deletedAt: null }
-      })) > PHOTO_LIBRARY_LIMIT
-    )
+    const ownedCount = canManage
+      ? await tx.personalPhoto.count({
+          where: { ownerId: profileId, deletedAt: null }
+        })
+      : null;
+    if (ownedCount !== null && ownedCount > PHOTO_LIBRARY_LIMIT)
       throw new PortalError(
         503,
         "This photo library needs a size review. Nothing has been removed."
@@ -112,6 +146,7 @@ export function readPersonalPhotos(
         AND: [
           where,
           ...(input.id ? [{ assetId: postId(input.id) }] : []),
+          ...(selectedIds ? [{ assetId: { in: selectedIds } }] : []),
           ...(after
             ? [
                 {
@@ -150,6 +185,10 @@ export function readPersonalPhotos(
       imagesAvailable: imagesAvailable(),
       total,
       limit: PHOTO_LIBRARY_LIMIT,
+      capacityRemaining:
+        ownedCount === null
+          ? null
+          : Math.max(0, PHOTO_LIBRARY_LIMIT - ownedCount),
       pageSize: PHOTO_PAGE_SIZE,
       current,
       images: page.map((row) => ({

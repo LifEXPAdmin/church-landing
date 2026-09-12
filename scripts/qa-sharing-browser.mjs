@@ -424,7 +424,7 @@ try {
   await page
     .getByText(/^Signed-in accounts can manage their own photo/)
     .waitFor();
-  assert.equal(await page.locator("main article").count(), 1);
+  assert.equal(await page.locator("main article").count(), 4);
   await go("/platform/releases/community-baseline");
   await page.getByRole("heading", { name: "Version 2026.09.12.0" }).waitFor();
   await bounded();
@@ -532,7 +532,7 @@ try {
   await page
     .getByRole("button", { name: "Confirm remove avatar", exact: true })
     .click();
-  await page.getByText("Avatar removed.", { exact: true }).waitFor();
+  await page.getByText(/^Avatar removed from current selection\./).waitFor();
   ok(
     "Existing photo editor uploads, persists on reload, preserves saved photo on cancel, serves authorized post avatar and removes it"
   );

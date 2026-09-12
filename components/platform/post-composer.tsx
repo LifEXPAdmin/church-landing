@@ -6,6 +6,7 @@ import type {
 } from "@/lib/platform/post-editor";
 import { portalInputClass, portalButtonClass } from "./portal-action-form";
 import Link from "next/link";
+import { ComposerPhotos } from "./composer-photos";
 import { useDraftWorkspace } from "./draft-workspace-provider";
 import {
   PostDraftFields,
@@ -300,6 +301,7 @@ function ComposerDraft({
           </select>
         </div>
         <PostDraftFields draft={draft} change={setDraft} />
+        <ComposerPhotos enabled={options.photoLibraryEnabled} />
         {churchId && (
           <EventChoice
             key={churchId}

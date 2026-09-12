@@ -1,3 +1,4 @@
+import { photoLibraryEnabled } from "./personal-photo-policy";
 import type { PrismaClient } from "@prisma/client";
 import { PortalError } from "./portal";
 import {
@@ -18,6 +19,7 @@ export function getPostComposer(db: PrismaClient, token: unknown) {
       orderBy: [{ name: "asc" }, { id: "asc" }]
     });
     return {
+      photoLibraryEnabled: photoLibraryEnabled(),
       churches: churches.map((c) => ({
         ...c,
         canPublish: context.publishers.has(c.id)

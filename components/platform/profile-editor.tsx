@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { usePhotoBackGuard } from "./use-photo-back-guard";
 import { ProfileForm } from "./profile-form";
 import { ProfileImageControl } from "./profile-image-control";
 import type { ProfileEditorView } from "@/lib/platform/profiles";
@@ -9,6 +10,7 @@ export function ProfileEditor({ profile }: { profile: ProfileEditorView }) {
     avatar: { busy: false, dirty: false },
     cover: { busy: false, dirty: false }
   });
+  const [backNotice, setBackNotice] = useState("");
   const [textDirty, setTextDirty] = useState(false),
     [textBusy, setTextBusy] = useState(false),
     [leave, setLeave] = useState<string | null>(null);
@@ -24,6 +26,11 @@ export function ProfileEditor({ profile }: { profile: ProfileEditorView }) {
     (image) => image.busy || image.dirty
   );
   dirty.current = textDirty || textBusy || selectedPhoto;
+  usePhotoBackGuard(dirty.current, () =>
+    setBackNotice(
+      "Your unsaved profile changes are still here. Finish or discard them before leaving."
+    )
+  );
   useEffect(() => {
     const before = (event: BeforeUnloadEvent) => {
       if (dirty.current && !allowLeave.current) {
@@ -73,6 +80,7 @@ export function ProfileEditor({ profile }: { profile: ProfileEditorView }) {
   }, [leave]);
   return (
     <div className="gc-profile-editor space-y-6">
+      <p role="status">{backNotice}</p>
       <header>
         <h1 className="text-4xl sm:text-5xl">Edit your profile</h1>
         <p className="mt-3 max-w-3xl text-gc-muted">
@@ -82,6 +90,14 @@ export function ProfileEditor({ profile }: { profile: ProfileEditorView }) {
           separate.
         </p>
       </header>
+      {profile.photoLibraryEnabled && (
+        <a
+          className="gc-profile-text-button"
+          href={`/platform/profile/${encodeURIComponent(profile.username)}?tab=photos`}
+        >
+          Manage your Photos, profile pictures and covers
+        </a>
+      )}
       <div className="grid items-start gap-5 lg:grid-cols-2">
         {(["avatar", "cover"] as const).map((kind) => (
           <ProfileImageControl
@@ -91,6 +107,7 @@ export function ProfileEditor({ profile }: { profile: ProfileEditorView }) {
             name={profile.name}
             kind={kind}
             available={profile.imagesAvailable}
+            retainsHistory={profile.photoLibraryEnabled}
             disabled={textBusy}
             onState={onImageState}
           />

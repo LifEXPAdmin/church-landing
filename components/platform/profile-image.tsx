@@ -1,5 +1,6 @@
 "use client";
 /* eslint-disable @next/next/no-img-element -- Authorized media must bypass the shared image optimizer. */
+import { useReadingPreferences } from "./reading-preferences";
 import { useState } from "react";
 import { Expand } from "lucide-react";
 import { PhotoViewer } from "./photo-viewer";
@@ -18,6 +19,7 @@ export function ProfileImage({
   accountId: string;
   profileId: string;
 }) {
+  const { preferences } = useReadingPreferences();
   const [failed, setFailed] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const className =
@@ -39,8 +41,11 @@ export function ProfileImage({
         )}
       </div>
     );
-  const small = image.variants[kind === "avatar" ? "thumb" : "medium"],
-    large = image.variants[kind === "avatar" ? "medium" : "large"];
+  const small =
+      image.variants[
+        kind === "avatar" || preferences.reduceData ? "thumb" : "medium"
+      ],
+    large = image.variants.medium;
   return (
     <>
       <button
@@ -54,7 +59,7 @@ export function ProfileImage({
           className="h-full w-full object-cover"
           src={small.url}
           srcSet={
-            small.width === large.width
+            preferences.reduceData || small.width === large.width
               ? undefined
               : `${small.url} ${small.width}w, ${large.url} ${large.width}w`
           }

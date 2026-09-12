@@ -1,3 +1,4 @@
+import { ProfilePhotos } from "@/components/platform/profile-photos";
 import { publicResourceMetadata } from "@/lib/platform/share-metadata";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -60,7 +61,12 @@ export default async function MemberProfilePage({
   searchParams
 }: {
   params: Promise<{ username: string }>;
-  searchParams: Promise<{ before?: string; cursor?: string; preview?: string }>;
+  searchParams: Promise<{
+    before?: string;
+    cursor?: string;
+    preview?: string;
+    tab?: string;
+  }>;
 }) {
   const { username } = await params;
   const profilePath = `/platform/profile/${encodeURIComponent(username)}`;
@@ -120,7 +126,8 @@ export default async function MemberProfilePage({
     profile = await readMemberProfile(username, {
       before,
       cursor,
-      preview: query.preview
+      preview: query.preview,
+      photos: query.tab === "photos"
     });
   } catch (error) {
     if (error instanceof PortalError && error.status === 401) return gate;
@@ -128,6 +135,7 @@ export default async function MemberProfilePage({
     throw error;
   }
   const preview = profile.memberPreview ? "member" : null;
+  const photosTab = query.tab === "photos" && profile.photoLibraryEnabled;
   const parameters = new URLSearchParams(preview ? { preview } : {});
   if (before && cursor) {
     parameters.set("before", before.toISOString());
@@ -324,11 +332,24 @@ export default async function MemberProfilePage({
                   <a
                     key={section}
                     className="gc-profile-text-button"
-                    href={`#${section}`}
+                    href={
+                      photosTab
+                        ? `${profilePath}${preview ? "?preview=member" : ""}#${section}`
+                        : `#${section}`
+                    }
                   >
                     {section === "about" ? "About" : "Posts"}
                   </a>
                 ))}
+              {profile.photoLibraryEnabled && (
+                <Link
+                  className="gc-profile-text-button"
+                  aria-current={photosTab ? "page" : undefined}
+                  href={`${profilePath}?tab=photos${preview ? "&preview=member" : ""}`}
+                >
+                  Photos
+                </Link>
+              )}
             </nav>
           </div>
         </header>
@@ -343,9 +364,17 @@ export default async function MemberProfilePage({
             </p>
           </section>
         )}
-        {profile.presentation.sectionOrder === "posts-first"
-          ? [postSection, about]
-          : [about, postSection]}
+        {photosTab ? (
+          <ProfilePhotos
+            profileId={profile.id}
+            ownerId={currentUser.id}
+            preview={!!preview}
+          />
+        ) : profile.presentation.sectionOrder === "posts-first" ? (
+          [postSection, about]
+        ) : (
+          [about, postSection]
+        )}
       </section>
     </PlatformShell>
   );

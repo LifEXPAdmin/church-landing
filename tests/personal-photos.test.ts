@@ -821,3 +821,104 @@ test("failed expired post uploads do not permanently block ordering of saved pho
   );
   assert.equal((await readPostGallery(db, a.token, post.id)).images.length, 1);
 });
+
+test("bounded saved-photo reads and member previews omit private choices; source privacy also filters post counts; stale account headers cannot write", async () => {
+  const { getPost } = await import("../lib/platform/post-reads");
+  const { handleImageRequest } = await import("../lib/platform/media-boundary");
+  const { socialWriteInput } = await import("../lib/platform/social-boundary");
+  const a = await createPortalActor(db, "photopreview"),
+    b = await createPortalActor(db, "photosecond"),
+    store = memoryStore(),
+    data = await bytes();
+  const shared = await uploadImage(
+    db,
+    a.token,
+    upload(a.id, "PROFILE_PHOTO", { audience: "PUBLIC" }),
+    data,
+    store
+  );
+  const privateImage = await uploadImage(
+    db,
+    a.token,
+    upload(a.id),
+    data,
+    store
+  );
+  const member = await readPersonalPhotos(db, a.token, {
+    profileId: a.id,
+    preview: "member"
+  });
+  assert.equal(member.total, 1);
+  assert.equal(member.canManage, false);
+  assert.equal(member.capacityRemaining, null);
+  assert.deepEqual(
+    (
+      await readPersonalPhotos(db, a.token, {
+        profileId: a.id,
+        ids: privateImage.id
+      })
+    ).images.map((row) => row.id),
+    [privateImage.id]
+  );
+  assert.equal(
+    (
+      await readPersonalPhotos(db, b.token, {
+        profileId: a.id,
+        ids: privateImage.id
+      })
+    ).images.length,
+    0
+  );
+  await denied(
+    readPersonalPhotos(db, a.token, {
+      profileId: a.id,
+      ids: Array(11).fill(privateImage.id).join(",")
+    }),
+    400
+  );
+  const post = await postCommand(db, a.token, {
+    operation: "create",
+    requestKey: randomUUID(),
+    content: "A saved shared photo",
+    photos: [{ id: shared.id, version: 1 }]
+  });
+  assert.equal((await getPost(db, b.token, post.id))?.photoCount, 1);
+  await personalPhotoCommand(
+    db,
+    a.token,
+    m("audience", { ...(await photoInput(shared.id)), audience: "ONLY_ME" })
+  );
+  assert.equal((await getPost(db, b.token, post.id))?.photoCount, 0);
+  assert.equal((await readPostGallery(db, b.token, post.id)).images.length, 0);
+  assert.equal((await getPost(db, a.token, post.id))?.photoCount, 1);
+  const origin = process.env.ACCOUNT_ORIGIN!,
+    headers = {
+      Origin: origin,
+      Cookie: "church_platform_session=" + a.token,
+      "X-Expected-Account": b.id,
+      "Content-Type": "application/json"
+    };
+  const deniedUpload = await handleImageRequest(
+    db,
+    new Request(origin + "/api/platform/images", {
+      method: "POST",
+      headers,
+      body: "{}"
+    }),
+    store
+  );
+  assert.equal(deniedUpload.status, 401);
+  await denied(
+    socialWriteInput(
+      db,
+      new Request(origin + "/api/platform/photos", {
+        method: "POST",
+        headers,
+        body: "{}"
+      }),
+      "photos"
+    ),
+    401
+  );
+  assert.equal(store.puts, 8);
+});

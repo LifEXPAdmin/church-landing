@@ -135,3 +135,42 @@ preserves a concurrently renewed grace period.
 
 Named-album intersection and browser integration remain subsequent gates. No
 production migration or retention activation is claimed by this checkpoint.
+
+## Interface and release-candidate verification
+
+The shared composer accepts versioned saved-photo references. The profile Photos
+route provides the paged library, current/history selection and direct uploads;
+`/platform/profile/me?tab=photos` resolves to the signed-in owner's Photos tab.
+The existing crop editor rechecks the authoritative current image after each save.
+Post owners open Manage photos for per-file progress, captions, order and conflict
+review. Management thumbnails load only after opening that panel. Reduced photo
+data is a nonsensitive browser preference: one post thumbnail per deliberate step,
+and one large derivative only when the viewer opens. No original is prefetched.
+
+Selected files, metadata and exact pending request bodies remain in memory. The
+shared workspace registers unresolved photo work for navigation/update protection.
+Browser Back uses one same-address guard for all pending photo panels; nested viewer
+Back closes the viewer, and saving/discarding removes the work guard. A changed
+account clears stale files and choices. Requests bind the expected account at the
+server boundary as well as checking identity before and after acknowledgements.
+A superseded foreground identity read can retry draft resume once without changing
+its account generation, preserving a real authentication failure's closed state.
+
+Fresh verification includes nine processed-photo service groups, eleven draft
+controller groups, four full library browser groups, two gallery conflict/retry
+groups, five navigation/account/reduced-data browser groups and two crop-editor/guide
+browser groups. Five release and
+reading-preference checks pass. Browser checks use isolated fictional accounts and
+production-mode HTTPS at 320, 390 and 1440 pixels; they are not physical phone tests.
+All 29 migrations apply to an empty isolated database. A fresh encrypted production
+backup restored locally, upgraded from 28 to 29 migrations and preserved original
+column fingerprints in 71 existing tables. The new backfill matched the permitted
+READY personal sources without creating posts or current-image changes.
+
+Before activation, apply the verified additive migration, confirm the new serving
+code and reconcile any READY personal images created by the preceding deployment
+between backfill and handover. Only missing associations may be inserted; existing
+audiences, hidden/deleted state and retired objects must never be reset. Confirm
+zero missing eligible associations before enabling retention. Disabling the library
+later still enforces every stored photo audience and preserves retained history.
+Production release identity and activation evidence are recorded after deployment.

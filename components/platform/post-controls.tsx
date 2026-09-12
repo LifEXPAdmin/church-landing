@@ -1,6 +1,7 @@
 "use client";
 import { useId, useState } from "react";
 import type { PostEditorView } from "@/lib/platform/post-editor";
+import { PostGalleryManager } from "./post-gallery-manager";
 import { PostActionForm } from "./post-action-form";
 import {
   PostDraftFields,
@@ -99,7 +100,14 @@ function EditPost({ post }: { post: PostEditorView }) {
     </PostActionForm>
   );
 }
-export function PostControls({ post }: { post: PostEditorView }) {
+export function PostControls({
+  post,
+  ownerId
+}: {
+  post: PostEditorView;
+  ownerId?: string;
+}) {
+  const [photosOpened, setPhotosOpened] = useState(false);
   const id = useId();
   return (
     <section
@@ -113,6 +121,20 @@ export function PostControls({ post }: { post: PostEditorView }) {
             Edit post
           </summary>
           <EditPost post={post} />
+        </details>
+      )}
+      {post.canEdit && ownerId && (
+        <details
+          onToggle={(event) => {
+            if (event.currentTarget.open) setPhotosOpened(true);
+          }}
+        >
+          <summary className="min-h-11 cursor-pointer py-3 font-semibold">
+            Manage photos
+          </summary>
+          {photosOpened && (
+            <PostGalleryManager postId={post.id} ownerId={ownerId} />
+          )}
         </details>
       )}
       {post.canDiscuss && (

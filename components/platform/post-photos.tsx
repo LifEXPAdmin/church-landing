@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ImageView } from "@/lib/platform/media";
 import { socialRequest } from "@/lib/platform/social-client";
+import { useReadingPreferences } from "./reading-preferences";
 import { PhotoViewer } from "./photo-viewer";
 
 export function PostPhotos({
@@ -12,6 +13,8 @@ export function PostPhotos({
   postId: string;
   accountId?: string | null;
 }) {
+  const { preferences } = useReadingPreferences();
+  const [active, setActive] = useState(0);
   const [images, setImages] = useState<ImageView[]>([]),
     [selected, setSelected] = useState<string | null>(null),
     [message, setMessage] = useState(""),
@@ -78,37 +81,75 @@ export function PostPhotos({
   return (
     <div ref={frame} className="my-4 min-h-12" aria-label="Post photos">
       <p role="status">{message}</p>
+      {!!images.length && preferences.reduceData && (
+        <div
+          className="mb-2 flex flex-wrap items-center gap-3"
+          aria-label="Choose a photo preview"
+        >
+          <button
+            type="button"
+            className="gc-button gc-button-quiet"
+            disabled={active === 0}
+            onClick={() => setActive((index) => index - 1)}
+          >
+            Previous photo
+          </button>
+          <span>
+            {Math.min(active + 1, images.length)} / {images.length} · Reduced
+            data
+          </span>
+          <button
+            type="button"
+            className="gc-button gc-button-quiet"
+            disabled={active >= images.length - 1}
+            onClick={() => setActive((index) => index + 1)}
+          >
+            Next photo
+          </button>
+        </div>
+      )}
       {!!images.length && (
         <div
           className="flex gap-3 overflow-x-auto overscroll-x-contain pb-2"
           aria-label={`${images.length} photos`}
         >
-          {images.map((image, index) => (
-            <button
-              key={image.id}
-              type="button"
-              className="relative shrink-0 overflow-hidden rounded-lg border border-gc-divider"
-              aria-haspopup="dialog"
-              aria-label={`Open photo ${index + 1} of ${images.length}`}
-              onClick={() => setSelected(image.id)}
-            >
-              <img
-                src={image.variants.thumb.url}
-                width={image.variants.thumb.width}
-                height={image.variants.thumb.height}
-                alt={image.alt || `Photo ${index + 1}`}
-                className="h-40 w-40 object-cover"
-                loading="lazy"
-                decoding="async"
-                onError={(e) => {
-                  e.currentTarget.style.visibility = "hidden";
-                }}
-              />
-              <span className="absolute bottom-1 right-1 rounded bg-black/75 px-2 text-sm text-white">
-                {index + 1}/{images.length}
-              </span>
-            </button>
-          ))}
+          {images.map(
+            (image, index) =>
+              (!preferences.reduceData ||
+                index === Math.min(active, images.length - 1)) && (
+                <button
+                  key={image.id}
+                  type="button"
+                  className="relative shrink-0 overflow-hidden rounded-lg border border-gc-divider"
+                  aria-haspopup="dialog"
+                  aria-label={`Open photo ${index + 1} of ${images.length}`}
+                  onClick={() => setSelected(image.id)}
+                >
+                  <img
+                    src={image.variants.thumb.url}
+                    srcSet={
+                      preferences.reduceData ||
+                      image.variants.medium.width === image.variants.thumb.width
+                        ? undefined
+                        : `${image.variants.thumb.url} ${image.variants.thumb.width}w, ${image.variants.medium.url} ${image.variants.medium.width}w`
+                    }
+                    sizes="160px"
+                    width={image.variants.thumb.width}
+                    height={image.variants.thumb.height}
+                    alt={image.alt || `Photo ${index + 1}`}
+                    className="h-40 w-40 object-cover"
+                    loading="lazy"
+                    decoding="async"
+                    onError={(e) => {
+                      e.currentTarget.style.visibility = "hidden";
+                    }}
+                  />
+                  <span className="absolute bottom-1 right-1 rounded bg-black/75 px-2 text-sm text-white">
+                    {index + 1}/{images.length}
+                  </span>
+                </button>
+              )
+          )}
         </div>
       )}
       {visible && !images.length && (

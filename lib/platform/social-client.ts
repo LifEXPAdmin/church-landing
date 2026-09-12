@@ -40,7 +40,11 @@ export async function socialRequest<T>(
     method: body ? "POST" : "GET",
     cache: "no-store",
     credentials: "same-origin",
-    ...(body ? { headers: { "Content-Type": "application/json" }, body } : {})
+    headers: {
+      ...(body ? { "Content-Type": "application/json" } : {}),
+      ...(expectedOwner ? { "X-Expected-Account": expectedOwner } : {})
+    },
+    ...(body ? { body } : {})
   });
   const data = await response.json();
   if ((await currentSocialOwner()) !== owner)

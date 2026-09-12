@@ -35,7 +35,8 @@ test("validated display settings roundtrip without retaining arbitrary identifie
     appearance: "dark",
     mode: "pages",
     size: "largest",
-    reduceMotion: true
+    reduceMotion: true,
+    reduceData: true
   };
   assert.deepEqual(
     parseReadingPreferences(

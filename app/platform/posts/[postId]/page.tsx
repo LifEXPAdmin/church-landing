@@ -92,7 +92,7 @@ export default async function PostPage({
             }
             moreCommentsHref={more}
           />
-          {editor && <PostControls post={editor} />}
+          {editor && <PostControls post={editor} ownerId={user?.id} />}
         </div>
       </section>
     </PlatformShell>

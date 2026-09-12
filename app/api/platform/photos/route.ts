@@ -19,7 +19,9 @@ export async function GET(request: Request) {
         profileId: q.get("profileId"),
         view: q.get("view") ?? "all",
         after: q.get("after"),
-        id: q.get("id")
+        id: q.get("id"),
+        ids: q.get("ids"),
+        preview: q.get("preview")
       }),
       { headers: socialHeaders }
     );

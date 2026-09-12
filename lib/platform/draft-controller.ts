@@ -450,12 +450,27 @@ export class DraftController {
     const generation = this.generation;
     const before = JSON.stringify(this.state.fields);
     this.set({ saving: true, resumeId: null });
+    const verifyResumeOwner = async () => {
+      const sequence = this.identitySequence + 1;
+      if (await this.verify()) return generation === this.generation;
+      // Route/focus verification can supersede this read without changing the
+      // account. Retry that interrupted check once; never retry an auth failure
+      // or carry a selected draft across an account generation change.
+      if (
+        generation !== this.generation ||
+        this.identitySequence <= sequence ||
+        !this.state.ownerId ||
+        this.state.failed
+      )
+        return false;
+      return (await this.verify()) && generation === this.generation;
+    };
     try {
-      if (!(await this.verify()) || generation !== this.generation) return;
+      if (!(await verifyResumeOwner())) return;
       const r = await this.transport(
         `/api/platform/post-workspace?view=draft&id=${encodeURIComponent(id)}`
       );
-      if (!(await this.verify()) || generation !== this.generation) return;
+      if (!(await verifyResumeOwner())) return;
       if (r.status !== 200) throw Error();
       const row = r.data.draft as DraftSnapshot | null;
       if (!row) {

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { accountInputClass } from "./account-form";
 import { ProfileImage } from "./profile-image";
+import { socialRequest, SocialClientError } from "@/lib/platform/social-client";
 import type { ImageView } from "@/lib/platform/media";
 import {
   centeredCrop,
@@ -19,13 +20,15 @@ export function ProfileImageControl({
   kind,
   available,
   disabled,
-  onState
+  onState,
+  retainsHistory = false
 }: {
   initial: ImageView | null;
   userId: string;
   name: string;
   kind: "avatar" | "cover";
   available: boolean;
+  retainsHistory?: boolean;
   disabled: boolean;
   onState: (kind: "avatar" | "cover", state: State) => void;
 }) {
@@ -180,6 +183,7 @@ export function ProfileImageControl({
     xhr.open("POST", "/api/platform/images");
     xhr.timeout = 60_000;
     xhr.setRequestHeader("Content-Type", "application/octet-stream");
+    xhr.setRequestHeader("X-Expected-Account", userId);
     xhr.setRequestHeader(
       "X-Image-Details",
       encodeURIComponent(
@@ -202,7 +206,7 @@ export function ProfileImageControl({
       setProgress(null);
       requestAnimationFrame(() => feedback.current?.focus());
     };
-    xhr.onload = () => {
+    xhr.onload = async () => {
       try {
         const result = JSON.parse(xhr.responseText);
         if (
@@ -211,9 +215,17 @@ export function ProfileImageControl({
           result.id &&
           result.variants
         ) {
-          setSaved(result);
+          const latest = await socialRequest<{
+            avatar: ImageView | null;
+            cover: ImageView | null;
+          }>("/api/platform/profile", undefined, userId);
+          setSaved(latest.data[kind]);
           reset();
-          setMessage(`${title} saved.`);
+          setMessage(
+            latest.data[kind]?.id === result.id
+              ? `${title} saved.${retainsHistory ? " Previous pictures remain in Photos." : ""}`
+              : "Upload confirmed. Your current picture changed since that upload; the latest saved picture is shown."
+          );
           setRemoveConfirm(false);
         } else {
           setMessage(
@@ -222,9 +234,15 @@ export function ProfileImageControl({
           );
           setConflict(xhr.status === 409);
         }
-      } catch {
+      } catch (error) {
+        if (error instanceof SocialClientError && error.status === 401) {
+          setSaved(null);
+          reset();
+        }
         setMessage(
-          "The save was not confirmed. Retry to check the same upload."
+          error instanceof Error
+            ? error.message
+            : "The save was not confirmed. Retry to check the same upload."
         );
       }
       finish();
@@ -258,7 +276,10 @@ export function ProfileImageControl({
     try {
       const response = await fetch("/api/platform/images", {
         method: "DELETE",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "X-Expected-Account": userId
+        },
         body: JSON.stringify({ id: saved.id, expectedVersion: saved.version })
       });
       const result = await response.json();
@@ -267,9 +288,15 @@ export function ProfileImageControl({
         setConflict(response.status === 409);
         return;
       }
-      setSaved(null);
+      const latest = await socialRequest<{
+        avatar: ImageView | null;
+        cover: ImageView | null;
+      }>("/api/platform/profile", undefined, userId);
+      setSaved(latest.data[kind]);
       setRemoveConfirm(false);
-      setMessage(`${title} removed.`);
+      setMessage(
+        `${title} removed from current selection.${retainsHistory ? " The saved picture remains in Photos." : ""}`
+      );
     } catch {
       setMessage("Removal was not confirmed. Try again to check the result.");
     } finally {
@@ -321,6 +348,8 @@ export function ProfileImageControl({
       </h2>
       <p className="text-sm text-gc-muted">
         Visible to signed-in members. JPEG, PNG or WebP, up to 4 MiB.
+        {retainsHistory &&
+          " New replacements keep previous pictures in Photos. Removing the current picture keeps its history; delete a saved picture separately in Photos."}
       </p>
       <div className="gc-profile-saved-photo">
         <ProfileImage

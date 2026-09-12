@@ -4,12 +4,14 @@ export type ReadingPreferences = {
   mode: "list" | "pages";
   size: "standard" | "comfortable" | "large" | "largest";
   reduceMotion: boolean;
+  reduceData: boolean;
 };
 export const defaultReadingPreferences: ReadingPreferences = {
   appearance: "system",
   mode: "pages",
   size: "comfortable",
-  reduceMotion: false
+  reduceMotion: false,
+  reduceData: false
 };
 
 // This cookie contains presentation choices only, never account identifiers.
@@ -26,7 +28,8 @@ export function parseReadingPreferences(raw?: string): ReadingPreferences {
       )
         ? value.size
         : "comfortable",
-      reduceMotion: value?.reduceMotion === true
+      reduceMotion: value?.reduceMotion === true,
+      reduceData: value?.reduceData === true
     };
   } catch {
     return { ...defaultReadingPreferences };

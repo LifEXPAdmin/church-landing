@@ -32,6 +32,9 @@ export async function socialWriteInput(
       401,
       "Sign in to continue. Keep your unsent entries."
     );
+  const expectedAccount = request.headers.get("x-expected-account");
+  if (expectedAccount && expectedAccount !== actor.id)
+    throw new PortalError(401, "Your sign-in changed. Reload before continuing.");
   if (
     !(await allowWorkspaceAttempt(
       db,

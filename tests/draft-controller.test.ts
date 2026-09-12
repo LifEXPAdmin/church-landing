@@ -327,3 +327,48 @@ test("saved photo references survive the composer whitelist, immutable retry bod
   );
   c.dispose();
 });
+
+test("a route verification overlapping resume cannot silently abandon the selected photo draft", async () => {
+  let pause = false,
+    release!: () => void,
+    entered!: () => void;
+  const started = new Promise<void>((resolve) => {
+    entered = resolve;
+  });
+  const delayed = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const payload = {
+    ...emptyComposer("church-a"),
+    content: "Saved photo draft",
+    replyAudience: "CHURCH_MEMBERS" as const,
+    photos: [{ id: "saved-photo", version: 2 }]
+  };
+  const c = new DraftController(async (path) => {
+    if (path === "/api/platform/profile") {
+      if (pause) {
+        pause = false;
+        entered();
+        await delayed;
+      }
+      return { status: 200, data: { id: "owner-a" } };
+    }
+    return {
+      status: 200,
+      data: { draft: { id: "selected-photo-draft", version: 1, payload } }
+    };
+  });
+  await c.verify();
+  pause = true;
+  const resumed = c.resume("selected-photo-draft");
+  await started;
+  c.conceal();
+  await c.verify();
+  release();
+  await resumed;
+  assert.equal(c.getSnapshot().id, "selected-photo-draft");
+  assert.deepEqual(c.getSnapshot().fields.photos, payload.photos);
+  assert.equal(c.getSnapshot().fields.replyAudience, "CHURCH_MEMBERS");
+  assert.equal(c.getSnapshot().dirty, false);
+  c.dispose();
+});

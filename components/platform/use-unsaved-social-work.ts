@@ -1,9 +1,11 @@
 "use client";
 import { useEffect, useId, useRef } from "react";
+import { usePhotoBackGuard } from "./use-photo-back-guard";
 import { useDraftWorkspace } from "./draft-workspace-provider";
 export function useUnsavedSocialWork(
   work: { dirty: boolean; saving: boolean; conflict: boolean },
-  onBlocked: () => void
+  onBlocked: () => void,
+  protectBack = false
 ) {
   const { controller } = useDraftWorkspace();
   const key = useId(),
@@ -11,6 +13,7 @@ export function useUnsavedSocialWork(
   notice.current = onBlocked;
   const { dirty, saving, conflict } = work;
   const blocked = dirty || saving || conflict;
+  usePhotoBackGuard(protectBack && blocked, onBlocked);
   useEffect(() => {
     controller.setExternalWork(key, { dirty, saving, conflict });
     return () => controller.setExternalWork(key, null);

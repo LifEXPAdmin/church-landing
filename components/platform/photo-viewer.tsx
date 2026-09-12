@@ -8,12 +8,14 @@ export function PhotoViewer({
   source,
   accountId,
   initialId,
-  onClose
+  onClose,
+  pageLimit = 10
 }: {
   source: string;
   accountId?: string | null;
   initialId: string;
   onClose: () => void;
+  pageLimit?: 10 | 24;
 }) {
   const titleId = useId(),
     dialog = useRef<HTMLDialogElement>(null);
@@ -38,13 +40,13 @@ export function PhotoViewer({
         accountId
       );
       if (seq !== generation.current) return;
-      setImages(result.data.images.slice(0, 10));
+      setImages(result.data.images.slice(0, pageLimit));
       setStatus("");
     } catch {
       if (seq === generation.current)
         setStatus("This photo is unavailable. Reconnect to check again.");
     }
-  }, [source, accountId]);
+  }, [source, accountId, pageLimit]);
   useEffect(() => {
     const node = dialog.current!,
       opener = document.activeElement as HTMLElement | null;

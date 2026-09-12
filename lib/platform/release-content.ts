@@ -47,6 +47,32 @@ export const features: Feature[] = [
     availability: "conditional"
   },
   {
+    id: "photo-library",
+    category: "Profiles",
+    name: "Your photo library",
+    description:
+      "Keep personal photos together without making a post for each upload.",
+    steps:
+      "Open your profile, then Photos. Browse All photos, Profile pictures or Cover photos. Add photos with an explicit audience, caption and description. Previous profile pictures and covers stay available from this release onward; choose one to use again without uploading it twice. Also create a post opens your saved photos in the shared composer.",
+    href: "/platform/profile/me?tab=photos",
+    eligibility:
+      "Manage your own library, up to 1,000 photos in pages of 24. New uploads start as Only me. Personal post photos follow their source audience; church-authored photos stay with their church. Removing a current picture, hiding a library entry and deleting a saved image are separate choices.",
+    availability: "conditional"
+  },
+  {
+    id: "post-photo-management",
+    category: "Posts and conversations",
+    name: "Add and arrange post photos",
+    description:
+      "Upload up to ten photos, arrange their order and add captions.",
+    steps:
+      "Open your post, then Manage photos. Choose files, save them and edit the gallery. Each file has its own progress and retry. Move photos earlier or later and save their order. In Settings, Reduce photo data loads one smaller post preview at a time.",
+    href: "/platform",
+    eligibility:
+      "The current post owner manages its photos. Church posts also require current publishing authority. Existing audiences and reply permissions apply. An interrupted save can be retried unchanged; conflicts keep your local edits for review.",
+    availability: "conditional"
+  },
+  {
     id: "photo-viewer",
     category: "Posts and conversations",
     name: "View photos",
@@ -291,6 +317,34 @@ export type ReleaseEntry = {
   featureIds: string[];
 };
 export const releases: ReleaseEntry[] = [
+  {
+    id: "personal-photo-library",
+    version: "2026.09.12.6",
+    date: "2026-09-12",
+    summary:
+      "Keep a personal photo library, reuse saved photos and manage post galleries.",
+    added: [
+      "A Photos tab organizes permitted personal photos, profile-picture history and cover history in pages of 24.",
+      "Save photos directly with an explicit audience, caption and image description. Also create a post opens the same saved photos in a private draft without another upload.",
+      "Personal post photos appear in your library while keeping the source post's current audience. Church-authored photos remain with the church."
+    ],
+    improved: [
+      "Previous profile pictures and covers are retained from this release onward. Select an older saved picture, remove the current selection or deliberately delete unused saved photos.",
+      "Manage post photos with individual upload progress, exact retries, captions, keyboard ordering and conflict review.",
+      "Reduce photo data in Settings loads smaller previews and one post photo at a time. Large photos load only when opened."
+    ],
+    fixed: [
+      "Pending photo uploads and edits survive navigation attempts, while a changed sign-in clears stale local work.",
+      "Opening a photo draft remains reliable when a foreground account check overlaps the resume request."
+    ],
+    featureIds: [
+      "photo-library",
+      "post-photo-management",
+      "photo-viewer",
+      "drafts",
+      "profile-photos"
+    ]
+  },
   {
     id: "photos-and-phone-guidance",
     version: "2026.09.12.5",

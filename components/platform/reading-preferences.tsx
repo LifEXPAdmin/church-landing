@@ -160,6 +160,22 @@ export function ReadingSettings() {
           onChange={(e) => update({ reduceMotion: e.target.checked })}
         />
       </label>
+      <label className="gc-setting-row" htmlFor="reduce-data">
+        <span>
+          Reduce photo data
+          <br />
+          <span className="text-sm font-normal text-gc-muted">
+            Load smaller previews. Post galleries show one photo at a time;
+            large images load only when you open them.
+          </span>
+        </span>
+        <input
+          id="reduce-data"
+          type="checkbox"
+          checked={preferences.reduceData}
+          onChange={(e) => update({ reduceData: e.target.checked })}
+        />
+      </label>
       <p className="gc-reader-sample">
         A little space to listen. A place to belong.
       </p>

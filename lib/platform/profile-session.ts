@@ -22,7 +22,12 @@ export const readProfileEditor = () =>
   );
 export const readMemberProfile = (
   username: string,
-  query: { before?: Date | null; cursor?: string | null; preview?: string }
+  query: {
+    before?: Date | null;
+    cursor?: string | null;
+    preview?: string;
+    photos?: boolean;
+  }
 ) =>
   privateCookies().then((store) =>
     getMemberProfile(
