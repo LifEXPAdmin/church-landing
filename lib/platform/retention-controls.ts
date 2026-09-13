@@ -227,12 +227,16 @@ export async function selectedSourceReport(
 ) {
   return tx.communityReport.findFirst({
     where: { targetType: type, targetId: id },
-    orderBy: { createdAt: "asc" }
+    orderBy: { createdAt: "asc" },
+    select: { id: true, targetType: true, targetId: true, reviewDueAt: true }
   });
 }
 export function recordReportedWithdrawal(
   tx: Tx,
-  report: CommunityReport,
+  report: Pick<
+    CommunityReport,
+    "id" | "targetType" | "targetId" | "reviewDueAt"
+  >,
   actorId: string,
   version: number,
   now: Date
