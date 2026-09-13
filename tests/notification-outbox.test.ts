@@ -1,15 +1,17 @@
 import webpush from "web-push";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
-import { createECDH, randomBytes, randomUUID } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import { PrismaClient } from "@prisma/client";
 import {
   createPortalActor,
   assertPortalTestDatabase,
   seedOperatorGrants
 } from "./seed-portal";
-import { createSessionToken } from "../lib/platform/auth";
-import { pushSubscriptionCommand } from "../lib/platform/push-subscriptions";
+import {
+  seedNotificationDevice,
+  seedNotificationPair
+} from "./seed-notifications";
 import {
   deliverNotification,
   openNotification,
@@ -160,52 +162,9 @@ test("secured notification inspection verifies configuration without delivery or
     else process.env.CRON_SECRET = prior;
   }
 });
-async function device(a: Awaited<ReturnType<typeof createPortalActor>>) {
-  const pair = createECDH("prime256v1");
-  pair.generateKeys();
-  return pushSubscriptionCommand(
-    db,
-    a.token,
-    mutation("subscribe", {
-      ownerId: a.id,
-      binding: createSessionToken(),
-      label: "Fictional phone",
-      subscription: {
-        endpoint: "https://fcm.googleapis.com/fcm/send/" + randomUUID(),
-        keys: {
-          p256dh: pair.getPublicKey().toString("base64url"),
-          auth: randomBytes(16).toString("base64url")
-        }
-      }
-    })
-  );
-}
-async function pair() {
-  const a = await createPortalActor(db, "pushsend"),
-    b = await createPortalActor(db, "pushread");
-  const ids = [a.id, b.id].sort();
-  const conversation = await db.adultConversation.create({
-    data: {
-      participantAId: ids[0],
-      participantBId: ids[1],
-      sendingAllowed: true
-    }
-  });
-  const subscription = await device(b);
-  await db.socialPreferences.create({
-    data: { ownerId: b.id, messageAlerts: false, pushCategories: ["messages"] }
-  });
-  const input = mutation("send", {
-    conversationId: conversation.id,
-    expectedVersion: conversation.version,
-    content: "Private canonical fixture body must never enter push"
-  });
-  const sent = await adultMessageCommand(db, a.token, input);
-  const delivery = await db.notificationDelivery.findFirstOrThrow({
-    where: { event: { messageId: sent.id }, ownerId: b.id }
-  });
-  return { a, b, conversation, subscription, input, sent, delivery };
-}
+const device = (actor: Awaited<ReturnType<typeof createPortalActor>>) =>
+  seedNotificationDevice(db, actor);
+const pair = () => seedNotificationPair(db);
 test("message/outbox commit together, retries use one intent, workers lease once and payloads never copy private text", async () => {
   const f = await pair();
   assert.deepEqual(await adultMessageCommand(db, f.a.token, f.input), f.sent);

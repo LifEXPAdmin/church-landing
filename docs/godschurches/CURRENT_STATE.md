@@ -1,3 +1,14 @@
+## Notification recovery checkpoint — 13 September 2026
+
+Six real worker-interruption/restart checks and seventeen existing notification
+regressions pass, along with types and scoped lint. They verify lease ownership,
+ambiguous provider acknowledgement, late block/logout, a real database lock
+timeout and the eight-attempt retry limit. Canonical messages remain intact.
+Only development fixtures and evidence changed; production remains
+2026.09.13.28 / d0549cf. See [the recovery receipt](CAPACITY_REHEARSAL.md).
+Continue with the remaining activity/notification foundation after inspecting its
+current brief and services. Broader reliability and owner acceptance remain open.
+
 ## Phone receipt and recovery continuation — 13 September 2026
 
 The recipient reports a Chrome notification in the phone's notification shade,

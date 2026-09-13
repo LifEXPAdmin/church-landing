@@ -1,5 +1,28 @@
 # Isolated capacity and recovery rehearsal
 
+## Notification worker recovery — 13 September 2026
+
+Six new isolated checks pass using real disposable worker processes, the canonical
+outbox service and a loopback HTTP provider simulator. Workers are killed after a
+committed lease both before sending and after simulated provider acceptance.
+Restarted processes respect live leases, recover expired leases and preserve the
+single canonical message, event and delivery intent. A lost provider acknowledgement
+can cause another generic push attempt; this is not an exactly-once delivery claim.
+
+The checks also prove that a stale worker cannot overwrite a newer lease, a later
+block or session revocation prevents sending, a real PostgreSQL advisory-lock
+timeout rolls back the claim, and eight failed worker attempts reach the existing
+terminal guard. Seventeen existing outbox, service-worker and subscription checks,
+TypeScript and scoped lint pass. The shared fixture removes duplicated test setup;
+there is no application code, schema, dependency or provider-configuration change.
+
+The normal full test gate discovers `tests/notification-recovery.test.ts`.
+These tests use isolated database fixtures and local HTTP only: no production
+application writes or real phone sends. This verifies process recovery, not a
+new native queue deployment or physical-device result. Missing-media recovery,
+broader service health and the remaining capacity/owner acceptance stay open.
+Production remains **2026.09.13.28 / d0549cf**.
+
 ## Verified publication — 13 September 2026
 
 Product **2026.09.13.28**, application
