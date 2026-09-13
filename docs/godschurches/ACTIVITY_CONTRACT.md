@@ -1,7 +1,7 @@
 # Personal activity and read boundaries
 
-The service foundation is verified locally on 13 September 2026. The consuming
-interface and integrated release verification remain pending; production is
+The service foundation and consuming interface are implemented locally on 13
+September 2026. Integrated release verification is running; production is
 2026.09.13.30 with 43 migrations, not this 44-migration candidate.
 
 The existing SocialEvent is the canonical intent. Activity adds only its ordered
@@ -21,9 +21,10 @@ Only the currently eligible signed-in recipient reads or changes this personal
 state. The read page contains at most twenty groups, stable timestamps, exact
 event/unread counts, an account-bound snapshot boundary and a continuation cursor.
 Messages group by conversation, comments by post, requests by request and reports
-by case, separately by category. The private response contains no source text,
-actor identity or raw source reference. Existing source resolvers batch current
-authority before supplying a link. Removed or restricted sources produce a
+by case, separately by category. The private response contains no source text or raw actor identifier. Existing
+source resolvers batch current authority before supplying a link; only then are
+display names read within the same transaction. A church speaker is named as the
+church, without exposing its internal publisher. Removed or restricted sources produce a
 generic unavailable item; their retained personal event count does not imply
 continuing source access. Current hidden message prefixes and optional mute/
 category controls remain respected. Counts describe the recipient's activity
@@ -48,7 +49,11 @@ gate, writes its exclusive gate, and all HTTP results are no-store.
 Verification must cover exact counts/grouping, one/thirty source-query bounds,
 older timestamp arrivals, mark-all races and exact retries, source loss/revocation,
 account switching, mute/preferences, legacy migration and isolated restore.
-The consuming interface remains gated until that evidence is recorded here.
+The interface reuses the existing social transport, account identity checks and
+unsaved-work navigation protection. Pending read changes retain their exact body;
+terminal errors require a fresh view. Visibility, focus and reconnection refresh
+without interval polling. Switching accounts clears the former view. Menu and
+Messages link to Activity without changing the primary navigation or QR ordering.
 
 ## Accepted service boundary and local evidence
 
@@ -70,7 +75,7 @@ allocation. Legacy read markers start empty; no delivery or welcome is backfille
 Exports include only the recipient's read metadata and serialize sequence values
 as decimal strings. Existing deletion/restore ownership is retained.
 
-Fifty-two focused service/regression checks pass across activity, batched sources,
+The foundation checkpoint had fifty-two focused service/regression checks pass across activity, batched sources,
 comment alerts, outbox, founder welcome/announcements, report review and export.
 Seven activity groups cover empty/denied HTTP boundaries, 25-group pagination,
 concurrent/older-timestamp arrivals, exact retries, account changes, unavailable
@@ -83,11 +88,19 @@ fixture attempts (a missing comment reference, tombstone shape and test-only
 BigInt serialization) were corrected; an unstarted HTTPS fixture was not claimed
 as an application failure or a passing browser test.
 
+The integrated candidate passes 36 focused service/navigation executions, types,
+scoped lint and two release-content checks. This includes church display identity
+and cancellation of a queued alert after Activity is read; a later arrival still
+delivers exactly once through the isolated transport. A fixture tried to mutate
+an immutable comment author and a transport stub returned the wrong type; both
+were corrected and the final run passes. Full HTTPS/browser evidence is pending.
+
 Actual metadata reads remain constant: one or thirty message sources use seven
-queries, versus 210 individual lookups; one or thirty comment sources use twelve.
-The complete Activity read uses nineteen data queries for one event or 20,000
+queries, versus 210 individual lookups; one or thirty outbound comment sources use
+thirteen, including the new read-boundary check. Complete Activity, including
+authorized display names, uses twenty-one data queries for one event or 20,000
 events across 500 posts, returning at most twenty groups. Five local populated
-reads took 38.0–123.2 ms; an all-read page took 51.4 ms. Two actual query plans
+reads took 89.5–129.8 ms; an all-read page took 59.0 ms. Two actual query plans
 are retained privately. Counts and reads stay scoped to this recipient, with no
 per-item source query loop or client polling. These measurements are local,
 not a production latency promise or completion of broader capacity acceptance.
@@ -95,3 +108,18 @@ not a production latency promise or completion of broader capacity acceptance.
 This receipt satisfies the consuming interface's source/read-boundary dependency
 for the five listed categories. Broader event adapters, author bells, preference
 expansion, parent integration and real-device acceptance remain open.
+
+## Delivery and migration operations
+
+Activity read markers cancel an optional alert that has not started delivery.
+The recipient-initiated phone test is unaffected. A provider request already in
+flight or delivered to a device cannot be recalled by a later read change.
+Opening an older notification still resolves current source access independently.
+
+The fresh encrypted production-copy rehearsal upgrades 43 to 44 migrations,
+preserves all original columns across 92 tables and passes protected deletion
+replay. No production data is modified by that rehearsal. Keep migration 44 on
+rollback; prefer a forward repair. Before returning to an older runtime that does
+not inspect Activity read markers, pause optional push delivery to avoid sending
+alerts already marked read. Restore with outbound delivery disabled until the
+existing deletion replay and release authorization checks pass.
