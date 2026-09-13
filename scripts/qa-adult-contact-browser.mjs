@@ -126,7 +126,6 @@ async function enabled(name) {
 }
 const choice = () =>
   page.getByRole("combobox", { name: "Who can send you a request" });
-const ready = () => button("Refresh contact access").waitFor();
 const receipt = (id) => go(`/platform/messages/requests?id=${id}`);
 try {
   await login(f.memberA);

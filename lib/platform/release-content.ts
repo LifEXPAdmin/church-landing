@@ -14,6 +14,19 @@ export type Feature = {
 };
 export const features: Feature[] = [
   {
+    id: "private-messages",
+    category: "Posts and conversations",
+    name: "Private contact requests and Messages",
+    description:
+      "Resume accepted adult conversations from a profile or the Messages tab, with private history and personal inbox controls.",
+    steps:
+      "Open a person's profile and choose Message. When contact operations are available, a new contact starts with a short request and explicit acceptance. Use Messages for prior history, Requests for decisions and Contact preferences to choose who may ask. Conversation options include mute, archive and clear for me; a message's More menu reports that selected item. Unconfirmed sends retain an exact retry.",
+    href: "/platform/messages",
+    eligibility:
+      "Verified eligible adult personal accounts. New requests default to No one. Real reporting coverage and retention operations must be ready before new contact or sending is enabled; the interface explains when they are paused. Blocks stop new sends. Clear for me does not erase the other participant's history. In-app alert choices do not grant contact permission. Attachments, groups, delivery/read receipts, email and push are unavailable.",
+    availability: "conditional"
+  },
+  {
     id: "private-reports",
     category: "Privacy and account",
     name: "Private reports and receipts",
@@ -61,7 +74,7 @@ export const features: Feature[] = [
       "Open Menu, then Settings. Search words such as password, alerts or hide phone, or choose a folder. Changes use their existing account and privacy controls. Preview text, theme and reading layout in Display before saving. Reading preferences can be restored separately on this browser.",
     href: "/platform/settings",
     eligibility:
-      "Sign in to your account. Browser appearance is separate from personal and selected-church settings. Church tools require current access; notification categories, family, payments and direct messaging are not enabled here.",
+      "Sign in to your account. Browser appearance is separate from personal and selected-church settings. Church tools require current access. Contact preferences govern new adult requests; actual messaging remains conditional on operational readiness. General notification channels, family and payment controls are unavailable here.",
     availability: "available"
   },
   {
@@ -443,6 +456,25 @@ export const features: Feature[] = [
   }
 ];
 export const releases: ReleaseEntry[] = [
+  {
+    id: "private-messages-and-contact-choices",
+    version: "2026.09.13.25",
+    date: "2026-09-13",
+    summary:
+      "A private Messages workspace with explicit contact choices and recoverable history.",
+    added: [
+      "Messages is in mobile and desktop navigation. Profile Message resumes the same accepted conversation or checks the recipient's request policy.",
+      "Private request decisions, paginated conversation history, personal mute/archive/clear controls and in-app alert choices use your current account and permissions."
+    ],
+    improved: [
+      "Unconfirmed sends keep an exact retry, account changes conceal private history, and only messages visible in the conversation advance your read position.",
+      "My feed remains reachable from Home and Menu. Selected-message reporting opens only the chosen evidence."
+    ],
+    fixed: [
+      "New contact and sending clearly remain unavailable until actual reporting coverage and retention operations are ready. Existing history and personal cleanup remain accessible; publication does not activate intake."
+    ],
+    featureIds: ["private-messages", "private-reports", "settings"]
+  },
   {
     id: "private-report-forms-and-receipts",
     version: "2026.09.12.24",

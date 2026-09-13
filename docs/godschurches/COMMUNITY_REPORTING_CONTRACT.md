@@ -16,7 +16,8 @@ remain enforced by their canonical owners.
 
 ## Sources and submitted context
 
-Supported targets are `POST`, `COMMENT`, `PROFILE` and `CHURCH`, each referencing
+Supported targets are `POST`, `COMMENT`, `PROFILE`, `CHURCH`, `CONTACT_REQUEST`
+and `MESSAGE`, each referencing
 its exact canonical ID. A post report targets the selected distribution record;
 plain repost and quote IDs are not silently converted into Like targets. A form
 must identify what the person is reporting and use the target lookup when opened.
@@ -27,6 +28,18 @@ versions are checked at submission. Comment context also binds the parent post
 version; church representation binds the listing and management versions.
 Profile changes reuse the existing presentation version, which the canonical
 profile writer increments for basic fields as well as presentation changes.
+
+Personal request/message targets require the checked account to be an actual
+participant. A message must remain in that participant's visible retained
+history, outside their cleared prefix. Immutable message content uses version
+one; request reports bind the current request version. Retained participant
+history may still be reported after blocking, without exposing a live profile
+or reopening sending. The global report capability reviews only the selected
+item, author/participant source IDs and date through the existing case scope;
+it does not grant arbitrary conversation browsing. Message source links resolve
+an owned bounded window around the selected ID. An outsider or cleared cursor
+cannot recover the selected text from that link. Reporting still stores source
+references and deliberate reporter details rather than another message copy.
 
 Reasons are spam, harassment, privacy, safety, impersonation and other. Optional
 details are plain text, limited to 2,000 characters. The service stores only the

@@ -343,7 +343,7 @@ export function readAdultContact(
         target: policy.recipient,
         expectedRecipientVersion: policy.version,
         activeRequest: request,
-        conversation: conversation?.sendingAllowed ? conversation : null
+        conversation
       };
     }
     const view = query.view ?? "received";

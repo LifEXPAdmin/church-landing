@@ -132,6 +132,14 @@ not client clocks. A cursor from another conversation fails without revealing
 it. Return narrow no-store projections only to the two checked participants.
 Account replacement, blur/reconnect and refresh recheck identity; no persisted
 local message cache, shell preload or notification preview exposes private text.
+The mounted conversation may merge at most two pages (100 messages) during
+foreground catch-up. Older/newer controls replace the window, preventing an
+unbounded client history. An owned selected-message cursor opens a bounded
+window around that item. Desktop can request its inbox in the same authorized
+read; mobile does not fetch the hidden list. Only numeric inbox scroll positions
+are kept in session storage, scoped to the account and inbox path; bodies and
+pending messages are never persisted there. Concealed mounted history is reused
+only after the original owner's fresh source/permission read succeeds.
 
 Read position belongs to its account and increases monotonically only through
 the greatest message actually rendered in the visible conversation. Reconnect
@@ -155,6 +163,12 @@ off does not grant contact permission or hide required pending decisions. Old
 preferences default to enabled in-app alerts while contact remains NOBODY.
 No email, push, quiet-hour or external-delivery capability is enabled by this
 scoped dependency. Its broader scheduling/delivery contract remains separate.
+The interface checks active history every fifteen seconds, backing off to two
+minutes on failure. Navigation reads only scalar activity counts every minute,
+backing off to five minutes. Blur/hidden pages pause these reads; focus/online
+recheck identity. Visible message-end observation excludes fixed bottom navigation
+and the obscured keyboard viewport before scheduling a monotonic read command.
+Unconfirmed read commands retain their exact receipt and use bounded backoff.
 
 ## Deletion, selected evidence and operational boundary
 

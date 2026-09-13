@@ -1,25 +1,28 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Church, Home, Search, Menu, BookOpen } from "lucide-react";
+import { Church, Home, Search, Menu, MessageCircle } from "lucide-react";
+import { MessageBadge } from "./message-badge";
 
 export function PortalNavigation({
   username,
+  owner,
   reviewerNavigation
 }: {
   username?: string;
+  owner?: string;
   reviewerNavigation: { href: string; label: string }[];
 }) {
   const pathname = usePathname();
   const links = [
     { href: "/platform", label: "Home", icon: Home },
-    { href: "/platform/feed", label: "My feed", icon: BookOpen },
     {
       href: username ? "/platform/my-church" : "/platform/churches",
       label: username ? "My church" : "Churches",
       icon: Church
     },
     { href: "/platform/search", label: "Explore", icon: Search },
+    { href: "/platform/messages", label: "Messages", icon: MessageCircle },
     { href: "/platform/menu", label: "Menu", icon: Menu }
   ];
   const active = (href: string) =>
@@ -36,10 +39,12 @@ export function PortalNavigation({
           <Link
             key={label}
             href={href}
+            prefetch={href === "/platform/messages" ? false : undefined}
             aria-current={active(href) ? "page" : undefined}
           >
             <Icon aria-hidden="true" />
             <span>{label}</span>
+            {href === "/platform/messages" && <MessageBadge owner={owner} />}
           </Link>
         ))}
       </nav>

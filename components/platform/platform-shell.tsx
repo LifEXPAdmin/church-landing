@@ -15,7 +15,10 @@ import { logoutPlatformAccount } from "@/app/platform/actions";
 import { PortalNavigation } from "@/components/platform/portal-navigation";
 
 interface PlatformShellProps {
-  user: Pick<PlatformUser, "name" | "username"> | null;
+  user:
+    | (Pick<PlatformUser, "name" | "username"> &
+        Partial<Pick<PlatformUser, "id">>)
+    | null;
   children: React.ReactNode;
   reviewerNavigation?: { href: string; label: string }[];
 }
@@ -74,6 +77,7 @@ export async function PlatformShell({
         </header>
         <div className="gc-workspace">
           <PortalNavigation
+            owner={user?.id}
             username={user?.username}
             reviewerNavigation={reviewerNavigation}
           />

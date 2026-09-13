@@ -121,6 +121,17 @@ export default async function HomeFeedPage({
             </div>
           )}
         <div className="gc-home-columns">
+          {currentUser && (
+            <nav
+              className="mb-3 flex gap-4 lg:col-span-2"
+              aria-label="Feed choices"
+            >
+              <Link href="/platform" aria-current="page">
+                Home
+              </Link>
+              <Link href="/platform/feed">My feed</Link>
+            </nav>
+          )}
           <div className="min-w-0">
             {currentUser && <PostComposer id="compose-post" />}
             <FeedReader

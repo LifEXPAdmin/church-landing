@@ -303,11 +303,20 @@ export default async function MemberProfilePage({
                   <Link href="/platform/profile/me">Edit profile</Link>
                 </Button>
               ) : (
-                <RelationshipControls
-                  kind="person"
-                  targetId={profile.id}
-                  name={profile.name}
-                />
+                <div className="flex flex-wrap items-center gap-2">
+                  <Link
+                    prefetch={false}
+                    className="gc-button gc-button-primary"
+                    href={`/platform/messages/requests?recipientId=${profile.id}`}
+                  >
+                    Message
+                  </Link>
+                  <RelationshipControls
+                    kind="person"
+                    targetId={profile.id}
+                    name={profile.name}
+                  />
+                </div>
               ))}
           </div>
           <div className="gc-profile-summary">

@@ -311,6 +311,57 @@ test("text is bounded/plain and wrong permission versions cannot change state", 
     400
   );
 });
+test("selected history and desktop inbox are bounded and use the same participant boundary", async () => {
+  const row = await pair();
+  await seedMessages(row.id, 123);
+  const target = await db.adultMessage.findUniqueOrThrow({
+    where: { conversationId_sequence: { conversationId: row.id, sequence: 60 } }
+  });
+  const view = await conversation(row.id, f.memberA, {
+    around: target.id,
+    inbox: "true"
+  });
+  assert.equal(view.messages!.length, 50);
+  assert.equal(view.messages![0].sequence, 36);
+  assert.equal(view.messages!.at(-1)!.sequence, 85);
+  assert.ok(view.messages!.some((m) => m.id === target.id));
+  assert.ok(view.older && view.newer);
+  assert.equal(view.conversations!.length, 1);
+  assert.ok(view.activity);
+  assert.equal((await conversation(row.id)).conversations, undefined);
+  await denied(
+    conversation(row.id, f.contact, { around: target.id, inbox: "true" }),
+    404
+  );
+  await denied(
+    conversation(row.id, f.memberA, { around: target.id, after: target.id }),
+    400
+  );
+  await choice(row.id, "clear", { through: target.id });
+  await denied(conversation(row.id, f.memberA, { around: target.id }), 409);
+  const independent = await conversation(row.id, f.memberB, {
+    around: target.id
+  });
+  assert.ok(independent.messages!.some((m) => m.id === target.id));
+});
+test("profile entry resumes the canonical history after consent is revoked without granting new contact", async () => {
+  const row = await pair();
+  await block();
+  await denied(
+    readAdultContact(db, f.memberA.token, {
+      view: "target",
+      recipientId: f.memberB.id
+    }),
+    404
+  );
+  await block(f.memberA, f.memberB, false);
+  const target = await readAdultContact(db, f.memberA.token, {
+    view: "target",
+    recipientId: f.memberB.id
+  });
+  assert.equal(target.conversation!.id, row.id);
+  assert.equal(target.conversation!.sendingAllowed, false);
+});
 test("history is bounded, stable and private across older/newer cursors and fresh service sessions", async () => {
   const row = await pair();
   await seedMessages(row.id, 123);

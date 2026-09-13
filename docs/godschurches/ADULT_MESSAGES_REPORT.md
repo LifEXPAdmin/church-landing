@@ -1,5 +1,51 @@
 # Adult message implementation receipt
 
+## Integrated interface verified locally — 13 September 2026
+
+Messages now occupies the mobile and desktop navigation slot, while Home and
+Menu retain My feed. Profile Message reuses the contact-policy lookup and resumes
+the canonical conversation; renewed acceptance after unblock keeps that same
+history. Requests link to their accepted conversation. Inbox rows show authorized
+identity/avatar, canonical latest text/date and own unread state. Desktop combines
+the bounded inbox and selected thread in one authorized read; mobile fetches the
+thread without the hidden list. The workspace stays out of unopened page chunks;
+global navigation reads only scalar activity counts. No dependency is added.
+
+The text composer retains exact unconfirmed bodies and allows deliberate current
+access review after a conflict. Account replacement, unsent Back/navigation and
+safe-update protections pass. Bounded active-page catch-up preserves sequence and
+excludes unseen messages from read markers, including the obscured navigation/
+keyboard area. One observer covers the rendered message ends. Mute, archive and
+clear-for-me retain distinct canonical behavior; new incoming messages restore
+an archived inbox entry without unmuting. Selected old-message links and Report
+open only an owned bounded window and the selected evidence. In-app choices do
+not change contact permission. Presence, delivery/read receipts and outbound
+notifications remain unavailable.
+
+Nineteen enabled and nine paused messaging browser groups, plus eight enabled
+and five paused contact regression groups,
+pass with no page errors. The two-account browser flow goes from a profile through
+request/acceptance to a real send and persisted inbox resume. Types, production
+build and scoped lint pass. Fresh service/navigation checks cover owned selected
+windows, outsider/cleared cursors, desktop batching and revoked-consent resume.
+The complete release gate is still pending at this checkpoint. Paused checks
+confirm retained history/cleanup while new sends stay unavailable. The earlier
+synthetic test assertions were repaired to wait for
+actual server confirmation and to scroll a message into view before expecting a
+read marker; a native controlled checkbox is checked after its saved response.
+The paused inbox assertion now derives its expected count from canonical state,
+since the fixture deliberately archives one conversation. Actual dark/largest-
+text surfaces and 320/390/1440 layouts were inspected. These
+are automated browser results, not new physical-phone observations.
+
+A fresh encrypted PostgreSQL 17 production backup restored and rehearsed all
+three additive migrations (33 to 36), preserving original-column fingerprints
+across all 77 existing tables. New messaging tables remain empty in that restored
+production fixture and legacy contact preferences default to NOBODY. Production
+has not yet been changed by this milestone. Actual reviewer coverage, independent
+escalation/recovery and retention/erasure operations still gate new intake;
+parent, broader activity/delivery and owner acceptance remain open.
+
 ## Durable in-app activity verified locally — 13 September 2026
 
 The existing SocialEvent owner now stores unique source references for contact

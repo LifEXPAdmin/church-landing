@@ -372,12 +372,56 @@ async function summaries(
   });
 }
 
+async function inboxIn(
+  tx: Tx,
+  ownerId: string,
+  available: boolean,
+  query: Record<string, unknown>
+) {
+  if (query.archived !== undefined && query.archived !== "true")
+    throw new PortalError(400, "Choose a supported inbox view.");
+  const archived = { ownerId, archivedAt: { not: null } };
+  const where = {
+    ...adultMemberWhere(ownerId),
+    states: query.archived === "true" ? { some: archived } : { none: archived }
+  };
+  const after = query.after ? postId(query.after) : null;
+  if (
+    after &&
+    !(await tx.adultConversation.findFirst({
+      where: { ...where, id: after },
+      select: { id: true }
+    }))
+  )
+    throw new PortalError(409, "This inbox page changed. Open Messages again.");
+  const rows = await tx.adultConversation.findMany({
+    where,
+    orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
+    take: INBOX + 1,
+    ...(after ? { cursor: { id: after }, skip: 1 } : {})
+  });
+  const page = rows.slice(0, INBOX);
+  return {
+    activity: await messageActivityIn(tx, ownerId),
+    conversations: await summaries(tx, ownerId, page, available),
+    after: rows.length > INBOX ? page.at(-1)!.id : null
+  };
+}
+
 export function readAdultMessages(
   db: PrismaClient,
   token: unknown,
   query: Record<string, unknown>
 ): Promise<AdultMessageView> {
-  socialInput(query, ["view", "conversationId", "before", "after", "archived"]);
+  socialInput(query, [
+    "view",
+    "conversationId",
+    "before",
+    "after",
+    "around",
+    "archived",
+    "inbox"
+  ]);
   return withAccountRead(db, token, async (tx, ownerId) => {
     if (!ownerId)
       throw new PortalError(401, "Sign in to use private conversations.");
@@ -390,52 +434,27 @@ export function readAdultMessages(
         activity: await messageActivityIn(tx, ownerId)
       };
     if (!query.view || query.view === "inbox") {
-      if (query.archived !== undefined && query.archived !== "true")
-        throw new PortalError(400, "Choose a supported inbox view.");
-      const archived = { ownerId, archivedAt: { not: null } };
-      const where = {
-        ...adultMemberWhere(ownerId),
-        states:
-          query.archived === "true" ? { some: archived } : { none: archived }
-      };
-      const after = query.after ? postId(query.after) : null;
-      if (
-        after &&
-        !(await tx.adultConversation.findFirst({
-          where: { ...where, id: after },
-          select: { id: true }
-        }))
-      )
-        throw new PortalError(
-          409,
-          "This inbox page changed. Open Messages again."
-        );
-      const rows = await tx.adultConversation.findMany({
-        where,
-        orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
-        take: INBOX + 1,
-        ...(after ? { cursor: { id: after }, skip: 1 } : {})
-      });
-      const page = rows.slice(0, INBOX);
       return {
         ownerId,
         available,
-        activity: await messageActivityIn(tx, ownerId),
-        conversations: await summaries(tx, ownerId, page, available),
-        after: rows.length > INBOX ? page.at(-1)!.id : null
+        ...(await inboxIn(tx, ownerId, available, query))
       };
     }
-    if (query.view !== "conversation" || (query.before && query.after))
+    if (
+      query.view !== "conversation" ||
+      [query.before, query.after, query.around].filter(Boolean).length > 1 ||
+      (query.inbox !== undefined && query.inbox !== "true")
+    )
       throw new PortalError(400, "Choose one supported conversation position.");
     const row = await ownedAdultConversation(tx, ownerId, query.conversationId);
     const [conversation] = await summaries(tx, ownerId, [row], available);
     const hidden = conversation.preferences.hiddenThrough;
     const cursor =
-      query.before || query.after
+      query.before || query.after || query.around
         ? await adultMessageCursor(
             tx,
             row.id,
-            query.before ?? query.after,
+            query.before ?? query.after ?? query.around,
             hidden
           )
         : null;
@@ -444,16 +463,21 @@ export function readAdultMessages(
       where: {
         conversationId: row.id,
         sequence: {
-          gt: forward ? Math.max(hidden, cursor!.sequence) : hidden,
+          gt: query.around
+            ? Math.max(hidden, cursor!.sequence - 25)
+            : forward
+              ? Math.max(hidden, cursor!.sequence)
+              : hidden,
+          ...(query.around ? { lte: cursor!.sequence + 25 } : {}),
           ...(query.before ? { lt: cursor!.sequence } : {})
         }
       },
-      orderBy: { sequence: forward ? "asc" : "desc" },
+      orderBy: { sequence: forward || query.around ? "asc" : "desc" },
       take: PAGE + 1,
       select: messageSelect
     });
     const page = rows.slice(0, PAGE);
-    if (!forward) page.reverse();
+    if (!forward && !query.around) page.reverse();
     const context = await tx.adultContactRequest.findFirst({
       where: { conversationId: row.id, status: "ACCEPTED" },
       orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
@@ -462,13 +486,19 @@ export function readAdultMessages(
     return {
       ownerId,
       available,
+      ...(query.inbox === "true"
+        ? await inboxIn(tx, ownerId, available, { archived: query.archived })
+        : {}),
       conversation,
       context: context
         ? { ...context, createdAt: context.createdAt.toISOString() }
         : null,
       messages: page.map((m) => item(m, ownerId)),
-      older: !forward && rows.length > PAGE ? page[0].id : null,
-      newer: forward && rows.length > PAGE ? page.at(-1)!.id : null
+      older: page.length && page[0].sequence > hidden + 1 ? page[0].id : null,
+      newer:
+        page.length && page.at(-1)!.sequence < row.lastSequence
+          ? page.at(-1)!.id
+          : null
     };
   });
 }

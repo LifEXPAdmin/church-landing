@@ -1,3 +1,14 @@
+## Integrated Messages interface verified locally — 13 September 2026
+
+The profile/request/inbox/conversation interface now uses the verified contact,
+text and scoped in-app activity services. Nineteen enabled and nine paused messaging
+browser groups and thirteen request-interface regressions pass; types/build and focused
+checks pass. A fresh encrypted backup restored and rehearsed 33 to 36 migrations
+with all 77 original tables preserved. See [the receipt](ADULT_MESSAGES_REPORT.md).
+The complete release gate remains next; production is still
+the reporting release below. No new report/contact/message intake, reviewer
+appointment, parent completion or physical-device result is claimed.
+
 ## Adult message service verified locally — 12 September 2026
 
 Persistent text, bounded history/inbox reads, exact receipts, monotonic personal

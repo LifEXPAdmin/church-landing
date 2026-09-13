@@ -1,5 +1,7 @@
 "use client";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import {
   contactAudiences,
   contactStatusLabels,
@@ -41,12 +43,24 @@ export function ContactWorkspace({
     act,
     discard
   } = useContactWorkspace(owner, query);
+  const router = useRouter();
+  const resume =
+    view === "compose" &&
+    !s.hidden &&
+    !s.pending &&
+    !s.purpose &&
+    s.data?.conversation?.sendingAllowed
+      ? s.data.conversation.id
+      : null;
+  useEffect(() => {
+    if (resume) router.replace(`/platform/messages/${resume}`);
+  }, [resume, router]);
   const busy = s.busy || !!s.pending || !!s.waitingUntil;
   const canCreate =
     !!s.data?.available &&
     !!s.data.target &&
     !s.data.activeRequest &&
-    !s.data.conversation;
+    !s.data.conversation?.sendingAllowed;
   const heading =
     view === "preferences"
       ? "Who can send you contact requests"
@@ -61,6 +75,9 @@ export function ContactWorkspace({
   const rows = s.data?.request ? [s.data.request] : (s.data?.requests ?? []);
   const nav = (
     <nav aria-label="Contact request views" className="flex flex-wrap gap-4">
+      <Link prefetch={false} className="underline" href="/platform/messages">
+        Messages
+      </Link>
       <Link
         prefetch={false}
         className="underline"
@@ -145,6 +162,15 @@ export function ContactWorkspace({
           </p>
         )}
         <div className="flex flex-wrap gap-2">
+          {row.conversation && (
+            <Link
+              prefetch={false}
+              className="gc-button gc-button-primary"
+              href={`/platform/messages/${row.conversation.id}`}
+            >
+              Open conversation
+            </Link>
+          )}
           {row.canAccept && (
             <button
               type="button"
@@ -375,12 +401,22 @@ export function ContactWorkspace({
               )}
               {s.data?.conversation && (
                 <p>
-                  You already have an accepted contact with this person. A
-                  second request is not needed.
+                  <Link
+                    prefetch={false}
+                    className="underline"
+                    href={`/platform/messages/${s.data.conversation.id}`}
+                  >
+                    Open your previous conversation
+                  </Link>
+                  .
+                  {s.data.conversation.sendingAllowed
+                    ? " A second request is not needed."
+                    : " A new accepted request is needed before sending again."}
                 </p>
               )}
               {!s.receiptId &&
-                ((!s.data?.activeRequest && !s.data?.conversation) ||
+                ((!s.data?.activeRequest &&
+                  !s.data?.conversation?.sendingAllowed) ||
                   !!s.purpose) && (
                   <form
                     className="space-y-4"
