@@ -36,7 +36,7 @@ export const features: Feature[] = [
       "Open Your reports, then the review link when your current account has review authority. Choose an open or closed case, inspect its selected source, and record a reason. Lost responses retain Retry same review; conflicts require checking the current case first.",
     href: "/platform/reports/review",
     eligibility:
-      "Explicit platform report permission or current church moderation authority for every required scope. Revoked access conceals case details. Recording case status does not hide content, restrict accounts or send notices. New intake remains paused until actual reviewer and retention operations are established.",
+      "Explicit platform report permission or current church moderation authority for every required scope. Revoked access conceals case details. Recording case status does not hide content, restrict accounts or send notices. Intake checks current reviewer coverage for each report.",
     availability: "conditional"
   },
   {
@@ -126,7 +126,7 @@ export const features: Feature[] = [
       "When welcomes are active, finish account setup and verification, then open Messages. Reply to Andrew uses the same private conversation. Optional founder announcements have their own preference, separate from personal replies.",
     href: "/platform/messages",
     eligibility:
-      "New eligible adult accounts only, once each. Welcomes remain paused while founder access is being verified. No existing-account backfill is sent. Replying does not change ordinary contact preferences or create a friendship. Current blocks and account restrictions apply.",
+      "New eligible adult accounts only, once each after verification and required setup, while founder operations are available. No existing-account backfill is sent. Replying does not change ordinary contact preferences or create a friendship. Current blocks and account restrictions apply.",
     availability: "conditional"
   },
   {
