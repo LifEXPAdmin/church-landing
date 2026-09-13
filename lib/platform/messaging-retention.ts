@@ -26,8 +26,11 @@ export interface DeletionJournal {
 export async function markUnretainedMessages(
   tx: Tx,
   now: Date,
-  conversationId?: string
+  conversationId?: string,
+  ownerId?: string
 ) {
+  if (!conversationId && !ownerId)
+    throw new Error("A retention source scope is required");
   return tx.$executeRaw(Prisma.sql`
     UPDATE "AdultMessage" m SET "unretainedAt" = ${now.toISOString()}::timestamp
     FROM "AdultConversation" c
@@ -38,7 +41,7 @@ export async function markUnretainedMessages(
     WHERE m."conversationId" = c.id AND m."unretainedAt" IS NULL
       AND (a."deletionRequestedAt" IS NOT NULL OR COALESCE(sa."hiddenThrough", 0) >= m.sequence)
       AND (b."deletionRequestedAt" IS NOT NULL OR COALESCE(sb."hiddenThrough", 0) >= m.sequence)
-      ${conversationId ? Prisma.sql`AND c.id = ${conversationId}` : Prisma.empty}`);
+      ${conversationId ? Prisma.sql`AND c.id = ${conversationId}` : Prisma.sql`AND (c."participantAId" = ${ownerId} OR c."participantBId" = ${ownerId})`}`);
 }
 
 async function candidatesIn(tx: Tx, now: Date) {
@@ -117,11 +120,49 @@ export async function purgeMessagingCandidate(
   candidate: MessagingPurgeCandidate
 ) {
   if (candidate.target === "REPORT") {
+    const source = await tx.communityReport.findUnique({
+      where: { id: candidate.id },
+      select: { targetType: true, targetId: true }
+    });
     await tx.communityReportDecision.deleteMany({
       where: { reportId: candidate.id }
     });
     await retireReportReceipts(tx, candidate.id);
     await tx.communityReport.deleteMany({ where: { id: candidate.id } });
+    // Release the exact canonical source's erasure exception once its last
+    // selected report expires. Active accounts and shared church content retain
+    // their normal lifecycle; messages use their participant-retention check.
+    if (source && !(await tx.communityReport.count({ where: source }))) {
+      if (source.targetType === "POST")
+        await tx.platformPost.updateMany({
+          where: {
+            id: source.targetId,
+            authorChurchId: null,
+            author: { deletionRequestedAt: { not: null } }
+          },
+          data: { content: "" }
+        });
+      if (source.targetType === "COMMENT")
+        await tx.platformPostComment.updateMany({
+          where: {
+            id: source.targetId,
+            authorChurchId: null,
+            author: { deletionRequestedAt: { not: null } }
+          },
+          data: { content: "", deletedAt: new Date() }
+        });
+      if (source.targetType === "CONTACT_REQUEST")
+        await tx.adultContactRequest.updateMany({
+          where: {
+            id: source.targetId,
+            OR: [
+              { sender: { deletionRequestedAt: { not: null } } },
+              { recipient: { deletionRequestedAt: { not: null } } }
+            ]
+          },
+          data: { purpose: "Removed after account deletion." }
+        });
+    }
   } else {
     await tx.socialEvent.deleteMany({ where: { messageId: candidate.id } });
     await tx.adultMessage.deleteMany({ where: { id: candidate.id } });

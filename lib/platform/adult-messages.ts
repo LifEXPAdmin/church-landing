@@ -314,8 +314,11 @@ async function summaries(
     ])
   );
   const people = await tx.platformUser.findMany({
-    where: { id: { in: otherIds }, ...eligibleWhere },
-    select: { id: true, name: true, username: true }
+    where: {
+      id: { in: otherIds },
+      OR: [eligibleWhere, { deletionRequestedAt: { not: null } }]
+    },
+    select: { id: true, name: true, username: true, deletionRequestedAt: true }
   });
   const blocks = await tx.socialRelationship.findMany({
     where: blockWhere(ownerId, otherIds),
@@ -325,7 +328,12 @@ async function summaries(
     blocks.map((b) => (b.ownerId === ownerId ? b.targetUserId : b.ownerId))
   );
   const peopleById = new Map(
-    people.filter((p) => !blocked.has(p.id)).map((p) => [p.id, p])
+    people
+      .filter((p) => !p.deletionRequestedAt && !blocked.has(p.id))
+      .map((p) => [p.id, { id: p.id, name: p.name, username: p.username }])
+  );
+  const deleted = new Set(
+    people.filter((p) => p.deletionRequestedAt).map((p) => p.id)
   );
   // One index seek per already-authorized conversation; never fetch all history
   // to pick its last message or store a duplicate preview body.
@@ -363,6 +371,7 @@ async function summaries(
       id: row.id,
       version: row.version,
       person,
+      deletedMember: deleted.has(adultOtherId(row, ownerId)),
       sendingAllowed: available && row.sendingAllowed && !!person,
       updatedAt: row.updatedAt.toISOString(),
       latest:

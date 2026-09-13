@@ -261,6 +261,7 @@ const confirmationActions: Record<RecentAuthenticationPurpose, string> = {
   "revoke-other-sessions": "signing out other sessions",
   "prepare-export": "downloading account data",
   "deactivate-account": "deactivating your account",
+  "delete-account": "permanently deleting your account",
   "request-email-change": "requesting an email change",
   "confirm-email-change": "changing your sign-in email",
   "unlink-google": "disconnecting Google"

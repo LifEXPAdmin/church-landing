@@ -29,6 +29,7 @@ export type AdultConversationSummary = {
   id: string;
   version: number;
   person: ContactPerson | null;
+  deletedMember?: boolean;
   sendingAllowed: boolean;
   updatedAt: string;
   latest: AdultMessageItem | null;

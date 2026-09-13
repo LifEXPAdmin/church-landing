@@ -10,9 +10,9 @@ import {
 
 const PREFIX = "retention-v1/purge/";
 export type JournalEntry = PurgeRecord & { completedAt: string | null };
-export interface RetentionJournalStore {
+export interface RetentionJournalStore<Entry = JournalEntry> {
   read(path: string): Promise<unknown | null>;
-  write(path: string, entry: JournalEntry): Promise<void>;
+  write(path: string, entry: Entry): Promise<void>;
   remove(path: string): Promise<void>;
   page(cursor?: string): Promise<{ paths: string[]; cursor?: string }>;
 }
@@ -40,7 +40,9 @@ function validate(value: unknown): JournalEntry {
 const pathFor = (record: PurgeRecord) =>
   `${PREFIX}${record.target.toLowerCase()}-${record.id}.json`;
 
-export function privateRetentionStore(): RetentionJournalStore {
+export function privateRetentionStore<Entry = JournalEntry>(
+  prefix = PREFIX
+): RetentionJournalStore<Entry> {
   if (!process.env.BLOB_READ_WRITE_TOKEN && !process.env.BLOB_STORE_ID)
     throw new Error("Protected retention storage is not configured");
   return {
@@ -69,7 +71,7 @@ export function privateRetentionStore(): RetentionJournalStore {
     },
     async page(cursor) {
       const result = await list({
-        prefix: PREFIX,
+        prefix,
         limit: 100,
         cursor,
         abortSignal: AbortSignal.timeout(10000)
@@ -204,7 +206,9 @@ export async function replayMessagingDeletions(
             version: entry.version,
             policy: entry.policy,
             createdAt: new Date(entry.recordedAt),
-            completedAt: new Date(),
+            completedAt: entry.completedAt
+              ? new Date(entry.completedAt)
+              : new Date(),
             journaledAt: null
           },
           update: {}

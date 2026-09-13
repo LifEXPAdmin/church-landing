@@ -21,6 +21,9 @@ import {
 const ContactWorkspace = dynamic(() =>
   import("./contact-workspace").then((m) => m.ContactWorkspace)
 );
+const AccountDeletion = dynamic(() =>
+  import("./account-deletion").then((m) => m.AccountDeletion)
+);
 
 export function SettingsControls({
   control,
@@ -69,6 +72,15 @@ export function SettingsControls({
           </p>
           <AccountLifecycle />
         </>
+      );
+    case "delete":
+      if (!canConfirm) return <SettingsCredentialHelp data={data} />;
+      return (
+        <AccountDeletion
+          owner={data.ownerId}
+          available={data.deletionAvailable}
+          verified={data.emailVerified}
+        />
       );
     case "password":
       return canConfirm ? (

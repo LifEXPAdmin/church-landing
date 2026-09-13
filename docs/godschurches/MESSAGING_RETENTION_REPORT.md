@@ -1,5 +1,32 @@
 # Messaging retention implementation
 
+## Permanent account closure checkpoint — local, 13 September 2026
+
+The next local milestone adds verified permanent requests, immutable deadlines,
+immediate access revocation, resource erasure, Deleted member shared-message
+projection and protected account replay. It reuses credential confirmation,
+session/contact revocation and the media retirement/garbage ledger. Final
+completion waits for provider cleanup acknowledgement and remaining ownership
+handoffs. Selected reported comments stay private to their authorized reviewer
+and lose their retained text when the final report expires.
+
+Settings now include a separately loaded deletion confirmation control and a
+read-only progress screen. Intake remains disabled. No password or Google proof
+is stored in browser progress data. See [the account contract](ACCOUNT_DELETION_CONTRACT.md).
+
+Fresh verification: 40 focused service/boundary regressions pass, including eight
+account-deletion groups, nine retention groups, existing Google-account cases
+and settings context. Types and scoped application lint pass. Checks include
+switched-account/origin denial, uncertain-response replay, provider-pending media,
+selected evidence, handoff exceptions and restored credentials/text. These are
+isolated fixtures, not real erasure or observed provider cleanup. Browser, full
+migration/release and operating-job checks remain pending for the integrated batch.
+
+Connected-provider read-only inventory found six hours of Neon recovery history,
+no snapshots and an available existing private Blob store. No provider settings
+were changed. Actual private journal probes, operator-backup expiry, current
+hold/device revocation replay and deployed cleanup remain to be completed.
+
 ## Local foundation — 13 September 2026
 
 The approved policy is recorded in [MESSAGING_RETENTION_POLICY.md](MESSAGING_RETENTION_POLICY.md).
@@ -38,8 +65,8 @@ raw retention comparisons now explicitly use UTC timestamps.
 ## Remaining operational integration
 
 This foundation is not a release or intake-activation receipt. The new migration
-has not been applied to production. Permanent account-resource erasure, current
-hold/account/device restoration replay, scheduled cleanup and actual backup
+has not been applied to production. Current
+hold/device restoration replay, scheduled cleanup and actual backup
 expiry remain in progress. Protected provider storage must be probed and the
 first production candidates inspected before any real purge. The full release
 gate and browser checks remain for the integrated feature release.

@@ -73,6 +73,7 @@ export type SettingsControl =
   | "notifications"
   | "export"
   | "deactivate"
+  | "delete"
   | "organization";
 export type SettingCapability =
   | "account"
@@ -490,9 +491,21 @@ export const settingsRegistry: readonly SettingRegistration[] = Object.freeze([
     "data",
     "Deactivate account",
     "Take a reversible break after reviewing the effects and any handoff requirements.",
-    ["deactivate", "close account", "delete account", "take a break"],
+    ["deactivate", "take a break"],
     { control: "deactivate" },
     account("account-lifecycle.ts", "account-lifecycle.ts deactivateAccount")
+  ),
+  entry(
+    "data.delete",
+    "data",
+    "Permanently delete account",
+    "Review permanent deletion, retained shared messages and actual cleanup progress.",
+    ["delete account", "close account", "permanent deletion", "erase"],
+    { control: "delete" },
+    account(
+      "account-deletion.ts readAccountDeletionProgress",
+      "account-deletion.ts requestPermanentAccountDeletion"
+    )
   ),
   entry(
     "help.support",

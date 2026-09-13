@@ -1,4 +1,14 @@
-## Scoped report review verified live — 13 September 2026
+## Permanent account closure — local, 13 September 2026
+
+Verified request/reauthentication, irrevocable access revocation, account-resource
+erasure, retained shared-message projection, protected account restoration replay
+and gated confirmation/progress controls are implemented locally. Forty focused
+service/boundary regressions, types and scoped application lint pass. Browser,
+full release and actual cleanup-operation checks remain pending; intake stays off.
+See [the account contract](ACCOUNT_DELETION_CONTRACT.md) and
+[current retention receipt](MESSAGING_RETENTION_REPORT.md). The live application
+remains `.26`; no production grant, migration, message, push or deletion was made
+for this checkpoint. Continue cleanup operations, then welcome/outbox integration.
 
 ## Messaging retention foundation — local, 13 September 2026
 
@@ -14,6 +24,8 @@ replay, provider/backup expiry and scheduled cleanup are in progress before the
 welcome and push integration. The canonical domain still serves `.26` /
 `06f08c7e2faba9bc6d2ddbd9ae7e422b1f067424`; no real grant, message,
 notification or purge was performed for this checkpoint.
+
+## Scoped report review verified live — 13 September 2026
 
 Product `2026.09.13.26`, application `06f08c7e2faba9bc6d2ddbd9ae7e422b1f067424`,
 is READY in `dpl_J5CR3nXf58fdGVHEn4EKRgUnsTHc`; the independent canonical

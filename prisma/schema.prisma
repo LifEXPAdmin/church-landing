@@ -213,6 +213,7 @@ model PlatformUser {
   deactivatedAt DateTime?
   deletionRequestedAt DateTime?
   erasedAt DateTime?
+  deletion AccountDeletion?
   adultAcknowledgedAt DateTime?
   adultPolicyVersion String?
   portalVersion Int @default(0)
@@ -293,6 +294,22 @@ model ProfilePresentation {
   sectionOrder String @default("about-first")
   introduction String @default("")
   user PlatformUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AccountDeletion {
+  id String @id @default(cuid())
+  userId String @unique
+  proofHash String @unique
+  requestedAt DateTime @default(now())
+  dueAt DateTime
+  policy String
+  structuredPurgedAt DateTime?
+  completedAt DateTime?
+  journaledAt DateTime?
+  completionJournaledAt DateTime?
+  exceptions Json @default("{}")
+  user PlatformUser @relation(fields: [userId], references: [id], onDelete: Restrict)
+  @@index([completedAt, dueAt])
 }
 
 model PlatformGoogleIdentity {

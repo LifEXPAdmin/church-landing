@@ -99,7 +99,8 @@ function ConversationLink({
       )}
       <span className="min-w-0 flex-1">
         <span className="block font-semibold">
-          {row.person?.name ?? "Unavailable account"}
+          {row.person?.name ??
+            (row.deletedMember ? "Deleted member" : "Unavailable account")}
         </span>
         <span className="block truncate text-sm text-gc-muted">
           {row.latest
@@ -469,6 +470,8 @@ export function MessageWorkspace({
                           >
                             {conversation.person.name}
                           </Link>
+                        ) : conversation.deletedMember ? (
+                          "Deleted member"
                         ) : (
                           "Unavailable account"
                         )}
@@ -580,7 +583,10 @@ export function MessageWorkspace({
                         key={message.id}
                         message={message}
                         name={
-                          conversation.person?.name ?? "the other participant"
+                          conversation.person?.name ??
+                          (conversation.deletedMember
+                            ? "Deleted member"
+                            : "the other participant")
                         }
                         selected={message.id === selected}
                       />

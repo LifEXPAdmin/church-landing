@@ -43,6 +43,13 @@ import {
   clearGoogleCookies
 } from "./google-cookies";
 import { isRecentAuthenticationPurpose } from "./account-credential";
+import { accountDeletionAvailable } from "./account-availability";
+import {
+  requestPermanentAccountDeletion,
+  readAccountDeletionProgress,
+  type AccountDeletionJournal
+} from "./account-deletion";
+import { protectedAccountDeletionJournal } from "./account-deletion-journal";
 
 export const SESSION_COOKIE = "church_platform_session";
 export function sessionCookie(token: string, secure: boolean) {
@@ -119,7 +126,8 @@ export async function readBody(
 export async function handleAccountRequest(
   db: PrismaClient,
   request: Request,
-  afterResponse?: (work: () => Promise<void>) => void
+  afterResponse?: (work: () => Promise<void>) => void,
+  deletionJournal?: AccountDeletionJournal
 ): Promise<Response> {
   const requestId = randomUUID();
   const credentialUse = { google: false };
@@ -128,7 +136,8 @@ export async function handleAccountRequest(
     request,
     requestId,
     afterResponse,
-    credentialUse
+    credentialUse,
+    deletionJournal
   );
   if (response.ok) {
     const sessionEnded = response.headers
@@ -164,7 +173,8 @@ async function processAccountRequest(
   request: Request,
   requestId: string,
   afterResponse?: (work: () => Promise<void>) => void,
-  credentialUse = { google: false }
+  credentialUse = { google: false },
+  deletionJournal?: AccountDeletionJournal
 ): Promise<Response> {
   if (request.method !== "POST")
     return reply("Use the account form to continue.", 405, { Allow: "POST" });
@@ -221,6 +231,8 @@ async function processAccountRequest(
       "prepare-export",
       "download-export",
       "deactivate-account",
+      "delete-account",
+      "deletion-progress",
       "reactivate-account",
       "request-email-change",
       "confirm-email-change",
@@ -239,6 +251,8 @@ async function processAccountRequest(
     "prepare-export": ["currentPassword"],
     "download-export": ["authorization"],
     "deactivate-account": ["currentPassword", "confirmed"],
+    "delete-account": ["currentPassword", "confirmed", "proof", "ownerId"],
+    "deletion-progress": ["proof"],
     "request-email-change": ["currentPassword", "newEmail"],
     "confirm-email-change": ["currentPassword", "token"]
   };
@@ -407,6 +421,36 @@ async function processAccountRequest(
           : "Continue by signing in with your email and password. If this is a new account, a verification email will be sent. Check your inbox and spam folder.",
         200
       );
+    }
+    if (operation === "delete-account" || operation === "deletion-progress") {
+      if (operation === "delete-account" && !accountDeletionAvailable())
+        return reply(
+          "Permanent account deletion is not available yet. No request was accepted.",
+          503
+        );
+      if (operation === "delete-account" && typeof body.ownerId !== "string")
+        return reply("Reload your account settings before continuing.", 400);
+      const result =
+        operation === "deletion-progress"
+          ? await readAccountDeletionProgress(db, body.proof)
+          : await requestPermanentAccountDeletion(
+              db,
+              requestSessionToken(request),
+              credential,
+              body.confirmed,
+              body.proof,
+              deletionJournal ?? protectedAccountDeletionJournal(),
+              body.ownerId
+            );
+      return Response.json(result, {
+        headers: {
+          "Cache-Control": "no-store",
+          "Referrer-Policy": "no-referrer",
+          ...(operation === "delete-account"
+            ? { "Set-Cookie": sessionCookie("", config.secureCookie) }
+            : {})
+        }
+      });
     }
     if (operation === "deactivate-account") {
       await deactivateAccount(
@@ -587,16 +631,20 @@ async function processAccountRequest(
         invalid:
           "Check every field. Passwords must match and contain 8 to 128 characters.",
         credentials:
-          operation === "change-password" ||
-          operation === "prepare-export" ||
-          operation === "deactivate-account" ||
-          operation === "request-email-change" ||
-          operation === "confirm-email-change" ||
-          operation === "revoke-other-sessions"
-            ? credentialUse.google
-              ? "Google confirmation is missing, expired or already used. Confirm this action with Google again."
-              : "Your current password did not match."
-            : "That email and password did not match.",
+          operation === "deletion-progress"
+            ? "This deletion progress reference is unavailable or expired."
+            : operation === "delete-account"
+              ? "Verify your account email and confirm your current sign-in before deleting your account."
+              : operation === "change-password" ||
+                  operation === "prepare-export" ||
+                  operation === "deactivate-account" ||
+                  operation === "request-email-change" ||
+                  operation === "confirm-email-change" ||
+                  operation === "revoke-other-sessions"
+                ? credentialUse.google
+                  ? "Google confirmation is missing, expired or already used. Confirm this action with Google again."
+                  : "Your current password did not match."
+                : "That email and password did not match.",
         registration:
           "Your registration could not be completed. Please try again later.",
         session: "Please sign in again before changing your account.",

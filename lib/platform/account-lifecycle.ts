@@ -22,6 +22,11 @@ export async function reactivateVerifiedAccount(
   tx: Prisma.TransactionClient,
   userId: string
 ) {
+  const state = await tx.platformUser.findUniqueOrThrow({
+    where: { id: userId },
+    select: { deletionRequestedAt: true }
+  });
+  if (state.deletionRequestedAt) throw new AccountError("credentials");
   await tx.platformUser.update({
     where: { id: userId },
     data: {
@@ -74,44 +79,7 @@ export async function deactivateAccount(
         })
       ]);
       if (duties.some(Boolean)) throw new AccountLifecycleError("handoff");
-      await revokeAccountFriendInvitations(tx, userId);
-      await revokeAccountContact(tx, userId);
-      const now = new Date();
-      await tx.calendarShare.updateMany({
-        where: { calendar: { ownerId: userId }, revokedAt: null },
-        data: { revokedAt: now, version: { increment: 1 } }
-      });
-      await tx.calendarEventShare.updateMany({
-        where: { event: { calendar: { ownerId: userId } }, revokedAt: null },
-        data: { revokedAt: now, version: { increment: 1 } }
-      });
-      await tx.calendarResponse.updateMany({
-        where: { userId, state: { in: ["GOING", "MAYBE"] } },
-        data: { state: "DECLINED", version: { increment: 1 } }
-      });
-      await tx.platformUser.update({
-        where: { id: userId },
-        data: {
-          deactivatedAt: now,
-          credentialVersion: { increment: 1 },
-          portalVersion: { increment: 1 }
-        }
-      });
-      await tx.platformSession.deleteMany({ where: { userId } });
-      await tx.platformEmailChange.deleteMany({ where: { userId } });
-      await tx.platformAccountGrant.updateMany({
-        where: { userId, consumedAt: null },
-        data: { consumedAt: now }
-      });
-      await tx.churchDirectoryPreference.deleteMany({
-        where: { connection: { userId } }
-      });
-      await tx.churchConnection.updateMany({
-        where: { userId },
-        data: { version: { increment: 1 } }
-      });
-      // Ends existing coordinator consent and records the standard support audit.
-      await reconcileSupportAccess(tx);
+      await closeVerifiedAccountAccess(tx, userId, new Date());
     },
     true
   );
@@ -155,4 +123,52 @@ export async function reactivateAccount(
     },
     { maxWait: 5000, timeout: 15000 }
   );
+}
+
+// Shared revocation transition. Call only after current credentials and ownership
+// are verified under the existing access and user locks.
+export async function closeVerifiedAccountAccess(
+  tx: Prisma.TransactionClient,
+  userId: string,
+  now: Date,
+  permanent = false
+) {
+  await revokeAccountFriendInvitations(tx, userId);
+  await revokeAccountContact(tx, userId);
+  await tx.calendarShare.updateMany({
+    where: { calendar: { ownerId: userId }, revokedAt: null },
+    data: { revokedAt: now, version: { increment: 1 } }
+  });
+  await tx.calendarEventShare.updateMany({
+    where: { event: { calendar: { ownerId: userId } }, revokedAt: null },
+    data: { revokedAt: now, version: { increment: 1 } }
+  });
+  await tx.calendarResponse.updateMany({
+    where: { userId, state: { in: ["GOING", "MAYBE"] } },
+    data: { state: "DECLINED", version: { increment: 1 } }
+  });
+  await tx.platformUser.update({
+    where: { id: userId },
+    data: {
+      deactivatedAt: now,
+      ...(permanent ? { deletionRequestedAt: now } : {}),
+      credentialVersion: { increment: 1 },
+      portalVersion: { increment: 1 }
+    }
+  });
+  await tx.platformSession.deleteMany({ where: { userId } });
+  await tx.platformEmailChange.deleteMany({ where: { userId } });
+  await tx.platformAccountGrant.updateMany({
+    where: { userId, consumedAt: null },
+    data: { consumedAt: now }
+  });
+  await tx.churchDirectoryPreference.deleteMany({
+    where: { connection: { userId } }
+  });
+  await tx.churchConnection.updateMany({
+    where: { userId },
+    data: { version: { increment: 1 } }
+  });
+  // Ends existing coordinator consent and records the standard support audit.
+  await reconcileSupportAccess(tx);
 }

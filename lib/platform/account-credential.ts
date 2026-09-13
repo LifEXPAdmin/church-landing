@@ -7,6 +7,7 @@ export const recentAuthenticationPurposes = [
   "revoke-other-sessions",
   "prepare-export",
   "deactivate-account",
+  "delete-account",
   "request-email-change",
   "confirm-email-change",
   "unlink-google"

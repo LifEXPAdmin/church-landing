@@ -1,6 +1,9 @@
 import type { PrismaClient } from "@prisma/client";
 import { withOwnedSession } from "./account-sessions";
-import { accountDeliveryAvailable } from "./account-availability";
+import {
+  accountDeliveryAvailable,
+  accountDeletionAvailable
+} from "./account-availability";
 import { googleAvailable } from "./google-availability";
 import { photoLibraryEnabled } from "./personal-photo-policy";
 import { isEligible, PortalError } from "./portal-policy";
@@ -60,6 +63,7 @@ export function readSettingsContext(
             : "Private sign-in email",
         emailVerified: !!user.emailVerifiedAt,
         emailAvailable: accountDeliveryAvailable(),
+        deletionAvailable: accountDeletionAvailable(),
         googleAvailable: googleAvailable(),
         methods: await accountSignInMethods(tx, session),
         privacy: await socialPrivacyIn(tx, user.id),

@@ -7,6 +7,7 @@ const confirmationReturns: Record<RecentAuthenticationPurpose, string> = {
   "revoke-other-sessions": "/platform/settings/account/sessions",
   "prepare-export": "/platform/settings/data/export",
   "deactivate-account": "/platform/settings/data/deactivate",
+  "delete-account": "/platform/settings/data/delete",
   "request-email-change": "/platform/settings/account/email",
   "confirm-email-change": "/platform/settings/account/email",
   "unlink-google": "/platform/settings/account/methods"
