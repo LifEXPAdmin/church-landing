@@ -499,9 +499,10 @@ export const releases: ReleaseEntry[] = [
     id: "reply-and-mention-phone-alerts",
     version: "2026.09.13.29",
     date: "2026-09-13",
-    summary: "Optional phone alerts for replies and mentions in comments.",
+    summary: "Comment phone alerts and a welcome for new members.",
     added: [
-      "Choose separate phone alerts for replies to your personal posts and comments, and for selected mentions."
+      "Choose separate phone alerts for replies to your personal posts and comments, and for selected mentions.",
+      "Eligible new accounts receive the founder welcome after setup and required verification, with a deliberate Reply action into the same private conversation."
     ],
     improved: [
       "Comment alerts respect quiet hours, conversation mute, current source access and your phone choices. Tapping an available alert opens its exact comment."
@@ -509,7 +510,7 @@ export const releases: ReleaseEntry[] = [
     fixed: [
       "A reply that also mentions you creates one alert intent. Edits and retries do not backfill old alerts, and your account export includes saved notification and quiet-hour choices."
     ],
-    featureIds: ["phone-notifications"]
+    featureIds: ["phone-notifications", "founder-welcome", "private-messages"]
   },
   {
     id: "bounded-community-feed",
