@@ -211,6 +211,8 @@ model PlatformUser {
   emailVerifiedAt DateTime?
   suspendedAt DateTime?
   deactivatedAt DateTime?
+  deletionRequestedAt DateTime?
+  erasedAt DateTime?
   adultAcknowledgedAt DateTime?
   adultPolicyVersion String?
   portalVersion Int @default(0)
@@ -473,6 +475,8 @@ model CommunityReport {
   version Int @default(1)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  closedAt DateTime?
+  reviewDueAt DateTime @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC') + interval '30 days'"))
   reporter PlatformUser @relation(fields: [reporterId], references: [id], onDelete: Restrict)
   scopeChurch Church? @relation(fields: [scopeChurchId], references: [id], onDelete: Restrict)
   decisions CommunityReportDecision[]
@@ -482,6 +486,56 @@ model CommunityReport {
   @@index([reporterId, createdAt, id])
   @@index([scopeChurchId, status, createdAt])
   @@index([targetType, targetId])
+  @@index([closedAt])
+  @@index([reviewDueAt])
+}
+
+// A hold preserves only the explicitly selected canonical message or report.
+// It never grants access, changes ordinary audiences, or copies message history.
+enum RetentionTarget {
+  MESSAGE
+  REPORT
+}
+
+model RetentionHold {
+  id String @id @default(cuid())
+  target RetentionTarget
+  targetId String
+  version Int @default(1)
+  reason String
+  operatorId String
+  createdAt DateTime @default(now())
+  reviewDueAt DateTime
+  releasedAt DateTime?
+  events RetentionHoldEvent[]
+  @@index([target, targetId, releasedAt])
+  @@index([reviewDueAt])
+}
+
+model RetentionHoldEvent {
+  id String @id @default(cuid())
+  holdId String
+  operatorId String
+  action String
+  reason String
+  version Int
+  createdAt DateTime @default(now())
+  hold RetentionHold @relation(fields: [holdId], references: [id], onDelete: Cascade)
+  @@index([holdId, createdAt])
+}
+
+// A committed deletion decision is sealed before external journal I/O. That
+// prevents a later hold/reopening from racing a retry or restoration replay.
+model RetentionPurge {
+  target RetentionTarget
+  targetId String
+  version Int
+  policy String
+  createdAt DateTime @default(now())
+  completedAt DateTime?
+  journaledAt DateTime?
+  @@id([target, targetId])
+  @@index([completedAt])
 }
 
 model CommunityReportDecision {
@@ -1603,10 +1657,12 @@ model AdultMessage {
   sequence Int
   content String
   createdAt DateTime @default(now())
+  unretainedAt DateTime?
   conversation AdultConversation @relation(fields: [conversationId], references: [id], onDelete: Restrict)
   sender PlatformUser @relation(fields: [senderId], references: [id], onDelete: Restrict)
   @@unique([conversationId, sequence])
   @@index([senderId, createdAt])
+  @@index([unretainedAt])
 }
 
 // Personal viewing/alert state is never conversation membership or send consent.

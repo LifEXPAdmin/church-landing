@@ -67,6 +67,7 @@ export function reviewReportRows(
       WHEN r."targetType" = 'POST' THEN r."targetId"
       WHEN r."targetType" = 'COMMENT' THEN c."postId" END
     WHERE ${original}
+      AND NOT EXISTS (SELECT 1 FROM "RetentionPurge" purge WHERE purge.target = 'REPORT' AND purge."targetId" = r.id)
       AND (${currentScope} IS NULL OR ${
         authority.churches.length
           ? Prisma.sql`${currentScope} IN (${Prisma.join(authority.churches)})`

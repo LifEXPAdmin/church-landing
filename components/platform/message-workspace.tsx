@@ -520,7 +520,7 @@ export function MessageWorkspace({
                             if (
                               through &&
                               confirm(
-                                "Hide messages through the last item on this page from your view? This does not erase the other person’s history or retract sent messages."
+                                "Clear through the last message on this page? This removes messages from your view. Other participants may still have their copies."
                               )
                             )
                               act("clear", {

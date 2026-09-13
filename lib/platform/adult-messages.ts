@@ -24,6 +24,7 @@ import { communityReportIntakeAvailable } from "./community-reports";
 import { eligibleWhere, expected, PortalError } from "./portal-policy";
 import { postField, postId } from "./post-input";
 import { socialCommand, socialInput } from "./social-operations";
+import { markUnretainedMessages } from "./messaging-retention";
 import {
   messageActivityIn,
   messageAlertChoices,
@@ -273,12 +274,14 @@ export function adultMessageCommand(
         create,
         update: { ...change, version: { increment: 1 } }
       });
+      if (input.operation === "clear")
+        await markUnretainedMessages(tx, new Date(), row.id);
       return {
         id: row.id,
         version: saved.version,
         message:
           input.operation === "clear"
-            ? "These messages are hidden from your view. The other participant's history is unchanged."
+            ? "This removes messages from your view. Other participants may still have their copies."
             : "Your conversation choice is saved."
       };
     },

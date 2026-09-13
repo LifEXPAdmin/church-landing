@@ -1,5 +1,14 @@
 # Ordinary support operations
 
+## Current policy — 13 September 2026
+
+[The approved messaging retention and deletion policy](MESSAGING_RETENTION_POLICY.md)
+supersedes historical pending-approval and independent-reviewer requirements below.
+The founder is the sole initial report reviewer, including self-involving cases;
+reconsideration is founder review. Actual scoped grants and functioning cleanup,
+backup expiry and restoration remain technical verification gates. No repeat
+owner policy approval is pending. Historical release evidence is retained below.
+
 ## Stage 2C implementation contract
 
 Authorized September 8, 2026: build, test and publish this slice. Production intake

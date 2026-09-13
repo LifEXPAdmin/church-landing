@@ -20,6 +20,7 @@ import { eligibleWhere, expected, PortalError } from "./portal-policy";
 import { socialCommand, socialInput } from "./social-operations";
 import { socialUserWhere } from "./social-policy";
 import { adultMemberWhere } from "./adult-message-policy";
+import { retentionDate } from "./messaging-retention";
 import {
   reportReviewAuthority,
   reviewReportRows
@@ -439,6 +440,19 @@ export function readCommunityReports(
           createdAt: true
         }
       });
+      const holds = await tx.retentionHold.findMany({
+        where: { target: "REPORT", targetId: report.id },
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        take: 30,
+        select: {
+          id: true,
+          version: true,
+          reason: true,
+          createdAt: true,
+          reviewDueAt: true,
+          releasedAt: true
+        }
+      });
       const selectedRequest =
         report.targetType === "CONTACT_REQUEST"
           ? await tx.adultContactRequest.findUnique({
@@ -479,6 +493,9 @@ export function readCommunityReports(
         ownerId,
         report: receipt(report),
         decisions,
+        holds,
+        reviewDueAt: report.reviewDueAt.toISOString(),
+        closedAt: report.closedAt?.toISOString() ?? null,
         evidence: selectedRequest
           ? { type: "CONTACT_REQUEST" as const, ...selectedRequest }
           : selectedMessage
@@ -537,29 +554,41 @@ export function communityReportCommand(
   input: Record<string, unknown>
 ) {
   const resolving = input.operation === "resolve";
-  if (!resolving && input.operation !== "create")
+  const holding = ["preserve", "review-hold", "release-hold"].includes(
+    String(input.operation)
+  );
+  if (!resolving && !holding && input.operation !== "create")
     throw new PortalError(400, "Choose a supported report action.");
   socialInput(
     input,
-    resolving
+    holding
       ? [
           "operation",
           "mutationId",
           "id",
           "expectedVersion",
-          "resolution",
+          "holdId",
           "decisionReason"
         ]
-      : [
-          "operation",
-          "mutationId",
-          "targetType",
-          "targetId",
-          "expectedTargetVersion",
-          "expectedContextVersion",
-          "reason",
-          "details"
-        ]
+      : resolving
+        ? [
+            "operation",
+            "mutationId",
+            "id",
+            "expectedVersion",
+            "resolution",
+            "decisionReason"
+          ]
+        : [
+            "operation",
+            "mutationId",
+            "targetType",
+            "targetId",
+            "expectedTargetVersion",
+            "expectedContextVersion",
+            "reason",
+            "details"
+          ]
   );
   let reviewed: CommunityReport | null = null;
   return socialCommand(
@@ -568,6 +597,93 @@ export function communityReportCommand(
     "community-report",
     input,
     async (tx, ownerId) => {
+      if (holding) {
+        const report = reviewed!;
+        expected(input.expectedVersion, report.version);
+        const reason = postField(input.decisionReason, 1000, 5);
+        const now = new Date();
+        let hold;
+        if (input.operation === "preserve") {
+          if (input.holdId !== undefined)
+            throw new PortalError(400, "Select the report being preserved.");
+          if (
+            await tx.retentionHold.findFirst({
+              where: {
+                target: "REPORT",
+                targetId: report.id,
+                releasedAt: null
+              },
+              select: { id: true }
+            })
+          )
+            throw new PortalError(
+              409,
+              "This report already has an active hold. Refresh its review."
+            );
+          hold = await tx.retentionHold.create({
+            data: {
+              target: "REPORT",
+              targetId: report.id,
+              operatorId: ownerId,
+              reason,
+              reviewDueAt: retentionDate(now, 30)
+            }
+          });
+        } else {
+          const current = await tx.retentionHold.findFirst({
+            where: {
+              id: postId(input.holdId),
+              target: "REPORT",
+              targetId: report.id,
+              releasedAt: null
+            }
+          });
+          if (!current)
+            throw new PortalError(
+              409,
+              "This hold changed. Refresh the review."
+            );
+          hold = await tx.retentionHold.update({
+            where: { id: current.id },
+            data: {
+              reason,
+              operatorId: ownerId,
+              version: { increment: 1 },
+              reviewDueAt: retentionDate(now, 30),
+              ...(input.operation === "release-hold" ? { releasedAt: now } : {})
+            }
+          });
+        }
+        await tx.retentionHoldEvent.create({
+          data: {
+            holdId: hold.id,
+            operatorId: ownerId,
+            reason,
+            version: hold.version,
+            action:
+              input.operation === "preserve"
+                ? "PRESERVE"
+                : input.operation === "release-hold"
+                  ? "RELEASE"
+                  : "REVIEW"
+          }
+        });
+        const updated = await tx.communityReport.update({
+          where: { id: report.id },
+          data: {
+            version: { increment: 1 },
+            reviewDueAt: retentionDate(now, 30)
+          }
+        });
+        return {
+          id: report.id,
+          version: updated.version,
+          message:
+            input.operation === "release-hold"
+              ? "Preservation hold released. The original retention clock is unchanged."
+              : "Selected report evidence preserved. Review is due within 30 days."
+        };
+      }
       if (resolving) {
         const report = reviewed!;
         expected(input.expectedVersion, report.version);
@@ -582,7 +698,15 @@ export function communityReportCommand(
         const reason = postField(input.decisionReason, 1000, 5);
         const updated = await tx.communityReport.update({
           where: { id: report.id },
-          data: { status: input.resolution, version: { increment: 1 } }
+          data: {
+            status: input.resolution,
+            version: { increment: 1 },
+            closedAt:
+              input.resolution === "CLOSED"
+                ? (report.closedAt ?? new Date())
+                : null,
+            reviewDueAt: retentionDate(new Date(), 30)
+          }
         });
         await tx.communityReportDecision.create({
           data: {
@@ -667,7 +791,8 @@ export function communityReportCommand(
           contextVersion: target.contextVersion,
           scopeChurchId: target.scopeChurchId,
           reason,
-          details
+          details,
+          reviewDueAt: retentionDate(new Date(), 30)
         }
       });
       return {
@@ -677,7 +802,7 @@ export function communityReportCommand(
           "Report received. Your receipt is private; no automatic restriction was applied."
       };
     },
-    resolving
+    resolving || holding
       ? async (tx, ownerId) => {
           reviewed = await requireReview(tx, ownerId, input.id);
         }

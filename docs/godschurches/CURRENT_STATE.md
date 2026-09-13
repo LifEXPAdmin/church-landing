@@ -1,5 +1,20 @@
 ## Scoped report review verified live — 13 September 2026
 
+## Messaging retention foundation — local, 13 September 2026
+
+The owner approved the retention/deletion policy and sole-founder report review,
+including self-involving cases. No repeat policy approval is pending. The first
+local implementation checkpoint adds stable retention clocks, scoped holds,
+sealed purge retries and protected message/report deletion replay; 47 focused
+service tests, types and scoped lint pass. See
+[the current retention receipt](MESSAGING_RETENTION_REPORT.md).
+
+This is not production activation. Account-resource erasure, full restoration
+replay, provider/backup expiry and scheduled cleanup are in progress before the
+welcome and push integration. The canonical domain still serves `.26` /
+`06f08c7e2faba9bc6d2ddbd9ae7e422b1f067424`; no real grant, message,
+notification or purge was performed for this checkpoint.
+
 Product `2026.09.13.26`, application `06f08c7e2faba9bc6d2ddbd9ae7e422b1f067424`,
 is READY in `dpl_J5CR3nXf58fdGVHEn4EKRgUnsTHc`; the independent canonical
 alias and serving endpoint match. The 91-file gate passes (598 pass, zero fail,
