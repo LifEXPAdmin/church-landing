@@ -1,8 +1,9 @@
 # Personal activity and read boundaries
 
-The service foundation and consuming interface are verified locally on 13
-September 2026. Publication verification is next; production is
-2026.09.13.30 with 43 migrations, not this 44-migration candidate.
+Product 2026.09.13.31 is verified live on 13 September 2026. Application
+`f50b7a0629dda9c3321f88017a866652b69bf58a` is READY in
+`dpl_8g9QpaHPJabF4bZhx3YhM2caQVoS`; the independent canonical alias and serving
+identity match. All 44 production migrations have matching checksums.
 
 The existing SocialEvent is the canonical intent. Activity adds only its ordered
 sequence and recipient read marker, plus a monotonic read-through position on
@@ -151,3 +152,29 @@ loop was added. The browser script is `scripts/qa-activity-browser.mjs`; run wit
 Node24, the existing isolated HTTPS fixture directory and `NODE_EXTRA_CA_CERTS`
 set to that fixture's certificate. Both browser and intercepted Node requests
 validate that certificate; global TLS verification is never disabled.
+
+## Verified publication and operating receipt
+
+Fifteen live read-only browser/HTTP groups pass with no page errors or mutation
+requests. The actual signed-in Activity page displays its empty state and disabled
+all-read control; Messages still exposes the current founder filters and returns
+to Activity. No real message, welcome, announcement, backfill, phone notification
+or production fixture was created. The earlier recipient-observed Chrome phone
+shade notification remains separate from these automated and desktop checks.
+
+The additive production migration preserves every original column across all
+92 prior tables. The actual application database connection has sequence usage,
+read access and read-marker update privilege without any additional grant. The
+Vercel build has 143 clean traces, 14,672 entries and 366 server JS files. The
+scoped runtime error query returned zero rows. Notification and retention
+maintenance both pass with no pending work, sends, erasures or failures; the
+existing phone public-key fingerprint is unchanged. The private daily-backup
+registry now includes all 44 checksums; 16 authenticated backup sets have zero
+issues or removals, with expiry at 28 days within the approved 30-day maximum.
+The operator workstation still must be awake and logged in.
+
+The bounded consuming interface is complete. Broader domain event adapters,
+author bells, expanded preferences, parent integration and physical-phone
+acceptance remain open. Source moderation and safe author reconsideration are
+the next independent service work; this Activity receipt grants no new moderation
+power and changes no content audience.

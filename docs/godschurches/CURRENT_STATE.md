@@ -1,3 +1,36 @@
+## Personal Activity verified live — September 13, 2026
+
+Product **2026.09.13.31**, application **f50b7a0629dda9c3321f88017a866652b69bf58a**,
+is READY in **dpl_8g9QpaHPJabF4bZhx3YhM2caQVoS**. Independent canonical alias
+and serving identity match. [Activity](https://godschurches.com/platform/activity)
+now connects Menu and Messages to grouped updates, current-authority links,
+category filters and exact read controls; later arrivals remain unread. Existing
+QR ordering, draft permissions and phone choices remain intact.
+
+[The Activity contract](ACTIVITY_CONTRACT.md) records 111 discovered files with
+700 passing checks and two expected skips, explicitly resumed after two raw-row
+test serializer repairs; both builds, fresh/upgrade/restore and HTTPS restart
+passed. Twelve complete built-browser groups and fifteen live read-only groups
+pass, with no page errors or live mutation requests. Current signed-in Activity
+and founder inbox controls also load. The 20,000-event fixture uses 21 data reads,
+the same as one event; the Activity entry adds 3,654 compressed bytes beyond
+Menu's shared chunks. No new runtime dependency or event table was added.
+
+All 44 production migration checksums match and all original columns across
+92 tables are preserved. Protected production-copy restore/deletion replay and
+actual application-role sequence privileges pass. The Vercel build has 143 clean
+traces; scoped runtime error rows are zero. Notification/retention maintenance
+pass with zero pending work or failures, and the phone key is unchanged. The
+backup registry is updated; 16 verified sets have zero issues/removals. No real
+message, welcome backfill, announcement, report, erasure, phone send or production
+fixture was created. Earlier phone-shade observation is retained; locked-phone,
+conversation-tap/reply/account-switch and iPhone acceptance remain open.
+
+Continue with scoped source moderation and author reconsideration using the
+existing report, source and support owners. The sole initial reviewer and
+retention decisions are resolved. Broader Activity adapters/author bells,
+moderation integration, parent and owner acceptance retain their own criteria.
+
 ## Photo cleanup recovery — live, 13 September 2026
 
 A real lost-commit-response fixture reproduced twenty obsolete READY-image
