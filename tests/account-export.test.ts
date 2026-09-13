@@ -174,6 +174,27 @@ test("export includes only the owner's explicit fields, directory choices and ow
       }
     ]
   });
+  const activityReadAt = new Date("2026-09-13T00:00:00Z");
+  const activityEvent = await db.socialEvent.create({
+    data: {
+      key: "export-activity-" + a.user.id,
+      kind: "COMMENT_ACTIVITY",
+      actorId: b.user.id,
+      recipientId: a.user.id,
+      postId: ownPost.id,
+      commentId: (
+        await db.platformPostComment.findFirstOrThrow({
+          where: { postId: ownPost.id, authorId: b.user.id },
+          select: { id: true }
+        })
+      ).id,
+      activityReadAt
+    }
+  });
+  await db.socialPreferences.update({
+    where: { ownerId: a.user.id },
+    data: { activityReadThrough: activityEvent.activitySequence }
+  });
   const prepared = await prepareAccountExport(db, a.token, password, secret);
   const content = await downloadAccountExport(
     db,
@@ -184,6 +205,17 @@ test("export includes only the owner's explicit fields, directory choices and ow
   const data = JSON.parse(content);
   assert.equal(data.account.email, a.user.email);
   assert.equal(data.socialPreferences.length, 1);
+  assert.equal(
+    data.socialPreferences[0].activityReadThrough,
+    activityEvent.activitySequence.toString()
+  );
+  assert.deepEqual(data.activityReadState, [
+    {
+      id: activityEvent.id,
+      activitySequence: activityEvent.activitySequence.toString(),
+      activityReadAt: activityReadAt.toISOString()
+    }
+  ]);
   for (const [key, value] of Object.entries(notificationChoices))
     assert.deepEqual(data.socialPreferences[0][key], value, key);
   assert.equal(data.posts.length, 1);

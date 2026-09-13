@@ -1436,6 +1436,8 @@ model PrivateCommentDraft {
 model SocialEvent {
   notificationDeliveries NotificationDelivery[]
   id String @id @default(cuid())
+  activitySequence BigInt @default(autoincrement())
+  activityReadAt DateTime?
   key String @unique
   kind String
   actorId String
@@ -1450,6 +1452,7 @@ model SocialEvent {
   @@index([postId, createdAt])
   @@index([recipientId, createdAt])
   @@index([recipientId, kind, conversationId])
+  @@unique([recipientId, activitySequence])
 }
 
 model PlatformFollow {
@@ -1629,6 +1632,7 @@ model PostWorkspaceOperation {
 
 model SocialPreferences {
   ownerId String @id
+  activityReadThrough BigInt @default(0)
   version Int @default(1)
   mentions String @default("EVERYONE")
   contactRequests AdultContactAudience @default(NOBODY)

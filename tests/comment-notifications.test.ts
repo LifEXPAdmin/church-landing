@@ -120,7 +120,12 @@ test("one reply-plus-mention intent survives exact retries and conflicts without
   assert.equal(rows.length, 1);
   assert.equal(rows[0].event.kind, "COMMENT_ACTIVITY");
   assert.equal(rows[0].ownerId, f.b.id);
-  assert.equal(JSON.stringify(rows).includes(String(input.content)), false);
+  assert.equal(
+    JSON.stringify(rows, (_key, value) =>
+      typeof value === "bigint" ? value.toString() : value
+    ).includes(String(input.content)),
+    false
+  );
   const payloads: object[] = [];
   assert.deepEqual(
     await deliverNotification(db, rows[0].id, async (_, payload) => {

@@ -580,25 +580,42 @@ export async function downloadAccountExport(
       images,
       photoReferences,
       photoAlbums,
-      socialPreferences: await tx.socialPreferences.findMany({
-        where: { ownerId: userId },
-        select: {
-          mentions: true,
-          contactRequests: true,
-          requestAlerts: true,
-          messageAlerts: true,
-          reportAlerts: true,
-          founderAnnouncements: true,
-          pushCategories: true,
-          quietStart: true,
-          quietEnd: true,
-          quietTimeZone: true,
-          showRelationships: true,
-          version: true,
-          updatedAt: true
-        },
-        take: 1
-      }),
+      activityReadState: (
+        await tx.socialEvent.findMany({
+          where: { recipientId: userId },
+          select: { id: true, activitySequence: true, activityReadAt: true },
+          orderBy: { activitySequence: "asc" },
+          take: MAX_ROWS + 1
+        })
+      ).map((row) => ({
+        ...row,
+        activitySequence: row.activitySequence.toString()
+      })),
+      socialPreferences: (
+        await tx.socialPreferences.findMany({
+          where: { ownerId: userId },
+          select: {
+            mentions: true,
+            contactRequests: true,
+            requestAlerts: true,
+            activityReadThrough: true,
+            messageAlerts: true,
+            reportAlerts: true,
+            founderAnnouncements: true,
+            pushCategories: true,
+            quietStart: true,
+            quietEnd: true,
+            quietTimeZone: true,
+            showRelationships: true,
+            version: true,
+            updatedAt: true
+          },
+          take: 1
+        })
+      ).map((row) => ({
+        ...row,
+        activityReadThrough: row.activityReadThrough.toString()
+      })),
       sentContactRequests: await tx.adultContactRequest.findMany({
         where: { senderId: userId },
         select: {

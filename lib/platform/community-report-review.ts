@@ -44,6 +44,7 @@ export function reviewReportRows(
   authority: ReportReviewAuthority,
   options: {
     id?: string;
+    ids?: string[];
     status?: "OPEN" | "CLOSED";
     after?: { id: string; createdAt: Date };
     limit: number;
@@ -74,6 +75,7 @@ export function reviewReportRows(
           : Prisma.sql`FALSE`
       })
       ${options.id ? Prisma.sql`AND r.id = ${options.id}` : Prisma.empty}
+      ${options.ids ? (options.ids.length ? Prisma.sql`AND r.id IN (${Prisma.join(options.ids)})` : Prisma.sql`AND FALSE`) : Prisma.empty}
       ${
         options.status === "CLOSED"
           ? Prisma.sql`AND r.status = 'CLOSED'`
