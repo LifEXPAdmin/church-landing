@@ -139,7 +139,10 @@ export async function replayAccountDeletions(
         if (
           prior &&
           (prior.id !== entry.id ||
-            prior.requestedAt.getTime() !== requestedAt.getTime())
+            prior.requestedAt.getTime() !== requestedAt.getTime() ||
+            (prior.completedAt &&
+              entry.completedAt &&
+              prior.completedAt.toISOString() !== entry.completedAt))
         )
           throw Error(
             "Restored account deletion does not match protected request"
@@ -156,7 +159,9 @@ export async function replayAccountDeletions(
             proofHash: hashSessionToken(createSessionToken()),
             completedAt: entry.completedAt ? new Date(entry.completedAt) : null
           },
-          update: {}
+          update: entry.completedAt
+            ? { completedAt: new Date(entry.completedAt) }
+            : {}
         });
         return true;
       },

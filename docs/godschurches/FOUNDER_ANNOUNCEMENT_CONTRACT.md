@@ -59,8 +59,8 @@ Restoration must cancel historical campaign work before traffic.
 
 ## Local verification
 
-The combined announcement/welcome/message/outbox/account-erasure run passes 41
-tests. Four isolated browser groups verify preserved conflict text, explicit preview
+The current combined announcement/welcome/message/outbox/account-deletion run
+passes 49 tests, superseding the earlier 41-test subset. Four isolated browser groups verify preserved conflict text, explicit preview
 with zero sends, exact retry after a lost send acknowledgement, one canonical
 message, truthful progress, recipient links and account-switch concealment. Production
 build/runtime traces, types and scoped lint pass. Fixture transports send no real

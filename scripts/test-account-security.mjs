@@ -57,6 +57,7 @@ const env = {
   ACCOUNT_TEST_SINK_DIR: join(dir, "sink"),
   MEDIA_STORAGE_MODE: "local-test",
   MEDIA_TEST_DIR: join(dir, "images"),
+  RETENTION_TEST_DIR: join(dir, "retention"),
   BLOB_READ_WRITE_TOKEN: "",
   BLOB_STORE_ID: "",
   ACCOUNT_DELIVERY_MODE: "test-sink",

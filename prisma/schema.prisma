@@ -314,9 +314,11 @@ model AccountDeletion {
   completedAt DateTime?
   journaledAt DateTime?
   completionJournaledAt DateTime?
+  lastAttemptAt DateTime?
   exceptions Json @default("{}")
   user PlatformUser @relation(fields: [userId], references: [id], onDelete: Restrict)
   @@index([completedAt, dueAt])
+  @@index([lastAttemptAt, dueAt])
 }
 
 model PlatformGoogleIdentity {
@@ -559,8 +561,26 @@ model RetentionPurge {
   createdAt DateTime @default(now())
   completedAt DateTime?
   journaledAt DateTime?
+  lastAttemptAt DateTime?
   @@id([target, targetId])
   @@index([completedAt])
+}
+
+// Minimal immutable control decisions awaiting a separately protected copy.
+// No free-form case/hold reasons or message bodies belong in this replay ledger.
+model RetentionControl {
+  id String @id @default(cuid())
+  target RetentionTarget
+  targetId String
+  sourceId String
+  kind String
+  version Int
+  payload Json
+  createdAt DateTime @default(now())
+  journaledAt DateTime?
+  @@unique([kind, sourceId, version])
+  @@index([journaledAt, createdAt, id])
+  @@index([target, targetId])
 }
 
 model CommunityReportDecision {

@@ -50,6 +50,12 @@ account requests, revoke restored credentials and erase restored personal input.
 Replay does not restore an old progress credential or restart the completion
 clock. Journal records expire 90 days after actual completed deletion.
 
+The [operating procedure](RETENTION_OPERATIONS.md) now supplies bounded maintenance
+and isolated restoration. Pending handoffs rotate fairly without moving request
+deadlines. Restore-time proof rotation is confined to a quarantined local copy;
+ordinary live requests keep immutable scope and credentials. A completion recorded
+after the backup retains its protected original date during replay.
+
 `ACCOUNT_DELETION_ENABLED` remains off until operating procedures, provider
 acceptance and the integrated release gate pass. The account control also requires
 configured protected storage. The progress endpoint remains available if intake

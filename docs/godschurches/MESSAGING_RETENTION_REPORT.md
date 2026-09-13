@@ -1,5 +1,22 @@
 # Messaging retention implementation
 
+## Protected operations checkpoint — local, 13 September 2026
+
+Protected report/hold controls, failed-copy recovery, fair bounded account/message
+cleanup, 90-day receipt expiry and quarantined restoration are implemented. The
+combined regression passes 36 tests, including actual isolated database snapshots
+and provider-failure/cleanup sequencing. A further 49-test announcement/account
+integration run passes. Types and scoped lint pass. See
+[the operating contract](RETENTION_OPERATIONS.md) for limits and required review.
+
+Restoration now preserves newer protected completion timestamps when the backup
+contains an older pending account/purge receipt. It retires old credentials,
+device keys, queued welcomes/announcements and elevated grants before replay.
+Missing recovery context is reported, and current authorization must be reconciled
+before traffic. No production migration, deletion, push or announcement was made.
+Actual backup expiry, provider/deployed acceptance and integrated release remain
+in progress. The founder's authenticated application identity remains unverified.
+
 ## Permanent account closure checkpoint — local, 13 September 2026
 
 The next local milestone adds verified permanent requests, immutable deadlines,

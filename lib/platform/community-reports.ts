@@ -22,6 +22,7 @@ import { socialUserWhere } from "./social-policy";
 import { adultMemberWhere } from "./adult-message-policy";
 import { recordReportActivity } from "./report-activity";
 import { retentionDate } from "./messaging-retention";
+import { recordHoldControl, recordReportControl } from "./retention-controls";
 import {
   reportReviewAuthority,
   reviewReportRows
@@ -676,6 +677,16 @@ export function communityReportCommand(
             reviewDueAt: retentionDate(now, 30)
           }
         });
+        await recordHoldControl(
+          tx,
+          hold,
+          input.operation === "preserve"
+            ? "PRESERVE"
+            : input.operation === "release-hold"
+              ? "RELEASE"
+              : "REVIEW"
+        );
+        await recordReportControl(tx, updated, ownerId);
         return {
           id: report.id,
           version: updated.version,
@@ -719,6 +730,7 @@ export function communityReportCommand(
             version: updated.version
           }
         });
+        await recordReportControl(tx, updated, ownerId);
         return {
           id: report.id,
           version: updated.version,
@@ -797,6 +809,7 @@ export function communityReportCommand(
         }
       });
       await recordReportActivity(tx, report);
+      await recordReportControl(tx, report, null);
       return {
         id: report.id,
         version: report.version,

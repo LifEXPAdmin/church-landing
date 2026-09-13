@@ -1,4 +1,5 @@
 import { get, put, del, list } from "@vercel/blob";
+import { retentionTestStore } from "./retention-test-store";
 import type { PrismaClient } from "@prisma/client";
 import {
   MESSAGING_RETENTION_POLICY,
@@ -43,6 +44,8 @@ const pathFor = (record: PurgeRecord) =>
 export function privateRetentionStore<Entry = JournalEntry>(
   prefix = PREFIX
 ): RetentionJournalStore<Entry> {
+  const fixture = retentionTestStore<Entry>(prefix);
+  if (fixture) return fixture;
   if (!process.env.BLOB_READ_WRITE_TOKEN && !process.env.BLOB_STORE_ID)
     throw new Error("Protected retention storage is not configured");
   return {
@@ -195,7 +198,27 @@ export async function replayMessagingDeletions(
     async (tx) => {
       await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(730221, 2)`;
       for (const entry of entries) {
+        const prior = await tx.retentionPurge.findUnique({
+          where: {
+            target_targetId: { target: entry.target, targetId: entry.id }
+          }
+        });
+        if (
+          prior &&
+          (prior.version !== entry.version ||
+            prior.policy !== entry.policy ||
+            prior.createdAt.toISOString() !== entry.recordedAt ||
+            (prior.completedAt &&
+              entry.completedAt &&
+              prior.completedAt.toISOString() !== entry.completedAt))
+        )
+          throw Error(
+            "Restored purge does not match its protected decision and completion"
+          );
         await purgeMessagingCandidate(tx, entry);
+        const completedAt = entry.completedAt
+          ? new Date(entry.completedAt)
+          : (prior?.completedAt ?? new Date());
         await tx.retentionPurge.upsert({
           where: {
             target_targetId: { target: entry.target, targetId: entry.id }
@@ -206,12 +229,10 @@ export async function replayMessagingDeletions(
             version: entry.version,
             policy: entry.policy,
             createdAt: new Date(entry.recordedAt),
-            completedAt: entry.completedAt
-              ? new Date(entry.completedAt)
-              : new Date(),
+            completedAt,
             journaledAt: null
           },
-          update: {}
+          update: { completedAt }
         });
       }
     },

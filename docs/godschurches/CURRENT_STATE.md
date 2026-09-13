@@ -1,3 +1,15 @@
+## Protected retention and restoration — local, 13 September 2026
+
+Control journaling, fair bounded cleanup, provider-acknowledged account completion,
+receipt expiry and isolated restoration are implemented. The combined 36-test
+report/account/retention/maintenance/restore run passes, including actual dump and
+restore. Types and scoped lint pass. The current announcement/account integration
+run passes 49 tests. See [the operating procedure](RETENTION_OPERATIONS.md).
+Next are actual backup expiry/provider checks and the integrated release gate.
+Production remains `.26`; no new production migration, grant, erasure, message,
+push or announcement has been made. Founder identity and phone observation remain
+separate acceptance requirements.
+
 ## Deliberate founder announcements — local, 13 September 2026
 
 Founder-only saved drafts, explicit selected-recipient preview/send, recoverable

@@ -2,6 +2,10 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "crons": [
     {
+      "path": "/api/maintenance/retention",
+      "schedule": "0 5 * * *"
+    },
+    {
       "path": "/api/maintenance/images",
       "schedule": "0 7 * * *"
     },

@@ -1,6 +1,10 @@
 import { after } from "next/server";
 import { dispatchNotifications } from "@/lib/platform/notification-queue";
 import { prisma } from "@/lib/prisma";
+import {
+  journalRetentionControls,
+  protectedRetentionControls
+} from "@/lib/platform/retention-controls";
 import { requestSessionToken } from "@/lib/platform/account-boundary";
 import {
   communityReportCommand,
@@ -35,6 +39,23 @@ export async function POST(request: Request) {
       "community-reports"
     );
     const result = await communityReportCommand(prisma, token, input);
+    try {
+      const protection = await journalRetentionControls(
+        prisma,
+        protectedRetentionControls(),
+        result.id
+      );
+      if (protection.failed || protection.pending)
+        throw Error("Protected recovery pending");
+    } catch {
+      return Response.json(
+        {
+          message:
+            "Your report action was recorded, but recovery protection is pending. Retry the same request to finish protecting it."
+        },
+        { status: 503, headers: socialHeaders }
+      );
+    }
     after(async () => {
       await dispatchNotifications(prisma, result.id);
     });

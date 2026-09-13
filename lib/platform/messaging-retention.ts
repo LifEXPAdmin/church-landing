@@ -1,4 +1,9 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
+import {
+  journalRetentionControls,
+  protectedRetentionControls,
+  type RetentionControlJournal
+} from "./retention-controls";
 
 export const MESSAGING_RETENTION_POLICY = "GC-MSG-RETENTION-v1";
 export const DAY = 86_400_000;
@@ -78,7 +83,11 @@ export async function inspectMessagingRetention(
     await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock_shared(730221, 2)`;
     const pending = await tx.retentionPurge.findMany({
       where: { journaledAt: null },
-      orderBy: [{ createdAt: "asc" }, { targetId: "asc" }],
+      orderBy: [
+        { lastAttemptAt: { sort: "asc", nulls: "first" } },
+        { createdAt: "asc" },
+        { targetId: "asc" }
+      ],
       take: 100
     });
     const candidates = await candidatesIn(tx, now);
@@ -184,15 +193,41 @@ export async function runMessagingRetention(
   db: PrismaClient,
   inspected: MessagingPurgeCandidate[],
   journal: DeletionJournal,
-  now = new Date()
+  now = new Date(),
+  controlJournal?: RetentionControlJournal
 ) {
   if (inspected.length > 200)
     throw new Error("Inspect a bounded retention batch");
+  if (
+    inspected.length &&
+    (await db.retentionControl.count({
+      where: { targetId: { in: inspected.map((c) => c.id) }, journaledAt: null }
+    }))
+  ) {
+    const protection = await journalRetentionControls(
+      db,
+      controlJournal ?? protectedRetentionControls(),
+      inspected.map((c) => c.id)
+    );
+    if (protection.failed || protection.pending)
+      throw Error("Protected retention controls must finish before erasure");
+  }
   const sealed = await db.$transaction(
     async (tx) => {
       await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(730221, 2)`;
       const current = await candidatesIn(tx, now);
+      const unprotected = await tx.retentionControl.findMany({
+        where: {
+          targetId: { in: current.map((c) => c.id) },
+          journaledAt: null
+        },
+        select: { target: true, targetId: true }
+      });
+      const blocked = new Set(
+        unprotected.map((r) => `${r.target}:${r.targetId}`)
+      );
       for (const candidate of current) {
+        if (blocked.has(`${candidate.target}:${candidate.id}`)) continue;
         if (
           !inspected.some(
             (r) =>
@@ -235,6 +270,12 @@ export async function runMessagingRetention(
   let messages = 0,
     reports = 0;
   for (const seal of sealed) {
+    await db.retentionPurge.update({
+      where: {
+        target_targetId: { target: seal.target, targetId: seal.targetId }
+      },
+      data: { lastAttemptAt: new Date() }
+    });
     const record: PurgeRecord = {
       target: seal.target,
       id: seal.targetId,
