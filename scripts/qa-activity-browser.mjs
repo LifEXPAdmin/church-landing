@@ -158,6 +158,11 @@ try {
     )
   );
   await bounded();
+  for (const width of [320, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    await bounded();
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.screenshot({
     path: output + "/activity-phone.png",
     fullPage: true
@@ -291,6 +296,44 @@ try {
     "Failed reads clear the prior private view and reconnect reloads current data"
   );
 
+  let completeRead,
+    captureRead,
+    reads = 0;
+  const captured = new Promise((resolve) => {
+    captureRead = resolve;
+  });
+  await page.route("**/api/platform/activity", async (route) => {
+    reads++;
+    const response = await route.fetch();
+    completeRead = () => route.fulfill({ response });
+    captureRead();
+  });
+  await page.evaluate(() => {
+    window.dispatchEvent(new Event("focus"));
+    window.dispatchEvent(new Event("online"));
+  });
+  await captured;
+  assert.equal(reads, 1);
+  await completeRead();
+  await total(1);
+  await page.unroute("**/api/platform/activity");
+  await page.evaluate(() => {
+    Object.defineProperty(document, "visibilityState", {
+      configurable: true,
+      value: "hidden"
+    });
+    document.dispatchEvent(new Event("visibilitychange"));
+  });
+  assert.equal(await rows().count(), 0);
+  await page.evaluate(() => {
+    delete document.visibilityState;
+    document.dispatchEvent(new Event("visibilitychange"));
+  });
+  await total(1);
+  ok(
+    "Concurrent focus and connection events share one read; backgrounding conceals private activity and returning reloads it"
+  );
+
   await db.platformPost.update({
     where: { id: posts.at(-1) },
     data: { status: "WITHDRAWN", withdrawnAt: new Date() }
@@ -313,10 +356,23 @@ try {
   );
 
   const beforeSwitch = bodies.length;
-  await signIn(other);
+  let releaseOldRead, captureOldRead;
+  const oldReadCaptured = new Promise((resolve) => {
+    captureOldRead = resolve;
+  });
+  await page.route("**/api/platform/activity", async (route) => {
+    await page.unroute("**/api/platform/activity");
+    const response = await route.fetch();
+    releaseOldRead = () => route.fulfill({ response });
+    captureOldRead();
+  });
   await page
     .getByRole("button", { name: "Refresh activity", exact: true })
     .click();
+  await oldReadCaptured;
+  assert.equal(await rows().count(), 0);
+  await signIn(other);
+  await releaseOldRead();
   await page.getByText("No activity yet.", { exact: true }).waitFor();
   await total(0);
   assert.equal(bodies.length, beforeSwitch);
