@@ -118,6 +118,15 @@ References: [Vercel cron operation and authentication](https://vercel.com/docs/c
 
 ## Personal photo retention compatibility
 
+The cleanup repair is live in **2026.09.13.30 / cb850fe**, READY deployment
+`dpl_6kJAqCknYw48VoX4vy2q8PryV3sh`, with canonical identity verified. The actual
+private-provider/worker check on 13 September at 19:41 UTC passed: four isolated
+variants and their one maintenance record were created and removed, unsigned
+reads were denied and repeat cleanup was inert. No account, asset or retained
+photo changed; 43 migration checksums match with none applied. The seven process
+recovery checks and complete release evidence are in
+[the recovery report](CAPACITY_REHEARSAL.md).
+
 The personal photo contract separates current selection from READY retention.
 Cleanup never deletes READY history files, independently of the current-picture
 flag. Under the lifecycle lock it removes an obsolete READY cleanup record only

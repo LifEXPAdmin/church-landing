@@ -1,13 +1,22 @@
-## Photo cleanup recovery — local candidate, 13 September 2026
+## Photo cleanup recovery — live, 13 September 2026
 
 A real lost-commit-response fixture reproduced twenty obsolete READY-image
 cleanup records blocking later garbage. The existing lifecycle lock now removes
 those obsolete records while preserving every retained file. Seven real process/
 missing-file recovery checks and the final sixteen-check recovery/history run
 pass; ten maintenance/album regressions, types, scoped lint and content checks
-also pass. No schema, dependency, queue or retention grace changed. Full release
-verification is next. Production remains 2026.09.13.29 / 5685e4a. See
-[the recovery receipt](CAPACITY_REHEARSAL.md).
+also pass. No schema, dependency, queue or retention grace changed.
+**2026.09.13.30 / cb850fe** is READY on
+`dpl_6kJAqCknYw48VoX4vy2q8PryV3sh`; independent canonical assignment and
+serving identity match. Explicitly resumed coverage passes all 106 files,
+683 checks and two expected skips. Thirteen read-only live groups, the actual
+private-image worker probe and both notification/retention maintenance checks
+pass; the inspected runtime error window is clear. The image probe created and
+removed one maintenance record and four tiny private objects, with zero account,
+asset or retained-photo changes. All 43 migrations match; none was added.
+Founder activation and the observed Chrome phone-shade receipt remain verified.
+See [the recovery receipt](CAPACITY_REHEARSAL.md). Broader Activity, service
+health/capacity and physical-device acceptance remain open.
 
 ## Founder activation and comment alerts — live, 13 September 2026
 

@@ -1,6 +1,6 @@
 # Isolated capacity and recovery rehearsal
 
-## Photo process recovery and cleanup repair — local, 13 September 2026
+## Photo process recovery and cleanup repair — live, 13 September 2026
 
 Seven isolated recovery checks use real killed/restarted processes and guarded
 local files. They cover partial/all-variant writes before commit, lost success
@@ -21,9 +21,41 @@ period before advancing the fixture's clock.
 
 The final recovery/history run passes 16 checks; the maintenance and album
 regressions separately pass ten checks. Types, scoped lint and release-content
-checks pass. Full release verification remains pending. Production is still
-2026.09.13.29 / 5685e4a; this cleanup repair is local. Broader service health,
-dense-relationship capacity and physical/owner acceptance remain open.
+checks pass. Product **2026.09.13.30**, application
+`cb850fe9b1ff3ca6b8d21d196f0b63e948e7a133`, is READY on
+`dpl_6kJAqCknYw48VoX4vy2q8PryV3sh`. Independent canonical assignment and
+serving identity match. Thirteen read-only live browser/HTTP groups pass with
+zero writes or page errors; the inspected deployment error window is clear.
+Actual Vercel compilation passes 141 clean traces, 14,417 entries and 361 server
+JavaScript files. All 43 migration checksums match; none was added or applied.
+
+Combined full regression coverage passes all 106 discovered files: 683 passes,
+zero remaining failures and two expected skips. This is explicitly resumed
+coverage: 38 unchanged development service files contributed 283 checks, followed
+by 400 checks and the fresh/upgrade, encrypted restore/replay, both production
+builds, HTTPS and restart stages. An old cleanup assertion was corrected to expect
+the removed obsolete record. Compilation then exhausted its existing 6 GiB heap
+with 42 stopped fixture databases (104,946 files) under the checkout. Those
+databases were preserved outside application tracing, and both unchanged builds
+passed with the same heap. A private resume helper also needed the normally
+created empty sink directories. Failed attempts are retained; this is not an
+uninterrupted successful gate or a measured application speed improvement.
+
+At 19:41 UTC, the actual private-Blob/deployed-image-worker probe passed six
+groups: unauthorized denial, authorized empty run, four private variants with
+unsigned reads denied, actual worker removal and inert repeat, plus unchanged
+user/asset counts and no remaining probe. Operational writes were exactly one
+maintenance record created/deleted and four tiny objects created/deleted; no
+account, asset or retained user photo changed. The existing notification and
+retention maintenance runs also pass with no sends, erasures, pending work or
+failures. The working device binding and VAPID identity remain intact.
+
+No queue, schedule, provider configuration or permission changed. Broader service
+health, dense-relationship capacity and physical/owner acceptance remain open.
+[Visible release notes](https://godschurches.com/platform/releases/photo-cleanup-recovery)
+and existing photo entries in [Explore](https://godschurches.com/platform/features)
+describe only the shipped repair. Notification recovery below remains a dated
+isolated receipt and is included in the subsequent full regression coverage.
 
 ## Notification worker recovery — 13 September 2026
 
