@@ -37,6 +37,9 @@ Support authorization filters before pagination or body selection. Forms bind
 the current account and preserve the exact serialized uncertain request. Private
 snapshots conceal on blur and revalidate on return; changed details require a
 deliberate reload rather than silently rebasing the form.
+An uncertain Support write can still confirm its original request while stale
+details remain concealed, after the current account and case access revalidate.
+The private case heading is inside the same concealment boundary.
 
 Content restrictions, appeal versions and reported author withdrawals reuse the
 content-free protected retention journal. Failed protection keeps durable pending

@@ -7,10 +7,14 @@ closure and author withdrawal. Existing Activity/outbox services carry generic
 decision and reconsideration updates. Ordinary Support intake remains disabled.
 No new grant, table, dependency or copied evidence store is introduced.
 
-Twenty-six latest focused checks pass across source restriction/privacy, both reply
+Twenty-seven latest focused checks pass across source restriction/privacy, both reply
 modes, version/retry/revocation, appeals, reported withdrawal, provider-failure
 recovery, last-report purge and batched notification regressions. Earlier foundation
-coverage passed 44 checks. Types and scoped lint pass. The full fresh/upgrade/
+coverage passed 44 checks. Real fixture image variants, saved/repost and pending
+notification reads also enforce restrictions without copied media. A fresh encrypted
+production-copy upgrade from 44 to 45 preserves all original columns across 92
+tables and passes protected replay, with zero production data changes. Types and
+scoped lint pass. The full fresh/upgrade/
 restore/build and browser gate is running; production remains .31 below.
 Candidate migration 45 and product .32 are local only. No real source action,
 appeal, report, message, grant, phone send or erasure was performed. Broader

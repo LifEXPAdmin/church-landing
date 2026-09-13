@@ -26,6 +26,16 @@ import { readableAssetWhere } from "../lib/platform/personal-photo-policy";
 import { readActivity, openActivity } from "../lib/platform/activity";
 import { communitySearch } from "../lib/platform/community-search";
 import { publicSharePreview } from "../lib/platform/public-sharing";
+import sharp from "sharp";
+import { uploadImage, readImage } from "../lib/platform/media";
+import { readPostGallery } from "../lib/platform/post-gallery";
+import {
+  postWorkspaceCommand,
+  readPostWorkspace
+} from "../lib/platform/post-workspace";
+import { repostCommand } from "../lib/platform/reposts";
+import { commentCommand } from "../lib/platform/comment-commands";
+import { notificationSource } from "../lib/platform/notification-source";
 const db = new PrismaClient();
 const command = (...args: Parameters<typeof rawCommand>) =>
   Promise.resolve().then(() => rawCommand(...args));
@@ -95,6 +105,110 @@ async function fixture(church = false) {
   };
   return { ...f, reviewer, post, report, body, review };
 }
+test("one restriction reaches saved items, reposts, real image reads and pending comment notifications without copying media", async () => {
+  const f = await fixture();
+  const files = new Map<string, Buffer>();
+  const storage = {
+    async put(path: string, data: Buffer) {
+      files.set(path, data);
+    },
+    async get(path: string) {
+      return files.get(path) ?? null;
+    },
+    async delete(paths: string[]) {
+      paths.forEach((path) => files.delete(path));
+    }
+  };
+  const bytes = await sharp({
+    create: { width: 80, height: 60, channels: 3, background: "blue" }
+  })
+    .png()
+    .toBuffer();
+  await uploadImage(
+    db,
+    f.memberA.token,
+    {
+      purpose: "POST_PHOTO",
+      targetId: f.post.id,
+      requestKey: randomUUID(),
+      alt: "Fictional selected image"
+    },
+    bytes,
+    storage
+  );
+  const gallery = await readPostGallery(db, f.contact.token, f.post.id);
+  assert.equal(gallery.images.length, 1);
+  assert.ok(
+    await readImage(db, f.contact.token, gallery.images[0].id, "thumb", storage)
+  );
+  const current = await db.platformPost.findUniqueOrThrow({
+    where: { id: f.post.id }
+  });
+  const repost = await repostCommand(db, f.contact.token, {
+    operation: "repost",
+    mutationId: randomUUID(),
+    sourceId: f.post.id,
+    expectedSourceVersion: current.version
+  });
+  await postWorkspaceCommand(db, f.contact.token, {
+    operation: "save-item",
+    mutationId: randomUUID(),
+    postId: f.post.id,
+    expectedVersion: 0
+  });
+  const comment = await commentCommand(db, f.coordinator.token, {
+    operation: "create",
+    mutationId: randomUUID(),
+    postId: f.post.id,
+    content: "Fictional personal reply"
+  });
+  const event = await db.socialEvent.findFirstOrThrow({
+    where: {
+      kind: "COMMENT_ACTIVITY",
+      commentId: comment.id,
+      recipientId: f.memberA.id
+    }
+  });
+  assert.ok(
+    await db.$transaction((tx) => notificationSource(tx, event, false))
+  );
+  const fileCount = files.size;
+  await command(db, f.reviewer.token, await f.body());
+  for (const token of [
+    null,
+    f.contact.token,
+    f.memberA.token,
+    f.reviewer.token
+  ])
+    for (const variant of ["thumb", "display"])
+      await denied(
+        readImage(db, token, gallery.images[0].id, variant, storage),
+        404
+      );
+  const saved = JSON.stringify(
+    await readPostWorkspace(db, f.contact.token, { view: "saved" })
+  );
+  assert.ok(saved.includes('"available":false'));
+  assert.ok(!saved.includes(f.post.content));
+  assert.equal(
+    (await getPost(db, f.contact.token, repost.id!))?.repost?.source,
+    null
+  );
+  assert.equal(
+    await db.$transaction((tx) => notificationSource(tx, event, false)),
+    null
+  );
+  assert.equal(
+    await db.$transaction((tx) => notificationSource(tx, event, true)),
+    null
+  );
+  assert.equal(files.size, fileCount);
+  await command(db, f.reviewer.token, await f.body("RESTORE"));
+  assert.ok(
+    await readImage(db, f.contact.token, gallery.images[0].id, "thumb", storage)
+  );
+  assert.equal(files.size, fileCount);
+});
 test("restriction uses the shared reader/media predicate and exact retries create one private author notice", async () => {
   const f = await fixture(),
     input = await f.body();

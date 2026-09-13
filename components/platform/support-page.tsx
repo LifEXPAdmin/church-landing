@@ -90,14 +90,6 @@ export async function SupportPage({
   return (
     <PlatformShell user={snapshot.viewer}>
       <section className="container-shell max-w-4xl py-8 sm:py-10">
-        <PortalHeading
-          title={titles[view]}
-          description={
-            view === "inbox"
-              ? "Only conversations currently assigned to you appear here. Check the audience before replying."
-              : "Ordinary help, clear ownership and updates you can return to. Private to each request's authorized participants."
-          }
-        />
         <PrivateSnapshotGuard
           label="help case"
           owner={snapshot.viewer.id}
@@ -106,6 +98,14 @@ export async function SupportPage({
             .digest("hex")}
           url={`/api/platform/support?${new URLSearchParams({ view, ...(caseId ? { caseId } : {}), ...(churchId ? { churchId } : {}), ...(page ? { page } : {}) })}`}
         >
+          <PortalHeading
+            title={titles[view]}
+            description={
+              view === "inbox"
+                ? "Only conversations currently assigned to you appear here. Check the audience before replying."
+                : "Ordinary help, clear ownership and updates you can return to. Private to each request’s authorized participants."
+            }
+          />
           <SupportViews
             snapshot={snapshot}
             view={view}

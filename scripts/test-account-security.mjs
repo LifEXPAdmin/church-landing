@@ -265,7 +265,7 @@ try {
         : beforeChurch && table === "PlatformPostLike"
           ? "to_jsonb(t) - 'active' - 'version'"
           : beforeChurch && table === "PlatformPostComment"
-          ? `to_jsonb(t) - ARRAY['parentId','rootId','version','editedAt','deletedAt','authorChurchId']`
+          ? `to_jsonb(t) - ARRAY['parentId','rootId','version','editedAt','deletedAt','authorChurchId','moderationState']`
           : beforeChurch && table === "PlatformPost"
             ? `jsonb_build_object('id',t.id,'createdAt',t."createdAt",'updatedAt',t."updatedAt",'authorId',t."authorId",'type',t.type,'content',t.content,'scripture',t.scripture)`
             : "to_jsonb(t)";
@@ -301,7 +301,7 @@ try {
       WHERE n.nspname = 'public' AND r.relname IN (${churchNames})
       UNION ALL
       SELECT 'trigger', t.tgname, pg_get_triggerdef(t.oid) FROM pg_trigger t JOIN pg_class r ON r.oid = t.tgrelid WHERE r.relname IN ('SupportCase','SupportCapabilityGrant','ChurchPosition','PlatformPostComment') AND NOT t.tgisinternal
-      UNION ALL SELECT 'function', p.proname, pg_get_functiondef(p.oid) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname IN ('church_position_acyclic','comment_thread_shape')
+      UNION ALL SELECT 'function', p.proname, pg_get_functiondef(p.oid) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname IN ('church_position_acyclic','comment_thread_shape','reported_comment_retention')
     ) t`
       ],
       url
@@ -506,6 +506,24 @@ try {
       console.log(
         "Chart migration preserves every prior position/assignment/grant field; automatic layout and empty save history remain the default."
       );
+    } else if (name === "20260913220000_content_moderation") {
+      const projections = [
+        ["PlatformPost", ["moderationState"]],
+        ["PlatformPostComment", ["moderationState"]],
+        ["CommunityReportDecision", ["action", "authorReason", "authorId", "authorChurchId", "fromVisibility", "toVisibility", "sourceVersion", "contextVersion"]],
+        ["SupportCase", ["moderationDecisionId"]],
+        ["SocialEvent", ["decisionId"]]
+      ];
+      const originalColumns = () => projections.map(([table, added]) => psql([
+        "-Atc", `SELECT md5(coalesce(jsonb_agg(to_jsonb(t) - ARRAY[${added.map(field => `'${field}'`).join(",")}] ORDER BY id)::text,'[]')) FROM "${table}" t`
+      ]));
+      const prior = originalColumns();
+      psql(["-f", `prisma/migrations/${name}/migration.sql`]);
+      if (JSON.stringify(prior) !== JSON.stringify(originalColumns()))
+        throw Error("Content moderation upgrade changed existing source, decision, help or event fields");
+      if (psql(["-Atc", `SELECT (SELECT count(*) FROM "PlatformPost" WHERE "moderationState" <> 'VISIBLE') + (SELECT count(*) FROM "PlatformPostComment" WHERE "moderationState" <> 'VISIBLE')`]).trim() !== "0")
+        throw Error("Content moderation migration restricted legacy sources");
+      console.log("Content moderation upgrade preserves every original source, decision, support and event column; legacy visibility stays unchanged.");
     } else psql(["-f", `prisma/migrations/${name}/migration.sql`]);
   }
   for (const [i, [table, key]] of accountTables.entries()) {

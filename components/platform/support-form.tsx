@@ -1,7 +1,8 @@
 "use client";
-import { useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { socialRequest, SocialClientError } from "@/lib/platform/social-client";
 import { useUnsavedSocialWork } from "./use-unsaved-social-work";
+import { usePrivateRecovery } from "./private-snapshot-guard";
 export type SupportField = {
   name: string;
   label: string;
@@ -40,6 +41,8 @@ export function SupportForm({
   const [dirty, setDirty] = useState(false);
   const [navigation, setNavigation] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
+  const retryOriginal = useCallback(() => formRef.current?.requestSubmit(), []);
+  usePrivateRecovery(id, !!retryBody, busy, retryOriginal);
   useUnsavedSocialWork(
     { dirty, saving: busy || !!retryBody, conflict: false },
     () =>

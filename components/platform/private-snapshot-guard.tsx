@@ -1,12 +1,31 @@
 "use client";
 import {
   useCallback,
+  createContext,
+  useContext,
   useEffect,
   useRef,
   useState,
   type ReactNode
 } from "react";
 import { socialRequest } from "@/lib/platform/social-client";
+
+type PendingRecovery = { retry: () => void; busy: boolean };
+const RecoveryContext = createContext<
+  ((id: string, recovery: PendingRecovery | null) => void) | null
+>(null);
+export function usePrivateRecovery(
+  id: string,
+  pending: boolean,
+  busy: boolean,
+  retry: () => void
+) {
+  const register = useContext(RecoveryContext);
+  useEffect(() => {
+    register?.(id, pending ? { retry, busy } : null);
+    return () => register?.(id, null);
+  }, [register, id, pending, busy, retry]);
+}
 
 // Keep form state mounted but concealed while rechecking. A changed version
 // requires deliberate reload, so this guard never rebases an uncertain write.
@@ -25,6 +44,21 @@ export function PrivateSnapshotGuard({
 }) {
   const [visible, setVisible] = useState(false),
     [notice, setNotice] = useState(`Checking current ${label} access…`);
+  const [currentAccess, setCurrentAccess] = useState(false);
+  const [recoveries, setRecoveries] = useState<Record<string, PendingRecovery>>(
+    {}
+  );
+  const register = useCallback(
+    (id: string, recovery: PendingRecovery | null) => {
+      setRecoveries((current) => {
+        const next = { ...current };
+        if (recovery) next[id] = recovery;
+        else delete next[id];
+        return next;
+      });
+    },
+    []
+  );
   const generation = useRef(0),
     checking = useRef(false),
     queued = useRef(false),
@@ -38,6 +72,7 @@ export function PrivateSnapshotGuard({
     checking.current = true;
     const seq = ++generation.current;
     setVisible(false);
+    setCurrentAccess(false);
     try {
       const { data } = await socialRequest<unknown>(url, undefined, owner);
       const digest = await crypto.subtle.digest(
@@ -45,6 +80,7 @@ export function PrivateSnapshotGuard({
         new TextEncoder().encode(JSON.stringify(data))
       );
       if (seq !== generation.current) return;
+      setCurrentAccess(true);
       if (
         Array.from(new Uint8Array(digest), (b) =>
           b.toString(16).padStart(2, "0")
@@ -77,6 +113,7 @@ export function PrivateSnapshotGuard({
     const hide = () => {
       generation.current++;
       setVisible(false);
+      setCurrentAccess(false);
     };
     const resume = () => {
       if (document.visibilityState !== "hidden") void check();
@@ -101,10 +138,24 @@ export function PrivateSnapshotGuard({
     };
   }, [check]);
   return (
-    <>
+    <RecoveryContext.Provider value={register}>
       {!visible && (
         <div className="space-y-3 rounded-xl border p-4">
           <p role="status">{notice || `Checking current ${label} access…`}</p>
+          {currentAccess &&
+            Object.entries(recoveries).map(([id, recovery]) => (
+              <button
+                key={id}
+                type="button"
+                className="gc-button"
+                disabled={recovery.busy}
+                onClick={recovery.retry}
+              >
+                {recovery.busy
+                  ? "Confirming original request…"
+                  : "Confirm original request"}
+              </button>
+            ))}
           <button
             type="button"
             className="gc-button gc-button-quiet"
@@ -129,6 +180,6 @@ export function PrivateSnapshotGuard({
         </div>
       )}
       <div hidden={!visible}>{children}</div>
-    </>
+    </RecoveryContext.Provider>
   );
 }
