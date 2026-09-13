@@ -655,7 +655,12 @@ test("canonical request activity is atomic, deduplicated and permission checked 
   });
   assert.equal(events.length, 1);
   assert.equal(events[0].recipientId, f.memberB.id);
-  assert.doesNotMatch(JSON.stringify(events), /No purpose copy in activity/);
+  assert.doesNotMatch(
+    JSON.stringify(events, (_key, value) =>
+      typeof value === "bigint" ? value.toString() : value
+    ),
+    /No purpose copy in activity/
+  );
   let activity = (await read(db, f.memberB.token, { view: "activity" }))
     .activity!;
   assert.equal(activity.pendingRequests, 1);
@@ -710,7 +715,9 @@ test("message activity consumes own canonical read/mute state and independent in
   });
   assert.equal(events.length, 1);
   assert.doesNotMatch(
-    JSON.stringify(events),
+    JSON.stringify(events, (_key, value) =>
+      typeof value === "bigint" ? value.toString() : value
+    ),
     /Never copied message activity body/
   );
   assert.equal(
