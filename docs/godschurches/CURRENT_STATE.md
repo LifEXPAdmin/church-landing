@@ -1,3 +1,21 @@
+## Scoped report review verified live — 13 September 2026
+
+Product `2026.09.13.26`, application `06f08c7e2faba9bc6d2ddbd9ae7e422b1f067424`,
+is READY in `dpl_J5CR3nXf58fdGVHEn4EKRgUnsTHc`; the independent canonical
+alias and serving endpoint match. The 91-file gate passes (598 pass, zero fail,
+two expected production-phase skips), as do 11 final reviewer browser groups,
+eight reporting regressions and seven live read-only groups. Types/build/runtime
+traces pass; lint remains zero errors / 37 existing QA warnings. Live application
+writes, browser errors and scoped runtime error/fatal rows are zero.
+
+The scoped queue and recoverable decision slice is published. Source enforcement,
+author notices/appeals, real reviewer appointment, independent escalation/recovery,
+retention/erasure, parent integration and owner acceptance remain open. New intake
+is paused. Next is the remaining scoped moderation/author-appeal slice at Extra
+High; leave unrelated Medium work for a lower-reasoning session. No migration or
+runtime dependency was added. Production has 36 matching migrations, and the fresh
+encrypted backup restores all 81 tables. See [the receipt](COMMUNITY_REPORTING_REPORT.md).
+
 ## Scoped report review verified locally — 13 September 2026
 
 The authorized open/closed queue, selected canonical evidence and recoverable

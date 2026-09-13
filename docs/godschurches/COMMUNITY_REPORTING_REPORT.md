@@ -1,5 +1,44 @@
 # Private reporting implementation receipt
 
+## Scoped report review verified live — 13 September 2026
+
+Product `2026.09.13.26`, application
+`06f08c7e2faba9bc6d2ddbd9ae7e422b1f067424`, is READY in
+`dpl_J5CR3nXf58fdGVHEn4EKRgUnsTHc`. The independent `godschurches.com`
+alias and serving endpoint match. The scoped queue, selected current evidence,
+private decisions/history, conflicts and exact retry/recovery interface are
+published. Seven live read-only groups pass with zero application writes or
+browser errors; scoped runtime error/fatal logs contain zero rows.
+
+The complete 91-file release gate passes: 600 executions, 598 passes, zero
+failures and two expected production-phase skips. Eleven final reviewer browser
+groups and eight existing reporting regressions pass. Types/build/runtime traces
+pass; lint has zero errors and 37 existing QA warnings. The 5,105-byte gzip
+review workspace is absent from unopened report-history resources; the scoped
+queue uses 16 queries for both one and thirty cases. No production latency
+improvement is claimed. Screenshots were inspected; these are automated checks,
+not new physical-device or real-reviewer acceptance results.
+
+The fresh encrypted PG17 backup restores all 81 tables with matching original
+column fingerprints. Production still has 36 completed matching migrations;
+this release applies none. Actual report, decision, reviewer-grant and message
+counts remain zero. No new dependency, table, background worker, privilege grant
+or automatic evidence copy was added.
+
+This completes the bounded queue/decision slice. Source enforcement, author
+notices/appeals, parent integration and operational acceptance remain open.
+Actual reviewer identities, independent escalation/recovery and retention/erasure
+operations still gate new report/contact/message intake, which remains paused.
+The next technical slice is scoped enforcement and author/appeal integration at
+Extra High; unrelated Medium presentation work can remain for a lower-reasoning
+session. The prior local-only candidate receipt below is superseded by this
+publication evidence. Beacon's separate legitimate claim/management workflow
+and prior phone observations remain unchanged.
+
+[Review queue](https://godschurches.com/platform/reports/review) ·
+[Patch notes](https://godschurches.com/platform/releases/scoped-report-review) ·
+[Explore](https://godschurches.com/platform/features).
+
 ## Scoped review queue verified locally — 13 September 2026
 
 The candidate adds `/platform/reports/review`, authorized entry from private
