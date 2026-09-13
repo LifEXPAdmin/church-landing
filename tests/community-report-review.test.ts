@@ -14,8 +14,16 @@ import {
 } from "../lib/platform/community-reports";
 import { PortalError } from "../lib/platform/portal-policy";
 const db = new PrismaClient({ log: [{ emit: "event", level: "query" }] });
-let queries = 0;
-db.$on("query", () => queries++);
+const queries: string[] = [];
+// Compare application reads, not connection probes or transaction-control log
+// events that can arrive independently of the resolved query promise.
+db.$on("query", (event) => {
+  if (
+    /^\s*SELECT\b/i.test(event.query) &&
+    /\b(?:FROM|JOIN)\s+(?:"public"\.)?"/i.test(event.query)
+  )
+    queries.push(event.query);
+});
 let f: Awaited<ReturnType<typeof seedPortal>>,
   operator: Awaited<ReturnType<typeof createPortalActor>>;
 const denied = (p: Promise<unknown>, status: number) =>
@@ -328,9 +336,9 @@ test("privileged uncertain retries remain denied after revocation and replay exa
 test("one and thirty queue rows use the same bounded query count without per-case source reads", async () => {
   const source = await post(f.churchA.id);
   await report(source.id, f.churchA.id);
-  queries = 0;
+  queries.length = 0;
   await queue(f.coordinator.token);
-  const one = queries;
+  const one = [...queries].sort();
   assert.equal((await queue(f.coordinator.token)).reviews?.length, 1);
   await db.communityReport.createMany({
     data: Array.from({ length: 29 }, (_, i) => ({
@@ -342,10 +350,12 @@ test("one and thirty queue rows use the same bounded query count without per-cas
       reason: "SPAM" as const
     }))
   });
-  queries = 0;
+  queries.length = 0;
   const many = await queue(f.coordinator.token);
   assert.equal(many.reviews?.length, 30);
-  assert.equal(queries, one);
-  assert.ok(one > 0);
-  console.log(`Review queue query count: 1 row=${one},30 rows=${queries}`);
+  assert.deepEqual([...queries].sort(), one);
+  assert.ok(one.length > 0);
+  console.log(
+    `Review queue data-read count: 1 row=${one.length},30 rows=${queries.length}`
+  );
 });

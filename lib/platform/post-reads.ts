@@ -30,6 +30,7 @@ const commentSelect = {
 } as const;
 function include(
   context: PostContext,
+  postIds: string[],
   count = 6,
   before?: Date,
   cursor?: string
@@ -42,12 +43,28 @@ function include(
     },
     _count: {
       select: {
-        likes: { where: { active: true, user: socialUserWhere(context) } },
-        images: {
-          where: { purpose: "POST_PHOTO" as const, status: "READY" as const }
+        likes: {
+          where: {
+            postId: { in: postIds },
+            active: true,
+            user: socialUserWhere(context)
+          }
         },
-        photoReferences: { where: { asset: readableAssetWhere(context) } },
-        comments: { where: commentVisibleWhere(context) }
+        images: {
+          where: {
+            postId: { in: postIds },
+            purpose: "POST_PHOTO" as const,
+            status: "READY" as const
+          }
+        },
+        photoReferences: {
+          where: { postId: { in: postIds }, asset: readableAssetWhere(context) }
+        },
+        comments: {
+          where: {
+            AND: [commentVisibleWhere(context), { postId: { in: postIds } }]
+          }
+        }
       }
     },
     comments: {
@@ -155,7 +172,7 @@ async function projectRows(
   const sources = ids.length
     ? await tx.platformPost.findMany({
         where: { AND: [{ id: { in: ids } }, repostSourceWhere(context, now)] },
-        include: include(context)
+        include: include(context, ids)
       })
     : [];
   // A personal source blocking the original acting account also revokes the
@@ -299,11 +316,21 @@ export async function listPostsIn(
       ]
     });
   const limit = Math.max(1, Math.min(31, query.limit ?? 31));
-  const rows = await tx.platformPost.findMany({
+  // Select the authorized page before relation counts. Prisma otherwise groups
+  // every post's comments/likes before LIMIT, extending the permission read lock.
+  // Both reads stay inside the existing transaction and revocation boundary.
+  const page = await tx.platformPost.findMany({
     where: { AND: filters },
-    include: include(context),
+    select: { id: true },
     orderBy: [{ publishedAt: "desc" }, { id: "desc" }],
     take: limit
+  });
+  if (!page.length) return [];
+  const ids = page.map((row) => row.id);
+  const rows = await tx.platformPost.findMany({
+    where: { id: { in: ids } },
+    include: include(context, ids),
+    orderBy: [{ publishedAt: "desc" }, { id: "desc" }]
   });
   return projectRows(tx, rows, context, now);
 }
@@ -356,6 +383,7 @@ export function getPost(
       where: { AND: [{ id: postId(id) }, postReadableWhere(context, now)] },
       include: include(
         context,
+        [postId(id)],
         31,
         query.before ?? undefined,
         query.cursor ?? undefined
@@ -398,7 +426,7 @@ export async function getPostViewIn(
   const now = new Date();
   const row = await tx.platformPost.findFirst({
     where: { AND: [{ id }, postReadableWhere(context, now)] },
-    include: include(context)
+    include: include(context, [postId(id)])
   });
   return row ? (await projectRows(tx, [row], context, now))[0] : null;
 }

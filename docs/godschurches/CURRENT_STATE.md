@@ -1,4 +1,17 @@
-## Backup expiry and protected recovery — 13 September 2026
+## Measured feed optimization — local, 13 September 2026
+
+The initial 10,000-account/100,000-post/500,000-comment workload completed with
+22,319 mixed requests and zero unexpected HTTP failures. Feed p95 was 1,019.5 ms.
+The candidate now selects the authorized page before counting related records;
+the same reader projections match, with the count scan reduced from 501,014 to
+30,731 comments. Twenty-six focused regressions, types and scoped lint pass.
+The populated restore preserves all four volume tables and 42 migration checksums,
+then retires old credentials/grants without enabling restored traffic.
+
+The corrected full gate and concurrent workload remain in progress. Candidate
+2026.09.13.28 is local; production still serves the messaging release below.
+The shared-IP participation throttle remains unchanged. See
+[the capacity receipt](CAPACITY_REHEARSAL.md) for measurements and open criteria.
 
 ## Messaging and phone capabilities live — 13 September 2026
 

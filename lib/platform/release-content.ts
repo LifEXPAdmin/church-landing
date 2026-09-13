@@ -496,6 +496,20 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "bounded-community-feed",
+    version: "2026.09.13.28",
+    date: "2026-09-13",
+    summary: "More efficient community feeds as conversations grow.",
+    added: [],
+    improved: [
+      "Feed pages count replies, Likes and photos only for the selected posts, reducing repeated work on larger communities."
+    ],
+    fixed: [
+      "The feed keeps its current audience checks, reply permissions, stable page order and private-source restrictions."
+    ],
+    featureIds: ["reader"]
+  },
+  {
     id: "private-message-and-notification-controls",
     version: "2026.09.13.27",
     date: "2026-09-13",
