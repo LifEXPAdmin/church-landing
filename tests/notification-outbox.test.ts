@@ -79,8 +79,14 @@ test("secured notification inspection verifies configuration without delivery or
       }
     );
   let sent = 0;
-  const publish = async () => {
+  const publish = async (id: string) => {
+    assert.match(id, /^probe-[a-f0-9-]{36}$/);
+    assert.equal(
+      await db.notificationDelivery.findUnique({ where: { id } }),
+      null
+    );
     sent++;
+    return { messageId: "fixture-provider-message" };
   };
   const snapshot = async () =>
     JSON.stringify(
@@ -140,6 +146,14 @@ test("secured notification inspection verifies configuration without delivery or
     ).json();
     assert.equal(disabled.configured, false);
     assert.equal(disabled.publicKeyFingerprint, null);
+    const probe = await (
+      await handleNotificationMaintenance(db, request("probe"), publish)
+    ).json();
+    assert.equal(probe.queued, 1);
+    assert.equal(probe.applicationWrites, 0);
+    assert.equal(probe.providerMessageId, "fixture-provider-message");
+    assert.equal(sent, 1);
+    assert.equal(await snapshot(), before);
   } finally {
     process.env.PUSH_ENABLED = "true";
     if (prior === undefined) delete process.env.CRON_SECRET;

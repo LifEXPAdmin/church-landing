@@ -84,6 +84,12 @@ configuration, device and permission UI, logout/account-switch behavior and
 restoration cancellation. Secured maintenance `?mode=inspect` is read-only and
 returns configuration availability, a fingerprint of the public VAPID key and
 aggregate device/pending counts; it never exposes subscription material.
+The same secured route's explicit `?mode=probe` publishes one nonexistent delivery
+reference to the private phone queue with a 60-second lifetime. Confirm its provider
+receipt and the matching deployed consumer's successful invocation. It creates no
+message, device, outbox row or phone notification; it is queue acceptance evidence,
+not Web Push provider acceptance or observed device delivery. Local execution
+requires an injected fixture publisher and cannot publish a production probe.
 Reviewer access separately gates new contact, message sending and founder
 welcomes. Independent settings and recipient-initiated tests can operate while
 that access is being established. Verify the integrated welcome/message journey

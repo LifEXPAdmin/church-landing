@@ -10,8 +10,12 @@ import {
   cleanNotificationRecords,
   notificationWrite
 } from "./notification-outbox";
-import { dispatchNotifications, type QueuePublish } from "./notification-queue";
-import { createHash } from "node:crypto";
+import {
+  dispatchNotifications,
+  PUSH_TOPIC,
+  type QueuePublish
+} from "./notification-queue";
+import { createHash, randomUUID } from "node:crypto";
 import { pushServerConfig } from "./push-config";
 export async function handleNotificationMaintenance(
   db: PrismaClient,
@@ -22,12 +26,46 @@ export async function handleNotificationMaintenance(
   const rejected = maintenanceRequestError(request);
   if (rejected) return rejected;
   const mode = new URL(request.url).searchParams.get("mode");
-  if (mode && mode !== "inspect")
+  if (mode && !["inspect", "probe"].includes(mode))
     return Response.json(
-      { error: "Choose inspection or the maintenance run." },
+      { error: "Choose inspection, a queue probe or the maintenance run." },
       { status: 400, headers }
     );
   try {
+    if (mode === "probe") {
+      // A single reserved, nonexistent delivery verifies the deployed private
+      // consumer. It cannot create an app message, subscription or phone alert.
+      if (!publish && process.env.VERCEL !== "1")
+        throw Error("Deployed queue required");
+      const id = `probe-${randomUUID()}`;
+      if (await db.notificationDelivery.findUnique({ where: { id } }))
+        throw Error("Probe collision");
+      const key = `phone-queue-probe:${Math.floor(Date.now() / 3600000)}`;
+      const result = publish
+        ? await publish(id, 0, key)
+        : await (
+            await import("@vercel/queue")
+          ).send(
+            PUSH_TOPIC,
+            { id },
+            {
+              retentionSeconds: 60,
+              idempotencyKey: key
+            }
+          );
+      return Response.json(
+        {
+          mode,
+          queued: 1,
+          applicationWrites: 0,
+          providerMessageId:
+            result && typeof result === "object" && "messageId" in result
+              ? result.messageId
+              : null
+        },
+        { headers }
+      );
+    }
     if (mode === "inspect") {
       const config = pushServerConfig();
       const [devices, pending] = await Promise.all([
