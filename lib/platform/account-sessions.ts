@@ -149,3 +149,16 @@ export async function revokeOtherAccountSessions(
     });
   });
 }
+
+// A successful sign-in replaces this browser's old cookie, not another device's
+// session. Retire that old association before returning the replacement cookie.
+export async function revokeReplacedAccountSession(
+  db: PrismaClient,
+  previous: unknown,
+  replacement: string
+) {
+  if (!validToken(previous) || previous === replacement) return;
+  await db.platformSession.deleteMany({
+    where: { tokenHash: hashSessionToken(previous) }
+  });
+}

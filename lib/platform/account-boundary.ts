@@ -16,6 +16,7 @@ import { accountConfig } from "./account-config";
 import { accountGrantDelivery } from "./account-delivery";
 import { allowAccountAttempt } from "./account-limits";
 import {
+  revokeReplacedAccountSession,
   listAccountSessions,
   revokeOtherAccountSessions
 } from "./account-sessions";
@@ -538,6 +539,11 @@ async function processAccountRequest(
         body.email,
         body.password,
         request.headers.get("user-agent")
+      );
+      await revokeReplacedAccountSession(
+        db,
+        requestSessionToken(request),
+        token
       );
       return reply(
         "Signed in.",

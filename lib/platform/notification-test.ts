@@ -1,3 +1,4 @@
+import { withOwnedSession } from "./account-sessions";
 import type { PrismaClient } from "@prisma/client";
 import { socialCommand, socialInput } from "./social-operations";
 import { requireNotificationActor } from "./push-subscriptions";
@@ -74,11 +75,17 @@ export function requestTestNotification(
         }
       });
       await enqueueNotification(tx, event, device.id);
+      const delivery = await tx.notificationDelivery.findFirst({
+        where: { eventId: event.id },
+        select: { state: true }
+      });
       return {
         id: event.id,
         version: 1,
         message:
-          "Test notification queued for this device. Quiet hours apply. This does not confirm phone delivery."
+          delivery?.state === "FINISHED"
+            ? "Quiet hours extend beyond this test’s ten-minute window. Try again after quiet hours."
+            : "Test notification queued for this device. Quiet hours apply. This does not confirm phone delivery."
       };
     },
     async (tx, ownerId) => {
@@ -90,4 +97,44 @@ export function requestTestNotification(
       await requireNotificationActor(tx, ownerId);
     }
   );
+}
+
+export function readTestNotification(
+  db: PrismaClient,
+  token: unknown,
+  id: unknown
+) {
+  return withOwnedSession(db, token, async (tx, session) => {
+    const row = await tx.notificationDelivery.findFirst({
+      where: {
+        ownerId: session.userId,
+        event: {
+          id: postId(id),
+          kind: "PUSH_TEST",
+          recipientId: session.userId
+        },
+        subscription: { sessionId: session.id }
+      },
+      select: { state: true, outcome: true, availableAt: true, attempts: true }
+    });
+    if (!row)
+      throw new PortalError(404, "This test is unavailable for this sign-in.");
+    return {
+      state: row.state,
+      outcome: row.outcome,
+      retryAt: row.state === "QUEUED" ? row.availableAt.toISOString() : null,
+      message:
+        row.state === "IN_FLIGHT"
+          ? "Attempting delivery to the notification provider."
+          : row.state === "QUEUED"
+            ? row.attempts
+              ? "A delivery retry is queued."
+              : "Queued for delivery; quiet hours still apply."
+            : row.outcome === "ACCEPTED"
+              ? "The provider accepted this test. Check your phone; this does not confirm display or reading."
+              : row.outcome === "FAILED"
+                ? "The provider did not accept this test. Check this device and try a new test later."
+                : "This test was canceled or its diagnostic record has expired. No phone display is confirmed."
+    };
+  });
 }

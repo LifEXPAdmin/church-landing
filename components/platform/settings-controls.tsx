@@ -21,6 +21,9 @@ import {
 const ContactWorkspace = dynamic(() =>
   import("./contact-workspace").then((m) => m.ContactWorkspace)
 );
+const NotificationSettings = dynamic(() =>
+  import("./notification-settings").then((m) => m.NotificationSettings)
+);
 const AccountDeletion = dynamic(() =>
   import("./account-deletion").then((m) => m.AccountDeletion)
 );
@@ -136,22 +139,7 @@ export function SettingsControls({
         </div>
       );
     case "notifications":
-      return (
-        <div className="gc-settings">
-          <p>
-            In-app notification categories, email alerts, push and quiet hours
-            are not available yet.
-          </p>
-          <p>
-            You can follow or mute a conversation from its post. Those choices
-            do not enable email or push delivery. Waitlist emails use the
-            unsubscribe link in each email.
-          </p>
-          <Link className="underline" href="/platform">
-            Open posts and conversation controls
-          </Link>
-        </div>
-      );
+      return <NotificationSettings owner={data.ownerId} />;
     case "organization":
       return <OrganizationSettings data={data} />;
   }

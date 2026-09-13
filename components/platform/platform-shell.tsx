@@ -1,3 +1,4 @@
+import { PushSessionBoundary } from "./push-session-boundary";
 import { LoadedVersion } from "./loaded-release";
 import { MissionSignature } from "@/components/layout/site-footer";
 import Link from "next/link";
@@ -42,6 +43,7 @@ export async function PlatformShell({
       release={publicReleaseId(process.env.VERCEL_GIT_COMMIT_SHA)}
     >
       <div className="gc-shell">
+        <PushSessionBoundary owner={user?.id ?? null} />
         <a href="#platform-content" className="gc-skip">
           Skip to content
         </a>

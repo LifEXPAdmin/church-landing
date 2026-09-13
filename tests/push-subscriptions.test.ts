@@ -1,3 +1,4 @@
+import webpush from "web-push";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { createECDH, randomBytes, randomUUID } from "node:crypto";
@@ -26,12 +27,11 @@ const envKeys = [
 const previous = Object.fromEntries(envKeys.map((k) => [k, process.env[k]]));
 before(async () => {
   await assertPortalTestDatabase(db);
-  const pair = createECDH("prime256v1");
-  pair.generateKeys();
+  const vapid = webpush.generateVAPIDKeys();
   Object.assign(process.env, {
     PUSH_ENABLED: "true",
-    PUSH_VAPID_PUBLIC_KEY: pair.getPublicKey().toString("base64url"),
-    PUSH_VAPID_PRIVATE_KEY: pair.getPrivateKey().toString("base64url"),
+    PUSH_VAPID_PUBLIC_KEY: vapid.publicKey,
+    PUSH_VAPID_PRIVATE_KEY: vapid.privateKey,
     PUSH_VAPID_SUBJECT: "https://example.test/contact"
   });
 });
@@ -311,4 +311,38 @@ test("quiet hours cover overnight windows and both DST gap/fold instants without
     { start: 0, end: 1440, timeZone: "UTC" }
   ])
     assert.throws(() => parseQuietHours(value));
+});
+
+test("explicit device enable atomically opts into message/request push without changing founder opt-out or ordinary contact permissions", async () => {
+  const a = await actor();
+  await db.socialPreferences.create({
+    data: { ownerId: a.id, founderAnnouncements: false }
+  });
+  const input = {
+    ...body(a.id),
+    enableMessages: true,
+    expectedNotificationVersion: 1
+  };
+  await command(db, a.token, input);
+  await command(db, a.token, input);
+  const preferences = await db.socialPreferences.findUniqueOrThrow({
+    where: { ownerId: a.id }
+  });
+  assert.deepEqual(preferences.pushCategories, ["messages", "requests"]);
+  assert.equal(preferences.founderAnnouncements, false);
+  assert.equal(preferences.contactRequests, "NOBODY");
+  assert.equal(preferences.version, 2);
+  await assert.rejects(
+    command(db, a.token, {
+      ...body(a.id),
+      enableMessages: true,
+      expectedNotificationVersion: 1
+    })
+  );
+  assert.equal(
+    await db.pushSubscription.count({
+      where: { ownerId: a.id, revokedAt: null }
+    }),
+    1
+  );
 });

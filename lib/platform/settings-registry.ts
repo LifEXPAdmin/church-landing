@@ -365,7 +365,7 @@ export const settingsRegistry: readonly SettingRegistration[] = Object.freeze([
     "notifications.availability",
     "notifications",
     "Notification preferences",
-    "See which conversation controls are available and what alerts are still unavailable.",
+    "Choose message and founder alerts, manage phone devices, and set quiet hours.",
     [
       "alerts",
       "notifications",
@@ -376,11 +376,11 @@ export const settingsRegistry: readonly SettingRegistration[] = Object.freeze([
     ],
     { control: "notifications" },
     {
-      persistenceOwner: "none for unavailable delivery categories",
-      read: "comment-reads.ts conversation; current delivery availability",
-      write: null
+      persistenceOwner: "SocialPreferences and PushSubscription",
+      read: "notification-preferences.ts and push-subscriptions.ts",
+      write: "notificationPreferenceCommand and pushSubscriptionCommand"
     },
-    { state: "explanation", valueType: "information" }
+    { valueType: "group" }
   ),
   entry(
     "church.connection",

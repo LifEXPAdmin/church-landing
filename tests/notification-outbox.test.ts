@@ -1,3 +1,4 @@
+import webpush from "web-push";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { createECDH, randomBytes, randomUUID } from "node:crypto";
@@ -15,7 +16,10 @@ import {
   cleanNotificationRecords,
   notificationWrite
 } from "../lib/platform/notification-outbox";
-import { requestTestNotification } from "../lib/platform/notification-test";
+import {
+  requestTestNotification,
+  readTestNotification
+} from "../lib/platform/notification-test";
 import { dispatchNotifications } from "../lib/platform/notification-queue";
 import { handleNotificationRequest } from "../lib/platform/notification-boundary";
 import { adultMessageCommand } from "../lib/platform/adult-messages";
@@ -38,12 +42,11 @@ const old = Object.fromEntries(names.map((k) => [k, process.env[k]]));
 let reviewer: Awaited<ReturnType<typeof createPortalActor>>;
 before(async () => {
   await assertPortalTestDatabase(db);
-  const pair = createECDH("prime256v1");
-  pair.generateKeys();
+  const vapid = webpush.generateVAPIDKeys();
   Object.assign(process.env, {
     PUSH_ENABLED: "true",
-    PUSH_VAPID_PUBLIC_KEY: pair.getPublicKey().toString("base64url"),
-    PUSH_VAPID_PRIVATE_KEY: pair.getPrivateKey().toString("base64url"),
+    PUSH_VAPID_PUBLIC_KEY: vapid.publicKey,
+    PUSH_VAPID_PRIVATE_KEY: vapid.privateKey,
     PUSH_VAPID_SUBJECT: "https://example.test/contact",
     COMMUNITY_REPORTS_ENABLED: "true"
   });
@@ -345,6 +348,11 @@ test("recipient test is current-device only, exact retries deduplicate, and HTTP
     requestTestNotification(db, b.token, { ...input, ownerId: b.id })
   );
   const one = await requestTestNotification(db, a.token, input);
+  assert.equal(
+    (await readTestNotification(db, a.token, one.id)).state,
+    "QUEUED"
+  );
+  await assert.rejects(readTestNotification(db, b.token, one.id));
   assert.deepEqual(await requestTestNotification(db, a.token, input), one);
   assert.equal(
     await db.notificationDelivery.count({ where: { eventId: one.id } }),
@@ -390,6 +398,47 @@ test("recipient test is current-device only, exact retries deduplicate, and HTTP
     { done: true, outcome: "accepted" }
   );
   assert.equal(attempts, 1);
+  assert.match(
+    (await readTestNotification(db, a.token, one.id)).message,
+    /provider accepted.*does not confirm display/
+  );
+});
+test("a recipient test respects a quiet window longer than its expiry and never sends afterward", async () => {
+  const actor = await createPortalActor(db, "quiettest"),
+    sub = await device(actor);
+  const now = new Date(),
+    minute = now.getUTCHours() * 60 + now.getUTCMinutes();
+  await db.socialPreferences.create({
+    data: {
+      ownerId: actor.id,
+      quietStart: (minute + 1439) % 1440,
+      quietEnd: (minute + 60) % 1440,
+      quietTimeZone: "UTC"
+    }
+  });
+  const input = mutation("test", {
+    ownerId: actor.id,
+    id: sub.id,
+    expectedVersion: sub.version
+  });
+  const result = await requestTestNotification(db, actor.token, input);
+  assert.match(result.message, /ten-minute window/);
+  assert.deepEqual(
+    await requestTestNotification(db, actor.token, input),
+    result
+  );
+  const status = await readTestNotification(db, actor.token, result.id);
+  assert.equal(status.state, "FINISHED");
+  assert.equal(status.outcome, "CANCELLED");
+  const delivery = await db.notificationDelivery.findFirstOrThrow({
+    where: { eventId: result.id }
+  });
+  let calls = 0;
+  await deliverNotification(db, delivery.id, async () => {
+    calls++;
+    return 201;
+  });
+  assert.equal(calls, 0);
 });
 test("report notifications keep selected evidence scoped and recheck the current reviewer grant", async () => {
   const f = await pair(),

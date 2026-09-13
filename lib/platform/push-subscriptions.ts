@@ -166,7 +166,9 @@ export async function pushSubscriptionCommand(
     "subscription",
     "label",
     "id",
-    "expectedVersion"
+    "expectedVersion",
+    "enableMessages",
+    "expectedNotificationVersion"
   ]);
   if (!["subscribe", "unsubscribe"].includes(String(input.operation)))
     throw new PortalError(400, "Choose a supported device action.");
@@ -199,6 +201,32 @@ export async function pushSubscriptionCommand(
           400,
           "Enable notifications from this browser again."
         );
+      if (
+        input.enableMessages !== undefined &&
+        typeof input.enableMessages !== "boolean"
+      )
+        throw new PortalError(
+          400,
+          "Choose whether to enable message notifications."
+        );
+      if (input.enableMessages) {
+        const preferences = await tx.socialPreferences.findUnique({
+          where: { ownerId }
+        });
+        expected(input.expectedNotificationVersion, preferences?.version ?? 0);
+        const pushCategories = [
+          ...new Set([
+            ...(preferences?.pushCategories ?? []),
+            "messages",
+            "requests"
+          ])
+        ].sort();
+        await tx.socialPreferences.upsert({
+          where: { ownerId },
+          create: { ownerId, pushCategories },
+          update: { pushCategories, version: { increment: 1 } }
+        });
+      }
       const subscription = parsePushSubscription(input.subscription);
       const session = await tx.platformSession.findUniqueOrThrow({
         where: { tokenHash: hashSessionToken(token as string) }

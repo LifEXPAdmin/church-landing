@@ -35,7 +35,10 @@ import {
   clearGoogleCookies,
   requestAccountCredential
 } from "./google-cookies";
-import { withOwnedSession } from "./account-sessions";
+import {
+  withOwnedSession,
+  revokeReplacedAccountSession
+} from "./account-sessions";
 
 const responseHeaders = {
   "Cache-Control": "no-store",
@@ -482,11 +485,17 @@ export async function handleGoogleCallback(
           : result.next
     );
     clearGoogleCookies(response, account.secureCookie);
-    if (result.kind === "signed-in")
+    if (result.kind === "signed-in") {
+      await revokeReplacedAccountSession(
+        db,
+        requestSessionToken(request),
+        result.token
+      );
       response.headers.append(
         "Set-Cookie",
         sessionCookie(result.token, account.secureCookie)
       );
+    }
     return response;
   } catch {
     // The callback is never rendered; strip provider parameters on every outcome.

@@ -14,7 +14,10 @@ import {
   readPushSubscriptions,
   pushSubscriptionCommand
 } from "./push-subscriptions";
-import { requestTestNotification } from "./notification-test";
+import {
+  requestTestNotification,
+  readTestNotification
+} from "./notification-test";
 import { openNotification } from "./notification-outbox";
 export async function handleNotificationRequest(
   db: PrismaClient,
@@ -33,9 +36,11 @@ export async function handleNotificationRequest(
           ? await readNotificationPreferences(db, token)
           : view === "devices"
             ? await readPushSubscriptions(db, token)
-            : view === "open"
-              ? await openNotification(db, token, query.get("id"))
-              : null;
+            : view === "test"
+              ? await readTestNotification(db, token, query.get("id"))
+              : view === "open"
+                ? await openNotification(db, token, query.get("id"))
+                : null;
       if (!result)
         throw new PortalError(400, "Use a supported notification view.");
       return Response.json(result, { headers: socialHeaders });

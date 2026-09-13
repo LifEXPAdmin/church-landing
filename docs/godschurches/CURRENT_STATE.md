@@ -1,3 +1,15 @@
+## Notification controls and browser recovery — local, 13 September 2026
+
+Phone opt-in, supported category/channel settings, quiet-hours preview, recoverable
+saves, recipient-only test/status controls and session cleanup now use the existing
+notification backend. Seven isolated production-browser groups pass with zero
+browser errors; seventeen latest focused service/worker checks pass, in addition to
+the preceding 33-test account/settings/push regression run. Build/runtime traces,
+types and scoped application lint pass. Browser subscription/provider behavior was
+simulated; no real push or phone observation is claimed. Founder welcome, complete
+retention operations and the integrated release gate remain in progress. Production
+still serves `.26`; no production migration, grant, message, push or purge was made.
+
 ## Messaging outbox and device foundation — local, 13 September 2026
 
 Canonical message/report intents, session-bound Web Push subscriptions, independent

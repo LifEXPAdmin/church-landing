@@ -69,7 +69,8 @@ export async function enqueueNotification(
       subscriptionId: device.id,
       subscriptionVersion: device.version,
       availableAt,
-      expiresAt
+      expiresAt,
+      ...(availableAt >= expiresAt ? terminal(now, "CANCELLED") : {})
     })),
     skipDuplicates: true
   });
@@ -272,7 +273,8 @@ export async function deliverNotification(
 export function openNotification(
   db: PrismaClient,
   token: unknown,
-  id: unknown
+  id: unknown,
+  requireDevice = true
 ) {
   return withOwnedSession(
     db,
@@ -282,11 +284,15 @@ export function openNotification(
         where: {
           id: postId(id),
           ownerId: session.userId,
-          subscription: {
-            sessionId: session.id,
-            revokedAt: null,
-            expiresAt: { gt: new Date() }
-          }
+          ...(requireDevice
+            ? {
+                subscription: {
+                  sessionId: session.id,
+                  revokedAt: null,
+                  expiresAt: { gt: new Date() }
+                }
+              }
+            : {})
         },
         include: { event: true }
       });

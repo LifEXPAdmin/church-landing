@@ -9,7 +9,7 @@ class DeferredNotification extends Error {
     super("Notification is waiting for its delivery window.");
   }
 }
-export const POST = handleCallback(
+const handleNotification = handleCallback(
   async (message: unknown) => {
     if (
       !message ||
@@ -31,3 +31,7 @@ export const POST = handleCallback(
     })
   }
 );
+
+export async function POST(request: Request) {
+  return handleNotification(request);
+}

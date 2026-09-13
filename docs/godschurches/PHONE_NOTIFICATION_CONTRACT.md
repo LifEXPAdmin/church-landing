@@ -1,7 +1,8 @@
 # Phone notification contract
 
 13 September 2026 — local implementation; production configuration, deployed
-queue acceptance, browser integration and physical-device observation remain open.
+queue acceptance and physical-device observation remain open. Isolated browser
+integration is verified; it does not establish real push delivery.
 
 ## Sources and access
 
@@ -84,3 +85,33 @@ restoration cancellation and the integrated welcome/message journey. Keep actual
 Android and iPhone installation, permission and lock-screen delivery checks open
 until an owner observes them. The existing installation help and safe update notice
 remain the owners of installation instructions and preserving unsaved work.
+
+## Permission and browser interface
+
+`/platform/settings/notifications/availability` owns category/channel choices,
+quiet hours, device enable/remove and recipient test controls. No visit or signup
+asks OS permission. A deliberate Enable notifications tap asks once, then associates
+the current account/session and opts into message/request phone categories without
+changing ordinary contact permissions or founder-announcement opt-out. Denial and
+unsupported iPhone browser state provide installation/settings guidance. Existing
+installation help remains shared.
+
+Uncertain saves keep their exact serialized body and mutation ID. Conflicts preserve
+local choices until the user deliberately adopts the current version or discards
+them. The quiet-hours preview names the zone and next-day boundary. Tests report
+queued/attempted/provider-accepted/failed separately; a quiet window beyond a test's
+ten-minute lifetime cancels it instead of sending a stale test afterward.
+
+The push-only service worker caches no pages or private data. It ignores payload
+text and URLs. Clicks focus an existing app and pass the opaque reference through
+its unsaved-work guard; a closed app opens the authenticated reference route.
+Reauthentication can resolve the same owner's still-authorized source; another
+owner cannot. Password/Google account switches revoke the replaced browser session.
+Browser reconciliation removes previous-account associations and reacts to observed
+permission revocation without prompting again.
+
+Seven isolated browser groups pass, including 320/390/1440-pixel layouts with
+increased text size. The latest focused worker/subscription/outbox/session run
+passes seventeen tests; the preceding broader UI/account regression run passes
+thirty-three. Production build and runtime-trace checks pass. Provider acceptance,
+real phone delivery, founder integration and restoration remain separate gates.
