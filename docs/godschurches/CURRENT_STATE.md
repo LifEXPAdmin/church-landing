@@ -1,3 +1,15 @@
+## Phone receipt and recovery continuation — 13 September 2026
+
+The recipient reports a Chrome notification in the phone's notification shade,
+with no heads-up pop-up observed. Read-only production verification confirms two
+recipient-test deliveries accepted with HTTP 201 on their first attempts. This
+is actual provider evidence plus a recipient observation; it does not complete
+locked-phone, conversation-tap/reply, account-switch or iPhone acceptance.
+See [the phone contract](PHONE_NOTIFICATION_CONTRACT.md). Production remains
+2026.09.13.28 / d0549cf. The next independent slice rehearses notification-worker
+interruption and recovery under the existing reliability contract, without real
+device sends or production fixtures. Founder identity remains a separate gate.
+
 ## Measured feed optimization — live, 13 September 2026
 
 **2026.09.13.28 / d0549cf** is READY on

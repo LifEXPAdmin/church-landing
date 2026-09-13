@@ -1,5 +1,20 @@
 # Phone notification contract
 
+## Recipient phone observation — 13 September 2026
+
+On live 2026.09.13.28, the recipient reports a Chrome notification visible in the
+phone notification shade. A heads-up pop-up was not observed; no change to that
+attention behavior was requested. Read-only production verification independently
+finds two recent recipient-test deliveries accepted with provider HTTP 201, one
+attempt each. The verification itself sent nothing and made no application write.
+
+This establishes provider acceptance and recipient-reported phone receipt for
+these tests. It does not establish the exact model/OS, a locked-screen state,
+correct-conversation tap/reply, permission removal, account switching or iPhone
+Home Screen behavior. Those remaining physical checks and founder activation stay
+open. Earlier statements that no actual Web Push or phone receipt was observed
+are superseded to this limited extent; automated tests remain separate evidence.
+
 13 September 2026 — published and enabled in 2026.09.13.27. Server key validation,
 native queue acceptance and secured maintenance passed. Actual Web Push provider
 acceptance and physical-device observation remain open. See

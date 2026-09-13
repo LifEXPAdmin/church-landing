@@ -1,5 +1,15 @@
 # Messaging retention implementation
 
+## Phone receipt reported — 13 September 2026
+
+The recipient reports the live Chrome test notification appearing in the phone's
+notification shade, without a heads-up pop-up. Read-only verification on
+2026.09.13.28 confirms two recipient-test deliveries with provider HTTP 201 and
+one attempt each. No new notification or application write was made by that check.
+See [the phone contract](PHONE_NOTIFICATION_CONTRACT.md) for the exact observed
+scope and remaining lock-screen, conversation, account-switch and iPhone checks.
+Founder/reviewer activation still requires the actual authenticated appointment.
+
 ## Verified publication and independent activation — 13 September 2026
 
 Product **2026.09.13.27**, application
