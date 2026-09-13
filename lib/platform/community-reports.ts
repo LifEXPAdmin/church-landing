@@ -20,6 +20,7 @@ import { eligibleWhere, expected, PortalError } from "./portal-policy";
 import { socialCommand, socialInput } from "./social-operations";
 import { socialUserWhere } from "./social-policy";
 import { adultMemberWhere } from "./adult-message-policy";
+import { recordReportActivity } from "./report-activity";
 import { retentionDate } from "./messaging-retention";
 import {
   reportReviewAuthority,
@@ -795,6 +796,7 @@ export function communityReportCommand(
           reviewDueAt: retentionDate(new Date(), 30)
         }
       });
+      await recordReportActivity(tx, report);
       return {
         id: report.id,
         version: report.version,

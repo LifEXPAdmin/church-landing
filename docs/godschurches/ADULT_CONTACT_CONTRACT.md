@@ -255,3 +255,11 @@ decline cooldown above are explicit conservative implementation defaults chosen
 for this contract. They are not a fabricated prior owner decision or a legal
 data-retention schedule. Changing them requires a documented policy delta and
 the corresponding boundary tests, rather than silently changing old records.
+
+## Phone delivery integration — 13 September 2026
+
+The private messaging source now atomically creates eligible optional delivery
+intents under the [phone notification contract](PHONE_NOTIFICATION_CONTRACT.md).
+The canonical message, consent, read/mute state and exact retry service remain the
+owners. Transport does not copy message bodies or establish new contact consent.
+This is a local checkpoint; production activation still requires its release gates.

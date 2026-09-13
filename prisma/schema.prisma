@@ -200,6 +200,8 @@ enum PlatformPostType {
 }
 
 model PlatformUser {
+  pushSubscriptions PushSubscription[]
+  notificationDeliveries NotificationDelivery[]
   id           String       @id @default(cuid())
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
@@ -379,6 +381,7 @@ model PlatformRecentAuthentication {
 }
 
 model PlatformSession {
+  pushSubscriptions PushSubscription[]
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
   expiresAt DateTime
@@ -1406,6 +1409,7 @@ model PrivateCommentDraft {
 // Canonical event intents, not a notification delivery queue. Never copy text,
 // private recipient preferences or credential data into these records.
 model SocialEvent {
+  notificationDeliveries NotificationDelivery[]
   id String @id @default(cuid())
   key String @unique
   kind String
@@ -1415,6 +1419,7 @@ model SocialEvent {
   requestId String?
   conversationId String?
   messageId String?
+  reportId String?
   recipientId String?
   createdAt DateTime @default(now())
   @@index([postId, createdAt])
@@ -1604,9 +1609,83 @@ model SocialPreferences {
   contactRequests AdultContactAudience @default(NOBODY)
   requestAlerts Boolean @default(true)
   messageAlerts Boolean @default(true)
+  reportAlerts Boolean @default(true)
+  founderAnnouncements Boolean @default(true)
+  pushCategories String[] @default([])
+  quietStart Int?
+  quietEnd Int?
+  quietTimeZone String?
   showRelationships Boolean @default(true)
   updatedAt DateTime @updatedAt
   owner PlatformUser @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+}
+
+// Each browser binding belongs to one current account session. Revocation
+// immediately removes endpoint/key material; an old row can never be reassigned.
+model PushSubscription {
+  id String @id @default(cuid())
+  ownerId String
+  sessionId String?
+  bindingHash String? @unique
+  endpointHash String? @unique
+  endpoint String?
+  p256dh String?
+  auth String?
+  version Int @default(1)
+  label String
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  revokedAt DateTime?
+  owner PlatformUser @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  session PlatformSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  deliveries NotificationDelivery[]
+  @@index([ownerId, revokedAt])
+  @@index([expiresAt, revokedAt])
+}
+
+enum NotificationDeliveryState {
+  QUEUED
+  IN_FLIGHT
+  FINISHED
+}
+
+// Transactional outbox and source-lived idempotency guard, never another body
+// store. Detailed attempt records expire independently after final delivery.
+model NotificationDelivery {
+  dispatchedAt DateTime?
+  id String @id @default(cuid())
+  eventId String
+  ownerId String
+  subscriptionId String
+  subscriptionVersion Int
+  state NotificationDeliveryState @default(QUEUED)
+  attempts Int @default(0)
+  availableAt DateTime @default(now())
+  expiresAt DateTime
+  leaseToken String?
+  leaseUntil DateTime?
+  finishedAt DateTime?
+  outcome String?
+  createdAt DateTime @default(now())
+  event SocialEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  owner PlatformUser @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  subscription PushSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Restrict)
+  diagnostics PushDeliveryAttempt[]
+  @@unique([eventId, subscriptionId])
+  @@index([state, availableAt])
+  @@index([ownerId, createdAt])
+  @@index([finishedAt])
+}
+
+model PushDeliveryAttempt {
+  id String @id @default(cuid())
+  deliveryId String
+  attempt Int
+  outcome String
+  statusCode Int?
+  createdAt DateTime @default(now())
+  delivery NotificationDelivery @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+  @@unique([deliveryId, attempt])
 }
 
 enum AdultContactAudience {

@@ -1,3 +1,5 @@
+import { after } from "next/server";
+import { dispatchNotifications } from "@/lib/platform/notification-queue";
 import { prisma } from "@/lib/prisma";
 import { requestSessionToken } from "@/lib/platform/account-boundary";
 import {
@@ -32,7 +34,11 @@ export async function POST(request: Request) {
       request,
       "adult-messages"
     );
-    return Response.json(await adultMessageCommand(prisma, token, input), {
+    const result = await adultMessageCommand(prisma, token, input);
+    after(async () => {
+      await dispatchNotifications(prisma, result.id);
+    });
+    return Response.json(result, {
       headers: socialHeaders
     });
   } catch (error) {

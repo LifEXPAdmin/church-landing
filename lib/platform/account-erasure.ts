@@ -109,6 +109,9 @@ async function eraseSocialData(tx: Tx, userId: string, now: Date) {
   await tx.socialEvent.deleteMany({
     where: { OR: [{ actorId: userId }, { recipientId: userId }] }
   });
+  await tx.pushSubscription.deleteMany({
+    where: { ownerId: userId, revokedAt: { not: null } }
+  });
   await tx.postAudit.deleteMany({ where: { actorId: userId } });
   await tx.commentPin.deleteMany({ where: { comment: { authorId: userId } } });
   await tx.platformPost.updateMany({

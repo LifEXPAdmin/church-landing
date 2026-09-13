@@ -4,6 +4,8 @@ import type {
   MessageActivity,
   MessageAlertChoices
 } from "./adult-message-types";
+import { enqueueNotification } from "./notification-outbox";
+import { pushAvailable } from "./push-config";
 type Tx = Prisma.TransactionClient;
 export async function messageAlertChoices(
   tx: Tx,
@@ -64,7 +66,7 @@ export async function messageActivityIn(
     requestAlerts: preferences.requests ? pendingRequests : 0,
     messageAlerts,
     preferences,
-    channels: { inApp: true, email: false, push: false }
+    channels: { inApp: true, email: false, push: pushAvailable() }
   };
 }
 
@@ -85,9 +87,13 @@ export async function recordMessageActivity(
   }
 ) {
   // An event is an atomic source intent, not a delivery attempt or body copy.
-  await tx.socialEvent.upsert({
-    where: { key: event.key },
-    create: event,
-    update: {}
-  });
+  if (
+    await tx.socialEvent.findUnique({
+      where: { key: event.key },
+      select: { id: true }
+    })
+  )
+    return;
+  const row = await tx.socialEvent.create({ data: event });
+  await enqueueNotification(tx, row);
 }

@@ -127,6 +127,7 @@ export async function purgeMessagingCandidate(
     await tx.communityReportDecision.deleteMany({
       where: { reportId: candidate.id }
     });
+    await tx.socialEvent.deleteMany({ where: { reportId: candidate.id } });
     await retireReportReceipts(tx, candidate.id);
     await tx.communityReport.deleteMany({ where: { id: candidate.id } });
     // Release the exact canonical source's erasure exception once its last

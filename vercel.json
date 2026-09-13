@@ -1,4 +1,23 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "crons": [{ "path": "/api/maintenance/images", "schedule": "0 7 * * *" }]
+  "crons": [
+    {
+      "path": "/api/maintenance/images",
+      "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/maintenance/notifications",
+      "schedule": "0 6 * * *"
+    }
+  ],
+  "functions": {
+    "app/api/queues/phone-notifications/route.ts": {
+      "experimentalTriggers": [
+        {
+          "type": "queue/v2beta",
+          "topic": "phone-notification-v1"
+        }
+      ]
+    }
+  }
 }

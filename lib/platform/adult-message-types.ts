@@ -9,7 +9,7 @@ export type MessageActivity = {
   requestAlerts: number;
   messageAlerts: number;
   preferences: MessageAlertChoices;
-  channels: { inApp: true; email: false; push: false };
+  channels: { inApp: true; email: false; push: boolean };
 };
 export type AdultMessageItem = {
   id: string;

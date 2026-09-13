@@ -1,3 +1,15 @@
+## Messaging outbox and device foundation — local, 13 September 2026
+
+Canonical message/report intents, session-bound Web Push subscriptions, independent
+notification categories, DST-aware quiet hours, source-checked delivery leases,
+bounded retries and content-free diagnostic expiry are implemented locally. The
+combined messaging/reporting/account/push run passes 51 tests; shared maintenance
+regressions pass five. The phone and welcome interfaces, restoration operations,
+deployed queue/configuration checks and observed phone delivery remain open.
+See [the phone contract](PHONE_NOTIFICATION_CONTRACT.md). Production still serves
+`.26`; no production app migration, grant, message, push or account purge has been
+performed by this batch. Continue the integrated user flow and release gates.
+
 ## Permanent account closure — local, 13 September 2026
 
 Verified request/reauthentication, irrevocable access revocation, account-resource
