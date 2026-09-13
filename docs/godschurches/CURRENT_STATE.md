@@ -1,4 +1,12 @@
-## Measured feed optimization — local, 13 September 2026
+## Measured feed optimization — live, 13 September 2026
+
+**2026.09.13.28 / d0549cf** is READY on
+`dpl_DCiJCGNKwjnr53NFiTCLrQ5aDXy5`, with canonical alias and serving identity
+verified. Thirteen read-only live groups pass with zero browser errors or writes;
+the inspected runtime error window is clear. The Vercel build passes 141 clean
+traces and applies no new migration. Independent phone/retention configuration
+and the existing VAPID identity are preserved. Founder/report intake still awaits
+the actual authenticated founder appointment; real-phone acceptance remains open.
 
 The initial 10,000-account/100,000-post/500,000-comment workload completed with
 22,319 mixed requests and zero unexpected HTTP failures. Feed p95 was 1,019.5 ms.
@@ -13,8 +21,8 @@ and two expected skips. The production build and trace guard pass after preservi
 large test clusters outside application tracing. The corrected 15-minute workload
 passes: 23,875 mixed requests, zero unexpected failures, 2,166 matching retry pairs,
 one winner among 100 canonical final-slot writers and eight populated-restore
-checks. Feed p95 is 293.9 ms on this local dataset. Candidate 2026.09.13.28 is
-verified locally; production publication is next.
+checks. Feed p95 is 293.9 ms on this local dataset; these measurements do not
+establish production or phone latency.
 The shared-IP participation throttle remains unchanged. See
 [the capacity receipt](CAPACITY_REHEARSAL.md) for measurements and open criteria.
 

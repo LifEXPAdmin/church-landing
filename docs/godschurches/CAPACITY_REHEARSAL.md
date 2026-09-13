@@ -1,5 +1,26 @@
 # Isolated capacity and recovery rehearsal
 
+## Verified publication — 13 September 2026
+
+Product **2026.09.13.28**, application
+`d0549cf5dbb37015e33e1fb02d51df6da10d1269`, is live on READY deployment
+`dpl_DCiJCGNKwjnr53NFiTCLrQ5aDXy5`. The independent canonical-domain assignment
+and serving release match. Thirteen read-only live groups pass, including the
+home feed, new and retained release notes, safe updates, private-route denial and
+notification/account-deletion entry. Browser errors and application writes are
+zero; the inspected deployment window has no error-level runtime rows.
+
+The actual Vercel build has 141 clean runtime traces, 14,415 entries and 361 server
+JavaScript files. All 42 migrations were already applied; this release applies
+none. Independent notification/retention configuration and the existing VAPID
+identity remain intact. Founder/report activation and real-phone acceptance retain
+their separate open requirements. The runtime source matches the locally tested
+candidate; the final commit adds only development-tooling and evidence changes.
+
+Visible improvements: [Home](https://godschurches.com/platform),
+[patch notes](https://godschurches.com/platform/releases/bounded-community-feed)
+and the existing reader entry in [Explore features](https://godschurches.com/platform/features).
+
 ## Scope and reproduction
 
 The development harness owns a fresh PostgreSQL cluster bound to loopback. It
@@ -168,7 +189,7 @@ fingerprint and all 42 migration checksums match, and restored traffic stays off
 Twelve actual query plans are retained privately. No competing local verification
 ran during this final timed workload. The owned server and database stopped cleanly.
 
-Production publication is next; the optimization measurements above are local.
+Production publication is verified above; the optimization measurements remain local.
 The current thirty-attempt shared-IP participation window, denser relationship
 graphs, per-post preview scaling, media load and broader worker failure rehearsals
 remain separate capacity considerations. This checkpoint does not close the
