@@ -585,6 +585,8 @@ export async function downloadAccountExport(
         select: {
           mentions: true,
           contactRequests: true,
+          requestAlerts: true,
+          messageAlerts: true,
           showRelationships: true,
           version: true,
           updatedAt: true

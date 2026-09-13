@@ -1,5 +1,26 @@
 # Adult message implementation receipt
 
+## Durable in-app activity verified locally — 13 September 2026
+
+The existing SocialEvent owner now stores unique source references for contact
+creation, acceptance and text messages. It does not copy their private bodies.
+Current authorized projections recheck adult eligibility, recipient request
+policy, bilateral blocks, accepted consent, visible/read positions and personal
+mute choices. Operational pending-request counts remain available when optional
+request alerts are off. Versioned request/message alert choices extend the
+existing SocialPreferences owner without changing contact permission. Email,
+push, external delivery and broader quiet-hour scheduling remain unimplemented.
+
+Fresh checks pass: 43 service groups and ten enabled plus ten paused HTTP groups,
+including exact event deduplication, invalid mixed-source database shapes,
+orphan/outsider suppression and independent alert preferences. The first enabled
+HTTP invocation lacked its matching test environment switch; the corrected run
+passes all ten checks. Types, scoped lint and production build/runtime tracing
+pass. Migration `20260913000300_message_activity_intents` is isolated-only; its
+backfill derives reference IDs and dates from canonical source records. No new
+worker, table or runtime dependency is added. Inbox/profile/reconnect UI and the
+complete first messaging release gate remain next. Production is unchanged.
+
 ## Text/history service verified locally — 12 September 2026
 
 The service extends the existing sorted two-person conversation membership from

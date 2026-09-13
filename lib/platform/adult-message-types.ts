@@ -1,4 +1,16 @@
 import type { ContactPerson } from "./adult-contact-types";
+export type MessageAlertChoices = {
+  version: number;
+  requests: boolean;
+  messages: boolean;
+};
+export type MessageActivity = {
+  pendingRequests: number;
+  requestAlerts: number;
+  messageAlerts: number;
+  preferences: MessageAlertChoices;
+  channels: { inApp: true; email: false; push: false };
+};
 export type AdultMessageItem = {
   id: string;
   sequence: number;
@@ -26,6 +38,7 @@ export type AdultConversationSummary = {
 export type AdultMessageView = {
   ownerId: string;
   available: boolean;
+  activity?: MessageActivity;
   conversations?: AdultConversationSummary[];
   after?: string | null;
   conversation?: AdultConversationSummary;

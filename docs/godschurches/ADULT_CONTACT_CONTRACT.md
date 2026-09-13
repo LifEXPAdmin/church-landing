@@ -146,6 +146,15 @@ backoff before adding realtime infrastructure. The canonical sequence, not poll
 timing, determines order and unread state. The existing required activity/outbox
 task owns durable in-app indicators; report or delivery failure must not roll
 back a committed request or message. No private content in lock-screen previews.
+The scoped implementation uses the existing SocialEvent owner for unique
+request/acceptance/message references and dates, never copied text. Current
+in-app projections join the canonical sources and recheck eligibility, consent,
+request policy, blocks, mute and visible/read positions. Optional request and
+message alerts belong to the existing versioned SocialPreferences; turning them
+off does not grant contact permission or hide required pending decisions. Old
+preferences default to enabled in-app alerts while contact remains NOBODY.
+No email, push, quiet-hour or external-delivery capability is enabled by this
+scoped dependency. Its broader scheduling/delivery contract remains separate.
 
 ## Deletion, selected evidence and operational boundary
 

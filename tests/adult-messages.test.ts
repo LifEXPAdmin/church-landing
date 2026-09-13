@@ -555,14 +555,273 @@ test("paused operations preserve private history and personal cleanup but do not
 
 test("new-request preferences cannot replace or silently revoke explicit accepted conversation consent", async () => {
   const row = await pair();
-  const current = await readAdultContact(db, f.memberB.token, { view: "preferences" });
-  await adultContactCommand(db, f.memberB.token, input("preferences", { audience: "NOBODY", expectedVersion: current.preferences!.version }));
+  const current = await readAdultContact(db, f.memberB.token, {
+    view: "preferences"
+  });
+  await adultContactCommand(
+    db,
+    f.memberB.token,
+    input("preferences", {
+      audience: "NOBODY",
+      expectedVersion: current.preferences!.version
+    })
+  );
   await send(row.id, "Already accepted private contact");
   assert.equal((await conversation(row.id)).conversation!.sendingAllowed, true);
   await block(f.memberB, f.memberA);
-  const restricted = await readAdultContact(db, f.memberB.token, { view: "preferences" });
-  await adultContactCommand(db, f.memberB.token, input("preferences", { audience: "EVERYONE", expectedVersion: restricted.preferences!.version }));
+  const restricted = await readAdultContact(db, f.memberB.token, {
+    view: "preferences"
+  });
+  await adultContactCommand(
+    db,
+    f.memberB.token,
+    input("preferences", {
+      audience: "EVERYONE",
+      expectedVersion: restricted.preferences!.version
+    })
+  );
   await denied(send(row.id, "A broader preference cannot undo a block"), 403);
+});
+
+test("canonical request activity is atomic, deduplicated and permission checked without copying purpose", async () => {
+  await adultContactCommand(
+    db,
+    f.memberB.token,
+    input("preferences", { audience: "EVERYONE", expectedVersion: 0 })
+  );
+  const pending = input("create", {
+    recipientId: f.memberB.id,
+    purpose: "No purpose copy in activity",
+    expectedRecipientVersion: 1
+  });
+  const [saved, replay] = await Promise.all([
+    adultContactCommand(db, f.memberA.token, pending),
+    adultContactCommand(db, f.memberA.token, pending)
+  ]);
+  assert.deepEqual(saved, replay);
+  const events = await db.socialEvent.findMany({
+    where: { requestId: saved.id }
+  });
+  assert.equal(events.length, 1);
+  assert.equal(events[0].recipientId, f.memberB.id);
+  assert.doesNotMatch(JSON.stringify(events), /No purpose copy in activity/);
+  let activity = (await read(db, f.memberB.token, { view: "activity" }))
+    .activity!;
+  assert.equal(activity.pendingRequests, 1);
+  assert.equal(activity.requestAlerts, 1);
+  const alerts = input("alerts", {
+    expectedVersion: activity.preferences.version,
+    requests: false,
+    messages: true
+  });
+  const pref = await command(db, f.memberB.token, alerts);
+  assert.deepEqual(await command(db, f.memberB.token, alerts), pref);
+  activity = (await read(db, f.memberB.token, { view: "activity" })).activity!;
+  assert.equal(activity.pendingRequests, 1);
+  assert.equal(activity.requestAlerts, 0);
+  assert.equal(
+    (await read(db, f.contact.token, { view: "activity" })).activity!
+      .pendingRequests,
+    0
+  );
+  await db.platformUser.update({
+    where: { id: f.memberA.id },
+    data: { emailVerifiedAt: null }
+  });
+  assert.equal(
+    (await read(db, f.memberB.token, { view: "activity" })).activity!
+      .pendingRequests,
+    0
+  );
+  await db.platformUser.update({
+    where: { id: f.memberA.id },
+    data: { emailVerifiedAt: new Date() }
+  });
+  await block(f.memberB, f.memberA);
+  assert.equal(
+    (await read(db, f.memberB.token, { view: "activity" })).activity!
+      .pendingRequests,
+    0
+  );
+});
+
+test("message activity consumes own canonical read/mute state and independent in-app choices", async () => {
+  const row = await pair();
+  const body = input("send", {
+    conversationId: row.id,
+    expectedVersion: row.version,
+    content: "Never copied message activity body"
+  });
+  const saved = await command(db, f.memberA.token, body);
+  await command(db, f.memberA.token, body);
+  const events = await db.socialEvent.findMany({
+    where: { messageId: saved.id }
+  });
+  assert.equal(events.length, 1);
+  assert.doesNotMatch(
+    JSON.stringify(events),
+    /Never copied message activity body/
+  );
+  assert.equal(
+    await db.socialEvent.count({
+      where: { conversationId: row.id, kind: "ADULT_REQUEST_ACCEPTED" }
+    }),
+    1
+  );
+  const activity = (await read(db, f.memberB.token, { view: "activity" }))
+    .activity!;
+  assert.equal(activity.messageAlerts, 1);
+  assert.deepEqual(activity.channels, {
+    inApp: true,
+    email: false,
+    push: false
+  });
+  assert.equal(
+    (await read(db, f.memberA.token, { view: "activity" })).activity!
+      .messageAlerts,
+    0
+  );
+  const changed = await command(
+    db,
+    f.memberB.token,
+    input("alerts", {
+      expectedVersion: activity.preferences.version,
+      requests: true,
+      messages: false
+    })
+  );
+  assert.equal(
+    (await read(db, f.memberB.token, { view: "activity" })).activity!
+      .messageAlerts,
+    0
+  );
+  assert.equal(
+    (await conversation(row.id, f.memberB)).conversation!.unread,
+    1,
+    "Optional alerts do not hide actual unread history"
+  );
+  assert.equal(
+    (
+      await db.socialPreferences.findUniqueOrThrow({
+        where: { ownerId: f.memberB.id }
+      })
+    ).contactRequests,
+    "EVERYONE"
+  );
+  await command(
+    db,
+    f.memberB.token,
+    input("alerts", {
+      expectedVersion: changed.version,
+      requests: true,
+      messages: true
+    })
+  );
+  await choice(row.id, "mute", { value: true }, f.memberB);
+  assert.equal(
+    (await read(db, f.memberB.token, { view: "activity" })).activity!
+      .messageAlerts,
+    0
+  );
+  await choice(row.id, "mute", { value: false }, f.memberB);
+  assert.equal(
+    (await read(db, f.memberB.token, { view: "activity" })).activity!
+      .messageAlerts,
+    1
+  );
+  await command(
+    db,
+    f.memberB.token,
+    input("read", { conversationId: row.id, through: saved.id })
+  );
+  assert.equal(
+    (await read(db, f.memberB.token, { view: "activity" })).activity!
+      .messageAlerts,
+    0
+  );
+  await send(row.id, "Later unseen message");
+  assert.equal(
+    (await read(db, f.memberB.token, { view: "activity" })).activity!
+      .messageAlerts,
+    1
+  );
+  await block(f.memberB, f.memberA);
+  assert.equal(
+    (await read(db, f.memberB.token, { view: "activity" })).activity!
+      .messageAlerts,
+    0
+  );
+});
+
+test("in-app activity ignores orphan/forged sources and database constraints prevent duplicate or mixed intents", async () => {
+  const row = await pair(),
+    message = await send(row.id, "Single source");
+  const original = await db.socialEvent.findFirstOrThrow({
+    where: { messageId: message.id }
+  });
+  await assert.rejects(
+    db.socialEvent.create({
+      data: {
+        ...original,
+        id: randomUUID(),
+        key: "changed-key-" + randomUUID()
+      }
+    })
+  );
+  await assert.rejects(
+    db.socialEvent.create({
+      data: {
+        key: randomUUID(),
+        kind: "ADULT_MESSAGE_CREATED",
+        actorId: f.memberA.id,
+        recipientId: f.memberB.id,
+        postId: "mixed-source",
+        commentId: "mixed-source",
+        conversationId: row.id,
+        messageId: randomUUID()
+      }
+    })
+  );
+  await db.socialEvent.create({
+    data: {
+      key: randomUUID(),
+      kind: "ADULT_MESSAGE_CREATED",
+      actorId: f.memberA.id,
+      recipientId: f.contact.id,
+      conversationId: row.id,
+      messageId: randomUUID()
+    }
+  });
+  assert.equal(
+    (await read(db, f.contact.token, { view: "activity" })).activity!
+      .messageAlerts,
+    0
+  );
+  const before = await db.socialEvent.count({
+    where: { conversationId: row.id }
+  });
+  await denied(
+    command(
+      db,
+      f.contact.token,
+      input("send", {
+        conversationId: row.id,
+        expectedVersion: row.version,
+        content: "No event on rejection"
+      })
+    ),
+    404
+  );
+  assert.equal(
+    await db.socialEvent.count({ where: { conversationId: row.id } }),
+    before
+  );
+  await db.adultMessage.delete({ where: { id: message.id } });
+  assert.equal(
+    (await read(db, f.memberB.token, { view: "activity" })).activity!
+      .messageAlerts,
+    0
+  );
 });
 test("minute/day abuse limits return real retry deadlines without charging exact replays", async () => {
   const row = await pair();

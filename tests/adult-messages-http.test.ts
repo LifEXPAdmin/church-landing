@@ -274,7 +274,15 @@ test("real mid-conversation block stops new HTTPS sends but keeps selected retai
   const view = await (
     await get({ view: "conversation", conversationId: conversation.id })
   ).json();
-  assert.equal((await send({ ...body("Current version after block"), expectedVersion: view.conversation.version })).status, 403);
+  assert.equal(
+    (
+      await send({
+        ...body("Current version after block"),
+        expectedVersion: view.conversation.version
+      })
+    ).status,
+    403
+  );
   assert.equal(view.conversation.person, null);
   assert.equal(view.conversation.sendingAllowed, false);
   assert.equal(view.messages.length, 1);
@@ -289,6 +297,69 @@ test("real mid-conversation block stops new HTTPS sends but keeps selected retai
     409
   );
 });
+test("HTTP in-app activity is owner-only and versioned alert choices preserve contact permission", async () => {
+  const input = body("A private activity source");
+  await preparing(() => adultMessageCommand(db, sender.token, input));
+  assert.equal((await send(input)).status, 200);
+  let response = await get({ view: "activity" }, recipient);
+  assert.match(response.headers.get("cache-control")!, /no-store/);
+  let data = await response.json();
+  assert.equal(data.activity.messageAlerts, 1);
+  assert.deepEqual(data.activity.channels, {
+    inApp: true,
+    email: false,
+    push: false
+  });
+  assert.doesNotMatch(JSON.stringify(data), /A private activity source/);
+  assert.equal(
+    (await (await get({ view: "activity" }, outsider)).json()).activity
+      .messageAlerts,
+    0
+  );
+  const alerts = command("alerts", {
+    expectedVersion: data.activity.preferences.version,
+    requests: false,
+    messages: false
+  });
+  const saved = await send(alerts, recipient);
+  assert.equal(saved.status, 200);
+  assert.deepEqual(
+    await (await send(alerts, recipient)).json(),
+    await saved.json()
+  );
+  assert.equal(
+    (
+      await send(
+        { ...alerts, mutationId: randomUUID(), messages: true },
+        recipient
+      )
+    ).status,
+    409
+  );
+  response = await get({ view: "activity" }, recipient);
+  data = await response.json();
+  assert.equal(data.activity.messageAlerts, 0);
+  assert.equal(
+    (
+      await db.socialPreferences.findUniqueOrThrow({
+        where: { ownerId: recipient.id }
+      })
+    ).contactRequests,
+    "EVERYONE"
+  );
+  assert.equal(
+    (
+      await (
+        await get(
+          { view: "conversation", conversationId: conversation.id },
+          recipient
+        )
+      ).json()
+    ).conversation.unread,
+    1
+  );
+});
+
 test("HTTPS rate headers and revoked account sessions cannot fake a send or expose history", async () => {
   if (enabled) {
     const key = createHmac("sha256", accountConfig().rateSecret)

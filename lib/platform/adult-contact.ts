@@ -16,6 +16,7 @@ import { postField, postId } from "./post-input";
 import { expected, isEligible, PortalError } from "./portal-policy";
 import { socialCommand, socialInput } from "./social-operations";
 import type { ContactRequest, ContactView } from "./adult-contact-types";
+import { recordMessageActivity } from "./message-activity";
 
 const PAGE = 30,
   DAY = 86400000;
@@ -227,6 +228,14 @@ export function adultContactCommand(
             expiresAt: new Date(now.getTime() + 14 * DAY)
           }
         });
+        await recordMessageActivity(tx, {
+          key: `adult-request:${saved.id}`,
+          kind: "ADULT_REQUEST_CREATED",
+          actorId: ownerId,
+          recipientId,
+          requestId: saved.id,
+          createdAt: saved.createdAt
+        });
         return receipt(
           saved,
           "Request sent. A conversation opens only if the recipient accepts."
@@ -273,6 +282,16 @@ export function adultContactCommand(
         where: { id: row.id },
         data: { status, conversationId, version: { increment: 1 } }
       });
+      if (conversationId)
+        await recordMessageActivity(tx, {
+          key: `adult-request-accepted:${saved.id}`,
+          kind: "ADULT_REQUEST_ACCEPTED",
+          actorId: ownerId,
+          recipientId: row.senderId,
+          requestId: saved.id,
+          conversationId,
+          createdAt: saved.updatedAt
+        });
       return receipt(
         saved,
         status === "ACCEPTED"

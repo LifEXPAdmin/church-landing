@@ -1339,12 +1339,16 @@ model SocialEvent {
   key String @unique
   kind String
   actorId String
-  postId String
-  commentId String
+  postId String?
+  commentId String?
+  requestId String?
+  conversationId String?
+  messageId String?
   recipientId String?
   createdAt DateTime @default(now())
   @@index([postId, createdAt])
   @@index([recipientId, createdAt])
+  @@index([recipientId, kind, conversationId])
 }
 
 model PlatformFollow {
@@ -1527,6 +1531,8 @@ model SocialPreferences {
   version Int @default(1)
   mentions String @default("EVERYONE")
   contactRequests AdultContactAudience @default(NOBODY)
+  requestAlerts Boolean @default(true)
+  messageAlerts Boolean @default(true)
   showRelationships Boolean @default(true)
   updatedAt DateTime @updatedAt
   owner PlatformUser @relation(fields: [ownerId], references: [id], onDelete: Cascade)

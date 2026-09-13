@@ -24,6 +24,11 @@ import { communityReportIntakeAvailable } from "./community-reports";
 import { eligibleWhere, expected, PortalError } from "./portal-policy";
 import { postField, postId } from "./post-input";
 import { socialCommand, socialInput } from "./social-operations";
+import {
+  messageActivityIn,
+  messageAlertChoices,
+  recordMessageActivity
+} from "./message-activity";
 type Tx = Prisma.TransactionClient;
 const PAGE = 50,
   INBOX = 30;
@@ -105,7 +110,9 @@ export function adultMessageCommand(
     "expectedVersion",
     "content",
     "value",
-    "through"
+    "through",
+    "requests",
+    "messages"
   ]);
   return socialCommand(
     db,
@@ -113,6 +120,33 @@ export function adultMessageCommand(
     "adult-message",
     input,
     async (tx, ownerId) => {
+      if (input.operation === "alerts") {
+        const current = await messageAlertChoices(tx, ownerId);
+        expected(input.expectedVersion, current.version);
+        if (
+          typeof input.requests !== "boolean" ||
+          typeof input.messages !== "boolean"
+        )
+          throw new PortalError(
+            400,
+            "Choose the supported in-app alert settings."
+          );
+        const fields = {
+          requestAlerts: input.requests,
+          messageAlerts: input.messages
+        };
+        const saved = await tx.socialPreferences.upsert({
+          where: { ownerId },
+          create: { ownerId, ...fields },
+          update: { ...fields, version: { increment: 1 } }
+        });
+        return {
+          id: ownerId,
+          version: saved.version,
+          message:
+            "Your in-app alert choices are saved. Email and push are unchanged."
+        };
+      }
       const row = await ownedAdultConversation(
         tx,
         ownerId,
@@ -157,6 +191,15 @@ export function adultMessageCommand(
             sequence: current.lastSequence,
             content
           }
+        });
+        await recordMessageActivity(tx, {
+          key: `adult-message:${message.id}`,
+          kind: "ADULT_MESSAGE_CREATED",
+          actorId: ownerId,
+          recipientId: adultOtherId(row, ownerId),
+          conversationId: row.id,
+          messageId: message.id,
+          createdAt: message.createdAt
         });
         await tx.adultConversationState.updateMany({
           where: {
@@ -340,6 +383,12 @@ export function readAdultMessages(
       throw new PortalError(401, "Sign in to use private conversations.");
     await requireContactActor(tx, ownerId);
     const available = await communityReportIntakeAvailable(tx, null);
+    if (query.view === "activity")
+      return {
+        ownerId,
+        available,
+        activity: await messageActivityIn(tx, ownerId)
+      };
     if (!query.view || query.view === "inbox") {
       if (query.archived !== undefined && query.archived !== "true")
         throw new PortalError(400, "Choose a supported inbox view.");
@@ -371,6 +420,7 @@ export function readAdultMessages(
       return {
         ownerId,
         available,
+        activity: await messageActivityIn(tx, ownerId),
         conversations: await summaries(tx, ownerId, page, available),
         after: rows.length > INBOX ? page.at(-1)!.id : null
       };
