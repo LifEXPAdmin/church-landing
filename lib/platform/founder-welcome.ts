@@ -8,19 +8,25 @@ import { notificationWrite } from "./notification-outbox";
 import { recordMessageActivity } from "./message-activity";
 type Tx = Prisma.TransactionClient;
 
-export async function founderAvailable(tx: Tx) {
-  const id = founderAccountId();
-  return process.env.FOUNDER_WELCOME_ENABLED === "true" &&
-    id &&
-    (await tx.platformOperatorGrant.findFirst({
+export async function founderAuthorized(tx: Tx, ownerId: string) {
+  return (
+    founderAccountId() === ownerId &&
+    !!(await tx.platformOperatorGrant.findFirst({
       where: {
-        userId: id,
+        userId: ownerId,
         capability: "REVIEW_COMMUNITY_REPORTS",
         revokedAt: null,
         user: eligibleWhere
       },
       select: { id: true }
-    })) &&
+    }))
+  );
+}
+export async function founderAvailable(tx: Tx) {
+  const id = founderAccountId();
+  return process.env.FOUNDER_WELCOME_ENABLED === "true" &&
+    id &&
+    (await founderAuthorized(tx, id)) &&
     (await communityReportIntakeAvailable(tx, null))
     ? id
     : null;
@@ -141,18 +147,26 @@ export async function consentToFounderReply(
       conversationId: row.id,
       recipientId: ownerId,
       replyConsentAt: null,
-      revokedAt: null,
-      messageId: { not: null }
-    },
-    include: { message: { select: { sequence: true } } }
+      revokedAt: null
+    }
   });
   const state = await tx.adultConversationState.findUnique({
     where: { conversationId_ownerId: { conversationId: row.id, ownerId } }
   });
+  const visible =
+    welcome &&
+    (await tx.adultMessage.findFirst({
+      where: {
+        conversationId: row.id,
+        senderId: welcome.founderId,
+        kind: { in: ["FOUNDER_WELCOME", "FOUNDER_ANNOUNCEMENT"] },
+        sequence: { gt: state?.hiddenThrough ?? 0 }
+      },
+      select: { id: true }
+    }));
   if (
     !welcome ||
-    !welcome.message ||
-    welcome.message.sequence <= (state?.hiddenThrough ?? 0) ||
+    !visible ||
     (await founderAvailable(tx)) !== welcome.founderId ||
     (await tx.socialRelationship.findFirst({
       where: founderBlockedWhere(welcome.founderId, ownerId),

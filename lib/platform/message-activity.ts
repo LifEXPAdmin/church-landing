@@ -13,11 +13,17 @@ export async function messageAlertChoices(
 ): Promise<MessageAlertChoices> {
   const row = await tx.socialPreferences.findUnique({
     where: { ownerId },
-    select: { version: true, requestAlerts: true, messageAlerts: true }
+    select: {
+      version: true,
+      requestAlerts: true,
+      messageAlerts: true,
+      founderAnnouncements: true
+    }
   });
   return {
     version: row?.version ?? 0,
     requests: row?.requestAlerts ?? true,
+    founder: row?.founderAnnouncements ?? true,
     messages: row?.messageAlerts ?? true
   };
 }
@@ -43,7 +49,7 @@ export async function messageActivityIn(
         ((b."ownerId" = ${ownerId} AND b."targetUserId" = other."id") OR (b."ownerId" = other."id" AND b."targetUserId" = ${ownerId})))`;
   const pendingRequests = Number(requests[0].count);
   let messageAlerts = 0;
-  if (preferences.messages) {
+  if (preferences.messages || preferences.founder) {
     const rows = await tx.$queryRaw<Array<{ count: bigint }>>`
       SELECT count(*) AS count FROM "SocialEvent" e
       JOIN "AdultMessage" m ON m."id" = e."messageId" AND m."conversationId" = e."conversationId" AND m."senderId" = e."actorId"
@@ -53,9 +59,10 @@ export async function messageActivityIn(
       WHERE e."recipientId" = ${ownerId} AND e."kind" = 'ADULT_MESSAGE_CREATED'
         AND (c."participantAId" = ${ownerId} OR c."participantBId" = ${ownerId})
         AND m."senderId" <> ${ownerId} AND (c."sendingAllowed" = true OR
-          (m.kind = 'FOUNDER_WELCOME' AND EXISTS (SELECT 1 FROM "FounderWelcome" w WHERE w."messageId" = m.id
+          (m.kind IN ('FOUNDER_WELCOME','FOUNDER_ANNOUNCEMENT') AND EXISTS (SELECT 1 FROM "FounderWelcome" w WHERE w."conversationId" = c.id
             AND w."recipientId" = ${ownerId} AND w."founderId" = m."senderId" AND w."revokedAt" IS NULL)))
-        AND (m.kind <> 'FOUNDER_ANNOUNCEMENT' OR COALESCE((SELECT p."founderAnnouncements" FROM "SocialPreferences" p WHERE p."ownerId" = ${ownerId}), true))
+        AND ((m.kind = 'FOUNDER_ANNOUNCEMENT' AND ${preferences.founder ?? true}) OR
+             (m.kind <> 'FOUNDER_ANNOUNCEMENT' AND ${preferences.messages}))
         AND COALESCE(s."muted", false) = false
         AND m."sequence" > GREATEST(COALESCE(s."readThrough", 0), COALESCE(s."hiddenThrough", 0))
         AND other."emailVerifiedAt" IS NOT NULL AND other."adultAcknowledgedAt" IS NOT NULL

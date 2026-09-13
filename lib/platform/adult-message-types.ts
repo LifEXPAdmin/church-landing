@@ -3,6 +3,7 @@ export type MessageAlertChoices = {
   version: number;
   requests: boolean;
   messages: boolean;
+  founder?: boolean;
 };
 export type MessageActivity = {
   pendingRequests: number;

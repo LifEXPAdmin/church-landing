@@ -449,6 +449,14 @@ export function MessageWorkspace({
                       {label}
                     </Link>
                   ))}
+                {s.data.founder && (
+                  <Link
+                    href="/platform/messages/announcements"
+                    prefetch={false}
+                  >
+                    Announcements
+                  </Link>
+                )}
               </nav>
               <div ref={list} className="gc-message-list">
                 {s.data.conversations?.length ? (

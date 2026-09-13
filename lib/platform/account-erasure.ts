@@ -22,6 +22,10 @@ async function erasePrivateCollections(tx: Tx, userId: string) {
   await tx.socialOperation.deleteMany({ where: { ownerId: userId } });
   await tx.conversationPreference.deleteMany({ where: { ownerId: userId } });
   await tx.socialPreferences.deleteMany({ where: { ownerId: userId } });
+  await tx.founderAnnouncementRecipient.deleteMany({
+    where: { recipientId: userId }
+  });
+  await tx.founderAnnouncement.deleteMany({ where: { founderId: userId } });
   await tx.founderWelcome.deleteMany({ where: { recipientId: userId } });
   await tx.profilePresentation.deleteMany({ where: { userId } });
   await tx.photoAlbumEntry.deleteMany({ where: { ownerId: userId } });

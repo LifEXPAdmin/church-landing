@@ -323,8 +323,7 @@ async function summaries(
     ])
   );
   const welcomes = await tx.founderWelcome.findMany({
-    where: { conversationId: { in: ids } },
-    include: { message: { select: { sequence: true } } }
+    where: { conversationId: { in: ids } }
   });
   const welcomeById = new Map(welcomes.map((w) => [w.conversationId, w]));
   const welcomeReady = welcomes.some(
@@ -332,6 +331,22 @@ async function summaries(
   )
     ? await founderAvailable(tx)
     : null;
+  const automatic = welcomes.length
+    ? await tx.adultMessage.groupBy({
+        by: ["conversationId"],
+        where: {
+          kind: { in: ["FOUNDER_WELCOME", "FOUNDER_ANNOUNCEMENT"] },
+          OR: welcomes.map((w) => ({
+            conversationId: w.conversationId,
+            senderId: w.founderId
+          }))
+        },
+        _max: { sequence: true }
+      })
+    : [];
+  const automaticSequence = new Map(
+    automatic.map((m) => [m.conversationId, m._max.sequence ?? 0])
+  );
   const personal = welcomes.length
     ? await tx.adultMessage.groupBy({
         by: ["conversationId", "senderId"],
@@ -425,8 +440,8 @@ async function summaries(
                 welcomeReady === welcome.founderId &&
                 !welcome.revokedAt &&
                 !welcome.replyConsentAt &&
-                !!welcome.message &&
-                welcome.message.sequence > preferences.hiddenThrough,
+                (automaticSequence.get(row.id) ?? 0) >
+                  preferences.hiddenThrough,
               unanswered:
                 inbound > Math.max(response, preferences.hiddenThrough)
             }

@@ -118,7 +118,12 @@ export async function notificationSource(
   if (!event.conversationId) return null;
   const conversation = await tx.adultConversation.findFirst({
     where: { id: event.conversationId, ...adultMemberWhere(ownerId) },
-    include: { states: { where: { ownerId }, take: 1 } }
+    include: {
+      states: { where: { ownerId }, take: 1 },
+      founderWelcome: {
+        select: { recipientId: true, founderId: true, revokedAt: true }
+      }
+    }
   });
   if (!conversation || adultOtherId(conversation, ownerId) !== event.actorId)
     return null;
@@ -155,21 +160,17 @@ export async function notificationSource(
         )
       }
     },
-    select: {
-      id: true,
-      kind: true,
-      founderWelcome: {
-        select: { recipientId: true, founderId: true, revokedAt: true }
-      }
-    }
+    select: { id: true, kind: true }
   });
+  const founder = conversation.founderWelcome;
   if (
     !conversation.sendingAllowed &&
     !(
-      message?.kind === "FOUNDER_WELCOME" &&
-      message.founderWelcome?.recipientId === ownerId &&
-      message.founderWelcome.founderId === event.actorId &&
-      !message.founderWelcome.revokedAt
+      message &&
+      ["FOUNDER_WELCOME", "FOUNDER_ANNOUNCEMENT"].includes(message.kind) &&
+      founder?.recipientId === ownerId &&
+      founder.founderId === event.actorId &&
+      !founder.revokedAt
     )
   )
     return null;

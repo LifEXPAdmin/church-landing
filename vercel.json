@@ -26,6 +26,14 @@
           "topic": "founder-welcome-v1"
         }
       ]
+    },
+    "app/api/queues/founder-announcements/route.ts": {
+      "experimentalTriggers": [
+        {
+          "type": "queue/v2beta",
+          "topic": "founder-announcement-v1"
+        }
+      ]
     }
   }
 }

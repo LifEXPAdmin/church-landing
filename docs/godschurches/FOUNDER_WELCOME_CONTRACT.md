@@ -34,7 +34,8 @@ automatic sender. Initial welcome does not grant general sending permission.
 The member's Reply to Andrew action opens the shared composer and explains the
 narrow conversation consent. A first send includes `welcomeReply=true` together
 with the current conversation version and ordinary exact-body mutation key. Under
-the shared permission lock, the server rechecks the visible canonical welcome,
+the shared permission lock, the server rechecks a visible canonical welcome or
+later optional founder announcement in that same non-revoked welcome conversation,
 recipient identity, founder authorization, both eligible adult accounts and blocks,
 then records consent and enables only that pair. It does not alter NOBODY/FOLLOWED/
 EVERYONE, friendships, follows, phone permission or announcement preferences.
@@ -71,8 +72,10 @@ queues before traffic, alongside protected deletion/hold replay. This operating
 restoration gate is required before production activation.
 
 Founder-announcement preferences are separate. The dedicated deliberate draft/
-preview/send implementation remains the next integration slice; this welcome
-checkpoint does not send any production announcement or backfill existing members.
+preview/send implementation is described in [its contract](FOUNDER_ANNOUNCEMENT_CONTRACT.md).
+Clearing the original welcome does not prevent a deliberate reply to a later
+visible update; it never revives a block or account-revoked welcome exception.
+These local checkpoints send no production announcements and backfill no members.
 
 ## Local evidence
 

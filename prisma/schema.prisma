@@ -203,6 +203,8 @@ model PlatformUser {
   pendingFounderWelcomeAt DateTime?
   founderWelcome FounderWelcome? @relation("WelcomeRecipient")
   sentFounderWelcomes FounderWelcome[] @relation("WelcomeFounder")
+  founderAnnouncements FounderAnnouncement[] @relation("AnnouncementFounder")
+  receivedAnnouncements FounderAnnouncementRecipient[] @relation("AnnouncementRecipient")
   pushSubscriptions PushSubscription[]
   notificationDeliveries NotificationDelivery[]
   id           String       @id @default(cuid())
@@ -1760,6 +1762,7 @@ model AdultMessage {
   unretainedAt DateTime?
   kind String @default("TEXT")
   founderWelcome FounderWelcome?
+  announcementRecipient FounderAnnouncementRecipient?
   conversation AdultConversation @relation(fields: [conversationId], references: [id], onDelete: Restrict)
   sender PlatformUser @relation(fields: [senderId], references: [id], onDelete: Restrict)
   @@unique([conversationId, sequence])
@@ -1859,4 +1862,37 @@ model FounderWelcome {
   conversation AdultConversation @relation(fields: [conversationId], references: [id], onDelete: Restrict)
   message AdultMessage? @relation(fields: [messageId], references: [id], onDelete: SetNull)
   @@index([founderId, createdAt])
+}
+
+model FounderAnnouncement {
+  id String @id @default(cuid())
+  founderId String
+  content String?
+  status String @default("DRAFT")
+  version Int @default(1)
+  selectedCount Int @default(0)
+  sentCount Int @default(0)
+  skippedCount Int @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  previewedAt DateTime?
+  queuedAt DateTime?
+  completedAt DateTime?
+  founder PlatformUser @relation("AnnouncementFounder", fields: [founderId], references: [id], onDelete: Restrict)
+  recipients FounderAnnouncementRecipient[]
+  @@index([founderId, updatedAt, id])
+  @@index([status, queuedAt])
+}
+model FounderAnnouncementRecipient {
+  announcementId String
+  recipientId String
+  status String @default("SELECTED")
+  messageId String? @unique
+  finishedAt DateTime?
+  announcement FounderAnnouncement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  recipient PlatformUser @relation("AnnouncementRecipient", fields: [recipientId], references: [id], onDelete: Restrict)
+  message AdultMessage? @relation(fields: [messageId], references: [id], onDelete: SetNull)
+  @@id([announcementId, recipientId])
+  @@index([recipientId])
+  @@index([announcementId, status, recipientId])
 }

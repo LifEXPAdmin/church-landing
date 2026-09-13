@@ -1,3 +1,14 @@
+## Deliberate founder announcements — local, 13 September 2026
+
+Founder-only saved drafts, explicit selected-recipient preview/send, recoverable
+conflicts/retries, bounded canonical delivery and progress are implemented. The
+combined regression run passes 41 tests; four isolated browser groups, production
+build/runtime traces, types and scoped lint pass. See
+[the announcement contract](FOUNDER_ANNOUNCEMENT_CONTRACT.md). This remains local:
+no production announcement or backfill was sent. Complete protected retention,
+backup expiry and restore operations next, then the integrated release gates.
+The actual founder identity and observed phone delivery remain distinct blockers.
+
 ## Canonical founder welcome and reply — local, 13 September 2026
 
 New-account welcome intents, exact approved body, separate automatic label, explicit
