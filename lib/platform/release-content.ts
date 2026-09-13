@@ -496,6 +496,18 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "photo-cleanup-recovery",
+    version: "2026.09.13.30",
+    date: "2026-09-13",
+    summary: "Photo cleanup recovers after an interrupted save.",
+    added: [],
+    improved: [],
+    fixed: [
+      "A lost save confirmation can no longer leave saved photos blocking cleanup of failed uploads. Retained photos stay intact."
+    ],
+    featureIds: ["photo-library", "profile-photos", "post-photo-management"]
+  },
+  {
     id: "reply-and-mention-phone-alerts",
     version: "2026.09.13.29",
     date: "2026-09-13",

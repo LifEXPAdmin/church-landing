@@ -173,6 +173,13 @@ test("history retains both current purposes, exact upload retries reuse bytes, s
       store.files.has(row.storagePrefix + "/original.webp"),
       "READY retained image defeats even an erroneous due ledger record"
     );
+    assert.equal(
+      await db.mediaGarbage.findUnique({
+        where: { storagePrefix: row.storagePrefix }
+      }),
+      null,
+      "Obsolete ready-photo cleanup cannot block the bounded queue"
+    );
     const deletion = m("delete", {
       ...(await photoInput(current.id)),
       confirmed: true
@@ -180,6 +187,15 @@ test("history retains both current purposes, exact upload retries reuse bytes, s
     await personalPhotoCommand(db, a.token, deletion);
     await personalPhotoCommand(db, a.token, deletion);
     await denied(readImage(db, b.token, current.id, "thumb", store), 404);
+    assert.ok(
+      (
+        await db.mediaGarbage.findUniqueOrThrow({
+          where: { storagePrefix: row.storagePrefix }
+        })
+      ).dueAt > new Date(),
+      "Later deliberate deletion receives a fresh provider grace period"
+    );
+    await due(row.storagePrefix);
     await collectImageGarbage(db, store, new Date(-100));
     assert.ok(!store.files.has(row.storagePrefix + "/original.webp"));
     await denied(

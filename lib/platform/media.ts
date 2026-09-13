@@ -581,11 +581,19 @@ export async function collectImageGarbage(
         const row = await tx.mediaAsset.findUnique({
           where: { storagePrefix: candidate.storagePrefix }
         });
-        if (
-          row?.status === "READY" ||
-          (row?.status === "UPLOADING" && row.leaseUntil > now)
-        )
+        if (row?.status === "READY") {
+          // A lost commit acknowledgement can recreate the upload ledger after
+          // the photo became ready. Release that obsolete slot, not its files,
+          // so retained photos cannot fill every later cleanup page forever.
+          await tx.mediaGarbage.deleteMany({
+            where: {
+              storagePrefix: candidate.storagePrefix,
+              dueAt: candidate.dueAt
+            }
+          });
           return false;
+        }
+        if (row?.status === "UPLOADING" && row.leaseUntil > now) return false;
         // Expire before external deletion so this attempt can never attach later.
         if (row?.status === "UPLOADING")
           await tx.mediaAsset.update({

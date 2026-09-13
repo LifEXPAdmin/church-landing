@@ -1,3 +1,14 @@
+## Photo cleanup recovery — local candidate, 13 September 2026
+
+A real lost-commit-response fixture reproduced twenty obsolete READY-image
+cleanup records blocking later garbage. The existing lifecycle lock now removes
+those obsolete records while preserving every retained file. Seven real process/
+missing-file recovery checks and the final sixteen-check recovery/history run
+pass; ten maintenance/album regressions, types, scoped lint and content checks
+also pass. No schema, dependency, queue or retention grace changed. Full release
+verification is next. Production remains 2026.09.13.29 / 5685e4a. See
+[the recovery receipt](CAPACITY_REHEARSAL.md).
+
 ## Founder activation and comment alerts — live, 13 September 2026
 
 **2026.09.13.29 / 5685e4a** is READY on

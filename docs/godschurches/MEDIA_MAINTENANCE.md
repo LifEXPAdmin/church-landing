@@ -119,7 +119,12 @@ References: [Vercel cron operation and authentication](https://vercel.com/docs/c
 ## Personal photo retention compatibility
 
 The personal photo contract separates current selection from READY retention.
-Cleanup skips all READY history, independently of the current-picture flag.
+Cleanup never deletes READY history files, independently of the current-picture
+flag. Under the lifecycle lock it removes an obsolete READY cleanup record only
+when the inspected due timestamp still matches. A lost database commit response
+can recreate that record after a successful save; retaining such records forever
+would fill the 20-prefix page and prevent later garbage from progressing. A later
+deliberate photo deletion creates a fresh record and receives its full grace.
 An uncertain failed upload renews its ledger grace, and retries register any old
 attempt prefix before replacing it. The worker removes a ledger only if its due
 time still matches the inspected candidate, preserving a concurrent renewal.

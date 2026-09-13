@@ -1,5 +1,30 @@
 # Isolated capacity and recovery rehearsal
 
+## Photo process recovery and cleanup repair — local, 13 September 2026
+
+Seven isolated recovery checks use real killed/restarted processes and guarded
+local files. They cover partial/all-variant writes before commit, lost success
+after commit, provider deletion before ledger acknowledgement, concurrent retry,
+missing/truncated image bytes and a block during image delivery. Exact upload
+retries preserve one asset/history record; lost success after commit writes zero
+additional variants. Previous profile photos remain readable throughout recovery.
+No real provider, production account or retained user photo is used.
+
+The fault test reproduced a cleanup defect: losing a database commit response
+creates a stale ledger entry for an already READY image. Twenty such records
+occupied the entire bounded page indefinitely, leaving later garbage untouched.
+The existing lifecycle transaction now removes only those matching obsolete
+records, never READY files. The next bounded pass reaches later garbage. No new
+queue, table, dependency, authority or grace change is introduced. The prior
+history test now asserts that a later deliberate deletion receives a fresh grace
+period before advancing the fixture's clock.
+
+The final recovery/history run passes 16 checks; the maintenance and album
+regressions separately pass ten checks. Types, scoped lint and release-content
+checks pass. Full release verification remains pending. Production is still
+2026.09.13.29 / 5685e4a; this cleanup repair is local. Broader service health,
+dense-relationship capacity and physical/owner acceptance remain open.
+
 ## Notification worker recovery — 13 September 2026
 
 Six new isolated checks pass using real disposable worker processes, the canonical
