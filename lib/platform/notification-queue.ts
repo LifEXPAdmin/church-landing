@@ -46,6 +46,7 @@ export async function dispatchNotifications(
                 { messageId: sourceId },
                 { requestId: sourceId },
                 { reportId: sourceId },
+                { commentId: sourceId },
                 { id: sourceId }
               ]
             }

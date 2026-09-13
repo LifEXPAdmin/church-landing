@@ -9,6 +9,7 @@ import { postField, postId } from "./post-input";
 import { expected, PortalError } from "./portal-policy";
 import { mentionAllowed } from "./social-policy";
 import { socialCommand, socialInput, socialKey } from "./social-operations";
+import { recordCommentActivity } from "./comment-activity";
 import {
   readableConversation,
   readableComment,
@@ -70,18 +71,30 @@ async function updateMentions(
       create: { commentId, recipientId },
       update: { active: true }
     });
-    await tx.socialEvent.upsert({
-      where: { key: `mention:${commentId}:${recipientId}` },
-      create: {
+    const key = `mention:${commentId}:${recipientId}`;
+    // Legacy mention intents also prove the mention already happened. An edit
+    // must not turn an old, undelivered mention into a new phone alert.
+    if (
+      await tx.socialEvent.findUnique({ where: { key }, select: { id: true } })
+    )
+      continue;
+    await tx.socialEvent.create({
+      data: {
         key: `mention:${commentId}:${recipientId}`,
         kind: "COMMENT_MENTIONED",
         actorId: context.actorId!,
         postId,
         commentId,
         recipientId
-      },
-      update: {}
+      }
     });
+    await recordCommentActivity(
+      tx,
+      context.actorId!,
+      postId,
+      commentId,
+      recipientId
+    );
   }
 }
 export async function createCommentIn(
@@ -132,6 +145,17 @@ export async function createCommentIn(
       commentId: row.id
     }
   });
+  for (const recipientId of new Set([
+    ...(post.authorChurchId ? [] : [post.authorId]),
+    ...(parent && !parent.authorChurchId ? [parent.authorId] : [])
+  ]))
+    await recordCommentActivity(
+      tx,
+      context.actorId!,
+      post.id,
+      row.id,
+      recipientId
+    );
   return row;
 }
 export async function commentCommand(

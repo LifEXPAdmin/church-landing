@@ -308,6 +308,76 @@ try {
   });
   assert.deepEqual(preferences.pushCategories.sort(), ["messages", "requests"]);
   assert.equal(preferences.founderAnnouncements, false);
+  for (const name of [
+    "Replies to your posts and comments",
+    "Mentions in comments"
+  ]) {
+    const group = page.getByRole("group", { name, exact: true });
+    const phone = group.getByRole("checkbox", {
+      name: "Phone alerts",
+      exact: true
+    });
+    assert.equal(await phone.isChecked(), false);
+    assert.equal(
+      await group
+        .getByRole("checkbox", { name: "In-app alerts", exact: true })
+        .count(),
+      0
+    );
+    await phone.check();
+  }
+  await page
+    .getByRole("button", { name: "Save notification choices", exact: true })
+    .click();
+  await page.getByText(/Your notification choices are saved/).waitFor();
+  assert.deepEqual(
+    (
+      await db.socialPreferences.findUniqueOrThrow({
+        where: { ownerId: actor.id }
+      })
+    ).pushCategories.sort(),
+    ["mentions", "messages", "replies", "requests"]
+  );
+  const commenter = await createPortalActor(db, "commentpushui");
+  const post = await db.platformPost.create({
+    data: { authorId: actor.id, content: "Fictional phone comment destination" }
+  });
+  const commentResponse = await context.request.post(
+    config.origin + "/api/platform/comments",
+    {
+      headers: {
+        Origin: config.origin,
+        Cookie: "church_platform_session=" + commenter.token
+      },
+      data: {
+        operation: "create",
+        mutationId: randomUUID(),
+        postId: post.id,
+        content: "Fictional exact notification reply",
+        mentionIds: [actor.id]
+      }
+    }
+  );
+  assert.equal(commentResponse.status(), 200);
+  const commentReceipt = await commentResponse.json();
+  const commentAlerts = await db.notificationDelivery.findMany({
+    where: { event: { commentId: commentReceipt.id }, ownerId: actor.id }
+  });
+  assert.equal(commentAlerts.length, 1);
+  await go("/platform/notifications/" + commentAlerts[0].id);
+  await page
+    .getByText("Fictional exact notification reply", { exact: true })
+    .waitFor();
+  assert.equal(new URL(page.url()).pathname, "/platform/posts/" + post.id);
+  assert.equal(
+    new URL(page.url()).searchParams.get("comment"),
+    commentReceipt.id
+  );
+  await bounded();
+  await go("/platform/settings/notifications/availability");
+  ok(
+    "Reply/mention opt-ins persist and one real comment API intent opens the exact authorized comment on a narrow screen"
+  );
   await page
     .getByRole("button", { name: "Send me a test notification", exact: true })
     .click();

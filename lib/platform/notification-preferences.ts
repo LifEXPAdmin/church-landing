@@ -6,11 +6,11 @@ import { calendarZone } from "./calendar-time";
 import { socialCommand, socialInput } from "./social-operations";
 import { pushAvailable } from "./push-config";
 
+const inAppCategories = ["messages", "requests", "reports", "founder"] as const;
 export const notificationCategories = [
-  "messages",
-  "requests",
-  "reports",
-  "founder"
+  ...inAppCategories,
+  "replies",
+  "mentions"
 ] as const;
 export type NotificationCategory = (typeof notificationCategories)[number];
 export type QuietHours = {
@@ -148,7 +148,7 @@ export function notificationPreferenceCommand(
       if (
         !choices ||
         Object.keys(choices).sort().join() !==
-          [...notificationCategories].sort().join() ||
+          [...inAppCategories].sort().join() ||
         Object.values(choices).some((v) => typeof v !== "boolean") ||
         !Array.isArray(categories) ||
         categories.length > notificationCategories.length ||

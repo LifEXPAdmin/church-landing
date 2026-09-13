@@ -475,7 +475,12 @@ test("lost-response creates and edits deduplicate mentions and activity, concurr
     1
   );
   assert.equal(
-    await db.socialEvent.count({ where: { commentId: first.id } }),
+    await db.socialEvent.count({
+      where: {
+        commentId: first.id,
+        kind: { in: ["COMMENT_CREATED", "COMMENT_MENTIONED"] }
+      }
+    }),
     2
   );
   const edit = (content: string) =>
@@ -495,7 +500,12 @@ test("lost-response creates and edits deduplicate mentions and activity, concurr
     race.some((r) => r.status === "rejected" && r.reason.status === 409)
   );
   assert.equal(
-    await db.socialEvent.count({ where: { commentId: first.id } }),
+    await db.socialEvent.count({
+      where: {
+        commentId: first.id,
+        kind: { in: ["COMMENT_CREATED", "COMMENT_MENTIONED"] }
+      }
+    }),
     2
   );
   const like = m("like", {

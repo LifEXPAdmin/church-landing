@@ -1,4 +1,6 @@
 import { prisma } from "@/lib/prisma";
+import { after } from "next/server";
+import { dispatchNotifications } from "@/lib/platform/notification-queue";
 import { requestSessionToken } from "@/lib/platform/account-boundary";
 import {
   socialWriteInput,
@@ -42,7 +44,12 @@ export async function POST(request: Request) {
       request,
       "comments"
     );
-    return Response.json(await commentCommand(prisma, token, input), {
+    const result = await commentCommand(prisma, token, input);
+    if (input.operation === "create" || input.operation === "edit")
+      after(async () => {
+        await dispatchNotifications(prisma, result.id);
+      });
+    return Response.json(result, {
       headers: socialHeaders
     });
   } catch (e) {

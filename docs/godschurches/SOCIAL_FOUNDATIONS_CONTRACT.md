@@ -242,10 +242,12 @@ without overwriting unsent input. Identity changes require explicit UI review.
 
 One canonical SocialEvent intent is stored per created comment and one per
 comment/recipient mention, deduplicated across retries and edits. Events hold IDs
-and kind only, never text. These are not delivered notifications. Future activity
-work must recheck active mentions, source access, blocks/mutes and conversation
-preferences before projecting or dispatching. Do not turn these records directly
-into email/push. The activity and prayer foundations remain open.
+and kind only, never text. The phone extension adds one authorized recipient intent
+for immediate personal replies and selected mentions, reusing the existing outbox
+and separate category opt-ins. Legacy mention events prevent editing from backfilling
+old alerts. Source access, active mentions, blocks/mutes and conversation preferences
+are rechecked; see [the phone contract](PHONE_NOTIFICATION_CONTRACT.md). The unified
+Activity inbox, all-follower delivery and prayer foundations remain open.
 
 Own-data export includes explicit own social/preferences, active comment drafts,
 comment Likes and conversation choices alongside authored comments. Operation

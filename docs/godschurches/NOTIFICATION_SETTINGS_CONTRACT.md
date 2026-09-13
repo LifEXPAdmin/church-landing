@@ -3,8 +3,8 @@
 Settings must distinguish event records, saved conversation choices and delivered
 notifications. `SocialEvent` explicitly stores canonical intents without copied
 text or recipient preferences; it is not a notification queue. The existing
-comment service writes COMMENT_CREATED and COMMENT_MENTIONED intents; those
-particular categories still have no delivery integration. The published P1 owner
+comment service retains COMMENT_CREATED and COMMENT_MENTIONED source intents and
+adds one permission-checked COMMENT_ACTIVITY intent per immediate recipient. The P1 owner
 now adds canonical adult message/request/report/founder preferences, authorized
 in-app projections, an idempotent device outbox and timezone-aware quiet hours.
 See [the phone contract](PHONE_NOTIFICATION_CONTRACT.md) and
@@ -14,7 +14,7 @@ social email, digests and unrelated source categories remain unavailable.
 
 | Category | Existing source / sending capability | Current channel and control |
 | --- | --- | --- |
-| Replies and mentions | `comment-commands.ts` creates comment/mention intents; `ConversationPreference` stores DEFAULT/FOLLOW/MUTE per owner/post with versions. | No delivered notification channel. Per-conversation choices remain editable on the post, without claiming inbox/email/push delivery. |
+| Replies and mentions | Canonical comments and selected mentions, with one immediate recipient intent; `ConversationPreference` retains DEFAULT/FOLLOW/MUTE per owner/post. | Independent opt-in phone categories. Thread mute stops delivery. Comments remain on their source post; no unified Activity inbox, email or all-follower delivery is claimed. |
 | Likes | Existing desired-state post/comment reactions. | No notification sender or category preference; unavailable. |
 | Follows and friendships | Canonical follows and consented invitation relationships. | No notification sender or category preference; unavailable. Friendship confirmation remains its existing signup flow. |
 | Messages and contact requests | Canonical adult conversation/request services and shared events. | Independent in-app and optional device push choices. New messaging remains paused pending authenticated founder/report coverage; existing history and settings retain current authority. |
@@ -53,6 +53,6 @@ undocumented urgent-category exception. The shared settings controller preserves
 unsaved values, version conflicts and exact retries. Founder opt-out never blocks
 personal reply alerts. Source bodies are not copied into delivery records.
 
-Broader grouped activity, author bells, comment/reaction channels and digest/email
+Broader grouped activity, author bells, all-follower/reaction channels and digest/email
 support remain with their existing foundation tasks. Do not expose unsupported
 controls or mark those tasks complete from this P1 implementation.

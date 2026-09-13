@@ -67,6 +67,17 @@ const invalidProof = (error: unknown) =>
 test("export includes only the owner's explicit fields, directory choices and own support submissions", async () => {
   const a = await owner();
   const b = await owner();
+  const notificationChoices = {
+    reportAlerts: false,
+    founderAnnouncements: false,
+    pushCategories: ["replies", "mentions"],
+    quietStart: 1320,
+    quietEnd: 420,
+    quietTimeZone: "America/Chicago"
+  };
+  await db.socialPreferences.create({
+    data: { ownerId: a.user.id, ...notificationChoices }
+  });
   const ownPost = await db.platformPost.create({
     data: { authorId: a.user.id, content: "Export own post marker" }
   });
@@ -172,6 +183,9 @@ test("export includes only the owner's explicit fields, directory choices and ow
   );
   const data = JSON.parse(content);
   assert.equal(data.account.email, a.user.email);
+  assert.equal(data.socialPreferences.length, 1);
+  for (const [key, value] of Object.entries(notificationChoices))
+    assert.deepEqual(data.socialPreferences[0][key], value, key);
   assert.equal(data.posts.length, 1);
   assert.equal(data.comments.length, 1);
   assert.equal(data.likes[0].postId, otherPost.id);

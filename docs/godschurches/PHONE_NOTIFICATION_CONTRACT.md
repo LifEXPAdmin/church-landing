@@ -1,5 +1,46 @@
 # Phone notification contract
 
+## Comment reply and mention extension — 13 September 2026
+
+The comment service now adds a single `COMMENT_ACTIVITY` recipient intent alongside
+its existing canonical comment/mention events. It reuses SocialEvent, the existing
+device outbox, native queue, exact command receipts and source resolver. There is
+no message-body copy, new table, provider or runtime dependency. A comment has at
+most seven immediate candidates: five selected mentions, its personal post owner
+and its personal parent-comment owner. Self-notifications are excluded; church
+publishers are not inferred to be recipients for the church's public identity.
+
+Phone categories `replies` and `mentions` are separate explicit opt-ins, initially
+off. Enable notifications retains its existing message/request defaults. An active,
+currently permitted mention takes the mention category; otherwise a qualifying
+personal reply takes the reply category. The same comment never creates a second
+recipient intent merely because both apply. Creation, delivery and opening recheck
+the canonical post/comment, church access and personal/church speaker visibility.
+Thread mute and applicable person/church mute or snooze stop optional delivery;
+they do not revoke an otherwise permitted direct link. Removed mentions, deleted
+comments, withdrawal, blocks and lost access cannot reveal unavailable content.
+
+Unchanged edits, receipt retries, later opt-ins and new devices do not backfill old
+alerts. Existing legacy mention events also prevent backfill. A newly selected
+mention is a new recipient event. Delivery retains the existing generic preview,
+quiet hours, lease/backoff limits, device/session revocation and account-bound
+click handling; an available link targets the exact comment. Queue publication
+runs after commit and its failure leaves recoverable intent without undoing a
+successful comment. No application flow promises a heads-up phone pop-up.
+
+The new migration extends only the category allowlist and requires a recipient for
+comment activity; existing preferences and quiet-hour constraints remain intact.
+The account export now includes phone categories, report/founder choices and quiet
+hours. Source comments remain on their posts. A unified Activity inbox, author bells
+and delivery to every thread follower remain separate unfinished scopes.
+
+For an operational pause, the existing push flag stops optional delivery while
+comments remain usable. Preserve the expanded database constraint and users'
+choices during a rollback. The older application cannot save preferences containing
+new category values; use a forward repair for those controls instead of deleting
+opt-ins or downgrading the constraint. Physical comment-alert/tap acceptance remains
+separate from the recipient's observed test-notification receipt below.
+
 ## Recipient phone observation — 13 September 2026
 
 On live 2026.09.13.28, the recipient reports a Chrome notification visible in the

@@ -1,3 +1,18 @@
+## Comment phone alerts — local release candidate, 13 September 2026
+
+The existing comment and outbox services now connect opt-in personal replies and
+selected mentions to exact comment links. Duplicate recipient reasons, retries,
+edits and legacy mentions cannot backfill old alerts. Current source access and
+thread/person/church controls remain authoritative. Account export now includes
+saved phone and quiet-hour choices. One constraint migration preserves existing
+preference rows; no new table or runtime dependency is added.
+
+Twenty-eight focused notification checks and eighteen final comment/social checks
+pass, including legacy mentions. Types and scoped lint pass; the full release and
+browser gates remain pending. This candidate is not
+live: production remains 2026.09.13.28 / d0549cf. Broader Activity, author bells,
+all-follower delivery, founder appointment and physical-device acceptance stay open.
+
 ## Notification recovery checkpoint — 13 September 2026
 
 Six real worker-interruption/restart checks and seventeen existing notification

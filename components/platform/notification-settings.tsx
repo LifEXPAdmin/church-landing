@@ -25,7 +25,9 @@ const labels: Record<NotificationCategory, string> = {
   messages: "Personal messages and replies",
   requests: "Contact requests and acceptances",
   reports: "Reports within your reviewer access",
-  founder: "Founder announcements"
+  founder: "Founder announcements",
+  replies: "Replies to your posts and comments",
+  mentions: "Mentions in comments"
 };
 const categories = Object.keys(labels) as NotificationCategory[];
 const endpoint = "/api/platform/notifications";
@@ -271,24 +273,31 @@ export function NotificationSettings({ owner }: { owner: string }) {
                   className="rounded-lg border border-gc-divider p-3"
                 >
                   <legend>{labels[category]}</legend>
-                  <label className="flex min-h-11 items-center gap-3">
-                    <input
-                      type="checkbox"
-                      checked={fields.inApp[category]}
-                      onChange={(event) =>
-                        change({
-                          ...fields,
-                          inApp: {
-                            ...fields.inApp,
-                            [category]: event.target.checked
-                          }
-                        })
-                      }
-                    />
-                    {category === "founder"
-                      ? "Receive founder announcements"
-                      : "In-app alerts"}
-                  </label>
+                  {category !== "replies" && category !== "mentions" ? (
+                    <label className="flex min-h-11 items-center gap-3">
+                      <input
+                        type="checkbox"
+                        checked={fields.inApp[category]}
+                        onChange={(event) =>
+                          change({
+                            ...fields,
+                            inApp: {
+                              ...fields.inApp,
+                              [category]: event.target.checked
+                            }
+                          })
+                        }
+                      />
+                      {category === "founder"
+                        ? "Receive founder announcements"
+                        : "In-app alerts"}
+                    </label>
+                  ) : (
+                    <p className="text-sm text-gc-muted">
+                      Comments remain available on their post. Mute a
+                      conversation there to stop its phone alerts.
+                    </p>
+                  )}
                   <label className="flex min-h-11 items-center gap-3">
                     <input
                       type="checkbox"

@@ -587,6 +587,12 @@ export async function downloadAccountExport(
           contactRequests: true,
           requestAlerts: true,
           messageAlerts: true,
+          reportAlerts: true,
+          founderAnnouncements: true,
+          pushCategories: true,
+          quietStart: true,
+          quietEnd: true,
+          quietTimeZone: true,
           showRelationships: true,
           version: true,
           updatedAt: true

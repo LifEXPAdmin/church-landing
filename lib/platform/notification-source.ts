@@ -8,6 +8,7 @@ import {
 } from "./community-report-review";
 import { reportReviewHref } from "./community-report-types";
 import type { NotificationCategory } from "./notification-preferences";
+import { commentNotificationSource } from "./comment-notification-source";
 type Tx = Prisma.TransactionClient;
 export type NotificationSource = {
   category: NotificationCategory | "test";
@@ -40,6 +41,8 @@ export async function notificationSource(
           group: event.id
         }
       : null;
+  if (event.kind === "COMMENT_ACTIVITY")
+    return commentNotificationSource(tx, event, delivery);
   if (event.kind === "REPORT_RECEIVED" && event.reportId) {
     const authority = await reportReviewAuthority(
       tx,

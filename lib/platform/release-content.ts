@@ -108,9 +108,9 @@ export const features: Feature[] = [
     category: "Getting started",
     name: "Optional phone notifications",
     description:
-      "Choose phone alerts with private previews, quiet hours and a test you control.",
+      "Choose phone alerts for messages, replies and mentions, with private previews, quiet hours and a test you control.",
     steps:
-      "Open Settings > Notifications > Availability and delivery. Choose Enable notifications, then allow your browser's request. Set your categories and quiet hours, and choose Send me a test notification. On iPhone, first add the app to your Home Screen using the installation help.",
+      "Open Settings > Notifications > Availability and delivery. Choose Enable notifications, then allow your browser's request. Replies to your posts and comments and Mentions in comments have separate phone choices. Mute an individual conversation on its post. Set quiet hours or choose Send me a test notification. On iPhone, first add the app to your Home Screen using the installation help.",
     href: "/platform/settings/notifications/availability",
     eligibility:
       "Eligible verified adult accounts and a supported browser with delivery available. Permission is requested only after your tap. Provider acceptance does not prove your phone displayed an alert. Signing out or switching accounts removes the old association; in-app messages remain available without push.",
@@ -495,6 +495,22 @@ export const features: Feature[] = [
   }
 ];
 export const releases: ReleaseEntry[] = [
+  {
+    id: "reply-and-mention-phone-alerts",
+    version: "2026.09.13.29",
+    date: "2026-09-13",
+    summary: "Optional phone alerts for replies and mentions in comments.",
+    added: [
+      "Choose separate phone alerts for replies to your personal posts and comments, and for selected mentions."
+    ],
+    improved: [
+      "Comment alerts respect quiet hours, conversation mute, current source access and your phone choices. Tapping an available alert opens its exact comment."
+    ],
+    fixed: [
+      "A reply that also mentions you creates one alert intent. Edits and retries do not backfill old alerts, and your account export includes saved notification and quiet-hour choices."
+    ],
+    featureIds: ["phone-notifications"]
+  },
   {
     id: "bounded-community-feed",
     version: "2026.09.13.28",
