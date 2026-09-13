@@ -1,8 +1,9 @@
 # Founder welcome and reply contract
 
-13 September 2026 — implemented and verified locally. Actual founder identity,
-scoped reviewer appointment, operational retention gates and deployment activation
-remain open. The approved sole-reviewer and retention decisions are already settled.
+13 September 2026 — published and verified in isolated fixtures. Retention and
+independent phone operations are enabled. Actual authenticated founder identity
+and scoped appointment still gate welcome/report activation. The approved
+sole-reviewer and retention decisions are already settled.
 
 ## New accounts and canonical messages
 

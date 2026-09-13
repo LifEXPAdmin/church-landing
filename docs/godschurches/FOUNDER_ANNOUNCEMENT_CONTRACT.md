@@ -1,7 +1,8 @@
 # Founder announcement contract
 
-13 September 2026 — local implementation. Founder identity, scoped appointment,
-retention/restoration operations, integrated release and activation remain open.
+13 September 2026 — published and verified in isolated fixtures. Retention,
+restoration and release gates passed. Actual authenticated founder identity and
+scoped appointment still gate activation; no production announcement was sent.
 
 ## Deliberate founder controls
 

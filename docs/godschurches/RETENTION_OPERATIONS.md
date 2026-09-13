@@ -1,7 +1,8 @@
 # Retention and restoration operations
 
-13 September 2026 — implemented and verified locally. Production activation and
-the current backup-expiry/provider receipts remain separate release gates.
+13 September 2026 — production cleanup is enabled; secured inspection and a
+bounded maintenance run passed with zero candidates or failures. Actual protected
+provider and backup/restore checks passed. See [the release receipt](MESSAGING_RETENTION_REPORT.md).
 The approved [policy](MESSAGING_RETENTION_POLICY.md) controls all periods; no
 repeat owner policy or second-reviewer approval is required.
 

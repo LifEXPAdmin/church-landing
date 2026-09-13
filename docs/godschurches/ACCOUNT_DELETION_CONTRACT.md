@@ -56,9 +56,9 @@ deadlines. Restore-time proof rotation is confined to a quarantined local copy;
 ordinary live requests keep immutable scope and credentials. A completion recorded
 after the backup retains its protected original date during replay.
 
-`ACCOUNT_DELETION_ENABLED` remains off until operating procedures, provider
-acceptance and the integrated release gate pass. The account control also requires
-configured protected storage. The progress endpoint remains available if intake
+`ACCOUNT_DELETION_ENABLED` is enabled in 2026.09.13.27 after the operating,
+protected-storage and integrated release gates passed. The account control also
+requires configured protected storage. No real account was erased during release. The progress endpoint remains available if intake
 is later paused. See [the implementation receipt](MESSAGING_RETENTION_REPORT.md)
 for actual verification and remaining deployment limits; a contract is not a
 claim that a production cleanup job has run.

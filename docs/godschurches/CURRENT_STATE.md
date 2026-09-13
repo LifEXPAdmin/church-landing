@@ -1,5 +1,24 @@
 ## Backup expiry and protected recovery — 13 September 2026
 
+## Messaging and phone capabilities live — 13 September 2026
+
+**2026.09.13.27 / 396eb12** is READY on
+`dpl_3Q6xNxLBB3BD9YJkHcJEnnSDNr52`, with canonical alias and serving identity
+verified. Phone controls, permanent closure and retention cleanup are enabled.
+The deployed key pair, native queue and two secured maintenance runs pass; they
+created no application messages, welcomes, grants or erasures. All 42 migration
+checksums and 81 original-table column fingerprints match. The full gate passes
+103 files / 662 executions with two expected skips, plus 20 final isolated browser
+groups and 11 read-only live groups. See [the release receipt](MESSAGING_RETENTION_REPORT.md).
+
+Founder/report intake remains paused for the actual authenticated founder
+appointment, since the prepared browser remains signed out. Existing approval
+of sole review and retention is settled. Published welcome/reply/announcement
+controls passed isolated checks; physical-phone and actual Web Push acceptance
+remain open. Backup expiry has a verified local daily job, requiring an awake,
+logged-in operator workstation. Continue independent eligible work after this
+checkpoint and preserve parent/owner acceptance.
+
 ## Messaging, retention and phone release gate — 13 September 2026
 
 The complete release gate passes: 103 discovered files, 662 passing executions,

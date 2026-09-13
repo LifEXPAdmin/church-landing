@@ -3,16 +3,23 @@
 Settings must distinguish event records, saved conversation choices and delivered
 notifications. `SocialEvent` explicitly stores canonical intents without copied
 text or recipient preferences; it is not a notification queue. The existing
-comment service writes COMMENT_CREATED and COMMENT_MENTIONED intents. There is
-no current category preference, notification inbox, outbox, quiet-hours or digest
-service. No in-app, push or SMS channel may be presented as enabled by those rows.
+comment service writes COMMENT_CREATED and COMMENT_MENTIONED intents; those
+particular categories still have no delivery integration. The published P1 owner
+now adds canonical adult message/request/report/founder preferences, authorized
+in-app projections, an idempotent device outbox and timezone-aware quiet hours.
+See [the phone contract](PHONE_NOTIFICATION_CONTRACT.md) and
+[the verified release](MESSAGING_RETENTION_REPORT.md). Saved preferences do not
+grant contact/reviewer authority or establish physical delivery. SMS, optional
+social email, digests and unrelated source categories remain unavailable.
 
 | Category | Existing source / sending capability | Current channel and control |
 | --- | --- | --- |
 | Replies and mentions | `comment-commands.ts` creates comment/mention intents; `ConversationPreference` stores DEFAULT/FOLLOW/MUTE per owner/post with versions. | No delivered notification channel. Per-conversation choices remain editable on the post, without claiming inbox/email/push delivery. |
 | Likes | Existing desired-state post/comment reactions. | No notification sender or category preference; unavailable. |
 | Follows and friendships | Canonical follows and consented invitation relationships. | No notification sender or category preference; unavailable. Friendship confirmation remains its existing signup flow. |
-| Messages | No active direct-messaging capability. | Unavailable; no message, SMS or push switch. |
+| Messages and contact requests | Canonical adult conversation/request services and shared events. | Independent in-app and optional device push choices. New messaging remains paused pending authenticated founder/report coverage; existing history and settings retain current authority. |
+| Report activity | Canonical selected-evidence report/review records. | Separate in-app/push choices; every event and open rechecks current report scope. Intake remains paused pending the actual reviewer appointment. |
+| Founder announcements | Deliberately previewed/sent canonical founder messages to explicitly selected eligible recipients. | Separate announcement opt-out and optional push category. Personal replies remain independent. Actual founder appointment still gates sending. |
 | Church announcements | Existing church-authored posts and source access. | Feed publication only; no announcement notification subscription or sender. |
 | Prayer updates | Current prayer post type and permitted engagement. | No separate notification sender/preference; never infer delivery or ranking from prayer activity. |
 | Events | Existing event/RSVP/volunteer services. | No notification reminder/digest sender; joining an event is not consent to an unimplemented channel. |
@@ -32,14 +39,20 @@ unsubscribe mechanism. They are not preferences for platform posts, church
 announcements, security notices or messages. No preference is copied between
 these scopes.
 
-The activity/preferences/outbox foundation must define recipient eligibility,
-essential versus optional classification, delivery deduplication, current-access
-rechecks, abuse bounds and channel/provider gates before category integration.
-Quiet hours and digests additionally require timezone semantics. The current
-Notifications screen truthfully points to conversation controls and unavailable
-channels; full category on/off summaries remain blocked until actual preference
-and sending capabilities exist.
+`notification-preferences.ts` owns the supported categories and channel summary.
+It shares SocialPreferences versions and exact social receipts with the existing
+contact choices. New phone-category opt-ins require current eligible account and
+provider availability. A denied OS permission is a separate browser state; it
+does not silently change in-app preferences. The explicit Enable action requests
+permission only after a user tap. Settings never offer an email or SMS toggle.
 
-This mapping introduces no new channel, schema, provider activation, subscription
-or outbound message. It records existing code and explicit missing capabilities;
-delivery and physical-device notification acceptance remain separate.
+Quiet-hour start/end minutes use an explicit IANA zone. Overnight, DST gaps and
+repeated boundaries are defined in the phone contract and checked before each
+provider attempt. In-app state remains available during quiet hours. There is no
+undocumented urgent-category exception. The shared settings controller preserves
+unsaved values, version conflicts and exact retries. Founder opt-out never blocks
+personal reply alerts. Source bodies are not copied into delivery records.
+
+Broader grouped activity, author bells, comment/reaction channels and digest/email
+support remain with their existing foundation tasks. Do not expose unsupported
+controls or mark those tasks complete from this P1 implementation.

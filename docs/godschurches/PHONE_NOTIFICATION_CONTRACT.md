@@ -1,8 +1,9 @@
 # Phone notification contract
 
-13 September 2026 — local implementation; production configuration, deployed
-queue acceptance and physical-device observation remain open. Isolated browser
-integration is verified; it does not establish real push delivery.
+13 September 2026 — published and enabled in 2026.09.13.27. Server key validation,
+native queue acceptance and secured maintenance passed. Actual Web Push provider
+acceptance and physical-device observation remain open. See
+[the release receipt](MESSAGING_RETENTION_REPORT.md).
 
 ## Sources and access
 
@@ -127,3 +128,8 @@ increased text size. The latest focused worker/subscription/outbox/session run
 passes seventeen tests; the preceding broader UI/account regression run passes
 thirty-three. Production build and runtime-trace checks pass. Provider acceptance,
 real phone delivery, founder integration and restoration remain separate gates.
+
+The final built notification suite now passes eight groups, including an incoming
+notification while the shared post composer is dirty. Text remains until saved;
+then closing the composer and following the notice rechecks the source. Founder,
+announcement and permanent-closure browser suites bring this batch to 20 groups.

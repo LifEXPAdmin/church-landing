@@ -1,5 +1,43 @@
 # Messaging retention implementation
 
+## Verified publication and independent activation — 13 September 2026
+
+Product **2026.09.13.27**, application
+`396eb127f80f3d55f12d2523d3baf7216f603087`, is live on READY deployment
+`dpl_3Q6xNxLBB3BD9YJkHcJEnnSDNr52`. The independently read canonical-domain
+assignment and serving release match. All 42 migration checksums match; the six
+additions preserved every original column across 81 existing tables.
+
+Phone notifications, permanent account-deletion intake and retention maintenance
+are enabled. The deployed VAPID pair validates and its public fingerprint matches
+the securely installed configuration. One private-queue probe returned a provider
+receipt and a successful native consumer invocation, without an application row
+or phone send. Secured retention and notification maintenance both returned
+success: zero candidates, failures, messages, announcements, account purges or
+revocations. Unauthorized maintenance and external queue calls were denied.
+The actual schedules are registered; these were deliberate operational runs,
+not a claim that a later scheduled invocation has already occurred.
+
+Eleven read-only live browser/HTTP groups pass with zero browser errors or writes.
+The activation deployment has no error-level runtime rows in the inspected window.
+Both Vercel builds pass clean 141-trace checks. The complete isolated gate and
+20 final browser groups are recorded below. Backup expiry uses the verified daily
+operator job with a 28-day threshold and requires an awake, logged-in workstation.
+
+Founder/report intake remains off: the owner's normal browser is signed out, so
+no authenticated founder identity or reviewer grant has been established. The
+approved welcome, explicit reply, filters and deliberate announcement controls
+are published and verified in isolated fixtures. No welcome backfill, production
+message or announcement was sent. Actual Web Push acceptance and Android/iPhone
+lock-screen delivery require a recipient-initiated device test. Parent, broader
+moderation/category expansion and owner acceptance remain open.
+
+Visible entry points: [Notifications](https://godschurches.com/platform/settings/notifications/availability),
+[account deletion](https://godschurches.com/platform/settings/data/delete),
+[patch notes](https://godschurches.com/platform/releases/private-message-and-notification-controls),
+[Explore](https://godschurches.com/platform/features) and
+[privacy](https://godschurches.com/privacy). Sign in normally to use private controls.
+
 ## Integrated verification — 13 September 2026
 
 The complete support release gate passes all 103 discovered test files: 664
