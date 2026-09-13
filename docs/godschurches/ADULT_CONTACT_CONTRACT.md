@@ -3,10 +3,10 @@
 Implementation contract · 12 September 2026
 
 This defines the authorized profile-first adult messaging slice after inspecting
-the current account, relationship, settings and reporting owners. It does not
-claim runtime messaging support or owner-approved legal retention policy.
-The current reporting foundation is verified live; see
-[its receipt](COMMUNITY_REPORTING_REPORT.md).
+the current account, relationship, settings and reporting owners. The integrated
+implementation is published with new intake paused for actual reporting and
+retention operations; see [the current receipt](ADULT_MESSAGES_REPORT.md).
+No owner-approved legal retention period or operational activation is implied.
 
 ## Scope and existing owners
 
@@ -172,7 +172,7 @@ Unconfirmed read commands retain their exact receipt and use bounded backoff.
 
 ## Deletion, selected evidence and operational boundary
 
-Delete/clear for me, when its UI is implemented, advances only that participant's
+Clear for me advances only that participant's
 hidden-through sequence. It does not erase the other participant's message or
 retract content they already received. Archive is not clear-for-me. New messages
 after the marker can appear; old messages do not reappear from reconnect or
@@ -220,8 +220,9 @@ the Settings registry held an unavailable `future.messages` row. The verified
 service milestone now extends the existing `SocialPreferences` with a distinct
 request audience and adds canonical requests and two-person conversation
 membership. The request UI uses `privacy.messages` and the same Settings shell.
-See [the implementation receipt](ADULT_CONTACT_REPORT.md) for its current local
-and release status. Text history and in-app indicators remain the next slice.
+See [the implementation receipt](ADULT_CONTACT_REPORT.md) for current release
+status. Persisted text history and scoped in-app indicators use this same
+contract; broader notification delivery remains separate unfinished work.
 
 | Choice | Authority and persistence | Effective behavior |
 | --- | --- | --- |

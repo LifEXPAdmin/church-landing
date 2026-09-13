@@ -1,5 +1,16 @@
 # Private reporting implementation receipt
 
+## Selected contact/message evidence integration live — 13 September 2026
+
+Product `2026.09.13.25` / `824070e` adds participant-checked request/message
+targets, selected-message navigation and contextual forms through the same
+case and reviewer boundary. No unrelated history is exposed. See
+[the integrated release receipt](ADULT_MESSAGES_REPORT.md) for the passing
+90-file gate, browser/live checks and 36-migration production state.
+Actual report intake stays paused for reviewer coverage and retention/erasure
+operations; no report, decision or reviewer grant was created. Broader source
+enforcement, worklist, appeals and operational acceptance remain unfinished.
+
 ## Verified live release — 12 September 2026
 
 Product `2026.09.12.24`, application

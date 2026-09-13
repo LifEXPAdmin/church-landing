@@ -1,5 +1,52 @@
 # Adult message implementation receipt
 
+## Integrated release verified live — 13 September 2026
+
+Product `2026.09.13.25`, application
+`824070e64e3dd89416cb9c3a6507f1619966ebb4`, is READY in
+`dpl_DFX5KzVgzZATBktGrAzRRChqv6Qe`. The independent `godschurches.com`
+alias and serving endpoint match. The profile/request/inbox/history interface,
+contact choices, personal conversation controls, selected reporting and scoped
+in-app activity are published. New report/contact/message intake remains paused
+pending real reviewer coverage, independent escalation/recovery and retention/
+erasure operations. Publication does not establish operational activation.
+
+The complete release gate passes all 90 discovered test files: 592 executions,
+590 passes, zero failures and two development-only delivery skips in the
+production phase. Types/build and 130 runtime traces pass; lint has zero errors
+and 37 existing QA warnings. The earlier 41 message/contact browser groups pass,
+and nine post-action/comment-reader groups pass on the final built candidate.
+Seven canonical live read-only groups pass with zero application write requests
+or browser errors. Scoped deployment error/fatal logs each contain zero rows.
+These are automated checks, not new physical-device or real-message evidence.
+
+The first full gate stopped at an assertion written before dynamic conversation
+routes existed. Ownership remains enforced by the message service. Review also
+found trailing-slash account returns could retain unrelated search text; the
+return filter now treats them like canonical routes. Both navigation files pass
+17 checks, followed by the complete successful gate above. Unknown conversation
+IDs still grant no history or sending permission.
+
+The encrypted PostgreSQL 17 backup restored and rehearsed all three additive
+migrations before production application. Production now has 36 completed,
+checksum-matching migrations. Original-column fingerprints across all 77 existing
+tables match before and after migration. Requests, conversations, messages,
+personal conversation states, message activity events, reports, decisions and
+report-reviewer grants remain zero. Existing contact preferences default to
+NOBODY. No user-content write or derived association was created by release.
+
+The implementation adds no runtime dependency, background worker or duplicated
+message-body store. History and inbox remain bounded; only scalar activity is
+read from global navigation. No production speed improvement is claimed.
+Broader activity delivery, contextual contact adapters, optional presence/read
+receipts, moderation operations, parent integration and owner acceptance remain
+open. Earlier local-only milestones below are superseded by this release receipt.
+
+[Messages](https://godschurches.com/platform/messages) ·
+[Contact choices](https://godschurches.com/platform/settings/privacy/messages) ·
+[Release notes](https://godschurches.com/platform/releases/private-messages-and-contact-choices) ·
+[Explore features](https://godschurches.com/platform/features).
+
 ## Integrated interface verified locally — 13 September 2026
 
 Messages now occupies the mobile and desktop navigation slot, while Home and

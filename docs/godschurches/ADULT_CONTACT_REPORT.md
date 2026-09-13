@@ -1,5 +1,23 @@
 # Adult contact implementation receipt
 
+## Integrated contact and Messages release verified live — 13 September 2026
+
+The request/preference service and interface, profile Message/resume, canonical
+accepted conversation, persisted text, personal controls and in-app activity are
+published in product `2026.09.13.25`, application `824070e`, READY deployment
+`dpl_DFX5KzVgzZATBktGrAzRRChqv6Qe`. The independent canonical alias matches.
+All 90 discovered test files pass; 41 message/contact browser groups and nine
+final shared-browser regressions pass. Seven read-only live groups pass with
+zero writes/errors. Three additive production migrations preserve all 77
+existing tables and bring the verified migration history to 36. See
+[the complete release receipt](ADULT_MESSAGES_REPORT.md).
+
+New intake remains paused for actual reporting coverage and retention/erasure
+operations. No real request, conversation, message or reviewer grant was created.
+Later contextual entry points, broader notifications and parent/owner acceptance
+remain open. The historical local-only statements below are superseded by this
+release, without replacing prior physical-phone observations.
+
 ## Request and preference interface verified locally — 12 September 2026
 
 The shared contact workspace now provides received/sent lists, private request

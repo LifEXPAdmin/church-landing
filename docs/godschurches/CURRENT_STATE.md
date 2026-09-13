@@ -1,3 +1,23 @@
+## Contact and Messages implementation verified live — 13 September 2026
+
+Product `2026.09.13.25`, application `824070e64e3dd89416cb9c3a6507f1619966ebb4`,
+is READY in `dpl_DFX5KzVgzZATBktGrAzRRChqv6Qe`; independent canonical alias
+and serving checks match. All 90 discovered test files pass (590 passes, zero
+failures, two expected production-phase skips), along with 41 message/contact
+browser groups, nine final shared-browser regressions and seven live read-only
+groups. Production has 36 matching migrations; all 77 existing tables are
+preserved. Live writes, browser errors and scoped runtime error/fatal rows are
+zero. See [the full receipt](ADULT_MESSAGES_REPORT.md).
+
+The implemented interface and services are published; new report/contact/message
+intake remains paused for actual reviewer coverage, escalation/recovery and
+retention/erasure operations. No real messaging record or reviewer grant was
+created. The next coherent work is the remaining scoped moderation/reviewer
+workflow and its operational acceptance. Broader activity delivery, contextual
+contact adapters, optional presence/read receipts, Beacon's legitimate claim/
+management workflow and parent/owner acceptance remain open. Preserve earlier
+physical-phone observations separately from automated browser results.
+
 ## Integrated Messages interface verified locally — 13 September 2026
 
 The profile/request/inbox/conversation interface now uses the verified contact,
