@@ -1,3 +1,22 @@
+## Founder activation and comment alerts — live, 13 September 2026
+
+**2026.09.13.29 / 5685e4a** is READY on
+`dpl_6iL7cTcVD9p3eVSrCY1tzGby9gdx`, with independent canonical alias and
+serving identity verified. Opt-in comment replies/mentions are live, along with
+new-account founder welcomes and scoped reporting after the authenticated owner
+appointment. Actual founder inbox/filter, announcement and reviewer controls load.
+One report-review grant and one audit were applied; no messages, welcomes,
+announcements, backfill, reports, erasures or assistant phone sends were created.
+
+The uninterrupted 105-file gate passes 676 checks with two expected skips; nine
+final isolated phone browser groups and thirteen read-only live groups pass.
+All 43 migrations match and 92 original tables' data is preserved. Encrypted
+restore/replay, refreshed private backup registry, 15-set expiry inspection and
+both deployed maintenance runs pass. See [the release receipt](MESSAGING_RETENTION_REPORT.md).
+Broader Activity, source enforcement/appeals, remaining recovery/capacity and
+physical-device/owner acceptance stay open. Continue the eligible queue after this
+checkpoint; preserve the recipient-observed Chrome shade receipt.
+
 ## Comment phone alerts — local release candidate, 13 September 2026
 
 The existing comment and outbox services now connect opt-in personal replies and

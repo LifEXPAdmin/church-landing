@@ -1,9 +1,10 @@
 # Founder welcome and reply contract
 
-13 September 2026 — published and verified in isolated fixtures. Retention and
-independent phone operations are enabled. Actual authenticated founder identity
-and scoped appointment still gate welcome/report activation. The approved
-sole-reviewer and retention decisions are already settled.
+13 September 2026 — enabled in 2026.09.13.29 after authenticated founder
+identity, restricted scoped appointment and operational checks. The approved
+sole-reviewer and retention decisions are settled. See [the activation receipt](MESSAGING_RETENTION_REPORT.md).
+No existing-account backfill or production test welcome was sent; actual
+conversation/physical-device acceptance remains separate.
 
 ## New accounts and canonical messages
 

@@ -1,5 +1,16 @@
 # Private reporting implementation receipt
 
+## Authenticated reviewer activation — 13 September 2026
+
+The approved sole initial reviewer is now verified through the authenticated own
+profile and stable eligible application ID. Restricted maintenance applied one
+REVIEW_COMMUNITY_REPORTS grant and one audit; the real authorized queue loads.
+Scoped intake is enabled in 2026.09.13.29 / 5685e4a after retention/restore and
+release verification. No actual report, decision or message was created. Current
+scopes and selected evidence remain enforced; enforcement/appeal and parent
+acceptance stay open. See [the activation receipt](MESSAGING_RETENTION_REPORT.md).
+This supersedes historical pending-appointment statements below.
+
 ## Scoped report review verified live — 13 September 2026
 
 Product `2026.09.13.26`, application

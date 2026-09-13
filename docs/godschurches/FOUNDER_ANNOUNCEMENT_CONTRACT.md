@@ -1,8 +1,9 @@
 # Founder announcement contract
 
-13 September 2026 — published and verified in isolated fixtures. Retention,
-restoration and release gates passed. Actual authenticated founder identity and
-scoped appointment still gate activation; no production announcement was sent.
+13 September 2026 — founder controls are enabled in 2026.09.13.29 after
+authenticated identity, scoped appointment and operational checks. The real founder
+page loads with sending available; no production announcement was prepared or sent.
+See [the activation receipt](MESSAGING_RETENTION_REPORT.md).
 
 ## Deliberate founder controls
 

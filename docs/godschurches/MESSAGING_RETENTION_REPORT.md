@@ -1,5 +1,59 @@
 # Messaging retention implementation
 
+## Founder activation and comment alerts live — 13 September 2026
+
+Product **2026.09.13.29**, application
+`5685e4afabbc8914a474bd421ffb0210b431c860`, is READY on
+`dpl_6iL7cTcVD9p3eVSrCY1tzGby9gdx`; the independent canonical alias and
+serving release match. Opt-in replies/mentions now use the existing comment and
+outbox services. Founder welcomes for eligible new accounts and scoped reporting
+are enabled. The authenticated owner's own profile was reconciled to the stable
+eligible application identity before one restricted report-review grant and one
+audited appointment were applied. No other privilege was granted. Identity and
+authorization evidence remain in private operations.
+
+The real signed-in founder inbox shows Welcome replies, Unanswered, Sent welcomes
+and Announcements. The actual authorized review queue and announcement controls
+load without an access or operational-pause error. These are live read-only UI
+checks; no real welcome, message, announcement, report, backfill, account erasure
+or assistant-initiated phone notification was sent. Production contains one active
+review grant, no conversations/messages/reports/welcomes/campaigns, one active
+device and the two previously accepted recipient test deliveries.
+
+The full uninterrupted gate passes 105 files: 676 passes, zero failures and two
+expected skips, including real worker interruption, retry ownership and protected
+restoration. Nine final isolated phone-settings/browser groups pass with zero
+errors and provider sends. The navigation fixture now keeps its synthetic
+permission counter across page loads; this corrected a test-only false failure.
+The subsequent Explore wording passes two content checks and scoped lint; the
+actual Vercel build passes 141 clean runtime traces. Thirteen read-only live groups
+pass with no browser errors or writes, and the inspected runtime error window is
+clear. Earlier founder browser acceptance remains recorded below; it was not
+relabelled as a new physical test.
+
+The one constraint-only migration is applied: all 43 checksums match and original
+column fingerprints across 92 tables are unchanged. The encrypted production copy
+restored through 42 to 43 with protected deletion replay before migration. The
+private daily operator's checksum registry now contains 43 entries; expiry checks
+15 verified sets with no issues or removals. An awake, logged-in workstation is
+still required. Secured deployed notification and retention maintenance pass with
+zero failures, pending work, sends or erasures; the original VAPID fingerprint and
+device binding are preserved. Public queue/maintenance requests remain denied.
+
+The recipient's Chrome notification-shade observation is preserved separately
+below. Locked-phone display, tap into a real conversation, reply/account-switch
+and iPhone acceptance remain open. Broader grouped Activity, author bells,
+thread-follower delivery, moderation enforcement/appeals and parent/owner
+acceptance are not completed by this release. Founder announcements still require
+a deliberate selected-recipient preview/send; no bulk send or old-account welcome
+backfill is authorized by activation.
+
+[Phone preferences](https://godschurches.com/platform/settings/notifications) ·
+[Messages](https://godschurches.com/platform/messages) ·
+[Founder announcements](https://godschurches.com/platform/messages/announcements) ·
+[Review queue](https://godschurches.com/platform/reports/review) ·
+[Patch notes](https://godschurches.com/platform/releases/reply-and-mention-phone-alerts).
+
 ## Phone receipt reported — 13 September 2026
 
 The recipient reports the live Chrome test notification appearing in the phone's
