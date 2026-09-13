@@ -79,9 +79,15 @@ OIDC uses the existing project. `CRON_SECRET` protects maintenance. No paid mess
 vendor or new database is required. Local tests inject queue/provider transports and
 must never publish to a real Vercel queue inadvertently.
 
-Before enabling production: verify the deployed trigger and cron, reviewer access,
-VAPID configuration, device and permission UI, logout/account-switch behavior,
-restoration cancellation and the integrated welcome/message journey. Keep actual
+Before enabling production push: verify the deployed trigger and cron, VAPID
+configuration, device and permission UI, logout/account-switch behavior and
+restoration cancellation. Secured maintenance `?mode=inspect` is read-only and
+returns configuration availability, a fingerprint of the public VAPID key and
+aggregate device/pending counts; it never exposes subscription material.
+Reviewer access separately gates new contact, message sending and founder
+welcomes. Independent settings and recipient-initiated tests can operate while
+that access is being established. Verify the integrated welcome/message journey
+with a currently authorized founder before claiming it live. Keep actual
 Android and iPhone installation, permission and lock-screen delivery checks open
 until an owner observes them. The existing installation help and safe update notice
 remain the owners of installation instructions and preserving unsaved work.

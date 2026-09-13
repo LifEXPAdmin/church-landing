@@ -11,6 +11,8 @@ import {
   notificationWrite
 } from "./notification-outbox";
 import { dispatchNotifications, type QueuePublish } from "./notification-queue";
+import { createHash } from "node:crypto";
+import { pushServerConfig } from "./push-config";
 export async function handleNotificationMaintenance(
   db: PrismaClient,
   request: Request,
@@ -19,7 +21,37 @@ export async function handleNotificationMaintenance(
 ) {
   const rejected = maintenanceRequestError(request);
   if (rejected) return rejected;
+  const mode = new URL(request.url).searchParams.get("mode");
+  if (mode && mode !== "inspect")
+    return Response.json(
+      { error: "Choose inspection or the maintenance run." },
+      { status: 400, headers }
+    );
   try {
+    if (mode === "inspect") {
+      const config = pushServerConfig();
+      const [devices, pending] = await Promise.all([
+        db.pushSubscription.count({
+          where: { revokedAt: null, expiresAt: { gt: new Date() } }
+        }),
+        db.notificationDelivery.count({ where: { state: { not: "FINISHED" } } })
+      ]);
+      return Response.json(
+        {
+          mode,
+          configured: !!config,
+          publicKeyFingerprint: config
+            ? createHash("sha256")
+                .update(config.publicKey)
+                .digest("hex")
+                .slice(0, 16)
+            : null,
+          devices,
+          pending
+        },
+        { headers }
+      );
+    }
     const cleanup = await notificationWrite(db, async (tx) => ({
       ...(await cleanNotificationRecords(tx)),
       announcementDiagnosticsRemoved: await cleanFounderAnnouncements(tx)

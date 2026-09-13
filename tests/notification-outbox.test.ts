@@ -30,6 +30,7 @@ import {
 import { relationshipCommand } from "../lib/platform/relationships";
 import { SESSION_COOKIE } from "../lib/platform/account-boundary";
 import { accountConfig } from "../lib/platform/account-config";
+import { handleNotificationMaintenance } from "../lib/platform/notification-maintenance";
 const db = new PrismaClient();
 const names = [
   "PUSH_ENABLED",
@@ -63,6 +64,87 @@ const mutation = (operation: string, fields: Record<string, unknown> = {}) => ({
   operation,
   mutationId: randomUUID(),
   ...fields
+});
+test("secured notification inspection verifies configuration without delivery or cleanup writes", async () => {
+  const prior = process.env.CRON_SECRET;
+  process.env.CRON_SECRET = randomBytes(32).toString("hex");
+  const request = (mode = "inspect", auth = true, method = "GET") =>
+    new Request(
+      `https://example.test/api/maintenance/notifications?mode=${mode}`,
+      {
+        method,
+        headers: auth
+          ? { authorization: `Bearer ${process.env.CRON_SECRET}` }
+          : {}
+      }
+    );
+  let sent = 0;
+  const publish = async () => {
+    sent++;
+  };
+  const snapshot = async () =>
+    JSON.stringify(
+      await Promise.all([
+        db.pushSubscription.findMany({ orderBy: { id: "asc" } }),
+        db.notificationDelivery.findMany({ orderBy: { id: "asc" } }),
+        db.pushDeliveryAttempt.findMany({ orderBy: { id: "asc" } })
+      ])
+    );
+  try {
+    const before = await snapshot();
+    assert.equal(
+      (
+        await handleNotificationMaintenance(
+          db,
+          request("inspect", false),
+          publish
+        )
+      ).status,
+      401
+    );
+    assert.equal(
+      (
+        await handleNotificationMaintenance(
+          db,
+          request("inspect", true, "POST"),
+          publish
+        )
+      ).status,
+      405
+    );
+    assert.equal(
+      (await handleNotificationMaintenance(db, request("invalid"), publish))
+        .status,
+      400
+    );
+    const response = await handleNotificationMaintenance(
+        db,
+        request(),
+        publish
+      ),
+      body = await response.json();
+    assert.equal(response.status, 200);
+    assert.equal(body.configured, true);
+    assert.match(body.publicKeyFingerprint, /^[a-f0-9]{16}$/);
+    assert.equal(body.mode, "inspect");
+    assert.equal(typeof body.devices, "number");
+    assert.doesNotMatch(
+      JSON.stringify(body),
+      /endpoint|privateKey|auth|p256dh/
+    );
+    assert.equal(sent, 0);
+    assert.equal(await snapshot(), before);
+    process.env.PUSH_ENABLED = "false";
+    const disabled = await (
+      await handleNotificationMaintenance(db, request(), publish)
+    ).json();
+    assert.equal(disabled.configured, false);
+    assert.equal(disabled.publicKeyFingerprint, null);
+  } finally {
+    process.env.PUSH_ENABLED = "true";
+    if (prior === undefined) delete process.env.CRON_SECRET;
+    else process.env.CRON_SECRET = prior;
+  }
 });
 async function device(a: Awaited<ReturnType<typeof createPortalActor>>) {
   const pair = createECDH("prime256v1");

@@ -455,6 +455,12 @@ test("welcome and reply use the existing outbox; provider failure never loses or
       welcomeReply: true
     });
     const sent = await adultMessageCommand(db, member.token, input);
+    for (const filter of ["all", "welcome-replies", "unanswered"])
+      assert.ok(
+        (
+          await readAdultMessages(db, founder.token, { filter })
+        ).conversations!.some((c) => c.id === welcome.conversationId)
+      );
     const reply = await db.notificationDelivery.findFirstOrThrow({
       where: { ownerId: founder.id, event: { messageId: sent.id } }
     });
@@ -476,6 +482,24 @@ test("welcome and reply use the existing outbox; provider failure never loses or
       (await openNotification(db, founder.token, reply.id)).href,
       `/platform/messages/${welcome.conversationId}?message=${sent.id}`
     );
+    const retry = await db.notificationDelivery.findUniqueOrThrow({
+      where: { id: reply.id }
+    });
+    const recovered = await deliverNotification(
+      db,
+      reply.id,
+      async (_sub, payload) => {
+        assert.equal(payload.deliveryId, reply.id);
+        assert.doesNotMatch(
+          JSON.stringify(payload),
+          /private welcome reply|Andrew|Fictional/
+        );
+        return 201;
+      },
+      new Date(retry.availableAt.getTime() + 1)
+    );
+    assert.deepEqual(recovered, { done: true, outcome: "accepted" });
+    await assert.rejects(openNotification(db, member.token, reply.id));
   } finally {
     process.env.PUSH_ENABLED = "false";
     for (const k of names)
