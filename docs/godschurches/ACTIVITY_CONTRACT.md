@@ -1,7 +1,7 @@
 # Personal activity and read boundaries
 
-The service foundation and consuming interface are implemented locally on 13
-September 2026. Integrated release verification is running; production is
+The service foundation and consuming interface are verified locally on 13
+September 2026. Publication verification is next; production is
 2026.09.13.30 with 43 migrations, not this 44-migration candidate.
 
 The existing SocialEvent is the canonical intent. Activity adds only its ordered
@@ -83,7 +83,8 @@ church sources, thread/author muting and canonical message read positions.
 Actual isolated dump/restore preserves read state and sequence advancement; the
 older-schema upgrade preserves all 1,408 original event rows and 165 preference
 rows in that fixture. Types and scoped lint pass. The real HTTPS export test was
-not run by the service-only fixture and remains part of the release gate. Failed
+outside that initial service-only fixture and subsequently passed in the full
+production HTTPS release gate below. Failed
 fixture attempts (a missing comment reference, tombstone shape and test-only
 BigInt serialization) were corrected; an unstarted HTTPS fixture was not claimed
 as an application failure or a passing browser test.
@@ -123,3 +124,30 @@ rollback; prefer a forward repair. Before returning to an older runtime that doe
 not inspect Activity read markers, pause optional push delivery to avoid sending
 alerts already marked read. Restore with outbound delivery disabled until the
 existing deletion replay and release authorization checks pass.
+
+## Integrated candidate acceptance — 13 September 2026
+
+All 111 discovered files are covered: 700 passed, zero remaining failures and two
+expected production-phase skips. Both builds, fresh/upgrade migration, synthetic
+backup/restore and real HTTPS process restart passed. Two older raw-row privacy
+assertions needed bigint-aware serialization; the gate retained 72 successful
+files (474 checks) and resumed all 39 unfinished files (226 checks). No runtime
+source changed after the builds. Failed attempts are retained as evidence.
+
+The final complete built-browser run passes twelve groups with no page errors:
+grouping, category/count agreement, pagination, source/detail/Back, individual and
+all-read writes, a lost committed acknowledgement and identical retry, later
+arrival preservation, two-page persistence, conflict concealment, stopping an
+uncertain retry, failed reads/reconnection, focus/visibility recovery, withdrawn
+source concealment and an account switch while an old response is in flight.
+Messages/Menu entry, Explore and release notes work at 320/390/1440-pixel widths.
+The mobile screenshot was inspected. These are isolated Chrome fixtures, not a
+new physical-phone observation or production notification send.
+
+The Activity entry adds 3,654 compressed bytes beyond the compiled Menu entry's
+shared chunks. All 143 runtime traces are clean (14,763 entries, 366 server JS
+files). No runtime dependency, private-body store, new event table or polling
+loop was added. The browser script is `scripts/qa-activity-browser.mjs`; run with
+Node24, the existing isolated HTTPS fixture directory and `NODE_EXTRA_CA_CERTS`
+set to that fixture's certificate. Both browser and intercepted Node requests
+validate that certificate; global TLS verification is never disabled.

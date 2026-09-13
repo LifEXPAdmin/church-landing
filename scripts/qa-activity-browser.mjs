@@ -8,6 +8,11 @@ const dir = process.argv[2];
 assert.ok(dir, "Pass the existing isolated HTTPS preview directory");
 const config = JSON.parse(readFileSync(dir + "/browser-env.json", "utf8"));
 assert.match(config.origin, /^https:\/\/127\.0\.0\.1:\d+$/);
+assert.equal(
+  process.env.NODE_EXTRA_CA_CERTS,
+  config.certificate,
+  "Start Node with NODE_EXTRA_CA_CERTS set to this isolated preview certificate"
+);
 Object.assign(process.env, {
   DATABASE_URL: config.database,
   DIRECT_URL: config.database,
@@ -98,6 +103,13 @@ const total = (n) =>
     .waitFor();
 const rows = () =>
   page.getByRole("list", { name: "Activity updates" }).getByRole("article");
+const rowCount = (count) =>
+  page.waitForFunction(
+    (n) =>
+      document.querySelectorAll('[aria-label="Activity updates"] article')
+        .length === n,
+    count
+  );
 const bounded = async () =>
   assert.ok(
     await page.evaluate(
@@ -165,16 +177,19 @@ try {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.screenshot({
     path: output + "/activity-phone.png",
-    fullPage: true
+    fullPage: false
   });
   ok(
     "Menu keeps QR first; Activity shows twenty grouped updates, names, local timestamps and exact unread counts without source bodies"
   );
 
   await page.getByRole("link", { name: "Older activity", exact: true }).click();
+  await page.waitForURL(/cursor=/);
+  await rowCount(5);
   await total(50);
   assert.equal(await rows().count(), 5);
   await page.goBack();
+  await rowCount(20);
   await total(50);
   assert.equal(await rows().count(), 20);
   await rows().first().getByRole("link", { name: "Open item" }).click();
@@ -228,6 +243,24 @@ try {
     })
     .waitFor();
   assert.equal(new URL(page.url()).pathname, "/platform/activity");
+  await page.evaluate(() => {
+    window.__activityBackSeen = false;
+    window.addEventListener(
+      "popstate",
+      () => {
+        window.__activityBackSeen = true;
+      },
+      { once: true }
+    );
+    history.back();
+  });
+  await page.waitForFunction(
+    () => window.__activityBackSeen && !!history.state?.gcPhotoWork
+  );
+  assert.equal(new URL(page.url()).pathname, "/platform/activity");
+  await page
+    .getByRole("button", { name: "Retry read change", exact: true })
+    .waitFor();
   await page
     .getByRole("button", { name: "Retry read change", exact: true })
     .click();
@@ -274,6 +307,32 @@ try {
   await total(1);
   ok(
     "A terminal read conflict conceals the old view and requires refresh without an optimistic unread change"
+  );
+
+  await page.route("**/api/platform/activity", (route) =>
+    route.request().method() === "POST"
+      ? route.abort("failed")
+      : route.continue()
+  );
+  await page
+    .getByRole("button", { name: "Mark all read", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Stop retrying and refresh", exact: true })
+    .waitFor();
+  await page.unroute("**/api/platform/activity");
+  await page
+    .getByRole("button", { name: "Stop retrying and refresh", exact: true })
+    .click();
+  await total(1);
+  assert.equal(
+    await page
+      .getByRole("button", { name: "Retry read change", exact: true })
+      .count(),
+    0
+  );
+  ok(
+    "Stopping an uncertain retry releases navigation protection and reloads the actual unread state"
   );
 
   await page.route("**/api/platform/activity", (route) =>
@@ -342,6 +401,10 @@ try {
     .getByRole("button", { name: "Refresh activity", exact: true })
     .click();
   await total(1);
+  await rows()
+    .first()
+    .getByRole("heading", { name: "Activity unavailable" })
+    .waitFor();
   assert.equal(
     await rows()
       .first()
@@ -356,12 +419,15 @@ try {
   );
 
   const beforeSwitch = bodies.length;
-  let releaseOldRead, captureOldRead;
+  let releaseOldRead,
+    captureOldRead,
+    oldReadHeld = false;
   const oldReadCaptured = new Promise((resolve) => {
     captureOldRead = resolve;
   });
   await page.route("**/api/platform/activity", async (route) => {
-    await page.unroute("**/api/platform/activity");
+    if (oldReadHeld) return route.continue();
+    oldReadHeld = true;
     const response = await route.fetch();
     releaseOldRead = () => route.fulfill({ response });
     captureOldRead();
@@ -373,6 +439,7 @@ try {
   assert.equal(await rows().count(), 0);
   await signIn(other);
   await releaseOldRead();
+  await page.unroute("**/api/platform/activity");
   await page.getByText("No activity yet.", { exact: true }).waitFor();
   await total(0);
   assert.equal(bodies.length, beforeSwitch);
