@@ -534,7 +534,8 @@ export const releases: ReleaseEntry[] = [
     ],
     fixed: [
       "Reported text stays available only to authorized review for its existing retention period after author removal. Backup recovery preserves removals and pauses for review when it cannot prove a later restoration.",
-      "Read-only demos no longer make an unnecessary account-information request."
+      "Read-only demos no longer make an unnecessary account-information request.",
+      "Signing in from a content-decision link returns to that decision."
     ],
     featureIds: [
       "report-review",

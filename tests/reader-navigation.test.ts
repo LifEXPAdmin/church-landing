@@ -358,3 +358,31 @@ test("Activity account return preserves a supported category and strips another 
     "/platform"
   );
 });
+
+test("content decision sign-in preserves only validated decision navigation", () => {
+  for (const suffix of ["", "/"]) {
+    const path = "/platform/reports/decisions" + suffix;
+    assert.equal(
+      safeAccountReturn(
+        path + "?id=decision_1&after=older_1&ownerId=other&description=private&status=CLOSED&token=secret#private"
+      ),
+      "/platform/reports/decisions?id=decision_1&after=older_1"
+    );
+    assert.equal(
+      new URL(
+        accountEntryHref("login", path + "?id=decision_1", "account"),
+        "https://example.test"
+      ).searchParams.get("next"),
+      "/platform/reports/decisions?id=decision_1"
+    );
+    assert.equal(
+      safeAccountReturn(path + "?id=../other&after=%26token%3Dsecret"),
+      "/platform/reports/decisions"
+    );
+  }
+  for (const path of [
+    "/platform/reports/decisions/arbitrary",
+    "//other.test/platform/reports/decisions",
+    "https://other.test/platform/reports/decisions"
+  ]) assert.equal(safeAccountReturn(path), "/platform");
+});
