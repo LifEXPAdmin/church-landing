@@ -1,33 +1,38 @@
-## Scoped content moderation — local candidate, September 13, 2026
+## Scoped content decisions verified live — September 13, 2026
 
-The existing report and Support services now implement scoped post/comment
-decisions, private author notices and deliberate reconsideration with the actual
-assigned reviewer. Source visibility changes preserve audience, reply permissions,
-closure and author withdrawal. Existing Activity/outbox services carry generic
-decision and reconsideration updates. Ordinary Support intake remains disabled.
-No new grant, table, dependency or copied evidence store is introduced.
+Product **2026.09.13.32**, application
+**2f97a6e6099637d29761e6045a65b2c08490b9d7**, is READY in
+**dpl_8FjUywkCMywNp4AXqb7Jg82bttN5** with independent canonical alias and
+serving identity verified. Existing report, Support and Activity services now
+provide scoped post/comment decisions, safe author explanations and deliberate
+reconsideration with the actual assigned reviewer. Audiences, reply permissions,
+author withdrawal and selected-evidence privacy remain enforced. Ordinary Support
+intake stays disabled; no additional grant or copied evidence store is introduced.
 
-Twenty-seven latest focused checks pass across source restriction/privacy, both reply
-modes, version/retry/revocation, appeals, reported withdrawal, provider-failure
-recovery, last-report purge and batched notification regressions. Earlier foundation
-coverage passed 44 checks. Real fixture image variants, saved/repost and pending
-notification reads also enforce restrictions without copied media. A fresh encrypted
-production-copy upgrade from 44 to 45 preserves all original columns across 92
-tables and passes protected replay, with zero production data changes. Types and
-scoped lint pass. The full gate passes 114 files, 717 checks and two expected
-skips, including fresh/upgrade/restore, both builds and HTTPS restart. Five new
-author/appeal browser groups and eleven existing review groups pass. Final rebuild
-and ordinary Support/demo reruns remain after correcting an unnecessary demo
-account read. Production remains .31 below.
-Candidate migration 45 and product .32 are local only. No real source action,
-appeal, report, message, grant, phone send or erasure was performed. Broader
-integration, escalation and owner acceptance remain open.
+The 114-file gate passes 717 checks and two expected skips, including fresh/
+upgrade/restore, both builds and HTTPS restart. Final browser groups: five author,
+eleven reviewer, eight Support/demo and seven current composer. A live-detected
+sign-in return omission was corrected and passed 34 focused navigation/guest
+checks, a fresh build, 17 isolated guest groups and actual isolated sign-in.
+The final deployment passes 17 read-only live groups and the signed-in author,
+reviewer and assigned inbox reads. Runtime error/fatal rows are zero. See
+[the complete receipt](COMMUNITY_REPORTING_REPORT.md) for exact test boundaries.
 
-See COMMUNITY_REPORTING_CONTRACT.md, SUPPORT_OPERATIONS.md and
-RETENTION_OPERATIONS.md. Next: finish isolated browser/end-to-end checks, refresh
-the protected production-copy recovery/runtime registry, then release only if all
-required gates pass. Preserve the user's observed Chrome phone-shade receipt and
-the remaining locked-phone, conversation-tap/account-switch and iPhone checks.
+All 45 production migration checksums match; all original columns across 92
+tables are preserved. Protected production-copy upgrade/replay passes. The
+installed backup registry and actual daily backup/restore both handle migration
+45; eighteen verified sets have zero expiry issues/removals. Both deployed
+maintenance runs pass with zero pending work, sends, erasures or failures. The
+phone key is unchanged. No actual report, decision, appeal, message, backfill,
+announcement, phone test or additional grant was created during this slice.
+
+The user's Chrome phone-shade receipt remains observed evidence; locked-phone,
+conversation-tap/reply/account-switch and iPhone acceptance remain open. Broader
+account escalation, topic/operator integration and owner acceptance are open.
+Next focused work: their remaining cross-surface acceptance and legitimate
+escalation/recovery coverage, using existing account and Support authority. The
+sole initial reviewer and retention decisions are settled. Preserve compatible
+moderation predicates and control readers during any rollback.
 
 ## Personal Activity verified live — September 13, 2026
 

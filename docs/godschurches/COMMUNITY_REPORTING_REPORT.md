@@ -1,47 +1,76 @@
 # Private reporting implementation receipt
 
-## Content decisions and reconsideration — candidate, 13 September 2026
+## Content decisions and reconsideration verified live — 13 September 2026
 
-Commits 2f081cb and 6f9711c extend the existing report, source, Support, Activity
-and protected retention services. Scoped decisions bind all current versions and
-permissions; safe author notices and explicit assigned-reviewer reconsideration
-preserve private reporter context. Source restrictions cover real fixture image
-variants, saved/repost views, search and notification resolution without copied
-files or text. Both reply modes, author withdrawal and current church authority
-remain enforced. No new table, runtime dependency, permission grant or ordinary
-Support activation is introduced.
+Product **2026.09.13.32**, application
+**2f97a6e6099637d29761e6045a65b2c08490b9d7**, is READY in
+**dpl_8FjUywkCMywNp4AXqb7Jg82bttN5**. Independent canonical assignment and
+serving identity match. Commits 2f081cb, 6f9711c, 49f651b and 1981a57 implement
+scoped post/comment decisions, private author notices and assigned-reviewer
+reconsideration through existing report, Support, Activity and retention services.
+The final 2f97a6e correction preserves the selected decision through safe sign-in.
 
-The full release gate passed 114 discovered files: 717 passing checks, two
-expected skips and zero failures. Fresh migrations, original-data upgrade,
+The complete foundation gate passed 114 discovered files: 717 passing checks,
+two expected skips and zero failures. Fresh migrations, original-data upgrade,
 synthetic restore, two production builds, private HTTP/RSC and process restart
-passed. The old Stage2A comment fingerprint required excluding the new default
-column; a separate migration-45 check verifies every original column and unchanged
-legacy visibility. Twenty-seven focused source/appeal/withdrawal/notification
-checks, 15 draft-controller checks and types/scoped lint also pass.
+passed. The legacy comment fingerprint excludes the added default column; a
+separate migration-45 check preserves every original column and legacy visibility.
+Twenty-seven focused source/appeal/withdrawal/notification checks, 15 draft
+controller checks and two final withdrawal-metadata checks also passed.
 
-Five new phone-width browser groups verify previewed decisions, exact lost-response
-retries, own-content privacy, deliberate appeal creation, reviewer inbox/replies,
-revocation and account switching. Eleven existing review groups pass, including
-safe update, navigation, scope transitions and 320/390/1440 layouts. The review
-preview first needed a valid full build identity for its update check. Ordinary
-Support's legacy browser script needed to wait for completed private navigation;
-its seven functional groups pass. The final demo check found an unnecessary shared
-draft-provider account read: the candidate now conceals and pauses that provider
-on demo routes, retaining the draft for current-account verification on return.
-Final candidate rebuild and affected browser reruns remain pending.
+Final built-browser acceptance passed five author/reconsideration groups, eleven
+reviewer groups, eight ordinary Support/demo groups and seven current composer
+groups. These cover both reply modes, legacy draft choices, exact lost-response
+retries, revoked church access, source privacy, consent, case ownership, account
+switching, navigation and mobile layouts. The retired inline-composer harness
+was replaced for this run by the current composer-shell suite. Support's browser
+harness now waits for completed private navigation. Its public demos make no API
+calls; the shared draft provider no longer requests private account data there.
 
-A fresh encrypted production-copy rehearsal upgrades 44 to 45, preserves all
-original columns across 92 tables, and passes protected deletion/control replay.
-Production preflight confirms 44 matching checksums, one current report-review
-grant and no actual reports/conversations/messages. These read-only checks changed
-no production data. Production remains .31; this candidate is not published.
+Live acceptance found a missing account-return allowlist entry in the first .32
+build, 1981a57. The correction passed 34 focused navigation/guest checks, a fresh
+production build, 17 isolated anonymous browser groups and actual isolated
+sign-in back to a selected decision while still denying unavailable evidence.
+The full foundation suite was not repeated for this routing-only correction.
+The final deployed build passes 17 canonical read-only groups with zero mutation
+requests or browser errors. Signed-in author decisions, the actual authorized
+review queue and assigned help inbox load. Scoped runtime error/fatal rows are
+zero. These are automated or desktop checks, not physical-phone acceptance.
 
-After final browser/build acceptance: verify ancestry, publish the exact candidate,
-confirm READY and independent canonical alias/serving identity, then verify actual
-migrations, preserved original columns, cloud traces, maintenance and the refreshed
-private backup registry. Compatible rollback must retain moderation predicates
-and control kinds. Broader escalation/integration and owner/phone acceptance stay
-open; the user's observed Chrome phone-shade receipt is preserved separately.
+Migration 45 is applied; all 45 production checksums match and all original
+columns across 92 tables are preserved. The encrypted production-copy 44-to-45
+upgrade passes protected deletion/control replay. The installed backup registry
+now has 45 entries, and its actual daily procedure creates and restores an
+encrypted migration-45 copy. Eighteen verified backup sets have zero expiry
+issues or removals under the 28-day threshold and 30-day maximum. The backup host
+must remain awake and logged in. Recovery uses the current versioned replay
+entry point; old access is quarantined before normal verified reappointment.
+
+Both deployed retention and notification maintenance runs pass with zero pending
+work, failed work, sends or erasures. The existing phone key is unchanged. No real
+report, moderation decision, appeal, message, welcome backfill, announcement,
+phone send, account erasure or new grant was created for this release. The user's
+observed Chrome notification-shade receipt is preserved; locked-phone delivery,
+conversation tap/reply/account switching and iPhone acceptance remain open.
+
+The report queue uses 12 data reads for either one or thirty cases. The review
+entry is 6,185 compressed bytes; the 4,120-byte private-guard/Support chunk is
+shared only by its relevant routes. Neither is included in the report-history
+route's entry chunks. The cloud build has 144 clean traces, 14,777 entries and
+366 server JavaScript files. No new runtime dependency, table, worker or copied
+evidence store is introduced; no production speed improvement is claimed.
+
+Broader account-restriction escalation, topic/operator integration and owner
+acceptance remain open. Next: verify their remaining cross-surface criteria and
+prepare legitimate escalation/recovery coverage through the existing account and
+Support owners. Existing sole-reviewer and retention approvals are resolved.
+A rollback must retain moderation predicates and protected control kinds; use a
+compatible corrective build instead of a pre-moderation application.
+
+[Author decisions](https://godschurches.com/platform/reports/decisions) ·
+[Review queue](https://godschurches.com/platform/reports/review) ·
+[Assigned inbox](https://godschurches.com/platform/help/inbox) ·
+[Patch notes](https://godschurches.com/platform/releases/content-decisions-and-reconsideration).
 
 ## Authenticated reviewer activation — 13 September 2026
 

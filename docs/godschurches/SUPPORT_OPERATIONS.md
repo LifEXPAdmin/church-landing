@@ -1,8 +1,8 @@
 # Ordinary support operations
 
-## Report reconsideration candidate — 13 September 2026
+## Report reconsideration live — 13 September 2026
 
-The candidate reuses SupportCase, messages, audits, versions and exact receipts
+Version 2026.09.13.32 reuses SupportCase, messages, audits, versions and exact receipts
 for deliberate author reconsideration. It does not activate ordinary Support.
 Only the linked decision's current assigned reviewer has scoped report access
 to that appeal; ordinary RESPOND/ASSIGN/REDACT grants never open it. No coordinator
@@ -16,8 +16,8 @@ selected report. Open cases keep the report in follow-up; closing help does not
 restore content. Linked case context follows the approved report retention clock,
 including account closure and recovery. All Support forms now bind current account
 identity and retain exact uncertain bodies; private snapshots recheck on return.
-See COMMUNITY_REPORTING_CONTRACT.md and CURRENT_STATE.md for candidate and release
-status. General Support intake was verified disabled before this candidate.
+See COMMUNITY_REPORTING_CONTRACT.md and CURRENT_STATE.md for the verified release.
+The current assigned-reviewer inbox loads; general Support intake remains disabled.
 
 ## Current policy — 13 September 2026
 

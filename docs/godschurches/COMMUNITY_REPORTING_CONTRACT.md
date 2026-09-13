@@ -1,10 +1,10 @@
 # Private community reporting contract
 
-## Scoped content decisions — local candidate, 13 September 2026
+## Scoped content decisions — live, 13 September 2026
 
 This section supersedes historical source-enforcement and appeal gaps below for
-the current candidate. Publication and broader integration remain separate gates.
-The live appointment/retention receipt is in CURRENT_STATE.md.
+2026.09.13.32. Broader integration and owner acceptance remain separate gates.
+The exact deployment, appointment and retention receipt is in CURRENT_STATE.md.
 
 The existing `moderate` report command supports no violation, request correction,
 hide, remove and restore. It binds report, source and parent versions under the
