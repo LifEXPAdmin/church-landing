@@ -53,7 +53,10 @@ export function safeAccountReturn(value: unknown): string {
       if (value) query.set(key, value);
     }
   }
-  if (url.pathname === "/platform/messages/requests") {
+  // Next redirects trailing slashes, so sanitize their query exactly like the
+  // canonical private route before returning through account entry.
+  const messagePath = url.pathname.replace(/\/$/, "");
+  if (messagePath === "/platform/messages/requests") {
     const recipientId = readerId(url.searchParams.get("recipientId")),
       id = readerId(url.searchParams.get("id")),
       after = readerId(url.searchParams.get("after"));
@@ -63,18 +66,18 @@ export function safeAccountReturn(value: unknown): string {
       if (url.searchParams.get("view") === "sent") query.set("view", "sent");
       if (after) query.set("after", after);
     }
-    return url.pathname + (query.size ? "?" + query.toString() : "");
+    return messagePath + (query.size ? "?" + query.toString() : "");
   }
-  if (/^\/platform\/messages(?:\/[a-zA-Z0-9_-]{1,100})?$/.test(url.pathname)) {
+  if (/^\/platform\/messages(?:\/[a-zA-Z0-9_-]{1,100})?$/.test(messagePath)) {
     if (url.searchParams.get("archived") === "true")
       query.set("archived", "true");
     const after = readerId(url.searchParams.get("after"));
     if (after) query.set("after", after);
-    if (url.pathname !== "/platform/messages") {
+    if (messagePath !== "/platform/messages") {
       const message = readerId(url.searchParams.get("message"));
       if (message) query.set("message", message);
     }
-    return url.pathname + (query.size ? "?" + query.toString() : "");
+    return messagePath + (query.size ? "?" + query.toString() : "");
   }
   if (url.pathname === "/platform/reports") {
     const type = url.searchParams.get("targetType"),

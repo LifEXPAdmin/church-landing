@@ -33,6 +33,18 @@ test("message return retains only owned navigation candidates, never text or cho
     safeAccountReturn("/platform/messages/thread1/anything"),
     "/platform"
   );
+  for (const [path, retained] of [
+    ["", "archived=true&after=next1"],
+    ["/thread1", "archived=true&after=next1&message=item1"],
+    ["/requests", "recipientId=person1"]
+  ]) {
+    assert.equal(
+      safeAccountReturn(
+        `/platform/messages${path}/?archived=true&after=next1&message=item1&recipientId=person1&q=private&content=secret&purpose=secret`
+      ),
+      `/platform/messages${path}?${retained}`
+    );
+  }
 });
 test("sign-in return preserves bounded list search and cursor without introducing unsupported query state", () => {
   const url = new URL(

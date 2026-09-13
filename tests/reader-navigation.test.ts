@@ -34,6 +34,10 @@ test("contact account return preserves only validated navigation and strips priv
   );
   assert.equal(
     safeAccountReturn("/platform/messages/unregistered?purpose=secret"),
+    "/platform/messages/unregistered"
+  );
+  assert.equal(
+    safeAccountReturn("/platform/messages/unregistered/extra?purpose=secret"),
     "/platform"
   );
 });
