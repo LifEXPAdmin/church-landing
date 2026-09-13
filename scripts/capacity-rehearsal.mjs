@@ -13,6 +13,7 @@ import { createServer as netServer } from "node:net";
 import { createServer as httpsServer } from "node:https";
 import { request } from "node:http";
 import { randomBytes } from "node:crypto";
+import { tmpdir } from "node:os";
 
 // Own the cluster and server: no target URL, existing database or credentials are
 // accepted. Real account/provider secrets are deliberately not inherited.
@@ -27,6 +28,9 @@ const seconds = Number(process.argv[2] ?? 900);
 assert.ok(Number.isInteger(seconds) && seconds >= 10 && seconds <= 1800);
 mkdirSync(".account-test", { recursive: true, mode: 0o700 });
 const dir = mkdtempSync(resolve(".account-test/capacity-"));
+// Large PostgreSQL/WAL files stay outside the application tracing root. Keep
+// only small receipts and guarded image/journal fixtures inside the checkout.
+const storageDir = mkdtempSync(join(tmpdir(), "godschurches-capacity-"));
 async function freePort() {
   const server = netServer();
   await new Promise((r) => server.listen(0, "127.0.0.1", r));
@@ -77,11 +81,18 @@ const env = {
   RETENTION_CLEANUP_ENABLED: "false",
   ACCOUNT_DELETION_ENABLED: "false",
   CAPACITY_FIXTURE_DIR: dir,
+  CAPACITY_STORAGE_DIR: storageDir,
   NODE_EXTRA_CA_CERTS: certificate
 };
 writeFileSync(
   join(dir, "browser-env.json"),
-  JSON.stringify({ origin, database, certificate }),
+  JSON.stringify({
+    origin,
+    database,
+    certificate,
+    databaseDirectory: join(storageDir, "pg"),
+    storageDirectory: storageDir
+  }),
   { mode: 0o600 }
 );
 function run(command, args, overrides = {}) {
@@ -139,7 +150,7 @@ try {
   console.log(`CAPACITY_FIXTURE ${dir}`);
   run(join(pg, "initdb"), [
     "-D",
-    join(dir, "pg"),
+    join(storageDir, "pg"),
     "-A",
     "trust",
     "-U",
@@ -149,7 +160,7 @@ try {
   ]);
   run(join(pg, "pg_ctl"), [
     "-D",
-    join(dir, "pg"),
+    join(storageDir, "pg"),
     "-l",
     join(dir, "pg.log"),
     "-o",
@@ -286,7 +297,7 @@ try {
   if (started)
     run(join(pg, "pg_ctl"), [
       "-D",
-      join(dir, "pg"),
+      join(storageDir, "pg"),
       "-m",
       "fast",
       "-w",

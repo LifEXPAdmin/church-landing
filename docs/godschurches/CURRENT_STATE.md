@@ -8,8 +8,13 @@ the same reader projections match, with the count scan reduced from 501,014 to
 The populated restore preserves all four volume tables and 42 migration checksums,
 then retires old credentials/grants without enabling restored traffic.
 
-The corrected full gate and concurrent workload remain in progress. Candidate
-2026.09.13.28 is local; production still serves the messaging release below.
+Explicitly resumed regression coverage now passes all 103 files: 662 executions
+and two expected skips. The production build and trace guard pass after preserving
+large test clusters outside application tracing. The corrected 15-minute workload
+passes: 23,875 mixed requests, zero unexpected failures, 2,166 matching retry pairs,
+one winner among 100 canonical final-slot writers and eight populated-restore
+checks. Feed p95 is 293.9 ms on this local dataset. Candidate 2026.09.13.28 is
+verified locally; production publication is next.
 The shared-IP participation throttle remains unchanged. See
 [the capacity receipt](CAPACITY_REHEARSAL.md) for measurements and open criteria.
 

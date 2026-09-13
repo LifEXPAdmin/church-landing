@@ -17,9 +17,11 @@ node scripts/capacity-rehearsal.mjs 900
 PostgreSQL 17 defaults to the Homebrew installation; `TEST_PG_BIN` may identify
 another local installation with `pg_stat_statements`. The duration is bounded
 between 10 and 1,800 seconds. Ten seconds is a tooling smoke check, not a capacity
-claim. Fixtures, authentication tokens, SQL, logs and snapshots stay under the
-ignored, private `.account-test/capacity-*` directory. The owned HTTP server and
-database are stopped when the harness exits. This is fictional test data only;
+claim. Authentication tokens, SQL and small receipts stay under the ignored,
+private `.account-test/capacity-*` directory. The large database, WAL and snapshot
+use a private OS temporary directory outside application tracing; its location
+is recorded in the private browser configuration. Retained clusters remain
+stopped after the harness exits. This is fictional test data only;
 ordinary recovery copies continue to follow [backup operations](BACKUP_OPERATIONS.md).
 
 ## Declared workload
@@ -78,6 +80,24 @@ production-copy migration checks. Keep missing-media, scheduled-worker recovery,
 phone observation and broader service-capacity criteria separate where they
 have not been exercised by this workload.
 
+## Bounded release and rollback
+
+Publish the reviewed feed change only after the reader/permission regressions,
+production build and trace guard pass and the timed integrity/recovery receipts
+are inspected. Confirm the exact deployment is READY, the canonical domain points
+to it, and its release endpoint identifies the application commit. Read-only live
+checks must retain private-route denial, existing release links and safe-update
+behavior. Local throughput is not a reason to increase production concurrency or
+relax admission limits.
+
+This query-only optimization adds no migration or capability setting. If a live
+regression requires rollback, return production to the previously verified
+messaging/retention release, then repeat canonical identity and live checks.
+Preserve all 42 migrations, current protected journals, VAPID keys and capability
+settings. Do not restore an older database or pre-retention application to reverse
+this read optimization. Broader rollback/recovery acceptance remains open where
+it involves workers, media, provider outages or current authority reconciliation.
+
 ## Current evidence
 
 The initial 15-minute production-build workload completed with 22,319 mixed
@@ -109,8 +129,18 @@ regressions pass, including reply modes and revoked access. Types and scoped
 lint pass. The first integrated rerun stopped at an unrelated report-queue test
 that counted connection/transaction housekeeping along with data queries. The
 test now compares the actual data-read signatures; its seven focused tests pass,
-with twelve data reads for both one and thirty rows. The complete gate is being
-rerun; no failed gate is presented as a release pass.
+with twelve data reads for both one and thirty rows.
+
+Release verification explicitly resumed the remaining 31 files after the first
+72 files and migration/build/HTTPS stages passed. The combined coverage is all
+103 files, 662 passing executions and two expected skips; the resumed 161 checks
+have zero failures. This is resumed coverage, not a single uninterrupted passing
+gate invocation. A second attempt repeated 38 files before compilation exhausted
+its heap while multiple large capacity clusters remained under the checkout.
+Those stopped fixtures were preserved outside tracing, and the production build
+then passed at the existing 6 GiB limit with 141 clean runtime traces. Future
+capacity storage uses the external private directory described above. Types and
+scoped lint also pass after that development-tooling change.
 
 The populated recovery rehearsal passes eight checks. Its real snapshot restores
 all four volume tables with matching fingerprints and all 42 migration checksums.
@@ -120,8 +150,25 @@ initial short run overlapped other verification and supplies functional evidence
 only. Participation's documented “already saved” acknowledgement is compared by
 canonical identity/version, while social mutation receipts use structural equality.
 
-The corrected timed workload and integrated gate remain in progress. Production
-still serves the verified messaging release; optimization measurements are local.
+The corrected 15-minute run passes all twelve integrity checks: 23,875 mixed
+requests, zero unexpected responses, 2,166 structurally matching retry pairs and
+zero differing receipts. Its peak was 28 in-flight requests, with 22.3% measured
+host CPU activity. Feed HTML p95 was 293.9 ms; detail 115.6 ms, search 101.6 ms,
+comments 106.2 ms, comment retry pairs 255.4 ms and Like retry pairs 176.2 ms.
+The feed p95 is approximately 71% lower than the initial local run; this does not
+establish production latency or an internet/phone SLA.
+
+The 100-writer canonical final-slot race completes with one winner and a matching
+canonical replay. The separate same-IP HTTP burst returns one 200, twenty-seven
+409s and seventy-two 429s. A later HTTP volunteer retry remains transport-rejected;
+it is not counted as a confirmed replay. Existing admission limits are preserved.
+All eight populated-restore checks pass again: the actual 9.5 MB snapshot restores
+in 5.5 seconds, protected quarantine/replay takes 2.1 seconds, every volume-table
+fingerprint and all 42 migration checksums match, and restored traffic stays off.
+Twelve actual query plans are retained privately. No competing local verification
+ran during this final timed workload. The owned server and database stopped cleanly.
+
+Production publication is next; the optimization measurements above are local.
 The current thirty-attempt shared-IP participation window, denser relationship
 graphs, per-post preview scaling, media load and broader worker failure rehearsals
 remain separate capacity considerations. This checkpoint does not close the

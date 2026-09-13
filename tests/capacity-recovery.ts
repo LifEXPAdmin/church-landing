@@ -101,7 +101,10 @@ try {
   const target = new URL(source);
   target.pathname = "/godschurches_security_test_restore";
   const pg = process.env.TEST_PG_BIN ?? "/opt/homebrew/opt/postgresql@17/bin";
-  const archive = join(dir, "capacity-snapshot.dump"),
+  const archive = join(
+      process.env.CAPACITY_STORAGE_DIR!,
+      "capacity-snapshot.dump"
+    ),
     started = performance.now();
   execFileSync(join(pg, "pg_dump"), [
     "--format=custom",

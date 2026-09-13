@@ -373,6 +373,28 @@ try {
       }
     ])
   );
+  const mixedGroups = [
+    "feed-html",
+    "detail-html",
+    "search-api",
+    "comments-api",
+    "comment-write-retry",
+    "like-write-retry"
+  ].map((name) => summary[name]);
+  const mixedRequests = mixedGroups.reduce((n, group) => n + group.count, 0);
+  const unexpectedResponses = mixedGroups.reduce(
+    (n, group) =>
+      n +
+      Object.entries(group.statuses).reduce(
+        (sum, [status, count]) => sum + (status === "200" ? 0 : count),
+        0
+      ),
+    0
+  );
+  check(
+    "mixed-unexpected-responses-below-one-percent",
+    mixedRequests > 0 && unexpectedResponses / mixedRequests < 0.01
+  );
   const result = {
     fixture: f.counts,
     environment: {
@@ -399,6 +421,8 @@ try {
     summary,
     checks,
     retryComparisons,
+    mixedRequests,
+    unexpectedResponses,
     databaseTotals: totals,
     statements,
     health
