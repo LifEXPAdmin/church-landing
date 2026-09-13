@@ -36,6 +36,11 @@ and handoff counts privately before the first real purge.
 The configured daily maintenance route defaults to inspection until
 `RETENTION_CLEANUP_ENABLED=true`. Once enabled, the existing Vercel cron invokes
 it daily at 05:00 UTC; provider execution can vary within its supported schedule.
+Closed reports become sweep candidates at 178 days, leaving two days for daily
+scheduling jitter and failure recovery before the 180-day maximum. Unretained
+messages and accepted account closures can be processed promptly; the 30-day
+deadline is not a waiting period. The distinct 90-day deletion receipts and
+14-day diagnostics retain their approved full periods, then expire.
 Each run bounds control preparation/copying, selects at most ten account requests
 and twenty message/report candidates, rechecks current retention under the shared
 write lock, and retains failures for retry. Account requests and sealed purges

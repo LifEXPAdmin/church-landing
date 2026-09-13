@@ -12,8 +12,8 @@ import { resolve, dirname, basename } from "node:path";
 import { Transform, Writable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 const DAY = 86400000;
-// A one-day margin for a daily operator job; the policy is a maximum of 30 days.
-export const BACKUP_EXPIRY_DAYS = 29;
+// Leave time for daily scheduling jitter and recovery before the 30-day maximum.
+export const BACKUP_EXPIRY_DAYS = 28;
 type RecordEntry = { createdAt: string; retiredAt?: string };
 type Ledger = { version: 1; records: Record<string, RecordEntry> };
 type Manifest = {

@@ -70,7 +70,7 @@ async function backup(
   await writeFile(manifestFile, JSON.stringify(manifest), { mode: 0o600 });
   return { archive, manifestFile, keyFile, manifest };
 }
-test("inspection is read-only; the 29-day operating boundary preserves a verified current recovery copy", async () =>
+test("inspection is read-only; the 28-day operating boundary preserves a verified current recovery copy", async () =>
   fixture(async (options) => {
     const old = await backup(
         options,

@@ -23,7 +23,7 @@ export const features: Feature[] = [
       "Open a person's profile and choose Message. When contact operations are available, a new contact starts with a short request and explicit acceptance. Use Messages for prior history, Requests for decisions and Contact preferences to choose who may ask. Conversation options include mute, archive and clear for me; a message's More menu reports that selected item. Unconfirmed sends retain an exact retry.",
     href: "/platform/messages",
     eligibility:
-      "Verified eligible adult personal accounts. New requests default to No one. Real reporting coverage and retention operations must be ready before new contact or sending is enabled; the interface explains when they are paused. Blocks stop new sends. Clear for me does not erase the other participant's history. In-app alert choices do not grant contact permission. Attachments, groups, delivery/read receipts, email and push are unavailable.",
+      "Verified eligible adult personal accounts. New requests default to No one. New contact and sending require current reporting coverage; the interface explains when they are paused. Blocks stop new sends. Clear for me does not erase the other participant's history. Optional phone alerts have separate controls and do not grant contact permission. Attachments, groups, delivery/read receipts and email are unavailable.",
     availability: "conditional"
   },
   {
@@ -100,8 +100,34 @@ export const features: Feature[] = [
       "Open Settings, then Your data. Review camera, microphone and location status without requesting access. Use the browser help links to change those permissions. Confirm your account to prepare a private export; save it within one minute or prepare a new file. Review deactivation and any duty handoff separately.",
     href: "/platform/settings/data",
     eligibility:
-      "Signed-in account. Exports and deactivation require current account confirmation. Browser status may be unavailable and does not grant church access or publish your location. Permanent deletion and general connected-app permissions are unavailable.",
+      "Signed-in account. Exports, deactivation and permanent deletion require current account confirmation. Permanent deletion explains immediate access loss, retained shared history and removal deadlines; its availability is shown before confirmation. Browser status does not grant church access or publish your location. General connected-app permissions are unavailable.",
     availability: "available"
+  },
+  {
+    id: "phone-notifications",
+    category: "Getting started",
+    name: "Optional phone notifications",
+    description:
+      "Choose phone alerts with private previews, quiet hours and a test you control.",
+    steps:
+      "Open Settings > Notifications > Availability and delivery. Choose Enable notifications, then allow your browser's request. Set your categories and quiet hours, and choose Send me a test notification. On iPhone, first add the app to your Home Screen using the installation help.",
+    href: "/platform/settings/notifications/availability",
+    eligibility:
+      "Eligible verified adult accounts and a supported browser with delivery available. Permission is requested only after your tap. Provider acceptance does not prove your phone displayed an alert. Signing out or switching accounts removes the old association; in-app messages remain available without push.",
+    availability: "conditional"
+  },
+  {
+    id: "founder-welcome",
+    category: "Posts and conversations",
+    name: "Founder welcome and replies",
+    description:
+      "Read a clearly labeled welcome and choose whether to reply directly to Andrew.",
+    steps:
+      "When welcomes are active, finish account setup and verification, then open Messages. Reply to Andrew uses the same private conversation. Optional founder announcements have their own preference, separate from personal replies.",
+    href: "/platform/messages",
+    eligibility:
+      "New eligible adult accounts only, once each. Welcomes remain paused while founder access is being verified. No existing-account backfill is sent. Replying does not change ordinary contact preferences or create a friendship. Current blocks and account restrictions apply.",
+    availability: "conditional"
   },
   {
     id: "polls",
@@ -469,6 +495,31 @@ export const features: Feature[] = [
   }
 ];
 export const releases: ReleaseEntry[] = [
+  {
+    id: "private-message-and-notification-controls",
+    version: "2026.09.13.27",
+    date: "2026-09-13",
+    summary:
+      "Phone notification controls, permanent account closure and clearer private-message retention.",
+    added: [
+      "Notification settings include deliberate device opt-in, a recipient-initiated test, quiet hours and separate founder-announcement preferences.",
+      "Permanent account closure explains immediate access loss, shared-message exceptions and removal deadlines before confirmation."
+    ],
+    improved: [
+      "Private messaging now has protected retention and restore procedures. Privacy information explains selected report evidence, founder review and recovery-copy expiry.",
+      "The founder welcome, explicit replies, inbox filters and deliberate announcement controls are prepared. Welcomes and new messaging remain paused until founder reviewer access is verified."
+    ],
+    fixed: [
+      "Account switching revokes old phone associations, and notification links recheck the signed-in account before opening private content.",
+      "Retry and restore records prevent deleted messages, queued welcomes and old device permissions from being revived."
+    ],
+    featureIds: [
+      "phone-notifications",
+      "data-controls",
+      "private-messages",
+      "founder-welcome"
+    ]
+  },
   {
     id: "scoped-report-review",
     version: "2026.09.13.26",

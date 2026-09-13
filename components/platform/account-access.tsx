@@ -61,8 +61,14 @@ export function AccountAccess({
         <div className="mb-5 space-y-3">
           <p>
             Find your church, connect with someone, or share an introduction.
-            After email verification and adult setup, you can choose Enable
-            notifications in Settings. Permission is optional.
+            After email verification and adult setup, you can choose{" "}
+            <Link
+              className="underline"
+              href="/platform/settings/notifications/availability"
+            >
+              Enable notifications in Settings
+            </Link>
+            . Permission is optional.
           </p>
           <div className="flex flex-wrap gap-x-5 gap-y-2">
             <Link

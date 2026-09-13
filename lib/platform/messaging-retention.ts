@@ -50,9 +50,11 @@ export async function markUnretainedMessages(
 }
 
 async function candidatesIn(tx: Tx, now: Date) {
+  // The policy is a maximum of 180 days after closure, not a required wait.
+  // Leave two days for daily scheduling jitter and a failed run's recovery.
   const reports = await tx.$queryRaw<Array<{ id: string; version: number }>>`
     SELECT r.id, r.version FROM "CommunityReport" r
-    WHERE r.status = 'CLOSED' AND r."closedAt" <= ${retentionDate(now, -180).toISOString()}::timestamp
+    WHERE r.status = 'CLOSED' AND r."closedAt" <= ${retentionDate(now, -178).toISOString()}::timestamp
       AND NOT EXISTS (SELECT 1 FROM "RetentionHold" h
         WHERE h.target = 'REPORT' AND h."targetId" = r.id AND h."releasedAt" IS NULL)
     ORDER BY r."closedAt", r.id LIMIT 100`;

@@ -13,7 +13,7 @@ export default function PrivacyPage() {
         <h1 className="mb-6 text-5xl">Privacy Policy</h1>
         <p className="mb-8 text-sm">
           Original policy: February 21, 2026. Service information updated
-          September 10, 2026.
+          September 13, 2026.
         </p>
 
         <div className="space-y-8 text-base leading-relaxed">
@@ -136,6 +136,48 @@ export default function PrivacyPage() {
             </p>
           </section>
           <section>
+            <h2 className="mb-2 text-3xl">Private Messages and Reports</h2>
+            <p>
+              Adult private messaging uses current account eligibility, contact
+              preferences, explicit acceptance and blocking controls. We store
+              conversation history and each participant&apos;s inbox choices.
+              Clear for me removes messages from your view; the other
+              participant may still retain their copy. Archive and temporary
+              deactivation do not delete conversation history.
+            </p>
+            <p className="mt-3">
+              Reports disclose only the selected item and necessary context to
+              authorized review. Andrew, the founder, is the sole initial report
+              reviewer, including reports involving himself. Reconsideration is
+              founder review, not independent review. Reasons and review history
+              remain restricted. Reporting and new messaging stay paused where
+              current reviewer coverage is unavailable.
+            </p>
+          </section>
+          <section>
+            <h2 className="mb-2 text-3xl">
+              Welcomes and Optional Notifications
+            </h2>
+            <p>
+              When founder welcomes are available, an eligible new account
+              receives one clearly labeled automatic welcome after setup and
+              verification. Choosing to reply opens the conversation with
+              Andrew; it does not change your ordinary contact preferences or
+              make you friends. Optional founder announcements have a separate
+              preference from personal replies.
+            </p>
+            <p className="mt-3">
+              Phone notifications require your deliberate Enable notifications
+              action and browser permission. We store a private device
+              subscription associated with your current sign-in. Delivery uses
+              your browser&apos;s push service with a generic preview and an
+              opaque reference; message bodies and report evidence are excluded.
+              Opening a notification requires sign-in and current access. Quiet
+              hours, category choices and conversation muting apply. Logging out
+              or switching accounts revokes the old device association.
+            </p>
+          </section>
+          <section>
             <h2 className="mb-2 text-3xl">Historical Waitlist and Email</h2>
             <p>
               The former waitlist collected name, email, selected role, and an
@@ -163,18 +205,50 @@ export default function PrivacyPage() {
             <h2 className="mb-2 text-3xl">Data Sharing</h2>
             <p>
               We do not sell personal information. We may use service providers
-              for hosting, analytics, and email delivery who process data on our
-              behalf.
+              for hosting, private storage, email and optional push delivery who
+              process data on our behalf.
             </p>
           </section>
           <section>
             <h2 className="mb-2 text-3xl">Retention</h2>
             <p>
-              Closing the waitlist does not delete historical records or change
-              the consent under which they were collected. Account,
-              contribution, and church records remain subject to their existing
-              access controls. Contact us about access, correction, or deletion
-              requests.
+              A verified permanent account-deletion request immediately ends
+              account access. Non-exempt personal data is removed from active
+              systems within 30 calendar days. Permanent deletion is distinct
+              from reversible deactivation. Settings explains availability,
+              confirmation and any church or support duty handoff.
+            </p>
+            <p className="mt-3">
+              Another participant may retain shared messages under Deleted
+              member. Personal information you wrote in those messages may
+              remain; contact us about a specific removal request. Once neither
+              participant retains a message, its body and unnecessary linked
+              data are removed within 30 days unless that selected item is
+              needed for a report or documented preservation hold. Church-owned
+              shared records retain their own ownership and access controls.
+            </p>
+            <p className="mt-3">
+              Selected report evidence is reviewed while a case is open and
+              removed within 180 days after final closure. A documented hold
+              preserves only the necessary records and is reviewed at least
+              every 30 days. Ordinary recovery copies expire within 30 days of
+              their original creation, so older backups may take up to 30
+              additional days after active deletion. Restoration must reapply
+              deletion and current access controls before the service reopens.
+            </p>
+            <p className="mt-3">
+              Minimal deletion receipts contain references, dates and outcomes
+              without message bodies or credentials and are retained for 90 days
+              after completed removal. Content-free push diagnostics are
+              retained for 14 days after the final attempt. Revoked device
+              associations stop sending immediately; endpoint and key material
+              is removed within 24 hours of detection. We cannot remove copies
+              someone has independently saved, such as screenshots.
+            </p>
+            <p className="mt-3">
+              Closing the waitlist does not change the original consent context
+              of historical records. Contact us about access, correction or
+              deletion requests concerning those records.
             </p>
           </section>
           <section>

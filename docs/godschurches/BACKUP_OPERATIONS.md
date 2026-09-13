@@ -48,7 +48,7 @@ explicit `--apply`, using operator-configured `GC_BACKUP_DIRECTORY` and
 `GC_BACKUP_KEY_DIRECTORY`. Both directories must be separate, private and free
 of symbolic links. Files require private permissions and no hard links.
 
-Expiry starts at 29 days, leaving a margin before the 30-day policy maximum. It
+Expiry starts at 28 days, leaving a two-day margin before the 30-day policy maximum. It
 requires a newer authenticated, restore-verified copy. It verifies ciphertext
 checksums and GCM authentication in constant memory, without writing decrypted
 bytes. An original-age ledger prevents known copied or renamed ciphertext from

@@ -197,7 +197,8 @@ test("selected report preserves its message through both clears; only selected e
   const row = await db.communityReport.findUniqueOrThrow({
     where: { id: r.id }
   });
-  const future = new Date(row.closedAt!.getTime() + 180 * DAY);
+  // Sweep before the 180-day maximum so a daily job does not begin late.
+  const future = new Date(row.closedAt!.getTime() + 178 * DAY);
   assert.deepEqual(await purge([r.id], new Date(future.getTime() - 1)), {
     messages: 0,
     reports: 0

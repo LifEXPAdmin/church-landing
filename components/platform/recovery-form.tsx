@@ -206,12 +206,20 @@ export function RecoveryForm({
         </Button>
       )}
       {complete && verification && (
-        <Link
-          className="block text-gc-accent underline"
-          href="/platform/invitations"
-        >
-          Check your signup connection
-        </Link>
+        <>
+          <Link
+            className="block text-gc-accent underline"
+            href="/platform/invitations"
+          >
+            Check your signup connection
+          </Link>
+          <Link
+            className="block text-gc-accent underline"
+            href="/platform/settings/notifications/availability"
+          >
+            Enable optional notifications in Settings
+          </Link>
+        </>
       )}
       <a href={returnHref} className="block text-gc-accent underline">
         {signedIn && verification
