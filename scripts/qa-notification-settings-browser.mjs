@@ -117,7 +117,9 @@ const fakeSubscription = {
 // Synthetic browser capability only: all application API/database behavior is real
 // and isolated. No test registers with or sends to a real push provider.
 await context.addInitScript((sub) => {
-  window.__permissionRequests = 0;
+  window.__permissionRequests = Number(
+    sessionStorage.getItem("fixture.permissionRequests") || "0"
+  );
   Object.defineProperty(window, "Notification", {
     configurable: true,
     value: class {
@@ -126,6 +128,10 @@ await context.addInitScript((sub) => {
       }
       static async requestPermission() {
         window.__permissionRequests++;
+        sessionStorage.setItem(
+          "fixture.permissionRequests",
+          String(window.__permissionRequests)
+        );
         sessionStorage.setItem("fixture.permission", "granted");
         return "granted";
       }
