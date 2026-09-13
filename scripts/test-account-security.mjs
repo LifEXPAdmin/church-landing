@@ -261,7 +261,7 @@ try {
   const fingerprint = (table, key, url = database, beforeChurch = false) => {
     const row =
       beforeChurch && table === "PlatformUser"
-        ? `to_jsonb(t) - ARRAY['deactivatedAt','suspendedAt','adultAcknowledgedAt','adultPolicyVersion','portalVersion']`
+        ? `to_jsonb(t) - ARRAY['deactivatedAt','suspendedAt','adultAcknowledgedAt','adultPolicyVersion','portalVersion','deletionRequestedAt','erasedAt','pendingFounderWelcomeAt']`
         : beforeChurch && table === "PlatformPostLike"
           ? "to_jsonb(t) - 'active' - 'version'"
           : beforeChurch && table === "PlatformPostComment"
@@ -512,6 +512,10 @@ try {
     if (stage2a[i] !== fingerprint(table, key, database, true))
       throw new Error(`Stage2B upgrade changed prior account data: ${table}`);
   }
+  if (psql(["-Atc", `SELECT
+    (SELECT count(*) FROM "PlatformUser" WHERE "deletionRequestedAt" IS NOT NULL OR "erasedAt" IS NOT NULL OR "pendingFounderWelcomeAt" IS NOT NULL)
+    + (SELECT count(*) FROM "AccountDeletion") + (SELECT count(*) FROM "FounderWelcome")`]).trim() !== "0")
+    throw new Error("Retention/welcome migration invented account closure or a welcome backfill.");
   if (psql(["-Atc", 'SELECT count(*) FROM "PlatformPostLike" WHERE NOT active OR version <> 1']).trim() !== "0")
     throw new Error("Like migration changed existing Like meaning.");
   const changedLegacyPostMeaning = psql([
