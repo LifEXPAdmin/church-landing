@@ -15,9 +15,11 @@ social command receipt service, current account and source policies, church
 capabilities, and existing rate-limit storage. It adds no client dependency,
 automatic content snapshot or parallel moderation of source records.
 
-This foundation is a partial moderation milestone. Intake defaults off. Real
-reviewer appointment, escalation and recovery coverage must be established before
-activation. A fictional test grant does not establish operational readiness.
+This foundation is a partial moderation milestone. Intake defaults off. The real
+founder's scoped appointment, documented founder reconsideration and verified
+recovery operations must be established before activation. A fictional test grant
+does not establish operational readiness. Church-scoped review retains its own
+current church authority; a global appointment cannot open private church cases.
 Source hide/remove/restore actions, author decision notices, appeals integration,
 operator hub integration and other writers' activity budgets remain
 separate unfinished work. Existing content access and interaction restrictions
@@ -62,8 +64,10 @@ later loss of source access. Receipts contain no fetched source body. No public,
 source-author, notification or share response contains reporter identity.
 Account export includes only the requesting account's own submitted reports and
 safe status; other reports, reviewer identities and private decision notes are
-excluded. This milestone introduces no automatic purge or new retention duration;
-operational retention/erasure policy must be settled before intake activation.
+excluded. The initial foundation introduced no automatic purge. The approved
+[retention policy](MESSAGING_RETENTION_POLICY.md) and
+[cleanup/restoration procedure](RETENTION_OPERATIONS.md) now govern disposition;
+their actual release and operating receipts remain required before activation.
 
 ## Authority and review
 
