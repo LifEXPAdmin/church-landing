@@ -62,3 +62,12 @@ configured protected storage. The progress endpoint remains available if intake
 is later paused. See [the implementation receipt](MESSAGING_RETENTION_REPORT.md)
 for actual verification and remaining deployment limits; a contract is not a
 claim that a production cleanup job has run.
+
+## Browser verification
+
+`scripts/qa-account-deletion-browser.mjs` accepts the existing isolated HTTPS
+fixture directory. Its preview must explicitly enable deletion and the protected
+local retention adapter, with all real provider credentials absent. Three groups
+verify rejected credentials, an accepted request with a lost response and durable
+progress, and a switched-account stale form. No real account is erased. The
+integrated service/restore checks verify the subsequent resource cleanup.

@@ -1,5 +1,18 @@
 ## Backup expiry and protected recovery — 13 September 2026
 
+## Messaging, retention and phone release gate — 13 September 2026
+
+The complete release gate passes: 103 discovered files, 662 passing executions,
+zero failures and two expected production-phase skips. Twenty final built-browser
+groups cover welcome replies, founder filters/announcements, phone preferences,
+notification clicks with an unsaved composer and permanent account closure.
+The verified recovery copy preserved 81 original tables through migrations
+36 to 42; all six additive production migrations have now applied successfully.
+Production publication and secured queue/maintenance activation checks are next.
+Founder/report intake remains paused pending actual authenticated founder
+appointment; the prior policy approvals are resolved. Physical-phone delivery
+remains unobserved. See [the integrated receipt](MESSAGING_RETENTION_REPORT.md).
+
 The daily local backup operator is installed and its first expiry run passes:
 13 authenticated sets, zero issues, zero expired sets and zero removals. Seven
 isolated expiry tests pass. A fresh production copy restored through migrations

@@ -79,8 +79,6 @@ const bounded = async () =>
     "No horizontal page overflow"
   );
 
-const { createPortalActor } = await import("../tests/seed-portal.ts");
-const { randomUUID } = await import("node:crypto");
 const signIn = async (actor) => {
   await context.clearCookies();
   await context.addCookies([

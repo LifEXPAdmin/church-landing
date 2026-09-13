@@ -359,6 +359,55 @@ try {
   ok(
     "Observed browser permission revocation removes server keys and never asks permission again"
   );
+  await go("/platform");
+  await page.getByRole("button", { name: "Share a post", exact: true }).click();
+  const composer = page.getByRole("form", {
+    name: "Publish post",
+    exact: true
+  });
+  const content = composer.getByLabel("Post content", { exact: true });
+  await content.fill(
+    "Keep this private draft when a phone notification opens."
+  );
+  await page.evaluate(() =>
+    navigator.serviceWorker.dispatchEvent(
+      new MessageEvent("message", {
+        data: {
+          type: "open-gc-notification",
+          id: "fixture-expired-notification"
+        }
+      })
+    )
+  );
+  await page
+    .getByText(
+      "Finish or save your open work before opening this notification."
+    )
+    .waitFor();
+  assert.equal(new URL(page.url()).pathname, "/platform");
+  assert.equal(
+    await content.inputValue(),
+    "Keep this private draft when a phone notification opens."
+  );
+  await composer
+    .getByRole("button", { name: "Save draft", exact: true })
+    .click();
+  await composer.getByText("Saved privately.", { exact: false }).waitFor();
+  await composer
+    .getByRole("button", { name: "Close composer", exact: true })
+    .click();
+  await page
+    .getByRole("link", { name: "Open notification", exact: true })
+    .click();
+  await page
+    .getByRole("heading", {
+      name: "This notification is no longer available",
+      exact: true
+    })
+    .waitFor();
+  ok(
+    "A notification click preserves the shared composer until its private draft is saved, then rechecks the source at the authenticated destination"
+  );
   assert.deepEqual(errors, []);
   writeFileSync(
     output + "/result.json",

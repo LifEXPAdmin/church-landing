@@ -95,7 +95,7 @@ const signIn = async (actor) => {
     }
   ]);
 };
-const { founder, member, welcome } = JSON.parse(
+const { founder } = JSON.parse(
   readFileSync(fixtureDir + "/founder-browser-actors.json", "utf8")
 );
 Object.assign(process.env, {

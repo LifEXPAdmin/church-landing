@@ -1,5 +1,43 @@
 # Messaging retention implementation
 
+## Integrated verification — 13 September 2026
+
+The complete support release gate passes all 103 discovered test files: 664
+executions, 662 passes, no failures and two expected development-only delivery
+skips in the production phase. It includes staged upgrades, a fresh database,
+synthetic restore, production builds and actual HTTPS HTML/RSC boundaries.
+Final built-browser verification passes 20 groups: welcome/reply/inbox (5),
+announcement drafts/preview/retries (4), phone settings and notification-to-draft
+navigation (8), and permanent closure (3). The closure browser checks wrong
+credentials, a lost accepted response, progress after reload and an account switch
+before submission. Provider sends are simulated in isolated fixtures.
+
+The build now permits a 6 GiB JavaScript heap during compilation. The unchanged
+4 GiB limit failed even after removing the fixture adapter in a temporary
+experiment; the original source was restored. No production request memory
+setting changed and no speed improvement is claimed. The successful build has
+141 clean runtime traces, 14,506 entries and 361 server JavaScript files, with no
+private fixture/environment or Prisma tooling leakage. Application TypeScript
+passes. Lint has no errors; four new unused QA imports were removed, leaving the
+37 previously existing QA-only warnings.
+
+The actual encrypted PostgreSQL 17 recovery copy restored through migrations
+36 to 42; every original-column fingerprint across 81 tables matched. Protected
+account/purge/control provider probes created and removed five temporary objects
+and wrote no application data. The installed backup job completed successfully,
+authenticated 14 current sets and removed none; its 28-day expiry threshold leaves
+a two-day margin before the policy maximum. The job requires an awake, logged-in
+operator workstation. See [backup operations](BACKUP_OPERATIONS.md).
+
+All six additive production migrations were applied successfully. Deployment,
+canonical-domain verification and separate capability activation checks follow;
+this paragraph alone does not claim the application is live. No production
+message, founder announcement, reviewer grant, backfill or account erasure was
+performed. Actual founder identity remains unavailable in the signed-out owner
+browser; the normal authenticated appointment and physical-phone acceptance
+remain separate open actions. The approved sole-reviewer and retention decisions
+are resolved and do not require another approval.
+
 ## Protected operations checkpoint — local, 13 September 2026
 
 Protected report/hold controls, failed-copy recovery, fair bounded account/message
