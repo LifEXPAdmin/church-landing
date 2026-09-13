@@ -358,9 +358,13 @@ test("orphan cleanup survives deletion failure and never deletes a currently att
   assert.ok(
     (await readImage(db, f.lee.token, uploaded.id, "thumb", store)).length
   );
-  await db.mediaGarbage.delete({
-    where: { storagePrefix: ready.storagePrefix }
-  });
+  assert.equal(
+    await db.mediaGarbage.findUnique({
+      where: { storagePrefix: ready.storagePrefix }
+    }),
+    null,
+    "READY files remain readable without an obsolete cleanup record"
+  );
 });
 test("ten concurrent photos reserve ten slots and duplicate concurrent retries never write a second image", async () => {
   const f = await seedParticipation(db),
