@@ -18,6 +18,14 @@
           "topic": "phone-notification-v1"
         }
       ]
+    },
+    "app/api/queues/founder-welcome/route.ts": {
+      "experimentalTriggers": [
+        {
+          "type": "queue/v2beta",
+          "topic": "founder-welcome-v1"
+        }
+      ]
     }
   }
 }

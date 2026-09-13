@@ -15,7 +15,8 @@ This defines the authorized profile-first adult messaging slice after inspecting
 the current account, relationship, settings and reporting owners. The integrated
 implementation is published with new intake paused for actual reporting and
 retention operations; see [the current receipt](ADULT_MESSAGES_REPORT.md).
-No owner-approved legal retention period or operational activation is implied.
+The approved policy above supplies retention periods; operational activation still
+requires verified operating evidence.
 
 ## Scope and existing owners
 
@@ -29,6 +30,11 @@ and bilateral SocialRelationship blocks. Reuse the existing settings registry
 and private-report service. Do not create a second relationship or notification
 authority. Profile entry comes first; future contextual entry points must use
 their canonical source authorization and do not delay this slice.
+
+The approved [founder welcome exception](FOUNDER_WELCOME_CONTRACT.md) now adds a
+once-only automatic welcome and deliberate member reply consent within the same
+canonical conversation. This narrow exception does not change ordinary request
+preferences or bypass account, block, reporting or retention protections.
 
 ## Eligibility and preference decisions
 

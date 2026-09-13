@@ -16,6 +16,7 @@ export type AdultMessageItem = {
   sequence: number;
   mine: boolean;
   content: string;
+  kind?: "TEXT" | "FOUNDER_WELCOME" | "FOUNDER_ANNOUNCEMENT";
   createdAt: string;
 };
 export type AdultConversationChoice = {
@@ -30,6 +31,7 @@ export type AdultConversationSummary = {
   version: number;
   person: ContactPerson | null;
   deletedMember?: boolean;
+  welcome?: { canReply: boolean; received: boolean; unanswered: boolean };
   sendingAllowed: boolean;
   updatedAt: string;
   latest: AdultMessageItem | null;
@@ -39,6 +41,7 @@ export type AdultConversationSummary = {
 export type AdultMessageView = {
   ownerId: string;
   available: boolean;
+  founder?: boolean;
   activity?: MessageActivity;
   conversations?: AdultConversationSummary[];
   after?: string | null;

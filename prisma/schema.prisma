@@ -200,6 +200,9 @@ enum PlatformPostType {
 }
 
 model PlatformUser {
+  pendingFounderWelcomeAt DateTime?
+  founderWelcome FounderWelcome? @relation("WelcomeRecipient")
+  sentFounderWelcomes FounderWelcome[] @relation("WelcomeFounder")
   pushSubscriptions PushSubscription[]
   notificationDeliveries NotificationDelivery[]
   id           String       @id @default(cuid())
@@ -1739,6 +1742,7 @@ model AdultConversation {
   requests AdultContactRequest[]
   messages AdultMessage[]
   states AdultConversationState[]
+  founderWelcome FounderWelcome?
   @@unique([participantAId, participantBId])
   @@index([participantBId])
   @@index([participantAId, updatedAt, id])
@@ -1754,11 +1758,14 @@ model AdultMessage {
   content String
   createdAt DateTime @default(now())
   unretainedAt DateTime?
+  kind String @default("TEXT")
+  founderWelcome FounderWelcome?
   conversation AdultConversation @relation(fields: [conversationId], references: [id], onDelete: Restrict)
   sender PlatformUser @relation(fields: [senderId], references: [id], onDelete: Restrict)
   @@unique([conversationId, sequence])
   @@index([senderId, createdAt])
   @@index([unretainedAt])
+  @@index([conversationId, senderId, kind, sequence])
 }
 
 // Personal viewing/alert state is never conversation membership or send consent.
@@ -1835,4 +1842,21 @@ model FriendAcceptance {
   recipient PlatformUser @relation("FriendRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
   @@unique([inviterId, recipientId])
   @@index([recipientId, state])
+}
+
+// Terminal recipient identity prevents welcome replay after clear/purge/content updates.
+model FounderWelcome {
+  id String @id @default(cuid())
+  recipientId String @unique
+  founderId String
+  conversationId String @unique
+  messageId String? @unique
+  replyConsentAt DateTime?
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+  recipient PlatformUser @relation("WelcomeRecipient", fields: [recipientId], references: [id], onDelete: Restrict)
+  founder PlatformUser @relation("WelcomeFounder", fields: [founderId], references: [id], onDelete: Restrict)
+  conversation AdultConversation @relation(fields: [conversationId], references: [id], onDelete: Restrict)
+  message AdultMessage? @relation(fields: [messageId], references: [id], onDelete: SetNull)
+  @@index([founderId, createdAt])
 }

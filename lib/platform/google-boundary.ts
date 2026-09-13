@@ -1,3 +1,4 @@
+import { scheduleFounderWelcome } from "./founder-welcome-queue";
 import type { PrismaClient } from "@prisma/client";
 import { readAccountSession } from "./accounts";
 import { AccountError } from "./account-error";
@@ -142,7 +143,11 @@ async function status(db: PrismaClient, request: Request, secure: boolean) {
   return { signedIn, methods, recentPurpose, emailConfirmationReady, pending };
 }
 
-export async function handleGoogleRequest(db: PrismaClient, request: Request) {
+export async function handleGoogleRequest(
+  db: PrismaClient,
+  request: Request,
+  afterResponse?: (work: () => Promise<void>) => void
+) {
   if (request.method !== "POST") {
     const response = reply("Use the account controls to continue.", 405);
     response.headers.set("Allow", "POST");
@@ -258,6 +263,7 @@ export async function handleGoogleRequest(db: PrismaClient, request: Request) {
         body,
         request.headers.get("user-agent")
       );
+      scheduleFounderWelcome(db, result.token, afterResponse);
       const response = reply("Your account is ready.", 200, {
         redirect: result.next
       });
@@ -382,7 +388,8 @@ export async function handleGoogleCallback(
   db: PrismaClient,
   request: Request,
   // Trusted boundary-test seam. Production routes never supply an adapter.
-  exchange: typeof exchangeGoogleCode = exchangeGoogleCode
+  exchange: typeof exchangeGoogleCode = exchangeGoogleCode,
+  afterResponse?: (work: () => Promise<void>) => void
 ) {
   if (request.method !== "GET") {
     const response = reply("Use Google sign-in to continue.", 405);
@@ -486,6 +493,7 @@ export async function handleGoogleCallback(
     );
     clearGoogleCookies(response, account.secureCookie);
     if (result.kind === "signed-in") {
+      scheduleFounderWelcome(db, result.token, afterResponse);
       await revokeReplacedAccountSession(
         db,
         requestSessionToken(request),

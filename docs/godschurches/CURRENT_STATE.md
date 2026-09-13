@@ -1,3 +1,17 @@
+## Canonical founder welcome and reply — local, 13 September 2026
+
+New-account welcome intents, exact approved body, separate automatic label, explicit
+member reply consent, founder inbox filters and shared outbox integration are
+implemented. The latest combined regression run passes 41 tests; the preceding
+message/outbox run passes 33. Five isolated browser groups, build/runtime traces,
+types and scoped lint pass. See [the founder contract](FOUNDER_WELCOME_CONTRACT.md).
+Founder announcements and complete retention/restoration operations are next.
+Actual founder application identity remains unverified: the normal login page is
+ready, but no authenticated owner session or reviewer grant has been established.
+The approved sole-reviewer and retention decisions do not need repeat approval.
+Production remains `.26`; this batch has made no production migration, grant,
+message, push or account purge. Real-phone acceptance remains separate.
+
 ## Notification controls and browser recovery — local, 13 September 2026
 
 Phone opt-in, supported category/channel settings, quiet-hours preview, recoverable

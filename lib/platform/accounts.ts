@@ -1,3 +1,4 @@
+import { newFounderWelcomeAt } from "./founder-config";
 import { AccountError } from "./account-error";
 export { AccountError } from "./account-error";
 import {
@@ -78,6 +79,7 @@ export async function registerAccount(
           username,
           passwordHash,
           role: input.role as PlatformRole,
+          pendingFounderWelcomeAt: newFounderWelcomeAt(),
           interests: []
         }
       });

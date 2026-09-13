@@ -1,3 +1,4 @@
+import { scheduleFounderWelcome } from "./founder-welcome-queue";
 import type { PrismaClient } from "@prisma/client";
 import { setTimeout as delay } from "node:timers/promises";
 import { randomUUID } from "node:crypto";
@@ -545,6 +546,7 @@ async function processAccountRequest(
         requestSessionToken(request),
         token
       );
+      scheduleFounderWelcome(db, token, afterResponse);
       return reply(
         "Signed in.",
         200,
@@ -600,6 +602,7 @@ async function processAccountRequest(
         { "Set-Cookie": sessionCookie("", config.secureCookie) },
         "/platform/login?notice=password-changed"
       );
+    scheduleFounderWelcome(db, requestSessionToken(request), afterResponse);
     return reply("Email verified. You can return to your account.", 200);
   } catch (error) {
     if (error instanceof AccountEmailChangeError)

@@ -17,7 +17,8 @@ export function useMessageWorkspace(
   conversationId?: string,
   archived = false,
   inboxAfter?: string,
-  selected?: string
+  selected?: string,
+  filter = "all"
 ) {
   const [state, setState] = useState({
     data: null as AdultMessageView | null,
@@ -92,6 +93,7 @@ export function useMessageWorkspace(
               ...(inboxAfter ? { after: inboxAfter } : {})
             }
       );
+      if (filter !== "all") q.set("filter", filter);
       setState((s) => ({ ...s, loading: true }));
       try {
         const { data } = await socialRequest<AdultMessageView>(
@@ -157,7 +159,7 @@ export function useMessageWorkspace(
         }
       }
     },
-    [owner, conversationId, archived, inboxAfter]
+    [owner, conversationId, archived, inboxAfter, filter]
   );
 
   useEffect(() => {

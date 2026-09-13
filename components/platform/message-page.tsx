@@ -7,6 +7,7 @@ export type MessageParams = {
   archived?: string;
   after?: string;
   message?: string;
+  filter?: string;
 };
 export async function MessagePage({
   conversationId,
@@ -20,6 +21,7 @@ export async function MessagePage({
     selected = readerId(query.message),
     archived = query.archived === "true";
   const position = new URLSearchParams({
+    ...(query.filter ? { filter: query.filter } : {}),
     ...(archived ? { archived: "true" } : {}),
     ...(after ? { after } : {}),
     ...(conversationId && selected ? { message: selected } : {})
@@ -32,10 +34,11 @@ export async function MessagePage({
       {user ? (
         <div className="container-shell py-6">
           <MessageWorkspace
-            key={`${user.id}-${conversationId ?? "inbox"}-${archived}-${after ?? "first"}-${selected ?? "latest"}`}
+            key={`${user.id}-${conversationId ?? "inbox"}-${archived}-${after ?? "first"}-${selected ?? "latest"}-${query.filter ?? "all"}`}
             owner={user.id}
             conversationId={conversationId}
             archived={archived}
+            filter={query.filter}
             after={after}
             selected={selected}
           />

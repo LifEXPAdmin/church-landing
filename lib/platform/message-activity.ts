@@ -52,7 +52,10 @@ export async function messageActivityIn(
       LEFT JOIN "AdultConversationState" s ON s."conversationId" = c."id" AND s."ownerId" = ${ownerId}
       WHERE e."recipientId" = ${ownerId} AND e."kind" = 'ADULT_MESSAGE_CREATED'
         AND (c."participantAId" = ${ownerId} OR c."participantBId" = ${ownerId})
-        AND m."senderId" <> ${ownerId} AND c."sendingAllowed" = true
+        AND m."senderId" <> ${ownerId} AND (c."sendingAllowed" = true OR
+          (m.kind = 'FOUNDER_WELCOME' AND EXISTS (SELECT 1 FROM "FounderWelcome" w WHERE w."messageId" = m.id
+            AND w."recipientId" = ${ownerId} AND w."founderId" = m."senderId" AND w."revokedAt" IS NULL)))
+        AND (m.kind <> 'FOUNDER_ANNOUNCEMENT' OR COALESCE((SELECT p."founderAnnouncements" FROM "SocialPreferences" p WHERE p."ownerId" = ${ownerId}), true))
         AND COALESCE(s."muted", false) = false
         AND m."sequence" > GREATEST(COALESCE(s."readThrough", 0), COALESCE(s."hiddenThrough", 0))
         AND other."emailVerifiedAt" IS NOT NULL AND other."adultAcknowledgedAt" IS NOT NULL

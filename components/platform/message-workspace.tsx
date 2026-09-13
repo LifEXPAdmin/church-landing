@@ -1,6 +1,7 @@
 "use client";
+import { FOUNDER_WELCOME_LABEL } from "@/lib/platform/founder-welcome-content";
 import Link from "next/link";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, MessageCircle, Plus } from "lucide-react";
 import type {
   AdultMessageItem,
@@ -12,11 +13,12 @@ import { MoreActions } from "./action-popover";
 import { RelationshipControls } from "./relationship-controls";
 import { useMessageWorkspace } from "./use-message-workspace";
 
-const inboxHref = (archived: boolean, after?: string) =>
+const inboxHref = (archived: boolean, after?: string, filter = "all") =>
   "/platform/messages" +
-  (archived || after
+  (archived || after || filter !== "all"
     ? "?" +
       new URLSearchParams({
+        ...(filter !== "all" ? { filter } : {}),
         ...(archived ? { archived: "true" } : {}),
         ...(after ? { after } : {})
       })
@@ -28,6 +30,29 @@ const time = (value: string) =>
     hour: "numeric",
     minute: "2-digit"
   });
+
+function founderText(content: string) {
+  return content
+    .split(/(\*\*[^*\n]+\*\*|\[[^\]\n]+\]\(https:\/\/[^\s)]+\))/g)
+    .map((part, index) => {
+      if (part.startsWith("**") && part.endsWith("**"))
+        return <strong key={index}>{part.slice(2, -2)}</strong>;
+      const link = /^\[([^\]]+)\]\((https:\/\/[^\s)]+)\)$/.exec(part);
+      return link ? (
+        <a
+          key={index}
+          className="underline"
+          href={link[2]}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {link[1]}
+        </a>
+      ) : (
+        part
+      );
+    });
+}
 
 function MessageRow({
   message,
@@ -54,7 +79,17 @@ function MessageRow({
           </Link>
         </MoreActions>
       </div>
-      <p className="whitespace-pre-wrap break-words">{message.content}</p>
+      {message.kind === "FOUNDER_WELCOME" && (
+        <p className="my-2 text-sm text-gc-muted">{FOUNDER_WELCOME_LABEL}</p>
+      )}
+      {message.kind === "FOUNDER_ANNOUNCEMENT" && (
+        <p className="my-2 text-sm text-gc-muted">Founder announcement</p>
+      )}
+      <p className="whitespace-pre-wrap break-words">
+        {message.kind === "FOUNDER_WELCOME"
+          ? founderText(message.content)
+          : message.content}
+      </p>
       <time
         className="mt-2 block text-xs text-gc-muted"
         dateTime={message.createdAt}
@@ -127,12 +162,14 @@ export function MessageWorkspace({
   owner,
   conversationId,
   archived = false,
+  filter = "all",
   after,
   selected
 }: {
   owner: string;
   conversationId?: string;
   archived?: boolean;
+  filter?: string;
   after?: string;
   selected?: string;
 }) {
@@ -145,14 +182,26 @@ export function MessageWorkspace({
     discard,
     markVisible,
     atBottom
-  } = useMessageWorkspace(owner, conversationId, archived, after, selected);
+  } = useMessageWorkspace(
+    owner,
+    conversationId,
+    archived,
+    after,
+    selected,
+    filter
+  );
   const history = useRef<HTMLDivElement>(null),
     list = useRef<HTMLDivElement>(null),
     restored = useRef(false),
     lastConversation = useRef<string | undefined>(undefined);
+  const [replyChosen, setReplyChosen] = useState(false);
   const conversation = s.data?.conversation,
     busy = s.busy || !!s.pending || !!s.waitingUntil;
-  const back = inboxHref(archived, after),
+  const needsWelcomeConsent =
+    !conversation?.sendingAllowed && !!conversation?.welcome?.canReply;
+  const canCompose =
+    !!conversation?.sendingAllowed || (needsWelcomeConsent && replyChosen);
+  const back = inboxHref(archived, after, filter),
     positionKey = `gc-message-position:${owner}:${back}`;
   const savePosition = () => {
     try {
@@ -189,7 +238,17 @@ export function MessageWorkspace({
         document
           .getElementById(`message-${selected}`)
           ?.scrollIntoView({ block: "center" });
-      else if (atBottom.current && !s.data.newer)
+      else if (
+        first &&
+        s.data.messages?.length === 1 &&
+        s.data.messages[0].kind === "FOUNDER_WELCOME" &&
+        !s.data.messages[0].mine
+      ) {
+        // The first welcome should reveal its greeting and automatic label,
+        // rather than inherit a normal conversation's jump to the latest line.
+        atBottom.current = false;
+        history.current.scrollTop = 0;
+      } else if (atBottom.current && !s.data.newer)
         history.current.scrollTop = history.current.scrollHeight;
     }
   }, [s.data, s.hidden, conversationId, positionKey, selected, atBottom]);
@@ -360,7 +419,9 @@ export function MessageWorkspace({
                 <Link
                   prefetch={false}
                   href="/platform/messages"
-                  aria-current={!archived ? "page" : undefined}
+                  aria-current={
+                    !archived && filter === "all" ? "page" : undefined
+                  }
                 >
                   Recent
                 </Link>
@@ -371,6 +432,23 @@ export function MessageWorkspace({
                 >
                   Archived
                 </Link>
+                {s.data.founder &&
+                  (
+                    [
+                      ["welcome-replies", "Welcome replies"],
+                      ["unanswered", "Unanswered"],
+                      ["sent-welcomes", "Sent welcomes"]
+                    ] as const
+                  ).map(([value, label]) => (
+                    <Link
+                      key={value}
+                      prefetch={false}
+                      href={inboxHref(false, undefined, value)}
+                      aria-current={filter === value ? "page" : undefined}
+                    >
+                      {label}
+                    </Link>
+                  ))}
               </nav>
               <div ref={list} className="gc-message-list">
                 {s.data.conversations?.length ? (
@@ -404,7 +482,7 @@ export function MessageWorkspace({
                   <Link
                     prefetch={false}
                     className="gc-button gc-button-quiet m-3"
-                    href={inboxHref(archived, s.data.after)}
+                    href={inboxHref(archived, s.data.after, filter)}
                   >
                     Older conversations
                   </Link>
@@ -602,79 +680,125 @@ export function MessageWorkspace({
                       </button>
                     )}
                   </div>
-                  <form
-                    className="gc-message-composer"
-                    aria-label="Send a message"
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      if (
-                        !busy &&
-                        !s.conflict &&
-                        conversation.sendingAllowed &&
-                        s.text.trim()
-                      ) {
-                        atBottom.current = true;
-                        act("send", {
-                          expectedVersion: conversation.version,
-                          content: s.text
-                        });
-                      }
-                    }}
-                  >
-                    {!conversation.sendingAllowed && (
-                      <p className="mb-2">
-                        Sending is unavailable for this conversation. Your
-                        unsent text is kept.{" "}
-                        {s.data.available && conversation.person && (
-                          <Link
-                            prefetch={false}
-                            className="underline"
-                            href={`/platform/messages/requests?recipientId=${conversation.person.id}`}
+                  {conversation.welcome?.received && (
+                    <div className="border-t p-3 text-sm">
+                      {needsWelcomeConsent && !replyChosen && (
+                        <>
+                          <p>
+                            Replying lets you and Andrew exchange personal
+                            messages in this conversation. Your ordinary message
+                            preferences stay unchanged.
+                          </p>
+                          <button
+                            type="button"
+                            className="gc-button my-2"
+                            disabled={busy}
+                            onClick={() => {
+                              setReplyChosen(true);
+                              requestAnimationFrame(() =>
+                                history.current?.parentElement
+                                  ?.querySelector<HTMLTextAreaElement>(
+                                    'textarea[aria-label="Your message"]'
+                                  )
+                                  ?.focus()
+                              );
+                            }}
                           >
-                            Check current contact options
-                          </Link>
-                        )}
+                            Reply to Andrew
+                          </button>
+                        </>
+                      )}
+                      <p>
+                        Phone alerts are optional.{" "}
+                        <Link
+                          className="underline"
+                          href="/platform/settings/notifications/availability"
+                        >
+                          Enable notifications or change announcement
+                          preferences
+                        </Link>
+                        .
                       </p>
-                    )}
-                    <label className="block">
-                      Your message
-                      <textarea
-                        aria-label="Your message"
-                        className="mt-1 block w-full rounded border p-3"
-                        value={s.text}
-                        rows={3}
-                        maxLength={4000}
-                        disabled={busy}
-                        onChange={(e) =>
-                          setState((v) => ({
-                            ...v,
-                            text: e.target.value,
-                            notice: "Message not sent."
-                          }))
-                        }
-                      />
-                    </label>
-                    <div className="mt-2 flex items-center justify-between gap-3">
-                      <p className="text-xs text-gc-muted">
-                        {conversation.preferences.muted
-                          ? "Conversation alerts muted. "
-                          : ""}
-                        Sent means saved here. Delivery and read receipts are
-                        unavailable.
-                      </p>
-                      <button
-                        className="gc-button gc-button-primary"
-                        disabled={
-                          busy ||
-                          s.conflict ||
-                          !conversation.sendingAllowed ||
-                          !s.text.trim()
-                        }
-                      >
-                        Send message
-                      </button>
                     </div>
-                  </form>
+                  )}
+                  {(!needsWelcomeConsent ||
+                    replyChosen ||
+                    s.text ||
+                    s.pending) && (
+                    <form
+                      className="gc-message-composer"
+                      aria-label="Send a message"
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        if (
+                          !busy &&
+                          !s.conflict &&
+                          canCompose &&
+                          s.text.trim()
+                        ) {
+                          atBottom.current = true;
+                          act("send", {
+                            expectedVersion: conversation.version,
+                            content: s.text,
+                            ...(needsWelcomeConsent
+                              ? { welcomeReply: true }
+                              : {})
+                          });
+                        }
+                      }}
+                    >
+                      {!canCompose && (
+                        <p className="mb-2">
+                          Sending is unavailable for this conversation. Your
+                          unsent text is kept.{" "}
+                          {s.data.available && conversation.person && (
+                            <Link
+                              prefetch={false}
+                              className="underline"
+                              href={`/platform/messages/requests?recipientId=${conversation.person.id}`}
+                            >
+                              Check current contact options
+                            </Link>
+                          )}
+                        </p>
+                      )}
+                      <label className="block">
+                        Your message
+                        <textarea
+                          aria-label="Your message"
+                          className="mt-1 block w-full rounded border p-3"
+                          value={s.text}
+                          rows={3}
+                          maxLength={4000}
+                          disabled={busy}
+                          onChange={(e) =>
+                            setState((v) => ({
+                              ...v,
+                              text: e.target.value,
+                              notice: "Message not sent."
+                            }))
+                          }
+                        />
+                      </label>
+                      <div className="mt-2 flex items-center justify-between gap-3">
+                        <p className="text-xs text-gc-muted">
+                          {conversation.preferences.muted
+                            ? "Conversation alerts muted. "
+                            : ""}
+                          Sent means saved here. Delivery and read receipts are
+                          unavailable.
+                        </p>
+                        <button
+                          className="gc-button gc-button-primary"
+                          disabled={
+                            busy || s.conflict || !canCompose || !s.text.trim()
+                          }
+                        >
+                          Send message
+                        </button>
+                      </div>
+                    </form>
+                  )}
                 </>
               ) : (
                 <div className="gc-message-placeholder">

@@ -1,3 +1,6 @@
+import { founderInboxRows, founderInboxFilter } from "./founder-inbox";
+import { consentToFounderReply, founderAvailable } from "./founder-welcome";
+import { founderAccountId } from "./founder-config";
 import {
   Prisma,
   type PrismaClient,
@@ -38,6 +41,7 @@ const messageSelect = {
   senderId: true,
   sequence: true,
   content: true,
+  kind: true,
   createdAt: true
 } satisfies Prisma.AdultMessageSelect;
 type MessageRow = Prisma.AdultMessageGetPayload<{
@@ -47,6 +51,7 @@ const item = (row: MessageRow, ownerId: string): AdultMessageItem => ({
   id: row.id,
   sequence: row.sequence,
   content: row.content,
+  kind: row.kind as AdultMessageItem["kind"],
   mine: row.senderId === ownerId,
   createdAt: row.createdAt.toISOString()
 });
@@ -113,7 +118,8 @@ export function adultMessageCommand(
     "value",
     "through",
     "requests",
-    "messages"
+    "messages",
+    "welcomeReply"
   ]);
   return socialCommand(
     db,
@@ -148,14 +154,17 @@ export function adultMessageCommand(
             "Your in-app alert choices are saved. Email and push are unchanged."
         };
       }
-      const row = await ownedAdultConversation(
-        tx,
-        ownerId,
-        input.conversationId
-      );
+      let row = await ownedAdultConversation(tx, ownerId, input.conversationId);
       if (input.operation === "send") {
         expected(input.expectedVersion, row.version);
         const content = postField(input.content, 4000, 1);
+        if (input.welcomeReply !== undefined && input.welcomeReply !== true)
+          throw new PortalError(
+            400,
+            "Choose Reply on the welcome to open this conversation."
+          );
+        if (input.welcomeReply === true)
+          row = await consentToFounderReply(tx, row, ownerId);
         await requireSending(tx, row, ownerId);
         if (row.lastSequence >= 2147483647)
           throw new PortalError(
@@ -313,6 +322,32 @@ async function summaries(
       }
     ])
   );
+  const welcomes = await tx.founderWelcome.findMany({
+    where: { conversationId: { in: ids } },
+    include: { message: { select: { sequence: true } } }
+  });
+  const welcomeById = new Map(welcomes.map((w) => [w.conversationId, w]));
+  const welcomeReady = welcomes.some(
+    (w) => w.recipientId === ownerId && !w.revokedAt && !w.replyConsentAt
+  )
+    ? await founderAvailable(tx)
+    : null;
+  const personal = welcomes.length
+    ? await tx.adultMessage.groupBy({
+        by: ["conversationId", "senderId"],
+        where: {
+          conversationId: { in: welcomes.map((w) => w.conversationId) },
+          kind: "TEXT"
+        },
+        _max: { sequence: true }
+      })
+    : [];
+  const personalSequences = new Map(
+    personal.map((m) => [
+      m.conversationId + ":" + m.senderId,
+      m._max.sequence ?? 0
+    ])
+  );
   const people = await tx.platformUser.findMany({
     where: {
       id: { in: otherIds },
@@ -340,9 +375,9 @@ async function summaries(
   const latest = await tx.$queryRaw<
     (MessageRow & { conversationId: string })[]
   >`
-    SELECT c."id" AS "conversationId", m."id", m."senderId", m."sequence", m."content", m."createdAt"
+    SELECT c."id" AS "conversationId", m."id", m."senderId", m."sequence", m."content", m."kind", m."createdAt"
     FROM "AdultConversation" c
-    JOIN LATERAL (SELECT "id", "senderId", "sequence", "content", "createdAt" FROM "AdultMessage"
+    JOIN LATERAL (SELECT "id", "senderId", "sequence", "content", "kind", "createdAt" FROM "AdultMessage"
       WHERE "conversationId" = c."id" ORDER BY "sequence" DESC LIMIT 1) m ON true
     WHERE c."id" IN (${Prisma.join(ids)})`;
   const lastById = new Map(latest.map((m) => [m.conversationId, m]));
@@ -367,12 +402,36 @@ async function summaries(
     const preferences = choices.get(row.id) ?? { ...defaultConversationChoice },
       last = lastById.get(row.id);
     const person = peopleById.get(adultOtherId(row, ownerId)) ?? null;
+    const welcome = welcomeById.get(row.id);
+    const inbound = welcome
+      ? (personalSequences.get(row.id + ":" + welcome.recipientId) ?? 0)
+      : 0;
+    const response = welcome
+      ? (personalSequences.get(row.id + ":" + welcome.founderId) ?? 0)
+      : 0;
     return {
       id: row.id,
       version: row.version,
       person,
       deletedMember: deleted.has(adultOtherId(row, ownerId)),
       sendingAllowed: available && row.sendingAllowed && !!person,
+      ...(welcome
+        ? {
+            welcome: {
+              received: welcome.recipientId === ownerId,
+              canReply:
+                available &&
+                !!person &&
+                welcomeReady === welcome.founderId &&
+                !welcome.revokedAt &&
+                !welcome.replyConsentAt &&
+                !!welcome.message &&
+                welcome.message.sequence > preferences.hiddenThrough,
+              unanswered:
+                inbound > Math.max(response, preferences.hiddenThrough)
+            }
+          }
+        : {}),
       updatedAt: row.updatedAt.toISOString(),
       latest:
         last && last.sequence > preferences.hiddenThrough
@@ -392,28 +451,44 @@ async function inboxIn(
 ) {
   if (query.archived !== undefined && query.archived !== "true")
     throw new PortalError(400, "Choose a supported inbox view.");
-  const archived = { ownerId, archivedAt: { not: null } };
-  const where = {
-    ...adultMemberWhere(ownerId),
-    states: query.archived === "true" ? { some: archived } : { none: archived }
-  };
-  const after = query.after ? postId(query.after) : null;
-  if (
-    after &&
-    !(await tx.adultConversation.findFirst({
-      where: { ...where, id: after },
-      select: { id: true }
-    }))
-  )
-    throw new PortalError(409, "This inbox page changed. Open Messages again.");
-  const rows = await tx.adultConversation.findMany({
-    where,
-    orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
-    take: INBOX + 1,
-    ...(after ? { cursor: { id: after }, skip: 1 } : {})
-  });
+  const isFounder = founderAccountId() === ownerId;
+  const filter = founderInboxFilter(query.filter);
+  if (!isFounder && filter !== "all")
+    throw new PortalError(
+      403,
+      "These filters are only available in the founder inbox."
+    );
+  let rows: AdultConversation[];
+  if (isFounder) rows = await founderInboxRows(tx, ownerId, query, INBOX + 1);
+  else {
+    const archived = { ownerId, archivedAt: { not: null } };
+    const where = {
+      ...adultMemberWhere(ownerId),
+      states:
+        query.archived === "true" ? { some: archived } : { none: archived }
+    };
+    const after = query.after ? postId(query.after) : null;
+    if (
+      after &&
+      !(await tx.adultConversation.findFirst({
+        where: { ...where, id: after },
+        select: { id: true }
+      }))
+    )
+      throw new PortalError(
+        409,
+        "This inbox page changed. Open Messages again."
+      );
+    rows = await tx.adultConversation.findMany({
+      where,
+      orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
+      take: INBOX + 1,
+      ...(after ? { cursor: { id: after }, skip: 1 } : {})
+    });
+  }
   const page = rows.slice(0, INBOX);
   return {
+    founder: isFounder,
     activity: await messageActivityIn(tx, ownerId),
     conversations: await summaries(tx, ownerId, page, available),
     after: rows.length > INBOX ? page.at(-1)!.id : null
@@ -432,7 +507,8 @@ export function readAdultMessages(
     "after",
     "around",
     "archived",
-    "inbox"
+    "inbox",
+    "filter"
   ]);
   return withAccountRead(db, token, async (tx, ownerId) => {
     if (!ownerId)
@@ -499,7 +575,10 @@ export function readAdultMessages(
       ownerId,
       available,
       ...(query.inbox === "true"
-        ? await inboxIn(tx, ownerId, available, { archived: query.archived })
+        ? await inboxIn(tx, ownerId, available, {
+            archived: query.archived,
+            filter: query.filter
+          })
         : {}),
       conversation,
       context: context

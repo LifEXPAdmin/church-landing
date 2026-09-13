@@ -1,3 +1,4 @@
+import { dispatchPendingFounderWelcomes } from "./founder-welcome-queue";
 import type { PrismaClient } from "@prisma/client";
 import {
   maintenanceHeaders as headers,
@@ -28,7 +29,17 @@ export async function handleNotificationMaintenance(
       failed += result.failed;
       if (result.failed || result.queued < 100) break;
     }
-    const result = { ok: failed === 0, ...cleanup, queued, failed };
+    const welcomes = signal.aborted
+      ? { queued: 0, failed: 1 }
+      : await dispatchPendingFounderWelcomes(db);
+    failed += welcomes.failed;
+    const result = {
+      ok: failed === 0,
+      ...cleanup,
+      queued,
+      failed,
+      welcomeQueued: welcomes.queued
+    };
     console.info("notification_maintenance_completed", result);
     return Response.json(result, { status: failed ? 503 : 200, headers });
   } catch {

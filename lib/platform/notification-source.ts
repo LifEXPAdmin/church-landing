@@ -120,11 +120,7 @@ export async function notificationSource(
     where: { id: event.conversationId, ...adultMemberWhere(ownerId) },
     include: { states: { where: { ownerId }, take: 1 } }
   });
-  if (
-    !conversation ||
-    !conversation.sendingAllowed ||
-    adultOtherId(conversation, ownerId) !== event.actorId
-  )
+  if (!conversation || adultOtherId(conversation, ownerId) !== event.actorId)
     return null;
   const state = conversation.states[0];
   if (delivery && state?.muted) return null;
@@ -140,7 +136,9 @@ export async function notificationSource(
       },
       select: { id: true }
     });
-    return request && (!delivery || !state?.readThrough)
+    return conversation.sendingAllowed &&
+      request &&
+      (!delivery || !state?.readThrough)
       ? { category: "requests", href, group: conversation.id }
       : null;
   }
@@ -157,11 +155,28 @@ export async function notificationSource(
         )
       }
     },
-    select: { id: true }
+    select: {
+      id: true,
+      kind: true,
+      founderWelcome: {
+        select: { recipientId: true, founderId: true, revokedAt: true }
+      }
+    }
   });
+  if (
+    !conversation.sendingAllowed &&
+    !(
+      message?.kind === "FOUNDER_WELCOME" &&
+      message.founderWelcome?.recipientId === ownerId &&
+      message.founderWelcome.founderId === event.actorId &&
+      !message.founderWelcome.revokedAt
+    )
+  )
+    return null;
   return message
     ? {
-        category: "messages",
+        category:
+          message.kind === "FOUNDER_ANNOUNCEMENT" ? "founder" : "messages",
         href: `${href}?message=${message.id}`,
         group: conversation.id
       }

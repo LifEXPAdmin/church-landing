@@ -1,3 +1,4 @@
+import { newFounderWelcomeAt } from "./founder-config";
 import { Prisma, type PrismaClient } from "@prisma/client";
 import { SESSION_SECONDS } from "./accounts";
 import { AccountError } from "./account-error";
@@ -451,6 +452,7 @@ export async function finishGoogleSignup(
             username,
             email: proof.email,
             role: "BELIEVER",
+            pendingFounderWelcomeAt: newFounderWelcomeAt(),
             interests: [],
             adultAcknowledgedAt: new Date(),
             adultPolicyVersion: ADULT_POLICY,

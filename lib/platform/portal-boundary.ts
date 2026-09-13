@@ -1,3 +1,4 @@
+import { scheduleFounderWelcome } from "./founder-welcome-queue";
 import type { PrismaClient } from "@prisma/client";
 import { accountConfig } from "./account-config";
 import { allowAccountAttempt } from "./account-limits";
@@ -14,7 +15,11 @@ const headers = {
   "X-Robots-Tag": "noindex, nofollow",
   Vary: "Cookie"
 };
-export async function handlePortalRequest(db: PrismaClient, request: Request) {
+export async function handlePortalRequest(
+  db: PrismaClient,
+  request: Request,
+  afterResponse?: (work: () => Promise<void>) => void
+) {
   try {
     const token = requestSessionToken(request);
     if (request.method === "GET") {
@@ -99,6 +104,8 @@ export async function handlePortalRequest(db: PrismaClient, request: Request) {
         "Too many changes. Wait 15 minutes before trying again."
       );
     const message = await portalCommand(db, token, body);
+    if (body.operation === "ack-adult")
+      scheduleFounderWelcome(db, token, afterResponse);
     return Response.json({ message }, { headers });
   } catch (error) {
     if (error instanceof PortalError)

@@ -95,6 +95,16 @@ export async function contactPolicy(
 // Called by the canonical relationship writer inside its permission transaction.
 // Unblocking or following again never revives revoked acceptance.
 export async function revokeBlockedContact(tx: Tx, a: string, b: string) {
+  await tx.founderWelcome.updateMany({
+    where: {
+      revokedAt: null,
+      OR: [
+        { founderId: a, recipientId: b },
+        { founderId: b, recipientId: a }
+      ]
+    },
+    data: { revokedAt: new Date() }
+  });
   await tx.adultContactRequest.updateMany({
     where: { ...contactPair(a, b), status: "PENDING" },
     data: { status: "REVOKED", version: { increment: 1 } }
