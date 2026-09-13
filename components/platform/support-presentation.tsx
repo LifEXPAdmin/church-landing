@@ -90,8 +90,10 @@ export function SupportConversation({ detail: c }: { detail: SupportDetail }) {
         <p className="text-sm text-gc-muted">
           Who can read and reply: {c.requester.name} (requester),{" "}
           {c.owner
-            ? `${c.owner.name} (Godschurches support owner)`
-            : "no assigned support owner"}
+            ? `${c.owner.name} (${c.reconsideration ? "assigned report reviewer" : "Godschurches support owner"})`
+            : c.reconsideration
+              ? "the assigned report reviewer is not currently authorized"
+              : "no assigned support owner"}
           {c.coordinator
             ? `, ${c.coordinator.name} (shared church coordinator)`
             : ". No church coordinator included"}
@@ -99,9 +101,22 @@ export function SupportConversation({ detail: c }: { detail: SupportDetail }) {
         </p>
         {!c.owner && (
           <PortalEmpty>
-            Awaiting assignment. Your request is saved, but no active support
-            owner is assigned. Use direct contact if needed.
+            {c.reconsideration
+              ? "Your case is saved, but the assigned reviewer currently lacks access. No substitute reviewer is assigned automatically."
+              : "Awaiting assignment. Your request is saved, but no active support owner is assigned. Use direct contact if needed."}
           </PortalEmpty>
+        )}
+        {c.reconsideration && (
+          <p className="text-sm">
+            This is reconsideration by the assigned report reviewer, who may be
+            the original decision maker. It is not independent review. Case
+            replies and closure do not automatically lift a content restriction.
+          </p>
+        )}
+        {c.reviewHref && (
+          <Link href={c.reviewHref} className="text-sm underline">
+            Review the selected report and content
+          </Link>
         )}
         {c.featureDecision && (
           <p className="text-sm text-gc-accent">

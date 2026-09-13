@@ -44,12 +44,25 @@ export const features: Feature[] = [
     category: "Privacy and account",
     name: "Scoped report review",
     description:
-      "Authorized reviewers can open their case queue and record private review decisions.",
+      "Authorized reviewers can inspect selected reports, record reasons and apply scoped post or comment restrictions.",
     steps:
-      "Open Your reports, then the review link when your current account has review authority. Choose an open or closed case, inspect its selected source, and record a reason. Lost responses retain Retry same review; conflicts require checking the current case first.",
+      "Open Your reports and the review link. Inspect the selected source, choose a decision and author explanation, then confirm its preview. Lost responses keep the same retry. Author reconsideration cases open in the assigned reviewer’s existing help inbox.",
     href: "/platform/reports/review",
     eligibility:
-      "Explicit platform report permission or current church moderation authority for every required scope. Revoked access conceals case details. Recording case status does not hide content, restrict accounts or send notices. Intake checks current reviewer coverage for each report.",
+      "Explicit current report authority for both original and current source scopes. Hide, remove and restore preserve source audiences, reply choices and author withdrawal. Case status alone does not change content. Reconsideration uses the assigned reviewer, including the founder for founder-reviewed cases; it is not independent review. Account restrictions require their separate authority.",
+    availability: "conditional"
+  },
+  {
+    id: "content-decisions",
+    category: "Privacy and account",
+    name: "Decisions about your content",
+    description:
+      "Read a private explanation and request reconsideration of a decision about your post or comment.",
+    steps:
+      "Open Your reports, then Decisions about your content, or follow its Activity update. Inspect the decision and your selected text. Review who will receive your request, explicitly agree, then send it. Continue replies in the linked help case.",
+    href: "/platform/reports/decisions",
+    eligibility:
+      "Current eligible personal authors or publishers for the speaking church. Reporter identities and private review notes are excluded. Reconsideration is available only while the assigned reviewer has current authority. It does not automatically restore content or provide independent review.",
     availability: "conditional"
   },
   {
@@ -508,6 +521,27 @@ export const features: Feature[] = [
   }
 ];
 export const releases: ReleaseEntry[] = [
+  {
+    id: "content-decisions-and-reconsideration",
+    version: "2026.09.13.32",
+    date: "2026-09-13",
+    summary: "Private content decisions and a clear reconsideration route.",
+    added: [
+      "Authors can read a safe decision explanation from Your reports or Activity, then deliberately request reconsideration from the assigned reviewer."
+    ],
+    improved: [
+      "Authorized reviewers can request correction, hide, remove or restore the selected post or comment while preserving its audience and reply permissions."
+    ],
+    fixed: [
+      "Reported text stays available only to authorized review for its existing retention period after author removal. Backup recovery preserves removals and pauses for review when it cannot prove a later restoration."
+    ],
+    featureIds: [
+      "report-review",
+      "content-decisions",
+      "private-reports",
+      "personal-activity"
+    ]
+  },
   {
     id: "personal-activity",
     version: "2026.09.13.31",

@@ -24,7 +24,7 @@ type Choices = View["preferences"];
 const labels: Record<NotificationCategory, string> = {
   messages: "Personal messages and replies",
   requests: "Contact requests and acceptances",
-  reports: "Reports within your reviewer access",
+  reports: "Reports, reconsideration and your content decisions",
   founder: "Founder announcements",
   replies: "Replies to your posts and comments",
   mentions: "Mentions in comments"

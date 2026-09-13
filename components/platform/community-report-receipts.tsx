@@ -83,6 +83,13 @@ export function CommunityReportReceipts({
         Only your own submissions appear here. A received report is not a
         finding against the reported person.
       </p>
+      <Link
+        prefetch={false}
+        className="underline"
+        href="/platform/reports/decisions"
+      >
+        Decisions about your content
+      </Link>
       {data?.canReview && (
         <Link
           prefetch={false}

@@ -391,7 +391,7 @@ export async function commentCommand(
       );
     expected(input.expectedVersion, comment.version);
     if (op === "delete") {
-      const row = await deleteCommentIn(tx, comment);
+      const row = await deleteCommentIn(tx, comment, context.actorId!);
       return { id: row.id, version: row.version, message: "Comment deleted." };
     }
     requireReply(context, post);

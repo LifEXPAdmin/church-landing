@@ -353,8 +353,14 @@ test("unassigned routing is minimal, capability removal revokes existing session
   assert.equal(d.unassigned, true);
   await deny(detail(f.owner, c.caseId));
   await deny(detail(f.manager, c.caseId));
-  const queue = await readSupport(db, f.manager.token, "routing");
-  const item = queue.routing.find((r) => r.id === c.caseId)!;
+  let queue = await readSupport(db, f.manager.token, "routing");
+  let item = queue.routing.find((r) => r.id === c.caseId);
+  // Other isolated suites can retain earlier unassigned cases. Exercise the
+  // actual bounded pages instead of assuming this case is on the first page.
+  for (let page = 1; !item && queue.more && page < 100; page++) {
+    queue = await readSupport(db, f.manager.token, "routing", { page });
+    item = queue.routing.find((r) => r.id === c.caseId);
+  }
   assert.ok(item);
   assert.deepEqual(
     Object.keys(item).sort(),

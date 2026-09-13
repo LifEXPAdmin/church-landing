@@ -125,6 +125,7 @@ export function SupportViews({
                   </p>
                 )}
                 <SupportForm
+                  owner={s.viewer.id}
                   key={churchId ?? "general"}
                   operation="create"
                   fixed={{
@@ -214,6 +215,7 @@ export function SupportViews({
               </p>
               {s.ownerOptions.length ? (
                 <SupportForm
+                  owner={s.viewer.id}
                   operation="handoff"
                   fixed={{ caseId: row.id, expectedVersion: row.version }}
                   fields={[
@@ -262,6 +264,7 @@ export function SupportViews({
           />
           {c.unread && (
             <SupportForm
+              owner={s.viewer.id}
               operation="mark-read"
               fixed={{ caseId: c.id, expectedVersion: c.version }}
               button="Mark these updates as seen"
@@ -276,6 +279,7 @@ export function SupportViews({
                 include passwords, codes or sensitive personal details.
               </p>
               <SupportForm
+                owner={s.viewer.id}
                 operation="reply"
                 fixed={{ caseId: c.id, expectedVersion: c.version }}
                 fields={[
@@ -293,6 +297,7 @@ export function SupportViews({
             c.access.requester && (
               <PortalCard title="Still need help?">
                 <SupportForm
+                  owner={s.viewer.id}
                   operation="reopen"
                   fixed={{ caseId: c.id, expectedVersion: c.version }}
                   fields={[
@@ -307,6 +312,7 @@ export function SupportViews({
           {(c.access.owner || c.access.requester) && c.status !== "CLOSED" && (
             <PortalCard title="Update the request status">
               <SupportForm
+                owner={s.viewer.id}
                 operation="transition"
                 fixed={{ caseId: c.id, expectedVersion: c.version }}
                 fields={[
@@ -342,6 +348,7 @@ export function SupportViews({
                     erase information already seen.
                   </p>
                   <SupportForm
+                    owner={s.viewer.id}
                     operation="revoke"
                     fixed={{ caseId: c.id, expectedVersion: c.version }}
                     button="Remove coordinator access"
@@ -350,6 +357,7 @@ export function SupportViews({
               ) : c.shareOptions.length &&
                 !["RESOLVED", "CLOSED"].includes(c.status) ? (
                 <SupportForm
+                  owner={s.viewer.id}
                   operation="share"
                   fixed={{ caseId: c.id, expectedVersion: c.version }}
                   fields={[
@@ -385,6 +393,7 @@ export function SupportViews({
             <PortalCard title="Support owner tools">
               {c.featureDecision && (
                 <SupportForm
+                  owner={s.viewer.id}
                   operation="feature"
                   fixed={{ caseId: c.id, expectedVersion: c.version }}
                   fields={[
@@ -404,6 +413,7 @@ export function SupportViews({
               )}
               {c.ownerOptions.length > 0 && (
                 <SupportForm
+                  owner={s.viewer.id}
                   operation="handoff"
                   fixed={{ caseId: c.id, expectedVersion: c.version }}
                   fields={[
@@ -434,6 +444,7 @@ export function SupportViews({
                     handling is separate. This cannot be undone here.
                   </p>
                   <SupportForm
+                    owner={s.viewer.id}
                     operation="redact"
                     fixed={{ caseId: c.id, expectedVersion: c.version }}
                     fields={[

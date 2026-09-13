@@ -6,6 +6,7 @@ import { readAccountSession } from "./accounts";
 import { AccountError } from "./account-error";
 import { PortalError } from "./portal-policy";
 import { postCommand } from "./post-commands";
+import { protectReportedWithdrawal } from "./retention-controls";
 import { previewPostLink } from "./post-links";
 import {
   getPostComposer,
@@ -123,7 +124,20 @@ export async function handlePostRequest(db: PrismaClient, request: Request) {
         );
       return Response.json(result, { headers });
     }
-    return Response.json(await postCommand(db, token, input), { headers });
+    const result = await postCommand(db, token, input);
+    if (
+      input.operation === "withdraw" &&
+      !(await protectReportedWithdrawal(db, "POST", result.id))
+    )
+      return Response.json(
+        {
+          ...result,
+          message:
+            "Your post removal is saved. Backup recovery protection is pending and will be retried automatically."
+        },
+        { status: 202, headers }
+      );
+    return Response.json(result, { headers });
   } catch (error) {
     const status =
       error instanceof PortalError

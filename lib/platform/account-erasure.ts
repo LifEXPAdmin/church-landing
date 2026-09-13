@@ -189,7 +189,7 @@ async function eraseAccountSubmissions(tx: Tx, userId: string, now: Date) {
     where: { case: { requesterId: userId } }
   });
   await tx.supportCase.updateMany({
-    where: { requesterId: userId },
+    where: { requesterId: userId, moderationDecisionId: null },
     data: {
       subject: "Deleted member request",
       description: "Personal information removed after account deletion.",
@@ -199,7 +199,10 @@ async function eraseAccountSubmissions(tx: Tx, userId: string, now: Date) {
     }
   });
   await tx.supportMessage.updateMany({
-    where: { authorId: userId, case: { requesterId: userId } },
+    where: {
+      authorId: userId,
+      case: { requesterId: userId, moderationDecisionId: null }
+    },
     data: { body: "Removed after account deletion.", redactedAt: now }
   });
   await tx.supportRead.deleteMany({ where: { userId } });

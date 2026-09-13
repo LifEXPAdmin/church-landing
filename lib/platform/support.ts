@@ -9,6 +9,18 @@ import {
 import { readAccountSession } from "./accounts";
 import { ADULT_POLICY } from "./portal-types";
 import { reconcileSupportAccess } from "./support-revocation";
+import { PortalError } from "./portal-policy";
+import { recordAppealControl } from "./retention-controls";
+import { postContext } from "./post-access";
+import { reportReviewAuthority } from "./community-report-review";
+import { reportReviewHref } from "./community-report-types";
+import {
+  activeContentReviewer,
+  contentSupportAccess,
+  prepareContentAppeal,
+  updateAppealReport,
+  visibleSupportIds
+} from "./moderation-support";
 import {
   SUPPORT_NOTICE,
   supportCategories,
@@ -61,7 +73,8 @@ const metadataSelect = {
   ownerGrantVersion: true,
   status: true,
   version: true,
-  category: true
+  category: true,
+  moderationDecisionId: true
 } as const;
 type CaseMeta = Prisma.SupportCaseGetPayload<{ select: typeof metadataSelect }>;
 const unavailable =
@@ -129,27 +142,33 @@ async function support<T>(
   token: unknown,
   work: (tx: Tx, actor: Actor) => Promise<T>
 ): Promise<T> {
-  return db.$transaction(
-    async (tx) => {
-      await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(730221, 2)`;
-      const session = await readAccountSession(tx as PrismaClient, token);
-      if (!session)
-        throw new SupportError(
-          401,
-          "Sign in to get help with your own requests."
-        );
-      await tx.$queryRaw`SELECT id FROM "PlatformUser" WHERE id=${session.id} FOR UPDATE`;
-      if (!(await readAccountSession(tx as PrismaClient, token)))
-        throw new SupportError(401, "Sign in again to continue.");
-      const actor = await tx.platformUser.findUniqueOrThrow({
-        where: { id: session.id },
-        select: actorSelect
-      });
-      await reconcileSupportAccess(tx);
-      return work(tx, actor);
-    },
-    { maxWait: 10000, timeout: 15000 }
-  );
+  return db
+    .$transaction(
+      async (tx) => {
+        await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(730221, 2)`;
+        const session = await readAccountSession(tx as PrismaClient, token);
+        if (!session)
+          throw new SupportError(
+            401,
+            "Sign in to get help with your own requests."
+          );
+        await tx.$queryRaw`SELECT id FROM "PlatformUser" WHERE id=${session.id} FOR UPDATE`;
+        if (!(await readAccountSession(tx as PrismaClient, token)))
+          throw new SupportError(401, "Sign in again to continue.");
+        const actor = await tx.platformUser.findUniqueOrThrow({
+          where: { id: session.id },
+          select: actorSelect
+        });
+        await reconcileSupportAccess(tx);
+        return work(tx, actor);
+      },
+      { maxWait: 10000, timeout: 15000 }
+    )
+    .catch((error) => {
+      if (error instanceof PortalError)
+        throw new SupportError(error.status, error.message);
+      throw error;
+    });
 }
 async function staffGrant(
   tx: Tx,
@@ -245,6 +264,13 @@ async function intake(tx: Tx, actor: Actor, churchId: string | null) {
 }
 async function access(tx: Tx, actor: Actor, c: CaseMeta) {
   if (!adult(actor)) throw denied();
+  if (c.moderationDecisionId) {
+    if (!verified(actor)) throw denied();
+    return contentSupportAccess(tx, actor.id, {
+      requesterId: c.requesterId,
+      moderationDecisionId: c.moderationDecisionId
+    });
+  }
   const requester = c.requesterId === actor.id;
   const grant = await staffGrant(tx, actor, "RESPOND");
   const owner =
@@ -266,34 +292,26 @@ async function access(tx: Tx, actor: Actor, c: CaseMeta) {
 async function visibleWhere(
   tx: Tx,
   actor: Actor,
-  onlyAssigned = false
+  onlyAssigned = false,
+  options: { id?: string; page?: number } = {}
 ): Promise<Prisma.SupportCaseWhereInput> {
-  if (!adult(actor)) return { id: { in: [] } };
   const grant = await staffGrant(tx, actor, "RESPOND");
-  if (onlyAssigned)
-    return grant
-      ? { ownerGrantId: grant.id, ownerGrantVersion: grant.version }
-      : { id: { in: [] } };
-  return {
-    OR: [
-      { requesterId: actor.id },
-      ...(grant
-        ? [{ ownerGrantId: grant.id, ownerGrantVersion: grant.version }]
-        : []),
-      ...(verified(actor)
-        ? [
-            {
-              coordinatorShare: {
-                is: { revokedAt: null, appointment: { userId: actor.id } }
-              }
-            }
-          ]
-        : [])
-    ]
-  };
+  const rows = await visibleSupportIds(
+    tx,
+    { id: actor.id, eligible: verified(actor), adult: adult(actor) },
+    grant,
+    { ...options, assigned: onlyAssigned }
+  );
+  return { id: { in: rows.map((row) => row.id) } };
 }
 async function shareOptions(tx: Tx, actor: Actor, c: CaseMeta) {
-  if (!verified(actor) || actor.id !== c.requesterId || !c.churchId) return [];
+  if (
+    c.moderationDecisionId ||
+    !verified(actor) ||
+    actor.id !== c.requesterId ||
+    !c.churchId
+  )
+    return [];
   const own = await tx.churchConnection.findFirst({
     where: { userId: actor.id, churchId: c.churchId, state: "APPROVED" },
     select: { id: true }
@@ -338,6 +356,12 @@ export async function readSupport(
     const page = pageNumber(input.page);
     const respond = await staffGrant(tx, actor, "RESPOND");
     const assign = await staffGrant(tx, actor, "ASSIGN");
+    const reportAuthority = await reportReviewAuthority(
+      tx,
+      await postContext(tx, verified(actor) ? actor.id : null)
+    );
+    const reportReviewer =
+      reportAuthority.global || !!reportAuthority.churches.length;
     const recipientGrant =
       view === "new" && adult(actor)
         ? await intake(
@@ -354,7 +378,7 @@ export async function readSupport(
         adult: adult(actor),
         verified: verified(actor)
       },
-      staff: { respond: !!respond, assign: !!assign },
+      staff: { respond: !!respond || reportReviewer, assign: !!assign },
       intake: {
         available: !!recipientGrant,
         recipient: recipientGrant
@@ -393,6 +417,7 @@ export async function readSupport(
       const rows = await tx.supportCase.findMany({
         where: {
           ownerGrantId: null,
+          moderationDecisionId: null,
           status: { notIn: ["RESOLVED", "CLOSED"] }
         },
         select: {
@@ -415,9 +440,9 @@ export async function readSupport(
       return result;
     }
     if (view === "requests" || view === "inbox") {
-      if (view === "inbox" && !respond) throw denied();
+      if (view === "inbox" && !respond && !reportReviewer) throw denied();
       const rows = await tx.supportCase.findMany({
-        where: await visibleWhere(tx, actor, view === "inbox"),
+        where: await visibleWhere(tx, actor, view === "inbox", { page }),
         select: {
           id: true,
           subject: true,
@@ -427,27 +452,32 @@ export async function readSupport(
           updatedAt: true,
           createdAt: true,
           ownerGrantId: true,
+          moderationDecisionId: true,
           reads: { where: { userId: actor.id }, select: { version: true } }
         },
         orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
-        skip: page * 20,
         take: 21
       });
       result.more = rows.length > 20;
-      result.rows = rows.slice(0, 20).map(({ ownerGrantId, reads, ...c }) => ({
-        ...c,
-        createdAt: c.createdAt.toISOString(),
-        updatedAt: c.updatedAt.toISOString(),
-        unread: (reads[0]?.version ?? 0) < c.version,
-        unassigned: !ownerGrantId
-      }));
+      result.rows = rows
+        .slice(0, 20)
+        .map(({ ownerGrantId, moderationDecisionId, reads, ...c }) => ({
+          ...c,
+          createdAt: c.createdAt.toISOString(),
+          updatedAt: c.updatedAt.toISOString(),
+          unread: (reads[0]?.version ?? 0) < c.version,
+          unassigned: !ownerGrantId && !moderationDecisionId
+        }));
       return result;
     }
     if (view !== "detail" || !input.caseId) throw denied();
     // Filter authorization in the query, before selecting even the subject or message bodies.
     const c = await tx.supportCase.findFirst({
       where: {
-        AND: [{ id: identifier(input.caseId) }, await visibleWhere(tx, actor)]
+        AND: [
+          { id: identifier(input.caseId) },
+          await visibleWhere(tx, actor, false, { id: input.caseId })
+        ]
       },
       select: {
         ...metadataSelect,
@@ -460,6 +490,7 @@ export async function readSupport(
         requester: { select: person },
         church: { select: { id: true, name: true } },
         ownerGrant: { select: { user: { select: person } } },
+        moderationDecision: { select: { actorId: true, reportId: true } },
         coordinatorShare: {
           where: { revokedAt: null },
           select: { appointment: { select: { user: { select: person } } } }
@@ -482,6 +513,9 @@ export async function readSupport(
     });
     if (!c) throw denied();
     const rights = await access(tx, actor, c);
+    const appealOwner = c.moderationDecision
+      ? await activeContentReviewer(tx, c.moderationDecision)
+      : null;
     result.detail = {
       id: c.id,
       subject: c.subject,
@@ -491,13 +525,19 @@ export async function readSupport(
       version: c.version,
       createdAt: c.createdAt.toISOString(),
       updatedAt: c.updatedAt.toISOString(),
-      unassigned: !c.ownerGrantId,
+      unassigned: c.moderationDecisionId ? !appealOwner : !c.ownerGrantId,
       unread: (c.reads[0]?.version ?? 0) < c.version,
       resolution: c.resolution,
       featureDecision: c.featureDecision,
       church: c.church,
       requester: c.requester,
-      owner: c.ownerGrant?.user ?? null,
+      owner: appealOwner ?? c.ownerGrant?.user ?? null,
+      reconsideration: !!c.moderationDecisionId,
+      ...(rights.owner && c.moderationDecision
+        ? {
+            reviewHref: reportReviewHref(c.moderationDecision.reportId)
+          }
+        : {}),
       coordinator: c.coordinatorShare?.appointment.user ?? null,
       access: rights,
       messages: c.messages
@@ -514,15 +554,24 @@ export async function readSupport(
       moreMessages: c.messages.length > 20,
       messagePage: page,
       shareOptions: rights.requester ? await shareOptions(tx, actor, c) : [],
-      ownerOptions: rights.owner
-        ? await ownerChoices(tx, [c.requesterId, actor.id])
-        : []
+      ownerOptions:
+        rights.owner && !c.moderationDecisionId
+          ? await ownerChoices(tx, [c.requesterId, actor.id])
+          : []
     };
     return result;
   });
 }
 
 const operationFields: Record<string, string[]> = {
+  appeal: [
+    "decisionId",
+    "decisionVersion",
+    "reportVersion",
+    "description",
+    "notice",
+    "consent"
+  ],
   create: [
     "category",
     "churchId",
@@ -596,7 +645,12 @@ export async function supportCommand(
           "That retry belongs to different information. Refresh the form."
         );
       const visible = await tx.supportCase.findFirst({
-        where: { AND: [{ id: prior.caseId }, await visibleWhere(tx, actor)] },
+        where: {
+          AND: [
+            { id: prior.caseId },
+            await visibleWhere(tx, actor, false, { id: prior.caseId })
+          ]
+        },
         select: { id: true }
       });
       // Routing-only receipts may be acknowledged without returning case content or further rights.
@@ -622,33 +676,48 @@ export async function supportCommand(
         429,
         "You have reached today's request update limit. Please try tomorrow."
       );
-    if (op === "create") {
+    if (op === "create" || op === "appeal") {
       if (input.caseId != null || input.expectedVersion != null)
         throw new SupportError(400, "Use the new request form.");
-      const category = text(input.category, 30) as SupportCategory;
-      if (!Object.hasOwn(supportCategories, category))
-        throw new SupportError(400, "Choose an ordinary help category.");
-      if (category !== "ACCOUNT_WEBSITE" && !verified(actor))
-        throw new SupportError(
-          403,
-          "Until your email is verified, choose Account or website problem for help with your own account."
-        );
-      const churchId = input.churchId ? identifier(input.churchId) : null;
-      const target = await intake(tx, actor, churchId);
-      if (!target) throw new SupportError(503, unavailable);
-      if (
-        target.id !== input.recipientId ||
-        target.version !== input.recipientVersion
-      )
-        throw new SupportError(
-          409,
-          "The support recipient changed. Refresh to review who will receive your request."
-        );
-      if (input.notice !== SUPPORT_NOTICE || input.consent !== true)
-        throw new SupportError(
-          400,
-          "Read and confirm who can see this request before sending it."
-        );
+      let createData: Prisma.SupportCaseUncheckedCreateInput;
+      if (op === "appeal") {
+        createData = await prepareContentAppeal(tx, actor.id, input);
+      } else {
+        const category = text(input.category, 30) as SupportCategory;
+        if (!Object.hasOwn(supportCategories, category))
+          throw new SupportError(400, "Choose an ordinary help category.");
+        if (category !== "ACCOUNT_WEBSITE" && !verified(actor))
+          throw new SupportError(
+            403,
+            "Until your email is verified, choose Account or website problem for help with your own account."
+          );
+        const churchId = input.churchId ? identifier(input.churchId) : null;
+        const target = await intake(tx, actor, churchId);
+        if (!target) throw new SupportError(503, unavailable);
+        if (
+          target.id !== input.recipientId ||
+          target.version !== input.recipientVersion
+        )
+          throw new SupportError(
+            409,
+            "The support recipient changed. Refresh to review who will receive your request."
+          );
+        if (input.notice !== SUPPORT_NOTICE || input.consent !== true)
+          throw new SupportError(
+            400,
+            "Read and confirm who can see this request before sending it."
+          );
+        createData = {
+          requesterId: actor.id,
+          churchId,
+          category,
+          subject: text(input.subject, 120, 3),
+          description: text(input.description, 3000, 10),
+          ownerGrantId: target.id,
+          ownerGrantVersion: target.version,
+          featureDecision: category === "FEATURE_SUGGESTION" ? "RECEIVED" : null
+        };
+      }
       if (
         (await tx.supportCase.count({
           where: { requesterId: actor.id, createdAt: { gte: since } }
@@ -659,16 +728,7 @@ export async function supportCommand(
           "You have reached today's limit of five new requests. You can still follow up on existing requests."
         );
       const c = await tx.supportCase.create({
-        data: {
-          requesterId: actor.id,
-          churchId,
-          category,
-          subject: text(input.subject, 120, 3),
-          description: text(input.description, 3000, 10),
-          ownerGrantId: target.id,
-          ownerGrantVersion: target.version,
-          featureDecision: category === "FEATURE_SUGGESTION" ? "RECEIVED" : null
-        },
+        data: createData,
         select: metadataSelect
       });
       await tx.supportAuditEvent.create({
@@ -692,11 +752,15 @@ export async function supportCommand(
       await tx.supportRead.create({
         data: { caseId: c.id, userId: actor.id, version: 1 }
       });
+      if (c.moderationDecisionId)
+        await updateAppealReport(tx, c.moderationDecisionId, actor.id, true);
+      if (c.moderationDecisionId) await recordAppealControl(tx, c.id, actor.id);
       return {
         caseId: c.id,
         version: 1,
-        message:
-          "Request received. Your request is saved here; no email was sent."
+        message: c.moderationDecisionId
+          ? "Reconsideration requested. Your explanation is saved in the help case for the assigned report reviewer."
+          : "Request received. Your request is saved here; no email was sent."
       };
     }
     const c = await tx.supportCase.findUnique({
@@ -707,6 +771,7 @@ export async function supportCommand(
     const rights = await access(tx, actor, c);
     const routingOnly =
       op === "handoff" &&
+      !c.moderationDecisionId &&
       !c.ownerGrantId &&
       !!(await staffGrant(tx, actor, "ASSIGN"));
     if (
@@ -714,6 +779,11 @@ export async function supportCommand(
       !rights.owner &&
       !rights.coordinator &&
       !routingOnly
+    )
+      throw denied();
+    if (
+      c.moderationDecisionId &&
+      ["share", "revoke", "handoff", "redact", "feature"].includes(op)
     )
       throw denied();
     expected(input.expectedVersion, c.version);
@@ -743,7 +813,8 @@ export async function supportCommand(
         );
       body = text(input.body, 2000, 1);
       if (rights.requester && c.status === "WAITING_FOR_REQUESTER")
-        data.status = c.ownerGrantId ? "IN_PROGRESS" : "RECEIVED";
+        data.status =
+          c.ownerGrantId || c.moderationDecisionId ? "IN_PROGRESS" : "RECEIVED";
     } else if (op === "transition") {
       if (!rights.owner && !rights.requester) throw denied();
       const target = text(input.status, 30) as SupportStatus;
@@ -777,6 +848,17 @@ export async function supportCommand(
       if (!rights.requester) throw denied();
       if (open) throw new SupportError(409, "This request is already open.");
       body = text(input.reason, 1000, 3);
+      if (c.moderationDecisionId) {
+        const d = await tx.communityReportDecision.findUniqueOrThrow({
+          where: { id: c.moderationDecisionId },
+          select: { actorId: true, reportId: true }
+        });
+        if (!(await activeContentReviewer(tx, d)))
+          throw new SupportError(
+            503,
+            "The assigned report reviewer is not currently authorized. This request cannot be reopened for delivery yet."
+          );
+      }
       data.status = "RECEIVED";
       data.resolution = null;
       // A changed intake default never silently receives an existing conversation.
@@ -885,6 +967,22 @@ export async function supportCommand(
           version: next.version
         }
       });
+    if (
+      c.moderationDecisionId &&
+      (op === "reopen" ||
+        (op === "reply" && rights.requester && !rights.owner) ||
+        (op === "transition" &&
+          rights.owner &&
+          ["RESOLVED", "CLOSED"].includes(String(data.status))))
+    ) {
+      await updateAppealReport(
+        tx,
+        c.moderationDecisionId,
+        actor.id,
+        op !== "transition",
+        body ?? undefined
+      );
+    }
     await audit(
       tx,
       c,
@@ -902,12 +1000,15 @@ export async function supportCommand(
         version: next.version
       }
     });
+    if (c.moderationDecisionId) await recordAppealControl(tx, c.id, actor.id);
     return {
       caseId: c.id,
       version: next.version,
-      message: next.ownerGrantId
-        ? "Request updated. Changes are saved here; no email was sent."
-        : "Request updated. It is awaiting assignment; no active support owner is assigned."
+      message: c.moderationDecisionId
+        ? "Help case updated. Its current reviewer is shown when you open the case."
+        : next.ownerGrantId
+          ? "Request updated. Changes are saved here; no email was sent."
+          : "Request updated. It is awaiting assignment; no active support owner is assigned."
     };
   });
 }

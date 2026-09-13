@@ -8,6 +8,22 @@ repeat owner policy or second-reviewer approval is required.
 
 ## Protected control records
 
+The content-moderation candidate extends these same records with source visibility,
+appeal versions and irreversible reported-author withdrawal controls. It copies no
+source text or case replies. A reported author removal commits first; failed
+provider protection returns an explicit accepted/pending message and the existing
+maintenance worker retries the durable control. Ordinary unreported text still
+clears immediately. Last-report expiry clears retained withdrawn text and linked
+appeal messages, audits and receipts, preserving unrelated ordinary support.
+
+Before enabling the candidate, install its recovery runtime and migration registry
+and run a fresh protected production-copy upgrade/replay. The restoration gate
+now also requires zero `contentNeedingReinspection` and `appealsNeedingRecovery`.
+Replayed later restoration cannot publish unproven old text: the source stays
+hidden until authorized reinspection. Missing appeal history must be recovered
+from an authorized current backup; content-free control records cannot invent it.
+Author withdrawal wins regardless of control-page order and later source versions.
+
 Report creation, final closure/reopening and hold changes commit a minimal
 RetentionControl record with their existing canonical mutation. The immutable
 projection contains opaque source/operator references, versions, outcomes and

@@ -17,7 +17,9 @@ const kinds = [
   "ADULT_REQUEST_CREATED",
   "ADULT_REQUEST_ACCEPTED",
   "COMMENT_ACTIVITY",
-  "REPORT_RECEIVED"
+  "REPORT_RECEIVED",
+  "REPORT_RECONSIDERATION",
+  "CONTENT_DECISION"
 ];
 const PAGE_SIZE = 20;
 type Position = { owner: string; through: string; after?: string };
@@ -108,6 +110,7 @@ const groupSql = Prisma.sql`CASE
   WHEN e.kind = 'ADULT_MESSAGE_CREATED' THEN 'conversation:' || coalesce(e."conversationId", e.id)
   WHEN e.kind IN ('ADULT_REQUEST_CREATED','ADULT_REQUEST_ACCEPTED') THEN 'request:' || coalesce(e."requestId", e.id)
   WHEN e.kind = 'COMMENT_ACTIVITY' THEN 'post:' || coalesce(e."postId", e.id)
+  WHEN e.kind = 'CONTENT_DECISION' THEN 'decision:' || coalesce(e."decisionId", e.id)
   ELSE 'report:' || coalesce(e."reportId", e.id) END`;
 function notMuted(user: Prisma.Sql, church: Prisma.Sql, context: PostContext) {
   return Prisma.sql`((${church} IS NULL AND ${context.mutedIds?.length ? Prisma.sql`${user} NOT IN (${Prisma.join(context.mutedIds)})` : Prisma.sql`TRUE`}) OR
@@ -130,7 +133,7 @@ async function activityRows(tx: Tx, ownerId: string, through: bigint) {
     LEFT JOIN "ConversationPreference" cp ON e.kind = 'COMMENT_ACTIVITY' AND cp."postId" = e."postId" AND cp."ownerId" = ${ownerId}
     WHERE e."recipientId" = ${ownerId} AND e.kind IN (${Prisma.join(kinds)}) AND e."activitySequence" <= ${through}
       AND (e.kind NOT IN ('ADULT_REQUEST_CREATED','ADULT_REQUEST_ACCEPTED') OR ${preferences?.requestAlerts ?? true})
-      AND (e.kind <> 'REPORT_RECEIVED' OR ${preferences?.reportAlerts ?? true})
+      AND (e.kind NOT IN ('REPORT_RECEIVED','REPORT_RECONSIDERATION','CONTENT_DECISION') OR ${preferences?.reportAlerts ?? true})
       AND (e.kind <> 'ADULT_MESSAGE_CREATED' OR (
         CASE WHEN m.kind = 'FOUNDER_ANNOUNCEMENT' THEN ${preferences?.founderAnnouncements ?? true} ELSE ${preferences?.messageAlerts ?? true} END
         AND coalesce(s.muted,false) = false AND (m.id IS NULL OR m.sequence > coalesce(s."hiddenThrough",0))))
@@ -185,9 +188,11 @@ async function activitySummaries(
       e.id,
       e.kind === "COMMENT_ACTIVITY"
         ? `Latest from ${speakers.get(e.commentId!)}`
-        : e.kind === "REPORT_RECEIVED"
-          ? "Within your current reviewer access"
-          : `With ${people.get(e.actorId)}`
+        : e.kind === "CONTENT_DECISION"
+          ? "A private decision about your content"
+          : ["REPORT_RECEIVED", "REPORT_RECONSIDERATION"].includes(e.kind)
+            ? "Within your current reviewer access"
+            : `With ${people.get(e.actorId)}`
     ])
   );
 }

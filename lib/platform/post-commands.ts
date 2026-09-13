@@ -27,6 +27,10 @@ import {
   type PostTx
 } from "./post-access";
 import { postField, postId } from "./post-input";
+import {
+  selectedSourceReport,
+  recordReportedWithdrawal
+} from "./retention-controls";
 
 import { POST_TOPICS } from "./post-options";
 import { emptyPostLink, preparePostLink, type PostLink } from "./post-links";
@@ -378,13 +382,14 @@ export async function postCommandIn(
         400,
         "Confirm that you want to remove this post and its discussion from view."
       );
+    const reported = await selectedSourceReport(tx, "POST", post.id);
     const updated = await tx.platformPost.update({
       where: { id: post.id },
       data: {
         status: "WITHDRAWN",
         withdrawnAt: now,
         discussionClosed: true,
-        content: "",
+        ...(!reported ? { content: "" } : {}),
         scripture: null,
         ...emptyPostLink,
         topics: [],
@@ -396,6 +401,14 @@ export async function postCommandIn(
       }
     });
     await audit(tx, updated, actorId, "withdrawn");
+    if (reported)
+      await recordReportedWithdrawal(
+        tx,
+        reported,
+        actorId,
+        updated.version,
+        now
+      );
     return {
       id: updated.id,
       version: updated.version,

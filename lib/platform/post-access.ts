@@ -90,7 +90,12 @@ export function postReadableWhere(
 ): Prisma.PlatformPostWhereInput {
   return {
     AND: [
-      { status: "PUBLISHED", withdrawnAt: null, publishedAt: { lte: now } },
+      {
+        status: "PUBLISHED",
+        withdrawnAt: null,
+        moderationState: "VISIBLE",
+        publishedAt: { lte: now }
+      },
       {
         OR: [
           { authorChurchId: { not: null } },

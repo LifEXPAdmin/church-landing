@@ -9,6 +9,8 @@ import {
 import { reportReviewHref } from "./community-report-types";
 import type { NotificationCategory } from "./notification-preferences";
 import { commentNotificationSources } from "./comment-notification-source";
+import { authorDecisionWhere } from "./content-moderation";
+import { contentNoticeHref } from "./content-moderation-types";
 type Tx = Prisma.TransactionClient;
 export type NotificationSource = {
   category: NotificationCategory | "test";
@@ -65,9 +67,14 @@ export async function notificationSources(
       });
   const comments = events.filter((e) => e.kind === "COMMENT_ACTIVITY");
   const reports = events.filter(
-    (e) => e.kind === "REPORT_RECEIVED" && e.reportId
+    (e) =>
+      ["REPORT_RECEIVED", "REPORT_RECONSIDERATION"].includes(e.kind) &&
+      e.reportId
   );
-  if (comments.length || reports.length) {
+  const decisions = events.filter(
+    (e) => e.kind === "CONTENT_DECISION" && e.decisionId && e.reportId
+  );
+  if (comments.length || reports.length || decisions.length) {
     const context = suppliedContext ?? (await postContext(tx, ownerId));
     if (context.actorId !== ownerId) return result;
     if (comments.length) {
@@ -100,6 +107,45 @@ export async function notificationSources(
             href: reportReviewHref(event.reportId!),
             group: event.reportId!
           });
+    }
+    if (decisions.length) {
+      const rows = await tx.communityReportDecision.findMany({
+        where: {
+          AND: [
+            { id: { in: decisions.map((e) => e.decisionId!) } },
+            authorDecisionWhere(context)
+          ]
+        },
+        select: { id: true, actorId: true, reportId: true },
+        take: 50
+      });
+      const sealed = new Set(
+        (
+          await tx.retentionPurge.findMany({
+            where: {
+              target: "REPORT",
+              targetId: { in: rows.map((r) => r.reportId) }
+            },
+            select: { targetId: true },
+            take: 50
+          })
+        ).map((r) => r.targetId)
+      );
+      const visible = new Map(rows.map((r) => [r.id, r]));
+      for (const event of decisions) {
+        const row = visible.get(event.decisionId!);
+        if (
+          row &&
+          row.reportId === event.reportId &&
+          row.actorId === event.actorId &&
+          !sealed.has(row.reportId)
+        )
+          result.set(event.id, {
+            category: "reports",
+            href: contentNoticeHref(row.id),
+            group: row.id
+          });
+      }
     }
   }
   const adult = events.filter(

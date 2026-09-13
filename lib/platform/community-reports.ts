@@ -20,13 +20,27 @@ import { eligibleWhere, expected, PortalError } from "./portal-policy";
 import { socialCommand, socialInput } from "./social-operations";
 import { socialUserWhere } from "./social-policy";
 import { adultMemberWhere } from "./adult-message-policy";
-import { recordReportActivity } from "./report-activity";
+import {
+  recordReportActivity,
+  recordContentDecisionActivity
+} from "./report-activity";
 import { retentionDate } from "./messaging-retention";
-import { recordHoldControl, recordReportControl } from "./retention-controls";
+import {
+  recordContentControl,
+  recordHoldControl,
+  recordReportControl
+} from "./retention-controls";
 import {
   reportReviewAuthority,
   reviewReportRows
 } from "./community-report-review";
+import {
+  contentReviewSource,
+  contentSourceView,
+  moderateReportedContent,
+  readContentNotices
+} from "./content-moderation";
+import { contentAppealOffer } from "./moderation-support";
 
 type Target = {
   type: CommunityReportTarget;
@@ -365,6 +379,20 @@ export function readCommunityReports(
     const ownerId = context.actorId;
     if (!ownerId)
       throw new PortalError(401, "Sign in to open your private reports.");
+    if (query.view === "decisions") {
+      await eligibleActor(tx, ownerId);
+      const page = await readContentNotices(tx, context, query);
+      const appeal = query.id
+        ? (await contentAppealOffer(tx, ownerId, postId(query.id))).offer
+        : undefined;
+      return {
+        ownerId,
+        notices: page.notices,
+        after: page.after,
+        appeal,
+        ownSource: page.ownSource
+      };
+    }
     if (query.view === "target") {
       await eligibleActor(tx, ownerId);
       const target = await requireTarget(
@@ -439,7 +467,13 @@ export function readCommunityReports(
           toStatus: true,
           reason: true,
           version: true,
-          createdAt: true
+          createdAt: true,
+          action: true,
+          authorReason: true,
+          fromVisibility: true,
+          toVisibility: true,
+          sourceVersion: true,
+          contextVersion: true
         }
       });
       const holds = await tx.retentionHold.findMany({
@@ -491,6 +525,15 @@ export function readCommunityReports(
                 select: { content: true, version: true, createdAt: true }
               })
             : undefined;
+      const source = await contentReviewSource(tx, report);
+      const reconsiderationCases = await tx.supportCase.findMany({
+        where: {
+          moderationDecision: { reportId: report.id, actorId: ownerId }
+        },
+        select: { id: true, status: true, version: true },
+        orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
+        take: 20
+      });
       return {
         ownerId,
         report: receipt(report),
@@ -511,7 +554,9 @@ export function readCommunityReports(
                   ...selectedText
                 }
               : undefined,
-        reportedVersion: report.targetVersion
+        reportedVersion: report.targetVersion,
+        source: contentSourceView(source),
+        reconsiderationCases
       };
     }
     if (query.view === "receipt") {
@@ -556,41 +601,54 @@ export function communityReportCommand(
   input: Record<string, unknown>
 ) {
   const resolving = input.operation === "resolve";
+  const moderating = input.operation === "moderate";
   const holding = ["preserve", "review-hold", "release-hold"].includes(
     String(input.operation)
   );
-  if (!resolving && !holding && input.operation !== "create")
+  if (!resolving && !moderating && !holding && input.operation !== "create")
     throw new PortalError(400, "Choose a supported report action.");
   socialInput(
     input,
-    holding
+    moderating
       ? [
           "operation",
           "mutationId",
           "id",
           "expectedVersion",
-          "holdId",
+          "expectedSourceVersion",
+          "expectedContextVersion",
+          "action",
+          "authorReason",
           "decisionReason"
         ]
-      : resolving
+      : holding
         ? [
             "operation",
             "mutationId",
             "id",
             "expectedVersion",
-            "resolution",
+            "holdId",
             "decisionReason"
           ]
-        : [
-            "operation",
-            "mutationId",
-            "targetType",
-            "targetId",
-            "expectedTargetVersion",
-            "expectedContextVersion",
-            "reason",
-            "details"
-          ]
+        : resolving
+          ? [
+              "operation",
+              "mutationId",
+              "id",
+              "expectedVersion",
+              "resolution",
+              "decisionReason"
+            ]
+          : [
+              "operation",
+              "mutationId",
+              "targetType",
+              "targetId",
+              "expectedTargetVersion",
+              "expectedContextVersion",
+              "reason",
+              "details"
+            ]
   );
   let reviewed: CommunityReport | null = null;
   return socialCommand(
@@ -599,6 +657,48 @@ export function communityReportCommand(
     "community-report",
     input,
     async (tx, ownerId) => {
+      if (moderating) {
+        const report = reviewed!;
+        expected(input.expectedVersion, report.version);
+        const { status: requestedStatus, ...decision } =
+          await moderateReportedContent(tx, report, input);
+        const openAppeals = await tx.supportCase.count({
+          where: {
+            moderationDecision: { reportId: report.id },
+            status: { notIn: ["RESOLVED", "CLOSED"] }
+          }
+        });
+        const status = openAppeals ? "FOLLOW_UP_REQUIRED" : requestedStatus;
+        const updated = await tx.communityReport.update({
+          where: { id: report.id },
+          data: {
+            status,
+            version: { increment: 1 },
+            closedAt:
+              status === "CLOSED" ? (report.closedAt ?? new Date()) : null,
+            reviewDueAt: retentionDate(new Date(), 30)
+          }
+        });
+        const saved = await tx.communityReportDecision.create({
+          data: {
+            reportId: report.id,
+            actorId: ownerId,
+            fromStatus: report.status,
+            toStatus: updated.status,
+            version: updated.version,
+            ...decision
+          }
+        });
+        await recordContentDecisionActivity(tx, saved);
+        await recordReportControl(tx, updated, ownerId);
+        await recordContentControl(tx, updated, saved);
+        return {
+          id: report.id,
+          version: updated.version,
+          message:
+            "Content decision recorded. The author has a separate private notice. Original sharing and reply permissions remain in force."
+        };
+      }
       if (holding) {
         const report = reviewed!;
         expected(input.expectedVersion, report.version);
@@ -708,6 +808,19 @@ export function communityReportCommand(
             "Choose whether this review is closed or requires follow-up."
           );
         const reason = postField(input.decisionReason, 1000, 5);
+        if (
+          input.resolution === "CLOSED" &&
+          (await tx.supportCase.count({
+            where: {
+              moderationDecision: { reportId: report.id },
+              status: { notIn: ["RESOLVED", "CLOSED"] }
+            }
+          }))
+        )
+          throw new PortalError(
+            409,
+            "Resolve the open reconsideration case before closing this report. Content restrictions can still be reviewed separately."
+          );
         const updated = await tx.communityReport.update({
           where: { id: report.id },
           data: {
@@ -817,7 +930,7 @@ export function communityReportCommand(
           "Report received. Your receipt is private; no automatic restriction was applied."
       };
     },
-    resolving || holding
+    resolving || moderating || holding
       ? async (tx, ownerId) => {
           reviewed = await requireReview(tx, ownerId, input.id);
         }

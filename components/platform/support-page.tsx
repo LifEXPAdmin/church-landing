@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { createHash } from "node:crypto";
 import { redirect } from "next/navigation";
 import type {
   SupportSnapshot,
@@ -15,6 +16,7 @@ import {
 } from "./portal-ui";
 import { SupportViews } from "./support-views";
 import { PortalRetry } from "./portal-retry";
+import { PrivateSnapshotGuard } from "./private-snapshot-guard";
 export async function SupportPage({
   view,
   caseId,
@@ -96,12 +98,21 @@ export async function SupportPage({
               : "Ordinary help, clear ownership and updates you can return to. Private to each request's authorized participants."
           }
         />
-        <SupportViews
-          snapshot={snapshot}
-          view={view}
-          churchId={churchId}
-          received={received}
-        />
+        <PrivateSnapshotGuard
+          label="help case"
+          owner={snapshot.viewer.id}
+          checksum={createHash("sha256")
+            .update(JSON.stringify(snapshot))
+            .digest("hex")}
+          url={`/api/platform/support?${new URLSearchParams({ view, ...(caseId ? { caseId } : {}), ...(churchId ? { churchId } : {}), ...(page ? { page } : {}) })}`}
+        >
+          <SupportViews
+            snapshot={snapshot}
+            view={view}
+            churchId={churchId}
+            received={received}
+          />
+        </PrivateSnapshotGuard>
       </section>
     </PlatformShell>
   );

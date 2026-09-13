@@ -57,6 +57,12 @@ export type CommunityReviewPage = {
     updatedAt: string;
   }[];
   decisions?: {
+    action?: string | null;
+    authorReason?: string | null;
+    fromVisibility?: string | null;
+    toVisibility?: string | null;
+    sourceVersion?: number | null;
+    contextVersion?: number | null;
     fromStatus: keyof typeof communityReportStatusLabels;
     toStatus: keyof typeof communityReportStatusLabels;
     reason: string;
@@ -71,6 +77,8 @@ export type CommunityReviewPage = {
     createdAt: string;
   };
   reportedVersion?: number;
+  source?: import("./content-moderation-types").ContentSourceReview | null;
+  reconsiderationCases?: { id: string; status: string; version: number }[];
   after?: string | null;
 };
 export function reportReviewHref(id?: string, closed = false, after?: string) {

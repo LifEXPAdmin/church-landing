@@ -35,6 +35,33 @@ export type ReviewRow = Pick<
   | "scopeChurchId"
 >;
 
+// SQL aliases r (report), c (comment), p (post) are shared by the review
+// queue and support appeal authorization. Neither path selects private bodies.
+export const reviewReportJoins = Prisma.sql`
+    LEFT JOIN "PlatformPostComment" c ON r."targetType" = 'COMMENT' AND c.id = r."targetId"
+    LEFT JOIN "PlatformPost" p ON p.id = CASE
+      WHEN r."targetType" = 'POST' THEN r."targetId"
+      WHEN r."targetType" = 'COMMENT' THEN c."postId" END
+`;
+export function reviewReportScope(authority: ReportReviewAuthority) {
+  const original = Prisma.sql`(
+    (${authority.global} AND r."scopeChurchId" IS NULL) OR
+    ${
+      authority.churches.length
+        ? Prisma.sql`r."scopeChurchId" IN (${Prisma.join(authority.churches)})`
+        : Prisma.sql`FALSE`
+    })`;
+  const currentScope = Prisma.sql`coalesce(p."authorChurchId",
+    CASE WHEN p.audience = 'CHURCH' THEN p."audienceChurchId" END)`;
+  return Prisma.sql`${original}
+      AND NOT EXISTS (SELECT 1 FROM "RetentionPurge" purge WHERE purge.target = 'REPORT' AND purge."targetId" = r.id)
+      AND (${currentScope} IS NULL OR ${
+        authority.churches.length
+          ? Prisma.sql`${currentScope} IN (${Prisma.join(authority.churches)})`
+          : Prisma.sql`FALSE`
+      })`;
+}
+
 // One permission predicate serves queue pages, cursor validation and individual
 // decisions. Filter original AND current source scopes before pagination. No
 // reporter details or source body is read by this query. Cursor time is explicitly
@@ -50,30 +77,12 @@ export function reviewReportRows(
     limit: number;
   }
 ) {
-  const original = Prisma.sql`(
-    (${authority.global} AND r."scopeChurchId" IS NULL) OR
-    ${
-      authority.churches.length
-        ? Prisma.sql`r."scopeChurchId" IN (${Prisma.join(authority.churches)})`
-        : Prisma.sql`FALSE`
-    })`;
-  const currentScope = Prisma.sql`coalesce(p."authorChurchId",
-    CASE WHEN p.audience = 'CHURCH' THEN p."audienceChurchId" END)`;
   return tx.$queryRaw<ReviewRow[]>(Prisma.sql`
     SELECT r.id, r."targetType", r.reason, r.status, r.version,
       r."createdAt", r."updatedAt", r."scopeChurchId"
     FROM "CommunityReport" r
-    LEFT JOIN "PlatformPostComment" c ON r."targetType" = 'COMMENT' AND c.id = r."targetId"
-    LEFT JOIN "PlatformPost" p ON p.id = CASE
-      WHEN r."targetType" = 'POST' THEN r."targetId"
-      WHEN r."targetType" = 'COMMENT' THEN c."postId" END
-    WHERE ${original}
-      AND NOT EXISTS (SELECT 1 FROM "RetentionPurge" purge WHERE purge.target = 'REPORT' AND purge."targetId" = r.id)
-      AND (${currentScope} IS NULL OR ${
-        authority.churches.length
-          ? Prisma.sql`${currentScope} IN (${Prisma.join(authority.churches)})`
-          : Prisma.sql`FALSE`
-      })
+    ${reviewReportJoins}
+    WHERE ${reviewReportScope(authority)}
       ${options.id ? Prisma.sql`AND r.id = ${options.id}` : Prisma.empty}
       ${options.ids ? (options.ids.length ? Prisma.sql`AND r.id IN (${Prisma.join(options.ids)})` : Prisma.sql`AND FALSE`) : Prisma.empty}
       ${

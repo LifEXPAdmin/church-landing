@@ -1,5 +1,59 @@
 # Private community reporting contract
 
+## Scoped content decisions — local candidate, 13 September 2026
+
+This section supersedes historical source-enforcement and appeal gaps below for
+the current candidate. Publication and broader integration remain separate gates.
+The live appointment/retention receipt is in CURRENT_STATE.md.
+
+The existing `moderate` report command supports no violation, request correction,
+hide, remove and restore. It binds report, source and parent versions under the
+existing transaction gate and checks pinned/current authority before exact replay.
+Only moderationState and source version change: audience, replyAudience, closure,
+text, attachments and author withdrawal remain with their current owners. Shared
+post/comment predicates exclude restricted sources from readers, search, media,
+saves, reposts, previews and notification resolution. A hidden root retains only
+a content-free placeholder when visible replies require its thread position.
+
+Canonical decisions record actor, source version, old/new visibility, private
+review reason and a separate structured author explanation. Existing Activity
+and outbox services receive one author intent. `/platform/reports/decisions`
+lists at most 20 own decisions; detail reads only the current logical author's
+selected canonical text, concealing deleted text. Reporter identity/context and
+private review reasons are excluded. Church notices require current publisher
+authority for the speaking church, never the internal publishing account alone.
+
+Explicit consent and current decision/report versions create one linked existing
+SupportCase per decision. Its named original reviewer must retain all required
+report authority. That authority opens only their assigned appeal; ordinary
+Support grants do not open it. Church authors/reviewers lose access on revocation.
+The founder remains sole initial global reviewer, including self cases; this is
+not independent review. No substitute, Support grant, ordinary intake activation,
+coordinator share, handoff or redaction permission is invented. Replies/reopening
+keep the report in follow-up and alert its assigned reviewer. Case closure never
+restores content; report closure is rejected while linked cases remain open.
+
+Support authorization filters before pagination or body selection. Forms bind
+the current account and preserve the exact serialized uncertain request. Private
+snapshots conceal on blur and revalidate on return; changed details require a
+deliberate reload rather than silently rebasing the form.
+
+Content restrictions, appeal versions and reported author withdrawals reuse the
+content-free protected retention journal. Failed protection keeps durable pending
+work. Report/appeal writes offer exact retry; a saved author removal returns an
+explicit accepted/pending-protection response with automatic maintenance retry.
+Selected canonical text remains only while a report requires it; final report
+purge clears withdrawn text and linked appeal records. Unreported deletion clears
+immediately. A database trigger permits deleted comment text only with a selected
+report. No parallel body snapshot, dependency, table or worker is introduced.
+
+Restoration reapplies irreversible author withdrawals regardless of journal page
+order. An older backup cannot prove a later approved restoration's text/audience:
+the source stays hidden pending reinspection. Missing/newer appeal history also
+blocks recovery completion instead of fabricating text. Operational release gates
+remain in RETENTION_OPERATIONS.md. Account escalation, broader operator integration
+and owner acceptance retain their separate criteria.
+
 ## Current policy — 13 September 2026
 
 [The approved messaging retention and deletion policy](MESSAGING_RETENTION_POLICY.md)

@@ -591,10 +591,22 @@ model CommunityReportDecision {
   toStatus CommunityReportStatus
   reason String
   version Int
+  // Structured author notice is separate from the private reviewer reason.
+  action String?
+  authorReason String?
+  authorId String?
+  authorChurchId String?
+  fromVisibility String?
+  toVisibility String?
+  sourceVersion Int?
+  contextVersion Int?
   createdAt DateTime @default(now())
   report CommunityReport @relation(fields: [reportId], references: [id], onDelete: Restrict)
   actor PlatformUser @relation(fields: [actorId], references: [id], onDelete: Restrict)
+  reconsideration SupportCase?
   @@index([reportId, createdAt])
+  @@index([authorId, createdAt, id])
+  @@index([authorChurchId, createdAt, id])
 }
 
 enum ChurchContactSlot {
@@ -1060,6 +1072,10 @@ model SupportCase {
   description String
   ownerGrantId String?
   ownerGrantVersion Int?
+  // A deliberate content appeal uses the selected report's assigned reviewer,
+  // never a broad ordinary-support grant or coordinator share.
+  moderationDecisionId String? @unique
+  moderationDecision CommunityReportDecision? @relation(fields: [moderationDecisionId], references: [id], onDelete: Restrict)
   status SupportStatus @default(RECEIVED)
   version Int @default(1)
   resolution String?
@@ -1177,6 +1193,12 @@ enum PostRepostKind {
   QUOTE
 }
 
+enum ContentModerationState {
+  VISIBLE
+  HIDDEN
+  REMOVED
+}
+
 model PlatformPost {
   id        String           @id @default(cuid())
   createdAt DateTime         @default(now())
@@ -1199,6 +1221,7 @@ model PlatformPost {
   editedAt DateTime?
   publishedAt DateTime? @default(now())
   withdrawnAt DateTime?
+  moderationState ContentModerationState @default(VISIBLE)
   discussionClosed Boolean @default(false)
   replyAudience PostReplyAudience @default(VIEWERS)
   allowReposts Boolean @default(false)
@@ -1351,6 +1374,7 @@ model PlatformPostComment {
   version Int @default(1)
   editedAt DateTime?
   deletedAt DateTime?
+  moderationState ContentModerationState @default(VISIBLE)
   parent PlatformPostComment? @relation("CommentParent", fields: [parentId, postId], references: [id, postId], onDelete: NoAction, onUpdate: NoAction)
   children PlatformPostComment[] @relation("CommentParent")
   root PlatformPostComment? @relation("CommentRoot", fields: [rootId, postId], references: [id, postId], onDelete: NoAction, onUpdate: NoAction)
@@ -1447,6 +1471,7 @@ model SocialEvent {
   conversationId String?
   messageId String?
   reportId String?
+  decisionId String?
   recipientId String?
   createdAt DateTime @default(now())
   @@index([postId, createdAt])

@@ -37,6 +37,8 @@ export type SupportRow = {
   unread: boolean;
 };
 export type SupportDetail = SupportRow & {
+  reconsideration?: boolean;
+  reviewHref?: string;
   description: string;
   church: { id: string; name: string } | null;
   requester: SupportPerson;

@@ -101,6 +101,7 @@ type Row = Prisma.PlatformPostCommentGetPayload<{
 }>;
 const visible = (r: Row, c: PostContext) =>
   !r.deletedAt &&
+  r.moderationState === "VISIBLE" &&
   (!!r.authorChurch ||
     (!r.author.suspendedAt &&
       !r.author.deactivatedAt &&

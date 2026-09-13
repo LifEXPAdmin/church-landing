@@ -1,5 +1,7 @@
 "use client";
 import { useEffect, useId, useRef, useState } from "react";
+import { socialRequest, SocialClientError } from "@/lib/platform/social-client";
+import { useUnsavedSocialWork } from "./use-unsaved-social-work";
 export type SupportField = {
   name: string;
   label: string;
@@ -10,6 +12,7 @@ export type SupportField = {
   optional?: boolean;
 };
 export function SupportForm({
+  owner,
   operation,
   fixed = {},
   fields = [],
@@ -17,6 +20,7 @@ export function SupportForm({
   destination,
   caution
 }: {
+  owner: string;
   operation: string;
   fixed?: Record<string, unknown>;
   fields?: SupportField[];
@@ -25,18 +29,33 @@ export function SupportForm({
   caution?: string;
 }) {
   const id = useId();
+  const initialFixed = useRef(fixed);
   const [pending, setBusy] = useState(false);
   const inFlight = useRef(false);
   const busy = pending;
   const [feedback, setFeedback] = useState("");
   const [failed, setFailed] = useState(false);
   const feedbackRef = useRef<HTMLParagraphElement>(null);
-  const retry = useRef<{ serialized: string; key: string } | null>(null);
+  const [retryBody, setRetryBody] = useState<string | null>(null);
+  const [dirty, setDirty] = useState(false);
+  const [navigation, setNavigation] = useState<string | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+  useUnsavedSocialWork(
+    { dirty, saving: busy || !!retryBody, conflict: false },
+    () =>
+      setFeedback("Save, retry or discard these local entries before leaving."),
+    true
+  );
+  useEffect(() => {
+    if (navigation) window.location.assign(navigation);
+  }, [navigation]);
   useEffect(() => {
     if (feedback && !busy) feedbackRef.current?.focus();
   }, [feedback, busy]);
   return (
     <form
+      ref={formRef}
+      onChange={() => setDirty(true)}
       aria-label={button}
       aria-busy={busy}
       className="space-y-4"
@@ -45,7 +64,10 @@ export function SupportForm({
         if (busy || inFlight.current) return;
         const form = e.currentTarget;
         const data = new FormData(form);
-        const payload: Record<string, unknown> = { ...fixed, operation };
+        const payload: Record<string, unknown> = {
+          ...initialFixed.current,
+          operation
+        };
         fields.forEach((f) => {
           payload[f.name] =
             f.type === "checkbox"
@@ -64,43 +86,51 @@ export function SupportForm({
             delete payload[choice];
           }
         }
-        const serialized = JSON.stringify(payload);
-        if (retry.current?.serialized !== serialized)
-          retry.current = { serialized, key: crypto.randomUUID() };
+        const serialized =
+          retryBody ??
+          JSON.stringify({ ...payload, requestKey: crypto.randomUUID() });
+        setRetryBody(serialized);
         inFlight.current = true;
         setBusy(true);
         setFeedback("");
         try {
-          const response = await fetch("/api/platform/support", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ ...payload, requestKey: retry.current.key }),
-            cache: "no-store"
-          });
-          const result = await response.json();
-          if (!response.ok) {
-            setFailed(true);
-            setFeedback(
-              result.message ||
-                "Please try again. Your request has not been confirmed."
+          const { data: result } = await socialRequest<{
+            caseId: string;
+            version: number;
+            message: string;
+          }>("/api/platform/support", serialized, owner);
+          if (
+            typeof result.caseId !== "string" ||
+            !Number.isSafeInteger(result.version) ||
+            result.version < 1
+          )
+            throw new SocialClientError(
+              503,
+              "The save result is unconfirmed. Retry the original request."
             );
-          } else {
-            setFailed(false);
-            setFeedback(result.message);
-            retry.current = null;
-            form.reset();
-            if (operation === "create" && typeof result.caseId === "string")
-              window.location.assign(
-                `/platform/help/cases/${encodeURIComponent(result.caseId)}?received=1`
-              );
-            else if (destination) window.location.assign(destination);
-            // A fresh private document discards stale client route data after a write.
-            else window.location.reload();
-          }
-        } catch {
+          setFailed(false);
+          setFeedback(result.message);
+          setRetryBody(null);
+          setDirty(false);
+          form.reset();
+          if (["create", "appeal"].includes(operation))
+            setNavigation(
+              `/platform/help/cases/${encodeURIComponent(result.caseId)}?received=1`
+            );
+          else if (destination) setNavigation(destination);
+          // A fresh private document discards stale client route data after a write.
+          else setNavigation(window.location.href);
+        } catch (error) {
+          if (
+            error instanceof SocialClientError &&
+            [400, 409, 429].includes(error.status)
+          )
+            setRetryBody(null);
           setFailed(true);
           setFeedback(
-            "We could not confirm that this saved. Keep this form open and retry with the same information; a retry will not duplicate it."
+            error instanceof Error
+              ? error.message
+              : "We could not confirm that this saved. Retry the original request; it will not duplicate it."
           );
         } finally {
           inFlight.current = false;
@@ -108,63 +138,65 @@ export function SupportForm({
         }
       }}
     >
-      {fields.map((f) => (
-        <div key={f.name}>
-          <label
-            htmlFor={`${id}-${f.name}`}
-            className="mb-2 block text-sm font-semibold text-gc-text"
-          >
-            {f.label}
-            {f.optional ? " (optional)" : ""}
-          </label>
-          {f.type === "checkbox" ? (
-            <input
-              id={`${id}-${f.name}`}
-              name={f.name}
-              type="checkbox"
-              required={!f.optional}
-              className="h-6 w-6 accent-[#e6b56c] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#f4c98c]"
-            />
-          ) : f.type === "select" ? (
-            <select
-              id={`${id}-${f.name}`}
-              name={f.name}
-              required={!f.optional}
-              className={inputClass}
+      <fieldset disabled={busy || !!retryBody} className="space-y-4">
+        {fields.map((f) => (
+          <div key={f.name}>
+            <label
+              htmlFor={`${id}-${f.name}`}
+              className="mb-2 block text-sm font-semibold text-gc-text"
             >
-              {f.options?.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-          ) : f.type === "textarea" ? (
-            <textarea
-              id={`${id}-${f.name}`}
-              name={f.name}
-              required={!f.optional}
-              minLength={f.min}
-              maxLength={f.max}
-              rows={4}
-              className={inputClass}
-            />
-          ) : (
-            <input
-              id={`${id}-${f.name}`}
-              name={f.name}
-              required={!f.optional}
-              minLength={f.min}
-              maxLength={f.max}
-              className={inputClass}
-            />
-          )}
-          {f.max && (
-            <p className="mt-1 text-xs text-gc-muted">
-              Up to {f.max.toLocaleString()} characters. Plain text only.
-            </p>
-          )}
-        </div>
-      ))}
+              {f.label}
+              {f.optional ? " (optional)" : ""}
+            </label>
+            {f.type === "checkbox" ? (
+              <input
+                id={`${id}-${f.name}`}
+                name={f.name}
+                type="checkbox"
+                required={!f.optional}
+                className="h-6 w-6 accent-[#e6b56c] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#f4c98c]"
+              />
+            ) : f.type === "select" ? (
+              <select
+                id={`${id}-${f.name}`}
+                name={f.name}
+                required={!f.optional}
+                className={inputClass}
+              >
+                {f.options?.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            ) : f.type === "textarea" ? (
+              <textarea
+                id={`${id}-${f.name}`}
+                name={f.name}
+                required={!f.optional}
+                minLength={f.min}
+                maxLength={f.max}
+                rows={4}
+                className={inputClass}
+              />
+            ) : (
+              <input
+                id={`${id}-${f.name}`}
+                name={f.name}
+                required={!f.optional}
+                minLength={f.min}
+                maxLength={f.max}
+                className={inputClass}
+              />
+            )}
+            {f.max && (
+              <p className="mt-1 text-xs text-gc-muted">
+                Up to {f.max.toLocaleString()} characters. Plain text only.
+              </p>
+            )}
+          </div>
+        ))}
+      </fieldset>
       {caution && (
         <p className="text-sm leading-relaxed text-gc-muted">{caution}</p>
       )}
@@ -178,19 +210,54 @@ export function SupportForm({
         {feedback}
       </p>
       {failed && (
-        <a
-          href=""
+        <button
+          type="button"
+          onClick={() => {
+            if (
+              confirm(
+                "Reload this page and discard local entries? An earlier unconfirmed request may already be saved."
+              )
+            ) {
+              setDirty(false);
+              setRetryBody(null);
+              setNavigation(window.location.href);
+            }
+          }}
           className="inline-flex min-h-11 items-center text-sm text-gc-accent underline"
         >
           Load the latest page (clears this draft)
-        </a>
+        </button>
+      )}
+      {(dirty || retryBody) && (
+        <button
+          type="button"
+          disabled={busy}
+          className="gc-button gc-button-quiet"
+          onClick={() => {
+            if (
+              retryBody &&
+              !confirm(
+                "This request may already be saved. Clear only this browser's pending retry and entries?"
+              )
+            )
+              return;
+            setRetryBody(null);
+            setDirty(false);
+            formRef.current?.reset();
+            setFeedback(
+              "Local entries discarded. Previously saved changes remain."
+            );
+          }}
+        >
+          Discard local entries
+        </button>
       )}
       <button
         disabled={busy}
         type="submit"
         className="min-h-11 rounded-xl bg-gc-action px-5 py-3 text-sm font-semibold text-gc-on-action hover:bg-gc-action focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#f4c98c] disabled:opacity-60"
       >
-        {busy ? "Saving..." : button}
+        {busy ? "Saving..." : retryBody ? "Retry original request" : button}
       </button>
     </form>
   );

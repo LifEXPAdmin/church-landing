@@ -135,6 +135,17 @@ export async function purgeMessagingCandidate(
       where: { id: candidate.id },
       select: { targetType: true, targetId: true }
     });
+    const appeals = {
+      case: { moderationDecision: { reportId: candidate.id } }
+    };
+    await tx.supportMessage.deleteMany({ where: appeals });
+    await tx.supportRead.deleteMany({ where: appeals });
+    await tx.supportOperation.deleteMany({ where: appeals });
+    await tx.supportAuditEvent.deleteMany({ where: appeals });
+    await tx.supportCoordinatorShare.deleteMany({ where: appeals });
+    await tx.supportCase.deleteMany({
+      where: { moderationDecision: { reportId: candidate.id } }
+    });
     await tx.communityReportDecision.deleteMany({
       where: { reportId: candidate.id }
     });
@@ -149,8 +160,14 @@ export async function purgeMessagingCandidate(
         await tx.platformPost.updateMany({
           where: {
             id: source.targetId,
-            authorChurchId: null,
-            author: { deletionRequestedAt: { not: null } }
+            OR: [
+              { status: "WITHDRAWN" },
+              { withdrawnAt: { not: null } },
+              {
+                authorChurchId: null,
+                author: { deletionRequestedAt: { not: null } }
+              }
+            ]
           },
           data: { content: "" }
         });
@@ -158,8 +175,13 @@ export async function purgeMessagingCandidate(
         await tx.platformPostComment.updateMany({
           where: {
             id: source.targetId,
-            authorChurchId: null,
-            author: { deletionRequestedAt: { not: null } }
+            OR: [
+              { deletedAt: { not: null } },
+              {
+                authorChurchId: null,
+                author: { deletionRequestedAt: { not: null } }
+              }
+            ]
           },
           data: { content: "", deletedAt: new Date() }
         });

@@ -1,10 +1,11 @@
 import { randomUUID } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
-import type {
+import {
   Prisma,
-  PrismaClient,
-  CommunityReport,
-  RetentionHold
+  type PrismaClient,
+  type CommunityReport,
+  type CommunityReportDecision,
+  type RetentionHold
 } from "@prisma/client";
 import {
   privateRetentionStore,
@@ -18,7 +19,14 @@ type Tx = Prisma.TransactionClient;
 const PREFIX = "retention-v1/controls/";
 export type RetentionControlEntry = {
   id: string;
-  kind: "REPORT" | "HOLD";
+  kind:
+    | "REPORT"
+    | "HOLD"
+    | "MODERATION_POST"
+    | "MODERATION_COMMENT"
+    | "APPEAL"
+    | "AUTHOR_WITHDRAW_POST"
+    | "AUTHOR_WITHDRAW_COMMENT";
   target: "REPORT" | "MESSAGE";
   targetId: string;
   sourceId: string;
@@ -59,10 +67,28 @@ function validate(value: unknown): RetentionControlEntry {
       ? r.target === "REPORT" &&
         r.sourceId === r.targetId &&
         ["RECEIVED", "FOLLOW_UP_REQUIRED", "CLOSED"].includes(r.outcome)
-      : r.kind === "HOLD" &&
-        ["REPORT", "MESSAGE"].includes(r.target) &&
-        ["PRESERVE", "REVIEW", "RELEASE"].includes(r.outcome)) ||
-    ["CLOSED", "RELEASE"].includes(r.outcome) !== (r.endedAt !== null)
+      : r.kind === "MODERATION_POST" || r.kind === "MODERATION_COMMENT"
+        ? r.target === "REPORT" &&
+          ["VISIBLE", "HIDDEN", "REMOVED"].includes(r.outcome)
+        : r.kind === "AUTHOR_WITHDRAW_POST" ||
+            r.kind === "AUTHOR_WITHDRAW_COMMENT"
+          ? r.target === "REPORT" &&
+            r.outcome === "WITHDRAWN" &&
+            r.endedAt === null
+          : r.kind === "APPEAL"
+            ? r.target === "REPORT" &&
+              [
+                "RECEIVED",
+                "IN_PROGRESS",
+                "WAITING_FOR_REQUESTER",
+                "RESOLVED",
+                "CLOSED"
+              ].includes(r.outcome)
+            : r.kind === "HOLD" &&
+              ["REPORT", "MESSAGE"].includes(r.target) &&
+              ["PRESERVE", "REVIEW", "RELEASE"].includes(r.outcome)) ||
+    ["CLOSED", "RESOLVED", "RELEASE"].includes(r.outcome) !==
+      (r.endedAt !== null)
   )
     throw Error("Invalid protected retention control");
   return r;
@@ -130,6 +156,104 @@ export function recordHoldControl(
     startedAt: hold.createdAt.toISOString(),
     reviewDueAt: hold.reviewDueAt.toISOString(),
     endedAt: hold.releasedAt?.toISOString() ?? null
+  });
+}
+// The separately protected journal contains only the selected source reference,
+// resulting restriction and version. It never copies content or author reasons.
+export function recordContentControl(
+  tx: Tx,
+  report: CommunityReport,
+  decision: CommunityReportDecision
+) {
+  if (decision.fromVisibility === decision.toVisibility) return;
+  return record(tx, {
+    id: randomUUID(),
+    kind:
+      report.targetType === "POST" ? "MODERATION_POST" : "MODERATION_COMMENT",
+    target: "REPORT",
+    targetId: report.id,
+    sourceId: report.targetId,
+    version: decision.sourceVersion!,
+    policy,
+    outcome: decision.toVisibility!,
+    operatorId: decision.actorId,
+    recordedAt: decision.createdAt.toISOString(),
+    startedAt: decision.createdAt.toISOString(),
+    reviewDueAt: report.reviewDueAt.toISOString(),
+    endedAt: null
+  });
+}
+export async function recordAppealControl(
+  tx: Tx,
+  caseId: string,
+  actorId: string
+) {
+  const row = await tx.supportCase.findUniqueOrThrow({
+    where: { id: caseId },
+    select: {
+      id: true,
+      version: true,
+      status: true,
+      createdAt: true,
+      updatedAt: true,
+      moderationDecision: {
+        select: { reportId: true, report: { select: { reviewDueAt: true } } }
+      }
+    }
+  });
+  if (!row.moderationDecision) return;
+  return record(tx, {
+    id: randomUUID(),
+    kind: "APPEAL",
+    target: "REPORT",
+    targetId: row.moderationDecision.reportId,
+    sourceId: row.id,
+    version: row.version,
+    policy,
+    outcome: row.status,
+    operatorId: actorId,
+    recordedAt: row.updatedAt.toISOString(),
+    startedAt: row.createdAt.toISOString(),
+    reviewDueAt: row.moderationDecision.report.reviewDueAt.toISOString(),
+    endedAt: ["RESOLVED", "CLOSED"].includes(row.status)
+      ? row.updatedAt.toISOString()
+      : null
+  });
+}
+export async function selectedSourceReport(
+  tx: Tx,
+  type: "POST" | "COMMENT",
+  id: string
+) {
+  return tx.communityReport.findFirst({
+    where: { targetType: type, targetId: id },
+    orderBy: { createdAt: "asc" }
+  });
+}
+export function recordReportedWithdrawal(
+  tx: Tx,
+  report: CommunityReport,
+  actorId: string,
+  version: number,
+  now: Date
+) {
+  return record(tx, {
+    id: randomUUID(),
+    kind:
+      report.targetType === "POST"
+        ? "AUTHOR_WITHDRAW_POST"
+        : "AUTHOR_WITHDRAW_COMMENT",
+    target: "REPORT",
+    targetId: report.id,
+    sourceId: report.targetId,
+    version,
+    policy,
+    outcome: "WITHDRAWN",
+    operatorId: actorId,
+    recordedAt: now.toISOString(),
+    startedAt: now.toISOString(),
+    reviewDueAt: report.reviewDueAt.toISOString(),
+    endedAt: null
   });
 }
 export function protectedRetentionControls(
@@ -228,6 +352,36 @@ export async function journalRetentionControls(
     })
   };
 }
+// Withdrawal already committed before this provider call. Do not turn a saved
+// deletion into an apparent failed edit: maintenance retries durable pending
+// controls, and the response explicitly distinguishes pending recovery protection.
+export async function protectReportedWithdrawal(
+  db: PrismaClient,
+  type: "POST" | "COMMENT",
+  sourceId: string,
+  journal?: RetentionControlJournal
+) {
+  try {
+    const entry = await db.retentionControl.findFirst({
+      where: {
+        kind:
+          type === "POST" ? "AUTHOR_WITHDRAW_POST" : "AUTHOR_WITHDRAW_COMMENT",
+        sourceId,
+        journaledAt: null
+      },
+      select: { targetId: true }
+    });
+    if (!entry) return true;
+    const result = await journalRetentionControls(
+      db,
+      journal ?? protectedRetentionControls(),
+      entry.targetId
+    );
+    return !result.failed && !result.pending;
+  } catch {
+    return false;
+  }
+}
 const RESTORED_REASON =
   "Protected preservation restored; the original case reason requires authorized review.";
 // Replay before purge/account receipts. Newer source versions win regardless of
@@ -244,6 +398,57 @@ export async function replayRetentionControls(
     async (tx) => {
       await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(730221, 2)`;
       for (const entry of entries) {
+        if (
+          entry.kind === "AUTHOR_WITHDRAW_POST" ||
+          entry.kind === "AUTHOR_WITHDRAW_COMMENT"
+        ) {
+          // Source withdrawal has no reversal operation. Preserve it even when
+          // a later moderation version is replayed first, without republishing.
+          if (entry.kind === "AUTHOR_WITHDRAW_POST")
+            await tx.$executeRaw`UPDATE "PlatformPost" SET status='WITHDRAWN', "withdrawnAt"=coalesce("withdrawnAt",${entry.recordedAt}::timestamp), "discussionClosed"=true, version=greatest(version,${entry.version}) WHERE id=${entry.sourceId}`;
+          else
+            await tx.$executeRaw`UPDATE "PlatformPostComment" SET "deletedAt"=coalesce("deletedAt",${entry.recordedAt}::timestamp), version=greatest(version,${entry.version}) WHERE id=${entry.sourceId}`;
+          await record(tx, entry);
+          await tx.retentionControl.updateMany({
+            where: { id: entry.id, journaledAt: null },
+            data: { journaledAt: new Date() }
+          });
+          continue;
+        }
+        if (entry.kind === "APPEAL") {
+          // This records the latest version that must exist. An older case or
+          // missing reply cannot be fabricated from a content-free journal.
+          await record(tx, entry);
+          await tx.retentionControl.updateMany({
+            where: { id: entry.id, journaledAt: null },
+            data: { journaledAt: new Date() }
+          });
+          continue;
+        }
+        if (
+          entry.kind === "MODERATION_POST" ||
+          entry.kind === "MODERATION_COMMENT"
+        ) {
+          // An old backup cannot prove the text, audience and attachments that
+          // were approved when a restriction was lifted. Keep that source hidden
+          // for explicit reinspection; never reconstruct or republish old text.
+          const visibility =
+            entry.outcome === "VISIBLE"
+              ? "HIDDEN"
+              : (entry.outcome as "HIDDEN" | "REMOVED");
+          const table =
+            entry.kind === "MODERATION_POST"
+              ? Prisma.sql`"PlatformPost"`
+              : Prisma.sql`"PlatformPostComment"`;
+          await tx.$executeRaw(Prisma.sql`UPDATE ${table} SET "moderationState"=${visibility}::"ContentModerationState", version=${entry.version}
+            WHERE id=${entry.sourceId} AND (version < ${entry.version} OR (version=${entry.version} AND ${entry.outcome !== "VISIBLE"}))`);
+          await record(tx, entry);
+          await tx.retentionControl.updateMany({
+            where: { id: entry.id, journaledAt: null },
+            data: { journaledAt: new Date() }
+          });
+          continue;
+        }
         const sealed = await tx.retentionPurge.findUnique({
           where: {
             target_targetId: { target: entry.target, targetId: entry.targetId }
@@ -331,4 +536,21 @@ export async function inspectRestoredHolds(db: PrismaClient) {
   return db.retentionHold.count({
     where: { reason: RESTORED_REASON, releasedAt: null }
   });
+}
+export async function inspectRestoredModeration(db: PrismaClient) {
+  const [row] = await db.$queryRaw<Array<{ count: bigint }>>(Prisma.sql`
+    WITH latest AS (SELECT DISTINCT ON (kind, "sourceId") kind, "sourceId", version, payload FROM "RetentionControl" WHERE kind IN ('MODERATION_POST','MODERATION_COMMENT') ORDER BY kind, "sourceId", version DESC)
+    SELECT count(*)::bigint AS count FROM latest r
+    LEFT JOIN "PlatformPost" p ON r.kind='MODERATION_POST' AND p.id=r."sourceId"
+    LEFT JOIN "PlatformPostComment" c ON r.kind='MODERATION_COMMENT' AND c.id=r."sourceId"
+    WHERE r.payload->>'outcome'='VISIBLE' AND
+      (p.version <= r.version AND p."moderationState" <> 'VISIBLE' OR c.version <= r.version AND c."moderationState" <> 'VISIBLE')`);
+  return Number(row.count);
+}
+export async function inspectRestoredAppeals(db: PrismaClient) {
+  const [row] = await db.$queryRaw<Array<{ count: bigint }>>(Prisma.sql`
+    WITH latest AS (SELECT DISTINCT ON ("sourceId") "sourceId", "targetId", version FROM "RetentionControl" WHERE kind='APPEAL' ORDER BY "sourceId", version DESC)
+    SELECT count(*)::bigint AS count FROM latest r LEFT JOIN "SupportCase" s ON s.id=r."sourceId"
+    WHERE (s.id IS NULL OR s.version < r.version) AND NOT EXISTS (SELECT 1 FROM "RetentionPurge" purge WHERE purge.target='REPORT' AND purge."targetId"=r."targetId")`);
+  return Number(row.count);
 }

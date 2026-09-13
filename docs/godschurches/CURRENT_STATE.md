@@ -1,3 +1,27 @@
+## Scoped content moderation — local candidate, September 13, 2026
+
+The existing report and Support services now implement scoped post/comment
+decisions, private author notices and deliberate reconsideration with the actual
+assigned reviewer. Source visibility changes preserve audience, reply permissions,
+closure and author withdrawal. Existing Activity/outbox services carry generic
+decision and reconsideration updates. Ordinary Support intake remains disabled.
+No new grant, table, dependency or copied evidence store is introduced.
+
+Twenty-six latest focused checks pass across source restriction/privacy, both reply
+modes, version/retry/revocation, appeals, reported withdrawal, provider-failure
+recovery, last-report purge and batched notification regressions. Earlier foundation
+coverage passed 44 checks. Types and scoped lint pass. The full fresh/upgrade/
+restore/build and browser gate is running; production remains .31 below.
+Candidate migration 45 and product .32 are local only. No real source action,
+appeal, report, message, grant, phone send or erasure was performed. Broader
+integration, escalation and owner acceptance remain open.
+
+See COMMUNITY_REPORTING_CONTRACT.md, SUPPORT_OPERATIONS.md and
+RETENTION_OPERATIONS.md. Next: finish isolated browser/end-to-end checks, refresh
+the protected production-copy recovery/runtime registry, then release only if all
+required gates pass. Preserve the user's observed Chrome phone-shade receipt and
+the remaining locked-phone, conversation-tap/account-switch and iPhone checks.
+
 ## Personal Activity verified live — September 13, 2026
 
 Product **2026.09.13.31**, application **f50b7a0629dda9c3321f88017a866652b69bf58a**,

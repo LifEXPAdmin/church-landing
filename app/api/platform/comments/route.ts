@@ -9,6 +9,7 @@ import {
 } from "@/lib/platform/social-boundary";
 import { commentCommand } from "@/lib/platform/comment-commands";
 import { readComments, readCommentDrafts } from "@/lib/platform/comment-reads";
+import { protectReportedWithdrawal } from "@/lib/platform/retention-controls";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
@@ -45,6 +46,18 @@ export async function POST(request: Request) {
       "comments"
     );
     const result = await commentCommand(prisma, token, input);
+    if (
+      input.operation === "delete" &&
+      !(await protectReportedWithdrawal(prisma, "COMMENT", result.id))
+    )
+      return Response.json(
+        {
+          ...result,
+          message:
+            "Your comment removal is saved. Backup recovery protection is pending and will be retried automatically."
+        },
+        { status: 202, headers: socialHeaders }
+      );
     if (input.operation === "create" || input.operation === "edit")
       after(async () => {
         await dispatchNotifications(prisma, result.id);

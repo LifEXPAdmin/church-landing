@@ -10,6 +10,13 @@ import {
   type CommunityReviewPage
 } from "@/lib/platform/community-report-types";
 import { useUnsavedSocialWork } from "./use-unsaved-social-work";
+import {
+  contentReviewActions,
+  contentDecisionReasons,
+  contentVisibilityLabels,
+  type ContentReviewAction,
+  type ContentDecisionReason
+} from "@/lib/platform/content-moderation-types";
 
 export function CommunityReportReview({
   owner,
@@ -27,6 +34,13 @@ export function CommunityReportReview({
     [busy, setBusy] = useState(false),
     [reason, setReason] = useState(""),
     [resolution, setResolution] = useState("CLOSED"),
+    [contentAction, setContentAction] = useState<ContentReviewAction | "NONE">(
+      "NONE"
+    ),
+    [authorReason, setAuthorReason] = useState<ContentDecisionReason>(
+      "PRIVATE_INFORMATION"
+    ),
+    [confirmed, setConfirmed] = useState(false),
     [pending, setPending] = useState<string | null>(null),
     [conflict, setConflict] = useState(false),
     [waitingUntil, setWaitingUntil] = useState(0),
@@ -39,7 +53,7 @@ export function CommunityReportReview({
     active = useRef(true);
   useUnsavedSocialWork(
     {
-      dirty: !!reason || resolution !== "CLOSED",
+      dirty: !!reason || resolution !== "CLOSED" || contentAction !== "NONE",
       saving: !!pending,
       conflict
     },
@@ -158,6 +172,8 @@ export function CommunityReportReview({
       setPending(null);
       setReason("");
       setResolution("CLOSED");
+      setContentAction("NONE");
+      setConfirmed(false);
       setConflict(false);
       setNotice(data.message);
       queued.current = true;
@@ -201,6 +217,8 @@ export function CommunityReportReview({
       return;
     setReason("");
     setResolution("CLOSED");
+    setContentAction("NONE");
+    setConfirmed(false);
     setPending(null);
     setConflict(false);
     setNotice(
@@ -229,7 +247,10 @@ export function CommunityReportReview({
         >
           Refresh review access
         </button>
-        {(reason || pending || resolution !== "CLOSED") && (
+        {(reason ||
+          pending ||
+          resolution !== "CLOSED" ||
+          contentAction !== "NONE") && (
           <button
             type="button"
             className="gc-button gc-button-quiet"
@@ -382,19 +403,57 @@ export function CommunityReportReview({
                   </Link>
                 )}
               </article>
+              {!!data.reconsiderationCases?.length && (
+                <section
+                  className="space-y-3"
+                  aria-label="Assigned reconsideration cases"
+                >
+                  <h2 className="text-2xl">Author reconsideration</h2>
+                  <p>
+                    These help cases are assigned to you through this report.
+                    Resolve the appeal separately from any content restriction.
+                  </p>
+                  {data.reconsiderationCases.map((c) => (
+                    <Link
+                      key={c.id}
+                      prefetch={false}
+                      className="block underline"
+                      href={`/platform/help/cases/${c.id}`}
+                    >
+                      Open reconsideration case ·{" "}
+                      {c.status.toLowerCase().replaceAll("_", " ")}
+                    </Link>
+                  ))}
+                </section>
+              )}
               <form
                 aria-label="Record report review"
                 className="space-y-4"
                 onSubmit={(e) => {
                   e.preventDefault();
-                  if (pending || conflict || busy || waitingUntil) return;
+                  if (
+                    pending ||
+                    conflict ||
+                    busy ||
+                    waitingUntil ||
+                    (contentAction !== "NONE" && (!confirmed || !data.source))
+                  )
+                    return;
                   void send(
                     JSON.stringify({
-                      operation: "resolve",
+                      operation:
+                        contentAction === "NONE" ? "resolve" : "moderate",
                       mutationId: crypto.randomUUID(),
                       id,
                       expectedVersion: report.version,
-                      resolution,
+                      ...(contentAction === "NONE"
+                        ? { resolution }
+                        : {
+                            action: contentAction,
+                            authorReason,
+                            expectedSourceVersion: data.source!.version,
+                            expectedContextVersion: data.source!.contextVersion
+                          }),
                       decisionReason: reason
                     })
                   );
@@ -402,24 +461,137 @@ export function CommunityReportReview({
               >
                 <h2 className="text-2xl">Record a review decision</h2>
                 <p className="text-sm">
-                  These choices record case status. They do not hide content,
-                  change account permissions or send a notification.
+                  Case status and content restrictions are separate. Content
+                  decisions use the selected source’s current version and send
+                  the author a separate explanation. Account permissions stay
+                  unchanged.
                 </p>
-                <label className="block" htmlFor="review-resolution">
-                  Review outcome
-                </label>
-                <select
-                  id="review-resolution"
-                  className="block w-full rounded border p-3"
-                  value={resolution}
-                  disabled={busy || !!pending || conflict}
-                  onChange={(e) => setResolution(e.target.value)}
-                >
-                  <option value="CLOSED">Close this review</option>
-                  <option value="FOLLOW_UP_REQUIRED">
-                    Further review required
-                  </option>
-                </select>
+                {data.source && (
+                  <fieldset
+                    className="space-y-3"
+                    disabled={busy || !!pending || conflict}
+                  >
+                    <legend className="font-semibold">Selected content</legend>
+                    <p>
+                      {contentVisibilityLabels[data.source.visibility]} · Source
+                      version {data.source.version}
+                      {data.source.contextVersion
+                        ? ` · Post version ${data.source.contextVersion}`
+                        : ""}
+                    </p>
+                    {data.source.authorWithdrawn && (
+                      <p>
+                        The author has withdrawn this content or its parent.
+                        Lifting a moderation restriction will not publish it.
+                      </p>
+                    )}
+                    <label className="block" htmlFor="content-action">
+                      Content action
+                    </label>
+                    <select
+                      id="content-action"
+                      className="w-full rounded border p-3"
+                      value={contentAction}
+                      onChange={(e) => {
+                        const next = e.target.value as
+                          | ContentReviewAction
+                          | "NONE";
+                        setContentAction(next);
+                        setConfirmed(false);
+                        setAuthorReason(
+                          ["NO_VIOLATION", "RESTORE"].includes(next)
+                            ? "NO_VIOLATION"
+                            : "PRIVATE_INFORMATION"
+                        );
+                      }}
+                    >
+                      <option value="NONE">Record case status only</option>
+                      {Object.entries(contentReviewActions).map(
+                        ([value, label]) => (
+                          <option key={value} value={value}>
+                            {label}
+                          </option>
+                        )
+                      )}
+                    </select>
+                    {contentAction !== "NONE" && (
+                      <>
+                        <label className="block" htmlFor="author-reason">
+                          Explanation for the author
+                        </label>
+                        <select
+                          id="author-reason"
+                          className="w-full rounded border p-3"
+                          value={authorReason}
+                          onChange={(e) =>
+                            setAuthorReason(
+                              e.target.value as ContentDecisionReason
+                            )
+                          }
+                        >
+                          {Object.entries(contentDecisionReasons)
+                            .filter(
+                              ([value]) =>
+                                ["NO_VIOLATION", "RESTORE"].includes(
+                                  contentAction
+                                ) ===
+                                [
+                                  "NO_VIOLATION",
+                                  "CORRECTION_COMPLETE"
+                                ].includes(value)
+                            )
+                            .map(([value, label]) => (
+                              <option key={value} value={value}>
+                                {label}
+                              </option>
+                            ))}
+                        </select>
+                        <div
+                          className="space-y-2 rounded border p-3"
+                          aria-label="Author notice preview"
+                        >
+                          <strong>{contentReviewActions[contentAction]}</strong>
+                          <p>{contentDecisionReasons[authorReason]}</p>
+                          <p className="text-sm">
+                            The author can ask the assigned reviewer for
+                            reconsideration. Reporter details and your private
+                            reason below are excluded.
+                          </p>
+                        </div>
+                        <label className="flex items-start gap-3">
+                          <input
+                            type="checkbox"
+                            required
+                            checked={confirmed}
+                            onChange={(e) => setConfirmed(e.target.checked)}
+                            className="mt-1 h-5 w-5"
+                          />
+                          Apply this decision to the selected content and create
+                          this author notice.
+                        </label>
+                      </>
+                    )}
+                  </fieldset>
+                )}
+                {contentAction === "NONE" && (
+                  <>
+                    <label className="block" htmlFor="review-resolution">
+                      Review outcome
+                    </label>
+                    <select
+                      id="review-resolution"
+                      className="block w-full rounded border p-3"
+                      value={resolution}
+                      disabled={busy || !!pending || conflict}
+                      onChange={(e) => setResolution(e.target.value)}
+                    >
+                      <option value="CLOSED">Close this review</option>
+                      <option value="FOLLOW_UP_REQUIRED">
+                        Further review required
+                      </option>
+                    </select>
+                  </>
+                )}
                 <label className="block" htmlFor="review-reason">
                   Private decision reason
                 </label>
@@ -443,6 +615,7 @@ export function CommunityReportReview({
                     className="gc-button gc-button-quiet"
                     onClick={() => {
                       setConflict(false);
+                      setConfirmed(false);
                       setNotice(
                         "Current review version checked. Your unsaved reason is kept; review it before recording again."
                       );
@@ -488,6 +661,17 @@ export function CommunityReportReview({
                           {communityReportStatusLabels[row.toStatus]} · Version{" "}
                           {row.version}
                         </p>
+                        {row.action && (
+                          <p className="text-sm">
+                            {
+                              contentReviewActions[
+                                row.action as keyof typeof contentReviewActions
+                              ]
+                            }{" "}
+                            · {row.fromVisibility} → {row.toVisibility} · Source
+                            version {row.sourceVersion}
+                          </p>
+                        )}
                         <p className="whitespace-pre-wrap break-words">
                           {row.reason}
                         </p>

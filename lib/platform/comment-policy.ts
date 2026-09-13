@@ -10,12 +10,17 @@ import {
 } from "./post-access";
 import { postId } from "./post-input";
 import { socialUserWhere } from "./social-policy";
+import {
+  selectedSourceReport,
+  recordReportedWithdrawal
+} from "./retention-controls";
 
 export function commentVisibleWhere(
   context: PostContext
 ): Prisma.PlatformPostCommentWhereInput {
   return {
     deletedAt: null,
+    moderationState: "VISIBLE",
     OR: [
       { authorChurchId: { not: null } },
       { authorChurchId: null, author: socialUserWhere(context) }
@@ -69,7 +74,8 @@ export function canDeleteComment(
 
 export async function deleteCommentIn(
   tx: PostTx,
-  comment: PlatformPostComment
+  comment: PlatformPostComment,
+  actorId: string
 ) {
   if (comment.deletedAt) return comment;
   await tx.commentMention.updateMany({
@@ -84,8 +90,17 @@ export async function deleteCommentIn(
     where: { commentId: comment.id },
     data: { commentId: null, version: { increment: 1 } }
   });
-  return tx.platformPostComment.update({
+  const reported = await selectedSourceReport(tx, "COMMENT", comment.id),
+    now = new Date();
+  const updated = await tx.platformPostComment.update({
     where: { id: comment.id },
-    data: { content: "", deletedAt: new Date(), version: { increment: 1 } }
+    data: {
+      ...(!reported ? { content: "" } : {}),
+      deletedAt: now,
+      version: { increment: 1 }
+    }
   });
+  if (reported)
+    await recordReportedWithdrawal(tx, reported, actorId, updated.version, now);
+  return updated;
 }
