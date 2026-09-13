@@ -108,7 +108,9 @@ and 90-day receipt expiry. The separate current announcement/account integration
 run passes 49 tests. These are automated fixtures, not production erasure or
 observed phone delivery.
 
-Before release: verify actual backup inventory/expiry and provider capabilities,
+The [backup procedure](BACKUP_OPERATIONS.md) now records actual inventory,
+authenticated expiry, a scheduled operator run and the protected upgrade rehearsal.
+Before release: complete any outstanding provider checks,
 complete the integrated fresh/upgrade/restore/browser gate, take a fresh verified
 encrypted recovery copy, inspect initial production candidates, and verify the
 specific deployed maintenance/queue handlers. Configure the verified founder's

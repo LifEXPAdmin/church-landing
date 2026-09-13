@@ -1,3 +1,14 @@
+## Backup expiry and protected recovery — 13 September 2026
+
+The daily local backup operator is installed and its first expiry run passes:
+13 authenticated sets, zero issues, zero expired sets and zero removals. Seven
+isolated expiry tests pass. A fresh production copy restored through migrations
+36 to 42 with all 81 original tables' column fingerprints intact and protected
+replay passed. See [backup operations](BACKUP_OPERATIONS.md). The job requires
+the workstation to be awake; provider-managed history remains a separate six-hour
+window. Application changes remain unpublished, with zero production database
+writes. Next: integrated release gate and deployed provider/maintenance checks.
+
 ## Protected retention and restoration — local, 13 September 2026
 
 Control journaling, fair bounded cleanup, provider-acknowledged account completion,
