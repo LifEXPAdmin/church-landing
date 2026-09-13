@@ -9,8 +9,8 @@ automatic content snapshot or parallel moderation of source records.
 This foundation is a partial moderation milestone. Intake defaults off. Real
 reviewer appointment, escalation and recovery coverage must be established before
 activation. A fictional test grant does not establish operational readiness.
-The broader moderator worklist, source hide/remove/restore actions, author
-decision notices, appeals integration and other writers' activity budgets remain
+Source hide/remove/restore actions, author decision notices, appeals integration,
+operator hub integration and other writers' activity budgets remain
 separate unfinished work. Existing content access and interaction restrictions
 remain enforced by their canonical owners.
 
@@ -101,8 +101,21 @@ private no-store responses. Strict fields prevent supplied owner identities.
   `expectedTargetVersion`, `expectedContextVersion`, `reason`, optional `details`.
 - GET `view=receipt&id=...` returns an owner-only receipt; `view=mine&after=...`
   returns up to 30 own receipts and an owner-bound next cursor.
-- GET `view=review&id=...` returns one authorized case and up to 30 recent
-  decision records. It is not a general reviewer worklist.
+- GET `view=queue&status=OPEN|CLOSED&after=...` returns at most 30 authorized
+  case summaries. Open includes received and follow-up-required cases. A shared
+  SQL predicate filters pinned and current scopes before pagination and applies
+  to the cursor, individual reads and decisions. An unknown, newly unauthorized
+  or status-changed cursor conflicts; it never falls back to an unfiltered page.
+  Summaries omit reporter/target identities, details and source bodies. Ordering
+  is descending creation time and ID with explicit UTC timestamp comparison.
+- GET `view=mine` also returns a current review-capability hint for its entry link.
+  The hint grants no authority; the queue and every case recheck access.
+- GET `view=review&id=...` returns one authorized case, up to 30 recent decision
+  records and only its selected canonical text. Posts/comments include their
+  current source version separately from the version originally reported, so a
+  changed source is identified as current text, not a saved snapshot. Removed
+  sources have no text projection. Profile/church cases do not fetch private
+  profile fields. No copied evidence store or unrelated history is created.
 - POST `operation=resolve` takes `mutationId`, `id`, `expectedVersion`,
   `resolution`, `decisionReason`, and requires current scoped authority.
 
@@ -139,7 +152,7 @@ Reporter receipts/export still contain only the deliberately submitted report
 details, without that reviewer projection. Revocation denies further reviewer
 reads. Request intake reuses the same actual global report-operations boundary.
 
-Future message targets must follow this participant-selected contract. A report
+Message targets follow this participant-selected contract. A report
 must never grant access to the rest of a private conversation. Request service
 and UI verification are recorded separately from the earlier reporting release.
 
@@ -169,7 +182,29 @@ an explicit warning that the report may already have been accepted, then points
 to the private receipt list; it does not retract a stored report or claim that
 the server did not receive it.
 
-The focused service suite covers source versions, all four target kinds, owner
+The review interface lives at `/platform/reports/review`. Its account-return
+path retains only validated case/cursor IDs and the closed filter, including
+trailing-slash paths. Authorized reviewers enter from their private report list;
+other accounts do not see the link. The route contains no server-rendered case
+body and does not preload on ordinary report/history pages. Queue and detail
+reads conceal old case data and unsaved reasons until fresh account and scoped
+permission checks succeed, including after blur, reconnect or a failed read.
+An uncertain transport error can precede the final account check, so it also
+conceals the case and rechecks access without automatically resending.
+There is no background case polling.
+
+The decision form reuses the safe-update/navigation guard. Stale versions retain
+the local reason and require a fresh case read and explicit version acceptance.
+Uncertain results retain the exact serialized body and mutation key. In
+particular, a 401/403/404 cannot clear an uncertain privileged retry: authority
+is checked before receipt replay and cannot establish whether the original
+request committed. Legitimately restored access permits the same-body retry;
+revoked reviewers cannot read its receipt. Discard warns that a decision may
+already be recorded and clears only the browser entries. Decision reasons and
+review history stay private to authorized case reviewers. Source enforcement,
+author notices and appeals are not represented as completed by closing a case.
+
+The focused service suite covers source versions, supported target kinds, owner
 privacy and export, concurrency, quota expiry, exact/changed/duplicate retries,
 revoked reviewers, current scope changes, target removal and the existing claim
 boundary. The HTTPS suite exercises transport and receipt privacy with both

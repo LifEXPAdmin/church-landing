@@ -32,3 +32,52 @@ export const communityReportStatusLabels = {
   CLOSED: "Review closed",
   FOLLOW_UP_REQUIRED: "Further review required"
 } as const;
+
+export type CommunityReportReceipt = {
+  id: string;
+  target: { type: CommunityReportTarget; id: string };
+  reason: CommunityReportReason;
+  details: string;
+  status: keyof typeof communityReportStatusLabels;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+  relatedReview?: string;
+};
+export type CommunityReviewPage = {
+  report?: CommunityReportReceipt;
+  reviews?: {
+    id: string;
+    type: CommunityReportTarget;
+    reason: CommunityReportReason;
+    status: keyof typeof communityReportStatusLabels;
+    version: number;
+    churchScoped: boolean;
+    createdAt: string;
+    updatedAt: string;
+  }[];
+  decisions?: {
+    fromStatus: keyof typeof communityReportStatusLabels;
+    toStatus: keyof typeof communityReportStatusLabels;
+    reason: string;
+    version: number;
+    createdAt: string;
+  }[];
+  evidence?: {
+    type: CommunityReportTarget;
+    content?: string;
+    purpose?: string;
+    version?: number;
+    createdAt: string;
+  };
+  reportedVersion?: number;
+  after?: string | null;
+};
+export function reportReviewHref(id?: string, closed = false, after?: string) {
+  const q = new URLSearchParams({
+    ...(id ? { id } : {}),
+    ...(after ? { after } : {}),
+    ...(closed ? { status: "CLOSED" } : {})
+  });
+  return "/platform/reports/review" + (q.size ? "?" + q : "");
+}

@@ -27,6 +27,19 @@ export const features: Feature[] = [
     availability: "conditional"
   },
   {
+    id: "report-review",
+    category: "Privacy and account",
+    name: "Scoped report review",
+    description:
+      "Authorized reviewers can open their case queue and record private review decisions.",
+    steps:
+      "Open Your reports, then the review link when your current account has review authority. Choose an open or closed case, inspect its selected source, and record a reason. Lost responses retain Retry same review; conflicts require checking the current case first.",
+    href: "/platform/reports/review",
+    eligibility:
+      "Explicit platform report permission or current church moderation authority for every required scope. Revoked access conceals case details. Recording case status does not hide content, restrict accounts or send notices. New intake remains paused until actual reviewer and retention operations are established.",
+    availability: "conditional"
+  },
+  {
     id: "private-reports",
     category: "Privacy and account",
     name: "Private reports and receipts",
@@ -456,6 +469,24 @@ export const features: Feature[] = [
   }
 ];
 export const releases: ReleaseEntry[] = [
+  {
+    id: "scoped-report-review",
+    version: "2026.09.13.26",
+    date: "2026-09-13",
+    summary:
+      "A private report queue for authorized reviewers, with recoverable decisions.",
+    added: [
+      "Authorized reviewers can browse open and closed cases, inspect only the selected source and record a private review reason."
+    ],
+    improved: [
+      "Case access is checked before pagination and every decision. Changed sources are labeled as current text; no extra evidence copy is stored."
+    ],
+    fixed: [
+      "Unconfirmed decisions preserve the same retry even if review access is revoked. Case details stay concealed until current access is checked again."
+    ],
+    featureIds: ["report-review", "private-reports"]
+  },
+
   {
     id: "private-messages-and-contact-choices",
     version: "2026.09.13.25",

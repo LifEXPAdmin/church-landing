@@ -165,7 +165,18 @@ test("exact concurrent retries create one private record; changed bodies conflic
   const visible = JSON.stringify(await review(a.id));
   assert.ok(!visible.includes(f.contact.id));
   assert.ok(!visible.includes(f.contact.email));
-  assert.ok(!visible.includes(p.content));
+  const evidence = (await review(a.id)).evidence;
+  assert.equal(
+    evidence && "content" in evidence ? evidence.content : undefined,
+    p.content
+  );
+  // Review may inspect the selected canonical source; intake still copied none
+  // of its body into the persistent case or the reporter's receipt.
+  assert.ok(
+    !JSON.stringify(
+      await read(db, f.contact.token, { view: "receipt", id: a.id })
+    ).includes(p.content)
+  );
 });
 
 test("all target kinds use exact current identity and versions; blocks and eligibility deny new reports", async () => {

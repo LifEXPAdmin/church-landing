@@ -1,5 +1,44 @@
 # Private reporting implementation receipt
 
+## Scoped review queue verified locally — 13 September 2026
+
+The candidate adds `/platform/reports/review`, authorized entry from private
+report history, bounded open/closed pages, selected current source inspection,
+and private `CLOSED`/`FOLLOW_UP_REQUIRED` decisions. Queue, cursor, case and
+command authorization share one current/pinned scope predicate. No source
+content is copied, no new schema/dependency is added, and broader enforcement,
+author appeals and operational acceptance remain open.
+
+Twenty-two focused service/navigation tests and ten existing reporting tests
+pass. Eleven final built-browser groups and eight existing reporting groups pass:
+scopes/pagination, stale cursors, selected evidence and version labeling,
+exact uncertain retries, revoked privilege and legitimate restoration, account
+replacement after commit, conflicts, failed reads, Back/links/safe updates,
+uncertain discard confirmation, closed-case navigation, 320/390/1440 layout and
+enlarged text. Browser page errors and production writes
+are zero. Screenshots were inspected; the decision fields received the same
+full-width form styling used by report submission and passed final browser acceptance.
+
+Verification caught and repaired a timezone-sensitive cursor comparison and an
+uncertain transport path that could precede the final account check. That path
+now conceals private work before checking current account and case authority.
+Test-harness timing/certificate/preview-identity mistakes were corrected; only
+completed passing runs are counted. The complete release gate passes all 91 discovered test files: 600 executions,
+598 passes, zero failures and two expected production-phase skips. Production
+HTTPS, server restart, upgrade, restore and fresh-migration phases passed.
+The isolated scoped queue uses 16 queries
+for both one and thirty rows, with no per-case source reads. No production
+latency claim is made. The review workspace chunk is 13,965 bytes / 5,105 bytes
+gzipped and is absent from unopened report-history resources. Runtime tracing passes 131 traces / 11,121 entries / 329
+server JS files; lint has zero errors and 37 unchanged QA warnings.
+
+A fresh encrypted PostgreSQL 17 backup restored with all 81 current tables'
+original-column fingerprints preserved and all 36 migration checksums matched.
+There is no migration in this candidate. Live reports, decisions, reviewer
+grants and messaging records remain zero in that read-only preflight. Production
+still serves `2026.09.13.25` / `824070e`; publication and canonical live verification are next. Real reviewer appointment and retention/erasure operations still gate
+new intake. Prior physical-phone observations are unchanged.
+
 ## Selected contact/message evidence integration live — 13 September 2026
 
 Product `2026.09.13.25` / `824070e` adds participant-checked request/message

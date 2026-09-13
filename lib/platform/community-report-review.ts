@@ -1,0 +1,86 @@
+import { Prisma } from "@prisma/client";
+import type { CommunityReport } from "@prisma/client";
+import type { PostContext, PostTx } from "./post-access";
+import { eligibleWhere } from "./portal-policy";
+
+export async function reportReviewAuthority(tx: PostTx, context: PostContext) {
+  return {
+    churches: [...context.moderators],
+    global: !!(
+      context.actorId &&
+      (await tx.platformOperatorGrant.findFirst({
+        where: {
+          userId: context.actorId,
+          capability: "REVIEW_COMMUNITY_REPORTS",
+          revokedAt: null,
+          user: eligibleWhere
+        },
+        select: { id: true }
+      }))
+    )
+  };
+}
+export type ReportReviewAuthority = Awaited<
+  ReturnType<typeof reportReviewAuthority>
+>;
+export type ReviewRow = Pick<
+  CommunityReport,
+  | "id"
+  | "targetType"
+  | "reason"
+  | "status"
+  | "version"
+  | "createdAt"
+  | "updatedAt"
+  | "scopeChurchId"
+>;
+
+// One permission predicate serves queue pages, cursor validation and individual
+// decisions. Filter original AND current source scopes before pagination. No
+// reporter details or source body is read by this query. Cursor time is explicitly
+// UTC wall time, matching Prisma timestamp columns regardless of database zone.
+export function reviewReportRows(
+  tx: PostTx,
+  authority: ReportReviewAuthority,
+  options: {
+    id?: string;
+    status?: "OPEN" | "CLOSED";
+    after?: { id: string; createdAt: Date };
+    limit: number;
+  }
+) {
+  const original = Prisma.sql`(
+    (${authority.global} AND r."scopeChurchId" IS NULL) OR
+    ${
+      authority.churches.length
+        ? Prisma.sql`r."scopeChurchId" IN (${Prisma.join(authority.churches)})`
+        : Prisma.sql`FALSE`
+    })`;
+  const currentScope = Prisma.sql`coalesce(p."authorChurchId",
+    CASE WHEN p.audience = 'CHURCH' THEN p."audienceChurchId" END)`;
+  return tx.$queryRaw<ReviewRow[]>(Prisma.sql`
+    SELECT r.id, r."targetType", r.reason, r.status, r.version,
+      r."createdAt", r."updatedAt", r."scopeChurchId"
+    FROM "CommunityReport" r
+    LEFT JOIN "PlatformPostComment" c ON r."targetType" = 'COMMENT' AND c.id = r."targetId"
+    LEFT JOIN "PlatformPost" p ON p.id = CASE
+      WHEN r."targetType" = 'POST' THEN r."targetId"
+      WHEN r."targetType" = 'COMMENT' THEN c."postId" END
+    WHERE ${original}
+      AND (${currentScope} IS NULL OR ${
+        authority.churches.length
+          ? Prisma.sql`${currentScope} IN (${Prisma.join(authority.churches)})`
+          : Prisma.sql`FALSE`
+      })
+      ${options.id ? Prisma.sql`AND r.id = ${options.id}` : Prisma.empty}
+      ${
+        options.status === "CLOSED"
+          ? Prisma.sql`AND r.status = 'CLOSED'`
+          : options.status === "OPEN"
+            ? Prisma.sql`AND r.status IN ('RECEIVED', 'FOLLOW_UP_REQUIRED')`
+            : Prisma.empty
+      }
+      ${options.after ? Prisma.sql`AND (r."createdAt", r.id) < (${options.after.createdAt.toISOString()}::timestamp, ${options.after.id})` : Prisma.empty}
+    ORDER BY r."createdAt" DESC, r.id DESC LIMIT ${options.limit}
+  `);
+}

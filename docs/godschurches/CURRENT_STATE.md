@@ -1,3 +1,15 @@
+## Scoped report review verified locally — 13 September 2026
+
+The authorized open/closed queue, selected canonical evidence and recoverable
+private review decisions are ready for publication. The complete 91-file gate
+passes (598 passes, zero failures, two expected production-phase skips), along
+with 11 final reviewer browser groups and eight reporting regressions. A fresh
+encrypted backup restores all 81 tables with 36 matching migrations; this slice
+adds no schema or runtime dependency. See [the receipt](COMMUNITY_REPORTING_REPORT.md).
+Production remains `2026.09.13.25` / `824070e` until the new release's serving
+identity is verified. Broader source enforcement, author appeals, real reviewer
+appointment and retention operations remain open; new intake remains paused.
+
 ## Contact and Messages implementation verified live — 13 September 2026
 
 Product `2026.09.13.25`, application `824070e64e3dd89416cb9c3a6507f1619966ebb4`,

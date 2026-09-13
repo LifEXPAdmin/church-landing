@@ -6,19 +6,14 @@ import {
   communityReportReasons,
   communityReportStatusLabels,
   communityReportTargetLabels,
-  type CommunityReportTarget,
-  type CommunityReportReason
+  type CommunityReportReceipt as Receipt
 } from "@/lib/platform/community-report-types";
-type Receipt = {
-  id: string;
-  target: { type: CommunityReportTarget; id: string };
-  reason: CommunityReportReason;
-  details: string;
-  status: keyof typeof communityReportStatusLabels;
-  createdAt: string;
-  relatedReview?: string;
+type Page = {
+  report?: Receipt;
+  reports?: Receipt[];
+  after?: string | null;
+  canReview?: boolean;
 };
-type Page = { report?: Receipt; reports?: Receipt[]; after?: string | null };
 export function CommunityReportReceipts({
   owner,
   id,
@@ -88,6 +83,15 @@ export function CommunityReportReceipts({
         Only your own submissions appear here. A received report is not a
         finding against the reported person.
       </p>
+      {data?.canReview && (
+        <Link
+          prefetch={false}
+          className="gc-button gc-button-quiet"
+          href="/platform/reports/review"
+        >
+          Review reports in your authorized scopes
+        </Link>
+      )}
       <p role="status">{busy ? "Checking private report access…" : message}</p>
       <button
         type="button"

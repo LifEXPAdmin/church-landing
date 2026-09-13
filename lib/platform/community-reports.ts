@@ -20,6 +20,10 @@ import { eligibleWhere, expected, PortalError } from "./portal-policy";
 import { socialCommand, socialInput } from "./social-operations";
 import { socialUserWhere } from "./social-policy";
 import { adultMemberWhere } from "./adult-message-policy";
+import {
+  reportReviewAuthority,
+  reviewReportRows
+} from "./community-report-review";
 
 type Target = {
   type: CommunityReportTarget;
@@ -57,14 +61,13 @@ const churchScope = (post: {
   post.authorChurchId ??
   (post.audience === "CHURCH" ? post.audienceChurchId : null);
 
-// Review reads only this source metadata. Report evidence is the deliberately
-// submitted context, never an automatic copy of a post, prayer, profile or file.
+// Intake reads source metadata only. Stored evidence is deliberate reporter
+// context; authorized case inspection separately reads its selected source.
 async function targetIn(
   tx: PostTx,
   context: PostContext,
   kind: unknown,
-  value: unknown,
-  review = false
+  value: unknown
 ): Promise<Target | null> {
   const type = targetType(kind),
     id = postId(value);
@@ -72,9 +75,7 @@ async function targetIn(
     const row = await tx.adultMessage.findFirst({
       where: {
         id,
-        ...(review
-          ? {}
-          : { conversation: adultMemberWhere(context.actorId ?? "") })
+        conversation: adultMemberWhere(context.actorId ?? "")
       },
       select: {
         id: true,
@@ -93,8 +94,7 @@ async function targetIn(
     });
     if (
       !row ||
-      (!review &&
-        row.sequence <= (row.conversation.states[0]?.hiddenThrough ?? 0))
+      row.sequence <= (row.conversation.states[0]?.hiddenThrough ?? 0)
     )
       return null;
     return {
@@ -113,14 +113,10 @@ async function targetIn(
     const row = await tx.adultContactRequest.findFirst({
       where: {
         id,
-        ...(review
-          ? {}
-          : {
-              OR: [
-                { senderId: context.actorId ?? "" },
-                { recipientId: context.actorId ?? "" }
-              ]
-            })
+        OR: [
+          { senderId: context.actorId ?? "" },
+          { recipientId: context.actorId ?? "" }
+        ]
       },
       select: { id: true, version: true }
     });
@@ -140,7 +136,7 @@ async function targetIn(
   }
   if (type === "POST") {
     const row = await tx.platformPost.findFirst({
-      where: { AND: [{ id }, ...(review ? [] : [postReadableWhere(context)])] },
+      where: { AND: [{ id }, postReadableWhere(context)] },
       select: {
         id: true,
         version: true,
@@ -165,12 +161,8 @@ async function targetIn(
       where: {
         AND: [
           { id },
-          ...(review
-            ? []
-            : [
-                commentVisibleWhere(context),
-                { post: postReadableWhere(context) }
-              ])
+          commentVisibleWhere(context),
+          { post: postReadableWhere(context) }
         ]
       },
       select: {
@@ -203,7 +195,7 @@ async function targetIn(
   }
   if (type === "PROFILE") {
     const row = await tx.platformUser.findFirst({
-      where: { AND: [{ id }, ...(review ? [] : [socialUserWhere(context)])] },
+      where: { AND: [{ id }, socialUserWhere(context)] },
       select: {
         name: true,
         username: true,
@@ -314,40 +306,25 @@ export async function communityReportIntakeAvailable(
   }));
 }
 
-async function requireReview(tx: PostTx, ownerId: string, id: unknown) {
+async function requireReview(
+  tx: PostTx,
+  ownerId: string,
+  id: unknown,
+  current?: PostContext
+) {
   await eligibleActor(tx, ownerId);
-  const report = await tx.communityReport.findUnique({
-    where: { id: postId(id) }
-  });
-  if (!report) throw new PortalError(404, "This report is unavailable.");
-  const context = await postContext(tx, ownerId);
-  const source = await targetIn(
+  const context = current ?? (await postContext(tx, ownerId));
+  const visible = await reviewReportRows(
     tx,
-    context,
-    report.targetType,
-    report.targetId,
-    true
+    await reportReviewAuthority(tx, context),
+    {
+      id: postId(id),
+      limit: 1
+    }
   );
-  const scopes = new Set(
-    [report.scopeChurchId, source?.scopeChurchId].filter(
-      (scope): scope is string => !!scope
-    )
-  );
-  if ([...scopes].some((scope) => !context.moderators.has(scope)))
+  if (!visible.length)
     throw new PortalError(404, "This report is unavailable.");
-  if (
-    !report.scopeChurchId &&
-    !(await tx.platformOperatorGrant.findFirst({
-      where: {
-        userId: ownerId,
-        capability: "REVIEW_COMMUNITY_REPORTS",
-        revokedAt: null
-      },
-      select: { id: true }
-    }))
-  )
-    throw new PortalError(404, "This report is unavailable.");
-  return report;
+  return tx.communityReport.findUniqueOrThrow({ where: { id: visible[0].id } });
 }
 
 function receipt(report: CommunityReport) {
@@ -373,7 +350,14 @@ export function readCommunityReports(
   token: unknown,
   query: Record<string, unknown>
 ) {
-  socialInput(query, ["view", "id", "targetType", "targetId", "after"]);
+  socialInput(query, [
+    "view",
+    "id",
+    "targetType",
+    "targetId",
+    "after",
+    "status"
+  ]);
   return withPostRead(db, token, async (tx, context) => {
     const ownerId = context.actorId;
     if (!ownerId)
@@ -395,8 +379,54 @@ export function readCommunityReports(
         )
       };
     }
+    if (query.view === "queue") {
+      await eligibleActor(tx, ownerId);
+      const authority = await reportReviewAuthority(tx, context);
+      if (!authority.global && !authority.churches.length)
+        throw new PortalError(
+          403,
+          "Report review is unavailable for this account."
+        );
+      const status = query.status ?? "OPEN";
+      if (status !== "OPEN" && status !== "CLOSED")
+        throw new PortalError(400, "Choose open or closed reviews.");
+      const after = query.after
+        ? (
+            await reviewReportRows(tx, authority, {
+              id: postId(query.after),
+              status,
+              limit: 1
+            })
+          )[0]
+        : undefined;
+      if (query.after && !after)
+        throw new PortalError(
+          409,
+          "Refresh the review queue. Its access or status has changed."
+        );
+      const rows = await reviewReportRows(tx, authority, {
+        status,
+        after,
+        limit: 31
+      });
+      return {
+        ownerId,
+        status,
+        reviews: rows.slice(0, 30).map((row) => ({
+          id: row.id,
+          type: row.targetType,
+          reason: row.reason,
+          status: row.status,
+          version: row.version,
+          churchScoped: !!row.scopeChurchId,
+          createdAt: row.createdAt.toISOString(),
+          updatedAt: row.updatedAt.toISOString()
+        })),
+        after: rows.length > 30 ? rows[29].id : null
+      };
+    }
     if (query.view === "review") {
-      const report = await requireReview(tx, ownerId, query.id);
+      const report = await requireReview(tx, ownerId, query.id, context);
       const decisions = await tx.communityReportDecision.findMany({
         where: { reportId: report.id },
         orderBy: [{ createdAt: "desc" }, { id: "desc" }],
@@ -433,18 +463,36 @@ export function readCommunityReports(
               }
             })
           : undefined;
+      const selectedText =
+        report.targetType === "POST"
+          ? await tx.platformPost.findUnique({
+              where: { id: report.targetId },
+              select: { content: true, version: true, createdAt: true }
+            })
+          : report.targetType === "COMMENT"
+            ? await tx.platformPostComment.findUnique({
+                where: { id: report.targetId },
+                select: { content: true, version: true, createdAt: true }
+              })
+            : undefined;
       return {
         ownerId,
         report: receipt(report),
         decisions,
-        ...(selectedRequest
-          ? {
-              evidence: { type: "CONTACT_REQUEST" as const, ...selectedRequest }
-            }
-          : {}),
-        ...(selectedMessage
-          ? { evidence: { type: "MESSAGE" as const, ...selectedMessage } }
-          : {})
+        evidence: selectedRequest
+          ? { type: "CONTACT_REQUEST" as const, ...selectedRequest }
+          : selectedMessage
+            ? { type: "MESSAGE" as const, ...selectedMessage }
+            : selectedText
+              ? {
+                  type:
+                    report.targetType === "POST"
+                      ? ("POST" as const)
+                      : ("COMMENT" as const),
+                  ...selectedText
+                }
+              : undefined,
+        reportedVersion: report.targetVersion
       };
     }
     if (query.view === "receipt") {
@@ -475,7 +523,10 @@ export function readCommunityReports(
     return {
       ownerId,
       reports: rows.slice(0, 30).map(receipt),
-      after: rows.length > 30 ? rows[29].id : null
+      after: rows.length > 30 ? rows[29].id : null,
+      canReview:
+        context.moderators.size > 0 ||
+        (await reportReviewAuthority(tx, context)).global
     };
   });
 }

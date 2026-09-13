@@ -65,6 +65,33 @@ test("report account return preserves only validated targets or private receipt 
   );
 });
 
+test("review account return keeps only validated case navigation, including trailing slashes", () => {
+  for (const suffix of ["", "/"]) {
+    assert.equal(
+      safeAccountReturn(
+        `/platform/reports/review${suffix}?id=case-one&after=case-older&status=CLOSED&decisionReason=secret&q=private&actorId=other`
+      ),
+      "/platform/reports/review?id=case-one&after=case-older&status=CLOSED"
+    );
+    assert.equal(
+      safeAccountReturn(
+        `/platform/reports/review${suffix}?id=%2Fbad&after=%2Fbad&status=ALL&details=secret`
+      ),
+      "/platform/reports/review"
+    );
+    assert.equal(
+      safeAccountReturn(
+        `/platform/reports${suffix}?receipt=case-one&q=private&reason=secret`
+      ),
+      "/platform/reports?receipt=case-one"
+    );
+  }
+  assert.equal(
+    safeAccountReturn("/platform/reports/review/extra?id=case-one"),
+    "/platform"
+  );
+});
+
 test("reader touch direction is literal and rejects slow, short, vertical and invalid gestures", () => {
   assert.equal(touchTurn(80, 19, 650), 1);
   assert.equal(touchTurn(-80, -19, 650), -1);
