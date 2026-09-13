@@ -310,6 +310,13 @@ export function MessageWorkspace({
         <h1 className="text-3xl">Messages</h1>
         <div className="flex flex-wrap gap-2">
           <Link
+            href="/platform/activity"
+            prefetch={false}
+            className="gc-button gc-button-quiet"
+          >
+            Activity
+          </Link>
+          <Link
             prefetch={false}
             className="gc-button gc-button-primary"
             href="/platform/search?kind=people"

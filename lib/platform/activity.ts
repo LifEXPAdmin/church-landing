@@ -1,4 +1,4 @@
-import { Prisma, type PrismaClient } from "@prisma/client";
+import { Prisma, type PrismaClient, type SocialEvent } from "@prisma/client";
 import { withAccountRead } from "./account-read";
 import { eligibleWhere, PortalError } from "./portal-policy";
 import { postContext, type PostContext } from "./post-access";
@@ -144,6 +144,54 @@ async function activityRows(tx: Tx, ownerId: string, through: bigint) {
   };
 }
 
+// Presentation metadata is fetched only for sources already authorized in this
+// same read transaction. Outbound delivery keeps its generic metadata-only path.
+async function activitySummaries(
+  tx: Tx,
+  events: SocialEvent[],
+  sources: Awaited<ReturnType<typeof notificationSources>>
+) {
+  const available = events.filter((e) => sources.has(e.id));
+  const adults = available.filter((e) => e.kind.startsWith("ADULT_"));
+  const comments = available.filter(
+    (e) => e.kind === "COMMENT_ACTIVITY" && e.commentId
+  );
+  const people = new Map(
+    (adults.length
+      ? await tx.platformUser.findMany({
+          where: { id: { in: adults.map((e) => e.actorId) } },
+          select: { id: true, name: true },
+          take: PAGE_SIZE
+        })
+      : []
+    ).map((p) => [p.id, p.name])
+  );
+  const speakers = new Map(
+    (comments.length
+      ? await tx.platformPostComment.findMany({
+          where: { id: { in: comments.map((e) => e.commentId!) } },
+          select: {
+            id: true,
+            author: { select: { name: true } },
+            authorChurch: { select: { name: true } }
+          },
+          take: PAGE_SIZE
+        })
+      : []
+    ).map((c) => [c.id, c.authorChurch?.name ?? c.author.name])
+  );
+  return new Map(
+    available.map((e) => [
+      e.id,
+      e.kind === "COMMENT_ACTIVITY"
+        ? `Latest from ${speakers.get(e.commentId!)}`
+        : e.kind === "REPORT_RECEIVED"
+          ? "Within your current reviewer access"
+          : `With ${people.get(e.actorId)}`
+    ])
+  );
+}
+
 export function readActivity(
   db: PrismaClient,
   token: unknown,
@@ -202,6 +250,7 @@ export function readActivity(
       new Date(),
       context
     );
+    const summaries = await activitySummaries(tx, events, sources);
     return {
       ownerId,
       boundary: position({ owner: ownerId, through: through.toString() }),
@@ -225,6 +274,7 @@ export function readActivity(
           count: count(g.count),
           unread: count(g.unread),
           available: !!source,
+          summary: source ? (summaries.get(event.id) ?? null) : null,
           href: source?.href ?? null
         };
       })

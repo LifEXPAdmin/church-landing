@@ -18,6 +18,7 @@ export type ActivityPage = {
     count: number;
     unread: number;
     available: boolean;
+    summary: string | null;
     href: string | null;
   }>;
   categories: readonly ActivityCategory[];

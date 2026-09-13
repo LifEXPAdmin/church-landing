@@ -32,7 +32,7 @@ const denied = (action: Promise<unknown>, status: number) =>
     action,
     (e: unknown) => e instanceof PortalError && e.status === status
   );
-async function fixture(groups = 1, replies = 2) {
+async function fixture(groups = 1, replies = 2, authorChurchId?: string) {
   const owner = await createPortalActor(db, "activityread"),
     author = await createPortalActor(db, "activitywrite");
   const posts = Array.from({ length: groups }, () => randomUUID());
@@ -48,6 +48,7 @@ async function fixture(groups = 1, replies = 2) {
       id: randomUUID(),
       postId,
       authorId: author.id,
+      authorChurchId,
       content: "Private activity comment body"
     }))
   );
@@ -447,4 +448,18 @@ test("canonical conversation reads and independent message/founder choices gover
     data: { hiddenThrough: 3, readThrough: 3 }
   });
   assert.equal((await readActivity(db, owner.token)).items.length, 0);
+});
+
+test("activity names a logical church speaker without exposing its internal publisher", async () => {
+  const church = await db.church.create({
+    data: {
+      slug: "activity-church-" + randomUUID(),
+      name: "Fictional Activity Church",
+      summary: "Isolated display fixture"
+    }
+  });
+  const f = await fixture(1, 2, church.id);
+  const page = await readActivity(db, f.owner.token);
+  assert.equal(page.items[0].summary, "Latest from Fictional Activity Church");
+  assert.ok(!JSON.stringify(page).includes(f.author.name));
 });

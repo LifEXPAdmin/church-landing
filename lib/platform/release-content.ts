@@ -14,6 +14,19 @@ export type Feature = {
 };
 export const features: Feature[] = [
   {
+    id: "personal-activity",
+    category: "Posts and conversations",
+    name: "Your Activity",
+    description:
+      "See grouped messages, contact requests, replies, mentions and report updates in one personal view.",
+    steps:
+      "Open Activity from Menu or Messages. Choose a category, open an available item or mark a group read. Mark all read covers every category through the loaded page; later updates stay unread. Older activity keeps your place, and an unconfirmed read change offers the same retry.",
+    href: "/platform/activity",
+    eligibility:
+      "Verified eligible adult accounts. Links and names require current source access. Optional notification choices and mutes still apply; Messages retains its own history and pending requests. Reading Activity cancels an optional phone alert that has not started delivery. Already delivered phone notifications remain under your device controls.",
+    availability: "available"
+  },
+  {
     id: "private-messages",
     category: "Posts and conversations",
     name: "Private contact requests and Messages",
@@ -495,6 +508,22 @@ export const features: Feature[] = [
   }
 ];
 export const releases: ReleaseEntry[] = [
+  {
+    id: "personal-activity",
+    version: "2026.09.13.31",
+    date: "2026-09-13",
+    summary: "A personal Activity view with clear read controls.",
+    added: [
+      "Open Activity from Menu or Messages to see grouped updates, categories, timestamps and unread counts."
+    ],
+    improved: [
+      "Mark a group or all loaded activity read while keeping later arrivals unread. Lost confirmations offer an exact retry, and unavailable sources keep private details hidden."
+    ],
+    fixed: [
+      "Reading an update cancels its optional phone alert if delivery has not started."
+    ],
+    featureIds: ["personal-activity", "phone-notifications", "private-messages"]
+  },
   {
     id: "photo-cleanup-recovery",
     version: "2026.09.13.30",

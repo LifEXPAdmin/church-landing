@@ -547,3 +547,56 @@ test("report notifications keep selected evidence scoped and recheck the current
     data: { revokedAt: null }
   });
 });
+
+test("marking Activity read cancels its queued alert while newer arrivals remain deliverable", async () => {
+  const { readActivity, activityCommand } =
+    await import("../lib/platform/activity");
+  const f = await pair();
+  await db.socialPreferences.update({
+    where: { ownerId: f.b.id },
+    data: { messageAlerts: true }
+  });
+  const page = await readActivity(db, f.b.token);
+  const input = mutation("read-all", {
+    ownerId: f.b.id,
+    boundary: page.boundary
+  });
+  const receipt = await activityCommand(db, f.b.token, input);
+  assert.deepEqual(
+    await deliverNotification(db, f.delivery.id, async () => {
+      throw Error("already-read activity must not send");
+    }),
+    { done: true, outcome: "cancelled" }
+  );
+  const c = await db.adultConversation.findUniqueOrThrow({
+    where: { id: f.conversation.id }
+  });
+  const sent = await adultMessageCommand(
+    db,
+    f.a.token,
+    mutation("send", {
+      conversationId: c.id,
+      expectedVersion: c.version,
+      content: "A new fixture message after the read boundary"
+    })
+  );
+  const delivery = await db.notificationDelivery.findFirstOrThrow({
+    where: { event: { messageId: sent.id }, ownerId: f.b.id }
+  });
+  assert.deepEqual(await activityCommand(db, f.b.token, input), receipt);
+  assert.equal((await readActivity(db, f.b.token)).unread, 1);
+  let sends = 0;
+  assert.deepEqual(
+    await deliverNotification(db, delivery.id, async () => {
+      sends++;
+      return 201;
+    }),
+    { done: true, outcome: "accepted" }
+  );
+  assert.equal(sends, 1);
+  assert.ok(
+    (await openNotification(db, f.b.token, f.delivery.id)).href.includes(
+      f.conversation.id
+    )
+  );
+});

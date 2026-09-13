@@ -8,6 +8,7 @@ import Link from "next/link";
 import {
   ArrowRight,
   BookOpen,
+  Bell,
   Church,
   CalendarDays,
   CalendarCheck,
@@ -142,6 +143,13 @@ export default async function PlatformMenuPage() {
               )}
               {user && (
                 <>
+                  <MenuLink
+                    href="/platform/activity"
+                    title="Activity"
+                    description="See grouped updates and manage what is unread."
+                    icon={Bell}
+                    prefetch={false}
+                  />
                   <MenuLink
                     href="/platform/saved"
                     title="Bookmarks"

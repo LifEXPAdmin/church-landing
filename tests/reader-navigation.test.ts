@@ -335,3 +335,26 @@ test("account entry preserves only the known Photos tab on profile return paths"
     "/platform/settings"
   );
 });
+
+test("Activity account return preserves a supported category and strips another account's cursor and private fields", () => {
+  assert.equal(
+    safeAccountReturn(
+      "/platform/activity?category=comments&cursor=private-position&ownerId=other&token=secret"
+    ),
+    "/platform/activity?category=comments"
+  );
+  assert.equal(
+    safeAccountReturn(
+      "/platform/activity/?category=reports&cursor=private-position"
+    ),
+    "/platform/activity?category=reports"
+  );
+  assert.equal(
+    safeAccountReturn("/platform/activity?category=unknown"),
+    "/platform/activity"
+  );
+  assert.equal(
+    safeAccountReturn("/platform/activity/foreign-event"),
+    "/platform"
+  );
+});

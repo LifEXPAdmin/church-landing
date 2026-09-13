@@ -37,6 +37,21 @@ export async function notificationSources(
     }))
   )
     return result;
+  const deliveryPreferences =
+    delivery && events.some((e) => e.kind !== "PUSH_TEST")
+      ? await tx.socialPreferences.findUnique({
+          where: { ownerId },
+          select: { activityReadThrough: true, contactRequests: true }
+        })
+      : null;
+  if (delivery)
+    events = events.filter(
+      (e) =>
+        e.kind === "PUSH_TEST" ||
+        (!e.activityReadAt &&
+          e.activitySequence >
+            (deliveryPreferences?.activityReadThrough ?? BigInt(0)))
+    );
   for (const event of events)
     if (
       event.kind === "PUSH_TEST" &&
@@ -147,10 +162,12 @@ export async function notificationSources(
   );
   const pending = valid.filter((e) => e.kind === "ADULT_REQUEST_CREATED");
   if (pending.length) {
-    const choices = await tx.socialPreferences.findUnique({
-      where: { ownerId },
-      select: { contactRequests: true }
-    });
+    const choices = delivery
+      ? deliveryPreferences
+      : await tx.socialPreferences.findUnique({
+          where: { ownerId },
+          select: { contactRequests: true }
+        });
     const followed = new Set(
       choices?.contactRequests === "FOLLOWED"
         ? (
