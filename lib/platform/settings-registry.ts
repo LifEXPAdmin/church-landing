@@ -365,11 +365,13 @@ export const settingsRegistry: readonly SettingRegistration[] = Object.freeze([
     "notifications.availability",
     "notifications",
     "Notification preferences",
-    "Choose message and founder alerts, manage phone devices, and set quiet hours.",
+    "Choose message, reply, mention and founder alerts, manage phone devices, and set quiet hours.",
     [
       "alerts",
       "notifications",
       "push",
+      "comment replies",
+      "mention alerts",
       "email notifications",
       "quiet hours",
       "mute conversation"

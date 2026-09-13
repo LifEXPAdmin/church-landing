@@ -110,7 +110,7 @@ export const features: Feature[] = [
     description:
       "Choose phone alerts for messages, replies and mentions, with private previews, quiet hours and a test you control.",
     steps:
-      "Open Settings > Notifications > Availability and delivery. Choose Enable notifications, then allow your browser's request. Replies to your posts and comments and Mentions in comments have separate phone choices. Mute an individual conversation on its post. Set quiet hours or choose Send me a test notification. On iPhone, first add the app to your Home Screen using the installation help.",
+      "Open Settings > Notifications > Notification preferences. Choose Enable notifications, then allow your browser's request. Replies to your posts and comments and Mentions in comments have separate phone choices. Mute an individual conversation on its post. Set quiet hours or choose Send me a test notification. On iPhone, first add the app to your Home Screen using the installation help.",
     href: "/platform/settings/notifications/availability",
     eligibility:
       "Eligible verified adult accounts and a supported browser with delivery available. Permission is requested only after your tap. Provider acceptance does not prove your phone displayed an alert. Signing out or switching accounts removes the old association; in-app messages remain available without push.",
