@@ -51,6 +51,7 @@ export function PrivateSnapshotGuard({
   const register = useCallback(
     (id: string, recovery: PendingRecovery | null) => {
       setRecoveries((current) => {
+        if (!recovery && !current[id]) return current;
         const next = { ...current };
         if (recovery) next[id] = recovery;
         else delete next[id];

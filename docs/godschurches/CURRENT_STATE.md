@@ -14,8 +14,11 @@ coverage passed 44 checks. Real fixture image variants, saved/repost and pending
 notification reads also enforce restrictions without copied media. A fresh encrypted
 production-copy upgrade from 44 to 45 preserves all original columns across 92
 tables and passes protected replay, with zero production data changes. Types and
-scoped lint pass. The full fresh/upgrade/
-restore/build and browser gate is running; production remains .31 below.
+scoped lint pass. The full gate passes 114 files, 717 checks and two expected
+skips, including fresh/upgrade/restore, both builds and HTTPS restart. Five new
+author/appeal browser groups and eleven existing review groups pass. Final rebuild
+and ordinary Support/demo reruns remain after correcting an unnecessary demo
+account read. Production remains .31 below.
 Candidate migration 45 and product .32 are local only. No real source action,
 appeal, report, message, grant, phone send or erasure was performed. Broader
 integration, escalation and owner acceptance remain open.

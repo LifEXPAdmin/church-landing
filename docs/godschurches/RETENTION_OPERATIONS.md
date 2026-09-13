@@ -23,6 +23,9 @@ Replayed later restoration cannot publish unproven old text: the source stays
 hidden until authorized reinspection. Missing appeal history must be recovered
 from an authorized current backup; content-free control records cannot invent it.
 Author withdrawal wins regardless of control-page order and later source versions.
+After activation, any rollback must retain these source predicates and control
+kinds. An older application that ignores moderationState is not an acceptable
+rollback when restricted content exists; use a compatible corrective build.
 
 Report creation, final closure/reopening and hold changes commit a minimal
 RetentionControl record with their existing canonical mutation. The immutable

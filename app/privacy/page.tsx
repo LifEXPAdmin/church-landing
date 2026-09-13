@@ -153,6 +153,15 @@ export default function PrivacyPage() {
               remain restricted. Reporting and new messaging stay paused where
               current reviewer coverage is unavailable.
             </p>
+            <p className="mt-3">
+              Authors can receive a private explanation of a decision about
+              their post or comment without the reporter&apos;s identity or
+              private review notes. If you request reconsideration, your
+              explanation and later replies are shared with the named assigned
+              reviewer through a linked help case. The reviewer may be the
+              original decision maker. This does not provide independent review
+              or automatically restore restricted content.
+            </p>
           </section>
           <section>
             <h2 className="mb-2 text-3xl">
@@ -228,13 +237,17 @@ export default function PrivacyPage() {
               shared records retain their own ownership and access controls.
             </p>
             <p className="mt-3">
-              Selected report evidence is reviewed while a case is open and
-              removed within 180 days after final closure. A documented hold
-              preserves only the necessary records and is reviewed at least
-              every 30 days. Ordinary recovery copies expire within 30 days of
-              their original creation, so older backups may take up to 30
-              additional days after active deletion. Restoration must reapply
-              deletion and current access controls before the service reopens.
+              Selected report evidence and necessary linked reconsideration
+              records are reviewed while a case is open and removed within 180
+              days after final closure, including after account closure.
+              Removing your post or comment keeps it out of ordinary views;
+              selected text needed for a report follows this same period. A
+              documented hold preserves only the necessary records and is
+              reviewed at least every 30 days. Ordinary recovery copies expire
+              within 30 days of their original creation, so older backups may
+              take up to 30 additional days after active deletion. Restoration
+              must reapply deletion and current access controls before the
+              service reopens.
             </p>
             <p className="mt-3">
               Minimal deletion receipts contain references, dates and outcomes

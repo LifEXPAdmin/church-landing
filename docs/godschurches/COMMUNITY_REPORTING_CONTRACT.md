@@ -57,6 +57,12 @@ blocks recovery completion instead of fabricating text. Operational release gate
 remain in RETENTION_OPERATIONS.md. Account escalation, broader operator integration
 and owner acceptance retain their separate criteria.
 
+Release rollback must retain the shared moderation predicates and protected
+control reader. Once restrictions or appeals exist, promoting a pre-moderation
+application could expose restricted sources or lose recovery controls even though
+the database migration is additive. Use a compatible corrective build; do not
+remove the columns, predicates or journal kinds to make an old build run.
+
 ## Current policy — 13 September 2026
 
 [The approved messaging retention and deletion policy](MESSAGING_RETENTION_POLICY.md)

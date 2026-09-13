@@ -533,7 +533,8 @@ export const releases: ReleaseEntry[] = [
       "Authorized reviewers can request correction, hide, remove or restore the selected post or comment while preserving its audience and reply permissions."
     ],
     fixed: [
-      "Reported text stays available only to authorized review for its existing retention period after author removal. Backup recovery preserves removals and pauses for review when it cannot prove a later restoration."
+      "Reported text stays available only to authorized review for its existing retention period after author removal. Backup recovery preserves removals and pauses for review when it cannot prove a later restoration.",
+      "Read-only demos no longer make an unnecessary account-information request."
     ],
     featureIds: [
       "report-review",

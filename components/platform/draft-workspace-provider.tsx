@@ -29,13 +29,17 @@ export function DraftWorkspaceProvider({
       })
   );
   const pathname = usePathname();
+  const demo =
+    pathname === "/platform/demo" || pathname.startsWith("/platform/demo/");
   useEffect(() => {
     controller.conceal();
-    void controller.verify();
-  }, [controller, pathname]);
+    if (demo) controller.dispose();
+    else void controller.verify();
+  }, [controller, pathname, demo]);
   useEffect(() => {
     const restore = () => {
-      if (document.visibilityState !== "hidden") void controller.verify();
+      if (!demo && document.visibilityState !== "hidden")
+        void controller.verify();
     };
     const visibility = () =>
       document.visibilityState === "hidden" ? controller.conceal() : restore();
@@ -67,7 +71,7 @@ export function DraftWorkspaceProvider({
       window.removeEventListener("pageshow", restore);
       window.removeEventListener("beforeunload", beforeUnload);
     };
-  }, [controller]);
+  }, [controller, demo]);
   return <Context.Provider value={controller}>{children}</Context.Provider>;
 }
 export function useDraftWorkspace() {

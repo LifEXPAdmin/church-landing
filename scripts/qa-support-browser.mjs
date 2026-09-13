@@ -17,16 +17,16 @@ const output = join(dir, "support-browser");
 mkdirSync(output, { recursive: true, mode: 0o700 });
 const require = createRequire(
   process.env.QA_PLAYWRIGHT_PACKAGE ??
-    "/Users/awmccuen/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/package.json"
+    `${process.env.HOME}/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/package.json`
 );
 const { chromium } = require("playwright");
 const binary = join(
   process.env.HOME,
   "Library/Caches/ms-playwright/chromium_headless_shell-1194/chrome-mac/headless_shell"
 );
-const executablePath = existsSync(chromium.executablePath())
-  ? chromium.executablePath()
-  : binary;
+const executablePath =
+  process.env.QA_CHROME_BIN ??
+  (existsSync(chromium.executablePath()) ? chromium.executablePath() : binary);
 assert.ok(existsSync(executablePath));
 const pub = execFileSync("openssl", [
   "x509",
@@ -97,9 +97,15 @@ async function submit(page, name) {
       r.url().endsWith("/api/platform/support") &&
       r.request().method() === "POST"
   );
+  // Successful shared forms load a fresh private document. Wait for that
+  // navigation before checking its status; streaming markup can briefly retain
+  // the previous document's hidden elements.
+  const navigation = page.waitForEvent("domcontentloaded");
   await button.click();
   const r = await response;
   assert.equal(r.status(), 200, "Support action succeeds");
+  await navigation;
+  await page.waitForLoadState("networkidle");
   return r.status();
 }
 async function screenshot(page, name) {
@@ -127,9 +133,10 @@ try {
       await requester.goto(
         origin + `/platform/help/new?churchId=${f.churchId}`
       );
+      await requester.getByLabel("Short summary", { exact: true }).waitFor();
       await layout(requester);
       assert.ok(
-        (await requester.locator("main").innerText()).includes(
+        (await requester.getByRole("main").innerText()).includes(
           f.actors.owner.name
         )
       );
@@ -183,7 +190,7 @@ try {
     }
   );
   await check("requester reply returns waiting work to progress", async () => {
-    await requester.reload();
+    await requester.reload({ waitUntil: "networkidle" });
     await requester
       .getByLabel("Your reply", { exact: true })
       .fill("The church welcome screen is the one I meant.");
@@ -208,12 +215,12 @@ try {
         .getByRole("heading", { name: "Your request", exact: true })
         .waitFor();
       await submit(requester, "Remove coordinator access");
-      await coordinator.reload();
+      await coordinator.reload({ waitUntil: "networkidle" });
       await coordinator
         .getByRole("heading", { name: "Request not available", exact: true })
         .waitFor();
       assert.ok(
-        !(await coordinator.locator("main").innerText()).includes(
+        !(await coordinator.getByRole("main").innerText()).includes(
           "The church welcome screen is the one I meant."
         )
       );
@@ -222,7 +229,7 @@ try {
   await check(
     "resolution and requester reopening are usable on mobile",
     async () => {
-      await owner.reload();
+      await owner.reload({ waitUntil: "networkidle" });
       await owner
         .getByLabel("New status", { exact: true })
         .selectOption("RESOLVED");
@@ -230,7 +237,7 @@ try {
         .getByLabel("What changed or resolved the issue?", { exact: true })
         .fill("The fictional setup question is resolved by this explanation.");
       await submit(owner, "Save status");
-      await requester.reload();
+      await requester.reload({ waitUntil: "networkidle" });
       await requester
         .getByLabel("Why are you reopening this request?", { exact: true })
         .fill("There is one more ordinary setup question.");

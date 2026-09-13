@@ -1,5 +1,48 @@
 # Private reporting implementation receipt
 
+## Content decisions and reconsideration — candidate, 13 September 2026
+
+Commits 2f081cb and 6f9711c extend the existing report, source, Support, Activity
+and protected retention services. Scoped decisions bind all current versions and
+permissions; safe author notices and explicit assigned-reviewer reconsideration
+preserve private reporter context. Source restrictions cover real fixture image
+variants, saved/repost views, search and notification resolution without copied
+files or text. Both reply modes, author withdrawal and current church authority
+remain enforced. No new table, runtime dependency, permission grant or ordinary
+Support activation is introduced.
+
+The full release gate passed 114 discovered files: 717 passing checks, two
+expected skips and zero failures. Fresh migrations, original-data upgrade,
+synthetic restore, two production builds, private HTTP/RSC and process restart
+passed. The old Stage2A comment fingerprint required excluding the new default
+column; a separate migration-45 check verifies every original column and unchanged
+legacy visibility. Twenty-seven focused source/appeal/withdrawal/notification
+checks, 15 draft-controller checks and types/scoped lint also pass.
+
+Five new phone-width browser groups verify previewed decisions, exact lost-response
+retries, own-content privacy, deliberate appeal creation, reviewer inbox/replies,
+revocation and account switching. Eleven existing review groups pass, including
+safe update, navigation, scope transitions and 320/390/1440 layouts. The review
+preview first needed a valid full build identity for its update check. Ordinary
+Support's legacy browser script needed to wait for completed private navigation;
+its seven functional groups pass. The final demo check found an unnecessary shared
+draft-provider account read: the candidate now conceals and pauses that provider
+on demo routes, retaining the draft for current-account verification on return.
+Final candidate rebuild and affected browser reruns remain pending.
+
+A fresh encrypted production-copy rehearsal upgrades 44 to 45, preserves all
+original columns across 92 tables, and passes protected deletion/control replay.
+Production preflight confirms 44 matching checksums, one current report-review
+grant and no actual reports/conversations/messages. These read-only checks changed
+no production data. Production remains .31; this candidate is not published.
+
+After final browser/build acceptance: verify ancestry, publish the exact candidate,
+confirm READY and independent canonical alias/serving identity, then verify actual
+migrations, preserved original columns, cloud traces, maintenance and the refreshed
+private backup registry. Compatible rollback must retain moderation predicates
+and control kinds. Broader escalation/integration and owner/phone acceptance stay
+open; the user's observed Chrome phone-shade receipt is preserved separately.
+
 ## Authenticated reviewer activation — 13 September 2026
 
 The approved sole initial reviewer is now verified through the authenticated own
