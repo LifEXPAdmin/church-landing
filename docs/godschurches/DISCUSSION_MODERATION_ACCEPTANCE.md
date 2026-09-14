@@ -1,6 +1,6 @@
 # Reasons for church discussion moderation
 
-September 14, 2026 UTC · candidate 2026.09.14.13 · not yet released
+September 14, 2026 UTC · release candidate 2026.09.14.13 · publication pending
 
 The current community moderation specification requires a reason for moderator
 discussion closure. An isolated baseline on the preceding runtime confirmed that
@@ -34,7 +34,40 @@ and changed retries, author compatibility, scope and revoked authority, bounded
 history and blocked actor labels, current-account HTTP behavior, and confirmation
 of a previously committed no-reason request across the release. A new unreasoned
 change is denied; no historical reason is fabricated. All eleven existing
-post/editor regressions also pass (18 focused groups total). Types and scoped lint pass. Full regression,
-built-browser, recovery, exact release and live/private reconciliation remain
-pending. Broader real operator/provider/device prerequisites and final review
+post/editor regressions also pass (18 focused groups total). Types and scoped lint pass. The final production build and local runtime
+trace inspection pass: 146 traces, 3,278 entries and 370 server JavaScript files,
+with no fixture, environment file or Prisma configuration tooling included.
+
+Twenty-four built-browser groups pass: seven discussion moderation, nine author
+content-note/editor and eight retained-reader privacy groups, with no page errors.
+They cover required reasons at 320/390/1280 pixels, exact lost-response recovery,
+author reopening without a new reason, account replacement, revoked authority,
+current history and actor concealment after a block. Narrow-screen form and
+history captures were inspected. The browser fixture is separate from the full
+regression database. A premature preview attempt was cleaned up before testing;
+a media regression correctly rejected the wrong working directory and passed
+from its fixture-owning checkout with the isolation guard unchanged.
+
+Measured against the preceding production build, unique discussion-route
+JavaScript including shared layouts grows by 1,810 raw / 535 gzip bytes (level 6
+per file). Home and profile raw sizes are unchanged; their compressed output
+varies by minus two bytes. A local query diagnostic observes 15 statements for a
+personal public post, 17 for an unaudited church post and 19 with one or twelve
+stored decisions. The history query is absent for the personal post; each church
+case performs one history query and returns at most ten decisions (2,615 JSON
+bytes in this fixture). These diagnostics are not hosting latency/capacity claims.
+
+The encrypted production recovery rehearsal completed at 16:54:02 UTC. All 49
+migration checksums match, all original columns in 92 tables are preserved,
+protected replay completes and the plaintext restore is removed. Production was
+not modified.
+
+The complete gate on runtime b8820e0 passes all 127 discovered files: 783
+executions, 781 passes, two expected development-only delivery skips in the
+production phase, zero failures or cancellations. It covers synthetic upgrades,
+fresh migrations, restore, service/HTTP behavior, development and production
+HTML/RSC over verified local HTTPS, process restart and production builds. The
+additional legacy receipt regression passes separately on 93b75bf; final browser
+acceptance uses 989bb2c. Changes after the runtime checkpoint are tests and
+reports. Exact release, live behavior and private reconciliation remain pending. Broader real operator/provider/device prerequisites and final review
 remain open.
