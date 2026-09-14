@@ -371,9 +371,18 @@ try {
     })
     .screenshot({ path: output + "/follow-wait-390.png" });
   await expire(followKey);
+  const followed = page.waitForResponse(
+    (response) =>
+      new URL(response.url()).pathname === "/api/platform/relationships" &&
+      response.request().method() === "POST"
+  );
   await page.getByRole("button", { name: "Follow", exact: true }).click();
+  assert.equal((await followed).status(), 200);
   await page
-    .getByText(/You have reached the follow limit/)
+    .getByRole("group", {
+      name: `Relationship choices for ${author.name}`,
+      exact: true
+    })
     .waitFor({ state: "hidden" });
   assert.equal(
     await db.platformFollow.count({
