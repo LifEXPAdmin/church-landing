@@ -29,9 +29,47 @@ read on entry/return; it does not add a profile polling timer. Changed snapshots
 require deliberate reload, preserving local entries until that choice. Private
 snapshot guards also conceal on offline events and recheck relationship changes.
 
-Initial verification: three service/transport groups and two client batching
-groups pass. Types and scoped lint pass. Thirty post references use the same
-number of database queries as one; exact counts and route asset changes will be
-recorded with final acceptance. No speed improvement is claimed. Full regression,
-built browser, exact deployment and live acceptance remain pending. Broader
-operator/provider/device prerequisites and final review remain open.
+Verification foundation `f1ff6df` passes the full 126-file gate: 776 executions,
+774 passes, two expected production-phase delivery skips and zero failures. This
+includes fresh/upgrade migrations, synthetic recovery, account/support/portal
+services and HTTPS production behavior. Finishing runtime `c59893f` then passes
+seven focused checks, types/scoped lint, a fresh production build and 35 final
+built-browser groups: eight retained privacy, nine author notes, five comment
+readers, five photo viewers and eight repost flows. Runtime trace inspection
+covers 146 traces, 3,265 entries and 369 server JavaScript files, with no private
+fixture/environment or Prisma configuration-loader inclusion.
+
+Browser regressions found and repaired pending-menu concealment and premature
+management-snapshot adoption after an unconfirmed edit. The original request and
+its snapshot now remain owned by the existing form until explicit confirmation.
+Quote commentary survives source opt-out; only its embedded source disappears.
+Photos and dialogs follow the entire source/profile boundary, including Back and
+explicit profile reload after avatar withdrawal. Three final mobile captures were
+visually inspected. Fictional writes stay isolated; production test writes and
+external sends are zero.
+
+One early comment-reader run reported a transient hydration error. Its repeat,
+the final five-suite run and two six-navigation feed probes have no page errors;
+no reproducible hydration defect remained. Harness updates scope repeated
+fixtures to their author, wait for actual controls, and assert whole-reader
+concealment rather than the superseded photo-only message.
+
+Measured costs and finishing work:
+
+- One and thirty current post references each use eleven database queries.
+- Three fresh-reader probes initially showed one unnecessary concealment and two
+  comment reads each. Separating viewport changes from listener cleanup removes
+  that concealment and leaves one comment read in each repeat.
+- Unread guest identity denials kept browser request streams unfinished. The
+  transport now releases unused denial bodies. The final six-navigation probe has
+  no unfinished identity requests and no page errors; no refresh loop was found.
+- Compared with the preceding production build, unique route-plus-layout assets
+  increase by 2,295 raw / 816 gzip bytes for Home, 2,645 / 852 for discussion and
+  5,640 / 1,570 for member profiles. Gzip uses level six per file consistently.
+  These are asset/request measurements, not a production latency or capacity SLA.
+
+All 49 production migration checksums match. This feature adds no migration;
+the recent protected recovery proof preserves 92 original tables. Exact
+deployment, canonical assignment, live behavior and private reconciliation remain
+pending. Broader operator/provider/device prerequisites and final review remain
+open.
