@@ -1,15 +1,25 @@
-## Four-feed implementation checkpoint — September 14, 2026
+## Four feeds verified live — September 14, 2026 UTC
 
-The local 2026.09.14.14 candidate implements all four approved modes, private
-saved choices, shared Home/My feed controls, searchable Settings access, stable
-ranked pages and current friendship/source checks. Complete local acceptance
-covers 130 discovered files with 806 passes and two expected skips, plus 38
-built-browser groups. Types/lint, six settings contracts and measured runtime
-checks pass. Protected upgrade 49→50 preserves all original columns across
-92 tables and passes control replay. Exact deployment/live acceptance, installed
-registry and post-release backup remain in progress; 2026.09.14.13 still serves.
-See [the feature evidence](FOUR_FEEDS_ACCEPTANCE.md) for provenance, operating
-bounds, earlier failures and the completed continuation.
+Product **2026.09.14.14**, application **c83b19205c89834976a30f11137d6f998edb9757**,
+is READY in **dpl_EJee3oWa1zmU82Z4Hmeh3LxZzuJJ**, independently assigned to the
+canonical domain and confirmed by the live release/build endpoint. All four
+approved modes, private saved choices, shared Home/My feed controls, searchable
+Feed Settings, stable ranked pages and current friendship/source checks ship
+in this complete feature cycle.
+
+Acceptance covers 130 discovered files with 806 passes and two expected skips,
+38 built-browser groups, types/lint and measured runtime costs. Eighteen public,
+four secured health and seven actual signed-in live groups pass, with zero browser
+errors or scoped runtime error/fatal rows. Test reads create four temporary ranking
+metadata records; production posts, Likes and preferences remain unchanged by
+whole-table fingerprints. No outbound sends occur. Migration 50 and the installed
+registry match; protected upgrade 49→50 preserves original columns in 92 tables,
+and the installed encrypted ordinary restore separately passes 50→50 with 93
+tables. The nightly wrapper reports 30 verified sets and no issues/removals.
+See [the feature evidence](FOUR_FEEDS_ACCEPTANCE.md) for exact provenance, operating
+bounds and earlier failures. Credit overlapping feed/settings requirements while
+leaving broader priorities open; continue the next eligible work. Final review
+remains last.
 
 ## Discussion moderation reasons verified live — September 14, 2026 UTC
 

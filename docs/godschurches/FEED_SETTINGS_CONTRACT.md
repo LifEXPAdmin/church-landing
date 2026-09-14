@@ -6,9 +6,9 @@ The current unified queue explicitly selects one complete early feed feature:
 Latest, Friends, Top This Week and Trending. All four are required. Their service,
 preference, selector, Home/My feed integration, regression and exact live-release
 work belongs to this feature cycle. Earlier foundation/UI labels do not defer
-required finishing work. The current application is 2026.09.14.13; this section
-records the approved contract. The local implementation and pending acceptance
-are recorded in [four-feed evidence](FOUR_FEEDS_ACCEPTANCE.md).
+required finishing work. The current application is 2026.09.14.14 / c83b192, verified READY and canonical.
+The complete service, Settings and live acceptance is recorded in
+[four-feed evidence](FOUR_FEEDS_ACCEPTANCE.md).
 
 - Latest selects currently eligible public posts, newest publication and stable
   ID first. It is the default only when no supported private choice is saved.

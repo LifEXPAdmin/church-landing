@@ -1,10 +1,12 @@
 # Four feed choices
 
-## Implementation checkpoint — September 14, 2026
+## Canonical release verified — September 14, 2026 UTC
 
-The local candidate adds Latest, Friends, Top This Week and Trending as one
-feature in Home and My feed. Publication and complete browser/operational
-acceptance are still pending. The serving application remains 2026.09.14.13.
+Product **2026.09.14.14**, application **c83b19205c89834976a30f11137d6f998edb9757**,
+is READY in **dpl_EJee3oWa1zmU82Z4Hmeh3LxZzuJJ**. Independent canonical assignment
+and the live release/build endpoint match. Latest, Friends, Top This Week and
+Trending are released as one complete feature in Home and My feed, with saved
+choices and searchable Feed Settings access.
 
 Latest is public-only and includes eligible own posts. Friends uses accepted
 mutual friendship plus both current follow edges; it excludes self and pending or
@@ -140,10 +142,35 @@ Settings suite. Together with the unchanged-service privacy/comment/content-note
 suites, 38 browser groups pass with zero page errors. No provider dependency or
 additional schedule is introduced. All test mutations remain in isolated fixtures.
 
-Still required in this feature cycle: installed migration-checksum propagation
-and post-release backup, exact canonical deployment, actual live checks and
-private reconciliation.
-The feed cleanup implementation is part of the deployed retention route; the
-separate installed local backup-retention module is unchanged and its checksum
-must still match. Broader Local/Following/Your Church/advanced-filter and
-operational acceptance scopes remain distinct.
+## Live and operational acceptance
+
+The canonical build completes at 19:23:26 UTC with migration 50 applied and its
+runtime trace check passing: 147 traces, 15,329 entries and 372 server JavaScript
+files. Eighteen public live groups pass, including all four choices, guest
+persistence, current ranked availability, narrow/wide layout, private denials,
+prior release links and signup. Four secured health groups pass with no alerts.
+Seven connected-Chrome groups verify the actual signed-in account, each mode,
+Home/My feed/Close preservation, existing author controls and Feed Settings'
+focused return to the account default. Browser errors and deployment-scoped
+error/fatal rows are zero. Physical-device behavior is not claimed from Chrome.
+
+Live verification creates four bounded ranking metadata records: two public and
+two account-owned snapshots. The signed URLs and database records reconcile
+exactly. No production post, Like or preference data changes: whole-table
+fingerprints match the pre-check baseline. No grant, message, invitation or
+provider delivery is issued. Snapshot expiry and cleanup are verified in isolated
+fixtures; ordinary live reads are not described as having zero database writes.
+
+All 50 live migration checksums match. Installed checksum and installation
+metadata each record 50, preserving the prior 49 and the unchanged local
+backup-retention source hash. The installed encrypted daily backup/restore passes
+50→50 at 19:29:29 UTC, preserving 93 restored tables and removing plaintext.
+This ordinary restore is separate from the protected 49→50 upgrade/replay above.
+The nightly wrapper verifies 30 backup sets with no refresh, expiry issues or
+removals. Feed snapshot cleanup ships in the existing deployed retention route;
+no additional worker or schedule is required.
+
+The complete early-feed feature is ready for private task closure. Broader
+Local/Following/Your Church/advanced-filter and operational acceptance scopes
+remain distinct; their overlapping four-mode and Settings work must be credited
+without closing those broader parents.

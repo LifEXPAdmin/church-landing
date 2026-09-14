@@ -35,6 +35,19 @@ upgrade/replay and ordinary-copy proofs. No production user data was changed.
 Content-note and excerpt erasure follows the same canonical body/evidence owners;
 see [the acceptance receipt](CONTENT_NOTES_ACCEPTANCE.md).
 
+The four-feed release **2026.09.14.14 / c83b192** verifies all 50 live migration
+checksums and both installed registry records, preserving the prior 49 hashes.
+The unchanged installed backup-retention source hash also matches. Protected
+production-copy upgrade 49→50 completes at 18:48:41 UTC, preserving all original
+columns across 92 tables and passing control replay. The actual installed
+encrypted daily backup/restore separately passes 50→50 at 19:29:29 UTC with 93
+tables and plaintext removal. The nightly wrapper verifies 30 sets, no refresh,
+zero issues and zero removals. The existing application retention route now
+sweeps at most 500 expired feed ranking snapshots per run; account erasure removes
+owned sets. No provider, worker or schedule is added. Live feed checks create four
+short-lived ranking records but change no post, Like or private preference data.
+See [four-feed acceptance](FOUR_FEEDS_ACCEPTANCE.md).
+
 For every schema release, verify the installed checksum file and its installation
 metadata independently, preserve all earlier checksums, install the new checksum,
 and run the installed encrypted daily backup/restore after deployment. The
