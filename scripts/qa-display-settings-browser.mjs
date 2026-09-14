@@ -241,7 +241,14 @@ try {
   const savedCookie = await cookie();
   assert.deepEqual(
     Object.keys(JSON.parse(decodeURIComponent(savedCookie))).sort(),
-    ["appearance", "mode", "reduceData", "reduceMotion", "size"]
+    [
+      "appearance",
+      "hideReactionCounts",
+      "mode",
+      "reduceData",
+      "reduceMotion",
+      "size"
+    ]
   );
   await page.reload();
   await preview.waitFor();
@@ -251,7 +258,7 @@ try {
     "largest"
   );
   ok(
-    "Preview survives in-app and native Back; discard writes nothing; explicit Save applies exactly five browser fields and survives reload"
+    "Preview survives in-app and native Back; discard writes nothing; explicit Save applies exactly six browser fields and survives reload"
   );
 
   await choose("Appearance", "system");
@@ -370,7 +377,8 @@ try {
     mode: "pages",
     size: "comfortable",
     reduceMotion: false,
-    reduceData: false
+    reduceData: false,
+    hideReactionCounts: false
   });
   assert.deepEqual(
     await db.profilePresentation.findUnique({ where: { userId: actor.id } }),
@@ -381,7 +389,7 @@ try {
     beforePrivacy
   );
   ok(
-    "Display remains bounded at phone and desktop widths with doubled root text; confirmed reset changes only the five browser fields"
+    "Display remains bounded at phone and desktop widths with doubled root text; confirmed reset changes only the six browser fields"
   );
 
   const { postCommand } = await import("../lib/platform/post-commands.ts");

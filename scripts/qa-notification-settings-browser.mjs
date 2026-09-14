@@ -317,7 +317,8 @@ try {
   for (const name of [
     "Replies to your posts and comments",
     "Mentions in comments",
-    "Replies in conversations you follow"
+    "Replies in conversations you follow",
+    "Updates to your saved prayers"
   ]) {
     const group = page.getByRole("group", { name, exact: true });
     const phone = group.getByRole("checkbox", {
@@ -343,7 +344,7 @@ try {
         where: { ownerId: actor.id }
       })
     ).pushCategories.sort(),
-    ["conversations", "mentions", "messages", "replies", "requests"]
+    ["conversations", "mentions", "messages", "prayer", "replies", "requests"]
   );
   const commenter = await createPortalActor(db, "commentpushui");
   const post = await db.platformPost.create({

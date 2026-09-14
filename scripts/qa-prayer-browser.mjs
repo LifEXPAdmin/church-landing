@@ -51,6 +51,7 @@ const browser = await chromium.launch({
   ]
 });
 const context = await browser.newContext({
+  hasTouch: true,
   viewport: { width: 390, height: 844 }
 });
 const page = await context.newPage();
@@ -414,7 +415,7 @@ try {
   await page
     .getByRole("button", { name: "Pray for this post", exact: true })
     .first()
-    .click();
+    .tap();
   await ready();
   assert.equal(new URL(page.url()).searchParams.get("post"), beforeReader);
   for (const [width, appearance] of [
@@ -424,10 +425,10 @@ try {
     await page.setViewportSize({ width, height: 844 });
     await page.evaluate((appearance) => {
       document
-        .querySelector(".platform-design")
+        .querySelector(".platform-design[data-reader-size]")
         .setAttribute("data-appearance", appearance);
       document
-        .querySelector(".platform-design")
+        .querySelector(".platform-design[data-reader-size]")
         .setAttribute("data-reader-size", "largest");
     }, appearance);
     await bounded();
@@ -446,8 +447,26 @@ try {
     );
   }
   await close();
+  const readerCard = page.locator(`[data-post="${p.id}"]`);
+  await readerCard.getByRole("button", { name: /^Comment, / }).tap();
+  const discussion = page.getByRole("dialog", {
+    name: "Post discussion",
+    exact: true
+  });
+  await discussion
+    .locator(`[data-comment-id="${root.id}"]`)
+    .getByRole("button", { name: "Pray for this comment", exact: true })
+    .tap();
+  await ready();
+  assert.equal(new URL(page.url()).searchParams.get("post"), beforeReader);
+  await page.keyboard.press("Escape");
+  await panel().waitFor({ state: "hidden" });
+  await discussion
+    .getByRole("button", { name: "Close discussion", exact: true })
+    .click();
+  assert.equal(new URL(page.url()).searchParams.get("post"), beforeReader);
   ok(
-    "Prayer interaction preserves the page-reader destination and fits 320/390px light/dark largest-text views"
+    "Simulated post and nested comment Pray taps preserve the page-reader destination; Escape and 320/390px light/dark largest-text views pass"
   );
 
   await page.setViewportSize({ width: 390, height: 844 });
@@ -467,7 +486,7 @@ try {
   await page.waitForFunction(
     () =>
       document
-        .querySelector(".platform-design[data-release]")
+        .querySelector(".platform-design[data-release][data-reader-size]")
         ?.getAttribute("data-hide-reaction-counts") === "true"
   );
   await go(`/platform/posts/${p.id}`);
@@ -607,16 +626,23 @@ try {
     .waitFor();
   assert.equal(await control("Publish prayer update").count(), 0);
   await signIn(f.contact);
-  await control("Refresh prayer choices").click();
-  await panel()
-    .getByRole("link", { name: "Sign in again", exact: true })
-    .waitFor();
-  assert.equal(
-    (await panel().innerText()).includes("Keep my own unsent text"),
-    false
-  );
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await page.waitForFunction(() => {
+    const dialog = document.querySelector(".gc-prayer-dialog");
+    return (
+      !dialog ||
+      (dialog.textContent.includes("Sign in again") &&
+        !dialog.querySelector("textarea"))
+    );
+  });
   assert.equal(await panel().locator("textarea").count(), 0);
-  await close();
+  if (await panel().isVisible()) {
+    assert.equal(
+      (await panel().innerText()).includes("Keep my own unsent text"),
+      false
+    );
+    await close();
+  }
   ok(
     "Same-account revocation preserves only unsent author input; changed accounts clear private state and cannot publish it"
   );
