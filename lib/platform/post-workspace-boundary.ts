@@ -93,7 +93,8 @@ export async function handlePostWorkspaceRequest(
     if (!(await allowWorkspaceAttempt(db, config.rateSecret, actor.id)))
       throw new PortalError(
         429,
-        "Too many saves. Keep your entries and retry in 15 minutes."
+        "Too many saves. Keep your entries and retry in 15 minutes.",
+        900
       );
     return Response.json(await postWorkspaceCommand(db, token, input), {
       headers: workspaceHeaders

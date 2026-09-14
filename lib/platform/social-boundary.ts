@@ -47,7 +47,8 @@ export async function socialWriteInput(
   )
     throw new PortalError(
       429,
-      "Too many changes. Keep your entries and retry in 15 minutes."
+      "Too many changes. Keep your entries and retry in 15 minutes.",
+      900
     );
   try {
     return { input: await readBody(request, 32768), token };

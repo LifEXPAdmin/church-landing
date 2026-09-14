@@ -8,6 +8,8 @@ import {
   seedPortal
 } from "./seed-portal";
 import { accountConfig } from "../lib/platform/account-config";
+import { allowWorkspaceAttempt } from "../lib/platform/account-limits";
+import { socialWriteInput } from "../lib/platform/social-boundary";
 import { PortalError } from "../lib/platform/portal-policy";
 import { postCommand } from "../lib/platform/post-commands";
 import { postWorkspaceCommand as workspace } from "../lib/platform/post-workspace";
@@ -504,6 +506,45 @@ test("signed-in posting does not borrow the shared-IP sign-in cap; direct 429 ha
   assert.match((await response.json()).message, /Keep your draft/);
   assert.equal((await bucket(authors[0].id, "post"))!.hits, 10);
   assert.equal((await bucket(authors[1].id, "post"))!.hits, 8);
+});
+
+test("independent transport flood limits also return a bounded waiting header without mutating private work", async () => {
+  const actor = await createPortalActor(db, "transportwait");
+  for (const suffix of ["", ":relationships"])
+    for (let i = 0; i < 240; i++)
+      await allowWorkspaceAttempt(
+        db,
+        accountConfig().rateSecret + suffix,
+        actor.id
+      );
+  const input = m("save-draft", {
+    id: randomUUID(),
+    expectedVersion: 0,
+    payload: { content: "Keep this private work", replyAudience: "VIEWERS" }
+  });
+  const response = await handlePostWorkspaceRequest(
+    db,
+    request("/api/platform/post-workspace", actor, input)
+  );
+  assert.equal(response.status, 429);
+  assert.equal(response.headers.get("Retry-After"), "900");
+  await assert.rejects(
+    socialWriteInput(
+      db,
+      request("/api/platform/relationships", actor, {}),
+      "relationships"
+    ),
+    (error: unknown) => {
+      assert.ok(error instanceof PortalError);
+      assert.equal(error.status, 429);
+      assert.equal(workspaceError(error).headers.get("Retry-After"), "900");
+      return true;
+    }
+  );
+  assert.equal(
+    await db.privatePostDraft.count({ where: { ownerId: actor.id } }),
+    0
+  );
 });
 
 test("historical canonical post retries preserve prior behavior and current church authority still gates new receipt replay", async () => {
