@@ -9,6 +9,7 @@ import { getPostEditor } from "../lib/platform/post-editor";
 import { getPost, listPosts } from "../lib/platform/post-reads";
 import { handlePostRequest } from "../lib/platform/post-boundary";
 import { relationshipCommand } from "../lib/platform/relationships";
+import { socialCommand } from "../lib/platform/social-operations";
 
 const db = new PrismaClient();
 before(() => assertPortalTestDatabase(db));
@@ -18,6 +19,72 @@ const denied = (promise: Promise<unknown>, status = 403) =>
     promise,
     (error: unknown) => error instanceof PortalError && error.status === status
   );
+
+test("a previously committed no-reason request stays confirmable across the release, but cannot become a new change", async () => {
+  const f = await fixture();
+  const input = {
+    operation: "discussion",
+    postId: f.post.id,
+    expectedVersion: 1,
+    closed: true,
+    mutationId: randomUUID()
+  };
+  // Seed the preceding release's committed settings and receipt through the
+  // unchanged receipt owner. Its browser lost the response before this release.
+  const prior = await socialCommand(
+    db,
+    f.contact.token,
+    "post-control",
+    input,
+    async (tx, actorId) => {
+      const post = await tx.platformPost.update({
+        where: { id: f.post.id },
+        data: { discussionClosed: true, version: { increment: 1 } }
+      });
+      await tx.postAudit.create({
+        data: {
+          postId: post.id,
+          actorId,
+          action: "discussion-changed",
+          version: post.version
+        }
+      });
+      return {
+        id: post.id,
+        version: post.version,
+        message: "Discussion permissions are saved."
+      };
+    }
+  );
+  assert.deepEqual(await postCommand(db, f.contact.token, input), prior);
+  await denied(
+    postCommand(db, f.contact.token, {
+      ...input,
+      expectedVersion: 2,
+      closed: false,
+      mutationId: randomUUID()
+    }),
+    400
+  );
+  const post = await db.platformPost.findUniqueOrThrow({
+    where: { id: f.post.id }
+  });
+  assert.equal(post.discussionClosed, true);
+  assert.equal(post.version, 2);
+  assert.equal(
+    await db.churchAuditEvent.count({
+      where: { targetId: post.id, action: "DISCUSSION_MODERATED" }
+    }),
+    0,
+    "A new reason must not be invented for an earlier committed decision"
+  );
+  assert.equal(
+    await db.postAudit.count({
+      where: { postId: post.id, action: "discussion-changed" }
+    }),
+    1
+  );
+});
 async function fixture() {
   const f = await seedPortal(db);
   for (const [actor, capability] of [

@@ -29,10 +29,12 @@ source copies. Records reuse the existing scoped operational/security audit
 store and its backup/export boundaries. No schema, dependency or worker is added.
 Release notes and existing feature guidance are updated within this cycle.
 
-Six new service/transport groups pass, covering missing/invalid reasons, exact
+Seven new service/transport groups pass, covering missing/invalid reasons, exact
 and changed retries, author compatibility, scope and revoked authority, bounded
-history and blocked actor labels, and current-account HTTP behavior. All eleven existing
-post/editor regressions also pass (17 focused groups total). Types and scoped lint pass. Full regression,
+history and blocked actor labels, current-account HTTP behavior, and confirmation
+of a previously committed no-reason request across the release. A new unreasoned
+change is denied; no historical reason is fabricated. All eleven existing
+post/editor regressions also pass (18 focused groups total). Types and scoped lint pass. Full regression,
 built-browser, recovery, exact release and live/private reconciliation remain
 pending. Broader real operator/provider/device prerequisites and final review
 remain open.
