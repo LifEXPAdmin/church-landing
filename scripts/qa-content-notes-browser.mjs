@@ -163,7 +163,7 @@ try {
   });
   await go("/platform");
   const card = page
-    .locator("article.gc-post")
+    .getByRole("article", { name: `Post by ${author.name}`, exact: true })
     .filter({ hasText: "A safe introduction chosen by the author." });
   await card.waitFor();
   assert.ok(!(await card.innerText()).includes(full));

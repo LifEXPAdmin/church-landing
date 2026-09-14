@@ -189,7 +189,7 @@ test("batch transport rejects changed accounts, malformed or oversized inputs an
   });
 });
 
-test("thirty references share one policy read and one bounded source query", async () => {
+test("thirty references share one policy read and one bounded source query", async (t) => {
   const client = new PrismaClient({ log: [{ emit: "event", level: "query" }] });
   const queries: string[] = [];
   client.$on("query", (event) => queries.push(event.query));
@@ -210,6 +210,9 @@ test("thirty references share one policy read and one bounded source query", asy
       thirty = await read(30);
     assert.equal(thirty, one);
     assert.ok(thirty < 20);
+    t.diagnostic(
+      `Current policy queries: one reference ${one}, thirty references ${thirty}.`
+    );
   } finally {
     await client.$disconnect();
   }
