@@ -1,19 +1,24 @@
-## Personal profile pin release candidate — September 14, 2026 UTC
+## Personal profile pin verified live — September 14, 2026 UTC
 
-The .15 candidate at final application source 0c6fa3f adds one owned published
-post pin, replacement/unpin controls, current audience/source checks, deduplicated
-profile pagination and owner export/erasure integration. It preserves canonical
-posts, engagement, introduction and church notice controls. Final review fixed a
-confirmed pin write followed by a failed status read retaining old placement.
-Thirty-two final production-mode browser groups, types, full lint and runtime
-traces pass. The complete 132-file gate at preceding service-identical 4cddb2d
-passes 809 checks with two expected skips and zero failures; two final HTTPS
-groups pass. Protected 50→51 recovery preserves original columns in 93 tables.
-Measured costs and the explicitly unresolved, pre-existing intermittent rendering
-observation remain in [profile pin evidence](PROFILE_PIN_ACCEPTANCE.md).
-Canonical production remains .14 / c83b192 until the pending .15 deployment,
-exact live checks, installed recovery and private reconciliation finish. No
-production pin or user content was changed for feature testing.
+**2026.09.14.15 / 4252774d4245d4327cbbfc1fb95b78241022121c** is READY in
+**dpl_ARQiPhrk3K96tyjJnjcQw744K8Dp**, independently canonical and verified live.
+One owned canonical post can be pinned, replaced or unpinned with current privacy,
+deduplicated pagination, preserved engagement and exact recovery. Required
+pagination-check and confirmed-write/status-outage repairs are included.
+
+The 132-file gate passes 809 checks with two expected skips; final application
+source 0c6fa3f passes 32 browser groups, types, lint and local runtime traces.
+Twelve public, four health and three actual signed-in live observations pass;
+production test user-data/pin changes, sends, new ranking snapshots, browser errors
+and scoped runtime error/fatal rows are zero. All 51 migration checksums and the
+installed registry match. Protected 50→51 and installed 51→51 restores pass with
+93 preserved tables; nightly recovery verifies 32 sets with zero issues/removals.
+See [profile pin evidence](PROFILE_PIN_ACCEPTANCE.md) for source provenance,
+measured costs and the earlier unresolved intermittent rendering observation.
+
+Private feature/queue readbacks and all four task completion records match.
+Continue remaining discussion integration/acceptance, then eligible prayer work;
+preserve broader module and provider/operator/device gates. Final review stays last.
 
 ## Four feeds verified live — September 14, 2026 UTC
 

@@ -1,6 +1,39 @@
 # Personal profile post pin
 
-## Implementation checkpoint — September 14, 2026
+## Verified release — September 14, 2026 UTC
+
+**2026.09.14.15 / 4252774d4245d4327cbbfc1fb95b78241022121c** is READY in
+**dpl_ARQiPhrk3K96tyjJnjcQw744K8Dp**, independently assigned to godschurches.com
+and confirmed by the live release/build endpoint. The whole ordinary-post pin
+feature and its three persistence/interface/acceptance subtasks are complete.
+
+Twelve public, four secured health and three actual signed-in live observations
+pass. The owner sees an enabled Pin to profile beside existing management actions
+on both discussion and profile cards. Existing profile images, About, interests
+and canonical posts still load. Actual pin/write/visitor engagement and failure
+journeys use isolated fictional accounts; live checks do not change a real pin.
+Before/after original-column fingerprints preserve posts, comments, Likes,
+preferences and operation receipts. Test user-data/pin changes, outbound sends,
+new ranking snapshots, browser errors and scoped runtime error/fatal rows are zero.
+The unresolved earlier intermittent React 418 observation below remains explicit.
+
+All 51 live migration checksums and both installed registry records match.
+Migration 51 applied at 21:04:06 UTC. Protected upgrade 50→51 preserves original
+columns in 93 tables and passes control replay; the separate installed encrypted
+ordinary restore passes 51→51 at 21:05:59 UTC with 93 tables and plaintext removal.
+The nightly wrapper verifies 32 sets with no issues or removals. Production traces
+pass: 148 traces, 15,498 entries, 374 server JavaScript files, without private
+fixtures/environment files or a Prisma configuration-loader path.
+
+Final application source 0c6fa3f passes 32 browser groups, types, lint and local
+traces; the service-identical preceding 4cddb2d full gate passes 809 checks plus two
+expected skips across 132 files. The publication commit also carries the final
+report. Private feature/queue readbacks and all four task completion records match.
+Broader featured-resource modules and actual provider/operator/device acceptance
+remain open. Continue existing discussion acceptance and eligible prayer work;
+keep the final batch review last.
+
+## Historical implementation checkpoint — September 14, 2026
 
 The local 2026.09.14.15 candidate adds a single owned published post pin to the
 personal profile. The optional introduction and church notice pins retain their

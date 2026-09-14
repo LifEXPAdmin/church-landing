@@ -48,6 +48,16 @@ owned sets. No provider, worker or schedule is added. Live feed checks create fo
 short-lived ranking records but change no post, Like or private preference data.
 See [four-feed acceptance](FOUR_FEEDS_ACCEPTANCE.md).
 
+The personal-profile-pin release **2026.09.14.15 / 4252774** verifies all 51 live
+checksums and both installed registry records, preserving the previous 50 hashes
+and unchanged retention source. Protected upgrade 50→51 at 19:58:54 UTC preserves
+original columns in 93 tables and passes control replay. The installed encrypted
+ordinary restore separately passes 51→51 at 21:05:59 UTC, 93 tables, with plaintext
+removal. The 21:07:48 UTC nightly wrapper verifies 32 sets, zero issues/removals.
+No schedule or protected ledger kind changes. Test production pins and existing
+post/comment/Like/preference records remain unchanged by fingerprints.
+See [profile pin acceptance](PROFILE_PIN_ACCEPTANCE.md).
+
 For every schema release, verify the installed checksum file and its installation
 metadata independently, preserve all earlier checksums, install the new checksum,
 and run the installed encrypted daily backup/restore after deployment. The
