@@ -2,9 +2,9 @@
 
 September 14, 2026. The sustained local rehearsal and current 121-file regression
 gate pass. Bounded hosted tests have completed, including recorded failures and
-repairs. Version 2026.09.14.7 is verified live; the `.8` concurrency candidate
-passes its protected hosted comparison and awaits production acceptance. The
-original disposable resources are removed; the second test set awaits cleanup.
+repairs. Version 2026.09.14.8 is verified live on its exact canonical deployment,
+with eight public/browser groups, four private-health groups and actual signed-in
+reader/discussion observations. Both sets of disposable resources are removed.
 Five hundred
 registered accounts and one hundred concurrent people
 remain a target, not a demonstrated production maximum. Registered accounts occupy

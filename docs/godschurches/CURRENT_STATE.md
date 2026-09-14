@@ -1,3 +1,32 @@
+## Concurrent social actions verified live — September 14, 2026 UTC
+
+Product **2026.09.14.8**, application **48afa4222cf89e69c048fe613d8ed4777b4a8136**,
+is READY in **dpl_Hwk9YMTKnSFaPyctZ2nBGwE5443k**, with independent canonical
+assignment and serving identity verified. Ordinary Likes and new comments share
+the permission read gate; revocation, edits, deletion and same-account retry
+boundaries remain protected. No schema or dependency is added.
+
+The 121-file gate passes 742 checks with two expected skips and zero failures.
+Eight public/browser groups, four private-health groups and actual signed-in
+reader/avatar/comment observations pass; production test writes, sends and scoped
+runtime error/fatal rows are zero. All 47 migration checksums match and the recent
+protected restore preserves 92 tables. Both disposable cloud resource sets are
+removed and independently verified absent.
+
+The 100-client hosted diagnostic completes 4,193 requests at 45.43 requests/second
+with 381 matching retry pairs, no global permission-lock waits and zero server
+failures after verified fixture-denial classification. Feed p95 remains 2.571
+seconds; the proposed one-second production target is **not** certified. A separate
+five-reader check has feed p95 680 ms. Exact limits and retained failures are in
+[capacity evidence](CAPACITY_REHEARSAL.md) and [pilot planning](PILOT_CAPACITY.md).
+
+Eligible capacity/recovery engineering and operating-limit documentation now have
+their release receipts. Broader reliability retains the unmet larger-pilot target,
+actual monitoring/responder integration and provider/device prerequisites.
+Continue remaining operational acceptance and next eligible priorities. Final
+review remains last; the private Current State index has its recorded service/login
+blocker while focused private specifications and tasks remain usable.
+
 ## Reliability deployed; contention investigation continues — September 14, 2026 UTC
 
 Product **2026.09.14.7**, application **ed38112a6e913081aeedbe6dd5dc28d264f4acb7**,

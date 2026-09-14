@@ -1,5 +1,39 @@
 # Isolated capacity and recovery rehearsal
 
+## Concurrency repair verified live — September 14, 11:00 UTC
+
+Product **2026.09.14.8**, application
+**48afa4222cf89e69c048fe613d8ed4777b4a8136**, is READY in
+**dpl_Hwk9YMTKnSFaPyctZ2nBGwE5443k**. Independent canonical alias and serving
+identity match. The Git-triggered build completed after its provider concurrency
+queue, with 146 clean runtime traces and no pending migrations. The runtime is
+identical to the tested `49576ea` candidate; the intervening commit records evidence.
+All 47 migration checksums match; the recent protected restore preserves 92 tables.
+
+Eight public/browser groups and four protected-health groups pass. Actual
+signed-in Home retains its selected post, Pages mode and anchored destination,
+existing avatar and Like state. Its existing comment discussion loads with the
+current Reply and comment controls and closes back to the same reader. Scoped
+runtime error/fatal rows, browser errors, production test writes and sends are
+zero. This release does not change the worker; its actual provider cleanup probe
+from `.7` remains the applicable separately recorded receipt.
+
+Both sets of disposable projects/databases/stores are removed, with independent
+404 checks for each owned resource. The second set's 400 objects are removed;
+the CLI initially resolved its same-named Blob resource before Neon, and the
+independent checks identified and completed the remaining Neon deletion. Shared
+provider installation and production resources remain. Encrypted seed, original
+failed attempts, classified denials, canonical write counts and measurement
+receipts are preserved privately.
+
+This completes the eligible engineering rehearsal and operating-limit record;
+it does **not** certify the proposed 100-client, one-second production target.
+The broader reliability package retains that unmet target, real phone/pilot
+acceptance, unavailable provider telemetry and actual monitoring/responder
+integration. Current observed limits are explicit in
+[pilot capacity](PILOT_CAPACITY.md). Continue remaining operational acceptance
+and the next eligible priorities; keep final batch review last.
+
 ## Hosted concurrency repair measured — September 14, 10:45 UTC
 
 The exact `.8` candidate completes the declared 100-client, 90-second diagnostic
