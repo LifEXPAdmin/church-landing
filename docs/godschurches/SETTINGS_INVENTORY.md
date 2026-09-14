@@ -1,5 +1,21 @@
 # Settings inventory and reuse map
 
+## Notification inventory update — September 14, 2026
+
+The dated table below preserves the original routing inventory. Current
+notification choices use `notification-preferences.ts` and the shared
+`notification-settings.tsx` control. Messages, contact requests, reports, founder
+announcements, direct replies and mentions have their existing supported
+categories, device controls and IANA quiet hours. The followed-conversation
+candidate adds a separate initially-off phone category; thread Follow/Default/Mute
+governs Activity under current source access. Follow never enables phone alerts.
+See [current category authority](NOTIFICATION_SETTINGS_CONTRACT.md) and
+[feature acceptance](CONVERSATION_FOLLOW_ACCEPTANCE.md) for release status.
+Author bells, prayer updates and other unimplemented categories retain their
+owning requirements; historical Missing labels do not reopen completed controls.
+
+## Original routing inventory
+
 September 12, 2026. Inspected against application `f4fdc30` and foundation
 `a4f6486`. The maintained private Settings map supplies 25 proposed folders.
 This inventory records each destination before routing changes. Existing means
@@ -384,4 +400,3 @@ that such controls deliver push or email notifications.
 The settings contract records exact defaults, read/write ownership, lifecycle,
 error and reset behavior. Later feature adapters require their own focused
 verification before a missing/partial destination becomes enabled.
-
