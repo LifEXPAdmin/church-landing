@@ -113,6 +113,7 @@ const resume = () =>
     window.dispatchEvent(new Event("blur"));
     window.dispatchEvent(new Event("focus"));
   });
+let priorActiveLikes = [];
 const bodies = [];
 page.on("request", (request) => {
   if (
@@ -123,6 +124,15 @@ page.on("request", (request) => {
 });
 page.setDefaultTimeout(25000);
 try {
+  // Fictional fixture isolation: preserve and restore pre-existing Like states.
+  priorActiveLikes = await db.platformPostLike.findMany({
+    where: { active: true },
+    select: { id: true }
+  });
+  await db.platformPostLike.updateMany({
+    where: { id: { in: priorActiveLikes.map((row) => row.id) } },
+    data: { active: false }
+  });
   const a = await createPortalActor(db, "feedbrowser"),
     b = await createPortalActor(db, "feedfriend"),
     c = await createPortalActor(db, "feedvoter");
@@ -405,10 +415,17 @@ try {
   await draft.fill("Fictional unsent feed recovery entry");
   assert.equal(
     await selector().evaluate((el) => {
-      for (let n = el; n; n = n.parentElement) if (n.inert) return true;
-      return false;
+      const modal = document.querySelector("dialog:modal");
+      return !!modal && !modal.contains(el);
     }),
     true
+  );
+  assert.equal(
+    await selector().evaluate((el) => {
+      el.focus();
+      return document.activeElement === el;
+    }),
+    false
   );
   await db.feedSnapshot.updateMany({
     where: { ownerId: a.id },
@@ -435,6 +452,34 @@ try {
     "The native discussion protects unsent work from feed changes, and expiry plus live-count refresh preserves the current-page draft"
   );
 
+  await discussion
+    .getByRole("button", { name: "Close composer", exact: true })
+    .click();
+  await discussion
+    .getByRole("button", { name: "Close discussion", exact: true })
+    .click();
+  await db.platformPostLike.updateMany({
+    where: { postId: { in: order } },
+    data: { active: false }
+  });
+  await choose("latest");
+  await choose("weekly");
+  await page
+    .getByRole("heading", {
+      name: "No liked posts in the last 7 days yet",
+      exact: true
+    })
+    .waitFor();
+  await choose("trending");
+  await page
+    .getByRole("heading", { name: "No trending posts yet", exact: true })
+    .waitFor();
+  await page
+    .getByRole("button", { name: "Open Latest", exact: true })
+    .waitFor();
+  ok(
+    "Both ranked empty states are explicit and provide a working Latest action"
+  );
   await bounded();
   assert.deepEqual(errors, []);
   writeFileSync(
@@ -461,5 +506,10 @@ try {
   throw error;
 } finally {
   await browser.close();
+  if (priorActiveLikes.length)
+    await db.platformPostLike.updateMany({
+      where: { id: { in: priorActiveLikes.map((row) => row.id) } },
+      data: { active: true }
+    });
   await db.$disconnect();
 }
