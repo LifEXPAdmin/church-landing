@@ -164,7 +164,13 @@ try {
     }
   });
   const requests = [];
+  let pinStatusReads = 0;
   page.on("request", (r) => {
+    if (
+      r.method() === "GET" &&
+      new URL(r.url()).pathname === "/api/platform/profile-pin"
+    )
+      pinStatusReads++;
     if (
       r.method() === "POST" &&
       new URL(r.url()).pathname === "/api/platform/profile-pin"
@@ -173,7 +179,11 @@ try {
   });
   await signIn(owner);
   phase = "owner-pin";
+  await profile(owner);
+  assert.equal(await page.locator("#posts article.gc-post").count(), 30);
+  assert.equal(pinStatusReads, 0, "Rendering 30 cards does not request pin status");
   await openPostMenu(old);
+  assert.equal(pinStatusReads, 1, "Only the opened owner menu requests pin status");
   await menu()
     .getByRole("button", { name: "Pin to profile", exact: true })
     .click();
@@ -234,10 +244,17 @@ try {
   );
   await page
     .locator('#posts [data-profile-pin="true"]')
-    .getByRole("button", { name: "More post options", exact: true })
+    .getByRole("button", {
+      name: `More options for ${owner.name}'s post`,
+      exact: true
+    })
     .click();
   assert.equal(
-    await menu()
+    await page
+      .getByRole("dialog", {
+        name: `More options for ${owner.name}'s post`,
+        exact: true
+      })
       .getByRole("button", { name: /Pin to profile|Unpin from profile/ })
       .count(),
     0
@@ -278,6 +295,9 @@ try {
     .waitFor();
   await waitPin(owner, next.id);
   await page.keyboard.press("Escape");
+  const pendingUrl = page.url();
+  await page.getByRole("link", { name: "Settings", exact: true }).click();
+  assert.equal(page.url(), pendingUrl);
   await page.evaluate(() => window.dispatchEvent(new Event("focus")));
   await page
     .getByRole("button", { name: "Confirm original request", exact: true })
@@ -349,30 +369,58 @@ try {
     "Switching accounts after the menu loads rejects the stale owner action before a mutation request"
   );
 
-  phase = "unsent-comment";
+  phase = "saved-comment-draft";
   await signIn({ ...owner, token: newToken });
   await go("/platform/posts/" + old.id);
-  const draft = page.getByRole("textbox", { name: "Comment", exact: true });
-  await draft.fill("Fictional unsent pin safety draft");
   await page
-    .getByRole("button", { name: "More post options", exact: true })
-    .first()
+    .getByRole("button", { name: "Write a comment", exact: true })
     .click();
+  const draft = page.getByRole("textbox", {
+    name: "Comment text",
+    exact: true
+  });
+  const marker = "Fictional saved pin safety draft " + randomUUID();
+  await draft.fill(marker);
+  await page
+    .getByRole("button", { name: "Close composer", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Save and close", exact: true })
+    .click();
+  await page
+    .getByRole("dialog", { name: "Write a comment", exact: true })
+    .waitFor({ state: "hidden" });
+  await openPostMenu(old);
   await menu()
     .getByRole("button", { name: "Pin to profile", exact: true })
     .click();
+  await waitPin(owner, old.id);
   await menu()
-    .getByText(
-      "Save or resolve your unsent work before changing profile placement.",
-      { exact: true }
-    )
+    .getByRole("button", { name: "Unpin from profile", exact: true })
     .waitFor();
-  assert.equal(await draft.inputValue(), "Fictional unsent pin safety draft");
-  assert.equal(await pinId(owner), null);
   await page.keyboard.press("Escape");
-  await draft.fill("");
+  await page
+    .getByRole("button", { name: "Write a comment", exact: true })
+    .click();
+  await page.waitForFunction(
+    (text) =>
+      document.querySelector('textarea[aria-label="Comment text"]')?.value ===
+      text,
+    marker
+  );
+  assert.equal(await draft.inputValue(), marker);
+  assert.equal(
+    await db.platformPostComment.count({ where: { postId: old.id } }),
+    1
+  );
+  await page
+    .getByRole("button", { name: "Close composer", exact: true })
+    .click();
+  await page
+    .getByRole("dialog", { name: "Write a comment", exact: true })
+    .waitFor({ state: "hidden" });
   ok(
-    "Changing profile placement protects an existing unsent comment and makes no pin mutation"
+    "Explicitly saved private comment text survives pinning and reopening, without publishing another comment"
   );
 
   phase = "current-audience";
