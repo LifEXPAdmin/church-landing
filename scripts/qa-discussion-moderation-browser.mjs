@@ -363,6 +363,11 @@ try {
     0
   );
   assert.equal(await history().count(), 0);
+  await signIn(f.memberA);
+  await go(path);
+  await openSettings();
+  await history().waitFor();
+  assert.ok((await history().innerText()).includes(f.contact.name));
   await relationshipCommand(db, f.memberA.token, {
     operation: "block",
     kind: "person",
@@ -371,14 +376,15 @@ try {
     expectedVersion: 0,
     mutationId: randomUUID()
   });
-  await signIn(f.memberA);
+  await resume();
+  await history().waitFor({ state: "hidden" });
   await go(path);
   await openSettings();
   await history().waitFor();
   assert.ok((await history().innerText()).includes("Unavailable member"));
   assert.ok(!(await history().innerText()).includes(f.contact.name));
   ok(
-    "Ordinary and unrelated church readers receive no management history; blocking a prior moderator conceals their identity in the author's permitted audit"
+    "Ordinary and unrelated church readers receive no management history; blocking a prior moderator conceals the open audit and reloads with a generic identity"
   );
   assert.deepEqual(errors, []);
   writeFileSync(
