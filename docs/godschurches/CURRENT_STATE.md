@@ -1,3 +1,29 @@
+## Avatar startup verified live — September 14, 2026 UTC
+
+Product **2026.09.14.6**, application
+**1b509e6bc0de18cc1129181ee578fe52cde0e00c**, is READY on
+**dpl_JDVTjDrePaQ2cqRGcguDghA94Hqc** with independently verified canonical
+assignment and serving identity. The private avatar route removes two serial
+HTTP steps, keeps current account/block/replacement checks and deduplicates
+overlapping foreground loads. No schema, dependency or provider upgrade changes.
+
+All 117 discovered files pass: 730 passes, zero failures and two expected skips.
+Five built-browser groups, 25 focused checks, types/lint/build, eight public live
+groups and actual signed-in Home/post avatar observations pass. Application
+test writes, browser errors and scoped deployment error/fatal rows are zero.
+All 46 migrations match; protected restore preserves 92 table fingerprints.
+
+On the defined isolated 80 ms / 10 Mbps reference, first avatar p95 after the
+visible post-author marker improves from 791.5 to 614.2 ms for a cold browser,
+489.6 to 304.7 ms on warm reload and 380.6 to 263.7 ms on synthetic resume.
+These are warm-server fictional-image measurements, not actual phone/mobile-data
+timings or a production SLA. See [the avatar receipt](AVATAR_STARTUP_REPORT.md).
+
+Continue actual resource/worker health, isolated capacity/recovery, remaining
+operational acceptance and the next eligible priorities. Final review stays last.
+The private Current State index retains its specific service/login blocker;
+focused private feature and task receipts continue to reconcile.
+
 ## Related Settings and ready-feature reconciliation — September 14, 2026 UTC
 
 Product **2026.09.14.5**, application

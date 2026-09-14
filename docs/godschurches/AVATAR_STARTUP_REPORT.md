@@ -1,10 +1,11 @@
 # Avatar startup and account isolation
 
-## Candidate — September 14, 2026 UTC
+## Verified live — September 14, 2026 UTC
 
-The candidate `2026.09.14.6` removes two serial HTTP steps from visible profile
-pictures. It is not yet a live-release receipt. The serving application remains
-`2026.09.14.5` until deployment and canonical behavior are verified below.
+Product **2026.09.14.6**, application
+**1b509e6bc0de18cc1129181ee578fe52cde0e00c**, removes two serial HTTP steps
+from visible profile pictures. Deployment **dpl_JDVTjDrePaQ2cqRGcguDghA94Hqc**
+is READY, with independent canonical assignment and serving identity verified.
 
 Previously, an avatar waited for identity, image metadata, identity and thumbnail
 requests. The dedicated avatar route resolves and delivers the current thumbnail
@@ -85,5 +86,22 @@ NODE_EXTRA_CA_CERTS=.account-test/run-EXAMPLE/localhost-cert.pem node --import .
 
 Use the actual fixture path and the repository's supported TypeScript loader;
 the placeholder is not a production URL. Private raw timing, screenshots and
-fixture receipts stay outside Git. Production verification and final release
-identity will be added after publication.
+fixture receipts stay outside Git.
+
+## Canonical release verification
+
+Eight public live groups pass: exact version/build identity, responsive Home,
+the final note, earlier release links, private endpoint denial and retained
+Exploring Faith signup. Actual connected Chrome, using its existing account,
+confirms loaded 240-pixel private object-URL avatars on Home and an existing post.
+The existing comment remains readable; no production photo, relationship or
+message was created to manufacture a consumer check. Browser errors, scoped
+deployment error/fatal rows and application test writes are zero.
+
+The actual Vercel build passes 145 traces, 14,962 entries and 368 server JavaScript
+files. All 46 production migration checksums match; none was added or applied.
+The 04:00:20 UTC protected restore preserves 92 original table fingerprints.
+The private feature task and progress-review receipt are reconciled. Actual
+phone/mobile-data comparison remains an independent physical-device acceptance
+limit. Continue the resource, capacity and recovery work; final batch review
+remains last.
