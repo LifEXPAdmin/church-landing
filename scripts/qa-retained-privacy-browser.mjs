@@ -136,7 +136,7 @@ const hiddenBody = (text) =>
   page.getByText(text, { exact: true }).waitFor({ state: "hidden" });
 const f = await seedPortal(db);
 await seedOperatorGrants(db, f.operator, ["REVIEW_COMMUNITY_REPORTS"]);
-const suffix = crypto.randomUUID();
+const suffix = randomUUID();
 const source = await db.platformPost.create({
   data: {
     authorId: f.memberA.id,
@@ -162,7 +162,7 @@ await uploadImage(
   {
     purpose: "POST_PHOTO",
     targetId: source.id,
-    requestKey: crypto.randomUUID(),
+    requestKey: randomUUID(),
     alt: "Fictional blue acceptance photo"
   },
   await sharp({
@@ -203,7 +203,7 @@ async function moderate(id, action, type = "POST") {
   const view = await read.json();
   const response = await api(f.operator, "/api/platform/community-reports", {
     operation: "moderate",
-    mutationId: crypto.randomUUID(),
+    mutationId: randomUUID(),
     id: report.id,
     expectedVersion: view.report.version,
     expectedSourceVersion: view.source.version,
@@ -399,7 +399,7 @@ try {
 
   const commentResponse = await api(f.coordinator, "/api/platform/comments", {
     operation: "create",
-    mutationId: crypto.randomUUID(),
+    mutationId: randomUUID(),
     postId: source.id,
     content: "Fictional comment counted before restriction " + suffix
   });
@@ -421,7 +421,7 @@ try {
 
   const saved = await api(f.coordinator, "/api/platform/post-workspace", {
     operation: "save-item",
-    mutationId: crypto.randomUUID(),
+    mutationId: randomUUID(),
     postId: source.id,
     expectedVersion: 0
   });
