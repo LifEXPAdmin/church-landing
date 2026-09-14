@@ -449,6 +449,11 @@ try {
     .filter({ hasText: /^Mute conversation$/ })
     .waitFor();
   await go("/platform/activity");
+  await page
+    .locator(
+      `a[href="/platform/posts/${post.id}?comment=${commentReceipt.id}"]`
+    )
+    .waitFor();
   assert.equal(
     await page
       .locator(

@@ -38,3 +38,35 @@ and account-switch acceptance remain separate from browser emulation.
 Do not close broader notification author-bell/domain-adapter tasks or the
 discussion's physical acceptance solely from this feature. Prayer integration
 is the next independent feature after this cycle is verified and reconciled.
+
+## Final candidate browser and cost evidence
+
+Application source `0ae2b3a7072e5bc9321141fcec9809e345d73d4a` passes 38 isolated
+production-browser groups: ten notification settings/integration, eight comments,
+three private recovery, five reader and twelve Activity. Page errors and real
+provider sends are zero. The real reply HTTP after-response path creates the
+follower intent; its Activity link opens the exact reply and Mute removes the
+thread from Activity. Simulated browser permission is not physical phone receipt.
+
+The clean Node 24 production build passes with 149 runtime traces, 3,348 entries
+and 377 server JavaScript files, excluding private fixtures/environment files.
+An earlier preview build in the working checkout used an inherited Node 22 and
+exhausted its 6 GiB heap. The same application source built successfully in a clean
+checkout using Node 24; no application change or capacity claim follows from that
+local helper failure. Types and complete lint pass.
+
+A local 43-follower measurement uses 23 SQL statements for a source comment with
+no followers and 24 with followers; both use 16 SELECTs. Processing is separate:
+20/20/3 candidates take 268/267/47 SQL statements and 103.67/96.83/16.24 ms with
+phone delivery disabled. These are local diagnostics, not hosting capacity or
+latency guarantees. The existing 100-client feed target remains unmet.
+
+Compared with the .15-equivalent build using unique route and shared-layout
+JavaScript, Home grows 226 raw/81 gzip bytes, discussion 224/81, and profile
+226/71. The separate lazy notification-settings chunk grows 253 raw/92 gzip bytes.
+There is no added client fetch on card mount or new runtime dependency.
+
+Protected encrypted production-copy upgrade 51→52 passes with original columns
+across 93 tables preserved, complete protected replay and plaintext restoration
+removed. Production application data is unmodified. Exact deployment, installed
+recovery registry, canonical live behavior and private task closure remain pending.
