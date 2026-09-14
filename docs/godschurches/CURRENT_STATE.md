@@ -1,17 +1,19 @@
-## Personal profile pin final candidate — September 14, 2026 UTC
+## Personal profile pin release candidate — September 14, 2026 UTC
 
-The .15 candidate at runtime 4cddb2d adds one owned published post pin,
-replacement/unpin controls, current audience/source checks, deduplicated profile
-pagination and owner export/erasure integration. It preserves the introduction,
-church notice controls and all canonical post/engagement records. Thirty-one final
-production-mode browser groups, two final HTTPS groups, types, full lint and
-runtime traces pass. The complete foundation gate passes 809 checks plus two
-expected skips across 132 discovered files; a complete final-source gate is
-running before publication. Protected 50→51 recovery preserves original columns
-in 93 tables. Measured request, query and bundle costs and the preserved
-intermittent rendering observation are in [profile pin evidence](PROFILE_PIN_ACCEPTANCE.md).
-The canonical application remains .14 / c83b192. No production pin was changed;
-release/live/installed-recovery/private closure remain in this feature cycle.
+The .15 candidate at final application source 0c6fa3f adds one owned published
+post pin, replacement/unpin controls, current audience/source checks, deduplicated
+profile pagination and owner export/erasure integration. It preserves canonical
+posts, engagement, introduction and church notice controls. Final review fixed a
+confirmed pin write followed by a failed status read retaining old placement.
+Thirty-two final production-mode browser groups, types, full lint and runtime
+traces pass. The complete 132-file gate at preceding service-identical 4cddb2d
+passes 809 checks with two expected skips and zero failures; two final HTTPS
+groups pass. Protected 50→51 recovery preserves original columns in 93 tables.
+Measured costs and the explicitly unresolved, pre-existing intermittent rendering
+observation remain in [profile pin evidence](PROFILE_PIN_ACCEPTANCE.md).
+Canonical production remains .14 / c83b192 until the pending .15 deployment,
+exact live checks, installed recovery and private reconciliation finish. No
+production pin or user content was changed for feature testing.
 
 ## Four feeds verified live — September 14, 2026 UTC
 

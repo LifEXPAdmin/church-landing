@@ -36,9 +36,11 @@ The complete foundation gate at 46bb3b5 passes 809 checks with two expected
 skips and zero failures across all 132 discovered files. It includes staged
 upgrade, fresh migrations, dump/restore, development and production HTTPS,
 restart, HTML/RSC privacy, service and concurrency checks. A complete fresh gate
-on final source 4cddb2d is still running; its result is required before release.
+on source 4cddb2d also passes all 132 files: 809 passes, two expected skips and
+zero failures. The final client-only correction below does not change the schema
+or service/HTTP implementation covered by this gate.
 
-Final production-mode source 4cddb2d passes thirty-one browser groups: nine profile
+Final production-mode source 0c6fa3f passes thirty-two browser groups: ten profile
 pin journeys, eight retained-reader privacy, five profile Settings and nine
 content-note/recovery journeys. The pin journeys cover old-post pagination,
 320/390/1280-pixel layouts, actual visitor Like undo/restore and one posted
@@ -53,6 +55,13 @@ The first browser run found a queued private-profile check retaining an old
 pagination URL/checksum. d80dcfd retries the latest callback; subsequent page
 traversal and recovery checks pass. e92af60 registers an uncertain pin with the
 existing private recovery owner, preserving its original request after concealment.
+Final review then reproduced a separate confirmed-write/status-read outage: the
+unpin persisted but a failed follow-up GET prevented the profile from refreshing.
+0c6fa3f refreshes placement immediately after the confirmed POST, before the
+optional status read. The added browser journey fails on 4cddb2d and passes on the
+rebuilt correction without replaying the saved change. All thirty-two browser
+groups, types, full lint and runtime traces pass on that final application.
+
 Fixture-only corrections use an actual church audience and current visitor-menu
 and comment-draft controls. The lost-response transport trusts only the isolated
 fixture certificate.
@@ -86,9 +95,9 @@ Unique route/layout JavaScript, gzip level 6 per file, compared with .14:
 
 | Surface | Raw bytes | Gzip bytes | Gzip change |
 | --- | ---: | ---: | ---: |
-| Home | 617,430 | 188,988 | +1,697 |
-| Discussion | 604,175 | 185,621 | +995 |
-| Profile | 607,765 | 184,655 | +995 |
+| Home | 617,430 | 188,989 | +1,698 |
+| Discussion | 604,175 | 185,622 | +996 |
+| Profile | 607,765 | 184,656 | +996 |
 
 Migration 51 adds the selected post, separate nonnegative version and indexed
 foreign key to existing private preferences. It adds no table, dependency,
