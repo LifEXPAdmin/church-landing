@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+import { requireSocialActivity } from "./social-activity-limits";
 import {
   originalForRepost,
   repostDestination,
@@ -248,6 +250,7 @@ export async function postCommandIn(
     const schedule = scheduled
       ? postSchedule(input.scheduleLocal, input.scheduleZone, now)
       : {};
+    await requireSocialActivity(tx, actorId, "post");
     const post = await tx.platformPost.create({
       data: {
         ...details(input),
@@ -538,42 +541,15 @@ export async function postCommand(
     );
   if (input.mutationId !== undefined)
     return receiptedPostAction(db, token, input);
+  if (input.operation === "create")
+    return receiptedPostCreation(db, token, input);
   let preparedLink: PostLink | undefined;
-  if (
-    (input.operation === "create" || input.operation === "edit") &&
-    input.linkUrl !== undefined
-  ) {
+  if (input.operation === "edit" && input.linkUrl !== undefined) {
     const source = await withOwnedSession(
       db,
       token,
       async (tx, session) => {
         const context = await postContext(tx, session.userId);
-        if (input.operation === "create") {
-          const prior = await tx.platformPost.findUnique({
-            where: {
-              authorId_requestKey: {
-                authorId: session.userId,
-                requestKey: postId(input.requestKey)
-              }
-            }
-          });
-          if (prior && !postCanEdit(context, prior))
-            throw new PortalError(
-              403,
-              "This saved request is no longer editable."
-            );
-          return {
-            actorId: session.userId,
-            existing: undefined,
-            saved: prior
-              ? {
-                  id: prior.id,
-                  version: prior.version,
-                  message: "This post was already saved."
-                }
-              : null
-          };
-        }
         const post = await tx.platformPost.findUnique({
           where: { id: postId(input.postId) }
         });
@@ -582,11 +558,10 @@ export async function postCommand(
         expected(input.expectedVersion, post.version);
         if (post.status === "WITHDRAWN")
           throw new PortalError(409, "This post has been withdrawn.");
-        return { actorId: session.userId, existing: post, saved: null };
+        return { actorId: session.userId, existing: post };
       },
       true
     );
-    if (source.saved) return source.saved;
     preparedLink = await preparePostLink(
       source.actorId,
       input,
@@ -604,6 +579,60 @@ export async function postCommand(
         preparedLink
       ),
     true
+  );
+  return preparedLink?.linkUrl &&
+    input.keepLinkPreview === true &&
+    !preparedLink.linkSourceUrl
+    ? {
+        ...result,
+        message:
+          result.message +
+          " The link was saved without a preview; you can edit the post to try again."
+      }
+    : result;
+}
+
+// Existing direct publishing uses requestKey; retain that contract while storing
+// its immutable input fingerprint in the existing receipt owner. Hashing bounds
+// even a legacy long request key. Historical posts without fingerprints keep
+// their original canonical retry behavior; new requests detect changed bodies.
+async function receiptedPostCreation(
+  db: PrismaClient,
+  token: unknown,
+  input: Record<string, unknown>
+) {
+  const requestKey = postId(input.requestKey);
+  const mutationId = createHash("sha256").update(requestKey).digest("hex");
+  const current = async (tx: PostTx, ownerId: string) => {
+    const prior = await tx.platformPost.findUnique({
+      where: { authorId_requestKey: { authorId: ownerId, requestKey } }
+    });
+    if (prior && !postCanEdit(await postContext(tx, ownerId), prior))
+      throw new PortalError(403, "This saved request is no longer editable.");
+    return { prior, ownerId };
+  };
+  let preparedLink: PostLink | undefined;
+  if (input.linkUrl !== undefined) {
+    const source = await withOwnedSession(
+      db,
+      token,
+      (tx, session) => current(tx, session.userId),
+      true
+    );
+    preparedLink = source.prior
+      ? emptyPostLink
+      : await preparePostLink(source.ownerId, input);
+  }
+  const result = await socialCommand(
+    db,
+    token,
+    "post-create",
+    { ...input, mutationId },
+    async (tx, ownerId) =>
+      postCommandIn(tx, await postContext(tx, ownerId), input, preparedLink),
+    async (tx, ownerId) => {
+      await current(tx, ownerId);
+    }
   );
   return preparedLink?.linkUrl &&
     input.keepLinkPreview === true &&

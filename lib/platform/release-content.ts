@@ -535,6 +535,23 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "fair-community-activity",
+    version: "2026.09.14.11",
+    date: "2026-09-14",
+    summary:
+      "Clearer waiting messages help keep community activity manageable.",
+    added: [
+      "Posting, commenting and following have account-based activity limits with a waiting time when reached."
+    ],
+    improved: [
+      "Private drafts and existing relationship choices remain available while waiting. People sharing church Wi-Fi have separate activity allowances."
+    ],
+    fixed: [
+      "Confirming a saved request does not use another activity allowance. A changed publishing request cannot reuse an earlier request key."
+    ],
+    featureIds: ["posts", "drafts"]
+  },
+  {
     id: "author-content-notes",
     version: "2026.09.14.10",
     date: "2026-09-14",

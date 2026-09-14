@@ -140,6 +140,15 @@ try {
             : ["tests/post-workspace.test.ts"]),
         "tests/post-publishing.test.ts",
         "tests/community-search.test.ts",
+        ...(process.argv.includes("--activity-limits")
+          ? [
+              "tests/social-activity-limits.test.ts",
+              "tests/operational-health.test.ts",
+              "tests/social-foundations.test.ts",
+              "tests/community-reports.test.ts",
+              "tests/friend-invitations.test.ts"
+            ]
+          : []),
         ...(process.argv.includes("--content-notes")
           ? [
               "tests/post-content-notes.test.ts",

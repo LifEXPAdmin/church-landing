@@ -1,6 +1,6 @@
 import type { PrismaClient } from "@prisma/client";
 import { accountConfig } from "./account-config";
-import { allowAccountAttempt } from "./account-limits";
+import { allowAccountAttempt, allowWorkspaceAttempt } from "./account-limits";
 import { requestSessionToken, readBody } from "./account-boundary";
 import { readAccountSession } from "./accounts";
 import { AccountError } from "./account-error";
@@ -119,20 +119,24 @@ export async function handlePostRequest(db: PrismaClient, request: Request) {
       ? (request.headers.get("x-real-ip") ?? "unknown").slice(0, 64)
       : "local";
     if (
-      !(await allowAccountAttempt(
-        db,
-        config.rateSecret +
-          (input.operation === "preview-link" ? ":post-previews" : ":posts"),
-        input.operation === "preview-link"
-          ? "request-preview"
-          : String(input.operation),
-        ip,
-        actor.id
-      ))
+      !(input.operation === "preview-link"
+        ? await allowAccountAttempt(
+            db,
+            config.rateSecret + ":post-previews",
+            "request-preview",
+            ip,
+            actor.id
+          )
+        : await allowWorkspaceAttempt(
+            db,
+            config.rateSecret + ":posts",
+            actor.id
+          ))
     )
       throw new PortalError(
         429,
-        "Too many changes. Wait 15 minutes and try again. Your draft is still here."
+        "Too many changes. Wait 15 minutes and try again. Your draft is still here.",
+        900
       );
     if (input.operation === "preview-link") {
       const result = await previewPostLink(
@@ -179,7 +183,15 @@ export async function handlePostRequest(db: PrismaClient, request: Request) {
               ? "Sign in to continue. Your draft is still here."
               : "The post could not be loaded or saved. Your entries are still here; check your connection and try again."
       },
-      { status, headers }
+      {
+        status,
+        headers: {
+          ...headers,
+          ...(status === 429 && error instanceof PortalError && error.retryAfter
+            ? { "Retry-After": String(error.retryAfter) }
+            : {})
+        }
+      }
     );
   }
 }

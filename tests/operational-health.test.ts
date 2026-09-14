@@ -61,6 +61,29 @@ test("operational health requires the maintenance secret before accessing data a
   assert.ok(!JSON.stringify(body).includes("credential"));
 });
 
+test("health exposes bounded activity configuration and flags invalid values without returning raw configuration", async () => {
+  const name = "COMMUNITY_POSTS_PER_HOUR",
+    old = process.env[name];
+  try {
+    delete process.env[name];
+    assert.equal(
+      (await readOperationalHealth(db)).configuration.socialActivity
+        .postsPerHour,
+      10
+    );
+    process.env[name] = "private-invalid-value";
+    const result = await readOperationalHealth(db);
+    assert.equal(result.configuration.socialActivity.postsPerHour, null);
+    assert.ok(result.needsAttention);
+    assert.ok(result.alerts.includes("community_activity_configuration"));
+    assert.ok(!JSON.stringify(result).includes("private-invalid-value"));
+    assert.equal((await handleOperationalHealth(db, request())).status, 503);
+  } finally {
+    if (old === undefined) delete process.env[name];
+    else process.env[name] = old;
+  }
+});
+
 test("health reports actual backlog ages with a fixed query shape and never projects private identities or changes data", async () => {
   const now = new Date();
   const before = await readOperationalHealth(db, now);

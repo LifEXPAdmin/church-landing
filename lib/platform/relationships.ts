@@ -3,6 +3,7 @@ import {
   hasFriendConnection
 } from "./friend-invitations";
 import type { PrismaClient } from "@prisma/client";
+import { requireSocialActivity } from "./social-activity-limits";
 import { withOwnedSession } from "./account-sessions";
 import { expected, PortalError } from "./portal-policy";
 import { activePublicAccount, communityAuthorSelect } from "./public-profile";
@@ -133,6 +134,8 @@ export async function relationshipCommand(
         const on = desired(input.desired);
         if (on && (incomingBlock || row?.blocked))
           throw new PortalError(404, "This account is unavailable.");
+        if (on && !(keys.targetUserId ? follow : row?.followingChurch))
+          await requireSocialActivity(tx, ownerId, "follow");
         if (keys.targetUserId) {
           if (on)
             await tx.platformFollow.upsert({

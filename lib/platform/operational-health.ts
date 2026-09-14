@@ -6,6 +6,7 @@ import {
 import { pushAvailable } from "./push-config";
 import { imagesAvailable } from "./media-storage";
 import { eligibleWhere } from "./portal-policy";
+import { socialActivityConfiguration } from "./social-activity-limits";
 
 type Backlog = {
   pending: number;
@@ -104,6 +105,9 @@ export async function readOperationalHealth(
     )
   };
   const alerts: string[] = [];
+  const socialActivity = socialActivityConfiguration();
+  if (Object.values(socialActivity).some((value) => value === null))
+    alerts.push("community_activity_configuration");
   if ((ages.mediaDueSeconds ?? 0) > 90_000 || snapshot.media.due > 100)
     alerts.push("media_backlog");
   if ((ages.notificationDueSeconds ?? 0) > 300)
@@ -132,6 +136,7 @@ export async function readOperationalHealth(
       inspectionMs: Math.round(performance.now() - started)
     },
     configuration: {
+      socialActivity,
       uploadsEnabled: imagesAvailable(),
       privateStorageConfigured: !!(
         process.env.BLOB_READ_WRITE_TOKEN || process.env.BLOB_STORE_ID

@@ -1,6 +1,7 @@
 import type { PrismaClient } from "@prisma/client";
 import { eligibleWhere, expected, PortalError } from "./portal-policy";
 import { socialCommand, socialInput } from "./social-operations";
+import { requireSocialActivity } from "./social-activity-limits";
 import { postContext, withPostRead } from "./post-access";
 import { postId } from "./post-input";
 import {
@@ -143,6 +144,7 @@ export function repostCommand(
         version: existing.version,
         message: "This source is already reposted to this destination."
       };
+    await requireSocialActivity(tx, ownerId, "post");
     const row = await tx.platformPost.create({
       data: {
         authorId: ownerId,

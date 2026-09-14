@@ -1,4 +1,5 @@
 import type { PrismaClient } from "@prisma/client";
+import { requireSocialActivity } from "./social-activity-limits";
 import {
   postContext,
   postReadableWhere,
@@ -119,6 +120,7 @@ export async function createCommentIn(
       403,
       "Choose a church you currently have permission to speak for in this audience."
     );
+  await requireSocialActivity(tx, context.actorId!, "comment");
   const row = await tx.platformPostComment.create({
     data: {
       postId: post.id,
