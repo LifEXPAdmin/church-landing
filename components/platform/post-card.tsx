@@ -121,12 +121,7 @@ export function PostCard({
           <SourcePreview source={post} accountId={currentUserId ?? null} />
         </RepostSourceBoundary>
       ) : (
-        <PostReadBoundary
-          enabled={fullDiscussion}
-          postId={post.id}
-          version={post.version}
-          accountId={currentUserId ?? null}
-        >
+        <>
           <header className="gc-post-header">
             <Link
               href={
@@ -158,55 +153,62 @@ export function PostCard({
               canWithdraw={post.canWithdraw}
             />
           </header>
-          <div className="gc-post-meta">
-            <time dateTime={post.createdAt.toISOString()}>
-              {formatDate(post.createdAt)}
-            </time>
-            <span>
-              <Globe aria-hidden="true" />
-              {post.audience === "PUBLIC" ? "Public" : "Church members"}
-            </span>
-            <span className="gc-post-type">{postTypeLabels[post.type]}</span>
-            {post.editedAt && <span>Edited</span>}
-            {post.pinned && <span>Pinned notice</span>}
-          </div>
-          {post.topics.length > 0 && (
-            <p className="text-sm text-gc-muted">
-              Topics: {post.topics.join(", ")}
-            </p>
-          )}
-          {post.eventOccurrenceId && (
-            <Link
-              className="inline-flex min-h-11 items-center text-gc-accent underline"
-              href={`/platform/events/${post.eventOccurrenceId}`}
-            >
-              View event details and RSVP
-            </Link>
-          )}
-          <PostContentNote note={post.contentNote} />
-          {previewOnly ? (
-            <p className="whitespace-pre-wrap break-words">
-              {postPreviewText(post)}
-            </p>
-          ) : (
-            <>
-              <PostText content={post.content} />
-              <PostLink {...post} />
-              {post.photoCount > 0 && (
-                <PostPhotos
-                  postId={post.id}
-                  accountId={currentUserId ?? null}
-                />
-              )}
-              {post.scripture && (
-                <p className="gc-scripture">
-                  <span>Scripture reference</span>
-                  {post.scripture}
-                </p>
-              )}
-            </>
-          )}
-        </PostReadBoundary>
+          <PostReadBoundary
+            enabled={fullDiscussion}
+            postId={post.id}
+            version={post.version}
+            accountId={currentUserId ?? null}
+          >
+            <div className="gc-post-meta">
+              <time dateTime={post.createdAt.toISOString()}>
+                {formatDate(post.createdAt)}
+              </time>
+              <span>
+                <Globe aria-hidden="true" />
+                {post.audience === "PUBLIC" ? "Public" : "Church members"}
+              </span>
+              <span className="gc-post-type">{postTypeLabels[post.type]}</span>
+              {post.editedAt && <span>Edited</span>}
+              {post.pinned && <span>Pinned notice</span>}
+            </div>
+            {post.topics.length > 0 && (
+              <p className="text-sm text-gc-muted">
+                Topics: {post.topics.join(", ")}
+              </p>
+            )}
+            {post.eventOccurrenceId && (
+              <Link
+                className="inline-flex min-h-11 items-center text-gc-accent underline"
+                href={`/platform/events/${post.eventOccurrenceId}`}
+              >
+                View event details and RSVP
+              </Link>
+            )}
+            <PostContentNote note={post.contentNote} />
+            {previewOnly ? (
+              <p className="whitespace-pre-wrap break-words">
+                {postPreviewText(post)}
+              </p>
+            ) : (
+              <>
+                <PostText content={post.content} />
+                <PostLink {...post} />
+                {post.photoCount > 0 && (
+                  <PostPhotos
+                    postId={post.id}
+                    accountId={currentUserId ?? null}
+                  />
+                )}
+                {post.scripture && (
+                  <p className="gc-scripture">
+                    <span>Scripture reference</span>
+                    {post.scripture}
+                  </p>
+                )}
+              </>
+            )}
+          </PostReadBoundary>
+        </>
       )}
       {!previewOnly && post.repost?.kind === "QUOTE" && (
         <RepostSourceBoundary
