@@ -1,7 +1,11 @@
 # Reviewed account access
 
-Candidate 2026.09.14.9 — September 14, 2026 UTC. Verification in progress;
-canonical production is still the separately recorded .8 release.
+Product **2026.09.14.9** — verified September 14, 2026 UTC.
+Application **c77f3e42053412ab1916644d4ed7af692e18929b** is READY in
+**dpl_GbGVTf2d7EVhprtZNDz2HiHNsga5**. Independent `godschurches.com`
+assignment and the serving product/build identity match. This completes the
+bounded engineering release; actual account-operator acceptance remains gated
+by its explicit assignment prerequisite.
 
 ## Contract
 
@@ -78,12 +82,16 @@ access decisions. Real operator acceptance retains an explicit capability
 assignment prerequisite; the existing founder report-review assignment remains
 unchanged. The private task queue records the precise owner action.
 
-The first complete 122-file gate passed 750 checks with two expected skips.
-Interactive acceptance then exposed the initial-picker limit, now repaired in
-the same feature. The expanded lookup requires a fresh complete gate. Two local
-preview rebuilds hit the 6 GB heap limit; an unchanged clean-checkout build
-passed all 146 runtime traces. Preserve these diagnostic limits separately from
-the full gate and final clean build.
+The final complete gate on c77f3e4 covers 122 files and 753 executions:
+751 passes, two expected skips and zero failures. It includes fresh migrations,
+synthetic preservation/restore, development/restart and built production HTTPS
+checks. The clean checkout and Vercel production build both pass all 146 runtime
+traces, with no private fixture/environment files in the deployed bundles.
+The first complete gate passed 750 checks before interactive acceptance exposed
+the initial-picker limit; the lookup repair and expanded gate finished in this
+same feature. Two earlier local preview rebuilds hit the 6 GB heap limit, while
+unchanged clean-checkout builds passed. Their diagnostic records remain retained;
+the underlying workspace/build-state cause is not established.
 
 Six built-browser groups pass on the expanded lookup implementation. They cover
 an account outside the first 100, required reason/confirmation, an identical
@@ -92,7 +100,23 @@ sessions, concurrent-version rejection, switching authorized operators and
 concealment after the current grant is revoked. The 320/390/1280-pixel layouts
 have no horizontal overflow; the reason and audit screenshots were inspected.
 
-Pending: the expanded full fresh-fixture gate, release/build/canonical assignment,
-live reads, and the installed post-release daily backup/restore. Broader operational acceptance requires actual
-appointed operators/responders and the existing physical/provider prerequisites;
-passing fictional test actions does not establish real case handling.
+Eight canonical public/browser groups and four private-health groups pass.
+Actual signed-in Chrome loads the current administration page without account
+controls, lookup or audit access for the existing report-only reviewer. The
+current production aggregate remains zero account-management grants, suspended
+accounts and account-access decisions. Application test writes, sends, browser
+errors and scoped deployment error/fatal rows are zero. Prior release links,
+signup choices, responsive headers and private guest denials remain intact.
+
+Migration 48 applied in the production build; all 48 live checksums match.
+The installed checksum file and metadata are synchronized to 48. The actual
+encrypted daily backup/restore passes 48→48 across 92 tables, separately from
+the protected 47→48 preservation/replay proof. Its nightly wrapper recognizes
+that fresh copy: 25 verified sets, zero expiry issues or removals, 28-day expiry
+threshold and 30-day policy maximum. The host must be awake for its local job.
+
+Broader operational acceptance requires actual appointed operators/responders
+and the existing physical/provider prerequisites; passing fictional test actions
+does not establish real case handling. Keep the wider moderation task open and
+continue its remaining author content-note/safe-excerpt work. Final batch review
+remains last.

@@ -1,3 +1,27 @@
+## Reviewed account access verified live — September 14, 2026 UTC
+
+Product **2026.09.14.9**, application **c77f3e42053412ab1916644d4ed7af692e18929b**,
+is READY in **dpl_GbGVTf2d7EVhprtZNDz2HiHNsga5**, with independent canonical
+assignment and serving identity verified. Account restriction/restoration now
+requires a structured reason and confirmation, records a scoped named audit,
+supports exact account lookup beyond the initial 100, and safely confirms an
+uncertain original request. Current authority, inspected versions and account
+switching remain enforced. Protected recovery cannot restore unreviewed old access.
+
+The full 122-file gate passes 751 checks with two expected skips and zero failures;
+six built-browser groups, types/lint and 146 runtime traces pass. Eight public
+live groups, four private-health groups and actual signed-in administration
+visibility pass, with zero production test actions, sends, browser errors or
+scoped runtime error/fatal rows. All 48 migrations match. Protected upgrade
+47→48 preserves 92 original tables; installed encrypted backup/restore 48→48 and
+the 25-set nightly expiry inspection pass. See [account acceptance](ACCOUNT_RESTRICTION_ACCEPTANCE.md).
+
+There are zero eligible actual account-management assignments; no live account
+grant, suspension or restoration was made. The explicit operator prerequisite
+is recorded privately, separate from the settled founder report-review decision.
+Keep broader moderation/operational acceptance open. Continue author content notes
+and safe excerpts, then the next eligible priorities. Final review remains last.
+
 ## Concurrent social actions verified live — September 14, 2026 UTC
 
 Product **2026.09.14.8**, application **48afa4222cf89e69c048fe613d8ed4777b4a8136**,

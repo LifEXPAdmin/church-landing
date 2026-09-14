@@ -8,13 +8,21 @@ repeat owner policy or second-reviewer approval is required.
 
 ## Account access controls
 
-The reviewed-account-access candidate adds `ACCOUNT_STATE` to the same protected
+The reviewed-account-access release adds `ACCOUNT_STATE` to the same protected
 ledger. Its [acceptance contract](ACCOUNT_RESTRICTION_ACCEPTANCE.md) describes
 suspension preservation, current-authority retries, and the
 `accountsNeedingRestrictionReview` recovery gate. A restoration newer than the
 backup requires fresh account-manager review; it cannot restore old access.
-Old credential/grant quarantine still applies. After activation, rollback must
+Old credential/grant quarantine still applies. Rollback must
 preserve these account controls as well as the existing content predicates.
+
+Version 2026.09.14.9 is verified live on c77f3e4; all 48 production migration
+checksums match. Protected production-copy upgrade 47→48 preserves 92 original
+tables and passes recovery replay. The actual installed encrypted daily backup/
+restore separately passes 48→48; the checksum file and installation metadata both
+record 48. The nightly wrapper finds 25 verified backup sets and zero expiry
+issues/removals. This remains a local awake-host job. No live account grant,
+restriction, restoration, erasure or outbound message was created for acceptance.
 
 For every schema release, verify the installed checksum file and its installation
 metadata independently, preserve all earlier checksums, install the new checksum,
