@@ -77,7 +77,26 @@ private-save preservation, follow/unfollow/block behavior, invalid configuration
 invitation regressions. Populated 49-migration preservation and dump/restore pass.
 Types and scoped lint pass. Production test writes and external sends are zero.
 
-The full fresh-fixture gate, built mobile waiting/recovery checks, exact deployment
-and live acceptance remain pending. Canonical production is still the preceding
-verified release; this candidate checkpoint is not a live completion claim.
-Keep broader moderation and operational prerequisites open, and final review last.
+The full fresh-fixture gate passes 124 discovered files and 770 executions:
+768 pass, two expected skips, zero failures. A final targeted pass covers fourteen
+activity/configuration checks, including waiting headers on transport rejection.
+All HTTP checks and the production build include runtime commit `0fa4d30`.
+Subsequent changes only repair browser fixture timing and document evidence.
+
+Five built-browser groups pass: actual posting, commenting and following limits,
+private saving during a wait, and a single successful action after expiry. Three
+actual 429 responses include positive `Retry-After` values. Saved body, content
+note, excerpt and reply choices survive. Layout checks at 320, 390 and 1280 pixels
+find no overflow; the three 390-pixel captures were visually inspected. Browser
+page errors, production writes and external sends are zero.
+
+The final build has 146 runtime traces, 3,259 entries and 368 server JavaScript
+files, without private environment files, fixtures or the Prisma config loader.
+Using the same gzip calculation as the preceding build, Home and detail routes
+add zero raw JavaScript bytes; two fewer gzip bytes are build variation, not a
+performance claim. No extra browser request or polling loop is introduced.
+
+Exact deployment and live acceptance remain pending. Canonical production is
+still the preceding verified release; this candidate checkpoint is not a live
+completion claim. Keep broader moderation and operational prerequisites open,
+and final review last.
