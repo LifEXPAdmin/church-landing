@@ -362,22 +362,17 @@ try {
   await note().fill("An unsent owner-specific note");
   const beforeSwitch = bodies.length;
   await signIn(reader);
-  await resume();
-  await page
+  // Exercise the retained old form before resume replaces the server snapshot.
+  // Its pinned transport must reject the changed owner before a POST.
+  await editForm().evaluate((form) => form.requestSubmit());
+  await editForm()
     .getByText("Your sign-in changed. Reload before continuing.", {
       exact: true
     })
-    .first()
     .waitFor();
-  assert.equal(await editForm().isVisible(), false);
-  await editForm().evaluate((form) => form.requestSubmit());
-  await page.waitForFunction(
-    () =>
-      !document
-        .querySelector('form[aria-label="Save post changes"]')
-        ?.getAttribute("aria-busy")
-        ?.includes("true")
-  );
+  assert.equal(bodies.length, beforeSwitch);
+  await resume();
+  await editForm().waitFor({ state: "hidden" });
   assert.equal(bodies.length, beforeSwitch);
   assert.equal(
     (await db.platformPost.findUniqueOrThrow({ where: { id: post.id } }))
