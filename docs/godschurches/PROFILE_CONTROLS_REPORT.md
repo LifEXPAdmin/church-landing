@@ -20,8 +20,22 @@ The additive enum migration does not modify existing rows or authorities.
 An encrypted production backup restored and upgraded from 45 to 46 migrations,
 preserving original-column fingerprints across all 92 tables; protected retention
 replay passed and the plaintext restore was removed. Production was read only.
-Types and scoped lint pass; the full isolated gate and built-browser acceptance
-are underway. This candidate is not yet released.
+Types and scoped lint pass. The full isolated gate passed all 115 discovered
+test files: 722 passing executions and two expected disabled-delivery skips,
+including fresh/upgrade/restore, build, real HTTPS and process restart checks.
+Sixteen built-browser groups passed: three participation-choice, eight invitation
+and five profile-settings groups, with no browser errors. Keyboard type-ahead,
+320/390/1280 widths, failed signup/save retries, cross-browser verification,
+existing friendships and concurrent profile changes retain their protections.
+Mobile screenshots were reviewed in light and dark appearance. Real physical
+device installation is not inferred from these browser fixtures.
+
+The browser scripts were repaired to use native macOS select type-ahead and to
+verify the avatar-save result independently of a conditional Photos-navigation
+hint; both still verify actual stored data and retry behavior. No application
+regression was found. Production preflight confirms all 45 existing migration
+checksums and records original-column fingerprints for 92 tables. This candidate
+is ready for the authorized additive migration and release; it is not yet live.
 
 Recovery must retain an enum-aware application reader after anyone saves the new
 choice; do not roll back to an older Prisma client that cannot decode it, drop

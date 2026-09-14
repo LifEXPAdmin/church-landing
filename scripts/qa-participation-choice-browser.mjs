@@ -108,9 +108,9 @@ try {
     exact: true
   });
   await choice.focus();
-  await choice.press("Home");
-  await choice.press("ArrowDown");
-  await choice.press("Enter");
+  // Native select type-ahead works with macOS Chrome's menu keyboard behavior.
+  await choice.press("e");
+  await choice.press("Tab");
   assert.equal(await choice.inputValue(), "EXPLORING_FAITH");
   await page
     .getByText(

@@ -209,7 +209,9 @@ try {
   await avatar
     .getByRole("button", { name: "Save avatar", exact: true })
     .click();
-  await avatar.getByText(/saved\. Previous pictures/).waitFor();
+  // The Photos navigation hint is conditional on the server's library flag.
+  // The actual save and retained database record must work in either mode.
+  await avatar.getByText(/Avatar saved\./).waitFor();
   await page.unroute("**/api/platform/images");
   assert.equal(new Set(details).size, 1);
   assert.equal(await db.mediaAsset.count({ where: { uploaderId: a.id } }), 1);
