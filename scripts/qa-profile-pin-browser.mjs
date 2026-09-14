@@ -227,6 +227,7 @@ try {
       .locator('#posts [data-profile-pin="true"]')
       .getByText(old.content, { exact: true })
       .waitFor();
+    await page.locator('#posts [data-profile-pin="true"]').scrollIntoViewIfNeeded();
     await page.screenshot({
       path: `${output}/profile-pin-${width}.png`,
       fullPage: false
