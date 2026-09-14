@@ -184,6 +184,57 @@ try {
   await bounded();
   ok("Opening the current post reveals its full text below the author note");
 
+  const relationshipBodies = [];
+  let lostRelationship = false;
+  await page.route("**/api/platform/relationships", async (route) => {
+    if (route.request().method() === "POST") {
+      relationshipBodies.push(route.request().postData());
+      if (!lostRelationship) {
+        lostRelationship = true;
+        const response = await route.fetch();
+        assert.equal(response.status(), 200);
+        await route.abort("failed");
+        return;
+      }
+    }
+    await route.continue();
+  });
+  await page
+    .getByRole("button", {
+      name: `More options for ${author.name}'s post`,
+      exact: true
+    })
+    .click();
+  await page
+    .getByRole("link", { name: "Report this post", exact: true })
+    .waitFor();
+  await page.getByRole("button", { name: "Follow", exact: true }).click();
+  await page
+    .getByRole("button", {
+      name: "Retry same relationship change",
+      exact: true
+    })
+    .waitFor();
+  await resume();
+  await page
+    .getByRole("button", {
+      name: "Retry same relationship change",
+      exact: true
+    })
+    .click();
+  await page
+    .getByRole("button", {
+      name: "Retry same relationship change",
+      exact: true
+    })
+    .waitFor({ state: "hidden" });
+  assert.equal(relationshipBodies.length, 2);
+  assert.equal(relationshipBodies[0], relationshipBodies[1]);
+  await page.unroute("**/api/platform/relationships");
+  ok(
+    "A retained full post preserves an uncertain relationship-menu action across text concealment and confirms the same request"
+  );
+
   await signIn(author);
   await go(`/platform/posts/${post.id}`);
   await openEdit();
@@ -389,7 +440,7 @@ try {
     kind: "person",
     targetId: author.id,
     desired: true,
-    expectedVersion: 0
+    expectedVersion: 1
   });
   await resume();
   await page
