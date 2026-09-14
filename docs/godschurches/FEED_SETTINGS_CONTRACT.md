@@ -7,7 +7,8 @@ Latest, Friends, Top This Week and Trending. All four are required. Their servic
 preference, selector, Home/My feed integration, regression and exact live-release
 work belongs to this feature cycle. Earlier foundation/UI labels do not defer
 required finishing work. The current application is 2026.09.14.13; this section
-records the new implementation audit, not a completed feed release.
+records the approved contract. The local implementation and pending acceptance
+are recorded in [four-feed evidence](FOUR_FEEDS_ACCEPTANCE.md).
 
 - Latest selects currently eligible public posts, newest publication and stable
   ID first. It is the default only when no supported private choice is saved.
@@ -48,9 +49,13 @@ Broader Local, Following, Your Church, recommendations, advanced filters and
 future settings scopes below remain distinct; their absence does not defer these
 four approved modes. No new paid ranking provider or view tracking is required.
 
-## Existing and broader preference authority
+## Existing and broader preference authority — pre-implementation audit
 
-The current Home and My feed share `HomeFeedPage` and the audience-aware post
+The following audit describes the state before the four-mode implementation.
+Its broader activation boundaries remain applicable; the new four-mode evidence
+above supersedes its statements that no saved feed preference exists.
+
+The audited Home and My feed share `HomeFeedPage` and the audience-aware post
 reader. `homeFeedMode` is deployment configuration, not a private account
 preference: community selection by default, or the existing following mode.
 No account-selected default, radius, language, denomination or ranking preference

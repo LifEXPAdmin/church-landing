@@ -1,3 +1,4 @@
+import { feedMode } from "./feed-options";
 import { communityReportTargets } from "./community-report-types";
 import { relationshipSearch } from "./relationship-navigation";
 import { isSettingsPath } from "./settings-registry";
@@ -27,6 +28,13 @@ export function safeAccountReturn(value: unknown): string {
   )
     return "/platform";
   const query = new URLSearchParams();
+  if (
+    ["/platform", "/platform/feed"].includes(url.pathname.replace(/\/$/, ""))
+  ) {
+    const mode = feedMode(url.searchParams.get("feed"));
+    if (mode) query.set("feed", mode);
+    // Snapshot cursors are account-bound. Account entry begins a fresh set.
+  }
   if (url.pathname.replace(/\/$/, "") === "/platform/activity") {
     const category = url.searchParams.get("category");
     if (

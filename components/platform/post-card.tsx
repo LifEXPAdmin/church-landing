@@ -1,3 +1,4 @@
+import type { FeedMode } from "@/lib/platform/feed-options";
 import { RepostControl } from "./repost-control";
 import {
   RepostSourceBoundary,
@@ -24,6 +25,7 @@ import { PostContentNote } from "./post-content-note";
 import { postPreviewText } from "@/lib/platform/post-options";
 
 interface PostCardProps {
+  feedMode?: FeedMode;
   post: PostView;
   currentUserId?: string;
   redirectTo?: string;
@@ -49,6 +51,7 @@ export function PostCard(props: PostCardProps) {
   ) : (
     <PostReadBoundary
       enabled
+      feedMode={props.feedMode}
       postId={post.id}
       version={post.version}
       accountId={currentUserId ?? null}

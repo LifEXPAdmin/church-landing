@@ -6,6 +6,7 @@ import {
   useState,
   type ReactNode
 } from "react";
+import type { FeedMode } from "@/lib/platform/feed-options";
 import { useRouter } from "next/navigation";
 import { socialRequest } from "@/lib/platform/social-client";
 import { currentPostAvailability } from "@/lib/platform/post-availability-client";
@@ -20,6 +21,7 @@ export function RepostSourceBoundary({
   preserveMounted = false,
   commentCount,
   likeCount,
+  feedMode,
   children
 }: {
   entryId: string;
@@ -30,6 +32,7 @@ export function RepostSourceBoundary({
   preserveMounted?: boolean;
   commentCount?: number;
   likeCount?: number;
+  feedMode?: FeedMode;
   children: ReactNode;
 }) {
   const router = useRouter(),
@@ -47,7 +50,7 @@ export function RepostSourceBoundary({
       const r = originalPost
         ? {
             data: {
-              ...(await currentPostAvailability(entryId, accountId)),
+              ...(await currentPostAvailability(entryId, accountId, feedMode)),
               sourceVersion: null
             }
           }
@@ -89,6 +92,7 @@ export function RepostSourceBoundary({
     originalPost,
     commentCount,
     likeCount,
+    feedMode,
     router
   ]);
   useEffect(() => {
@@ -171,6 +175,7 @@ export function PostReadBoundary({
   accountId,
   commentCount,
   likeCount,
+  feedMode,
   children
 }: {
   enabled: boolean;
@@ -179,6 +184,7 @@ export function PostReadBoundary({
   accountId: string | null;
   commentCount?: number;
   likeCount?: number;
+  feedMode?: FeedMode;
   children: ReactNode;
 }) {
   return enabled ? (
@@ -190,6 +196,7 @@ export function PostReadBoundary({
       accountId={accountId}
       commentCount={commentCount}
       likeCount={likeCount}
+      feedMode={feedMode}
     >
       {children}
     </RepostSourceBoundary>

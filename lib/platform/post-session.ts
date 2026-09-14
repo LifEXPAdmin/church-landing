@@ -1,3 +1,5 @@
+import { readFeed } from "./feed-reads";
+import { GUEST_FEED_COOKIE } from "./feed-options";
 import { prisma } from "@/lib/prisma";
 import { privateCookies } from "./private-cookies";
 import { PLATFORM_SESSION_COOKIE } from "./session";
@@ -16,6 +18,15 @@ async function token() {
   // content is exercised through the isolated production renderer instead.
   if (process.env.NODE_ENV !== "production") return undefined;
   return (await privateCookies()).get(PLATFORM_SESSION_COOKIE)?.value;
+}
+export async function readHomeFeed(input: {
+  mode?: string;
+  cursor?: string;
+  scope?: string;
+  refresh?: string;
+}) {
+  const guestMode = (await privateCookies()).get(GUEST_FEED_COOKIE)?.value;
+  return readFeed(prisma, await token(), { ...input, guestMode });
 }
 export async function readPosts(query: PostQuery = {}) {
   return listPosts(prisma, await token(), query);

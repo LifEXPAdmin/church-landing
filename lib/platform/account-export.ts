@@ -597,6 +597,8 @@ export async function downloadAccountExport(
         await tx.socialPreferences.findMany({
           where: { ownerId: userId },
           select: {
+            feedMode: true,
+            feedVersion: true,
             mentions: true,
             contactRequests: true,
             requestAlerts: true,

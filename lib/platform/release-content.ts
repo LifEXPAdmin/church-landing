@@ -348,10 +348,11 @@ export const features: Feature[] = [
   {
     id: "reader",
     category: "Posts and conversations",
-    name: "Focused reading",
-    description: "Read one post at a time with adjustable reading preferences.",
+    name: "Feed choices and focused reading",
+    description:
+      "Choose Latest, Friends, Top This Week or Trending, then read in List or Pages.",
     steps:
-      "Open My feed. Swipe or use navigation controls; open Settings, then Appearance and reading, to preview text and theme before saving on this browser.",
+      "Choose a feed in Home or My feed. Your account remembers that choice. Latest shows public posts; Friends shows accepted mutual friends; Top This Week counts Likes received in the last seven days; Trending gives more weight to recent Likes. Refresh posts updates the reading set. List, Pages and display settings stay separate.",
     href: "/platform/feed",
     eligibility:
       "Public posts are available to guests; private posts require access.",
@@ -534,6 +535,23 @@ export const features: Feature[] = [
   }
 ];
 export const releases: ReleaseEntry[] = [
+  {
+    id: "four-community-feeds",
+    version: "2026.09.14.14",
+    date: "2026-09-14",
+    summary:
+      "Choose Latest, Friends, Top This Week or Trending in Home and My feed.",
+    added: [
+      "A saved feed choice for your account, with separate guest choices."
+    ],
+    improved: [
+      "Ranked pages keep their order while you read. Refresh posts starts a new set with current Likes."
+    ],
+    fixed: [
+      "Friends shows accepted mutual friendships only and rechecks access when you return. Feed changes protect unsent entries."
+    ],
+    featureIds: ["reader"]
+  },
   {
     id: "reasoned-discussion-moderation",
     version: "2026.09.14.13",

@@ -1,3 +1,4 @@
+import type { FeedMode } from "./feed-options";
 import { socialRequest } from "./social-client";
 
 export type PostAvailability = {
@@ -15,26 +16,32 @@ type Waiting = {
 
 // Coalesce checks from the same render/focus event, never cache a response.
 // Account queues are separate; every response uses the existing pinned transport.
-const queued = new Map<string | null, Waiting[]>();
-export function currentPostAvailability(id: string, owner: string | null) {
+const queued = new Map<string, Waiting[]>();
+export function currentPostAvailability(
+  id: string,
+  owner: string | null,
+  mode?: FeedMode
+) {
+  const key = JSON.stringify([owner, mode]);
   return new Promise<PostAvailability>((resolve, reject) => {
-    const waiting = queued.get(owner);
+    const waiting = queued.get(key);
     if (waiting) waiting.push({ id, resolve, reject });
     else {
-      queued.set(owner, [{ id, resolve, reject }]);
-      setTimeout(() => void flush(owner), 0);
+      queued.set(key, [{ id, resolve, reject }]);
+      setTimeout(() => void flush(key, owner, mode), 0);
     }
   });
 }
-async function flush(owner: string | null) {
-  const waiting = queued.get(owner) ?? [];
-  queued.delete(owner);
+async function flush(key: string, owner: string | null, mode?: FeedMode) {
+  const waiting = queued.get(key) ?? [];
+  queued.delete(key);
   const ids = [...new Set(waiting.map((item) => item.id))];
   for (let offset = 0; offset < ids.length; offset += 30) {
     const group = ids.slice(offset, offset + 30);
     const listeners = waiting.filter((item) => group.includes(item.id));
     try {
       const query = new URLSearchParams({ view: "availability-batch" });
+      if (mode) query.set("feed", mode);
       group.forEach((id) => query.append("postId", id));
       const { data } = await socialRequest<{ posts: PostAvailability[] }>(
         `/api/platform/posts?${query}`,

@@ -57,8 +57,21 @@ export function postLikeCommand(
       expected(input.expectedVersion, old?.version ?? 0);
       const row = await tx.platformPostLike.upsert({
         where,
-        create: { postId: id, userId: ownerId, active: desired },
-        update: { active: desired, version: { increment: 1 } }
+        create: {
+          postId: id,
+          userId: ownerId,
+          active: desired,
+          firstLikedAt: desired ? new Date() : null
+        },
+        update: {
+          active: desired,
+          version: { increment: 1 },
+          // A known first Like is never renewed by toggling or retrying. For an
+          // initially inactive/unknown row, record only a real new activation.
+          ...(desired && old && !old.active && !old.firstLikedAt
+            ? { firstLikedAt: new Date() }
+            : {})
+        }
       });
       return {
         id,

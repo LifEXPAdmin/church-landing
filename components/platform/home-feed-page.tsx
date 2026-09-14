@@ -1,5 +1,5 @@
-import { readPosts } from "@/lib/platform/post-session";
-import { readerDate, readerId } from "@/lib/platform/reader-navigation";
+import { readHomeFeed } from "@/lib/platform/post-session";
+import { readerId } from "@/lib/platform/reader-navigation";
 import Link from "next/link";
 import { ArrowRight, MessageCircle } from "lucide-react";
 import { PostCard } from "@/components/platform/post-card";
@@ -8,11 +8,16 @@ import { FeedReader } from "@/components/platform/feed-reader";
 import { ComposePostButton } from "@/components/platform/compose-post-button";
 import { PlatformShell } from "@/components/platform/platform-shell";
 import { getCurrentPlatformUser } from "@/lib/platform/session";
-import { homeFeedMode } from "@/lib/platform/home-feed";
+import { feedChoices, feedMode } from "@/lib/platform/feed-options";
+import { PortalError } from "@/lib/platform/portal-policy";
 import { accountEntryHref } from "@/lib/platform/account-entry";
 import { accountDeliveryAvailable } from "@/lib/platform/account-availability";
 
 export type FeedParams = {
+  feed?: string;
+  feedCursor?: string;
+  feedScope?: string;
+  refreshFeed?: string;
   before?: string;
   cursor?: string;
   post?: string;
@@ -28,32 +33,50 @@ export default async function HomeFeedPage({
 }) {
   const currentUser = await getCurrentPlatformUser();
   const params = await searchParams;
-  const community = homeFeedMode() === "community" || !currentUser;
-  const before =
-    params.before &&
-    /^\d{4}-\d{2}-\d{2}T[\d:.]+Z$/.test(params.before) &&
-    Number.isFinite(Date.parse(params.before))
-      ? new Date(params.before)
-      : null;
-  const cursor =
-    params.cursor && /^[a-zA-Z0-9_-]{1,100}$/.test(params.cursor)
-      ? params.cursor
-      : null;
-  const through = readerDate(params.through),
-    anchor = readerId(params.anchor);
-  const result = await readPosts({
-    feed: true,
-    before,
-    cursor,
-    through,
-    anchor
+  let result;
+  try {
+    result = await readHomeFeed({
+      mode: params.feed,
+      cursor: params.feedCursor,
+      scope: params.feedScope,
+      refresh: params.refreshFeed
+    });
+  } catch (error) {
+    if (!(error instanceof PortalError)) throw error;
+    const mode = feedMode(params.feed) ?? "latest";
+    return (
+      <PlatformShell user={currentUser}>
+        <section className="container-shell space-y-4 py-8">
+          <h1>{feedChoices[mode].label}</h1>
+          <p role="status">{error.message}</p>
+          <Link className="gc-button" href={`/platform?feed=${mode}`}>
+            Refresh posts
+          </Link>{" "}
+          <Link
+            className="gc-button gc-button-quiet"
+            href="/platform?feed=latest"
+          >
+            Open Latest
+          </Link>
+        </section>
+      </PlatformShell>
+    );
+  }
+  const posts = result.posts;
+  const selectedFeed = result.mode;
+  const displayQuery: Record<string, string> =
+    params.mode === "list" || params.mode === "pages"
+      ? { mode: params.mode }
+      : {};
+  const feedQuery = new URLSearchParams({
+    ...displayQuery,
+    feed: selectedFeed,
+    feedScope: result.scope,
+    feedCursor: result.pageCursor
   });
-  const posts = result.slice(0, 30);
-  const last = posts.at(-1);
-  const moreHref =
-    result.length > 30 && last
-      ? `/platform?before=${encodeURIComponent(last.createdAt.toISOString())}&cursor=${encodeURIComponent(last.id)}`
-      : undefined;
+  const moreHref = result.nextCursor
+    ? `/platform?${new URLSearchParams({ ...displayQuery, feed: selectedFeed, feedScope: result.scope, feedCursor: result.nextCursor })}`
+    : undefined;
   return (
     <PlatformShell user={currentUser}>
       <section className="container-shell">
@@ -95,9 +118,7 @@ export default async function HomeFeedPage({
             <p className="gc-eyebrow">Life together</p>
             {currentUser ? <h1>Home</h1> : <h2 className="text-3xl">Home</h2>}
             <p className="text-gc-muted">
-              {community
-                ? "From across the community, newest first."
-                : "From you, the people you follow and your church communities."}
+              Choose what to read, then explore at your own pace.
             </p>
           </div>
           {currentUser && <ComposePostButton />}
@@ -126,38 +147,36 @@ export default async function HomeFeedPage({
               className="mb-3 flex gap-4 lg:col-span-2"
               aria-label="Feed choices"
             >
-              <Link href="/platform" aria-current="page">
+              <Link href={`/platform?${feedQuery}`} aria-current="page">
                 Home
               </Link>
-              <Link href="/platform/feed">My feed</Link>
+              <Link href={`/platform/feed?${feedQuery}`}>My feed</Link>
             </nav>
           )}
           <div className="min-w-0">
             {currentUser && <PostComposer id="compose-post" />}
             <FeedReader
+              feedNotice={result.notice}
+              feedChoice={{
+                mode: result.mode,
+                scope: result.scope,
+                ownerId: result.ownerId,
+                preferenceVersion: result.preferenceVersion,
+                pageCursor: result.pageCursor
+              }}
               items={posts.map((post) => ({
                 id: post.id,
                 label: post.author.name,
                 content: (
                   <PostCard
                     post={post}
+                    feedMode={selectedFeed}
                     currentUserId={currentUser?.id}
-                    redirectTo={`/platform?post=${post.id}`}
+                    redirectTo={`/platform?${feedQuery}&post=${post.id}`}
                   />
                 )
               }))}
               initialPost={readerId(params.post)}
-              anchor={
-                posts[0]
-                  ? {
-                      id: anchor && through ? anchor : posts[0].id,
-                      at: (anchor && through
-                        ? through
-                        : posts[0].createdAt
-                      ).toISOString()
-                    }
-                  : undefined
-              }
               initialMode={
                 params.mode === "pages" || params.mode === "list"
                   ? params.mode
@@ -167,19 +186,29 @@ export default async function HomeFeedPage({
               emptyContent={
                 <div className="gc-empty">
                   <MessageCircle aria-hidden="true" />
-                  <h2>No posts yet.</h2>
+                  <h2>{feedChoices[selectedFeed].empty}</h2>
                   <p>
-                    {currentUser && !community
-                      ? "This space grows with the people you follow. Find someone to connect with, or share the first word of encouragement."
-                      : "Conversations will appear here as people share. In the meantime, learn how this community works."}
+                    {selectedFeed === "friends"
+                      ? currentUser
+                        ? "Connect with friends, or browse Latest while you wait for their posts."
+                        : "Sign in to see posts from your accepted friends."
+                      : selectedFeed === "latest"
+                        ? "Conversations will appear here as people share."
+                        : "Try Latest for new posts from across the community."}
                   </p>
-                  <Link
-                    href={currentUser ? "/platform/search" : "/about"}
-                    className="gc-button gc-button-quiet"
-                  >
-                    {currentUser ? "Find your people" : "About Godschurches"}
-                    <ArrowRight aria-hidden="true" />
-                  </Link>
+                  {selectedFeed === "friends" && (
+                    <Link
+                      href={
+                        currentUser
+                          ? "/platform/share"
+                          : accountEntryHref("login", "/platform?feed=friends")
+                      }
+                      className="gc-button gc-button-quiet"
+                    >
+                      {currentUser ? "Invite friends" : "Sign in"}
+                      <ArrowRight aria-hidden="true" />
+                    </Link>
+                  )}
                 </div>
               }
             />

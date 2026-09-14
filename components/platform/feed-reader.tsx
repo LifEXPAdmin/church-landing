@@ -15,11 +15,12 @@ import {
   RotateCw,
   Maximize2
 } from "lucide-react";
+import { FeedChoice, type FeedChoiceState } from "./feed-choice";
+import { useDraftController } from "./draft-workspace-provider";
 import { FocusedFeed } from "./focused-feed";
 import { useReadingPreferences } from "./reading-preferences";
 import {
   newWheelGesture,
-  readerDate,
   readerHref,
   readerId,
   readerMode,
@@ -49,7 +50,9 @@ export function FeedReader({
   initialMode,
   moreHref,
   anchor,
-  emptyContent
+  emptyContent,
+  feedChoice,
+  feedNotice
 }: {
   items: Item[];
   initialPost?: string;
@@ -57,7 +60,23 @@ export function FeedReader({
   moreHref?: string;
   anchor?: { id: string; at: string };
   emptyContent?: ReactNode;
+  feedChoice?: FeedChoiceState;
+  feedNotice?: string | null;
 }) {
+  const draftController = useDraftController();
+  const hasWorkspaceWork = () => {
+    const work = draftController.getSnapshot();
+    return (
+      work.dirty ||
+      work.saving ||
+      work.publishing ||
+      work.conflict ||
+      work.retry ||
+      work.externalWork.dirty ||
+      work.externalWork.saving ||
+      work.externalWork.conflict
+    );
+  };
   const { preferences, update } = useReadingPreferences(),
     router = useRouter(),
     search = useSearchParams();
@@ -133,24 +152,23 @@ export function FeedReader({
     };
   }, [preferences.reduceMotion]);
   useEffect(() => {
-    if (
-      current &&
-      (!readerId(search.get("post")) ||
-        !readerDate(search.get("through")) ||
-        !readerId(search.get("anchor")))
-    ) {
-      // Let the router install its history integration before recording the
-      // initial position. An earlier native write can erase its Back state.
-      const frame = requestAnimationFrame(() =>
-        history.replaceState(
-          null,
-          "",
-          readerHref(location.href, selected ?? current.id, homeMode, anchor)
-        )
-      );
-      return () => cancelAnimationFrame(frame);
-    }
-  }, [current, selected, homeMode, anchor, search]);
+    // Server-selected mode and snapshot enter native reading history together.
+    // Opening/closing My feed keeps this mounted set and all local drafts.
+    const frame = requestAnimationFrame(() => {
+      const url = new URL(location.href);
+      if (feedChoice) {
+        url.searchParams.delete("refreshFeed");
+        url.searchParams.set("feed", feedChoice.mode);
+        url.searchParams.set("feedScope", feedChoice.scope);
+        url.searchParams.set("feedCursor", feedChoice.pageCursor);
+      }
+      const href = current
+        ? readerHref(url.href, selected ?? current.id, homeMode, anchor)
+        : url.pathname + url.search;
+      history.replaceState(null, "", href);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [current, selected, homeMode, anchor, feedChoice]);
   useEffect(() => {
     // Draft content stays in its mounted form, never in a URL or browser storage.
     const beforeUnload = (event: BeforeUnloadEvent) => {
@@ -412,6 +430,34 @@ export function FeedReader({
         initialScroll={homeScroll.current}
         moreHref={moreHref?.replace("/platform?", "/platform/feed?")}
       >
+        {feedChoice && (
+          <FeedChoice
+            value={feedChoice}
+            empty={!items.length}
+            canChange={() => {
+              if (
+                isBusy(root.current) ||
+                hasDraft(document.body) ||
+                hasWorkspaceWork()
+              ) {
+                setNotice(
+                  "Finish or clear your unsent entries before changing feeds. Your current feed and entries are still here."
+                );
+                return false;
+              }
+              return true;
+            }}
+            onNavigate={(href) => {
+              discardNavigation.current = true;
+              location.assign(href);
+            }}
+          />
+        )}
+        {feedNotice && (
+          <p role="status" className="mb-4 text-sm text-gc-muted">
+            {feedNotice}
+          </p>
+        )}
         {unavailable && (
           <p className="mb-4 text-sm text-gc-muted" role="status">
             The post you were reading is no longer in this set. Its content and
@@ -421,8 +467,13 @@ export function FeedReader({
               : " No posts remain in this set."}
           </p>
         )}
-        <div className="gc-feed-toolbar" hidden={focused}>
-          <div role="group" aria-label="Feed view" className="gc-mode-picker">
+        <div className="gc-feed-toolbar">
+          <div
+            role="group"
+            aria-label="Feed view"
+            className="gc-mode-picker"
+            hidden={focused}
+          >
             <button
               type="button"
               aria-pressed={mode === "list"}
@@ -445,20 +496,30 @@ export function FeedReader({
             className="gc-refresh"
             disabled={loading}
             onClick={() => {
-              if (isBusy(root.current) || hasDraft(root.current)) {
+              if (
+                isBusy(root.current) ||
+                hasDraft(document.body) ||
+                hasWorkspaceWork()
+              ) {
                 setNotice(
                   "Finish or clear your unsent entries before refreshing. You can keep using Pages and List without losing them."
                 );
                 return;
               }
-              if (current) remember(current.id);
-              // Request a fresh document at the frozen reading URL. A server
-              // failure then uses the route's explicit retry screen.
               setRefreshingSet(true);
-              announce(
-                "Refreshing this set while keeping your reading position."
-              );
-              location.reload();
+              announce("Refreshing posts to start a new reading set.");
+              const url = new URL(location.href);
+              for (const key of [
+                "feedCursor",
+                "before",
+                "cursor",
+                "through",
+                "anchor",
+                "post"
+              ])
+                url.searchParams.delete(key);
+              url.searchParams.set("refreshFeed", "1");
+              location.assign(url.pathname + url.search);
             }}
           >
             <RotateCw aria-hidden="true" />
@@ -622,7 +683,10 @@ export function FeedReader({
                   }}
                   className="gc-button gc-button-quiet"
                 >
-                  Read older posts
+                  {feedChoice &&
+                  ["weekly", "trending"].includes(feedChoice.mode)
+                    ? "Read more posts"
+                    : "Read older posts"}
                   <ArrowRight aria-hidden="true" />
                 </a>
               ) : (
@@ -632,14 +696,18 @@ export function FeedReader({
                 </p>
               )}
               <a
-                href="/platform"
+                href={
+                  feedChoice
+                    ? `/platform?${new URLSearchParams({ feed: feedChoice.mode, feedScope: feedChoice.scope, refreshFeed: "1", mode })}`
+                    : "/platform"
+                }
                 onClick={(event) => {
                   event.preventDefault();
-                  navigate(() => router.push("/platform"));
+                  navigate(() => router.push(event.currentTarget.href));
                 }}
                 className="inline-flex min-h-11 items-center text-gc-accent underline"
               >
-                Start again with the newest posts
+                Start a new reading set
               </a>
             </div>
           )}

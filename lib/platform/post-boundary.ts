@@ -40,7 +40,8 @@ export async function handlePostRequest(db: PrismaClient, request: Request) {
           ? await getPostAvailabilityBatch(
               db,
               token,
-              url.searchParams.getAll("postId")
+              url.searchParams.getAll("postId"),
+              url.searchParams.get("feed")
             )
           : view === "availability"
             ? await getPostAvailability(

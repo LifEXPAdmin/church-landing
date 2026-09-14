@@ -74,9 +74,13 @@ export function DraftWorkspaceProvider({
   }, [controller, demo]);
   return <Context.Provider value={controller}>{children}</Context.Provider>;
 }
-export function useDraftWorkspace() {
+export function useDraftController() {
   const controller = useContext(Context);
   if (!controller) throw new Error("Draft workspace provider is required.");
+  return controller;
+}
+export function useDraftWorkspace() {
+  const controller = useDraftController();
   const state = useSyncExternalStore(
     controller.subscribe,
     controller.getSnapshot,

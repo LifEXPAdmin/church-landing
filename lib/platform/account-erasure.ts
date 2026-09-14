@@ -21,6 +21,7 @@ async function erasePrivateCollections(tx: Tx, userId: string) {
   await tx.postWorkspaceOperation.deleteMany({ where: { ownerId: userId } });
   await tx.socialOperation.deleteMany({ where: { ownerId: userId } });
   await tx.conversationPreference.deleteMany({ where: { ownerId: userId } });
+  await tx.feedSnapshot.deleteMany({ where: { ownerId: userId } });
   await tx.socialPreferences.deleteMany({ where: { ownerId: userId } });
   await tx.founderAnnouncementRecipient.deleteMany({
     where: { recipientId: userId }

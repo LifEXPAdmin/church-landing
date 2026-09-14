@@ -1,3 +1,5 @@
+import { feedMode } from "./feed-options";
+import { feedReadableWhere } from "./feed-policy";
 import { PortalError } from "./portal-policy";
 import { repostSourceWhere } from "./repost-policy";
 import { readableAssetWhere } from "./personal-photo-policy";
@@ -230,6 +232,22 @@ async function projectRows(
       : null
   }));
 }
+/** Hydrate only this already authorized, ordered page through the shared reader. */
+export async function hydratePostPage(
+  tx: PostTx,
+  context: PostContext,
+  ids: string[],
+  now = new Date()
+) {
+  if (!ids.length) return [];
+  const rows = await tx.platformPost.findMany({
+    where: { AND: [{ id: { in: ids } }, postReadableWhere(context, now)] },
+    include: await pageInclude(tx, context, ids)
+  });
+  const views = await projectRows(tx, rows, context, now);
+  const byId = new Map(views.map((view) => [view.id, view]));
+  return ids.flatMap((id) => (byId.has(id) ? [byId.get(id)!] : []));
+}
 export type PostQuery = {
   feed?: boolean;
   authorId?: string;
@@ -402,14 +420,22 @@ export function getPostAvailability(
 export function getPostAvailabilityBatch(
   db: PrismaClient,
   token: unknown,
-  values: string[]
+  values: string[],
+  scope?: unknown
 ) {
   if (!values.length || values.length > 30)
     throw new PortalError(400, "Check up to 30 post references at once.");
+  const mode = feedMode(scope);
+  if (scope && !mode) throw new PortalError(400, "Choose a supported feed.");
   const ids = [...new Set(values.map(postId))];
   return withPostRead(db, token, async (tx, context) => {
     const rows = await tx.platformPost.findMany({
-      where: { AND: [{ id: { in: ids } }, postReadableWhere(context)] },
+      where: {
+        AND: [
+          { id: { in: ids } },
+          mode ? feedReadableWhere(context, mode) : postReadableWhere(context)
+        ]
+      },
       select: {
         id: true,
         version: true,

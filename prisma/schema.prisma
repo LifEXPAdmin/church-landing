@@ -237,6 +237,7 @@ model PlatformUser {
   postPhotoReferences PostPhotoReference[]
   presentation ProfilePresentation?
   socialPreferences SocialPreferences?
+  feedSnapshots FeedSnapshot[]
   socialRelations SocialRelationship[] @relation("SocialOwner")
   socialTargets SocialRelationship[] @relation("SocialTarget")
   socialOperations SocialOperation[]
@@ -1352,6 +1353,7 @@ model PostVolunteerSignup {
 }
 
 model PlatformPostLike {
+  firstLikedAt DateTime?
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
   active    Boolean  @default(true)
@@ -1662,6 +1664,8 @@ model PostWorkspaceOperation {
 
 
 model SocialPreferences {
+  feedMode String?
+  feedVersion Int @default(0)
   ownerId String @id
   activityReadThrough BigInt @default(0)
   version Int @default(1)
@@ -1950,4 +1954,17 @@ model FounderAnnouncementRecipient {
   @@id([announcementId, recipientId])
   @@index([recipientId])
   @@index([announcementId, status, recipientId])
+}
+
+// Expiring ordered references only: no post bodies, scores, or viewing history.
+model FeedSnapshot {
+  id String @id
+  ownerId String?
+  mode String
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  postIds String[]
+  owner PlatformUser? @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  @@index([ownerId, createdAt])
+  @@index([expiresAt])
 }

@@ -1,3 +1,4 @@
+import { expireFeedSnapshots } from "./feed-snapshot-retention";
 import { Prisma, type PrismaClient } from "@prisma/client";
 import {
   maintenanceRequestError,
@@ -202,6 +203,7 @@ export async function runRetentionOperations(
   journals: RetentionJournals,
   signal = AbortSignal.timeout(40000)
 ) {
+  const feedSnapshotsExpired = await expireFeedSnapshots(db);
   const seeded = await prepareRetentionControls(db);
   const protectedControls = await journalRetentionControls(
     db,
@@ -273,6 +275,7 @@ export async function runRetentionOperations(
   const remaining = await inspectRetentionOperations(db);
   return {
     seeded,
+    feedSnapshotsExpired,
     protected: protectedControls.recorded,
     accountsErased,
     accountsCompleted,
