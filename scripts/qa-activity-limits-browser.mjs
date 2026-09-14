@@ -273,8 +273,7 @@ try {
     name: "Write a comment",
     exact: true
   });
-  const commentText =
-    "Fictional comment retained while waiting " + randomUUID();
+  let commentText = "Fictional comment retained while waiting " + randomUUID();
   await comment.getByLabel("Comment text", { exact: true }).fill(commentText);
   await comment.getByRole("button", { name: "Reply", exact: true }).click();
   await comment.getByText(/You have reached the comment limit/).waitFor();
@@ -290,10 +289,30 @@ try {
   );
   await bounded();
   await comment.screenshot({ path: output + "/comment-wait-390.png" });
+  // Send deliberately saves first; the unchanged draft is already acknowledged.
+  const savedComment = await db.privateCommentDraft.findFirstOrThrow({
+    where: {
+      ownerId: reader.id,
+      postId: source.id,
+      content: commentText,
+      deletedAt: null
+    }
+  });
+  assert.equal(savedComment.content, commentText);
+  commentText += " Edited during the waiting period.";
+  await comment.getByLabel("Comment text", { exact: true }).fill(commentText);
   await comment
     .getByRole("button", { name: "Save draft", exact: true })
     .click();
   await comment.getByText("Saved privately.", { exact: true }).waitFor();
+  assert.equal(
+    (
+      await db.privateCommentDraft.findUniqueOrThrow({
+        where: { ownerId_id: { ownerId: reader.id, id: savedComment.id } }
+      })
+    ).content,
+    commentText
+  );
   ok(
     "Actual comment 429 preserves unsent text and still allows private saving"
   );
