@@ -1,10 +1,11 @@
 ## Followed conversation integration candidate — September 14, 2026 UTC
 
-The existing discussion interface passes 16 refreshed isolated browser groups.
-The remaining explicit follower Activity/optional phone integration is now a
-local candidate, reusing current source, preference and delivery owners.
-Migration 52, full acceptance, protected recovery and exact deployment/live
-verification are still in progress. The serving release remains .15 below.
+Explicit follower Activity/optional phone integration is a verified local
+candidate, reusing current source, preference and delivery owners. All 132
+discovered test files pass with 817 passing checks and two expected skips;
+38 final browser groups, types/lint and protected production-copy upgrade 51→52
+pass. Exact deployment/live and installed recovery verification remain pending.
+The serving release remains .15 below until those checks finish.
 See [candidate scope](CONVERSATION_FOLLOW_ACCEPTANCE.md).
 
 ## Personal profile pin verified live — September 14, 2026 UTC

@@ -24,15 +24,18 @@ Activity and optional phone delivery using the existing notification owners.
   source deletion cascade and recovery quarantine. No new provider, dependency
   or schedule. Migration 52 preserves prior fields, with no historical work.
 
-## Acceptance in progress
+## Release candidate acceptance
 
 Fifteen final comment-notification service groups pass, including independent
 consent, delayed follow/device choices, competing workers, expiration, revocation
-and church access. The preceding related run passes Activity, batched source,
-operational health and actual isolated restore checks; its one lifecycle receipt
-assertion was corrected and passes in the final 15-group run. Types and scoped
-lint pass. Full migration/build/HTTP/browser, protected production-copy recovery
-and exact release/live checks remain required. Physical phone keyboard/gesture, locked-notification display/tap/reply
+and church access. The final uninterrupted full gate passes all 132 discovered
+test files: 817 checks pass, zero fail or cancel, and two expected checks skip.
+It includes populated upgrade, fresh migration, encrypted/synthetic recovery,
+production build, actual development and production HTTPS checks, restart and
+the remaining discovered service tests. The gate uses application source
+`0ae2b3a7072e5bc9321141fcec9809e345d73d4a`; later commits change only QA/docs.
+Types and complete lint pass. Exact release/live checks and installed recovery
+verification remain required. Physical phone keyboard/gesture, locked-notification display/tap/reply
 and account-switch acceptance remain separate from browser emulation.
 
 Do not close broader notification author-bell/domain-adapter tasks or the
