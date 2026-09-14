@@ -73,6 +73,7 @@ export function PrivateSnapshotGuard({
     checking = useRef(false),
     queued = useRef(false),
     active = useRef(true);
+  const latestCheck = useRef<() => Promise<void>>(async () => {});
   const check = useCallback(async () => {
     if (!active.current || document.visibilityState === "hidden") return;
     if (checking.current) {
@@ -114,10 +115,13 @@ export function PrivateSnapshotGuard({
       checking.current = false;
       if (queued.current && active.current) {
         queued.current = false;
-        void check();
+        // A route or confirmed snapshot may have changed during this request.
+        // Retry its current callback, never the old URL/checksum closure.
+        void latestCheck.current();
       }
     }
   }, [owner, url, confirmedChecksum, label]);
+  latestCheck.current = check;
   useEffect(() => {
     active.current = true;
     const hide = () => {
