@@ -140,7 +140,6 @@ async function project(
           id: row.author.id,
           name: row.author.name,
           username: row.author.username,
-          role: row.author.role,
           churchId: null
         };
     return {
@@ -226,8 +225,7 @@ export function readComments(db: PrismaClient, token: unknown, query: Query) {
           items.push({
             id: candidate.id,
             name: candidate.name,
-            username: candidate.username,
-            role: candidate.role
+            username: candidate.username
           });
         }
       return {

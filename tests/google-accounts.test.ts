@@ -160,6 +160,50 @@ async function newGoogle(extra: Record<string, unknown> = {}) {
   return { a, outcome, user, subject };
 }
 
+test("Google signup persists Exploring Faith with the original return and age checks", async () => {
+  const a = await attempt();
+  const result = await finish(a);
+  assert.equal(result.kind, "signup");
+  const input = {
+    name: "Fictional Explorer",
+    username: unique(),
+    adultAcknowledged: true,
+    role: "EXPLORING_FAITH"
+  };
+  await assert.rejects(
+    finishGoogleSignup(
+      db,
+      a.browserToken,
+      result.signupToken,
+      { ...input, adultAcknowledged: false },
+      null
+    )
+  );
+  await assert.rejects(
+    finishGoogleSignup(
+      db,
+      a.browserToken,
+      result.signupToken,
+      { ...input, role: "ADMIN" },
+      null
+    )
+  );
+  const created = await finishGoogleSignup(
+    db,
+    a.browserToken,
+    result.signupToken,
+    input,
+    null
+  );
+  assert.equal(created.next, "/platform/posts/fictional-post");
+  const user = await readAccountSession(db, created.token);
+  assert.equal(user?.role, "EXPLORING_FAITH");
+  assert.equal(
+    await db.churchCapabilityGrant.count({ where: { userId: user!.id } }),
+    0
+  );
+});
+
 test("Google configuration is off by default; authorization uses state, nonce, exact callback and S256 with only identity scopes", async () => {
   assert.equal(googleConfig({ NODE_ENV: "test" }), null);
   assert.throws(

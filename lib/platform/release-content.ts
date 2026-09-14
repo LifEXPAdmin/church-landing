@@ -14,6 +14,19 @@ export type Feature = {
 };
 export const features: Feature[] = [
   {
+    id: "participation-choice",
+    category: "Getting started",
+    name: "Exploring Faith and participation choices",
+    description:
+      "Choose how you would like to participate, including Exploring Faith.",
+    steps:
+      "Choose during account creation, or change your saved choice in Edit profile. Exploring Faith means: I’m learning about Christianity and figuring out what I believe.",
+    href: "/platform/signup",
+    eligibility:
+      "Exploring Faith is private to your account. Participation choices do not grant church or staff authority, and ordinary verification and age requirements still apply.",
+    availability: "available"
+  },
+  {
     id: "personal-activity",
     category: "Posts and conversations",
     name: "Your Activity",
@@ -521,6 +534,22 @@ export const features: Feature[] = [
   }
 ];
 export const releases: ReleaseEntry[] = [
+  {
+    id: "exploring-faith",
+    version: "2026.09.14.1",
+    date: "2026-09-14",
+    summary: "A welcoming, private Exploring Faith choice.",
+    added: [
+      "Choose Exploring Faith when creating your account: I’m learning about Christianity and figuring out what I believe."
+    ],
+    improved: [
+      "Change your participation choice later in Edit profile, with protection against conflicting saves."
+    ],
+    fixed: [
+      "Exploring Faith stays private to your account and is not shown as a profile or author badge. Existing verification, invitation consent and church permissions remain in place."
+    ],
+    featureIds: ["participation-choice", "account"]
+  },
   {
     id: "content-decisions-and-reconsideration",
     version: "2026.09.13.32",

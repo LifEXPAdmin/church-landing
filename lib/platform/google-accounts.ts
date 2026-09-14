@@ -1,5 +1,5 @@
 import { newFounderWelcomeAt } from "./founder-config";
-import { Prisma, type PrismaClient } from "@prisma/client";
+import { Prisma, PlatformRole, type PrismaClient } from "@prisma/client";
 import { SESSION_SECONDS } from "./accounts";
 import { AccountError } from "./account-error";
 import { withOwnedSession } from "./account-sessions";
@@ -392,12 +392,18 @@ export async function finishGoogleSignup(
   db: PrismaClient,
   browserToken: unknown,
   signupToken: unknown,
-  input: { name?: unknown; username?: unknown; adultAcknowledged?: unknown },
+  input: {
+    name?: unknown;
+    username?: unknown;
+    adultAcknowledged?: unknown;
+    role?: unknown;
+  },
   userAgent: string | null
 ) {
   if (!validToken(browserToken) || !validToken(signupToken))
     throw new GoogleAccountError();
   const name = typeof input.name === "string" ? input.name.trim() : "";
+  const role = input.role === undefined ? "BELIEVER" : input.role;
   const username =
     typeof input.username === "string"
       ? input.username.trim().toLowerCase()
@@ -406,7 +412,8 @@ export async function finishGoogleSignup(
     name.length < 2 ||
     name.length > 100 ||
     !/^[a-z0-9_]{3,24}$/.test(username) ||
-    input.adultAcknowledged !== true
+    input.adultAcknowledged !== true ||
+    !Object.values(PlatformRole).includes(role as PlatformRole)
   )
     throw new GoogleAccountError();
   try {
@@ -451,7 +458,7 @@ export async function finishGoogleSignup(
             name,
             username,
             email: proof.email,
-            role: "BELIEVER",
+            role: role as PlatformRole,
             pendingFounderWelcomeAt: newFounderWelcomeAt(),
             interests: [],
             adultAcknowledgedAt: new Date(),

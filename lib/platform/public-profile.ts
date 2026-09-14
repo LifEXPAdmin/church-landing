@@ -18,8 +18,7 @@ export const publicProfileSelect = {
 export const communityAuthorSelect = {
   id: true,
   name: true,
-  username: true,
-  role: true
+  username: true
 } satisfies Prisma.PlatformUserSelect;
 export type CommunityAuthor = Prisma.PlatformUserGetPayload<{
   select: typeof communityAuthorSelect;

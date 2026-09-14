@@ -2,6 +2,7 @@
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { safeAccountReturn } from "@/lib/platform/account-entry";
+import { ParticipationChoice } from "./participation-choice";
 import { AccountConfirmation, useAccountConfirmation } from "./google-account";
 
 type Operation =
@@ -216,27 +217,7 @@ export function AccountForm({
           />
         </>
       )}
-      {registration && (
-        <div>
-          <label htmlFor={id("role")}>How would you like to participate?</label>
-          <select
-            id={id("role")}
-            name="role"
-            className={accountInputClass}
-            defaultValue="BELIEVER"
-          >
-            <option value="BELIEVER">Believer</option>
-            <option value="CHURCH">Church</option>
-            <option value="CREATOR">Creator</option>
-            <option value="BUSINESS">Business</option>
-            <option value="BUILDER">Builder</option>
-          </select>
-          <p className="mt-2 text-sm text-gc-muted">
-            This describes your interests. It does not grant church or
-            administrative access.
-          </p>
-        </div>
-      )}
+      {registration && <ParticipationChoice id={id("role")} />}
       {change && (
         <p className="text-sm text-gc-muted">
           Changing your password signs out every device, including this one.

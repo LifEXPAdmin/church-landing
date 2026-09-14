@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useRef, useState } from "react";
 import { accountInputClass } from "./account-fields";
+import { ParticipationChoice } from "./participation-choice";
 import {
   googleRequest,
   followAccountRedirect,
@@ -62,6 +63,7 @@ export function GoogleOnboarding() {
                     operation: "signup",
                     name: values.get("name"),
                     username: values.get("username"),
+                    role: values.get("role"),
                     adultAcknowledged: values.get("adultAcknowledged") === "on"
                   }
                 : {
@@ -112,6 +114,7 @@ export function GoogleOnboarding() {
                   Use 3 to 24 letters, numbers or underscores.
                 </p>
               </div>
+              <ParticipationChoice id="google-role" />
               <label className="flex min-h-11 items-start gap-3">
                 <input
                   className="mt-1 h-5 w-5 shrink-0"

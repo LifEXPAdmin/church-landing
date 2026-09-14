@@ -1,5 +1,33 @@
 # Profile photos and readable customization
 
+## Exploring Faith candidate — 14 September 2026 UTC
+
+Signup and Edit profile share the existing participation selector, with
+**Exploring Faith** and the helper **I’m learning about Christianity and figuring
+out what I believe.** The saved enum remains a self-description; no church,
+operator or staff grants follow from it. The same selector is wired into the
+provider-gated Google onboarding path; Google remains disabled on production.
+
+The existing profile transaction validates changed participation and requires
+its version. Conflicts show the saved participation choice alongside other
+fields; older clients that omit the field preserve it. Existing choices and
+accounts are unchanged. Owner session/editor/export reads retain the value;
+member profile projections conceal Exploring Faith, and public author/comment/
+mention projections no longer include the unused personal participation field.
+There is no automatic public faith-status badge.
+
+The additive enum migration does not modify existing rows or authorities.
+An encrypted production backup restored and upgraded from 45 to 46 migrations,
+preserving original-column fingerprints across all 92 tables; protected retention
+replay passed and the plaintext restore was removed. Production was read only.
+Types and scoped lint pass; the full isolated gate and built-browser acceptance
+are underway. This candidate is not yet released.
+
+Recovery must retain an enum-aware application reader after anyone saves the new
+choice; do not roll back to an older Prisma client that cannot decode it, drop
+the enum value, or reclassify users. Use a compatible forward repair. No new
+runtime dependency, query waterfall, background worker or private cache is added.
+
 September 10, 2026 · `codex/profile-controls`, based on image foundation
 `35f7a53c8c9e5ff09c1ced2b4764461795953d0b`.
 

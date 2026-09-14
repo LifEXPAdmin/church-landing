@@ -48,7 +48,11 @@ const count = (a: string, b: string) =>
       ]
     }
   });
-async function freshSignup(code?: string, consent = true) {
+async function freshSignup(
+  code?: string,
+  consent = true,
+  role: "BELIEVER" | "EXPLORING_FAITH" = "BELIEVER"
+) {
   const name = "invite_" + randomUUID().replaceAll("-", "").slice(0, 12),
     email = name + "@example.test",
     password = "Safe fictional password 8!";
@@ -56,7 +60,7 @@ async function freshSignup(code?: string, consent = true) {
     email,
     username: name,
     name,
-    role: "BELIEVER",
+    role,
     password,
     confirmPassword: password,
     friendInvitation: code,
@@ -136,7 +140,7 @@ test("existing members knowingly accept, concurrent retries commit exactly two e
 });
 test("accepted signup survives cross-browser verification and only connects after adult acknowledgement", async () => {
   const { a, code } = await enabled(),
-    b = await freshSignup(code);
+    b = await freshSignup(code, true, "EXPLORING_FAITH");
   assert.equal(await count(a.id, b.account.id), 0);
   let grant = "";
   await requestAccountGrant(

@@ -185,6 +185,7 @@ model WaitlistEvent {
 
 enum PlatformRole {
   BELIEVER
+  EXPLORING_FAITH
   CHURCH
   CREATOR
   BUSINESS

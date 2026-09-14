@@ -170,7 +170,7 @@ export async function handleGoogleRequest(
       start: ["next"],
       link: ["currentPassword"],
       reauthenticate: ["purpose", "emailToken"],
-      signup: ["name", "username", "adultAcknowledged"],
+      signup: ["name", "username", "adultAcknowledged", "role"],
       reactivate: ["confirmed"],
       status: [],
       cancel: [],

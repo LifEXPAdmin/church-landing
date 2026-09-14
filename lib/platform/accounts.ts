@@ -254,6 +254,7 @@ export async function updateAccountProfile(
   const allowed = [
     "operation",
     "name",
+    "role",
     "bio",
     "location",
     "website",
@@ -265,6 +266,14 @@ export async function updateAccountProfile(
     "introduction"
   ];
   if (Object.keys(input).some((key) => !allowed.includes(key)))
+    throw new AccountError("profile");
+  // Older clients may omit the choice. New edits share the existing version
+  // check, and cannot turn a self-description into an authority grant.
+  if (
+    input.role !== undefined &&
+    (!Object.values(PlatformRole).includes(input.role as PlatformRole) ||
+      !Number.isInteger(input.expectedVersion))
+  )
     throw new AccountError("profile");
   const customized = [
     "palette",
@@ -354,6 +363,9 @@ export async function updateAccountProfile(
       where: { id: current.id },
       data: {
         name,
+        ...(input.role !== undefined
+          ? { role: input.role as PlatformRole }
+          : {}),
         bio: bio || null,
         location: location || null,
         website: website || null,

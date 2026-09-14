@@ -111,6 +111,18 @@ phone verification is planned for later; no texts are sent by this flow.
 
 ## Personal invitation signup
 
+### Participation choices
+
+Choose **Exploring Faith** during signup if it describes you: **I’m learning
+about Christianity and figuring out what I believe.** This choice stays private
+to your account. Change it later in **Edit profile**. Existing choices remain
+available; none grants church or administrative authority or changes ordinary
+verification and age requirements. Use the isolated participation-choice service
+and browser checks for persistence, conflict/error recovery and disclosure tests;
+never create a production account solely for testing.
+
+### Invitation consent
+
 Open an invitation and choose **Create account and connect** to accept it, or
 **Join without connecting** for ordinary signup. The selected inviter is bound
 to the new account; another browser or duplicate signup cannot replace it.

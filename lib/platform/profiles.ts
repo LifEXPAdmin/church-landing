@@ -112,6 +112,10 @@ export function getMemberProfile(
       socialPreferences?.showRelationships !== false;
     return {
       ...visibleProfile,
+      // Never serialize a private participation choice to another member or
+      // a member preview. The owner edits it through getProfileEditor.
+      role:
+        visibleProfile.role === "EXPLORING_FAITH" ? null : visibleProfile.role,
       relationshipsVisible,
       _count: relationshipsVisible
         ? profile._count

@@ -2,6 +2,7 @@ import type { PlatformPostType, PlatformRole } from "@prisma/client";
 
 export const roleLabels: Record<PlatformRole, string> = {
   BELIEVER: "Believer",
+  EXPLORING_FAITH: "Exploring Faith",
   CHURCH: "Church",
   CREATOR: "Creator",
   BUSINESS: "Business",

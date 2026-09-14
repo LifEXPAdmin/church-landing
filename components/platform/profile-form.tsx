@@ -3,6 +3,8 @@ import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { accountInputClass } from "./account-form";
 import type { ProfileEditorView } from "@/lib/platform/profiles";
+import { ParticipationChoice } from "./participation-choice";
+import { roleLabels } from "@/lib/platform/format";
 import {
   PROFILE_BACKGROUNDS,
   PROFILE_ORDERS,
@@ -125,6 +127,7 @@ export function ProfileForm({
           </p>
         </div>
         <input type="hidden" name="expectedVersion" value={version} />
+        <ParticipationChoice id="profile-role" initialValue={profile.role} />
         <fieldset className="min-w-0 space-y-4">
           <legend className="text-2xl">Identity</legend>
           <p className="text-sm text-gc-muted">
@@ -343,6 +346,10 @@ export function ProfileForm({
               <div>
                 <dt>Bio</dt>
                 <dd>{latest.bio || "Empty"}</dd>
+              </div>
+              <div>
+                <dt>Participation choice</dt>
+                <dd>{roleLabels[latest.role]}</dd>
               </div>
               <div>
                 <dt>Location / website</dt>

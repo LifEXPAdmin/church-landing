@@ -294,7 +294,8 @@ export default async function MemberProfilePage({
             <div className="min-w-0 flex-1">
               <h1 className="text-4xl sm:text-5xl">{profile.name}</h1>
               <p className="mt-2 text-gc-muted">
-                @{profile.username} · {roleLabels[profile.role]}
+                @{profile.username}
+                {profile.role ? ` · ${roleLabels[profile.role]}` : ""}
               </p>
             </div>
             {!preview &&
