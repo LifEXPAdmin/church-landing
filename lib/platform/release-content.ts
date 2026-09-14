@@ -535,6 +535,20 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "related-settings-access",
+    version: "2026.09.14.5",
+    date: "2026-09-14",
+    summary: "Related directory settings follow your current church access.",
+    added: [],
+    improved: [
+      "The directory shortcut appears only with a current approved church connection. Other personal settings stay available."
+    ],
+    fixed: [
+      "Accounts without an approved church connection no longer get a related shortcut into a restricted directory-sharing page."
+    ],
+    featureIds: ["settings"]
+  },
+  {
     id: "related-settings",
     version: "2026.09.14.4",
     date: "2026-09-14",

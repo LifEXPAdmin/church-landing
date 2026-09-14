@@ -181,6 +181,7 @@ export function SettingsWorkspace({
           (s) =>
             s.state === "working" &&
             s.scope === "personal" &&
+            (s.id !== "privacy.directory" || !!data?.churches.length) &&
             relatedSettingIds[activeFolder.id]?.includes(s.id)
         )
       : [];

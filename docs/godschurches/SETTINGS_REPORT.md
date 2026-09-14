@@ -16,8 +16,14 @@ from deactivation. The feature guide reflects current notification controls.
 The existing Settings browser navigation assertion now expects the deployed
 notification page, preserving the same query/Back check. Product `2026.09.14.4`
 release notes describe this scope. Types, scoped lint and 28 focused existing
-Settings/navigation/release tests pass. Built-browser and live release acceptance
-are pending; the current deployed application remains `2026.09.14.3`.
+Settings/navigation/release tests pass. The six existing Settings browser groups and three related-link groups passed
+for the initial build. The initial `2026.09.14.4` deployment passed 27 public
+live groups, but authenticated acceptance found a related directory shortcut
+for an account without approved church membership. That access-denied route
+preserved privacy; the shortcut was inappropriate. The same feature's finishing
+patch now filters it through current approved connections, without a new query
+or permission. No-church, pending and removed-member checks are included before
+final acceptance of `2026.09.14.5`. Completion remains pending.
 
 ## Published — September 12, 2026
 
