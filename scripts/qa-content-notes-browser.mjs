@@ -429,6 +429,60 @@ try {
     "Composer saves both optional choices privately with reply permission intact and fits 320/390/1280-pixel layouts"
   );
 
+  await composer
+    .getByRole("button", { name: "Close composer", exact: true })
+    .click();
+  await go("/platform/drafts");
+  const savedDraft = page
+    .getByRole("listitem")
+    .filter({ hasText: "Fictional draft note retention body" });
+  await savedDraft
+    .getByRole("link", { name: "Resume draft", exact: true })
+    .click();
+  const resumed = page.getByRole("form", { name: "Publish post", exact: true });
+  await resumed.getByLabel("Post content", { exact: true }).waitFor();
+  await resumed.getByText("Content note and preview", { exact: true }).click();
+  assert.equal(
+    await resumed
+      .getByLabel("Optional content note", { exact: true })
+      .inputValue(),
+    "Draft reflection note"
+  );
+  assert.equal(
+    await resumed
+      .getByLabel("Optional safe excerpt", { exact: true })
+      .inputValue(),
+    "Draft preview chosen by the author"
+  );
+  await resumed.getByRole("button", { name: "Post", exact: true }).click();
+  const published = resumed.getByRole("link", {
+    name: "View published post",
+    exact: true
+  });
+  await published.waitFor();
+  await published.click();
+  await page
+    .locator("article.gc-post")
+    .getByText("Draft reflection note", { exact: false })
+    .waitFor();
+  const consumed = await db.privatePostDraft.findUniqueOrThrow({
+    where: { ownerId_id: { ownerId: author.id, id: draft.id } }
+  });
+  assert.ok(consumed.deletedAt);
+  assert.equal(consumed.payload, null);
+  const publishedPost = await db.platformPost.findFirstOrThrow({
+    where: {
+      authorId: author.id,
+      content: "Fictional draft note retention body"
+    }
+  });
+  assert.equal(publishedPost.contentNote, "Draft reflection note");
+  assert.equal(publishedPost.safeExcerpt, "Draft preview chosen by the author");
+  assert.equal(publishedPost.replyAudience, "VIEWERS");
+  ok(
+    "A saved draft reopens through the real library and publishes both author choices exactly once with its reply permission unchanged"
+  );
+
   const privatePost = await postCommand(db, author.token, {
     operation: "create",
     requestKey: randomUUID(),
