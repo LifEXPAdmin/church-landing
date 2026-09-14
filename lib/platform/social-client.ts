@@ -13,12 +13,16 @@ export async function currentSocialOwner(): Promise<string | null> {
     cache: "no-store",
     credentials: "same-origin"
   });
-  if (response.status === 401) return null;
-  if (!response.ok)
+  if (!response.ok) {
+    // Identity denials have no payload to use. Release the unread stream before
+    // continuing guest reads or reporting a failure.
+    await response.body?.cancel();
+    if (response.status === 401) return null;
     throw new SocialClientError(
       response.status,
       "Your sign-in could not be checked. Reconnect and try again."
     );
+  }
   const body = await response.json();
   if (typeof body.id !== "string")
     throw new SocialClientError(503, "Your sign-in could not be checked.");

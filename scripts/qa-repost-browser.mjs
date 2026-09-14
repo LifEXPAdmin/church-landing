@@ -408,6 +408,10 @@ try {
     window.dispatchEvent(new Event("blur"));
     window.dispatchEvent(new Event("focus"));
   });
+  await page
+    .locator(".gc-post-body")
+    .getByText("My thoughts above the source", { exact: true })
+    .waitFor();
   await page.getByText("Original post unavailable.", { exact: true }).waitFor();
   assert.equal(
     await page
