@@ -1,5 +1,26 @@
 # Display preview verification
 
+## Current complete-display acceptance — September 14, 2026
+
+The existing implementation satisfies accessible feed-navigation preferences and
+scoped display reset. No second feed, preference store or runtime change was
+needed. Nine fresh built-browser groups include the six established display
+checks and three additional acceptance groups: native keyboard Previous/Next,
+List/Pages changes and saved-mode reload preserve the selected actual post;
+all 96 supported preference combinations retain Save and Back at 320px with
+doubled root text. Reset changes exactly five browser fields and preserves
+non-default profile presentation, relationship privacy and account values.
+There were no browser errors. Fictional actors and mutations stayed isolated.
+
+Product `2026.09.14.3`, application
+`ebf45fc445ec36a50fc03a855551c6f6a8d04383`, remains live on READY deployment
+`dpl_6KpUY2PKNK5XT7TQuBVQF5zwoa8Z`. The canonical alias and serving identity
+were freshly rechecked. Authenticated Chrome showed the current display form,
+preview and controls without saving. Production application writes: **0**.
+This is verification and reconciliation of existing behavior, not a new release.
+Physical phone and assistive-device acceptance remains unclaimed. Earlier
+checkpoints below are retained as history.
+
 September 12, 2026. See [the display contract](DISPLAY_SETTINGS_CONTRACT.md).
 
 The advanced Display form previews appearance, readable post text and List/Pages
