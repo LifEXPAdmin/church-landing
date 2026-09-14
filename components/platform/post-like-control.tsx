@@ -1,6 +1,6 @@
 "use client";
 import { Heart } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { socialRequest, SocialClientError } from "@/lib/platform/social-client";
 import { useUnsavedSocialWork } from "./use-unsaved-social-work";
@@ -22,6 +22,22 @@ export function PostLikeControl({
     [message, setMessage] = useState(""),
     [refreshNeeded, setRefreshNeeded] = useState(false);
   const flight = useRef(false);
+  const lastInitial = useRef(initial);
+  useEffect(() => {
+    const previous = lastInitial.current;
+    if (
+      previous.count === initial.count &&
+      previous.version === initial.version &&
+      previous.liked === initial.liked
+    )
+      return;
+    lastInitial.current = initial;
+    // Fresh permitted counts must replace a retained count without dropping an
+    // in-flight choice or its exact retry key.
+    setState((current) =>
+      pending || flight.current ? { ...current, count: initial.count } : initial
+    );
+  }, [initial, pending]);
   const path = `/api/platform/post-likes?postId=${encodeURIComponent(postId)}`;
   useUnsavedSocialWork(
     { dirty: false, saving: !!pending, conflict: false },

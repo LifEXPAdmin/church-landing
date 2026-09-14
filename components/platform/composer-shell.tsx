@@ -2,6 +2,7 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import { X } from "lucide-react";
 import { usePhotoBackGuard } from "./use-photo-back-guard";
+import { useReadVisibility } from "./read-visibility";
 
 /** Presentation only: draft and publication authority stay in the callers. */
 export function ComposerDialog({
@@ -14,8 +15,10 @@ export function ComposerDialog({
   children: ReactNode;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
+  const sourceVisible = useReadVisibility();
   usePhotoBackGuard(true, onClose);
   useEffect(() => {
+    if (!sourceVisible) return;
     const dialog = ref.current!;
     const opener = document.activeElement as HTMLElement | null;
     const overflow = document.body.style.overflow;
@@ -48,7 +51,7 @@ export function ComposerDialog({
       document.body.style.overflow = overflow;
       if (opener?.isConnected) opener.focus({ preventScroll: true });
     };
-  }, []);
+  }, [sourceVisible]);
   return (
     <dialog
       ref={ref}

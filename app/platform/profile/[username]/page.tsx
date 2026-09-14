@@ -1,4 +1,7 @@
 import { ProfilePhotos } from "@/components/platform/profile-photos";
+import { createHash } from "node:crypto";
+import { profileSnapshot } from "@/lib/platform/profile-snapshot";
+import { PrivateSnapshotGuard } from "@/components/platform/private-snapshot-guard";
 import { publicResourceMetadata } from "@/lib/platform/share-metadata";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -139,6 +142,16 @@ export default async function MemberProfilePage({
   }
   const preview = profile.memberPreview ? "member" : null;
   const photosTab = query.tab === "photos" && profile.photoLibraryEnabled;
+  const snapshotQuery = new URLSearchParams({
+    view: "member-snapshot",
+    username
+  });
+  if (before && cursor) {
+    snapshotQuery.set("before", before.toISOString());
+    snapshotQuery.set("cursor", cursor);
+  }
+  if (preview) snapshotQuery.set("preview", preview);
+  if (photosTab) snapshotQuery.set("tab", "photos");
   const parameters = new URLSearchParams(preview ? { preview } : {});
   if (before && cursor) {
     parameters.set("before", before.toISOString());
@@ -252,143 +265,152 @@ export default async function MemberProfilePage({
   );
   return (
     <PlatformShell user={currentUser}>
-      <section
-        className="container-shell gc-profile-page py-8 sm:py-10"
-        data-profile-palette={profile.presentation.palette}
+      <PrivateSnapshotGuard
+        owner={currentUser.id}
+        url={`/api/platform/profile?${snapshotQuery}`}
+        checksum={createHash("sha256")
+          .update(JSON.stringify(profileSnapshot(profile)))
+          .digest("hex")}
+        label="member profile"
       >
-        {profile.isMe && (
-          <ProfilePreviews path={profilePath} preview={preview} />
-        )}
-        {preview === "member" && (
-          <aside className="gc-profile-section mb-5">
-            <h2 className="text-2xl">Member preview</h2>
-            <p>
-              This shows your profile details and public post summaries for a
-              signed-in member with no shared church connections. Church posts
-              appear only for members with current access. Post interactions are
-              available outside this preview.
-            </p>
-          </aside>
-        )}
-        <header className="gc-profile-header">
-          <div
-            className="gc-profile-cover"
-            data-profile-background={profile.presentation.background}
-          >
-            <ProfileImage
-              image={profile.cover}
-              name={profile.name}
-              kind="cover"
-              accountId={currentUser.id}
-              profileId={profile.id}
-            />
-          </div>
-          <div className="gc-profile-identity">
-            <ProfileImage
-              image={profile.avatar}
-              name={profile.name}
-              kind="avatar"
-              accountId={currentUser.id}
-              profileId={profile.id}
-            />
-            <div className="min-w-0 flex-1">
-              <h1 className="text-4xl sm:text-5xl">{profile.name}</h1>
-              <p className="mt-2 text-gc-muted">
-                @{profile.username}
-                {profile.role ? ` · ${roleLabels[profile.role]}` : ""}
+        <section
+          className="container-shell gc-profile-page py-8 sm:py-10"
+          data-profile-palette={profile.presentation.palette}
+        >
+          {profile.isMe && (
+            <ProfilePreviews path={profilePath} preview={preview} />
+          )}
+          {preview === "member" && (
+            <aside className="gc-profile-section mb-5">
+              <h2 className="text-2xl">Member preview</h2>
+              <p>
+                This shows your profile details and public post summaries for a
+                signed-in member with no shared church connections. Church posts
+                appear only for members with current access. Post interactions
+                are available outside this preview.
               </p>
-            </div>
-            {!preview &&
-              (profile.isMe ? (
-                <Button asChild className="rounded-full">
-                  <Link href="/platform/profile/me">Edit profile</Link>
-                </Button>
-              ) : (
-                <div className="flex flex-wrap items-center gap-2">
-                  <Link
-                    prefetch={false}
-                    className="gc-button gc-button-primary"
-                    href={`/platform/messages/requests?recipientId=${profile.id}`}
-                  >
-                    Message
-                  </Link>
-                  <RelationshipControls
-                    kind="person"
-                    targetId={profile.id}
-                    name={profile.name}
-                  />
-                </div>
-              ))}
-          </div>
-          <div className="gc-profile-summary">
-            <p className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-gc-muted">
-              <span>{profile.postCount} posts</span>
-              <span>
-                {profile.relationshipsVisible
-                  ? `${profile._count.followers} followers`
-                  : "Relationship counts are private"}
-              </span>
-              {profile.relationshipsVisible && (
-                <span>{profile._count.following} following</span>
-              )}
-            </p>
-            <nav
-              aria-label="Profile sections"
-              className="mt-4 flex flex-wrap gap-3"
+            </aside>
+          )}
+          <header className="gc-profile-header">
+            <div
+              className="gc-profile-cover"
+              data-profile-background={profile.presentation.background}
             >
-              {(profile.presentation.sectionOrder === "posts-first"
-                ? ["posts", "about"]
-                : ["about", "posts"]
-              )
-                .filter((section) => section !== "about" || hasAbout)
-                .map((section) => (
-                  <a
-                    key={section}
-                    className="gc-profile-text-button"
-                    href={
-                      photosTab
-                        ? `${profilePath}${preview ? "?preview=member" : ""}#${section}`
-                        : `#${section}`
-                    }
-                  >
-                    {section === "about" ? "About" : "Posts"}
-                  </a>
+              <ProfileImage
+                image={profile.cover}
+                name={profile.name}
+                kind="cover"
+                accountId={currentUser.id}
+                profileId={profile.id}
+              />
+            </div>
+            <div className="gc-profile-identity">
+              <ProfileImage
+                image={profile.avatar}
+                name={profile.name}
+                kind="avatar"
+                accountId={currentUser.id}
+                profileId={profile.id}
+              />
+              <div className="min-w-0 flex-1">
+                <h1 className="text-4xl sm:text-5xl">{profile.name}</h1>
+                <p className="mt-2 text-gc-muted">
+                  @{profile.username}
+                  {profile.role ? ` · ${roleLabels[profile.role]}` : ""}
+                </p>
+              </div>
+              {!preview &&
+                (profile.isMe ? (
+                  <Button asChild className="rounded-full">
+                    <Link href="/platform/profile/me">Edit profile</Link>
+                  </Button>
+                ) : (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Link
+                      prefetch={false}
+                      className="gc-button gc-button-primary"
+                      href={`/platform/messages/requests?recipientId=${profile.id}`}
+                    >
+                      Message
+                    </Link>
+                    <RelationshipControls
+                      kind="person"
+                      targetId={profile.id}
+                      name={profile.name}
+                    />
+                  </div>
                 ))}
-              {profile.photoLibraryEnabled && (
-                <Link
-                  className="gc-profile-text-button"
-                  aria-current={photosTab ? "page" : undefined}
-                  href={`${profilePath}?tab=photos${preview ? "&preview=member" : ""}`}
-                >
-                  Photos
-                </Link>
-              )}
-            </nav>
-          </div>
-        </header>
-        {profile.presentation.introduction && (
-          <section
-            className="gc-profile-section"
-            aria-labelledby="profile-intro-heading"
-          >
-            <h2 id="profile-intro-heading">Introduction</h2>
-            <p className="gc-profile-prose">
-              {profile.presentation.introduction}
-            </p>
-          </section>
-        )}
-        {photosTab ? (
-          <ProfilePhotos
-            profileId={profile.id}
-            ownerId={currentUser.id}
-            preview={!!preview}
-          />
-        ) : profile.presentation.sectionOrder === "posts-first" ? (
-          [postSection, about]
-        ) : (
-          [about, postSection]
-        )}
-      </section>
+            </div>
+            <div className="gc-profile-summary">
+              <p className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-gc-muted">
+                <span>{profile.postCount} posts</span>
+                <span>
+                  {profile.relationshipsVisible
+                    ? `${profile._count.followers} followers`
+                    : "Relationship counts are private"}
+                </span>
+                {profile.relationshipsVisible && (
+                  <span>{profile._count.following} following</span>
+                )}
+              </p>
+              <nav
+                aria-label="Profile sections"
+                className="mt-4 flex flex-wrap gap-3"
+              >
+                {(profile.presentation.sectionOrder === "posts-first"
+                  ? ["posts", "about"]
+                  : ["about", "posts"]
+                )
+                  .filter((section) => section !== "about" || hasAbout)
+                  .map((section) => (
+                    <a
+                      key={section}
+                      className="gc-profile-text-button"
+                      href={
+                        photosTab
+                          ? `${profilePath}${preview ? "?preview=member" : ""}#${section}`
+                          : `#${section}`
+                      }
+                    >
+                      {section === "about" ? "About" : "Posts"}
+                    </a>
+                  ))}
+                {profile.photoLibraryEnabled && (
+                  <Link
+                    className="gc-profile-text-button"
+                    aria-current={photosTab ? "page" : undefined}
+                    href={`${profilePath}?tab=photos${preview ? "&preview=member" : ""}`}
+                  >
+                    Photos
+                  </Link>
+                )}
+              </nav>
+            </div>
+          </header>
+          {profile.presentation.introduction && (
+            <section
+              className="gc-profile-section"
+              aria-labelledby="profile-intro-heading"
+            >
+              <h2 id="profile-intro-heading">Introduction</h2>
+              <p className="gc-profile-prose">
+                {profile.presentation.introduction}
+              </p>
+            </section>
+          )}
+          {photosTab ? (
+            <ProfilePhotos
+              profileId={profile.id}
+              ownerId={currentUser.id}
+              preview={!!preview}
+            />
+          ) : profile.presentation.sectionOrder === "posts-first" ? (
+            [postSection, about]
+          ) : (
+            [about, postSection]
+          )}
+        </section>
+      </PrivateSnapshotGuard>
     </PlatformShell>
   );
 }

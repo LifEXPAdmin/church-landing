@@ -535,6 +535,21 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "current-reader-privacy",
+    version: "2026.09.14.12",
+    date: "2026-09-14",
+    summary:
+      "Open readers recheck current post and profile access when you return.",
+    added: [],
+    improved: [
+      "Post readers check current visibility and permitted counts together. Member profiles conceal retained details until current access is confirmed."
+    ],
+    fixed: [
+      "A hidden or newly private post no longer remains visible in an open feed after you return. Comment drafts stay available to their owner while source access is checked."
+    ],
+    featureIds: ["posts", "profile"]
+  },
+  {
     id: "fair-community-activity",
     version: "2026.09.14.11",
     date: "2026-09-14",

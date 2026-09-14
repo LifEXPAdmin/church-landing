@@ -9,6 +9,7 @@ import {
 } from "react";
 import { Ellipsis } from "lucide-react";
 import { createPortal } from "react-dom";
+import { useReadVisibility } from "./read-visibility";
 
 /** A small nonmodal action surface. The owning control keeps its retry state. */
 export function ActionPopover({
@@ -29,6 +30,7 @@ export function ActionPopover({
   const id = useId(),
     button = useRef<HTMLButtonElement>(null),
     panel = useRef<HTMLDivElement>(null);
+  const sourceVisible = useReadVisibility();
   const change = useRef(onOpenChange);
   const [target, setTarget] = useState<Element | null>(null);
   const [position, setPosition] = useState({
@@ -40,6 +42,9 @@ export function ActionPopover({
   useLayoutEffect(() => {
     change.current = onOpenChange;
   });
+  useLayoutEffect(() => {
+    if (!sourceVisible && open) change.current(false);
+  }, [sourceVisible, open]);
   useLayoutEffect(() => {
     if (!open) return;
     setTarget(

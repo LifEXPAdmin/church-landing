@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma";
-import { getProfileEditor } from "@/lib/platform/profiles";
+import { getProfileEditor, getMemberProfile } from "@/lib/platform/profiles";
+import { profileSnapshot } from "@/lib/platform/profile-snapshot";
+import { readerDate, readerId } from "@/lib/platform/reader-navigation";
 import { requestSessionToken } from "@/lib/platform/account-boundary";
 import { PortalError } from "@/lib/platform/portal";
 import { withOwnedSession } from "@/lib/platform/account-sessions";
@@ -15,14 +17,30 @@ export async function GET(request: Request) {
     "X-Robots-Tag": "noindex, nofollow"
   };
   try {
+    const query = new URL(request.url).searchParams;
     return Response.json(
-      new URL(request.url).searchParams.get("view") === "identity"
-        ? await withOwnedSession(
-            prisma,
-            requestSessionToken(request),
-            async (_, session) => ({ id: session.userId })
+      query.get("view") === "member-snapshot"
+        ? profileSnapshot(
+            await getMemberProfile(
+              prisma,
+              requestSessionToken(request),
+              (query.get("username") ?? "").slice(0, 100),
+              {
+                before: readerDate(query.get("before")),
+                cursor: readerId(query.get("cursor")),
+                preview:
+                  query.get("preview") === "member" ? "member" : undefined,
+                photos: query.get("tab") === "photos"
+              }
+            )
           )
-        : await getProfileEditor(prisma, requestSessionToken(request)),
+        : query.get("view") === "identity"
+          ? await withOwnedSession(
+              prisma,
+              requestSessionToken(request),
+              async (_, session) => ({ id: session.userId })
+            )
+          : await getProfileEditor(prisma, requestSessionToken(request)),
       { headers }
     );
   } catch (error) {

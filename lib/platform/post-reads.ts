@@ -399,6 +399,43 @@ export function getPostAvailability(
     };
   });
 }
+export function getPostAvailabilityBatch(
+  db: PrismaClient,
+  token: unknown,
+  values: string[]
+) {
+  if (!values.length || values.length > 30)
+    throw new PortalError(400, "Check up to 30 post references at once.");
+  const ids = [...new Set(values.map(postId))];
+  return withPostRead(db, token, async (tx, context) => {
+    const rows = await tx.platformPost.findMany({
+      where: { AND: [{ id: { in: ids } }, postReadableWhere(context)] },
+      select: {
+        id: true,
+        version: true,
+        _count: {
+          select: {
+            comments: { where: commentVisibleWhere(context) },
+            likes: { where: { active: true, user: socialUserWhere(context) } }
+          }
+        }
+      }
+    });
+    const byId = new Map(rows.map((row) => [row.id, row]));
+    return {
+      posts: ids.map((id) => {
+        const row = byId.get(id);
+        return {
+          id,
+          available: !!row,
+          entryVersion: row?.version ?? null,
+          commentCount: row?._count.comments ?? null,
+          likeCount: row?._count.likes ?? null
+        };
+      })
+    };
+  });
+}
 export function getPost(
   db: PrismaClient,
   token: unknown,

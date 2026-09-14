@@ -9,6 +9,7 @@ import {
   type ReactNode
 } from "react";
 import { socialRequest } from "@/lib/platform/social-client";
+import { ReadVisibility, useReadVisibility } from "./read-visibility";
 
 type PendingRecovery = { retry: () => void; busy: boolean };
 const RecoveryContext = createContext<
@@ -42,6 +43,7 @@ export function PrivateSnapshotGuard({
   label?: string;
   children: ReactNode;
 }) {
+  const parentVisible = useReadVisibility();
   const [visible, setVisible] = useState(false),
     [notice, setNotice] = useState(`Checking current ${label} access…`);
   const [currentAccess, setCurrentAccess] = useState(false);
@@ -125,6 +127,8 @@ export function PrivateSnapshotGuard({
     window.addEventListener("blur", hide);
     window.addEventListener("focus", resume);
     window.addEventListener("online", resume);
+    window.addEventListener("offline", hide);
+    window.addEventListener("social-relationships-changed", resume);
     window.addEventListener("pageshow", resume);
     document.addEventListener("visibilitychange", visibility);
     return () => {
@@ -134,6 +138,8 @@ export function PrivateSnapshotGuard({
       window.removeEventListener("blur", hide);
       window.removeEventListener("focus", resume);
       window.removeEventListener("online", resume);
+      window.removeEventListener("offline", hide);
+      window.removeEventListener("social-relationships-changed", resume);
       window.removeEventListener("pageshow", resume);
       document.removeEventListener("visibilitychange", visibility);
     };
@@ -180,7 +186,11 @@ export function PrivateSnapshotGuard({
           </button>
         </div>
       )}
-      <div hidden={!visible}>{children}</div>
+      <ReadVisibility.Provider value={visible && parentVisible}>
+        <div hidden={!visible} inert={!visible}>
+          {children}
+        </div>
+      </ReadVisibility.Provider>
     </RecoveryContext.Provider>
   );
 }

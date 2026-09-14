@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { MessageCircle } from "lucide-react";
 import { CommentThread } from "./comment-thread";
 import { useDraftWorkspace } from "./draft-workspace-provider";
+import { useReadVisibility } from "./read-visibility";
 export function CommentSheet({
   postId,
   count,
@@ -17,8 +18,9 @@ export function CommentSheet({
   const dialog = useRef<HTMLDialogElement>(null),
     opener = useRef<HTMLButtonElement>(null);
   const { controller } = useDraftWorkspace();
+  const sourceVisible = useReadVisibility();
   useEffect(() => {
-    if (!open) return;
+    if (!open || !sourceVisible) return;
     const node = dialog.current!,
       button = opener.current;
     node.showModal();
@@ -29,7 +31,7 @@ export function CommentSheet({
       document.body.style.overflow = overflow;
       button?.focus({ preventScroll: true });
     };
-  }, [open]);
+  }, [open, sourceVisible]);
   function close() {
     const work = controller.getSnapshot().externalWork;
     if (work.dirty || work.saving || work.conflict) {

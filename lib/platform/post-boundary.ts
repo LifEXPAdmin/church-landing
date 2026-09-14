@@ -6,7 +6,7 @@ import { readAccountSession } from "./accounts";
 import { AccountError } from "./account-error";
 import { PortalError } from "./portal-policy";
 import { postCommand } from "./post-commands";
-import { getPostAvailability } from "./post-reads";
+import { getPostAvailability, getPostAvailabilityBatch } from "./post-reads";
 import { protectReportedWithdrawal } from "./retention-controls";
 import { previewPostLink } from "./post-links";
 import {
@@ -36,26 +36,32 @@ export async function handlePostRequest(db: PrismaClient, request: Request) {
         );
       const view = url.searchParams.get("view");
       const result =
-        view === "availability"
-          ? await getPostAvailability(
+        view === "availability-batch"
+          ? await getPostAvailabilityBatch(
               db,
               token,
-              url.searchParams.get("postId") ?? ""
+              url.searchParams.getAll("postId")
             )
-          : view === "composer"
-            ? await getPostComposer(db, token)
-            : view === "events"
-              ? await getPostEventOptions(
-                  db,
-                  token,
-                  url.searchParams.get("churchId"),
-                  url.searchParams.get("cursor")
-                )
-              : await getPostEditor(
-                  db,
-                  token,
-                  url.searchParams.get("postId") ?? ""
-                );
+          : view === "availability"
+            ? await getPostAvailability(
+                db,
+                token,
+                url.searchParams.get("postId") ?? ""
+              )
+            : view === "composer"
+              ? await getPostComposer(db, token)
+              : view === "events"
+                ? await getPostEventOptions(
+                    db,
+                    token,
+                    url.searchParams.get("churchId"),
+                    url.searchParams.get("cursor")
+                  )
+                : await getPostEditor(
+                    db,
+                    token,
+                    url.searchParams.get("postId") ?? ""
+                  );
       return Response.json(result, { headers });
     }
     if (request.method !== "POST")

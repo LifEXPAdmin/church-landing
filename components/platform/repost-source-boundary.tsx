@@ -8,6 +8,8 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 import { socialRequest } from "@/lib/platform/social-client";
+import { currentPostAvailability } from "@/lib/platform/post-availability-client";
+import { ReadVisibility, useReadVisibility } from "./read-visibility";
 /** Retained server content is concealed on loss of focus/access and refreshed by version. */
 export function RepostSourceBoundary({
   entryId,
@@ -15,6 +17,9 @@ export function RepostSourceBoundary({
   sourceVersion,
   accountId,
   originalPost = false,
+  preserveMounted = false,
+  commentCount,
+  likeCount,
   children
 }: {
   entryId: string;
@@ -22,11 +27,15 @@ export function RepostSourceBoundary({
   sourceVersion: number | null;
   accountId: string | null;
   originalPost?: boolean;
+  preserveMounted?: boolean;
+  commentCount?: number;
+  likeCount?: number;
   children: ReactNode;
 }) {
   const router = useRouter(),
     root = useRef<HTMLDivElement>(null),
     generation = useRef(0);
+  const parentVisible = useReadVisibility();
   const [active, setActive] = useState(false),
     [visible, setVisible] = useState(originalPost || sourceVersion !== null),
     [message, setMessage] = useState("Original post unavailable.");
@@ -34,22 +43,33 @@ export function RepostSourceBoundary({
     if (document.visibilityState === "hidden") return;
     const seq = ++generation.current;
     try {
-      const r = await socialRequest<{
-        available: boolean;
-        entryVersion: number | null;
-        sourceVersion: number | null;
-      }>(
-        originalPost
-          ? `/api/platform/posts?view=availability&postId=${encodeURIComponent(entryId)}`
-          : `/api/platform/reposts?view=entry&id=${encodeURIComponent(entryId)}`,
-        undefined,
-        accountId
-      );
+      const r = originalPost
+        ? {
+            data: {
+              ...(await currentPostAvailability(entryId, accountId)),
+              sourceVersion: null
+            }
+          }
+        : await socialRequest<{
+            available: boolean;
+            entryVersion: number | null;
+            sourceVersion: number | null;
+          }>(
+            `/api/platform/reposts?view=entry&id=${encodeURIComponent(entryId)}`,
+            undefined,
+            accountId
+          );
       if (seq !== generation.current) return;
       const match =
         r.data.available &&
         r.data.entryVersion === entryVersion &&
-        r.data.sourceVersion === sourceVersion;
+        r.data.sourceVersion === sourceVersion &&
+        (!originalPost ||
+          ((commentCount === undefined ||
+            ("commentCount" in r.data &&
+              r.data.commentCount === commentCount)) &&
+            (likeCount === undefined ||
+              ("likeCount" in r.data && r.data.likeCount === likeCount))));
       setVisible(match);
       setMessage("Original post unavailable.");
       if (r.data.available && !match) {
@@ -62,7 +82,16 @@ export function RepostSourceBoundary({
         setMessage("Reconnect to check the original post.");
       }
     }
-  }, [accountId, entryId, entryVersion, sourceVersion, originalPost, router]);
+  }, [
+    accountId,
+    entryId,
+    entryVersion,
+    sourceVersion,
+    originalPost,
+    commentCount,
+    likeCount,
+    router
+  ]);
   useEffect(() => {
     if (!root.current) return;
     const observer = new IntersectionObserver((entries) =>
@@ -72,14 +101,15 @@ export function RepostSourceBoundary({
     return () => observer.disconnect();
   }, []);
   useEffect(() => {
-    if (!active) return;
-    void check();
+    if (active) void check();
+  }, [active, check]);
+  useEffect(() => {
     const hide = () => {
       generation.current++;
       setVisible(false);
     };
     const restore = () => {
-      if (document.visibilityState !== "hidden") void check();
+      if (active && document.visibilityState !== "hidden") void check();
     };
     const visibility = () =>
       document.visibilityState === "hidden" ? hide() : restore();
@@ -88,6 +118,7 @@ export function RepostSourceBoundary({
     window.addEventListener("focus", restore);
     window.addEventListener("offline", hide);
     window.addEventListener("online", restore);
+    window.addEventListener("pageshow", restore);
     window.addEventListener("social-relationships-changed", restore);
     document.addEventListener("visibilitychange", visibility);
     return () => {
@@ -97,15 +128,14 @@ export function RepostSourceBoundary({
       window.removeEventListener("focus", restore);
       window.removeEventListener("offline", hide);
       window.removeEventListener("online", restore);
+      window.removeEventListener("pageshow", restore);
       window.removeEventListener("social-relationships-changed", restore);
       document.removeEventListener("visibilitychange", visibility);
     };
   }, [active, check]);
   return (
     <div ref={root}>
-      {visible ? (
-        children
-      ) : (
+      {!visible && (
         <div className="rounded-xl border border-gc-border p-4 text-sm">
           <p role="status">{message}</p>
           <button
@@ -117,23 +147,36 @@ export function RepostSourceBoundary({
           </button>
         </div>
       )}
+      {originalPost || preserveMounted ? (
+        <ReadVisibility.Provider value={visible && parentVisible}>
+          <div hidden={!visible} inert={!visible}>
+            {children}
+          </div>
+        </ReadVisibility.Provider>
+      ) : visible ? (
+        children
+      ) : null}
     </div>
   );
 }
 
-// Full detail bodies share the existing revocation/version owner. Keep all
-// editing and comment forms outside this boundary so hiding a body loses no draft.
+// Ordinary and full readers share the revocation owner. Conceal mounted forms
+// without losing their local draft or uncertain request.
 export function PostReadBoundary({
   enabled,
   postId,
   version,
   accountId,
+  commentCount,
+  likeCount,
   children
 }: {
   enabled: boolean;
   postId: string;
   version: number;
   accountId: string | null;
+  commentCount?: number;
+  likeCount?: number;
   children: ReactNode;
 }) {
   return enabled ? (
@@ -143,6 +186,8 @@ export function PostReadBoundary({
       entryVersion={version}
       sourceVersion={null}
       accountId={accountId}
+      commentCount={commentCount}
+      likeCount={likeCount}
     >
       {children}
     </RepostSourceBoundary>
