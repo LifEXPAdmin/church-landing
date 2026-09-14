@@ -1,5 +1,44 @@
 # Isolated capacity and recovery rehearsal
 
+## Hosted failure and chronological index repair — September 14, 2026
+
+The first protected cloud run used a disposable Vercel preview, private Blob
+store and Free Neon PostgreSQL 18.6 at fixed 0.25 CU, with the same fictional
+volume and dense relationships. Production uses PostgreSQL 17, so this is not an
+exact version replica. Outgoing delivery, scheduled jobs and queue triggers were
+disabled. The initial stable test alias was outside default deployment protection;
+preflight stopped before load, and all-URL protection passed before testing.
+
+At 25 clients, 2,115 requests over 182.5 seconds had no unexpected responses.
+Feed p95 was 1,181.7 ms, above the proposed one-second target. At 50 clients the
+guard stopped after 1,021 requests in 75.8 seconds, with 46 unexpected responses:
+two synthetic Like targets were correctly denied and the remaining failures
+accompanied a database outage. No 100-client stage ran. The provider error was
+PostgreSQL `53200` / out of memory in a tuple sort, followed by crashed/unreachable
+connections. Read-only inspection confirms the database restarted at 09:06:19 UTC.
+Protected health recovered afterward; its queues had no overdue work. This is a
+failed hosted capacity gate, not a demonstration of the desired operating envelope.
+
+The actual feed-page plan sorted about 98,000 candidate posts before returning
+31 IDs. A measured index on status, moderation state, publication time and ID
+changes this to an ordered index scan of 31 rows with the same canonical policy.
+Individual hosted `EXPLAIN ANALYZE` observations for page selection were 265.1 ms
+before and 1.3 ms afterward; these are query observations, not an HTTP speed ratio.
+The additive migration creates only that index and preserves every record and
+permission. A corrected 50/100-client run is active on unchanged compute. Its Like
+targets use current canonical read/version state, and each account attempts only
+one additional upload across the rerun. All cumulative ceilings include the failed
+run; no allowance is silently reset. Final migration/restore/regression, deployed
+acceptance and disposable-resource cleanup are pending.
+
+Before the index addition, the complete gate passed all 120 discovered files:
+738 passes, two expected skips, zero failures. That receipt remains separate from
+the required new migration gate. The initial hosted run accepted 69 uploads,
+preserved 275 matching successful retry pairs and passed three owner/other-account
+private-image comparisons. Its 3,146 total calls included preflight/verification;
+image-read attempts were 929 and upload attempts 71. Production application writes
+and real outgoing messages were zero.
+
 ## Dense media staircase and bounded previews — September 14, 2026
 
 The first sustained staircase finished at 08:11 UTC against the `.7` candidate

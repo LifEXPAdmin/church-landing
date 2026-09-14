@@ -1260,6 +1260,7 @@ model PlatformPost {
   @@index([type])
   @@index([createdAt])
   @@index([audienceChurchId, status, publishedAt])
+  @@index([status, moderationState, publishedAt(sort: Desc), id(sort: Desc)], map: "PlatformPost_visible_feed_idx")
   @@index([status, scheduleAt])
 }
 

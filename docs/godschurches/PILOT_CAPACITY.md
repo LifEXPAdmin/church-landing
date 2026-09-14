@@ -1,7 +1,8 @@
 # Pilot capacity, costs and recovery limits
 
-September 14, 2026. Local candidate; sustained rehearsal and deployment acceptance
-are pending. Five hundred registered accounts and one hundred concurrent people
+September 14, 2026. The sustained local rehearsal and full regression gate pass;
+bounded cloud rehearsal and deployment acceptance are pending. Five hundred
+registered accounts and one hundred concurrent people
 remain a target, not a demonstrated production maximum. Registered accounts occupy
 storage; daily active people produce traffic; concurrently active clients and
 requests in flight are different measures. A fifteen-minute test does not establish
@@ -31,8 +32,10 @@ Never delete user content or shorten retention to meet a quota.
   excluding retries and dashboard/list operations. Roughly 500 new images consume
   the full advanced allowance, or 350 at the 70% review point. Retained profile
   history also consumes storage; selecting another image does not delete history.
-  Cache hits do not consume simple-operation allowance, so do not count every
-  application image response as a cache miss. Budget for misses separately.
+  The current private storage adapter explicitly uses `useCache: false` on Blob
+  reads. Budget each attempted private image fetch as a simple operation; do not
+  assume a provider cache hit. Browser in-flight deduplication can avoid an app
+  request, but does not change how a store read is configured.
 - Image changes: the candidate retains 120 attempts/minute globally and ten
   changes of each kind/account/15 minutes, with a separate 300-attempt shared-IP
   image window. Sign-in keeps its existing 30-attempt network allowance. These
@@ -62,7 +65,7 @@ retained unprocessed.
 | Quantity | Scenario result | Implication |
 | --- | ---: | --- |
 | Application requests | 300,000/month | Compare with other team traffic and measured CPU/request |
-| Image deliveries | 120,000/month | 10% cache misses = 12,000 simple operations; over the Free allowance |
+| Image deliveries | 120,000/month | Current uncached store reads imply about 120,000 simple operations before retries; over the Free allowance |
 | New images | 600/month | 2,400 upload operations before retries/listing; over the Free allowance |
 | New retained image bytes | 0.788 GB/month | Storage accumulates across months and existing history |
 | All-medium image delivery bytes | 42.17 GB/month | An intentionally heavy case; beyond the Blob 10 GB allowance |
@@ -70,10 +73,10 @@ retained unprocessed.
 | Neon, continuously active at 0.25 CU | 180 CU-hours/month | Above 100 Free hours; intermittent usage is different |
 
 Private delivery also passes through application functions and origin/edge
-transfer. Provider cache hits reduce some store-side charges, but do not remove
-the app-to-browser response. Do not add a public cache to private images to meet
-these projections. Measure actual cache outcomes and byte mix in a separately
-budgeted cloud rehearsal before treating a model as production headroom.
+transfer. The current uncached store read must be included in both the operation
+and byte budget. Do not add a public cache to private images to meet these
+projections. Measure actual request counts and byte mix in a separately budgeted
+cloud rehearsal before treating a model as production headroom.
 
 Public current rates support a review, not an automatic purchase: Vercel Pro is
 $20/month for the platform/one deploying seat with $20 usage credit; additional
@@ -94,13 +97,23 @@ storage, chosen history and any excess egress. Resend Pro lists $20/month for
 
 The owned local rehearsal uses fictional data, guarded loopback PostgreSQL and
 private filesystem images, disabled real delivery, and an explicit shared-network
-model. A schema-only Neon branch is available in the current console, but a
-separate branch/store still needs a defined test resource budget. The full
-image-heavy run's no-cache operation upper bound can exceed the remaining Hobby
-allowance. Provider dashboards lag; they cannot serve as a reliable per-request
-stop guard. Before cloud testing, select isolated project/branch/store resources,
-strict request/byte ceilings and an allowance that does not endanger the live app.
-Never point the loopback harness or its fictional-data writer at production.
+model. A separate, disposable Vercel project, Free Neon database and private Blob
+store now have a bounded cloud plan: 25 and 50 clients for three minutes each,
+then 100 for five minutes, with two-second think time. Hard guards cap application
+requests at 22,000, image-read attempts below 8,000, uploaded images at 175 beyond
+the 100 seed images, and response bytes at 3 GB. Four hundred seed objects occupy
+131,406,400 bytes. These counters account for uncached store fetches; provider
+dashboards can lag and are not the per-request stop guard.
+
+The test project protects all URLs and uses only its own temporary automation
+credential. Its canonical alias initially lay outside the default protection
+scope; the preflight stopped before load and passed after protecting all URLs.
+All real delivery, scheduled jobs and queue triggers are disabled in the test
+project. Its Neon default is PostgreSQL 18.6 at fixed 0.25 CU, while production is
+PostgreSQL 17; preserve that limit when interpreting hosted results. The cloud
+run is not yet an accepted operating envelope. Never point the loopback harness
+or its fictional-data writer at production. Preserve test receipts and remove
+only the owned disposable resources after the experiment.
 
 Begin any human pilot with consenting small groups, inspect the exact deployed
 health and usage, then expand only after the observed experience and headroom

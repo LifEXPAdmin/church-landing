@@ -544,6 +544,7 @@ export const releases: ReleaseEntry[] = [
     improved: [
       "More people can update photos on shared church Wi-Fi while individual account protections remain in place.",
       "Removed photo files can be cleared in larger batches after their existing waiting period.",
+      "Home finds recent posts more efficiently in larger communities.",
       "Home loads a small comment preview without retrieving the entire conversation."
     ],
     fixed: [
