@@ -15,6 +15,7 @@ import { CommentThread } from "./comment-thread";
 import type { PostView } from "@/lib/platform/post-reads";
 import { PostLink } from "./post-link";
 import { PostLikeControl } from "./post-like-control";
+import { PrayerControl } from "./prayer-workspace";
 import { accountEntryHref } from "@/lib/platform/account-entry";
 import Link from "next/link";
 import { Heart, Globe, MessageCircle } from "lucide-react";
@@ -287,9 +288,10 @@ function PostCardContent({
             >
               <Heart aria-hidden="true" />
               <span className="gc-post-action-label">Like</span>
-              <span>{post.likeCount}</span>
+              <span className="gc-reaction-count">{post.likeCount}</span>
             </Link>
           )}
+          <PrayerControl postId={post.id} owner={currentUserId ?? null} />
           <RepostControl postId={post.id} accountId={currentUserId ?? null} />
           <SavePostControl postId={post.id} accountId={currentUserId ?? null} />
           <PublicShareControls kind="post" id={post.id} compact />

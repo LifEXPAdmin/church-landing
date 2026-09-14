@@ -35,7 +35,14 @@ export function processCommentFollowerBatch(
       const job = await tx.commentFollowerJob.findUnique({
         where: { commentId },
         include: {
-          comment: { select: { authorId: true, postId: true, deletedAt: true } }
+          comment: {
+            select: {
+              authorId: true,
+              postId: true,
+              deletedAt: true,
+              prayerUpdate: { select: { targetKey: true } }
+            }
+          }
         }
       });
       if (!job || job.completedAt) return { done: true, processed: 0 };
@@ -43,17 +50,31 @@ export function processCommentFollowerBatch(
       const recipients =
         expired || job.comment.deletedAt
           ? []
-          : await tx.conversationPreference.findMany({
-              where: {
-                postId: job.comment.postId,
-                mode: "FOLLOW",
-                followedAt: { lt: job.createdAt },
-                ...(job.cursor ? { id: { gt: job.cursor } } : {})
-              },
-              select: { id: true, ownerId: true },
-              orderBy: { id: "asc" },
-              take: COMMENT_FOLLOWER_BATCH
-            });
+          : job.phase === "PRAYER"
+            ? job.comment.prayerUpdate
+              ? await tx.prayerRecord.findMany({
+                  where: {
+                    targetKey: job.comment.prayerUpdate.targetKey,
+                    savedAt: { not: null },
+                    updatesSince: { lt: job.createdAt },
+                    ...(job.cursor ? { id: { gt: job.cursor } } : {})
+                  },
+                  select: { id: true, ownerId: true },
+                  orderBy: { id: "asc" },
+                  take: COMMENT_FOLLOWER_BATCH
+                })
+              : []
+            : await tx.conversationPreference.findMany({
+                where: {
+                  postId: job.comment.postId,
+                  mode: "FOLLOW",
+                  followedAt: { lt: job.createdAt },
+                  ...(job.cursor ? { id: { gt: job.cursor } } : {})
+                },
+                select: { id: true, ownerId: true },
+                orderBy: { id: "asc" },
+                take: COMMENT_FOLLOWER_BATCH
+              });
       for (const recipient of recipients)
         await recordCommentActivity(
           tx,
@@ -63,11 +84,18 @@ export function processCommentFollowerBatch(
           recipient.ownerId,
           job.createdAt
         );
-      const done = recipients.length < COMMENT_FOLLOWER_BATCH;
+      const nextPrayer =
+        !expired &&
+        !job.comment.deletedAt &&
+        job.phase === "CONVERSATIONS" &&
+        recipients.length < COMMENT_FOLLOWER_BATCH &&
+        !!job.comment.prayerUpdate;
+      const done = recipients.length < COMMENT_FOLLOWER_BATCH && !nextPrayer;
       await tx.commentFollowerJob.update({
         where: { commentId },
         data: {
           ...(recipients.length ? { cursor: recipients.at(-1)!.id } : {}),
+          ...(nextPrayer ? { phase: "PRAYER", cursor: null } : {}),
           ...(done ? { completedAt: now } : {})
         }
       });

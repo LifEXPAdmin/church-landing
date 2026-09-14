@@ -17,6 +17,8 @@ import { CommentActions } from "./comment-actions";
 import { reportEntryHref } from "@/lib/platform/community-report-types";
 import { useUnsavedSocialWork } from "./use-unsaved-social-work";
 import { useReadVisibility } from "./read-visibility";
+import { PrayerControl } from "./prayer-workspace";
+import { prayerUpdateLabels } from "@/lib/platform/prayer-types";
 
 export function CommentThread({
   postId,
@@ -365,6 +367,11 @@ export function CommentThread({
                 Replying to {row.replyTo.name ?? "an unavailable comment"}
               </p>
             )}
+            {row.prayerUpdateKind && (
+              <p className="text-sm font-medium">
+                {prayerUpdateLabels[row.prayerUpdateKind]}
+              </p>
+            )}
             <p className="whitespace-pre-wrap break-words text-[length:var(--gc-reader-size)] leading-relaxed">
               {row.content}
             </p>
@@ -377,6 +384,11 @@ export function CommentThread({
             </Link>
             {owner && (
               <div className="flex flex-wrap gap-2">
+                <PrayerControl
+                  owner={owner}
+                  postId={postId}
+                  commentId={row.id}
+                />
                 <button
                   type="button"
                   className="gc-button gc-button-quiet"
@@ -395,7 +407,8 @@ export function CommentThread({
                     )
                   }
                 >
-                  {row.liked ? "Unlike" : "Like"} ({row.likeCount})
+                  {row.liked ? "Unlike" : "Like"}
+                  <span className="gc-reaction-count"> ({row.likeCount})</span>
                 </button>
                 {row.canReply && (
                   <button

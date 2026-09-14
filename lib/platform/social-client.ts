@@ -77,6 +77,7 @@ export type CommentAuthor = {
   churchId: string | null;
 };
 export type CommentItem = {
+  prayerUpdateKind?: import("./prayer-types").PrayerUpdateKind | null;
   id: string;
   rootId: string | null;
   parentId: string | null;

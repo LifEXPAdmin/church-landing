@@ -1909,3 +1909,35 @@ body:has(dialog:modal) {
 }
 
 .gc-action-popover .gc-button { border: 0; background: transparent; box-shadow: none; font-weight: 400; }
+
+/* Browser presentation only. Nested previews override the current saved choice. */
+.platform-design[data-hide-reaction-counts="false"] {
+  --gc-reaction-count-display: inline;
+}
+.platform-design[data-hide-reaction-counts="true"] {
+  --gc-reaction-count-display: none;
+}
+.gc-reaction-count {
+  display: var(--gc-reaction-count-display, inline);
+}
+
+.gc-prayer-dialog {
+  color: var(--gc-text);
+  background: var(--gc-surface);
+  border: 1px solid var(--gc-border);
+  border-radius: 1rem;
+  width: min(40rem, calc(100vw - 1rem));
+  max-height: calc(100dvh - 2rem);
+  padding: clamp(1rem, 4vw, 1.75rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.gc-prayer-dialog::backdrop {
+  background: rgb(0 0 0 / 55%);
+}
+.gc-prayer-dialog :is(input[type="checkbox"], button, select) {
+  touch-action: manipulation;
+}
+.gc-prayer-dialog textarea {
+  resize: vertical;
+}

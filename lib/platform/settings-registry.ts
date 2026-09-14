@@ -374,7 +374,7 @@ export const settingsRegistry: readonly SettingRegistration[] = Object.freeze([
     "display.reading",
     "display",
     "Reading preferences",
-    "Choose appearance, text size, feed navigation, reduced motion and lower photo data use on this browser.",
+    "Choose appearance, text size, feed navigation, motion, photo data use and reaction-count visibility on this browser.",
     [
       "dark mode",
       "light mode",
@@ -386,7 +386,10 @@ export const settingsRegistry: readonly SettingRegistration[] = Object.freeze([
       "data saver",
       "pages",
       "list",
-      "reset display"
+      "reset display",
+      "hide counts",
+      "prayer counts",
+      "like counts"
     ],
     { control: "reading" },
     {
@@ -404,7 +407,7 @@ export const settingsRegistry: readonly SettingRegistration[] = Object.freeze([
     "notifications.availability",
     "notifications",
     "Notification preferences",
-    "Choose message, reply, mention and founder alerts, manage phone devices, and set quiet hours.",
+    "Choose message, reply, conversation, prayer and founder alerts, manage phone devices, and set quiet hours.",
     [
       "alerts",
       "notifications",
@@ -413,7 +416,9 @@ export const settingsRegistry: readonly SettingRegistration[] = Object.freeze([
       "mention alerts",
       "email notifications",
       "quiet hours",
-      "mute conversation"
+      "mute conversation",
+      "prayer updates",
+      "followed conversations"
     ],
     { control: "notifications" },
     {
@@ -422,6 +427,19 @@ export const settingsRegistry: readonly SettingRegistration[] = Object.freeze([
       write: "notificationPreferenceCommand and pushSubscriptionCommand"
     },
     { valueType: "group" }
+  ),
+  entry(
+    "notifications.prayers",
+    "notifications",
+    "My private prayer list",
+    "Return to saved prayers and choose which future author updates to receive.",
+    ["pray", "prayer", "praise", "saved prayers", "follow-up"],
+    { href: "/platform/prayers" },
+    {
+      persistenceOwner: "PrayerRecord",
+      read: "prayer-reads.ts",
+      write: "prayerCommand"
+    }
   ),
   entry(
     "church.connection",

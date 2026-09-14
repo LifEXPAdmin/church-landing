@@ -59,7 +59,8 @@ export const displayResetFields = Object.freeze([
   "mode",
   "size",
   "reduceMotion",
-  "reduceData"
+  "reduceData",
+  "hideReactionCounts"
 ] as const);
 export const inactiveSettingScopes = Object.freeze([
   "family",

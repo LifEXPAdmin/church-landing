@@ -1,3 +1,14 @@
+## Prayer feature candidate — September 14, 2026 UTC
+
+The .17 candidate adds the current prayer feature, private saved follow-up,
+canonical author updates and reaction-count visibility in one feature cycle.
+Service checks pass ten prayer groups, including exact retries, scoped names,
+church-event audience changes, export/erasure and racing bounded subscribers.
+The existing fifteen comment-notification groups also passed before the interface
+integration. Types pass. Browser verification, full acceptance, production-copy
+migration 52→53, publication and live verification are pending. Serving production
+remains the .16 release below. See [candidate contract](PRAYER_CONTRACT.md).
+
 ## Followed conversation integration verified live — September 14, 2026 UTC
 
 **2026.09.14.16 / f7d617fa143ccd23abc08e510ddb7f0250c9f9e9** is READY in

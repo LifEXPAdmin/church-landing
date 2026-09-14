@@ -21,6 +21,7 @@ import {
 } from "@/lib/platform/signup-completion";
 import { PostSignupHelp } from "./installation-help";
 import { accountEntryHref } from "@/lib/platform/account-entry";
+import { PrayerWorkspaceProvider } from "./prayer-workspace";
 
 interface PlatformShellProps {
   user:
@@ -70,70 +71,77 @@ export async function PlatformShell({
       initial={initial}
       release={publicReleaseId(process.env.VERCEL_GIT_COMMIT_SHA)}
     >
-      <div className="gc-shell">
-        <PushSessionBoundary owner={user?.id ?? null} />
-        <a href="#platform-content" className="gc-skip">
-          Skip to content
-        </a>
-        <header className="gc-topbar">
-          <Link href="/platform" className="wordmark gc-brand">
-            <Church aria-hidden="true" />
-            God’s Churches
-          </Link>
-          <span className="gc-tagline">Faith. Fellowship. Everyday life.</span>
-          <nav aria-label="Account and website" className="gc-utilities">
-            {user ? (
-              <>
-                <Link href="/platform/settings" className="gc-utility">
-                  <Settings aria-hidden="true" />
-                  <span>Settings</span>
+      <PrayerWorkspaceProvider
+        key={user?.id ?? "guest"}
+        owner={user?.id ?? null}
+      >
+        <div className="gc-shell">
+          <PushSessionBoundary owner={user?.id ?? null} />
+          <a href="#platform-content" className="gc-skip">
+            Skip to content
+          </a>
+          <header className="gc-topbar">
+            <Link href="/platform" className="wordmark gc-brand">
+              <Church aria-hidden="true" />
+              God’s Churches
+            </Link>
+            <span className="gc-tagline">
+              Faith. Fellowship. Everyday life.
+            </span>
+            <nav aria-label="Account and website" className="gc-utilities">
+              {user ? (
+                <>
+                  <Link href="/platform/settings" className="gc-utility">
+                    <Settings aria-hidden="true" />
+                    <span>Settings</span>
+                  </Link>
+                  <form action={logoutPlatformAccount}>
+                    <button type="submit" className="gc-utility">
+                      <LogOut aria-hidden="true" />
+                      <span>Log out</span>
+                    </button>
+                  </form>
+                </>
+              ) : (
+                <Link
+                  href={
+                    signInReturnTo
+                      ? accountEntryHref("login", signInReturnTo)
+                      : "/platform/login"
+                  }
+                  className="gc-button gc-button-quiet"
+                >
+                  Sign in
                 </Link>
-                <form action={logoutPlatformAccount}>
-                  <button type="submit" className="gc-utility">
-                    <LogOut aria-hidden="true" />
-                    <span>Log out</span>
-                  </button>
-                </form>
-              </>
-            ) : (
-              <Link
-                href={
-                  signInReturnTo
-                    ? accountEntryHref("login", signInReturnTo)
-                    : "/platform/login"
-                }
-                className="gc-button gc-button-quiet"
-              >
-                Sign in
-              </Link>
-            )}
-          </nav>
-        </header>
-        <div className="gc-workspace">
-          <PortalNavigation
-            owner={user?.id}
-            username={user?.username}
-            reviewerNavigation={reviewerNavigation}
-          />
-          <main id="platform-content" tabIndex={-1} className="gc-main">
-            {newAccount && (
-              <PostSignupHelp emailPending={user?.emailVerifiedAt === null} />
-            )}
-            {children}
-          </main>
+              )}
+            </nav>
+          </header>
+          <div className="gc-workspace">
+            <PortalNavigation
+              owner={user?.id}
+              username={user?.username}
+              reviewerNavigation={reviewerNavigation}
+            />
+            <main id="platform-content" tabIndex={-1} className="gc-main">
+              {newAccount && (
+                <PostSignupHelp emailPending={user?.emailVerifiedAt === null} />
+              )}
+              {children}
+            </main>
+          </div>
+          <footer className="gc-platform-footer">
+            <AppearanceSelect />
+            <LoadedVersion />
+            <Link href="/platform/features">Explore features</Link>
+            <Link href="/platform/releases">What’s new</Link>
+            <MissionSignature />
+            <Link href="/about#our-mission">Our mission</Link>
+            <Link href="/help">Help</Link>
+            <Link href="/privacy">Privacy</Link>
+            <Link href="/terms">Terms</Link>
+          </footer>
         </div>
-        <footer className="gc-platform-footer">
-          <AppearanceSelect />
-          <LoadedVersion />
-          <Link href="/platform/features">Explore features</Link>
-          <Link href="/platform/releases">What’s new</Link>
-          <MissionSignature />
-          <Link href="/about#our-mission">Our mission</Link>
-          <Link href="/help">Help</Link>
-          <Link href="/privacy">Privacy</Link>
-          <Link href="/terms">Terms</Link>
-        </footer>
-      </div>
+      </PrayerWorkspaceProvider>
     </ReadingProvider>
   );
 }

@@ -71,6 +71,7 @@ function cursorCodec(scope: string) {
 }
 function include(context: PostContext) {
   return {
+    prayerUpdate: { select: { kind: true } },
     author: {
       select: {
         ...communityAuthorSelect,
@@ -149,6 +150,7 @@ async function project(
       unavailable: !available,
       createdAt: row.createdAt,
       content: available ? row.content : null,
+      prayerUpdateKind: available ? (row.prayerUpdate?.kind ?? null) : null,
       author: available ? author : null,
       version: available ? row.version : null,
       editedAt: available ? row.editedAt : null,

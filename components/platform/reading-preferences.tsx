@@ -97,6 +97,7 @@ export function ReadingProvider({
         data-appearance={preferences.appearance}
         data-reader-size={preferences.size}
         data-reduce-motion={preferences.reduceMotion}
+        data-hide-reaction-counts={preferences.hideReactionCounts}
       >
         {children}
       </div>
@@ -254,6 +255,24 @@ export function ReadingSettings({
             type="checkbox"
             checked={choices.reduceData}
             onChange={(e) => preview({ reduceData: e.target.checked })}
+          />
+        </label>
+        <label className="gc-setting-row" htmlFor="hide-reaction-counts">
+          <span>
+            Hide reaction counts
+            <br />
+            <span className="text-sm font-normal text-gc-muted">
+              Hide Like and prayer totals on this browser. Your own choices stay
+              available.
+            </span>
+          </span>
+          <input
+            id="hide-reaction-counts"
+            type="checkbox"
+            checked={choices.hideReactionCounts}
+            onChange={(event) =>
+              preview({ hideReactionCounts: event.target.checked })
+            }
           />
         </label>
       </fieldset>

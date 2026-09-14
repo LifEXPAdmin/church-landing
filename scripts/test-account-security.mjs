@@ -234,6 +234,9 @@ try {
     ["SavedPostItem", "id"],
     ["PostWorkspaceOperation", "key"],
     ["CommentFollowerJob", "commentId"],
+    ["PrayerGuideReceipt", "ownerId"],
+    ["PrayerRecord", "id"],
+    ["PrayerUpdate", "commentId"],
     ...[
       "SocialRelationship",
       "SocialOperation",
@@ -587,6 +590,37 @@ try {
       if (JSON.stringify(prior) !== JSON.stringify(original())) throw Error("Conversation migration changed original preferences, comments or activity");
       if (psql(["-Atc", `SELECT (SELECT count(*) FROM "CommentFollowerJob") + (SELECT count(*) FROM "SocialPreferences" WHERE "conversationPushSince" IS NOT NULL) + (SELECT count(*) FROM "ConversationPreference" WHERE (mode='FOLLOW' AND "followedAt" IS DISTINCT FROM "updatedAt") OR (mode<>'FOLLOW' AND "followedAt" IS NOT NULL))`]).trim() !== "0") throw Error("Conversation migration backfilled work or changed prior follow consent");
       console.log("Conversation migration preserves original fields and existing follow dates, with no historical jobs or phone opt-ins.");
+    } else if (name === "20260914223000_prayer_acknowledgment_followup") {
+      const original = () => [
+        psql([
+          "-Atc",
+          `SELECT md5(coalesce(jsonb_agg(to_jsonb(t) - 'prayerPushSince' ORDER BY "ownerId")::text,'[]')) FROM "SocialPreferences" t`
+        ]),
+        psql([
+          "-Atc",
+          `SELECT md5(coalesce(jsonb_agg(to_jsonb(t) - 'phase' ORDER BY "commentId")::text,'[]')) FROM "CommentFollowerJob" t`
+        ]),
+        fingerprint("PlatformPostComment", "id"),
+        fingerprint("SocialEvent", "id")
+      ];
+      const prior = original();
+      psql(["-f", `prisma/migrations/${name}/migration.sql`]);
+      if (JSON.stringify(prior) !== JSON.stringify(original()))
+        throw Error(
+          "Prayer migration changed original preferences, fanout jobs, comments or activity"
+        );
+      if (
+        psql([
+          "-Atc",
+          `SELECT (SELECT count(*) FROM "PrayerGuideReceipt") + (SELECT count(*) FROM "PrayerRecord") + (SELECT count(*) FROM "PrayerUpdate") + (SELECT count(*) FROM "SocialPreferences" WHERE "prayerPushSince" IS NOT NULL) + (SELECT count(*) FROM "CommentFollowerJob" WHERE phase <> 'CONVERSATIONS')`
+        ]).trim() !== "0"
+      )
+        throw Error(
+          "Prayer migration invented guide consent, acknowledgments, saves, updates or phone opt-ins"
+        );
+      console.log(
+        "Prayer migration preserves original comments, activity, preferences and fanout jobs; no consent or historical work is backfilled."
+      );
     } else psql(["-f", `prisma/migrations/${name}/migration.sql`]);
   }
   for (const [i, [table, key]] of accountTables.entries()) {
@@ -640,6 +674,7 @@ try {
   if (portalTests) await runTests("tests/post-workspace.test.ts");
   if (portalTests) await runTests("tests/community-search.test.ts");
   if (portalTests) await runTests("tests/social-foundations.test.ts");
+  if (portalTests) await runTests("tests/prayer.test.ts");
   if (portalTests) await runTests("tests/gallery-sharing.test.ts");
   if (portalTests) await runTests("tests/install-policy.test.ts");
   if (portalTests) await runTests("tests/post-participation.test.ts");

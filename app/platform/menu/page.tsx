@@ -15,6 +15,7 @@ import {
   CircleHelp,
   FileText,
   LifeBuoy,
+  HandHeart,
   QrCode,
   Settings,
   Shield,
@@ -161,6 +162,13 @@ export default async function PlatformMenuPage() {
                     title="Your drafts"
                     description="Review and discard your private saved drafts."
                     icon={FileText}
+                  />
+                  <MenuLink
+                    href="/platform/prayers"
+                    title="My private prayer list"
+                    description="Return to saved prayers and choose author updates."
+                    icon={HandHeart}
+                    prefetch={false}
                   />
                 </>
               )}

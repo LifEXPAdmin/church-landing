@@ -23,7 +23,10 @@ export async function recordCommentActivity(
   );
   // Direct replies/mentions own their synchronous creation boundary. A later
   // follower continuation must not recreate an earlier ineligible direct event.
-  if (!source || (sourceCreatedAt && source.category !== "conversations"))
+  if (
+    !source ||
+    (sourceCreatedAt && !["conversations", "prayer"].includes(source.category))
+  )
     return;
   const event = await tx.socialEvent.create({
     data: {

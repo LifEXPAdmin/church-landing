@@ -28,7 +28,8 @@ const labels: Record<NotificationCategory, string> = {
   founder: "Founder announcements",
   replies: "Replies to your posts and comments",
   mentions: "Mentions in comments",
-  conversations: "Replies in conversations you follow"
+  conversations: "Replies in conversations you follow",
+  prayer: "Updates to your saved prayers"
 };
 const categories = Object.keys(labels) as NotificationCategory[];
 const endpoint = "/api/platform/notifications";
@@ -276,7 +277,8 @@ export function NotificationSettings({ owner }: { owner: string }) {
                   <legend>{labels[category]}</legend>
                   {category !== "replies" &&
                   category !== "mentions" &&
-                  category !== "conversations" ? (
+                  category !== "conversations" &&
+                  category !== "prayer" ? (
                     <label className="flex min-h-11 items-center gap-3">
                       <input
                         type="checkbox"
@@ -297,9 +299,11 @@ export function NotificationSettings({ owner }: { owner: string }) {
                     </label>
                   ) : (
                     <p className="text-sm text-gc-muted">
-                      {category === "conversations"
-                        ? "Follow a conversation on its post to receive new replies in Activity. Phone alerts are optional and start after you enable this choice."
-                        : "Comments remain available on their post."}{" "}
+                      {category === "prayer"
+                        ? "Choose updates separately for each saved prayer. Phone alerts are optional and start after you enable this choice."
+                        : category === "conversations"
+                          ? "Follow a conversation on its post to receive new replies in Activity. Phone alerts are optional and start after you enable this choice."
+                          : "Comments remain available on their post."}{" "}
                       Mute a conversation there to stop its Activity and phone
                       alerts.
                     </p>

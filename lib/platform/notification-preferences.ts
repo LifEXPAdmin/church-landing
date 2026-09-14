@@ -11,7 +11,8 @@ export const notificationCategories = [
   ...inAppCategories,
   "replies",
   "mentions",
-  "conversations"
+  "conversations",
+  "prayer"
 ] as const;
 export type NotificationCategory = (typeof notificationCategories)[number];
 export type QuietHours = {
@@ -189,6 +190,11 @@ export function notificationPreferenceCommand(
         conversationPushSince: !categories.includes("conversations")
           ? null
           : old.pushCategories.includes("conversations")
+            ? undefined
+            : new Date(),
+        prayerPushSince: !categories.includes("prayer")
+          ? null
+          : old.pushCategories.includes("prayer")
             ? undefined
             : new Date(),
         quietStart: quiet?.start ?? null,

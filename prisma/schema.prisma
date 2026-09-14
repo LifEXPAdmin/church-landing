@@ -257,6 +257,8 @@ model PlatformUser {
   conversationPreferences ConversationPreference[]
   commentDrafts PrivateCommentDraft[]
   privatePostDrafts PrivatePostDraft[]
+  prayerGuide PrayerGuideReceipt?
+  prayerRecords PrayerRecord[]
   savedPostCollections SavedPostCollection[]
   savedPostItems SavedPostItem[]
   postWorkspaceOperations PostWorkspaceOperation[]
@@ -1258,6 +1260,8 @@ model PlatformPost {
   commentDrafts PrivateCommentDraft[]
 
   savedItems SavedPostItem[]
+  prayerRecords PrayerRecord[]
+  prayerUpdates PrayerUpdate[]
   profilePins SocialPreferences[] @relation("PersonalProfilePin")
 
   @@index([repostSourceId])
@@ -1392,6 +1396,9 @@ model PlatformPostComment {
   mentions CommentMention[]
   pin CommentPin?
   followerJob CommentFollowerJob?
+  prayerRecords PrayerRecord[] @relation("PrayerCommentTarget")
+  prayerUpdate PrayerUpdate? @relation("PrayerUpdateComment")
+  prayerSourceUpdates PrayerUpdate[] @relation("PrayerUpdateTarget")
 
   post   PlatformPost @relation(fields: [postId], references: [id], onDelete: Cascade)
   author PlatformUser @relation(fields: [authorId], references: [id], onDelete: Cascade)
@@ -1455,11 +1462,63 @@ model ConversationPreference {
 model CommentFollowerJob {
   commentId String @id
   cursor String?
+  phase String @default("CONVERSATIONS")
   createdAt DateTime @default(now())
   completedAt DateTime?
   dispatchedAt DateTime?
   comment PlatformPostComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
   @@index([completedAt, dispatchedAt, createdAt])
+}
+
+model PrayerGuideReceipt {
+  ownerId String @id
+  guideVersion String
+  version Int @default(1)
+  acceptedAt DateTime @default(now())
+  owner PlatformUser @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+}
+
+// One target; postId remains the current permission context for comment targets.
+// Acknowledgment, naming, saving and following are separate deliberate choices.
+model PrayerRecord {
+  id String @id @default(cuid())
+  ownerId String
+  postId String
+  commentId String?
+  targetKey String
+  acknowledgedAt DateTime?
+  shareName Boolean @default(false)
+  savedAt DateTime?
+  updatesSince DateTime?
+  version Int @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  owner PlatformUser @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  post PlatformPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  comment PlatformPostComment? @relation("PrayerCommentTarget", fields: [commentId, postId], references: [id, postId], onDelete: Cascade)
+  @@unique([ownerId, targetKey])
+  @@index([ownerId, savedAt, id])
+  @@index([targetKey, acknowledgedAt])
+  @@index([targetKey, id])
+  @@index([commentId, postId])
+  @@index([postId])
+}
+
+// The canonical comment owns body, editing, deletion and source audience.
+model PrayerUpdate {
+  commentId String @id
+  postId String
+  targetCommentId String?
+  targetKey String
+  kind String
+  createdAt DateTime
+  comment PlatformPostComment @relation("PrayerUpdateComment", fields: [commentId, postId], references: [id, postId], onDelete: Cascade)
+  post PlatformPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  targetComment PlatformPostComment? @relation("PrayerUpdateTarget", fields: [targetCommentId, postId], references: [id, postId], onDelete: Cascade)
+  @@unique([commentId, postId])
+  @@index([targetKey, createdAt, commentId])
+  @@index([targetCommentId, postId])
+  @@index([postId])
 }
 
 model PrivateCommentDraft {
@@ -1696,6 +1755,7 @@ model SocialPreferences {
   founderAnnouncements Boolean @default(true)
   pushCategories String[] @default([])
   conversationPushSince DateTime?
+  prayerPushSince DateTime?
   quietStart Int?
   quietEnd Int?
   quietTimeZone String?

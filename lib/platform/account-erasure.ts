@@ -14,6 +14,8 @@ const personalPost = (userId: string) => ({
 });
 
 async function erasePrivateCollections(tx: Tx, userId: string) {
+  await tx.prayerRecord.deleteMany({ where: { ownerId: userId } });
+  await tx.prayerGuideReceipt.deleteMany({ where: { ownerId: userId } });
   await tx.savedPostItem.deleteMany({ where: { ownerId: userId } });
   await tx.savedPostCollection.deleteMany({ where: { ownerId: userId } });
   await tx.privatePostDraft.deleteMany({ where: { ownerId: userId } });
@@ -84,6 +86,9 @@ async function erasePersonalCalendars(tx: Tx, userId: string, now: Date) {
 }
 
 async function eraseSocialData(tx: Tx, userId: string, now: Date) {
+  await tx.prayerUpdate.deleteMany({
+    where: { comment: { authorId: userId, authorChurchId: null } }
+  });
   await tx.platformFollow.deleteMany({
     where: { OR: [{ followerId: userId }, { followingId: userId }] }
   });

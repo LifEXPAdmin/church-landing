@@ -28,6 +28,7 @@ export function DisplayPreview({
       data-appearance={preferences.appearance}
       data-reader-size={preferences.size}
       data-reduce-motion={preferences.reduceMotion}
+      data-hide-reaction-counts={preferences.hideReactionCounts}
     >
       <h3>Preview your reading view</h3>
       <p className="text-sm text-gc-muted">
@@ -42,6 +43,9 @@ export function DisplayPreview({
             <p className="text-sm text-gc-muted">Community sample</p>
             <h4>{sample.title}</h4>
             <p className="gc-reader-sample">{sample.text}</p>
+            <p className="text-sm">
+              Like<span className="gc-reaction-count"> · 4</span> · Pray
+            </p>
           </article>
         ))}
       </div>

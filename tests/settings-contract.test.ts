@@ -114,7 +114,8 @@ test("registration preserves existing choices and limits reset to browser presen
     mode: "list",
     size: "largest",
     reduceMotion: true,
-    reduceData: true
+    reduceData: true,
+    hideReactionCounts: true
   };
   const saved = encodeURIComponent(JSON.stringify(choices));
   assert.deepEqual(parseReadingPreferences(saved), choices);

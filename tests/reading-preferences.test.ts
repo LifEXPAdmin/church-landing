@@ -36,7 +36,8 @@ test("validated display settings roundtrip without retaining arbitrary identifie
     mode: "pages",
     size: "largest",
     reduceMotion: true,
-    reduceData: true
+    reduceData: true,
+    hideReactionCounts: true
   };
   assert.deepEqual(
     parseReadingPreferences(

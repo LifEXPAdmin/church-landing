@@ -12,7 +12,7 @@ import { useUnsavedSocialWork } from "./use-unsaved-social-work";
 const labels: Record<ActivityCategory, string> = {
   messages: "Messages",
   requests: "Contact requests",
-  comments: "Replies and mentions",
+  comments: "Replies and updates",
   reports: "Reports",
   founder: "Founder announcements"
 };

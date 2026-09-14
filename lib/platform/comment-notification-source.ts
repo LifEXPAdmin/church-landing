@@ -53,6 +53,7 @@ export async function commentNotificationSources(
       createdAt: true,
       authorId: true,
       authorChurchId: true,
+      prayerUpdate: { select: { targetKey: true } },
       post: { select: { id: true, authorId: true, authorChurchId: true } },
       parent: {
         select: { authorId: true, authorChurchId: true, deletedAt: true }
@@ -68,7 +69,11 @@ export async function commentNotificationSources(
   if (!comments.length) return result;
   const preference = await tx.socialPreferences.findUnique({
     where: { ownerId },
-    select: { mentions: true, conversationPushSince: true }
+    select: {
+      mentions: true,
+      conversationPushSince: true,
+      prayerPushSince: true
+    }
   });
   const choice = preference?.mentions ?? "EVERYONE";
   const followed = new Set(
@@ -96,6 +101,28 @@ export async function commentNotificationSources(
         take: 50
       })
     ).map((p) => [p.postId, p])
+  );
+  const prayerKeys = comments.flatMap((comment) =>
+    comment.prayerUpdate ? [comment.prayerUpdate.targetKey] : []
+  );
+  const prayerSubscriptions = new Map(
+    (prayerKeys.length
+      ? await tx.prayerRecord.findMany({
+          where: {
+            ownerId,
+            targetKey: { in: prayerKeys },
+            savedAt: { not: null },
+            updatesSince: { not: null },
+            OR: [
+              { commentId: null },
+              { comment: { is: commentVisibleWhere(context) } }
+            ]
+          },
+          select: { targetKey: true, updatesSince: true },
+          take: 50
+        })
+      : []
+    ).map((row) => [row.targetKey, row])
   );
   for (const comment of comments) {
     const post = comment.post;
@@ -130,7 +157,16 @@ export async function commentNotificationSources(
       (!delivery ||
         (preference?.conversationPushSince &&
           preference.conversationPushSince < comment.createdAt));
-    if (mentioned || replied || following)
+    const subscription = comment.prayerUpdate
+      ? prayerSubscriptions.get(comment.prayerUpdate.targetKey)
+      : null;
+    const prayer =
+      subscription?.updatesSince &&
+      subscription.updatesSince < comment.createdAt &&
+      (!delivery ||
+        (preference?.prayerPushSince &&
+          preference.prayerPushSince < comment.createdAt));
+    if (mentioned || replied || prayer || following)
       for (const event of valid) {
         if (
           event.commentId !== comment.id ||
@@ -143,7 +179,9 @@ export async function commentNotificationSources(
             ? "mentions"
             : replied
               ? "replies"
-              : "conversations",
+              : prayer
+                ? "prayer"
+                : "conversations",
           href: `/platform/posts/${post.id}?comment=${comment.id}`,
           group: post.id
         });

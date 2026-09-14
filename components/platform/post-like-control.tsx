@@ -104,7 +104,7 @@ export function PostLikeControl({
         <span className="gc-post-action-label">
           {state.liked ? "Liked" : "Like"}
         </span>
-        <span>{state.count}</span>
+        <span className="gc-reaction-count">{state.count}</span>
       </button>
       <span role="status" className={refreshNeeded ? "text-sm" : "sr-only"}>
         {busy ? "Checking Like…" : message}

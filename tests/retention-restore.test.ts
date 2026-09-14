@@ -150,7 +150,7 @@ test("an actual isolated database snapshot replays newer deletion and hold relea
     }
   });
   await source.commentFollowerJob.create({
-    data: { commentId: followedComment.id }
+    data: { commentId: followedComment.id, phase: "PRAYER" }
   });
   const curve = createECDH("prime256v1");
   curve.generateKeys();

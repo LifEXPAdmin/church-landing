@@ -610,6 +610,7 @@ export async function downloadAccountExport(
             founderAnnouncements: true,
             pushCategories: true,
             conversationPushSince: true,
+            prayerPushSince: true,
             quietStart: true,
             quietEnd: true,
             quietTimeZone: true,
@@ -752,6 +753,39 @@ export async function downloadAccountExport(
         orderBy: { id: "asc" },
         take: MAX_ROWS + 1
       }),
+      prayerGuide: await tx.prayerGuideReceipt.findMany({
+        where: { ownerId: userId },
+        select: { guideVersion: true, version: true, acceptedAt: true },
+        take: 1
+      }),
+      prayerChoices: await tx.prayerRecord.findMany({
+        where: { ownerId: userId },
+        select: {
+          postId: true,
+          commentId: true,
+          acknowledgedAt: true,
+          shareName: true,
+          savedAt: true,
+          updatesSince: true,
+          version: true,
+          createdAt: true,
+          updatedAt: true
+        },
+        orderBy: { id: "asc" },
+        take: MAX_ROWS + 1
+      }),
+      prayerUpdates: await tx.prayerUpdate.findMany({
+        where: { comment: { authorId: userId, authorChurchId: null } },
+        select: {
+          commentId: true,
+          postId: true,
+          targetCommentId: true,
+          kind: true,
+          createdAt: true
+        },
+        orderBy: { commentId: "asc" },
+        take: MAX_ROWS + 1
+      }),
       conversationPreferences: await tx.conversationPreference.findMany({
         where: { ownerId: userId },
         select: {
@@ -779,7 +813,7 @@ export async function downloadAccountExport(
         version: 1,
         generatedAt: new Date().toISOString(),
         scope:
-          "Your account profile, presentation preferences and linked Google identity, authored community content and personal image metadata and photo albums, personal polls and your own ballots and volunteer signups, likes/following, private social and conversation choices and friend invitation records, private comment drafts and comment Likes, private post drafts and saved collection organization (source posts excluded), church directory choices, your own church representative setup and listing drafts/submissions, personal calendars/events and their sharing choices, your event responses, your own sent contact requests and currently authorized accepted conversation messages, your own community reports and your own support submissions. Other people's content outside your accepted conversations, staff/church operations, credentials, session data and security audit records and private report-review notes are excluded. Cleared message history is excluded from your view; this does not erase the other participant's history. Image binaries are not embedded; image references still require current access. Reading preferences saved only on this browser are not in this account file.",
+          "Your account profile, presentation preferences and linked Google identity, authored community content and personal image metadata and photo albums, personal polls and your own ballots and volunteer signups, likes/following, private social, conversation and prayer choices and your own prayer update labels (source content excluded), and friend invitation records, private comment drafts and comment Likes, private post drafts and saved collection organization (source posts excluded), church directory choices, your own church representative setup and listing drafts/submissions, personal calendars/events and their sharing choices, your event responses, your own sent contact requests and currently authorized accepted conversation messages, your own community reports and your own support submissions. Other people's content outside your accepted conversations, staff/church operations, credentials, session data and security audit records and private report-review notes are excluded. Cleared message history is excluded from your view; this does not erase the other participant's history. Image binaries are not embedded; image references still require current access. Reading preferences saved only on this browser are not in this account file.",
         account,
         ...collections
       },

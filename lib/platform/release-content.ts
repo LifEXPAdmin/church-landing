@@ -14,6 +14,19 @@ export type Feature = {
 };
 export const features: Feature[] = [
   {
+    id: "prayer-follow-up",
+    category: "Posts and conversations",
+    name: "Prayer and private follow-up",
+    description:
+      "Acknowledge prayer, save a private reminder and follow author updates on posts, comments and replies.",
+    steps:
+      "Choose Pray, read the first-use guide, then choose I prayed after praying. Your name stays hidden unless you share it. Save privately and choose future author updates independently. Return from Menu > My private prayer list. Authors can publish an update or praise report in the same discussion.",
+    href: "/platform/prayers",
+    eligibility:
+      "Verified adult accounts with current source access. Prayer records do not measure faith or grant permissions. Phone alerts require a separate choice and enabled device. Undo removes the acknowledgment and name; removing a private save leaves the acknowledgment unchanged.",
+    availability: "available"
+  },
+  {
     id: "follow-conversation",
     category: "Posts and conversations",
     name: "Follow a conversation",
@@ -56,7 +69,7 @@ export const features: Feature[] = [
     category: "Posts and conversations",
     name: "Your Activity",
     description:
-      "See grouped messages, contact requests, replies, mentions and report updates in one personal view.",
+      "See grouped messages, contact requests, replies, mentions, saved-prayer updates and report updates in one personal view.",
     steps:
       "Open Activity from Menu or Messages. Choose a category, open an available item or mark a group read. Mark all read covers every category through the loaded page; later updates stay unread. Older activity keeps your place, and an unconfirmed read change offers the same retry.",
     href: "/platform/activity",
@@ -560,6 +573,30 @@ export const features: Feature[] = [
   }
 ];
 export const releases: ReleaseEntry[] = [
+  {
+    id: "prayer-private-follow-up",
+    version: "2026.09.14.17",
+    date: "2026-09-14",
+    summary:
+      "Pray on posts and comments, save private follow-ups and receive author updates.",
+    added: [
+      "A first-use prayer guide, I prayed with undo and optional name sharing, and your private prayer list.",
+      "Authors can share requests, updates, praise reports and completed follow-ups in the original discussion."
+    ],
+    improved: [
+      "Choose Activity updates for each saved prayer, with separate optional phone alerts.",
+      "Hide Like and prayer counts in Appearance and reading without hiding their controls."
+    ],
+    fixed: [
+      "Interrupted prayer actions retain the same retry. Source access changes hide private details, while same-account unsent author text remains available to review or discard."
+    ],
+    featureIds: [
+      "prayer-follow-up",
+      "personal-activity",
+      "phone-notifications",
+      "settings"
+    ]
+  },
   {
     id: "followed-conversation-activity",
     version: "2026.09.14.16",
