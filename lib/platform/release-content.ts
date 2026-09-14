@@ -535,6 +535,21 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "avatar-startup",
+    version: "2026.09.14.6",
+    date: "2026-09-14",
+    summary: "Profile pictures load with fewer waiting steps.",
+    added: [],
+    improved: [
+      "Profile pictures on posts, comments and messages appear with less waiting.",
+      "Returning to the app avoids repeated loading of the same profile picture."
+    ],
+    fixed: [
+      "Old picture responses stay hidden after account, access or current-picture changes."
+    ],
+    featureIds: ["profile-photos"]
+  },
+  {
     id: "related-settings-access",
     version: "2026.09.14.5",
     date: "2026-09-14",

@@ -1,41 +1,53 @@
 "use client";
 /* eslint-disable @next/next/no-img-element -- Account-gated media bypasses shared image optimization. */
 import { useEffect, useRef, useState } from "react";
-import { socialRequest } from "@/lib/platform/social-client";
-import type { ImageView } from "@/lib/platform/media";
-// Share only simultaneous reads, scoped to the expected account. No result is
-// retained, and focus/permission changes always begin a fresh read generation.
-const flights = new Map<
-  string,
-  Promise<{ owner: string | null; data: { images: ImageView[] } }>
->();
+import { currentSocialOwner } from "@/lib/platform/social-client";
+
+// Share only simultaneous reads, scoped to the expected account. No settled
+// bytes or URLs are retained outside the currently visible component.
+const flights = new Map<string, Promise<Blob>>();
 let readers = 0;
 const invalidate = () => flights.clear();
 function observeRequests() {
   if (++readers === 1) {
-    window.addEventListener("focus", invalidate);
     window.addEventListener("blur", invalidate);
     window.addEventListener("social-relationships-changed", invalidate);
-    document.addEventListener("visibilitychange", invalidate);
+    document.addEventListener("visibilitychange", invalidateHidden);
   }
   return () => {
     if (--readers) return;
     invalidate();
-    window.removeEventListener("focus", invalidate);
     window.removeEventListener("blur", invalidate);
     window.removeEventListener("social-relationships-changed", invalidate);
-    document.removeEventListener("visibilitychange", invalidate);
+    document.removeEventListener("visibilitychange", invalidateHidden);
   };
+}
+function invalidateHidden() {
+  if (document.visibilityState === "hidden") invalidate();
 }
 function avatarRequest(id: string, owner: string) {
   const key = JSON.stringify([owner, id]);
   let flight = flights.get(key);
   if (!flight) {
-    flight = socialRequest<{ images: ImageView[] }>(
-      `/api/platform/images?${new URLSearchParams({ purpose: "PROFILE_AVATAR", targetId: id })}`,
-      undefined,
-      owner
-    ).finally(() => {
+    flight = (async () => {
+      // The server validates the expected account and current avatar on both
+      // sides of storage delivery, replacing the preliminary identity/metadata
+      // waterfall. Keep the final browser identity check before showing bytes.
+      const response = await fetch(
+        `/api/platform/avatars/${encodeURIComponent(id)}`,
+        {
+          cache: "no-store",
+          credentials: "same-origin",
+          headers: { "X-Expected-Account": owner }
+        }
+      );
+      if (!response.ok || response.headers.get("content-type") !== "image/webp")
+        throw new Error("Avatar unavailable");
+      const bytes = await response.blob();
+      if ((await currentSocialOwner()) !== owner)
+        throw new Error("Your sign-in changed");
+      return bytes;
+    })().finally(() => {
       if (flights.get(key) === flight) flights.delete(key);
     });
     flights.set(key, flight);
@@ -51,27 +63,44 @@ export function AuthorAvatar({
   name: string;
   owner?: string | null;
 }) {
-  const [image, setImage] = useState<ImageView | null>(null);
+  const [image, setImage] = useState<{
+    id: string;
+    owner: string;
+    url: string;
+  } | null>(null);
   const root = useRef<HTMLSpanElement>(null);
   useEffect(() => {
     if (!owner || !root.current) return;
     const unobserveRequests = observeRequests();
     let visible = false;
+    let active = false;
     let generation = 0;
+    let objectUrl: string | null = null;
     const hide = () => {
       generation++;
+      active = false;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      objectUrl = null;
       setImage(null);
     };
     const load = async () => {
-      if (!visible || document.visibilityState === "hidden") return;
-      const seq = ++generation;
-      setImage(null);
+      if (!visible || active || document.visibilityState === "hidden") return;
+      // Focus and visible events often describe the same foreground transition.
+      // Only a concealment, permission change or new target starts another read.
+      active = true;
+      const seq = generation;
       try {
-        const result = await avatarRequest(id, owner);
-        if (generation === seq) setImage(result.data.images[0] ?? null);
+        const bytes = await avatarRequest(id, owner);
+        if (generation !== seq) return;
+        objectUrl = URL.createObjectURL(bytes);
+        setImage({ id, owner, url: objectUrl });
       } catch {
-        /* Initials remain when access or delivery is unavailable. */
+        /* Initials remain until a new visibility/access generation can retry. */
       }
+    };
+    const changed = () => {
+      hide();
+      void load();
     };
     const visibility = () =>
       document.visibilityState === "hidden" ? hide() : void load();
@@ -83,7 +112,7 @@ export function AuthorAvatar({
     observer.observe(root.current);
     window.addEventListener("blur", hide);
     window.addEventListener("focus", load);
-    window.addEventListener("social-relationships-changed", load);
+    window.addEventListener("social-relationships-changed", changed);
     document.addEventListener("visibilitychange", visibility);
     return () => {
       hide();
@@ -91,15 +120,15 @@ export function AuthorAvatar({
       unobserveRequests();
       window.removeEventListener("blur", hide);
       window.removeEventListener("focus", load);
-      window.removeEventListener("social-relationships-changed", load);
+      window.removeEventListener("social-relationships-changed", changed);
       document.removeEventListener("visibilitychange", visibility);
     };
   }, [id, owner]);
   return (
     <span ref={root} aria-hidden="true" className="gc-avatar overflow-hidden">
-      {image ? (
+      {image && image.id === id && image.owner === owner ? (
         <img
-          src={image.variants.thumb.url}
+          src={image.url}
           width={40}
           height={40}
           alt=""

@@ -8,6 +8,7 @@ import { PortalError } from "./portal-policy";
 import { listImages, readImage, removeImage, uploadImage } from "./media";
 import { IMAGE_INPUT_BYTES } from "./media-processing";
 import { boundedBytes, imageStorage, type ImageStorage } from "./media-storage";
+import { readAvatar } from "./avatar";
 
 export const imageHeaders = {
   "Cache-Control": "private, no-store, max-age=0",
@@ -199,6 +200,37 @@ export async function handleImageDelivery(
         "Content-Type": "image/webp",
         "Content-Length": String(bytes.length),
         "Content-Disposition": 'inline; filename="image.webp"'
+      }
+    });
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+export async function handleAvatarDelivery(
+  db: PrismaClient,
+  request: Request,
+  targetId: string,
+  injectedStore?: ImageStorage
+) {
+  const start = performance.now();
+  try {
+    const bytes = await readAvatar(
+      db,
+      requestSessionToken(request),
+      targetId,
+      request.headers.get("x-expected-account"),
+      injectedStore,
+      AbortSignal.any([request.signal, AbortSignal.timeout(15_000)])
+    );
+    return new Response(new Uint8Array(bytes), {
+      headers: {
+        ...imageHeaders,
+        Vary: "Cookie, X-Expected-Account",
+        "Content-Type": "image/webp",
+        "Content-Length": String(bytes.length),
+        "Content-Disposition": 'inline; filename="avatar.webp"',
+        "Server-Timing": `avatar;dur=${(performance.now() - start).toFixed(1)}`
       }
     });
   } catch (error) {
