@@ -2,7 +2,7 @@
 
 ## Header correction — September 14, 2026
 
-Candidate **2026.09.14.3** uses **God’s Churches** in public, account and demo
+Product **2026.09.14.3** uses **God’s Churches** in public, account and demo
 headers, their accessible brand-link names, the portal heading label and current
 first-party page-title/site-name metadata. User-authored titles and historical
 release copy retain their content. Existing routes, domain, logo and installation
@@ -18,10 +18,14 @@ demo wordmark. Nine existing focused HTTP/release checks pass: private HTML/RSC
 projections, guest returns, public metadata, fixture-only demo, account/selected
 links, landmarks and safe release refresh. No browser errors occur.
 
-Publication and exact canonical live acceptance remain pending. This is not a
-live completion receipt. The previous account/invitation release retains its
-full security gate and protected recovery evidence. No schema, runtime dependency
-or production application write is needed for this presentation correction.
+Application **ebf45fc445ec36a50fc03a855551c6f6a8d04383** is READY in
+**dpl_6KpUY2PKNK5XT7TQuBVQF5zwoa8Z**, with independent canonical assignment
+and serving identity verified at 05:12 UTC. Twenty-six live read-only groups
+and the actual signed-in Chrome header/title check pass. Browser errors, scoped
+runtime error/fatal rows and application writes are zero. All 46 migration
+checksums match; protected restore preserves 92 original table fingerprints.
+The previous account/invitation release retains its full security gate and
+protected recovery evidence. No schema or runtime dependency is added.
 
 ## Original asset receipt — September 11, 2026
 

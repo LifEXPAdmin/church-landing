@@ -1,3 +1,25 @@
+## Header correction verified live — September 14, 2026 UTC
+
+Product **2026.09.14.3**, application
+**ebf45fc445ec36a50fc03a855551c6f6a8d04383**, is READY in
+**dpl_6KpUY2PKNK5XT7TQuBVQF5zwoa8Z** with independent canonical assignment
+and serving identity verified. Public, account and demo headers, accessible
+brand links and current page-title/site-name metadata use **God’s Churches**.
+Enlarged public navigation keeps whole labels; the demo reuses the responsive
+wordmark. Existing domain, logo, routes and installation identity are preserved.
+
+The final build passes 144 runtime traces, 60 built visual/navigation
+configurations and nine existing focused HTTP/release checks. Twenty-six live
+read-only groups plus signed-in Chrome header/title verification pass, with no
+application writes, browser errors or scoped runtime error/fatal rows. No schema
+or dependency is added; 46 checksums match and protected restore preserves all
+92 original table fingerprints. See [the brand receipt](BRAND_ASSETS.md).
+
+Exploring Faith and QR remain complete and live. Continue the actual lightweight
+queue audit, then startup/resource measurements, eligible capacity/recovery and
+operations. Final review remains last; the separate private Current State index
+update still has its recorded service/sign-in blocker.
+
 ## QR signup before optional installation verified live — September 14, 2026 UTC
 
 Product **2026.09.14.2**, application
