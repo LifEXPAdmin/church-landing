@@ -1,6 +1,14 @@
 # Profile photos and readable customization
 
-## Exploring Faith candidate — 14 September 2026 UTC
+## Exploring Faith verified live — 14 September 2026 UTC
+
+Product **2026.09.14.1**, application
+**da10798152fac0aa6023789ee101f15c70af7a49**, is READY in
+**dpl_61LoJLMNjFfcVGYGBsqKQRfpEPYs**. Independent canonical assignment and
+the serving identity match. The live signup selector and exact helper work at
+320/390/1440 widths; the authenticated live editor exposes the same choices and
+preserves the existing account's selection. Nineteen live read-only groups pass,
+with zero application writes, browser errors or scoped runtime error/fatal rows.
 
 Signup and Edit profile share the existing participation selector, with
 **Exploring Faith** and the helper **I’m learning about Christianity and figuring
@@ -33,9 +41,12 @@ device installation is not inferred from these browser fixtures.
 The browser scripts were repaired to use native macOS select type-ahead and to
 verify the avatar-save result independently of a conditional Photos-navigation
 hint; both still verify actual stored data and retry behavior. No application
-regression was found. Production preflight confirms all 45 existing migration
-checksums and records original-column fingerprints for 92 tables. This candidate
-is ready for the authorized additive migration and release; it is not yet live.
+regression was found. The additive production migration advanced 45 to 46; all
+migration checksums and original-column fingerprints across 92 tables match.
+No existing account row changed. The installed backup registry contains all 46
+unchanged checksums, and a fresh encrypted backup restored successfully at 46.
+That daily copy did not request another upgrade/replay; the earlier protected
+upgrade rehearsal above supplies that separate evidence.
 
 Recovery must retain an enum-aware application reader after anyone saves the new
 choice; do not roll back to an older Prisma client that cannot decode it, drop

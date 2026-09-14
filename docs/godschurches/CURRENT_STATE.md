@@ -1,3 +1,30 @@
+## Exploring Faith verified live — September 14, 2026 UTC
+
+Product **2026.09.14.1**, application
+**da10798152fac0aa6023789ee101f15c70af7a49**, is READY in
+**dpl_61LoJLMNjFfcVGYGBsqKQRfpEPYs** with independently verified canonical
+assignment and serving identity. Signup and Edit profile offer the private,
+persisted **Exploring Faith** choice. Existing accounts, verification, adult
+eligibility, invitation consent/returns and church/operator permissions retain
+their behavior. Provider-gated Google onboarding is covered but remains disabled.
+
+The full isolated gate passes 115 files, 722 executions and two expected skips;
+16 built-browser groups cover signup/editor, invitations and profile recovery.
+Nineteen live read-only groups and the authenticated editor read pass, with zero
+application writes, browser errors or scoped runtime error/fatal rows. The 45→46
+enum migration preserves all original columns/fingerprints in 92 tables. Protected
+backup upgrade/replay passes; the installed 46-migration daily copy also restores.
+See [the profile receipt](PROFILE_CONTROLS_REPORT.md) for scope and recovery limits.
+
+The workflow guide and entry/handoff instructions now use one continuous
+complete-feature workflow. Historical reasoning labels remain references only.
+Next: personal QR signup-first with optional installation/bookmark help after
+confirmed signup, the exact header correction, actual ready UI/queue work,
+startup/resource measurements, eligible capacity/recovery and operations work.
+Final batch review stays last; existing physical-device/provider prerequisites
+remain explicit. Sole-reviewer and retention decisions remain settled. Recovery
+must retain an enum-aware reader and never reclassify existing accounts.
+
 ## Scoped content decisions verified live — September 13, 2026
 
 Product **2026.09.13.32**, application
