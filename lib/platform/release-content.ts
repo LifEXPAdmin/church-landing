@@ -302,7 +302,7 @@ export const features: Feature[] = [
     description:
       "Share a thought, prayer, testimony, Scripture reference or link.",
     steps:
-      "Open the community, choose a post type and audience, review who can reply, then publish.",
+      "Open the community, choose a post type and audience, review who can reply, then publish. Under Content note and preview, you can add a note and choose a short safe excerpt. Edit these choices later with Edit post.",
     href: "/platform",
     eligibility:
       "Sign in to publish. Church publishing requires current authorization.",
@@ -534,6 +534,23 @@ export const features: Feature[] = [
   }
 ];
 export const releases: ReleaseEntry[] = [
+  {
+    id: "author-content-notes",
+    version: "2026.09.14.10",
+    date: "2026-09-14",
+    summary:
+      "Authors can add a content note and choose a safe preview for a post.",
+    added: [
+      "Optional content notes and safe excerpts are available in new posts, private drafts and Edit post."
+    ],
+    improved: [
+      "Posts with a content note show the chosen excerpt in feeds and repost previews. Open the post to read the full text. Search, saved items and public sharing respect the same choices and current audience."
+    ],
+    fixed: [
+      "Published post changes preserve an interrupted request for confirmation and protect unsaved entries when leaving or switching accounts. Full post text rechecks current access when you return."
+    ],
+    featureIds: ["posts", "drafts", "saved"]
+  },
   {
     id: "reviewed-account-access",
     version: "2026.09.14.9",

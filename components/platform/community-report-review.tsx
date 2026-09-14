@@ -369,6 +369,18 @@ export function CommunityReportReview({
                     className="space-y-2 border-t pt-3"
                   >
                     <h3 className="font-semibold">Selected source only</h3>
+                    {data.evidence.contentNote && (
+                      <p className="whitespace-pre-wrap break-words">
+                        <strong>Content note:</strong>{" "}
+                        {data.evidence.contentNote}
+                      </p>
+                    )}
+                    {data.evidence.safeExcerpt && (
+                      <p className="whitespace-pre-wrap break-words">
+                        <strong>Safe excerpt:</strong>{" "}
+                        {data.evidence.safeExcerpt}
+                      </p>
+                    )}
                     <p className="whitespace-pre-wrap break-words">
                       {data.evidence.content ??
                         data.evidence.purpose ??

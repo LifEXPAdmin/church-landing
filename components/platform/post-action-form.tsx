@@ -1,6 +1,8 @@
 "use client";
 import {
   useEffect,
+  useCallback,
+  useId,
   useRef,
   useState,
   useTransition,
@@ -11,8 +13,12 @@ import Link from "next/link";
 import type { PostEditorView } from "@/lib/platform/post-editor";
 import { accountEntryHref } from "@/lib/platform/account-entry";
 import { portalButtonClass } from "./portal-action-form";
+import { socialRequest, SocialClientError } from "@/lib/platform/social-client";
+import { useUnsavedSocialWork } from "./use-unsaved-social-work";
+import { usePrivateRecovery } from "./private-snapshot-guard";
 
 export function PostActionForm({
+  owner,
   payload,
   label,
   children,
@@ -22,6 +28,7 @@ export function PostActionForm({
   onSuccess,
   disabled = false
 }: {
+  owner: string;
   payload: Record<string, unknown>;
   label: string;
   children: ReactNode;
@@ -32,10 +39,13 @@ export function PostActionForm({
   disabled?: boolean;
 }) {
   const router = useRouter(),
+    form = useRef<HTMLFormElement>(null),
     inFlight = useRef(false),
     version = useRef(payload.expectedVersion),
-    requestKey = useRef(payload.requestKey),
     status = useRef<HTMLParagraphElement>(null);
+  const id = useId();
+  const [dirty, setDirty] = useState(false),
+    [retry, setRetry] = useState<string | null>(null);
   const [pending, setPending] = useState(false),
     [refreshing, refresh] = useTransition();
   const [message, setMessage] = useState("");
@@ -45,67 +55,99 @@ export function PostActionForm({
   const [savedId, setSavedId] = useState<string | null>(null);
   const [needsSignIn, setNeedsSignIn] = useState(false);
   const busy = pending || refreshing;
+  const retryOriginal = useCallback(() => form.current?.requestSubmit(), []);
+  usePrivateRecovery(id, !!retry, busy, retryOriginal);
+  useUnsavedSocialWork(
+    { dirty, saving: busy || !!retry, conflict },
+    () =>
+      setMessage("Save or discard these local post changes before leaving."),
+    true
+  );
   useEffect(() => {
     if (message) status.current?.focus();
   }, [message]);
   return (
     <form
+      ref={form}
       aria-label={label}
       aria-busy={busy}
       className="space-y-4"
+      onChange={() => setDirty(true)}
       onSubmit={async (e) => {
         e.preventDefault();
         if (inFlight.current || busy || conflict || saved || disabled) return;
-        const problem = validate?.();
+        const problem = retry ? null : validate?.();
         if (problem) {
           setMessage(problem);
           return;
         }
         const data = new FormData(e.currentTarget);
+        const body =
+          retry ??
+          JSON.stringify({
+            ...payload,
+            expectedVersion: version.current,
+            ...fields?.(data),
+            mutationId: crypto.randomUUID()
+          });
+        setRetry(body);
         inFlight.current = true;
         setPending(true);
         setMessage("");
         try {
-          const response = await fetch("/api/platform/posts", {
-            method: "POST",
-            credentials: "same-origin",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              ...payload,
-              expectedVersion: version.current,
-              requestKey: requestKey.current,
-              ...fields?.(data)
-            })
-          });
-          const result = await response.json();
-          setNeedsSignIn(response.status === 401);
-          setMessage(
-            typeof result.message === "string"
-              ? result.message
-              : "The response could not be confirmed. Your entries are still here."
+          const { data: result } = await socialRequest<{
+            id: string;
+            version: number;
+            message: string;
+          }>("/api/platform/posts", body, owner);
+          if (
+            typeof result.id !== "string" ||
+            !Number.isInteger(result.version) ||
+            typeof result.message !== "string"
+          )
+            throw new SocialClientError(
+              503,
+              "The response could not be confirmed. Retry the original request."
+            );
+          setNeedsSignIn(false);
+          setMessage(result.message);
+          setRetry(null);
+          setDirty(false);
+          version.current = result.version;
+          setSaved(true);
+          setSavedId(result.id);
+          setLatest(null);
+          onSuccess?.(result.id);
+          if (payload.operation === "withdraw") {
+            window.location.assign("/platform");
+            return;
+          }
+          refresh(() => router.refresh());
+        } catch (error) {
+          if (
+            error instanceof SocialClientError &&
+            [400, 409, 429].includes(error.status)
+          )
+            setRetry(null);
+          setNeedsSignIn(
+            error instanceof SocialClientError && error.status === 401
           );
-          if (response.ok) {
-            version.current = result.version;
-            setSaved(true);
-            setSavedId(result.id);
-            setLatest(null);
-            onSuccess?.(result.id);
-            if (payload.operation === "withdraw") {
-              window.location.assign("/platform");
-              return;
-            }
-            refresh(() => router.refresh());
-          } else if (response.status === 409 && payload.postId) {
+          if (
+            error instanceof SocialClientError &&
+            error.status === 409 &&
+            payload.postId
+          ) {
             setConflict(true);
             setLatest(null);
             setMessage(
-              `${result.message} Your entries are still here. Load the latest saved post and review it before saving again.`
+              `${error.message} Your entries are still here. Load the latest saved post and review it before saving again.`
             );
-          }
-        } catch {
-          setMessage(
-            "The response was interrupted. Your entries are still here. Try again to check or save this same request."
-          );
+          } else
+            setMessage(
+              error instanceof Error
+                ? error.message
+                : "The response was interrupted. Your entries are still here. Retry the original request."
+            );
         } finally {
           inFlight.current = false;
           setPending(false);
@@ -113,14 +155,37 @@ export function PostActionForm({
       }}
     >
       <fieldset
-        disabled={busy || saved || disabled}
+        disabled={busy || !!retry || saved || disabled}
         className="min-w-0 space-y-4"
       >
         {children}
-        <button type="submit" className={portalButtonClass} disabled={conflict}>
-          {busy ? "Saving…" : label}
-        </button>
       </fieldset>
+      {!saved && (
+        <button
+          type="submit"
+          className={portalButtonClass}
+          disabled={busy || conflict || disabled}
+        >
+          {busy ? "Saving…" : retry ? "Retry original request" : label}
+        </button>
+      )}
+      {(dirty || retry || conflict) && (
+        <button
+          type="button"
+          className={portalButtonClass}
+          disabled={busy}
+          onClick={() => {
+            if (
+              confirm(
+                "Reload and discard these local post changes? An unconfirmed request may already be saved."
+              )
+            )
+              window.location.reload();
+          }}
+        >
+          Discard local changes and reload
+        </button>
+      )}
       <p
         ref={status}
         role="status"
@@ -176,18 +241,11 @@ export function PostActionForm({
             inFlight.current = true;
             setPending(true);
             try {
-              const response = await fetch(
+              const { data: result } = await socialRequest<PostEditorView>(
                 `/api/platform/posts?postId=${encodeURIComponent(String(payload.postId))}`,
-                { credentials: "same-origin", cache: "no-store" }
+                undefined,
+                owner
               );
-              const result = await response.json();
-              if (!response.ok) {
-                setLatest(null);
-                setMessage(
-                  result.message ?? "The latest post could not be loaded."
-                );
-                return;
-              }
               setLatest(result);
               setMessage(
                 "The latest saved post is shown below. Your form entries are unchanged."
@@ -213,6 +271,12 @@ export function PostActionForm({
         >
           <h3 className="text-xl">Latest saved post</h3>
           <p className="whitespace-pre-wrap break-words">{latest.content}</p>
+          <p className="whitespace-pre-wrap break-words">
+            Content note: {latest.contentNote || "None"}
+          </p>
+          <p className="whitespace-pre-wrap break-words">
+            Safe excerpt: {latest.safeExcerpt || "None"}
+          </p>
           <p>Scripture: {latest.scripture || "None"}</p>
           <p className="[overflow-wrap:anywhere]">
             Link: {latest.linkUrl || "None"}. Preview:{" "}

@@ -3,12 +3,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { socialRequest, SocialClientError } from "@/lib/platform/social-client";
+import { PostContentNote } from "./post-content-note";
 import {
   searchHref,
   type SearchNavigation
 } from "@/lib/platform/search-navigation";
 type Base = { id: string; label: string };
 type Result = Base & {
+  contentNote?: string | null;
   href?: string;
   type?: string;
   topics?: string[];
@@ -134,6 +136,7 @@ export function CommunitySearchResults({
                     ? "Church event occurrence"
                     : "Topic"}
           </p>
+          <PostContentNote note={item.contentNote} />
           {item.href ? (
             <Link
               prefetch={false}

@@ -141,7 +141,7 @@ async function eraseSocialData(tx: Tx, userId: string, now: Date) {
   });
   // A canonical selected source remains only for its existing report's lifetime.
   // No whole conversation or copied archive is retained as an erasure exception.
-  await tx.$executeRaw`UPDATE "PlatformPost" p SET content = ''
+  await tx.$executeRaw`UPDATE "PlatformPost" p SET content = '', "contentNote" = NULL, "safeExcerpt" = NULL
     WHERE p."authorId" = ${userId} AND p."authorChurchId" IS NULL AND NOT EXISTS
       (SELECT 1 FROM "CommunityReport" r WHERE r."targetType" = 'POST' AND r."targetId" = p.id)`;
   // Selected reported comments stay canonical and are hidden by the permanently

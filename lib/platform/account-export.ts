@@ -133,6 +133,8 @@ export async function downloadAccountExport(
         updatedAt: true,
         type: true,
         content: true,
+        contentNote: true,
+        safeExcerpt: true,
         scripture: true,
         linkUrl: true,
         linkTitle: true,

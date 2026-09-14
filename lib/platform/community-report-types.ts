@@ -72,6 +72,8 @@ export type CommunityReviewPage = {
   evidence?: {
     type: CommunityReportTarget;
     content?: string;
+    contentNote?: string | null;
+    safeExcerpt?: string | null;
     purpose?: string;
     version?: number;
     createdAt: string;

@@ -10,7 +10,11 @@ const dir = mkdtempSync(resolve(".account-test/workspace-"));
 // Preserve disposable PostgreSQL/WAL data outside Next.js file enumeration.
 const clusterRoot = mkdtempSync(join(tmpdir(), "godschurches-security-"));
 const databaseDirectory = join(clusterRoot, "pg");
-writeFileSync(join(dir, "cluster.json"), JSON.stringify({ databaseDirectory }), { mode: 0o600 });
+writeFileSync(
+  join(dir, "cluster.json"),
+  JSON.stringify({ databaseDirectory }),
+  { mode: 0o600 }
+);
 const socket = createServer();
 await new Promise((r) => socket.listen(0, "127.0.0.1", r));
 const port = socket.address().port;
@@ -38,6 +42,7 @@ const env = {
   BLOB_STORE_ID: "",
   MEDIA_STORAGE_MODE: "local-test",
   MEDIA_TEST_DIR: join(dir, "images"),
+  RETENTION_TEST_DIR: join(dir, "retention"),
   CHURCH_CLAIM_REVIEW_ENABLED: "true",
   CHURCH_CLAIM_POLICY_VERSION: "manual-review-v1",
   SUPPORT_INTAKE_ENABLED: "false"
@@ -103,7 +108,7 @@ try {
     sql(
       [
         "-Atc",
-        `SELECT md5(string_agg(row::text, '' ORDER BY row::text)) FROM (SELECT to_jsonb(t) AS row FROM "PlatformUser" t WHERE id='fixture-upgrade' UNION ALL SELECT to_jsonb(t) FROM "PlatformPost" t WHERE id='fixture-retained-post' UNION ALL SELECT to_jsonb(t) - ARRAY['parentId','rootId','version','editedAt','deletedAt','authorChurchId'] FROM "PlatformPostComment" t WHERE id='fixture-retained-comment' UNION ALL SELECT to_jsonb(t) FROM "PlatformFollow" t WHERE id='fixture-retained-follow') t`
+        `SELECT md5(string_agg(row::text, '' ORDER BY row::text)) FROM (SELECT to_jsonb(t) AS row FROM "PlatformUser" t WHERE id='fixture-upgrade' UNION ALL SELECT to_jsonb(t) - ARRAY['contentNote','safeExcerpt'] FROM "PlatformPost" t WHERE id='fixture-retained-post' UNION ALL SELECT to_jsonb(t) - ARRAY['parentId','rootId','version','editedAt','deletedAt','authorChurchId'] FROM "PlatformPostComment" t WHERE id='fixture-retained-comment' UNION ALL SELECT to_jsonb(t) FROM "PlatformFollow" t WHERE id='fixture-retained-follow') t`
       ],
       url
     );
@@ -134,7 +139,16 @@ try {
               ]
             : ["tests/post-workspace.test.ts"]),
         "tests/post-publishing.test.ts",
-        "tests/community-search.test.ts"
+        "tests/community-search.test.ts",
+        ...(process.argv.includes("--content-notes")
+          ? [
+              "tests/post-content-notes.test.ts",
+              "tests/draft-controller.test.ts",
+              "tests/post-editor.test.ts",
+              "tests/gallery-sharing.test.ts",
+              "tests/content-withdrawal.test.ts"
+            ]
+          : [])
       ];
   for (const file of files) {
     sql(["-c", 'TRUNCATE "PlatformAuthLimit"']);

@@ -542,6 +542,26 @@ try {
       if (psql(["-Atc", `SELECT count(*) FROM "ChurchAuditEvent" WHERE reason IS NOT NULL`]).trim() !== "0")
         throw Error("Account restriction upgrade invented historical reasons");
       console.log("Account restriction upgrade preserves prior account, audit and control fields; legacy reasons remain absent.");
+    } else if (name === "20260914130000_post_content_notes") {
+      const original = () =>
+        psql([
+          "-Atc",
+          `SELECT md5(coalesce(jsonb_agg(to_jsonb(t) - ARRAY['contentNote','safeExcerpt'] ORDER BY id)::text,'[]')) FROM "PlatformPost" t`
+        ]);
+      const prior = original();
+      psql(["-f", `prisma/migrations/${name}/migration.sql`]);
+      if (prior !== original())
+        throw Error("Content note upgrade changed original post fields");
+      if (
+        psql([
+          "-Atc",
+          `SELECT count(*) FROM "PlatformPost" WHERE "contentNote" IS NOT NULL OR "safeExcerpt" IS NOT NULL`
+        ]).trim() !== "0"
+      )
+        throw Error("Content note upgrade invented author choices");
+      console.log(
+        "Content note upgrade preserves original post fields; existing notes and excerpts remain absent."
+      );
     } else psql(["-f", `prisma/migrations/${name}/migration.sql`]);
   }
   for (const [i, [table, key]] of accountTables.entries()) {

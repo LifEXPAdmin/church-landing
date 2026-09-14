@@ -10,10 +10,12 @@ import {
 } from "./post-draft-fields";
 import { portalInputClass } from "./portal-action-form";
 
-function EditPost({ post }: { post: PostEditorView }) {
+function EditPost({ post, owner }: { post: PostEditorView; owner: string }) {
   const id = useId(),
     [draft, setDraft] = useState<PostDraft>({
       content: post.content,
+      contentNote: post.contentNote,
+      safeExcerpt: post.safeExcerpt,
       scripture: post.scripture,
       type: post.type,
       topics: post.topics,
@@ -33,6 +35,7 @@ function EditPost({ post }: { post: PostEditorView }) {
     [allowReposts, setAllowReposts] = useState(post.allowReposts);
   return (
     <PostActionForm
+      owner={owner}
       payload={{
         operation: "edit",
         postId: post.id,
@@ -127,7 +130,7 @@ export function PostControls({
   ownerId
 }: {
   post: PostEditorView;
-  ownerId?: string;
+  ownerId: string;
 }) {
   const [photosOpened, setPhotosOpened] = useState(false);
   useEffect(() => {
@@ -159,7 +162,7 @@ export function PostControls({
           <summary className="min-h-11 cursor-pointer py-3 font-semibold">
             Edit post
           </summary>
-          <EditPost post={post} />
+          <EditPost post={post} owner={ownerId} />
         </details>
       )}
       {post.canEdit && ownerId && (
@@ -182,6 +185,7 @@ export function PostControls({
             Discussion settings
           </summary>
           <PostActionForm
+            owner={ownerId}
             payload={{
               operation: "discussion",
               postId: post.id,
@@ -230,6 +234,7 @@ export function PostControls({
             Pin church notice
           </summary>
           <PostActionForm
+            owner={ownerId}
             payload={{
               operation: "pin",
               postId: post.id,
@@ -269,6 +274,7 @@ export function PostControls({
             Remove post
           </summary>
           <PostActionForm
+            owner={ownerId}
             payload={{
               operation: "withdraw",
               postId: post.id,

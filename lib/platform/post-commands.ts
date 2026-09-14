@@ -32,8 +32,13 @@ import {
   recordReportedWithdrawal
 } from "./retention-controls";
 
-import { POST_TOPICS } from "./post-options";
+import {
+  POST_TOPICS,
+  CONTENT_NOTE_LIMIT,
+  SAFE_EXCERPT_LIMIT
+} from "./post-options";
 import { emptyPostLink, preparePostLink, type PostLink } from "./post-links";
+import { socialCommand, socialKey } from "./social-operations";
 export { POST_TOPICS } from "./post-options";
 function topics(value: unknown) {
   if (
@@ -51,6 +56,8 @@ function details(input: Record<string, unknown>) {
     throw new PortalError(400, "Choose a supported post category.");
   return {
     content: postField(input.content, 3000, 3),
+    contentNote: postField(input.contentNote ?? "", CONTENT_NOTE_LIMIT) || null,
+    safeExcerpt: postField(input.safeExcerpt ?? "", SAFE_EXCERPT_LIMIT) || null,
     scripture: postField(input.scripture ?? "", 120) || null,
     topics: topics(input.topics ?? []),
     type
@@ -389,7 +396,9 @@ export async function postCommandIn(
         status: "WITHDRAWN",
         withdrawnAt: now,
         discussionClosed: true,
-        ...(!reported ? { content: "" } : {}),
+        ...(!reported
+          ? { content: "", contentNote: null, safeExcerpt: null }
+          : {}),
         scripture: null,
         ...emptyPostLink,
         topics: [],
@@ -527,6 +536,8 @@ export async function postCommand(
       400,
       "The acting account comes from your current sign-in."
     );
+  if (input.mutationId !== undefined)
+    return receiptedPostAction(db, token, input);
   let preparedLink: PostLink | undefined;
   if (
     (input.operation === "create" || input.operation === "edit") &&
@@ -604,6 +615,86 @@ export async function postCommand(
           " The link was saved without a preview; you can edit the post to try again."
       }
     : result;
+}
+
+// Published controls use the existing receipt owner. Current authority precedes
+// replay; link validation stays outside the permission transaction. Older
+// callers keep their versioned contract, and private drafts keep theirs.
+async function receiptedPostAction(
+  db: PrismaClient,
+  token: unknown,
+  input: Record<string, unknown>
+) {
+  if (
+    !["edit", "discussion", "pin", "withdraw"].includes(String(input.operation))
+  )
+    throw new PortalError(400, "Choose a supported post management action.");
+  const key = `post-control:${socialKey(input.mutationId)}`;
+  const authority = async (tx: PostTx, ownerId: string) => {
+    const context = await postContext(tx, ownerId);
+    const post = await tx.platformPost.findUnique({
+      where: { id: postId(input.postId) }
+    });
+    if (!post) throw new PortalError(404, "Post unavailable.");
+    // A removal receipt may be confirmed after withdrawal, but never after
+    // losing the authority that allowed this action. No retained body is returned.
+    const allowed =
+      input.operation === "withdraw"
+        ? postCanWithdraw(context, { ...post, status: "PUBLISHED" })
+        : postCanEdit(context, post) ||
+          (input.operation === "discussion" && postCanModerate(context, post));
+    if (!allowed)
+      throw new PortalError(
+        403,
+        "You cannot change this post. Refresh to check your current access."
+      );
+    return { context, post };
+  };
+  const source = await withOwnedSession(
+    db,
+    token,
+    async (tx, session) => {
+      const current = await authority(tx, session.userId);
+      const prior = await tx.socialOperation.findUnique({
+        where: { ownerId_key: { ownerId: session.userId, key } },
+        select: { key: true }
+      });
+      if (!prior) expected(input.expectedVersion, current.post.version);
+      return { ...current, prior: !!prior, ownerId: session.userId };
+    },
+    true
+  );
+  const link =
+    !source.prior && input.operation === "edit" && input.linkUrl !== undefined
+      ? await preparePostLink(source.ownerId, input, source.post)
+      : undefined;
+  return socialCommand(
+    db,
+    token,
+    "post-control",
+    input,
+    async (tx, ownerId) => {
+      const result = await postCommandIn(
+        tx,
+        await postContext(tx, ownerId),
+        input,
+        link
+      );
+      return link?.linkUrl &&
+        input.keepLinkPreview === true &&
+        !link.linkSourceUrl
+        ? {
+            ...result,
+            message:
+              result.message +
+              " The link was saved without a preview; you can edit the post to try again."
+          }
+        : result;
+    },
+    async (tx, ownerId) => {
+      await authority(tx, ownerId);
+    }
+  );
 }
 
 // Called only by a trusted durable worker. A saved plan is not proof that a

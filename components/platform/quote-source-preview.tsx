@@ -6,6 +6,8 @@ import type { OriginalPostView } from "@/lib/platform/post-reads";
 import { PostText } from "./post-text";
 import { PostPhotos } from "./post-photos";
 import { PostLink } from "./post-link";
+import { PostContentNote } from "./post-content-note";
+import { postPreviewText } from "@/lib/platform/post-options";
 export function SourcePreview({
   source,
   accountId
@@ -35,11 +37,20 @@ export function SourcePreview({
         {" UTC"}
         {source.editedAt ? " · Edited" : ""} · Public
       </p>
-      <PostText content={source.content} />
-      <PostLink {...source} />
-      {source.scripture && <p>{source.scripture}</p>}
-      {source.photoCount > 0 && (
-        <PostPhotos postId={source.id} accountId={accountId} />
+      <PostContentNote note={source.contentNote} />
+      {source.contentNote ? (
+        <p className="whitespace-pre-wrap break-words">
+          {postPreviewText(source)}
+        </p>
+      ) : (
+        <>
+          <PostText content={source.content} />
+          <PostLink {...source} />
+          {source.scripture && <p>{source.scripture}</p>}
+          {source.photoCount > 0 && (
+            <PostPhotos postId={source.id} accountId={accountId} />
+          )}
+        </>
       )}
     </div>
   );

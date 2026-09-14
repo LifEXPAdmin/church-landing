@@ -1215,6 +1215,8 @@ model PlatformPost {
   requestKey String?
   type      PlatformPostType @default(UPDATE)
   content   String
+  contentNote String?
+  safeExcerpt String?
   scripture String?
   linkUrl String?
   linkTitle String?

@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { socialRequest, SocialClientError } from "@/lib/platform/social-client";
 import { useUnsavedSocialWork } from "./use-unsaved-social-work";
+import { PostContentNote } from "./post-content-note";
 type Collection = { id: string; version: number; name: string };
 type Saved = {
   id: string;
@@ -13,6 +14,7 @@ type Saved = {
   post?: {
     id: string;
     excerpt: string;
+    contentNote?: string | null;
     type: string;
     publishedAt: string;
     href: string;
@@ -467,6 +469,7 @@ function SavedItem({
       {row.available && row.post ? (
         <>
           <p className="text-sm text-gc-muted">{row.post.type.toLowerCase()}</p>
+          <PostContentNote note={row.post.contentNote} />
           <p className="whitespace-pre-wrap break-words">{row.post.excerpt}</p>
           <Link prefetch={false} className="underline" href={row.post.href}>
             Open saved post

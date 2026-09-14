@@ -1,5 +1,8 @@
 import { RepostControl } from "./repost-control";
-import { RepostSourceBoundary } from "./repost-source-boundary";
+import {
+  RepostSourceBoundary,
+  PostReadBoundary
+} from "./repost-source-boundary";
 import { SourcePreview } from "./quote-source-preview";
 import { AuthorAvatar } from "./author-avatar";
 import { PostPhotos } from "./post-photos";
@@ -17,6 +20,8 @@ import { Heart, Globe, MessageCircle } from "lucide-react";
 import { formatDate, postTypeLabels } from "@/lib/platform/format";
 import { PostParticipation } from "./post-participation";
 import { PostText } from "./post-text";
+import { PostContentNote } from "./post-content-note";
+import { postPreviewText } from "@/lib/platform/post-options";
 
 interface PostCardProps {
   post: PostView;
@@ -103,6 +108,7 @@ export function PostCard({
     );
   }
   const count = post.commentCount;
+  const previewOnly = !!post.contentNote && !fullDiscussion;
   return (
     <article className="gc-post" aria-label={`Post by ${post.author.name}`}>
       {repostContext ? (
@@ -115,7 +121,12 @@ export function PostCard({
           <SourcePreview source={post} accountId={currentUserId ?? null} />
         </RepostSourceBoundary>
       ) : (
-        <>
+        <PostReadBoundary
+          enabled={fullDiscussion}
+          postId={post.id}
+          version={post.version}
+          accountId={currentUserId ?? null}
+        >
           <header className="gc-post-header">
             <Link
               href={
@@ -172,20 +183,32 @@ export function PostCard({
               View event details and RSVP
             </Link>
           )}
-          <PostText content={post.content} />
-          <PostLink {...post} />
-          {post.photoCount > 0 && (
-            <PostPhotos postId={post.id} accountId={currentUserId ?? null} />
-          )}
-          {post.scripture && (
-            <p className="gc-scripture">
-              <span>Scripture reference</span>
-              {post.scripture}
+          <PostContentNote note={post.contentNote} />
+          {previewOnly ? (
+            <p className="whitespace-pre-wrap break-words">
+              {postPreviewText(post)}
             </p>
+          ) : (
+            <>
+              <PostText content={post.content} />
+              <PostLink {...post} />
+              {post.photoCount > 0 && (
+                <PostPhotos
+                  postId={post.id}
+                  accountId={currentUserId ?? null}
+                />
+              )}
+              {post.scripture && (
+                <p className="gc-scripture">
+                  <span>Scripture reference</span>
+                  {post.scripture}
+                </p>
+              )}
+            </>
           )}
-        </>
+        </PostReadBoundary>
       )}
-      {post.repost?.kind === "QUOTE" && (
+      {!previewOnly && post.repost?.kind === "QUOTE" && (
         <RepostSourceBoundary
           entryId={post.id}
           entryVersion={post.version}
@@ -245,7 +268,8 @@ export function PostCard({
         <SavePostControl postId={post.id} accountId={currentUserId ?? null} />
         <PublicShareControls kind="post" id={post.id} compact />
       </div>
-      {!repostContext &&
+      {!previewOnly &&
+        !repostContext &&
         (post.hasParticipation ||
           !!post.eventOccurrenceId ||
           (fullDiscussion && (post.canEdit || post.canOrganize))) && (

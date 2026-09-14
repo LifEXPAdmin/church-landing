@@ -4,7 +4,7 @@ import { Prisma, type PrismaClient } from "@prisma/client";
 import { withPostRead, postReadableWhere } from "./post-access";
 import { postId } from "./post-input";
 import { communityAuthorSelect } from "./public-profile";
-import { POST_TOPICS } from "./post-options";
+import { POST_TOPICS, postPreviewText } from "./post-options";
 import { PortalError } from "./portal-policy";
 
 export const SEARCH_KINDS = [
@@ -106,6 +106,8 @@ export function communitySearch(
         select: {
           id: true,
           content: true,
+          contentNote: true,
+          safeExcerpt: true,
           type: true,
           publishedAt: true,
           topics: true
@@ -115,7 +117,8 @@ export function communitySearch(
       return page(
         rows.map((p) => ({
           id: p.id,
-          label: p.content.slice(0, 300),
+          label: postPreviewText(p).slice(0, 300),
+          contentNote: p.contentNote,
           type: p.type,
           topics: p.topics,
           publishedAt: p.publishedAt,

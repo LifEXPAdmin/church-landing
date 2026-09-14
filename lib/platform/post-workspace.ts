@@ -11,11 +11,13 @@ import { postContext, postReadableWhere, type PostTx } from "./post-access";
 import { postId } from "./post-input";
 import { postCommandIn } from "./post-commands";
 import { preparePostLink, type PostLink } from "./post-links";
-import { POST_TOPICS } from "./post-options";
+import { POST_TOPICS, postPreviewText } from "./post-options";
 
 export const WORKSPACE_PAGE_SIZE = 20;
 export type PrivateDraftPayload = {
   content: string;
+  contentNote?: string;
+  safeExcerpt?: string;
   scripture: string;
   type: PlatformPostType;
   topics: string[];
@@ -30,6 +32,8 @@ export type PrivateDraftPayload = {
 };
 const draftFields = [
   "content",
+  "contentNote",
+  "safeExcerpt",
   "scripture",
   "type",
   "topics",
@@ -93,6 +97,12 @@ export function privateDraftPayload(value: unknown): PrivateDraftPayload {
   const reference = (v: unknown) => (v == null || v === "" ? null : postId(v));
   return {
     content: text(p.content ?? "", 20000),
+    ...(p.contentNote !== undefined
+      ? { contentNote: text(p.contentNote, 1000) }
+      : {}),
+    ...(p.safeExcerpt !== undefined
+      ? { safeExcerpt: text(p.safeExcerpt, 1000) }
+      : {}),
     scripture: text(p.scripture ?? "", 1000),
     type: type as PlatformPostType,
     topics,
@@ -280,7 +290,14 @@ export function readPostWorkspace(
             postReadableWhere(context)
           ]
         },
-        select: { id: true, content: true, type: true, publishedAt: true }
+        select: {
+          id: true,
+          content: true,
+          contentNote: true,
+          safeExcerpt: true,
+          type: true,
+          publishedAt: true
+        }
       });
       return page(
         rows.map((row) => {
@@ -294,7 +311,8 @@ export function readPostWorkspace(
               ? {
                   post: {
                     id: post.id,
-                    excerpt: post.content.slice(0, 300),
+                    excerpt: postPreviewText(post).slice(0, 300),
+                    contentNote: post.contentNote,
                     type: post.type,
                     publishedAt: post.publishedAt,
                     href: `/platform/posts/${post.id}`
@@ -440,6 +458,19 @@ export async function postWorkspaceCommand(
         expected(input.expectedVersion, row?.version ?? 0);
         if (op === "save-draft") {
           const payload = privateDraftPayload(input.payload);
+          const previous = row ? privateDraftPayload(row.payload) : null;
+          if (
+            previous &&
+            ["contentNote", "safeExcerpt"].some(
+              (field) =>
+                previous[field as "contentNote" | "safeExcerpt"] &&
+                !Object.hasOwn(payload, field)
+            )
+          )
+            throw new PortalError(
+              400,
+              "This draft has content-note or preview choices. Reload it before saving so those choices are preserved."
+            );
           if (
             !row &&
             (await tx.privatePostDraft.count({

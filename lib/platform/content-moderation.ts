@@ -214,8 +214,13 @@ export async function readContentNotices(
   })) as ContentDecisionNotice[];
   // Only the current logical author can identify the selected source using its
   // canonical text. This owner view never changes the ordinary reader predicate.
-  let ownSource: { href: string; content: string; version: number } | null =
-    null;
+  let ownSource: {
+    href: string;
+    content: string;
+    contentNote?: string | null;
+    safeExcerpt?: string | null;
+    version: number;
+  } | null = null;
   if (query.id && rows[0]) {
     const report = rows[0].report;
     const author = {
@@ -230,6 +235,8 @@ export async function readContentNotices(
         select: {
           id: true,
           content: true,
+          contentNote: true,
+          safeExcerpt: true,
           version: true,
           withdrawnAt: true,
           status: true
@@ -238,6 +245,14 @@ export async function readContentNotices(
       if (source)
         ownSource = {
           href: `/platform/posts/${source.id}`,
+          contentNote:
+            source.withdrawnAt || source.status === "WITHDRAWN"
+              ? null
+              : source.contentNote,
+          safeExcerpt:
+            source.withdrawnAt || source.status === "WITHDRAWN"
+              ? null
+              : source.safeExcerpt,
           content:
             source.withdrawnAt || source.status === "WITHDRAWN"
               ? ""

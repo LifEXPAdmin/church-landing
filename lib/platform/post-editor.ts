@@ -98,6 +98,8 @@ export function getPostEditor(db: PrismaClient, token: unknown, id: string) {
       id: post.id,
       version: post.version,
       content: post.content,
+      contentNote: post.contentNote ?? "",
+      safeExcerpt: post.safeExcerpt ?? "",
       scripture: post.scripture ?? "",
       linkUrl: post.linkUrl,
       linkTitle: post.linkTitle,

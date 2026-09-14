@@ -103,6 +103,8 @@ function project(post: PostRow, context: PostContext, now: Date) {
     updatedAt: post.updatedAt,
     type: post.type,
     content: post.content,
+    contentNote: post.contentNote,
+    safeExcerpt: post.safeExcerpt,
     scripture: post.scripture,
     linkUrl: post.linkUrl,
     linkTitle: post.linkTitle,
@@ -376,6 +378,24 @@ export function getChurchPostFeed(
       posts,
       viewerId: context.actorId,
       canShare: context.churches.includes(churchId)
+    };
+  });
+}
+/** Bounded retained-detail check: current source permission/version, no body or counts. */
+export function getPostAvailability(
+  db: PrismaClient,
+  token: unknown,
+  id: string
+) {
+  return withPostRead(db, token, async (tx, context) => {
+    const post = await tx.platformPost.findFirst({
+      where: { AND: [{ id: postId(id) }, postReadableWhere(context)] },
+      select: { version: true }
+    });
+    return {
+      available: !!post,
+      entryVersion: post?.version ?? null,
+      sourceVersion: null
     };
   });
 }

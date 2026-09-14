@@ -160,6 +160,18 @@ export default async function ContentDecisionsPage({
                     <p className="text-sm">
                       Current text · Version {page.ownSource.version}
                     </p>
+                    {page.ownSource.contentNote && (
+                      <p className="whitespace-pre-wrap break-words">
+                        <strong>Content note:</strong>{" "}
+                        {page.ownSource.contentNote}
+                      </p>
+                    )}
+                    {page.ownSource.safeExcerpt && (
+                      <p className="whitespace-pre-wrap break-words">
+                        <strong>Safe excerpt:</strong>{" "}
+                        {page.ownSource.safeExcerpt}
+                      </p>
+                    )}
                     <p className="whitespace-pre-wrap break-words">
                       {page.ownSource.content ||
                         "This source's text is no longer available."}

@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+import { PrivateSnapshotGuard } from "@/components/platform/private-snapshot-guard";
 import { publicResourceMetadata } from "@/lib/platform/share-metadata";
 import { DiscussionBack } from "@/components/platform/discussion-back";
 import type { Metadata } from "next";
@@ -92,7 +94,18 @@ export default async function PostPage({
             }
             moreCommentsHref={more}
           />
-          {editor && <PostControls post={editor} ownerId={user?.id} />}
+          {editor && user && (
+            <PrivateSnapshotGuard
+              owner={user.id}
+              url={`/api/platform/posts?postId=${encodeURIComponent(post.id)}`}
+              checksum={createHash("sha256")
+                .update(JSON.stringify(editor))
+                .digest("hex")}
+              label="post management"
+            >
+              <PostControls post={editor} ownerId={user.id} />
+            </PrivateSnapshotGuard>
+          )}
         </div>
       </section>
     </PlatformShell>

@@ -34,6 +34,8 @@ export const emptyComposer = (
   churchId: string | null = null
 ): ComposerFields => ({
   content: "",
+  contentNote: "",
+  safeExcerpt: "",
   scripture: "",
   type: "UPDATE",
   topics: [],
@@ -48,6 +50,8 @@ export const emptyComposer = (
 export function composerPayload(f: ComposerFields): PrivateDraftPayload {
   return {
     content: f.content,
+    ...(f.contentNote !== undefined ? { contentNote: f.contentNote } : {}),
+    ...(f.safeExcerpt !== undefined ? { safeExcerpt: f.safeExcerpt } : {}),
     scripture: f.scripture,
     type: f.type,
     topics: [...f.topics],

@@ -118,6 +118,8 @@ test("uncertain save retries exact body before saving edits made after the faile
   c.change({
     ...c.getSnapshot().fields,
     content: "Original",
+    contentNote: "Original note",
+    safeExcerpt: "Original excerpt",
     replyAudience: "CHURCH_MEMBERS"
   });
   f.lose();
@@ -126,12 +128,18 @@ test("uncertain save retries exact body before saving edits made after the faile
   c.change({
     ...c.getSnapshot().fields,
     content: "New unsent text",
+    contentNote: "Revised note",
+    safeExcerpt: "Revised excerpt",
     replyAudience: "VIEWERS"
   });
   await c.retry();
   assert.equal(f.bodies[1], original);
   assert.equal(c.getSnapshot().dirty, true);
   assert.equal(c.getSnapshot().fields.content, "New unsent text");
+  assert.equal(c.getSnapshot().fields.contentNote, "Revised note");
+  assert.equal(c.getSnapshot().fields.safeExcerpt, "Revised excerpt");
+  assert.equal(JSON.parse(original).payload.contentNote, "Original note");
+  assert.equal(JSON.parse(original).payload.safeExcerpt, "Original excerpt");
   await c.save();
   assert.equal(JSON.parse(f.bodies[2]).expectedVersion, 1);
   assert.equal(JSON.parse(f.bodies[2]).payload.replyAudience, "VIEWERS");

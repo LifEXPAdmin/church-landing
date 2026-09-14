@@ -6,6 +6,7 @@ import { readAccountSession } from "./accounts";
 import { AccountError } from "./account-error";
 import { PortalError } from "./portal-policy";
 import { postCommand } from "./post-commands";
+import { getPostAvailability } from "./post-reads";
 import { protectReportedWithdrawal } from "./retention-controls";
 import { previewPostLink } from "./post-links";
 import {
@@ -17,29 +18,44 @@ const headers = {
   "Cache-Control": "private, no-store, max-age=0",
   "Referrer-Policy": "no-referrer",
   "X-Robots-Tag": "noindex, nofollow",
-  Vary: "Cookie"
+  Vary: "Cookie, X-Expected-Account"
 };
 export async function handlePostRequest(db: PrismaClient, request: Request) {
   try {
     const token = requestSessionToken(request),
       url = new URL(request.url);
     if (request.method === "GET") {
+      const expectedAccount = request.headers.get("x-expected-account");
+      if (
+        expectedAccount &&
+        (await readAccountSession(db, token))?.id !== expectedAccount
+      )
+        throw new PortalError(
+          401,
+          "Your sign-in changed. Reload before continuing."
+        );
       const view = url.searchParams.get("view");
       const result =
-        view === "composer"
-          ? await getPostComposer(db, token)
-          : view === "events"
-            ? await getPostEventOptions(
-                db,
-                token,
-                url.searchParams.get("churchId"),
-                url.searchParams.get("cursor")
-              )
-            : await getPostEditor(
-                db,
-                token,
-                url.searchParams.get("postId") ?? ""
-              );
+        view === "availability"
+          ? await getPostAvailability(
+              db,
+              token,
+              url.searchParams.get("postId") ?? ""
+            )
+          : view === "composer"
+            ? await getPostComposer(db, token)
+            : view === "events"
+              ? await getPostEventOptions(
+                  db,
+                  token,
+                  url.searchParams.get("churchId"),
+                  url.searchParams.get("cursor")
+                )
+              : await getPostEditor(
+                  db,
+                  token,
+                  url.searchParams.get("postId") ?? ""
+                );
       return Response.json(result, { headers });
     }
     if (request.method !== "POST")
@@ -89,6 +105,15 @@ export async function handlePostRequest(db: PrismaClient, request: Request) {
       throw new PortalError(
         401,
         "Sign in to continue. Your draft is still here."
+      );
+    const expectedAccount = request.headers.get("x-expected-account");
+    if (
+      (input.mutationId !== undefined && !expectedAccount) ||
+      (expectedAccount && expectedAccount !== actor.id)
+    )
+      throw new PortalError(
+        401,
+        "Your sign-in changed. Reload before continuing."
       );
     const ip = process.env.VERCEL
       ? (request.headers.get("x-real-ip") ?? "unknown").slice(0, 64)

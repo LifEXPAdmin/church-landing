@@ -169,7 +169,7 @@ export async function purgeMessagingCandidate(
               }
             ]
           },
-          data: { content: "" }
+          data: { content: "", contentNote: null, safeExcerpt: null }
         });
       if (source.targetType === "COMMENT")
         await tx.platformPostComment.updateMany({

@@ -1,4 +1,5 @@
 import { getPostViewIn } from "./post-reads";
+import { postPreviewText } from "./post-options";
 import { accountConfig } from "./account-config";
 import { postContext, postReadableWhere, withPostRead } from "./post-access";
 import { postId } from "./post-input";
@@ -74,6 +75,8 @@ export function publicSharePreview(
           repostKind: true,
           type: true,
           content: true,
+          contentNote: true,
+          safeExcerpt: true,
           authorChurchId: true,
           author: { select: { name: true } },
           authorChurch: { select: { name: true } }
@@ -96,9 +99,9 @@ export function publicSharePreview(
             110
           ),
           description:
-            source.type === "PRAYER"
+            source.type === "PRAYER" && !source.safeExcerpt
               ? "Read this public conversation on Godschurches."
-              : short(source.content, 160),
+              : short(postPreviewText(source), 160),
           author: {
             name: short(source.author.name, 100),
             kind: source.author.churchId
@@ -134,9 +137,10 @@ export function publicSharePreview(
           110
         ),
         description:
-          query.kind === "comment" || row.type === "PRAYER"
+          query.kind === "comment" ||
+          (row.type === "PRAYER" && !row.safeExcerpt)
             ? "Read this public conversation on Godschurches."
-            : short(row.content, 160),
+            : short(postPreviewText(row), 160),
         author: { name: short(name, 100), kind }
       };
     }

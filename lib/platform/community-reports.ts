@@ -517,7 +517,13 @@ export function readCommunityReports(
         report.targetType === "POST"
           ? await tx.platformPost.findUnique({
               where: { id: report.targetId },
-              select: { content: true, version: true, createdAt: true }
+              select: {
+                content: true,
+                contentNote: true,
+                safeExcerpt: true,
+                version: true,
+                createdAt: true
+              }
             })
           : report.targetType === "COMMENT"
             ? await tx.platformPostComment.findUnique({

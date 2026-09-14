@@ -14,19 +14,21 @@ export function RepostSourceBoundary({
   entryVersion,
   sourceVersion,
   accountId,
+  originalPost = false,
   children
 }: {
   entryId: string;
   entryVersion: number;
   sourceVersion: number | null;
   accountId: string | null;
+  originalPost?: boolean;
   children: ReactNode;
 }) {
   const router = useRouter(),
     root = useRef<HTMLDivElement>(null),
     generation = useRef(0);
   const [active, setActive] = useState(false),
-    [visible, setVisible] = useState(sourceVersion !== null),
+    [visible, setVisible] = useState(originalPost || sourceVersion !== null),
     [message, setMessage] = useState("Original post unavailable.");
   const check = useCallback(async () => {
     if (document.visibilityState === "hidden") return;
@@ -37,7 +39,9 @@ export function RepostSourceBoundary({
         entryVersion: number | null;
         sourceVersion: number | null;
       }>(
-        `/api/platform/reposts?view=entry&id=${encodeURIComponent(entryId)}`,
+        originalPost
+          ? `/api/platform/posts?view=availability&postId=${encodeURIComponent(entryId)}`
+          : `/api/platform/reposts?view=entry&id=${encodeURIComponent(entryId)}`,
         undefined,
         accountId
       );
@@ -58,7 +62,7 @@ export function RepostSourceBoundary({
         setMessage("Reconnect to check the original post.");
       }
     }
-  }, [accountId, entryId, entryVersion, sourceVersion, router]);
+  }, [accountId, entryId, entryVersion, sourceVersion, originalPost, router]);
   useEffect(() => {
     if (!root.current) return;
     const observer = new IntersectionObserver((entries) =>
@@ -114,5 +118,35 @@ export function RepostSourceBoundary({
         </div>
       )}
     </div>
+  );
+}
+
+// Full detail bodies share the existing revocation/version owner. Keep all
+// editing and comment forms outside this boundary so hiding a body loses no draft.
+export function PostReadBoundary({
+  enabled,
+  postId,
+  version,
+  accountId,
+  children
+}: {
+  enabled: boolean;
+  postId: string;
+  version: number;
+  accountId: string | null;
+  children: ReactNode;
+}) {
+  return enabled ? (
+    <RepostSourceBoundary
+      originalPost
+      entryId={postId}
+      entryVersion={version}
+      sourceVersion={null}
+      accountId={accountId}
+    >
+      {children}
+    </RepostSourceBoundary>
+  ) : (
+    children
   );
 }
