@@ -1,5 +1,54 @@
 # Isolated capacity and recovery rehearsal
 
+## Hosted concurrency repair measured — September 14, 10:45 UTC
+
+The exact `.8` candidate completes the declared 100-client, 90-second diagnostic
+at fixed 0.5 CU: 4,193 timed requests, 45.43 requests/second, 73 peak requests in
+flight and 381 structurally matching successful retry pairs. There are no new
+uploads, differing receipts, throttles or runtime error/fatal rows. Three raw 404s
+remain recorded; each is independently reproduced by the removed fixture member,
+while a currently approved member receives 200 on the same post/thread route.
+All 100 fictional READY image/history records and their 400 private objects remain
+consistent, totaling 131,406,400 bytes; garbage is zero and the database is
+275,931,136 bytes. No production data or outgoing messages participate.
+
+| Path | p50, ms | p95, ms |
+| --- | ---: | ---: |
+| Feed HTML | 667.7 | 2,570.5 |
+| Detail HTML | 239.2 | 856.4 |
+| Post search | 134.4 | 423.1 |
+| People search | 120.3 | 399.3 |
+| Comments | 212.3 | 823.0 |
+| Avatar | 186.1 | 459.8 |
+| Medium photo | 322.0 | 1,949.4 |
+| Comment write/retry | 255.3 | 881.2 |
+| Like write/retry | 223.2 | 804.0 |
+
+Nine samples observe zero waiters on the global permission gate. Three of 31
+active-session observations wait on transaction IDs, versus 250 of 268 active
+observations waiting on locks in the earlier 0.5-CU run. All observed permission
+locks are granted shared locks. Connections peak at 60 including inspection,
+active sessions at 14, temporary-file growth is zero, and the database does not
+restart during the run. Sampling intervals, durations and warm-up differ; this
+is evidence of the repaired contention and observed timings, not a controlled
+speed ratio or a sustained production capacity certification.
+
+The one-second primary-read target remains unmet for the feed. A separate
+five-reader diagnostic performs fifty alternating feed/detail pairs: feed headers
+p95 653.7 ms and complete response 680.0 ms, versus detail 339.3/345.0 ms.
+Source inspection and these timings distinguish the remaining feed/server-load
+cost from the repaired global lock; they do not establish its exact cause under
+100 clients. Do not approve a 100-concurrent production pilot from this result.
+Production remains at its existing smaller database setting.
+
+After six explicit privacy reads and the 100-read follow-up, cumulative conservative
+accounting is 24,046 application calls, 6,950 image attempts, 166 load-upload
+attempts plus 200 seeded images, and 1,703,536,198 response bytes. A one-megabyte
+allowance covers the independent privacy responses. The 25,000/8,000/400/3-GB
+limits remain intact. Earlier failed runs, encrypted original seed and raw
+classification evidence are preserved. Exact production release/live acceptance
+and removal of this second set of owned cloud resources follow this checkpoint.
+
 ## Permission-gate contention repair — local candidate
 
 The retained hosted wait samples led to a deterministic local reproduction:
@@ -19,12 +68,28 @@ block is rechecked before a pending new comment can write, while comment deletio
 still waits for an existing reader. PostgreSQL documents the relevant
 [row-lock conflicts](https://www.postgresql.org/docs/17/explicit-locking.html).
 
-The candidate is **2026.09.14.8**, not yet deployed. No schema, dependency, cache
-or authority is added. Full regression, repeat workload measurement and exact
-live acceptance remain in this feature cycle. An initial broad ad hoc invocation
+The candidate is **2026.09.14.8**, application
+`49576eaa2ae8efa15082c7579f91905ab67626e5`, not yet deployed to production.
+Its full 121-file gate passes: 744 executions, 742 passes, two expected skips
+and zero failures, including both builds and the actual local HTTPS regressions.
+Types and scoped lint pass. All 47 live migration checksums match; the recent
+protected restore preserves 92 original tables. No schema, dependency, cache
+or authority is added. Repeat workload measurement and exact live acceptance
+remain in this feature cycle. An initial broad ad hoc invocation
 ran shared-fixture files concurrently and omitted their live local HTTPS server;
 its cross-fixture comparison and connection failures are retained separately.
 The standard sequential full gate supplies the required server and isolation.
+
+A new disposable protected preview has its own fictional database and private
+image store. The exact candidate, disabled delivery and fixed 0.5-CU configuration
+pass preflight. A 100-client, 90-second diagnostic begins only after the full gate
+finishes; it additionally samples the actual permission-gate modes and waits.
+The new seed is restored from the authenticated encrypted original and its
+temporary plaintext is removed. Earlier measurements and conservative counters
+are retained. The specific reproduced defect permits a bounded extension to
+25,000 cumulative application calls and 400 seeded/upload-attempt images; the
+8,000 image-read and 3-GB response limits remain. There are no additional load
+uploads. These are diagnostic limits, not a demonstrated production capacity.
 
 ## Verified reliability release — September 14, 10:03 UTC
 

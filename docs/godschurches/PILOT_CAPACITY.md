@@ -1,9 +1,10 @@
 # Pilot capacity, costs and recovery limits
 
-September 14, 2026. The sustained local rehearsal and final 120-file regression
+September 14, 2026. The sustained local rehearsal and current 121-file regression
 gate pass. Bounded hosted tests have completed, including recorded failures and
-repairs; version 2026.09.14.7 is verified live and all disposable cloud resources
-are removed. Lock contention remains under investigation in the capacity feature.
+repairs. Version 2026.09.14.7 is verified live; the `.8` concurrency candidate
+passes its protected hosted comparison and awaits production acceptance. The
+original disposable resources are removed; the second test set awaits cleanup.
 Five hundred
 registered accounts and one hundred concurrent people
 remain a target, not a demonstrated production maximum. Registered accounts occupy
@@ -19,6 +20,17 @@ this dense 10,000-account fixture, even after the index repair. Production still
 uses 0.25 CU with its actual much smaller data; no production compute was changed.
 Do not interpret the higher test settings as an activated production capacity.
 See [the complete measured workload and limitations](CAPACITY_REHEARSAL.md).
+
+The repaired permission gate removes observed global-lock waits during a new
+100-client, 90-second comparison at 0.5 CU. It completes 4,193 requests at 45.43
+requests/second with 381 matching retry pairs and no server failures after three
+independently verified membership denials. Detail/search/comments/avatar and
+comment/Like writes have p95 below one second; medium images remain 1.949 seconds
+and feed 2.571 seconds. A five-reader follow-up has feed p95 680 ms. These distinct
+workloads do not establish the 100-client target or a sustained production ceiling.
+Recorded failure, memory/compute limits and the current smaller production data
+remain part of the operating envelope. Production compute is unchanged; a
+successful isolated test does not increase its configured resources.
 
 ## Current limits and useful triggers
 
@@ -119,10 +131,15 @@ store used a bounded cloud plan: 25 and 50 clients for three minutes each,
 then 100 for five minutes, with two-second think time. The first failure stopped
 that sequence. Measured repairs and shorter compute comparisons used the same
 cumulative budget; their actual durations and raw failures are recorded separately.
-Hard guards cap application
-requests at 22,000, image-read attempts below 8,000, uploaded images at 175 beyond
-the 100 seed images, and response bytes at 3 GB. Four hundred seed objects occupy
-131,406,400 bytes. These counters account for uncached store fetches; provider
+The original hard guards cap application requests at 22,000, image-read attempts
+below 8,000, uploaded images at 175 beyond the 100 seed images, and response bytes
+at 3 GB. The reproduced permission-lock defect permits an explicit bounded
+extension to 25,000 cumulative application calls and 400 seeded/upload-attempt
+images, while retaining the image-read and response-byte ceilings. Prior counters
+are carried forward. The second seed contributes another 100 images/400 objects
+and no new load uploads; one active test store contains 131,406,400 bytes. Final
+accounting and each actual diagnostic duration appear in the capacity report.
+These counters account for uncached store fetches; provider
 dashboards can lag and are not the per-request stop guard.
 
 The test project protects all URLs and uses only its own temporary automation
