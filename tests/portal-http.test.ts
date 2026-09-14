@@ -86,7 +86,9 @@ const post = (
     headers: {
       "Content-Type": "application/json",
       Origin: origin,
-      ...(actor ? { Cookie: cookie(actor) } : {}),
+      ...(actor
+        ? { Cookie: cookie(actor), "X-Expected-Account": actor.id }
+        : {}),
       ...extra
     },
     body: JSON.stringify(body)
@@ -639,6 +641,8 @@ test("actual POST rejects array transition actions without approving a suspended
     (
       await post(f.operator, {
         operation: "suspend",
+        mutationId: crypto.randomUUID(),
+        reason: "SAFETY_REVIEW",
         userId: actor.id,
         suspended: true,
         expectedVersion: version
@@ -760,6 +764,8 @@ test("actual revocation/suspension POST takes effect on existing cookies without
     (
       await post(f.operator, {
         operation: "suspend",
+        mutationId: crypto.randomUUID(),
+        reason: "SAFETY_REVIEW",
         userId: f.memberB.id,
         suspended: true,
         expectedVersion: viewer.version

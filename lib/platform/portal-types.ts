@@ -1,3 +1,4 @@
+import type { AccountRestrictionAudit } from "./account-restriction-types";
 export const ADULT_POLICY = "adult-preview-v1";
 export type PortalView =
   | "discover"
@@ -77,6 +78,7 @@ export type PortalSnapshot = {
   queue?: ConnectionSummary[];
   contacts?: ContactSummary[];
   operator?: {
+    accountAudit?: AccountRestrictionAudit[];
     users: {
       id: string;
       name: string;

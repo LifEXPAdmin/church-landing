@@ -13,7 +13,7 @@ const headers = {
   "Cache-Control": "private, no-store, max-age=0",
   "Referrer-Policy": "no-referrer",
   "X-Robots-Tag": "noindex, nofollow",
-  Vary: "Cookie"
+  Vary: "Cookie, X-Expected-Account"
 };
 export async function handlePortalRequest(
   db: PrismaClient,
@@ -48,6 +48,15 @@ export async function handlePortalRequest(
         ].includes(view)
       )
         throw new PortalError(400, "Choose a supported church view.");
+      const expectedAccount = request.headers.get("x-expected-account");
+      if (expectedAccount) {
+        const actor = await readAccountSession(db, token);
+        if (!actor || actor.id !== expectedAccount)
+          throw new PortalError(
+            401,
+            "Your sign-in changed. Reload before continuing."
+          );
+      }
       const churchId = url.searchParams.get("churchId") ?? undefined;
       if (churchId && churchId.length > 100)
         throw new PortalError(400, "Check the church link.");
@@ -87,6 +96,15 @@ export async function handlePortalRequest(
     if (!actor) throw new PortalError(401, "Sign in to continue.");
     if (typeof body.operation !== "string" || body.operation.length > 40)
       throw new PortalError(400, "Check the church action.");
+    const expectedAccount = request.headers.get("x-expected-account");
+    if (
+      (body.operation === "suspend" && !expectedAccount) ||
+      (expectedAccount !== null && expectedAccount !== actor.id)
+    )
+      throw new PortalError(
+        401,
+        "Your sign-in changed. Reload before continuing."
+      );
     const ip = process.env.VERCEL
       ? (request.headers.get("x-real-ip") ?? "unknown").slice(0, 64)
       : "local";

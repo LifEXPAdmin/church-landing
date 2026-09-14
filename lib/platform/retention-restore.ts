@@ -7,7 +7,8 @@ import {
   replayRetentionControls,
   inspectRestoredHolds,
   inspectRestoredModeration,
-  inspectRestoredAppeals
+  inspectRestoredAppeals,
+  inspectRestoredAccountRestrictions
 } from "./retention-controls";
 import type { RetentionJournals } from "./retention-maintenance";
 
@@ -194,6 +195,8 @@ export async function replayProtectedRestoration(
   const holdsNeedingReasonReview = await inspectRestoredHolds(db);
   const contentNeedingReinspection = await inspectRestoredModeration(db);
   const appealsNeedingRecovery = await inspectRestoredAppeals(db);
+  const accountsNeedingRestrictionReview =
+    await inspectRestoredAccountRestrictions(db);
   return {
     quarantine,
     messageRecords,
@@ -203,11 +206,13 @@ export async function replayProtectedRestoration(
     holdsNeedingReasonReview,
     contentNeedingReinspection,
     appealsNeedingRecovery,
+    accountsNeedingRestrictionReview,
     replayComplete:
       unresolvedReports.length === 0 &&
       holdsNeedingReasonReview === 0 &&
       contentNeedingReinspection === 0 &&
-      appealsNeedingRecovery === 0,
+      appealsNeedingRecovery === 0 &&
+      accountsNeedingRestrictionReview === 0,
     trafficEnabled: false,
     currentAuthorizationReviewRequired: true
   };

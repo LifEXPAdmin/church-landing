@@ -114,10 +114,14 @@ export async function expireRetentionReceipts(
   const oldControls = await db.$queryRaw<
     Array<{ id: string; payload: Prisma.JsonValue; completedAt: Date }>
   >`
-    SELECT c.id, c.payload, p."completedAt" FROM "RetentionControl" c
+    SELECT * FROM (SELECT c.id, c.payload, p."completedAt" FROM "RetentionControl" c
     JOIN "RetentionPurge" p ON p.target = c.target AND p."targetId" = c."targetId"
     WHERE p."completedAt" <= ${cutoff.toISOString()}::timestamp AND p."journaledAt" IS NOT NULL
-    ORDER BY p."completedAt", c.id LIMIT 100`;
+    UNION ALL
+    SELECT c.id, c.payload, d."completedAt" FROM "RetentionControl" c
+    JOIN "AccountDeletion" d ON c.target='ACCOUNT' AND d."userId"=c."targetId"
+    WHERE d."completedAt" <= ${cutoff.toISOString()}::timestamp AND d."completionJournaledAt" IS NOT NULL
+    ) expired ORDER BY "completedAt", id LIMIT 100`;
   for (const row of oldControls) {
     if (signal?.aborted) return { controls, messages, accounts };
     if (
@@ -144,6 +148,7 @@ export async function expireRetentionReceipts(
       })
     )
       continue;
+    if (row.target === "ACCOUNT") continue; // Account erasure has its own journal owner.
     const record: PurgeRecord = {
       target: row.target,
       id: row.targetId,
@@ -173,6 +178,12 @@ export async function expireRetentionReceipts(
   });
   for (const row of oldAccounts) {
     if (signal?.aborted) return { controls, messages, accounts };
+    if (
+      await db.retentionControl.count({
+        where: { target: "ACCOUNT", targetId: row.userId }
+      })
+    )
+      continue;
     if (await journals.accounts.expire(accountDeletionRecord(row), now)) {
       await db.accountDeletion.deleteMany({
         where: {

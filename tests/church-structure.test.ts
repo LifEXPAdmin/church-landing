@@ -530,6 +530,8 @@ test("structure: connection removal and suspension end appointments; rejoining n
   });
   await portalCommand(db, f.operator.token, {
     operation: "suspend",
+    mutationId: crypto.randomUUID(),
+    reason: "SAFETY_REVIEW",
     userId: m.id,
     expectedVersion: m.portalVersion,
     suspended: true

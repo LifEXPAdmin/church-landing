@@ -529,6 +529,19 @@ try {
       if (psql(["-Atc", `SELECT (SELECT count(*) FROM "PlatformPost" WHERE "moderationState" <> 'VISIBLE') + (SELECT count(*) FROM "PlatformPostComment" WHERE "moderationState" <> 'VISIBLE')`]).trim() !== "0")
         throw Error("Content moderation migration restricted legacy sources");
       console.log("Content moderation upgrade preserves every original source, decision, support and event column; legacy visibility stays unchanged.");
+    } else if (name === "20260914110000_account_restriction_audit") {
+      const preserved = () => [
+        psql(["-Atc", `SELECT md5(coalesce(jsonb_agg(to_jsonb(t) - 'reason' ORDER BY id)::text,'[]')) FROM "ChurchAuditEvent" t`]),
+        fingerprint("PlatformUser", "id"), fingerprint("RetentionControl", "id"),
+        fingerprint("RetentionHold", "id")
+      ];
+      const prior = preserved();
+      psql(["-f", `prisma/migrations/${name}/migration.sql`]);
+      if (JSON.stringify(prior) !== JSON.stringify(preserved()))
+        throw Error("Account restriction upgrade changed existing account, audit or protected control data");
+      if (psql(["-Atc", `SELECT count(*) FROM "ChurchAuditEvent" WHERE reason IS NOT NULL`]).trim() !== "0")
+        throw Error("Account restriction upgrade invented historical reasons");
+      console.log("Account restriction upgrade preserves prior account, audit and control fields; legacy reasons remain absent.");
     } else psql(["-f", `prisma/migrations/${name}/migration.sql`]);
   }
   for (const [i, [table, key]] of accountTables.entries()) {

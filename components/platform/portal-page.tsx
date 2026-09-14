@@ -1,5 +1,7 @@
 import { ChurchUpcoming } from "./church-upcoming";
 import Link from "next/link";
+import { createHash } from "node:crypto";
+import { PrivateSnapshotGuard } from "./private-snapshot-guard";
 import { redirect } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
@@ -82,13 +84,22 @@ function PortalViewContent({
       return <PortalHelp snapshot={snapshot} />;
     case "operator":
       return snapshot.operator ? (
-        <PortalOperator
-          churches={snapshot.churches}
-          coordinatorChurches={snapshot.coordinatorChurches}
-          capabilities={snapshot.operatorCapabilities}
-          data={snapshot.operator}
-          viewerId={snapshot.viewer.id}
-        />
+        <PrivateSnapshotGuard
+          owner={snapshot.viewer.id}
+          label="account administration"
+          checksum={createHash("sha256")
+            .update(JSON.stringify(snapshot))
+            .digest("hex")}
+          url="/api/platform/portal?view=operator"
+        >
+          <PortalOperator
+            churches={snapshot.churches}
+            coordinatorChurches={snapshot.coordinatorChurches}
+            capabilities={snapshot.operatorCapabilities}
+            data={snapshot.operator}
+            viewerId={snapshot.viewer.id}
+          />
+        </PrivateSnapshotGuard>
       ) : (
         <PortalEmpty>
           Administration is not available for this account.

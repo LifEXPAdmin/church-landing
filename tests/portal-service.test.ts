@@ -484,6 +484,8 @@ test("array actions cannot bypass target eligibility to approve a suspended pend
     .version;
   await command(f.operator, {
     operation: "suspend",
+    mutationId: crypto.randomUUID(),
+    reason: "SAFETY_REVIEW",
     userId: actor.id,
     suspended: true,
     expectedVersion: version
@@ -837,6 +839,8 @@ test("suspension ends sessions and grants; restoring the account does not restor
     .version;
   await command(f.operator, {
     operation: "suspend",
+    mutationId: crypto.randomUUID(),
+    reason: "SAFETY_REVIEW",
     userId: actor.id,
     suspended: true,
     expectedVersion: version
@@ -872,6 +876,8 @@ test("suspension ends sessions and grants; restoring the account does not restor
   );
   await command(f.operator, {
     operation: "suspend",
+    mutationId: crypto.randomUUID(),
+    reason: "REVIEW_COMPLETE",
     userId: actor.id,
     suspended: false,
     expectedVersion: version + 1

@@ -523,6 +523,7 @@ model CommunityReport {
 enum RetentionTarget {
   MESSAGE
   REPORT
+  ACCOUNT
 }
 
 model RetentionHold {
@@ -1164,6 +1165,7 @@ model ChurchAuditEvent {
   actorId String
   targetId String
   action String
+  reason String?
   fromState String?
   toState String?
   version Int?

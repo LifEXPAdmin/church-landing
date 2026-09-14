@@ -34,6 +34,17 @@ import { verifiedChurchManagement } from "./church-management";
 import { readAccountSession, normalizeEmail } from "./accounts";
 import { reconcileSupportAccess } from "./support-revocation";
 import { churchSearchQuery } from "./church-search";
+import { socialCommand, socialInput } from "./social-operations";
+import {
+  suspensionReasons,
+  accountRestorationReasons
+} from "./account-restriction-types";
+import {
+  recordAccountRestrictionControl,
+  journalRetentionControls,
+  protectedRetentionControls,
+  type RetentionControlJournal
+} from "./retention-controls";
 import {
   ADULT_POLICY,
   type PortalSnapshot,
@@ -101,10 +112,20 @@ async function audit(
   churchId?: string,
   fromState?: string,
   toState?: string,
-  version?: number
+  version?: number,
+  reason?: string
 ) {
   await tx.churchAuditEvent.create({
-    data: { actorId, targetId, action, churchId, fromState, toState, version }
+    data: {
+      actorId,
+      targetId,
+      action,
+      churchId,
+      fromState,
+      toState,
+      version,
+      reason
+    }
   });
 }
 export async function operator(
@@ -253,11 +274,165 @@ async function resetConnectionAccess(tx: Tx, connection: ChurchConnection) {
     data: { revokedAt: new Date(), version: { increment: 1 } }
   });
 }
+// The journal adapter is injectable for isolated failure/recovery acceptance.
+export async function accountRestrictionCommand(
+  db: PrismaClient,
+  token: unknown,
+  input: Record<string, unknown>,
+  journal?: RetentionControlJournal
+) {
+  socialInput(input, [
+    "operation",
+    "mutationId",
+    "userId",
+    "expectedVersion",
+    "suspended",
+    "reason"
+  ]);
+  if (input.operation !== "suspend" || typeof input.suspended !== "boolean")
+    throw new PortalError(400, "Choose an account status.");
+  const reasons = input.suspended
+    ? suspensionReasons
+    : accountRestorationReasons;
+  if (typeof input.reason !== "string" || !Object.hasOwn(reasons, input.reason))
+    throw new PortalError(
+      400,
+      "Choose a reason for this account access decision."
+    );
+  const reason = input.reason;
+  const receipt = await socialCommand(
+    db,
+    token,
+    "account-restriction",
+    input,
+    async (tx, ownerId) => {
+      const actor = await tx.platformUser.findUniqueOrThrow({
+        where: { id: ownerId },
+        select: actorSelect
+      });
+      const userId = id(input.userId);
+      if (userId === actor.id)
+        throw new PortalError(
+          403,
+          "Self-suspension is not available through this operator control."
+        );
+      await lockUser(tx, userId);
+      const target = await tx.platformUser.findUnique({
+        where: { id: userId },
+        select: actorSelect
+      });
+      if (!target) throw new PortalError(404, "Account not found.");
+      expected(input.expectedVersion, target.portalVersion);
+      if (typeof input.suspended !== "boolean")
+        throw new PortalError(400, "Choose an account status.");
+      if (!!target.suspendedAt === input.suspended)
+        throw new PortalError(
+          409,
+          "This account status already changed. Reload to inspect current details."
+        );
+      const now = new Date();
+      await tx.platformUser.update({
+        where: { id: userId },
+        data: {
+          suspendedAt: input.suspended ? now : null,
+          portalVersion: { increment: 1 },
+          credentialVersion: { increment: 1 }
+        }
+      });
+      await tx.platformSession.deleteMany({ where: { userId } });
+      await tx.platformEmailChange.deleteMany({ where: { userId } });
+      await tx.platformAccountGrant.updateMany({
+        where: { userId, consumedAt: null },
+        data: { consumedAt: new Date() }
+      });
+      if (input.suspended) {
+        await revokeAccountFriendInvitations(tx, userId);
+        await revokeAccountContact(tx, userId);
+        await tx.supportCapabilityGrant.updateMany({
+          where: { userId, revokedAt: null },
+          data: { revokedAt: new Date(), version: { increment: 1 } }
+        });
+        const connections = await tx.churchConnection.findMany({
+          where: { userId }
+        });
+        for (const connection of connections) {
+          await resetConnectionAccess(tx, connection);
+          await tx.churchConnection.update({
+            where: { id: connection.id },
+            data: { version: { increment: 1 } }
+          });
+        }
+        await tx.churchCapabilityGrant.updateMany({
+          where: { userId, revokedAt: null },
+          data: { revokedAt: new Date(), version: { increment: 1 } }
+        });
+        await tx.platformOperatorGrant.updateMany({
+          where: { userId, revokedAt: null },
+          data: { revokedAt: new Date() }
+        });
+        await tx.churchContactAssignment.updateMany({
+          where: { userId, revokedAt: null },
+          data: { revokedAt: new Date(), version: { increment: 1 } }
+        });
+      }
+      await audit(
+        tx,
+        actor.id,
+        userId,
+        input.suspended ? "SUSPEND" : "RESTORE_ACCOUNT",
+        undefined,
+        target.suspendedAt ? "SUSPENDED" : "NOT_SUSPENDED",
+        input.suspended ? "SUSPENDED" : "NOT_SUSPENDED",
+        target.portalVersion + 1,
+        reason
+      );
+      await recordAccountRestrictionControl(
+        tx,
+        userId,
+        target.portalVersion + 1,
+        input.suspended,
+        actor.id,
+        now
+      );
+      await reconcileSupportAccess(tx);
+      return {
+        id: userId,
+        version: target.portalVersion + 1,
+        message:
+          "Account status updated. Existing sessions ended. Old sharing, privileges and contact appointments will not reactivate."
+      };
+    },
+    async (tx, ownerId) => {
+      const actor = await tx.platformUser.findUniqueOrThrow({
+        where: { id: ownerId },
+        select: actorSelect
+      });
+      await operator(tx, actor, "MANAGE_ACCOUNTS");
+    }
+  );
+  try {
+    const result = await journalRetentionControls(
+      db,
+      journal ?? protectedRetentionControls(),
+      receipt.id
+    );
+    if (result.failed || result.pending)
+      throw Error("Pending recovery protection");
+  } catch {
+    throw new PortalError(
+      503,
+      "The account status was saved, but recovery protection is still pending. Retry the original request to confirm it safely."
+    );
+  }
+  return receipt;
+}
 export async function portalCommand(
   db: PrismaClient,
   token: unknown,
   input: Record<string, unknown>
 ): Promise<string> {
+  if (input.operation === "suspend")
+    return (await accountRestrictionCommand(db, token, input)).message;
   let signupId: string | undefined;
   const result = await portal(db, token, async (tx, actor) => {
     const op = input.operation;
@@ -488,75 +663,6 @@ export async function portalCommand(
       });
       await audit(tx, actor.id, church.id, "ESTABLISH", church.id);
       return "Church established through an explicit operator assignment.";
-    }
-    if (op === "suspend") {
-      await operator(tx, actor, "MANAGE_ACCOUNTS");
-      const userId = id(input.userId);
-      if (userId === actor.id)
-        throw new PortalError(
-          403,
-          "Self-suspension is not available through this operator control."
-        );
-      await lockUser(tx, userId);
-      const target = await tx.platformUser.findUnique({
-        where: { id: userId },
-        select: actorSelect
-      });
-      if (!target) throw new PortalError(404, "Account not found.");
-      expected(input.expectedVersion, target.portalVersion);
-      if (typeof input.suspended !== "boolean")
-        throw new PortalError(400, "Choose an account status.");
-      await tx.platformUser.update({
-        where: { id: userId },
-        data: {
-          suspendedAt: input.suspended ? new Date() : null,
-          portalVersion: { increment: 1 },
-          credentialVersion: { increment: 1 }
-        }
-      });
-      await tx.platformSession.deleteMany({ where: { userId } });
-      await tx.platformEmailChange.deleteMany({ where: { userId } });
-      await tx.platformAccountGrant.updateMany({
-        where: { userId, consumedAt: null },
-        data: { consumedAt: new Date() }
-      });
-      if (input.suspended) {
-        await revokeAccountFriendInvitations(tx, userId);
-        await revokeAccountContact(tx, userId);
-        await tx.supportCapabilityGrant.updateMany({
-          where: { userId, revokedAt: null },
-          data: { revokedAt: new Date(), version: { increment: 1 } }
-        });
-        const connections = await tx.churchConnection.findMany({
-          where: { userId }
-        });
-        for (const connection of connections) {
-          await resetConnectionAccess(tx, connection);
-          await tx.churchConnection.update({
-            where: { id: connection.id },
-            data: { version: { increment: 1 } }
-          });
-        }
-        await tx.churchCapabilityGrant.updateMany({
-          where: { userId, revokedAt: null },
-          data: { revokedAt: new Date(), version: { increment: 1 } }
-        });
-        await tx.platformOperatorGrant.updateMany({
-          where: { userId, revokedAt: null },
-          data: { revokedAt: new Date() }
-        });
-        await tx.churchContactAssignment.updateMany({
-          where: { userId, revokedAt: null },
-          data: { revokedAt: new Date(), version: { increment: 1 } }
-        });
-      }
-      await audit(
-        tx,
-        actor.id,
-        userId,
-        input.suspended ? "SUSPEND" : "RESTORE_ACCOUNT"
-      );
-      return "Account status updated. Existing sessions ended. Old sharing, privileges and contact appointments will not reactivate.";
     }
     const churchId = id(input.churchId);
     if (
@@ -1041,7 +1147,33 @@ export async function getPortalSnapshot(
         where: scope,
         take: 100
       });
+      const accountAudit = manageAccounts
+        ? await tx.churchAuditEvent.findMany({
+            where: { action: { in: ["SUSPEND", "RESTORE_ACCOUNT"] } },
+            select: {
+              id: true,
+              actorId: true,
+              targetId: true,
+              action: true,
+              fromState: true,
+              toState: true,
+              reason: true,
+              version: true,
+              createdAt: true
+            },
+            orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+            take: 30
+          })
+        : undefined;
       snapshot.operator = {
+        ...(accountAudit
+          ? {
+              accountAudit: accountAudit.map((row) => ({
+                ...row,
+                createdAt: row.createdAt.toISOString()
+              }))
+            }
+          : {}),
         users: users.map((u) => ({
           id: u.id,
           name: u.name,

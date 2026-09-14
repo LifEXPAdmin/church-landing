@@ -535,6 +535,23 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "reviewed-account-access",
+    version: "2026.09.14.9",
+    date: "2026-09-14",
+    summary:
+      "Account access decisions have clearer reasons and safer recovery.",
+    added: [
+      "Authorized account operators can review recent access decisions and their recorded reasons."
+    ],
+    improved: [
+      "Suspending or restoring an account requires a reason and explicit confirmation. Restoring access still requires a new sign-in and leaves prior sharing and permissions ended."
+    ],
+    fixed: [
+      "An interrupted account access change can be confirmed without repeating it. Switching accounts requires a fresh review before continuing."
+    ],
+    featureIds: ["settings", "support"]
+  },
+  {
     id: "responsive-community-actions",
     version: "2026.09.14.8",
     date: "2026-09-14",

@@ -648,6 +648,8 @@ test("assignment permissions: membership removal and suspension permanently end 
   });
   await portalCommand(db, f.operator.token, {
     operation: "suspend",
+    mutationId: crypto.randomUUID(),
+    reason: "SAFETY_REVIEW",
     userId: user.id,
     suspended: true,
     expectedVersion: user.portalVersion

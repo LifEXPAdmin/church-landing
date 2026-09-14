@@ -1,6 +1,8 @@
 "use client";
 
 import { useId, useState } from "react";
+import { AccountRestrictionForm } from "./account-restriction-form";
+import { accountRestrictionReasons } from "@/lib/platform/account-restriction-types";
 
 import type {
   ChurchSummary,
@@ -39,11 +41,13 @@ function Choose({
   label,
   value,
   onChange,
+  disabled = false,
   options
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
+  disabled?: boolean;
   options: { value: string; label: string }[];
 }) {
   const id = useId();
@@ -54,6 +58,7 @@ function Choose({
       </label>
       <select
         id={id}
+        disabled={disabled}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         className={portalInputClass}
@@ -286,6 +291,7 @@ function AccountStatus({
   viewerId: string;
 }) {
   const [userId, setUserId] = useState("");
+  const [protectedWork, setProtectedWork] = useState(false);
   const target = data.users.find(
     (user) => user.id === userId && user.id !== viewerId
   );
@@ -297,6 +303,7 @@ function AccountStatus({
       </p>
       <Choose
         label="Account to manage"
+        disabled={protectedWork}
         value={userId}
         onChange={setUserId}
         options={userOptions(data.users.filter((user) => user.id !== viewerId))}
@@ -306,24 +313,68 @@ function AccountStatus({
           <p className="text-sm font-semibold text-gc-accent">
             Current status: {target.suspended ? "Suspended" : "Not suspended"}
           </p>
-          <PortalActionForm
+          <AccountRestrictionForm
             key={target.id}
-            operation="suspend"
-            payload={{
-              userId: target.id,
-              expectedVersion: target.version,
-              suspended: !target.suspended
-            }}
-            label={
-              target.suspended ? "Restore account access" : "Suspend account"
-            }
-            confirmation={
-              target.suspended
-                ? `Restore account access for ${target.name} without restoring old assignments.`
-                : `Suspend ${target.name}'s account and end their sessions and private assignments.`
-            }
+            owner={viewerId}
+            target={{ ...target, version: target.version }}
+            onProtected={setProtectedWork}
           />
         </>
+      )}
+      <h3 className="pt-2 text-xl text-gc-text">
+        Most recent 30 account access decisions
+      </h3>
+      {!data.accountAudit?.length ? (
+        <PortalEmpty>No account access decisions are recorded.</PortalEmpty>
+      ) : (
+        <ol className="space-y-3">
+          {data.accountAudit.map((entry) => (
+            <li
+              key={entry.id}
+              className="rounded-xl border border-gc-divider p-4 text-sm"
+            >
+              <p className="font-semibold">
+                {data.users.find((user) => user.id === entry.targetId)?.name ??
+                  entry.targetId}
+                : {entry.action === "SUSPEND" ? "Suspended" : "Access restored"}
+              </p>
+              <p>
+                {entry.reason &&
+                Object.hasOwn(accountRestrictionReasons, entry.reason)
+                  ? accountRestrictionReasons[
+                      entry.reason as keyof typeof accountRestrictionReasons
+                    ]
+                  : "Reason not recorded in this older decision"}
+              </p>
+              <p className="text-gc-muted">
+                By{" "}
+                {data.users.find((user) => user.id === entry.actorId)?.name ??
+                  entry.actorId}{" "}
+                ·{" "}
+                <time dateTime={entry.createdAt}>
+                  {new Date(entry.createdAt)
+                    .toISOString()
+                    .replace("T", " ")
+                    .replace(/\.\d+Z$/, " UTC")}
+                </time>
+              </p>
+              <p className="text-gc-muted">
+                {entry.fromState === "SUSPENDED"
+                  ? "Suspended"
+                  : entry.fromState === "NOT_SUSPENDED"
+                    ? "Not suspended"
+                    : "Earlier state not recorded"}{" "}
+                →{" "}
+                {entry.toState === "SUSPENDED"
+                  ? "Suspended"
+                  : entry.toState === "NOT_SUSPENDED"
+                    ? "Not suspended"
+                    : "Resulting state not recorded"}
+                {entry.version !== null ? ` · Version ${entry.version}` : ""}
+              </p>
+            </li>
+          ))}
+        </ol>
       )}
     </PortalCard>
   );

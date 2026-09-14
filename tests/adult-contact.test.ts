@@ -778,6 +778,8 @@ test("actual account deactivation and operator suspension revoke consent without
   });
   await portalCommand(db, f.operator.token, {
     operation: "suspend",
+    mutationId: crypto.randomUUID(),
+    reason: "SAFETY_REVIEW",
     userId: f.memberA.id,
     suspended: true,
     expectedVersion: target.portalVersion

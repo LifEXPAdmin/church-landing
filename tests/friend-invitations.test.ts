@@ -465,6 +465,8 @@ test("suspending an inviter removes connected pairs and invalidates pending sign
   });
   await portalCommand(db, operator.token, {
     operation: "suspend",
+    mutationId: crypto.randomUUID(),
+    reason: "SAFETY_REVIEW",
     userId: a.id,
     expectedVersion: before.portalVersion,
     suspended: true

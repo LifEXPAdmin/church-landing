@@ -25,9 +25,10 @@ export type RetentionControlEntry = {
     | "MODERATION_POST"
     | "MODERATION_COMMENT"
     | "APPEAL"
+    | "ACCOUNT_STATE"
     | "AUTHOR_WITHDRAW_POST"
     | "AUTHOR_WITHDRAW_COMMENT";
-  target: "REPORT" | "MESSAGE";
+  target: "REPORT" | "MESSAGE" | "ACCOUNT";
   targetId: string;
   sourceId: string;
   version: number;
@@ -63,30 +64,35 @@ function validate(value: unknown): RetentionControlEntry {
     r.policy !== policy ||
     ![r.recordedAt, r.startedAt, r.reviewDueAt].every(date) ||
     (r.endedAt !== null && !date(r.endedAt)) ||
-    !(r.kind === "REPORT"
-      ? r.target === "REPORT" &&
+    !(r.kind === "ACCOUNT_STATE"
+      ? r.target === "ACCOUNT" &&
         r.sourceId === r.targetId &&
-        ["RECEIVED", "FOLLOW_UP_REQUIRED", "CLOSED"].includes(r.outcome)
-      : r.kind === "MODERATION_POST" || r.kind === "MODERATION_COMMENT"
+        r.operatorId !== null &&
+        ["SUSPENDED", "RESTORED"].includes(r.outcome)
+      : r.kind === "REPORT"
         ? r.target === "REPORT" &&
-          ["VISIBLE", "HIDDEN", "REMOVED"].includes(r.outcome)
-        : r.kind === "AUTHOR_WITHDRAW_POST" ||
-            r.kind === "AUTHOR_WITHDRAW_COMMENT"
+          r.sourceId === r.targetId &&
+          ["RECEIVED", "FOLLOW_UP_REQUIRED", "CLOSED"].includes(r.outcome)
+        : r.kind === "MODERATION_POST" || r.kind === "MODERATION_COMMENT"
           ? r.target === "REPORT" &&
-            r.outcome === "WITHDRAWN" &&
-            r.endedAt === null
-          : r.kind === "APPEAL"
+            ["VISIBLE", "HIDDEN", "REMOVED"].includes(r.outcome)
+          : r.kind === "AUTHOR_WITHDRAW_POST" ||
+              r.kind === "AUTHOR_WITHDRAW_COMMENT"
             ? r.target === "REPORT" &&
-              [
-                "RECEIVED",
-                "IN_PROGRESS",
-                "WAITING_FOR_REQUESTER",
-                "RESOLVED",
-                "CLOSED"
-              ].includes(r.outcome)
-            : r.kind === "HOLD" &&
-              ["REPORT", "MESSAGE"].includes(r.target) &&
-              ["PRESERVE", "REVIEW", "RELEASE"].includes(r.outcome)) ||
+              r.outcome === "WITHDRAWN" &&
+              r.endedAt === null
+            : r.kind === "APPEAL"
+              ? r.target === "REPORT" &&
+                [
+                  "RECEIVED",
+                  "IN_PROGRESS",
+                  "WAITING_FOR_REQUESTER",
+                  "RESOLVED",
+                  "CLOSED"
+                ].includes(r.outcome)
+              : r.kind === "HOLD" &&
+                ["REPORT", "MESSAGE"].includes(r.target) &&
+                ["PRESERVE", "REVIEW", "RELEASE"].includes(r.outcome)) ||
     ["CLOSED", "RESOLVED", "RELEASE"].includes(r.outcome) !==
       (r.endedAt !== null)
   )
@@ -135,6 +141,31 @@ export function recordReportControl(
     startedAt: report.createdAt.toISOString(),
     reviewDueAt: report.reviewDueAt.toISOString(),
     endedAt: report.closedAt?.toISOString() ?? null
+  });
+}
+// Account recovery controls contain no login contact, report text or reason.
+export function recordAccountRestrictionControl(
+  tx: Tx,
+  userId: string,
+  version: number,
+  suspended: boolean,
+  operatorId: string,
+  now: Date
+) {
+  return record(tx, {
+    id: randomUUID(),
+    kind: "ACCOUNT_STATE",
+    target: "ACCOUNT",
+    targetId: userId,
+    sourceId: userId,
+    version,
+    policy,
+    outcome: suspended ? "SUSPENDED" : "RESTORED",
+    operatorId,
+    recordedAt: now.toISOString(),
+    startedAt: now.toISOString(),
+    reviewDueAt: retentionDate(now, 90).toISOString(),
+    endedAt: null
   });
 }
 export function recordHoldControl(
@@ -402,6 +433,23 @@ export async function replayRetentionControls(
     async (tx) => {
       await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(730221, 2)`;
       for (const entry of entries) {
+        if (entry.kind === "ACCOUNT_STATE") {
+          // A newer restoration cannot authorize an older backup's account
+          // credentials/assignments. Keep it suspended for current reinspection.
+          // Equal-version state already preserved in the backup is left intact.
+          await tx.$executeRaw`UPDATE "PlatformUser" SET
+            "suspendedAt"=coalesce("suspendedAt",${entry.recordedAt}::timestamp),
+            "portalVersion"=greatest("portalVersion",${entry.version})
+            WHERE id=${entry.sourceId} AND
+              ("portalVersion" < ${entry.version} OR
+                ("portalVersion"=${entry.version} AND ${entry.outcome === "SUSPENDED"}))`;
+          await record(tx, entry);
+          await tx.retentionControl.updateMany({
+            where: { id: entry.id, journaledAt: null },
+            data: { journaledAt: new Date() }
+          });
+          continue;
+        }
         if (
           entry.kind === "AUTHOR_WITHDRAW_POST" ||
           entry.kind === "AUTHOR_WITHDRAW_COMMENT"
@@ -556,5 +604,19 @@ export async function inspectRestoredAppeals(db: PrismaClient) {
     WITH latest AS (SELECT DISTINCT ON ("sourceId") "sourceId", "targetId", version FROM "RetentionControl" WHERE kind='APPEAL' ORDER BY "sourceId", version DESC)
     SELECT count(*)::bigint AS count FROM latest r LEFT JOIN "SupportCase" s ON s.id=r."sourceId"
     WHERE (s.id IS NULL OR s.version < r.version) AND NOT EXISTS (SELECT 1 FROM "RetentionPurge" purge WHERE purge.target='REPORT' AND purge."targetId"=r."targetId")`);
+  return Number(row.count);
+}
+
+export async function inspectRestoredAccountRestrictions(db: PrismaClient) {
+  const [row] = await db.$queryRaw<Array<{ count: bigint }>>(Prisma.sql`
+    WITH latest AS (SELECT DISTINCT ON ("sourceId") "sourceId", version, payload, "journaledAt"
+      FROM "RetentionControl" WHERE kind='ACCOUNT_STATE' ORDER BY "sourceId", version DESC)
+    SELECT count(*)::bigint AS count FROM latest r
+    LEFT JOIN "PlatformUser" u ON u.id=r."sourceId"
+    WHERE r."journaledAt" IS NULL OR
+      (u.id IS NULL AND NOT EXISTS (SELECT 1 FROM "AccountDeletion" d WHERE d."userId"=r."sourceId" AND d."completedAt" IS NOT NULL)) OR
+      (u.id IS NOT NULL AND (
+        (r.payload->>'outcome'='SUSPENDED' AND u."suspendedAt" IS NULL) OR
+        (r.payload->>'outcome'='RESTORED' AND u."suspendedAt" IS NOT NULL AND u."portalVersion"<=r.version)))`);
   return Number(row.count);
 }
