@@ -1,3 +1,29 @@
+## Author content notes verified live — September 14, 2026 UTC
+
+Product **2026.09.14.10**, application **acb8571569ae3d2b5acc9ad1eadd4d2c5bd25cc4**,
+is READY in **dpl_2Lzy7pPH4XrPoCfMH4gKYLpcMrkJ** with independent canonical
+assignment and serving identity verified. Optional plain-text content notes and
+safe excerpts persist through private drafts, publication and editing. Noted
+previews conceal full text and media; current audience, private prayer metadata,
+repost attribution, reviewer access and erasure protections remain enforced.
+Published management forms retain uncertain original requests and local choices
+through conflicts, navigation and current-account checks.
+
+The 123-file gate passes 758 checks with two expected skips and zero failures;
+56 focused checks, nine built-browser groups, types/lint and both runtime trace
+checks pass. Ten public live groups, four private-health groups and actual
+signed-in composer/editor observations pass. No production test application
+mutations, sends, browser errors or scoped runtime error/fatal rows occurred.
+All 49 migration checksums match. Protected upgrade 48→49 preserves 92 original
+tables and passes replay; installed encrypted backup/restore 49→49 and the
+27-set nightly expiry inspection pass. See [content-note acceptance](CONTENT_NOTES_ACCEPTANCE.md).
+
+Broader moderation remains open for actual F091 activity-limit and F093
+cross-surface acceptance review, legitimate operator assignment and remaining
+provider/device prerequisites. Original age-rating/child-eligibility scope remains
+separate from author-selected notes. Continue the next eligible work in the same
+unified run; final review remains last.
+
 ## Reviewed account access verified live — September 14, 2026 UTC
 
 Product **2026.09.14.9**, application **c77f3e42053412ab1916644d4ed7af692e18929b**,

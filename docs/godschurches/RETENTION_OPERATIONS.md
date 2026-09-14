@@ -24,6 +24,17 @@ record 48. The nightly wrapper finds 25 verified backup sets and zero expiry
 issues/removals. This remains a local awake-host job. No live account grant,
 restriction, restoration, erasure or outbound message was created for acceptance.
 
+The later content-note release **2026.09.14.10 / acb8571** verifies all 49 live
+migration checksums. Protected production-copy upgrade 48→49 at 13:20:59 UTC
+preserves all original columns across 92 tables and passes control replay.
+Installed registry and metadata now both record 49, preserving the previous 48
+checksums and installed retention source hash. The actual encrypted daily
+backup/restore separately passes 49→49; the 14:07:33 UTC nightly wrapper finds
+27 verified sets, zero expiry issues and zero removals. These are distinct
+upgrade/replay and ordinary-copy proofs. No production user data was changed.
+Content-note and excerpt erasure follows the same canonical body/evidence owners;
+see [the acceptance receipt](CONTENT_NOTES_ACCEPTANCE.md).
+
 For every schema release, verify the installed checksum file and its installation
 metadata independently, preserve all earlier checksums, install the new checksum,
 and run the installed encrypted daily backup/restore after deployment. The

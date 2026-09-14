@@ -1,6 +1,11 @@
 # Author content notes and safe excerpts
 
-September 14, 2026 UTC · candidate product 2026.09.14.10
+September 14, 2026 UTC · product 2026.09.14.10 verified live
+
+Application **acb8571569ae3d2b5acc9ad1eadd4d2c5bd25cc4** is READY in
+**dpl_2Lzy7pPH4XrPoCfMH4gKYLpcMrkJ**. The independent `godschurches.com`
+assignment and serving product/build match. This report's later documentation
+checkpoint is distinct from the serving application SHA.
 
 ## Scope and behavior
 
@@ -61,10 +66,26 @@ reconsideration views apply their existing authorization boundaries.
   368 server JavaScript files, without private fixture/environment leakage.
 - Encrypted production-copy upgrade 48→49 passes at 13:20:59 UTC, preserves every
   original column across 92 tables and completes protected recovery replay.
-  Production is unmodified. Exact deployment/live and installed-backup acceptance
-  remain pending; this checkpoint is not a production completion receipt.
+  Production is unmodified. All 49 live migration checksums match; migration 49
+  completed during the production build at 13:56:28 UTC. The installed registry
+  and metadata both record 49, preserving all prior checksums and the installed
+  retention implementation. Actual encrypted daily backup/restore separately
+  passes 49→49 across 92 tables. Its ordinary-copy result does not claim protected
+  replay; that proof is the separate 48→49 upgrade above. The nightly wrapper at
+  14:07:33 UTC finds 27 verified sets, zero expiry issues and zero removals, with
+  the approved 28-day threshold and 30-day maximum. The local host must be awake.
 - Migration 49 adds two nullable text columns and length constraints, without
   backfilling author choices or changing previous migrations.
+- Ten canonical public/browser groups and four private-health groups pass.
+  Actual signed-in Chrome shows both empty choices and counters in the pristine
+  composer and existing own-post editor. Existing text and audience remain;
+  retained text returned after its current-availability check. No fields were
+  edited or forms submitted. Automated live application writes, browser errors,
+  external sends and scoped deployment error/fatal rows are zero. These reads
+  do not substitute for the nine isolated write/recovery browser groups or for
+  physical-device acceptance.
+- Production tracing passes 146 traces, 15,141 entries and 368 server JavaScript
+  files. No private fixture/environment/configuration-loader material is included.
 
 Broader age ratings and child eligibility in the original sensitivity proposal
 remain outside this feature's current scope, with their partial disposition in
