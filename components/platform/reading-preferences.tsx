@@ -259,15 +259,20 @@ export function ReadingSettings({
         </label>
         <label className="gc-setting-row" htmlFor="hide-reaction-counts">
           <span>
-            Hide reaction counts
+            <span id="hide-reaction-counts-label">Hide reaction counts</span>
             <br />
-            <span className="text-sm font-normal text-gc-muted">
+            <span
+              id="hide-reaction-counts-hint"
+              className="text-sm font-normal text-gc-muted"
+            >
               Hide Like and prayer totals on this browser. Your own choices stay
               available.
             </span>
           </span>
           <input
             id="hide-reaction-counts"
+            aria-labelledby="hide-reaction-counts-label"
+            aria-describedby="hide-reaction-counts-hint"
             type="checkbox"
             checked={choices.hideReactionCounts}
             onChange={(event) =>

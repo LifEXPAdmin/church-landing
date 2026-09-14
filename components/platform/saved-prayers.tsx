@@ -1,6 +1,12 @@
 "use client";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState
+} from "react";
 import { socialRequest, SocialClientError } from "@/lib/platform/social-client";
 import {
   prayerUpdateLabels,
@@ -9,54 +15,55 @@ import {
 import { PrayerControl } from "./prayer-workspace";
 import { useUnsavedSocialWork } from "./use-unsaved-social-work";
 
-export function SavedPrayers({ owner }: { owner: string }) {
+export function SavedPrayers({
+  owner,
+  after
+}: {
+  owner: string;
+  after?: string;
+}) {
   const [page, setPage] = useState<PrayerSavedPage | null>(null),
     [busy, setBusy] = useState(false),
     [pending, setPending] = useState<string | null>(null),
     [message, setMessage] = useState("Checking your private prayer list…");
   const sequence = useRef(0),
     flight = useRef(false);
+  useLayoutEffect(() => {
+    const requested = location.hash.slice(1);
+    if (!page?.items.some((row) => requested === `prayer-save-${row.id}`))
+      return;
+    const row = document.getElementById(requested);
+    row?.focus({ preventScroll: true });
+    row?.scrollIntoView({ block: "start" });
+  }, [page]);
   useUnsavedSocialWork(
     { dirty: false, saving: !!pending, conflict: false },
     () => setMessage("Confirm your pending prayer-list change before leaving.")
   );
-  const refresh = useCallback(
-    async (after?: string) => {
-      const seq = ++sequence.current;
-      if (!after) setPage(null);
-      try {
-        const result = await socialRequest<PrayerSavedPage>(
-          `/api/platform/prayers?view=saved${after ? `&after=${encodeURIComponent(after)}` : ""}`,
-          undefined,
-          owner
-        );
-        if (sequence.current !== seq) return;
-        setPage((previous) => ({
-          ...result.data,
-          items: [
-            ...new Map(
-              [
-                ...(after ? (previous?.items ?? []) : []),
-                ...result.data.items
-              ].map((item) => [item.id, item])
-            ).values()
-          ]
-        }));
-        setMessage("");
-      } catch (error) {
-        if (sequence.current !== seq) return;
-        setPage(null);
-        if (error instanceof SocialClientError && error.status === 401)
-          setPending(null);
-        setMessage(
-          error instanceof Error
-            ? error.message
-            : "Your private prayer list could not be checked."
-        );
-      }
-    },
-    [owner]
-  );
+  const refresh = useCallback(async () => {
+    const seq = ++sequence.current;
+    setPage(null);
+    try {
+      const result = await socialRequest<PrayerSavedPage>(
+        `/api/platform/prayers?view=saved${after ? `&after=${encodeURIComponent(after)}` : ""}`,
+        undefined,
+        owner
+      );
+      if (sequence.current !== seq) return;
+      setPage(result.data);
+      setMessage("");
+    } catch (error) {
+      if (sequence.current !== seq) return;
+      setPage(null);
+      if (error instanceof SocialClientError && error.status === 401)
+        setPending(null);
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Your private prayer list could not be checked."
+      );
+    }
+  }, [owner, after]);
   useEffect(() => {
     const counter = sequence;
     const check = () => {
@@ -146,13 +153,33 @@ export function SavedPrayers({ owner }: { owner: string }) {
       {page && !page.items.length && <p>No saved prayers yet.</p>}
       {page?.items.map((row) => (
         <article
+          id={`prayer-save-${row.id}`}
+          tabIndex={-1}
           key={row.id}
           className="space-y-3 rounded-xl border border-gc-border p-4"
         >
           {row.available && row.href ? (
             <>
               <h2 className="text-xl">
-                <Link href={row.href} prefetch={false} className="underline">
+                <Link
+                  href={row.href}
+                  prefetch={false}
+                  className="underline"
+                  onClick={(event) => {
+                    if (
+                      event.defaultPrevented ||
+                      event.button !== 0 ||
+                      event.metaKey ||
+                      event.ctrlKey ||
+                      event.shiftKey ||
+                      event.altKey
+                    )
+                      return;
+                    const returnTo = new URL(location.href);
+                    returnTo.hash = `prayer-save-${row.id}`;
+                    history.replaceState(history.state, "", returnTo);
+                  }}
+                >
                   {row.label}
                 </Link>
               </h2>
@@ -202,14 +229,26 @@ export function SavedPrayers({ owner }: { owner: string }) {
         </article>
       ))}
       {page?.nextCursor && (
-        <button
-          type="button"
+        <Link
+          href={`/platform/prayers?after=${encodeURIComponent(page.nextCursor)}`}
+          prefetch={false}
           className="gc-button gc-button-quiet"
-          disabled={busy || !!pending}
-          onClick={() => void refresh(page.nextCursor!)}
+          aria-disabled={busy || !!pending}
+          onClick={(event) => {
+            if (busy || pending) event.preventDefault();
+          }}
         >
           More saved prayers
-        </button>
+        </Link>
+      )}
+      {after && (
+        <Link
+          href="/platform/prayers"
+          prefetch={false}
+          className="gc-button gc-button-quiet"
+        >
+          Newest saved prayers
+        </Link>
       )}
       <Link
         href="/platform/settings/notifications/availability"

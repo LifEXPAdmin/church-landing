@@ -920,3 +920,29 @@ test("account export includes only the owner's prayer records and labels; erasur
     [b.username]
   );
 });
+
+test("prayer account entry preserves the private list destination while dropping another account's pagination and arbitrary input", async () => {
+  const { safeAccountReturn, accountEntryHref } =
+    await import("../lib/platform/account-entry");
+  assert.equal(
+    safeAccountReturn(
+      "/platform/prayers?after=private-owner-cursor&token=secret&q=private"
+    ),
+    "/platform/prayers"
+  );
+  assert.equal(
+    safeAccountReturn("/platform/prayers/?cursor=secret"),
+    "/platform/prayers"
+  );
+  assert.equal(
+    safeAccountReturn("/platform/prayers/unregistered"),
+    "/platform"
+  );
+  assert.equal(
+    new URL(
+      accountEntryHref("login", "/platform/prayers"),
+      "https://example.test"
+    ).searchParams.get("next"),
+    "/platform/prayers"
+  );
+});

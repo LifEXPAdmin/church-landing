@@ -524,6 +524,64 @@ try {
     "Private saved prayers conceal withdrawn source details and remain removable without source access"
   );
 
+  const later = [];
+  for (let index = 0; index < 25; index++) {
+    const source = await db.platformPost.create({
+      data: {
+        authorId: f.contact.id,
+        content: `Fictional private-list source ${index}`
+      }
+    });
+    later.push(
+      await db.prayerRecord.create({
+        data: {
+          ownerId: f.memberA.id,
+          postId: source.id,
+          targetKey: `post:${source.id}`,
+          savedAt: new Date(Date.now() + index + 10000)
+        }
+      })
+    );
+  }
+  await go("/platform/prayers");
+  await page
+    .getByRole("link", { name: "More saved prayers", exact: true })
+    .click();
+  await page
+    .getByRole("link", { name: "Newest saved prayers", exact: true })
+    .waitFor();
+  await page.locator("main article h2 a").first().waitFor();
+  assert.equal(await page.locator("main article").count(), 6);
+  const returnRow = page
+    .locator("main article")
+    .filter({ has: page.locator("h2 a") })
+    .nth(3);
+  const returnId = await returnRow.getAttribute("id");
+  const sourceHref = await returnRow.locator("h2 a").getAttribute("href");
+  const pageAddress = page.url();
+  await returnRow.locator("h2 a").click();
+  await page
+    .getByRole("heading", { name: "Post and discussion", exact: true })
+    .waitFor();
+  assert.equal(new URL(page.url()).pathname, sourceHref);
+  await page.goBack();
+  await page.locator("#" + returnId).waitFor();
+  assert.equal(page.url(), pageAddress + "#" + returnId);
+  await page.waitForFunction(
+    (id) => document.activeElement?.id === id,
+    returnId
+  );
+  assert.equal(await page.locator("main article").count(), 6);
+  await page.reload();
+  await page.locator("#" + returnId).waitFor();
+  await page.waitForFunction(
+    (id) => document.activeElement?.id === id,
+    returnId
+  );
+  ok(
+    "Private prayer pagination keeps the same page and source item through browser Back and reload, after current access is checked"
+  );
+
   const fresh = await db.platformPost.create({
     data: {
       authorId: f.memberA.id,

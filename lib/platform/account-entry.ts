@@ -17,11 +17,14 @@ export function safeAccountReturn(value: unknown): string {
   const url = new URL(value, "https://return.invalid");
   if (
     url.origin !== "https://return.invalid" ||
-    !/^\/platform(?:\/(?:notifications\/[a-zA-Z0-9_-]{1,80}|activity|feed|search|share|invitations|invite\/[A-Za-z0-9_-]{43}|features|releases(?:\/[a-zA-Z0-9_-]{1,100})?|menu|drafts|comment-drafts|relationships|saved|reports(?:\/(?:review|decisions))?|messages(?:\/[a-zA-Z0-9_-]{1,100})?|settings(?:\/[a-z]+(?:\/[a-z]+)?)?|calendars(?:\/[a-zA-Z0-9_-]{1,100})?|commitments|events\/[a-zA-Z0-9_-]{1,100}|profile(?:\/(?:me|[a-zA-Z0-9_]{3,24}))?|posts\/[a-zA-Z0-9_-]{1,100}|church-listings(?:\/[a-zA-Z0-9_-]{1,100})?|church-claims(?:\/(?:review(?:\/[a-zA-Z0-9_-]{1,100})?|[a-zA-Z0-9_-]{1,100}))?|churches(?:\/[a-zA-Z0-9_-]{1,100}(?:\/(?:directory|review|overview|calendar|responsibilities|access|structure(?:\/[a-zA-Z0-9_-]{1,100})?|people\/[a-zA-Z0-9_-]{1,100}))?)?|my-church(?:\/sharing)?|help|support(?:\/[a-zA-Z0-9_-]{1,100})?))?\/?$/.test(
+    !/^\/platform(?:\/(?:notifications\/[a-zA-Z0-9_-]{1,80}|activity|feed|search|share|invitations|invite\/[A-Za-z0-9_-]{43}|features|releases(?:\/[a-zA-Z0-9_-]{1,100})?|menu|drafts|comment-drafts|relationships|saved|prayers|reports(?:\/(?:review|decisions))?|messages(?:\/[a-zA-Z0-9_-]{1,100})?|settings(?:\/[a-z]+(?:\/[a-z]+)?)?|calendars(?:\/[a-zA-Z0-9_-]{1,100})?|commitments|events\/[a-zA-Z0-9_-]{1,100}|profile(?:\/(?:me|[a-zA-Z0-9_]{3,24}))?|posts\/[a-zA-Z0-9_-]{1,100}|church-listings(?:\/[a-zA-Z0-9_-]{1,100})?|church-claims(?:\/(?:review(?:\/[a-zA-Z0-9_-]{1,100})?|[a-zA-Z0-9_-]{1,100}))?|churches(?:\/[a-zA-Z0-9_-]{1,100}(?:\/(?:directory|review|overview|calendar|responsibilities|access|structure(?:\/[a-zA-Z0-9_-]{1,100})?|people\/[a-zA-Z0-9_-]{1,100}))?)?|my-church(?:\/sharing)?|help|support(?:\/[a-zA-Z0-9_-]{1,100})?))?\/?$/.test(
       url.pathname
     )
   )
     return "/platform";
+  // Prayer pagination is bound to the current account. Begin its private list anew after account entry.
+  if (url.pathname.replace(/\/$/, "") === "/platform/prayers")
+    return "/platform/prayers";
   if (
     url.pathname.startsWith("/platform/settings") &&
     !isSettingsPath(url.pathname)
