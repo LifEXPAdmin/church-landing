@@ -259,3 +259,18 @@ the still-open church-content, photo-maintenance and physical/owner rehearsal
 requirements. The canonical private workflow also records release-content
 maintenance. The session's independently decoded QR and prepared three-minute
 walkthrough are retained in the private handoff. No owner message was sent.
+
+## Discussion integration refresh — 14 September 2026 UTC
+
+The existing discussion interface was rechecked against production-build source
+`0c6fa3f`, equivalent to the application serving as `2026.09.14.15 / 4252774`.
+Eight comment, three recovery and five reader browser groups pass with no page
+errors in the isolated HTTPS fixture. QA now targets the shipped sheet composer,
+action menus and whole-thread concealment after audience revocation. The previous
+inline-composer and reload-button selectors were stale; no interface was rebuilt.
+
+The remaining F041 integration is explicit conversation-follower Activity and
+optional delivery. Current recipient creation covers direct replies and selected
+mentions only. Complete that dependency within this discussion feature cycle,
+then verify the exact deployed release. Physical phone keyboard/gesture and
+locked-device delivery acceptance remain separate from these browser checks.

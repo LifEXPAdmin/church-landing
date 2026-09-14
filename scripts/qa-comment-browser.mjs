@@ -244,18 +244,22 @@ try {
     window.dispatchEvent(new Event("blur"));
     window.dispatchEvent(new Event("focus"));
   });
-  await thread()
-    .getByRole("button", { name: "Reload discussion", exact: true })
-    .waitFor();
-  assert.equal(await thread().locator("[data-comment-id]").count(), 0);
+  await page.getByText("Original post unavailable.", { exact: true }).waitFor();
+  assert.equal(await page.locator("[data-comment-thread]").isVisible(), false);
+  assert.equal(await page.locator("[data-comment-id]:visible").count(), 0);
   assert.deepEqual(errors, []);
-  ok("Revoked guest access clears the discussion on foreground recheck");
+  ok(
+    "Revoked guest access conceals the mounted discussion on foreground recheck"
+  );
   await db.platformPost.update({
     where: { id: p.id },
     data: { audience: "PUBLIC", audienceChurchId: null }
   });
   await signIn(f.memberA);
   await go(`/platform/posts/${p.id}`);
+  await page
+    .getByRole("button", { name: "Write a comment", exact: true })
+    .click();
   const composer = () =>
     page.getByRole("form", { name: "Write a comment", exact: true });
   const text = () => composer().getByLabel("Comment text", { exact: true });
@@ -280,7 +284,7 @@ try {
   });
   await text().fill("Saved before sending with exact retry");
   await composer()
-    .getByRole("button", { name: "Save comment draft", exact: true })
+    .getByRole("button", { name: "Save draft", exact: true })
     .click();
   await composer()
     .getByRole("button", { name: "Retry same request", exact: true })
@@ -288,17 +292,8 @@ try {
   await composer().getByText("Saved privately.", { exact: true }).waitFor();
   assert.equal(draftBodies[0], draftBodies[1]);
   await page.unroute("**/api/platform/comments");
-  await composer()
-    .getByRole("button", { name: "Send comment", exact: true })
-    .click();
-  await page.waitForFunction(
-    () =>
-      !!document.querySelector('form[aria-label="Write a comment"] textarea') &&
-      !document.querySelector('form[aria-label="Write a comment"] textarea')
-        .disabled &&
-      document.querySelector('form[aria-label="Write a comment"] textarea')
-        .value === ""
-  );
+  await composer().getByRole("button", { name: "Reply", exact: true }).click();
+  await composer().waitFor({ state: "hidden" });
   const created = await db.platformPostComment.findFirstOrThrow({
     where: { postId: p.id, content: "Saved before sending with exact retry" }
   });
@@ -317,7 +312,13 @@ try {
   await createdRow()
     .getByRole("button", { name: "Unlike (1)", exact: true })
     .waitFor();
-  await createdRow().getByRole("button", { name: "Edit", exact: true }).click();
+  await createdRow()
+    .getByRole("button", { name: /More comment options/ })
+    .click();
+  await page
+    .getByRole("dialog", { name: /More comment options/ })
+    .getByRole("button", { name: "Edit", exact: true })
+    .click();
   const edit = page.getByRole("form", { name: "Edit comment", exact: true });
   await edit
     .getByLabel("Edited comment text", { exact: true })
@@ -330,7 +331,13 @@ try {
   ok(
     "Signed-in composer saves privately, retries identical lost-response body, sends once, likes, and edits through canonical versions"
   );
-  await createdRow().getByRole("button", { name: "Edit", exact: true }).click();
+  await createdRow()
+    .getByRole("button", { name: /More comment options/ })
+    .click();
+  await page
+    .getByRole("dialog", { name: /More comment options/ })
+    .getByRole("button", { name: "Edit", exact: true })
+    .click();
   await edit
     .getByLabel("Edited comment text", { exact: true })
     .fill("My unsent conflict text");
@@ -359,7 +366,11 @@ try {
   ok(
     "Concurrent edit conflict preserves unsent text and cannot overwrite newer version"
   );
+  await page
+    .getByRole("button", { name: "Write a comment", exact: true })
+    .click();
   await text().fill("A mention");
+  await composer().getByText("Identity and mentions", { exact: true }).click();
   await composer()
     .getByRole("combobox", { name: "Mention someone (optional)" })
     .fill(f.memberB.username);
@@ -374,7 +385,7 @@ try {
     .getByRole("combobox", { name: "Mention someone (optional)" })
     .press("Enter");
   await composer()
-    .getByRole("button", { name: "Save comment draft", exact: true })
+    .getByRole("button", { name: "Save draft", exact: true })
     .click();
   await composer().getByText("Saved privately.", { exact: true }).waitFor();
   const saved = await db.privateCommentDraft.findFirstOrThrow({
@@ -404,16 +415,18 @@ try {
   await composer()
     .getByRole("option", { name: f.churchA.name, exact: true })
     .waitFor({ state: "attached" });
+  if (!(await composer().getByLabel("Speaking as").isVisible()))
+    await composer()
+      .getByText("Identity and mentions", { exact: true })
+      .click();
   await composer().getByLabel("Speaking as").selectOption(f.churchA.id);
   await text().fill("Church speaker permission checkpoint");
   await composer()
-    .getByRole("button", { name: "Save comment draft", exact: true })
+    .getByRole("button", { name: "Save draft", exact: true })
     .click();
   await composer().getByText("Saved privately.", { exact: true }).waitFor();
   await db.churchCapabilityGrant.delete({ where: { id: grant.id } });
-  await composer()
-    .getByRole("button", { name: "Send comment", exact: true })
-    .click();
+  await composer().getByRole("button", { name: "Reply", exact: true }).click();
   await composer()
     .getByText(
       "Choose a church you currently have permission to speak for in this audience.",
@@ -445,9 +458,7 @@ try {
       capability: "PUBLISH_CHURCH_POSTS"
     }
   });
-  await composer()
-    .getByRole("button", { name: "Send comment", exact: true })
-    .click();
+  await composer().getByRole("button", { name: "Reply", exact: true }).click();
   await thread()
     .getByText("Church speaker permission checkpoint", { exact: true })
     .waitFor();
@@ -465,14 +476,16 @@ try {
   await replyForm
     .getByLabel("Comment text", { exact: true })
     .fill("Reply survives deleted root");
-  await replyForm
-    .getByRole("button", { name: "Send comment", exact: true })
-    .click();
+  await replyForm.getByRole("button", { name: "Reply", exact: true }).click();
   await churchRow
     .getByRole("button", { name: "Read replies (1)", exact: true })
     .waitFor();
   page.once("dialog", (d) => d.accept());
-  await churchRow.getByRole("button", { name: "Delete", exact: true }).click();
+  await churchRow.getByRole("button", { name: /More comment options/ }).click();
+  await page
+    .getByRole("dialog", { name: /More comment options/ })
+    .getByRole("button", { name: "Delete", exact: true })
+    .click();
   const tomb = thread()
     .locator("article[data-comment-id]")
     .filter({ hasText: "Comment unavailable" })
@@ -480,8 +493,13 @@ try {
       has: page.getByRole("button", { name: "Read replies (1)", exact: true })
     });
   const tombId = await tomb.getAttribute("data-comment-id");
-  await tomb.getByRole("button", { name: "Read replies (1)", exact: true }).click();
-  await page.locator(`[data-comment-id="${tombId}"]`).getByText("Reply survives deleted root", { exact: true }).waitFor();
+  await tomb
+    .getByRole("button", { name: "Read replies (1)", exact: true })
+    .click();
+  await page
+    .locator(`[data-comment-id="${tombId}"]`)
+    .getByText("Reply survives deleted root", { exact: true })
+    .waitFor();
   ok(
     "Church speaker publish rechecks revoked grants without fallback, hides internal publisher, and UI reply survives root deletion"
   );
