@@ -35,7 +35,8 @@ request, and feed changes check the existing post/comment draft workspace.
 
 ## Stable reading and operating bounds
 
-Ranked feeds retain only an ordered array of post IDs for one hour. Scores,
+Ranked feeds store only an ordered array of post IDs. A set is valid for one
+hour; physical removal follows the bounded allocation or maintenance sweep. Scores,
 bodies, reading activity and per-visitor identity are not stored. All subsequent
 pages recheck current discovery and source permissions before hydration. The
 ordering stays fixed while visible Like counts stay current; deliberate Refresh
@@ -75,13 +76,18 @@ inspection versus cleanup, explicit feed choices in account export and erasure
 of owned ranking sets/preferences. Current sets survive cleanup, inspection
 writes nothing, and unrelated retained conversation history survives erasure.
 
-The production build at runtime fad1462 passes all nine four-feed browser groups:
-guest/account choice separation and fresh sessions; Home/My feed and List/Pages;
+The production build at runtime 6d89c68 passes all ten four-feed browser groups:
+guest/account choice separation and fresh sessions; searchable feed settings and
+existing mute management; Home/My feed and List/Pages;
 320/390/1280-pixel controls; disjoint ranking pages, Back and Refresh; lost save
 acknowledgement with identical retry bytes; current friendship removal; account
 switching; expired current-page draft recovery; and both ranked empty states.
 The accepted run has zero page errors, production mutations or external sends.
-Narrow and wide focused-reader captures were visually inspected. Earlier runs
+Narrow and wide focused-reader captures and the 320-pixel settings group were
+visually inspected. The existing retained-privacy, comment-reader and content-note
+suites separately pass eight, five and nine groups on the same feed services.
+Six settings registry/return-contract checks, types and focused lint pass for
+the final settings addition. Earlier runs
 found and repaired a native-history paging race. Two earlier runs reported a
 React hydration warning around Refresh following Back; development and production
 diagnostic runs did not isolate its cause. The final ordinary production suite
@@ -92,7 +98,7 @@ synchronously. This is not a claim that an underlying hydration defect was fixed
 ## Measured costs and recovery
 
 Compared with the preceding application build, unique route-plus-layout
-JavaScript grows 4,672 raw / 1,477 gzip bytes for Home, and 950 raw / 349 gzip
+JavaScript grows 5,228 raw / 1,642 gzip bytes for Home, and 1,477 raw / 505 gzip
 bytes each for discussion and profile. Gzip uses level six per file; these are
 build assets, not measured network transfer or startup time. The local production
 trace contains 147 traces, 3,305 entries and 372 server JavaScript files, without
@@ -115,9 +121,28 @@ migration checksums and passes protected control replay. The plaintext restore
 is removed. Production access used verified TLS and a read-only transaction
 default; no production modification or outbound delivery occurred.
 
-Still required in this feature cycle: complete security/support gate and retained
-browser regressions, installed migration-checksum propagation and post-release
-backup, exact canonical deployment, actual live checks and private reconciliation.
+## Complete local acceptance before publication
+
+All 130 discovered test files are covered: 806 passing executions and two expected
+production delivery skips, with no unresolved failures or cancellations. The
+foundation gate on fad1462 completed additive upgrade, synthetic restore, fresh
+migration constraints, both production builds, development HTML/RSC privacy and
+production restart/session checks. It stopped at an old production assertion that
+expected a private church post in default Home. Latest is now explicitly public;
+the corrected publishing file and every remaining explicit/discovered test pass
+on the same owned isolated cluster and unchanged application code after restart
+over verified HTTPS. Original failing logs and the separate continuation receipt
+are retained; this is combined acceptance, not a claimed uninterrupted gate run.
+
+The final settings navigation addition in 6d89c68 passes six registry/return
+contract checks, types/lint, the ten-group four-feed browser suite and the six-group
+Settings suite. Together with the unchanged-service privacy/comment/content-note
+suites, 38 browser groups pass with zero page errors. No provider dependency or
+additional schedule is introduced. All test mutations remain in isolated fixtures.
+
+Still required in this feature cycle: installed migration-checksum propagation
+and post-release backup, exact canonical deployment, actual live checks and
+private reconciliation.
 The feed cleanup implementation is part of the deployed retention route; the
 separate installed local backup-retention module is unchanged and its checksum
 must still match. Broader Local/Following/Your Church/advanced-filter and

@@ -1,13 +1,15 @@
 ## Four-feed implementation checkpoint — September 14, 2026
 
 The local 2026.09.14.14 candidate implements all four approved modes, private
-saved choices, shared Home/My feed controls, stable ranked pages and retained
-friendship checks. Fifteen isolated service/migration checks, four operating/erasure/export checks,
-nine built-browser groups, type checking and focused lint pass. Protected upgrade
-49→50 preserves all original columns across 92 tables and passes control replay.
-The complete gate, retained-browser regressions, deployment and live acceptance
-remain in progress; 2026.09.14.13 is still serving. See
-[the feature evidence](FOUR_FEEDS_ACCEPTANCE.md) for exact bounds and next checks.
+saved choices, shared Home/My feed controls, searchable Settings access, stable
+ranked pages and current friendship/source checks. Complete local acceptance
+covers 130 discovered files with 806 passes and two expected skips, plus 38
+built-browser groups. Types/lint, six settings contracts and measured runtime
+checks pass. Protected upgrade 49→50 preserves all original columns across
+92 tables and passes control replay. Exact deployment/live acceptance, installed
+registry and post-release backup remain in progress; 2026.09.14.13 still serves.
+See [the feature evidence](FOUR_FEEDS_ACCEPTANCE.md) for provenance, operating
+bounds, earlier failures and the completed continuation.
 
 ## Discussion moderation reasons verified live — September 14, 2026 UTC
 
@@ -92,7 +94,7 @@ Published management forms retain uncertain original requests and local choices
 through conflicts, navigation and current-account checks.
 
 The 123-file gate passes 758 checks with two expected skips and zero failures;
-56 focused checks, nine built-browser groups, types/lint and both runtime trace
+56 focused checks, ten built-browser groups, types/lint and both runtime trace
 checks pass. Ten public live groups, four private-health groups and actual
 signed-in composer/editor observations pass. No production test application
 mutations, sends, browser errors or scoped runtime error/fatal rows occurred.
