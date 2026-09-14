@@ -68,7 +68,7 @@ const output = fixtureDir + "/photo-viewer-browser";
 mkdirSync(output, { recursive: true });
 const go = async (path) => {
   await page.goto(config.origin + path);
-  await page.waitForLoadState("networkidle");
+  await page.getByRole("heading", { level: 1 }).waitFor();
 };
 const bounded = async () =>
   assert.ok(
