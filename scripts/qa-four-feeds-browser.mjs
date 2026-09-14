@@ -54,9 +54,15 @@ const context = await browser.newContext({
   viewport: { width: 390, height: 844 }
 });
 const page = await context.newPage();
+let phase = "initial";
 const errors = [];
 page.on("pageerror", (e) => {
-  const issue = { path: new URL(page.url()).pathname, message: e.message };
+  const issue = {
+    phase,
+    path: new URL(page.url()).pathname,
+    message: e.message,
+    stack: e.stack
+  };
   errors.push(issue);
   console.log("BROWSER_ERROR", JSON.stringify(issue));
 });
@@ -100,6 +106,7 @@ const signIn = (actor) =>
     }
   ]);
 const choose = async (mode) => {
+  phase = "choose-" + mode;
   await selector().selectOption(mode);
   await page.waitForURL((url) => url.searchParams.get("feed") === mode);
   await selector().waitFor();
@@ -251,6 +258,7 @@ try {
   for (const width of [320, 390, 1280]) {
     await page.setViewportSize({ width, height: 844 });
     await bounded();
+    await page.screenshot({ path: output + `/focused-${width}.png` });
     await selector().screenshot({ path: output + `/selector-${width}.png` });
   }
   await page
@@ -276,6 +284,7 @@ try {
       firstLikedAt: new Date(Date.now() - 1000)
     }
   });
+  phase = "weekly-next";
   await page
     .getByRole("link", { name: "Read more posts", exact: true })
     .click();
@@ -286,9 +295,11 @@ try {
     firstUrl
   );
   assert.deepEqual(await getIds(), order.slice(30));
+  phase = "weekly-back";
   await page.goBack();
   await selector().waitFor();
   assert.deepEqual(await getIds(), rankedFirst);
+  phase = "refresh-ranked";
   await page
     .getByRole("button", { name: "Refresh posts", exact: true })
     .click();

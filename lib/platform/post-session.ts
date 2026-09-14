@@ -24,6 +24,10 @@ export async function readHomeFeed(input: {
   cursor?: string;
   scope?: string;
   refresh?: string;
+  legacyThrough?: string;
+  legacyAnchor?: string;
+  legacyBefore?: string;
+  legacyCursor?: string;
 }) {
   const guestMode = (await privateCookies()).get(GUEST_FEED_COOKIE)?.value;
   return readFeed(prisma, await token(), { ...input, guestMode });

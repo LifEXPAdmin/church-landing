@@ -42,7 +42,8 @@ test("actual reader HTML and Flight keep a selected bounded set while new posts 
       body.includes(a.id) && body.includes(b.id) && body.includes(c.id)
     );
     assert.ok(!body.includes(arrival.id));
-    assert.equal(body.includes(f.post.id), production);
+    // Latest is now explicitly public-only, even for an approved member.
+    assert.equal(body.includes(f.post.id), false);
     if (!rsc) {
       const attrs = (id: string) =>
         body.match(
@@ -124,5 +125,50 @@ test("canonical comment API writes only to the selected reader post without alte
   assert.equal(
     await db.platformPostComment.count({ where: { postId: b.id, content } }),
     0
+  );
+});
+
+test("Friends HTML and Flight include only current accepted personal friends with independent church access", async () => {
+  const f = await seedParticipation(db);
+  await db.friendAcceptance.create({
+    data: {
+      inviterId: f.ada.id,
+      recipientId: f.lee.id,
+      invitationVersion: 1,
+      state: "CONNECTED"
+    }
+  });
+  await db.platformFollow.createMany({
+    data: [
+      { followerId: f.ada.id, followingId: f.lee.id },
+      { followerId: f.lee.id, followingId: f.ada.id }
+    ],
+    skipDuplicates: true
+  });
+  const privatePost = await postCommand(db, f.ada.token, {
+    operation: "create",
+    requestKey: randomUUID(),
+    audience: "CHURCH",
+    audienceChurchId: f.churchA.id,
+    content: "Fictional personal friend church note " + randomUUID()
+  });
+  const path = "/platform?feed=friends";
+  for (const rsc of [false, true]) {
+    const body = await (await get(path, f.lee.token, rsc)).text();
+    assert.equal(body.includes(privatePost.id), production);
+    assert.ok(
+      !body.includes(f.post.id),
+      "A church identity is not a personal friend"
+    );
+    assert.ok(
+      !(await (await get(path, "", rsc)).text()).includes(privatePost.id)
+    );
+  }
+  await db.churchConnection.updateMany({
+    where: { userId: f.lee.id },
+    data: { state: "WITHDRAWN" }
+  });
+  assert.ok(
+    !(await (await get(path, f.lee.token)).text()).includes(privatePost.id)
   );
 });

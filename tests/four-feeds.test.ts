@@ -534,3 +534,37 @@ test("public ranking reuse keeps storage bounded across visitors while deliberat
   assert.deepEqual(ids(fresh), []);
   assert.notEqual(fresh.pageCursor, first.pageCursor);
 });
+
+test("existing chronological through/anchor and older-page links retain their publication boundary", async () => {
+  const a = await createPortalActor(db, "legacyfeed"),
+    at = clock();
+  const rows = await Promise.all(
+    Array.from({ length: 3 }, () => post(a.id, at))
+  );
+  const order = rows
+    .map((row) => row.id)
+    .sort()
+    .reverse();
+  const arrival = await post(a.id, new Date(+at + 1));
+  const result = await readFeed(
+    db,
+    a.token,
+    { legacyThrough: at.toISOString(), legacyAnchor: order[1] },
+    new Date(+at + 2)
+  );
+  assert.deepEqual(
+    ids(result).filter((id) => order.includes(id)),
+    order.slice(1)
+  );
+  assert.ok(!ids(result).includes(arrival.id));
+  const older = await readFeed(
+    db,
+    a.token,
+    { legacyBefore: at.toISOString(), legacyCursor: order[1] },
+    new Date(+at + 2)
+  );
+  assert.deepEqual(
+    ids(older).filter((id) => order.includes(id)),
+    order.slice(2)
+  );
+});

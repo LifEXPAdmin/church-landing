@@ -1,3 +1,4 @@
+import { readerDate, readerId } from "./reader-navigation";
 import { gzipSync, gunzipSync } from "node:zlib";
 import { expireFeedSnapshots } from "./feed-snapshot-retention";
 import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
@@ -17,6 +18,7 @@ const PAGE = 30,
 export const MAX_RANKED_CANDIDATES = 10000;
 const TTL = HOUR;
 type Cursor = {
+  upperId?: string;
   page?: string[];
   at: string;
   snapshot?: string;
@@ -67,6 +69,11 @@ function codec(ownerId: string | null, mode: FeedMode) {
               (id: unknown) =>
                 typeof id !== "string" || !/^[a-zA-Z0-9_-]{1,100}$/.test(id)
             ))
+        )
+          throw Error();
+        if (
+          row.upperId !== undefined &&
+          !/^[a-zA-Z0-9_-]{1,100}$/.test(row.upperId)
         )
           throw Error();
         if (row.snapshot) {
@@ -162,6 +169,10 @@ export function readFeed(
     guestMode?: unknown;
     scope?: unknown;
     refresh?: unknown;
+    legacyThrough?: unknown;
+    legacyAnchor?: unknown;
+    legacyBefore?: unknown;
+    legacyCursor?: unknown;
   } = {},
   now = new Date()
 ) {
@@ -187,6 +198,21 @@ export function readFeed(
         "latest";
       const cursors = codec(context.actorId, mode);
       let cursor = cursors.decode(sameOwner ? input.cursor : undefined, now);
+      if (!cursor && ["latest", "friends"].includes(mode)) {
+        const through = readerDate(input.legacyThrough),
+          anchor = readerId(input.legacyAnchor);
+        const before = readerDate(input.legacyBefore),
+          id = readerId(input.legacyCursor);
+        if ((through && anchor && through <= now) || (before && id))
+          cursor = {
+            at:
+              through && anchor && through <= now
+                ? through.toISOString()
+                : now.toISOString(),
+            ...(through && anchor && through <= now ? { upperId: anchor } : {}),
+            ...(before && id ? { before: before.toISOString(), id } : {})
+          };
+      }
       let at = cursor ? new Date(cursor.at) : now;
       let ids: string[],
         next: Cursor | null = null,
@@ -323,7 +349,14 @@ export function readFeed(
           where: {
             AND: [
               feedReadableWhere(context, mode, now),
-              { publishedAt: { lte: at } },
+              cursor.upperId
+                ? {
+                    OR: [
+                      { publishedAt: { lt: at } },
+                      { publishedAt: at, id: { lte: cursor.upperId } }
+                    ]
+                  }
+                : { publishedAt: { lte: at } },
               ...(cursor.before && cursor.id
                 ? [
                     {
@@ -348,6 +381,7 @@ export function readFeed(
         if (rows.length > PAGE && last)
           next = {
             at: cursor.at,
+            ...(cursor.upperId ? { upperId: cursor.upperId } : {}),
             before: last.publishedAt!.toISOString(),
             id: last.id
           };

@@ -39,7 +39,11 @@ export default async function HomeFeedPage({
       mode: params.feed,
       cursor: params.feedCursor,
       scope: params.feedScope,
-      refresh: params.refreshFeed
+      refresh: params.refreshFeed,
+      legacyThrough: params.through,
+      legacyAnchor: params.anchor,
+      legacyBefore: params.before,
+      legacyCursor: params.cursor
     });
   } catch (error) {
     if (!(error instanceof PortalError)) throw error;
