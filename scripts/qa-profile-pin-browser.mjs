@@ -553,6 +553,42 @@ try {
   ok(
     "Pinned post member previews retain the content note and safe excerpt without opening the full body"
   );
+  phase = "confirmed-write-status-outage";
+  await profile(owner);
+  await page
+    .locator('#posts [data-profile-pin="true"]')
+    .getByRole("button", { name: "More post options", exact: true })
+    .click();
+  await menu()
+    .getByRole("button", { name: "Unpin from profile", exact: true })
+    .waitFor();
+  await page.waitForFunction(() =>
+    Array.from(document.querySelectorAll('[role="dialog"] button')).some(
+      (b) => b.textContent.trim() === "Unpin from profile" && !b.disabled
+    )
+  );
+  let statusFailures = 0;
+  const statusRoute = "**/api/platform/profile-pin?postId=*";
+  await page.route(statusRoute, (route) => {
+    statusFailures++;
+    return route.abort("failed");
+  });
+  await menu()
+    .getByRole("button", { name: "Unpin from profile", exact: true })
+    .click();
+  await waitPin(owner, null);
+  await page.waitForFunction(
+    () => !document.querySelector('#posts [data-profile-pin="true"]'),
+    undefined,
+    { timeout: 10000 }
+  );
+  await page.locator("#posts").waitFor({ state: "visible" });
+  assert.equal(statusFailures, 1);
+  await page.unroute(statusRoute);
+  await page.keyboard.press("Escape");
+  ok(
+    "A confirmed unpin refreshes the profile even when its subsequent status read fails, without replaying the saved change"
+  );
   assert.deepEqual(errors, []);
   writeFileSync(
     output + "/RESULT.json",

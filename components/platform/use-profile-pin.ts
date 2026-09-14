@@ -95,10 +95,12 @@ export function useProfilePin(
         owner
       );
       setPending(null);
+      // The write is confirmed even if the following status read is unavailable.
+      // Refresh placement now; a failed read must not retain the old profile.
+      router.refresh();
       const current = await socialRequest<PinState>(path, undefined, owner);
       setState(current.data);
       setMessage(result.data.message);
-      router.refresh();
     } catch (error) {
       const status = error instanceof SocialClientError ? error.status : 503;
       if ([400, 401, 403, 404, 409, 429].includes(status)) setPending(null);
