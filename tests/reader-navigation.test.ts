@@ -241,7 +241,7 @@ test("first use chooses Pages while prior List, appearance, size and reduced-mot
   };
   assert.deepEqual(
     parseReadingPreferences(encodeURIComponent(JSON.stringify(prior))),
-    { ...prior, reduceData: false }
+    { ...prior, reduceData: false, hideReactionCounts: false }
   );
 });
 
