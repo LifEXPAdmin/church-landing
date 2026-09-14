@@ -482,9 +482,12 @@ export default function PrayerPanel({
                     This publishes a comment in the same discussion, visible to
                     its existing audience. You can edit or delete it there.
                   </p>
-                  <label className="block">
-                    Update kind
+                  <div>
+                    <label htmlFor={`${title}-kind`} className="block">
+                      Update kind
+                    </label>
                     <select
+                      id={`${title}-kind`}
                       value={kind}
                       onChange={(event) =>
                         setKind(event.target.value as PrayerUpdateKind)
@@ -497,7 +500,7 @@ export default function PrayerPanel({
                         </option>
                       ))}
                     </select>
-                  </label>
+                  </div>
                   <div>
                     <label htmlFor={`${title}-update`} className="block">
                       Your prayer update
