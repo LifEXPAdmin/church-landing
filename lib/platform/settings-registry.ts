@@ -33,6 +33,11 @@ export const settingsFolders = [
     description: "Current conversation controls and alert availability."
   },
   {
+    id: "feed",
+    label: "Feed and discovery",
+    description: "Your saved feed and accounts you have muted."
+  },
+  {
     id: "church",
     label: "My church",
     description: "Your connection, directory choices and church tools."
@@ -69,6 +74,7 @@ export const relatedSettingIds: Partial<
   church: ["privacy.directory", "calendar.sharing"],
   calendar: ["profile.information", "privacy.directory"],
   notifications: ["privacy.relationships", "safety.muted"],
+  feed: ["safety.muted"],
   safety: ["notifications.availability"]
 };
 export type SettingsControl =
@@ -341,6 +347,28 @@ export const settingsRegistry: readonly SettingRegistration[] = Object.freeze([
     ["qr", "invitation", "share code"],
     { href: "/platform/invitations" },
     linked("friend-invitations.ts", "friend-invitations.ts")
+  ),
+  entry(
+    "feed.default",
+    "feed",
+    "Default feed",
+    "Choose Latest, Friends, Top This Week or Trending. Your account remembers your choice.",
+    [
+      "feed",
+      "default feed",
+      "latest",
+      "friends",
+      "top this week",
+      "trending",
+      "discovery"
+    ],
+    { href: "/platform#feed-choice" },
+    {
+      persistenceOwner: "SocialPreferences.feedMode and feedVersion",
+      read: "feed-reads.ts readFeed",
+      write: "feed-preferences.ts saveFeedPreference"
+    },
+    { defaultValue: "latest" }
   ),
   entry(
     "display.reading",

@@ -101,6 +101,8 @@ export function FeedChoice({
   }
   return (
     <div
+      id="feed-choice"
+      tabIndex={-1}
       className="mb-4 space-y-2"
       data-reader-busy={busy}
       data-reader-dirty={!!pending.current}

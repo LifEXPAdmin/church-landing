@@ -254,6 +254,36 @@ try {
     "Signed-in accounts ignore the guest choice, include own Latest posts and restore their saved Friends choice in a new session"
   );
 
+  const savedChoiceVersion = (
+    await db.socialPreferences.findUniqueOrThrow({ where: { ownerId: a.id } })
+  ).feedVersion;
+  await go("/platform/settings/feed");
+  await page
+    .getByRole("heading", { name: "Feed and discovery", exact: true })
+    .waitFor();
+  await page.getByRole("link", { name: /^Default feed/ }).waitFor();
+  await page
+    .getByRole("link", { name: /^Muted accounts and churches/ })
+    .waitFor();
+  await page.setViewportSize({ width: 320, height: 844 });
+  await bounded();
+  await page.screenshot({
+    path: output + "/feed-settings-320.png",
+    fullPage: true
+  });
+  await go("/platform/settings?q=trending");
+  await page.getByRole("link", { name: /^Default feed/ }).click();
+  await page.waitForURL((url) => url.pathname === "/platform");
+  assert.equal(await selector().inputValue(), "friends");
+  assert.equal(
+    (await db.socialPreferences.findUniqueOrThrow({ where: { ownerId: a.id } }))
+      .feedVersion,
+    savedChoiceVersion
+  );
+  ok(
+    "Feed settings and search lead to the same remembered selector and existing mute management without changing a preference"
+  );
+
   await page.getByRole("button", { name: "List", exact: true }).click();
   const before = await getIds();
   await page.getByRole("button", { name: "Open My feed", exact: true }).click();
