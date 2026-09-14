@@ -1,3 +1,26 @@
+## Community activity limits verified live — September 14, 2026 UTC
+
+Product **2026.09.14.11**, application **01e534320bf399b2a9a65f1f9c9283df5ad6539d**,
+is READY in **dpl_5HYSikMFsSHhgDvtAqMT8pyuq5xJ**, with independent canonical
+assignment and serving identity verified. Per-account posting, commenting and
+following allowances return clear waiting times. Exact retries, private drafts,
+removals, existing relationships and invitation consent remain protected; changed
+reuse of new creation keys conflicts. Operational configuration is visible only
+through secured aggregate health.
+
+The 124-file gate passes 768 checks with two expected skips and zero failures;
+70 focused checks, fourteen final targeted checks, five built-browser groups,
+types/lint and local/production runtime traces pass. Ten public live groups, four
+private-health groups and actual signed-in Home/composer observations pass.
+Production test application mutations, sends, browser errors and scoped runtime
+error/fatal rows are zero. All 49 migration checksums and the installed recovery
+registry match; no migration or client JavaScript growth is added. See
+[activity-limit acceptance](COMMUNITY_ACTIVITY_LIMITS.md).
+
+Continue cross-surface privacy acceptance and the next eligible priorities within
+the same unified run. Broader moderation and real operator/provider/device
+prerequisites remain open. Final review remains last.
+
 ## Author content notes verified live — September 14, 2026 UTC
 
 Product **2026.09.14.10**, application **acb8571569ae3d2b5acc9ad1eadd4d2c5bd25cc4**,

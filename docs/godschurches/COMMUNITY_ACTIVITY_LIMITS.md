@@ -1,6 +1,6 @@
 # Community activity limits
 
-September 14, 2026 UTC · candidate 2026.09.14.11
+September 14, 2026 UTC · product 2026.09.14.11 verified live
 
 ## Behavior and ownership
 
@@ -96,7 +96,33 @@ Using the same gzip calculation as the preceding build, Home and detail routes
 add zero raw JavaScript bytes; two fewer gzip bytes are build variation, not a
 performance claim. No extra browser request or polling loop is introduced.
 
-Exact deployment and live acceptance remain pending. Canonical production is
-still the preceding verified release; this candidate checkpoint is not a live
-completion claim. Keep broader moderation and operational prerequisites open,
-and final review last.
+## Exact release and live acceptance
+
+Application **01e534320bf399b2a9a65f1f9c9283df5ad6539d** is READY in
+**dpl_5HYSikMFsSHhgDvtAqMT8pyuq5xJ**. The independent `godschurches.com`
+assignment and serving product/build match **2026.09.14.11**. The later report-only
+checkpoint is distinct from this serving application. Production build tracing
+passes 146 traces, 15,141 entries and 368 server JavaScript files with no private
+fixtures, environment files or Prisma configuration loader.
+
+Ten public live groups pass at 15:02 UTC, covering three Home widths, exact release
+copy, retained-post availability, changed-account composer rejection, prior release
+links, guest privacy and the Exploring Faith choice. Four private-health groups
+pass; actual configuration reports posts 10/hour, comments 30/ten minutes and
+follows 30/hour, with no attention alerts. The actual signed-in Home and untouched
+composer load the current version, existing content and original choices. No text
+was entered or action submitted; real activity mutations were verified only in
+the isolated built fixture. Live test application mutations, sends, browser errors
+and scoped runtime error/fatal log rows are zero.
+
+All 49 live migration checksums and the installed recovery registry match. There
+is no new migration. The recent protected 48→49 production-copy restore preserves
+92 original tables and completes replay; the installed encrypted daily 49→49 copy
+and 27-set nightly expiry inspection remain separately recorded. No production
+data or recovery installation changed for this release. Actual eligible account
+management assignments, suspended accounts and access decisions remain zero.
+
+This completes the bounded activity-limit feature. Broader moderation remains
+open for cross-surface privacy acceptance, legitimate operator assignment and
+recorded provider/device prerequisites. Continue eligible work; final review stays
+last.
