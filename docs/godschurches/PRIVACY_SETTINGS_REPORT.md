@@ -1,5 +1,34 @@
 # Privacy settings: current values and capability boundaries
 
+## Current adult-mention acceptance — September 14, 2026
+
+The existing Privacy overview and canonical relationship editor satisfy the
+adult mention binding. They reuse EVERYONE, FOLLOWED and NOBODY through the
+existing current-account/versioned service. Missing photo-tag review and family
+controls do not disable adult mentions. No new preference, permission or runtime
+change was required.
+
+Five fresh built Privacy browser groups and fifteen Settings-context/social
+service tests pass. Both restricted modes save and read back; failed/unknown
+reads and replaced or expired accounts conceal private values. Current block,
+audience, private-mention, draft and exact-retry boundaries still pass. There
+were zero browser errors. All mutation checks used isolated fictional accounts.
+
+Product `2026.09.14.3`, application
+`ebf45fc445ec36a50fc03a855551c6f6a8d04383`, remains live on READY deployment
+`dpl_6KpUY2PKNK5XT7TQuBVQF5zwoa8Z`. The canonical alias and serving identity
+were rechecked. Authenticated Chrome displayed the three actual mention choices
+and existing saved value without saving; guest privacy reads returned 401 with
+no-store. Production application writes: **0**. This verifies existing behavior
+and adds no new deployment.
+
+Discovery opt-out/contact lookup, future-post defaults/activity visibility,
+relationship-list disclosure, photo-tag review and family policy still require
+their own capabilities. The existing relationship-count choice does not claim
+to control a public relationship list. A broader effective-privacy walkthrough
+cannot claim values for those absent preferences. Physical acceptance remains
+separate. Earlier evidence below is retained as history.
+
 ## Current contract
 
 The Privacy overview consumes the existing owner's SocialPreferences projection
