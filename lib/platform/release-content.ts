@@ -535,6 +535,20 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "responsive-community-actions",
+    version: "2026.09.14.8",
+    date: "2026-09-14",
+    summary: "Comments and Likes can proceed while others are reading.",
+    added: [],
+    improved: [
+      "Posting a reply or changing a Like no longer waits for unrelated reading across the community."
+    ],
+    fixed: [
+      "Concurrent replies and repeated submissions preserve one saved result, with existing account and privacy protections."
+    ],
+    featureIds: ["posts", "comments"]
+  },
+  {
     id: "community-reliability",
     version: "2026.09.14.7",
     date: "2026-09-14",

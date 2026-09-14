@@ -41,24 +41,32 @@ export function postLikeCommand(
   if (typeof input.desired !== "boolean")
     throw new PortalError(400, "Choose the intended Like state.");
   const desired = input.desired;
-  return socialCommand(db, token, "post-like", input, async (tx, ownerId) => {
-    const id = await postInteractionIdIn(
-      tx,
-      await postContext(tx, ownerId),
-      parsePostId(input.postId)
-    );
-    const where = { postId_userId: { postId: id, userId: ownerId } };
-    const old = await tx.platformPostLike.findUnique({ where });
-    expected(input.expectedVersion, old?.version ?? 0);
-    const row = await tx.platformPostLike.upsert({
-      where,
-      create: { postId: id, userId: ownerId, active: desired },
-      update: { active: desired, version: { increment: 1 } }
-    });
-    return {
-      id,
-      version: row.version,
-      message: desired ? "Post liked." : "Like removed."
-    };
-  });
+  return socialCommand(
+    db,
+    token,
+    "post-like",
+    input,
+    async (tx, ownerId) => {
+      const id = await postInteractionIdIn(
+        tx,
+        await postContext(tx, ownerId),
+        parsePostId(input.postId)
+      );
+      const where = { postId_userId: { postId: id, userId: ownerId } };
+      const old = await tx.platformPostLike.findUnique({ where });
+      expected(input.expectedVersion, old?.version ?? 0);
+      const row = await tx.platformPostLike.upsert({
+        where,
+        create: { postId: id, userId: ownerId, active: desired },
+        update: { active: desired, version: { increment: 1 } }
+      });
+      return {
+        id,
+        version: row.version,
+        message: desired ? "Post liked." : "Like removed."
+      };
+    },
+    undefined,
+    "shared"
+  );
 }

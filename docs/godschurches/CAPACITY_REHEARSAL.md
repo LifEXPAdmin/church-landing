@@ -1,5 +1,31 @@
 # Isolated capacity and recovery rehearsal
 
+## Permission-gate contention repair — local candidate
+
+The retained hosted wait samples led to a deterministic local reproduction:
+an open unrelated shared permission reader blocked both a Like and new comment
+until released. The four focused tests now pass with ordinary post/comment
+Likes and comment creation sharing that permission gate. All other social
+operations keep their existing exclusive gate, including edits, deletion,
+conversation choices, account state and relationship/permission changes.
+
+Same-account operations still serialize before the session is reread and exact
+retry receipts are inspected. The selected commands use a non-key-updating row
+lock: it conflicts with account/session revocation and other same-account actions,
+but permits another author's foreign-key references. A two-author barrier test
+exercises reciprocal comments and their canonical events without deadlock; exact
+retries preserve one result. Actual advisory-lock waits show that a committed
+block is rechecked before a pending new comment can write, while comment deletion
+still waits for an existing reader. PostgreSQL documents the relevant
+[row-lock conflicts](https://www.postgresql.org/docs/17/explicit-locking.html).
+
+The candidate is **2026.09.14.8**, not yet deployed. No schema, dependency, cache
+or authority is added. Full regression, repeat workload measurement and exact
+live acceptance remain in this feature cycle. An initial broad ad hoc invocation
+ran shared-fixture files concurrently and omitted their live local HTTPS server;
+its cross-fixture comparison and connection failures are retained separately.
+The standard sequential full gate supplies the required server and isolation.
+
 ## Verified reliability release — September 14, 10:03 UTC
 
 Product **2026.09.14.7**, application

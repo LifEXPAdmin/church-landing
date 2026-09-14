@@ -27,7 +27,7 @@ export async function withOwnedSession<T>(
   db: PrismaClient,
   token: unknown,
   action: (tx: Prisma.TransactionClient, current: OwnedSession) => Promise<T>,
-  serializeAccess = false
+  serializeAccess: boolean | "shared" = false
 ) {
   if (!validToken(token)) throw new AccountError("session");
   const tokenHash = hashSessionToken(token);
@@ -38,12 +38,20 @@ export async function withOwnedSession<T>(
   if (!snapshot) throw new AccountError("session");
   return db.$transaction(
     async (tx) => {
-      // Shared church/support gate precedes user locks everywhere that can
-      // change status or interact with another account.
-      if (serializeAccess)
+      // The permission gate always precedes the acting-account lock. Only
+      // commands that cannot revoke or narrow access may share it with readers.
+      if (serializeAccess === "shared")
+        await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock_shared(730221, 2)`;
+      else if (serializeAccess)
         await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(730221, 2)`;
       // Serialize with session issuance, password changes and other revocations.
-      await tx.$queryRaw`SELECT "id" FROM "PlatformUser" WHERE "id" = ${snapshot.userId} FOR UPDATE`;
+      // A non-policy command does not change this key. NO KEY UPDATE still
+      // serializes same-account actions/revocation, while allowing foreign-key
+      // references from another concurrent author's comment/notification.
+      if (serializeAccess === "shared")
+        await tx.$queryRaw`SELECT "id" FROM "PlatformUser" WHERE "id" = ${snapshot.userId} FOR NO KEY UPDATE`;
+      else
+        await tx.$queryRaw`SELECT "id" FROM "PlatformUser" WHERE "id" = ${snapshot.userId} FOR UPDATE`;
       const current = await tx.platformSession.findUnique({
         where: { tokenHash },
         select: sessionSelect

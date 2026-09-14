@@ -178,7 +178,7 @@ export async function commentCommand(
     "draftVersion",
     "authorChurchId"
   ]);
-  return socialCommand(db, token, "comments", input, async (tx, ownerId) => {
+  const run = async (tx: PostTx, ownerId: string) => {
     const context = await postContext(tx, ownerId),
       op = input.operation;
     // Private draft reads and discards never reveal current post text or target labels.
@@ -408,5 +408,18 @@ export async function commentCommand(
       data: { content, editedAt: new Date(), version: { increment: 1 } }
     });
     return { id: row.id, version: row.version, message: "Comment updated." };
-  });
+  };
+  // Adding a reply or changing one's Like does not narrow any source audience.
+  // Edits, deletion, pinning, conversation choices and drafts retain the gate.
+  return socialCommand(
+    db,
+    token,
+    "comments",
+    input,
+    run,
+    undefined,
+    input.operation === "create" || input.operation === "like"
+      ? "shared"
+      : "exclusive"
+  );
 }

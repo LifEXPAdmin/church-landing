@@ -50,7 +50,8 @@ export function socialCommand(
   domain: string,
   input: Record<string, unknown>,
   run: (tx: PostTx, ownerId: string) => Promise<SocialReceipt>,
-  beforeReplay?: (tx: PostTx, ownerId: string) => Promise<void>
+  beforeReplay?: (tx: PostTx, ownerId: string) => Promise<void>,
+  policyAccess: "exclusive" | "shared" = "exclusive"
 ) {
   const key = `${domain}:${socialKey(input.mutationId)}`,
     fingerprint = digest(input);
@@ -89,6 +90,6 @@ export function socialCommand(
       });
       return result;
     },
-    true
+    policyAccess === "shared" ? "shared" : true
   );
 }
