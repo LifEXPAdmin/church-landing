@@ -90,5 +90,7 @@ migrations. Live health has no alerts; eligible account-manager grants,
 suspensions and account-access decisions remain zero.
 
 Repository code, release guidance and current state are reconciled. Matching
-private task and specification receipt propagation is being verified. Broader real operator/provider/device prerequisites and final review
+private task and specification updates have succeeded and exact fresh readbacks
+preserve the prior scope and completed receipts. Broader task closure remains
+gated by its actual operational and dependent prerequisites. Broader real operator/provider/device prerequisites and final review
 remain open.
