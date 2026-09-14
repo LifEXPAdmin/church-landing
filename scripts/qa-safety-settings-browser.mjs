@@ -107,10 +107,26 @@ try {
     .waitFor();
   await page.getByText("Block a personal account", { exact: true }).waitFor();
   await page.getByText("Mute or snooze", { exact: true }).waitFor();
+  await page
+    .getByText("Open More on a post, comment, profile or church", {
+      exact: false
+    })
+    .waitFor();
+  await page.getByRole("link", { name: "Your reports", exact: true }).click();
+  await page
+    .getByRole("heading", { name: "Your private reports", exact: true })
+    .waitFor();
+  assert.equal(new URL(page.url()).pathname, "/platform/reports");
   assert.equal(
-    await page.getByRole("link", { name: "My reports", exact: true }).count(),
+    await page
+      .getByRole("link", {
+        name: "Review reports in your authorized scopes",
+        exact: true
+      })
+      .count(),
     0
   );
+  await go("/platform/settings/safety");
   await page
     .getByRole("link", { name: "Help and support", exact: true })
     .click();
@@ -124,7 +140,7 @@ try {
     )
     .waitFor();
   ok(
-    "Safety separates blocks, mutes, mentions and unavailable reporting; real Help and existing blocked list are reachable with useful empty guidance"
+    "Safety separates blocks, mutes, mentions and contextual reporting; private report history grants no reviewer entry, and Help and blocked-list guidance remain reachable"
   );
 
   const targets = [];

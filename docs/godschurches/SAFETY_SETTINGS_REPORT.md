@@ -1,5 +1,37 @@
 # Safety settings and private list verification
 
+## Current Safety and private-history acceptance — September 14, 2026
+
+The existing deployed Safety overview now explains contextual reporting and
+links to the canonical private report history. This completes the earlier
+missing contextual-entry and reporter-history criteria. The stale Safety
+browser assertion was corrected to follow the real history link and verify
+that an ordinary member receives no reviewer entry. No runtime or schema
+change was necessary.
+
+Fresh verification: five Safety browser groups, eight contextual-report browser
+groups and ten reporting service tests passed, with zero browser errors. These
+cover owner-only lists and receipts, private-note/export redaction, pagination,
+inactive-account labels, failed unblock and exact retry, account concealment,
+source conflicts/revocation, no report prefetch, real context links, lost response
+and quota recovery. One initial quota check used mismatched isolated fixture
+secrets; aligning the server and script fixture configuration made the complete
+suite pass. Production secrets and configuration were unchanged. Scoped lint
+and the diff whitespace check passed.
+
+Product `2026.09.14.3`, application
+`ebf45fc445ec36a50fc03a855551c6f6a8d04383`, remains on READY deployment
+`dpl_6KpUY2PKNK5XT7TQuBVQF5zwoa8Z`. The current canonical serving identity,
+guest private-API denial/no-store behavior and authenticated Chrome navigation
+from Safety to the actual private-history empty state were rechecked. Production
+application writes: **0**. All report/block mutations used isolated fictional
+actors. This is current verification of existing live behavior, not a new release.
+
+Global comment/content filtering, family restrictions and personal keyword
+filtering still lack the separately accepted capabilities. Physical phone and
+parent operational acceptance remain unclaimed. Earlier evidence below is history;
+the historical missing-reporting gate is superseded.
+
 September 12, 2026. See [Safety scope](SAFETY_SETTINGS_CONTRACT.md).
 
 Safety explains the distinct effects of blocking, mute/snooze and mention/reply

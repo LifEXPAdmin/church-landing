@@ -1,5 +1,21 @@
 # Safety settings and relationship management
 
+## Current reporting capability — September 14, 2026
+
+The deployed [community reporting contract](COMMUNITY_REPORTING_CONTRACT.md)
+supersedes the historical missing-reporting gate below. Safety explains how to
+open reporting from each supported source's More controls and links to the
+canonical private report history. The owner sees only their own receipt data;
+private review reasons and other reporters' identities remain restricted.
+Current source access, active reviewer coverage and existing account eligibility
+still govern new intake. Reports, support, blocks and mute/snooze remain separate.
+
+Comment-filter defaults, family restrictions and personal keyword filters require
+their own accepted capabilities. Current per-post reply permissions and adult
+mention controls do not imply those broader preferences exist.
+
+## Preserved implementation contract — September 12, 2026
+
 September 12, 2026. Reuses the deployed [relationship service](SOCIAL_FOUNDATIONS_CONTRACT.md)
 and its existing current-account, bilateral policy, version and exact-body retry
 boundaries. No new permission, schema or moderation capability is activated.
