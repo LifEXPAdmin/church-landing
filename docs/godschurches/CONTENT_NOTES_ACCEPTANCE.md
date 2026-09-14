@@ -33,10 +33,13 @@ the existing social receipt owner. Current authority is required before receipt
 replay. Link validation stays outside the permission transaction. Conflicts show
 the latest choices and require explicit review before saving retained entries.
 The full detail body reuses the current-source version guard; editing and reply
-forms remain outside that body boundary. This adds one bounded availability read
-while a detail is active, at entry/resume and the existing 30-second interval;
-it adds no new ordinary-feed request or dependency. No latency improvement is
-claimed.
+forms remain outside that body boundary. Each active detail check uses the existing pinned transport: identity, one
+bounded availability read, then identity. It runs at entry/resume and the existing
+30-second interval. Authorized management snapshots likewise use that transport.
+This adds no new ordinary-feed request or dependency. Measured production route
+assets add 1,503 gzip bytes to Home and 2,495 to post detail compared with the
+previous release (per-file gzip totals, excluding cache and network latency).
+No latency improvement is claimed.
 
 Owner export includes authored choices. Unreported withdrawal and account erasure
 clear the note and excerpt. Only selected canonical report evidence can retain
@@ -48,9 +51,18 @@ reconsideration views apply their existing authorization boundaries.
 - Eight isolated suites pass 56 tests, including seven focused note/preview,
   receipt, authority and erasure groups; populated migration and dump/restore
   preservation pass. Production writes and external sends are zero.
-- Types and scoped lint pass at the implementation checkpoint; built-browser,
-  full regression, protected production-copy upgrade and exact live acceptance
-  are pending. This document is not a production completion receipt.
+- The full gate passes all 123 discovered test files: 760 executions, 758 passes,
+  two expected skips and zero failures. Both builds and all HTTP/render checks
+  ran the final runtime source in `499a73c59abe12e9737b7c93abef7d89913144a0`.
+  Nine built-browser groups pass with zero page errors, including a real library
+  resume and publication. The later `4ea650b` changes only the browser test script;
+  runtime source is identical. Three final captures were visually inspected.
+- Types and scoped lint pass. Runtime tracing passes 146 traces, 3,259 entries and
+  368 server JavaScript files, without private fixture/environment leakage.
+- Encrypted production-copy upgrade 48→49 passes at 13:20:59 UTC, preserves every
+  original column across 92 tables and completes protected recovery replay.
+  Production is unmodified. Exact deployment/live and installed-backup acceptance
+  remain pending; this checkpoint is not a production completion receipt.
 - Migration 49 adds two nullable text columns and length constraints, without
   backfilling author choices or changing previous migrations.
 
