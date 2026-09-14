@@ -123,10 +123,10 @@ export const features: Feature[] = [
     description:
       "Find account, privacy, reading and church choices in clear folders.",
     steps:
-      "Open Menu, then Settings. Search words such as password, alerts or hide phone, or choose a folder. Changes use their existing account and privacy controls. Preview text, theme and reading layout in Display before saving. Reading preferences can be restored separately on this browser.",
+      "Open Menu, then Settings. Search words such as password, alerts or hide phone, or choose a folder. Related personal settings link to existing privacy, directory, calendar and notification controls. Preview text, theme and reading layout in Display before saving. Reading preferences can be restored separately on this browser.",
     href: "/platform/settings",
     eligibility:
-      "Sign in to your account. Browser appearance is separate from personal and selected-church settings. Church tools require current access. Contact preferences govern new adult requests; actual messaging remains conditional on operational readiness. General notification channels, family and payment controls are unavailable here.",
+      "Sign in to your account. Browser appearance is separate from personal and selected-church settings. Church tools require current access. Contact preferences govern new adult requests; messaging and optional phone notifications retain their current eligibility and operational requirements. Family and payment controls are unavailable here.",
     availability: "available"
   },
   {
@@ -534,6 +534,23 @@ export const features: Feature[] = [
   }
 ];
 export const releases: ReleaseEntry[] = [
+  {
+    id: "related-settings",
+    version: "2026.09.14.4",
+    date: "2026-09-14",
+    summary:
+      "Find related privacy, sharing and notification choices in Settings.",
+    added: [
+      "Related personal settings connect Profile, Privacy, My church, Calendar, Notifications and Safety to existing working controls."
+    ],
+    improved: [
+      "Each shortcut keeps the original control and current account protections. Church directory and calendar sharing still require deliberate choices."
+    ],
+    fixed: [
+      "The account deactivation explanation now correctly distinguishes the separate permanent-deletion review."
+    ],
+    featureIds: ["settings"]
+  },
   {
     id: "gods-churches-header",
     version: "2026.09.14.3",

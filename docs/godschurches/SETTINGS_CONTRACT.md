@@ -4,6 +4,20 @@ September 12, 2026. Read the [inventory](SETTINGS_INVENTORY.md) and
 [resource boundary](RESOURCE_CONTRACT.md) first. This defines the initial
 searchable settings implementation; it does not activate every proposed setting.
 
+## Related settings — September 14, 2026
+
+A small curated registry-ID map connects related folder pages. Related links use
+only currently working personal registrations and their canonical destinations;
+future/explanatory rows and selected-church controls are excluded. The section
+is concealed with the owning account's refreshed Settings context and does not
+prefetch destination pages. Organization detail retains its explicit church
+selector and current authority checks. These links add no preference store,
+permission, API request or automatic sharing action.
+
+Current notification preferences and the separate permanent-deletion review
+supersede the historical unavailable descriptions below. Existing feature-owned
+eligibility, delivery, reauthentication and confirmation boundaries remain.
+
 ## Registration and scope
 
 `lib/platform/settings-registry.ts` owns stable destination IDs, folder IDs,

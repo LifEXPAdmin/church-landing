@@ -60,6 +60,17 @@ export const settingsFolders = [
 ] as const;
 
 export type SettingsFolderId = (typeof settingsFolders)[number]["id"];
+/** Curated navigation only; each target retains its canonical service and scope. */
+export const relatedSettingIds: Partial<
+  Record<SettingsFolderId, readonly string[]>
+> = {
+  profile: ["privacy.relationships", "calendar.sharing"],
+  privacy: ["profile.information", "calendar.sharing"],
+  church: ["privacy.directory", "calendar.sharing"],
+  calendar: ["profile.information", "privacy.directory"],
+  notifications: ["privacy.relationships", "safety.muted"],
+  safety: ["notifications.availability"]
+};
 export type SettingsControl =
   | "summary"
   | "email"

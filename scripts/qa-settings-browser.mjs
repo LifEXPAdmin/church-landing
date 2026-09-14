@@ -117,10 +117,11 @@ try {
   await page.locator("#setting-notifications-availability").click();
   await page.waitForURL("**/settings/notifications/availability");
   await page
-    .getByText(
-      "In-app notification categories, email alerts, push and quiet hours are not available yet.",
-      { exact: true }
-    )
+    .getByRole("heading", {
+      name: "Notification preferences",
+      level: 1,
+      exact: true
+    })
     .waitFor();
   await page.goBack();
   await page.getByLabel("Search settings", { exact: true }).waitFor();

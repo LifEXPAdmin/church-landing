@@ -8,6 +8,7 @@ import type { SettingsContext } from "@/lib/platform/settings-context";
 import {
   settingsFolders,
   settingsRegistry,
+  relatedSettingIds,
   searchSettings,
   settingHref,
   type SettingRegistration
@@ -174,20 +175,34 @@ export function SettingsWorkspace({
       (s.id !== "profile.photos" || data?.photosAvailable)
   );
   const results = query.trim() ? searchSettings(query, entries) : [];
+  const related =
+    activeFolder && !active
+      ? entries.filter(
+          (s) =>
+            s.state === "working" &&
+            s.scope === "personal" &&
+            relatedSettingIds[activeFolder.id]?.includes(s.id)
+        )
+      : [];
   const scope =
     active?.scope === "browser"
       ? "This browser"
       : active?.scope === "church"
         ? "Selected church"
         : "Personal settings";
-  const rows = (list: readonly SettingRegistration[], showPath = false) => (
+  const rows = (
+    list: readonly SettingRegistration[],
+    showPath = false,
+    isRelated = false
+  ) => (
     <div className="gc-settings-rows">
       {list.map((s) => (
         <Link
           key={s.id}
-          id={"setting-" + s.id.replaceAll(".", "-")}
+          id={(isRelated ? "related-" : "setting-") + s.id.replaceAll(".", "-")}
           className="gc-settings-destination"
           href={settingHref(s)}
+          prefetch={isRelated ? false : undefined}
         >
           <span>
             <strong>{s.label}</strong>
@@ -249,7 +264,7 @@ export function SettingsWorkspace({
           <p className="text-gc-muted">
             {active?.description ??
               activeFolder?.description ??
-              "Find the choices that make Godschurches work for you."}
+              "Find the choices that make God’s Churches work for you."}
           </p>
         </header>
         {busy && !data && <p role="status">Loading your settings…</p>}
@@ -374,8 +389,8 @@ export function SettingsWorkspace({
                   <p>
                     Deactivation hides personal content and ends access while
                     retaining your records for reactivation. Review its effects
-                    and any duty handoff before confirming. Permanent account
-                    deletion is unavailable.
+                    and any duty handoff before confirming. Permanent deletion
+                    has its own separate review and confirmation.
                   </p>
                   {rows(entries.filter((s) => s.id === "data.deactivate"))}
                 </section>
@@ -385,6 +400,19 @@ export function SettingsWorkspace({
                   control={active.destination.control}
                   data={data}
                 />
+              )}
+              {related.length > 0 && (
+                <section
+                  className="mt-8 space-y-3"
+                  aria-label="Related personal settings"
+                >
+                  <h2 className="text-2xl">Related personal settings</h2>
+                  <p className="text-sm text-gc-muted">
+                    Review your own choices. Sharing with a church or another
+                    person still requires your deliberate selection.
+                  </p>
+                  {rows(related, true, true)}
+                </section>
               )}
             </GoogleAccountOptions>
           </div>

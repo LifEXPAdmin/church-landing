@@ -1,5 +1,22 @@
 # Searchable Settings
 
+## Related settings implementation — September 14, 2026
+
+Related personal settings connect Profile, Privacy, My church, Calendar,
+Notifications and Safety to a small set of existing controls. Stable registry
+IDs supply their labels, paths and service ownership. Only working personal
+destinations are eligible; the section shares account concealment and disables
+prefetch. Church directory and calendar actions keep deliberate selection and
+existing access checks. Organization details retain their own church selector.
+
+The Data folder now accurately distinguishes permanent deletion's separate review
+from deactivation. The feature guide reflects current notification controls.
+The existing Settings browser navigation assertion now expects the deployed
+notification page, preserving the same query/Back check. Product `2026.09.14.4`
+release notes describe this scope. Types, scoped lint and 28 focused existing
+Settings/navigation/release tests pass. Built-browser and live release acceptance
+are pending; the current deployed application remains `2026.09.14.3`.
+
 ## Published — September 12, 2026
 
 Product `2026.09.12.10` adds a grouped Settings home, account summary, folder and
