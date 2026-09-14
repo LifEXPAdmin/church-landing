@@ -89,7 +89,7 @@ test("actual post HTML and RSC filter church audiences before feed, search, prof
           body.includes(marker),
           production &&
             token === f.coordinator.token &&
-            !path.includes("search"),
+            path.includes("/posts/"),
           `${path}, rsc=${rsc}, authorized=${token === f.coordinator.token}`
         );
         if (path.includes("search")) {
