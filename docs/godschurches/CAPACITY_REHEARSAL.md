@@ -1,6 +1,51 @@
 # Isolated capacity and recovery rehearsal
 
-## Dense media staircase candidate — September 14, 2026
+## Dense media staircase and bounded previews — September 14, 2026
+
+The first sustained staircase finished at 08:11 UTC against the `.7` candidate
+before the additional preview repair below. All fourteen integrity checks pass,
+including 4,709 identical retry pairs and three owner/other-account private-image
+comparisons. All 175 canonical photo uploads succeeded. Across the three stages,
+51,813 requests returned no unexpected responses or admission throttles.
+
+| Active clients | Timed duration | Requests | Requests/second | Peak in flight | Feed p95 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 25 | 180 seconds | 2,316 | 12.71 | 11 | 344.2 ms |
+| 50 | 180 seconds | 4,603 | 25.28 | 27 | 354.8 ms |
+| 100 | 900 seconds | 44,894 | 49.75 | 63 | 639.4 ms |
+
+At 100 clients, thumbnail p95 was 437.0 ms, medium-image 583.5 ms, upload
+982.7 ms, detail 440.2 ms, comments 349.0 ms and search 352.7 ms. Maximum app
+RSS was 1,547,888 KiB; host-wide CPU averaged 24.35% across ten logical cores.
+The largest connection sample had 24 connections, including inspection clients
+and PostgreSQL parallel workers; the application pool was capped at twenty.
+These are Apple M4/16 GiB local observations, not a one-vCPU Fluid or 0.25-CU
+Neon capacity claim. All aggregate stage health checks had no alerts.
+
+The populated snapshot restored in 6.08 seconds; protected replay took 2.38 seconds.
+All nine content/media/social-policy fingerprints and 46 migration checksums
+matched. Replay quarantined 112 sessions and eleven elevated grants and left
+traffic disabled pending current authorization review. Eight recovery groups and
+twelve initial integrity groups passed. Production writes were zero.
+
+The same run revealed 5.61 GB cumulative PostgreSQL temporary writes: nested
+comment `take: 6` trimmed in application memory after retrieving 30,851 rows for
+the page. The candidate now selects at most six visible comment IDs per post
+with a parameterized lateral query, then hydrates only those IDs through the
+existing canonical visibility predicate within the same permission read lock.
+No schema/index, public cache, dependency or permissions are added.
+
+On the unchanged dense database, twenty alternating warm service-read pairs have
+identical complete feed projections. Feed service p50 improves 148.1→77.1 ms and
+p95 158.0→82.2 ms. The actual comment hydration plan returns 180 rows instead of
+30,851, with zero temporary blocks; ID selection also returns 180 rows with zero
+temporary blocks. The retained original sort used 3,112 KiB on disk. A separate
+5,000-comment regression matches canonical newest-six ordering with timestamp
+ties, blocks, suspension, deactivation, hidden/deleted comments and church identity.
+These service measurements exclude HTTP/network and do not replace the final
+built-load rerun. The full release gate was interrupted to incorporate this
+measured repair; its partial log is retained. Final regression, corrected built
+load and exact deployed acceptance are still pending.
 
 The candidate adds `node scripts/capacity-rehearsal.mjs 900 --staircase`.
 It retains the existing integrity burst, then runs 25/50/100 authenticated clients
@@ -39,7 +84,7 @@ next 14 received 429, with zero unexpected responses. The candidate now gives
 images a separate 300-attempt IP window while retaining 120 global attempts/minute,
 ten changes of each kind/account/15 minutes, and unchanged sign-in budgets. Two
 new admission/concurrency tests plus existing image-boundary and release checks
-pass (seven checks). The sustained corrected run is pending.
+pass (seven checks). The sustained image-limit run above passed without throttles.
 
 The build initially exhausted its existing 6 GiB heap while enumerating retained
 fixture databases. Seven stopped clusters were preserved outside the trace root;
@@ -48,8 +93,8 @@ files in an owned private temporary directory and record that path in `cluster.j
 Small receipts and guarded image fixtures remain in `.account-test`. Nothing is
 erased to obtain a build result. Initial health tests also found a UTC comparison
 error and a missing fixture preview prerequisite; both were corrected, and all
-four health checks pass, including a real database lock timeout. Full candidate
-regression, sustained results and exact deployed acceptance remain pending.
+four health checks pass, including a real database lock timeout. Final candidate
+regression and exact deployed acceptance remain pending.
 
 Actual provider inventory and remaining access limits are in
 [operational health](OPERATIONAL_HEALTH.md); explicit growth/cost scenarios and

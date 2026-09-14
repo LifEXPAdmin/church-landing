@@ -63,14 +63,20 @@ try {
   };
   const seen = new Set<string>();
   const slow = events
-    .filter((e) => /^SELECT\s/i.test(e.query) && !/pg_advisory/.test(e.query))
+    .filter(
+      (e) => /^\s*SELECT\s/i.test(e.query) && !/pg_advisory/.test(e.query)
+    )
     .sort((a, b) => b.duration - a.duration)
     .filter((e) => {
       if (seen.has(e.query)) return false;
       seen.add(e.query);
       return true;
     })
-    .slice(0, 12);
+    .filter(
+      (e, index) =>
+        index < 12 ||
+        /CROSS JOIN LATERAL|FROM "public"\."PlatformPostComment"/.test(e.query)
+    );
   const plans = slow.map((event) => {
     const parameters = JSON.parse(event.params).map(literal).join(",");
     const sql = `PREPARE capacity_read AS ${event.query};\nEXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) EXECUTE capacity_read${parameters ? `(${parameters})` : ""};\nDEALLOCATE capacity_read;\n`;

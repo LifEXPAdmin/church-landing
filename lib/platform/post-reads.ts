@@ -6,7 +6,7 @@ import type { Prisma, PrismaClient } from "@prisma/client";
 import { activePublicAccount, communityAuthorSelect } from "./public-profile";
 import { homeFeedMode } from "./home-feed";
 import { canOrganize } from "./post-participation";
-import { commentVisibleWhere } from "./comment-policy";
+import { commentVisibleWhere, commentPreviewIds } from "./comment-policy";
 import {
   postCanEdit,
   postCanWithdraw,
@@ -88,6 +88,14 @@ function include(
 type PostRow = Prisma.PlatformPostGetPayload<{
   include: ReturnType<typeof include>;
 }>;
+async function pageInclude(tx: PostTx, context: PostContext, ids: string[]) {
+  const selection = include(context, ids);
+  if (ids.length > 1) {
+    const previews = await commentPreviewIds(tx, context, ids, 6);
+    selection.comments.where.AND.push({ id: { in: previews } });
+  }
+  return selection;
+}
 function project(post: PostRow, context: PostContext, now: Date) {
   return {
     id: post.id,
@@ -172,7 +180,7 @@ async function projectRows(
   const sources = ids.length
     ? await tx.platformPost.findMany({
         where: { AND: [{ id: { in: ids } }, repostSourceWhere(context, now)] },
-        include: include(context, ids)
+        include: await pageInclude(tx, context, ids)
       })
     : [];
   // A personal source blocking the original acting account also revokes the
@@ -329,7 +337,7 @@ export async function listPostsIn(
   const ids = page.map((row) => row.id);
   const rows = await tx.platformPost.findMany({
     where: { id: { in: ids } },
-    include: include(context, ids),
+    include: await pageInclude(tx, context, ids),
     orderBy: [{ publishedAt: "desc" }, { id: "desc" }]
   });
   return projectRows(tx, rows, context, now);

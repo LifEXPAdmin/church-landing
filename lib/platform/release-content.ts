@@ -538,11 +538,13 @@ export const releases: ReleaseEntry[] = [
     id: "community-reliability",
     version: "2026.09.14.7",
     date: "2026-09-14",
-    summary: "Photo updates work better when people share a network.",
+    summary:
+      "Busy community feeds and shared-network photo updates work more efficiently.",
     added: [],
     improved: [
       "More people can update photos on shared church Wi-Fi while individual account protections remain in place.",
-      "Removed photo files can be cleared in larger batches after their existing waiting period."
+      "Removed photo files can be cleared in larger batches after their existing waiting period.",
+      "Home loads a small comment preview without retrieving the entire conversation."
     ],
     fixed: [
       "Service checks make delayed background work easier to detect without exposing personal details."
