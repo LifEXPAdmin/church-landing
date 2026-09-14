@@ -50,6 +50,13 @@ export function PrivateSnapshotGuard({
   const [recoveries, setRecoveries] = useState<Record<string, PendingRecovery>>(
     {}
   );
+  const [confirmedChecksum, setConfirmedChecksum] = useState(checksum);
+  // A sibling reader can refresh the server tree after a write whose response
+  // was lost. Keep the original management snapshot until its owner confirms
+  // that exact request; refreshing props cannot confirm it on the owner's behalf.
+  useEffect(() => {
+    if (Object.keys(recoveries).length === 0) setConfirmedChecksum(checksum);
+  }, [checksum, recoveries]);
   const register = useCallback(
     (id: string, recovery: PendingRecovery | null) => {
       setRecoveries((current) => {
@@ -87,7 +94,7 @@ export function PrivateSnapshotGuard({
       if (
         Array.from(new Uint8Array(digest), (b) =>
           b.toString(16).padStart(2, "0")
-        ).join("") !== checksum
+        ).join("") !== confirmedChecksum
       ) {
         setNotice(
           `This ${label} or its access changed. Reload to inspect current details. Unsaved entries will be cleared; an unconfirmed request may already be saved.`
@@ -110,7 +117,7 @@ export function PrivateSnapshotGuard({
         void check();
       }
     }
-  }, [owner, url, checksum, label]);
+  }, [owner, url, confirmedChecksum, label]);
   useEffect(() => {
     active.current = true;
     const hide = () => {
