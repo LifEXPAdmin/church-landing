@@ -2,12 +2,13 @@
 
 The .17 candidate adds the current prayer feature, private saved follow-up,
 canonical author updates and reaction-count visibility in one feature cycle.
-Service checks pass ten prayer groups, including exact retries, scoped names,
-church-event audience changes, export/erasure and racing bounded subscribers.
-The existing fifteen comment-notification groups also passed before the interface
-integration. Types pass. Browser verification, full acceptance, production-copy
-migration 52→53, publication and live verification are pending. Serving production
-remains the .16 release below. See [candidate contract](PRAYER_CONTRACT.md).
+The uninterrupted 134-file gate passes 829 checks with two expected skips;
+55 production-build browser groups, lint/types and protected production-copy
+upgrade 52→53 pass. Application source is 01cc6e7; the full gate uses 70be5ff
+with its corrected legacy display assertion. Original columns across 94 tables
+are preserved and protected recovery completes. Publication, exact canonical/live
+verification and installed recovery acceptance remain pending; serving production
+is still .16 below. See [complete candidate evidence](PRAYER_ACCEPTANCE.md).
 
 ## Followed conversation integration verified live — September 14, 2026 UTC
 

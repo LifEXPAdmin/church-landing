@@ -1,6 +1,6 @@
 # Prayer and private follow-up acceptance
 
-14 September 2026 UTC · Release candidate; not yet published.
+14 September 2026 UTC · Complete release gate passed; publication pending.
 
 ## Complete feature scope
 
@@ -46,10 +46,13 @@ explicit independent choices, exact retries, publication/read failures, source
 withdrawal, account switching and saved-list return position. Browser emulation
 does not establish physical-device or assistive-technology operation.
 
-Ten focused prayer service groups and the earlier fifteen comment notification
-groups pass. An additional account-return test and real HTTPS prayer boundary
-test are included in the full gate. Twenty-six focused reading/settings/navigation
-checks pass. Full lint has zero errors and 37 existing warnings; TypeScript passes.
+The uninterrupted full gate passes all 134 discovered test files: 831 checks,
+829 passes, zero failures/cancellations and two expected disabled-delivery skips.
+This includes eleven prayer service groups, the real HTTPS prayer boundary,
+populated upgrade, fresh migrations, protected recovery, production build,
+development/production HTML/RSC privacy and new-process persistence. Twenty-six
+focused reading/settings/navigation checks also pass. Full lint has zero errors
+and 37 existing warnings; TypeScript passes.
 Clean production build passes 151 runtime traces, 3,347 entries and 381 server
 JavaScript files, excluding private fixtures and environment files.
 
@@ -60,7 +63,7 @@ Production has not yet been migrated or modified by this candidate's checks.
 
 The first full-gate attempt exposed a legacy reading-preference assertion missing
 the new default-false count option. The assertion was corrected; the fresh final
-gate runs unchanged source `70be5ff` (application remains `01cc6e7`). Earlier browser
+gate passed unchanged source `70be5ff` (application remains `01cc6e7`). Earlier browser
 attempts exposed implicit labels incorporating restored textarea values, a return
 position omission and QA timing/selectors; the final checks cover their repairs.
 One invocation omitted the local TLS CA and was corrected without weakening TLS.
@@ -85,7 +88,7 @@ These fixture observations do not establish a production or 100-client SLA.
 
 ## Remaining release acceptance
 
-Finish the uninterrupted full gate, exact READY deployment and independent
+Finish the exact READY deployment and independent
 canonical assignment, actual public and signed-in read checks, migration and
 installed recovery registry verification, ordinary installed restore, runtime
 logs and original production-data fingerprints. Reconcile the existing private
