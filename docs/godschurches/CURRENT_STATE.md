@@ -1,3 +1,28 @@
+## Discussion moderation reasons verified live — September 14, 2026 UTC
+
+Product **2026.09.14.13**, application **3912a5081653ff0172f37c17790c885f2e33b8a4**,
+is READY in **dpl_7nwnLrSNkABY52KiR6eLWUnvfMu7**, with independent canonical
+assignment and serving identity verified. Church moderators choose a fixed reason
+for discussion-setting changes. Authorized post managers can inspect the latest
+ten scoped decisions; current actor visibility and source access remain required.
+Author controls and exact requests, including earlier committed requests, retain
+their existing behavior.
+
+The complete gate passes 781 checks with two expected skips across 127 files;
+18 focused checks, 24 built-browser groups, types/lint and local/production runtime
+traces pass. Fourteen public live groups, four secured health groups and current
+signed-in author controls pass. Production test mutations/sends, browser page
+errors and scoped runtime error/fatal rows are zero. All 49 migrations and the
+installed recovery registry match; the protected restore preserves 92 tables.
+No schema, dependency or worker is added. Discussion JavaScript grows 535 gzip
+bytes; Home/profile raw sizes are unchanged. See [moderation acceptance](DISCUSSION_MODERATION_ACCEPTANCE.md).
+
+The reason/history engineering slice is complete. Real church moderation actions
+were exercised only in isolated fixtures; legitimate account-operator assignment,
+provider/device acceptance and dependent future scopes keep broader moderation
+open. Continue the next actually eligible priority in the unified queue. Final
+review remains last.
+
 ## Retained reader privacy verified live — September 14, 2026 UTC
 
 Product **2026.09.14.12**, application **48c478684c22459d3ce97d91a294cf0196d7811f**,

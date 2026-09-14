@@ -1,6 +1,6 @@
 # Reasons for church discussion moderation
 
-September 14, 2026 UTC · release candidate 2026.09.14.13 · publication pending
+September 14, 2026 UTC · 2026.09.14.13 · verified production release
 
 The current community moderation specification requires a reason for moderator
 discussion closure. An isolated baseline on the preceding runtime confirmed that
@@ -69,5 +69,26 @@ fresh migrations, restore, service/HTTP behavior, development and production
 HTML/RSC over verified local HTTPS, process restart and production builds. The
 additional legacy receipt regression passes separately on 93b75bf; final browser
 acceptance uses 989bb2c. Changes after the runtime checkpoint are tests and
-reports. Exact release, live behavior and private reconciliation remain pending. Broader real operator/provider/device prerequisites and final review
+reports.
+
+Application 3912a5081653ff0172f37c17790c885f2e33b8a4 is READY in deployment
+dpl_7nwnLrSNkABY52KiR6eLWUnvfMu7, with independent godschurches.com assignment
+and matching serving version/build. The provider build completes at 17:22:03 UTC,
+reports no pending migrations, and passes its runtime trace check: 146 traces,
+15,160 entries and 370 server JavaScript files without forbidden tooling or
+private fixture/environment files.
+
+Fourteen public live groups and four secured aggregate health groups pass with
+zero browser page errors or test application mutations. Current signed-in owner
+post controls retain their original open discussion and eligible-viewer choices,
+without a new required moderator reason. No real settings, moderator grants or
+content were changed. New moderator actions and their reason history were tested
+in isolated built-browser fixtures; real church moderation acceptance is not
+claimed. Deployment-scoped error/fatal log reads both succeed with zero rows.
+The installed recovery registry and retention source match the current 49
+migrations. Live health has no alerts; eligible account-manager grants,
+suspensions and account-access decisions remain zero.
+
+Repository code, release guidance and current state are reconciled. Matching
+private task and specification receipt propagation is being verified. Broader real operator/provider/device prerequisites and final review
 remain open.
