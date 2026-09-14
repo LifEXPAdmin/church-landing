@@ -1,6 +1,13 @@
 "use client";
 import Link from "next/link";
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState
+} from "react";
 import { socialRequest, SocialClientError } from "@/lib/platform/social-client";
 import {
   prayerGuide,
@@ -27,6 +34,9 @@ export default function PrayerPanel({
     dialog = useRef<HTMLDialogElement>(null),
     sequence = useRef(0),
     flight = useRef(false);
+  const restoreView = useRef<{ scroll: number; focusId: string | null } | null>(
+    null
+  );
   const [state, setState] = useState<PrayerTargetState | null>(null),
     [updates, setUpdates] = useState<PrayerUpdatePage | null>(null);
   const [busy, setBusy] = useState(false),
@@ -66,6 +76,13 @@ export default function PrayerPanel({
   }, []);
   const refresh = useCallback(async () => {
     const seq = ++sequence.current;
+    if (dialog.current)
+      restoreView.current = {
+        scroll: dialog.current.scrollTop,
+        focusId: dialog.current.contains(document.activeElement)
+          ? (document.activeElement?.id ?? null)
+          : null
+      };
     setState(null);
     setUpdates(null);
     try {
@@ -81,6 +98,14 @@ export default function PrayerPanel({
       if (sequence.current === seq) failed(error);
     }
   }, [path, owner, failed]);
+  useLayoutEffect(() => {
+    if (!state || !restoreView.current || !dialog.current) return;
+    const restore = restoreView.current;
+    restoreView.current = null;
+    if (restore.focusId)
+      document.getElementById(restore.focusId)?.focus({ preventScroll: true });
+    dialog.current.scrollTop = restore.scroll;
+  }, [state]);
   useEffect(() => {
     const node = dialog.current!;
     const previous = document.body.style.overflow;
@@ -473,16 +498,19 @@ export default function PrayerPanel({
                       ))}
                     </select>
                   </label>
-                  <label className="block">
-                    Your prayer update
+                  <div>
+                    <label htmlFor={`${title}-update`} className="block">
+                      Your prayer update
+                    </label>
                     <textarea
+                      id={`${title}-update`}
                       value={content}
                       maxLength={1500}
                       rows={5}
                       onChange={(event) => setContent(event.target.value)}
                       className="mt-1 block w-full"
                     />
-                  </label>
+                  </div>
                   <p className="text-sm">
                     {content.length}/1500 characters. Unsent text stays only in
                     this open page.

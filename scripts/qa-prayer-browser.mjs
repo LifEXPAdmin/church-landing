@@ -109,7 +109,11 @@ const close = async () => {
   await panel().waitFor({ state: "hidden" });
 };
 const check = async (label, value) => {
-  await panel().getByLabel(label, { exact: true }).setChecked(value);
+  assert.notEqual(
+    await panel().getByLabel(label, { exact: true }).isChecked(),
+    value
+  );
+  await panel().getByLabel(label, { exact: true }).click();
   await ready();
   await page.waitForFunction(
     ({ label, value }) =>
@@ -595,6 +599,13 @@ try {
       2
     )
   );
+} catch (error) {
+  writeFileSync(
+    output + "/failure.txt",
+    String(error) + "\n" + (await page.locator("body").innerText())
+  );
+  await page.screenshot({ path: output + "/failure.png", fullPage: true });
+  throw error;
 } finally {
   await browser.close();
   await db.$disconnect();
