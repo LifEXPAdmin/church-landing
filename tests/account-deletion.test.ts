@@ -567,7 +567,21 @@ test("erasure removes private collections/profile/credentials while preserving t
     data: { authorId: a.id, postId: p.id, content: marker }
   });
   await db.socialPreferences.create({
-    data: { ownerId: a.id, contactRequests: "NOBODY" }
+    data: {
+      ownerId: a.id,
+      contactRequests: "NOBODY",
+      feedMode: "weekly",
+      feedVersion: 2
+    }
+  });
+  await db.feedSnapshot.create({
+    data: {
+      id: randomUUID(),
+      ownerId: a.id,
+      mode: "weekly",
+      postIds: [p.id],
+      expiresAt: new Date(Date.now() + 3600000)
+    }
   });
   const [participantAId, participantBId] = [a.id, b.id].sort();
   const c = await db.adultConversation.create({
@@ -604,6 +618,11 @@ test("erasure removes private collections/profile/credentials while preserving t
   assert.equal(deleted.name, "Deleted member");
   assert.equal(deleted.passwordHash, null);
   assert.equal(deleted.bio, null);
+  assert.equal(await db.feedSnapshot.count({ where: { ownerId: a.id } }), 0);
+  assert.equal(
+    await db.socialPreferences.count({ where: { ownerId: a.id } }),
+    0
+  );
   assert.notEqual(deleted.email, a.email);
   assert.equal(
     await db.privatePostDraft.count({ where: { ownerId: a.id } }),

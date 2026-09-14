@@ -462,6 +462,30 @@ test("expired snapshots are swept in bounded batches and account entry preserves
   assert.equal(await db.feedSnapshot.count({ where: { ownerId: a.id } }), 1);
   await expireFeedSnapshots(db, new Date(+at + HOUR));
   assert.equal(await db.feedSnapshot.count({ where: { ownerId: a.id } }), 0);
+  const sweepAt = new Date("2001-01-01T00:00:00.000Z");
+  await db.feedSnapshot.createMany({
+    data: Array.from({ length: 501 }, () => ({
+      id: randomUUID(),
+      ownerId: a.id,
+      mode: "weekly",
+      postIds: [],
+      expiresAt: new Date("2000-01-01T00:00:00.000Z")
+    }))
+  });
+  const current = await db.feedSnapshot.create({
+    data: {
+      id: randomUUID(),
+      ownerId: a.id,
+      mode: "trending",
+      postIds: [],
+      expiresAt: new Date(+sweepAt + 1)
+    }
+  });
+  assert.equal(await expireFeedSnapshots(db, sweepAt), 500);
+  assert.equal(await db.feedSnapshot.count({ where: { ownerId: a.id } }), 2);
+  assert.equal(await expireFeedSnapshots(db, sweepAt), 1);
+  assert.ok(await db.feedSnapshot.findUnique({ where: { id: current.id } }));
+  await db.feedSnapshot.delete({ where: { id: current.id } });
   assert.equal(
     safeAccountReturn(
       "/platform/feed?feed=friends&feedCursor=secret&feedScope=other&mode=pages"

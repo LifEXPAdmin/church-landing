@@ -68,6 +68,8 @@ test("export includes only the owner's explicit fields, directory choices and ow
   const a = await owner();
   const b = await owner();
   const notificationChoices = {
+    feedMode: "friends",
+    feedVersion: 3,
     reportAlerts: false,
     founderAnnouncements: false,
     pushCategories: ["replies", "mentions"],

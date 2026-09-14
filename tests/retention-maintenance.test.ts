@@ -143,6 +143,22 @@ test("secured staged maintenance inspects first, continues after a journal failu
     const secret = randomBytes(32).toString("hex");
     process.env.CRON_SECRET = secret;
     process.env.RETENTION_CLEANUP_ENABLED = "false";
+    const expiredFeed = await db.feedSnapshot.create({
+      data: {
+        id: randomUUID(),
+        mode: "weekly",
+        postIds: [],
+        expiresAt: new Date(Date.now() - 1000)
+      }
+    });
+    const currentFeed = await db.feedSnapshot.create({
+      data: {
+        id: randomUUID(),
+        mode: "trending",
+        postIds: [],
+        expiresAt: new Date(Date.now() + 3600000)
+      }
+    });
     const request = (auth = `Bearer ${secret}`, query = "", method = "GET") =>
       new Request("https://example.test/api/maintenance/retention" + query, {
         method,
@@ -213,9 +229,19 @@ test("secured staged maintenance inspects first, continues after a journal failu
       200
     );
     assert.equal(opened, 0);
+    assert.equal(await db.feedSnapshot.count(), 2);
     const failed = await handleRetentionMaintenance(db, request(), provider);
     assert.equal(failed.status, 503);
-    assert.equal((await failed.json()).failed, 1);
+    const failedResult = await failed.json();
+    assert.equal(failedResult.failed, 1);
+    assert.equal(failedResult.feedSnapshotsExpired, 1);
+    assert.equal(
+      await db.feedSnapshot.findUnique({ where: { id: expiredFeed.id } }),
+      null
+    );
+    assert.ok(
+      await db.feedSnapshot.findUnique({ where: { id: currentFeed.id } })
+    );
     const a = await db.accountDeletion.findUniqueOrThrow({
         where: { userId: actors[0].id }
       }),
