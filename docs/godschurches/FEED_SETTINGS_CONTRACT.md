@@ -1,5 +1,55 @@
 # Feed preferences: existing authority and activation gates
 
+## Active four-mode feature — September 14, 2026
+
+The current unified queue explicitly selects one complete early feed feature:
+Latest, Friends, Top This Week and Trending. All four are required. Their service,
+preference, selector, Home/My feed integration, regression and exact live-release
+work belongs to this feature cycle. Earlier foundation/UI labels do not defer
+required finishing work. The current application is 2026.09.14.13; this section
+records the new implementation audit, not a completed feed release.
+
+- Latest selects currently eligible public posts, newest publication and stable
+  ID first. It is the default only when no supported private choice is saved.
+- Friends selects currently accepted mutual friends, newest first, excluding
+  self, pending requests and one-way follows. Current source permissions still
+  apply. An empty or guest Friends view must not add stranger content.
+- Top This Week ranks public posts by distinct eligible active non-self Likes
+  received within the rolling previous 168 hours. Older posts can qualify through
+  recent Likes; this supersedes the earlier proposed post-age restriction.
+- Trending sums each distinct eligible active non-self Like's weight in the
+  previous 72 hours: `2 ** (-ageHours / 24)`. Four Likes aged 24 hours score 2;
+  three aged one hour score about 2.915. Both ranked modes exclude zero scores,
+  use one snapshot time, include the lower time boundary and exclude the snapshot
+  instant. Ties use newest publication, then descending stable post ID.
+
+The existing Like owner has one row per account/post and immutable `createdAt`.
+Unlike changes active/version fields; exact receipts do not create new votes.
+The command can also create an initially inactive row, so its row-creation time
+cannot always be treated as a verified first-active Like time. Any necessary
+timestamp support must preserve known dates, avoid refreshing dates on retries,
+and leave unknown historical activation dates unguessed. Normal visible Like
+counts remain separate from ranking. Plain reposts use the original Like target;
+repost copies must not multiply its votes.
+
+Current Home and My feed share the mounted reader, ordinary List/Pages choice and
+chronological anchors. Those anchors alone cannot freeze a changing Like ranking.
+The feature needs viewer/mode-bound stable ranked cursors, current authorization
+on each page and on retained readers, deliberate refresh, and private saved mode
+across sessions. Current mute/block, moderation, source/repost, account and church
+audience owners remain authoritative. Friends eligibility must also disappear
+after friendship removal even if the former friend's original post stays public.
+
+Required empty text: “No posts from your friends yet”, “No liked posts in the last
+7 days yet”, and “No trending posts yet”, each with an explicit Latest action.
+Switching mode resets its source cursor but preserves List/Pages, navigation and
+unsent-work protections. Guest choices remain separate from account preferences.
+Broader Local, Following, Your Church, recommendations, advanced filters and
+future settings scopes below remain distinct; their absence does not defer these
+four approved modes. No new paid ranking provider or view tracking is required.
+
+## Existing and broader preference authority
+
 The current Home and My feed share `HomeFeedPage` and the audience-aware post
 reader. `homeFeedMode` is deployment configuration, not a private account
 preference: community selection by default, or the existing following mode.
