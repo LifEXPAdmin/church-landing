@@ -274,13 +274,10 @@ try {
     data: { status: "WITHDRAWN", withdrawnAt: new Date() }
   });
   await page.evaluate(() => window.dispatchEvent(new Event("focus")));
-  await sheet
-    .getByText("This photo is unavailable. Reconnect to check again.", {
-      exact: true
-    })
-    .waitFor();
+  await sheet.waitFor({ state: "hidden" });
+  await page.getByText("Original post unavailable.", { exact: true }).waitFor();
   assert.equal(await sheet.getByRole("img").count(), 0);
-  await page.keyboard.press("Escape");
+  await page.goBack();
   await sheet.waitFor({ state: "detached" });
   const one = await db.platformPost.create({
     data: {
@@ -313,16 +310,15 @@ try {
   );
   await signIn(owner);
   await page.evaluate(() => window.dispatchEvent(new Event("focus")));
-  await sheet
-    .getByText("This photo is unavailable. Reconnect to check again.", {
-      exact: true
-    })
+  await sheet.waitFor({ state: "hidden" });
+  await page
+    .getByRole("button", { name: "Check original availability", exact: true })
     .waitFor();
   assert.equal(await sheet.getByRole("img").count(), 0);
   ok(
     "Source withdrawal and account switching conceal open photos; single-photo gallery omits next/previous controls"
   );
-  await page.keyboard.press("Escape");
+  await page.goBack();
   await sheet.waitFor({ state: "detached" });
   await uploadImage(
     db,
