@@ -385,7 +385,9 @@ try {
 
   await signIn(author);
   await go("/platform");
-  await page.locator("#compose-post > summary").click();
+  await page
+    .getByRole("button", { name: "Share what's on your heart", exact: true })
+    .click();
   const composer = page.getByRole("form", {
     name: "Publish post",
     exact: true
@@ -401,7 +403,7 @@ try {
     .getByLabel("Optional safe excerpt", { exact: true })
     .fill("Draft preview chosen by the author");
   await composer
-    .getByRole("button", { name: "Save draft now", exact: true })
+    .getByRole("button", { name: "Save draft", exact: true })
     .click();
   await page.waitForFunction(() =>
     document
