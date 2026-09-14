@@ -242,6 +242,19 @@ try {
     editForm().getByLabel("Optional content note", { exact: true });
   const excerpt = () =>
     editForm().getByLabel("Optional safe excerpt", { exact: true });
+  const beforeValidation = bodies.length;
+  await note().fill("x".repeat(121));
+  await editForm()
+    .getByRole("button", { name: "Save post changes", exact: true })
+    .click();
+  await editForm()
+    .getByText(
+      "Use up to 120 characters for the content note. Your draft has not been shortened.",
+      { exact: true }
+    )
+    .waitFor();
+  assert.equal((await note().inputValue()).length, 121);
+  assert.equal(bodies.length, beforeValidation);
   await note().fill("Edited note before a lost response");
   await excerpt().fill("Edited safe excerpt before a lost response");
   // The app's own navigation protection must retain both new choices.
