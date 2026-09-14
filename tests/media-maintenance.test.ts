@@ -92,9 +92,9 @@ test("maintenance fails closed before storage access and requires its secret, no
   assert.equal(opened, true);
 });
 
-test("maintenance uses the existing 20-prefix bound, respects grace and is idempotent under duplicate calls", async () => {
+test("maintenance expands the paced drain to 100 prefixes, reports remaining work, preserves grace and exact retry", async () => {
   const store = memoryStore();
-  const due = Array.from({ length: 25 }, prefix),
+  const due = Array.from({ length: 125 }, prefix),
     future = prefix();
   await db.mediaGarbage.createMany({
     data: [
@@ -105,8 +105,24 @@ test("maintenance uses the existing 20-prefix bound, respects grace and is idemp
   for (const p of [...due, future])
     for (const v of ["original", "large", "medium", "thumb"])
       store.files.set(`${p}/${v}.webp`, Buffer.from("fixture"));
+  assert.deepEqual(await collectImageGarbage(db, store), { removed: 20 });
+  const began = performance.now();
   const first = await handleImageMaintenance(db, request(), () => store);
-  assert.deepEqual(await first.json(), { ok: true, removed: 20 });
+  assert.equal(
+    first.status,
+    503,
+    "A capped drain advertises unfinished due work"
+  );
+  assert.deepEqual(await first.json(), {
+    ok: false,
+    removed: 100,
+    remaining: { total: 6, due: 5, oldestDueAt: new Date(0).toISOString() },
+    needsAttention: true
+  });
+  assert.ok(
+    performance.now() - began >= 99 * 340,
+    "Actual deletion starts are paced with timer tolerance"
+  );
   assert.equal(await db.mediaGarbage.count(), 6);
   const duplicate = await Promise.all([
     collectImageGarbage(db, store),
@@ -120,6 +136,42 @@ test("maintenance uses the existing 20-prefix bound, respects grace and is idemp
   assert.equal(store.files.size, 4);
   assert.ok([...store.files.keys()].every((k) => k.startsWith(future + "/")));
   assert.deepEqual(await collectImageGarbage(db, store), { removed: 0 });
+});
+
+test("secured image inspection reads backlog and age without opening storage or changing rows", async () => {
+  const p = prefix();
+  await db.mediaGarbage.create({
+    data: { storagePrefix: p, dueAt: new Date(0) }
+  });
+  const before = JSON.stringify(await db.mediaGarbage.findMany());
+  const inspect = new Request(
+    "https://example.test/api/maintenance/images?mode=inspect",
+    { headers: { authorization: `Bearer ${secret}` } }
+  );
+  const response = await handleImageMaintenance(db, inspect, () => {
+    throw Error("Inspection must not open provider storage");
+  });
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), {
+    mode: "inspect",
+    total: 1,
+    due: 1,
+    oldestDueAt: new Date(0).toISOString(),
+    maximumPerRun: 100
+  });
+  assert.equal(JSON.stringify(await db.mediaGarbage.findMany()), before);
+  assert.equal(
+    (
+      await handleImageMaintenance(
+        db,
+        new Request(
+          "https://example.test/api/maintenance/images?mode=unknown",
+          { headers: { authorization: `Bearer ${secret}` } }
+        )
+      )
+    ).status,
+    400
+  );
 });
 
 test("provider failure and cancellation retain durable work and return only a safe failure", async () => {

@@ -535,6 +535,21 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "community-reliability",
+    version: "2026.09.14.7",
+    date: "2026-09-14",
+    summary: "Photo updates work better when people share a network.",
+    added: [],
+    improved: [
+      "More people can update photos on shared church Wi-Fi while individual account protections remain in place.",
+      "Removed photo files can be cleared in larger batches after their existing waiting period."
+    ],
+    fixed: [
+      "Service checks make delayed background work easier to detect without exposing personal details."
+    ],
+    featureIds: ["profile-photos"]
+  },
+  {
     id: "avatar-startup",
     version: "2026.09.14.6",
     date: "2026-09-14",

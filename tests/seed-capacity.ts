@@ -10,6 +10,9 @@ import {
 import { seedParticipation } from "./seed-post-participation";
 import { portalCommand, ADULT_POLICY } from "../lib/platform/portal";
 import { getPostParticipation } from "../lib/platform/post-participation-reads";
+import { createHash, randomUUID } from "node:crypto";
+import sharp from "sharp";
+import { uploadImage } from "../lib/platform/media";
 
 // Development-only, disposable cluster. Never imported by application code.
 const db = new PrismaClient();
@@ -90,6 +93,65 @@ try {
     posts: 100000,
     comments: 500000
   });
+  const media = [];
+  if (process.env.CAPACITY_STAIRCASE === "1") {
+    // Fictional graph and retained preview text only; no remote URLs are fetched.
+    for (const [index, actor] of actors.entries()) {
+      await db.$executeRaw`
+        INSERT INTO "PlatformFollow" (id,"followerId","followingId")
+        SELECT ${"cap-follow-" + index + "-"} || i, ${actor.id}, 'cap-user-' || i FROM generate_series(1,500) i`;
+      await db.$executeRaw`
+        INSERT INTO "SocialRelationship" (id,"ownerId","targetUserId",muted,blocked,"updatedAt")
+        SELECT ${"cap-policy-" + index + "-"} || i, ${actor.id}, 'cap-user-' || (700+i), i<=200, i>200, now()
+        FROM generate_series(1,230) i`;
+    }
+    await db.$executeRaw`
+      UPDATE "PlatformPost" SET "linkUrl"='https://example.org/fictional-capacity',
+        "linkSourceUrl"='https://example.org/fictional-capacity',
+        "linkTitle"='Fictional capacity preview', "linkDescription"='Stored inert metadata for the isolated dense feed.'
+      WHERE id IN (SELECT 'cap-post-' || i FROM generate_series(1,100) i)`;
+    const pixels = Buffer.alloc(1024 * 768 * 3);
+    let state = 0x5a1ad;
+    for (let i = 0; i < pixels.length; i++) {
+      state ^= state << 13;
+      state ^= state >>> 17;
+      state ^= state << 5;
+      pixels[i] = state & 255;
+    }
+    const photo = await sharp(pixels, {
+      raw: { width: 1024, height: 768, channels: 3 }
+    })
+      .jpeg({ quality: 82 })
+      .toBuffer();
+    await writeFile(
+      join(process.env.CAPACITY_FIXTURE_DIR!, "fictional-photo.jpg"),
+      photo,
+      { mode: 0o600 }
+    );
+    for (const actor of actors) {
+      const image = await uploadImage(
+        db,
+        actor.token,
+        {
+          purpose: "PROFILE_AVATAR",
+          targetId: actor.id,
+          requestKey: randomUUID()
+        },
+        photo
+      );
+      media.push({ ownerId: actor.id, id: image.id, variants: image.variants });
+    }
+    console.log(
+      JSON.stringify({
+        denseFollows: 50000,
+        densePolicyRows: 23000,
+        previewPosts: 100,
+        avatars: media.length,
+        inputBytes: photo.length,
+        inputSha256: createHash("sha256").update(photo).digest("hex")
+      })
+    );
+  }
   await writeFile(
     join(process.env.CAPACITY_FIXTURE_DIR!, "actors.json"),
     JSON.stringify({
@@ -103,7 +165,8 @@ try {
       poll: participation.poll,
       outsider: { id: f.blake.id, token: f.blake.token },
       reviewer: { id: f.reviewerA.id, token: f.reviewerA.token },
-      counts
+      counts,
+      media
     }),
     { mode: 0o600 }
   );

@@ -11,15 +11,18 @@ completion or a safe error; logs contain no owner, asset, key or provider detail
 
 `vercel.json` schedules one invocation daily at `0 7 * * *` UTC. The current Hobby
 plan invokes within the 07:00–07:59 UTC window. No new paid plan or store is
-required. Each invocation considers at most 20 due prefixes, with a 40-second
+required. The current candidate considers at most 100 due prefixes, with a 40-second
 application deadline and a 60-second function limit. Each provider deletion is
 also bounded to 15 seconds. Pending work survives failures, missed invocations
-and function termination; the next invocation retries it. A failure returns 503
+and function termination; the next invocation retries it. The response reports
+remaining total/due counts and the oldest due timestamp. Remaining due work or a failure returns 503
 and logs `image_cleanup_incomplete`; Vercel does not retry failed invocations.
 
 The 24-hour grace period remains unchanged. Normal cleanup can therefore occur
-24–48 hours after removal, or later during outages/backlog. The current daily
-capacity is 20 prefixes; inspect the due count and oldest due timestamp as volume
+24–48 hours after removal, or later during outages/backlog. The candidate daily
+ceiling is 100 prefixes, with at least 350 ms between four-variant deletion starts
+within one run; slow providers can reduce that ceiling. Concurrent runs share
+the provider allowance, so avoid overlapping manual drains. Inspect the due count and oldest due timestamp as volume
 grows and review capacity before broad rollout. This is object reclamation, not a
 promise of immediate physical deletion. Access to a retired image is denied by
 the existing image service immediately.
@@ -36,6 +39,15 @@ Maintenance uses server-only private storage independently of
 local filesystem adapter remains guarded by the existing isolated-test checks.
 No schema, user authority, audience, retention grace or account deletion policy
 is changed by this worker.
+
+## Read-only inspection candidate — September 14, 2026
+
+After verifying the new deployment, an authorized `GET /api/maintenance/images?mode=inspect`
+reads aggregate backlog without opening storage or deleting anything. Older
+deployments did not recognize this mode: verify the serving version before
+using it as an inspection. Unknown modes return 400. Account cookies still grant
+no maintenance authority. Full operational health is described in
+[the health runbook](OPERATIONAL_HEALTH.md).
 
 ## Activation and operation
 

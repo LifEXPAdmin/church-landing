@@ -20,12 +20,14 @@ async function hit(
   return rows[0].hits <= maximum;
 }
 
-export async function allowAccountAttempt(
+async function allowLimitedAttempt(
   db: PrismaClient,
   secret: string,
   operation: string,
   ip: string,
-  subject: string
+  subject: string,
+  ipMaximum: number,
+  subjectMaximum: number
 ) {
   const key = (value: string) =>
     createHmac("sha256", secret).update(value).digest("hex");
@@ -34,12 +36,45 @@ export async function allowAccountAttempt(
   await db.platformAuthLimit.deleteMany({
     where: { expiresAt: { lt: new Date() } }
   });
-  if (!(await hit(db, key(`ip:${ip}`), 30, 900))) return false;
-  return hit(
+  if (!(await hit(db, key(`ip:${ip}`), ipMaximum, 900))) return false;
+  return hit(db, key(`${operation}:${subject}`), subjectMaximum, 900);
+}
+
+export function allowAccountAttempt(
+  db: PrismaClient,
+  secret: string,
+  operation: string,
+  ip: string,
+  subject: string
+) {
+  return allowLimitedAttempt(
     db,
-    key(`${operation}:${subject}`),
-    operation.startsWith("request-") ? 3 : 10,
-    900
+    secret,
+    operation,
+    ip,
+    subject,
+    30,
+    operation.startsWith("request-") ? 3 : 10
+  );
+}
+
+// Many distinct signed-in adults can share church Wi-Fi. Keep the existing
+// per-account and global image budgets without borrowing the sign-in IP limit.
+export function allowImageAttempt(
+  db: PrismaClient,
+  secret: string,
+  operation: string,
+  ip: string,
+  ownerId: string
+) {
+  return allowLimitedAttempt(
+    db,
+    secret + ":images",
+    operation,
+    ip,
+    ownerId,
+    300,
+    10
   );
 }
 

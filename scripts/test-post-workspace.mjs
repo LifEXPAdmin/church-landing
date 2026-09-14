@@ -1,3 +1,4 @@
+import { tmpdir } from "node:os";
 import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
@@ -6,6 +7,10 @@ import { randomBytes } from "node:crypto";
 const pg = process.env.TEST_PG_BIN ?? "/opt/homebrew/opt/postgresql@16/bin";
 mkdirSync(".account-test", { recursive: true, mode: 0o700 });
 const dir = mkdtempSync(resolve(".account-test/workspace-"));
+// Preserve disposable PostgreSQL/WAL data outside Next.js file enumeration.
+const clusterRoot = mkdtempSync(join(tmpdir(), "godschurches-security-"));
+const databaseDirectory = join(clusterRoot, "pg");
+writeFileSync(join(dir, "cluster.json"), JSON.stringify({ databaseDirectory }), { mode: 0o600 });
 const socket = createServer();
 await new Promise((r) => socket.listen(0, "127.0.0.1", r));
 const port = socket.address().port;
@@ -53,7 +58,7 @@ let started = false;
 try {
   run(join(pg, "initdb"), [
     "-D",
-    join(dir, "pg"),
+    databaseDirectory,
     "-A",
     "trust",
     "-U",
@@ -63,7 +68,7 @@ try {
   ]);
   run(join(pg, "pg_ctl"), [
     "-D",
-    join(dir, "pg"),
+    databaseDirectory,
     "-l",
     join(dir, "pg.log"),
     "-o",
@@ -199,7 +204,7 @@ try {
   if (started)
     run(join(pg, "pg_ctl"), [
       "-D",
-      join(dir, "pg"),
+      databaseDirectory,
       "-m",
       "fast",
       "-w",

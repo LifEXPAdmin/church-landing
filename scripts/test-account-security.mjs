@@ -1,3 +1,4 @@
+import { tmpdir } from "node:os";
 import { spawn, spawnSync } from "node:child_process";
 import {
   mkdirSync,
@@ -32,6 +33,10 @@ if (!existsSync(join(pg, "initdb")))
   );
 mkdirSync(".account-test", { recursive: true, mode: 0o700 });
 const dir = mkdtempSync(resolve(".account-test/run-"));
+// Preserve disposable PostgreSQL/WAL data outside Next.js file enumeration.
+const clusterRoot = mkdtempSync(join(tmpdir(), "godschurches-security-"));
+const databaseDirectory = join(clusterRoot, "pg");
+writeFileSync(join(dir, "cluster.json"), JSON.stringify({ databaseDirectory }), { mode: 0o600 });
 async function freePort() {
   const server = createServer();
   await new Promise((resolve, reject) => {
@@ -115,7 +120,7 @@ async function stopProxy() {
 try {
   run(join(pg, "initdb"), [
     "-D",
-    join(dir, "pg"),
+    databaseDirectory,
     "-A",
     "trust",
     "-U",
@@ -125,7 +130,7 @@ try {
   ]);
   run(join(pg, "pg_ctl"), [
     "-D",
-    join(dir, "pg"),
+    databaseDirectory,
     "-l",
     join(dir, "pg.log"),
     "-o",
@@ -975,7 +980,7 @@ try {
     );
     writeFileSync(
       join(dir, "browser-env.json"),
-      JSON.stringify({ origin: httpsOrigin, database, certificate }),
+      JSON.stringify({ origin: httpsOrigin, database, certificate, databaseDirectory }),
       { mode: 0o600 }
     );
     await runTests("tests/portal-http.test.ts", portalEnv);
@@ -1074,7 +1079,7 @@ try {
   if (databaseStarted)
     run(join(pg, "pg_ctl"), [
       "-D",
-      join(dir, "pg"),
+      databaseDirectory,
       "-m",
       "fast",
       "-w",

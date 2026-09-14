@@ -1,5 +1,60 @@
 # Isolated capacity and recovery rehearsal
 
+## Dense media staircase candidate — September 14, 2026
+
+The candidate adds `node scripts/capacity-rehearsal.mjs 900 --staircase`.
+It retains the existing integrity burst, then runs 25/50/100 authenticated clients
+with two-second think time: three minutes at 25 and 50, then fifteen at 100.
+Each stage records full-response p50/p95, status classes, bytes, requests/second,
+requests in flight, PostgreSQL connections/waits and database counters, host CPU,
+application RSS/CPU samples and a bounded aggregate health snapshot. Host CPU
+includes the load generator and PostgreSQL; it is not function CPU billing.
+The client sample is HTTP, not a hydrated browser or physical phone.
+
+The fixture adds 50,000 follows, 20,000 mute and 3,000 block rows, 100 inert stored
+link previews and 100 real normalized avatar images. One private-library upload
+per client/stage uses the canonical upload route, and owner/other-account byte
+access is checked afterward. Read traffic includes feed/detail HTML, comments,
+post/people search, private thumbnail and medium-variant image bytes (up to 800 pixels). Duplicate comment
+and like requests must return identical successful receipts. Expected 429 abuse
+throttles are separate from unexpected responses; failure prevents increasing
+load. No outgoing provider send or production record is used.
+
+The local HTTPS proxy adds 80 ms request latency and an aggregate shared 100 Mbps
+down / 20 Mbps up byte budget, with per-stream backpressure. Its two-stream check
+transferred exactly 2,097,152 bytes in 2,099 ms at 8 Mbps. This models a shared
+network; it does not emulate cloud CPU allocation or real mobile loss/jitter.
+The harness accepts no external target or provider credentials. Source hash,
+local build ID, fixture settings and private raw receipts are preserved.
+
+The initial ten-second-per-stage functional run passed fourteen staircase checks,
+twelve baseline integrity groups, twelve actual query plans and eight populated
+restore groups. All nine content/media/social-policy table fingerprints and
+46 migration checksums matched; protected replay quarantined sessions/grants and
+kept traffic disabled. Health used two aggregate data reads, and account cookies
+alone received 401. These short-run times are not a sustained capacity claim.
+
+That run reproduced a shared-network photo limit: 30 uploads succeeded and the
+next 14 received 429, with zero unexpected responses. The candidate now gives
+images a separate 300-attempt IP window while retaining 120 global attempts/minute,
+ten changes of each kind/account/15 minutes, and unchanged sign-in budgets. Two
+new admission/concurrency tests plus existing image-boundary and release checks
+pass (seven checks). The sustained corrected run is pending.
+
+The build initially exhausted its existing 6 GiB heap while enumerating retained
+fixture databases. Seven stopped clusters were preserved outside the trace root;
+the unchanged build passed. Both security harnesses now place new PostgreSQL/WAL
+files in an owned private temporary directory and record that path in `cluster.json`.
+Small receipts and guarded image fixtures remain in `.account-test`. Nothing is
+erased to obtain a build result. Initial health tests also found a UTC comparison
+error and a missing fixture preview prerequisite; both were corrected, and all
+four health checks pass, including a real database lock timeout. Full candidate
+regression, sustained results and exact deployed acceptance remain pending.
+
+Actual provider inventory and remaining access limits are in
+[operational health](OPERATIONAL_HEALTH.md); explicit growth/cost scenarios and
+cloud-test quota considerations are in [the pilot envelope](PILOT_CAPACITY.md).
+
 ## Photo process recovery and cleanup repair — live, 13 September 2026
 
 Seven isolated recovery checks use real killed/restarted processes and guarded

@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
+import { setTimeout as delay } from "node:timers/promises";
 import type { MediaAsset, Prisma, PrismaClient } from "@prisma/client";
 import { withOwnedSession } from "./account-sessions";
 import { postContext, withPostRead, type PostTx } from "./post-access";
@@ -559,19 +560,46 @@ export async function readImage(
 }
 // Used by the secret-protected maintenance route. Immutable prefixes and the
 // existing lifecycle gate make duplicate invocations safe without a new queue.
+export async function inspectImageGarbage(db: PrismaClient, now = new Date()) {
+  const [total, due] = await Promise.all([
+    db.mediaGarbage.count(),
+    db.mediaGarbage.aggregate({
+      where: { dueAt: { lte: now } },
+      _count: { _all: true },
+      _min: { dueAt: true }
+    })
+  ]);
+  return {
+    total,
+    due: due._count._all,
+    oldestDueAt: due._min.dueAt?.toISOString() ?? null
+  };
+}
+
 export async function collectImageGarbage(
   db: PrismaClient,
   store: ImageStorage = imageStorage(),
   now = new Date(),
-  signal = AbortSignal.timeout(40_000)
+  signal = AbortSignal.timeout(40_000),
+  budget = { maximum: 20, intervalMs: 0 }
 ) {
+  if (
+    !Number.isInteger(budget.maximum) ||
+    budget.maximum < 1 ||
+    budget.maximum > 100 ||
+    !Number.isInteger(budget.intervalMs) ||
+    budget.intervalMs < 0 ||
+    budget.intervalMs > 1000
+  )
+    throw new Error("Invalid image cleanup budget");
   signal.throwIfAborted();
   const candidates = await db.mediaGarbage.findMany({
     where: { dueAt: { lte: now } },
     orderBy: [{ dueAt: "asc" }, { storagePrefix: "asc" }],
-    take: 20
+    take: budget.maximum
   });
   let removed = 0;
+  let nextDeleteAt = 0;
   for (const candidate of candidates) {
     signal.throwIfAborted();
     const eligible = await db.$transaction(
@@ -606,6 +634,12 @@ export async function collectImageGarbage(
     );
     if (!eligible) continue;
     signal.throwIfAborted();
+    // Pace four-variant deletions below the current private-provider operation
+    // rate. A cancellation leaves the durable candidate available for retry.
+    const wait = nextDeleteAt - performance.now();
+    if (wait > 0) await delay(wait, undefined, { signal });
+    signal.throwIfAborted();
+    nextDeleteAt = performance.now() + budget.intervalMs;
     await store.delete(
       paths(candidate.storagePrefix),
       AbortSignal.any([signal, AbortSignal.timeout(15_000)])

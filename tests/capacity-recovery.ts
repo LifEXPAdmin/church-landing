@@ -75,7 +75,12 @@ try {
     "PlatformUser",
     "Church",
     "PlatformPost",
-    "PlatformPostComment"
+    "PlatformPostComment",
+    "PlatformFollow",
+    "SocialRelationship",
+    "MediaAsset",
+    "MediaGarbage",
+    "PersonalPhoto"
   ];
   async function fingerprints(client: PrismaClient) {
     const rows = [];
@@ -84,7 +89,7 @@ try {
       const [row] = await client.$queryRawUnsafe<
         Array<{ count: string; digest: string }>
       >(
-        `SELECT count(*)::text AS count, md5(string_agg(md5(to_jsonb(t)::text), '' ORDER BY id)) AS digest FROM "${table}" t`
+        `SELECT count(*)::text AS count, md5(string_agg(md5(to_jsonb(t)::text), '' ORDER BY "${table === "MediaGarbage" ? "storagePrefix" : table === "PersonalPhoto" ? "assetId" : "id"}")) AS digest FROM "${table}" t`
       );
       rows.push({ table, ...row });
     }
@@ -175,11 +180,11 @@ try {
       "church revocation hides source",
       "stale account form rejected with zero comments",
       "disabled push with functioning social readers",
-      "snapshot preserves all four capacity tables",
+      `snapshot preserves all ${tables.length} capacity tables`,
       `${migrations.length} migration checksums preserved`,
       "restored sessions and elevated grants quarantined",
       "church revocation preserved",
-      "posts/comments/churches unchanged after quarantine"
+      "content, media and social policy unchanged after quarantine"
     ],
     before,
     archiveBytes: (await stat(archive)).size,

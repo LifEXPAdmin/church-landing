@@ -1,7 +1,7 @@
 import type { PrismaClient } from "@prisma/client";
 import { accountConfig } from "./account-config";
 import { requestSessionToken, readBody } from "./account-boundary";
-import { allowAccountAttempt } from "./account-limits";
+import { allowImageAttempt } from "./account-limits";
 import { readAccountSession } from "./accounts";
 import { AccountError } from "./account-error";
 import { PortalError } from "./portal-policy";
@@ -82,9 +82,9 @@ export async function handleImageRequest(
       ? (request.headers.get("x-real-ip") ?? "unknown").slice(0, 64)
       : "local";
     if (
-      !(await allowAccountAttempt(
+      !(await allowImageAttempt(
         db,
-        config.rateSecret + ":images",
+        config.rateSecret,
         request.method === "POST" ? "upload" : "remove",
         ip,
         actor.id

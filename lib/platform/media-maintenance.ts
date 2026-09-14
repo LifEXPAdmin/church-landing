@@ -1,5 +1,5 @@
 import type { PrismaClient } from "@prisma/client";
-import { collectImageGarbage } from "./media";
+import { collectImageGarbage, inspectImageGarbage } from "./media";
 import { privateImageStorage, type ImageStorage } from "./media-storage";
 
 import {
@@ -15,11 +15,39 @@ export async function handleImageMaintenance(
 ) {
   const rejected = maintenanceRequestError(request);
   if (rejected) return rejected;
+  const mode = new URL(request.url).searchParams.get("mode");
+  if (mode && mode !== "inspect")
+    return Response.json(
+      { error: "Choose inspection or the maintenance run." },
+      { status: 400, headers }
+    );
   try {
-    const result = await collectImageGarbage(db, storage(), new Date(), signal);
+    if (mode === "inspect")
+      return Response.json(
+        { mode, ...(await inspectImageGarbage(db)), maximumPerRun: 100 },
+        { headers }
+      );
+    const result = await collectImageGarbage(
+      db,
+      storage(),
+      new Date(),
+      signal,
+      { maximum: 100, intervalMs: 350 }
+    );
+    const remaining = await inspectImageGarbage(db);
+    const needsAttention = remaining.due > 0;
     // Aggregate receipts contain no owner, asset, prefix, token or provider data.
-    console.info("image_cleanup_completed", result);
-    return Response.json({ ok: true, ...result }, { headers });
+    const receipt = {
+      ok: !needsAttention,
+      ...result,
+      remaining,
+      needsAttention
+    };
+    console.info("image_cleanup_completed", receipt);
+    return Response.json(receipt, {
+      status: needsAttention ? 503 : 200,
+      headers
+    });
   } catch {
     console.error("image_cleanup_incomplete");
     return Response.json(

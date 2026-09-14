@@ -12,8 +12,10 @@ import { join, resolve } from "node:path";
 import { createServer as netServer } from "node:net";
 import { createServer as httpsServer } from "node:https";
 import { request } from "node:http";
-import { randomBytes } from "node:crypto";
+import { randomBytes, createHash } from "node:crypto";
 import { tmpdir } from "node:os";
+import { sharedLink } from "./capacity-link.mjs";
+import { pipeline } from "node:stream";
 
 // Own the cluster and server: no target URL, existing database or credentials are
 // accepted. Real account/provider secrets are deliberately not inherited.
@@ -26,11 +28,39 @@ assert.match(sourceHead, /^[a-f0-9]{40}$/);
 const pg = process.env.TEST_PG_BIN ?? "/opt/homebrew/opt/postgresql@17/bin";
 const seconds = Number(process.argv[2] ?? 900);
 assert.ok(Number.isInteger(seconds) && seconds >= 10 && seconds <= 1800);
+const staircase = process.argv[3] === "--staircase";
+assert.ok(process.argv.length <= 3 || (process.argv.length === 4 && staircase));
 mkdirSync(".account-test", { recursive: true, mode: 0o700 });
 const dir = mkdtempSync(resolve(".account-test/capacity-"));
 // Large PostgreSQL/WAL files stay outside the application tracing root. Keep
 // only small receipts and guarded image/journal fixtures inside the checkout.
 const storageDir = mkdtempSync(join(tmpdir(), "godschurches-capacity-"));
+const sourceFiles = spawnSync(
+  "git",
+  ["ls-files", "--cached", "--others", "--exclude-standard", "-z"],
+  { encoding: "utf8" }
+)
+  .stdout.split("\0")
+  .filter((path) => /^(app|components|lib|prisma)\//.test(path))
+  .sort();
+const sourceDigest = createHash("sha256");
+for (const path of sourceFiles)
+  sourceDigest.update(path + "\0").update(readFileSync(path));
+writeFileSync(
+  join(dir, "source-receipt.json"),
+  JSON.stringify({
+    sourceHead,
+    sourceSha256: sourceDigest.digest("hex"),
+    files: sourceFiles.length,
+    buildId: readFileSync(".next/BUILD_ID", "utf8").trim(),
+    staircase,
+    seconds,
+    workingTreeDirty:
+      spawnSync("git", ["status", "--porcelain"], { encoding: "utf8" }).stdout
+        .length > 0
+  }),
+  { mode: 0o600 }
+);
 async function freePort() {
   const server = netServer();
   await new Promise((r) => server.listen(0, "127.0.0.1", r));
@@ -62,6 +92,7 @@ const env = {
   ACCOUNT_TEST_SINK_DIR: join(dir, "sink"),
   ACCOUNT_DELIVERY_MODE: "test-sink",
   AUTH_RATE_LIMIT_SECRET: randomBytes(32).toString("hex"),
+  CRON_SECRET: randomBytes(32).toString("hex"),
   MEDIA_STORAGE_MODE: "local-test",
   MEDIA_TEST_DIR: join(dir, "images"),
   RETENTION_TEST_DIR: join(dir, "retention"),
@@ -82,6 +113,8 @@ const env = {
   ACCOUNT_DELETION_ENABLED: "false",
   CAPACITY_FIXTURE_DIR: dir,
   CAPACITY_STORAGE_DIR: storageDir,
+  CAPACITY_STAIRCASE: staircase ? "1" : "0",
+  PERSONAL_PHOTO_LIBRARY_ENABLED: staircase ? "true" : "false",
   NODE_EXTRA_CA_CERTS: certificate
 };
 writeFileSync(
@@ -139,6 +172,8 @@ async function child(args, logName, overrides = {}) {
 let started = false,
   app,
   proxy;
+const downstream = sharedLink(100),
+  upstreamLink = sharedLink(20);
 const interrupt = () => {
   interrupted = true;
   runningChild?.kill("SIGTERM");
@@ -230,9 +265,15 @@ try {
     }
   );
   closeSync(appLog);
+  writeFileSync(
+    join(dir, "runtime.json"),
+    JSON.stringify({ appPid: app.pid }),
+    { mode: 0o600 }
+  );
   proxy = httpsServer(
     { key: readFileSync(key), cert: readFileSync(certificate) },
-    (req, res) => {
+    async (req, res) => {
+      if (staircase) await new Promise((resolve) => setTimeout(resolve, 80));
       const headers = {
         ...req.headers,
         host: new URL(origin).host,
@@ -251,14 +292,16 @@ try {
         },
         (r) => {
           res.writeHead(r.statusCode, r.headers);
-          r.pipe(res);
+          if (staircase) pipeline(r, downstream.stream(), res, () => {});
+          else r.pipe(res);
         }
       );
       upstream.on("error", () => {
         if (!res.headersSent) res.writeHead(502);
         res.end();
       });
-      req.pipe(upstream);
+      if (staircase) pipeline(req, upstreamLink.stream(), upstream, () => {});
+      else req.pipe(upstream);
     }
   );
   await new Promise((r) => proxy.listen(tlsPort, "127.0.0.1", r));
@@ -267,10 +310,20 @@ try {
       "--import",
       "./tests/register.mjs",
       "scripts/capacity-workload.mjs",
-      String(seconds)
+      String(staircase ? 10 : seconds)
     ],
     "workload.log"
   );
+  if (staircase)
+    await child(
+      [
+        "--import",
+        "./tests/register.mjs",
+        "scripts/capacity-staircase.mjs",
+        String(seconds)
+      ],
+      "staircase.log"
+    );
   await child(
     ["--import", "./tests/register.mjs", "tests/capacity-query-plans.ts"],
     "query-plans.log"
@@ -284,6 +337,25 @@ try {
     result.checks.every((check) => check.pass),
     "Capacity integrity check failed; inspect result.json"
   );
+  if (staircase) {
+    const measured = JSON.parse(
+      readFileSync(join(dir, "staircase.json"), "utf8")
+    );
+    measured.linkBytes = {
+      download: downstream.bytes,
+      upload: upstreamLink.bytes
+    };
+    writeFileSync(
+      join(dir, "staircase.json"),
+      JSON.stringify(measured, null, 2),
+      { mode: 0o600 }
+    );
+    assert.ok(
+      measured.integrity.every((check) => check.pass),
+      "Staircase integrity check failed; inspect staircase.json"
+    );
+    console.log(`CAPACITY_STAIRCASE_FINISHED ${join(dir, "staircase.json")}`);
+  }
   console.log(`CAPACITY_FINISHED ${join(dir, "result.json")}`);
 } finally {
   process.removeListener("SIGINT", interrupt);
