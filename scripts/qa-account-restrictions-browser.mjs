@@ -65,7 +65,7 @@ const ok = (s) => {
   results.push(s);
   console.log("PASS " + s);
 };
-const output = fixtureDir + "/safety-settings-browser";
+const output = fixtureDir + "/account-restriction-browser";
 mkdirSync(output, { recursive: true });
 const go = async (path) => {
   await page.goto(config.origin + path);

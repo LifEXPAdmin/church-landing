@@ -85,7 +85,14 @@ preview rebuilds hit the 6 GB heap limit; an unchanged clean-checkout build
 passed all 146 runtime traces. Preserve these diagnostic limits separately from
 the full gate and final clean build.
 
-Pending: full fresh-fixture gate, browser acceptance, release/build/canonical
-assignment, live reads, and the installed post-release daily backup/restore. Broader operational acceptance requires actual
+Six built-browser groups pass on the expanded lookup implementation. They cover
+an account outside the first 100, required reason/confirmation, an identical
+original-request retry after a lost saved response, restoration without old
+sessions, concurrent-version rejection, switching authorized operators and
+concealment after the current grant is revoked. The 320/390/1280-pixel layouts
+have no horizontal overflow; the reason and audit screenshots were inspected.
+
+Pending: the expanded full fresh-fixture gate, release/build/canonical assignment,
+live reads, and the installed post-release daily backup/restore. Broader operational acceptance requires actual
 appointed operators/responders and the existing physical/provider prerequisites;
 passing fictional test actions does not establish real case handling.
