@@ -21,7 +21,9 @@ export async function handleRepostRequest(db: PrismaClient, request: Request) {
           {
             available: !!entry?.repost?.source,
             entryVersion: entry?.version ?? null,
-            sourceVersion: entry?.repost?.source?.version ?? null
+            sourceVersion: entry?.repost?.source?.version ?? null,
+            commentCount: entry?.repost?.source?.commentCount ?? null,
+            likeCount: entry?.repost?.source?.likeCount ?? null
           },
           { headers: socialHeaders }
         );

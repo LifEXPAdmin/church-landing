@@ -40,6 +40,8 @@ export function PostCard(props: PostCardProps) {
       entryVersion={repostContext.entryVersion}
       sourceVersion={post.version}
       accountId={currentUserId ?? null}
+      commentCount={post.commentCount}
+      likeCount={post.likeCount}
       preserveMounted
     >
       <PostCardContent {...props} />

@@ -54,6 +54,8 @@ export function RepostSourceBoundary({
             available: boolean;
             entryVersion: number | null;
             sourceVersion: number | null;
+            commentCount: number | null;
+            likeCount: number | null;
           }>(
             `/api/platform/reposts?view=entry&id=${encodeURIComponent(entryId)}`,
             undefined,
@@ -64,12 +66,8 @@ export function RepostSourceBoundary({
         r.data.available &&
         r.data.entryVersion === entryVersion &&
         r.data.sourceVersion === sourceVersion &&
-        (!originalPost ||
-          ((commentCount === undefined ||
-            ("commentCount" in r.data &&
-              r.data.commentCount === commentCount)) &&
-            (likeCount === undefined ||
-              ("likeCount" in r.data && r.data.likeCount === likeCount))));
+        (commentCount === undefined || r.data.commentCount === commentCount) &&
+        (likeCount === undefined || r.data.likeCount === likeCount);
       setVisible(match);
       setMessage("Original post unavailable.");
       if (r.data.available && !match) {

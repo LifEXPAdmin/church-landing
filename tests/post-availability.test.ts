@@ -5,9 +5,62 @@ import { PrismaClient } from "@prisma/client";
 import { seedPortal, assertPortalTestDatabase } from "./seed-portal";
 import { getPostAvailabilityBatch } from "../lib/platform/post-reads";
 import { handlePostRequest } from "../lib/platform/post-boundary";
+import { handleRepostRequest } from "../lib/platform/repost-boundary";
+import { repostCommand } from "../lib/platform/reposts";
 const db = new PrismaClient();
 before(() => assertPortalTestDatabase(db));
 after(() => db.$disconnect());
+
+test("retained repost checks return only currently permitted source counts", async () => {
+  const f = await seedPortal(db);
+  const post = await db.platformPost.create({
+    data: {
+      authorId: f.memberA.id,
+      content: "Fictional repost source",
+      allowReposts: true
+    }
+  });
+  const comment = await db.platformPostComment.create({
+    data: {
+      authorId: f.coordinator.id,
+      postId: post.id,
+      content: "Fictional removable comment"
+    }
+  });
+  const entry = await repostCommand(db, f.contact.token, {
+    operation: "repost",
+    sourceId: post.id,
+    expectedSourceVersion: post.version,
+    mutationId: randomUUID()
+  });
+  const read = async () => {
+    const response = await handleRepostRequest(
+      db,
+      new Request(
+        `http://127.0.0.1/api/platform/reposts?view=entry&id=${entry.id}`,
+        { headers: { Cookie: "church_platform_session=" + f.contact.token } }
+      )
+    );
+    assert.equal(response.status, 200);
+    return response.json();
+  };
+  assert.equal((await read()).commentCount, 1);
+  await db.platformPostComment.update({
+    where: { id: comment.id },
+    data: { moderationState: "HIDDEN", version: { increment: 1 } }
+  });
+  assert.equal((await read()).commentCount, 0);
+  await db.platformPost.update({
+    where: { id: post.id },
+    data: { moderationState: "HIDDEN", version: { increment: 1 } }
+  });
+  const unavailable = await read();
+  assert.equal(unavailable.available, false);
+  assert.equal(unavailable.sourceVersion, null);
+  assert.equal(unavailable.commentCount, null);
+  assert.equal(unavailable.likeCount, null);
+  assert.equal(JSON.stringify(unavailable).includes("Fictional"), false);
+});
 
 test("bounded source checks apply current church access and moderation before returning versions or counts", async () => {
   const f = await seedPortal(db);
