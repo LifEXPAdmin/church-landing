@@ -13,10 +13,9 @@ test("frozen feed excludes new arrivals, has stable timestamp ties and disjoint 
   const f = await seedParticipation(db);
   const ids: string[] = [];
   for (let i = 0; i < 34; i++) {
-    const post = await postCommand(db, f.lee.token, {
-      operation: "create",
-      requestKey: randomUUID(),
-      content: "Reader record " + i
+    // Historical page fixtures must not manufacture a same-hour posting burst.
+    const post = await db.platformPost.create({
+      data: { authorId: f.lee.id, content: "Reader record " + i }
     });
     ids.push(post.id);
   }

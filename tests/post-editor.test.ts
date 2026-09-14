@@ -284,12 +284,14 @@ test("church feed separates bounded pins, applies expiry and paginates deliberat
     until
   });
   for (let i = 0; i < 33; i++)
-    await postCommand(db, f.lee.token, {
-      operation: "create",
-      requestKey: randomUUID(),
-      audienceChurchId: f.churchA.id,
-      audience: "PUBLIC",
-      content: "Deliberately shared personal post " + i
+    // Seed older page records; current publication retains its real quota.
+    await db.platformPost.create({
+      data: {
+        authorId: f.lee.id,
+        audienceChurchId: f.churchA.id,
+        audience: "PUBLIC",
+        content: "Deliberately shared personal post " + i
+      }
     });
   const unshared = await postCommand(db, f.lee.token, {
     operation: "create",

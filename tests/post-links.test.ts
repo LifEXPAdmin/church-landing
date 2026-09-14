@@ -162,13 +162,14 @@ test("preview boundary requires current sign-in, exact origin and bounded rates;
 test("link preparation holds no database lock and rechecks revoked sessions before saving; saved create retries never refetch", async (t) => {
   const f = await seedParticipation(db),
     requestKey = randomUUID();
-  const first = await postCommand(db, f.lee.token, {
+  const original = {
     operation: "create",
     requestKey,
     content: "Already saved with a plain link.",
     linkUrl: url,
     linkReceipt: signPostPreview(f.lee.id, url, null)
-  });
+  };
+  const first = await postCommand(db, f.lee.token, original);
   let signalStarted: () => void = () => {},
     release: (addresses: string[]) => void = () => {};
   const started = new Promise<void>((resolve) => {
@@ -184,18 +185,15 @@ test("link preparation holds no database lock and rechecks revoked sessions befo
       })
   );
   t.mock.method(Resolver.prototype, "resolve6", async () => []);
-  // Even an expired receipt is unnecessary for an already saved creation key.
-  assert.equal(
-    (
-      await postCommand(db, f.lee.token, {
-        operation: "create",
-        requestKey,
-        content: "Retry",
-        linkUrl: url,
-        linkReceipt: "expired"
-      })
-    ).id,
-    first.id
+  // Exact retries need no provider lookup. Changed input uses a new request.
+  assert.equal((await postCommand(db, f.lee.token, original)).id, first.id);
+  await denied(
+    postCommand(db, f.lee.token, {
+      ...original,
+      content: "Changed retry",
+      linkReceipt: "expired"
+    }),
+    409
   );
   assert.equal(lookup.mock.callCount(), 0);
   const edit = postCommand(db, f.ada.token, {
