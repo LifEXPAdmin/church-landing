@@ -1,12 +1,26 @@
-## Followed conversation integration candidate — September 14, 2026 UTC
+## Followed conversation integration verified live — September 14, 2026 UTC
 
-Explicit follower Activity/optional phone integration is a verified local
-candidate, reusing current source, preference and delivery owners. All 132
-discovered test files pass with 817 passing checks and two expected skips;
-38 final browser groups, types/lint and protected production-copy upgrade 51→52
-pass. Exact deployment/live and installed recovery verification remain pending.
-The serving release remains .15 below until those checks finish.
-See [candidate scope](CONVERSATION_FOLLOW_ACCEPTANCE.md).
+**2026.09.14.16 / f7d617fa143ccd23abc08e510ddb7f0250c9f9e9** is READY in
+**dpl_FVXxHDHSyaCwQ8di3N7gRfGD3AG9**, independently canonical and verified live.
+Explicit thread following adds new replies to Activity; optional conversation
+phone alerts stay separate and initially off. Bounded durable continuation,
+current consent/source checks and recovery quarantine ship in the same cycle.
+
+The 132-file gate passes 817 checks with two expected skips; 38 final browser
+groups, types/lint and protected production-copy upgrade 51→52 pass. Thirteen
+public, four health and three signed-in live groups pass with zero browser or
+scoped runtime errors. One content-free queue probe completes on the deployed
+consumer with HTTP 200. Production test user-data changes, phone sends, new jobs,
+opt-ins and ranking snapshots are zero; nine table fingerprints match baseline.
+All 52 migrations and the installed registry match. Installed restore 52→52
+passes with 94 tables; nightly recovery verifies 34 sets with no issues/removals.
+See [complete feature evidence](CONVERSATION_FOLLOW_ACCEPTANCE.md).
+
+Private source/task readbacks confirm the discussion interface/integration child
+is completed; broader physical/prayer acceptance and other notification adapters
+remain open. Continue prayer next,
+including the original reaction-count visibility requirement. Final review stays
+last; the existing intermittent rendering and 100-client feed limits remain open.
 
 ## Personal profile pin verified live — September 14, 2026 UTC
 

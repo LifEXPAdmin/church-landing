@@ -7,7 +7,7 @@ notification choices use `notification-preferences.ts` and the shared
 `notification-settings.tsx` control. Messages, contact requests, reports, founder
 announcements, direct replies and mentions have their existing supported
 categories, device controls and IANA quiet hours. The followed-conversation
-candidate adds a separate initially-off phone category; thread Follow/Default/Mute
+release adds a separate initially-off phone category; thread Follow/Default/Mute
 governs Activity under current source access. Follow never enables phone alerts.
 See [current category authority](NOTIFICATION_SETTINGS_CONTRACT.md) and
 [feature acceptance](CONVERSATION_FOLLOW_ACCEPTANCE.md) for release status.
