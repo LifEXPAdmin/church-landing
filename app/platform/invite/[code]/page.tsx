@@ -3,7 +3,8 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { PlatformShell } from "@/components/platform/platform-shell";
 import { FriendInvitations } from "@/components/platform/friend-invitations";
-import { InstallationBanner } from "@/components/platform/installation-help";
+import { AccountAccess } from "@/components/platform/account-access";
+import { accountDeliveryAvailable } from "@/lib/platform/account-availability";
 import { publicFriendInvitation } from "@/lib/platform/friend-invitations";
 import { getCurrentPlatformUser } from "@/lib/platform/session";
 export const dynamic = "force-dynamic";
@@ -24,25 +25,22 @@ export default async function Page({
     publicFriendInvitation(prisma, code)
   ]);
   return (
-    <PlatformShell user={user}>
+    <PlatformShell
+      user={user}
+      signInReturnTo={invitation ? `/platform/invite/${code}` : undefined}
+    >
       <section className="container-shell mx-auto max-w-2xl space-y-5 py-8">
-        <h1 className="text-4xl">
-          {invitation
-            ? user
-              ? "Your invitation and connection"
-              : `${invitation.owner.name} invited you`
-            : "This invitation is unavailable"}
-        </h1>
-        <InstallationBanner />
+        {(user || !invitation) && (
+          <h1 className="text-4xl">
+            {invitation
+              ? user
+                ? "Your invitation and connection"
+                : `${invitation.owner.name} invited you`
+              : "This invitation is unavailable"}
+          </h1>
+        )}
         {invitation ? (
           <>
-            {!user && (
-              <p>
-                You can join and become friends with {invitation.owner.name}, or
-                join without connecting. Friendship adds no church or
-                private-content permissions.
-              </p>
-            )}
             {user ? (
               <FriendInvitations
                 accountId={user.id}
@@ -54,26 +52,13 @@ export default async function Page({
                 }}
               />
             ) : (
-              <>
-                <Link
-                  className="gc-button"
-                  href={`/platform/signup?friendInvitation=${encodeURIComponent(code)}&next=%2Fplatform%2Finvitations`}
-                >
-                  Create account and connect with {invitation.owner.name}
-                </Link>
-                <Link
-                  className="gc-button gc-button-quiet"
-                  href="/platform/signup"
-                >
-                  Join without connecting
-                </Link>
-                <Link
-                  className="gc-button gc-button-quiet"
-                  href={`/platform/login?next=${encodeURIComponent(`/platform/invite/${code}`)}`}
-                >
-                  Already a member? Sign in to review
-                </Link>
-              </>
+              <AccountAccess
+                initialView="register"
+                invitation={{ code, name: invitation.owner.name }}
+                returnTo="/platform/invitations"
+                signInReturnTo={`/platform/invite/${code}`}
+                recoveryAvailable={accountDeliveryAvailable()}
+              />
             )}
           </>
         ) : (
@@ -88,7 +73,7 @@ export default async function Page({
           </>
         )}
         <Link className="gc-button gc-button-quiet" href="/platform">
-          Continue without connecting
+          Browse the platform
         </Link>
       </section>
     </PlatformShell>

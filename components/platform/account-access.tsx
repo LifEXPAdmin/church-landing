@@ -15,6 +15,7 @@ export function AccountAccess({
   reactivated = false,
   emailChanged = false,
   returnTo = "/platform",
+  signInReturnTo = returnTo,
   reason,
   googleAvailable = false,
   recoveryAvailable = false,
@@ -26,6 +27,7 @@ export function AccountAccess({
   reactivated?: boolean;
   emailChanged?: boolean;
   returnTo?: string;
+  signInReturnTo?: string;
   reason?: AccountReason;
   googleAvailable?: boolean;
   recoveryAvailable?: boolean;
@@ -43,13 +45,17 @@ export function AccountAccess({
         className="text-4xl text-gc-text sm:text-5xl"
       >
         {registered
-          ? "You have a place in this mission."
-          : "Your Godschurches account"}
+          ? invitation
+            ? "Sign in to continue"
+            : "You have a place in this mission."
+          : invitation
+            ? `${invitation.name} invited you`
+            : "Your Godschurches account"}
       </h1>
       <p className="my-5 text-gc-muted">
-        A place to grow in faith and connect with others. Your account email
-        stays private. Create your account or sign in to pick up where you left
-        off.
+        {invitation && !registered
+          ? "Create your account below and choose to connect. Your account email stays private."
+          : "A place to grow in faith and connect with others. Your account email stays private. Create your account or sign in to pick up where you left off."}
       </p>
       {reason && (
         <p className="mb-5 text-gc-accent">
@@ -57,7 +63,7 @@ export function AccountAccess({
           signing in.
         </p>
       )}
-      {registered && (
+      {registered && !invitation && (
         <div className="mb-5 space-y-3">
           <p>
             Find your church, connect with someone, or share an introduction.
@@ -132,6 +138,16 @@ export function AccountAccess({
           </p>
         </div>
       )}
+      {invitation && view === "register" && (
+        <p className="mb-5">
+          <Link
+            href={accountEntryHref("login", signInReturnTo, reason)}
+            className="inline-flex min-h-11 items-center text-gc-accent underline"
+          >
+            Already have an account? Sign in
+          </Link>
+        </p>
+      )}
       <AccountForm
         key={view}
         operation={view}
@@ -151,20 +167,22 @@ export function AccountAccess({
           requestAnimationFrame(() => heading.current?.focus());
         }}
       />
-      <p className="mt-6">
-        <Link
-          href={accountEntryHref(
-            view === "login" ? "signup" : "login",
-            returnTo,
-            reason
-          )}
-          className="inline-flex min-h-11 items-center text-gc-accent underline"
-        >
-          {view === "login"
-            ? "New here? Create an account"
-            : "Already have an account? Sign in"}
-        </Link>
-      </p>
+      {(!invitation || view === "login") && (
+        <p className="mt-6">
+          <Link
+            href={accountEntryHref(
+              view === "login" ? "signup" : "login",
+              view === "login" ? returnTo : signInReturnTo,
+              reason
+            )}
+            className="inline-flex min-h-11 items-center text-gc-accent underline"
+          >
+            {view === "login"
+              ? "New here? Create an account"
+              : "Already have an account? Sign in"}
+          </Link>
+        </p>
+      )}
       <p className="mt-3 text-sm text-gc-muted">
         {recoveryAvailable
           ? "Use Forgot password? to request a reset link for your existing account. Registering again will not recover it."

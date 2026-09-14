@@ -144,7 +144,7 @@ try {
     await sheet.getByText(name, { exact: true }).click();
   }
   await bounded();
-  assert.equal(await sheet.getByRole("link").count(), 3);
+  assert.equal(await sheet.getByRole("link").count(), 4);
   await sheet.getByRole("button", { name: "Close", exact: true }).click();
   ok(
     "Absent capability remains unknown with current platform instructions and bounded mobile layout"
@@ -247,16 +247,16 @@ try {
     })
   );
   await help
-    .getByRole("button", { name: "Copy this page link", exact: true })
+    .getByRole("button", { name: "Copy app link", exact: true })
     .click();
   await help
-    .getByText("Select and copy the link below.", { exact: true })
+    .getByText("Select and copy the app link below.", { exact: true })
     .waitFor();
   assert.equal(
     await help
-      .getByRole("textbox", { name: "Page link", exact: true })
+      .getByRole("textbox", { name: "App link", exact: true })
       .inputValue(),
-    config.origin + "/platform/menu"
+    config.origin + "/platform"
   );
   for (const width of [320, 390, 1440]) {
     await phone.setViewportSize({ width, height: 844 });

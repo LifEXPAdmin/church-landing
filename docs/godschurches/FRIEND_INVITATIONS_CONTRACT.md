@@ -48,12 +48,13 @@ cross-browser verification, ordinary signup, stale removal callbacks, bilateral
 blocks, deactivation/deletion, expiry/rotation, wrong-account requests, exact-body
 conflicts, export exclusions, account/permission gates and decoded QR destinations.
 
-
 ## Interfaces and operational limits
 
 `/platform/invitations` is the owner-only My QR code and signup-status entry.
-`/platform/invite/[code]` is a read-only welcome; `/platform/signup` accepts only
-its explicit primary choice. `safeAccountReturn` allowlists these exact paths.
+`/platform/invite/[code]` renders the actual signup form for signed-out visitors;
+its GET remains read-only and account insertion requires the explicit primary
+choice. Existing members retain the connection review. `/platform/signup` also
+accepts the same explicit choice. `safeAccountReturn` allowlists these exact paths.
 `GET/POST /api/platform/friend-invitations` uses the existing private response
 headers, cookie session and per-domain 240-attempt/15-minute rate limit. Commands
 are enable/rotate/revoke (current invitation version), accept (opaque code and

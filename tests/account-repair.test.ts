@@ -47,7 +47,10 @@ test("HTTPS unique insertion, public-handle conflict and private-email neutralit
   const input = identity();
   const first = await post(input);
   assert.equal(first.status, 200);
-  assert.equal(first.headers.get("set-cookie"), null);
+  assert.match(first.headers.get("set-cookie")!, /gc_signup_completion=/);
+  assert.ok(
+    !first.headers.get("set-cookie")!.includes("church_platform_session=")
+  );
   const neutral = await first.json();
   assert.ok(!("created" in neutral));
   assert.ok(!("id" in neutral));
@@ -81,6 +84,10 @@ test("HTTPS unique insertion, public-handle conflict and private-email neutralit
   });
   assert.equal(duplicate.status, 200);
   assert.deepEqual(await duplicate.json(), neutral);
+  assert.equal(
+    duplicate.headers.get("set-cookie")!.length,
+    first.headers.get("set-cookie")!.length
+  );
   assert.deepEqual(
     await db.platformUser.findUnique({ where: { id: before.id } }),
     before

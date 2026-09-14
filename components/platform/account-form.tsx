@@ -120,14 +120,16 @@ export function AccountForm({
         }
       }}
     >
-      <h2 className="text-3xl text-gc-text">{title}</h2>
+      <h2 className="text-3xl text-gc-text">
+        {registration && invitation ? "Create account and connect" : title}
+      </h2>
       {registration && invitation && (
         <p>
           You are choosing to become friends with {invitation.name} after email
           verification and adult eligibility. Either of you can remove the
           connection.{" "}
           <a className="underline" href="/platform/signup">
-            Join without connecting instead
+            Join without connecting
           </a>
           .
         </p>

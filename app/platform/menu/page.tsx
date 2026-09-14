@@ -246,6 +246,7 @@ export default async function PlatformMenuPage() {
           </section>
           <section aria-label="Installation">
             <InstallationHelp />
+            <InstallationHelp bookmark />
           </section>
           <section aria-labelledby="menu-about">
             <h2 id="menu-about">About Godschurches</h2>

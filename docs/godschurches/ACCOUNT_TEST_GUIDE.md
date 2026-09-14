@@ -132,6 +132,22 @@ if completion could not be confirmed. Existing members must explicitly Connect.
 A scan or normal signin alone never accepts an invitation. Either participant
 can remove the friendship; an old invitation or delayed callback cannot restore it.
 
+The personal invitation opens the signup form directly. After creating an account
+and signing in, **Keep God’s Churches handy** offers optional installation and
+bookmark steps. Pending email verification and account/invitation status stay
+visible. **Continue in browser** dismisses this help; both guides remain in Menu.
+The saved/copied app link opens the clean app home, without invitation or email
+verification tokens. In another browser, sign in to the same account if asked.
+The neutral registration response alone does not claim a new account was created;
+an existing account does not receive a new-account completion screen.
+
+Run `scripts/qa-signup-installation-browser.mjs` against the isolated built HTTPS
+fixture alongside the invitation and installation browser suites. These checks
+cover real fictional signup/sign-in and consent persistence, error/reload,
+duplicate and declined signup, optional help, clean URLs, keyboard/phone layout,
+install capability/dismissal and retained Menu guidance. Browser capability
+simulation is not a physical installation or camera scan.
+
 ## Review active sign-ins
 
 In **Account settings**, select **Show active sign-ins**. The list shows this

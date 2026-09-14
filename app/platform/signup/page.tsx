@@ -27,7 +27,14 @@ export default async function PlatformSignupPage({
   const invite = await publicFriendInvitation(prisma, friendInvitation);
   const user = await getCurrentPlatformUser();
   return (
-    <PlatformShell user={user}>
+    <PlatformShell
+      user={user}
+      signInReturnTo={
+        invite && friendInvitation
+          ? `/platform/invite/${friendInvitation}`
+          : undefined
+      }
+    >
       <section className="container-shell py-8 sm:py-10">
         {user && friendInvitation ? (
           <Link
@@ -47,6 +54,11 @@ export default async function PlatformSignupPage({
             googleAvailable={googleAvailable() && !user}
             initialView="register"
             returnTo={safeAccountReturn(next)}
+            signInReturnTo={
+              invite && friendInvitation
+                ? `/platform/invite/${friendInvitation}`
+                : safeAccountReturn(next)
+            }
             reason={reason ? accountReason(reason) : undefined}
           />
         )}

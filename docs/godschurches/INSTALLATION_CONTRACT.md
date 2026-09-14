@@ -13,7 +13,8 @@ Godschurches as the visible name. Root scope keeps same-origin account-return an
 church/deep-link routes within the installed experience. Start URL is public and
 contains no account or campaign identifier. Normal 192/512 and maskable 512 assets
 already exist; retain the current separate Apple touch icon. Manifest wiring and
-actual installation guidance are Medium follow-on tasks.
+Menu installation guidance are implemented; the dated sections below record the
+current signup-first and optional bookmark behavior.
 
 Initial installation is online-first, using normal network navigation and existing
 no-store private boundaries. It adds no service worker or application Cache
@@ -43,7 +44,7 @@ installed state where detectable, and an honest unsupported/unknown fallback.
 Do not guess install capability from user agent alone. Push remains gated on its
 own subscription/outbox/provider and real-device acceptance tasks.
 
-Medium implementation must verify ordinary browser navigation, canonical start,
+Implementation must verify ordinary browser navigation, canonical start,
 sign-in return/deep links, missing build metadata, changed build with clean/dirty/
 saving/conflicting work, offline recovery, supported/unsupported prompt branches,
 and no automatic reload. Physical Samsung/iOS installation and account switching
@@ -92,7 +93,7 @@ physical-device installation acceptance.
 
 ### Visible Home Screen guidance
 
-Menu and invitation pages offer a dismissible banner for Apple mobile device
+Menu offers a dismissible banner for Apple mobile device
 guidance or an actual available browser install prompt. Device hints choose
 instructions only; they never establish installation capability. The banner is
 suppressed in standalone mode and after dismissal. A versioned, non-account
@@ -101,7 +102,44 @@ current visit to dismiss it. Permanent Menu help remains available.
 
 The shared dialog expands Safari instructions for Apple devices and explains
 opening embedded mail/social/QR pages in a regular browser. Explicit Copy uses
-the current page path/query without its fragment; a selectable link remains if
-clipboard access fails. It neither redirects nor changes unsent work, account
+the configured canonical app origin and manifest start path, without the current
+page's path, query or fragment; a selectable link remains if clipboard access
+fails. It neither redirects nor changes unsent work, account
 state, invitation consent or notification permissions. Browser acceptance still
 does not prove installation; actual standalone/appinstalled signals are required.
+
+### Signup before optional installation — 14 September 2026
+
+Personal invitation GET renders the existing signup form with inviter context,
+explicit connect/decline and a separate existing-account sign-in return. It renders
+no installation banner. The signup service still binds consent transactionally;
+email verification in another browser uses that saved choice as before.
+
+Anonymous registration retains its neutral response and never issues a session.
+Both inserted and duplicate registrations receive a same-shaped HttpOnly cookie:
+an issuance timestamp and a purpose-specific HMAC. Only an inserted account's ID
+matches that proof after normal sign-in; duplicates use an opaque decoy. The
+24-hour proof grants no session, verification, eligibility, friendship or access.
+The shell checks the current authenticated owner, expiry and integrity, rejecting
+duplicate cookies. No URL flag or client-stored account identity establishes
+completion. Only the resulting boolean reaches the optional client help.
+
+The compact Keep God's Churches handy step preserves the original sign-in
+destination, explains outstanding verification, and links directly to the
+current account/invitation status heading, including from the same page. Continue in browser uses the existing installation dismissal
+state; no signup or connection is restarted. Standalone/appinstalled suppresses
+the step. Persistent Menu help remains available with blocked-storage fallbacks.
+No extra database query, dependency, worker, permission prompt or migration is
+introduced. A second browser may require ordinary sign-in to the same account;
+accepted invitations remain server-bound.
+
+Bookmark instructions first open the clean app home in another tab and describe
+real browser controls; the website never claims a bookmark was saved. Installation
+still requires a deliberate supported prompt or truthful manual instructions.
+Browser instructions checked 14 September 2026 against the Apple/Chrome install
+sources above and [Apple Safari bookmarks](https://support.apple.com/guide/iphone/iph42ab2f3a7/ios),
+[Chrome Android bookmarks](https://support.google.com/chrome/answer/188842?co=GENIE.Platform%3DAndroid&hl=en),
+[Chrome iPhone bookmarks](https://support.google.com/chrome/answer/188842?co=GENIE.Platform%3DiOS&hl=en),
+[Chrome computer bookmarks](https://support.google.com/chrome/answer/188842?co=GENIE.Platform%3DDesktop&hl=en),
+[Edge favorites](https://support.microsoft.com/en-us/microsoft-edge/add-a-site-to-my-favorites-in-microsoft-edge-eb40d818-fd1f-cb19-d943-6fcfd1d9a935)
+and [Firefox Android bookmarks](https://support.mozilla.org/en-US/kb/add-delete-and-view-bookmarked-webpages-firefox-android).

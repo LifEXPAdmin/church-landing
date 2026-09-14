@@ -14,29 +14,57 @@ import type { PlatformUser } from "@prisma/client";
 import { Church, LogOut, Settings } from "lucide-react";
 import { logoutPlatformAccount } from "@/app/platform/actions";
 import { PortalNavigation } from "@/components/platform/portal-navigation";
+import { accountConfig } from "@/lib/platform/account-config";
+import {
+  confirmedSignup,
+  signupCompletionCookieName
+} from "@/lib/platform/signup-completion";
+import { PostSignupHelp } from "./installation-help";
+import { accountEntryHref } from "@/lib/platform/account-entry";
 
 interface PlatformShellProps {
   user:
     | (Pick<PlatformUser, "name" | "username"> &
-        Partial<Pick<PlatformUser, "id">>)
+        Partial<Pick<PlatformUser, "id" | "emailVerifiedAt">>)
     | null;
   children: React.ReactNode;
   reviewerNavigation?: { href: string; label: string }[];
+  signInReturnTo?: string;
 }
 
 export async function PlatformShell({
   user,
   children,
-  reviewerNavigation = []
+  reviewerNavigation = [],
+  signInReturnTo
 }: PlatformShellProps) {
   // Preserve the existing browser-restored preference defaults in development.
   // Production cookie reads use the shared private serialization boundary.
+  // Reduced visitor-preview identities deliberately carry no account ID. Avoid
+  // awaiting the shared cookie promise there: development diagnostics can attach
+  // earlier session-reader results to it even though the cookie value is redacted.
+  const cookieStore =
+    process.env.NODE_ENV === "production" || user?.id
+      ? await privateCookies()
+      : null;
   const initial =
     process.env.NODE_ENV === "production"
-      ? parseReadingPreferences(
-          (await privateCookies()).get(preferenceCookie)?.value
-        )
+      ? parseReadingPreferences(cookieStore?.get(preferenceCookie)?.value)
       : defaultReadingPreferences;
+  let newAccount = false;
+  if (user?.id) {
+    try {
+      const config = accountConfig();
+      const proofs = cookieStore!.getAll(
+        signupCompletionCookieName(config.secureCookie)
+      );
+      newAccount =
+        proofs.length === 1 &&
+        confirmedSignup(proofs[0].value, user.id, config.rateSecret);
+    } catch {
+      // Optional setup help must not interrupt an existing account's navigation.
+    }
+  }
   return (
     <ReadingProvider
       initial={initial}
@@ -69,7 +97,11 @@ export async function PlatformShell({
               </>
             ) : (
               <Link
-                href="/platform/login"
+                href={
+                  signInReturnTo
+                    ? accountEntryHref("login", signInReturnTo)
+                    : "/platform/login"
+                }
                 className="gc-button gc-button-quiet"
               >
                 Sign in
@@ -84,6 +116,9 @@ export async function PlatformShell({
             reviewerNavigation={reviewerNavigation}
           />
           <main id="platform-content" tabIndex={-1} className="gc-main">
+            {newAccount && (
+              <PostSignupHelp emailPending={user?.emailVerifiedAt === null} />
+            )}
             {children}
           </main>
         </div>

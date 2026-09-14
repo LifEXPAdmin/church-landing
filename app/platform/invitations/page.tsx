@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PlatformShell } from "@/components/platform/platform-shell";
 import { FriendInvitations } from "@/components/platform/friend-invitations";
-import { InstallationBanner } from "@/components/platform/installation-help";
 import { getCurrentPlatformUser } from "@/lib/platform/session";
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -15,8 +14,13 @@ export default async function Page() {
   return (
     <PlatformShell user={user}>
       <section className="container-shell mx-auto max-w-2xl space-y-5 py-8">
-        <h1 className="text-4xl">My QR code</h1>
-        <InstallationBanner />
+        <h1
+          id="account-and-invitation-status"
+          tabIndex={-1}
+          className="text-4xl"
+        >
+          My QR code
+        </h1>
         {user ? (
           <FriendInvitations accountId={user.id} />
         ) : (

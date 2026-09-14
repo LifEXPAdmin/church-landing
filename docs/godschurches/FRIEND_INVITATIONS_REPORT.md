@@ -1,5 +1,56 @@
 # Personal invitation verification
 
+## Signup before optional installation — September 14, 2026
+
+Candidate product **2026.09.14.2** passes local release acceptance. Publication
+and exact canonical live verification remain pending; this is not a production
+completion receipt.
+
+A signed-out personal invitation opens the actual signup form, with permitted
+inviter context and explicit Create account and connect / Join without connecting
+choices. Both the header Sign in link and the contextual existing-account link
+preserve the invitation review destination. The contextual sign-in option is
+above the form. No installation or bookmark banner precedes account creation.
+
+After a newly created account signs in normally, a compact **Keep God’s Churches
+handy** step offers installation, browser bookmark instructions and Continue in
+browser. It preserves the original return destination and points to current
+verification and invitation status. The neutral anonymous registration response
+remains unchanged; duplicate registration does not change an existing account or
+receive a new-account completion screen. A short-lived, owner-bound HttpOnly
+presentation proof grants no session, eligibility, consent or other authority.
+
+Optional help reuses persistent dismissal and the browser's actual install
+capability. Accepted prompt results alone never claim installation. Manual
+Safari, Chrome, Edge and Firefox guidance names their browser controls; it never
+claims to save a bookmark. Open/Copy use the canonical app home immediately,
+without invitation, verification or other current-page tokens. Another browser
+may require sign-in to the same account. Permanent Menu help remains available.
+
+Review repaired a development-only visitor-preview diagnostic leak introduced by
+an extra cookie await, a brief empty bookmark-link state, the header sign-in
+return omission, and phone dialog/verification-navigation details. The visitor
+preview keeps its minimal identity read path. The full isolated gate passes
+116 files, 724 executions and two expected disabled-delivery skips, including
+fresh/upgrade/restore, development HTML/RSC privacy, both builds and HTTPS restart.
+The final production build passes 144 clean runtime traces. Twenty-three final
+built HTTPS browser groups pass: seven signup/install, eight invitation, five
+installation and three participation-choice groups. They cover real signup and
+normal sign-in, duplicate neutrality, owner-bound proof, consent/eligibility,
+cross-browser verification, existing/removed friendships, failure/reload/Back,
+keyboard/focus, 320/390/1280px and enlarged text. Status navigation jumps below
+optional help; Close stays readable on a 320px phone. No browser errors occur.
+
+No migration, database query for help, runtime dependency, notification request,
+new service worker or production application write is required. The fresh
+46-migration encrypted backup restores and replays protected recovery controls,
+preserving all 92 original table fingerprints. Any application rollback must
+retain the existing enum-aware account reader and invitation/removal lifecycle.
+A physical camera scan, actual home-screen installation and a real user's email
+verification remain separate owner-device evidence, not desktop simulation.
+
+## Original personal invitation release — September 12, 2026
+
 September 12, 2026. Released product version 2026.09.12.3.
 
 Application `4fb52ed12e8eab94b786fdf572fce3da0ffa9434` is published in READY

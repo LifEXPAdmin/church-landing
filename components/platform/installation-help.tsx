@@ -8,6 +8,8 @@ import {
   useState
 } from "react";
 import { Download } from "lucide-react";
+import Link from "next/link";
+import { INSTALL_POLICY } from "@/lib/platform/install-policy";
 
 type InstallPrompt = Event & {
   prompt: () => Promise<void>;
@@ -165,22 +167,169 @@ export function InstallationBanner() {
     </aside>
   );
 }
-export function InstallationHelp({ compact = false }: { compact?: boolean }) {
+export function PostSignupHelp({ emailPending }: { emailPending: boolean }) {
+  const state = useContext(InstallContext);
+  if (!state || state.installed || state.bannerDismissed) return null;
+  return (
+    <aside
+      aria-label="Keep God’s Churches handy"
+      className="container-shell mx-auto mt-5 max-w-2xl"
+    >
+      <div className="space-y-3 rounded-xl border border-gc-divider bg-gc-surface p-4">
+        <h2 className="text-2xl">Keep God’s Churches handy</h2>
+        <p>
+          Your account is created.
+          {emailPending
+            ? " Email verification is still pending; finish verification and adult setup before participating."
+            : " Continue with any remaining account setup."}{" "}
+          Any invitation you accepted stays with your account.
+        </p>
+        <Link
+          className="inline-flex min-h-11 items-center underline"
+          href="/platform/invitations#account-and-invitation-status"
+        >
+          Check account and invitation status
+        </Link>
+        <p>
+          Install the app on your home screen, or bookmark this page to come
+          back anytime.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <InstallationHelp compact label="Install the app" />
+          <InstallationHelp
+            compact
+            bookmark
+            label="How to bookmark this page"
+          />
+          <button
+            type="button"
+            className="gc-button gc-button-quiet"
+            onClick={() => {
+              state.dismissBanner();
+              requestAnimationFrame(() =>
+                document.getElementById("platform-content")?.focus()
+              );
+            }}
+          >
+            Continue in browser
+          </button>
+        </div>
+        <p className="text-sm text-gc-muted">
+          Both are optional. You can find these steps later in Menu.
+        </p>
+      </div>
+    </aside>
+  );
+}
+
+function BookmarkInstructions({ apple }: { apple: boolean }) {
+  return (
+    <div className="space-y-3">
+      <p>
+        First open the app page above. Bookmark that clean address using your
+        browser’s controls. This website cannot save a bookmark for you.
+      </p>
+      <details open={apple}>
+        <summary className="cursor-pointer font-semibold">
+          iPhone · Safari bookmarks
+        </summary>
+        <p className="mt-2">
+          Tap More, then Add Bookmark to, choose a location and Save. With a
+          Bottom or Top tab layout, touch and hold Show Bookmarks, then choose
+          Add Bookmark.
+        </p>
+        <a
+          className="underline"
+          href="https://support.apple.com/guide/iphone/iph42ab2f3a7/ios"
+          target="_blank"
+          rel="noreferrer"
+        >
+          Apple’s bookmark instructions
+        </a>
+      </details>
+      <details>
+        <summary className="cursor-pointer font-semibold">
+          Android or iPhone · Chrome bookmarks
+        </summary>
+        <p className="mt-2">
+          Open More beside the address bar, then choose Add to bookmarks (the
+          star). You can find it later in More → Bookmarks.
+        </p>
+        <a
+          className="underline"
+          href="https://support.google.com/chrome/answer/188842?hl=en"
+          target="_blank"
+          rel="noreferrer"
+        >
+          Google’s bookmark instructions
+        </a>
+      </details>
+      <details>
+        <summary className="cursor-pointer font-semibold">
+          Computer · Chrome or Edge bookmarks
+        </summary>
+        <p className="mt-2">
+          Use the star in the address bar. Chrome calls it Bookmark; Edge calls
+          it Add this page to favorites. Choose a folder and save when asked.
+        </p>
+        <a
+          className="underline"
+          href="https://support.microsoft.com/en-us/microsoft-edge/add-a-site-to-my-favorites-in-microsoft-edge-eb40d818-fd1f-cb19-d943-6fcfd1d9a935"
+          target="_blank"
+          rel="noreferrer"
+        >
+          Microsoft’s favorites instructions
+        </a>
+      </details>
+      <details>
+        <summary className="cursor-pointer font-semibold">
+          Android · Firefox bookmarks
+        </summary>
+        <p className="mt-2">
+          Open the three-dot menu, then tap Add next to Bookmarks.
+        </p>
+        <a
+          className="underline"
+          href="https://support.mozilla.org/en-US/kb/add-delete-and-view-bookmarked-webpages-firefox-android"
+          target="_blank"
+          rel="noreferrer"
+        >
+          Mozilla’s bookmark instructions
+        </a>
+      </details>
+      <p>
+        In another browser, use its Bookmarks or Favorites menu. Inside a mail,
+        social or QR app, open or copy the app link into your regular browser
+        first.
+      </p>
+    </div>
+  );
+}
+
+export function InstallationHelp({
+  compact = false,
+  bookmark = false,
+  label
+}: {
+  compact?: boolean;
+  bookmark?: boolean;
+  label?: string;
+}) {
   const state = useContext(InstallContext);
   const titleId = useId();
   const dialog = useRef<HTMLDialogElement>(null),
     trigger = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
   const [copyMessage, setCopyMessage] = useState("");
-  const [copyUrl, setCopyUrl] = useState("");
+  const copyUrl = new URL(
+    INSTALL_POLICY.start_url,
+    process.env.NEXT_PUBLIC_SITE_URL || "https://godschurches.com"
+  ).href;
   useEffect(() => {
     if (!open) return;
     const element = dialog.current!;
     const opener = trigger.current;
     const overflow = document.body.style.overflow;
-    setCopyUrl(
-      window.location.origin + window.location.pathname + window.location.search
-    );
     document.body.style.overflow = "hidden";
     element.showModal();
     return () => {
@@ -200,12 +349,16 @@ export function InstallationHelp({ compact = false }: { compact?: boolean }) {
       >
         <Download aria-hidden="true" />
         {compact ? (
-          <span>Show installation steps</span>
+          <span>{label ?? "Show installation steps"}</span>
         ) : (
           <span>
-            <span className="gc-menu-link-title">Install Godschurches</span>
+            <span className="gc-menu-link-title">
+              {bookmark ? "Bookmark God’s Churches" : "Install Godschurches"}
+            </span>
             <span className="gc-menu-link-description">
-              Add an app shortcut, or keep using your browser.
+              {bookmark
+                ? "Save the app page in your browser’s bookmarks."
+                : "Add an app shortcut, or keep using your browser."}
             </span>
           </span>
         )}
@@ -218,144 +371,167 @@ export function InstallationHelp({ compact = false }: { compact?: boolean }) {
       >
         <div className="space-y-4 p-2">
           <div className="flex items-start justify-between gap-3">
-            <h2 id={titleId} className="text-2xl">
-              Install Godschurches
+            <h2 id={titleId} className="min-w-0 flex-1 text-2xl">
+              {bookmark ? "Bookmark God’s Churches" : "Install Godschurches"}
             </h2>
             <button
               type="button"
-              className="gc-button gc-button-quiet"
+              className="gc-button gc-button-quiet shrink-0 whitespace-nowrap"
               onClick={() => setOpen(false)}
             >
               Close
             </button>
           </div>
-          <p role="status">
-            {state.installed
-              ? "Godschurches is open as an installed app, or your browser has reported installation."
-              : state.message ||
-                (state.available
-                  ? "Your browser offers installation. Open its prompt when you are ready."
-                  : "This browser has not offered an install prompt. It may use a menu option, already have the app, or not support installation.")}
-          </p>
-          {state.available && !state.installed && (
+          <div className="space-y-2">
+            <a
+              className="gc-button"
+              href={copyUrl}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Open app page in a new tab
+            </a>
+            <p className="text-sm text-gc-muted">
+              Use this app address for installation or bookmarking. Keep this
+              tab open to finish verification or check your invitation. If
+              another browser asks, sign in to the same account; you do not need
+              to create it again.
+            </p>
             <button
               type="button"
-              className="gc-button"
-              disabled={state.pending}
-              onClick={() => void state.install()}
+              className="gc-button gc-button-quiet"
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(copyUrl);
+                  setCopyMessage(
+                    "App link copied. Paste it into Safari or your usual browser."
+                  );
+                } catch {
+                  setCopyMessage("Select and copy the app link below.");
+                }
+              }}
             >
-              Install app
+              Copy app link
             </button>
-          )}
-          {state.pending && (
-            <p role="status">Follow the browser’s installation prompt.</p>
-          )}
-          {!state.installed && (
-            <div className="space-y-3">
-              <details>
-                <summary className="cursor-pointer font-semibold">
-                  Android · Chrome
-                </summary>
-                <p className="mt-2">
-                  Open Godschurches in Chrome. Open More beside the address bar,
-                  choose Install and create shortcut, then Install. Follow the
-                  browser’s steps; wording can vary by version.
-                </p>
-                <a
-                  className="underline"
-                  href="https://support.google.com/chrome/answer/9658361?co=GENIE.Platform%3DAndroid&hl=en"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Google’s Android instructions
-                </a>
-              </details>
-              <details open={state.apple}>
-                <summary className="cursor-pointer font-semibold">
-                  iPhone · Safari
-                </summary>
-                <p className="mt-2">
-                  Open Godschurches in Safari. Tap More, then Share (or the
-                  Share button). Choose Add to Home Screen, turn on Open as Web
-                  App when shown, then Add. If the option is missing, check Edit
-                  Actions.
-                </p>
-                <a
-                  className="underline"
-                  href="https://support.apple.com/guide/iphone/open-as-web-app-iphea86e5236/ios"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Apple’s iPhone instructions
-                </a>
-              </details>
-              <details open={state.apple}>
-                <summary className="cursor-pointer font-semibold">
-                  Opened inside another app?
-                </summary>
-                <p className="mt-2">
-                  If you opened this page inside a mail, social or QR app, use
-                  its menu to open in Safari on iPhone, or your usual browser on
-                  Android. If that option is missing, copy this link and paste
-                  it into the browser. Then follow the installation steps above.
-                </p>
+            <label className="block">
+              App link
+              <input
+                readOnly
+                value={copyUrl}
+                className="block w-full rounded border p-2"
+                onFocus={(event) => event.currentTarget.select()}
+              />
+            </label>
+            <p role="status">{copyMessage}</p>
+          </div>
+          {bookmark ? (
+            <BookmarkInstructions apple={state.apple} />
+          ) : (
+            <>
+              <p role="status">
+                {state.installed
+                  ? "Godschurches is open as an installed app, or your browser has reported installation."
+                  : state.message ||
+                    (state.available
+                      ? "Your browser offers installation. Open its prompt when you are ready."
+                      : "This browser has not offered an install prompt. It may use a menu option, already have the app, or not support installation.")}
+              </p>
+              {state.available && !state.installed && (
                 <button
                   type="button"
-                  className="gc-button gc-button-quiet"
-                  onClick={async () => {
-                    try {
-                      await navigator.clipboard.writeText(copyUrl);
-                      setCopyMessage(
-                        "Link copied. Paste it into Safari or your usual browser."
-                      );
-                    } catch {
-                      setCopyMessage("Select and copy the link below.");
-                    }
-                  }}
+                  className="gc-button"
+                  disabled={state.pending}
+                  onClick={() => void state.install()}
                 >
-                  Copy this page link
+                  Install app
                 </button>
-                <label className="mt-2 block">
-                  Page link
-                  <input
-                    readOnly
-                    value={copyUrl}
-                    className="block w-full rounded border p-2"
-                    onFocus={(e) => e.currentTarget.select()}
-                  />
-                </label>
-                <p role="status">{copyMessage}</p>
-              </details>
-              <details>
-                <summary className="cursor-pointer font-semibold">
-                  Computer · Chrome
-                </summary>
-                <p className="mt-2">
-                  Open Chrome’s More menu, then Cast, save, and share → Install
-                  page as app. Some versions also show an Install icon in the
-                  address bar.
-                </p>
-                <a
-                  className="underline"
-                  href="https://support.google.com/chrome/answer/9658361?co=GENIE.Platform%3DDesktop&hl=en"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Google’s computer instructions
-                </a>
-              </details>
-              <p>
-                On another browser, check its app or home-screen menu. If
-                installation is unavailable, bookmark Godschurches and use it
-                here.
+              )}
+              {state.pending && (
+                <p role="status">Follow the browser’s installation prompt.</p>
+              )}
+              {!state.installed && (
+                <div className="space-y-3">
+                  <details>
+                    <summary className="cursor-pointer font-semibold">
+                      Android · Chrome
+                    </summary>
+                    <p className="mt-2">
+                      Open Godschurches in Chrome. Open More beside the address
+                      bar, choose Install and create shortcut, then Install.
+                      Follow the browser’s steps; wording can vary by version.
+                    </p>
+                    <a
+                      className="underline"
+                      href="https://support.google.com/chrome/answer/9658361?co=GENIE.Platform%3DAndroid&hl=en"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Google’s Android instructions
+                    </a>
+                  </details>
+                  <details open={state.apple}>
+                    <summary className="cursor-pointer font-semibold">
+                      iPhone · Safari
+                    </summary>
+                    <p className="mt-2">
+                      Open Godschurches in Safari. Tap More, then Share (or the
+                      Share button). Choose Add to Home Screen, turn on Open as
+                      Web App when shown, then Add. If the option is missing,
+                      check Edit Actions.
+                    </p>
+                    <a
+                      className="underline"
+                      href="https://support.apple.com/guide/iphone/open-as-web-app-iphea86e5236/ios"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Apple’s iPhone instructions
+                    </a>
+                  </details>
+                  <details open={state.apple}>
+                    <summary className="cursor-pointer font-semibold">
+                      Opened inside another app?
+                    </summary>
+                    <p className="mt-2">
+                      If you opened this page inside a mail, social or QR app,
+                      use its menu to open in Safari on iPhone, or your usual
+                      browser on Android. If that option is missing, copy this
+                      link and paste it into the browser. Then follow the
+                      installation steps above.
+                    </p>
+                  </details>
+                  <details>
+                    <summary className="cursor-pointer font-semibold">
+                      Computer · Chrome
+                    </summary>
+                    <p className="mt-2">
+                      Open Chrome’s More menu, then Cast, save, and share →
+                      Install page as app. Some versions also show an Install
+                      icon in the address bar.
+                    </p>
+                    <a
+                      className="underline"
+                      href="https://support.google.com/chrome/answer/9658361?co=GENIE.Platform%3DDesktop&hl=en"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Google’s computer instructions
+                    </a>
+                  </details>
+                  <p>
+                    On another browser, check its app or home-screen menu. If
+                    installation is unavailable, bookmark Godschurches and use
+                    it here.
+                  </p>
+                </div>
+              )}
+              <p className="text-sm text-gc-muted">
+                A connection is needed for current content. Installation does
+                not sign you in or enable notifications. Keep unsent work in its
+                open tab.
               </p>
-            </div>
+            </>
           )}
-          <p className="text-sm text-gc-muted">
-            A connection is needed for current content. Installation does not
-            sign you in or enable notifications. Keep unsent work in its open
-            tab.
-          </p>
         </div>
       </dialog>
     </>

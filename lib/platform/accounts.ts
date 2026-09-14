@@ -89,7 +89,7 @@ export async function registerAccount(
         input.friendInvitation,
         input.friendConsent
       );
-      return { email: created.email };
+      return { id: created.id, email: created.email };
     }, txOptions);
   } catch (error) {
     if (

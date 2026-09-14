@@ -213,7 +213,7 @@ export const features: Feature[] = [
     description:
       "Invite someone to join Godschurches and become friends with you.",
     steps:
-      "Open Menu, then My QR code. Enable your invitation, then copy, share or download it. Your guest chooses whether to connect and finishes account verification and adult eligibility. Scanning an existing friend's code shows your current friendship and a link to share your own QR. Either person can remove the friendship in profile relationship controls.",
+      "Open Menu, then My QR code. Enable your invitation, then copy, share or download it. A signed-out guest sees the signup form first and chooses whether to connect. Verification and adult eligibility still come before connection. Existing members sign in to review; existing friends see their current friendship. Either person can remove the friendship in profile relationship controls.",
     href: "/platform/invitations",
     eligibility:
       "Verified adult accounts. Codes expire after 30 days and can be replaced or revoked. Friendship grants no extra private or church access.",
@@ -486,9 +486,9 @@ export const features: Feature[] = [
     category: "Sharing and installation",
     name: "Installation help",
     description:
-      "Add Godschurches to your device when your browser supports it.",
+      "Optionally install the app or bookmark its clean home address.",
     steps:
-      "Open Menu and Install Godschurches. On iPhone, the Home Screen banner opens Safari's More or Share steps, including Open as Web App when shown. Help remains in Menu after dismissal. If you opened the site inside another app, copy its link into Safari or your usual browser.",
+      "After a new account signs in, Keep God’s Churches handy offers optional installation, bookmarking or Continue in browser. Verification and invitation progress stay separate. Install and Bookmark help remain in Menu after dismissal. Open or copy the clean app page before following your browser's instructions; invitation and verification links are never used as saved app addresses.",
     href: "/platform/menu",
     eligibility:
       "Browser and device support vary; the website works without installation.",
@@ -534,6 +534,23 @@ export const features: Feature[] = [
   }
 ];
 export const releases: ReleaseEntry[] = [
+  {
+    id: "signup-before-installation",
+    version: "2026.09.14.2",
+    date: "2026-09-14",
+    summary:
+      "Create your account first; keep the app handy when you are ready.",
+    added: [
+      "New accounts get optional Install the app, How to bookmark this page and Continue in browser choices after signing in. Bookmark help also stays in Menu."
+    ],
+    improved: [
+      "Personal QR links open the signup form directly, with inviter context, an existing-account sign-in route and a choice to join without connecting."
+    ],
+    fixed: [
+      "Installation no longer appears before personal QR signup. Saved app links use the clean home address, while verification, invitation consent and existing friendships keep their current protections."
+    ],
+    featureIds: ["friend-invitations", "installation", "account"]
+  },
   {
     id: "exploring-faith",
     version: "2026.09.14.1",

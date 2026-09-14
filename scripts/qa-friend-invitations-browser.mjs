@@ -275,9 +275,13 @@ try {
     .click();
   assert.equal(new URL(page.url()).searchParams.has("friendInvitation"), false);
   await page.goto(url);
-  await page
-    .getByRole("link", { name: /Create account and connect with/ })
-    .click();
+  await page.locator("#account-register-form").waitFor();
+  assert.equal(
+    await page
+      .getByRole("complementary", { name: "Home Screen installation" })
+      .count(),
+    0
+  );
   const username = "qr_" + randomUUID().replaceAll("-", "").slice(0, 14),
     email = username + "@example.test",
     password = "Fictional-" + randomUUID();

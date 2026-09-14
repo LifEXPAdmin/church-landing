@@ -1,4 +1,5 @@
 import { scheduleFounderWelcome } from "./founder-welcome-queue";
+import { signupCompletionCookie } from "./signup-completion";
 import type { PrismaClient } from "@prisma/client";
 import { setTimeout as delay } from "node:timers/promises";
 import { randomUUID } from "node:crypto";
@@ -421,7 +422,14 @@ async function processAccountRequest(
         config.delivery === "disabled"
           ? "Continue by signing in with your email and password. Registration never changes an existing account or resets its password."
           : "Continue by signing in with your email and password. If this is a new account, a verification email will be sent. Check your inbox and spam folder.",
-        200
+        200,
+        {
+          "Set-Cookie": signupCompletionCookie(
+            created?.id,
+            config.rateSecret,
+            config.secureCookie
+          )
+        }
       );
     }
     if (operation === "delete-account" || operation === "deletion-progress") {
