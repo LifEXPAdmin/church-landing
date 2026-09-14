@@ -1,6 +1,36 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { currentPostAvailability } from "../lib/platform/post-availability-client";
+import { currentSocialOwner } from "../lib/platform/social-client";
+
+test("denied identity reads release unread streams before continuing as a guest or reporting failure", async () => {
+  const original = globalThis.fetch;
+  let status = 401,
+    released = 0;
+  globalThis.fetch = async () =>
+    new Response(
+      new ReadableStream({
+        start(controller) {
+          controller.enqueue(
+            new TextEncoder().encode("Unused identity denial")
+          );
+        },
+        cancel() {
+          released++;
+        }
+      }),
+      { status }
+    );
+  try {
+    assert.equal(await currentSocialOwner(), null);
+    assert.equal(released, 1);
+    status = 503;
+    await assert.rejects(currentSocialOwner(), /sign-in could not be checked/);
+    assert.equal(released, 2);
+  } finally {
+    globalThis.fetch = original;
+  }
+});
 
 test("visible-post checks coalesce, deduplicate and cap requests without retaining responses", async () => {
   const original = globalThis.fetch;
