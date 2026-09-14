@@ -1,6 +1,6 @@
 # Godschurches workflow guide
 
-Version 1.4 · Updated 12 September 2026
+Version 2.0 · Updated 14 September 2026 UTC
 
 This is the repository entry point for work that continues between ChatGPT, Codex,
 the private second brain, and the development workstation. Keep this file's path
@@ -63,30 +63,37 @@ scope with evidence in the existing task; catalogs do not establish completion.
 Preserve private links in private systems. Workflow changes propagate to affected
 packets, templates, entry points and task descriptions with an actual readback.
 
-## Focused implementation and reasoning route
+## Unified feature workflow
 
-Use the private **Astra Work Queues — Medium and Extra High** directory and
-**WF13 — Efficient Implementation, Future Design and Handoffs** once per session.
+Use the private **Godschurches Work Queue — Tasks, Subtasks and Tonight’s Order**
+and **Implementation, Integration and Complete-Feature Handoffs** once per session.
 Then read the selected focused brief, owning requirement and newest relevant
 implementation delta. Avoid rereading the full catalog or historical receipts
 unless a conflict requires them. User decisions define intended behavior; the
 actual checkout and dated application/test receipts establish implementation.
 
-Choose one coherent slice, or a small group sharing an accepted contract.
-Preserve priority and completed foundations. Medium tasks must be open, labeled
-`astra_medium`, and free of `dependency_blocked`; verify the named prerequisite
-receipt in the checkout before starting. A parent's Extra High route does not
-change its Medium children's route. Labels do not change the active model or
-reasoning setting: record only a setting established by the session, otherwise
-state that it is unverified. Do not promise a particular token saving.
+The owner's 14 September instruction replaces all earlier Medium/High/Extra High
+routing and separate-session requirements. Extra High stays selected for the
+entire run, including simple work. Metadata does not change the active model.
+Use ordinary feature tasks with subtasks ordered by current priority and actual
+dependencies. Retire reasoning labels and title prefixes; preserve historical
+M/XH identifiers and completion receipts as references, not execution gates.
 
-At Extra High, complete lower-reasoning tasks (including Medium and High/Hard)
-when they are necessary prerequisites, integration, regression repairs or
-acceptance work for the active feature, patch or release. Keep their existing
-labels and verify their own criteria. Leave unrelated Medium tasks for a separate
-lower-reasoning session; readiness alone does not put them in the Extra High
-batch. Do not execute an Extra High task at a lower reasoning setting. Record
-the precise dependency and continue independent work that fits the active scope.
+Checkpoint current work before changing priorities. Inspect actual implementation
+and prerequisite evidence instead of trusting historical ready counts. Finish
+one feature through all necessary interface, integration, configuration,
+migration, regression repair, release-note, meaningful test and deployment steps.
+Verify the exact READY release, independent canonical assignment and actual live
+behavior before closing its scope. Complete smaller children unlocked by that
+feature immediately; do not defer required finishing work into a standalone task
+because it is easy or formerly assigned a lower reasoning level.
+
+Continue automatically through the next eligible priorities until ready work is
+exhausted, genuine blockers prevent further independent progress, or the owner
+stops the run. A checkpoint is not a stopping requirement. Real account, provider,
+purchase and physical-device prerequisites remain explicit; reuse settled owner
+decisions and continue independent authorized work. Run capacity experiments in
+an isolated environment. Keep the batch's final review last.
 
 Before dependent interface work, identify existing service/component paths,
 input/output types, authorized actions, pagination and error/conflict states.
@@ -95,12 +102,11 @@ invent permissions, counts, policy or a replacement backend. Preserve stable
 IDs, existing role/privilege boundaries and version/retry behavior. Defer future
 UI, tables, workers and dependencies until their owning task is authorized.
 
-If a required contract is missing or conflicting, a permission/schema/lifecycle
-or delivery boundary must change, or bounded investigation cannot explain a
-failure, record the precise Extra High dependency and switch to another ready
-slice. The user selects the higher reasoning setting. Clear a dependency only
-after its named contract and acceptance evidence exist. Keep integrated parents
-and final batch review open through their separate acceptance.
+Resolve required technical contracts and regressions within the active authorized
+feature. If an actual external prerequisite blocks completion, record the exact
+missing evidence and continue independent work. Clear a dependency only after its
+named contract and acceptance evidence exist. Keep broader parents and final
+batch review open through their own acceptance.
 
 ## Keep the application lean and fast
 
@@ -202,11 +208,11 @@ Use this compact outline in the appropriate private session record and relevant
 engineering report. Include only public engineering facts in this repository.
 
 - Date, objective, and contributor.
-- Selected reasoning route, verified model/setting or explicit uncertainty, focused
-  brief title, owning requirement identifiers, and prerequisite receipt.
+- Selected feature and subtasks, focused brief title, owning requirement
+  identifiers, prerequisite receipt and current user-authorized priority.
 - Reused paths/contracts and the behavior or contract delta, including no change.
-- Necessary lower-reasoning dependencies completed in the active batch; unrelated
-  Medium work left for a lower-reasoning session.
+- Required finishing steps and newly unlocked children completed in this feature;
+  exact external blockers and next independent eligible work.
 - Relevant runtime-cost review, measurements actually made, and unresolved limits.
 - Actual changes and affected files/pages.
 - Decisions and their source.
@@ -240,14 +246,21 @@ When a tool, reading order, execution location, task convention, or handoff chan
 5. Append a change entry and name any propagation still pending.
 
 Use a minor version for additions and a major version for a changed core workflow.
-After repository instructions reach the active checkout, start a fresh Codex
-session and confirm which instructions it loaded.
+Verify the changed reading route in the active checkout. Record later fresh-session
+discovery when observed; it does not require ending an authorized continuous run.
 
 Keep private Notion URLs, Todoist IDs, account records, credentials, and private
 test evidence in their appropriate private systems. The exact page titles above
 allow an authorized assistant to locate the context without publishing it.
 
 ## Change log
+
+- **2.0 — 14 September 2026 UTC:** Adopted the owner's unified Extra High run,
+  ordinary feature/subtask queue, complete-feature release cycles and continuous
+  priority execution. Replaced earlier routing/session restrictions in the root
+  instructions and existing handoff template. Preserved real dependency gates,
+  private-source boundaries and historical receipts. Active readback verified;
+  no new fresh-session automatic-loading claim is made.
 
 - **1.4 — 12 September 2026:** Adopted the owner's dependency-only use of
   lower-reasoning tasks within Extra High work. Added scoped reuse and measured

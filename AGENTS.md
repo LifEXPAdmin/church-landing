@@ -15,12 +15,17 @@ Step 001–132 are separate identifiers. Read original step details relevant to 
 active task; a mapping is not completion evidence. Record partial or superseded
 requirements in the existing private task rather than duplicating its backlog.
 
-Before selecting a slice, follow the [focused implementation and reasoning route](docs/godschurches/WORKFLOW_GUIDE.md#focused-implementation-and-reasoning-route).
+Before selecting a feature, follow the [unified feature workflow](docs/godschurches/WORKFLOW_GUIDE.md#unified-feature-workflow).
 Read the selected private brief and prerequisite receipt; preserve completed work
-and dependency gates. Task labels do not switch the active reasoning setting.
-Extra High may complete lower-reasoning work needed for the active feature or
-release; leave unrelated Medium work for a lower-reasoning session. Do not take
-Extra High tasks at a lower setting. Follow the guide's lean-runtime review:
+and real dependency gates. The owner's current instruction keeps Extra High for
+the entire run and supersedes per-task reasoning routes and separate sessions.
+Use ordinary feature tasks with subtasks; historical M/XH IDs remain references.
+Finish every required UI, integration, configuration, regression, release-note
+and deployment step in the same feature cycle, through exact canonical release
+and live verification. Complete newly unlocked children immediately. Continue
+to the next eligible priority until ready work is exhausted, a genuine blocker
+prevents independent progress, or the owner stops the run. Keep final review last.
+Follow the guide's lean-runtime review:
 reuse existing owners, avoid unnecessary code/dependencies and measure relevant
 costs before claiming performance improvements.
 
