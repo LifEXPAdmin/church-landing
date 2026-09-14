@@ -200,14 +200,18 @@ try {
     .waitFor();
   await removeImage(db, owner.token, avatar.id, avatar.version);
   await page.evaluate(() => window.dispatchEvent(new Event("focus")));
-  await sheet
-    .getByText("This photo is no longer available.", { exact: true })
-    .waitFor();
+  await sheet.waitFor({ state: "hidden" });
+  await page.getByText(/This member profile or its access changed/).waitFor();
   assert.equal(await sheet.getByRole("img").count(), 0);
-  await page.keyboard.press("Escape");
+  page.once("dialog", (dialog) => dialog.accept());
+  await page
+    .getByRole("button", { name: "Reload current information", exact: true })
+    .click();
+  await page.getByRole("heading", { name: owner.name, exact: true }).waitFor();
   await sheet.waitFor({ state: "detached" });
+  assert.equal(await trigger.count(), 0);
   ok(
-    "Cover is enlargeable at phone and desktop widths; withdrawn image disappears on current-access refresh"
+    "Cover enlarges at phone and desktop widths; a withdrawn avatar conceals the retained profile/viewer until a current reload removes its entry"
   );
   const post = await db.platformPost.create({
     data: {
@@ -380,6 +384,13 @@ try {
       2
     )
   );
+} catch (error) {
+  await page.screenshot({ path: output + "/failure.png" }).catch(() => {});
+  writeFileSync(
+    output + "/failure.txt",
+    String(error) + "\n" + (await page.locator("body").innerText())
+  );
+  throw error;
 } finally {
   await context.close();
   await browser.close();
