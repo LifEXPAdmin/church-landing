@@ -147,6 +147,19 @@ export async function createCommentIn(
       commentId: row.id
     }
   });
+  if (
+    await tx.conversationPreference.findFirst({
+      where: {
+        postId: post.id,
+        mode: "FOLLOW",
+        followedAt: { lt: row.createdAt }
+      },
+      select: { id: true }
+    })
+  )
+    await tx.commentFollowerJob.create({
+      data: { commentId: row.id, createdAt: row.createdAt }
+    });
   for (const recipientId of new Set([
     ...(post.authorChurchId ? [] : [post.authorId]),
     ...(parent && !parent.authorChurchId ? [parent.authorId] : [])
@@ -318,10 +331,23 @@ export async function commentCommand(
       const where = { ownerId_postId: { ownerId, postId: post.id } },
         old = await tx.conversationPreference.findUnique({ where });
       expected(input.expectedVersion, old?.version ?? 0);
+      const followedAt =
+        input.mode === "FOLLOW"
+          ? ((old?.mode === "FOLLOW" ? old.followedAt : null) ?? new Date())
+          : null;
       const row = await tx.conversationPreference.upsert({
         where,
-        create: { ownerId, postId: post.id, mode: String(input.mode) },
-        update: { mode: String(input.mode), version: { increment: 1 } }
+        create: {
+          ownerId,
+          postId: post.id,
+          mode: String(input.mode),
+          followedAt
+        },
+        update: {
+          mode: String(input.mode),
+          followedAt,
+          version: { increment: 1 }
+        }
       });
       return {
         id: row.id,

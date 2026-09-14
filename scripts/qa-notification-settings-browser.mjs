@@ -316,7 +316,8 @@ try {
   assert.equal(preferences.founderAnnouncements, false);
   for (const name of [
     "Replies to your posts and comments",
-    "Mentions in comments"
+    "Mentions in comments",
+    "Replies in conversations you follow"
   ]) {
     const group = page.getByRole("group", { name, exact: true });
     const phone = group.getByRole("checkbox", {
@@ -342,7 +343,7 @@ try {
         where: { ownerId: actor.id }
       })
     ).pushCategories.sort(),
-    ["mentions", "messages", "replies", "requests"]
+    ["conversations", "mentions", "messages", "replies", "requests"]
   );
   const commenter = await createPortalActor(db, "commentpushui");
   const post = await db.platformPost.create({
@@ -383,6 +384,82 @@ try {
   await go("/platform/settings/notifications/availability");
   ok(
     "Reply/mention opt-ins persist and one real comment API intent opens the exact authorized comment on a narrow screen"
+  );
+  const followedPost = await db.platformPost.create({
+    data: { authorId: commenter.id, content: "Fictional followed conversation" }
+  });
+  await go("/platform/posts/" + followedPost.id);
+  const followButton = page.getByRole("button", {
+    name: "Follow conversation",
+    exact: true
+  });
+  await followButton.click();
+  await page
+    .locator('button[aria-pressed="true"]')
+    .filter({ hasText: /^Follow conversation$/ })
+    .waitFor();
+  const choice = await db.conversationPreference.findUniqueOrThrow({
+    where: { ownerId_postId: { ownerId: actor.id, postId: followedPost.id } }
+  });
+  assert.equal(choice.mode, "FOLLOW");
+  assert.ok(choice.followedAt);
+  const followedResponse = await context.request.post(
+    config.origin + "/api/platform/comments",
+    {
+      headers: {
+        Origin: config.origin,
+        Cookie: "church_platform_session=" + commenter.token
+      },
+      data: {
+        operation: "create",
+        mutationId: randomUUID(),
+        postId: followedPost.id,
+        content: "New reply in your followed conversation"
+      }
+    }
+  );
+  assert.equal(followedResponse.status(), 200);
+  const followedReceipt = await followedResponse.json();
+  let followedAlert;
+  for (let attempt = 0; attempt < 80; attempt++) {
+    followedAlert = await db.notificationDelivery.findFirst({
+      where: { event: { commentId: followedReceipt.id }, ownerId: actor.id }
+    });
+    if (followedAlert) break;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  assert.ok(
+    followedAlert,
+    "Committed reply produces its explicit follower intent through the real after-response path"
+  );
+  await go("/platform/activity");
+  const activityLink = page.locator(
+    `a[href="/platform/posts/${followedPost.id}?comment=${followedReceipt.id}"]`
+  );
+  await activityLink.waitFor();
+  await activityLink.click();
+  await page
+    .getByText("New reply in your followed conversation", { exact: true })
+    .waitFor();
+  await page
+    .getByRole("button", { name: "Mute conversation", exact: true })
+    .click();
+  await page
+    .locator('button[aria-pressed="true"]')
+    .filter({ hasText: /^Mute conversation$/ })
+    .waitFor();
+  await go("/platform/activity");
+  assert.equal(
+    await page
+      .locator(
+        `a[href="/platform/posts/${followedPost.id}?comment=${followedReceipt.id}"]`
+      )
+      .count(),
+    0
+  );
+  await go("/platform/settings/notifications/availability");
+  ok(
+    "Conversation Follow persists, the real reply API creates one follower Activity/phone intent, its exact link opens, and Mute conceals its Activity"
   );
   await page
     .getByRole("button", { name: "Send me a test notification", exact: true })

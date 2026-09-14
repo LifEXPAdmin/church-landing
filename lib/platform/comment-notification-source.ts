@@ -50,6 +50,7 @@ export async function commentNotificationSources(
     },
     select: {
       id: true,
+      createdAt: true,
       authorId: true,
       authorChurchId: true,
       post: { select: { id: true, authorId: true, authorChurchId: true } },
@@ -67,7 +68,7 @@ export async function commentNotificationSources(
   if (!comments.length) return result;
   const preference = await tx.socialPreferences.findUnique({
     where: { ownerId },
-    select: { mentions: true }
+    select: { mentions: true, conversationPushSince: true }
   });
   const choice = preference?.mentions ?? "EVERYONE";
   const followed = new Set(
@@ -84,26 +85,23 @@ export async function commentNotificationSources(
         ).map((f) => f.followingId)
       : []
   );
-  const muted = new Set(
-    delivery
-      ? (
-          await tx.conversationPreference.findMany({
-            where: {
-              ownerId,
-              postId: { in: comments.map((c) => c.post.id) },
-              mode: "MUTE"
-            },
-            select: { postId: true },
-            take: 50
-          })
-        ).map((p) => p.postId)
-      : []
+  const conversations = new Map(
+    (
+      await tx.conversationPreference.findMany({
+        where: {
+          ownerId,
+          postId: { in: comments.map((c) => c.post.id) }
+        },
+        select: { postId: true, mode: true, followedAt: true },
+        take: 50
+      })
+    ).map((p) => [p.postId, p])
   );
   for (const comment of comments) {
     const post = comment.post;
     if (
       delivery &&
-      (muted.has(post.id) ||
+      (conversations.get(post.id)?.mode === "MUTE" ||
         (comment.authorChurchId
           ? context.mutedChurchIds?.includes(comment.authorChurchId)
           : context.mutedIds?.includes(comment.authorId)) ||
@@ -124,7 +122,15 @@ export async function commentNotificationSources(
         !comment.parent.deletedAt &&
         !comment.parent.authorChurchId &&
         comment.parent.authorId === ownerId);
-    if (mentioned || replied)
+    const conversation = conversations.get(post.id);
+    const following =
+      conversation?.mode === "FOLLOW" &&
+      conversation.followedAt &&
+      conversation.followedAt < comment.createdAt &&
+      (!delivery ||
+        (preference?.conversationPushSince &&
+          preference.conversationPushSince < comment.createdAt));
+    if (mentioned || replied || following)
       for (const event of valid) {
         if (
           event.commentId !== comment.id ||
@@ -133,7 +139,11 @@ export async function commentNotificationSources(
         )
           continue;
         result.set(event, {
-          category: mentioned ? "mentions" : "replies",
+          category: mentioned
+            ? "mentions"
+            : replied
+              ? "replies"
+              : "conversations",
           href: `/platform/posts/${post.id}?comment=${comment.id}`,
           group: post.id
         });

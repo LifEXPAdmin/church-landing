@@ -9,19 +9,21 @@ export async function recordCommentActivity(
   actorId: string,
   postId: string,
   commentId: string,
-  recipientId: string
+  recipientId: string,
+  sourceCreatedAt?: Date
 ) {
   if (actorId === recipientId) return;
   const key = `comment-recipient:${commentId}:${recipientId}`;
   if (await tx.socialEvent.findUnique({ where: { key }, select: { id: true } }))
     return;
-  if (
-    !(await commentNotificationSource(
-      tx,
-      { actorId, recipientId, postId, commentId },
-      false
-    ))
-  )
+  const source = await commentNotificationSource(
+    tx,
+    { actorId, recipientId, postId, commentId },
+    false
+  );
+  // Direct replies/mentions own their synchronous creation boundary. A later
+  // follower continuation must not recreate an earlier ineligible direct event.
+  if (!source || (sourceCreatedAt && source.category !== "conversations"))
     return;
   const event = await tx.socialEvent.create({
     data: {
@@ -30,8 +32,9 @@ export async function recordCommentActivity(
       actorId,
       postId,
       commentId,
-      recipientId
+      recipientId,
+      ...(sourceCreatedAt ? { createdAt: sourceCreatedAt } : {})
     }
   });
-  await enqueueNotification(tx, event);
+  await enqueueNotification(tx, event, undefined, sourceCreatedAt);
 }

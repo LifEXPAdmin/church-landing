@@ -609,6 +609,7 @@ export async function downloadAccountExport(
             reportAlerts: true,
             founderAnnouncements: true,
             pushCategories: true,
+            conversationPushSince: true,
             quietStart: true,
             quietEnd: true,
             quietTimeZone: true,
@@ -753,7 +754,13 @@ export async function downloadAccountExport(
       }),
       conversationPreferences: await tx.conversationPreference.findMany({
         where: { ownerId: userId },
-        select: { postId: true, mode: true, version: true, updatedAt: true },
+        select: {
+          postId: true,
+          mode: true,
+          version: true,
+          updatedAt: true,
+          followedAt: true
+        },
         orderBy: { id: "asc" },
         take: MAX_ROWS + 1
       }),

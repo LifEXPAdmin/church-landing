@@ -1,5 +1,42 @@
 # Phone notification contract
 
+## Explicit conversation followers — 14 September 2026 candidate
+
+A new canonical comment records one content-free continuation only when existing
+explicit conversation followers exist. It processes at most 20 candidates per
+transaction using the shared permission gate and a job-row lock. The recipient
+intent and cursor commit together. Direct replies and selected mentions retain
+their immediate recipient path and shared per-comment/recipient deduplication.
+No ordinary person/church following is treated as a conversation subscription.
+
+The existing Follow/Default/Mute controls own this choice. Follow adds future
+replies to Activity; Default retains direct replies/mentions; Mute suppresses the
+thread's Activity and phone delivery. A maintained followedAt boundary prevents
+late follows or unfollow/refollow from replaying old comments. Every recipient
+rechecks canonical post/comment access, current account, blocks and church scope.
+
+Phone category conversations is an independent, initially off choice. Its consent
+start and each device's creation precede the comment; changing unrelated choices
+preserves that start, while removing/re-enabling the category starts a new period.
+Later opt-ins/devices cannot produce historical alerts. Existing quiet hours,
+generic payload, source-lived deduplication, current-source open and session-bound
+device revocation remain authoritative. Reads, mutes and access changes still
+suppress delivery. No new provider, dependency or scheduled task is introduced.
+
+The after-response path processes one page and hands unfinished work to the
+comment-followers-v1 native queue. A callback processes at most three pages before
+retrying its durable cursor. Failed handoffs remain repairable by the existing
+secured daily notification maintenance; health reports pending jobs and age.
+Work older than seven days is finished without fanout. Completed job diagnostics
+expire after 14 days; all jobs after 21. Canonical recipient events remain the
+deduplication guard. Comment deletion cascades the job. Isolated restoration
+quarantines unfinished follower work before reopening traffic.
+
+Migration 52 preserves existing preference fields and known follow dates, with no
+old-comment jobs or phone opt-ins. Preserve category values on rollback; forward
+repair preference controls rather than downgrade their allowlist. Physical phone
+alert/display/tap acceptance remains distinct from isolated provider callbacks.
+
 ## Comment reply and mention extension — 13 September 2026
 
 The comment service now adds a single `COMMENT_ACTIVITY` recipient intent alongside

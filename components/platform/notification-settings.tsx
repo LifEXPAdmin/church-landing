@@ -27,7 +27,8 @@ const labels: Record<NotificationCategory, string> = {
   reports: "Reports, reconsideration and your content decisions",
   founder: "Founder announcements",
   replies: "Replies to your posts and comments",
-  mentions: "Mentions in comments"
+  mentions: "Mentions in comments",
+  conversations: "Replies in conversations you follow"
 };
 const categories = Object.keys(labels) as NotificationCategory[];
 const endpoint = "/api/platform/notifications";
@@ -273,7 +274,9 @@ export function NotificationSettings({ owner }: { owner: string }) {
                   className="rounded-lg border border-gc-divider p-3"
                 >
                   <legend>{labels[category]}</legend>
-                  {category !== "replies" && category !== "mentions" ? (
+                  {category !== "replies" &&
+                  category !== "mentions" &&
+                  category !== "conversations" ? (
                     <label className="flex min-h-11 items-center gap-3">
                       <input
                         type="checkbox"
@@ -294,8 +297,11 @@ export function NotificationSettings({ owner }: { owner: string }) {
                     </label>
                   ) : (
                     <p className="text-sm text-gc-muted">
-                      Comments remain available on their post. Mute a
-                      conversation there to stop its phone alerts.
+                      {category === "conversations"
+                        ? "Follow a conversation on its post to receive new replies in Activity. Phone alerts are optional and start after you enable this choice."
+                        : "Comments remain available on their post."}{" "}
+                      Mute a conversation there to stop its Activity and phone
+                      alerts.
                     </p>
                   )}
                   <label className="flex min-h-11 items-center gap-3">

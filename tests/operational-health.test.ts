@@ -34,6 +34,38 @@ const request = (authorization = `Bearer ${secret}`, method = "GET") =>
     }
   });
 
+test("pending conversation fanout appears in private health with its age and clears after completion", async () => {
+  const actor = await createPortalActor(db, "followerhealth");
+  const post = await db.platformPost.create({
+    data: { authorId: actor.id, content: "Private health fixture" }
+  });
+  const comment = await db.platformPostComment.create({
+    data: { authorId: actor.id, postId: post.id, content: "Private reply" }
+  });
+  const now = new Date();
+  await db.commentFollowerJob.create({
+    data: { commentId: comment.id, createdAt: new Date(now.getTime() - 360000) }
+  });
+  try {
+    const result = await readOperationalHealth(db, now);
+    assert.ok(result.queues.conversationFollowers.pending >= 1);
+    assert.ok(result.alerts.includes("conversation_activity_backlog"));
+    assert.ok((result.ages.conversationPendingSeconds ?? 0) >= 360);
+    assert.equal(JSON.stringify(result).includes(comment.id), false);
+    await db.commentFollowerJob.update({
+      where: { commentId: comment.id },
+      data: { completedAt: now }
+    });
+    assert.equal(
+      (await readOperationalHealth(db, now)).queues.conversationFollowers
+        .pending,
+      result.queues.conversationFollowers.pending - 1
+    );
+  } finally {
+    await db.platformPost.delete({ where: { id: post.id } });
+  }
+});
+
 test("operational health requires the maintenance secret before accessing data and sanitizes unavailable service failures", async () => {
   let reads = 0;
   const unavailable = {

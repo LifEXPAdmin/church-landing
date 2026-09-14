@@ -1,6 +1,10 @@
 import { prisma } from "@/lib/prisma";
 import { after } from "next/server";
 import { dispatchNotifications } from "@/lib/platform/notification-queue";
+import {
+  advanceCommentFollowers,
+  dispatchCommentFollowers
+} from "@/lib/platform/comment-followers";
 import { requestSessionToken } from "@/lib/platform/account-boundary";
 import {
   socialWriteInput,
@@ -60,7 +64,17 @@ export async function POST(request: Request) {
       );
     if (input.operation === "create" || input.operation === "edit")
       after(async () => {
-        await dispatchNotifications(prisma, result.id);
+        if (input.operation === "create") {
+          try {
+            const advanced = await advanceCommentFollowers(prisma, result.id);
+            if (!advanced.done)
+              await dispatchCommentFollowers(prisma, result.id);
+          } catch {
+            // The comment and continuation are already committed. Maintenance
+            // repairs interruptions without requiring the author to resend.
+            console.error("comment_follower_handoff_incomplete");
+          }
+        } else await dispatchNotifications(prisma, result.id);
       });
     return Response.json(result, {
       headers: socialHeaders

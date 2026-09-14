@@ -15,6 +15,11 @@
     }
   ],
   "functions": {
+    "app/api/queues/comment-followers/route.ts": {
+      "experimentalTriggers": [
+        { "type": "queue/v2beta", "topic": "comment-followers-v1" }
+      ]
+    },
     "app/api/queues/phone-notifications/route.ts": {
       "experimentalTriggers": [
         {

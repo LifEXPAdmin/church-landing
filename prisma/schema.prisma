@@ -1391,6 +1391,7 @@ model PlatformPostComment {
   likes CommentLike[]
   mentions CommentMention[]
   pin CommentPin?
+  followerJob CommentFollowerJob?
 
   post   PlatformPost @relation(fields: [postId], references: [id], onDelete: Cascade)
   author PlatformUser @relation(fields: [authorId], references: [id], onDelete: Cascade)
@@ -1442,9 +1443,23 @@ model ConversationPreference {
   mode String @default("DEFAULT")
   version Int @default(1)
   updatedAt DateTime @updatedAt
+  followedAt DateTime?
   owner PlatformUser @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   post PlatformPost @relation(fields: [postId], references: [id], onDelete: Cascade)
   @@unique([ownerId, postId])
+  @@index([postId, mode, id])
+}
+
+// Bounded continuation of a new comment's explicit conversation followers.
+// The canonical comment owns this content-free job; no historical backfill.
+model CommentFollowerJob {
+  commentId String @id
+  cursor String?
+  createdAt DateTime @default(now())
+  completedAt DateTime?
+  dispatchedAt DateTime?
+  comment PlatformPostComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  @@index([completedAt, dispatchedAt, createdAt])
 }
 
 model PrivateCommentDraft {
@@ -1680,6 +1695,7 @@ model SocialPreferences {
   reportAlerts Boolean @default(true)
   founderAnnouncements Boolean @default(true)
   pushCategories String[] @default([])
+  conversationPushSince DateTime?
   quietStart Int?
   quietEnd Int?
   quietTimeZone String?

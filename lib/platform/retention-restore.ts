@@ -53,6 +53,10 @@ export async function quarantineRestoredAccess(db: PrismaClient) {
         where: { state: { not: "FINISHED" } }
       });
       const devices = await revokePushSubscriptions(tx, {}, now);
+      const conversationJobs = await tx.commentFollowerJob.updateMany({
+        where: { completedAt: null },
+        data: { completedAt: now, dispatchedAt: null }
+      });
       await tx.notificationDelivery.updateMany({
         where: { state: { not: "FINISHED" } },
         data: {
@@ -140,6 +144,7 @@ export async function quarantineRestoredAccess(db: PrismaClient) {
         sessions: sessions.count,
         devices: devices.count,
         deliveries: pendingDeliveries,
+        conversationJobs: conversationJobs.count,
         googleAssociations: googleAssociations.count,
         elevatedGrants:
           operators.count +

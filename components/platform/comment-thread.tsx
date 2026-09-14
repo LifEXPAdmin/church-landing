@@ -477,8 +477,16 @@ export function CommentThread({
             <fieldset className="space-y-2" disabled={!!mutation}>
               <legend>Conversation preference</legend>
               <p className="text-sm text-gc-muted">
-                Saved for your account. These controls do not enable email or
-                push delivery.
+                Follow to see new replies in Activity. Default keeps direct
+                replies and mentions. Mute stops this conversation’s Activity
+                and phone alerts. Optional phone alerts are controlled in{" "}
+                <Link
+                  className="underline"
+                  href="/platform/settings/notifications"
+                >
+                  Notification settings
+                </Link>
+                .
               </p>
               <div className="flex flex-wrap gap-2">
                 {(

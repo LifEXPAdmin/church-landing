@@ -266,3 +266,17 @@ processing, service and boundary checks. The focused service run is
 the existing isolated production preview. All fixture writers enforce loopback
 PostgreSQL and the test-sink boundary. Maintenance tests inject isolated storage;
 they do not call a real provider or use a production cron secret.
+
+## Follow a discussion
+
+On an available post, choose **Follow conversation** to receive future replies
+in Activity. **Default** retains direct replies and mentions; **Mute conversation**
+stops this thread's Activity and phone alerts. The source discussion remains
+subject to its original audience.
+
+In Notification preferences, **Replies in conversations you follow** has its own
+optional phone toggle, initially off. Following a person/church does not subscribe
+to every thread. Later follows, alert choices and device registration do not
+send earlier replies. Use the isolated notification-settings browser suite for
+the actual Follow → reply API → Activity → exact comment → Mute journey; physical
+phone delivery and keyboard/gesture acceptance require their own device receipt.

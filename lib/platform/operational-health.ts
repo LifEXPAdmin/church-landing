@@ -30,6 +30,7 @@ type WorkerSnapshot = {
   };
   welcome: { pending: number; oldestPendingAt: string | null };
   announcements: { pending: number; oldestPendingAt: string | null };
+  conversationFollowers: { pending: number; oldestPendingAt: string | null };
   scheduledPosts: { pending: number; due: number; oldestDueAt: string | null };
 };
 const secondsSince = (time: string | null, now: Date) =>
@@ -69,6 +70,8 @@ export async function readOperationalHealth(
           'overdueHolds',(SELECT count(*) FROM "RetentionHold" WHERE "releasedAt" IS NULL AND "reviewDueAt"<=${now.toISOString()}::timestamp)),
         'announcements',(SELECT json_build_object('pending',count(*),'oldestPendingAt',min("queuedAt") AT TIME ZONE 'UTC')
           FROM "FounderAnnouncement" WHERE status='SENDING'),
+        'conversationFollowers',(SELECT json_build_object('pending',count(*),'oldestPendingAt',min("createdAt") AT TIME ZONE 'UTC')
+          FROM "CommentFollowerJob" WHERE "completedAt" IS NULL),
         'scheduledPosts',(SELECT json_build_object('pending',count(*),'due',count(*) FILTER (WHERE "scheduleAt"<=${now.toISOString()}::timestamp),
           'oldestDueAt',(min("scheduleAt") FILTER (WHERE "scheduleAt"<=${now.toISOString()}::timestamp)) AT TIME ZONE 'UTC') FROM "PlatformPost" WHERE status='SCHEDULED')
       ) AS snapshot`;
@@ -102,6 +105,10 @@ export async function readOperationalHealth(
     announcementPendingSeconds: secondsSince(
       snapshot.announcements.oldestPendingAt,
       now
+    ),
+    conversationPendingSeconds: secondsSince(
+      snapshot.conversationFollowers.oldestPendingAt,
+      now
     )
   };
   const alerts: string[] = [];
@@ -113,6 +120,8 @@ export async function readOperationalHealth(
   if ((ages.notificationDueSeconds ?? 0) > 300)
     alerts.push("notification_backlog");
   if (snapshot.failedDeliveries24h) alerts.push("notification_failures");
+  if ((ages.conversationPendingSeconds ?? 0) > 300)
+    alerts.push("conversation_activity_backlog");
   if ((ages.protectedControlSeconds ?? 0) > 300)
     alerts.push("unprotected_retention_controls");
   if (

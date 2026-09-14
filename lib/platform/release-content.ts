@@ -14,6 +14,18 @@ export type Feature = {
 };
 export const features: Feature[] = [
   {
+    id: "follow-conversation",
+    category: "Posts and conversations",
+    name: "Follow a conversation",
+    description: "See new replies to a followed conversation in your Activity.",
+    steps:
+      "Open a post’s discussion and choose Follow conversation. Choose Default to return to direct replies and mentions, or Mute conversation to stop its Activity and phone alerts. Enable optional Replies in conversations you follow in Notification preferences.",
+    href: "/platform/activity",
+    eligibility:
+      "Current account and source access are required. Following a person or church does not subscribe to every discussion. Phone alerts require a separate opt-in and an enabled device; later choices do not send old replies.",
+    availability: "available"
+  },
+  {
     id: "profile-post-pin",
     category: "Posts and conversations",
     name: "Pin a post to your profile",
@@ -548,6 +560,26 @@ export const features: Feature[] = [
   }
 ];
 export const releases: ReleaseEntry[] = [
+  {
+    id: "followed-conversation-activity",
+    version: "2026.09.14.16",
+    date: "2026-09-14",
+    summary: "Follow a conversation to see its new replies in Activity.",
+    added: [
+      "A separate, optional phone-alert choice for replies in conversations you follow."
+    ],
+    improved: [
+      "Follow, Default and Mute explain which conversation updates you receive."
+    ],
+    fixed: [
+      "Delayed replies respect current access and consent, without replaying old replies after a later follow or phone opt-in."
+    ],
+    featureIds: [
+      "follow-conversation",
+      "personal-activity",
+      "phone-notifications"
+    ]
+  },
   {
     id: "personal-profile-pin",
     version: "2026.09.14.15",

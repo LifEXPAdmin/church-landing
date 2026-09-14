@@ -1,5 +1,10 @@
 import { dispatchFounderAnnouncements } from "./founder-announcement-queue";
 import { cleanFounderAnnouncements } from "./founder-announcements";
+import {
+  cleanCommentFollowerJobs,
+  dispatchCommentFollowers,
+  COMMENT_FOLLOWER_TOPIC
+} from "./comment-followers";
 import { dispatchPendingFounderWelcomes } from "./founder-welcome-queue";
 import type { PrismaClient } from "@prisma/client";
 import {
@@ -26,13 +31,13 @@ export async function handleNotificationMaintenance(
   const rejected = maintenanceRequestError(request);
   if (rejected) return rejected;
   const mode = new URL(request.url).searchParams.get("mode");
-  if (mode && !["inspect", "probe"].includes(mode))
+  if (mode && !["inspect", "probe", "probe-followers"].includes(mode))
     return Response.json(
       { error: "Choose inspection, a queue probe or the maintenance run." },
       { status: 400, headers }
     );
   try {
-    if (mode === "probe") {
+    if (mode === "probe" || mode === "probe-followers") {
       // A single reserved, nonexistent delivery verifies the deployed private
       // consumer. It cannot create an app message, subscription or phone alert.
       if (!publish && process.env.VERCEL !== "1")
@@ -40,13 +45,15 @@ export async function handleNotificationMaintenance(
       const id = `probe-${randomUUID()}`;
       if (await db.notificationDelivery.findUnique({ where: { id } }))
         throw Error("Probe collision");
-      const key = `phone-queue-probe:${Math.floor(Date.now() / 3600000)}`;
+      if (await db.commentFollowerJob.findUnique({ where: { commentId: id } }))
+        throw Error("Probe collision");
+      const key = `${mode === "probe-followers" ? "comment-follower" : "phone"}-queue-probe:${Math.floor(Date.now() / 3600000)}`;
       const result = publish
         ? await publish(id, 0, key)
         : await (
             await import("@vercel/queue")
           ).send(
-            PUSH_TOPIC,
+            mode === "probe-followers" ? COMMENT_FOLLOWER_TOPIC : PUSH_TOPIC,
             { id },
             {
               retentionSeconds: 60,
@@ -68,11 +75,14 @@ export async function handleNotificationMaintenance(
     }
     if (mode === "inspect") {
       const config = pushServerConfig();
-      const [devices, pending] = await Promise.all([
+      const [devices, pending, conversationFollowers] = await Promise.all([
         db.pushSubscription.count({
           where: { revokedAt: null, expiresAt: { gt: new Date() } }
         }),
-        db.notificationDelivery.count({ where: { state: { not: "FINISHED" } } })
+        db.notificationDelivery.count({
+          where: { state: { not: "FINISHED" } }
+        }),
+        db.commentFollowerJob.count({ where: { completedAt: null } })
       ]);
       return Response.json(
         {
@@ -85,14 +95,16 @@ export async function handleNotificationMaintenance(
                 .slice(0, 16)
             : null,
           devices,
-          pending
+          pending,
+          conversationFollowers
         },
         { headers }
       );
     }
     const cleanup = await notificationWrite(db, async (tx) => ({
       ...(await cleanNotificationRecords(tx)),
-      announcementDiagnosticsRemoved: await cleanFounderAnnouncements(tx)
+      announcementDiagnosticsRemoved: await cleanFounderAnnouncements(tx),
+      conversationJobsRemoved: await cleanCommentFollowerJobs(tx)
     }));
     let queued = 0,
       failed = 0;
@@ -108,14 +120,18 @@ export async function handleNotificationMaintenance(
     const announcements = signal.aborted
       ? { queued: 0, failed: 1 }
       : await dispatchFounderAnnouncements(db);
-    failed += welcomes.failed + announcements.failed;
+    const followers = signal.aborted
+      ? { queued: 0, failed: 1 }
+      : await dispatchCommentFollowers(db);
+    failed += welcomes.failed + announcements.failed + followers.failed;
     const result = {
       ok: failed === 0,
       ...cleanup,
       queued,
       failed,
       welcomeQueued: welcomes.queued,
-      announcementQueued: announcements.queued
+      announcementQueued: announcements.queued,
+      conversationQueued: followers.queued
     };
     console.info("notification_maintenance_completed", result);
     return Response.json(result, { status: failed ? 503 : 200, headers });

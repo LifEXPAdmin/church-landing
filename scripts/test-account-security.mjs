@@ -233,6 +233,7 @@ try {
     ["SavedPostCollection", "id"],
     ["SavedPostItem", "id"],
     ["PostWorkspaceOperation", "key"],
+    ["CommentFollowerJob", "commentId"],
     ...[
       "SocialRelationship",
       "SocialOperation",
@@ -574,6 +575,18 @@ try {
       if (psql(["-Atc", `SELECT count(*) FROM "PlatformPostLike" WHERE active=true AND version=1 AND "firstLikedAt" IS DISTINCT FROM "createdAt"`]).trim() !== "0") throw Error("Feed migration did not preserve known first Like dates");
       if (psql(["-Atc", `SELECT (SELECT count(*) FROM "SocialPreferences" WHERE "feedMode" IS NOT NULL OR "feedVersion" <> 0) + (SELECT count(*) FROM "FeedSnapshot")`]).trim() !== "0") throw Error("Feed migration invented choices or reading sets");
       console.log("Four-feed migration preserves every original Like/preference field, records known first Like dates and leaves choices/reading sets empty.");
+    } else if (name === "20260914213000_conversation_follow_activity") {
+      psql(["-c", `INSERT INTO "ConversationPreference" (id,"ownerId","postId",mode,version,"updatedAt") SELECT 'legacy-conversation-follow', u.id, p.id, 'FOLLOW', 3, CURRENT_TIMESTAMP - interval '2 days' FROM "PlatformUser" u CROSS JOIN "PlatformPost" p LIMIT 1 ON CONFLICT DO NOTHING`]);
+      const original = () => [
+        psql(["-Atc", `SELECT md5(coalesce(jsonb_agg(to_jsonb(t) - 'followedAt' ORDER BY id)::text,'[]')) FROM "ConversationPreference" t`]),
+        psql(["-Atc", `SELECT md5(coalesce(jsonb_agg(to_jsonb(t) - 'conversationPushSince' ORDER BY "ownerId")::text,'[]')) FROM "SocialPreferences" t`]),
+        fingerprint("PlatformPostComment", "id"), fingerprint("SocialEvent", "id")
+      ];
+      const prior = original();
+      psql(["-f", `prisma/migrations/${name}/migration.sql`]);
+      if (JSON.stringify(prior) !== JSON.stringify(original())) throw Error("Conversation migration changed original preferences, comments or activity");
+      if (psql(["-Atc", `SELECT (SELECT count(*) FROM "CommentFollowerJob") + (SELECT count(*) FROM "SocialPreferences" WHERE "conversationPushSince" IS NOT NULL) + (SELECT count(*) FROM "ConversationPreference" WHERE (mode='FOLLOW' AND "followedAt" IS DISTINCT FROM "updatedAt") OR (mode<>'FOLLOW' AND "followedAt" IS NOT NULL))`]).trim() !== "0") throw Error("Conversation migration backfilled work or changed prior follow consent");
+      console.log("Conversation migration preserves original fields and existing follow dates, with no historical jobs or phone opt-ins.");
     } else psql(["-f", `prisma/migrations/${name}/migration.sql`]);
   }
   for (const [i, [table, key]] of accountTables.entries()) {

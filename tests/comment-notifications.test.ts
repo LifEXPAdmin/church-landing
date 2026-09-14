@@ -20,6 +20,13 @@ import {
   openNotification
 } from "../lib/platform/notification-outbox";
 import { dispatchNotifications } from "../lib/platform/notification-queue";
+import {
+  processCommentFollowerBatch,
+  dispatchCommentFollowers,
+  cleanCommentFollowerJobs,
+  COMMENT_FOLLOWER_BATCH
+} from "../lib/platform/comment-followers";
+import { readActivity, openActivity } from "../lib/platform/activity";
 import { portalCommand } from "../lib/platform/portal";
 import { PortalError } from "../lib/platform/portal-policy";
 const db = new PrismaClient();
@@ -102,6 +109,402 @@ const sendComment = (f: Awaited<ReturnType<typeof fixture>>, extra = {}) =>
       ...extra
     })
   );
+
+async function follow(
+  actor: { id: string; token: string },
+  postId: string,
+  mode = "FOLLOW"
+) {
+  const old = await db.conversationPreference.findUnique({
+    where: { ownerId_postId: { ownerId: actor.id, postId } }
+  });
+  return commentCommand(
+    db,
+    actor.token,
+    command("conversation", {
+      postId,
+      mode,
+      expectedVersion: old?.version ?? 0
+    })
+  );
+}
+async function followerFixture(categories: string[] = []) {
+  const f = await fixture([]);
+  const reader = await createPortalActor(db, "threadfollow");
+  await follow(reader, f.post.id);
+  await preferences(reader, categories);
+  return { ...f, reader };
+}
+const followerEvents = (commentId: string, recipientId: string) =>
+  db.socialEvent.findMany({
+    where: { commentId, recipientId, kind: "COMMENT_ACTIVITY" }
+  });
+
+test("explicit thread follow adds one canonical Activity intent without phone opt-in; ordinary author following does not", async () => {
+  const f = await followerFixture();
+  const ordinary = await createPortalActor(db, "ordinaryfollow");
+  await db.platformFollow.create({
+    data: { followerId: ordinary.id, followingId: f.a.id }
+  });
+  const input = command("create", {
+    postId: f.post.id,
+    content: "Followed conversation's new reply"
+  });
+  const sent = await commentCommand(db, f.a.token, input);
+  assert.deepEqual(await commentCommand(db, f.a.token, input), sent);
+  assert.equal((await processCommentFollowerBatch(db, sent.id)).processed, 1);
+  assert.deepEqual(await processCommentFollowerBatch(db, sent.id), {
+    done: true,
+    processed: 0
+  });
+  const events = await followerEvents(sent.id, f.reader.id);
+  assert.equal(events.length, 1);
+  assert.equal((await followerEvents(sent.id, ordinary.id)).length, 0);
+  assert.equal((await deliveries(sent.id)).length, 0);
+  const activity = await readActivity(db, f.reader.token);
+  assert.equal(activity.unread, 1);
+  assert.equal(activity.items[0].available, true);
+  assert.equal(
+    activity.items[0].href,
+    `/platform/posts/${f.post.id}?comment=${sent.id}`
+  );
+  assert.equal(
+    JSON.stringify(events, (_, v) =>
+      typeof v === "bigint" ? String(v) : v
+    ).includes(input.content as string),
+    false
+  );
+  await follow(f.reader, f.post.id, "MUTE");
+  assert.equal((await readActivity(db, f.reader.token)).items.length, 0);
+});
+
+test("thread alerts require independent opt-in and an existing device; generic delivery resolves the exact comment", async () => {
+  const f = await followerFixture(["conversations"]);
+  await seedNotificationDevice(db, f.reader);
+  const sent = await sendComment(f);
+  await processCommentFollowerBatch(db, sent.id);
+  const rows = await deliveries(sent.id);
+  assert.equal(rows.length, 1);
+  let sends = 0;
+  const result = await deliverNotification(
+    db,
+    rows[0].id,
+    async (_subscription, payload) => {
+      sends++;
+      assert.deepEqual(Object.keys(payload).sort(), ["deliveryId", "tag"]);
+      return 201;
+    }
+  );
+  assert.deepEqual(result, { done: true, outcome: "accepted" });
+  await deliverNotification(db, rows[0].id, async () => {
+    sends++;
+    return 201;
+  });
+  assert.equal(sends, 1);
+  assert.equal(
+    (await openNotification(db, f.reader.token, rows[0].id)).href,
+    `/platform/posts/${f.post.id}?comment=${sent.id}`
+  );
+  await preferences(f.reader, ["replies", "mentions"]);
+  const second = await sendComment(f);
+  await processCommentFollowerBatch(db, second.id);
+  assert.equal((await deliveries(second.id)).length, 0);
+  assert.equal((await followerEvents(second.id, f.reader.id)).length, 1);
+});
+
+test("delayed fanout never backfills a later follow, refollow, alert opt-in or device registration", async () => {
+  for (const change of [
+    "follow",
+    "refollow",
+    "opt-in",
+    "re-opt-in",
+    "device"
+  ] as const) {
+    const f = await followerFixture(
+      change === "opt-in" ? [] : ["conversations"]
+    );
+    if (change !== "device") await seedNotificationDevice(db, f.reader);
+    if (change === "follow") await follow(f.reader, f.post.id, "DEFAULT");
+    // Another existing follower keeps a job pending when this reader follows late.
+    await follow(f.b, f.post.id);
+    const sent = await sendComment(f);
+    if (change === "refollow") await follow(f.reader, f.post.id, "DEFAULT");
+    if (change === "follow" || change === "refollow")
+      await follow(f.reader, f.post.id);
+    if (change === "re-opt-in") await preferences(f.reader, []);
+    if (change === "opt-in" || change === "re-opt-in")
+      await preferences(f.reader, ["conversations"]);
+    if (change === "device") await seedNotificationDevice(db, f.reader);
+    await processCommentFollowerBatch(db, sent.id);
+    assert.equal(
+      (await deliveries(sent.id)).filter((r) => r.ownerId === f.reader.id)
+        .length,
+      0,
+      change
+    );
+    assert.equal(
+      (await followerEvents(sent.id, f.reader.id)).length,
+      change === "follow" || change === "refollow" ? 0 : 1,
+      change
+    );
+  }
+});
+
+test("followed reply plus direct reply or mention deduplicates its Activity and delivery", async () => {
+  const f = await followerFixture(["conversations", "mentions"]);
+  await seedNotificationDevice(db, f.reader);
+  await follow(f.b, f.post.id);
+  await preferences(f.b, ["replies", "conversations"]);
+  const sent = await sendComment(f, { mentionIds: [f.reader.id] });
+  await Promise.all([
+    processCommentFollowerBatch(db, sent.id),
+    processCommentFollowerBatch(db, sent.id)
+  ]);
+  for (const id of [f.reader.id, f.b.id]) {
+    assert.equal((await followerEvents(sent.id, id)).length, 1);
+    assert.equal(
+      (await deliveries(sent.id)).filter((r) => r.ownerId === id).length,
+      1
+    );
+  }
+});
+
+test("current follow, account, block and source revocations cancel pending fanout and queued phone delivery", async () => {
+  for (const stage of ["before-fanout", "before-delivery"] as const) {
+    for (const revoke of [
+      "default",
+      "mute",
+      "refollow",
+      "block",
+      "delete",
+      "post",
+      "deactivate"
+    ] as const) {
+      const f = await followerFixture(["conversations"]);
+      await seedNotificationDevice(db, f.reader);
+      const sent = await sendComment(f);
+      if (stage === "before-delivery")
+        await processCommentFollowerBatch(db, sent.id);
+      if (revoke === "default" || revoke === "mute" || revoke === "refollow") {
+        await follow(
+          f.reader,
+          f.post.id,
+          revoke === "mute" ? "MUTE" : "DEFAULT"
+        );
+        if (revoke === "refollow") await follow(f.reader, f.post.id);
+      } else if (revoke === "block")
+        await relationshipCommand(
+          db,
+          f.reader.token,
+          command("block", {
+            kind: "person",
+            targetId: f.a.id,
+            desired: true,
+            expectedVersion: 0
+          })
+        );
+      else if (revoke === "delete")
+        await commentCommand(
+          db,
+          f.a.token,
+          command("delete", {
+            postId: f.post.id,
+            commentId: sent.id,
+            expectedVersion: sent.version
+          })
+        );
+      else if (revoke === "post")
+        await db.platformPost.update({
+          where: { id: f.post.id },
+          data: { withdrawnAt: new Date() }
+        });
+      else
+        await db.platformUser.update({
+          where: { id: f.reader.id },
+          data: { deactivatedAt: new Date() }
+        });
+      await processCommentFollowerBatch(db, sent.id);
+      const rows = (await deliveries(sent.id)).filter(
+        (r) => r.ownerId === f.reader.id
+      );
+      if (stage === "before-fanout") assert.equal(rows.length, 0, revoke);
+      else {
+        assert.equal(rows.length, 1, revoke);
+        const outcome = await deliverNotification(db, rows[0].id, async () => {
+          throw Error("Revoked delivery reached provider");
+        });
+        assert.deepEqual(
+          outcome,
+          {
+            done: true,
+            outcome: revoke === "deactivate" ? "finished" : "cancelled"
+          },
+          revoke
+        );
+        if (revoke !== "deactivate") {
+          await denied(openNotification(db, f.reader.token, rows[0].id));
+          const event = (await followerEvents(sent.id, f.reader.id))[0];
+          const activity = await openActivity(db, f.reader.token, event.id);
+          assert.equal(activity.available, false, revoke);
+          assert.equal(activity.href, null, revoke);
+        }
+      }
+    }
+  }
+});
+
+test("bounded follower pages survive racing workers, failed publication, source deletion and expired work", async () => {
+  const f = await fixture([]);
+  const followers = await Promise.all(
+    Array.from({ length: COMMENT_FOLLOWER_BATCH + 3 }, () =>
+      createPortalActor(db, "pagedfollow")
+    )
+  );
+  for (const actor of followers) await follow(actor, f.post.id);
+  const sent = await sendComment(f);
+  const failed = await dispatchCommentFollowers(db, sent.id, async () => {
+    throw Error("Isolated queue outage");
+  });
+  assert.deepEqual(failed, { queued: 0, failed: 1 });
+  assert.equal(
+    (
+      await db.commentFollowerJob.findUniqueOrThrow({
+        where: { commentId: sent.id }
+      })
+    ).dispatchedAt,
+    null
+  );
+  const keys: string[] = [];
+  assert.equal(
+    (
+      await dispatchCommentFollowers(db, sent.id, async (id, key) => {
+        assert.equal(id, sent.id);
+        keys.push(key);
+      })
+    ).queued,
+    1
+  );
+  assert.equal(
+    (
+      await dispatchCommentFollowers(db, sent.id, async () => {
+        throw Error("Duplicate handoff");
+      })
+    ).queued,
+    0
+  );
+  assert.equal(keys.length, 1);
+  const results = await Promise.all([
+    processCommentFollowerBatch(db, sent.id),
+    processCommentFollowerBatch(db, sent.id)
+  ]);
+  assert.equal(
+    results.reduce((n, r) => n + r.processed, 0),
+    followers.length
+  );
+  assert.ok(results.every((r) => r.processed <= COMMENT_FOLLOWER_BATCH));
+  assert.equal(
+    await db.socialEvent.count({
+      where: {
+        commentId: sent.id,
+        recipientId: { in: followers.map((f) => f.id) }
+      }
+    }),
+    followers.length
+  );
+  assert.equal((await processCommentFollowerBatch(db, sent.id)).processed, 0);
+  const expired = await sendComment(f);
+  const expiredAt = new Date(Date.now() + 8 * 86400000);
+  assert.equal(
+    (await processCommentFollowerBatch(db, expired.id, expiredAt)).processed,
+    0
+  );
+  assert.equal(
+    await db.socialEvent.count({
+      where: {
+        commentId: expired.id,
+        recipientId: { in: followers.map((f) => f.id) }
+      }
+    }),
+    0
+  );
+  await db.$transaction((tx) =>
+    cleanCommentFollowerJobs(tx, new Date(Date.now() + 30 * 86400000))
+  );
+  assert.equal(
+    await db.commentFollowerJob.count({
+      where: { commentId: { in: [sent.id, expired.id] } }
+    }),
+    0
+  );
+  assert.equal((await processCommentFollowerBatch(db, sent.id)).processed, 0);
+  const removed = await sendComment(f);
+  await db.platformPostComment.delete({ where: { id: removed.id } });
+  assert.equal(
+    await db.commentFollowerJob.count({ where: { commentId: removed.id } }),
+    0
+  );
+});
+
+test("church-only followers lose pending Activity, delivery and exact links when membership is removed", async () => {
+  const f = await seedPortal(db);
+  await follow(
+    f.memberA,
+    (
+      await db.platformPost.create({
+        data: {
+          id: `follower-${randomUUID()}`,
+          authorId: f.contact.id,
+          audience: "CHURCH",
+          audienceChurchId: f.churchA.id,
+          content: "Church discussion fixture"
+        }
+      })
+    ).id
+  );
+  const choice = await db.conversationPreference.findFirstOrThrow({
+    where: { ownerId: f.memberA.id, mode: "FOLLOW" }
+  });
+  await seedNotificationDevice(db, f.memberA);
+  await preferences(f.memberA, ["conversations"]);
+  const send = () =>
+    commentCommand(
+      db,
+      f.contact.token,
+      command("create", {
+        postId: choice.postId,
+        content: "A private followed church reply"
+      })
+    );
+  const queued = await send();
+  const pending = await send();
+  await processCommentFollowerBatch(db, queued.id);
+  const [delivery] = await deliveries(queued.id);
+  assert.ok(delivery);
+  const connection = await db.churchConnection.findUniqueOrThrow({
+    where: { userId_churchId: { userId: f.memberA.id, churchId: f.churchA.id } }
+  });
+  await portalCommand(db, f.reviewerA.token, {
+    operation: "transition",
+    action: "REMOVE",
+    churchId: f.churchA.id,
+    connectionId: connection.id,
+    expectedVersion: connection.version
+  });
+  await processCommentFollowerBatch(db, pending.id);
+  assert.equal((await followerEvents(pending.id, f.memberA.id)).length, 0);
+  assert.deepEqual(
+    await deliverNotification(db, delivery.id, async () => {
+      throw Error("Revoked church recipient reached provider");
+    }),
+    { done: true, outcome: "cancelled" }
+  );
+  await denied(openNotification(db, f.memberA.token, delivery.id));
+  const event = (await followerEvents(queued.id, f.memberA.id))[0];
+  assert.equal(
+    (await openActivity(db, f.memberA.token, event.id)).available,
+    false
+  );
+});
 
 test("one reply-plus-mention intent survives exact retries and conflicts without copying private text", async () => {
   const f = await fixture();

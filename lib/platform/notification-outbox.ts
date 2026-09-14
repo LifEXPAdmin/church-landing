@@ -28,7 +28,8 @@ export function notificationWrite<T>(
 export async function enqueueNotification(
   tx: Tx,
   event: SocialEvent,
-  onlyDeviceId?: string
+  onlyDeviceId?: string,
+  sourceCreatedAt?: Date
 ) {
   if (!pushAvailable() || !event.recipientId) return;
   const now = new Date();
@@ -37,6 +38,7 @@ export async function enqueueNotification(
       ownerId: event.recipientId,
       revokedAt: null,
       expiresAt: { gt: now },
+      ...(sourceCreatedAt ? { createdAt: { lt: sourceCreatedAt } } : {}),
       ...(onlyDeviceId ? { id: onlyDeviceId } : {})
     },
     select: { id: true, version: true },

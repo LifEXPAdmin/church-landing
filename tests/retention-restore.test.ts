@@ -139,6 +139,19 @@ test("an actual isolated database snapshot replays newer deletion and hold relea
   }
   const shared = await pair(a, b),
     cleared = await pair(c, d);
+  const followedPost = await source.platformPost.create({
+    data: { authorId: b.id, content: "Isolated follower restore source" }
+  });
+  const followedComment = await source.platformPostComment.create({
+    data: {
+      authorId: c.id,
+      postId: followedPost.id,
+      content: "Do not replay after recovery"
+    }
+  });
+  await source.commentFollowerJob.create({
+    data: { commentId: followedComment.id }
+  });
   const curve = createECDH("prime256v1");
   curve.generateKeys();
   await pushSubscriptionCommand(
@@ -409,6 +422,19 @@ test("an actual isolated database snapshot replays newer deletion and hold relea
     assert.ok(result.quarantine.sessions > 0);
     assert.ok(result.quarantine.devices > 0);
     assert.ok(result.quarantine.deliveries > 0);
+    assert.ok(result.quarantine.conversationJobs > 0);
+    assert.equal(
+      await restored.commentFollowerJob.count({ where: { completedAt: null } }),
+      0
+    );
+    assert.equal(
+      (
+        await source.commentFollowerJob.findUniqueOrThrow({
+          where: { commentId: followedComment.id }
+        })
+      ).completedAt,
+      null
+    );
     assert.equal(
       await restored.adultMessage.findUnique({ where: { id: removed.id } }),
       null
