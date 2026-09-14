@@ -228,6 +228,7 @@ try {
     ["MediaAsset", "id"],
     ["MediaGarbage", "storagePrefix"],
     ["ProfilePresentation", "userId"],
+    ["FeedSnapshot", "id"],
     ["PrivatePostDraft", "id"],
     ["SavedPostCollection", "id"],
     ["SavedPostItem", "id"],
@@ -268,7 +269,7 @@ try {
       beforeChurch && table === "PlatformUser"
         ? `to_jsonb(t) - ARRAY['deactivatedAt','suspendedAt','adultAcknowledgedAt','adultPolicyVersion','portalVersion','deletionRequestedAt','erasedAt','pendingFounderWelcomeAt']`
         : beforeChurch && table === "PlatformPostLike"
-          ? "to_jsonb(t) - 'active' - 'version'"
+          ? "to_jsonb(t) - 'active' - 'version' - 'firstLikedAt'"
           : beforeChurch && table === "PlatformPostComment"
           ? `to_jsonb(t) - ARRAY['parentId','rootId','version','editedAt','deletedAt','authorChurchId','moderationState']`
           : beforeChurch && table === "PlatformPost"
@@ -562,6 +563,17 @@ try {
       console.log(
         "Content note upgrade preserves original post fields; existing notes and excerpts remain absent."
       );
+    } else if (name === "20260914180000_four_feeds") {
+      const original = () => [
+        psql(["-Atc", `SELECT md5(coalesce(jsonb_agg(to_jsonb(t) - 'firstLikedAt' ORDER BY id)::text,'[]')) FROM "PlatformPostLike" t`]),
+        psql(["-Atc", `SELECT md5(coalesce(jsonb_agg(to_jsonb(t) - ARRAY['feedMode','feedVersion'] ORDER BY "ownerId")::text,'[]')) FROM "SocialPreferences" t`])
+      ];
+      const prior = original();
+      psql(["-f", `prisma/migrations/${name}/migration.sql`]);
+      if (JSON.stringify(prior) !== JSON.stringify(original())) throw Error("Feed migration changed original Like or preference fields");
+      if (psql(["-Atc", `SELECT count(*) FROM "PlatformPostLike" WHERE active=true AND version=1 AND "firstLikedAt" IS DISTINCT FROM "createdAt"`]).trim() !== "0") throw Error("Feed migration did not preserve known first Like dates");
+      if (psql(["-Atc", `SELECT (SELECT count(*) FROM "SocialPreferences" WHERE "feedMode" IS NOT NULL OR "feedVersion" <> 0) + (SELECT count(*) FROM "FeedSnapshot")`]).trim() !== "0") throw Error("Feed migration invented choices or reading sets");
+      console.log("Four-feed migration preserves every original Like/preference field, records known first Like dates and leaves choices/reading sets empty.");
     } else psql(["-f", `prisma/migrations/${name}/migration.sql`]);
   }
   for (const [i, [table, key]] of accountTables.entries()) {
