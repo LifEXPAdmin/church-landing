@@ -389,6 +389,7 @@
 }
 .gc-primary-nav a {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.875rem;
   padding: 0.75rem 1rem;
@@ -400,6 +401,10 @@
 .gc-primary-nav svg {
   width: 20px;
   height: 20px;
+  flex-shrink: 0;
+}
+.gc-primary-nav a > span {
+  overflow-wrap: normal;
 }
 .gc-primary-nav a[aria-current="page"] {
   background: var(--gc-selected);

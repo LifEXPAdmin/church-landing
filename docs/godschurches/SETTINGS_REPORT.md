@@ -9,6 +9,8 @@ destinations are eligible; the section shares account concealment and disables
 prefetch. Church directory and calendar actions keep deliberate selection and
 existing access checks. Organization details retain their own church selector.
 
+The enlarged-text check also caught a split Messages word in phone navigation;
+wrapping whole flex items and preserving normal word boundaries repairs it.
 The Data folder now accurately distinguishes permanent deletion's separate review
 from deactivation. The feature guide reflects current notification controls.
 The existing Settings browser navigation assertion now expects the deployed

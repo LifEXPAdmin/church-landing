@@ -547,7 +547,8 @@ export const releases: ReleaseEntry[] = [
       "Each shortcut keeps the original control and current account protections. Church directory and calendar sharing still require deliberate choices."
     ],
     fixed: [
-      "The account deactivation explanation now correctly distinguishes the separate permanent-deletion review."
+      "The account deactivation explanation now correctly distinguishes the separate permanent-deletion review.",
+      "Phone navigation keeps whole words readable with enlarged text."
     ],
     featureIds: ["settings"]
   },
