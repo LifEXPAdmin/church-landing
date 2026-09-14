@@ -302,7 +302,7 @@ export const features: Feature[] = [
     description:
       "Share a thought, prayer, testimony, Scripture reference or link.",
     steps:
-      "Open the community, choose a post type and audience, review who can reply, then publish. Under Content note and preview, you can add a note and choose a short safe excerpt. Edit these choices later with Edit post.",
+      "Open the community, choose a post type and audience, review who can reply, then publish. Under Content note and preview, you can add a note and choose a short safe excerpt. Edit these choices later with Edit post. Authorized church moderators can change discussion settings with a recorded reason; post managers can review recent moderation decisions.",
     href: "/platform",
     eligibility:
       "Sign in to publish. Church publishing requires current authorization.",
@@ -534,6 +534,23 @@ export const features: Feature[] = [
   }
 ];
 export const releases: ReleaseEntry[] = [
+  {
+    id: "reasoned-discussion-moderation",
+    version: "2026.09.14.13",
+    date: "2026-09-14",
+    summary:
+      "Church moderation changes explain why a discussion’s settings changed.",
+    added: [
+      "Authorized post managers can review the latest ten discussion moderation decisions."
+    ],
+    improved: [
+      "Church moderators choose a reason when changing reply settings. Existing author controls and exact request retries are preserved."
+    ],
+    fixed: [
+      "Discussion changes made through church moderation permission now record a reason and the previous and updated settings."
+    ],
+    featureIds: ["posts"]
+  },
   {
     id: "current-reader-privacy",
     version: "2026.09.14.12",

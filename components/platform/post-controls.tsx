@@ -9,6 +9,7 @@ import {
   type PostDraft
 } from "./post-draft-fields";
 import { portalInputClass } from "./portal-action-form";
+import { discussionModerationReasons } from "@/lib/platform/post-discussion-options";
 
 function EditPost({ post, owner }: { post: PostEditorView; owner: string }) {
   const id = useId(),
@@ -194,7 +195,10 @@ export function PostControls({
             label="Save discussion settings"
             fields={(data) => ({
               closed: data.has("closed"),
-              replyAudience: data.get("replyAudience")
+              replyAudience: data.get("replyAudience"),
+              ...(!post.canEdit
+                ? { moderationReason: data.get("moderationReason") }
+                : {})
             })}
           >
             <label className="flex min-h-11 items-center gap-2">
@@ -221,11 +225,70 @@ export function PostControls({
                 </option>
               )}
             </select>
+            {!post.canEdit && (
+              <div className="space-y-2">
+                <label
+                  htmlFor={`${id}-moderation-reason`}
+                  className="block font-semibold"
+                >
+                  Reason for moderation changes
+                </label>
+                <select
+                  id={`${id}-moderation-reason`}
+                  name="moderationReason"
+                  required
+                  defaultValue=""
+                  className={portalInputClass}
+                >
+                  <option value="">Choose a reason</option>
+                  {Object.entries(discussionModerationReasons).map(
+                    ([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    )
+                  )}
+                </select>
+                <p className="text-sm text-gc-muted">
+                  You are changing these settings as a church moderator. The
+                  reason and settings are recorded for the post&apos;s
+                  authorized managers.
+                </p>
+              </div>
+            )}
             <p className="text-sm text-gc-muted">
               Existing comments remain readable. Reply settings cannot widen the
               post&apos;s audience.
             </p>
           </PostActionForm>
+          {post.discussionModeration.length > 0 && (
+            <section
+              aria-label="Recent discussion moderation"
+              className="mt-5 space-y-3 border-t border-gc-border pt-4"
+            >
+              <h3 className="font-semibold">Recent moderation decisions</h3>
+              <p className="text-sm text-gc-muted">
+                The latest ten decisions for this post. Current access is
+                required to view this history.
+              </p>
+              <ol className="space-y-4">
+                {post.discussionModeration.map((decision) => (
+                  <li key={decision.id} className="space-y-1 text-sm">
+                    <p className="font-semibold">{decision.reason}</p>
+                    <p>
+                      {decision.actor} ·{" "}
+                      <time dateTime={decision.createdAt}>
+                        {decision.createdAt.slice(0, 16).replace("T", " ")} UTC
+                      </time>
+                    </p>
+                    <p>
+                      {decision.before} → {decision.after}
+                    </p>
+                  </li>
+                ))}
+              </ol>
+            </section>
+          )}
         </details>
       )}
       {post.canPin && (

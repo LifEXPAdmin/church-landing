@@ -308,7 +308,8 @@ test("closed and narrower replies enforce current church membership and explicit
     operation: "discussion",
     postId: p.id,
     expectedVersion: 1,
-    closed: true
+    closed: true,
+    moderationReason: "REVIEW_NEEDED"
   });
   await denied(
     communityCommand(db, f.lee.token, "comment", {

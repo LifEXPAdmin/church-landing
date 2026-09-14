@@ -1,6 +1,10 @@
 import { createHash } from "node:crypto";
 import { requireSocialActivity } from "./social-activity-limits";
 import {
+  discussionModerationReasons,
+  discussionSettingsState
+} from "./post-discussion-options";
+import {
   originalForRepost,
   repostDestination,
   requireRepostActor
@@ -428,6 +432,16 @@ export async function postCommandIn(
     };
   }
   if (op === "discussion") {
+    const asModerator = !postCanEdit(context, post);
+    if (
+      asModerator &&
+      (typeof input.moderationReason !== "string" ||
+        !Object.hasOwn(discussionModerationReasons, input.moderationReason))
+    )
+      throw new PortalError(
+        400,
+        "Choose a reason for these moderation changes."
+      );
     const updated = await tx.platformPost.update({
       where: { id: post.id },
       data: {
@@ -440,6 +454,19 @@ export async function postCommandIn(
       }
     });
     await audit(tx, updated, actorId, "discussion-changed");
+    if (asModerator)
+      await tx.churchAuditEvent.create({
+        data: {
+          churchId: post.authorChurchId ?? post.audienceChurchId,
+          actorId,
+          targetId: post.id,
+          action: "DISCUSSION_MODERATED",
+          reason: input.moderationReason as string,
+          fromState: discussionSettingsState(post),
+          toState: discussionSettingsState(updated),
+          version: updated.version
+        }
+      });
     return {
       id: updated.id,
       version: updated.version,

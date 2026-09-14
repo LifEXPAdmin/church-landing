@@ -9,6 +9,12 @@ import {
   withPostRead
 } from "./post-access";
 import { postId } from "./post-input";
+import { socialUserWhere } from "./social-policy";
+import {
+  discussionModerationReasons,
+  discussionSettingsLabel,
+  type DiscussionModerationReason
+} from "./post-discussion-options";
 
 export function getPostComposer(db: PrismaClient, token: unknown) {
   return withPostRead(db, token, async (tx, context) => {
@@ -94,6 +100,45 @@ export function getPostEditor(db: PrismaClient, token: unknown, id: string) {
       canWithdraw = postCanWithdraw(context, post);
     if (!canEdit && !canModerate && !canWithdraw)
       throw new PortalError(403, "You cannot manage this post.");
+    const moderationChurchId =
+      post.authorChurchId ??
+      (post.audience === "CHURCH" ? post.audienceChurchId : null);
+    const moderation =
+      moderationChurchId && (canEdit || canModerate)
+        ? await tx.churchAuditEvent.findMany({
+            where: {
+              churchId: moderationChurchId,
+              targetId: post.id,
+              action: "DISCUSSION_MODERATED"
+            },
+            select: {
+              id: true,
+              actorId: true,
+              reason: true,
+              fromState: true,
+              toState: true,
+              version: true,
+              createdAt: true
+            },
+            orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+            take: 10
+          })
+        : [];
+    const names = new Map(
+      moderation.length
+        ? (
+            await tx.platformUser.findMany({
+              where: {
+                AND: [
+                  { id: { in: moderation.map((row) => row.actorId) } },
+                  socialUserWhere(context)
+                ]
+              },
+              select: { id: true, name: true }
+            })
+          ).map((actor) => [actor.id, actor.name])
+        : []
+    );
     return {
       id: post.id,
       version: post.version,
@@ -120,6 +165,19 @@ export function getPostEditor(db: PrismaClient, token: unknown, id: string) {
       pinUntil: post.pinUntil?.toISOString() ?? null,
       canEdit,
       canDiscuss: post.repostKind !== "PLAIN" && (canEdit || canModerate),
+      discussionModeration: moderation.map((row) => ({
+        id: row.id,
+        actor: names.get(row.actorId) ?? "Unavailable member",
+        reason: Object.hasOwn(discussionModerationReasons, row.reason ?? "")
+          ? discussionModerationReasons[
+              row.reason as DiscussionModerationReason
+            ]
+          : "Earlier moderation decision",
+        before: discussionSettingsLabel(row.fromState),
+        after: discussionSettingsLabel(row.toState),
+        version: row.version,
+        createdAt: row.createdAt.toISOString()
+      })),
       canWithdraw,
       canPin: canEdit && !!post.authorChurchId
     };
