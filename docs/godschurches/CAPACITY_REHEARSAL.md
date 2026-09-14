@@ -1,5 +1,35 @@
 # Isolated capacity and recovery rehearsal
 
+## Verified reliability release — September 14, 10:03 UTC
+
+Product **2026.09.14.7**, application
+**ed38112a6e913081aeedbe6dd5dc28d264f4acb7**, is READY in
+**dpl_Ex3WQKULWL5tdCbiEchdmVVrUp89**. Independent canonical alias and serving
+identity match. The Git push did not queue a deployment; the exact Git SHA was
+submitted through the existing provider API. Its build applied the one additive
+feed index and passed 146 clean runtime traces. All 47 live migration checksums
+match. The final regression and protected-copy evidence below apply to this code.
+
+Eight public/browser groups and four protected health groups pass, along with
+actual signed-in existing-post, Home destination and avatar observations. Seven
+actual deployed-worker/provider groups pass: one temporary maintenance record and
+four tiny private objects were created and removed; the repeated drain was inert.
+User/profile/asset writes, real sends, remaining probe objects, browser errors and
+scoped deployment error/fatal rows are zero. All actual aggregate queues are clear.
+
+All three disposable cloud resources are removed and independently return 404.
+The store's 1,036 fictional objects were removed before its deletion. A Neon
+deletion first returned 500, then succeeded on a bounded retry; the shared
+integration installation remains. The encrypted original seed, private test
+receipts and failure evidence are retained. Production compute is unchanged.
+
+The larger-pilot latency target remains open. Of 268 active-session observations
+in the 0.5-CU 100-client samples, 250 were waiting on locks; the 2-CU diagnostic
+had 70 of 75. Source inspection finds that ordinary Likes and comment creation
+use the same exclusive permission gate as revocation. A focused local contention
+reproduction and safe concurrency repair continue within this capacity feature;
+do not call the broader capacity or operational acceptance complete yet.
+
 ## Final candidate gate and compute diagnostic — September 14, 09:52 UTC
 
 Candidate `ae54804b6c605e8e4a54a2409f39f05de754ee4c` passes the complete

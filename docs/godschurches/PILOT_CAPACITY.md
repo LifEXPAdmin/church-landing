@@ -2,7 +2,9 @@
 
 September 14, 2026. The sustained local rehearsal and final 120-file regression
 gate pass. Bounded hosted tests have completed, including recorded failures and
-repairs; exact deployment acceptance remains next. Five hundred
+repairs; version 2026.09.14.7 is verified live and all disposable cloud resources
+are removed. Lock contention remains under investigation in the capacity feature.
+Five hundred
 registered accounts and one hundred concurrent people
 remain a target, not a demonstrated production maximum. Registered accounts occupy
 storage; daily active people produce traffic; concurrently active clients and

@@ -1,6 +1,9 @@
 # Operational health and measured hosting resources
 
-September 14, 2026. Local candidate; deployment acceptance is still pending.
+September 14, 2026. Verified live on version 2026.09.14.7; exact deployment,
+47 migration checksums and actual worker evidence are in
+[the capacity receipt](CAPACITY_REHEARSAL.md). The 10:03 UTC operational probe
+completed with an empty final backlog, no alerts and no user/profile/asset changes.
 The public `/api/health` remains liveness only. The new private
 `GET /api/maintenance/health` requires the existing exact bearer maintenance
 secret, before database access. It never accepts account cookies as authority.

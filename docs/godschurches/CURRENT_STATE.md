@@ -1,3 +1,23 @@
+## Reliability deployed; contention investigation continues — September 14, 2026 UTC
+
+Product **2026.09.14.7**, application **ed38112a6e913081aeedbe6dd5dc28d264f4acb7**,
+is READY on **dpl_Ex3WQKULWL5tdCbiEchdmVVrUp89** with independent canonical alias
+and serving verification. Bounded comment previews, chronological feed indexing,
+shared-network image admission, private aggregate health and paced cleanup are live.
+The 120-file gate passes 738 checks with two expected skips. Protected upgrade
+46→47 preserves 92 original tables; all 47 live migration checksums match.
+
+Public, authenticated and actual deployed-worker checks pass. The operational
+probe created/deleted one maintenance record and four tiny private objects, with
+zero user/profile/asset writes, sends or remaining objects. All disposable cloud
+resources are removed; encrypted seed and failure/measurement receipts remain.
+See [capacity evidence and remaining latency limits](CAPACITY_REHEARSAL.md).
+
+Hosted 100-client feed p95 remains above 2.5 seconds despite a short 2-CU test;
+production compute is unchanged. Lock waits dominate the samples. Continue the
+focused local contention reproduction and safe repair within this feature, then
+remaining operational acceptance and next eligible priorities. Final review stays last.
+
 ## Avatar startup verified live — September 14, 2026 UTC
 
 Product **2026.09.14.6**, application
