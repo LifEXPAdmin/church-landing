@@ -10,7 +10,8 @@ A small curated registry-ID map connects related folder pages. Related links use
 only currently working personal registrations and their canonical destinations;
 future/explanatory rows and selected-church controls are excluded. The section
 is concealed with the owning account's refreshed Settings context and does not
-prefetch destination pages. Organization detail retains its explicit church
+prefetch destination pages. Directory shortcuts additionally require the existing
+current eligible approved-connection projection. Organization detail retains its explicit church
 selector and current authority checks. These links add no preference store,
 permission, API request or automatic sharing action.
 

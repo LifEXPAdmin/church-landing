@@ -1,6 +1,33 @@
 # Searchable Settings
 
-## Related settings implementation — September 14, 2026
+## Related settings verified live — September 14, 2026
+
+Product **2026.09.14.5**, application
+`7fa26de2d22cf9d5c73a11efe09907a54df26b46`, is READY on
+`dpl_AXDdbe9vWpBsgFsSfeA3CkFnsXWT`. Independent canonical assignment and
+serving identity match. The same feature cycle included the initial `.4`
+release, its live-discovered directory-link gap, and the `.5` access correction.
+The target always denied unauthorized directory reads; the final shortcut is
+shown only for the current eligible approved connection.
+
+Six existing Settings browser groups and four related-navigation groups pass.
+All eleven authorized shortcut paths were opened by keyboard and returned to
+correct folders. No-church, pending and removed members received no related
+directory shortcut. Enlarged text keeps six folders bounded and Messages whole;
+organization detail retains its explicit selector. Existing exact retries,
+conflicts, account changes, revoked roles, dirty work and reset preservation pass.
+Twenty-eight focused tests, types, scoped lint and final production build pass;
+144 traces, 14,887 entries and 366 server JavaScript files exclude private fixtures.
+
+Twenty-eight public live checks and three authenticated Chrome observations pass:
+correct shortcut visibility, actual personal-calendar destination, and separate
+Data reviews with truthful copy. Browser errors, scoped runtime error/fatal rows
+and production test application writes are **0**. All 46 migration checksums
+match; protected encrypted restore preserves 92 original table fingerprints.
+There is no migration, dependency, provider/permission change or extra background
+request. Physical-device acceptance remains separate.
+
+## Preserved implementation and initial acceptance — September 14, 2026
 
 Related personal settings connect Profile, Privacy, My church, Calendar,
 Notifications and Safety to a small set of existing controls. Stable registry

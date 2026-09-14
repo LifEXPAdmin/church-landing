@@ -1,3 +1,32 @@
+## Related Settings and ready-feature reconciliation — September 14, 2026 UTC
+
+Product **2026.09.14.5**, application
+**7fa26de2d22cf9d5c73a11efe09907a54df26b46**, is READY in
+**dpl_AXDdbe9vWpBsgFsSfeA3CkFnsXWT**, with independent canonical assignment
+and serving identity verified. Related personal links reuse existing controls;
+directory shortcuts require current approved church access. Enlarged phone
+navigation preserves whole words, and Data accurately distinguishes deactivation
+from the separate permanent-deletion review. An initial live shortcut visibility
+gap in `.4` was repaired and verified in this same feature cycle.
+
+Ten built-browser groups, 28 focused tests, types/lint/build and 28 public live
+groups pass, plus actual authenticated shortcut/calendar/Data observations.
+Production test application writes, browser errors and scoped runtime error/fatal
+rows are zero. All 46 migrations match; no migration was added. Protected restore
+preserves 92 table fingerprints. See [Settings](SETTINGS_REPORT.md).
+
+Current acceptance also reconciles already implemented [display preferences](DISPLAY_SETTINGS_REPORT.md),
+[Safety and private report history](SAFETY_SETTINGS_REPORT.md), and
+[adult mention bindings](PRIVACY_SETTINGS_REPORT.md). Their existing source was
+verified on `.3` rather than rebuilt. Future family/tag/discovery/list-visibility
+and content-filter contracts remain distinct, as do actual phone and legitimate
+church-management acceptance. The private Current State index still rejects
+updates; focused feature/task receipts continue to reconcile successfully.
+
+Next: avatar/startup measurements with actual hosting resources, isolated capacity
+and recovery, remaining operational acceptance, then the next eligible priorities.
+Keep final review last; continue the unified complete-feature workflow.
+
 ## Header correction verified live — September 14, 2026 UTC
 
 Product **2026.09.14.3**, application
