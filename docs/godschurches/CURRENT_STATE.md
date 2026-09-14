@@ -1,13 +1,15 @@
-## Discussion moderation reasons verified live — September 14, 2026 UTC
-
 ## Four-feed implementation checkpoint — September 14, 2026
 
 The local 2026.09.14.14 candidate implements all four approved modes, private
 saved choices, shared Home/My feed controls, stable ranked pages and retained
-friendship checks. Fourteen isolated service/migration checks, type checking and
-focused lint pass. Full browser, operating/recovery, release and live acceptance
+friendship checks. Fifteen isolated service/migration checks, four operating/erasure/export checks,
+nine built-browser groups, type checking and focused lint pass. Protected upgrade
+49→50 preserves all original columns across 92 tables and passes control replay.
+The complete gate, retained-browser regressions, deployment and live acceptance
 remain in progress; 2026.09.14.13 is still serving. See
 [the feature evidence](FOUR_FEEDS_ACCEPTANCE.md) for exact bounds and next checks.
+
+## Discussion moderation reasons verified live — September 14, 2026 UTC
 
 Product **2026.09.14.13**, application **3912a5081653ff0172f37c17790c885f2e33b8a4**,
 is READY in **dpl_7nwnLrSNkABY52KiR6eLWUnvfMu7**, with independent canonical

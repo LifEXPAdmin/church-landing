@@ -135,6 +135,20 @@ const waitBody = (text) => page.getByText(text, { exact: true }).waitFor();
 const hiddenBody = (text) =>
   page.getByText(text, { exact: true }).waitFor({ state: "hidden" });
 const f = await seedPortal(db);
+await db.friendAcceptance.create({
+  data: {
+    inviterId: f.memberA.id,
+    recipientId: f.coordinator.id,
+    invitationVersion: 1,
+    state: "CONNECTED"
+  }
+});
+await db.platformFollow.createMany({
+  data: [
+    { followerId: f.memberA.id, followingId: f.coordinator.id },
+    { followerId: f.coordinator.id, followingId: f.memberA.id }
+  ]
+});
 await seedOperatorGrants(db, f.operator, ["REVIEW_COMMUNITY_REPORTS"]);
 const suffix = randomUUID();
 const source = await db.platformPost.create({
@@ -215,7 +229,12 @@ async function moderate(id, action, type = "POST") {
   assert.equal(response.status, 200, await response.clone().text());
 }
 async function showHome(post) {
-  await go("/platform?mode=pages&post=" + post.id);
+  await go(
+    "/platform?mode=pages&feed=" +
+      (post.audience === "CHURCH" ? "friends" : "latest") +
+      "&post=" +
+      post.id
+  );
   await waitBody(post.content);
   await page.getByText(post.content, { exact: true }).scrollIntoViewIfNeeded();
 }
