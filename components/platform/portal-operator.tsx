@@ -290,7 +290,9 @@ function AccountStatus({
   data: OperatorData;
   viewerId: string;
 }) {
-  const [userId, setUserId] = useState("");
+  const [userId, setUserId] = useState(
+    data.accountLookup?.selectedUserId ?? ""
+  );
   const [protectedWork, setProtectedWork] = useState(false);
   const target = data.users.find(
     (user) => user.id === userId && user.id !== viewerId
@@ -300,7 +302,47 @@ function AccountStatus({
       <p className="text-sm text-gc-muted">
         Suspension ends sessions and removes private sharing, permissions, and
         appointments. Restoring access does not reactivate those assignments.
+        Deactivation or permanent closure still applies after a suspension ends.
       </p>
+      <form
+        action="/platform/operator/churches"
+        method="get"
+        aria-label="Find account by username"
+        className="space-y-3"
+      >
+        <label className="block text-sm font-semibold">
+          Find another account by username
+          <input
+            name="q"
+            required
+            maxLength={25}
+            pattern="@?[a-zA-Z0-9_]{3,24}"
+            defaultValue={data.accountLookup?.query ?? ""}
+            autoComplete="off"
+            spellCheck={false}
+            disabled={protectedWork}
+            className={portalInputClass}
+            placeholder="@username"
+          />
+        </label>
+        <p className="text-sm text-gc-muted">
+          The initial list shows up to 100 accounts. Enter a complete username
+          to find an account beyond that list.
+        </p>
+        <button
+          type="submit"
+          disabled={protectedWork}
+          className="gc-button gc-button-quiet"
+        >
+          Find account
+        </button>
+        {data.accountLookup && !data.accountLookup.selectedUserId && (
+          <p role="status" className="text-sm text-gc-muted">
+            No other account matches that username. Your own account cannot be
+            changed here.
+          </p>
+        )}
+      </form>
       <Choose
         label="Account to manage"
         disabled={protectedWork}
@@ -334,9 +376,8 @@ function AccountStatus({
               className="rounded-xl border border-gc-divider p-4 text-sm"
             >
               <p className="font-semibold">
-                {data.users.find((user) => user.id === entry.targetId)?.name ??
-                  entry.targetId}
-                : {entry.action === "SUSPEND" ? "Suspended" : "Access restored"}
+                {entry.targetName ?? entry.targetId}:{" "}
+                {entry.action === "SUSPEND" ? "Suspended" : "Access restored"}
               </p>
               <p>
                 {entry.reason &&
@@ -347,10 +388,7 @@ function AccountStatus({
                   : "Reason not recorded in this older decision"}
               </p>
               <p className="text-gc-muted">
-                By{" "}
-                {data.users.find((user) => user.id === entry.actorId)?.name ??
-                  entry.actorId}{" "}
-                ·{" "}
+                By {entry.actorName ?? entry.actorId} ·{" "}
                 <time dateTime={entry.createdAt}>
                   {new Date(entry.createdAt)
                     .toISOString()

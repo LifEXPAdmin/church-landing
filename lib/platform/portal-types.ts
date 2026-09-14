@@ -79,6 +79,7 @@ export type PortalSnapshot = {
   contacts?: ContactSummary[];
   operator?: {
     accountAudit?: AccountRestrictionAudit[];
+    accountLookup?: { query: string; selectedUserId: string | null };
     users: {
       id: string;
       name: string;

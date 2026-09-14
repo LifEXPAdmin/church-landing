@@ -621,3 +621,93 @@ test("concurrent operators and duplicate submissions commit one account decision
     f.current.credentialVersion + 1
   );
 });
+
+test("exact account lookup reaches beyond the initial hundred and retains scoped named audit and current-account protection", async () => {
+  const f = await fixture();
+  const suffix = randomUUID().replaceAll("-", "").slice(0, 6);
+  await db.platformUser.createMany({
+    data: Array.from({ length: 101 }, (_, i) => ({
+      name: "Fictional lookup filler",
+      username: `a0lookup_${suffix}_${i}`,
+      email: `lookup-${suffix}-${i}@example.test`,
+      passwordHash: f.current.passwordHash
+    }))
+  });
+  const username = `zzlookup_${suffix}`;
+  await db.platformUser.update({
+    where: { id: f.target.id },
+    data: { username }
+  });
+  const initial = (await getPortalSnapshot(db, f.actor.token, "operator"))
+    .operator!;
+  assert.equal(initial.users.length, 100);
+  assert.ok(!initial.users.some((user) => user.id === f.target.id));
+  const lookup = (
+    await getPortalSnapshot(
+      db,
+      f.actor.token,
+      "operator",
+      undefined,
+      "@" + username.toUpperCase()
+    )
+  ).operator!;
+  assert.equal(lookup.accountLookup?.selectedUserId, f.target.id);
+  assert.equal(lookup.accountLookup?.query, username);
+  assert.equal(lookup.users.length, 101);
+  assert.ok(
+    lookup.users.some(
+      (user) =>
+        user.id === f.target.id && user.version === f.current.portalVersion
+    )
+  );
+  assert.equal(JSON.stringify(lookup).includes(f.target.email), false);
+  await accountRestrictionCommand(db, f.actor.token, f.body, f.store.journal);
+  const history = (await getPortalSnapshot(db, f.actor.token, "operator"))
+    .operator!.accountAudit!;
+  const decision = history.find((row) => row.targetId === f.target.id)!;
+  assert.equal(decision.targetName, f.target.name);
+  assert.equal(decision.actorName, f.actor.name);
+  const other = await createPortalActor(db, "lookupreviewer");
+  await seedOperatorGrants(db, other, ["REVIEW_COMMUNITY_REPORTS"]);
+  await denied(
+    getPortalSnapshot(db, other.token, "operator", undefined, username),
+    403
+  );
+  await denied(
+    getPortalSnapshot(
+      db,
+      f.actor.token,
+      "operator",
+      undefined,
+      "not a username"
+    ),
+    400
+  );
+  const absent = (
+    await getPortalSnapshot(
+      db,
+      f.actor.token,
+      "operator",
+      undefined,
+      `missing_${suffix}`
+    )
+  ).operator!;
+  assert.equal(absent.accountLookup?.selectedUserId, null);
+  const origin = process.env.ACCOUNT_ORIGIN!;
+  for (const [expected, status] of [
+    [f.actor.id, 200],
+    [other.id, 401]
+  ] as const) {
+    const response = await handlePortalRequest(
+      db,
+      new Request(`${origin}/api/platform/portal?view=operator&q=${username}`, {
+        headers: {
+          Cookie: `church_platform_session=${f.actor.token}`,
+          "X-Expected-Account": expected
+        }
+      })
+    );
+    assert.equal(response.status, status);
+    assert.match(response.headers.get("cache-control")!, /no-store/);
+  }
+});

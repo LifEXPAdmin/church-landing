@@ -12,7 +12,11 @@ restoration reason, and explicitly confirms the operation. Self-suspension and
 stale versions are rejected. The audit records actor, target, reason, previous
 state, resulting state, version and time. Older records retain absent reasons;
 the migration does not manufacture historical evidence. Only account managers
-receive the latest 30 account audit rows; canonical older history remains intact.
+receive the latest 30 account audit rows with current account names; canonical
+older history remains intact. The initial picker is bounded to 100 accounts. An
+exact-username lookup can include one additional account in a fresh private page,
+whose revalidation includes that selected target. The lookup cannot bypass
+account-management authority, reveal sign-in contacts, or replace a pending form.
 
 A stable mutation identifier and payload hash provide one canonical result.
 Current operator authority is rechecked before returning a saved receipt. The
@@ -57,7 +61,7 @@ production copy before authorized release.
 
 ## Verification record
 
-Eight focused service/boundary/recovery groups pass, including a failed protected
+Nine focused service/boundary/recovery groups pass, including a failed protected
 write with canonical retry, current-authority denial after grant revocation,
 account-switch denial, scoped audit history, both replay orders and expiration
 failure recovery and competing operators at one inspected version. Expiration
@@ -73,6 +77,13 @@ eligible account-management grants, zero suspended accounts and zero account
 access decisions. Real operator acceptance retains an explicit capability
 assignment prerequisite; the existing founder report-review assignment remains
 unchanged. The private task queue records the precise owner action.
+
+The first complete 122-file gate passed 750 checks with two expected skips.
+Interactive acceptance then exposed the initial-picker limit, now repaired in
+the same feature. The expanded lookup requires a fresh complete gate. Two local
+preview rebuilds hit the 6 GB heap limit; an unchanged clean-checkout build
+passed all 146 runtime traces. Preserve these diagnostic limits separately from
+the full gate and final clean build.
 
 Pending: full fresh-fixture gate, browser acceptance, release/build/canonical
 assignment, live reads, and the installed post-release daily backup/restore. Broader operational acceptance requires actual

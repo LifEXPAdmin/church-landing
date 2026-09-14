@@ -90,7 +90,7 @@ function PortalViewContent({
           checksum={createHash("sha256")
             .update(JSON.stringify(snapshot))
             .digest("hex")}
-          url="/api/platform/portal?view=operator"
+          url={`/api/platform/portal?${new URLSearchParams({ view: "operator", ...(snapshot.operator.accountLookup ? { q: snapshot.operator.accountLookup.query } : {}) })}`}
         >
           <PortalOperator
             churches={snapshot.churches}

@@ -109,8 +109,18 @@ try {
     await go("/platform/operator/churches");
     await page.getByLabel("Account to manage", { exact: true }).waitFor();
     await page
-      .getByLabel("Account to manage", { exact: true })
-      .selectOption(target.id);
+      .getByLabel("Find another account by username", { exact: true })
+      .fill(target.username);
+    await page
+      .getByRole("button", { name: "Find account", exact: true })
+      .click();
+    await page
+      .getByRole("form", { name: "Suspend account", exact: true })
+      .waitFor();
+    assert.equal(
+      await page.getByLabel("Account to manage", { exact: true }).inputValue(),
+      target.id
+    );
   };
   await signIn(operator);
   await inspect();
@@ -136,7 +146,7 @@ try {
     fullPage: true
   });
   ok(
-    "390px form requires a reason and confirmation, protects the selected target and has no horizontal overflow"
+    "Exact username lookup reaches outside the initial list; the 390px form requires a reason and confirmation, protects its target and has no horizontal overflow"
   );
 
   await form.getByRole("checkbox").check();

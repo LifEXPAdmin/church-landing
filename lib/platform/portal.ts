@@ -1140,6 +1140,29 @@ export async function getPortalSnapshot(
               take: 100
             })
           : [];
+      let accountLookup:
+        | { query: string; selectedUserId: string | null }
+        | undefined;
+      if (query) {
+        await operator(tx, actor, "MANAGE_ACCOUNTS");
+        const username = query.trim().replace(/^@/, "").toLowerCase();
+        if (!/^[a-z0-9_]{3,24}$/.test(username))
+          throw new PortalError(400, "Enter the account's complete username.");
+        const target = await tx.platformUser.findUnique({
+          where: { username },
+          select: actorSelect
+        });
+        accountLookup = {
+          query: username,
+          selectedUserId: target && target.id !== actor.id ? target.id : null
+        };
+        if (
+          accountLookup.selectedUserId &&
+          target &&
+          !users.some((user) => user.id === target.id)
+        )
+          users.push(target);
+      }
       const grants = manageGrants
         ? await tx.churchCapabilityGrant.findMany({ take: 100 })
         : [];
@@ -1165,11 +1188,35 @@ export async function getPortalSnapshot(
             take: 30
           })
         : undefined;
+      const auditNames = new Map(
+        accountAudit
+          ? (
+              await tx.platformUser.findMany({
+                where: {
+                  id: {
+                    in: [
+                      ...new Set(
+                        accountAudit.flatMap((row) => [
+                          row.actorId,
+                          row.targetId
+                        ])
+                      )
+                    ]
+                  }
+                },
+                select: { id: true, name: true }
+              })
+            ).map((user) => [user.id, user.name])
+          : []
+      );
       snapshot.operator = {
+        ...(accountLookup ? { accountLookup } : {}),
         ...(accountAudit
           ? {
               accountAudit: accountAudit.map((row) => ({
                 ...row,
+                actorName: auditNames.get(row.actorId) ?? null,
+                targetName: auditNames.get(row.targetId) ?? null,
                 createdAt: row.createdAt.toISOString()
               }))
             }

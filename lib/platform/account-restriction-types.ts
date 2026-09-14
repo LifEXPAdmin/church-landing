@@ -17,6 +17,8 @@ export const accountRestrictionReasons = {
 export type AccountRestrictionAudit = {
   id: string;
   actorId: string;
+  actorName: string | null;
+  targetName: string | null;
   targetId: string;
   action: string;
   fromState: string | null;

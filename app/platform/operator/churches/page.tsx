@@ -7,6 +7,11 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false }
 };
 
-export default function Page() {
-  return <PortalPage view="operator" />;
+export default async function Page({
+  searchParams
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
+  const { q } = await searchParams;
+  return <PortalPage view="operator" query={typeof q === "string" ? q : ""} />;
 }
