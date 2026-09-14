@@ -18,6 +18,7 @@ export type FeedChoiceState = {
   ownerId: string | null;
   preferenceVersion: number;
   pageCursor: string;
+  requestedCursor?: string;
 };
 export function FeedChoice({
   value,

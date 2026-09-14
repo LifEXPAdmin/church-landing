@@ -44,6 +44,17 @@ function hasDraft(root: HTMLElement | null) {
 function isBusy(root: HTMLElement | null) {
   return !!root?.querySelector('[aria-busy="true"], [data-reader-busy="true"]');
 }
+// Native reading-position writes must not replace the URL being loaded by the
+// router, including a Back/Forward entry whose server payload is still pending.
+function isCurrentReadingPage(choice?: FeedChoiceState) {
+  if (!choice) return true;
+  const cursor = new URL(location.href).searchParams.get("feedCursor");
+  return (
+    cursor === choice.pageCursor ||
+    cursor === choice.requestedCursor ||
+    (!cursor && !choice.requestedCursor)
+  );
+}
 export function FeedReader({
   items,
   initialPost,
@@ -137,6 +148,7 @@ export function FeedReader({
   const positionHref = (id = current?.id, nextMode = homeMode) =>
     id ? readerHref(location.href, id, nextMode, anchor) : "/platform";
   function remember(id: string, nextMode = homeMode) {
+    if (loading || !isCurrentReadingPage(feedChoice)) return;
     history.replaceState(null, "", positionHref(id, nextMode));
   }
   useEffect(() => {
@@ -154,7 +166,9 @@ export function FeedReader({
   useEffect(() => {
     // Server-selected mode and snapshot enter native reading history together.
     // Opening/closing My feed keeps this mounted set and all local drafts.
+    if (loading || !isCurrentReadingPage(feedChoice)) return;
     const frame = requestAnimationFrame(() => {
+      if (!isCurrentReadingPage(feedChoice)) return;
       const url = new URL(location.href);
       if (feedChoice) {
         url.searchParams.delete("refreshFeed");
@@ -168,7 +182,7 @@ export function FeedReader({
       history.replaceState(null, "", href);
     });
     return () => cancelAnimationFrame(frame);
-  }, [current, selected, homeMode, anchor, feedChoice]);
+  }, [current, selected, homeMode, anchor, feedChoice, loading]);
   useEffect(() => {
     // Draft content stays in its mounted form, never in a URL or browser storage.
     const beforeUnload = (event: BeforeUnloadEvent) => {
@@ -229,6 +243,7 @@ export function FeedReader({
     let pendingFrame = 0;
     const position = () => {
       pendingFrame = 0;
+      if (loading || !isCurrentReadingPage(feedChoice)) return;
       const node =
         nodes.find(
           (item) => item.getBoundingClientRect().bottom > innerHeight * 0.25
@@ -261,7 +276,7 @@ export function FeedReader({
       window.removeEventListener("scroll", scroll);
       window.removeEventListener("resize", scroll);
     };
-  }, [focused, mode, items, anchor, initialPost]);
+  }, [focused, mode, items, anchor, initialPost, feedChoice, loading]);
   const blockedGesture = (target: EventTarget | null) =>
     focused ||
     mode !== "pages" ||
@@ -315,6 +330,7 @@ export function FeedReader({
       });
   }
   function changeMode(nextMode: "pages" | "list") {
+    if (loading) return;
     turningCleanup();
     update({ mode: nextMode });
     if (current) remember(current.id, nextMode);
@@ -412,6 +428,7 @@ export function FeedReader({
           type="button"
           className="gc-button"
           onClick={openFocused}
+          disabled={loading}
           aria-haspopup="dialog"
         >
           <Maximize2 aria-hidden="true" /> Open My feed

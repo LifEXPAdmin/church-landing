@@ -75,7 +75,7 @@ export default async function HomeFeedPage({
     feedCursor: result.pageCursor
   });
   const moreHref = result.nextCursor
-    ? `/platform?${new URLSearchParams({ ...displayQuery, feed: selectedFeed, feedScope: result.scope, feedCursor: result.nextCursor })}`
+    ? `/platform?${new URLSearchParams({ feed: selectedFeed, feedScope: result.scope, feedCursor: result.nextCursor })}`
     : undefined;
   return (
     <PlatformShell user={currentUser}>
@@ -162,7 +162,8 @@ export default async function HomeFeedPage({
                 scope: result.scope,
                 ownerId: result.ownerId,
                 preferenceVersion: result.preferenceVersion,
-                pageCursor: result.pageCursor
+                pageCursor: result.pageCursor,
+                requestedCursor: params.feedCursor
               }}
               items={posts.map((post) => ({
                 id: post.id,
