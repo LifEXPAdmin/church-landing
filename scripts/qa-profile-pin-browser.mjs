@@ -263,6 +263,60 @@ try {
   ok(
     "Member visitors see the same canonical card and counts at phone and desktop widths, with no owner pin control"
   );
+  await page.keyboard.press("Escape");
+
+  phase = "canonical-pin-interactions";
+  const pinnedCard = page.locator('#posts [data-profile-pin="true"]');
+  await pinnedCard
+    .getByRole("button", { name: "Unlike post", exact: true })
+    .click();
+  await pinnedCard
+    .getByRole("button", { name: "Like post", exact: true })
+    .click();
+  await pinnedCard
+    .getByRole("button", { name: "Unlike post", exact: true })
+    .waitFor();
+  await pinnedCard
+    .getByRole("button", { name: "Comment, 1 comments", exact: true })
+    .click();
+  const discussion = page.getByRole("dialog", {
+    name: "Post discussion",
+    exact: true
+  });
+  await discussion
+    .getByRole("button", { name: "Write a comment", exact: true })
+    .click();
+  const replyText = "Fictional reply through the pinned card " + randomUUID();
+  const composer = page.getByRole("form", {
+    name: "Write a comment",
+    exact: true
+  });
+  await composer.getByLabel("Comment text", { exact: true }).fill(replyText);
+  await composer.getByRole("button", { name: "Reply", exact: true }).click();
+  await composer.waitFor({ state: "hidden" });
+  await discussion.getByText(replyText, { exact: true }).waitFor();
+  await discussion
+    .getByRole("button", { name: "Close discussion", exact: true })
+    .click();
+  assert.equal(
+    await db.platformPostComment.count({
+      where: { postId: old.id, authorId: visitor.id, content: replyText }
+    }),
+    1
+  );
+  assert.equal(
+    await db.platformPostLike.count({
+      where: { postId: old.id, userId: visitor.id, active: true }
+    }),
+    1
+  );
+  await profile(owner);
+  await pinnedCard
+    .getByRole("button", { name: "Comment, 2 comments", exact: true })
+    .waitFor();
+  ok(
+    "A visitor can undo and restore a Like and publish one reply through the pinned card, updating only the original post's canonical engagement"
+  );
 
   phase = "lost-ack-profile-recovery";
   await signIn(owner);
@@ -412,7 +466,7 @@ try {
   assert.equal(await draft.inputValue(), marker);
   assert.equal(
     await db.platformPostComment.count({ where: { postId: old.id } }),
-    1
+    2
   );
   await page
     .getByRole("button", { name: "Close composer", exact: true })
