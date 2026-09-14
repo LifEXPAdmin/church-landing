@@ -1,3 +1,26 @@
+## Retained reader privacy verified live — September 14, 2026 UTC
+
+Product **2026.09.14.12**, application **48c478684c22459d3ce97d91a294cf0196d7811f**,
+is READY in **dpl_BS9dUwyS7JbieNSswsmVvyk4tYze**. Independent canonical assignment
+and serving identity match. Ordinary and reposted readers recheck current access
+and permitted counts; mounted comment drafts, pending menus and exact management
+requests survive concealment. Member profiles use a current authorized snapshot.
+Guest identity checks release unused response streams.
+
+The full foundation gate passes 774 checks with two expected skips across 126
+files; final finishing code passes seven focused checks, 35 built-browser groups,
+types/lint and local/production runtime traces. Thirteen public live groups,
+four secured health groups and actual signed-in Home/profile/photo observations
+pass. Test application mutations, sends, final browser errors and scoped runtime
+error/fatal rows are zero. All 49 migration checksums and the installed recovery
+registry match; no schema or dependency is added. Exact provenance, earlier
+regressions and measured costs are in [privacy acceptance](RETAINED_READER_PRIVACY.md).
+
+Continue the existing moderation discussion-setting path's missing decision
+reason and related audit acceptance. Do not rebuild its already-working scoped
+permission and close/reopen controls. Broader moderation, legitimate account
+operator assignment, provider/device prerequisites and final review remain open.
+
 ## Community activity limits verified live — September 14, 2026 UTC
 
 Product **2026.09.14.11**, application **01e534320bf399b2a9a65f1f9c9283df5ad6539d**,

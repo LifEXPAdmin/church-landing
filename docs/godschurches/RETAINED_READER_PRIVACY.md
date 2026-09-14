@@ -1,13 +1,17 @@
 # Retained reader privacy
 
-September 14, 2026 UTC · candidate 2026.09.14.12 · not yet released
+September 14, 2026 UTC · 2026.09.14.12 · verified live
+
+Application **48c478684c22459d3ce97d91a294cf0196d7811f** is READY in
+**dpl_BS9dUwyS7JbieNSswsmVvyk4tYze**. Independent canonical assignment and the
+serving build match. [Live release](https://godschurches.com/platform/releases/current-reader-privacy).
 
 An isolated browser reproduced a retained-reader defect in the preceding runtime:
 a fresh availability read denied a hidden church post, but its already-open Home
 card remained visible after blur and focus. The fixture contained fictional data;
 production writes and sends were zero. The captured baseline is preserved privately.
 
-The candidate extends the existing current-source boundary to ordinary, full and
+The release extends the existing current-source boundary to ordinary, full and
 reposted card content, counts and controls. Visibility changes conceal mounted
 content rather than discarding local comment or composer state. Related native
 dialogs and action popovers follow the same visibility context. Existing published
@@ -68,8 +72,18 @@ Measured costs and finishing work:
   5,640 / 1,570 for member profiles. Gzip uses level six per file consistently.
   These are asset/request measurements, not a production latency or capacity SLA.
 
-All 49 production migration checksums match. This feature adds no migration;
-the recent protected recovery proof preserves 92 original tables. Exact
-deployment, canonical assignment, live behavior and private reconciliation remain
-pending. Broader operator/provider/device prerequisites and final review remain
-open.
+All 49 production migration checksums and the installed recovery registry match.
+This feature adds no migration; the recent protected recovery proof preserves 92
+original tables. Production build traces pass with 146 traces, 15,147 entries and
+369 server JavaScript files. Thirteen public live groups, four secured health
+groups and actual signed-in Home, member-profile and profile-photo observations
+pass. Test application mutations, sends, browser errors and scoped runtime
+error/fatal rows are zero. The actual account-manager assignment prerequisite
+remains unresolved: eligible grants, suspensions and account-access decisions
+are all zero.
+
+This closes the retained-reader privacy slice. Broader moderation remains open:
+the existing church moderator discussion-setting path records its action and
+version but lacks the specified decision reason. Complete that finishing work
+next, preserving current permissions, retries, audit access and account privacy.
+Remaining real operator/provider/device prerequisites and final review stay open.
