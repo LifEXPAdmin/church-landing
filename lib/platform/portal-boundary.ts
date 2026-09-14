@@ -6,6 +6,7 @@ import { requestSessionToken, readBody } from "./account-boundary";
 import { readAccountSession } from "./accounts";
 import { getPortalSnapshot, portalCommand, publicChurches } from "./portal";
 import { PortalError } from "./portal-policy";
+import { AccountError } from "./account-error";
 import type { PortalView } from "./portal-types";
 import { churchSearchQuery } from "./church-search";
 
@@ -126,6 +127,11 @@ export async function handlePortalRequest(
       scheduleFounderWelcome(db, token, afterResponse);
     return Response.json({ message }, { headers });
   } catch (error) {
+    if (error instanceof AccountError)
+      return Response.json(
+        { message: "Your sign-in changed. Reload before continuing." },
+        { status: 401, headers }
+      );
     if (error instanceof PortalError)
       return Response.json(
         { message: error.message },
