@@ -1,3 +1,14 @@
+## Personal profile pin implementation — September 14, 2026 UTC
+
+The next approved personal-profile feature is implemented locally after safe
+four-feed release checkpoint 6e1874d. The .15 candidate adds one owned published
+post pin, replacement/unpin controls, current audience/source checks, deduplicated
+profile pagination and owner export/erasure integration. It preserves the pinned
+introduction and church notice controls. Seven focused service groups pass;
+complete fresh-gate, browser, recovery, release and live checks remain in this
+feature cycle. The canonical application stays .14 / c83b192. See
+[profile pin evidence](PROFILE_PIN_ACCEPTANCE.md). No production pin was changed.
+
 ## Four feeds verified live — September 14, 2026 UTC
 
 Product **2026.09.14.14**, application **c83b19205c89834976a30f11137d6f998edb9757**,

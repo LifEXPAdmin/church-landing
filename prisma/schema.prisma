@@ -1258,6 +1258,7 @@ model PlatformPost {
   commentDrafts PrivateCommentDraft[]
 
   savedItems SavedPostItem[]
+  profilePins SocialPreferences[] @relation("PersonalProfilePin")
 
   @@index([repostSourceId])
   @@unique([authorId, requestKey])
@@ -1666,6 +1667,9 @@ model PostWorkspaceOperation {
 model SocialPreferences {
   feedMode String?
   feedVersion Int @default(0)
+  profilePinPostId String?
+  profilePinVersion Int @default(0)
+  profilePinPost PlatformPost? @relation("PersonalProfilePin", fields: [profilePinPostId], references: [id], onDelete: SetNull)
   ownerId String @id
   activityReadThrough BigInt @default(0)
   version Int @default(1)
@@ -1682,6 +1686,7 @@ model SocialPreferences {
   showRelationships Boolean @default(true)
   updatedAt DateTime @updatedAt
   owner PlatformUser @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  @@index([profilePinPostId])
 }
 
 // Each browser binding belongs to one current account session. Revocation

@@ -9,6 +9,8 @@ import { notFound } from "next/navigation";
 import { RelationshipControls } from "@/components/platform/relationship-controls";
 import { PostCard } from "@/components/platform/post-card";
 import { PostText } from "@/components/platform/post-text";
+import { PostContentNote } from "@/components/platform/post-content-note";
+import { postPreviewText } from "@/lib/platform/post-options";
 import { ProfileImage } from "@/components/platform/profile-image";
 import { PlatformShell } from "@/components/platform/platform-shell";
 import { Button } from "@/components/ui/button";
@@ -160,6 +162,9 @@ export default async function MemberProfilePage({
   const currentPath = profilePath + (parameters.size ? `?${parameters}` : "");
   const posts = profile.posts.slice(0, 30),
     last = posts.at(-1);
+  const displayPosts = profile.pinnedPost
+    ? [profile.pinnedPost, ...posts]
+    : posts;
   const older = new URLSearchParams(preview ? { preview } : {});
   if (last) {
     older.set("before", last.createdAt.toISOString());
@@ -225,34 +230,45 @@ export default async function MemberProfilePage({
           Latest posts
         </Link>
       )}
-      {posts.length ? (
-        posts.map((post) =>
-          profile.memberPreview ? (
-            <article
-              key={post.id}
-              className="gc-post"
-              aria-label={`Post by ${profile.name}`}
-            >
-              <p className="text-sm text-gc-muted">
-                Public post by {profile.name}
-              </p>
-              <PostText content={post.content} />
-              <Link
-                className="gc-profile-text-button"
-                href={`/platform/posts/${post.id}`}
+      {displayPosts.length ? (
+        displayPosts.map((post) => (
+          <div
+            key={post.id}
+            data-profile-pin={
+              post.id === profile.pinnedPost?.id ? "true" : undefined
+            }
+          >
+            {post.id === profile.pinnedPost?.id && (
+              <p className="mb-2 text-sm font-semibold">Pinned</p>
+            )}
+            {profile.memberPreview ? (
+              <article
+                key={post.id}
+                className="gc-post"
+                aria-label={`Post by ${profile.name}`}
               >
-                Open post as yourself
-              </Link>
-            </article>
-          ) : (
-            <PostCard
-              key={post.id}
-              post={post}
-              currentUserId={currentUser.id}
-              redirectTo={currentPath}
-            />
-          )
-        )
+                <p className="text-sm text-gc-muted">
+                  Public post by {profile.name}
+                </p>
+                <PostContentNote note={post.contentNote} />
+                <PostText content={postPreviewText(post)} />
+                <Link
+                  className="gc-profile-text-button"
+                  href={`/platform/posts/${post.id}`}
+                >
+                  Open post as yourself
+                </Link>
+              </article>
+            ) : (
+              <PostCard
+                key={post.id}
+                post={post}
+                currentUserId={currentUser.id}
+                redirectTo={currentPath}
+              />
+            )}
+          </div>
+        ))
       ) : (
         <p className="gc-profile-section">No posts to show here yet.</p>
       )}

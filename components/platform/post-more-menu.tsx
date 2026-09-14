@@ -1,7 +1,8 @@
 "use client";
 import Link from "next/link";
 import { useState } from "react";
-import { Ellipsis, Pencil, Trash2 } from "lucide-react";
+import { Ellipsis, Pencil, Pin, PinOff, Trash2 } from "lucide-react";
+import { useProfilePin } from "./use-profile-pin";
 import { ActionPopover } from "./action-popover";
 import { RelationshipControls } from "./relationship-controls";
 export function PostMoreMenu({
@@ -22,6 +23,12 @@ export function PostMoreMenu({
   canWithdraw: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const canPin = own && kind === "person";
+  const pin = useProfilePin(postId, targetId, canPin);
+  const openMenu = (value: boolean) => {
+    setOpen(value);
+    if (value) void pin.load();
+  };
   const reveal = (id: string) => {
     setOpen(false);
     if (location.pathname !== `/platform/posts/${postId}`) return;
@@ -66,16 +73,59 @@ export function PostMoreMenu({
         reportTarget={{ type: "POST", id: postId, label: "Report this post" }}
       />
     );
-  if (!canEdit && !canWithdraw) return null;
+  if (!canEdit && !canWithdraw && !canPin) return null;
   return (
     <ActionPopover
       label="More post options"
       trigger={<Ellipsis aria-hidden="true" />}
       className="gc-icon-button"
       open={open}
-      onOpenChange={setOpen}
+      onOpenChange={openMenu}
     >
       {management}
+      {canPin && (
+        <div
+          className="space-y-2"
+          data-reader-busy={pin.busy}
+          data-reader-dirty={!!pin.pending}
+        >
+          <button
+            type="button"
+            disabled={
+              pin.busy ||
+              !!pin.pending ||
+              !pin.state ||
+              (!pin.state.pinned && !pin.state.canPin)
+            }
+            onClick={() => void pin.send()}
+          >
+            {pin.state?.pinned ? (
+              <PinOff aria-hidden="true" />
+            ) : (
+              <Pin aria-hidden="true" />
+            )}
+            {pin.state?.pinned ? "Unpin from profile" : "Pin to profile"}
+          </button>
+          {pin.state?.replaces && (
+            <p className="text-sm">Replaces your current pinned post.</p>
+          )}
+          {(pin.busy || pin.message) && (
+            <p role="status" className="text-sm">
+              {pin.busy ? "Checking profile pin…" : pin.message}
+            </p>
+          )}
+          {!pin.busy && pin.pending && (
+            <button type="button" onClick={() => void pin.send(pin.pending!)}>
+              Retry the same profile pin choice
+            </button>
+          )}
+          {!pin.busy && !pin.pending && !pin.state && (
+            <button type="button" onClick={() => void pin.load()}>
+              Check profile pin status
+            </button>
+          )}
+        </div>
+      )}
     </ActionPopover>
   );
 }

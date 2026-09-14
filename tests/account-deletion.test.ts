@@ -571,7 +571,9 @@ test("erasure removes private collections/profile/credentials while preserving t
       ownerId: a.id,
       contactRequests: "NOBODY",
       feedMode: "weekly",
-      feedVersion: 2
+      feedVersion: 2,
+      profilePinPostId: p.id,
+      profilePinVersion: 1
     }
   });
   await db.feedSnapshot.create({

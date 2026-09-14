@@ -95,7 +95,8 @@ function PostCardContent({
             </time>
             {post.audience === "CHURCH" ? " · Church members" : ""}
           </span>
-          {!post.repost.canUndo && (
+          {(!post.repost.canUndo ||
+            (!post.author.churchId && currentUserId === post.author.id)) && (
             <PostMoreMenu
               postId={post.id}
               name={post.author.name}

@@ -249,6 +249,7 @@ export async function hydratePostPage(
   return ids.flatMap((id) => (byId.has(id) ? [byId.get(id)!] : []));
 }
 export type PostQuery = {
+  excludePostId?: string;
   feed?: boolean;
   authorId?: string;
   churchId?: string;
@@ -310,6 +311,8 @@ export async function listPostsIn(
   // A person's profile never claims a church-authored post as their own.
   if (query.authorId)
     filters.push({ authorId: postId(query.authorId), authorChurchId: null });
+  if (query.excludePostId)
+    filters.push({ id: { not: postId(query.excludePostId) } });
   if (query.churchId)
     filters.push({ audienceChurchId: postId(query.churchId) });
   if (query.search)

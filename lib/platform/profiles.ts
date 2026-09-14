@@ -4,7 +4,7 @@ import type { PrismaClient } from "@prisma/client";
 import { activePublicAccount, publicProfileSelect } from "./public-profile";
 import { defaultProfileStyle } from "./profile-style";
 import { listImagesIn } from "./media";
-import { listPostsIn } from "./post-reads";
+import { hydratePostPage, listPostsIn } from "./post-reads";
 import { postReadableWhere, withPostRead } from "./post-access";
 import { PortalError } from "./portal-policy";
 import { imagesAvailable } from "./media-storage";
@@ -52,7 +52,9 @@ export function getMemberProfile(
       where: { username, ...socialUserWhere(context) },
       select: {
         ...publicProfileSelect,
-        socialPreferences: { select: { showRelationships: true } },
+        socialPreferences: {
+          select: { showRelationships: true, profilePinPostId: true }
+        },
         presentation: { select: profilePresentationSelect },
         _count: {
           select: {
@@ -80,6 +82,19 @@ export function getMemberProfile(
       null;
     const cover =
       (await listImagesIn(tx, context, "PROFILE_COVER", profile.id))[0] ?? null;
+    const pinId = profile.socialPreferences?.profilePinPostId;
+    // Keep private selection metadata out of the DTO. Only a currently readable,
+    // personally authored canonical card may be displayed as the profile pin.
+    const pin =
+      pinId && !(query.photos && photoLibraryEnabled())
+        ? ((await hydratePostPage(tx, reader, [pinId]))[0] ?? null)
+        : null;
+    const pinnedPost =
+      pin?.author.id === profile.id &&
+      !pin.author.churchId &&
+      (pin.repost?.kind !== "PLAIN" || pin.repost.source)
+        ? pin
+        : null;
     const posts =
       query.photos && photoLibraryEnabled()
         ? []
@@ -87,6 +102,7 @@ export function getMemberProfile(
             before: query.before,
             cursor: query.cursor,
             authorId: profile.id,
+            excludePostId: pinnedPost?.id,
             limit: 31
           });
     const count = await tx.platformPost.count({
@@ -124,6 +140,7 @@ export function getMemberProfile(
       avatar,
       cover,
       posts,
+      pinnedPost: query.before && query.cursor ? null : pinnedPost,
       postCount: count,
       following,
       isMe: profile.id === context.actorId,

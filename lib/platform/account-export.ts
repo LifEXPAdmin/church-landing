@@ -599,6 +599,8 @@ export async function downloadAccountExport(
           select: {
             feedMode: true,
             feedVersion: true,
+            profilePinPostId: true,
+            profilePinVersion: true,
             mentions: true,
             contactRequests: true,
             requestAlerts: true,

@@ -14,6 +14,19 @@ export type Feature = {
 };
 export const features: Feature[] = [
   {
+    id: "profile-post-pin",
+    category: "Posts and conversations",
+    name: "Pin a post to your profile",
+    description:
+      "Feature one of your published personal posts at the top of your profile.",
+    steps:
+      "Open your post’s More options, then choose Pin to profile. Pin another post to replace it, or choose Unpin from profile to restore the normal order.",
+    href: "/platform/profile/me",
+    eligibility:
+      "Your own published personal posts only. The original audience, source permissions, Likes and comments stay the same. A pin does not change Home or feed ranking.",
+    availability: "available"
+  },
+  {
     id: "participation-choice",
     category: "Getting started",
     name: "Exploring Faith and participation choices",
@@ -535,6 +548,20 @@ export const features: Feature[] = [
   }
 ];
 export const releases: ReleaseEntry[] = [
+  {
+    id: "personal-profile-pin",
+    version: "2026.09.14.15",
+    date: "2026-09-14",
+    summary: "Pin one of your posts to the top of your personal profile.",
+    added: ["Pin, replace or unpin an existing post from its owner menu."],
+    improved: [
+      "Visitors with current access see the same post once, with its original Likes, comments and timestamp."
+    ],
+    fixed: [
+      "Profile placement preserves post audiences, source access and your existing introduction. Unconfirmed choices retain the same retry."
+    ],
+    featureIds: ["profile-post-pin", "profile"]
+  },
   {
     id: "four-community-feeds",
     version: "2026.09.14.14",
