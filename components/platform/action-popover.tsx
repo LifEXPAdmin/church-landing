@@ -43,9 +43,6 @@ export function ActionPopover({
     change.current = onOpenChange;
   });
   useLayoutEffect(() => {
-    if (!sourceVisible && open) change.current(false);
-  }, [sourceVisible, open]);
-  useLayoutEffect(() => {
     if (!open) return;
     setTarget(
       button.current?.closest("dialog") ??
@@ -54,7 +51,7 @@ export function ActionPopover({
     );
   }, [open]);
   useLayoutEffect(() => {
-    if (!open || !target || !panel.current) return;
+    if (!open || !sourceVisible || !target || !panel.current) return;
     const opener = button.current!,
       surface = panel.current;
     const place = () => {
@@ -143,7 +140,7 @@ export function ActionPopover({
       )
         opener.focus({ preventScroll: true });
     };
-  }, [open, target]);
+  }, [open, sourceVisible, target]);
   return (
     <>
       <button
@@ -168,7 +165,11 @@ export function ActionPopover({
             aria-label={label}
             tabIndex={-1}
             className="gc-action-popover"
-            style={position}
+            style={{
+              ...position,
+              visibility: sourceVisible ? undefined : "hidden"
+            }}
+            inert={!sourceVisible}
             onClick={(event) => {
               if (
                 event.target instanceof Element &&

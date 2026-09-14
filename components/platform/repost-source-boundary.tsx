@@ -34,6 +34,7 @@ export function RepostSourceBoundary({
 }) {
   const router = useRouter(),
     root = useRef<HTMLDivElement>(null),
+    activeReader = useRef(false),
     generation = useRef(0);
   const parentVisible = useReadVisibility();
   const [active, setActive] = useState(false),
@@ -99,6 +100,7 @@ export function RepostSourceBoundary({
     return () => observer.disconnect();
   }, []);
   useEffect(() => {
+    activeReader.current = active;
     if (active) void check();
   }, [active, check]);
   useEffect(() => {
@@ -112,7 +114,7 @@ export function RepostSourceBoundary({
     const visibility = () =>
       document.visibilityState === "hidden" ? hide() : restore();
     const timer = setInterval(() => {
-      if (active) restore();
+      if (activeReader.current) restore();
     }, 30000);
     window.addEventListener("blur", hide);
     window.addEventListener("focus", restore);
@@ -132,7 +134,7 @@ export function RepostSourceBoundary({
       window.removeEventListener("social-relationships-changed", restore);
       document.removeEventListener("visibilitychange", visibility);
     };
-  }, [active, check]);
+  }, [check]);
   return (
     <div ref={root}>
       {!visible && (
