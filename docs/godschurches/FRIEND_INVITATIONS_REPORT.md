@@ -2,9 +2,13 @@
 
 ## Signup before optional installation — September 14, 2026
 
-Candidate product **2026.09.14.2** passes local release acceptance. Publication
-and exact canonical live verification remain pending; this is not a production
-completion receipt.
+Product **2026.09.14.2**, application
+**91b9ccac56a412d2eeba3d3a6fa9df0b0c1b1283**, is published in READY deployment
+**dpl_Hyoayx4MiwLcCxmAadr7ncaEKzz4**. Independent canonical assignment and serving
+identity match. Twenty-two live read-only groups pass at 04:55 UTC; connected
+Chrome confirms the existing member receives no new-account prompt. Browser
+errors, scoped deployment error/fatal rows and production application writes
+are zero. The feature brief and task/subtasks are reconciled with this receipt.
 
 A signed-out personal invitation opens the actual signup form, with permitted
 inviter context and explicit Create account and connect / Join without connecting

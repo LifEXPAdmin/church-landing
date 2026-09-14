@@ -1,3 +1,29 @@
+## QR signup before optional installation verified live — September 14, 2026 UTC
+
+Product **2026.09.14.2**, application
+**91b9ccac56a412d2eeba3d3a6fa9df0b0c1b1283**, is READY in
+**dpl_Hyoayx4MiwLcCxmAadr7ncaEKzz4**, with independent canonical assignment
+and serving identity verified. Personal QR entry presents the actual signup
+form first. After real creation and normal sign-in, optional installation and
+bookmark help preserves verification, invitation consent and safe returns.
+Existing-account, already-friends and removal behavior remain intact.
+
+The full isolated gate passes 116 files, 724 executions and two expected skips;
+the final build has 144 clean runtime traces and 23 built-browser groups pass.
+Twenty-two live read-only groups and the existing-member Chrome read pass, with
+zero application writes, browser errors or scoped runtime error/fatal rows.
+All 46 migration checksums match; no migration is added. Protected encrypted
+restore preserves 92 original table fingerprints and replays recovery controls.
+See [the complete invitation receipt](FRIEND_INVITATIONS_REPORT.md).
+
+The private feature brief and parent/subtasks are reconciled. The private Current
+State index separately rejects updates with 503; its selected browser requires
+sign-in. That summary propagation remains pending. Physical camera/installation
+and actual user-email acceptance retain their existing owner-device scope.
+Next: exact header correction, actual ready lightweight queue, startup/resources,
+eligible capacity/recovery and operations. Continue the unified feature workflow;
+final review stays last.
+
 ## Exploring Faith verified live — September 14, 2026 UTC
 
 Product **2026.09.14.1**, application
