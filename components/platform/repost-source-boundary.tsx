@@ -109,11 +109,13 @@ export function RepostSourceBoundary({
       setVisible(false);
     };
     const restore = () => {
-      if (active && document.visibilityState !== "hidden") void check();
+      if (document.visibilityState !== "hidden") void check();
     };
     const visibility = () =>
       document.visibilityState === "hidden" ? hide() : restore();
-    const timer = setInterval(restore, 30000);
+    const timer = setInterval(() => {
+      if (active) restore();
+    }, 30000);
     window.addEventListener("blur", hide);
     window.addEventListener("focus", restore);
     window.addEventListener("offline", hide);

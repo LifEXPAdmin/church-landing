@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import type { ImageView } from "@/lib/platform/media";
 import { socialRequest } from "@/lib/platform/social-client";
+import { useReadVisibility } from "./read-visibility";
 
 export function PhotoViewer({
   source,
@@ -17,6 +18,7 @@ export function PhotoViewer({
   onClose: () => void;
   pageLimit?: 10 | 24;
 }) {
+  const sourceVisible = useReadVisibility();
   const titleId = useId(),
     dialog = useRef<HTMLDialogElement>(null);
   const closeRef = useRef(onClose),
@@ -50,9 +52,17 @@ export function PhotoViewer({
   useEffect(() => {
     const node = dialog.current!,
       opener = document.activeElement as HTMLElement | null;
+    if (!sourceVisible) return;
     const overflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     node.showModal();
+    return () => {
+      node.close();
+      document.body.style.overflow = overflow;
+      opener?.focus({ preventScroll: true });
+    };
+  }, [sourceVisible]);
+  useEffect(() => {
     const key = crypto.randomUUID();
     historyKey.current = key;
     window.history.pushState(
@@ -65,12 +75,10 @@ export function PhotoViewer({
     window.addEventListener("popstate", back);
     return () => {
       window.removeEventListener("popstate", back);
-      node.close();
-      document.body.style.overflow = overflow;
-      opener?.focus({ preventScroll: true });
     };
   }, []);
   useEffect(() => {
+    if (!sourceVisible) return;
     const conceal = () => {
       generation.current++;
       setImages([]);
@@ -85,6 +93,7 @@ export function PhotoViewer({
     window.addEventListener("blur", conceal);
     window.addEventListener("focus", refresh);
     window.addEventListener("online", refresh);
+    window.addEventListener("offline", conceal);
     window.addEventListener("social-relationships-changed", refresh);
     document.addEventListener("visibilitychange", visibility);
     return () => {
@@ -92,10 +101,11 @@ export function PhotoViewer({
       window.removeEventListener("blur", conceal);
       window.removeEventListener("focus", refresh);
       window.removeEventListener("online", refresh);
+      window.removeEventListener("offline", conceal);
       window.removeEventListener("social-relationships-changed", refresh);
       document.removeEventListener("visibilitychange", visibility);
     };
-  }, [load]);
+  }, [load, sourceVisible]);
   function close() {
     if (window.history.state?.gcPhotoViewer === historyKey.current)
       window.history.back();
@@ -116,6 +126,8 @@ export function PhotoViewer({
   return (
     <dialog
       ref={dialog}
+      style={{ visibility: sourceVisible ? undefined : "hidden" }}
+      inert={!sourceVisible}
       aria-labelledby={titleId}
       className="gc-photo-viewer"
       onCancel={(e) => {

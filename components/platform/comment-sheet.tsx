@@ -64,6 +64,8 @@ export function CommentSheet({
       {open && (
         <dialog
           ref={dialog}
+          style={{ visibility: sourceVisible ? undefined : "hidden" }}
+          inert={!sourceVisible}
           aria-label="Post discussion"
           onCancel={(e) => {
             e.preventDefault();

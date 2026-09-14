@@ -16,6 +16,7 @@ import { CommentComposer } from "./comment-composer";
 import { CommentActions } from "./comment-actions";
 import { reportEntryHref } from "@/lib/platform/community-report-types";
 import { useUnsavedSocialWork } from "./use-unsaved-social-work";
+import { useReadVisibility } from "./read-visibility";
 
 export function CommentThread({
   postId,
@@ -26,6 +27,7 @@ export function CommentThread({
   commentId?: string;
   initiallyClosed?: boolean;
 }) {
+  const sourceVisible = useReadVisibility();
   const [sort, setSort] = useState<"oldest" | "newest">("oldest");
   const [data, setData] = useState<CommentThreadPage | null>(null);
   const [replies, setReplies] = useState<
@@ -156,14 +158,20 @@ export function CommentThread({
   const loadRef = useRef(load);
   loadRef.current = load;
   useEffect(() => {
-    void loadRef.current();
+    if (sourceVisible) void loadRef.current();
+    else {
+      sequence.current++;
+      busy.current = false;
+      setHidden(true);
+      setPending(false);
+    }
     return () => {
       // This counter invalidates outstanding requests, rather than tracking a DOM node.
       // eslint-disable-next-line react-hooks/exhaustive-deps
       sequence.current++;
       busy.current = false;
     };
-  }, [postId, sort, commentId]);
+  }, [postId, sort, commentId, sourceVisible]);
   useEffect(() => {
     const conceal = () => {
       sequence.current++;
@@ -172,7 +180,8 @@ export function CommentThread({
       setPending(false);
     };
     const restore = () => {
-      if (document.visibilityState !== "hidden") void loadRef.current();
+      if (sourceVisible && document.visibilityState !== "hidden")
+        void loadRef.current();
     };
     const visibility = () =>
       document.visibilityState === "hidden" ? conceal() : restore();
@@ -186,6 +195,8 @@ export function CommentThread({
     );
     window.addEventListener("blur", conceal);
     window.addEventListener("focus", restore);
+    window.addEventListener("offline", conceal);
+    window.addEventListener("online", restore);
     document.addEventListener("visibilitychange", visibility);
     return () => {
       window.removeEventListener(
@@ -194,9 +205,11 @@ export function CommentThread({
       );
       window.removeEventListener("blur", conceal);
       window.removeEventListener("focus", restore);
+      window.removeEventListener("offline", conceal);
+      window.removeEventListener("online", restore);
       document.removeEventListener("visibilitychange", visibility);
     };
-  }, []);
+  }, [sourceVisible]);
   useEffect(() => {
     if (context?.target && !hidden) {
       const element = document.getElementById(`comment-${context.target.id}`);

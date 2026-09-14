@@ -5,6 +5,7 @@ import type { ImageView } from "@/lib/platform/media";
 import { socialRequest } from "@/lib/platform/social-client";
 import { useReadingPreferences } from "./reading-preferences";
 import { PhotoViewer } from "./photo-viewer";
+import { useReadVisibility } from "./read-visibility";
 
 export function PostPhotos({
   postId,
@@ -13,6 +14,7 @@ export function PostPhotos({
   postId: string;
   accountId?: string | null;
 }) {
+  const sourceVisible = useReadVisibility();
   const { preferences } = useReadingPreferences();
   const [active, setActive] = useState(0);
   const [images, setImages] = useState<ImageView[]>([]),
@@ -55,7 +57,7 @@ export function PostPhotos({
     return () => observer.disconnect();
   }, []);
   useEffect(() => {
-    if (!visible) return;
+    if (!visible || !sourceVisible) return;
     const hide = () => {
       generation.current++;
       setImages([]);
@@ -68,16 +70,20 @@ export function PostPhotos({
     refresh();
     window.addEventListener("blur", hide);
     window.addEventListener("focus", refresh);
+    window.addEventListener("offline", hide);
+    window.addEventListener("online", refresh);
     window.addEventListener("social-relationships-changed", refresh);
     document.addEventListener("visibilitychange", visibility);
     return () => {
       hide();
       window.removeEventListener("blur", hide);
       window.removeEventListener("focus", refresh);
+      window.removeEventListener("offline", hide);
+      window.removeEventListener("online", refresh);
       window.removeEventListener("social-relationships-changed", refresh);
       document.removeEventListener("visibilitychange", visibility);
     };
-  }, [visible, load]);
+  }, [visible, sourceVisible, load]);
   return (
     <div ref={frame} className="my-4 min-h-12" aria-label="Post photos">
       <p role="status">{message}</p>

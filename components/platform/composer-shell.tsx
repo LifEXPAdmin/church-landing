@@ -55,6 +55,8 @@ export function ComposerDialog({
   return (
     <dialog
       ref={ref}
+      style={{ visibility: sourceVisible ? undefined : "hidden" }}
+      inert={!sourceVisible}
       aria-label={title}
       className="gc-composer-dialog fixed bottom-auto m-auto max-h-none w-[calc(100%_-_1rem)] max-w-[600px] overflow-hidden rounded-2xl border border-gc-divider bg-gc-surface p-0 text-gc-text shadow-xl backdrop:bg-black/40"
       onCancel={(event) => {
