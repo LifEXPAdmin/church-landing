@@ -87,7 +87,7 @@ test("ordinary Likes and new comments complete while an unrelated permission rea
 
 test("reciprocal comment writers reach the same barrier without foreign-key deadlock and exact retries preserve one result", async () => {
   const actors = [f.memberA, f.memberB];
-  const posts = [];
+  const posts: Array<Awaited<ReturnType<typeof postCommand>>> = [];
   for (const actor of actors)
     posts.push(
       await postCommand(db, actor.token, {
