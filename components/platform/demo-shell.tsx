@@ -23,10 +23,10 @@ export function DemoShell({ children }: { children: React.ReactNode }) {
         <div className="container-shell flex flex-wrap items-center justify-between gap-x-5 gap-y-2 py-4">
           <a
             href={demoHref()}
-            className="wordmark inline-flex min-h-11 items-center gap-2 rounded-lg text-3xl text-gc-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gc-focus"
+            className="wordmark gc-brand rounded-lg text-gc-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gc-focus"
           >
             <Church aria-hidden="true" className="h-6 w-6 text-gc-accent" />
-            Godschurches
+            God’s Churches
           </a>
           <p className="text-sm font-semibold text-gc-accent">
             Read-only public demo

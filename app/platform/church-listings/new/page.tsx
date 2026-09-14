@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { ChurchListingPage } from "@/components/platform/church-listing-page";
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
-  title: { absolute: "Church listings | Godschurches" },
+  title: { absolute: "Church listings | God’s Churches" },
   robots: { index: false, follow: false }
 };
 export default async function Page({

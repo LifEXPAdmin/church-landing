@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { ChurchClaimPage } from "@/components/platform/church-claim-page";
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
-  title: { absolute: "Church representative review | Godschurches" },
+  title: { absolute: "Church representative review | God’s Churches" },
   robots: { index: false, follow: false }
 };
 export default async function Page({

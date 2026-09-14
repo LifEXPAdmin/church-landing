@@ -20,10 +20,10 @@ export async function publicResourceMetadata(
   } catch {
     /* Generic branding also covers unavailable service and invalid source IDs. */
   }
-  const title = preview?.title ?? "Godschurches",
+  const title = preview?.title ?? "God’s Churches",
     description =
       preview?.description ??
-      "Open Godschurches to view this page and check your access.";
+      "Open God’s Churches to view this page and check your access.";
   let url: string | undefined;
   try {
     url = new URL(canonicalSharePath(kind, id), origin).href;
@@ -32,7 +32,7 @@ export async function publicResourceMetadata(
     url: new URL("/brand/share-card.png", origin).href,
     width: 1200,
     height: 630,
-    alt: "Godschurches — faith and community"
+    alt: "God’s Churches — faith and community"
   };
   return {
     title: { absolute: title },
@@ -45,7 +45,7 @@ export async function publicResourceMetadata(
       title,
       description,
       type: "website",
-      siteName: "Godschurches",
+      siteName: "God’s Churches",
       ...(url ? { url } : {}),
       images: [image]
     },

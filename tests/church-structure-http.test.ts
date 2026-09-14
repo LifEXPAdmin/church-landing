@@ -854,7 +854,7 @@ test("actual structure HTTP handles forged requests and preserves guest destinat
     const html = await (
       await get(`/platform/churches/${churchId}/${suffix}`)
     ).text();
-    assert.ok(html.includes("Church space | Godschurches"));
+    assert.ok(html.includes("Church space | God’s Churches"));
     if (production) {
       assert.ok(
         html.includes(

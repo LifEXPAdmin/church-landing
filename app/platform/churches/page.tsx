@@ -4,7 +4,7 @@ import { churchSearchQuery } from "@/lib/platform/church-search";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
-  title: { absolute: "Find your church | Godschurches" },
+  title: { absolute: "Find your church | God’s Churches" },
   robots: { index: false, follow: false }
 };
 

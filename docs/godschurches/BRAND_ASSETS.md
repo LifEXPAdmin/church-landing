@@ -1,5 +1,30 @@
 # Shared brand assets
 
+## Header correction — September 14, 2026
+
+Candidate **2026.09.14.3** uses **God’s Churches** in public, account and demo
+headers, their accessible brand-link names, the portal heading label and current
+first-party page-title/site-name metadata. User-authored titles and historical
+release copy retain their content. Existing routes, domain, logo and installation
+identity remain stable. The demo header reuses the responsive wordmark; public
+navigation wraps whole links so enlarged labels remain readable.
+
+The final production build passes type/lint and 144 clean runtime traces.
+Sixty built HTTPS visual/navigation configurations pass across five public,
+signup, demo and signed-in pages, 320/390/1280px, light/dark and 100%/200% text.
+The existing brand destinations, keyboard Home/Back and visible text bounds
+work. Image review confirms whole public navigation labels and the responsive
+demo wordmark. Nine existing focused HTTP/release checks pass: private HTML/RSC
+projections, guest returns, public metadata, fixture-only demo, account/selected
+links, landmarks and safe release refresh. No browser errors occur.
+
+Publication and exact canonical live acceptance remain pending. This is not a
+live completion receipt. The previous account/invitation release retains its
+full security gate and protected recovery evidence. No schema, runtime dependency
+or production application write is needed for this presentation correction.
+
+## Original asset receipt — September 11, 2026
+
 11 September 2026. Reuses the existing Lucide Church mark from both website
 headers and the paper (`#f7f4ed`), olive (`#385842`), ink (`#202923`) palette.
 The path source is [brand.ts](../../lib/brand.ts); the bundled

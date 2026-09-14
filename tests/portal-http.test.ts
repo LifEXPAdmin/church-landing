@@ -248,7 +248,7 @@ test("my-church, sharing and review render private HTML/RSC with one main and co
         "Skip link available"
       );
       assert.ok(
-        markup.includes(`<title>${route.title} | Godschurches</title>`),
+        markup.includes(`<title>${route.title} | God’s Churches</title>`),
         `${route.path}: correct document title`
       );
       assert.equal(

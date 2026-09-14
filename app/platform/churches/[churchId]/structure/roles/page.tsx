@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { ChurchStructurePage } from "@/components/platform/church-structure-page";
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
-  title: { absolute: "Church role library | Godschurches" },
+  title: { absolute: "Church role library | God’s Churches" },
   robots: { index: false, follow: false }
 };
 export default async function Page({

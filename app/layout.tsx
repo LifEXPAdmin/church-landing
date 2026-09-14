@@ -25,8 +25,8 @@ export const metadata: Metadata = {
     process.env.NEXT_PUBLIC_SITE_URL ?? "https://godschurches.com"
   ),
   title: {
-    default: "Godschurches | The Revival",
-    template: "%s | Godschurches"
+    default: "God’s Churches | The Revival",
+    template: "%s | God’s Churches"
   },
   description:
     "Faith, fellowship, and everyday life. Read public posts and connect with people on Godschurches.",
@@ -51,9 +51,9 @@ export const metadata: Metadata = {
     "church platform"
   ],
   openGraph: {
-    title: "Godschurches | The Revival",
+    title: "God’s Churches | The Revival",
     description: "Faith, fellowship, and everyday life.",
-    siteName: "Godschurches",
+    siteName: "God’s Churches",
     type: "website",
     images: [
       {
@@ -66,7 +66,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Godschurches | The Revival",
+    title: "God’s Churches | The Revival",
     description: "Faith, fellowship, and everyday life.",
     images: ["/brand/share-card.png"]
   }

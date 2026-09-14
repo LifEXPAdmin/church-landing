@@ -3,7 +3,7 @@ import { PortalPage } from "@/components/platform/portal-page";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
-  title: { absolute: "Review connections | Godschurches" },
+  title: { absolute: "Review connections | God’s Churches" },
   robots: { index: false, follow: false }
 };
 

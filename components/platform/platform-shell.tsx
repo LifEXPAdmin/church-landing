@@ -78,7 +78,7 @@ export async function PlatformShell({
         <header className="gc-topbar">
           <Link href="/platform" className="wordmark gc-brand">
             <Church aria-hidden="true" />
-            Godschurches
+            God’s Churches
           </Link>
           <span className="gc-tagline">Faith. Fellowship. Everyday life.</span>
           <nav aria-label="Account and website" className="gc-utilities">

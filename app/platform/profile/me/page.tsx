@@ -12,7 +12,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const user = await getCurrentPlatformUser();
   return {
     title: {
-      absolute: user ? "Edit your Godschurches profile" : accountReasons.profile
+      absolute: user ? "Edit your God’s Churches profile" : accountReasons.profile
     },
     description: user
       ? "Choose what to share with other Godschurches members."

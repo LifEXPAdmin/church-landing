@@ -3,7 +3,7 @@ import { CalendarPage } from "@/components/platform/calendar-page";
 import type { CalendarQuery } from "@/lib/platform/calendar-view";
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
-  title: { absolute: "Calendars | Godschurches" },
+  title: { absolute: "Calendars | God’s Churches" },
   robots: { index: false, follow: false }
 };
 export default async function Page({

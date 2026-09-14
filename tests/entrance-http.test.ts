@@ -201,7 +201,7 @@ test("public information has canonical metadata, useful account links and no act
     const response = await get(path);
     assert.equal(response.status, 200, path);
     const body = await response.text();
-    assert.match(body, /<title>[^<]+\| Godschurches<\/title>/);
+    assert.match(body, /<title>[^<]+\| God’s Churches<\/title>/);
     assert.ok(
       body.includes('rel="canonical" href="' + origin + path + '"'),
       path + " canonical"

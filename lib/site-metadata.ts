@@ -5,7 +5,7 @@ export function publicMetadata(
   description: string,
   path: string
 ): Metadata {
-  const fullTitle = `${title} | Godschurches`;
+  const fullTitle = `${title} | God’s Churches`;
   return {
     title: { absolute: fullTitle },
     description,
@@ -14,7 +14,7 @@ export function publicMetadata(
       title: fullTitle,
       description,
       url: path,
-      siteName: "Godschurches",
+      siteName: "God’s Churches",
       type: "website",
       images: [
         {

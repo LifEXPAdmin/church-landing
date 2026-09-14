@@ -166,12 +166,15 @@
 }
 .gc-public-nav {
   display: flex;
-  gap: 1.5rem;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
 }
 .gc-public-nav a {
   display: inline-flex;
   align-items: center;
   min-height: 44px;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 .gc-info-article {
   max-width: 48rem;

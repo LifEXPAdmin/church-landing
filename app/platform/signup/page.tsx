@@ -9,7 +9,7 @@ import { safeAccountReturn, accountReason } from "@/lib/platform/account-entry";
 import { googleAvailable } from "@/lib/platform/google-availability";
 import { accountDeliveryAvailable } from "@/lib/platform/account-availability";
 export const metadata: Metadata = {
-  title: { absolute: "Create a Godschurches account" },
+  title: { absolute: "Create a God’s Churches account" },
   description: "Create your account and start connecting in faith.",
   referrer: "no-referrer",
   robots: { index: false, follow: false }

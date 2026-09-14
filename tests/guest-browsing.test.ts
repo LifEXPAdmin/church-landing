@@ -178,7 +178,7 @@ test("anonymous HTML and RSC expose public reading and minimal author labels but
     assert.equal(profile.status, 200);
     const content = await profile.text();
     assert.match(content, /Join or sign in to view member profiles/);
-    if (!rsc) assert.match(content, /<title>Godschurches<\/title>/);
+    if (!rsc) assert.match(content, /<title>God’s Churches<\/title>/);
     assert.ok(!content.includes(a.user.bio!));
     assert.ok(!content.includes(entry.content));
     const member = await get(
@@ -212,7 +212,7 @@ test("anonymous HTML and RSC expose public reading and minimal author labels but
     /<title>Join or sign in to view member profiles\.<\/title>/
   );
   const editor = await (await get("/platform/profile/me", a.token)).text();
-  assert.match(editor, /<title>Edit your Godschurches profile<\/title>/);
+  assert.match(editor, /<title>Edit your God’s Churches profile<\/title>/);
   assert.match(editor, /Edit your profile/);
   assert.ok(!prompt.includes('name="currentPassword"'));
 });

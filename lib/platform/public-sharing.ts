@@ -46,7 +46,7 @@ export function publicSharePreview(
     kind: String(query.kind) as ShareKind,
     path,
     url: new URL(path, origin).href,
-    title: "Godschurches",
+    title: "God’s Churches",
     description: "Open Godschurches to view this page and check your access.",
     author: null as { name: string; kind: "person" | "church" } | null,
     image: {

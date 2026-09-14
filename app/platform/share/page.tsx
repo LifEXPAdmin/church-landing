@@ -6,7 +6,7 @@ import { getCurrentPlatformUser } from "@/lib/platform/session";
 import { accountConfig } from "@/lib/platform/account-config";
 import { accountEntryHref } from "@/lib/platform/account-entry";
 export const metadata: Metadata = {
-  title: "Share Godschurches",
+  title: "Share God’s Churches",
   description: "Open the community, create an account and find your church."
 };
 export const dynamic = "force-dynamic";

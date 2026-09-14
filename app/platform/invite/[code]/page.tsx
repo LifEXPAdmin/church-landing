@@ -9,7 +9,7 @@ import { publicFriendInvitation } from "@/lib/platform/friend-invitations";
 import { getCurrentPlatformUser } from "@/lib/platform/session";
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
-  title: "A Godschurches invitation",
+  title: "A God’s Churches invitation",
   description: "Review an invitation to connect. Joining is your choice.",
   robots: { index: false, follow: false },
   referrer: "no-referrer"

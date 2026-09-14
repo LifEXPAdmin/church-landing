@@ -13,7 +13,7 @@ export function SiteHeader() {
       <div className="gc-topbar">
         <Link href="/platform" className="wordmark gc-brand">
           <Church aria-hidden="true" />
-          Godschurches
+          God’s Churches
         </Link>
         <Link href="/platform/login" className="gc-button gc-button-quiet">
           Sign in

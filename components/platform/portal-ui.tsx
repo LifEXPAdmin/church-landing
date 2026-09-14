@@ -32,8 +32,8 @@ export function PortalHeading({
 }) {
   return (
     <div className="mb-7 border-l-2 border-gc-action pl-4">
-      <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-gc-accent">
-        Godschurches
+      <p className="mb-2 text-xs font-semibold tracking-[0.18em] text-gc-accent">
+        God’s Churches
       </p>
       <h1 className="text-4xl leading-tight text-gc-text sm:text-5xl">
         {title}

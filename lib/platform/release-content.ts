@@ -535,6 +535,20 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "gods-churches-header",
+    version: "2026.09.14.3",
+    date: "2026-09-14",
+    summary: "God’s Churches, clearly named at the top of every page.",
+    added: [],
+    improved: [
+      "Public, account and demo headers show God’s Churches, with matching accessible link names and page-title branding."
+    ],
+    fixed: [
+      "The brand includes its apostrophe, space and capital C. Home links keep their existing destinations."
+    ],
+    featureIds: ["account"]
+  },
+  {
     id: "signup-before-installation",
     version: "2026.09.14.2",
     date: "2026-09-14",

@@ -69,7 +69,7 @@ export function FeedReader({
   const openButton = useRef<HTMLButtonElement>(null),
     homeScroll = useRef(0);
   useEffect(() => {
-    document.title = `${focused ? "My feed" : "Home"} | Godschurches`;
+    document.title = `${focused ? "My feed" : "Home"} | God’s Churches`;
   }, [focused]);
   function openFocused() {
     turningCleanup();

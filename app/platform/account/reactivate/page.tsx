@@ -6,7 +6,7 @@ import { GoogleButton } from "@/components/platform/google-account";
 import { googleAvailable } from "@/lib/platform/google-availability";
 
 export const metadata: Metadata = {
-  title: { absolute: "Reactivate your account | Godschurches" },
+  title: { absolute: "Reactivate your account | God’s Churches" },
   robots: { index: false, follow: false }
 };
 

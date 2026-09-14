@@ -5,8 +5,8 @@ import { DemoShell } from "@/components/platform/demo-shell";
 export const dynamic = "error";
 export const metadata: Metadata = {
   title: {
-    absolute: "Church portal demo | Godschurches",
-    template: "%s | Godschurches demo"
+    absolute: "Church portal demo | God’s Churches",
+    template: "%s | God’s Churches demo"
   },
   description:
     "Demo: fictional church and member information. A read-only tour of the Godschurches portal; no account required.",

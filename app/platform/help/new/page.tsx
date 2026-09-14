@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { SupportPage } from "@/components/platform/support-page";
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = { title: { absolute: "Private support | Godschurches" } };
+export const metadata: Metadata = { title: { absolute: "Private support | God’s Churches" } };
 export default async function Page({
   searchParams
 }: {

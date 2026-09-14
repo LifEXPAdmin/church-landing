@@ -6,7 +6,7 @@ import { safeAccountReturn, accountReason } from "@/lib/platform/account-entry";
 import { googleAvailable } from "@/lib/platform/google-availability";
 import { accountDeliveryAvailable } from "@/lib/platform/account-availability";
 export const metadata: Metadata = {
-  title: { absolute: "Sign in to Godschurches" },
+  title: { absolute: "Sign in to God’s Churches" },
   description: "Sign in securely with your email and password."
 };
 export default async function PlatformLoginPage({

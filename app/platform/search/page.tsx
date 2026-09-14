@@ -8,7 +8,7 @@ import {
   type SearchCategory
 } from "@/lib/platform/search-navigation";
 export const metadata: Metadata = {
-  title: { absolute: "Explore | Godschurches" },
+  title: { absolute: "Explore | God’s Churches" },
   description:
     "Find community posts, author labels, churches, events and topics you can view."
 };
