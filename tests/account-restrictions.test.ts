@@ -1,6 +1,7 @@
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
+import { execFileSync } from "node:child_process";
 import { PrismaClient } from "@prisma/client";
 import {
   accountRestrictionCommand,
@@ -439,72 +440,184 @@ test("missing accounts and unprotected controls block recovery, while protected 
 test("account recovery controls expire only after protected account deletion plus 90 days, and failed removal preserves local evidence", async () => {
   const f = await fixture();
   await accountRestrictionCommand(db, f.actor.token, f.body, f.store.journal);
-  const completed = new Date();
-  const deletion = await db.accountDeletion.create({
-    data: {
-      userId: f.target.id,
-      proofHash: randomUUID(),
-      policy: "GC-ACCOUNT-RETENTION-v1",
-      requestedAt: completed,
-      dueAt: completed,
-      structuredPurgedAt: completed,
-      completedAt: completed,
-      journaledAt: completed,
-      completionJournaledAt: completed
-    }
-  });
-  const journals = {
-    controls: f.store.journal,
-    messages: {
-      async page() {
-        return { entries: [], cursor: undefined };
-      },
-      async record() {},
-      async complete() {},
-      async expire() {
-        return false;
+  // Expiry is global maintenance: use a dedicated schema copy so its clock
+  // cannot expire receipts owned by another suite sharing the source fixture.
+  const sourceUrl = new URL(process.env.DATABASE_URL!);
+  assert.equal(sourceUrl.hostname, "127.0.0.1");
+  assert.equal(sourceUrl.pathname, "/godschurches_security_test");
+  const targetUrl = new URL(sourceUrl);
+  const database = "godschurches_account_restriction_restore";
+  targetUrl.pathname = "/" + database;
+  const pg = process.env.TEST_PG_BIN ?? "/opt/homebrew/opt/postgresql@16/bin";
+  const flags = [
+    "-h",
+    sourceUrl.hostname,
+    "-p",
+    sourceUrl.port,
+    "-U",
+    decodeURIComponent(sourceUrl.username)
+  ];
+  const run = (name: string, args: string[], input?: Buffer) =>
+    execFileSync(`${pg}/${name}`, args, {
+      input,
+      stdio: ["pipe", "pipe", "pipe"],
+      maxBuffer: 32 * 1024 * 1024
+    });
+  let created = false;
+  const recoveryDb = new PrismaClient({ datasourceUrl: targetUrl.href });
+  try {
+    const schema = run("pg_dump", [
+      "--schema-only",
+      "--format=custom",
+      "--no-owner",
+      "--no-acl",
+      sourceUrl.href
+    ]);
+    run("createdb", [...flags, database]);
+    created = true;
+    run(
+      "pg_restore",
+      ["--exit-on-error", "--no-owner", "--no-acl", "--dbname", targetUrl.href],
+      schema
+    );
+    await recoveryDb.platformUser.create({
+      data: await db.platformUser.findUniqueOrThrow({
+        where: { id: f.target.id }
+      })
+    });
+    const original = await db.retentionControl.findFirstOrThrow({
+      where: { sourceId: f.target.id }
+    });
+    await recoveryDb.retentionControl.create({
+      data: { ...original, payload: (await controls(f.target.id))[0] }
+    });
+    const completed = new Date();
+    const deletion = await recoveryDb.accountDeletion.create({
+      data: {
+        userId: f.target.id,
+        proofHash: randomUUID(),
+        policy: "GC-ACCOUNT-RETENTION-v1",
+        requestedAt: completed,
+        dueAt: completed,
+        structuredPurgedAt: completed,
+        completedAt: completed,
+        journaledAt: completed,
+        completionJournaledAt: completed
       }
-    },
-    accounts: {
-      async page() {
-        return { entries: [], cursor: undefined };
+    });
+    const journals = {
+      controls: f.store.journal,
+      messages: {
+        async page() {
+          return { entries: [], cursor: undefined };
+        },
+        async record() {},
+        async complete() {},
+        async expire() {
+          return false;
+        }
       },
-      async recordAccount() {},
-      async completeAccount() {},
-      async expire() {
-        return true;
+      accounts: {
+        async page() {
+          return { entries: [], cursor: undefined };
+        },
+        async recordAccount() {},
+        async completeAccount() {},
+        async expire() {
+          return true;
+        }
       }
-    }
-  };
-  await expireRetentionReceipts(
-    db,
-    journals,
-    new Date(completed.getTime() + 90 * DAY - 1)
-  );
-  assert.equal((await controls(f.target.id)).length, 1);
-  f.store.fail(true);
-  await assert.rejects(
-    expireRetentionReceipts(
-      db,
+    };
+    await expireRetentionReceipts(
+      recoveryDb,
+      journals,
+      new Date(completed.getTime() + 90 * DAY - 1)
+    );
+    assert.equal(
+      await recoveryDb.retentionControl.count({
+        where: { sourceId: f.target.id }
+      }),
+      1
+    );
+    f.store.fail(true);
+    await assert.rejects(
+      expireRetentionReceipts(
+        recoveryDb,
+        journals,
+        new Date(completed.getTime() + 90 * DAY + 1)
+      ),
+      /Isolated provider/
+    );
+    assert.equal(
+      await recoveryDb.retentionControl.count({
+        where: { sourceId: f.target.id }
+      }),
+      1
+    );
+    assert.ok(
+      await recoveryDb.accountDeletion.findUnique({
+        where: { id: deletion.id }
+      })
+    );
+    f.store.fail(false);
+    await expireRetentionReceipts(
+      recoveryDb,
       journals,
       new Date(completed.getTime() + 90 * DAY + 1)
-    ),
-    /Isolated provider/
+    );
+    assert.equal(
+      await recoveryDb.retentionControl.count({
+        where: { sourceId: f.target.id }
+      }),
+      0
+    );
+    assert.equal(
+      await recoveryDb.accountDeletion.findUnique({
+        where: { id: deletion.id }
+      }),
+      null
+    );
+    assert.equal(f.store.values.size, 0);
+  } finally {
+    await recoveryDb.$disconnect();
+    if (created) run("dropdb", [...flags, database]);
+  }
+});
+
+test("concurrent operators and duplicate submissions commit one account decision at the inspected version", async () => {
+  const f = await fixture();
+  const other = await createPortalActor(db, "restrictionrace");
+  await seedOperatorGrants(db, other, ["MANAGE_ACCOUNTS"]);
+  const results = await Promise.allSettled([
+    accountRestrictionCommand(db, f.actor.token, f.body, f.store.journal),
+    accountRestrictionCommand(db, f.actor.token, f.body, f.store.journal),
+    accountRestrictionCommand(
+      db,
+      other.token,
+      { ...f.body, mutationId: randomUUID(), reason: "ACCOUNT_SECURITY" },
+      f.store.journal
+    )
+  ]);
+  const accepted = results.filter((r) => r.status === "fulfilled");
+  assert.ok(accepted.length >= 1);
+  for (const result of results) {
+    if (result.status === "rejected")
+      assert.ok(
+        result.reason instanceof PortalError && result.reason.status === 409
+      );
+    else assert.equal(result.value.version, f.current.portalVersion + 1);
+  }
+  assert.equal(
+    await db.churchAuditEvent.count({
+      where: { targetId: f.target.id, action: "SUSPEND" }
+    }),
+    1
   );
   assert.equal((await controls(f.target.id)).length, 1);
-  assert.ok(
-    await db.accountDeletion.findUnique({ where: { id: deletion.id } })
-  );
-  f.store.fail(false);
-  await expireRetentionReceipts(
-    db,
-    journals,
-    new Date(completed.getTime() + 90 * DAY + 1)
-  );
-  assert.equal((await controls(f.target.id)).length, 0);
+  assert.equal(f.store.values.size, 1);
   assert.equal(
-    await db.accountDeletion.findUnique({ where: { id: deletion.id } }),
-    null
+    (await db.platformUser.findUniqueOrThrow({ where: { id: f.target.id } }))
+      .credentialVersion,
+    f.current.credentialVersion + 1
   );
-  assert.equal(f.store.values.size, 0);
 });

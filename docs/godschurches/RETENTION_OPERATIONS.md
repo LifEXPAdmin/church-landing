@@ -6,6 +6,23 @@ provider and backup/restore checks passed. See [the release receipt](MESSAGING_R
 The approved [policy](MESSAGING_RETENTION_POLICY.md) controls all periods; no
 repeat owner policy or second-reviewer approval is required.
 
+## Account access controls
+
+The reviewed-account-access candidate adds `ACCOUNT_STATE` to the same protected
+ledger. Its [acceptance contract](ACCOUNT_RESTRICTION_ACCEPTANCE.md) describes
+suspension preservation, current-authority retries, and the
+`accountsNeedingRestrictionReview` recovery gate. A restoration newer than the
+backup requires fresh account-manager review; it cannot restore old access.
+Old credential/grant quarantine still applies. After activation, rollback must
+preserve these account controls as well as the existing content predicates.
+
+For every schema release, verify the installed checksum file and its installation
+metadata independently, preserve all earlier checksums, install the new checksum,
+and run the installed encrypted daily backup/restore after deployment. The
+separate protected production-copy upgrade/replay is also required; an ordinary
+backup alone does not replay protected control decisions. Record exact source
+and resulting migration counts for both checks.
+
 ## Protected control records
 
 Version 2026.09.13.32 extends these same records with source visibility,

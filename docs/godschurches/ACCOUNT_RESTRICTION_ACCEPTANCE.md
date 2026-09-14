@@ -57,16 +57,24 @@ production copy before authorized release.
 
 ## Verification record
 
-Seven focused service/boundary/recovery groups pass, including a failed protected
+Eight focused service/boundary/recovery groups pass, including a failed protected
 write with canonical retry, current-authority denial after grant revocation,
 account-switch denial, scoped audit history, both replay orders and expiration
-failure recovery. Type checking passes. The first isolated checks caught the
+failure recovery and competing operators at one inspected version. Expiration
+uses a dedicated schema copy so an advanced clock cannot affect another suite.
+Type checking and scoped lint pass. The first isolated checks caught the
 existing ledger-kind constraint, which the migration now explicitly expands.
 The reused large fixture also exceeded a pre-existing 100-user test expectation;
 the unchanged portal regression must be judged in its standard fresh-fixture gate.
 
-Pending: full fresh-fixture gate and migration/restore proofs, browser acceptance,
-protected production-copy upgrade, release/build/canonical assignment, live reads
-and current authority inventory. Broader operational acceptance requires actual
+The protected production-copy upgrade 47→48 preserves all 92 original tables
+and passes the protected recovery gate. Actual production inspection finds zero
+eligible account-management grants, zero suspended accounts and zero account
+access decisions. Real operator acceptance retains an explicit capability
+assignment prerequisite; the existing founder report-review assignment remains
+unchanged. The private task queue records the precise owner action.
+
+Pending: full fresh-fixture gate, browser acceptance, release/build/canonical
+assignment, live reads, and the installed post-release daily backup/restore. Broader operational acceptance requires actual
 appointed operators/responders and the existing physical/provider prerequisites;
 passing fictional test actions does not establish real case handling.

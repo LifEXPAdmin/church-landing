@@ -203,7 +203,11 @@ try {
     .getByRole("button", { name: "Reload current information", exact: true })
     .click();
   await page.getByLabel("Account to manage", { exact: true }).waitFor();
-  await page.getByText("Safety review", { exact: true }).waitFor();
+  await page
+    .locator("li")
+    .filter({ hasText: target.name })
+    .getByText("Safety review", { exact: true })
+    .waitFor();
   ok(
     "A saved action with a lost response is concealed on blur; current access permits only the identical pending retry, leaving one audit and no sessions"
   );
@@ -247,6 +251,8 @@ try {
     .click();
   await page.getByLabel("Account to manage", { exact: true }).waitFor();
   await page
+    .locator("li")
+    .filter({ hasText: target.name })
     .getByText("Review completed; access may resume", { exact: true })
     .waitFor();
   ok(
@@ -365,6 +371,15 @@ try {
     "Account audit remains readable at 320px and desktop widths; revoking current authority conceals the original privileged page"
   );
   assert.deepEqual(errors, []);
+} catch (error) {
+  await page
+    .screenshot({ path: output + "/failure.png", fullPage: true })
+    .catch(() => {});
+  writeFileSync(
+    output + "/failure.txt",
+    String(error) + "\n" + (await page.locator("body").innerText())
+  );
+  throw error;
 } finally {
   writeFileSync(
     output + "/result.json",
