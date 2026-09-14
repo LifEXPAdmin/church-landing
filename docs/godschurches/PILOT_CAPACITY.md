@@ -1,12 +1,22 @@
 # Pilot capacity, costs and recovery limits
 
-September 14, 2026. The sustained local rehearsal and full regression gate pass;
-bounded cloud rehearsal and deployment acceptance are pending. Five hundred
+September 14, 2026. The sustained local rehearsal and final 120-file regression
+gate pass. Bounded hosted tests have completed, including recorded failures and
+repairs; exact deployment acceptance remains next. Five hundred
 registered accounts and one hundred concurrent people
 remain a target, not a demonstrated production maximum. Registered accounts occupy
 storage; daily active people produce traffic; concurrently active clients and
 requests in flight are different measures. A fifteen-minute test does not establish
 month-long reliability, and the Mac does not reproduce Neon or Fluid CPU limits.
+
+The indexed hosted database at 0.5 CU completed 50 clients for two minutes and
+100 for four minutes without server failures. At 100, feed p95 was 2,533 ms;
+the short 2-CU comparison remained 2,640 ms. These results miss the proposed
+one-second primary-read target. Fixed 0.25 CU had repeated memory failures on
+this dense 10,000-account fixture, even after the index repair. Production still
+uses 0.25 CU with its actual much smaller data; no production compute was changed.
+Do not interpret the higher test settings as an activated production capacity.
+See [the complete measured workload and limitations](CAPACITY_REHEARSAL.md).
 
 ## Current limits and useful triggers
 
@@ -22,6 +32,11 @@ Never delete user content or shorten retention to meet a quota.
   continuously for 30 days would use 180 CU-hours. Five-minute idle suspension
   saves compute but adds a separate cold-wake condition. Review at 70 CU-hours,
   0.35 GB data or 3.5 GB transfer, and on repeated pool waits/timeouts.
+  Fixed 0.5 CU would consume 100 CU-hours after 200 active hours; fixed 2 CU
+  after only 50 active hours. Free selectable compute does not make sustained
+  operation free of quota limits. Thirty continuously active days at those sizes
+  would be 360 and 1,440 CU-hours respectively, or $38.16 and $152.64 at the
+  stated Launch compute rate, before storage/history and other providers.
 - Vercel Hobby: 4 active CPU-hours, 360 GB-hours memory, one million function
   invocations, 100 GB fast transfer and 10 GB origin transfer per allowance period.
   Review the actual team totals, including other projects. The existing function
@@ -98,8 +113,11 @@ storage, chosen history and any excess egress. Resend Pro lists $20/month for
 The owned local rehearsal uses fictional data, guarded loopback PostgreSQL and
 private filesystem images, disabled real delivery, and an explicit shared-network
 model. A separate, disposable Vercel project, Free Neon database and private Blob
-store now have a bounded cloud plan: 25 and 50 clients for three minutes each,
-then 100 for five minutes, with two-second think time. Hard guards cap application
+store used a bounded cloud plan: 25 and 50 clients for three minutes each,
+then 100 for five minutes, with two-second think time. The first failure stopped
+that sequence. Measured repairs and shorter compute comparisons used the same
+cumulative budget; their actual durations and raw failures are recorded separately.
+Hard guards cap application
 requests at 22,000, image-read attempts below 8,000, uploaded images at 175 beyond
 the 100 seed images, and response bytes at 3 GB. Four hundred seed objects occupy
 131,406,400 bytes. These counters account for uncached store fetches; provider
@@ -109,9 +127,10 @@ The test project protects all URLs and uses only its own temporary automation
 credential. Its canonical alias initially lay outside the default protection
 scope; the preflight stopped before load and passed after protecting all URLs.
 All real delivery, scheduled jobs and queue triggers are disabled in the test
-project. Its Neon default is PostgreSQL 18.6 at fixed 0.25 CU, while production is
-PostgreSQL 17; preserve that limit when interpreting hosted results. The cloud
-run is not yet an accepted operating envelope. Never point the loopback harness
+project. Its Neon default is PostgreSQL 18.6, while production is PostgreSQL 17;
+preserve that version difference when interpreting the 0.25/0.5/2-CU results.
+The cloud run does not establish the proposed low-latency operating envelope.
+Never point the loopback harness
 or its fictional-data writer at production. Preserve test receipts and remove
 only the owned disposable resources after the experiment.
 

@@ -1,5 +1,92 @@
 # Isolated capacity and recovery rehearsal
 
+## Final candidate gate and compute diagnostic — September 14, 09:52 UTC
+
+Candidate `ae54804b6c605e8e4a54a2409f39f05de754ee4c` passes the complete
+120-file gate: 740 executions, 738 passes, two expected skips and zero failures.
+Fresh migrations, synthetic upgrade/restore, both production builds, verified
+HTTPS, process restart and the complete service/HTTP regression inventory pass.
+The separate protected production-copy upgrade from 46 to 47 migrations preserves
+all original columns and fingerprints across 92 tables and completes protected
+replay. The installed backup checksum registry includes the additive index.
+Production deployment and live worker acceptance follow this checkpoint.
+
+After the gate finished, a final bounded diagnostic used the same protected test
+deployment and indexed fictional database at fixed 2 CU, approximately 8 GB RAM,
+on the existing Free plan. One hundred clients ran for 60 seconds with two-second
+think time and no further uploads: 1,973 requests, 30.49 requests/second, 85 peak
+requests in flight and 184 matching successful retry pairs. Feed p50/p95 was
+1,250.5/2,639.9 ms; detail p95 was 2,429.5 ms, avatar 3,943.3 ms and medium image
+4,647.6 ms. Sampled database connections peaked at 57, active connections at 35,
+with zero temporary-file growth and no runtime error rows in the scoped provider
+query. The one logged 404 was the same removed-member fixture's church-post read;
+its current approved/removed-account comparison is retained separately.
+
+This short diagnostic does not establish sustained capacity or a clean compute
+speed ratio. It does show that increasing database memory alone did not resolve
+the observed HTTP latency. The one-second primary-read target remains unmet;
+do not approve the 100-concurrent production target from these results. Production
+compute remains unchanged at 0.25 CU. A larger pilot needs a separately budgeted
+application/network/database timing comparison on matching infrastructure and a
+review of the measured provider quotas; no paid plan was purchased.
+
+Conservative cumulative test accounting is 19,636 application calls, 5,717 image
+read attempts, 166 upload attempts and 1,386,251,183 response bytes, plus subsequent
+explicit verification reads. It includes a margin for the interrupted attempt,
+not an invented exact bill. The authenticated project dashboard at 09:43 showed
+17,189 function invocations, 15m37s active CPU, 2.4 GB-hours provisioned memory,
+752.46 MB fast transfer and 838.48 MB origin transfer; provider totals can lag one
+hour and do not replace the harness stop counters.
+
+## Indexed hosted comparison — September 14, 09:26–09:29 UTC
+
+Candidate index checkpoint `ae54804` remains local, with a new full gate running.
+Protected production-copy upgrade from 46 to 47 migrations passes and preserves
+all original columns and fingerprints across 92 tables. Production is still `.6`.
+
+The index alone did not prevent memory failures on the 0.25-CU test database.
+That second attempt was stopped after repeated PostgreSQL `53200` errors; its
+partial counters and provider errors are retained. The same disposable Free
+database was then set to fixed 0.5 CU, approximately 2 GB RAM, without purchasing
+a plan. The subsequent bounded comparison completed:
+
+| Clients | Declared duration | Requests | Requests/second | Peak in flight | Feed p50 / p95 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 50 | 120 seconds | 2,619 | 21.34 | 32 | 585.7 / 1,147.7 ms |
+| 100 | 240 seconds | 7,497 | 30.82 | 87 | 1,306.7 / 2,533.0 ms |
+
+All 910 successful retry pairs matched, all forty further uploads succeeded and
+the final private health snapshot had no alerts. The 100-client stage had five
+404 responses, initially counted as unexpected. Actual scoped request logs and
+five paired approved/removed-account reads identify the retained recovery
+fixture's removed church membership: that account is denied each same church
+post/thread while the approved account receives 200. The raw counts remain intact;
+the verified classification is five expected privacy denials and zero server
+failures. There was no restart during this comparison.
+
+At 100 clients, detail p95 was 2,388.0 ms, comments 2,337.1 ms, post search
+2,227.2 ms, avatar 4,152.8 ms and medium image 4,146.8 ms. Maximum sampled database
+connections were 55, including the inspector, with up to 51 active; temporary-file
+growth was zero. These results do **not** meet the proposed one-second primary
+read target. The larger hosted footprint restores correctness under this short
+workload; it is not a demonstrated low-latency production maximum.
+
+Read-only integrity checks find 10,000 fictional accounts, 259 READY image/history
+records, their 1,036 private objects totaling 339,096,652 bytes, and no garbage.
+Database size was 279,363,584 bytes. The original fictional PostgreSQL 17 seed
+archive is encrypted with an authenticated round-trip receipt and a separate
+private key; it excludes later load-test changes. The production-copy restore
+above is a separate artifact with protected replay. No production application
+write, real outgoing message or provider purchase occurred in the cloud tests.
+
+The cumulative conservative budget accounting includes both failed attempts and
+an explicit allowance for the terminated interval. After the successful comparison
+it records 17,549 application calls, 5,157 image-read attempts, 166 upload attempts
+and 1,245,220,177 response bytes; ten subsequent privacy reads are additional.
+These are budget counters with a stated margin, not exact billing measurements.
+The remaining budget permits a short compute diagnostic after the current gate;
+deployment acceptance and disposal of the owned cloud resources remain pending.
+
 ## Hosted failure and chronological index repair — September 14, 2026
 
 The first protected cloud run used a disposable Vercel preview, private Blob
@@ -25,7 +112,7 @@ changes this to an ordered index scan of 31 rows with the same canonical policy.
 Individual hosted `EXPLAIN ANALYZE` observations for page selection were 265.1 ms
 before and 1.3 ms afterward; these are query observations, not an HTTP speed ratio.
 The additive migration creates only that index and preserves every record and
-permission. A corrected 50/100-client run is active on unchanged compute. Its Like
+permission. At this checkpoint a corrected 50/100-client run was starting on unchanged compute. Its Like
 targets use current canonical read/version state, and each account attempts only
 one additional upload across the rerun. All cumulative ceilings include the failed
 run; no allowance is silently reset. Final migration/restore/regression, deployed
@@ -72,7 +159,7 @@ comment `take: 6` trimmed in application memory after retrieving 30,851 rows for
 the page. The candidate now selects at most six visible comment IDs per post
 with a parameterized lateral query, then hydrates only those IDs through the
 existing canonical visibility predicate within the same permission read lock.
-No schema/index, public cache, dependency or permissions are added.
+No schema/index, public cache, dependency or permissions are added by this preview change.
 
 On the unchanged dense database, twenty alternating warm service-read pairs have
 identical complete feed projections. Feed service p50 improves 148.1→77.1 ms and
