@@ -1,9 +1,10 @@
 "use client";
-import { useRef, useState } from "react";
+import { useCallback, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { socialRequest, SocialClientError } from "@/lib/platform/social-client";
 import { useDraftController } from "./draft-workspace-provider";
 import { useUnsavedSocialWork } from "./use-unsaved-social-work";
+import { usePrivateRecovery } from "./private-snapshot-guard";
 type PinState = {
   pinned: boolean;
   replaces: boolean;
@@ -25,6 +26,13 @@ export function useProfilePin(
     [pending, setPending] = useState<string | null>(null),
     [message, setMessage] = useState("");
   const flight = useRef(false);
+  const recoveryId = useId(),
+    retryRef = useRef<() => void>(() => {});
+  retryRef.current = () => {
+    if (pending) void send(pending);
+  };
+  const retryOriginal = useCallback(() => retryRef.current(), []);
+  usePrivateRecovery(recoveryId, !!pending, busy, retryOriginal);
   useUnsavedSocialWork(
     { dirty: false, saving: !!pending, conflict: false },
     () => setMessage("Confirm your pending profile pin before leaving.")
