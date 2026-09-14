@@ -107,6 +107,11 @@ const signIn = (actor) =>
   ]);
 const choose = async (mode) => {
   phase = "choose-" + mode;
+  // The server can paint a select before its event handler is hydrated.
+  // The reader's canonical cursor is installed by its mounted client effect.
+  await page.waitForFunction(
+    () => !!new URL(location.href).searchParams.get("feedCursor")
+  );
   await selector().selectOption(mode);
   await page.waitForURL((url) => url.searchParams.get("feed") === mode);
   await selector().waitFor();
@@ -297,6 +302,15 @@ try {
   assert.deepEqual(await getIds(), order.slice(30));
   phase = "weekly-back";
   await page.goBack();
+  await page.waitForFunction(
+    (ids) =>
+      JSON.stringify(
+        [...document.querySelectorAll(".gc-feed [data-post]")].map(
+          (node) => node.dataset.post
+        )
+      ) === JSON.stringify(ids),
+    rankedFirst
+  );
   await selector().waitFor();
   assert.deepEqual(await getIds(), rankedFirst);
   phase = "refresh-ranked";
@@ -396,6 +410,10 @@ try {
   await page.reload();
   await selector().waitFor();
   assert.equal(await selector().inputValue(), "latest");
+  await page.waitForFunction(
+    (scope) => new URL(location.href).searchParams.get("feedScope") !== scope,
+    oldScope
+  );
   assert.notEqual(new URL(page.url()).searchParams.get("feedScope"), oldScope);
   assert.equal(
     await db.socialPreferences.count({ where: { ownerId: c.id } }),
