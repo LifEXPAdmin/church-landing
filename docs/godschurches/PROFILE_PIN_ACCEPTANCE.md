@@ -30,7 +30,66 @@ revocation; and own-data export. The first run exposed an invalid fictional
 church-post fixture; its audience linkage was corrected and all seven groups
 pass. Initial types and focused lint pass.
 
-Complete fresh full-gate, browser, additive/protected recovery, final measured
-costs, exact deployment/live acceptance and private reconciliation remain in
-this feature cycle. No production pin, account preference or user content has
-been changed for this implementation checkpoint.
+## Final candidate acceptance — September 14, 2026 UTC
+
+The complete foundation gate at 46bb3b5 passes 809 checks with two expected
+skips and zero failures across all 132 discovered files. It includes staged
+upgrade, fresh migrations, dump/restore, development and production HTTPS,
+restart, HTML/RSC privacy, service and concurrency checks. A complete fresh gate
+on final source 4cddb2d is still running; its result is required before release.
+
+Final production-mode source 4cddb2d passes thirty browser groups: eight profile
+pin journeys, eight retained-reader privacy, five profile Settings and nine
+content-note/recovery journeys. The pin journeys cover old-post pagination,
+320/390/1280-pixel layouts, canonical counts, a committed replacement whose
+response is lost, identical recovery through closed menus and concealed profiles,
+new sessions, unpinning, account replacement, saved comment drafts, church-only
+visibility, moderation and safe member previews. Two final HTTPS groups pass
+current account/origin, exact retry, ownership and HTML/RSC boundaries. Final
+types, full lint and the 148-trace/3,332-entry/374-server-file build check pass.
+
+The first browser run found a queued private-profile check retaining an old
+pagination URL/checksum. d80dcfd retries the latest callback; subsequent page
+traversal and recovery checks pass. e92af60 registers an uncertain pin with the
+existing private recovery owner, preserving its original request after concealment.
+Fixture-only corrections use an actual church audience and current visitor-menu
+and comment-draft controls. The lost-response transport trusts only the isolated
+fixture certificate.
+
+Two earlier production browser runs emitted intermittent React 418 warnings
+during profile loads, while their feature assertions completed. The cause is
+unestablished. Subsequent checks include eighteen development loads, sixty
+unmodified production loads, eighteen loads with sixfold client CPU throttling,
+and three fresh-server diagnostic runs of sixty loads each without recurrence.
+Temporary diagnostic asset changes were restored with exact hash verification.
+The final thirty browser groups use the original production build and have zero
+page errors. Preserve this observation in the existing reliability/final review;
+these results do not establish a fix for the intermittent warning.
+
+## Measured cost and recovery
+
+Rendering thirty owned profile cards makes zero profile-pin status requests;
+opening one owner menu makes one. With 1,000 fictional owned posts, a first page
+uses 28 statements without a selected pin and 34 with one visible pin; the next
+page uses 36 including cursor validation. Results remain bounded at 31 ordinary
+records for the 30-card page/continuation check, plus at most one pin. Five warm
+local samples give median times 26.44, 25.78 and 23.85 ms respectively. These are
+isolated diagnostics, not hosting latency or capacity acceptance.
+
+Unique route/layout JavaScript, gzip level 6 per file, compared with .14:
+
+| Surface | Raw bytes | Gzip bytes | Gzip change |
+| --- | ---: | ---: | ---: |
+| Home | 617,430 | 188,988 | +1,697 |
+| Discussion | 604,175 | 185,621 | +995 |
+| Profile | 607,765 | 184,655 | +995 |
+
+Migration 51 adds the selected post, separate nonnegative version and indexed
+foreign key to existing private preferences. It adds no table, dependency,
+provider or schedule. The verified-TLS protected production-copy upgrade at
+19:58:54 UTC passes 50→51, preserving original columns in all 93 original tables,
+completing protected replay and removing plaintext restore artifacts. Production
+was not modified by that rehearsal. Final deployment, canonical/live checks,
+installed-registry/ordinary recovery acceptance and private reconciliation remain
+in this feature cycle. No production pin or user preference has been changed for
+feature testing.

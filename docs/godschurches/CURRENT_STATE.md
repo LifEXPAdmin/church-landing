@@ -1,13 +1,17 @@
-## Personal profile pin implementation — September 14, 2026 UTC
+## Personal profile pin final candidate — September 14, 2026 UTC
 
-The next approved personal-profile feature is implemented locally after safe
-four-feed release checkpoint 6e1874d. The .15 candidate adds one owned published
-post pin, replacement/unpin controls, current audience/source checks, deduplicated
-profile pagination and owner export/erasure integration. It preserves the pinned
-introduction and church notice controls. Seven focused service groups pass;
-complete fresh-gate, browser, recovery, release and live checks remain in this
-feature cycle. The canonical application stays .14 / c83b192. See
-[profile pin evidence](PROFILE_PIN_ACCEPTANCE.md). No production pin was changed.
+The .15 candidate at runtime 4cddb2d adds one owned published post pin,
+replacement/unpin controls, current audience/source checks, deduplicated profile
+pagination and owner export/erasure integration. It preserves the introduction,
+church notice controls and all canonical post/engagement records. Thirty final
+production-mode browser groups, two final HTTPS groups, types, full lint and
+runtime traces pass. The complete foundation gate passes 809 checks plus two
+expected skips across 132 discovered files; a complete final-source gate is
+running before publication. Protected 50→51 recovery preserves original columns
+in 93 tables. Measured request, query and bundle costs and the preserved
+intermittent rendering observation are in [profile pin evidence](PROFILE_PIN_ACCEPTANCE.md).
+The canonical application remains .14 / c83b192. No production pin was changed;
+release/live/installed-recovery/private closure remain in this feature cycle.
 
 ## Four feeds verified live — September 14, 2026 UTC
 
