@@ -3,7 +3,7 @@
 The .15 candidate at runtime 4cddb2d adds one owned published post pin,
 replacement/unpin controls, current audience/source checks, deduplicated profile
 pagination and owner export/erasure integration. It preserves the introduction,
-church notice controls and all canonical post/engagement records. Thirty final
+church notice controls and all canonical post/engagement records. Thirty-one final
 production-mode browser groups, two final HTTPS groups, types, full lint and
 runtime traces pass. The complete foundation gate passes 809 checks plus two
 expected skips across 132 discovered files; a complete final-source gate is

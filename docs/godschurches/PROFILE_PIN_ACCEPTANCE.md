@@ -38,10 +38,11 @@ upgrade, fresh migrations, dump/restore, development and production HTTPS,
 restart, HTML/RSC privacy, service and concurrency checks. A complete fresh gate
 on final source 4cddb2d is still running; its result is required before release.
 
-Final production-mode source 4cddb2d passes thirty browser groups: eight profile
+Final production-mode source 4cddb2d passes thirty-one browser groups: nine profile
 pin journeys, eight retained-reader privacy, five profile Settings and nine
 content-note/recovery journeys. The pin journeys cover old-post pagination,
-320/390/1280-pixel layouts, canonical counts, a committed replacement whose
+320/390/1280-pixel layouts, actual visitor Like undo/restore and one posted
+reply on the original canonical post, a committed replacement whose
 response is lost, identical recovery through closed menus and concealed profiles,
 new sessions, unpinning, account replacement, saved comment drafts, church-only
 visibility, moderation and safe member previews. Two final HTTPS groups pass
@@ -56,14 +57,19 @@ Fixture-only corrections use an actual church audience and current visitor-menu
 and comment-draft controls. The lost-response transport trusts only the isolated
 fixture certificate.
 
-Two earlier production browser runs emitted intermittent React 418 warnings
+Three earlier production browser runs emitted intermittent React 418 warnings
 during profile loads, while their feature assertions completed. The cause is
-unestablished. Subsequent checks include eighteen development loads, sixty
+unestablished. Investigative checks included eighteen development loads, sixty
 unmodified production loads, eighteen loads with sixfold client CPU throttling,
 and three fresh-server diagnostic runs of sixty loads each without recurrence.
+Thirteen additional complete nine-group instrumented journeys also passed.
 Temporary diagnostic asset changes were restored with exact hash verification.
-The final thirty browser groups use the original production build and have zero
-page errors. Preserve this observation in the existing reliability/final review;
+The final unmodified nine-group pin journey at 20:53 UTC and the other twenty-two
+final browser groups have zero page errors. The new visitor-interaction assertions
+are test-only source 8d9dd19 against the unchanged 4cddb2d application build.
+The existing navigation reliability investigation already records React 418
+observations predating this feature. Preserve these new diagnostic receipts there
+and in the final review;
 these results do not establish a fix for the intermittent warning.
 
 ## Measured cost and recovery
