@@ -16,9 +16,9 @@ match; ordinary installed restore covers 97 tables, and nightly recovery verifie
 test user-data changes, prayer choices, jobs, new snapshots, sends and scoped
 browser/runtime errors are zero. See [complete feature evidence](PRAYER_ACCEPTANCE.md).
 
-Close prayer and its required children against their private receipts; credit
-discussion/notification integration while preserving their broader phone/domain
-criteria. Remaining moderation acceptance includes real operator coverage and
+Private source/task readbacks confirm prayer and all three children are complete;
+discussion/notification owners credit this integration while preserving their
+broader phone/domain criteria. Remaining moderation acceptance includes real operator coverage and
 topic/admin integration. Continue the next eligible priority, including topic
 communities after prerequisite inspection; keep final review last.
 

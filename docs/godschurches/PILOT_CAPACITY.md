@@ -1,5 +1,25 @@
 # Pilot capacity, costs and recovery limits
 
+## Additional shared-build observation — September 15, 2026 UTC
+
+Read-only provider inspection confirms a second project linked to the same main
+branch, with only its separate Vercel domain. During the .16 release, the canonical
+deployment explicitly waited in the concurrent-build queue while the counterpart
+built the same source for 115.703 seconds. The .17 canonical deployment started
+immediately. This records occasional build contention, not a cause of request
+latency or a guarantee that every release queues. The counterpart's intended use
+is unestablished; its configuration is preserved, with no deletion, unlinking,
+purchase or production compute change. The existing private reliability tasks
+contain the exact project and deployment evidence.
+
+The .17 release separately verifies 53 production migration checksums and the
+installed registry, protected upgrade and a 97-table ordinary installed restore.
+Nightly recovery verifies 36 encrypted sets with no issues/removals. These newer
+release/recovery observations do not change the hosted load results below or
+certify the unmet 100-client feed target.
+
+## Measured operating envelope — September 14, 2026 UTC
+
 September 14, 2026. The sustained local rehearsal and current 121-file regression
 gate pass. Bounded hosted tests have completed, including recorded failures and
 repairs. Version 2026.09.14.8 is verified live on its exact canonical deployment,
