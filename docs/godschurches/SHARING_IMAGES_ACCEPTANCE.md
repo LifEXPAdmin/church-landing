@@ -62,11 +62,24 @@ The license-only packaging follow-up `0d35047` also passes the complete producti
 build: 160 traces, 35,499 entries and 408 server JavaScript files. Its actual image
 route trace contains the 4,396-byte OFL notice alongside the font and fallback.
 
-The complete account/support/restore regression gate is running. It began with
+A late integration audit reproduced a separate existing mismatch: plain repost
+Copy/Share normalized to the original post, while generated canonical/OG metadata
+still used the repost address. `03f72a8` uses the same approved projection for both.
+A real HTTPS regression verifies original canonical/OG addresses, independent quote
+addresses and current image revocation after source withdrawal. All thirteen
+focused checks pass (ten retained repost services plus three actual HTTPS image/
+metadata groups). The failed reproduction is preserved. Its production build,
+types, scoped lint, packaging and hydration guards pass with the licensed trace
+counts above; the full gate was not restarted for this bounded metadata delta.
+
+The complete account/support/restore gate passes all 146 discovered files:
+892 checks pass, two development-delivery checks are skipped under the
+production-disabled delivery configuration, and none fail or cancel. It began with
 `375c395`; the safe 404 assertion (`913ee49`) and pixel crop repair (`8328c04`)
 were applied before its builds and new image tests. Earlier unrelated service
-checks retain that base provenance. Record the actual final count and failures
-before release; a running gate is not a pass.
+checks retain that base provenance. Synthetic full restore, fresh and upgraded
+migrations, production restart, actual HTML/RSC privacy boundaries and complete
+file discovery passed without production data or external email.
 
 The existing Copy/native Share/QR, repost/quote, Bookmark and sign-in-return owners
 are reused. All nine final production-browser groups pass on `8328c04`: four
