@@ -1,9 +1,10 @@
 import { PushSessionBoundary } from "./push-session-boundary";
-import { PlatformFooter } from "./platform-footer";
+import { LoadedVersion } from "./loaded-release";
+import { MissionSignature } from "@/components/layout/site-footer";
 import Link from "next/link";
 import { publicReleaseId } from "@/lib/platform/install-policy";
 import { privateCookies } from "@/lib/platform/private-cookies";
-import { ReadingProvider } from "./reading-preferences";
+import { ReadingProvider, AppearanceSelect } from "./reading-preferences";
 import {
   parseReadingPreferences,
   preferenceCookie,
@@ -128,7 +129,17 @@ export async function PlatformShell({
               {children}
             </main>
           </div>
-          <PlatformFooter />
+          <footer className="gc-platform-footer">
+            <AppearanceSelect />
+            <LoadedVersion />
+            <Link href="/platform/features">Explore features</Link>
+            <Link href="/platform/releases">What’s new</Link>
+            <MissionSignature />
+            <Link href="/about#our-mission">Our mission</Link>
+            <Link href="/help">Help</Link>
+            <Link href="/privacy">Privacy</Link>
+            <Link href="/terms">Terms</Link>
+          </footer>
         </div>
       </PrayerWorkspaceProvider>
     </ReadingProvider>
