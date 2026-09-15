@@ -1,6 +1,6 @@
 # Topic communities acceptance
 
-September 15, 2026 UTC · local candidate, release acceptance pending
+September 15, 2026 UTC · local release gate passed, live acceptance pending
 
 Candidate product version is **2026.09.14.18**. Canonical production remains the
 verified prayer release **2026.09.14.17**. No topic task is declared complete.
@@ -23,6 +23,13 @@ this verification run.
 
 ## Local evidence so far
 
+The uninterrupted full gate on **0d49b4372b72693288e893c5503350b0a5b663bd**
+passes all **136 discovered test files**: **845 executions, 843 passes, zero
+failures/cancellations and two expected disabled-delivery skips**. It covers
+populated upgrade, PostgreSQL restore, fresh migrations, production builds,
+process restart, development and production HTTP boundaries and all discovered
+service tests. The harness exits successfully after its completed preview closes.
+
 The latest focused gate passes 38 checks: 13 topic service/boundary groups and
 25 existing draft, report review and protected-control groups. Populated migration
 54 preserves original values. Topic records and topic constraints survive actual
@@ -31,7 +38,9 @@ Final application source **0d49b43** passes all 12 topic browser groups and all
 five photo recovery groups. Another 53 related browser groups passed across the
 reviewed candidate chain: discussion moderation, comment reading/recovery,
 composer, draft library, profile settings, scoped report review and content
-moderation. Topic checks cover creation, two guest-readable communities, canonical
+moderation. The 15 discussion/comment reader/recovery groups were also rechecked
+successfully on final application **0d49b43** after the shared history repair.
+Topic checks cover creation, two guest-readable communities, canonical
 replies, empty/error recovery, exact uncertain retries, keyboard joining,
 independent following, composing, explicit role acceptance/revocation, stale
 changes, current rules, restrictions and 20/1 pagination with return navigation.
@@ -60,8 +69,8 @@ of 788 schema objects found only the new topic length check's parentheses differ
 the unreleased migration now uses stable explicit comparisons. The focused restore
 gate includes that constraint and passes. The third gate passed its service and
 restore stages before stopping at the older topic-list comment HTML assertion;
-the corrected canonical JSON assertion passes independently. The fourth clean
-full gate runs on exact **0d49b43** and remains required before release.
+the corrected canonical JSON assertion passes independently and in the fourth
+clean full gate on exact **0d49b43**. The failed attempts remain preserved.
 
 ## Runtime measurements
 
@@ -85,9 +94,10 @@ server JavaScript files. Actual deployed trace inspection is still required.
 
 The final encrypted production-copy rehearsal completed at 01:30:13 UTC and
 verified 53→54 with the stable CHECK expression, preserved original columns across
-97 tables and completed protected replay without production changes. Confirm the final full gate and browser
-flows, runtime traces, protected recovery, exact READY/canonical deployment and
-live behavior. Then synchronize the installed registry, run its ordinary restore,
+97 tables and completed protected replay without production changes. The full
+gate, 70 browser groups and local runtime traces now pass. Verify the exact
+READY/canonical deployment and live behavior, then synchronize the installed
+registry, run its ordinary restore,
 compare live write fingerprints and reconcile the existing private feature/subtasks.
 
 Restored topics remain quarantined until a legitimate current source verifies

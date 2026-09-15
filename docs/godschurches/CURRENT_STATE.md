@@ -1,12 +1,15 @@
 ## Topic communities in progress — September 15, 2026 UTC
 
-The local topic foundation and public/member/owner pages are checkpointed.
-Thirteen topic checks plus 25 existing draft/review/retention checks pass with
-54-migration upgrade and topic-inclusive dump/restore fingerprints. Types and
-focused lint pass. Expanded production HTML/RSC, clean full regression, browser,
-costs, protected upgrade, deployment and private reconciliation remain within this
-same feature cycle. No topic feature/subtask is declared complete; the exact
-production release below is unchanged. See [current contract](TOPIC_COMMUNITIES_CONTRACT.md).
+Topic application **0d49b43** passes the complete 136-file gate with 843 passes,
+two expected skips and no failures/cancellations, plus 70 accepted browser groups.
+Migration 54, original-column preservation, topic-inclusive dump/restore, types,
+lint, runtime traces and bounded query/bundle checks pass. A protected production
+copy upgraded 53→54 at 01:30:13 UTC, preserving 97 original tables and replaying
+current protections without changing production. Exact deployment/live behavior,
+installed recovery and private reconciliation remain in this feature cycle.
+No topic feature/subtask is declared complete; the production release below is
+unchanged. See [acceptance evidence](TOPIC_COMMUNITIES_ACCEPTANCE.md) and
+[current contract](TOPIC_COMMUNITIES_CONTRACT.md).
 
 ## Prayer and private follow-up verified live — September 14, 2026 UTC
 
