@@ -165,9 +165,28 @@ restored optional choices and the new lifecycle baseline. These are local result
 full feature acceptance is still pending. Failed setup, fixture and UTC-boundary
 attempts remain in private evidence rather than being counted as passes.
 
-Remaining in this feature: final source/privacy regressions and interface/browser
-acceptance; query/runtime costs; production build and full HTTPS gate; protected
-production-copy upgrade, configuration and exact canonical release/live checks. Feedback-owned intake/exposure/ratings integrate
+An additional actual-source regression checks two existing church activations:
+management rises without new directory listings, reapproval does not invent a
+first activation, and unavailable topic owners cannot inflate active/new spaces.
+Six report tests now pass. The encrypted production-copy upgrade from 63 to 69
+preserves all original columns in 107 tables and completes protected replay.
+The production source remained read-only. The historical gate now compares new
+default fields separately, verifies no invented methods/consent/source timestamps,
+and requires exactly one empty baseline in a fresh schema.
+
+Seven production-preview browser behavior groups pass with no runtime errors:
+narrow/keyboard mature cohorts, actual filtered CSV and matching audit hash,
+reconnect and revocation, default-off choices and retained edits, trusted navigation
+and cross-device conflicts, exact interrupted withdrawal retry, and identity/access
+concealment. The report response is approximately 10 KB; seven warm local samples
+have medians about 12 ms for Growth, 3.2 ms for overview and 1.8 ms for a saved
+choice. These small fictional source fixtures do not establish production capacity.
+Additional empty/immature/failure-state verification found a stale date-form value
+after preset navigation; the form now resets when report dates change and uses
+the reporting zone for its maximum date. Its final build/browser check is pending.
+
+Remaining in this feature: final interface/browser acceptance; complete production
+and HTTPS gate; configuration and exact canonical release/live checks. Feedback-owned intake/exposure/ratings integrate
 in the specified subsequent feature, followed by shared acceptance. Real operator,
 provider, host and physical-device prerequisites stay in their existing tasks.
 

@@ -9,13 +9,22 @@ versioned lifecycle accounting, separate aggregate exports and privacy/recovery.
 See [the metric contract](PLATFORM_METRICS_CONTRACT.md) for definitions and evidence.
 
 The actual A2 cohort queries return 80/60/40/20 percent and remain invariant under
-different database timezones. Five expanded report/export/onboarding/support
+different database timezones. Six expanded report/export/onboarding/support
 checks pass; five final collection/withdrawal/operator/expiry checks pass. Nineteen
 existing admin/onboarding checks pass after correcting the isolated recovery
 adapter. Earlier fixture, UTC-boundary and withdrawal-normalization failures are
-preserved. Types and focused lint pass. Full production/HTTPS, browser, cost,
-protected production-copy upgrade and exact canonical release acceptance remain
-required in this feature cycle. Feedback source integration follows in feature 31.
+preserved. Types and focused lint pass. The encrypted production-copy upgrade
+63 to 69 passes, preserving all original columns across 107 existing tables and
+completing protected replay. Seven browser behavior groups pass in a production
+preview, including real aggregate CSV/hash, default-off choices, trusted foreground
+input, cross-device conflicts, exact interrupted retries, withdrawal and lost access.
+Warm local Growth/overview/choice medians are approximately 12/3.2/1.8 ms; this is
+not production capacity evidence. Additional report-state checks exposed and fixed
+stale date inputs after changing a preset; the final preview is being rebuilt.
+The complete gate is rerunning after updating historical schema assertions for
+the new fields and initial empty baseline. Full production/HTTPS, final browser
+and exact canonical release acceptance remain required in this feature cycle.
+Feedback source integration follows in feature 31.
 No production measurement setting, data, schema or access grant has been changed.
 
 ## Admin requests and core operations verified live — September 15, 2026 UTC
