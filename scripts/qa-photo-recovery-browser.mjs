@@ -64,11 +64,11 @@ const ok = (s) => {
   results.push(s);
   console.log("PASS " + s);
 };
-const output = fixtureDir + "/photo-recovery-browser";
+const output = fixtureDir + "/photo-recovery-browser-" + Date.now();
 mkdirSync(output, { recursive: true });
 const go = async (path) => {
   await page.goto(config.origin + path);
-  await page.waitForLoadState("networkidle");
+  await page.locator("#platform-content").waitFor();
 };
 const bounded = async () =>
   assert.ok(
@@ -80,7 +80,7 @@ const bounded = async () =>
 
 const { randomUUID } = await import("node:crypto");
 const { createPortalActor } = await import("../tests/seed-portal.ts");
-const { uploadImage, removeImage } = await import("../lib/platform/media.ts");
+const { uploadImage } = await import("../lib/platform/media.ts");
 const sharp = (await import("sharp")).default;
 Object.assign(process.env, {
   PERSONAL_PHOTO_LIBRARY_ENABLED: "true",
@@ -102,7 +102,6 @@ const signIn = async (actor) => {
   ]);
 };
 const { postCommand } = await import("../lib/platform/post-commands.ts");
-const { readPersonalPhotos } = await import("../lib/platform/personal-photos.ts");
 const pauseUntil = async (predicate, label) => { const until = Date.now() + 20_000; while (Date.now() < until) { if (await predicate()) return; await new Promise(resolve => setTimeout(resolve, 100)); } throw Error("Timed out: " + label); };
 const makeUpload = (targetId, purpose = "PROFILE_PHOTO", extra = {}) => ({ targetId, purpose, requestKey: randomUUID(), ...extra });
 const requestImages = [];
@@ -180,7 +179,7 @@ try {
   await go("/platform/posts/" + post.id);
   const photos=page.locator('[aria-label="Post photos"]');
   await photos.getByRole("button", { name: "Open photo 1 of 3", exact: true }).waitFor();
-  await photos.scrollIntoViewIfNeeded(); await page.waitForLoadState("networkidle");
+  await photos.scrollIntoViewIfNeeded(); await pauseUntil(async () => await photos.locator("img").evaluateAll(images => images.length === 1 && images.every(image => image.complete && image.naturalWidth > 0)), "first reduced-data thumbnail loads");
   assert.equal(await photos.locator("img").count(), 1);
   assert.equal(new Set(requestImages).size, 1); assert.ok(requestImages.every(path => path.endsWith("/thumb")));
   await photos.getByRole("button", { name: "Next photo", exact: true }).click();
@@ -188,7 +187,8 @@ try {
   await pauseUntil(async () => new Set(requestImages).size === 2, "second deliberately selected thumbnail enters viewport");
   assert.equal(new Set(requestImages).size, 2); assert.ok(requestImages.every(path => path.endsWith("/thumb")));
   await photos.getByRole("button", { name: "Open photo 2 of 3", exact: true }).click();
-  await dialog.getByRole("img").waitFor(); await page.waitForLoadState("networkidle");
+  await dialog.getByRole("img").waitFor();
+  await pauseUntil(async () => await dialog.getByRole("img").evaluate(image => image.complete && image.naturalWidth > 0), "deliberately opened large image loads");
   assert.equal(requestImages.filter(path => path.endsWith("/large")).length, 1);
   assert.equal(requestImages.filter(path => path.endsWith("/original")).length, 0);
   await page.screenshot({path:output+"/reduced-data-viewer-390.png"});
@@ -204,16 +204,19 @@ try {
   const firstImage=await db.mediaAsset.findFirstOrThrow({where:{postId:post.id,status:"READY"}});
   await db.platformPost.update({where:{id:post.id},data:{status:"WITHDRAWN",withdrawnAt:new Date()}});
   await page.evaluate(()=>window.dispatchEvent(new Event("focus")));
-  await photos.getByText("Photos are unavailable. Reconnect and try again.", {exact:true}).waitFor();
-  await photos.getByRole("button",{name:"Check photos",exact:true}).waitFor();assert.equal(await photos.locator("img").count(),0);
+  await page.getByRole("button",{name:"Recheck current access",exact:true}).waitFor();
+  await photos.waitFor({state:"hidden"});
+  await pauseUntil(async()=>await photos.locator("img").count()===0,"withdrawal clears concealed photo elements");
   const denied=await context.request.get(config.origin+"/api/platform/images/"+firstImage.id+"/large");assert.equal(denied.status(),404);
   await db.platformPost.update({where:{id:post.id},data:{status:"PUBLISHED",withdrawnAt:null}});
-  await photos.getByRole("button",{name:"Check photos",exact:true}).click();await photos.getByRole("button",{name:"Open photo 1 of 3",exact:true}).waitFor();
+  page.once("dialog",dialog=>dialog.accept());
+  await page.getByRole("button",{name:"Reload current information",exact:true}).click();
+  await photos.getByRole("button",{name:"Open photo 1 of 3",exact:true}).waitFor();
   ok("Normal photo mode uses responsive previews without large/original requests; withdrawal conceals stale photos and explicit access retry recovers when the fixture is restored");
   assert.equal(errors.length, 0);
   writeFileSync(output + "/result.json", JSON.stringify({ passed: results.length, checks: results, errors, productionWrites: 0 }, null, 2));
 } catch (error) {
   await page.screenshot({ path: output + "/failure.png", fullPage: true }).catch(() => {});
-  writeFileSync(output + "/failure.txt", String(error?.stack ?? error));
+  writeFileSync(output + "/failure.txt", String(error?.stack ?? error) + "\nURL: " + page.url() + "\n" + await page.locator("body").innerText().catch(() => "Body unavailable"));
   throw error;
 } finally { await context.close(); await browser.close(); await db.$disconnect(); }

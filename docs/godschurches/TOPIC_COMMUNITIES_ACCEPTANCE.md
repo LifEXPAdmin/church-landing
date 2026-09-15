@@ -27,21 +27,41 @@ The latest focused gate passes 38 checks: 13 topic service/boundary groups and
 25 existing draft, report review and protected-control groups. Populated migration
 54 preserves original values. Topic records and topic constraints survive actual
 PostgreSQL dump/restore. Types, focused lint and release-content checks pass.
-The first ten built browser groups passed after correcting a saved-topic redirect
-race with unsaved-work history cleanup. Expanded checks exposed a clean form that
-could briefly submit the membership version from before joining; clean forms now
-use current props, and uncertain requests retain their original payload. The
-expanded browser and production HTTP suites remain in progress. Replies use the
-existing canonical comment reader; its JSON and built browser checks are separate
-from the post's HTML/RSC assertions.
+Final application source **0d49b43** passes all 12 topic browser groups and all
+five photo recovery groups. Another 53 related browser groups passed across the
+reviewed candidate chain: discussion moderation, comment reading/recovery,
+composer, draft library, profile settings, scoped report review and content
+moderation. Topic checks cover creation, two guest-readable communities, canonical
+replies, empty/error recovery, exact uncertain retries, keyboard joining,
+independent following, composing, explicit role acceptance/revocation, stale
+changes, current rules, restrictions and 20/1 pagination with return navigation.
+Touch-width and desktop screenshots were inspected. No physical-device result is
+implied.
+
+The browser checks exposed and repaired saved-topic navigation racing with
+unsaved-work history cleanup, clean forms briefly retaining an older membership
+version, and intermittent client pagination returns. Shared cleanup now resolves
+after all native Back-event listeners; dirty and uncertain payloads stay intact.
+Topic pagination requests a fresh page. Production-mode topic HTTP checks pass
+public HTML/RSC, the canonical comment JSON reader, account/consent boundaries and
+restricted-content concealment. Replies remain owned by the canonical reader.
+
+The photo harness now observes actual visible content and loaded image pixels
+instead of waiting for global network silence. Its withdrawal assertions follow
+the whole-post privacy guard, verify removed image elements and direct-image 404,
+then exercise explicit reload recovery. Older failed logs are preserved, including
+obsolete draft selectors and missing isolated photo flags; they are not counted
+as passing checks.
 
 The first clean full gate stopped because its older comment fingerprint had not
 excluded the newly added nullable topic column. The second passed service checks
 but found a CHECK-expression representation difference after restore. Inspection
 of 788 schema objects found only the new topic length check's parentheses differed;
 the unreleased migration now uses stable explicit comparisons. The focused restore
-gate includes that constraint and passes. Failed artifacts are preserved. A fresh
-full gate remains required for this final candidate.
+gate includes that constraint and passes. The third gate passed its service and
+restore stages before stopping at the older topic-list comment HTML assertion;
+the corrected canonical JSON assertion passes independently. The fourth clean
+full gate runs on exact **0d49b43** and remains required before release.
 
 ## Runtime measurements
 
@@ -53,7 +73,13 @@ view initially repeated account and permission reads across three transactions.
 Combining those related reads in one protected transaction reduces 43 SELECTs to
 19 with the same 8,908-byte response size. Functional checks pass after that change.
 These are local bounded workload observations, not production latency or a hosting
-SLA. Browser request and final bundle/trace measurements remain pending.
+SLA. Removing unused topic-link prefetching changed a three-variant navigation
+probe from 29 automatic topic-destination requests to zero. One before-change
+variant failed; this is a request observation, not a controlled latency result.
+Final route JavaScript including shared chunks is 170,658 gzip bytes for discovery,
+184,325 for a topic, 183,296 for management and 170,144 for followed topics, measured
+with Node's default gzip. The local build has 157 clean runtime traces and 396
+server JavaScript files. Actual deployed trace inspection is still required.
 
 ## Recovery and release work remaining
 
