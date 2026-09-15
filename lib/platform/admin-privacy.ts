@@ -37,6 +37,8 @@ export async function eraseAdminPersonalData(
   userId: string,
   now: Date
 ) {
+  await tx.feedbackPromptClaim.deleteMany({ where: { userId } });
+  await tx.feedbackPromptPreference.deleteMany({ where: { userId } });
   await retireFeedbackImages(tx, { feedbackOwnerId: userId });
   await tx.supportMessage.updateMany({
     where: { case: { requesterId: userId, feedback: { isNot: null } } },

@@ -1,3 +1,37 @@
+## Durable optional feedback prompt checkpoint — September 15, 2026 UTC
+
+Feature 31 is still **unreleased**, continuing through ideas, subscriptions and
+shared product review. Its optional prompt now uses the released opt-in use facts:
+at least seven account days, three separated sessions and a current ordinary
+action. One account-wide reservation prevents competing tabs/devices; an unseen
+reservation expires without an exposure. A painted sheet confirms one exposure.
+Shown/closed prompts suppress for thirty days; responses suppress for ninety;
+never-ask persists across devices and campaigns with protected recovery.
+
+The named nonmodal sheet appears only after a quiet Menu interaction. Existing
+draft/conflict, dialog, focus, visibility and offline boundaries suppress it. It
+opens the same optional form and restores keyboard focus when closed. A retained
+response can still save after measurement withdrawal; unavailable exposure proof
+is labeled unattributed, excluded from both measured prompt and voluntary Menu
+coverage. Withdrawal/expiry/erasure remove raw claims; refusal remains protected.
+
+Both isolated fixtures have 76 migrations. The combined 24 prompt/intake/metric/
+retention checks pass, followed by seven final prompt checks after the coverage
+correction. Six prompt HTTPS browser groups pass, including real navigation,
+unfinished forms, Escape/focus, duplicate tabs, a lost never-ask acknowledgment,
+actual low-rating receipts and cross-tab measurement withdrawal with retained text.
+Six voluntary feedback/attachment/report browser regression groups also pass.
+Final browser errors and unexpected discard prompts are zero. Types/lint and the
+final production preview build pass; earlier constraint/fixture/layout failures
+are preserved. Local warm service medians are 7.44 ms eligible and 1.84 ms with
+measurement off (seven samples each), not production latency or capacity evidence.
+
+No feature-31 production schema, configuration, account, case, image, permission or
+outbound send changed. The serving release remains the measurement core below.
+Continue reviewed public ideas, explicit subscribed follow-up and the in-app weekly
+review/shared reports in this feature, then full protected release acceptance.
+Actual operator/intake, provider and physical gates remain; final review stays last.
+
 ## Feedback forms and private attachments checkpoint — September 15, 2026 UTC
 
 Feature 31 remains **unreleased** and continues within the same feature cycle.

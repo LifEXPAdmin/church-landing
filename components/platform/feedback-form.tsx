@@ -119,11 +119,13 @@ function Check({
 export function FeedbackForm({
   snapshot: s,
   release,
-  onRefresh
+  onRefresh,
+  promptClaimId
 }: {
   snapshot: SupportSnapshot;
   release: string;
   onRefresh: () => void;
+  promptClaimId?: string;
 }) {
   const [kind, setKind] = useState<FeedbackKind>("GENERAL"),
     [context, setContext] = useState(false);
@@ -155,6 +157,7 @@ export function FeedbackForm({
       onConfirmed={() => setAttachments([])}
       readFields={(data) => ({
         kind,
+        ...(promptClaimId ? { promptClaimId } : {}),
         attachments: attachments.map((a) => a.id),
         rating: data.get("rating") ? Number(data.get("rating")) : null,
         subject: data.get("subject"),

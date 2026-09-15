@@ -6,6 +6,7 @@ import { readAccountSession } from "./accounts";
 import { readSupport, supportCommand, SupportError } from "./support";
 import type { SupportView } from "./support-types";
 import { protectAdminCaseChanges } from "./admin-privacy";
+import { protectFeedbackPromptPreferences } from "./feedback-prompts";
 import { PortalError } from "./portal-policy";
 import {
   journalRetentionControls,
@@ -106,6 +107,10 @@ export async function handleSupportRequest(
         "Too many attempts. Wait 15 minutes before trying again."
       );
     const result = await supportCommand(db, token, body);
+    if (body.operation === "feedback-create") {
+      const feedbackOwner = await db.supportCase.findUniqueOrThrow({ where: { id: result.caseId }, select: { requesterId: true } });
+      await protectFeedbackPromptPreferences(db, feedbackOwner.requesterId);
+    }
     if(body.operation==="redact" || body.operation==="feedback-remove-attachment") await protectAdminCaseChanges(db,[result.caseId]);
     const linked = await db.supportCase.findUnique({
       where: { id: result.caseId },

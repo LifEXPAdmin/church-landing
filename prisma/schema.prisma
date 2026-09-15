@@ -247,6 +247,8 @@ model PlatformUser {
   uploadedImages MediaAsset[] @relation("ImageUploader")
   profileImages MediaAsset[] @relation("ProfileImage")
   feedbackImages MediaAsset[] @relation("FeedbackImageOwner")
+  feedbackPromptPreference FeedbackPromptPreference?
+  feedbackPromptClaims FeedbackPromptClaim[]
   personalPhotos PersonalPhoto[]
   photoAlbums PhotoAlbum[]
   postPhotoReferences PostPhotoReference[]
@@ -1233,6 +1235,8 @@ model FeedbackSubmission {
   kind String
   rating Int?
   entryPoint String @default("VOLUNTARY")
+  promptClaimId String? @unique
+  promptClaim FeedbackPromptClaim? @relation(fields: [promptClaimId], references: [id], onDelete: SetNull)
   version Int @default(1)
   sharingVersion Int @default(1)
   contactAllowed Boolean @default(false)
@@ -1252,6 +1256,36 @@ model FeedbackSubmission {
   attachments MediaAsset[]
   @@index([kind, createdAt])
   @@index([entryPoint, createdAt])
+}
+
+// Operational refusal survives optional measurement withdrawal; never a score.
+model FeedbackPromptPreference {
+  userId String @id
+  version Int @default(1)
+  neverAskAt DateTime?
+  shownUntil DateTime?
+  dismissedUntil DateTime?
+  respondedUntil DateTime?
+  updatedAt DateTime @updatedAt
+  user PlatformUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// A partial unique index permits only one unfinished reservation per account.
+// Unseen reservations are not exposures. Raw claims expire after 90 days.
+model FeedbackPromptClaim {
+  id String @id
+  userId String
+  campaign String
+  measurementVersion Int
+  configurationVersion Int
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  shownAt DateTime?
+  finishedAt DateTime?
+  user PlatformUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  feedback FeedbackSubmission?
+  @@index([userId, createdAt])
+  @@index([createdAt])
 }
 
 model SupportCoordinatorShare {

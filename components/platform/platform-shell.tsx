@@ -23,6 +23,7 @@ import { PostSignupHelp } from "./installation-help";
 import { accountEntryHref } from "@/lib/platform/account-entry";
 import { PrayerWorkspaceProvider } from "./prayer-workspace";
 import { MeasurementForeground } from "./measurement-foreground";
+import { FeedbackPrompt } from "./feedback-prompt";
 
 interface PlatformShellProps {
   user:
@@ -79,6 +80,7 @@ export async function PlatformShell({
         <div className="gc-shell">
           <PushSessionBoundary owner={user?.id ?? null} />
           <MeasurementForeground owner={user?.id ?? null} />
+          <FeedbackPrompt key={user?.id ?? "guest"} owner={user?.id ?? null} />
           <a href="#platform-content" className="gc-skip">
             Skip to content
           </a>

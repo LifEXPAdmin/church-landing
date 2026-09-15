@@ -1,5 +1,6 @@
 import { supportRecipientSelect as grantSelect, supportRecipient as recipient, defaultSupportRecipient } from "./support-recipient";
 import { createHmac } from "node:crypto";
+import { feedbackResponseSource, suppressFeedbackPromptIn } from "./feedback-prompts";
 import { attachFeedbackImages, feedbackAttachmentIds, retireFeedbackImages } from "./feedback-image-lifecycle";
 import { projectImage } from "./media";
 import { retireImage } from "./media-lifecycle";
@@ -801,8 +802,9 @@ export async function supportCommand(
       });
       if (feedback)
         await tx.feedbackSubmission.create({
-          data: { caseId: c.id, ...feedback.metadata }
+          data: { caseId: c.id, ...feedback.metadata, ...await feedbackResponseSource(tx, actor.id, input.promptClaimId) }
         });
+      if (feedback) await suppressFeedbackPromptIn(tx, actor.id, "RESPONDED");
       if (feedback) await attachFeedbackImages(tx, actor.id, c.id, feedbackAttachmentIds(input.attachments));
       await tx.supportAuditEvent.create({
         data: {

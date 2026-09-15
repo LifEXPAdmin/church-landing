@@ -31,6 +31,7 @@ export const feedbackCreateFields = [
   "helps",
   "technicalContext",
   "attachments",
+  "promptClaimId",
   "recipientId",
   "recipientVersion",
   "notice",
@@ -181,6 +182,7 @@ export function parseFeedback(input: Record<string, unknown>) {
 }
 
 export const emptyFeedback = {
+  promptClaimId: null,
   rating: null,
   contactAllowed: false,
   contactInApp: false,

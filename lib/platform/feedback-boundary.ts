@@ -10,6 +10,7 @@ import {
 import { readSupport, supportCommand, SupportError } from "./support";
 import { removeFeedbackUpload } from "./feedback-attachments";
 import { protectAdminCaseChanges } from "./admin-privacy";
+import { protectFeedbackPromptPreferences } from "./feedback-prompts";
 
 /** The permanent feedback surface uses native private case transactions. */
 export async function handleFeedbackRequest(
@@ -65,6 +66,7 @@ export async function handleFeedbackRequest(
         "Use the private receipt for case conversation or status actions."
       );
     const result = await supportCommand(db, token, input);
+    if (input.operation === "feedback-create") await protectFeedbackPromptPreferences(db, owner);
     if (input.operation === "feedback-remove-attachment") await protectAdminCaseChanges(db, [result.caseId]);
     return Response.json(result, {
       headers: socialHeaders

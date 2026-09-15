@@ -2,6 +2,8 @@ import { randomUUID } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
 import { emptyFeedback } from "./feedback-policy";
 import { retireFeedbackImages } from "./feedback-image-lifecycle";
+import { mergeFeedbackSuppression } from "./feedback-prompt-preferences";
+import { feedbackPromptOutcomes, type FeedbackPromptOutcome } from "./feedback-prompt-policy";
 import {
   Prisma,
   type PrismaClient,
@@ -37,6 +39,7 @@ export type RetentionControlEntry = {
     | "ADMIN_CLAIM"
     | "SUPPORT_MESSAGE"
     | "SUPPORT_ATTACHMENT"
+    | "FEEDBACK_PROMPT"
     | "APPEAL"
     | "ACCOUNT_STATE"
     | "AUTHOR_WITHDRAW_POST"
@@ -88,6 +91,8 @@ function validate(value: unknown): RetentionControlEntry {
       ? r.target === "ACCOUNT" &&
         r.operatorId !== null &&
         (r.outcome === "QUARANTINED" || (r.kind === "ADMIN_SUPPORT" && r.outcome === "CASE_REDACTED"))
+      : r.kind === "FEEDBACK_PROMPT"
+        ? r.target === "ACCOUNT" && r.sourceId === r.targetId && r.operatorId === r.targetId && feedbackPromptOutcomes.includes(r.outcome as FeedbackPromptOutcome)
       : r.kind === "SUPPORT_ATTACHMENT"
         ? r.target === "ASSET" && r.operatorId !== null && r.outcome === "REDACTED"
       : r.kind === "SUPPORT_MESSAGE"
@@ -196,6 +201,14 @@ export function recordSupportAttachmentPrivacyControl(tx: Tx, sourceId: string, 
     id: randomUUID(), kind: "SUPPORT_ATTACHMENT", target: "ASSET", targetId: assetId,
     sourceId, version, policy, outcome: "REDACTED", operatorId: actorId,
     recordedAt: now.toISOString(), startedAt: now.toISOString(), reviewDueAt: retentionDate(now, 90).toISOString(), endedAt: null
+  });
+}
+export function recordFeedbackPromptControl(tx: Tx, userId: string, version: number, outcome: FeedbackPromptOutcome, now: Date) {
+  return record(tx, {
+    id: randomUUID(), kind: "FEEDBACK_PROMPT", target: "ACCOUNT", targetId: userId,
+    sourceId: userId, version, policy, outcome, operatorId: userId,
+    recordedAt: now.toISOString(), startedAt: now.toISOString(),
+    reviewDueAt: retentionDate(now, 90).toISOString(), endedAt: null
   });
 }
 // Account recovery controls contain no login contact, report text or reason.
@@ -550,6 +563,13 @@ export async function replayRetentionControls(
     async (tx) => {
       await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(730221, 2)`;
       for (const entry of entries) {
+        if (entry.kind === "FEEDBACK_PROMPT") {
+          if (await tx.platformUser.findFirst({ where: { id: entry.targetId, erasedAt: null }, select: { id: true } }))
+            await mergeFeedbackSuppression(tx, entry.targetId, entry.outcome as FeedbackPromptOutcome, new Date(entry.recordedAt), entry.version);
+          await record(tx, entry);
+          await tx.retentionControl.updateMany({ where: { id: entry.id, journaledAt: null }, data: { journaledAt: new Date() } });
+          continue;
+        }
         if (entry.kind === "SUPPORT_ATTACHMENT") {
           await retireFeedbackImages(tx, { id: entry.targetId,
             ...(entry.sourceId === entry.targetId ? { feedbackCaseId: null } : { feedbackCaseId: entry.sourceId }) });

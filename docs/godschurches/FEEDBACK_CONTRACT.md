@@ -61,6 +61,43 @@ browser/release acceptance remain in this same feature cycle.
 
 ## Existing owners and required boundaries
 
+The durable prompt and its interface are now connected in isolation. Seven-day
+account age, three thirty-minute-separated opt-in sessions and one current ordinary
+action reuse the metric source rules. Current intake and measurement readiness
+are checked before an account-wide reservation and again before confirming a shown
+exposure. A two-minute abandoned reservation creates no impression. The nonmodal
+named invitation appears only after a quiet Menu interaction; existing draft,
+dialog, focus, offline and error boundaries suppress it. It opens this same form.
+
+Displayed prompts and dismissal suppress thirty days, accepted feedback ninety.
+Never-ask is a persistent account choice. Concurrent updates merge the strongest
+suppression; protected content-free recovery cannot resurrect a refusal or erase
+a newer cooldown. A transient failed preference acknowledgment retries the same
+key/payload. The sheet restores focus and does not capture ordinary navigation.
+
+Raw reservations/exposures last at most ninety days and are removed on measurement
+withdrawal, restore or erasure. The operational refusal remains separately. Only
+a retained, actually shown, owned exposure can join a measured prompt response.
+After withdrawal or expiry the feedback itself can still save: its source is
+`UNATTRIBUTED`, not a measured prompt response or a voluntary Menu submission.
+This prevents privacy changes from manufacturing response coverage. A direct
+voluntary form remains `VOLUNTARY`; forged entry-point fields remain rejected.
+
+Both isolated fixtures reach 76 migrations. Twenty-four combined prompt/intake/
+measurement/recovery scenarios pass; seven final prompt scenarios pass after the
+unattributed-coverage correction. Six final HTTPS prompt groups and six voluntary
+form/attachment/report regression groups pass at 320px with no browser errors or
+unexpected discard prompts. The cross-tab settings test removes real exposure
+rows, retains unsent text and saves the correct unattributed receipt. The final
+production preview, types and focused lint pass. Initial account-scope constraint,
+frozen-clock fixture and narrow heading-layout failures remain recorded.
+
+Seven warm isolated service samples give eligibility median/max 7.44/7.75 ms
+(23 SQL commands, 181-byte response) and measurement-off 1.84/2.03 ms
+(12–14 commands, 190 bytes). These small loopback measurements do not establish
+production latency or capacity. Full feature release and shared report/idea/
+subscription acceptance remain outstanding in this same feature cycle.
+
 The voluntary form and My feedback pages are now connected locally through the
 native request/retry component and the owner-checked API. Menu and Help link to
 them; account entry preserves only their validated destination. Ratings, bug and

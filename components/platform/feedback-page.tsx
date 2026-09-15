@@ -9,12 +9,14 @@ export async function FeedbackPage({
   view,
   caseId,
   page,
-  received
+  received,
+  promptClaimId
 }: {
   view: "new" | "requests" | "detail";
   caseId?: string;
   page?: string;
   received?: boolean;
+  promptClaimId?: string;
 }) {
   if (process.env.NODE_ENV !== "production")
     return (
@@ -63,6 +65,7 @@ export async function FeedbackPage({
           view={view}
           release={currentRelease.version}
           received={received}
+          promptClaimId={promptClaimId}
         />
       </section>
     </PlatformShell>

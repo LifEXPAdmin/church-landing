@@ -9,19 +9,22 @@ import { PortalCard, PortalEmpty, portalLinkClass } from "./portal-ui";
 import { SupportRows } from "./support-presentation";
 import { SupportViews } from "./support-views";
 import { ReadVisibility } from "./read-visibility";
+import { FeedbackPromptPreferences } from "./feedback-prompt-preferences";
 
 export function FeedbackWorkspace({
   owner,
   query,
   view,
   release,
-  received
+  received,
+  promptClaimId
 }: {
   owner: string;
   query: string;
   view: "new" | "requests" | "detail";
   release: string;
   received?: boolean;
+  promptClaimId?: string;
 }) {
   const [data, setData] = useState<SupportSnapshot | null>(null),
     [visible, setVisible] = useState(false),
@@ -159,6 +162,7 @@ export function FeedbackWorkspace({
               view={view}
               release={release}
               received={received}
+              promptClaimId={promptClaimId}
               onRefresh={() => void load()}
             />
           )}
@@ -172,13 +176,15 @@ function FeedbackViews({
   view,
   release,
   received,
-  onRefresh
+  onRefresh,
+  promptClaimId
 }: {
   snapshot: SupportSnapshot;
   view: "new" | "requests" | "detail";
   release: string;
   received?: boolean;
   onRefresh: () => void;
+  promptClaimId?: string;
 }) {
   const everReady = useRef(false);
   if (s.intake.available) everReady.current = true;
@@ -241,6 +247,7 @@ function FeedbackViews({
               <FeedbackForm
                 snapshot={s}
                 release={release}
+                promptClaimId={promptClaimId}
                 onRefresh={onRefresh}
               />
             )}
@@ -315,6 +322,7 @@ function FeedbackViews({
           />
         </>
       )}
+      {view !== "detail" && <FeedbackPromptPreferences owner={s.viewer.id} />}
     </>
   );
 }

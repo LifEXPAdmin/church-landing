@@ -417,6 +417,7 @@ export function recordOnboardingPresentation(
 
 /** A restore cannot resurrect older optional choices, foreground facts or use-session eligibility. */
 export async function clearRestoredMeasurements(tx: Tx) {
+  await tx.feedbackPromptClaim.deleteMany({});
   const days = await tx.platformMetricActivityDay.deleteMany({});
   const choices = await tx.platformMeasurementChoice.updateMany({
     where: { enabledAt: { not: null } },
@@ -440,6 +441,7 @@ export async function clearRestoredMeasurements(tx: Tx) {
 /** Existing maintenance calls this bounded cleanup; reports independently ignore expired facts. */
 export async function purgeExpiredMeasurements(tx: Tx, now = new Date()) {
   const cutoff = new Date(now.getTime() - METRIC_RAW_DAYS * 86400000);
+  await tx.$executeRaw`DELETE FROM "FeedbackPromptClaim" WHERE id IN (SELECT id FROM "FeedbackPromptClaim" WHERE "createdAt" < ${metricUtc(cutoff)} ORDER BY "createdAt" LIMIT 1000)`;
   const days = await tx.$executeRaw`WITH expired AS (
     SELECT "userId",version,day FROM "PlatformMetricActivityDay" WHERE "lastAt" < ${metricUtc(cutoff)} ORDER BY "lastAt" LIMIT 1000
   ) DELETE FROM "PlatformMetricActivityDay" d USING expired e WHERE d."userId"=e."userId" AND d.version=e.version AND d.day=e.day`;

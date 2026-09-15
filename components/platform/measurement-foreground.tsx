@@ -107,6 +107,7 @@ export function MeasurementForeground({ owner }: { owner: string | null }) {
           return;
         }
         const result = await r.json();
+        if (result.accepted) window.dispatchEvent(new CustomEvent("platform-quiet-navigation", { detail: { owner } }));
         if (live && state === choice) {
           if (typeof result.cursor === "string")
             state.foregroundCursor = result.cursor;

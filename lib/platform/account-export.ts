@@ -869,6 +869,8 @@ export async function downloadAccountExport(
       churchConnections,
       supportRequests,
       supportMessages,
+      feedbackPromptPreferences: await tx.feedbackPromptPreference.findMany({ where: { userId }, select: { neverAskAt: true, shownUntil: true, dismissedUntil: true, respondedUntil: true, updatedAt: true } }),
+      feedbackPromptHistory: await tx.feedbackPromptClaim.findMany({ where: { userId, createdAt: { gte: measurementCutoff } }, select: { campaign: true, createdAt: true, expiresAt: true, shownAt: true, finishedAt: true }, orderBy: { createdAt: "asc" }, take: MAX_ROWS + 1 }),
       measurementChoice: (await tx.platformMeasurementChoice.findMany({ where: { userId }, select: {
         policy: true, enabledAt: true, updatedAt: true, shareDevice: true, referral: true,
         sessionStarts: true, cohortEligible: true, onboardingStartedAt: true,
