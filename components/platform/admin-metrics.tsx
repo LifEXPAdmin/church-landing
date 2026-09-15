@@ -235,6 +235,7 @@ export function AdminMetrics({ data }: { data: MetricSnapshot }) {
         ))}
       </nav>
       <form
+        key={r.window.from + ":" + r.window.through}
         action="/platform/admin/growth"
         className="flex flex-wrap items-end gap-3"
       >
