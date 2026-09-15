@@ -1,3 +1,28 @@
+## Resumable onboarding and church welcome verified live — September 15, 2026 UTC
+
+**2026.09.15.4 / 3d8b59a206818e13aaef6b0a82baccbdbd7dff55** is READY in
+**dpl_3tawYWB6fMJds7wPkxCyaTJDasMA**, independently canonical and verified live.
+Optional saved steps, relevant Home, both existing private church draft returns,
+approved welcome selection, deliberate introduction/question labels and explicitly
+scoped host follow-up/totals ship through current permission and content owners.
+The same feature includes account export/erasure and the Help entry correction
+found during signed-in live acceptance. No automatic follow or grant is added.
+
+The full 148-file gate on `6c9f74c` passes 904 checks with two expected skips.
+Later privacy changes pass 25 focused checks; the final Help candidate passes its
+production build, types/lint, four actual HTTPS and nine browser groups. Final live
+acceptance passes 23 public, four health and four signed-in groups, with zero
+browser/runtime errors. All 57 migration checksums match; protected 56→57 recovery
+preserves 101 original tables and installed 57→57 restore covers 102. Thirty
+original-column production fingerprints match with no new hints, welcome choices,
+labels, host grants or ranking snapshots, zero test user-data writes and zero sends.
+
+See [complete acceptance](ONBOARDING_WELCOME_ACCEPTANCE.md) for source provenance,
+preserved failed Help acceptance, recovery and measured request/query costs.
+Engineering is complete; real approved-host and consenting-adult physical-phone
+pilot acceptance remains open. Continue the eligible ordinary public metadata,
+sitemap, structured-data and discoverability work in feature 32. Final review stays last.
+
 ## Dynamic public sharing images verified live — September 15, 2026 UTC
 
 **2026.09.15.3 / 433416388b95be194e8df2cf81fda4cff7c58ec8** is READY in

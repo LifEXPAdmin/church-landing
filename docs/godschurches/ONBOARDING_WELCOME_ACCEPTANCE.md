@@ -187,3 +187,31 @@ nine final production-browser groups pass, with zero runtime errors, including
 actual Help-to-guide navigation and both owned draft returns. The full gate was
 not repeated for this small documented Help delta. Corrected canonical release
 acceptance remains pending at this checkpoint.
+
+## Corrected canonical release accepted — September 15, 2026 UTC
+
+Version **2026.09.15.4**, source **3d8b59a206818e13aaef6b0a82baccbdbd7dff55**,
+is READY in **dpl_3tawYWB6fMJds7wPkxCyaTJDasMA**. Independent deployment,
+canonical alias and serving release checks agree at **12:49:49 UTC**. The final
+provider build verifies the retained hydration renderer; the live page loads its
+exact bytes and checksum. The unchanged schema has all 57 applied checksums and
+no pending migration. Recovery evidence and the installed registry above remain
+current for this Help-only correction.
+
+Final live acceptance passes **23 public**, **four health** and **four actual
+signed-in** groups. These cover guest signup returns, all three private projection
+denials, real public preview regressions, release guidance, both public Help links,
+member Help, the owned guide, the existing private representative draft and denied
+host access. Current account data supplies the guide; no production fixture or
+grant was created. The signed-in draft still requires real representative review,
+and the new host capability is unchecked. Browser and scoped deployment runtime
+error rows are zero. Thirty original-column production fingerprints match the
+pre-release baseline; new saved hints, welcome choices, labels, host grants and
+ranking snapshots remain zero. Test application writes and outbound sends are zero.
+
+The three engineering subtasks are complete. The broader feature retains actual
+approved-church/host and five-consenting-adult phone pilot acceptance, including
+human time-to-first-action and response coverage. There is no eligible live account
+manager or approved host to perform those journeys, and no permission was granted
+to manufacture one. Continue the eligible public-discoverability feature; final
+batch review remains last.
