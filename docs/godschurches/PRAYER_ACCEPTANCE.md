@@ -1,6 +1,43 @@
 # Prayer and private follow-up acceptance
 
-14 September 2026 UTC · Complete release gate passed; publication pending.
+14 September 2026 UTC · Published and verified live.
+
+## Exact release and live acceptance
+
+**2026.09.14.17 / e0dff560010e8bd785756d9f3c1abb4f5d335712** is READY in
+**dpl_75CbzUPnt9ougiMfyNSWxQifK4iQ**. Independent canonical assignment and
+the live release/build identity match. Application source is `01cc6e7`; the
+full-gate source `70be5ff` and later release commits add QA/report changes only.
+
+Sixteen public, four secured health and four actual signed-in live groups pass.
+The existing account sees its empty private list and separate initially-off
+prayer phone category; its prior settings remain unchanged. Existing post and
+comment targets show the guide, disabled pre-guide acknowledgment/name controls,
+independent off save/update choices and truthful wording. The owned post shows
+the four author-update kinds and an empty update reader; another author's
+comment has no author publication form. The original discussion is preserved.
+Browser errors/warnings and scoped runtime error/fatal rows are zero.
+
+A content-free nonexistent-job probe completes on the exact deployed continuation
+consumer with HTTP 200 and zero application writes. No real prayer guide consent,
+acknowledgment, save, update, phone preference or message is created by verification.
+Whole-table fingerprints across ten source/preference/event/device/job tables
+match baseline. New ranking snapshots, prayer records/updates/guides, phone opt-ins
+and continuation jobs are zero. All 53 production migration checksums match.
+
+The installed registry is updated to 53 with earlier checksums preserved. The
+independent installed ordinary restore passes 53→53 across 97 tables and removes
+plaintext; the separate protected 52→53 upgrade preserves original columns in
+94 tables and replays current protections. Nightly recovery verifies 36 encrypted
+sets with zero issues/removals; its workstation must remain awake. Deployed
+runtime tracing passes 151 traces, 15,762 entries and 380 server JavaScript files,
+excluding private fixtures and environment files.
+
+The prayer feature and its service/guide/private-list children are complete.
+Credit the prayer integration within discussion and notification owners while
+retaining their actual-phone and other domain-adapter requirements. No physical
+phone or assistive-technology session is claimed. The prior intermittent rendering
+investigation and unmet 100-client feed target remain open.
 
 ## Complete feature scope
 
@@ -59,7 +96,8 @@ JavaScript files, excluding private fixtures and environment files.
 The protected production-copy upgrade from migration 52 to 53 passes. Original
 columns across 94 tables match before/after; protected recovery completes with
 outbound delivery disabled. Plaintext and its temporary cluster are removed.
-Production has not yet been migrated or modified by this candidate's checks.
+The release subsequently applied migration 53 through the established build
+command. Production user-data preservation is independently verified above.
 
 The first full-gate attempt exposed a legacy reading-preference assertion missing
 the new default-false count option. The assertion was corrected; the fresh final
@@ -86,11 +124,10 @@ Transaction statements vary with the reused permission gate. Pages contain at
 most twenty saves or updates, and names at most thirty permitted participants.
 These fixture observations do not establish a production or 100-client SLA.
 
-## Remaining release acceptance
+## Continuation
 
-Finish the exact READY deployment and independent
-canonical assignment, actual public and signed-in read checks, migration and
-installed recovery registry verification, ordinary installed restore, runtime
-logs and original production-data fingerprints. Reconcile the existing private
-feature/subtasks and overlapping discussion/notification scope only after those
-receipts exist. Preserve physical phone/provider prerequisites in their owners.
+Reconcile the existing private feature/subtasks and overlapping discussion and
+notification scope against these receipts. Preserve physical phone/provider
+prerequisites in their existing owners. Remaining moderation acceptance includes
+real account-operator coverage and future topic/admin integration. Inspect the
+next eligible priority after this complete feature; keep final review last.

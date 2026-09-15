@@ -1,9 +1,9 @@
 # Prayer and private follow-up
 
-14 September 2026 UTC · Implemented; complete release gate passed, publication pending.
+14 September 2026 UTC · Published and verified live in 2026.09.14.17.
 
 See [feature acceptance](PRAYER_ACCEPTANCE.md) for the 134-file gate, 55 browser
-groups, protected upgrade, measured costs and remaining release verification.
+groups, protected/installed recovery, measured costs and exact live verification.
 
 The current feature covers prayer on every eligible canonical post, comment and
 reply, a first-use guide, acknowledgment and undo, explicit name sharing, private

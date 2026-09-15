@@ -1,14 +1,26 @@
-## Prayer feature candidate — September 14, 2026 UTC
+## Prayer and private follow-up verified live — September 14, 2026 UTC
 
-The .17 candidate adds the current prayer feature, private saved follow-up,
-canonical author updates and reaction-count visibility in one feature cycle.
+**2026.09.14.17 / e0dff560010e8bd785756d9f3c1abb4f5d335712** is READY in
+**dpl_75CbzUPnt9ougiMfyNSWxQifK4iQ**, independently canonical and verified live.
+Prayer, private saved follow-up, canonical author updates, optional notifications
+and reaction-count visibility ship in one complete feature cycle.
 The uninterrupted 134-file gate passes 829 checks with two expected skips;
 55 production-build browser groups, lint/types and protected production-copy
 upgrade 52→53 pass. Application source is 01cc6e7; the full gate uses 70be5ff
 with its corrected legacy display assertion. Original columns across 94 tables
-are preserved and protected recovery completes. Publication, exact canonical/live
-verification and installed recovery acceptance remain pending; serving production
-is still .16 below. See [complete candidate evidence](PRAYER_ACCEPTANCE.md).
+are preserved and protected recovery completes. Sixteen public, four health and
+four actual signed-in live groups pass. The deployed continuation probe completes
+with HTTP 200 and zero writes. All 53 migration checksums and the installed registry
+match; ordinary installed restore covers 97 tables, and nightly recovery verifies
+36 sets with zero issues/removals. Ten production table fingerprints match;
+test user-data changes, prayer choices, jobs, new snapshots, sends and scoped
+browser/runtime errors are zero. See [complete feature evidence](PRAYER_ACCEPTANCE.md).
+
+Close prayer and its required children against their private receipts; credit
+discussion/notification integration while preserving their broader phone/domain
+criteria. Remaining moderation acceptance includes real operator coverage and
+topic/admin integration. Continue the next eligible priority, including topic
+communities after prerequisite inspection; keep final review last.
 
 ## Followed conversation integration verified live — September 14, 2026 UTC
 
