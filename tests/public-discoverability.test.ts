@@ -20,13 +20,27 @@ const db = new PrismaClient();
 before(() => assertPortalTestDatabase(db));
 after(() => db.$disconnect());
 const origin = process.env.ACCOUNT_ORIGIN!;
-async function sitemap(kind?: string, page = 0) {
+async function sitemap(kind?: string, page?: number): Promise<string> {
+  if (kind && page === undefined) {
+    const index = await sitemap();
+    const children = [...index.matchAll(/<loc>([^<]+)<\/loc>/g)]
+      .map((match) => new URL(match[1].replace(/&amp;/g, "&")))
+      .filter((url) => url.searchParams.get("kind") === kind);
+    const pages: string[] = [];
+    for (const child of children) {
+      assert.equal(child.origin, origin);
+      pages.push(await sitemap(kind, Number(child.searchParams.get("page"))));
+    }
+    return pages.join("\n");
+  }
   const r = await publicSitemapResponse(
     db,
     new Request(
       origin +
         "/sitemap.xml" +
-        (kind ? "?" + new URLSearchParams({ kind, page: String(page) }) : "")
+        (kind
+          ? "?" + new URLSearchParams({ kind, page: String(page ?? 0) })
+          : "")
     )
   );
   assert.equal(r.status, 200);
