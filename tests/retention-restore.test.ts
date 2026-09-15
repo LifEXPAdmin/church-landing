@@ -177,6 +177,38 @@ test("an actual isolated database snapshot replays newer deletion and hold relea
   await source.commentFollowerJob.create({
     data: { commentId: followedComment.id, phase: "PRAYER" }
   });
+  const planChurch = await source.church.create({
+    data: {
+      slug: `restore-plan-${randomUUID()}`,
+      name: "Fictional recovery church",
+      summary: "Isolated recovery only"
+    }
+  });
+  const restoredPlan = await source.platformPost.create({
+    data: {
+      authorId: b.id,
+      authorChurchId: planChurch.id,
+      audienceChurchId: planChurch.id,
+      content: "Fictional restored plan must not publish",
+      status: "SCHEDULED",
+      publishedAt: null,
+      scheduleAt: new Date(Date.now() + 3600000),
+      scheduleLocal: "2026-09-15T12:00",
+      scheduleZone: "UTC",
+      scheduledById: b.id,
+      scheduleDispatchedAt: new Date(),
+      scheduleDispatchedVersion: 1
+    }
+  });
+  const restoredFanout = await source.notificationFanoutJob.create({
+    data: {
+      key: randomUUID(),
+      kind: "AUTHOR_POST",
+      sourceId: followedPost.id,
+      sourceVersion: 1,
+      actorId: b.id
+    }
+  });
   const curve = createECDH("prime256v1");
   curve.generateKeys();
   await pushSubscriptionCommand(
@@ -448,6 +480,40 @@ test("an actual isolated database snapshot replays newer deletion and hold relea
     assert.ok(result.quarantine.devices > 0);
     assert.ok(result.quarantine.deliveries > 0);
     assert.ok(result.quarantine.conversationJobs > 0);
+    assert.ok(result.quarantine.activityJobs > 0);
+    assert.ok(result.quarantine.scheduledPosts > 0);
+    const quarantinedPlan = await restored.platformPost.findUniqueOrThrow({
+      where: { id: restoredPlan.id }
+    });
+    assert.equal(quarantinedPlan.status, "DRAFT");
+    assert.equal(quarantinedPlan.content, restoredPlan.content);
+    assert.equal(quarantinedPlan.scheduleAt, null);
+    assert.equal(quarantinedPlan.scheduleDispatchedAt, null);
+    assert.equal(quarantinedPlan.scheduleDispatchedVersion, null);
+    assert.equal(quarantinedPlan.version, restoredPlan.version + 1);
+    assert.ok(
+      (
+        await restored.notificationFanoutJob.findUniqueOrThrow({
+          where: { id: restoredFanout.id }
+        })
+      ).completedAt
+    );
+    assert.equal(
+      (
+        await source.notificationFanoutJob.findUniqueOrThrow({
+          where: { id: restoredFanout.id }
+        })
+      ).completedAt,
+      null
+    );
+    assert.equal(
+      (
+        await source.platformPost.findUniqueOrThrow({
+          where: { id: restoredPlan.id }
+        })
+      ).status,
+      "SCHEDULED"
+    );
     assert.ok(result.quarantine.topicsNeedingOwnershipReview > 0);
     assert.equal(
       (

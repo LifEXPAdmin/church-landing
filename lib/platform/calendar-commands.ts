@@ -546,6 +546,7 @@ export async function calendarCommand(
         409,
         "This series is canceled. Create a new event if it should run again."
       );
+    const changedOccurrences: Array<{ id: string; version: number }> = [];
     if (op === "edit-event") {
       const scope = input.scope;
       if (scope !== "OCCURRENCE" && scope !== "SERIES")
@@ -566,7 +567,7 @@ export async function calendarCommand(
         expected(input.occurrenceVersion, occurrence.version);
         const { ordinal: ignored, ...time } = times.occurrences[0];
         void ignored;
-        await tx.calendarOccurrence.update({
+        const changed = await tx.calendarOccurrence.update({
           where: { id: occurrence.id },
           data: {
             ...data,
@@ -575,6 +576,7 @@ export async function calendarCommand(
             version: { increment: 1 }
           }
         });
+        changedOccurrences.push(changed);
         await tx.calendarEvent.update({
           where: { id: event.id },
           data: { version: { increment: 1 } }
@@ -608,8 +610,8 @@ export async function calendarCommand(
         });
         for (const time of times.occurrences) {
           const row = rows.find((r) => r.ordinal === time.ordinal)!;
-          if (!row.canceledAt)
-            await tx.calendarOccurrence.update({
+          if (!row.canceledAt) {
+            const changed = await tx.calendarOccurrence.update({
               where: { id: row.id },
               data: {
                 ...data,
@@ -618,6 +620,8 @@ export async function calendarCommand(
                 version: { increment: 1 }
               }
             });
+            changedOccurrences.push(changed);
+          }
         }
       }
     } else if (op === "cancel-event") {
@@ -640,15 +644,26 @@ export async function calendarCommand(
         if (!occurrence)
           throw new PortalError(404, "Active occurrence not found.");
         expected(input.occurrenceVersion, occurrence.version);
-        await tx.calendarOccurrence.update({
+        const changed = await tx.calendarOccurrence.update({
           where: { id: occurrence.id },
           data: { canceledAt: new Date(), version: { increment: 1 } }
         });
+        changedOccurrences.push(changed);
       } else {
+        const active = await tx.calendarOccurrence.findMany({
+          where: { eventId: event.id, canceledAt: null },
+          select: { id: true, version: true },
+          take: 53
+        });
+        if (active.length > 52)
+          throw new PortalError(409, "Review the size of this event series.");
         await tx.calendarOccurrence.updateMany({
           where: { eventId: event.id, canceledAt: null },
           data: { canceledAt: new Date(), version: { increment: 1 } }
         });
+        changedOccurrences.push(
+          ...active.map((row) => ({ id: row.id, version: row.version + 1 }))
+        );
       }
       await tx.calendarEvent.update({
         where: { id: event.id },
@@ -662,14 +677,6 @@ export async function calendarCommand(
         }
       });
     } else throw new PortalError(400, "Choose an available calendar action.");
-    const changedOccurrences = await tx.calendarOccurrence.findMany({
-      where: {
-        eventId: event.id,
-        ...(input.scope === "OCCURRENCE" ? { id: id(input.occurrenceId) } : {})
-      },
-      select: { id: true, version: true },
-      take: 53
-    });
     for (const occurrence of changedOccurrences)
       await recordFanout(
         tx,

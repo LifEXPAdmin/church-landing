@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { privateCookies } from "./private-cookies";
 import { PLATFORM_SESSION_COOKIE } from "./session";
 import { getPostParticipation } from "./post-participation-reads";
-import { getPostEditor } from "./post-editor";
+import { getPostEditor, getScheduledPosts } from "./post-editor";
 import {
   getPost,
   getChurchPostFeed,
@@ -48,6 +48,9 @@ export async function readPostParticipation(id: string) {
 }
 export async function readPostEditor(id: string) {
   return getPostEditor(prisma, await token(), id);
+}
+export async function readScheduledPosts(after?: string) {
+  return getScheduledPosts(prisma, await token(), after);
 }
 export async function readChurchPostFeed(
   churchId: string,

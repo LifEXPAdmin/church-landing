@@ -5,6 +5,7 @@ import { requestSessionToken, readBody } from "./account-boundary";
 import { readAccountSession } from "./accounts";
 import { PortalError } from "./portal-policy";
 import { churchClaimCommand, getChurchClaims } from "./church-claims";
+import { scheduleDomainActivity } from "./notification-fanout";
 
 const headers = {
   "Cache-Control": "private, no-store, max-age=0",
@@ -14,7 +15,8 @@ const headers = {
 };
 export async function handleChurchClaimRequest(
   db: PrismaClient,
-  request: Request
+  request: Request,
+  afterResponse?: (work: () => Promise<void>) => void
 ) {
   try {
     const token = requestSessionToken(request);
@@ -79,7 +81,9 @@ export async function handleChurchClaimRequest(
         429,
         "Too many changes. Wait 15 minutes and try again."
       );
-    return Response.json(await churchClaimCommand(db, token, input), {
+    const result = await churchClaimCommand(db, token, input);
+    scheduleDomainActivity(db, actor.id, afterResponse);
+    return Response.json(result, {
       headers
     });
   } catch (error) {

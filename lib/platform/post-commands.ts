@@ -268,10 +268,7 @@ export async function postCommandIn(
         409,
         "This event already has a discussion. Use its existing post."
       );
-    const scheduled =
-      input.scheduleLocal !== undefined &&
-      input.scheduleLocal !== null &&
-      input.scheduleLocal !== "";
+    const scheduled = !!(input.scheduleLocal || input.scheduleZone);
     if (scheduled && !authorChurchId)
       throw new PortalError(
         403,
@@ -329,7 +326,7 @@ export async function postCommandIn(
       id: post.id,
       version: post.version,
       message: scheduled
-        ? "The publication plan is saved. Durable worker activation is a separate step."
+        ? "Your church post is scheduled. Manage its publication time in Scheduled posts."
         : "Your post is published."
     };
   }
@@ -780,7 +777,14 @@ async function receiptedPostAction(
   input: Record<string, unknown>
 ) {
   if (
-    !["edit", "discussion", "pin", "withdraw"].includes(String(input.operation))
+    ![
+      "edit",
+      "discussion",
+      "pin",
+      "withdraw",
+      "schedule",
+      "cancel-schedule"
+    ].includes(String(input.operation))
   )
     throw new PortalError(400, "Choose a supported post management action.");
   const key = `post-control:${socialKey(input.mutationId)}`;
@@ -869,13 +873,28 @@ export async function publishScheduledPost(
         !post ||
         post.status !== "SCHEDULED" ||
         post.version !== version ||
-        !post.scheduleAt ||
-        post.scheduleAt > now
+        !post.scheduleAt
       )
-        return { published: false, changed: false };
+        return { published: false, changed: false, retryAfterSeconds: 0 };
+      if (post.scheduleAt > now)
+        return {
+          published: false,
+          changed: false,
+          retryAfterSeconds: Math.max(
+            1,
+            Math.ceil((post.scheduleAt.getTime() - now.getTime()) / 1000)
+          )
+        };
       const context = await postContext(tx, post.scheduledById);
       let allowed =
-        !!post.authorChurchId && context.publishers.has(post.authorChurchId);
+        !!post.authorChurchId &&
+        context.publishers.has(post.authorChurchId) &&
+        post.moderationState === "VISIBLE" &&
+        !post.topicCommunityId &&
+        !post.repostKind &&
+        (!post.audienceChurchId ||
+          context.churches.includes(post.audienceChurchId)) &&
+        now.getTime() - post.scheduleAt.getTime() <= 86_400_000;
       if (allowed) {
         try {
           await eventLink(
@@ -884,6 +903,23 @@ export async function publishScheduledPost(
             post.eventOccurrenceId,
             post.audienceChurchId
           );
+          const photos = await tx.postPhotoReference.findMany({
+            where: { postId: post.id },
+            select: { assetId: true, asset: { select: { version: true } } },
+            take: 11
+          });
+          if (photos.length > 10)
+            throw new PortalError(409, "Review the scheduled gallery.");
+          if (photos.length)
+            await validatePostPhotosIn(
+              tx,
+              await postContext(tx, post.authorId),
+              post,
+              photos.map((photo) => ({
+                id: photo.assetId,
+                version: photo.asset.version
+              }))
+            );
         } catch (error) {
           if (!(error instanceof PortalError)) throw error;
           allowed = false;
@@ -894,6 +930,8 @@ export async function publishScheduledPost(
         data: {
           status: allowed ? "PUBLISHED" : "DRAFT",
           publishedAt: allowed ? now : null,
+          scheduleDispatchedAt: null,
+          scheduleDispatchedVersion: null,
           scheduleAt: null,
           scheduleLocal: null,
           scheduleZone: null,
@@ -907,7 +945,7 @@ export async function publishScheduledPost(
         allowed ? "schedule-published" : "schedule-blocked"
       );
       if (allowed) await recordPostPublication(tx, updated);
-      return { published: allowed, changed: true };
+      return { published: allowed, changed: true, retryAfterSeconds: 0 };
     },
     { maxWait: 10000, timeout: 15000 }
   );

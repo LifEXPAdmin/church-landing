@@ -68,6 +68,32 @@ export async function recordFanout(
     update: {}
   });
 }
+export async function recordChurchRoleChanges(
+  tx: Tx,
+  actorId: string,
+  ids: string[]
+) {
+  if (ids.length > 10)
+    throw Error("Church position assignment bound exceeded.");
+  const assignments = await tx.churchPositionAssignment.findMany({
+    where: { id: { in: ids } },
+    select: {
+      id: true,
+      version: true,
+      connection: { select: { userId: true } }
+    },
+    take: 10
+  });
+  for (const assignment of assignments)
+    await recordDomainActivity(tx, {
+      kind: "CHURCH_ROLE",
+      category: "church",
+      sourceId: assignment.id,
+      sourceVersion: assignment.version,
+      actorId,
+      recipientId: assignment.connection.userId
+    });
+}
 export async function recordPostPublication(tx: Tx, post: PlatformPost) {
   if (
     post.status !== "PUBLISHED" ||

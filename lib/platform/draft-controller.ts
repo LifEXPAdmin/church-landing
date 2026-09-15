@@ -24,6 +24,7 @@ export type DraftState = {
   failed: boolean;
   retry: boolean;
   postId: string | null;
+  scheduled: boolean;
   resumeId: string | null;
   loadNumber: number;
   externalWork: { dirty: boolean; saving: boolean; conflict: boolean };
@@ -49,6 +50,10 @@ export const emptyComposer = (
 // Explicit whitelist: short-lived preview credentials never enter snapshots.
 export function composerPayload(f: ComposerFields): PrivateDraftPayload {
   return {
+    ...(f.scheduleLocal !== undefined
+      ? { scheduleLocal: f.scheduleLocal }
+      : {}),
+    ...(f.scheduleZone !== undefined ? { scheduleZone: f.scheduleZone } : {}),
     ...(f.discovery !== undefined ? { discovery: { ...f.discovery } } : {}),
     content: f.content,
     ...(f.contentNote !== undefined ? { contentNote: f.contentNote } : {}),
@@ -94,6 +99,7 @@ const initialState = (): DraftState => ({
   failed: false,
   retry: false,
   postId: null,
+  scheduled: false,
   resumeId: null,
   externalWork: { dirty: false, saving: false, conflict: false },
   loadNumber: 0
@@ -342,9 +348,13 @@ export class DraftController {
         this.set({
           version: r.data.version,
           postId: r.data.postId as string,
+          scheduled: r.data.scheduled === true,
           dirty: false,
           retry: false,
-          message: "Post published once."
+          message:
+            r.data.scheduled === true
+              ? "Church post scheduled once."
+              : "Post published once."
         });
       return true;
     } catch {
@@ -523,6 +533,7 @@ export class DraftController {
         failed: false,
         retry: false,
         postId: null,
+        scheduled: false,
         message:
           "Draft resumed. Review its audience and reply permissions. Renew any link preview before publishing."
       });

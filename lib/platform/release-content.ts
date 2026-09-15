@@ -14,6 +14,32 @@ export type Feature = {
 };
 export const features: Feature[] = [
   {
+    id: "author-bells",
+    category: "Posts and conversations",
+    name: "Choose new-post alerts",
+    description:
+      "Turn on a private bell for future posts by a person or church.",
+    steps:
+      "Open their profile or church page, open the relationship choices and choose Notify me of new posts. Choose Activity and phone categories separately in Notification preferences. Turn the bell off at any time.",
+    href: "/platform/settings/notifications/availability",
+    eligibility:
+      "Verified adult accounts with current access. Follow, favorites and membership do not turn on the bell or phone alerts. Mutes, blocks and current source permissions still apply; enabling a bell does not deliver older posts.",
+    availability: "available"
+  },
+  {
+    id: "scheduled-church-posts",
+    category: "Church tools",
+    name: "Scheduled church posts",
+    description:
+      "Prepare a church post now and choose a future publication time.",
+    steps:
+      "In the post composer, choose your authorized church identity, enable Schedule publication and enter the time and time zone. Your private draft retains the plan. After scheduling, open Your drafts > Scheduled church posts to edit, reschedule or cancel it.",
+    href: "/platform/scheduled-posts",
+    eligibility:
+      "Current church publishing access, checked again at publication. Plans stay hidden until published. Lost access, restored plans or a delay over one day return to a draft for publisher review. Personal, quote and topic posts publish immediately unless kept as private drafts.",
+    availability: "conditional"
+  },
+  {
     id: "discovery-feeds",
     category: "Posts and conversations",
     name: "Discovery and private feed settings",
@@ -224,9 +250,9 @@ export const features: Feature[] = [
     category: "Getting started",
     name: "Optional phone notifications",
     description:
-      "Choose phone alerts for messages, replies and mentions, with private previews, quiet hours and a test you control.",
+      "Choose independent Activity and phone alerts, with private previews, quiet hours and a test you control.",
     steps:
-      "Open Settings > Notifications > Notification preferences. Choose Enable notifications, then allow your browser's request. Replies to your posts and comments and Mentions in comments have separate phone choices. Mute an individual conversation on its post. Set quiet hours or choose Send me a test notification. On iPhone, first add the app to your Home Screen using the installation help.",
+      "Open Settings > Notifications > Notification preferences. Choose Activity and phone categories for replies, mentions, followed conversations, prayer, author bells, reactions, church changes and commitments. Phone delivery also requires Enable notifications and your browser's permission. Set quiet hours or choose Send me a test notification. On iPhone, first add the app to your Home Screen using the installation help.",
     href: "/platform/settings/notifications/availability",
     eligibility:
       "Eligible verified adult accounts and a supported browser with delivery available. Permission is requested only after your tap. Provider acceptance does not prove your phone displayed an alert. Signing out or switching accounts removes the old association; in-app messages remain available without push.",
@@ -612,6 +638,34 @@ export const features: Feature[] = [
   }
 ];
 export const releases: ReleaseEntry[] = [
+  {
+    id: "complete-notification-choices",
+    version: "2026.09.15.2",
+    date: "2026-09-15",
+    summary:
+      "Choose the activity that reaches you and schedule future church posts.",
+    added: [
+      "Private new-post bells for people and churches, separate from Follow and phone permission.",
+      "Independent Activity and phone choices for reactions, prayer acknowledgments, church roles and connections, event responses and volunteer commitments.",
+      "Future church publication with editable drafts, explicit time zones, rescheduling and cancellation."
+    ],
+    improved: [
+      "Related activity is grouped with generic phone previews and current access checks when an alert opens.",
+      "Quiet hours, exact retries, private exports and recovery protection apply to the expanded choices."
+    ],
+    fixed: [
+      "Turning on a new bell, phone category or device cannot send older activity.",
+      "Interrupted notification batches resume without duplicate recipients; canceled or outdated publication plans cannot publish.",
+      "Restored schedules require review, and optional alert choices never change church permissions or hide canonical operational outcomes."
+    ],
+    featureIds: [
+      "author-bells",
+      "scheduled-church-posts",
+      "personal-activity",
+      "phone-notifications",
+      "drafts"
+    ]
+  },
   {
     id: "explicit-discovery-feeds",
     version: "2026.09.15.1",

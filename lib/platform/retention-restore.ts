@@ -53,6 +53,20 @@ export async function quarantineRestoredAccess(db: PrismaClient) {
         where: { state: { not: "FINISHED" } }
       });
       const devices = await revokePushSubscriptions(tx, {}, now);
+      const scheduledPosts = await tx.platformPost.updateMany({
+        where: { status: "SCHEDULED" },
+        data: {
+          status: "DRAFT",
+          publishedAt: null,
+          scheduleAt: null,
+          scheduleLocal: null,
+          scheduleZone: null,
+          scheduledById: null,
+          scheduleDispatchedAt: null,
+          scheduleDispatchedVersion: null,
+          version: { increment: 1 }
+        }
+      });
       const activityJobs = await tx.notificationFanoutJob.updateMany({
         where: { completedAt: null },
         data: { completedAt: now, dispatchedAt: null }
@@ -160,6 +174,7 @@ export async function quarantineRestoredAccess(db: PrismaClient) {
       return {
         sessions: sessions.count,
         devices: devices.count,
+        scheduledPosts: scheduledPosts.count,
         deliveries: pendingDeliveries,
         activityJobs: activityJobs.count,
         conversationJobs: conversationJobs.count,

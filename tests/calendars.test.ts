@@ -473,6 +473,11 @@ test("RSVPs survive another login and time edits preserve occurrence identities;
     }),
     409
   );
+  // Simulate cleanup of the earlier cancellation's continuation. A later series
+  // edit must not manufacture a new alert for that unchanged canceled instance.
+  await db.notificationFanoutJob.deleteMany({
+    where: { sourceId: occurrence.id }
+  });
   await f.cmd(f.ada, {
     operation: "edit-event",
     eventId: event.id,
@@ -485,6 +490,12 @@ test("RSVPs survive another login and time edits preserve occurrence identities;
     endLocal: "2026-10-25T11:00",
     weeklyUntil: "2026-11-08"
   });
+  assert.equal(
+    await db.notificationFanoutJob.count({
+      where: { sourceId: occurrence.id }
+    }),
+    0
+  );
   rows = await db.calendarOccurrence.findMany({
     where: { eventId: event.id },
     orderBy: { ordinal: "asc" }

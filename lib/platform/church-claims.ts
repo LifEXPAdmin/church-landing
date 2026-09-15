@@ -1,3 +1,4 @@
+import { recordDomainActivity } from "./domain-activity";
 import {
   effectiveChurchGrants,
   activeRoleGrantWhere
@@ -880,12 +881,20 @@ export async function churchClaimCommand(
           sourceClaimId: claim.id,
           revokedAt: null
         };
-        if (prior)
-          await tx.churchCapabilityGrant.update({
-            where: { id: prior.id },
-            data: { ...grantData, version: { increment: 1 } }
-          });
-        else await tx.churchCapabilityGrant.create({ data: grantData });
+        const grant = prior
+          ? await tx.churchCapabilityGrant.update({
+              where: { id: prior.id },
+              data: { ...grantData, version: { increment: 1 } }
+            })
+          : await tx.churchCapabilityGrant.create({ data: grantData });
+        await recordDomainActivity(tx, {
+          kind: "CHURCH_CAPABILITY",
+          category: "church",
+          sourceId: grant.id,
+          sourceVersion: grant.version,
+          actorId: actor.id,
+          recipientId: actor.id
+        });
       }
       const activatedChurch = await tx.church.update({
         where: { id: church.id },
@@ -926,10 +935,26 @@ export async function churchClaimCommand(
           "Use End approved access for an activated request."
         );
       const reason = string(input.reason, 1000);
+      const endingGrants = await tx.churchCapabilityGrant.findMany({
+        where: { sourceClaimId: claim.id, revokedAt: null },
+        select: { id: true, version: true, userId: true },
+        take: 31
+      });
+      if (endingGrants.length > 30)
+        throw new PortalError(409, "Review this request's permission count.");
       await tx.churchCapabilityGrant.updateMany({
         where: { sourceClaimId: claim.id, revokedAt: null },
         data: { revokedAt: new Date(), version: { increment: 1 } }
       });
+      for (const grant of endingGrants)
+        await recordDomainActivity(tx, {
+          kind: "CHURCH_CAPABILITY",
+          category: "church",
+          sourceId: grant.id,
+          sourceVersion: grant.version + 1,
+          actorId: actor.id,
+          recipientId: grant.userId
+        });
       if (activated && claim.churchId)
         await tx.church.update({
           where: { id: claim.churchId },

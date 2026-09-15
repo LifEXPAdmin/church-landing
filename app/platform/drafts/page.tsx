@@ -24,6 +24,12 @@ export default async function DraftsPage({
             <h1 className="text-4xl">Your drafts</h1>
             <Link
               className="gc-button gc-button-quiet"
+              href="/platform/scheduled-posts"
+            >
+              Scheduled church posts
+            </Link>
+            <Link
+              className="gc-button gc-button-quiet"
               href="/platform/comment-drafts"
             >
               Your comment drafts

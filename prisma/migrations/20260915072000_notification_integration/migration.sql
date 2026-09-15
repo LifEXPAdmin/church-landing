@@ -1,10 +1,18 @@
 BEGIN;
+ALTER TABLE "PlatformPost"
+  ADD COLUMN "scheduleDispatchedAt" TIMESTAMP(3),
+  ADD COLUMN "scheduleDispatchedVersion" INTEGER,
+  ADD CONSTRAINT "PlatformPost_schedule_dispatch_shape" CHECK (
+    ("scheduleDispatchedAt" IS NULL AND "scheduleDispatchedVersion" IS NULL) OR
+    ("scheduleDispatchedAt" IS NOT NULL AND "scheduleDispatchedVersion" > 0)
+  );
 ALTER TABLE "SocialRelationship"
   ADD COLUMN "authorBellSince" TIMESTAMP(3),
   ADD COLUMN "authorBellVersion" INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE "SocialRelationship" ADD CONSTRAINT "SocialRelationship_bell_version_check" CHECK ("authorBellVersion" >= 0 AND (NOT blocked OR "authorBellSince" IS NULL));
-CREATE INDEX "SocialRelationship_targetUserId_authorBellSince_id_idx" ON "SocialRelationship"("targetUserId", "authorBellSince", id);
-CREATE INDEX "SocialRelationship_churchId_authorBellSince_id_idx" ON "SocialRelationship"("churchId", "authorBellSince", id);
+-- Match the continuation's id keyset; opted-out rows never enter these indexes.
+CREATE INDEX "SocialRelationship_person_bell_page_idx" ON "SocialRelationship"("targetUserId", id) INCLUDE ("ownerId", "authorBellSince", blocked) WHERE "authorBellSince" IS NOT NULL;
+CREATE INDEX "SocialRelationship_church_bell_page_idx" ON "SocialRelationship"("churchId", id) INCLUDE ("ownerId", "authorBellSince", blocked) WHERE "authorBellSince" IS NOT NULL;
 ALTER TABLE "SocialPreferences"
   ADD COLUMN "notificationVersion" INTEGER NOT NULL DEFAULT 0,
   ADD COLUMN "notificationRecoveryRequired" BOOLEAN NOT NULL DEFAULT false,
@@ -69,19 +77,19 @@ ALTER TABLE "SocialPreferences" ADD CONSTRAINT notification_choices CHECK (
 
 ALTER TABLE "SocialEvent" DROP CONSTRAINT "SocialEvent_source_shape";
 ALTER TABLE "SocialEvent" ADD CONSTRAINT "SocialEvent_source_shape" CHECK (
- ("kind" NOT IN ('PUSH_TEST','REPORT_RECEIVED','REPORT_RECONSIDERATION','CONTENT_DECISION','AUTHOR_POST','POST_REACTION','COMMENT_REACTION','PRAYER_ACK','CHURCH_REVIEW','CHURCH_CONNECTION','EVENT_CHANGED','RSVP_CHANGED','VOLUNTEER_CHANGED','VOLUNTEER_CONFIRMATION') AND "kind" NOT LIKE 'ADULT_%' AND "postId" IS NOT NULL AND "commentId" IS NOT NULL AND "requestId" IS NULL AND "conversationId" IS NULL AND "messageId" IS NULL AND "reportId" IS NULL AND "decisionId" IS NULL)
+ ("kind" NOT IN ('PUSH_TEST','REPORT_RECEIVED','REPORT_RECONSIDERATION','CONTENT_DECISION','AUTHOR_POST','POST_REACTION','COMMENT_REACTION','PRAYER_ACK','CHURCH_REVIEW','CHURCH_CONNECTION','CHURCH_ROLE','CHURCH_CAPABILITY','EVENT_CHANGED','RSVP_CHANGED','VOLUNTEER_CHANGED','VOLUNTEER_CONFIRMATION') AND "kind" NOT LIKE 'ADULT_%' AND "postId" IS NOT NULL AND "commentId" IS NOT NULL AND "requestId" IS NULL AND "conversationId" IS NULL AND "messageId" IS NULL AND "reportId" IS NULL AND "decisionId" IS NULL)
  OR ("kind" = 'ADULT_REQUEST_CREATED' AND "postId" IS NULL AND "commentId" IS NULL AND "requestId" IS NOT NULL AND "conversationId" IS NULL AND "messageId" IS NULL AND "reportId" IS NULL AND "decisionId" IS NULL AND "recipientId" IS NOT NULL)
  OR ("kind" = 'ADULT_REQUEST_ACCEPTED' AND "postId" IS NULL AND "commentId" IS NULL AND "requestId" IS NOT NULL AND "conversationId" IS NOT NULL AND "messageId" IS NULL AND "reportId" IS NULL AND "decisionId" IS NULL AND "recipientId" IS NOT NULL)
  OR ("kind" = 'ADULT_MESSAGE_CREATED' AND "postId" IS NULL AND "commentId" IS NULL AND "requestId" IS NULL AND "conversationId" IS NOT NULL AND "messageId" IS NOT NULL AND "reportId" IS NULL AND "decisionId" IS NULL AND "recipientId" IS NOT NULL)
  OR ("kind" IN ('REPORT_RECEIVED','REPORT_RECONSIDERATION') AND "postId" IS NULL AND "commentId" IS NULL AND "requestId" IS NULL AND "conversationId" IS NULL AND "messageId" IS NULL AND "reportId" IS NOT NULL AND "decisionId" IS NULL AND "recipientId" IS NOT NULL)
  OR ("kind" = 'CONTENT_DECISION' AND "postId" IS NULL AND "commentId" IS NULL AND "requestId" IS NULL AND "conversationId" IS NULL AND "messageId" IS NULL AND "reportId" IS NOT NULL AND "decisionId" IS NOT NULL AND "recipientId" IS NOT NULL)
  OR ("kind" = 'PUSH_TEST' AND "postId" IS NULL AND "commentId" IS NULL AND "requestId" IS NULL AND "conversationId" IS NULL AND "messageId" IS NULL AND "reportId" IS NULL AND "decisionId" IS NULL AND "recipientId" = "actorId" AND "recipientId" IS NOT NULL)
- OR (kind IN ('AUTHOR_POST','POST_REACTION','COMMENT_REACTION','PRAYER_ACK','CHURCH_REVIEW','CHURCH_CONNECTION','EVENT_CHANGED','RSVP_CHANGED','VOLUNTEER_CHANGED','VOLUNTEER_CONFIRMATION') AND "recipientId" IS NOT NULL AND "sourceId" IS NOT NULL AND "sourceVersion" IS NOT NULL
+ OR (kind IN ('AUTHOR_POST','POST_REACTION','COMMENT_REACTION','PRAYER_ACK','CHURCH_REVIEW','CHURCH_CONNECTION','CHURCH_ROLE','CHURCH_CAPABILITY','EVENT_CHANGED','RSVP_CHANGED','VOLUNTEER_CHANGED','VOLUNTEER_CONFIRMATION') AND "recipientId" IS NOT NULL AND "sourceId" IS NOT NULL AND "sourceVersion" IS NOT NULL
    AND "notificationCategory" IS NOT NULL AND "requestId" IS NULL AND "conversationId" IS NULL AND "messageId" IS NULL AND "reportId" IS NULL AND "decisionId" IS NULL
    AND ((kind IN ('AUTHOR_POST','POST_REACTION') AND "postId" IS NOT NULL AND "commentId" IS NULL)
      OR (kind='COMMENT_REACTION' AND "postId" IS NOT NULL AND "commentId" IS NOT NULL)
      OR (kind='PRAYER_ACK' AND "postId" IS NOT NULL)
      OR (kind='VOLUNTEER_CHANGED' AND "postId" IS NOT NULL AND "commentId" IS NULL)
-     OR (kind IN ('CHURCH_REVIEW','CHURCH_CONNECTION','EVENT_CHANGED','RSVP_CHANGED','VOLUNTEER_CONFIRMATION') AND "postId" IS NULL AND "commentId" IS NULL)))
+     OR (kind IN ('CHURCH_REVIEW','CHURCH_CONNECTION','CHURCH_ROLE','CHURCH_CAPABILITY','EVENT_CHANGED','RSVP_CHANGED','VOLUNTEER_CONFIRMATION') AND "postId" IS NULL AND "commentId" IS NULL)))
 );
 COMMIT;

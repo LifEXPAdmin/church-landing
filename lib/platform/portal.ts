@@ -4,6 +4,7 @@ import {
   eligibleWhere,
   churchSelect,
   isEligible,
+  eligibility,
   expected
 } from "./portal-policy";
 export {
@@ -11,6 +12,7 @@ export {
   eligibleWhere,
   churchSelect,
   isEligible,
+  eligibility,
   expected
 } from "./portal-policy";
 import {
@@ -69,13 +71,6 @@ const actorSelect = {
 export type Actor = Prisma.PlatformUserGetPayload<{
   select: typeof actorSelect;
 }>;
-export function eligibility(user: Actor) {
-  if (!isEligible(user))
-    throw new PortalError(
-      403,
-      "Verify your email and confirm adult eligibility before joining this private journey."
-    );
-}
 function text(value: unknown, maximum = 100, minimum = 1): string {
   if (
     typeof value !== "string" ||
@@ -704,9 +699,17 @@ export async function portalCommand(
         });
         if (!grant) throw new PortalError(404, "Assignment not found.");
         expected(input.expectedVersion, grant.version);
-        await tx.churchCapabilityGrant.update({
+        const changedGrant = await tx.churchCapabilityGrant.update({
           where: { id: grant.id },
           data: { revokedAt: new Date(), version: { increment: 1 } }
+        });
+        await recordDomainActivity(tx, {
+          kind: "CHURCH_CAPABILITY",
+          category: "church",
+          sourceId: changedGrant.id,
+          sourceVersion: changedGrant.version,
+          actorId: actor.id,
+          recipientId: changedGrant.userId
         });
         await audit(tx, actor.id, grant.id, "REVOKE_CAPABILITY", churchId);
         return "This independent grant is revoked for existing sessions. Permissions supplied by a separately reviewed role may remain.";
@@ -748,6 +751,14 @@ export async function portalCommand(
           })
         : await tx.churchCapabilityGrant.create({ data });
       await audit(tx, actor.id, grant.id, "GRANT_CAPABILITY", churchId);
+      await recordDomainActivity(tx, {
+        kind: "CHURCH_CAPABILITY",
+        category: "church",
+        sourceId: grant.id,
+        sourceVersion: grant.version,
+        actorId: actor.id,
+        recipientId: userId
+      });
       return "Scoped capability explicitly assigned. Contact titles and account categories do not grant it.";
     }
     if (op === "assign-contact" || op === "revoke-contact") {

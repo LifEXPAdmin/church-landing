@@ -76,6 +76,10 @@ test("export includes only the owner's explicit fields, directory choices and ow
     },
     discoveryVersion: 4,
     discoveryRecoveryRequired: false,
+    notificationVersion: 2,
+    notificationRecoveryRequired: false,
+    mutedNotificationCategories: ["reactions", "church"],
+    notificationPushSince: { posts: "2026-09-15T00:00:00.000Z" },
     reportAlerts: false,
     founderAnnouncements: false,
     pushCategories: ["replies", "mentions"],
@@ -117,6 +121,15 @@ test("export includes only the owner's explicit fields, directory choices and ow
   });
   await db.platformFollow.create({
     data: { followerId: a.user.id, followingId: b.user.id }
+  });
+  const privateBellAt = new Date("2026-09-15T00:00:00.000Z");
+  const privateBell = await db.socialRelationship.create({
+    data: {
+      ownerId: a.user.id,
+      targetUserId: b.user.id,
+      authorBellSince: privateBellAt,
+      authorBellVersion: 4
+    }
   });
   const church = await db.church.create({
     data: {
@@ -232,6 +245,11 @@ test("export includes only the owner's explicit fields, directory choices and ow
   ]);
   for (const [key, value] of Object.entries(notificationChoices))
     assert.deepEqual(data.socialPreferences[0][key], value, key);
+  const exportedBell = data.socialRelationships.find(
+    (row: { targetUserId: string | null }) => row.targetUserId === privateBell.targetUserId
+  );
+  assert.equal(exportedBell.authorBellSince, privateBellAt.toISOString());
+  assert.equal(exportedBell.authorBellVersion, 4);
   assert.equal(data.posts.length, 1);
   assert.equal(data.posts[0].discoveryLanguage, "en");
   assert.equal(

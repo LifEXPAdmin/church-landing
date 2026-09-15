@@ -110,13 +110,13 @@ const categorySql = Prisma.sql`CASE
   WHEN e.kind = 'AUTHOR_POST' THEN 'posts'
   WHEN e.kind IN ('POST_REACTION','COMMENT_REACTION') THEN 'reactions'
   WHEN e.kind = 'PRAYER_ACK' OR (e.kind='COMMENT_ACTIVITY' AND e."notificationCategory"='prayer') THEN 'prayer'
-  WHEN e.kind IN ('CHURCH_REVIEW','CHURCH_CONNECTION') THEN 'church'
+  WHEN e.kind IN ('CHURCH_REVIEW','CHURCH_CONNECTION','CHURCH_ROLE','CHURCH_CAPABILITY') THEN 'church'
   WHEN e.kind IN ('EVENT_CHANGED','RSVP_CHANGED','VOLUNTEER_CHANGED','VOLUNTEER_CONFIRMATION') THEN 'commitments'
   WHEN e.kind = 'COMMENT_ACTIVITY' THEN 'comments' ELSE 'reports' END`;
 const groupSql = Prisma.sql`CASE
   WHEN e.kind='AUTHOR_POST' THEN 'author:' || coalesce(p."authorChurchId",e."actorId")
   WHEN e.kind IN ('POST_REACTION','COMMENT_REACTION','PRAYER_ACK') THEN 'reaction:' || coalesce(e."commentId",e."postId",e.id)
-  WHEN e.kind IN ('CHURCH_REVIEW','CHURCH_CONNECTION','EVENT_CHANGED','RSVP_CHANGED','VOLUNTEER_CHANGED','VOLUNTEER_CONFIRMATION') THEN e.kind || ':' || coalesce(e."sourceId",e.id)
+  WHEN e.kind IN ('CHURCH_REVIEW','CHURCH_CONNECTION','CHURCH_ROLE','CHURCH_CAPABILITY','EVENT_CHANGED','RSVP_CHANGED','VOLUNTEER_CHANGED','VOLUNTEER_CONFIRMATION') THEN e.kind || ':' || coalesce(e."sourceId",e.id)
   WHEN e.kind = 'ADULT_MESSAGE_CREATED' THEN 'conversation:' || coalesce(e."conversationId", e.id)
   WHEN e.kind IN ('ADULT_REQUEST_CREATED','ADULT_REQUEST_ACCEPTED') THEN 'request:' || coalesce(e."requestId", e.id)
   WHEN e.kind = 'COMMENT_ACTIVITY' THEN 'post:' || coalesce(e."postId", e.id)
@@ -146,6 +146,9 @@ async function activityRows(tx: Tx, ownerId: string, through: bigint) {
       AND NOT (coalesce(e."notificationCategory", CASE WHEN e.kind='COMMENT_ACTIVITY' THEN 'replies' ELSE '' END) = ANY(${preferences?.mutedNotificationCategories ?? []}::text[]))
       AND (e.kind NOT IN ('ADULT_REQUEST_CREATED','ADULT_REQUEST_ACCEPTED') OR ${preferences?.requestAlerts ?? true})
       AND (e.kind NOT IN ('REPORT_RECEIVED','REPORT_RECONSIDERATION','CONTENT_DECISION') OR ${preferences?.reportAlerts ?? true})
+      AND (e.kind NOT IN ('AUTHOR_POST','POST_REACTION','COMMENT_REACTION','PRAYER_ACK') OR (
+        (p.id IS NULL OR ${notMuted(Prisma.sql`p."authorId"`, Prisma.sql`p."authorChurchId"`, context)})
+        AND (e.kind = 'AUTHOR_POST' OR ${context.mutedIds?.length ? Prisma.sql`e."actorId" NOT IN (${Prisma.join(context.mutedIds)})` : Prisma.sql`TRUE`})))
       AND (e.kind <> 'ADULT_MESSAGE_CREATED' OR (
         CASE WHEN m.kind = 'FOUNDER_ANNOUNCEMENT' THEN ${preferences?.founderAnnouncements ?? true} ELSE ${preferences?.messageAlerts ?? true} END
         AND coalesce(s.muted,false) = false AND (m.id IS NULL OR m.sequence > coalesce(s."hiddenThrough",0))))
@@ -195,11 +198,28 @@ async function activitySummaries(
       : []
     ).map((c) => [c.id, c.authorChurch?.name ?? c.author.name])
   );
+  const authorEvents = available.filter(
+    (event) => event.kind === "AUTHOR_POST"
+  );
+  const authorNames = new Map(
+    (authorEvents.length
+      ? await tx.platformPost.findMany({
+          where: { id: { in: authorEvents.map((event) => event.postId!) } },
+          select: {
+            id: true,
+            author: { select: { name: true } },
+            authorChurch: { select: { name: true } }
+          },
+          take: PAGE_SIZE
+        })
+      : []
+    ).map((post) => [post.id, post.authorChurch?.name ?? post.author.name])
+  );
   return new Map(
     available.map((e) => [
       e.id,
       e.kind === "AUTHOR_POST"
-        ? "A new post from an author whose bell you enabled"
+        ? `New posts from ${authorNames.get(e.postId!) ?? "an author whose bell you enabled"}`
         : ["POST_REACTION", "COMMENT_REACTION"].includes(e.kind)
           ? "Reactions to your post or comment"
           : e.kind === "PRAYER_ACK"
@@ -208,24 +228,27 @@ async function activitySummaries(
               ? "A church connection request within your review access"
               : e.kind === "CHURCH_CONNECTION"
                 ? "Your church connection changed"
-                : e.kind === "EVENT_CHANGED"
-                  ? "An event in your commitments changed"
-                  : e.kind === "RSVP_CHANGED"
-                    ? "Your event response was saved"
-                    : ["VOLUNTEER_CHANGED", "VOLUNTEER_CONFIRMATION"].includes(
-                          e.kind
-                        )
-                      ? "An update to your volunteer commitment"
-                      : e.kind === "COMMENT_ACTIVITY"
-                        ? `Latest from ${speakers.get(e.commentId!)}`
-                        : e.kind === "CONTENT_DECISION"
-                          ? "A private decision about your content"
-                          : [
-                                "REPORT_RECEIVED",
-                                "REPORT_RECONSIDERATION"
-                              ].includes(e.kind)
-                            ? "Within your current reviewer access"
-                            : `With ${people.get(e.actorId)}`
+                : ["CHURCH_ROLE", "CHURCH_CAPABILITY"].includes(e.kind)
+                  ? "Your church role or access changed"
+                  : e.kind === "EVENT_CHANGED"
+                    ? "An event in your commitments changed"
+                    : e.kind === "RSVP_CHANGED"
+                      ? "Your event response was saved"
+                      : [
+                            "VOLUNTEER_CHANGED",
+                            "VOLUNTEER_CONFIRMATION"
+                          ].includes(e.kind)
+                        ? "An update to your volunteer commitment"
+                        : e.kind === "COMMENT_ACTIVITY"
+                          ? `Latest from ${speakers.get(e.commentId!)}`
+                          : e.kind === "CONTENT_DECISION"
+                            ? "A private decision about your content"
+                            : [
+                                  "REPORT_RECEIVED",
+                                  "REPORT_RECONSIDERATION"
+                                ].includes(e.kind)
+                              ? "Within your current reviewer access"
+                              : `With ${people.get(e.actorId)}`
     ])
   );
 }

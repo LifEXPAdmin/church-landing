@@ -22,6 +22,8 @@ import { POST_TOPICS, postPreviewText } from "./post-options";
 export const WORKSPACE_PAGE_SIZE = 20;
 export type PrivateDraftPayload = {
   discovery?: PostDiscoveryInput;
+  scheduleLocal?: string;
+  scheduleZone?: string;
   content: string;
   contentNote?: string;
   safeExcerpt?: string;
@@ -39,6 +41,8 @@ export type PrivateDraftPayload = {
   topicCommunityId?: string | null;
 };
 const draftFields = [
+  "scheduleLocal",
+  "scheduleZone",
   "discovery",
   "content",
   "contentNote",
@@ -106,6 +110,12 @@ export function privateDraftPayload(value: unknown): PrivateDraftPayload {
     throw new PortalError(400, "Choose a supported reply permission.");
   const reference = (v: unknown) => (v == null || v === "" ? null : postId(v));
   return {
+    ...(p.scheduleLocal !== undefined
+      ? { scheduleLocal: text(p.scheduleLocal, 32) }
+      : {}),
+    ...(p.scheduleZone !== undefined
+      ? { scheduleZone: text(p.scheduleZone, 100) }
+      : {}),
     ...(p.discovery !== undefined
       ? { discovery: parsePostDiscovery(p.discovery, false) }
       : {}),
@@ -354,6 +364,7 @@ type Receipt = {
   version: number;
   message: string;
   postId?: string;
+  scheduled?: boolean;
 };
 export async function postWorkspaceCommand(
   db: PrismaClient,
@@ -512,15 +523,25 @@ export async function postWorkspaceCommand(
           const previous = row ? privateDraftPayload(row.payload) : null;
           if (
             previous &&
-            ["contentNote", "safeExcerpt"].some(
+            [
+              "contentNote",
+              "safeExcerpt",
+              "scheduleLocal",
+              "scheduleZone"
+            ].some(
               (field) =>
-                previous[field as "contentNote" | "safeExcerpt"] &&
-                !Object.hasOwn(payload, field)
+                previous[
+                  field as
+                    | "contentNote"
+                    | "safeExcerpt"
+                    | "scheduleLocal"
+                    | "scheduleZone"
+                ] && !Object.hasOwn(payload, field)
             )
           )
             throw new PortalError(
               400,
-              "This draft has content-note or preview choices. Reload it before saving so those choices are preserved."
+              "This draft has content-note, preview or scheduling choices. Reload it before saving so those choices are preserved."
             );
           if (
             !row &&
@@ -546,7 +567,7 @@ export async function postWorkspaceCommand(
             message: "Draft saved privately."
           };
         } else {
-          let published: { id: string } | undefined;
+          let published: { id: string; message: string } | undefined;
           if (op === "publish-draft")
             published = await postCommandIn(
               tx,
@@ -570,8 +591,16 @@ export async function postWorkspaceCommand(
           result = {
             id,
             version: saved.version,
-            ...(published ? { postId: published.id } : {}),
-            message: published ? "Draft published once." : "Draft discarded."
+            ...(published
+              ? {
+                  postId: published.id,
+                  scheduled: !!(
+                    privateDraftPayload(row!.payload).scheduleLocal ||
+                    privateDraftPayload(row!.payload).scheduleZone
+                  )
+                }
+              : {}),
+            message: published ? published.message : "Draft discarded."
           };
         }
       } else if (

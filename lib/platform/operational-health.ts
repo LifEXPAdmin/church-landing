@@ -94,6 +94,7 @@ export async function readOperationalHealth(
     { maxWait: 3000, timeout: 6000 }
   );
   const ages = {
+    scheduledDueSeconds: secondsSince(snapshot.scheduledPosts.oldestDueAt, now),
     activityPendingSeconds: secondsSince(
       snapshot.activityFanout.oldestPendingAt,
       now
@@ -143,8 +144,8 @@ export async function readOperationalHealth(
     (ages.announcementPendingSeconds ?? 0) > 300
   )
     alerts.push("founder_delivery_backlog");
-  if (snapshot.scheduledPosts.due)
-    alerts.push("scheduled_publishing_not_configured");
+  if ((ages.scheduledDueSeconds ?? 0) > 300)
+    alerts.push("scheduled_publication_backlog");
   return {
     schema: 1,
     checkedAt: now.toISOString(),
@@ -161,7 +162,7 @@ export async function readOperationalHealth(
       pushConfigured: pushAvailable(),
       retentionEnabled: process.env.RETENTION_CLEANUP_ENABLED === "true",
       welcomeEnabled: process.env.FOUNDER_WELCOME_ENABLED === "true",
-      scheduledPublishingConfigured: false
+      scheduledPublishingConfigured: process.env.VERCEL === "1"
     },
     queues: snapshot,
     ages,

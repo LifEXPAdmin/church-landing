@@ -18,6 +18,8 @@ export const domainNotificationKinds = [
   "PRAYER_ACK",
   "CHURCH_REVIEW",
   "CHURCH_CONNECTION",
+  "CHURCH_ROLE",
+  "CHURCH_CAPABILITY",
   "EVENT_CHANGED",
   "RSVP_CHANGED",
   "VOLUNTEER_CHANGED",
@@ -337,12 +339,14 @@ export async function domainNotificationSources(
         })
       ).map((c) => [c.id, c])
     );
-    const grants = await effectiveChurchGrants(
-      tx,
-      ownerId,
-      [...new Set([...connections.values()].map((c) => c.churchId))],
-      ["REVIEW_CONNECTIONS"]
-    );
+    const grants = churches.some((e) => e.kind === "CHURCH_REVIEW")
+      ? await effectiveChurchGrants(
+          tx,
+          ownerId,
+          [...new Set([...connections.values()].map((c) => c.churchId))],
+          ["REVIEW_CONNECTIONS"]
+        )
+      : [];
     for (const e of churches) {
       const c = connections.get(e.sourceId!);
       if (!c || c.version < (e.sourceVersion ?? Infinity)) continue;
@@ -363,6 +367,49 @@ export async function domainNotificationSources(
           "church",
           `/platform/churches/${c.churchId}/review`,
           `connection:${c.id}`
+        );
+    }
+  }
+  const access = events.filter((e) =>
+    ["CHURCH_ROLE", "CHURCH_CAPABILITY"].includes(e.kind)
+  );
+  if (access.length) {
+    const directIds = access
+        .filter((e) => e.kind === "CHURCH_CAPABILITY")
+        .map((e) => e.sourceId!),
+      roleIds = access
+        .filter((e) => e.kind === "CHURCH_ROLE")
+        .map((e) => e.sourceId!);
+    const direct = new Map(
+      (directIds.length
+        ? await tx.churchCapabilityGrant.findMany({
+            where: { id: { in: directIds }, userId: ownerId },
+            select: { id: true, version: true, churchId: true },
+            take: 50
+          })
+        : []
+      ).map((row) => [row.id, row])
+    );
+    const roles = new Map(
+      (roleIds.length
+        ? await tx.churchPositionAssignment.findMany({
+            where: { id: { in: roleIds }, connection: { userId: ownerId } },
+            select: { id: true, version: true, churchId: true },
+            take: 50
+          })
+        : []
+      ).map((row) => [row.id, row])
+    );
+    for (const event of access) {
+      const row = (event.kind === "CHURCH_ROLE" ? roles : direct).get(
+        event.sourceId!
+      );
+      if (row && row.version >= (event.sourceVersion ?? Infinity))
+        add(
+          event,
+          "church",
+          "/platform/my-church",
+          `church-access:${row.churchId}`
         );
     }
   }

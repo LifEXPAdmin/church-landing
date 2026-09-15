@@ -18,7 +18,7 @@ self.addEventListener("push", (event) => {
       : id;
   event.waitUntil(
     self.registration.showNotification("God’s Churches", {
-      body: "You have a new message on God’s Churches.",
+      body: "You have new activity on God’s Churches.",
       icon: "/brand/icon-192.png",
       badge: "/brand/icon-192.png",
       tag: "gc-" + tag,

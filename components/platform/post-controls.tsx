@@ -3,6 +3,7 @@ import { useEffect, useId, useState } from "react";
 import type { PostEditorView } from "@/lib/platform/post-editor";
 import { PostGalleryManager } from "./post-gallery-manager";
 import { PostActionForm } from "./post-action-form";
+import { PostScheduleFields } from "./post-schedule-fields";
 import {
   PostDraftFields,
   draftProblem,
@@ -38,6 +39,11 @@ function EditPost({ post, owner }: { post: PostEditorView; owner: string }) {
   return (
     <PostActionForm
       owner={owner}
+      returnHref={
+        post.status !== "PUBLISHED"
+          ? `/platform/scheduled-posts/${post.id}`
+          : undefined
+      }
       payload={{
         operation: "edit",
         postId: post.id,
@@ -121,10 +127,71 @@ function EditPost({ post, owner }: { post: PostEditorView; owner: string }) {
         </label>
       )}
       <p className="text-sm text-gc-muted">
-        Edits keep existing votes and volunteer reservations. Change event
-        details on the event itself. The post will show an Edited label.
+        {post.status === "PUBLISHED"
+          ? "Edits keep existing votes and volunteer reservations. Change event details on the event itself. The post will show an Edited label."
+          : "Saving content keeps the current publication plan. Cancel its schedule first if you need more time to edit. Change linked event details on the event itself."}
       </p>
     </PostActionForm>
+  );
+}
+function SchedulePost({
+  post,
+  owner
+}: {
+  post: PostEditorView;
+  owner: string;
+}) {
+  const [time, setTime] = useState({
+    local: post.scheduleLocal,
+    zone: post.scheduleZone
+  });
+  return (
+    <section aria-label="Publication plan" className="space-y-4">
+      <h3 className="text-xl">Publication plan</h3>
+      <p className="break-words">
+        {post.status === "SCHEDULED"
+          ? `Scheduled for ${post.scheduleLocal.replace("T", " ")} in ${post.scheduleZone}.`
+          : "This post is a draft. Review its content and permissions before scheduling publication."}
+      </p>
+      <PostActionForm
+        owner={owner}
+        returnHref={`/platform/scheduled-posts/${post.id}`}
+        payload={{
+          operation: "schedule",
+          postId: post.id,
+          expectedVersion: post.version
+        }}
+        label={
+          post.status === "SCHEDULED"
+            ? "Reschedule publication"
+            : "Schedule publication"
+        }
+        fields={() => ({ scheduleLocal: time.local, scheduleZone: time.zone })}
+      >
+        <PostScheduleFields
+          local={time.local}
+          zone={time.zone}
+          change={(local, zone) => setTime({ local, zone })}
+        />
+      </PostActionForm>
+      {post.status === "SCHEDULED" && (
+        <PostActionForm
+          owner={owner}
+          returnHref={`/platform/scheduled-posts/${post.id}`}
+          payload={{
+            operation: "cancel-schedule",
+            postId: post.id,
+            expectedVersion: post.version
+          }}
+          label="Cancel publication schedule"
+        >
+          <p>
+            The content stays as a church draft. It will not publish until a
+            publisher schedules it again.
+          </p>
+        </PostActionForm>
+      )}
+    </section>
   );
 }
 export function PostControls({
@@ -164,6 +231,9 @@ export function PostControls({
       className="space-y-4 rounded-xl border border-gc-divider p-4"
     >
       <h2 className="text-2xl">Manage post</h2>
+      {post.canEdit && post.churchAuthor && post.status !== "PUBLISHED" && (
+        <SchedulePost post={post} owner={ownerId} />
+      )}
       {post.canEdit && (
         <details id="post-edit" className="scroll-mt-4">
           <summary className="min-h-11 cursor-pointer py-3 font-semibold">
@@ -172,7 +242,7 @@ export function PostControls({
           <EditPost post={post} owner={ownerId} />
         </details>
       )}
-      {post.canEdit && ownerId && (
+      {post.canEdit && ownerId && post.status === "PUBLISHED" && (
         <details
           onToggle={(event) => {
             if (event.currentTarget.open) setPhotosOpened(true);
@@ -193,6 +263,11 @@ export function PostControls({
           </summary>
           <PostActionForm
             owner={ownerId}
+            returnHref={
+              post.status !== "PUBLISHED"
+                ? `/platform/scheduled-posts/${post.id}`
+                : undefined
+            }
             payload={{
               operation: "discussion",
               postId: post.id,
@@ -354,6 +429,11 @@ export function PostControls({
               expectedVersion: post.version
             }}
             label="Confirm removal"
+            returnHref={
+              post.status !== "PUBLISHED"
+                ? `/platform/scheduled-posts/${post.id}`
+                : undefined
+            }
             fields={(data) => ({ confirmed: data.has("confirmed") })}
           >
             <label className="flex min-h-11 items-start gap-2">

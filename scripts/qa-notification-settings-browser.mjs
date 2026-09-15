@@ -318,7 +318,7 @@ try {
     "Replies to your posts and comments",
     "Mentions in comments",
     "Replies in conversations you follow",
-    "Updates to your saved prayers"
+    "Prayer acknowledgments and saved prayer updates"
   ]) {
     const group = page.getByRole("group", { name, exact: true });
     const phone = group.getByRole("checkbox", {
@@ -329,8 +329,8 @@ try {
     assert.equal(
       await group
         .getByRole("checkbox", { name: "In-app alerts", exact: true })
-        .count(),
-      0
+        .isChecked(),
+      true
     );
     await phone.check();
   }

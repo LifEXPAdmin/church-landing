@@ -1,4 +1,5 @@
 import { scheduleDomainActivity } from "./notification-fanout";
+import { schedulePublicationHandoff } from "./scheduled-publication";
 import type { PrismaClient } from "@prisma/client";
 import { accountConfig } from "./account-config";
 import { allowAccountAttempt, allowWorkspaceAttempt } from "./account-limits";
@@ -15,6 +16,7 @@ import { previewPostLink } from "./post-links";
 import {
   getPostComposer,
   getPostEditor,
+  getScheduledPosts,
   getPostEventOptions
 } from "./post-editor";
 const headers = {
@@ -43,42 +45,46 @@ export async function handlePostRequest(
         );
       const view = url.searchParams.get("view");
       const result =
-        view === "availability-batch"
-          ? await getPostAvailabilityBatch(
-              db,
-              token,
-              url.searchParams.getAll("postId"),
-              url.searchParams.get("feed"),
-              {
-                filterKey: url.searchParams.get("feedKey"),
-                guestDiscovery: request.headers
-                  .get("cookie")
-                  ?.split(";")
-                  .map((part) => part.trim())
-                  .find((part) => part.startsWith(GUEST_DISCOVERY_COOKIE + "="))
-                  ?.slice(GUEST_DISCOVERY_COOKIE.length + 1)
-              }
-            )
-          : view === "availability"
-            ? await getPostAvailability(
+        view === "scheduled"
+          ? await getScheduledPosts(db, token, url.searchParams.get("after"))
+          : view === "availability-batch"
+            ? await getPostAvailabilityBatch(
                 db,
                 token,
-                url.searchParams.get("postId") ?? ""
+                url.searchParams.getAll("postId"),
+                url.searchParams.get("feed"),
+                {
+                  filterKey: url.searchParams.get("feedKey"),
+                  guestDiscovery: request.headers
+                    .get("cookie")
+                    ?.split(";")
+                    .map((part) => part.trim())
+                    .find((part) =>
+                      part.startsWith(GUEST_DISCOVERY_COOKIE + "=")
+                    )
+                    ?.slice(GUEST_DISCOVERY_COOKIE.length + 1)
+                }
               )
-            : view === "composer"
-              ? await getPostComposer(db, token)
-              : view === "events"
-                ? await getPostEventOptions(
-                    db,
-                    token,
-                    url.searchParams.get("churchId"),
-                    url.searchParams.get("cursor")
-                  )
-                : await getPostEditor(
-                    db,
-                    token,
-                    url.searchParams.get("postId") ?? ""
-                  );
+            : view === "availability"
+              ? await getPostAvailability(
+                  db,
+                  token,
+                  url.searchParams.get("postId") ?? ""
+                )
+              : view === "composer"
+                ? await getPostComposer(db, token)
+                : view === "events"
+                  ? await getPostEventOptions(
+                      db,
+                      token,
+                      url.searchParams.get("churchId"),
+                      url.searchParams.get("cursor")
+                    )
+                  : await getPostEditor(
+                      db,
+                      token,
+                      url.searchParams.get("postId") ?? ""
+                    );
       return Response.json(result, { headers });
     }
     if (request.method !== "POST")
@@ -108,6 +114,8 @@ export async function handlePostRequest(
         "withdraw",
         "discussion",
         "pin",
+        "schedule",
+        "cancel-schedule",
         "preview-link"
       ].includes(String(input.operation))
     )
@@ -116,12 +124,6 @@ export async function handlePostRequest(
       throw new PortalError(
         400,
         "The acting account comes from your current sign-in."
-      );
-    // Scheduling remains domain-only until durable dispatch is available.
-    if (input.scheduleLocal || input.scheduleZone)
-      throw new PortalError(
-        400,
-        "Automatic scheduled publishing is not available yet."
       );
     const actor = await readAccountSession(db, token);
     if (!actor)
@@ -178,6 +180,7 @@ export async function handlePostRequest(
     }
     const result = await postCommand(db, token, input);
     scheduleDomainActivity(db, actor.id, afterResponse);
+    schedulePublicationHandoff(db, actor.id, afterResponse, result.id);
     if (
       (input.discovery !== undefined || input.operation === "withdraw") &&
       !(await protectDiscoveryRecovery(db, actor.id, request.signal))

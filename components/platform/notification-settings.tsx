@@ -32,7 +32,7 @@ const labels: Record<NotificationCategory, string> = {
   prayer: "Prayer acknowledgments and saved prayer updates",
   posts: "New posts from authors whose bell you enabled",
   reactions: "Likes on your posts and comments",
-  church: "Church requests and connection changes",
+  church: "Church requests, roles and connection changes",
   commitments: "Event responses, changes and volunteer commitments"
 };
 const categories = Object.keys(labels) as NotificationCategory[];

@@ -2,7 +2,10 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import vm from "node:vm";
-import { NOTIFICATION_PREVIEW } from "../lib/platform/notification-outbox";
+import {
+  NOTIFICATION_PREVIEW,
+  notificationGroupTag
+} from "../lib/platform/notification-outbox";
 import { safeAccountReturn } from "../lib/platform/account-entry";
 async function worker(windows: object[] = []) {
   const events = new Map<string, (event: unknown) => void>(),
@@ -77,6 +80,33 @@ test("push shows only the approved generic preview and an opaque click reference
     data: { json: () => ({ deliveryId: "../foreign" }) }
   });
   assert.equal(w.shown.length, 1);
+});
+test("real domain groups replace the same owner's notification without renotifying or exposing source identifiers", async () => {
+  const w = await worker(),
+    group = "reaction:fictional-post-reference";
+  for (const deliveryId of ["first-intent", "latest-intent"])
+    await w.fire("push", {
+      data: {
+        json: () => ({
+          deliveryId,
+          tag: notificationGroupTag("owner-a", group)
+        })
+      }
+    });
+  assert.equal(w.shown[0].options.tag, w.shown[1].options.tag);
+  assert.equal(w.shown[1].options.renotify, false);
+  assert.equal(
+    JSON.stringify(w.shown[1].options.data),
+    '{"id":"latest-intent"}'
+  );
+  assert.doesNotMatch(
+    JSON.stringify(w.shown),
+    /fictional-post-reference|owner-a|reaction:/
+  );
+  assert.notEqual(
+    notificationGroupTag("owner-a", group),
+    notificationGroupTag("owner-b", group)
+  );
 });
 test("notification clicks ask an existing app to respect its open work; a closed app opens only the authenticated reference route", async () => {
   let focused = 0;

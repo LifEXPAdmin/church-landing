@@ -1336,6 +1336,8 @@ model PlatformPost {
   scheduledById String?
   scheduleLocal String?
   scheduleZone String?
+  scheduleDispatchedAt DateTime?
+  scheduleDispatchedVersion Int?
   eventOccurrenceId String? @unique
 
   author   PlatformUser          @relation(fields: [authorId], references: [id], onDelete: Cascade)
@@ -2054,8 +2056,7 @@ model SocialRelationship {
   church Church? @relation(fields: [churchId], references: [id], onDelete: Cascade)
   @@unique([ownerId, targetUserId])
   @@unique([ownerId, churchId])
-  @@index([targetUserId, authorBellSince, id])
-  @@index([churchId, authorBellSince, id])
+  // Opted-in bell keysets use partial covering indexes in the migration.
   @@index([targetUserId, blocked])
   @@index([ownerId, blocked])
   @@index([ownerId, id])

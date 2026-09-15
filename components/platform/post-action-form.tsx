@@ -26,6 +26,7 @@ export function PostActionForm({
   validate,
   onLatest,
   onSuccess,
+  returnHref,
   disabled = false
 }: {
   owner: string;
@@ -36,6 +37,7 @@ export function PostActionForm({
   validate?: () => string | null;
   onLatest?: (post: PostEditorView) => void;
   onSuccess?: (id: string) => void;
+  returnHref?: string;
   disabled?: boolean;
 }) {
   const router = useRouter(),
@@ -201,7 +203,10 @@ export function PostActionForm({
           rel="noopener noreferrer"
           href={accountEntryHref(
             "login",
-            payload.postId ? `/platform/posts/${payload.postId}` : "/platform",
+            returnHref ??
+              (payload.postId
+                ? `/platform/posts/${payload.postId}`
+                : "/platform"),
             "participate"
           )}
         >
@@ -301,6 +306,17 @@ export function PostActionForm({
             .
           </p>
           <p>Pinned until: {latest.pinUntil ?? "Not pinned"}</p>
+          {latest.churchAuthor && (
+            <p className="break-words">
+              Publication:{" "}
+              {latest.status === "SCHEDULED"
+                ? `${latest.scheduleLocal.replace("T", " ")} in ${latest.scheduleZone}`
+                : latest.status === "DRAFT"
+                  ? "Draft; no active plan"
+                  : "Published"}
+              .
+            </p>
+          )}
           <button
             type="button"
             className={portalButtonClass}

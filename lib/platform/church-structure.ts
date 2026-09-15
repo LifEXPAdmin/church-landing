@@ -1,4 +1,5 @@
 import { readChurchChartHistory } from "./church-chart-history";
+import { recordChurchRoleChanges } from "./domain-activity";
 import { saveChurchChart } from "./church-chart-save";
 import {
   saveAssignmentPrivileges,
@@ -403,6 +404,7 @@ export async function churchStructureCommand(
         input
       );
       if (result.changed) {
+        await recordChurchRoleChanges(tx, actor.id, [result.id]);
         await advance(tx, churchId);
         await audit(
           tx,
@@ -482,6 +484,13 @@ export async function churchStructureCommand(
           409,
           "Move or archive the positions that report here before archiving this position."
         );
+      const ending = await tx.churchPositionAssignment.findMany({
+        where: { positionId: row.id, revokedAt: null },
+        select: { id: true },
+        take: 11
+      });
+      if (ending.length > 10)
+        throw new PortalError(409, "Review this position's assignment count.");
       await endRoleContributions(tx, { positionId: row.id });
       await tx.churchPositionAssignment.updateMany({
         where: { positionId: row.id, revokedAt: null },
@@ -491,6 +500,11 @@ export async function churchStructureCommand(
         where: { id: row.id },
         data: { archivedAt: new Date() }
       });
+      await recordChurchRoleChanges(
+        tx,
+        actor.id,
+        ending.map((assignment) => assignment.id)
+      );
     } else if (op === "assign") {
       if (input.privilegesReviewed !== true || input.confirmed !== true)
         throw new PortalError(
@@ -540,19 +554,19 @@ export async function churchStructureCommand(
           409,
           "A position can have up to ten active assignments. Create another position if needed."
         );
-      if (prior)
-        await tx.churchPositionAssignment.update({
-          where: { id: prior.id },
-          data: {
-            revokedAt: null,
-            createdAt: new Date(),
-            version: { increment: 1 }
-          }
-        });
-      else
-        await tx.churchPositionAssignment.create({
-          data: { churchId, positionId: row.id, connectionId: target.id }
-        });
+      const assignment = prior
+        ? await tx.churchPositionAssignment.update({
+            where: { id: prior.id },
+            data: {
+              revokedAt: null,
+              createdAt: new Date(),
+              version: { increment: 1 }
+            }
+          })
+        : await tx.churchPositionAssignment.create({
+            data: { churchId, positionId: row.id, connectionId: target.id }
+          });
+      await recordChurchRoleChanges(tx, actor.id, [assignment.id]);
     } else {
       const assignment = await tx.churchPositionAssignment.findFirst({
         where: {
@@ -579,6 +593,7 @@ export async function churchStructureCommand(
         where: { id: assignment.id },
         data: { revokedAt: new Date(), version: { increment: 1 } }
       });
+      await recordChurchRoleChanges(tx, actor.id, [assignment.id]);
     }
     await advance(tx, churchId);
     await audit(

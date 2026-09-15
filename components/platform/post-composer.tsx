@@ -13,6 +13,7 @@ import {
 } from "./composer-shell";
 import { QuoteDraftPreview } from "./quote-source-preview";
 import { ComposerPhotos } from "./composer-photos";
+import { PostScheduleFields } from "./post-schedule-fields";
 import { useDraftWorkspace } from "./draft-workspace-provider";
 import {
   PostDraftFields,
@@ -251,6 +252,17 @@ function ComposerDraft({
       onSubmit={(e) => {
         e.preventDefault();
         const problem = draftProblem(draft);
+        if (
+          (draft.scheduleLocal || draft.scheduleZone) &&
+          (!draft.authorChurchId ||
+            draft.topicCommunityId ||
+            draft.quoteSourceId)
+        ) {
+          setProblem(
+            "Choose an authorized church author or turn off Schedule publication before posting."
+          );
+          return;
+        }
         if (draft.topicCommunityId && !publicTopicConfirmed) {
           setProblem(
             "Confirm that this topic post will be public before publishing."
@@ -306,7 +318,9 @@ function ComposerDraft({
               (!!draft.quoteSourceId && !quoteAvailable)
             }
           >
-            Post
+            {draft.scheduleLocal || draft.scheduleZone
+              ? "Schedule post"
+              : "Post"}
           </button>
         }
       >
@@ -338,6 +352,42 @@ function ComposerDraft({
           disabled={state.publishing || !!state.postId}
         >
           <PostDraftFields draft={draft} change={setDraft} />
+          {((authorChurchId &&
+            !draft.topicCommunityId &&
+            !draft.quoteSourceId) ||
+            draft.scheduleLocal ||
+            draft.scheduleZone) && (
+            <section
+              aria-label="Schedule publication"
+              className="space-y-3 rounded-xl border border-gc-divider p-3"
+            >
+              <label className="flex min-h-11 items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={!!(draft.scheduleLocal || draft.scheduleZone)}
+                  onChange={(event) =>
+                    controller.change({
+                      ...draft,
+                      scheduleLocal: "",
+                      scheduleZone: event.target.checked
+                        ? Intl.DateTimeFormat().resolvedOptions().timeZone
+                        : ""
+                    })
+                  }
+                />
+                Schedule publication
+              </label>
+              {(draft.scheduleLocal || draft.scheduleZone) && (
+                <PostScheduleFields
+                  local={draft.scheduleLocal ?? ""}
+                  zone={draft.scheduleZone ?? ""}
+                  change={(scheduleLocal, scheduleZone) =>
+                    controller.change({ ...draft, scheduleLocal, scheduleZone })
+                  }
+                />
+              )}
+            </section>
+          )}
           {(options.topics.length > 0 || draft.topicCommunityId) && (
             <div className="space-y-2">
               <label className="block font-semibold" htmlFor={`${id}-topic`}>
@@ -678,16 +728,24 @@ function ComposerDraft({
           <div className="flex flex-wrap gap-3">
             <Link
               className={portalButtonClass}
-              href={`/platform/posts/${state.postId}`}
+              href={
+                state.scheduled
+                  ? `/platform/scheduled-posts/${state.postId}`
+                  : `/platform/posts/${state.postId}`
+              }
             >
-              View published post
+              {state.scheduled
+                ? "Manage scheduled post"
+                : "View published post"}
             </Link>
-            <Link
-              className={portalButtonClass}
-              href={`/platform/posts/${state.postId}#poll-create`}
-            >
-              Add a poll
-            </Link>
+            {!state.scheduled && (
+              <Link
+                className={portalButtonClass}
+                href={`/platform/posts/${state.postId}#poll-create`}
+              >
+                Add a poll
+              </Link>
+            )}
           </div>
         )}
       </ComposerFrame>

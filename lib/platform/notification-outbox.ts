@@ -1,5 +1,5 @@
 import type { Prisma, PrismaClient, SocialEvent } from "@prisma/client";
-import { randomUUID } from "node:crypto";
+import { randomUUID, createHash } from "node:crypto";
 import { withOwnedSession } from "./account-sessions";
 import { PortalError } from "./portal-policy";
 import { postId } from "./post-input";
@@ -14,6 +14,10 @@ import { revokePushSubscriptions } from "./push-subscriptions";
 type Tx = Prisma.TransactionClient;
 export const NOTIFICATION_PREVIEW = "You have new activity on God’s Churches.";
 const DAY = 86400000;
+export const notificationGroupTag = (ownerId: string, group: string) =>
+  createHash("sha256")
+    .update(JSON.stringify([ownerId, group]))
+    .digest("hex");
 export function notificationWrite<T>(
   db: PrismaClient,
   work: (tx: Tx) => Promise<T>
@@ -215,7 +219,10 @@ export async function deliverNotification(
         keys: { p256dh: sub.p256dh, auth: sub.auth }
       },
       subscriptionId: sub.id,
-      payload: { deliveryId: id, tag: source.group },
+      payload: {
+        deliveryId: id,
+        tag: notificationGroupTag(row.ownerId, source.group)
+      },
       ttl: Math.max(
         0,
         Math.min(
@@ -322,7 +329,7 @@ export function openNotification(
       return {
         href: source.href,
         preview: NOTIFICATION_PREVIEW,
-        tag: source.group
+        tag: notificationGroupTag(session.userId, source.group)
       };
     },
     true

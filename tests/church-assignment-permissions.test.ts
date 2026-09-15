@@ -23,6 +23,11 @@ import { postContext } from "../lib/platform/post-access";
 import { delegableChurchCapabilities } from "../lib/platform/church-assignment-permissions";
 import { loginAccount } from "../lib/platform/accounts";
 import { positionPlacementLabel } from "../lib/platform/church-position-placement";
+import { readActivity, openActivity } from "../lib/platform/activity";
+import {
+  readNotificationPreferences,
+  notificationPreferenceCommand
+} from "../lib/platform/notification-preferences";
 const db = new PrismaClient();
 before(() => assertPortalTestDatabase(db));
 after(() => db.$disconnect());
@@ -121,6 +126,88 @@ async function fixture() {
     effective
   };
 }
+
+test("reviewed role changes create owned, generic and retry-safe Activity while optional alerts preserve operational permissions", async () => {
+  const f = await fixture(),
+    position = await f.position(),
+    key = randomUUID();
+  const save = () =>
+    f.save(position.id, ["PUBLISH_CHURCH_POSTS"], {
+      requestKey: key,
+      assignmentVersion: 0
+    });
+  const saved = await save();
+  assert.deepEqual(await save(), saved);
+  const events = await db.socialEvent.findMany({
+    where: { kind: "CHURCH_ROLE", sourceId: saved.id }
+  });
+  assert.equal(events.length, 1);
+  assert.equal(events[0].recipientId, f.coordinator.id);
+  const opened = await openActivity(db, f.coordinator.token, events[0].id);
+  assert.equal(opened.href, "/platform/my-church");
+  await denied(openActivity(db, f.memberB.token, events[0].id), 404);
+  const activity = await readActivity(db, f.coordinator.token, {
+    category: "church"
+  });
+  assert.ok(
+    activity.items.some(
+      (row) => row.summary === "Your church role or access changed"
+    )
+  );
+  assert.doesNotMatch(
+    JSON.stringify(activity),
+    /PUBLISH_CHURCH_POSTS|Fictional reviewed position/
+  );
+  const prefs = await readNotificationPreferences(db, f.coordinator.token);
+  await notificationPreferenceCommand(db, f.coordinator.token, {
+    operation: "preferences",
+    mutationId: randomUUID(),
+    ownerId: f.coordinator.id,
+    expectedVersion: prefs.preferences.version,
+    inApp: { ...prefs.preferences.inApp, church: false },
+    pushCategories: prefs.preferences.pushCategories,
+    quietHours: prefs.preferences.quietHours
+  });
+  await f.save(position.id, []);
+  assert.equal(
+    (await readActivity(db, f.coordinator.token, { category: "church" }))
+      .unread,
+    0
+  );
+  assert.ok(
+    !(await f.effective()).some(
+      (grant) => grant.capability === "PUBLISH_CHURCH_POSTS"
+    )
+  );
+  await f.save(position.id, ["PUBLISH_CHURCH_POSTS"]);
+  await f.cmd({
+    operation: "archive",
+    positionId: position.id,
+    confirmed: true
+  });
+  const ended = await db.churchPositionAssignment.findUniqueOrThrow({
+    where: { id: saved.id }
+  });
+  assert.ok(ended.revokedAt);
+  const outcome = await db.socialEvent.findFirstOrThrow({
+    where: {
+      kind: "CHURCH_ROLE",
+      sourceId: saved.id,
+      sourceVersion: ended.version
+    }
+  });
+  assert.equal(
+    (await openActivity(db, f.coordinator.token, outcome.id)).href,
+    "/platform/my-church",
+    "Hiding optional Activity does not revoke the owner's access to their canonical role outcome"
+  );
+  assert.equal(
+    await db.socialEvent.count({
+      where: { sourceId: saved.id, recipientId: f.memberB.id }
+    }),
+    0
+  );
+});
 
 test("placement: new role instances remain independently unconnected; placement, vacancy and duties preserve grants across sessions", async () => {
   const f = await fixture();

@@ -57,3 +57,10 @@ export function expected(value: unknown, actual: number) {
       "This information changed. Refresh the page and try again."
     );
 }
+export function eligibility(user: Parameters<typeof isEligible>[0]) {
+  if (!isEligible(user))
+    throw new PortalError(
+      403,
+      "Verify your email and confirm adult eligibility before joining this private journey."
+    );
+}

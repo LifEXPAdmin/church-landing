@@ -200,6 +200,46 @@ test("author bells are explicit and independent of follows; publication, retries
     available: false,
     href: null
   });
+  const oldBell = await db.socialRelationship.findFirstOrThrow({
+    where: { ownerId: reader.id, targetUserId: author.id }
+  });
+  const bellControl = await db.retentionControl.findFirstOrThrow({
+    where: { kind: "AUTHOR_BELL", sourceId: oldBell.id },
+    orderBy: { version: "desc" }
+  });
+  assert.ok(bellControl.journaledAt);
+  assert.doesNotMatch(
+    JSON.stringify(bellControl.payload),
+    /authorBellSince|desired|muted|followed/
+  );
+  // Restore an older on-choice alongside unrelated newer relationship edits.
+  await db.socialRelationship.update({
+    where: { id: oldBell.id },
+    data: {
+      authorBellSince: new Date(Date.now() - 10000),
+      authorBellVersion: bellControl.version - 1,
+      version: 100
+    }
+  });
+  await replayRetentionControls(db, [
+    bellControl.payload as unknown as RetentionControlEntry
+  ]);
+  const protectedBell = await db.socialRelationship.findUniqueOrThrow({
+    where: { id: oldBell.id }
+  });
+  assert.equal(protectedBell.authorBellSince, null);
+  assert.equal(protectedBell.authorBellVersion, bellControl.version);
+  await replayRetentionControls(db, [
+    bellControl.payload as unknown as RetentionControlEntry
+  ]);
+  assert.equal(
+    (
+      await db.socialRelationship.findUniqueOrThrow({
+        where: { id: oldBell.id }
+      })
+    ).version,
+    protectedBell.version
+  );
   await bell(reader, author.id, true);
   await bell(author, reader.id, true);
   status = (await readRelationships(db, reader.token, {
@@ -493,6 +533,13 @@ test("reactions and private prayer acknowledgments retain one intent, never expo
       .length,
     0
   );
+  const retainedIntents = await db.socialEvent.count({ where: { postId: post.id, recipientId: author.id } });
+  await relationshipCommand(db, author.token, input("mute", {
+    kind: "person", targetId: reader.id, desired: true, expectedVersion: 0
+  }));
+  assert.equal((await readActivity(db, author.token, { category: "prayer" })).items.length, 0);
+  assert.equal((await readActivity(db, author.token, { category: "reactions" })).items.length, 0);
+  assert.equal(await db.socialEvent.count({ where: { postId: post.id, recipientId: author.id } }), retainedIntents);
 });
 
 test("church requests, changed events and volunteer confirmations use current domain access and keep canonical outcomes", async () => {

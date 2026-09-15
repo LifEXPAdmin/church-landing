@@ -1,5 +1,6 @@
 import { photoLibraryEnabled } from "./personal-photo-policy";
 import { postDiscoveryInput } from "./post-discovery";
+import { postPreviewText } from "./post-options";
 import type { PrismaClient } from "@prisma/client";
 import { PortalError } from "./portal-policy";
 import {
@@ -94,7 +95,23 @@ export function getPostEditor(db: PrismaClient, token: unknown, id: string) {
   return withPostRead(db, token, async (tx, context) => {
     if (!context.actorId) throw new PortalError(401, "Sign in to continue.");
     const post = await tx.platformPost.findFirst({
-      where: { AND: [{ id: postId(id) }, postReadableWhere(context)] },
+      where: {
+        AND: [
+          { id: postId(id) },
+          {
+            OR: [
+              postReadableWhere(context),
+              {
+                status: { in: ["DRAFT", "SCHEDULED"] },
+                authorChurchId: { in: [...context.publishers] },
+                moderationState: "VISIBLE",
+                topicCommunityId: null,
+                repostKind: null
+              }
+            ]
+          }
+        ]
+      },
       include: {
         authorChurch: { select: { name: true } },
         audienceChurch: { select: { name: true } },
@@ -167,6 +184,10 @@ export function getPostEditor(db: PrismaClient, token: unknown, id: string) {
     );
     return {
       id: post.id,
+      status: post.status,
+      scheduleAt: post.scheduleAt?.toISOString() ?? null,
+      scheduleLocal: post.scheduleLocal ?? "",
+      scheduleZone: post.scheduleZone ?? "",
       discovery: postDiscoveryInput(post),
       topicCommunityId: post.topicCommunityId,
       version: post.version,
@@ -207,8 +228,54 @@ export function getPostEditor(db: PrismaClient, token: unknown, id: string) {
         createdAt: row.createdAt.toISOString()
       })),
       canWithdraw,
-      canPin: canEdit && !!post.authorChurchId
+      canPin: canEdit && !!post.authorChurchId && post.status === "PUBLISHED"
     };
   });
 }
 export type PostEditorView = Awaited<ReturnType<typeof getPostEditor>>;
+
+export function getScheduledPosts(
+  db: PrismaClient,
+  token: unknown,
+  after?: string | null
+) {
+  return withPostRead(db, token, async (tx, context) => {
+    if (!context.actorId)
+      throw new PortalError(401, "Sign in to view scheduled posts.");
+    const rows = await tx.platformPost.findMany({
+      where: {
+        authorChurchId: { in: [...context.publishers] },
+        status: { in: ["DRAFT", "SCHEDULED"] },
+        moderationState: "VISIBLE",
+        topicCommunityId: null,
+        repostKind: null,
+        ...(after ? { id: { gt: postId(after) } } : {})
+      },
+      select: {
+        id: true,
+        version: true,
+        content: true,
+        contentNote: true,
+        safeExcerpt: true,
+        status: true,
+        scheduleLocal: true,
+        scheduleZone: true,
+        authorChurch: { select: { name: true } }
+      },
+      orderBy: { id: "asc" },
+      take: 21
+    });
+    return {
+      items: rows.slice(0, 20).map((row) => ({
+        id: row.id,
+        version: row.version,
+        excerpt: postPreviewText(row).slice(0, 160),
+        status: row.status,
+        scheduleLocal: row.scheduleLocal,
+        scheduleZone: row.scheduleZone,
+        church: row.authorChurch!.name
+      })),
+      nextCursor: rows.length > 20 ? rows[19].id : null
+    };
+  });
+}

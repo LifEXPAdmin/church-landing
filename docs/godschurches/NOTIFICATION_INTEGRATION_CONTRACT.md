@@ -79,6 +79,25 @@ corrected without weakening their isolation checks. Older test expectations now
 include the new category and isolate unrelated church confirmations; unavailable
 opens retain the existing generic result. Failed logs are preserved privately.
 
-Scheduling integration, remaining role-change adapters, expanded browser and
-recovery/resource acceptance, the complete release gate and exact live acceptance
-are still in progress. This checkpoint is not a production completion claim.
+The second integration completes reviewed role/direct-capability outcomes and
+scheduled church publishing. Private composer drafts retain the exact local time
+and zone; older clients cannot silently remove a saved plan. Authorized publishers
+can manage a bounded list, edit, reschedule, cancel and resolve version conflicts.
+The canonical post owns both the plan and its dispatch acknowledgment; no second
+schedule table exists. Six-day queue handoffs roll forward through daily repair
+inside the provider's seven-day retention window. Every execution checks the exact
+revision, current publisher and source permissions. Restored, unavailable or more
+than one-day-overdue plans become drafts. Only actual publication creates fanout.
+
+Current focused checks cover saved drafts, scheduling, current authorization,
+native handoff retry, real worker kills before and after fanout commit, category
+recovery, calendar-series cancellation, role changes and worker grouping. A real
+isolated dump/restore also retires schedules and continuations while preserving
+draft content. Phone replacement tags are opaque and scoped to their owner.
+Partial covering bell indexes follow the continuation's id order.
+
+Production-built browser acceptance, expanded export/recovery, the complete
+release gate and exact live acceptance are still in progress. The HTTPS export
+test correctly rejects the service-only HTTP fixture and will run in the actual
+HTTPS harness. Failed attempts remain recorded privately. No production
+completion is claimed by this source checkpoint.

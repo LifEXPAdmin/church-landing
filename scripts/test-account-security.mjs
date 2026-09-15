@@ -21,10 +21,16 @@ const portalTests = supportTests || process.argv.includes("--portal");
 const preview = process.argv.includes("--preview");
 const coveredTests = new Set();
 function discoverTests(directory) {
-  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
-    const path = join(directory, entry.name);
-    return entry.isDirectory() ? discoverTests(path) : path.endsWith(".test.ts") ? [path] : [];
-  }).sort();
+  return readdirSync(directory, { withFileTypes: true })
+    .flatMap((entry) => {
+      const path = join(directory, entry.name);
+      return entry.isDirectory()
+        ? discoverTests(path)
+        : path.endsWith(".test.ts")
+          ? [path]
+          : [];
+    })
+    .sort();
 }
 const pg = process.env.TEST_PG_BIN ?? "/opt/homebrew/opt/postgresql@16/bin";
 if (!existsSync(join(pg, "initdb")))
@@ -36,7 +42,11 @@ const dir = mkdtempSync(resolve(".account-test/run-"));
 // Preserve disposable PostgreSQL/WAL data outside Next.js file enumeration.
 const clusterRoot = mkdtempSync(join(tmpdir(), "godschurches-security-"));
 const databaseDirectory = join(clusterRoot, "pg");
-writeFileSync(join(dir, "cluster.json"), JSON.stringify({ databaseDirectory }), { mode: 0o600 });
+writeFileSync(
+  join(dir, "cluster.json"),
+  JSON.stringify({ databaseDirectory }),
+  { mode: 0o600 }
+);
 async function freePort() {
   const server = createServer();
   await new Promise((resolve, reject) => {
@@ -279,10 +289,10 @@ try {
         : beforeChurch && table === "PlatformPostLike"
           ? "to_jsonb(t) - 'active' - 'version' - 'firstLikedAt'"
           : beforeChurch && table === "PlatformPostComment"
-          ? `to_jsonb(t) - ARRAY['parentId','rootId','version','editedAt','deletedAt','authorChurchId','moderationState','topicCommunityId']`
-          : beforeChurch && table === "PlatformPost"
-            ? `jsonb_build_object('id',t.id,'createdAt',t."createdAt",'updatedAt',t."updatedAt",'authorId',t."authorId",'type',t.type,'content',t.content,'scripture',t.scripture)`
-            : "to_jsonb(t)";
+            ? `to_jsonb(t) - ARRAY['parentId','rootId','version','editedAt','deletedAt','authorChurchId','moderationState','topicCommunityId']`
+            : beforeChurch && table === "PlatformPost"
+              ? `jsonb_build_object('id',t.id,'createdAt',t."createdAt",'updatedAt',t."updatedAt",'authorId',t."authorId",'type',t.type,'content',t.content,'scripture',t.scripture)`
+              : "to_jsonb(t)";
     return psql(
       [
         "-Atc",
@@ -524,33 +534,71 @@ try {
       const projections = [
         ["PlatformPost", ["moderationState"]],
         ["PlatformPostComment", ["moderationState"]],
-        ["CommunityReportDecision", ["action", "authorReason", "authorId", "authorChurchId", "fromVisibility", "toVisibility", "sourceVersion", "contextVersion"]],
+        [
+          "CommunityReportDecision",
+          [
+            "action",
+            "authorReason",
+            "authorId",
+            "authorChurchId",
+            "fromVisibility",
+            "toVisibility",
+            "sourceVersion",
+            "contextVersion"
+          ]
+        ],
         ["SupportCase", ["moderationDecisionId"]],
         ["SocialEvent", ["decisionId"]]
       ];
-      const originalColumns = () => projections.map(([table, added]) => psql([
-        "-Atc", `SELECT md5(coalesce(jsonb_agg(to_jsonb(t) - ARRAY[${added.map(field => `'${field}'`).join(",")}] ORDER BY id)::text,'[]')) FROM "${table}" t`
-      ]));
+      const originalColumns = () =>
+        projections.map(([table, added]) =>
+          psql([
+            "-Atc",
+            `SELECT md5(coalesce(jsonb_agg(to_jsonb(t) - ARRAY[${added.map((field) => `'${field}'`).join(",")}] ORDER BY id)::text,'[]')) FROM "${table}" t`
+          ])
+        );
       const prior = originalColumns();
       psql(["-f", `prisma/migrations/${name}/migration.sql`]);
       if (JSON.stringify(prior) !== JSON.stringify(originalColumns()))
-        throw Error("Content moderation upgrade changed existing source, decision, help or event fields");
-      if (psql(["-Atc", `SELECT (SELECT count(*) FROM "PlatformPost" WHERE "moderationState" <> 'VISIBLE') + (SELECT count(*) FROM "PlatformPostComment" WHERE "moderationState" <> 'VISIBLE')`]).trim() !== "0")
+        throw Error(
+          "Content moderation upgrade changed existing source, decision, help or event fields"
+        );
+      if (
+        psql([
+          "-Atc",
+          `SELECT (SELECT count(*) FROM "PlatformPost" WHERE "moderationState" <> 'VISIBLE') + (SELECT count(*) FROM "PlatformPostComment" WHERE "moderationState" <> 'VISIBLE')`
+        ]).trim() !== "0"
+      )
         throw Error("Content moderation migration restricted legacy sources");
-      console.log("Content moderation upgrade preserves every original source, decision, support and event column; legacy visibility stays unchanged.");
+      console.log(
+        "Content moderation upgrade preserves every original source, decision, support and event column; legacy visibility stays unchanged."
+      );
     } else if (name === "20260914110000_account_restriction_audit") {
       const preserved = () => [
-        psql(["-Atc", `SELECT md5(coalesce(jsonb_agg(to_jsonb(t) - 'reason' ORDER BY id)::text,'[]')) FROM "ChurchAuditEvent" t`]),
-        fingerprint("PlatformUser", "id"), fingerprint("RetentionControl", "id"),
+        psql([
+          "-Atc",
+          `SELECT md5(coalesce(jsonb_agg(to_jsonb(t) - 'reason' ORDER BY id)::text,'[]')) FROM "ChurchAuditEvent" t`
+        ]),
+        fingerprint("PlatformUser", "id"),
+        fingerprint("RetentionControl", "id"),
         fingerprint("RetentionHold", "id")
       ];
       const prior = preserved();
       psql(["-f", `prisma/migrations/${name}/migration.sql`]);
       if (JSON.stringify(prior) !== JSON.stringify(preserved()))
-        throw Error("Account restriction upgrade changed existing account, audit or protected control data");
-      if (psql(["-Atc", `SELECT count(*) FROM "ChurchAuditEvent" WHERE reason IS NOT NULL`]).trim() !== "0")
+        throw Error(
+          "Account restriction upgrade changed existing account, audit or protected control data"
+        );
+      if (
+        psql([
+          "-Atc",
+          `SELECT count(*) FROM "ChurchAuditEvent" WHERE reason IS NOT NULL`
+        ]).trim() !== "0"
+      )
         throw Error("Account restriction upgrade invented historical reasons");
-      console.log("Account restriction upgrade preserves prior account, audit and control fields; legacy reasons remain absent.");
+      console.log(
+        "Account restriction upgrade preserves prior account, audit and control fields; legacy reasons remain absent."
+      );
     } else if (name === "20260914130000_post_content_notes") {
       const original = () =>
         psql([
@@ -573,27 +621,73 @@ try {
       );
     } else if (name === "20260914180000_four_feeds") {
       const original = () => [
-        psql(["-Atc", `SELECT md5(coalesce(jsonb_agg(to_jsonb(t) - 'firstLikedAt' ORDER BY id)::text,'[]')) FROM "PlatformPostLike" t`]),
-        psql(["-Atc", `SELECT md5(coalesce(jsonb_agg(to_jsonb(t) - ARRAY['feedMode','feedVersion'] ORDER BY "ownerId")::text,'[]')) FROM "SocialPreferences" t`])
+        psql([
+          "-Atc",
+          `SELECT md5(coalesce(jsonb_agg(to_jsonb(t) - 'firstLikedAt' ORDER BY id)::text,'[]')) FROM "PlatformPostLike" t`
+        ]),
+        psql([
+          "-Atc",
+          `SELECT md5(coalesce(jsonb_agg(to_jsonb(t) - ARRAY['feedMode','feedVersion'] ORDER BY "ownerId")::text,'[]')) FROM "SocialPreferences" t`
+        ])
       ];
       const prior = original();
       psql(["-f", `prisma/migrations/${name}/migration.sql`]);
-      if (JSON.stringify(prior) !== JSON.stringify(original())) throw Error("Feed migration changed original Like or preference fields");
-      if (psql(["-Atc", `SELECT count(*) FROM "PlatformPostLike" WHERE active=true AND version=1 AND "firstLikedAt" IS DISTINCT FROM "createdAt"`]).trim() !== "0") throw Error("Feed migration did not preserve known first Like dates");
-      if (psql(["-Atc", `SELECT (SELECT count(*) FROM "SocialPreferences" WHERE "feedMode" IS NOT NULL OR "feedVersion" <> 0) + (SELECT count(*) FROM "FeedSnapshot")`]).trim() !== "0") throw Error("Feed migration invented choices or reading sets");
-      console.log("Four-feed migration preserves every original Like/preference field, records known first Like dates and leaves choices/reading sets empty.");
+      if (JSON.stringify(prior) !== JSON.stringify(original()))
+        throw Error(
+          "Feed migration changed original Like or preference fields"
+        );
+      if (
+        psql([
+          "-Atc",
+          `SELECT count(*) FROM "PlatformPostLike" WHERE active=true AND version=1 AND "firstLikedAt" IS DISTINCT FROM "createdAt"`
+        ]).trim() !== "0"
+      )
+        throw Error("Feed migration did not preserve known first Like dates");
+      if (
+        psql([
+          "-Atc",
+          `SELECT (SELECT count(*) FROM "SocialPreferences" WHERE "feedMode" IS NOT NULL OR "feedVersion" <> 0) + (SELECT count(*) FROM "FeedSnapshot")`
+        ]).trim() !== "0"
+      )
+        throw Error("Feed migration invented choices or reading sets");
+      console.log(
+        "Four-feed migration preserves every original Like/preference field, records known first Like dates and leaves choices/reading sets empty."
+      );
     } else if (name === "20260914213000_conversation_follow_activity") {
-      psql(["-c", `INSERT INTO "ConversationPreference" (id,"ownerId","postId",mode,version,"updatedAt") SELECT 'legacy-conversation-follow', u.id, p.id, 'FOLLOW', 3, CURRENT_TIMESTAMP - interval '2 days' FROM "PlatformUser" u CROSS JOIN "PlatformPost" p LIMIT 1 ON CONFLICT DO NOTHING`]);
+      psql([
+        "-c",
+        `INSERT INTO "ConversationPreference" (id,"ownerId","postId",mode,version,"updatedAt") SELECT 'legacy-conversation-follow', u.id, p.id, 'FOLLOW', 3, CURRENT_TIMESTAMP - interval '2 days' FROM "PlatformUser" u CROSS JOIN "PlatformPost" p LIMIT 1 ON CONFLICT DO NOTHING`
+      ]);
       const original = () => [
-        psql(["-Atc", `SELECT md5(coalesce(jsonb_agg(to_jsonb(t) - 'followedAt' ORDER BY id)::text,'[]')) FROM "ConversationPreference" t`]),
-        psql(["-Atc", `SELECT md5(coalesce(jsonb_agg(to_jsonb(t) - 'conversationPushSince' ORDER BY "ownerId")::text,'[]')) FROM "SocialPreferences" t`]),
-        fingerprint("PlatformPostComment", "id"), fingerprint("SocialEvent", "id")
+        psql([
+          "-Atc",
+          `SELECT md5(coalesce(jsonb_agg(to_jsonb(t) - 'followedAt' ORDER BY id)::text,'[]')) FROM "ConversationPreference" t`
+        ]),
+        psql([
+          "-Atc",
+          `SELECT md5(coalesce(jsonb_agg(to_jsonb(t) - 'conversationPushSince' ORDER BY "ownerId")::text,'[]')) FROM "SocialPreferences" t`
+        ]),
+        fingerprint("PlatformPostComment", "id"),
+        fingerprint("SocialEvent", "id")
       ];
       const prior = original();
       psql(["-f", `prisma/migrations/${name}/migration.sql`]);
-      if (JSON.stringify(prior) !== JSON.stringify(original())) throw Error("Conversation migration changed original preferences, comments or activity");
-      if (psql(["-Atc", `SELECT (SELECT count(*) FROM "CommentFollowerJob") + (SELECT count(*) FROM "SocialPreferences" WHERE "conversationPushSince" IS NOT NULL) + (SELECT count(*) FROM "ConversationPreference" WHERE (mode='FOLLOW' AND "followedAt" IS DISTINCT FROM "updatedAt") OR (mode<>'FOLLOW' AND "followedAt" IS NOT NULL))`]).trim() !== "0") throw Error("Conversation migration backfilled work or changed prior follow consent");
-      console.log("Conversation migration preserves original fields and existing follow dates, with no historical jobs or phone opt-ins.");
+      if (JSON.stringify(prior) !== JSON.stringify(original()))
+        throw Error(
+          "Conversation migration changed original preferences, comments or activity"
+        );
+      if (
+        psql([
+          "-Atc",
+          `SELECT (SELECT count(*) FROM "CommentFollowerJob") + (SELECT count(*) FROM "SocialPreferences" WHERE "conversationPushSince" IS NOT NULL) + (SELECT count(*) FROM "ConversationPreference" WHERE (mode='FOLLOW' AND "followedAt" IS DISTINCT FROM "updatedAt") OR (mode<>'FOLLOW' AND "followedAt" IS NOT NULL))`
+        ]).trim() !== "0"
+      )
+        throw Error(
+          "Conversation migration backfilled work or changed prior follow consent"
+        );
+      console.log(
+        "Conversation migration preserves original fields and existing follow dates, with no historical jobs or phone opt-ins."
+      );
     } else if (name === "20260914223000_prayer_acknowledgment_followup") {
       const original = () => [
         psql([
@@ -627,15 +721,37 @@ try {
       );
     } else if (name === "20260915003000_topic_communities") {
       const originals = () => [
-        ...["PlatformPost", "PlatformPostComment"].map(table => psql(["-Atc", `SELECT md5(coalesce(jsonb_agg(to_jsonb(t) - 'topicCommunityId' ORDER BY id)::text,'[]')) FROM "${table}" t`])),
-        psql(["-Atc", `SELECT md5(coalesce(jsonb_agg(to_jsonb(t) - 'scopeTopicId' ORDER BY id)::text,'[]')) FROM "CommunityReport" t`]),
-        fingerprint("PlatformUser", "id"), fingerprint("RetentionControl", "id")
+        ...["PlatformPost", "PlatformPostComment"].map((table) =>
+          psql([
+            "-Atc",
+            `SELECT md5(coalesce(jsonb_agg(to_jsonb(t) - 'topicCommunityId' ORDER BY id)::text,'[]')) FROM "${table}" t`
+          ])
+        ),
+        psql([
+          "-Atc",
+          `SELECT md5(coalesce(jsonb_agg(to_jsonb(t) - 'scopeTopicId' ORDER BY id)::text,'[]')) FROM "CommunityReport" t`
+        ]),
+        fingerprint("PlatformUser", "id"),
+        fingerprint("RetentionControl", "id")
       ];
       const prior = originals();
       psql(["-f", `prisma/migrations/${name}/migration.sql`]);
-      if (JSON.stringify(prior) !== JSON.stringify(originals())) throw Error("Topic migration changed original content, accounts, reports or protected controls");
-      if (psql(["-Atc", `SELECT (SELECT count(*) FROM "TopicCommunity") + (SELECT count(*) FROM "TopicMembership") + (SELECT count(*) FROM "TopicAudit") + (SELECT count(*) FROM "PlatformPost" WHERE "topicCommunityId" IS NOT NULL) + (SELECT count(*) FROM "PlatformPostComment" WHERE "topicCommunityId" IS NOT NULL) + (SELECT count(*) FROM "CommunityReport" WHERE "scopeTopicId" IS NOT NULL)`]).trim() !== "0") throw Error("Topic migration invented communities, choices, roles or content destinations");
-      console.log("Topic migration preserves original accounts, posts, comments, reports and protected controls; no community, membership, authority or destination is inferred.");
+      if (JSON.stringify(prior) !== JSON.stringify(originals()))
+        throw Error(
+          "Topic migration changed original content, accounts, reports or protected controls"
+        );
+      if (
+        psql([
+          "-Atc",
+          `SELECT (SELECT count(*) FROM "TopicCommunity") + (SELECT count(*) FROM "TopicMembership") + (SELECT count(*) FROM "TopicAudit") + (SELECT count(*) FROM "PlatformPost" WHERE "topicCommunityId" IS NOT NULL) + (SELECT count(*) FROM "PlatformPostComment" WHERE "topicCommunityId" IS NOT NULL) + (SELECT count(*) FROM "CommunityReport" WHERE "scopeTopicId" IS NOT NULL)`
+        ]).trim() !== "0"
+      )
+        throw Error(
+          "Topic migration invented communities, choices, roles or content destinations"
+        );
+      console.log(
+        "Topic migration preserves original accounts, posts, comments, reports and protected controls; no community, membership, authority or destination is inferred."
+      );
     } else if (name === "20260915033000_discovery_preferences") {
       const originals = () => [
         psql([
@@ -678,27 +794,71 @@ try {
       );
     } else if (name === "20260915072000_notification_integration") {
       const originals = () => [
-        psql(["-Atc", `SELECT md5(coalesce(jsonb_agg(to_jsonb(t) - ARRAY['authorBellSince','authorBellVersion'] ORDER BY id)::text,'[]')) FROM "SocialRelationship" t`]),
-        psql(["-Atc", `SELECT md5(coalesce(jsonb_agg(to_jsonb(t) - ARRAY['notificationVersion','notificationRecoveryRequired','mutedNotificationCategories','notificationPushSince'] ORDER BY "ownerId")::text,'[]')) FROM "SocialPreferences" t`]),
-        psql(["-Atc", `SELECT md5(coalesce(jsonb_agg(to_jsonb(t) - ARRAY['notificationCategory','sourceId','sourceVersion'] ORDER BY id)::text,'[]')) FROM "SocialEvent" t`]),
-        ...["PlatformPost", "PlatformPostComment", "RetentionControl", "ChurchConnection", "CalendarResponse", "PostVolunteerSignup"].map(table => fingerprint(table, "id"))
+        psql([
+          "-Atc",
+          `SELECT md5(coalesce(jsonb_agg(to_jsonb(t) - ARRAY['authorBellSince','authorBellVersion'] ORDER BY id)::text,'[]')) FROM "SocialRelationship" t`
+        ]),
+        psql([
+          "-Atc",
+          `SELECT md5(coalesce(jsonb_agg(to_jsonb(t) - ARRAY['notificationVersion','notificationRecoveryRequired','mutedNotificationCategories','notificationPushSince'] ORDER BY "ownerId")::text,'[]')) FROM "SocialPreferences" t`
+        ]),
+        psql([
+          "-Atc",
+          `SELECT md5(coalesce(jsonb_agg(to_jsonb(t) - ARRAY['notificationCategory','sourceId','sourceVersion'] ORDER BY id)::text,'[]')) FROM "SocialEvent" t`
+        ]),
+        psql([
+          "-Atc",
+          `SELECT md5(coalesce(jsonb_agg(to_jsonb(t) - ARRAY['scheduleDispatchedAt','scheduleDispatchedVersion'] ORDER BY id)::text,'[]')) FROM "PlatformPost" t`
+        ]),
+        ...[
+          "PlatformPostComment",
+          "RetentionControl",
+          "ChurchConnection",
+          "CalendarResponse",
+          "PostVolunteerSignup"
+        ].map((table) => fingerprint(table, "id"))
       ];
       const before = originals();
       psql(["-f", `prisma/migrations/${name}/migration.sql`]);
-      if (JSON.stringify(before) !== JSON.stringify(originals())) throw Error("Notification migration changed original source, recipient or preference fields");
-      if (psql(["-Atc", `SELECT (SELECT count(*) FROM "NotificationFanoutJob") + (SELECT count(*) FROM "SocialRelationship" WHERE "authorBellSince" IS NOT NULL OR "authorBellVersion"<>0) + (SELECT count(*) FROM "SocialPreferences" WHERE "notificationVersion"<>0 OR "notificationRecoveryRequired" OR cardinality("mutedNotificationCategories")<>0 OR "notificationPushSince" IS NOT NULL)`]).trim() !== "0") throw Error("Notification migration created subscriptions, opt-ins or delivery work");
-      console.log("Notification upgrade preserves all original fields and creates no author consent or delivery work.");
+      if (JSON.stringify(before) !== JSON.stringify(originals()))
+        throw Error(
+          "Notification migration changed original source, recipient or preference fields"
+        );
+      if (
+        psql([
+          "-Atc",
+          `SELECT (SELECT count(*) FROM "NotificationFanoutJob") + (SELECT count(*) FROM "SocialRelationship" WHERE "authorBellSince" IS NOT NULL OR "authorBellVersion"<>0) + (SELECT count(*) FROM "SocialPreferences" WHERE "notificationVersion"<>0 OR "notificationRecoveryRequired" OR cardinality("mutedNotificationCategories")<>0 OR "notificationPushSince" IS NOT NULL) + (SELECT count(*) FROM "PlatformPost" WHERE "scheduleDispatchedAt" IS NOT NULL OR "scheduleDispatchedVersion" IS NOT NULL)`
+        ]).trim() !== "0"
+      )
+        throw Error(
+          "Notification migration created subscriptions, opt-ins or delivery work"
+        );
+      console.log(
+        "Notification upgrade preserves all original fields and creates no author consent or delivery work."
+      );
     } else psql(["-f", `prisma/migrations/${name}/migration.sql`]);
   }
   for (const [i, [table, key]] of accountTables.entries()) {
     if (stage2a[i] !== fingerprint(table, key, database, true))
       throw new Error(`Stage2B upgrade changed prior account data: ${table}`);
   }
-  if (psql(["-Atc", `SELECT
+  if (
+    psql([
+      "-Atc",
+      `SELECT
     (SELECT count(*) FROM "PlatformUser" WHERE "deletionRequestedAt" IS NOT NULL OR "erasedAt" IS NOT NULL OR "pendingFounderWelcomeAt" IS NOT NULL)
-    + (SELECT count(*) FROM "AccountDeletion") + (SELECT count(*) FROM "FounderWelcome")`]).trim() !== "0")
-    throw new Error("Retention/welcome migration invented account closure or a welcome backfill.");
-  if (psql(["-Atc", 'SELECT count(*) FROM "PlatformPostLike" WHERE NOT active OR version <> 1']).trim() !== "0")
+    + (SELECT count(*) FROM "AccountDeletion") + (SELECT count(*) FROM "FounderWelcome")`
+    ]).trim() !== "0"
+  )
+    throw new Error(
+      "Retention/welcome migration invented account closure or a welcome backfill."
+    );
+  if (
+    psql([
+      "-Atc",
+      'SELECT count(*) FROM "PlatformPostLike" WHERE NOT active OR version <> 1'
+    ]).trim() !== "0"
+  )
     throw new Error("Like migration changed existing Like meaning.");
   const changedLegacyPostMeaning = psql([
     "-Atc",
@@ -1141,7 +1301,12 @@ try {
     );
     writeFileSync(
       join(dir, "browser-env.json"),
-      JSON.stringify({ origin: httpsOrigin, database, certificate, databaseDirectory }),
+      JSON.stringify({
+        origin: httpsOrigin,
+        database,
+        certificate,
+        databaseDirectory
+      }),
       { mode: 0o600 }
     );
     await runTests("tests/portal-http.test.ts", portalEnv);
@@ -1194,7 +1359,9 @@ try {
       const discovered = [...discoverTests("tests"), ...discoverTests("lib")];
       for (const file of discovered)
         if (!coveredTests.has(file)) await runTests(file, portalEnv);
-      console.log(`Full regression coverage: ${discovered.length} discovered test files passed.`);
+      console.log(
+        `Full regression coverage: ${discovered.length} discovered test files passed.`
+      );
     }
     if (supportTests)
       console.log(

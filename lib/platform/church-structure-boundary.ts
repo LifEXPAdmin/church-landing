@@ -1,4 +1,5 @@
 import type { PrismaClient } from "@prisma/client";
+import { scheduleDomainActivity } from "./notification-fanout";
 import { accountConfig } from "./account-config";
 import { allowAccountAttempt } from "./account-limits";
 import { requestSessionToken, readBody } from "./account-boundary";
@@ -14,7 +15,8 @@ const headers = {
 };
 export async function handleChurchStructureRequest(
   db: PrismaClient,
-  request: Request
+  request: Request,
+  afterResponse?: (work: () => Promise<void>) => void
 ) {
   try {
     const token = requestSessionToken(request);
@@ -90,7 +92,9 @@ export async function handleChurchStructureRequest(
         429,
         "Too many changes. Wait 15 minutes and try again."
       );
-    return Response.json(await churchStructureCommand(db, token, input), {
+    const result = await churchStructureCommand(db, token, input);
+    scheduleDomainActivity(db, actor.id, afterResponse);
+    return Response.json(result, {
       headers
     });
   } catch (error) {

@@ -421,18 +421,20 @@ test("scheduled church plans reject ambiguous time, publish once, cancel safely 
     scheduleZone: "UTC"
   });
   assert.equal(await getPost(db, f.ada.token, p.id), null);
-  assert.deepEqual(await publishScheduledPost(db, p.id, 1), {
-    published: false,
-    changed: false
-  });
+  const early = await publishScheduledPost(db, p.id, 1);
+  assert.equal(early.published, false);
+  assert.equal(early.changed, false);
+  assert.ok(early.retryAfterSeconds > 0);
   const due = new Date(future.getTime() + 60000);
   assert.deepEqual(await publishScheduledPost(db, p.id, 1, due), {
     published: true,
-    changed: true
+    changed: true,
+    retryAfterSeconds: 0
   });
   assert.deepEqual(await publishScheduledPost(db, p.id, 1, due), {
     published: false,
-    changed: false
+    changed: false,
+    retryAfterSeconds: 0
   });
   assert.equal(
     await db.postAudit.count({
@@ -482,7 +484,8 @@ test("scheduled church plans reject ambiguous time, publish once, cancel safely 
   );
   assert.deepEqual(await publishScheduledPost(db, blocked.id, 1, due), {
     published: false,
-    changed: true
+    changed: true,
+    retryAfterSeconds: 0
   });
   assert.equal(
     (await db.platformPost.findUniqueOrThrow({ where: { id: blocked.id } }))

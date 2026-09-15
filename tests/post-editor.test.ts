@@ -90,7 +90,7 @@ test("composer and event choices expose only current approved church capabilitie
     false
   );
 });
-test("publishing boundary rejects forged authors, origins, scheduling and excessive fields while identical retries publish once", async () => {
+test("publishing boundary rejects forged authors, origins, unauthorized scheduling and excessive fields while identical retries publish once", async () => {
   const f = await seedParticipation(db),
     requestKey = randomUUID(),
     content = "文".repeat(1499) + "\r\n\r\n" + "字".repeat(1499);
@@ -123,7 +123,7 @@ test("publishing boundary rejects forged authors, origins, scheduling and excess
         scheduleZone: "UTC"
       })
     ).status,
-    400
+    403
   );
   assert.equal(
     (await send(f.lee.token, { ...payload, content: content + "字" })).status,

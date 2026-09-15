@@ -1,4 +1,5 @@
 import { scheduleDomainActivity } from "./notification-fanout";
+import { schedulePublicationHandoff } from "./scheduled-publication";
 import type { PrismaClient } from "@prisma/client";
 import { accountConfig } from "./account-config";
 import { allowWorkspaceAttempt } from "./account-limits";
@@ -100,8 +101,10 @@ export async function handlePostWorkspaceRequest(
         900
       );
     const result = await postWorkspaceCommand(db, token, input);
-    if (input.operation === "publish-draft")
+    if (input.operation === "publish-draft") {
       scheduleDomainActivity(db, actor.id, afterResponse);
+      schedulePublicationHandoff(db, actor.id, afterResponse, result.postId);
+    }
     const protectedRecovery =
       input.operation !== "publish-draft" ||
       (await protectDiscoveryRecovery(db, actor.id, request.signal));

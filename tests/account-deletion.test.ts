@@ -244,6 +244,15 @@ test("a separately protected request replays against a pre-deletion snapshot bef
   const p = await db.platformPost.create({
     data: { authorId: a.id, content: "Old backup private data" }
   });
+  const notificationJob = await db.notificationFanoutJob.create({
+    data: {
+      key: randomUUID(),
+      kind: "AUTHOR_POST",
+      sourceId: p.id,
+      sourceVersion: 1,
+      actorId: a.id
+    }
+  });
   const proof = createSessionToken();
   await requestPermanentAccountDeletion(
     db,
@@ -257,6 +266,12 @@ test("a separately protected request replays against a pre-deletion snapshot bef
     where: { userId: a.id }
   });
   await eraseRequestedAccountData(db, request.id, protectedStore.journal);
+  assert.equal(
+    await db.notificationFanoutJob.findUnique({
+      where: { id: notificationJob.id }
+    }),
+    null
+  );
   const done = await finalizeAccountDeletion(
     db,
     request.id,
