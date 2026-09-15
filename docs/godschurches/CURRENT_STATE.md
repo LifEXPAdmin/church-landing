@@ -12,13 +12,22 @@ export and follow-change checks have been added for the production-build gate.
 The later foundation run passed 52 tests including independent classification
 recovery clocks, withdrawal and erasure cleanup. The first full gate stopped on
 an isolated dependency-copy layout error; its passing partial checks do not
-constitute a full gate. The production-build browser checks now pass thirteen
-discovery and author-classification groups, including exact retry, account switch,
-standalone settings, finite pagination, consent and 320-pixel larger-text checks.
+constitute a full gate. Subsequent full gates for the implementation and compressed
+catalog passed all 139 discovered files: 864 executions, 862 passes and two expected
+disabled skips, with zero failures/cancellations. Production-build browsers cover
+exact retry, account switch, standalone settings, finite pagination, consent and
+320-pixel larger-text checks. A later shared-shell hydration failure remains a
+release gate: diagnostics identified the bundled renderer's interrupted host replay
+defect, with its cursor still inside the same shell on retry. Keeping the outlined
+footer in a synchronous client component passed the complete eleven-group discovery
+journey, including twelve repeated reloads and interactive appearance checks across
+three widths. Thirty controller/display tests also verify stable empty server
+snapshots. Final source regressions and release evidence remain pending.
 The public town shards are compressed from 4,711,979 to 1,355,796 bytes with exact
-decoded hashes preserved. Migration 55 remains local. The final compressed build,
-related browser regressions, protected production-copy upgrade, complete release
-gate, exact deployment / canonical assignment and live behavior are still required.
+decoded hashes preserved. The encrypted production-copy 54→55 upgrade and protected
+restore preserve all original columns across 100 tables with zero production writes.
+Migration 55 remains local. Final browser regressions, the complete release gate,
+exact deployment / canonical assignment and live behavior are still required.
 See [the discovery contract](DISCOVERY_FEEDS_CONTRACT.md). Physical-phone
 acceptance remains separately evidenced; the unified queue final review stays last.
 
