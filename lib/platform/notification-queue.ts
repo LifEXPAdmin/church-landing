@@ -23,7 +23,8 @@ export const publishPush: QueuePublish = async (
 export async function dispatchNotifications(
   db: PrismaClient,
   sourceId?: string,
-  publish: QueuePublish = publishPush
+  publish: QueuePublish = publishPush,
+  actorId?: string
 ) {
   if (!pushAvailable()) return { queued: 0, failed: 0 };
   const now = new Date();
@@ -39,16 +40,23 @@ export async function dispatchNotifications(
           ]
         }
       ],
-      ...(sourceId
+      ...(sourceId || actorId
         ? {
             event: {
-              OR: [
-                { messageId: sourceId },
-                { requestId: sourceId },
-                { reportId: sourceId },
-                { commentId: sourceId },
-                { id: sourceId }
-              ]
+              ...(actorId ? { actorId } : {}),
+              ...(sourceId
+                ? {
+                    OR: [
+                      { sourceId },
+                      { postId: sourceId },
+                      { messageId: sourceId },
+                      { requestId: sourceId },
+                      { reportId: sourceId },
+                      { commentId: sourceId },
+                      { id: sourceId }
+                    ]
+                  }
+                : {})
             }
           }
         : {}),

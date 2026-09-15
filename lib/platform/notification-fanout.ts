@@ -1,0 +1,324 @@
+import type { Prisma, PrismaClient } from "@prisma/client";
+import { activeRoleGrantWhere } from "./church-permissions";
+import { eligibleWhere } from "./portal-policy";
+import { recordDomainActivity } from "./domain-activity";
+import { dispatchNotifications, type QueuePublish } from "./notification-queue";
+import type { FollowerPublish } from "./comment-followers";
+
+export const NOTIFICATION_FANOUT_TOPIC = "notification-fanout-v1";
+export const NOTIFICATION_FANOUT_BATCH = 20;
+const DAY = 86400000;
+const publishFanout: FollowerPublish = async (id, idempotencyKey) => {
+  if (process.env.VERCEL !== "1")
+    throw Error("Deployed activity queue required.");
+  const { send } = await import("@vercel/queue");
+  return send(
+    NOTIFICATION_FANOUT_TOPIC,
+    { id },
+    { retentionSeconds: 604800, idempotencyKey }
+  );
+};
+
+export function processNotificationFanoutBatch(
+  db: PrismaClient,
+  id: string,
+  now = new Date()
+) {
+  return db.$transaction(
+    async (tx) => {
+      await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock_shared(730221, 2)`;
+      await tx.$queryRaw`SELECT id FROM "NotificationFanoutJob" WHERE id=${id} FOR UPDATE`;
+      const job = await tx.notificationFanoutJob.findUnique({ where: { id } });
+      if (!job || job.completedAt)
+        return { done: true, processed: 0, sourceId: null };
+      let recipients: { id: string; ownerId: string }[] = [];
+      let postId: string | null = null;
+      let valid = job.createdAt.getTime() + 7 * DAY > now.getTime();
+      const after = job.cursor ? { id: { gt: job.cursor } } : {};
+      const page = {
+        orderBy: { id: "asc" as const },
+        take: NOTIFICATION_FANOUT_BATCH
+      };
+      if (valid && job.kind === "AUTHOR_POST") {
+        const post = await tx.platformPost.findUnique({
+          where: { id: job.sourceId },
+          select: {
+            id: true,
+            status: true,
+            publishedAt: true,
+            authorId: true,
+            authorChurchId: true
+          }
+        });
+        valid =
+          !!post &&
+          post.status === "PUBLISHED" &&
+          post.authorId === job.actorId &&
+          post.publishedAt?.getTime() === job.createdAt.getTime();
+        if (valid && post) {
+          postId = post.id;
+          recipients = await tx.socialRelationship.findMany({
+            where: {
+              ...(post.authorChurchId
+                ? { churchId: post.authorChurchId }
+                : { targetUserId: post.authorId }),
+              authorBellSince: { lt: job.createdAt },
+              blocked: false,
+              ...after
+            },
+            select: { id: true, ownerId: true },
+            ...page
+          });
+        }
+      } else if (valid && job.kind === "CHURCH_REVIEW") {
+        const connection = await tx.churchConnection.findUnique({
+          where: { id: job.sourceId },
+          select: { churchId: true, userId: true, state: true, version: true }
+        });
+        valid =
+          !!connection &&
+          connection.userId === job.actorId &&
+          connection.state === "PENDING" &&
+          connection.version === job.sourceVersion;
+        if (valid && connection) {
+          if (job.phase === "PRIMARY")
+            recipients = (
+              await tx.churchCapabilityGrant.findMany({
+                where: {
+                  churchId: connection.churchId,
+                  capability: "REVIEW_CONNECTIONS",
+                  revokedAt: null,
+                  createdAt: { lte: job.createdAt },
+                  userId: { not: job.actorId },
+                  user: eligibleWhere,
+                  ...after
+                },
+                select: { id: true, userId: true },
+                ...page
+              })
+            ).map((r) => ({ id: r.id, ownerId: r.userId }));
+          else
+            recipients = (
+              await tx.churchRoleGrant.findMany({
+                where: {
+                  ...activeRoleGrantWhere(),
+                  churchId: connection.churchId,
+                  capability: "REVIEW_CONNECTIONS",
+                  createdAt: { lte: job.createdAt },
+                  AND: [
+                    {
+                      assignment: {
+                        createdAt: { lte: job.createdAt },
+                        connection: { userId: { not: job.actorId } }
+                      }
+                    }
+                  ],
+                  ...after
+                },
+                select: {
+                  id: true,
+                  assignment: {
+                    select: { connection: { select: { userId: true } } }
+                  }
+                },
+                ...page
+              })
+            ).map((r) => ({
+              id: r.id,
+              ownerId: r.assignment.connection.userId
+            }));
+        }
+      } else if (valid && job.kind === "EVENT_CHANGED") {
+        valid = !!(await tx.calendarOccurrence.findFirst({
+          where: { id: job.sourceId, version: { gte: job.sourceVersion } },
+          select: { id: true }
+        }));
+        if (valid) {
+          if (job.phase === "PRIMARY")
+            recipients = (
+              await tx.calendarResponse.findMany({
+                where: {
+                  occurrenceId: job.sourceId,
+                  state: { in: ["GOING", "MAYBE"] },
+                  updatedAt: { lte: job.createdAt },
+                  ...after
+                },
+                select: { id: true, userId: true },
+                ...page
+              })
+            ).map((r) => ({ id: r.id, ownerId: r.userId }));
+          else
+            recipients = (
+              await tx.postVolunteerSignup.findMany({
+                where: {
+                  slot: { post: { eventOccurrenceId: job.sourceId } },
+                  state: "ACTIVE",
+                  updatedAt: { lte: job.createdAt },
+                  ...after
+                },
+                select: { id: true, userId: true },
+                ...page
+              })
+            ).map((r) => ({ id: r.id, ownerId: r.userId }));
+        }
+      } else if (valid && job.kind === "VOLUNTEER_CHANGED") {
+        const slot = await tx.postVolunteerSlot.findFirst({
+          where: { id: job.sourceId, version: { gte: job.sourceVersion } },
+          select: { postId: true }
+        });
+        valid = !!slot;
+        if (slot) {
+          postId = slot.postId;
+          recipients = (
+            await tx.postVolunteerSignup.findMany({
+              where: {
+                slotId: job.sourceId,
+                state: "ACTIVE",
+                updatedAt: { lte: job.createdAt },
+                ...after
+              },
+              select: { id: true, userId: true },
+              ...page
+            })
+          ).map((r) => ({ id: r.id, ownerId: r.userId }));
+        }
+      } else valid = false;
+      for (const recipient of recipients) {
+        if (recipient.ownerId === job.actorId) continue;
+        await recordDomainActivity(tx, {
+          kind: job.kind,
+          sourceId: job.sourceId,
+          sourceVersion: job.sourceVersion,
+          actorId: job.actorId,
+          recipientId: recipient.ownerId,
+          postId,
+          createdAt: job.createdAt,
+          category:
+            job.kind === "AUTHOR_POST"
+              ? "posts"
+              : job.kind === "CHURCH_REVIEW"
+                ? "church"
+                : "commitments"
+        });
+      }
+      const nextPhase =
+        valid &&
+        job.phase === "PRIMARY" &&
+        ["EVENT_CHANGED", "CHURCH_REVIEW"].includes(job.kind) &&
+        recipients.length < NOTIFICATION_FANOUT_BATCH;
+      const done = recipients.length < NOTIFICATION_FANOUT_BATCH && !nextPhase;
+      await tx.notificationFanoutJob.update({
+        where: { id },
+        data: {
+          ...(recipients.length ? { cursor: recipients.at(-1)!.id } : {}),
+          ...(nextPhase ? { phase: "SECONDARY", cursor: null } : {}),
+          ...(done ? { completedAt: now } : {})
+        }
+      });
+      return { done, processed: recipients.length, sourceId: job.sourceId };
+    },
+    { maxWait: 10000, timeout: 15000 }
+  );
+}
+export async function advanceNotificationFanout(
+  db: PrismaClient,
+  id: string,
+  publish?: QueuePublish
+) {
+  const result = await processNotificationFanoutBatch(db, id);
+  let failed = 0;
+  if (result.sourceId)
+    for (let i = 0; i < 2; i++) {
+      const sent = await dispatchNotifications(db, result.sourceId, publish);
+      failed += sent.failed;
+      if (sent.failed || sent.queued < 100) break;
+    }
+  return { ...result, failed };
+}
+export async function dispatchNotificationFanout(
+  db: PrismaClient,
+  actorId?: string,
+  publish: FollowerPublish = publishFanout
+) {
+  const now = new Date();
+  const jobs = await db.notificationFanoutJob.findMany({
+    where: {
+      ...(actorId ? { actorId } : {}),
+      completedAt: null,
+      OR: [
+        { dispatchedAt: null },
+        { dispatchedAt: { lt: new Date(now.getTime() - 3600000) } }
+      ]
+    },
+    select: { id: true },
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+    take: 100
+  });
+  let queued = 0,
+    failed = 0;
+  for (let i = 0; i < jobs.length; i += 8) {
+    const results = await Promise.allSettled(
+      jobs.slice(i, i + 8).map(async (job) => {
+        await publish(
+          job.id,
+          `${job.id}:${Math.floor(now.getTime() / 3600000)}`
+        );
+        await db.notificationFanoutJob.updateMany({
+          where: { id: job.id, completedAt: null },
+          data: { dispatchedAt: now }
+        });
+      })
+    );
+    for (const result of results)
+      if (result.status === "fulfilled") queued++;
+      else failed++;
+  }
+  return { queued, failed };
+}
+export async function cleanNotificationFanout(
+  tx: Prisma.TransactionClient,
+  now = new Date()
+) {
+  return (
+    await tx.notificationFanoutJob.deleteMany({
+      where: {
+        OR: [
+          { completedAt: { lte: new Date(now.getTime() - 14 * DAY) } },
+          { createdAt: { lte: new Date(now.getTime() - 21 * DAY) } }
+        ]
+      }
+    })
+  ).count;
+}
+
+export function scheduleDomainActivity(
+  db: PrismaClient,
+  actorId: string,
+  afterResponse?: (work: () => Promise<void>) => void
+) {
+  if (!afterResponse) return;
+  try {
+    afterResponse(async () => {
+      try {
+        const jobs = await db.notificationFanoutJob.findMany({
+          where: { actorId, completedAt: null },
+          select: { id: true },
+          orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+          take: 2
+        });
+        for (const job of jobs) await advanceNotificationFanout(db, job.id);
+        if (
+          (await dispatchNotifications(db, undefined, undefined, actorId))
+            .failed
+        )
+          console.error("domain_activity_delivery_handoff_incomplete");
+        if ((await dispatchNotificationFanout(db, actorId)).failed)
+          console.error("domain_activity_handoff_incomplete");
+      } catch {
+        console.error("domain_activity_handoff_incomplete");
+      }
+    });
+  } catch {
+    console.error("domain_activity_handoff_incomplete");
+  }
+}

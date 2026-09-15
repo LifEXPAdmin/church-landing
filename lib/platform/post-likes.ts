@@ -1,3 +1,4 @@
+import { recordDomainActivity } from "./domain-activity";
 import type { PrismaClient } from "@prisma/client";
 import { expected, PortalError } from "./portal-policy";
 import { postContext, withPostRead } from "./post-access";
@@ -79,6 +80,23 @@ export function postLikeCommand(
             : {})
         }
       });
+      if (desired && !old?.active) {
+        const post = await tx.platformPost.findUniqueOrThrow({
+          where: { id },
+          select: { authorId: true, authorChurchId: true }
+        });
+        if (!post.authorChurchId)
+          await recordDomainActivity(tx, {
+            kind: "POST_REACTION",
+            category: "reactions",
+            sourceId: row.id,
+            sourceVersion: row.version,
+            actorId: ownerId,
+            recipientId: post.authorId,
+            postId: id,
+            once: true
+          });
+      }
       return {
         id,
         version: row.version,

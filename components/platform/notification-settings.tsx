@@ -29,7 +29,11 @@ const labels: Record<NotificationCategory, string> = {
   replies: "Replies to your posts and comments",
   mentions: "Mentions in comments",
   conversations: "Replies in conversations you follow",
-  prayer: "Updates to your saved prayers"
+  prayer: "Prayer acknowledgments and saved prayer updates",
+  posts: "New posts from authors whose bell you enabled",
+  reactions: "Likes on your posts and comments",
+  church: "Church requests and connection changes",
+  commitments: "Event responses, changes and volunteer commitments"
 };
 const categories = Object.keys(labels) as NotificationCategory[];
 const endpoint = "/api/platform/notifications";
@@ -60,6 +64,7 @@ export function NotificationSettings({ owner }: { owner: string }) {
     !!fields && JSON.stringify(fields) !== JSON.stringify(view?.preferences);
   const current = useRef({ dirty, fields, pending });
   current.current = { dirty, fields, pending };
+  const actionEpoch = useRef(0);
   const generation = useRef(0),
     inFlight = useRef(false);
   useUnsavedSocialWork(
@@ -124,6 +129,19 @@ export function NotificationSettings({ owner }: { owner: string }) {
     [owner, router]
   );
   useEffect(() => {
+    actionEpoch.current++;
+    generation.current++;
+    inFlight.current = false;
+    setView(null);
+    setFields(null);
+    setDevices(null);
+    setPending(null);
+    setConflict(false);
+    setTestId(null);
+    setCurrentId(null);
+    setBusy(false);
+    setMessage("");
+    current.current = { dirty: false, fields: null, pending: null };
     void load();
     const refresh = () => {
       if (document.visibilityState !== "hidden" && !inFlight.current)
@@ -144,9 +162,11 @@ export function NotificationSettings({ owner }: { owner: string }) {
     inFlight.current = true;
     setBusy(true);
     setMessage("");
+    const epoch = actionEpoch.current;
     let body: string | null = pending;
     try {
       body ??= await makeBody();
+      if (epoch !== actionEpoch.current) return;
       setPending(body);
       const input = JSON.parse(body),
         { data } = await socialRequest<{
@@ -154,6 +174,7 @@ export function NotificationSettings({ owner }: { owner: string }) {
           version: number;
           message: string;
         }>(endpoint, body, owner);
+      if (epoch !== actionEpoch.current) return;
       // A server acknowledgement ends the exact-body retry even if local device
       // storage becomes unavailable afterward.
       setPending(null);
@@ -182,6 +203,7 @@ export function NotificationSettings({ owner }: { owner: string }) {
       setMessage(data.message);
       await load(true);
     } catch (error) {
+      if (epoch !== actionEpoch.current) return;
       setMessage(
         error instanceof Error
           ? error.message
@@ -205,8 +227,10 @@ export function NotificationSettings({ owner }: { owner: string }) {
         }
       }
     } finally {
-      inFlight.current = false;
-      setBusy(false);
+      if (epoch === actionEpoch.current) {
+        inFlight.current = false;
+        setBusy(false);
+      }
     }
   }
   const serialize = (operation: string, extra: object = {}) =>
@@ -249,6 +273,12 @@ export function NotificationSettings({ owner }: { owner: string }) {
           </button>
         </div>
       )}
+      {view?.preferences.recoveryRequired && (
+        <p role="alert">
+          A recovery could not confirm your newer notification choices. Optional
+          alerts are off. Review each category and save your choices.
+        </p>
+      )}
       {view && fields && (
         <>
           <form
@@ -275,37 +305,40 @@ export function NotificationSettings({ owner }: { owner: string }) {
                   className="rounded-lg border border-gc-divider p-3"
                 >
                   <legend>{labels[category]}</legend>
-                  {category !== "replies" &&
-                  category !== "mentions" &&
-                  category !== "conversations" &&
-                  category !== "prayer" ? (
-                    <label className="flex min-h-11 items-center gap-3">
-                      <input
-                        type="checkbox"
-                        checked={fields.inApp[category]}
-                        onChange={(event) =>
-                          change({
-                            ...fields,
-                            inApp: {
-                              ...fields.inApp,
-                              [category]: event.target.checked
-                            }
-                          })
-                        }
-                      />
-                      {category === "founder"
-                        ? "Receive founder announcements"
-                        : "In-app alerts"}
-                    </label>
-                  ) : (
+                  <label className="flex min-h-11 items-center gap-3">
+                    <input
+                      type="checkbox"
+                      checked={fields.inApp[category]}
+                      onChange={(event) =>
+                        change({
+                          ...fields,
+                          inApp: {
+                            ...fields.inApp,
+                            [category]: event.target.checked
+                          }
+                        })
+                      }
+                    />
+                    {category === "founder"
+                      ? "Receive founder announcements"
+                      : "In-app alerts"}
+                  </label>
+                  {(
+                    [
+                      "prayer",
+                      "conversations",
+                      "posts",
+                      "commitments"
+                    ] as NotificationCategory[]
+                  ).includes(category) && (
                     <p className="text-sm text-gc-muted">
-                      {category === "prayer"
-                        ? "Choose updates separately for each saved prayer. Phone alerts are optional and start after you enable this choice."
-                        : category === "conversations"
-                          ? "Follow a conversation on its post to receive new replies in Activity. Phone alerts are optional and start after you enable this choice."
-                          : "Comments remain available on their post."}{" "}
-                      Mute a conversation there to stop its Activity and phone
-                      alerts.
+                      {category === "posts"
+                        ? "Enable the bell on a person or church separately. Following and membership do not enable it."
+                        : category === "prayer"
+                          ? "Prayer acknowledgment alerts never include a participant's name. Choose future updates separately on each saved prayer."
+                          : category === "conversations"
+                            ? "Follow a conversation on its post for future replies. Mute there stops its Activity and phone alerts."
+                            : "Your actual responses and reservations stay available in My commitments, even when alerts are off."}
                     </p>
                   )}
                   <label className="flex min-h-11 items-center gap-3">

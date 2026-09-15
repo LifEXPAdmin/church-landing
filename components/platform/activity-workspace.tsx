@@ -14,7 +14,12 @@ const labels: Record<ActivityCategory, string> = {
   requests: "Contact requests",
   comments: "Replies and updates",
   reports: "Reports",
-  founder: "Founder announcements"
+  founder: "Founder announcements",
+  posts: "Author posts",
+  reactions: "Reactions",
+  prayer: "Prayer",
+  church: "Church connections",
+  commitments: "Commitments"
 };
 const endpoint = "/api/platform/activity";
 const date = new Intl.DateTimeFormat(undefined, {

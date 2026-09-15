@@ -1,3 +1,5 @@
+import { recordDiscoveryControl } from "./retention-controls";
+import { protectDiscoveryRecovery } from "./discovery-recovery";
 import { Temporal } from "@js-temporal/polyfill";
 import type { Prisma, PrismaClient, SocialPreferences } from "@prisma/client";
 import { withOwnedSession } from "./account-sessions";
@@ -6,13 +8,22 @@ import { calendarZone } from "./calendar-time";
 import { socialCommand, socialInput } from "./social-operations";
 import { pushAvailable } from "./push-config";
 
-const inAppCategories = ["messages", "requests", "reports", "founder"] as const;
+const legacyInAppCategories = [
+  "messages",
+  "requests",
+  "reports",
+  "founder"
+] as const;
 export const notificationCategories = [
-  ...inAppCategories,
+  ...legacyInAppCategories,
   "replies",
   "mentions",
   "conversations",
-  "prayer"
+  "prayer",
+  "posts",
+  "reactions",
+  "church",
+  "commitments"
 ] as const;
 export type NotificationCategory = (typeof notificationCategories)[number];
 export type QuietHours = {
@@ -77,16 +88,66 @@ export function quietHoursEnd(quiet: QuietHours, now: Date): Date | null {
   }
   return null;
 }
+export function inAppNotificationEnabled(
+  row: SocialPreferences | null,
+  category: NotificationCategory
+) {
+  if (
+    row?.notificationRecoveryRequired ||
+    row?.mutedNotificationCategories.includes(category)
+  )
+    return false;
+  return category === "messages"
+    ? (row?.messageAlerts ?? true)
+    : category === "requests"
+      ? (row?.requestAlerts ?? true)
+      : category === "reports"
+        ? (row?.reportAlerts ?? true)
+        : category === "founder"
+          ? (row?.founderAnnouncements ?? true)
+          : true;
+}
+export function notificationPushAllowed(
+  row: SocialPreferences | null,
+  category: NotificationCategory,
+  sourceAt: Date
+) {
+  if (
+    !row ||
+    row.notificationRecoveryRequired ||
+    !row.pushCategories.includes(category)
+  )
+    return false;
+  const saved = row.notificationPushSince;
+  const at =
+    saved && typeof saved === "object" && !Array.isArray(saved)
+      ? saved[category]
+      : null;
+  if (typeof at === "string")
+    return (
+      Number.isFinite(Date.parse(at)) && Date.parse(at) < sourceAt.getTime()
+    );
+  if (category === "conversations")
+    return !!row.conversationPushSince && row.conversationPushSince < sourceAt;
+  if (category === "prayer")
+    return !!row.prayerPushSince && row.prayerPushSince < sourceAt;
+  // Preserve already supported choices on older accounts. Newly supported
+  // channels require a dated opt-in; a raw category name cannot backfill them.
+  return !["posts", "reactions", "church", "commitments"].includes(category);
+}
 export function projectNotificationPreferences(row: SocialPreferences | null) {
   return {
     version: row?.version ?? 0,
-    inApp: {
-      messages: row?.messageAlerts ?? true,
-      requests: row?.requestAlerts ?? true,
-      reports: row?.reportAlerts ?? true,
-      founder: row?.founderAnnouncements ?? true
-    },
-    pushCategories: (row?.pushCategories ?? []) as NotificationCategory[],
+    recoveryRequired: row?.notificationRecoveryRequired ?? false,
+    inApp: Object.fromEntries(
+      notificationCategories.map((category) => [
+        category,
+        inAppNotificationEnabled(row, category)
+      ])
+    ) as Record<NotificationCategory, boolean>,
+    pushCategories: (row?.notificationRecoveryRequired
+      ? []
+      : (row?.pushCategories ?? [])) as NotificationCategory[],
     quietHours:
       row?.quietStart != null && row.quietEnd != null && row.quietTimeZone
         ? {
@@ -121,7 +182,7 @@ export function readNotificationPreferences(db: PrismaClient, token: unknown) {
     }
   }));
 }
-export function notificationPreferenceCommand(
+export async function notificationPreferenceCommand(
   db: PrismaClient,
   token: unknown,
   input: Record<string, unknown>
@@ -137,20 +198,25 @@ export function notificationPreferenceCommand(
   ]);
   if (input.operation !== "preferences")
     throw new PortalError(400, "Choose a supported notification control.");
-  return socialCommand(
+  const result = await socialCommand(
     db,
     token,
     "notification",
     input,
     async (tx, ownerId) => {
-      const old = await notificationPreferencesIn(tx, ownerId);
+      const prior = await tx.socialPreferences.findUnique({
+        where: { ownerId }
+      });
+      const old = projectNotificationPreferences(prior);
       expected(input.expectedVersion, old.version);
       const categories = input.pushCategories;
       const choices = input.inApp as Record<string, unknown> | undefined;
       if (
         !choices ||
-        Object.keys(choices).sort().join() !==
-          [...inAppCategories].sort().join() ||
+        ![
+          [...legacyInAppCategories].sort().join(),
+          [...notificationCategories].sort().join()
+        ].includes(Object.keys(choices).sort().join()) ||
         Object.values(choices).some((v) => typeof v !== "boolean") ||
         !Array.isArray(categories) ||
         categories.length > notificationCategories.length ||
@@ -181,12 +247,61 @@ export function notificationPreferenceCommand(
           "Phone notifications are not available yet. You can still turn existing choices off."
         );
       const quiet = parseQuietHours(input.quietHours);
+      const legacy =
+        Object.keys(choices).length === legacyInAppCategories.length;
+      if (legacy && old.recoveryRequired)
+        throw new PortalError(
+          409,
+          "Reload the current notification settings to review recovered choices."
+        );
+      const now = new Date();
+      const nextInApp = { ...old.inApp, ...choices } as Record<
+        NotificationCategory,
+        boolean
+      >;
+      // Legacy clients know eight phone categories. Preserve newer saved values.
+      const nextPush = [
+        ...new Set([
+          ...categories,
+          ...(legacy
+            ? old.pushCategories.filter((c) =>
+                ["posts", "reactions", "church", "commitments"].includes(c)
+              )
+            : [])
+        ])
+      ].sort();
+      const beforeSince = prior?.notificationPushSince;
+      const pushSince = Object.fromEntries(
+        nextPush.map((category) => [
+          category,
+          !old.pushCategories.includes(category)
+            ? now.toISOString()
+            : beforeSince &&
+                typeof beforeSince === "object" &&
+                !Array.isArray(beforeSince) &&
+                typeof beforeSince[category] === "string"
+              ? beforeSince[category]
+              : category === "conversations"
+                ? (prior?.conversationPushSince?.toISOString() ??
+                  now.toISOString())
+                : category === "prayer"
+                  ? (prior?.prayerPushSince?.toISOString() ?? now.toISOString())
+                  : new Date(0).toISOString()
+        ])
+      );
       const data = {
+        notificationVersion: (prior?.notificationVersion ?? 0) + 1,
+        notificationRecoveryRequired: false,
+        mutedNotificationCategories: notificationCategories.filter(
+          (c) => !nextInApp[c]
+        ),
+        notificationPushSince: pushSince,
+
         messageAlerts: choices.messages as boolean,
         requestAlerts: choices.requests as boolean,
         reportAlerts: choices.reports as boolean,
         founderAnnouncements: choices.founder as boolean,
-        pushCategories: [...categories].sort(),
+        pushCategories: nextPush,
         conversationPushSince: !categories.includes("conversations")
           ? null
           : old.pushCategories.includes("conversations")
@@ -206,6 +321,13 @@ export function notificationPreferenceCommand(
         create: { ownerId, ...data },
         update: { ...data, version: { increment: 1 } }
       });
+      await recordDiscoveryControl(
+        tx,
+        "NOTIFICATION_PREFERENCES",
+        ownerId,
+        ownerId,
+        row.notificationVersion
+      );
       return {
         id: ownerId,
         version: row.version,
@@ -220,4 +342,10 @@ export function notificationPreferenceCommand(
         );
     }
   );
+  if (!(await protectDiscoveryRecovery(db, result.id)))
+    throw new PortalError(
+      503,
+      "Your notification choices are saved; their protected recovery receipt needs confirmation. Retry the same change."
+    );
+  return result;
 }

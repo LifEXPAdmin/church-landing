@@ -1,3 +1,4 @@
+import { recordDomainActivity } from "./domain-activity";
 import type { PrismaClient } from "@prisma/client";
 import { requireUnrestrictedTopicPost } from "./topic-policy";
 import { postContext, type PostContext } from "./post-access";
@@ -201,6 +202,26 @@ export async function prayerCommand(
         },
         update: { ...data, version: { increment: 1 } }
       });
+      if (
+        operation === "acknowledge" &&
+        input.desired &&
+        !old?.acknowledgedAt &&
+        target &&
+        !target.authorChurchId
+      ) {
+        const recipientId = target.comment?.authorId ?? target.post.authorId;
+        await recordDomainActivity(tx, {
+          kind: "PRAYER_ACK",
+          category: "prayer",
+          sourceId: row.id,
+          sourceVersion: row.version,
+          actorId: ownerId,
+          recipientId,
+          postId: target.postId,
+          commentId: target.commentId,
+          once: true
+        });
+      }
       return {
         id: row.id,
         version: row.version,

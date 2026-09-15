@@ -1,3 +1,5 @@
+import { after } from "next/server";
+import { dispatchNotifications } from "@/lib/platform/notification-queue";
 import { prisma } from "@/lib/prisma";
 import { requestSessionToken } from "@/lib/platform/account-boundary";
 import {
@@ -29,7 +31,15 @@ export async function POST(request: Request) {
       request,
       "post-likes"
     );
-    return Response.json(await postLikeCommand(prisma, token, input), {
+    const result = await postLikeCommand(prisma, token, input);
+    after(async () => {
+      try {
+        await dispatchNotifications(prisma, result.id);
+      } catch {
+        console.error("reaction_handoff_incomplete");
+      }
+    });
+    return Response.json(result, {
       headers: socialHeaders
     });
   } catch (error) {

@@ -1,3 +1,5 @@
+import { recordDiscoveryControl } from "./retention-controls";
+import { protectDiscoveryRecovery } from "./discovery-recovery";
 import {
   removeFriendConnection,
   hasFriendConnection
@@ -5,7 +7,7 @@ import {
 import type { PrismaClient } from "@prisma/client";
 import { requireSocialActivity } from "./social-activity-limits";
 import { withOwnedSession } from "./account-sessions";
-import { expected, PortalError } from "./portal-policy";
+import { eligibleWhere, expected, PortalError } from "./portal-policy";
 import { activePublicAccount, communityAuthorSelect } from "./public-profile";
 import { withPostRead } from "./post-access";
 import { postId } from "./post-input";
@@ -46,7 +48,8 @@ export async function relationshipCommand(
     "mentions",
     "showRelationships"
   ]);
-  return socialCommand(
+  let actingOwner: string | null = null;
+  const result = await socialCommand(
     db,
     token,
     "relationships",
@@ -124,13 +127,32 @@ export async function relationshipCommand(
         }));
       const op = input.operation;
       const data: {
+        authorBellSince?: Date | null;
+        authorBellVersion?: number;
         followingChurch?: boolean;
         favorite?: boolean;
         muted?: boolean;
         snoozedUntil?: Date | null;
         blocked?: boolean;
       } = {};
-      if (op === "follow") {
+      if (op === "author-bell") {
+        const on = desired(input.desired);
+        if (on && (incomingBlock || row?.blocked))
+          throw new PortalError(404, "This account is unavailable.");
+        if (
+          on &&
+          !(await tx.platformUser.findFirst({
+            where: { id: ownerId, ...eligibleWhere },
+            select: { id: true }
+          }))
+        )
+          throw new PortalError(
+            403,
+            "Verify your email and complete adult account setup before enabling a bell."
+          );
+        data.authorBellSince = on ? (row?.authorBellSince ?? new Date()) : null;
+        data.authorBellVersion = (row?.authorBellVersion ?? 0) + 1;
+      } else if (op === "follow") {
         const on = desired(input.desired);
         if (on && (incomingBlock || row?.blocked))
           throw new PortalError(404, "This account is unavailable.");
@@ -200,10 +222,29 @@ export async function relationshipCommand(
               ]
             }
           });
-          await tx.socialRelationship.updateMany({
-            where: { ownerId: keys.targetUserId, targetUserId: ownerId },
-            data: { favorite: false, version: { increment: 1 } }
+          const reverse = await tx.socialRelationship.findFirst({
+            where: { ownerId: keys.targetUserId, targetUserId: ownerId }
           });
+          if (reverse) {
+            const revised = await tx.socialRelationship.update({
+              where: { id: reverse.id },
+              data: {
+                favorite: false,
+                authorBellSince: null,
+                authorBellVersion: { increment: 1 },
+                version: { increment: 1 }
+              }
+            });
+            await recordDiscoveryControl(
+              tx,
+              "AUTHOR_BELL",
+              ownerId,
+              revised.id,
+              revised.authorBellVersion
+            );
+          }
+          data.authorBellSince = null;
+          data.authorBellVersion = (row?.authorBellVersion ?? 0) + 1;
           await tx.conversationPreference.updateMany({
             where: {
               mode: "FOLLOW",
@@ -231,13 +272,39 @@ export async function relationshipCommand(
         : await tx.socialRelationship.create({
             data: { ownerId, ...keys, ...data }
           });
+      if (data.authorBellVersion !== undefined)
+        await recordDiscoveryControl(
+          tx,
+          "AUTHOR_BELL",
+          ownerId,
+          saved.id,
+          saved.authorBellVersion
+        );
       return {
         id: saved.id,
         version: saved.version,
-        message: "Social setting saved privately."
+        message:
+          op === "author-bell"
+            ? saved.authorBellSince
+              ? "New post bell enabled. Following is unchanged; phone alerts also require your notification choice."
+              : "New post bell turned off."
+            : "Social setting saved privately."
       };
+    },
+    async (_tx, ownerId) => {
+      actingOwner = ownerId;
     }
   );
+  if (
+    ["author-bell", "block"].includes(String(input.operation)) &&
+    actingOwner &&
+    !(await protectDiscoveryRecovery(db, actingOwner))
+  )
+    throw new PortalError(
+      503,
+      "Your relationship choice is saved; its protected recovery receipt needs confirmation. Retry the same change."
+    );
+  return result;
 }
 export function readRelationships(
   db: PrismaClient,
@@ -285,7 +352,8 @@ export function readRelationships(
             muted: true,
             snoozedUntil: true,
             blocked: true,
-            followingChurch: true
+            followingChurch: true,
+            authorBellSince: true
           }
         });
         const following = keys.targetUserId
@@ -309,6 +377,7 @@ export function readRelationships(
             blocked: false
           }),
           following,
+          authorBell: !!row?.authorBellSince,
           friends: keys.targetUserId
             ? await hasFriendConnection(tx, ownerId, keys.targetUserId)
             : false

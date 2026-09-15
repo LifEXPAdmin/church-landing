@@ -62,7 +62,7 @@ export async function POST(request: Request) {
         },
         { status: 202, headers: socialHeaders }
       );
-    if (input.operation === "create" || input.operation === "edit")
+    if (["create", "edit", "like"].includes(String(input.operation)))
       after(async () => {
         if (input.operation === "create") {
           try {

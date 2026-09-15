@@ -1,3 +1,8 @@
+import {
+  dispatchNotificationFanout,
+  cleanNotificationFanout,
+  NOTIFICATION_FANOUT_TOPIC
+} from "./notification-fanout";
 import { dispatchFounderAnnouncements } from "./founder-announcement-queue";
 import { cleanFounderAnnouncements } from "./founder-announcements";
 import {
@@ -31,13 +36,20 @@ export async function handleNotificationMaintenance(
   const rejected = maintenanceRequestError(request);
   if (rejected) return rejected;
   const mode = new URL(request.url).searchParams.get("mode");
-  if (mode && !["inspect", "probe", "probe-followers"].includes(mode))
+  if (
+    mode &&
+    !["inspect", "probe", "probe-followers", "probe-activity"].includes(mode)
+  )
     return Response.json(
       { error: "Choose inspection, a queue probe or the maintenance run." },
       { status: 400, headers }
     );
   try {
-    if (mode === "probe" || mode === "probe-followers") {
+    if (
+      mode === "probe" ||
+      mode === "probe-followers" ||
+      mode === "probe-activity"
+    ) {
       // A single reserved, nonexistent delivery verifies the deployed private
       // consumer. It cannot create an app message, subscription or phone alert.
       if (!publish && process.env.VERCEL !== "1")
@@ -47,13 +59,19 @@ export async function handleNotificationMaintenance(
         throw Error("Probe collision");
       if (await db.commentFollowerJob.findUnique({ where: { commentId: id } }))
         throw Error("Probe collision");
-      const key = `${mode === "probe-followers" ? "comment-follower" : "phone"}-queue-probe:${Math.floor(Date.now() / 3600000)}`;
+      if (await db.notificationFanoutJob.findUnique({ where: { id } }))
+        throw Error("Probe collision");
+      const key = `${mode === "probe-activity" ? "activity" : mode === "probe-followers" ? "comment-follower" : "phone"}-queue-probe:${Math.floor(Date.now() / 3600000)}`;
       const result = publish
         ? await publish(id, 0, key)
         : await (
             await import("@vercel/queue")
           ).send(
-            mode === "probe-followers" ? COMMENT_FOLLOWER_TOPIC : PUSH_TOPIC,
+            mode === "probe-activity"
+              ? NOTIFICATION_FANOUT_TOPIC
+              : mode === "probe-followers"
+                ? COMMENT_FOLLOWER_TOPIC
+                : PUSH_TOPIC,
             { id },
             {
               retentionSeconds: 60,
@@ -75,15 +93,17 @@ export async function handleNotificationMaintenance(
     }
     if (mode === "inspect") {
       const config = pushServerConfig();
-      const [devices, pending, conversationFollowers] = await Promise.all([
-        db.pushSubscription.count({
-          where: { revokedAt: null, expiresAt: { gt: new Date() } }
-        }),
-        db.notificationDelivery.count({
-          where: { state: { not: "FINISHED" } }
-        }),
-        db.commentFollowerJob.count({ where: { completedAt: null } })
-      ]);
+      const [devices, pending, conversationFollowers, activityFanout] =
+        await Promise.all([
+          db.pushSubscription.count({
+            where: { revokedAt: null, expiresAt: { gt: new Date() } }
+          }),
+          db.notificationDelivery.count({
+            where: { state: { not: "FINISHED" } }
+          }),
+          db.commentFollowerJob.count({ where: { completedAt: null } }),
+          db.notificationFanoutJob.count({ where: { completedAt: null } })
+        ]);
       return Response.json(
         {
           mode,
@@ -96,7 +116,8 @@ export async function handleNotificationMaintenance(
             : null,
           devices,
           pending,
-          conversationFollowers
+          conversationFollowers,
+          activityFanout
         },
         { headers }
       );
@@ -104,6 +125,7 @@ export async function handleNotificationMaintenance(
     const cleanup = await notificationWrite(db, async (tx) => ({
       ...(await cleanNotificationRecords(tx)),
       announcementDiagnosticsRemoved: await cleanFounderAnnouncements(tx),
+      activityJobsRemoved: await cleanNotificationFanout(tx),
       conversationJobsRemoved: await cleanCommentFollowerJobs(tx)
     }));
     let queued = 0,
@@ -123,7 +145,14 @@ export async function handleNotificationMaintenance(
     const followers = signal.aborted
       ? { queued: 0, failed: 1 }
       : await dispatchCommentFollowers(db);
-    failed += welcomes.failed + announcements.failed + followers.failed;
+    const activity = signal.aborted
+      ? { queued: 0, failed: 1 }
+      : await dispatchNotificationFanout(db);
+    failed +=
+      welcomes.failed +
+      announcements.failed +
+      followers.failed +
+      activity.failed;
     const result = {
       ok: failed === 0,
       ...cleanup,
@@ -131,7 +160,8 @@ export async function handleNotificationMaintenance(
       failed,
       welcomeQueued: welcomes.queued,
       announcementQueued: announcements.queued,
-      conversationQueued: followers.queued
+      conversationQueued: followers.queued,
+      activityQueued: activity.queued
     };
     console.info("notification_maintenance_completed", result);
     return Response.json(result, { status: failed ? 503 : 200, headers });

@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { Ellipsis, UserPlus, VolumeX, Ban } from "lucide-react";
+import { Ellipsis, UserPlus, VolumeX, Ban, Bell } from "lucide-react";
 import { ActionPopover } from "./action-popover";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -19,6 +19,7 @@ import {
 export type RelationshipStatus = {
   version: number;
   following: boolean;
+  authorBell?: boolean;
   friends?: boolean;
   favorite: boolean;
   muted: boolean;
@@ -184,7 +185,7 @@ export function RelationshipControls({
       operation === "block" &&
       desired &&
       !window.confirm(
-        "Block this personal account? Direct social interactions and follows between you will stop. Public material may still be viewed while signed out. Church-authored posts and your church duties are separate. Unblocking will not restore follows or favorites."
+        "Block this personal account? Direct social interactions and follows between you will stop. Public material may still be viewed while signed out. Church-authored posts and your church duties are separate. Unblocking will not restore follows, favorites or new post bells."
       )
     )
       return;
@@ -192,7 +193,7 @@ export function RelationshipControls({
       operation === "block" &&
       desired === false &&
       !window.confirm(
-        "Unblock this personal account? Your block will be removed, but following, favorites, friendship and conversation subscriptions will not be restored. Other access restrictions still apply."
+        "Unblock this personal account? Your block will be removed, but following, favorites, friendship, new post bells and conversation subscriptions will not be restored. Other access restrictions still apply."
       )
     )
       return;
@@ -252,7 +253,7 @@ export function RelationshipControls({
             <p className="text-sm text-gc-muted">
               {kind === "church"
                 ? "Following a church does not grant membership or access to private church content."
-                : "Favorites and these controls are private to your account."}
+                : "Favorites and these controls are private to your account. The new post bell is separate from Follow; phone alerts require your notification settings."}
             </p>
           )}
           {snoozed && (
@@ -265,6 +266,16 @@ export function RelationshipControls({
           )}
           {!snoozed && data.snoozedUntil && <p>Your snooze has ended.</p>}
           <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              className="gc-button gc-button-quiet"
+              disabled={busy || !!pending || conflict || data.blocked}
+              aria-pressed={!!data.authorBell}
+              onClick={() => change("author-bell", !data.authorBell)}
+            >
+              <Bell aria-hidden="true" />{" "}
+              {data.authorBell ? "New post bell on" : "Notify me of new posts"}
+            </button>
             <button
               type="button"
               className="gc-button gc-button-quiet"

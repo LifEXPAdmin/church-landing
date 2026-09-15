@@ -1,3 +1,4 @@
+import { recordDomainActivity } from "./domain-activity";
 import type { PrismaClient } from "@prisma/client";
 import { requireSocialActivity } from "./social-activity-limits";
 import {
@@ -411,6 +412,18 @@ export async function commentCommand(
         },
         update: { active: input.desired, version: { increment: 1 } }
       });
+      if (input.desired && !old?.active && !comment.authorChurchId)
+        await recordDomainActivity(tx, {
+          kind: "COMMENT_REACTION",
+          category: "reactions",
+          sourceId: row.id,
+          sourceVersion: row.version,
+          actorId: ownerId,
+          recipientId: comment.authorId,
+          postId: post.id,
+          commentId: comment.id,
+          once: true
+        });
       return {
         id: comment.id,
         version: row.version,

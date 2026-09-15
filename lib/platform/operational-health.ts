@@ -30,6 +30,7 @@ type WorkerSnapshot = {
   };
   welcome: { pending: number; oldestPendingAt: string | null };
   announcements: { pending: number; oldestPendingAt: string | null };
+  activityFanout: { pending: number; oldestPendingAt: string | null };
   conversationFollowers: { pending: number; oldestPendingAt: string | null };
   scheduledPosts: { pending: number; due: number; oldestDueAt: string | null };
 };
@@ -70,6 +71,7 @@ export async function readOperationalHealth(
           'overdueHolds',(SELECT count(*) FROM "RetentionHold" WHERE "releasedAt" IS NULL AND "reviewDueAt"<=${now.toISOString()}::timestamp)),
         'announcements',(SELECT json_build_object('pending',count(*),'oldestPendingAt',min("queuedAt") AT TIME ZONE 'UTC')
           FROM "FounderAnnouncement" WHERE status='SENDING'),
+        'activityFanout',(SELECT json_build_object('pending',count(*),'oldestPendingAt',min("createdAt") AT TIME ZONE 'UTC') FROM "NotificationFanoutJob" WHERE "completedAt" IS NULL),
         'conversationFollowers',(SELECT json_build_object('pending',count(*),'oldestPendingAt',min("createdAt") AT TIME ZONE 'UTC')
           FROM "CommentFollowerJob" WHERE "completedAt" IS NULL),
         'scheduledPosts',(SELECT json_build_object('pending',count(*),'due',count(*) FILTER (WHERE "scheduleAt"<=${now.toISOString()}::timestamp),
@@ -92,6 +94,10 @@ export async function readOperationalHealth(
     { maxWait: 3000, timeout: 6000 }
   );
   const ages = {
+    activityPendingSeconds: secondsSince(
+      snapshot.activityFanout.oldestPendingAt,
+      now
+    ),
     mediaDueSeconds: secondsSince(snapshot.media.oldestDueAt, now),
     notificationDueSeconds: secondsSince(
       snapshot.notifications.oldestDueAt,
@@ -120,6 +126,8 @@ export async function readOperationalHealth(
   if ((ages.notificationDueSeconds ?? 0) > 300)
     alerts.push("notification_backlog");
   if (snapshot.failedDeliveries24h) alerts.push("notification_failures");
+  if ((ages.activityPendingSeconds ?? 0) > 300)
+    alerts.push("domain_activity_backlog");
   if ((ages.conversationPendingSeconds ?? 0) > 300)
     alerts.push("conversation_activity_backlog");
   if ((ages.protectedControlSeconds ?? 0) > 300)

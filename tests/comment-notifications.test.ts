@@ -692,7 +692,15 @@ test("reply and mention opt-ins are independent, legacy preference bodies preser
     messages: true,
     requests: true,
     reports: true,
-    founder: true
+    founder: true,
+    replies: true,
+    mentions: true,
+    conversations: true,
+    prayer: true,
+    posts: true,
+    reactions: true,
+    church: true,
+    commitments: true
   });
   assert.equal(
     (

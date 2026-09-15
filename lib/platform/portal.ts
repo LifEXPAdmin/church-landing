@@ -1,3 +1,4 @@
+import { recordDomainActivity, recordFanout } from "./domain-activity";
 import {
   PortalError,
   eligibleWhere,
@@ -518,6 +519,21 @@ export async function portalCommand(
         "PENDING",
         connection.version
       );
+      await recordFanout(
+        tx,
+        "CHURCH_REVIEW",
+        connection.id,
+        connection.version,
+        actor.id
+      );
+      await recordDomainActivity(tx, {
+        kind: "CHURCH_CONNECTION",
+        category: "church",
+        sourceId: connection.id,
+        sourceVersion: connection.version,
+        actorId: actor.id,
+        recipientId: actor.id
+      });
       return "Request received. A church reviewer will decide it. Directory access is not available while pending.";
     }
     if (op === "transition" || op === "share") {
@@ -641,6 +657,14 @@ export async function portalCommand(
         transition.to,
         connection.version + 1
       );
+      await recordDomainActivity(tx, {
+        kind: "CHURCH_CONNECTION",
+        category: "church",
+        sourceId: connection.id,
+        sourceVersion: connection.version + 1,
+        actorId: actor.id,
+        recipientId: connection.userId
+      });
       return transition.to === "APPROVED"
         ? "Church connection approved. This is not certification of formal membership or pastoral office."
         : "Connection updated. The account and public posts are unchanged; related private access and sharing end.";

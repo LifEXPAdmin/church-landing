@@ -1,3 +1,4 @@
+import { after } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { handlePostRequest } from "@/lib/platform/post-boundary";
 export const runtime = "nodejs";
@@ -6,5 +7,5 @@ export function GET(request: Request) {
   return handlePostRequest(prisma, request);
 }
 export function POST(request: Request) {
-  return handlePostRequest(prisma, request);
+  return handlePostRequest(prisma, request, after);
 }

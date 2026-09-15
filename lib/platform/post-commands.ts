@@ -1,3 +1,4 @@
+import { recordPostPublication } from "./domain-activity";
 import { createHash } from "node:crypto";
 import { postDiscoveryData } from "./post-discovery";
 import { emptyPostDiscovery } from "./post-options";
@@ -323,6 +324,7 @@ export async function postCommandIn(
         post.discoveryVersion
       );
     await audit(tx, post, actorId, scheduled ? "scheduled" : "published");
+    await recordPostPublication(tx, post);
     return {
       id: post.id,
       version: post.version,
@@ -904,6 +906,7 @@ export async function publishScheduledPost(
         post.scheduledById ?? post.authorId,
         allowed ? "schedule-published" : "schedule-blocked"
       );
+      if (allowed) await recordPostPublication(tx, updated);
       return { published: allowed, changed: true };
     },
     { maxWait: 10000, timeout: 15000 }

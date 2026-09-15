@@ -1,3 +1,4 @@
+import { recordDomainActivity, recordFanout } from "./domain-activity";
 import type { PrismaClient, PlatformPost } from "@prisma/client";
 import { withOwnedSession } from "./account-sessions";
 import { postSchedule } from "./post-commands";
@@ -143,6 +144,14 @@ export async function participationCommandIn(
       row.id,
       saved.version
     );
+    await recordDomainActivity(tx, {
+      kind: "VOLUNTEER_CONFIRMATION",
+      category: "commitments",
+      sourceId: saved.id,
+      sourceVersion: saved.version,
+      actorId,
+      recipientId: actorId
+    });
     return {
       id: row.id,
       version: saved.version,
@@ -360,6 +369,18 @@ export async function participationCommandIn(
       saved.id,
       saved.version
     );
+    if (
+      prior &&
+      (prior.capacity !== saved.capacity ||
+        !!prior.closedAt !== !!saved.closedAt)
+    )
+      await recordFanout(
+        tx,
+        "VOLUNTEER_CHANGED",
+        saved.id,
+        saved.version,
+        actorId
+      );
     return {
       id: saved.id,
       version: saved.version,
@@ -421,6 +442,14 @@ export async function participationCommandIn(
       saved.id,
       saved.version
     );
+    await recordDomainActivity(tx, {
+      kind: "VOLUNTEER_CONFIRMATION",
+      category: "commitments",
+      sourceId: saved.id,
+      sourceVersion: saved.version,
+      actorId,
+      recipientId: actorId
+    });
     return {
       id: saved.id,
       version: saved.version,

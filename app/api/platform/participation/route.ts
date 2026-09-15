@@ -1,3 +1,4 @@
+import { after } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { handleParticipationRequest } from "@/lib/platform/post-participation-boundary";
 export const runtime = "nodejs";
@@ -6,5 +7,5 @@ export function GET(request: Request) {
   return handleParticipationRequest(prisma, request);
 }
 export function POST(request: Request) {
-  return handleParticipationRequest(prisma, request);
+  return handleParticipationRequest(prisma, request, after);
 }

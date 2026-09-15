@@ -1,3 +1,4 @@
+import { scheduleDomainActivity } from "./notification-fanout";
 import { scheduleFounderWelcome } from "./founder-welcome-queue";
 import type { PrismaClient } from "@prisma/client";
 import { accountConfig } from "./account-config";
@@ -123,6 +124,7 @@ export async function handlePortalRequest(
         "Too many changes. Wait 15 minutes before trying again."
       );
     const message = await portalCommand(db, token, body);
+    scheduleDomainActivity(db, actor.id, afterResponse);
     if (body.operation === "ack-adult")
       scheduleFounderWelcome(db, token, afterResponse);
     return Response.json({ message }, { headers });

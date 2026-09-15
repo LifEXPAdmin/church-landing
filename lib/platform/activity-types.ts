@@ -3,7 +3,12 @@ export const activityCategories = [
   "requests",
   "comments",
   "reports",
-  "founder"
+  "founder",
+  "posts",
+  "reactions",
+  "prayer",
+  "church",
+  "commitments"
 ] as const;
 export type ActivityCategory = (typeof activityCategories)[number];
 export type ActivityPage = {

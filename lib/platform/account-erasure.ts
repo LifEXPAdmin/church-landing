@@ -141,6 +141,7 @@ async function eraseSocialData(tx: Tx, userId: string, now: Date) {
   await tx.postVolunteerSlot.deleteMany({
     where: { post: personalPost(userId) }
   });
+  await tx.notificationFanoutJob.deleteMany({ where: { actorId: userId } });
   await tx.socialEvent.deleteMany({
     where: { OR: [{ actorId: userId }, { recipientId: userId }] }
   });

@@ -1,3 +1,4 @@
+import { scheduleDomainActivity } from "./notification-fanout";
 import type { PrismaClient } from "@prisma/client";
 import { accountConfig } from "./account-config";
 import { allowWorkspaceAttempt } from "./account-limits";
@@ -43,7 +44,8 @@ export function workspaceError(error: unknown) {
 }
 export async function handlePostWorkspaceRequest(
   db: PrismaClient,
-  request: Request
+  request: Request,
+  afterResponse?: (work: () => Promise<void>) => void
 ) {
   try {
     const token = requestSessionToken(request),
@@ -98,6 +100,8 @@ export async function handlePostWorkspaceRequest(
         900
       );
     const result = await postWorkspaceCommand(db, token, input);
+    if (input.operation === "publish-draft")
+      scheduleDomainActivity(db, actor.id, afterResponse);
     const protectedRecovery =
       input.operation !== "publish-draft" ||
       (await protectDiscoveryRecovery(db, actor.id, request.signal));

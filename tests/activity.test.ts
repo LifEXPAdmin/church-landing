@@ -92,7 +92,12 @@ test("activity has an exact empty state and denies guests, ineligible accounts a
     "requests",
     "comments",
     "reports",
-    "founder"
+    "founder",
+    "posts",
+    "reactions",
+    "prayer",
+    "church",
+    "commitments"
   ]);
   const guest = await handleActivityRequest(db, request(null));
   assert.equal(guest.status, 401);
@@ -280,6 +285,13 @@ test("marking a group leaves other groups and later events unread and rejects ch
 
 test("source removal and current church revocation leave only generic owned history, never a private link or body", async () => {
   const f = await seedPortal(db);
+  // This source-access scenario isolates replies; connection outcomes now have
+  // their own independent, separately covered Activity category.
+  await db.socialPreferences.upsert({
+    where: { ownerId: f.memberA.id },
+    create: { ownerId: f.memberA.id, mutedNotificationCategories: ["church"] },
+    update: { mutedNotificationCategories: ["church"] }
+  });
   const post = await db.platformPost.create({
     data: {
       authorId: f.memberA.id,

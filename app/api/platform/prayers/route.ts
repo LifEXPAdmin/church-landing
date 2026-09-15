@@ -1,3 +1,4 @@
+import { dispatchNotifications } from "@/lib/platform/notification-queue";
 import { after } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requestSessionToken } from "@/lib/platform/account-boundary";
@@ -71,6 +72,14 @@ export async function POST(request: Request) {
           await dispatchCommentFollowers(prisma, result.id);
         } catch {
           console.error("prayer_update_handoff_incomplete");
+        }
+      });
+    if (input.operation === "acknowledge")
+      after(async () => {
+        try {
+          await dispatchNotifications(prisma, result.id);
+        } catch {
+          console.error("prayer_acknowledgment_handoff_incomplete");
         }
       });
     return Response.json(result, { headers: socialHeaders });

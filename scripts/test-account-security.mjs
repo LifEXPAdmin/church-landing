@@ -234,6 +234,7 @@ try {
     ["SavedPostItem", "id"],
     ["PostWorkspaceOperation", "key"],
     ["CommentFollowerJob", "commentId"],
+    ["NotificationFanoutJob", "id"],
     ["PrayerGuideReceipt", "ownerId"],
     ["PrayerRecord", "id"],
     ["PrayerUpdate", "commentId"],
@@ -675,6 +676,18 @@ try {
       console.log(
         "Discovery migration preserves every original field and leaves new classifications and choices empty; no location, faith, language or feed consent is inferred."
       );
+    } else if (name === "20260915072000_notification_integration") {
+      const originals = () => [
+        psql(["-Atc", `SELECT md5(coalesce(jsonb_agg(to_jsonb(t) - ARRAY['authorBellSince','authorBellVersion'] ORDER BY id)::text,'[]')) FROM "SocialRelationship" t`]),
+        psql(["-Atc", `SELECT md5(coalesce(jsonb_agg(to_jsonb(t) - ARRAY['notificationVersion','notificationRecoveryRequired','mutedNotificationCategories','notificationPushSince'] ORDER BY "ownerId")::text,'[]')) FROM "SocialPreferences" t`]),
+        psql(["-Atc", `SELECT md5(coalesce(jsonb_agg(to_jsonb(t) - ARRAY['notificationCategory','sourceId','sourceVersion'] ORDER BY id)::text,'[]')) FROM "SocialEvent" t`]),
+        ...["PlatformPost", "PlatformPostComment", "RetentionControl", "ChurchConnection", "CalendarResponse", "PostVolunteerSignup"].map(table => fingerprint(table, "id"))
+      ];
+      const before = originals();
+      psql(["-f", `prisma/migrations/${name}/migration.sql`]);
+      if (JSON.stringify(before) !== JSON.stringify(originals())) throw Error("Notification migration changed original source, recipient or preference fields");
+      if (psql(["-Atc", `SELECT (SELECT count(*) FROM "NotificationFanoutJob") + (SELECT count(*) FROM "SocialRelationship" WHERE "authorBellSince" IS NOT NULL OR "authorBellVersion"<>0) + (SELECT count(*) FROM "SocialPreferences" WHERE "notificationVersion"<>0 OR "notificationRecoveryRequired" OR cardinality("mutedNotificationCategories")<>0 OR "notificationPushSince" IS NOT NULL)`]).trim() !== "0") throw Error("Notification migration created subscriptions, opt-ins or delivery work");
+      console.log("Notification upgrade preserves all original fields and creates no author consent or delivery work.");
     } else psql(["-f", `prisma/migrations/${name}/migration.sql`]);
   }
   for (const [i, [table, key]] of accountTables.entries()) {

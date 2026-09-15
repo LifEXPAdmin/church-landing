@@ -10,7 +10,7 @@ import type { NotificationSource } from "./notification-source";
 type CommentEvent = Pick<
   SocialEvent,
   "recipientId" | "postId" | "commentId" | "actorId"
->;
+> & { notificationCategory?: string | null };
 
 // Source predicates remain shared with the reader. A page loads only selected
 // metadata and one current recipient context, never one context per activity row.
@@ -174,14 +174,29 @@ export async function commentNotificationSources(
           event.actorId !== comment.authorId
         )
           continue;
+        const eligible = {
+          mentions: mentioned,
+          replies: replied,
+          prayer: !!prayer,
+          conversations: !!following
+        };
+        const category = event.notificationCategory;
+        if (
+          category &&
+          (!(category in eligible) ||
+            !eligible[category as keyof typeof eligible])
+        )
+          continue;
         result.set(event, {
-          category: mentioned
-            ? "mentions"
-            : replied
-              ? "replies"
-              : prayer
-                ? "prayer"
-                : "conversations",
+          category:
+            (category as keyof typeof eligible) ??
+            (mentioned
+              ? "mentions"
+              : replied
+                ? "replies"
+                : prayer
+                  ? "prayer"
+                  : "conversations"),
           href: `/platform/posts/${post.id}?comment=${comment.id}`,
           group: post.id
         });

@@ -1,3 +1,4 @@
+import { recordDomainActivity, recordFanout } from "./domain-activity";
 import type {
   PrismaClient,
   CalendarVisibility,
@@ -482,6 +483,15 @@ export async function calendarCommand(
         update: { state, version: { increment: 1 } }
       });
       await audit(tx, actor.id, event.calendarId, row.id, "RSVP", row.version);
+      if (!prior || prior.state !== row.state)
+        await recordDomainActivity(tx, {
+          kind: "RSVP_CHANGED",
+          category: "commitments",
+          sourceId: row.id,
+          sourceVersion: row.version,
+          actorId: actor.id,
+          recipientId: actor.id
+        });
       return {
         id: occurrence.id,
         message:
@@ -652,6 +662,22 @@ export async function calendarCommand(
         }
       });
     } else throw new PortalError(400, "Choose an available calendar action.");
+    const changedOccurrences = await tx.calendarOccurrence.findMany({
+      where: {
+        eventId: event.id,
+        ...(input.scope === "OCCURRENCE" ? { id: id(input.occurrenceId) } : {})
+      },
+      select: { id: true, version: true },
+      take: 53
+    });
+    for (const occurrence of changedOccurrences)
+      await recordFanout(
+        tx,
+        "EVENT_CHANGED",
+        occurrence.id,
+        occurrence.version,
+        actor.id
+      );
     await audit(
       tx,
       actor.id,

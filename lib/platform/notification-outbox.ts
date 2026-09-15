@@ -5,13 +5,14 @@ import { PortalError } from "./portal-policy";
 import { postId } from "./post-input";
 import { pushAvailable } from "./push-config";
 import {
-  notificationPreferencesIn,
+  projectNotificationPreferences,
+  notificationPushAllowed,
   quietHoursEnd
 } from "./notification-preferences";
 import { notificationSource } from "./notification-source";
 import { revokePushSubscriptions } from "./push-subscriptions";
 type Tx = Prisma.TransactionClient;
-export const NOTIFICATION_PREVIEW = "You have a new message on God’s Churches.";
+export const NOTIFICATION_PREVIEW = "You have new activity on God’s Churches.";
 const DAY = 86400000;
 export function notificationWrite<T>(
   db: PrismaClient,
@@ -47,11 +48,18 @@ export async function enqueueNotification(
   if (!devices.length) return;
   const source = await notificationSource(tx, event, true, now);
   if (!source) return;
-  const preferences = await notificationPreferencesIn(tx, event.recipientId);
+  const row = await tx.socialPreferences.findUnique({
+    where: { ownerId: event.recipientId }
+  });
+  const preferences = projectNotificationPreferences(row);
   if (
     source.category !== "test" &&
     ((source.category === "founder" && !preferences.inApp.founder) ||
-      !preferences.pushCategories.includes(source.category))
+      !notificationPushAllowed(
+        row,
+        source.category,
+        sourceCreatedAt ?? event.createdAt
+      ))
   )
     return;
   const expiresAt = new Date(
@@ -152,11 +160,18 @@ export async function deliverNotification(
       } as const;
     const source = await notificationSource(tx, row.event, true, now);
     if (!source) return finish("CANCELLED");
-    const preferences = await notificationPreferencesIn(tx, row.ownerId);
+    const settings = await tx.socialPreferences.findUnique({
+      where: { ownerId: row.ownerId }
+    });
+    const preferences = projectNotificationPreferences(settings);
     if (
       source.category !== "test" &&
       ((source.category === "founder" && !preferences.inApp.founder) ||
-        !preferences.pushCategories.includes(source.category))
+        !notificationPushAllowed(
+          settings,
+          source.category,
+          row.event.createdAt
+        ))
     )
       return finish("CANCELLED");
     const availableAt =

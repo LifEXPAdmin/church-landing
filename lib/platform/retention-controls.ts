@@ -28,6 +28,8 @@ export type RetentionControlEntry = {
     | "TOPIC_ACCESS"
     | "POST_DISCOVERY"
     | "DISCOVERY_PREFERENCES"
+    | "NOTIFICATION_PREFERENCES"
+    | "AUTHOR_BELL"
     | "APPEAL"
     | "ACCOUNT_STATE"
     | "AUTHOR_WITHDRAW_POST"
@@ -68,9 +70,13 @@ function validate(value: unknown): RetentionControlEntry {
     r.policy !== policy ||
     ![r.recordedAt, r.startedAt, r.reviewDueAt].every(date) ||
     (r.endedAt !== null && !date(r.endedAt)) ||
-    !(["TOPIC_ACCESS", "POST_DISCOVERY", "DISCOVERY_PREFERENCES"].includes(
-      r.kind
-    )
+    !([
+      "TOPIC_ACCESS",
+      "POST_DISCOVERY",
+      "DISCOVERY_PREFERENCES",
+      "NOTIFICATION_PREFERENCES",
+      "AUTHOR_BELL"
+    ].includes(r.kind)
       ? r.target === "ACCOUNT" &&
         r.operatorId !== null &&
         r.outcome === "QUARANTINED"
@@ -212,7 +218,11 @@ export async function recordTopicAccessControl(
 }
 export async function recordDiscoveryControl(
   tx: Tx,
-  kind: "POST_DISCOVERY" | "DISCOVERY_PREFERENCES",
+  kind:
+    | "POST_DISCOVERY"
+    | "DISCOVERY_PREFERENCES"
+    | "NOTIFICATION_PREFERENCES"
+    | "AUTHOR_BELL",
   actorId: string,
   sourceId: string,
   version: number
@@ -503,6 +513,61 @@ export async function replayRetentionControls(
     async (tx) => {
       await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(730221, 2)`;
       for (const entry of entries) {
+        if (
+          entry.kind === "AUTHOR_BELL" ||
+          entry.kind === "NOTIFICATION_PREFERENCES"
+        ) {
+          if (entry.kind === "AUTHOR_BELL") {
+            await tx.socialRelationship.updateMany({
+              where: {
+                id: entry.sourceId,
+                authorBellVersion: { lt: entry.version }
+              },
+              data: {
+                authorBellSince: null,
+                authorBellVersion: entry.version,
+                version: { increment: 1 }
+              }
+            });
+          } else {
+            const owner = await tx.platformUser.findUnique({
+              where: { id: entry.sourceId },
+              select: { id: true, erasedAt: true }
+            });
+            if (owner && !owner.erasedAt) {
+              await tx.socialPreferences.upsert({
+                where: { ownerId: owner.id },
+                create: {
+                  ownerId: owner.id,
+                  notificationVersion: entry.version,
+                  notificationRecoveryRequired: true
+                },
+                update: {}
+              });
+              await tx.socialPreferences.updateMany({
+                where: {
+                  ownerId: owner.id,
+                  notificationVersion: { lt: entry.version }
+                },
+                data: {
+                  notificationVersion: entry.version,
+                  notificationRecoveryRequired: true,
+                  pushCategories: [],
+                  notificationPushSince: Prisma.DbNull,
+                  conversationPushSince: null,
+                  prayerPushSince: null,
+                  version: { increment: 1 }
+                }
+              });
+            }
+          }
+          await record(tx, entry);
+          await tx.retentionControl.updateMany({
+            where: { id: entry.id, journaledAt: null },
+            data: { journaledAt: new Date() }
+          });
+          continue;
+        }
         if (
           entry.kind === "POST_DISCOVERY" ||
           entry.kind === "DISCOVERY_PREFERENCES"

@@ -1,3 +1,4 @@
+import { scheduleDomainActivity } from "./notification-fanout";
 import type { PrismaClient } from "@prisma/client";
 import { accountConfig } from "./account-config";
 import { allowAccountAttempt } from "./account-limits";
@@ -18,7 +19,8 @@ const headers = {
 };
 export async function handleParticipationRequest(
   db: PrismaClient,
-  request: Request
+  request: Request,
+  afterResponse?: (work: () => Promise<void>) => void
 ) {
   try {
     const token = requestSessionToken(request),
@@ -76,7 +78,9 @@ export async function handleParticipationRequest(
         429,
         "Too many changes. Wait 15 minutes and try again."
       );
-    return Response.json(await participationCommand(db, token, input), {
+    const result = await participationCommand(db, token, input);
+    scheduleDomainActivity(db, actor.id, afterResponse);
+    return Response.json(result, {
       headers
     });
   } catch (error) {

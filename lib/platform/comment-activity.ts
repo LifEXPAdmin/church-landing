@@ -32,6 +32,7 @@ export async function recordCommentActivity(
     data: {
       key,
       kind: "COMMENT_ACTIVITY",
+      notificationCategory: source.category,
       actorId,
       postId,
       commentId,

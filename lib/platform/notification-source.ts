@@ -1,3 +1,7 @@
+import {
+  domainNotificationKinds,
+  domainNotificationSources
+} from "./domain-notification-source";
 import type { Prisma, SocialEvent } from "@prisma/client";
 import { eligibleWhere } from "./portal-policy";
 import { adultMemberWhere, adultOtherId } from "./adult-message-policy";
@@ -65,6 +69,20 @@ export async function notificationSources(
         href: "/platform/settings/notifications",
         group: event.id
       });
+  const domain = events.filter(
+    (e) =>
+      domainNotificationKinds.includes(e.kind) && e.sourceId && e.sourceVersion
+  );
+  if (domain.length) {
+    const sources = await domainNotificationSources(
+      tx,
+      domain,
+      delivery,
+      now,
+      suppliedContext
+    );
+    for (const [id, source] of sources) result.set(id, source);
+  }
   const comments = events.filter((e) => e.kind === "COMMENT_ACTIVITY");
   const reports = events.filter(
     (e) =>

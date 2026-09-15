@@ -1,3 +1,4 @@
+import { scheduleDomainActivity } from "./notification-fanout";
 import type { PrismaClient } from "@prisma/client";
 import { accountConfig } from "./account-config";
 import { allowAccountAttempt, allowWorkspaceAttempt } from "./account-limits";
@@ -22,7 +23,11 @@ const headers = {
   "X-Robots-Tag": "noindex, nofollow",
   Vary: "Cookie, X-Expected-Account"
 };
-export async function handlePostRequest(db: PrismaClient, request: Request) {
+export async function handlePostRequest(
+  db: PrismaClient,
+  request: Request,
+  afterResponse?: (work: () => Promise<void>) => void
+) {
   try {
     const token = requestSessionToken(request),
       url = new URL(request.url);
@@ -172,6 +177,7 @@ export async function handlePostRequest(db: PrismaClient, request: Request) {
       return Response.json(result, { headers });
     }
     const result = await postCommand(db, token, input);
+    scheduleDomainActivity(db, actor.id, afterResponse);
     if (
       (input.discovery !== undefined || input.operation === "withdraw") &&
       !(await protectDiscoveryRecovery(db, actor.id, request.signal))

@@ -1640,6 +1640,9 @@ model PrivateCommentDraft {
 // Canonical event intents, not a notification delivery queue. Never copy text,
 // private recipient preferences or credential data into these records.
 model SocialEvent {
+  notificationCategory String?
+  sourceId String?
+  sourceVersion Int?
   notificationDeliveries NotificationDelivery[]
   id String @id @default(cuid())
   activitySequence BigInt @default(autoincrement())
@@ -1838,6 +1841,10 @@ model PostWorkspaceOperation {
 
 
 model SocialPreferences {
+  notificationVersion Int @default(0)
+  notificationRecoveryRequired Boolean @default(false)
+  mutedNotificationCategories String[] @default([])
+  notificationPushSince Json?
   discovery Json?
   discoveryVersion Int @default(0)
   discoveryRecoveryRequired Boolean @default(false)
@@ -2029,6 +2036,8 @@ model AdultConversationState {
 }
 
 model SocialRelationship {
+  authorBellSince DateTime?
+  authorBellVersion Int @default(0)
   id String @id @default(cuid())
   ownerId String
   targetUserId String?
@@ -2045,6 +2054,8 @@ model SocialRelationship {
   church Church? @relation(fields: [churchId], references: [id], onDelete: Cascade)
   @@unique([ownerId, targetUserId])
   @@unique([ownerId, churchId])
+  @@index([targetUserId, authorBellSince, id])
+  @@index([churchId, authorBellSince, id])
   @@index([targetUserId, blocked])
   @@index([ownerId, blocked])
   @@index([ownerId, id])
@@ -2152,4 +2163,22 @@ model FeedSnapshot {
   @@index([ownerId, createdAt])
   @@index([expiresAt])
   @@index([ownerId, mode, selectionKey, createdAt])
+}
+
+// Content-free continuation, never an alternative source or permission owner.
+model NotificationFanoutJob {
+  id String @id @default(cuid())
+  key String @unique
+  kind String
+  sourceId String
+  sourceVersion Int
+  actorId String
+  phase String @default("PRIMARY")
+  cursor String?
+  createdAt DateTime @default(now())
+  completedAt DateTime?
+  dispatchedAt DateTime?
+  @@index([completedAt, dispatchedAt, createdAt])
+  @@index([actorId])
+  @@index([sourceId])
 }
