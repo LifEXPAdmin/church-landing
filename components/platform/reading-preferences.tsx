@@ -56,7 +56,15 @@ export function ReadingProvider({
       entry?.slice(preferenceCookie.length + 1)
     );
     confirmed.current = next;
-    setPreferences(next);
+    // Keep the server snapshot when the cookie agrees. A redundant layout
+    // update can interrupt hydration of descendants still arriving in the stream.
+    setPreferences((previous) =>
+      (Object.keys(next) as (keyof ReadingPreferences)[]).every(
+        (key) => previous[key] === next[key]
+      )
+        ? previous
+        : next
+    );
   }, [initial]);
   function update(change: Partial<ReadingPreferences>) {
     const next = { ...current.current, ...change };
