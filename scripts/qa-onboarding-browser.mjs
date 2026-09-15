@@ -124,6 +124,19 @@ page.on("request", (request) => {
 });
 try {
   await page.setViewportSize({ width: 320, height: 780 });
+  for (const path of ["/help", "/platform/help"]) {
+    await go(path);
+    await page
+      .getByRole("link", {
+        name: "Getting started and saved next steps",
+        exact: true
+      })
+      .click();
+    await page.waitForURL(config.origin + "/platform/getting-started");
+    await page
+      .getByRole("heading", { name: "Getting started", exact: true, level: 1 })
+      .waitFor();
+  }
   await go("/platform/getting-started");
   await bounded();
   assert.equal(
@@ -503,6 +516,20 @@ try {
   await signin(f.newcomer);
   const listingPath = "/platform/church-listings/" + listingDraft.id;
   const claimPath = "/platform/church-claims/" + claimDraft.id;
+  await go("/platform/help");
+  await page
+    .getByRole("link", {
+      name: "Getting started and saved next steps",
+      exact: true
+    })
+    .click();
+  await page.waitForURL(config.origin + "/platform/getting-started");
+  await page
+    .getByRole("heading", { name: "Getting started", exact: true, level: 2 })
+    .waitFor();
+  ok(
+    "Public, guest and signed-in Help navigate back to the saved guide at phone width."
+  );
   await page.locator(`a[href="${listingPath}"]`).click();
   await page.waitForURL(config.origin + listingPath);
   await page

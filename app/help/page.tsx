@@ -89,6 +89,9 @@ export default function HelpPage() {
         </section>
       </article>
       <nav aria-label="App guide" className="mt-8 flex flex-wrap gap-4">
+        <Link className="underline" href="/platform/getting-started">
+          Getting started and saved next steps
+        </Link>
         <Link className="underline" href="/platform/features">
           Explore features
         </Link>

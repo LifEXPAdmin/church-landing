@@ -87,6 +87,22 @@ test("actual HTTPS next-step endpoints require the current owner, reject cross-s
   await json(await write({ ...input, mutationId: randomUUID() }), 409);
 });
 
+test("public, guest and signed-in Help retain a link back to the saved guide", async () => {
+  for (const [path, token] of [
+    ["/help", ""],
+    ["/platform/help", ""],
+    ["/platform/help", f.newcomer.token]
+  ]) {
+    const response = await read(path, token);
+    assert.equal(response.status, 200);
+    const body = await response.text();
+    assert.match(
+      body,
+      /href="\/platform\/getting-started"[^>]*>Getting started and saved next steps<\/a>/
+    );
+  }
+});
+
 test("actual HTTPS account download includes only the owner's saved hints and authored label, excluding host state", async () => {
   const account = (actor: typeof f.val, body: Record<string, unknown>) =>
     fetch(new URL("/api/platform/account", origin), {

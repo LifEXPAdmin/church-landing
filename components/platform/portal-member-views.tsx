@@ -710,6 +710,12 @@ export function PortalHelp({ snapshot }: { snapshot: PortalSnapshot }) {
         title="Help and contacts"
         description="Reach your church's appointed contacts or contact Godschurches directly."
       />
+      <Link
+        className={`${portalLinkClass} mb-4`}
+        href="/platform/getting-started"
+      >
+        Getting started and saved next steps
+      </Link>
       <nav aria-label="Private support" className="mb-6 flex flex-wrap gap-6">
         <Link className={portalLinkClass} href="/platform/help/new">
           Get help
