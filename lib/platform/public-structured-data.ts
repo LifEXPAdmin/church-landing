@@ -61,13 +61,7 @@ export async function publicStructuredData(
       startLocal: true,
       endLocal: true,
       startAt: true,
-      endAt: true,
-      timeZone: true,
-      event: {
-        select: {
-          calendar: { select: { church: { select: { id: true, name: true } } } }
-        }
-      }
+      endAt: true
     }
   });
   if (!row) return null;

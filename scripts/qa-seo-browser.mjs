@@ -60,23 +60,6 @@ page.on("pageerror", (error) => errors.push(error.message));
 const output = fixtureDir + "/seo-browser";
 mkdirSync(output, { recursive: true });
 const { seedSharing } = await import("../tests/seed-sharing.ts");
-const f = await seedSharing(db);
-f.church = await db.church.update({
-  where: { id: f.church.id },
-  data: {
-    name: "Fictional community " + randomUUID().slice(0, 8),
-    communityListed: false,
-    city: "Fictional town",
-    locationModel: "NO_BUILDING"
-  }
-});
-await db.church.createMany({
-  data: Array.from({ length: 101 }, (_, index) => ({
-    name: "Fictional directory continuation " + index,
-    slug: randomUUID(),
-    communityListed: true
-  }))
-});
 const go = async (path) => {
   const response = await page.goto(config.origin + path);
   assert.equal(response.status(), 200);
@@ -105,6 +88,24 @@ const ok = (message) => {
   console.log("PASS " + message);
 };
 try {
+  const f = await seedSharing(db);
+  f.church = await db.church.update({
+    where: { id: f.church.id },
+    data: {
+      name: "Fictional community " + randomUUID().slice(0, 8),
+      communityListed: false,
+      city: "Fictional town",
+      locationModel: "NO_BUILDING"
+    }
+  });
+  await db.church.createMany({
+    data: Array.from({ length: 101 }, (_, index) => ({
+      name: "Fictional directory continuation " + index,
+      slug: randomUUID(),
+      summary: "Public fictional directory fixture",
+      communityListed: true
+    }))
+  });
   for (const width of [320, 390, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     await go("/platform/churches/" + f.church.id);
