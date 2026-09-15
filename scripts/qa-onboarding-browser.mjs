@@ -133,25 +133,28 @@ try {
     1
   );
   await page.getByRole("link", { name: "Create account", exact: true }).click();
+  await page.waitForURL((url) => url.pathname === "/platform/signup");
   assert.equal(
     new URL(page.url()).searchParams.get("next"),
     "/platform/getting-started"
   );
-  await page.getByText("Exploring Faith", { exact: true }).waitFor();
+  const participation = page.getByLabel("How would you like to participate?", {
+    exact: true
+  });
+  await participation.selectOption("EXPLORING_FAITH");
+  assert.equal(await participation.inputValue(), "EXPLORING_FAITH");
   ok(
     "Guest guidance preserves signup return and Exploring Faith at 320px without automatic actions."
   );
 
   await signin(f.newcomer);
   await bounded();
-  const profileStep = page
-    .getByRole("listitem")
-    .filter({
-      has: page.getByRole("link", {
-        name: "Introduce yourself on your profile",
-        exact: true
-      })
-    });
+  const profileStep = page.getByRole("listitem").filter({
+    has: page.getByRole("link", {
+      name: "Introduce yourself on your profile",
+      exact: true
+    })
+  });
   await profileStep.getByRole("button", { name: "Later", exact: true }).click();
   await waitFor(
     async () =>
@@ -298,7 +301,7 @@ try {
   await signin(f.val);
   await go("/platform/posts/" + f.introduction.id);
   await page.getByText("Welcome and questions", { exact: true }).click();
-  await page.getByLabel("Post label", { exact: true }).selectOption("QUESTION");
+  await page.getByLabel("Post label").selectOption("QUESTION");
   await db.churchWelcomeThread.update({
     where: { postId: f.introduction.id },
     data: { version: { increment: 1 } }
@@ -322,7 +325,12 @@ try {
   await page.route("**/api/platform/church-tools", async (route) => {
     if (route.request().method() === "POST" && drop) {
       drop = false;
-      await route.fetch();
+      const committed = await route.fetch();
+      assert.equal(
+        committed.status(),
+        200,
+        "The dropped response must follow a committed save"
+      );
       await route.abort("failed");
     } else await route.continue();
   });
@@ -332,6 +340,13 @@ try {
   await page
     .getByRole("button", { name: "Retry unconfirmed change", exact: true })
     .waitFor();
+  await waitFor(
+    () =>
+      page
+        .getByRole("button", { name: "Retry unconfirmed change", exact: true })
+        .isEnabled(),
+    "The lost-response request did not finish"
+  );
   assert.equal(
     (
       await db.churchWelcomeThread.findUnique({

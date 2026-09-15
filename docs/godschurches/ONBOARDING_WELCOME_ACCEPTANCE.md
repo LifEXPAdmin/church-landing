@@ -74,12 +74,46 @@ failure; handled now updates an existing authorized row directly. Incorrect test
 calls and a fixture deletion that bypassed the existing comment erasure owner
 were corrected; the preserved failures are not counted as passes.
 
-Ten focused onboarding/church-tools checks passed. The later five-file foundation
-run passed all 37 checks, including existing claim/listing/role boundaries and
-bounded queue pagination. Further explicit host-assignment coverage, production
-HTTPS, browser, full migration/restore/restart gate, runtime-cost review and exact
-production acceptance are still required for this candidate. Types and focused
-lint are being checked as the finishing changes land.
+Application candidate `6c9f74c` passes the 37-check foundation run and a later
+21-check onboarding/explicit role-assignment/release run. Its production build,
+types and scoped lint pass. Two actual production HTTPS groups pass owner,
+origin, exact retry, stale-version, current permission, HTML/RSC privacy and
+revocation checks.
+
+Seven final production-browser groups pass guest signup return/Exploring Faith,
+actual sign-in/resumed hints, ordinary approval to persisted volunteering, church
+welcome selection, stale edits, response-loss exact retry, host handled/reopen,
+and revoked/unrelated access. Layouts at 320/390/1440 pixels were inspected.
+Browser runtime errors are zero. Earlier browser attempts exposed harness-only
+navigation waits, native-option selectors and an assertion before a dropped
+response finished; those failures are retained and excluded from success counts.
+The application source was unchanged during those browser harness corrections.
+
+A fresh encrypted production copy restored and upgraded 56→57 in isolation. All
+101 original tables retained every original column fingerprint; protected replay
+passed with delivery disabled. Temporary plaintext and the isolated recovery
+cluster were removed. Production has not yet received the migration. The full
+fresh migration/restore/restart regression gate and exact canonical/live release
+acceptance remain in progress; this is not a completion claim.
+
+## Runtime and timing observations
+
+No dependency, API route, worker or provider was added. One minimal label/status
+table accompanies additive private preference/church fields. The closed Home
+panel made zero onboarding requests in the browser journey; opened views refresh
+only while active and visible, at the existing fifteen-second interval. Bounded
+host pagination and source checks remain in force.
+
+The production build reports 103 KB shared first-load JavaScript, 208 KB for Home,
+143 KB for Getting started and 142 KB for welcome tools. These are build outputs,
+not claims of improvement over an unmeasured baseline. In an isolated local
+fictional fixture, six reads per scenario used 23 statements for unconnected
+first steps, 31 for approved-member Home, 19 for publisher choices and 27 for host
+queue/totals, including transaction and permission work. Warm medians were
+14.40/25.33/10.42/25.25 ms, with response bodies of 1661/2256/476/646 bytes.
+Concurrent regression work may affect timings; these do not establish hosting
+latency or capacity. Automated approval-to-reservation was 339 ms and proves only
+that the existing ordinary journey reaches a stored action, not human pilot speed.
 
 Actual phones, consenting real churches/hosts and the five-person pilot remain
 separate evidence. Automated fictional time-to-action is not human pilot timing.
