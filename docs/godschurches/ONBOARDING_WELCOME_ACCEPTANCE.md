@@ -94,8 +94,9 @@ A fresh encrypted production copy restored and upgraded 56→57 in isolation. Al
 101 original tables retained every original column fingerprint; protected replay
 passed with delivery disabled. Temporary plaintext and the isolated recovery
 cluster were removed. Production has not yet received the migration. The full
-fresh migration/restore/restart regression gate and exact canonical/live release
-acceptance remain in progress; this is not a completion claim.
+fresh migration/restore/restart regression gate has now passed. Exact canonical
+deployment and live release acceptance remain pending; this is not yet a release
+completion claim.
 
 ## Account export and permanent closure finishing repair
 
@@ -110,9 +111,17 @@ already removes the saved hints. Protected account restoration uses this same ow
 
 The four-file onboarding/export/deletion/protected-restoration delta passes 25
 checks, including an actual ordinary approved member's export and permanent
-closure. Types and scoped lint pass. The existing full gate remains frozen on
-`6c9f74c`; a fresh production build, three actual HTTPS groups and final browser
-run verify this later delta before release. Earlier failure evidence is retained.
+closure. Types and scoped lint pass. The uninterrupted full gate on
+`6c9f74c` passes 904 checks across 148 discovered files, with two expected
+development-delivery skips and no failures or cancellations. It includes actual
+server restart, synthetic upgrade/fresh migration, full restore, production build
+and HTML/RSC checks. The later privacy candidate `f4ca23f` passes its fresh
+production build, all three actual HTTPS groups (including the real account
+download endpoint) and all eight final browser groups, with zero browser runtime
+errors. The full gate was not repeated for this documented privacy delta. Earlier failure evidence is retained. A second fresh production recovery copy
+upgrades 56→57 on the privacy-repaired source, preserves all 101 original tables
+and passes protected replay at 12:19:36 UTC. Production is still at 56 migrations
+before the authorized release build.
 
 ## Runtime and timing observations
 
@@ -136,3 +145,17 @@ that the existing ordinary journey reaches a stored action, not human pilot spee
 Actual phones, consenting real churches/hosts and the five-person pilot remain
 separate evidence. Automated fictional time-to-action is not human pilot timing.
 Real reviewer/provider prerequisites are not bypassed by local fixture grants.
+
+
+## Release preflight
+
+The candidate preserves normal branch ancestry and existing work. The current
+provider project runs Node 24 in iad1 with Fluid enabled and the established
+`prisma:deploy` then production build command on main. The refreshed thirty-day
+project Usage view records 37K function invocations, 2.2 GB-hours of Fluid memory,
+33m 26s active CPU, 974.49 MB deployment storage and 9.71 GB function storage.
+These are measured provider totals; no plan, quota, service or resource was changed.
+All 56 current migration checksums match, only the additive onboarding migration
+is pending, and thirty original-column production fingerprints were captured
+before release. Exact deployment, new-field defaults, installed recovery registry,
+live behavior and after-read fingerprints are the remaining release steps.
