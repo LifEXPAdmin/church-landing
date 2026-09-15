@@ -696,6 +696,9 @@ export async function replayRetentionControls(
                 contactInApp: false,
                 contactEmail: false,
                 contactPush: false,
+                contactInAppSince: null,
+                contactEmailSince: null,
+                contactPushSince: null,
                 allowIdea: false,
                 publicAttribution: false,
                 version: entry.version,
@@ -928,6 +931,7 @@ export async function replayRetentionControls(
                   notificationRecoveryRequired: true,
                   pushCategories: [],
                   notificationPushSince: Prisma.DbNull,
+                  feedbackEmailSince: null,
                   conversationPushSince: null,
                   prayerPushSince: null,
                   version: { increment: 1 }

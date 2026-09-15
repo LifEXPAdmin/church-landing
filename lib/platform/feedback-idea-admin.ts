@@ -1,3 +1,5 @@
+import { recordFanout } from "./domain-activity";
+import { feedbackFollowupEnabled } from "./feedback-followup-policy";
 import { Prisma, type PrismaClient } from "@prisma/client";
 import {
   withAdmin,
@@ -264,7 +266,7 @@ async function eventIn(
   explanation: string
 ) {
   const grant = requireAdminCapability(authority, "MANAGE_PRODUCT_FEEDBACK");
-  return tx.feedbackIdeaEvent.create({
+  const event = await tx.feedbackIdeaEvent.create({
     data: {
       ideaId: idea.id,
       version: idea.version,
@@ -281,6 +283,16 @@ async function eventIn(
       createdAt: new Date()
     }
   });
+  if (action === "STATUS" && feedbackFollowupEnabled())
+    await recordFanout(
+      tx,
+      "FEEDBACK_IDEA",
+      idea.id,
+      idea.version,
+      authority.actor.id,
+      event.createdAt
+    );
+  return event;
 }
 export function feedbackIdeaAdminCommand(
   db: PrismaClient,

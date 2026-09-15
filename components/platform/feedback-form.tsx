@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useId, useState } from "react";
 import type {
   SupportDetail,
@@ -47,7 +48,14 @@ function FeedbackChoicesFields({
         <p className="text-sm text-gc-muted">
           Optional. If you allow follow-up, choose at least one channel. Your
           private receipt stays available with permission off. Device and email
-          delivery also depend on your account settings and availability.
+          delivery also depend on your{" "}
+          <Link
+            className="underline"
+            href="/platform/settings/notifications/availability"
+          >
+            notification preferences
+          </Link>{" "}
+          and availability.
         </p>
         {Object.entries(feedbackChannelLabels).map(([value, label]) => (
           <Check

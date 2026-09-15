@@ -19,6 +19,7 @@ const labels: Record<ActivityCategory, string> = {
   reactions: "Reactions",
   prayer: "Prayer",
   church: "Church connections",
+  feedback: "Feedback and ideas",
   commitments: "Commitments"
 };
 const endpoint = "/api/platform/activity";

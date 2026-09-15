@@ -42,9 +42,16 @@ export async function recordDomainActivity(tx: Tx, intent: DomainIntent) {
     decisionId: null
   };
   if (
-    !(await domainNotificationSources(tx, [event], false, new Date())).has(
-      event.id
-    )
+    !(
+      await domainNotificationSources(
+        tx,
+        [event],
+        false,
+        new Date(),
+        undefined,
+        "ANY"
+      )
+    ).has(event.id)
   )
     return;
   const { activitySequence: ignored, ...data } = event;
@@ -55,7 +62,12 @@ export async function recordDomainActivity(tx: Tx, intent: DomainIntent) {
 
 export async function recordFanout(
   tx: Tx,
-  kind: "AUTHOR_POST" | "CHURCH_REVIEW" | "EVENT_CHANGED" | "VOLUNTEER_CHANGED",
+  kind:
+    | "AUTHOR_POST"
+    | "CHURCH_REVIEW"
+    | "EVENT_CHANGED"
+    | "VOLUNTEER_CHANGED"
+    | "FEEDBACK_IDEA",
   sourceId: string,
   sourceVersion: number,
   actorId: string,

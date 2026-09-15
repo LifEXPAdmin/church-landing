@@ -1,8 +1,13 @@
 /** Presentation of existing capabilities; each destination retains its authority. */
 export const settingsHelpTopics = [
-  {id:"measurement",title:"Can I turn off optional platform measurement?",keywords:"analytics measurement privacy opt out referral device",
-    body:"Yes. Optional measurement starts off and is available under Privacy and interactions. Turning it off removes optional foreground/session facts and referral/device choices. Raw use facts last up to 90 days. Operational account, church and support totals remain separate; measurement never grants private account or case access.",
-    href:"/platform/settings/privacy/measurement",action:"Review measurement choices"},
+  {
+    id: "measurement",
+    title: "Can I turn off optional platform measurement?",
+    keywords: "analytics measurement privacy opt out referral device",
+    body: "Yes. Optional measurement starts off and is available under Privacy and interactions. Turning it off removes optional foreground/session facts and referral/device choices. Raw use facts last up to 90 days. Operational account, church and support totals remain separate; measurement never grants private account or case access.",
+    href: "/platform/settings/privacy/measurement",
+    action: "Review measurement choices"
+  },
   {
     id: "discovery",
     title: "How do discovery feeds and hidden choices work?",
@@ -51,7 +56,7 @@ export const settingsHelpTopics = [
     title: "Can I set quiet hours for notifications?",
     keywords:
       "quiet hours notifications email push alerts conversations follow",
-    body: "Quiet hours, delivery channels and notification categories are unavailable. Current conversation controls let you follow or mute an eligible discussion, without promising email or push delivery. A successful action and a delivered notification are separate results.",
+    body: "In Notification preferences, choose available channels and categories, manage devices, and set quiet hours in your time zone. Quiet hours pause phone alerts and selected feedback email. Choose follow-up separately on each feedback case or reviewed idea. Account verification and recovery emails remain separate.",
     href: "/platform/settings/notifications/availability",
     action: "Review current notification controls"
   },

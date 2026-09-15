@@ -1,3 +1,4 @@
+import { feedbackActivityWhere } from "./feedback-notification-source";
 import { domainNotificationKinds } from "./domain-notification-source";
 import { Prisma, type PrismaClient, type SocialEvent } from "@prisma/client";
 import { withAccountRead } from "./account-read";
@@ -107,6 +108,7 @@ const categorySql = Prisma.sql`CASE
   WHEN e.kind = 'ADULT_MESSAGE_CREATED' AND m.kind = 'FOUNDER_ANNOUNCEMENT' THEN 'founder'
   WHEN e.kind = 'ADULT_MESSAGE_CREATED' THEN 'messages'
   WHEN e.kind IN ('ADULT_REQUEST_CREATED','ADULT_REQUEST_ACCEPTED') THEN 'requests'
+  WHEN e.kind IN ('FEEDBACK_CASE','FEEDBACK_IDEA') THEN 'feedback'
   WHEN e.kind = 'AUTHOR_POST' THEN 'posts'
   WHEN e.kind IN ('POST_REACTION','COMMENT_REACTION') THEN 'reactions'
   WHEN e.kind = 'PRAYER_ACK' OR (e.kind='COMMENT_ACTIVITY' AND e."notificationCategory"='prayer') THEN 'prayer'
@@ -114,6 +116,7 @@ const categorySql = Prisma.sql`CASE
   WHEN e.kind IN ('EVENT_CHANGED','RSVP_CHANGED','VOLUNTEER_CHANGED','VOLUNTEER_CONFIRMATION') THEN 'commitments'
   WHEN e.kind = 'COMMENT_ACTIVITY' THEN 'comments' ELSE 'reports' END`;
 const groupSql = Prisma.sql`CASE
+  WHEN e.kind IN ('FEEDBACK_CASE','FEEDBACK_IDEA') THEN e.kind || ':' || coalesce(e."sourceId",e.id)
   WHEN e.kind='AUTHOR_POST' THEN 'author:' || coalesce(p."authorChurchId",e."actorId")
   WHEN e.kind IN ('POST_REACTION','COMMENT_REACTION','PRAYER_ACK') THEN 'reaction:' || coalesce(e."commentId",e."postId",e.id)
   WHEN e.kind IN ('CHURCH_REVIEW','CHURCH_CONNECTION','CHURCH_ROLE','CHURCH_CAPABILITY','EVENT_CHANGED','RSVP_CHANGED','VOLUNTEER_CHANGED','VOLUNTEER_CONFIRMATION') THEN e.kind || ':' || coalesce(e."sourceId",e.id)
@@ -142,6 +145,7 @@ async function activityRows(tx: Tx, ownerId: string, through: bigint) {
     LEFT JOIN "PlatformPost" p ON p.id = e."postId"
     LEFT JOIN "ConversationPreference" cp ON e.kind = 'COMMENT_ACTIVITY' AND cp."postId" = e."postId" AND cp."ownerId" = ${ownerId}
     WHERE e."recipientId" = ${ownerId} AND e.kind IN (${Prisma.join(kinds)}) AND e."activitySequence" <= ${through}
+      AND ${feedbackActivityWhere(ownerId)}
       AND ${!preferences?.notificationRecoveryRequired}
       AND NOT (coalesce(e."notificationCategory", CASE WHEN e.kind='COMMENT_ACTIVITY' THEN 'replies' ELSE '' END) = ANY(${preferences?.mutedNotificationCategories ?? []}::text[]))
       AND (e.kind NOT IN ('ADULT_REQUEST_CREATED','ADULT_REQUEST_ACCEPTED') OR ${preferences?.requestAlerts ?? true})
@@ -218,37 +222,41 @@ async function activitySummaries(
   return new Map(
     available.map((e) => [
       e.id,
-      e.kind === "AUTHOR_POST"
-        ? `New posts from ${authorNames.get(e.postId!) ?? "an author whose bell you enabled"}`
-        : ["POST_REACTION", "COMMENT_REACTION"].includes(e.kind)
-          ? "Reactions to your post or comment"
-          : e.kind === "PRAYER_ACK"
-            ? "Prayer acknowledgments on your post or comment"
-            : e.kind === "CHURCH_REVIEW"
-              ? "A church connection request within your review access"
-              : e.kind === "CHURCH_CONNECTION"
-                ? "Your church connection changed"
-                : ["CHURCH_ROLE", "CHURCH_CAPABILITY"].includes(e.kind)
-                  ? "Your church role or access changed"
-                  : e.kind === "EVENT_CHANGED"
-                    ? "An event in your commitments changed"
-                    : e.kind === "RSVP_CHANGED"
-                      ? "Your event response was saved"
-                      : [
-                            "VOLUNTEER_CHANGED",
-                            "VOLUNTEER_CONFIRMATION"
-                          ].includes(e.kind)
-                        ? "An update to your volunteer commitment"
-                        : e.kind === "COMMENT_ACTIVITY"
-                          ? `Latest from ${speakers.get(e.commentId!)}`
-                          : e.kind === "CONTENT_DECISION"
-                            ? "A private decision about your content"
-                            : [
-                                  "REPORT_RECEIVED",
-                                  "REPORT_RECONSIDERATION"
-                                ].includes(e.kind)
-                              ? "Within your current reviewer access"
-                              : `With ${people.get(e.actorId)}`
+      e.kind === "FEEDBACK_CASE"
+        ? "An update to your private feedback"
+        : e.kind === "FEEDBACK_IDEA"
+          ? "An update to an idea you subscribed to"
+          : e.kind === "AUTHOR_POST"
+            ? `New posts from ${authorNames.get(e.postId!) ?? "an author whose bell you enabled"}`
+            : ["POST_REACTION", "COMMENT_REACTION"].includes(e.kind)
+              ? "Reactions to your post or comment"
+              : e.kind === "PRAYER_ACK"
+                ? "Prayer acknowledgments on your post or comment"
+                : e.kind === "CHURCH_REVIEW"
+                  ? "A church connection request within your review access"
+                  : e.kind === "CHURCH_CONNECTION"
+                    ? "Your church connection changed"
+                    : ["CHURCH_ROLE", "CHURCH_CAPABILITY"].includes(e.kind)
+                      ? "Your church role or access changed"
+                      : e.kind === "EVENT_CHANGED"
+                        ? "An event in your commitments changed"
+                        : e.kind === "RSVP_CHANGED"
+                          ? "Your event response was saved"
+                          : [
+                                "VOLUNTEER_CHANGED",
+                                "VOLUNTEER_CONFIRMATION"
+                              ].includes(e.kind)
+                            ? "An update to your volunteer commitment"
+                            : e.kind === "COMMENT_ACTIVITY"
+                              ? `Latest from ${speakers.get(e.commentId!)}`
+                              : e.kind === "CONTENT_DECISION"
+                                ? "A private decision about your content"
+                                : [
+                                      "REPORT_RECEIVED",
+                                      "REPORT_RECONSIDERATION"
+                                    ].includes(e.kind)
+                                  ? "Within your current reviewer access"
+                                  : `With ${people.get(e.actorId)}`
     ])
   );
 }

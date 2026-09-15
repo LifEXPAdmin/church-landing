@@ -1,3 +1,5 @@
+import { feedbackNotificationSources } from "./feedback-notification-source";
+import type { FeedbackChannel } from "./feedback-followup-policy";
 import type { Prisma, SocialEvent } from "@prisma/client";
 import {
   postContext,
@@ -12,6 +14,8 @@ import type { NotificationSource } from "./notification-source";
 
 type Tx = Prisma.TransactionClient;
 export const domainNotificationKinds = [
+  "FEEDBACK_CASE",
+  "FEEDBACK_IDEA",
   "AUTHOR_POST",
   "POST_REACTION",
   "COMMENT_REACTION",
@@ -33,7 +37,8 @@ export async function domainNotificationSources(
   events: SocialEvent[],
   delivery: boolean,
   now: Date,
-  suppliedContext?: PostContext
+  suppliedContext?: PostContext,
+  feedbackChannel: FeedbackChannel = delivery ? "PUSH" : "IN_APP"
 ): Promise<Map<string, NotificationSource>> {
   const result = new Map<string, NotificationSource>();
   const ownerId = events[0]?.recipientId;
@@ -54,6 +59,14 @@ export async function domainNotificationSources(
   };
   const context = suppliedContext ?? (await postContext(tx, ownerId));
   if (context.actorId !== ownerId || !context.eligible) return result;
+  const feedback = await feedbackNotificationSources(
+    tx,
+    events.filter(
+      (e) => e.kind === "FEEDBACK_CASE" || e.kind === "FEEDBACK_IDEA"
+    ),
+    feedbackChannel
+  );
+  for (const [id, source] of feedback) result.set(id, source);
   const postEvents = events.filter((e) => e.postId);
   const posts = new Map(
     (postEvents.length

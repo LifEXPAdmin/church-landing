@@ -1,3 +1,8 @@
+import {
+  feedbackEmailAvailable,
+  sendFeedbackEmail,
+  type FeedbackEmailTransport
+} from "./feedback-email";
 import type { Prisma, PrismaClient, SocialEvent } from "@prisma/client";
 import { randomUUID, createHash } from "node:crypto";
 import { withOwnedSession } from "./account-sessions";
@@ -7,6 +12,7 @@ import { pushAvailable } from "./push-config";
 import {
   projectNotificationPreferences,
   notificationPushAllowed,
+  notificationEmailAllowed,
   quietHoursEnd
 } from "./notification-preferences";
 import { notificationSource } from "./notification-source";
@@ -36,7 +42,50 @@ export async function enqueueNotification(
   onlyDeviceId?: string,
   sourceCreatedAt?: Date
 ) {
-  if (!pushAvailable() || !event.recipientId) return;
+  if (!event.recipientId) return;
+  if (
+    !onlyDeviceId &&
+    feedbackEmailAvailable() &&
+    ["FEEDBACK_CASE", "FEEDBACK_IDEA"].includes(event.kind)
+  ) {
+    const at = new Date();
+    const source = await notificationSource(tx, event, "EMAIL", at);
+    const settings = source
+      ? await tx.socialPreferences.findUnique({
+          where: { ownerId: event.recipientId }
+        })
+      : null;
+    const owner =
+      source && notificationEmailAllowed(settings, event.createdAt)
+        ? await tx.platformUser.findUnique({
+            where: { id: event.recipientId },
+            select: { credentialVersion: true }
+          })
+        : null;
+    // Resend retains idempotency keys for 24h. Never retry an optional email
+    // beyond 23h from the event, including delayed dispatch and lost responses.
+    const expiresAt = new Date(event.createdAt.getTime() + 23 * 3600000);
+    const availableAt =
+      quietHoursEnd(projectNotificationPreferences(settings).quietHours, at) ??
+      at;
+    if (owner && expiresAt > at)
+      await tx.notificationDelivery.createMany({
+        data: [
+          {
+            id: randomUUID(),
+            eventId: event.id,
+            ownerId: event.recipientId,
+            channel: "EMAIL",
+            emailCredentialVersion: owner.credentialVersion,
+            availableAt,
+            expiresAt,
+            ...(availableAt >= expiresAt ? terminal(at, "CANCELLED") : {})
+          }
+        ],
+        skipDuplicates: true
+      });
+  }
+  if (!pushAvailable()) return;
   const now = new Date();
   const devices = await tx.pushSubscription.findMany({
     where: {
@@ -110,13 +159,15 @@ export async function deliverNotification(
   db: PrismaClient,
   id: string,
   transport: PushTransport,
-  now = new Date()
+  now = new Date(),
+  emailTransport: FeedbackEmailTransport = sendFeedbackEmail
 ): Promise<PushWorkResult> {
   const claim = await notificationWrite(db, async (tx) => {
     const row = await tx.notificationDelivery.findUnique({
       where: { id },
       include: {
         event: true,
+        owner: { select: { credentialVersion: true, email: true } },
         subscription: {
           include: {
             session: { select: { credentialVersion: true, expiresAt: true } },
@@ -128,7 +179,8 @@ export async function deliverNotification(
     if (!row || row.state === "FINISHED")
       return { done: true, outcome: "finished" } as const;
     const sub = row.subscription;
-    if (sub.expiresAt <= now && !sub.revokedAt)
+    const email = row.channel === "EMAIL";
+    if (sub && sub.expiresAt <= now && !sub.revokedAt)
       await revokePushSubscriptions(tx, { id: sub.id }, now);
     const finish = async (outcome: "CANCELLED" | "FAILED") => {
       await tx.notificationDelivery.update({
@@ -141,17 +193,22 @@ export async function deliverNotification(
       } as const;
     };
     if (
-      !pushAvailable() ||
       row.expiresAt <= now ||
-      sub.revokedAt ||
-      sub.expiresAt <= now ||
-      sub.version !== row.subscriptionVersion ||
-      !sub.session ||
-      sub.session.expiresAt <= now ||
-      sub.session.credentialVersion !== sub.owner.credentialVersion ||
-      !sub.endpoint ||
-      !sub.p256dh ||
-      !sub.auth
+      (email
+        ? !feedbackEmailAvailable() ||
+          row.emailCredentialVersion !== row.owner.credentialVersion ||
+          !["FEEDBACK_CASE", "FEEDBACK_IDEA"].includes(row.event.kind)
+        : !pushAvailable() ||
+          !sub ||
+          sub.revokedAt ||
+          sub.expiresAt <= now ||
+          sub.version !== row.subscriptionVersion ||
+          !sub.session ||
+          sub.session.expiresAt <= now ||
+          sub.session.credentialVersion !== sub.owner.credentialVersion ||
+          !sub.endpoint ||
+          !sub.p256dh ||
+          !sub.auth)
     )
       return finish("CANCELLED");
     if (row.state === "IN_FLIGHT" && row.leaseUntil! > now)
@@ -162,20 +219,28 @@ export async function deliverNotification(
           Math.ceil((row.leaseUntil!.getTime() - now.getTime()) / 1000)
         )
       } as const;
-    const source = await notificationSource(tx, row.event, true, now);
+    const source = await notificationSource(
+      tx,
+      row.event,
+      email ? "EMAIL" : true,
+      now
+    );
     if (!source) return finish("CANCELLED");
     const settings = await tx.socialPreferences.findUnique({
       where: { ownerId: row.ownerId }
     });
     const preferences = projectNotificationPreferences(settings);
     if (
-      source.category !== "test" &&
-      ((source.category === "founder" && !preferences.inApp.founder) ||
-        !notificationPushAllowed(
-          settings,
-          source.category,
-          row.event.createdAt
-        ))
+      email
+        ? source.category !== "feedback" ||
+          !notificationEmailAllowed(settings, row.event.createdAt)
+        : source.category !== "test" &&
+          ((source.category === "founder" && !preferences.inApp.founder) ||
+            !notificationPushAllowed(
+              settings,
+              source.category,
+              row.event.createdAt
+            ))
     )
       return finish("CANCELLED");
     const availableAt =
@@ -214,11 +279,22 @@ export async function deliverNotification(
       data: { deliveryId: id, attempt, outcome: "ATTEMPTED", createdAt: now }
     });
     return {
-      subscription: {
-        endpoint: sub.endpoint,
-        keys: { p256dh: sub.p256dh, auth: sub.auth }
-      },
-      subscriptionId: sub.id,
+      emailIntent: email
+        ? {
+            deliveryId: id,
+            email: row.owner.email,
+            kind: row.event.kind as "FEEDBACK_CASE" | "FEEDBACK_IDEA",
+            sourceId: row.event.sourceId!
+          }
+        : null,
+      subscription:
+        sub && sub.endpoint && sub.p256dh && sub.auth
+          ? {
+              endpoint: sub.endpoint,
+              keys: { p256dh: sub.p256dh, auth: sub.auth }
+            }
+          : null,
+      subscriptionId: sub?.id ?? null,
       payload: {
         deliveryId: id,
         tag: notificationGroupTag(row.ownerId, source.group)
@@ -237,7 +313,11 @@ export async function deliverNotification(
   if (claim.done !== undefined) return claim;
   let status = 0;
   try {
-    status = await transport(claim.subscription, claim.payload, claim.ttl);
+    status = claim.emailIntent
+      ? await emailTransport(claim.emailIntent)
+      : claim.subscription
+        ? await transport(claim.subscription, claim.payload, claim.ttl)
+        : 400;
   } catch {
     /* Diagnostics must not retain a provider exception with endpoint/key material. */
   }
@@ -248,7 +328,7 @@ export async function deliverNotification(
     });
     if (!row) return { done: true, outcome: "cancelled" };
     const accepted = status >= 200 && status < 300,
-      expired = status === 404 || status === 410;
+      expired = !claim.emailIntent && (status === 404 || status === 410);
     const retry =
       !accepted &&
       !expired &&
@@ -268,7 +348,7 @@ export async function deliverNotification(
         statusCode: status >= 100 && status <= 599 ? status : null
       }
     });
-    if (expired)
+    if (expired && claim.subscriptionId)
       await revokePushSubscriptions(tx, { id: claim.subscriptionId }, finished);
     if (retry) {
       const afterSeconds = Math.min(3600, 30 * 2 ** (claim.attempt - 1));

@@ -1250,6 +1250,9 @@ model FeedbackSubmission {
   contactInApp Boolean @default(false)
   contactEmail Boolean @default(false)
   contactPush Boolean @default(false)
+  contactInAppSince DateTime?
+  contactEmailSince DateTime?
+  contactPushSince DateTime?
   allowIdea Boolean @default(false)
   publicAttribution Boolean @default(false)
   contextRelease String?
@@ -1349,6 +1352,7 @@ model FeedbackIdeaSubscription {
   user PlatformUser @relation(fields: [userId], references: [id], onDelete: Cascade)
   @@id([ideaId, userId])
   @@index([userId])
+  @@index([ideaId, id], map: "FeedbackIdeaSubscription_fanout_idx")
 }
 // Public status explanations are separate from native private audit/note text.
 model FeedbackIdeaEvent {
@@ -2234,6 +2238,7 @@ model SocialPreferences {
   notificationRecoveryRequired Boolean @default(false)
   mutedNotificationCategories String[] @default([])
   notificationPushSince Json?
+  feedbackEmailSince DateTime?
   discovery Json?
   discoveryVersion Int @default(0)
   discoveryRecoveryRequired Boolean @default(false)
@@ -2299,8 +2304,10 @@ model NotificationDelivery {
   id String @id @default(cuid())
   eventId String
   ownerId String
-  subscriptionId String
-  subscriptionVersion Int
+  channel String @default("PUSH")
+  subscriptionId String?
+  subscriptionVersion Int?
+  emailCredentialVersion Int?
   state NotificationDeliveryState @default(QUEUED)
   attempts Int @default(0)
   availableAt DateTime @default(now())
@@ -2312,7 +2319,7 @@ model NotificationDelivery {
   createdAt DateTime @default(now())
   event SocialEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
   owner PlatformUser @relation(fields: [ownerId], references: [id], onDelete: Restrict)
-  subscription PushSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Restrict)
+  subscription PushSubscription? @relation(fields: [subscriptionId], references: [id], onDelete: Restrict)
   diagnostics PushDeliveryAttempt[]
   @@unique([eventId, subscriptionId])
   @@index([state, availableAt])

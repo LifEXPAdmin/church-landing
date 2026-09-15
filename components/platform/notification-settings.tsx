@@ -33,6 +33,7 @@ const labels: Record<NotificationCategory, string> = {
   posts: "New posts from authors whose bell you enabled",
   reactions: "Likes on your posts and comments",
   church: "Church requests, roles and connection changes",
+  feedback: "Feedback and ideas you chose to follow",
   commitments: "Event responses, changes and volunteer commitments"
 };
 const categories = Object.keys(labels) as NotificationCategory[];
@@ -293,7 +294,8 @@ export function NotificationSettings({ owner }: { owner: string }) {
                   expectedVersion: fields.version,
                   inApp: fields.inApp,
                   pushCategories: fields.pushCategories,
-                  quietHours: fields.quietHours
+                  quietHours: fields.quietHours,
+                  feedbackEmail: fields.feedbackEmail
                 })
               );
             }}
@@ -367,6 +369,33 @@ export function NotificationSettings({ owner }: { owner: string }) {
                     Phone alerts
                     {!view.channels.push && " — currently unavailable"}
                   </label>
+                  {category === "feedback" && (
+                    <>
+                      <label className="flex min-h-11 items-center gap-3">
+                        <input
+                          type="checkbox"
+                          checked={fields.feedbackEmail}
+                          disabled={
+                            !view.channels.email && !fields.feedbackEmail
+                          }
+                          onChange={(event) =>
+                            change({
+                              ...fields,
+                              feedbackEmail: event.target.checked
+                            })
+                          }
+                        />
+                        Email updates
+                        {!view.channels.email && " — currently unavailable"}
+                      </label>
+                      <p className="text-sm text-gc-muted">
+                        Choose follow-up separately on each feedback case or
+                        reviewed idea. These settings apply to those selected
+                        updates. Turning a channel back on allows future
+                        updates.
+                      </p>
+                    </>
+                  )}
                   {category === "founder" && (
                     <p className="text-sm text-gc-muted">
                       Turning these off keeps personal messages and replies
@@ -381,9 +410,10 @@ export function NotificationSettings({ owner }: { owner: string }) {
                 </fieldset>
               ))}
               <p>
-                Email and SMS social alerts are unavailable. Account
-                verification and recovery emails stay separate. Following
-                someone does not enable phone alerts.
+                Feedback email uses your verified sign-in address when
+                available. SMS alerts are unavailable. Account verification and
+                recovery emails stay separate. Following someone does not enable
+                phone alerts.
               </p>
               <fieldset className="space-y-3">
                 <legend className="text-xl">Quiet hours</legend>
@@ -405,7 +435,7 @@ export function NotificationSettings({ owner }: { owner: string }) {
                       })
                     }
                   />
-                  Pause phone alerts during quiet hours
+                  Pause phone and feedback email alerts during quiet hours
                 </label>
                 {fields.quietHours && (
                   <>
@@ -465,7 +495,8 @@ export function NotificationSettings({ owner }: { owner: string }) {
                       />
                     </label>
                     <p aria-live="polite">
-                      Phone alerts pause from {time(fields.quietHours.start)} to{" "}
+                      Phone and feedback email alerts pause from{" "}
+                      {time(fields.quietHours.start)} to{" "}
                       {time(fields.quietHours.end)}
                       {fields.quietHours.end < fields.quietHours.start
                         ? " the next day"
@@ -474,13 +505,15 @@ export function NotificationSettings({ owner }: { owner: string }) {
                       .
                       {fields.quietHours.start === fields.quietHours.end &&
                         " Choose different start and end times."}{" "}
-                      These hours apply to every phone-alert category.
+                      These hours apply to every phone-alert category and
+                      selected feedback email.
                     </p>
                   </>
                 )}
                 <p className="text-sm text-gc-muted">
                   Use an IANA zone such as America/Chicago. Daylight-saving
-                  changes are handled in that zone. In-app messages remain
+                  changes are handled in that zone. Account verification and
+                  recovery email stays separate. In-app messages remain
                   available.
                 </p>
               </fieldset>

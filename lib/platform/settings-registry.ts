@@ -165,11 +165,23 @@ const help = {
 };
 
 export const settingsRegistry: readonly SettingRegistration[] = Object.freeze([
-  entry("privacy.measurement","privacy","Optional platform measurement",
+  entry(
+    "privacy.measurement",
+    "privacy",
+    "Optional platform measurement",
     "Choose limited use measurement and optional source or device sharing. Off by default.",
-    ["analytics","measurement","data collection","referral"],{control:"measurement"},
-    {persistenceOwner:"PlatformMeasurementChoice",read:"platform-measurement.ts",write:"platform-measurement.ts"},
-    {valueType:"group",defaultValue:{enabled:false,shareDevice:false,referral:"UNKNOWN"}}),
+    ["analytics", "measurement", "data collection", "referral"],
+    { control: "measurement" },
+    {
+      persistenceOwner: "PlatformMeasurementChoice",
+      read: "platform-measurement.ts",
+      write: "platform-measurement.ts"
+    },
+    {
+      valueType: "group",
+      defaultValue: { enabled: false, shareDevice: false, referral: "UNKNOWN" }
+    }
+  ),
   entry(
     "account.identity",
     "account",
@@ -445,7 +457,7 @@ export const settingsRegistry: readonly SettingRegistration[] = Object.freeze([
     "notifications.availability",
     "notifications",
     "Notification preferences",
-    "Choose independent Activity and phone alerts for messages, conversations, prayer, author bells, reactions, church changes and commitments. Manage devices and quiet hours.",
+    "Choose Activity and phone categories, and available email for feedback you selected. Manage devices, quiet hours and feedback follow-up preferences.",
     [
       "alerts",
       "notifications",
@@ -461,7 +473,10 @@ export const settingsRegistry: readonly SettingRegistration[] = Object.freeze([
       "reactions",
       "church roles",
       "event changes",
-      "volunteer commitments"
+      "volunteer commitments",
+      "feedback email",
+      "idea updates",
+      "unsubscribe feedback"
     ],
     { control: "notifications" },
     {

@@ -135,6 +135,7 @@ export async function handleAdminRequest(
         const saved = await feedbackIdeaAdminCommand(db, token, input);
         await protectAdminCaseChanges(db, [saved.id]);
         result = saved;
+        afterReport?.(saved.id);
       } else if (input.operation === "lookup")
         result = await adminAccountLookup(db, token, input);
       else if (input.operation === "bulk")

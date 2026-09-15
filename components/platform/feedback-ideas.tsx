@@ -220,7 +220,7 @@ export function FeedbackIdeas({
                       </div>
                     </SupportForm>
                     <Link
-                      href="/platform/settings/notifications"
+                      href="/platform/settings/notifications/availability"
                       className={portalLinkClass}
                     >
                       Account notification settings

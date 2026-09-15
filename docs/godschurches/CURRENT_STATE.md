@@ -1,3 +1,24 @@
+## Selected feedback follow-up checkpoint — September 15, 2026 UTC
+
+Feature 31 remains **unreleased**. Selected native private-case updates and reviewed
+idea status changes now share Activity, the existing fanout and the delivery outbox.
+Dated per-source consent and global choices prevent retrospective delivery. Email
+binds current credentials; unsubscribe, read receipts, source withdrawal and merge
+reversal are checked before delivery. Generic email uses stable idempotency and a
+23-hour lifetime; account-mail behavior and existing phone safeguards are preserved.
+Current settings/help explain available channels and quiet hours. Recovery/export/
+erasure include the new choices. No actual requester message or production change
+occurred.
+
+[Detailed acceptance and next work](FEEDBACK_FOLLOWUP_ACCEPTANCE.md): 17 final
+service/worker/source scenarios and four final HTTPS browser groups pass; types,
+lint and the production preview pass with the unchanged repaired renderer. Both
+isolated fixtures have 83 migrations. Source equality and local costs are retained
+in private evidence. Actual operator/provider/physical prerequisites still gate
+activation. Continue 31.4 weekly review, source-scoped reports and shared 29/30/31
+acceptance, then protected release and exact canonical/live verification. Keep
+ordinary tasks/subtasks, Extra High and the final batch review last.
+
 ## Reviewed ideas checkpoint — September 15, 2026 UTC
 
 Feature 31 remains **unreleased**. Reviewed public summaries, unique removable

@@ -1,3 +1,4 @@
+import { feedbackEmailAvailable } from "./feedback-email";
 import { recordDiscoveryControl } from "./retention-controls";
 import { protectDiscoveryRecovery } from "./discovery-recovery";
 import { Temporal } from "@js-temporal/polyfill";
@@ -23,7 +24,8 @@ export const notificationCategories = [
   "posts",
   "reactions",
   "church",
-  "commitments"
+  "commitments",
+  "feedback"
 ] as const;
 export type NotificationCategory = (typeof notificationCategories)[number];
 export type QuietHours = {
@@ -133,12 +135,27 @@ export function notificationPushAllowed(
     return !!row.prayerPushSince && row.prayerPushSince < sourceAt;
   // Preserve already supported choices on older accounts. Newly supported
   // channels require a dated opt-in; a raw category name cannot backfill them.
-  return !["posts", "reactions", "church", "commitments"].includes(category);
+  return !["posts", "reactions", "church", "commitments", "feedback"].includes(
+    category
+  );
+}
+export function notificationEmailAllowed(
+  row: SocialPreferences | null,
+  sourceAt: Date
+) {
+  return (
+    !!row &&
+    !row.notificationRecoveryRequired &&
+    !!row.feedbackEmailSince &&
+    row.feedbackEmailSince < sourceAt
+  );
 }
 export function projectNotificationPreferences(row: SocialPreferences | null) {
   return {
     version: row?.version ?? 0,
     recoveryRequired: row?.notificationRecoveryRequired ?? false,
+    feedbackEmail:
+      !!row?.feedbackEmailSince && !row.notificationRecoveryRequired,
     inApp: Object.fromEntries(
       notificationCategories.map((category) => [
         category,
@@ -178,7 +195,12 @@ export function readNotificationPreferences(db: PrismaClient, token: unknown) {
           where: { id: session.userId, ...eligibleWhere },
           select: { id: true }
         })),
-      email: false
+      email:
+        feedbackEmailAvailable() &&
+        !!(await tx.platformUser.findFirst({
+          where: { id: session.userId, ...eligibleWhere },
+          select: { id: true }
+        }))
     }
   }));
 }
@@ -194,7 +216,8 @@ export async function notificationPreferenceCommand(
     "expectedVersion",
     "inApp",
     "pushCategories",
-    "quietHours"
+    "quietHours",
+    "feedbackEmail"
   ]);
   if (input.operation !== "preferences")
     throw new PortalError(400, "Choose a supported notification control.");
@@ -215,6 +238,10 @@ export async function notificationPreferenceCommand(
         !choices ||
         ![
           [...legacyInAppCategories].sort().join(),
+          notificationCategories
+            .filter((c) => c !== "feedback")
+            .sort()
+            .join(),
           [...notificationCategories].sort().join()
         ].includes(Object.keys(choices).sort().join()) ||
         Object.values(choices).some((v) => typeof v !== "boolean") ||
@@ -246,10 +273,35 @@ export async function notificationPreferenceCommand(
           503,
           "Phone notifications are not available yet. You can still turn existing choices off."
         );
+      if (
+        input.feedbackEmail !== undefined &&
+        typeof input.feedbackEmail !== "boolean"
+      )
+        throw new PortalError(400, "Review the feedback email choice.");
+      const email =
+        input.feedbackEmail === undefined
+          ? old.feedbackEmail
+          : input.feedbackEmail;
+      if (
+        email &&
+        !old.feedbackEmail &&
+        (!feedbackEmailAvailable() ||
+          !(await tx.platformUser.findFirst({
+            where: { id: ownerId, ...eligibleWhere },
+            select: { id: true }
+          })))
+      )
+        throw new PortalError(
+          503,
+          "Feedback email is not available yet. You can still turn it off."
+        );
       const quiet = parseQuietHours(input.quietHours);
       const legacy =
         Object.keys(choices).length === legacyInAppCategories.length;
-      if (legacy && old.recoveryRequired)
+      if (
+        Object.keys(choices).length !== notificationCategories.length &&
+        old.recoveryRequired
+      )
         throw new PortalError(
           409,
           "Reload the current notification settings to review recovered choices."
@@ -263,6 +315,10 @@ export async function notificationPreferenceCommand(
       const nextPush = [
         ...new Set([
           ...categories,
+          ...(!Object.hasOwn(choices, "feedback") &&
+          old.pushCategories.includes("feedback")
+            ? ["feedback"]
+            : []),
           ...(legacy
             ? old.pushCategories.filter((c) =>
                 ["posts", "reactions", "church", "commitments"].includes(c)
@@ -290,6 +346,11 @@ export async function notificationPreferenceCommand(
         ])
       );
       const data = {
+        feedbackEmailSince: email
+          ? old.feedbackEmail
+            ? prior!.feedbackEmailSince
+            : now
+          : null,
         notificationVersion: (prior?.notificationVersion ?? 0) + 1,
         notificationRecoveryRequired: false,
         mutedNotificationCategories: notificationCategories.filter(

@@ -27,7 +27,7 @@ export type NotificationSource = {
 export async function notificationSources(
   tx: Tx,
   events: SocialEvent[],
-  delivery: boolean,
+  delivery: boolean | "EMAIL",
   now = new Date(),
   suppliedContext?: PostContext
 ): Promise<Map<string, NotificationSource>> {
@@ -77,9 +77,10 @@ export async function notificationSources(
     const sources = await domainNotificationSources(
       tx,
       domain,
-      delivery,
+      !!delivery,
       now,
-      suppliedContext
+      suppliedContext,
+      delivery === "EMAIL" ? "EMAIL" : delivery ? "PUSH" : "IN_APP"
     );
     for (const [id, source] of sources) result.set(id, source);
   }
@@ -99,7 +100,7 @@ export async function notificationSources(
       const sources = await commentNotificationSources(
         tx,
         comments,
-        delivery,
+        !!delivery,
         context
       );
       for (const event of comments) {
@@ -375,7 +376,7 @@ export async function notificationSources(
 export async function notificationSource(
   tx: Tx,
   event: SocialEvent,
-  delivery: boolean,
+  delivery: boolean | "EMAIL",
   now = new Date()
 ): Promise<NotificationSource | null> {
   return (

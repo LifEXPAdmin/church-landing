@@ -1,3 +1,4 @@
+import { dispatchNotificationFanout } from "@/lib/platform/notification-fanout";
 import { after } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { handleAdminRequest } from "@/lib/platform/admin-boundary";
@@ -10,5 +11,6 @@ export const POST = (request: Request) =>
   handleAdminRequest(prisma, request, (id) =>
     after(async () => {
       await dispatchNotifications(prisma, id);
+      await dispatchNotificationFanout(prisma);
     })
   );

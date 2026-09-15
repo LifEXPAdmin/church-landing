@@ -22,7 +22,7 @@ const headers = {
 export async function handleSupportRequest(
   db: PrismaClient,
   request: Request,
-  afterAppeal?: (reportId: string) => void
+  afterUpdate?: (sourceId: string) => void
 ) {
   try {
     const token = requestSessionToken(request);
@@ -108,10 +108,18 @@ export async function handleSupportRequest(
       );
     const result = await supportCommand(db, token, body);
     if (body.operation === "feedback-create") {
-      const feedbackOwner = await db.supportCase.findUniqueOrThrow({ where: { id: result.caseId }, select: { requesterId: true } });
+      const feedbackOwner = await db.supportCase.findUniqueOrThrow({
+        where: { id: result.caseId },
+        select: { requesterId: true }
+      });
       await protectFeedbackPromptPreferences(db, feedbackOwner.requesterId);
     }
-    if(body.operation==="redact" || body.operation==="feedback-remove-attachment" || body.operation==="feedback-choices") await protectAdminCaseChanges(db,[result.caseId]);
+    if (
+      body.operation === "redact" ||
+      body.operation === "feedback-remove-attachment" ||
+      body.operation === "feedback-choices"
+    )
+      await protectAdminCaseChanges(db, [result.caseId]);
     const linked = await db.supportCase.findUnique({
       where: { id: result.caseId },
       select: { moderationDecision: { select: { reportId: true } } }
@@ -132,8 +140,10 @@ export async function handleSupportRequest(
           "Your case update was recorded, but recovery protection is pending. Retry the same request to finish protecting it."
         );
       }
-      afterAppeal?.(reportId);
+      afterUpdate?.(reportId);
     }
+    if (["reply", "transition", "feature"].includes(String(body.operation)))
+      afterUpdate?.(result.caseId);
     return Response.json(result, { headers });
   } catch (error) {
     if (error instanceof SupportError || error instanceof PortalError)

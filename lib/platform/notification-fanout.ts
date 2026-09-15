@@ -1,3 +1,5 @@
+import { feedbackNotificationFamily } from "./feedback-notification-source";
+import { feedbackFollowupEnabled } from "./feedback-followup-policy";
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { activeRoleGrantWhere } from "./church-permissions";
 import { eligibleWhere } from "./portal-policy";
@@ -185,6 +187,42 @@ export function processNotificationFanoutBatch(
             })
           ).map((r) => ({ id: r.id, ownerId: r.userId }));
         }
+      } else if (
+        valid &&
+        job.kind === "FEEDBACK_IDEA" &&
+        feedbackFollowupEnabled()
+      ) {
+        const proof = await tx.feedbackIdeaEvent.findFirst({
+          where: {
+            ideaId: job.sourceId,
+            version: job.sourceVersion,
+            actorId: job.actorId,
+            createdAt: job.createdAt,
+            action: "STATUS"
+          },
+          select: { id: true }
+        });
+        const family = proof
+          ? await feedbackNotificationFamily(tx, job.sourceId, job.createdAt)
+          : [];
+        if (family.length)
+          recipients = (
+            await tx.feedbackIdeaSubscription.findMany({
+              where: {
+                ideaId: { in: family },
+                user: eligibleWhere,
+                OR: [
+                  { inAppSince: { lt: job.createdAt } },
+                  { emailSince: { lt: job.createdAt } },
+                  { pushSince: { lt: job.createdAt } }
+                ],
+                ...after
+              },
+              select: { id: true, userId: true },
+              ...page
+            })
+          ).map((r) => ({ id: r.id, ownerId: r.userId }));
+        else valid = false;
       } else valid = false;
       for (const recipient of recipients) {
         if (recipient.ownerId === job.actorId) continue;
@@ -197,11 +235,13 @@ export function processNotificationFanoutBatch(
           postId,
           createdAt: job.createdAt,
           category:
-            job.kind === "AUTHOR_POST"
-              ? "posts"
-              : job.kind === "CHURCH_REVIEW"
-                ? "church"
-                : "commitments"
+            job.kind === "FEEDBACK_IDEA"
+              ? "feedback"
+              : job.kind === "AUTHOR_POST"
+                ? "posts"
+                : job.kind === "CHURCH_REVIEW"
+                  ? "church"
+                  : "commitments"
         });
       }
       const nextPhase =

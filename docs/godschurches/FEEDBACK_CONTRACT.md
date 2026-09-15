@@ -4,6 +4,21 @@ September 15, 2026 UTC. Implementation in progress; nothing in this candidate is
 released. The current serving application is the platform measurement core in
 [its acceptance receipt](PLATFORM_METRICS_ACCEPTANCE.md).
 
+## Selected follow-up checkpoint
+
+The current candidate now supplies selected case/idea updates through native
+Activity, fanout and the existing delivery outbox. Explicit dated source consent,
+current global preferences and current source authority govern delivery. Email is
+bound to current credentials, uses a generic stable template, and expires before
+its provider idempotency window. Unsubscribe, source withdrawal, merge reversal,
+read receipts and protected recovery suppress older or unauthorized updates.
+
+The [follow-up acceptance receipt](FEEDBACK_FOLLOWUP_ACCEPTANCE.md) records 17 final
+service/worker scenarios, four final narrow HTTPS browser groups, the production
+preview build, 83 isolated migrations, source checks and measured local costs.
+Actual production/operator/provider/physical prerequisites remain unchanged.
+Continue the admin-only weekly review and shared acceptance within feature 31.
+
 ## Native intake checkpoint
 
 ### Reviewed ideas and privacy recovery
@@ -22,7 +37,7 @@ retains original votes and channel subscription dates, displays the destination,
 and is auditable and reversible. A withdrawn destination cannot trap an otherwise
 permitted reversal; reversing never revives its withdrawn publication. Explicit
 unsubscribe clears the chosen channels throughout the merged family. Stored
-channel choices still await the existing outbox integration in this feature.
+channel choices now use the selected-follow-up integration described above.
 
 Contributor publication withdrawal immediately hides the copy; reauthorization
 requires another human publication review. Name withdrawal alone hides attribution.

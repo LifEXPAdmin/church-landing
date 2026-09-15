@@ -1,3 +1,8 @@
+import { recordDomainActivity } from "./domain-activity";
+import {
+  feedbackContactDates,
+  feedbackFollowupEnabled
+} from "./feedback-followup-policy";
 import {
   supportRecipientSelect as grantSelect,
   supportRecipient as recipient,
@@ -827,6 +832,7 @@ export async function supportCommand(
           data: {
             caseId: c.id,
             ...feedback.metadata,
+            ...feedbackContactDates(feedback.metadata),
             ...(await feedbackResponseSource(tx, actor.id, input.promptClaimId))
           }
         });
@@ -929,6 +935,7 @@ export async function supportCommand(
         where: { caseId: c.id },
         data: {
           ...choices,
+          ...feedbackContactDates(choices, feedback),
           version: { increment: 1 },
           ...(sharingChanged ? { sharingVersion: { increment: 1 } } : {})
         }
@@ -1193,6 +1200,7 @@ export async function supportCommand(
         actor.id,
         next.version
       );
+    const followupAt = new Date();
     if (body)
       await tx.supportMessage.create({
         data: {
@@ -1200,6 +1208,7 @@ export async function supportCommand(
           authorId: actor.id,
           body,
           kind,
+          createdAt: followupAt,
           version: next.version
         }
       });
@@ -1236,6 +1245,21 @@ export async function supportCommand(
         version: next.version
       }
     });
+    if (
+      feedbackFollowupEnabled() &&
+      rights.owner &&
+      !rights.requester &&
+      ["reply", "transition", "feature"].includes(op)
+    )
+      await recordDomainActivity(tx, {
+        kind: "FEEDBACK_CASE",
+        category: "feedback",
+        sourceId: c.id,
+        sourceVersion: next.version,
+        actorId: actor.id,
+        recipientId: c.requesterId,
+        createdAt: followupAt
+      });
     if (c.moderationDecisionId) await recordAppealControl(tx, c.id, actor.id);
     return {
       caseId: c.id,
@@ -1243,7 +1267,7 @@ export async function supportCommand(
       message: c.moderationDecisionId
         ? "Help case updated. Its current reviewer is shown when you open the case."
         : next.ownerGrantId
-          ? "Request updated. Changes are saved here; no email was sent."
+          ? "Request updated. Any available follow-up uses the requester’s selected channels."
           : "Request updated. It is awaiting assignment; no active support owner is assigned."
     };
   });

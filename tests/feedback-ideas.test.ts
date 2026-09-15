@@ -467,7 +467,8 @@ test("attribution is separate; publication withdrawal hides immediately, require
       sharingVersion: beforeChoice.sharingVersion,
       allowIdea: true,
       contactAllowed: true,
-      contactInApp: true
+      contactInApp: true,
+      contactInAppSince: new Date(0)
     }
   });
   await db.feedbackIdea.update({
