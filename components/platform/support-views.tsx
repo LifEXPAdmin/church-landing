@@ -32,12 +32,18 @@ export function SupportViews({
   snapshot: s,
   view,
   churchId,
-  received
+  received,
+  detailBase,
+  handoffDestination,
+  onRefresh
 }: {
   snapshot: SupportSnapshot;
   view: SupportView;
   churchId?: string;
   received?: boolean;
+  detailBase?: string;
+  handoffDestination?: string;
+  onRefresh?: () => void;
 }) {
   const c = s.detail;
   return (
@@ -125,6 +131,7 @@ export function SupportViews({
                   </p>
                 )}
                 <SupportForm
+                  onRefresh={onRefresh}
                   owner={s.viewer.id}
                   key={churchId ?? "general"}
                   operation="create"
@@ -215,6 +222,7 @@ export function SupportViews({
               </p>
               {s.ownerOptions.length ? (
                 <SupportForm
+                  onRefresh={onRefresh}
                   owner={s.viewer.id}
                   operation="handoff"
                   fixed={{ caseId: row.id, expectedVersion: row.version }}
@@ -260,10 +268,11 @@ export function SupportViews({
           <Pagination
             page={c.messagePage}
             more={c.moreMessages}
-            base={`/platform/help/cases/${c.id}`}
+            base={detailBase ?? `/platform/help/cases/${c.id}`}
           />
           {c.unread && (
             <SupportForm
+              onRefresh={onRefresh}
               owner={s.viewer.id}
               operation="mark-read"
               fixed={{ caseId: c.id, expectedVersion: c.version }}
@@ -279,6 +288,7 @@ export function SupportViews({
                 include passwords, codes or sensitive personal details.
               </p>
               <SupportForm
+                onRefresh={onRefresh}
                 owner={s.viewer.id}
                 operation="reply"
                 fixed={{ caseId: c.id, expectedVersion: c.version }}
@@ -294,9 +304,10 @@ export function SupportViews({
               />
             </PortalCard>
           ) : (
-            c.access.requester && (
+            (c.access.requester || c.access.owner) && (
               <PortalCard title="Still need help?">
                 <SupportForm
+                  onRefresh={onRefresh}
                   owner={s.viewer.id}
                   operation="reopen"
                   fixed={{ caseId: c.id, expectedVersion: c.version }}
@@ -312,6 +323,7 @@ export function SupportViews({
           {(c.access.owner || c.access.requester) && c.status !== "CLOSED" && (
             <PortalCard title="Update the request status">
               <SupportForm
+                onRefresh={onRefresh}
                 owner={s.viewer.id}
                 operation="transition"
                 fixed={{ caseId: c.id, expectedVersion: c.version }}
@@ -348,6 +360,7 @@ export function SupportViews({
                     erase information already seen.
                   </p>
                   <SupportForm
+                    onRefresh={onRefresh}
                     owner={s.viewer.id}
                     operation="revoke"
                     fixed={{ caseId: c.id, expectedVersion: c.version }}
@@ -357,6 +370,7 @@ export function SupportViews({
               ) : c.shareOptions.length &&
                 !["RESOLVED", "CLOSED"].includes(c.status) ? (
                 <SupportForm
+                  onRefresh={onRefresh}
                   owner={s.viewer.id}
                   operation="share"
                   fixed={{ caseId: c.id, expectedVersion: c.version }}
@@ -393,6 +407,7 @@ export function SupportViews({
             <PortalCard title="Support owner tools">
               {c.featureDecision && (
                 <SupportForm
+                  onRefresh={onRefresh}
                   owner={s.viewer.id}
                   operation="feature"
                   fixed={{ caseId: c.id, expectedVersion: c.version }}
@@ -413,6 +428,7 @@ export function SupportViews({
               )}
               {c.ownerOptions.length > 0 && (
                 <SupportForm
+                  onRefresh={onRefresh}
                   owner={s.viewer.id}
                   operation="handoff"
                   fixed={{ caseId: c.id, expectedVersion: c.version }}
@@ -428,7 +444,7 @@ export function SupportViews({
                     }
                   ]}
                   button="Hand off request"
-                  destination="/platform/help/inbox"
+                  destination={handoffDestination ?? "/platform/help/inbox"}
                   caution="This transfers the whole conversation to the selected support owner and removes your assignment in the same step. Only use an approved handoff."
                 />
               )}
@@ -444,6 +460,7 @@ export function SupportViews({
                     handling is separate. This cannot be undone here.
                   </p>
                   <SupportForm
+                    onRefresh={onRefresh}
                     owner={s.viewer.id}
                     operation="redact"
                     fixed={{ caseId: c.id, expectedVersion: c.version }}
@@ -488,12 +505,18 @@ function Pagination({
     (page > 0 || more) && (
       <nav aria-label="Request pages" className="flex gap-6">
         {page > 0 && (
-          <Link className={portalLinkClass} href={`${base}?page=${page - 1}`}>
+          <Link
+            className={portalLinkClass}
+            href={`${base}${base.includes("?") ? "&" : "?"}page=${page - 1}`}
+          >
             Previous page
           </Link>
         )}
         {more && page < 99 && (
-          <Link className={portalLinkClass} href={`${base}?page=${page + 1}`}>
+          <Link
+            className={portalLinkClass}
+            href={`${base}${base.includes("?") ? "&" : "?"}page=${page + 1}`}
+          >
             Next page
           </Link>
         )}

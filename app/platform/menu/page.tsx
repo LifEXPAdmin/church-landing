@@ -24,6 +24,7 @@ import {
 import { PlatformShell } from "@/components/platform/platform-shell";
 import { getCurrentPlatformUser } from "@/lib/platform/session";
 import { accountEntryHref } from "@/lib/platform/account-entry";
+import { readAdminPageNavigation } from "@/lib/platform/admin-session";
 
 export const metadata: Metadata = { title: "Menu" };
 
@@ -56,6 +57,10 @@ function MenuLink({
 
 export default async function PlatformMenuPage() {
   const user = await getCurrentPlatformUser();
+  let adminAvailable=false;
+  if(user&&process.env.NODE_ENV==="production") {
+    try {adminAvailable=!!(await readAdminPageNavigation()).sections.length;}catch{/* Optional entry fails closed; the rest of Menu remains usable. */}
+  }
   return (
     <PlatformShell user={user}>
       <section className="container-shell">
@@ -270,6 +275,7 @@ export default async function PlatformMenuPage() {
             <InstallationHelp />
             <InstallationHelp bookmark />
           </section>
+          {adminAvailable&&<section aria-labelledby="menu-admin"><h2 id="menu-admin">Platform operations</h2><ul className="gc-menu-links"><MenuLink href="/platform/admin" title="Admin" description="Open your currently permitted requests and operations." icon={Shield} prefetch={false}/></ul></section>}
           <section aria-labelledby="menu-about">
             <h2 id="menu-about">About Godschurches</h2>
             <ul className="gc-menu-links">

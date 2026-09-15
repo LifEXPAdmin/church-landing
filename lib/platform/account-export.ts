@@ -855,7 +855,8 @@ export async function downloadAccountExport(
       following,
       churchConnections,
       supportRequests,
-      supportMessages
+      supportMessages,
+      privateAdminViews: await tx.adminSavedView.findMany({where:{userId},select:{name:true,filters:true,createdAt:true,updatedAt:true},orderBy:{id:"asc"},take:MAX_ROWS+1})
     };
     if (Object.values(collections).some((rows) => rows.length > MAX_ROWS))
       throw new AccountExportError("size");

@@ -173,7 +173,7 @@ test("lifecycle, resolution, waiting reply, stale versions and reopen remain ind
   assert.equal(d.featureDecision, "UNDER_CONSIDERATION");
   assert.ok(d.resolution);
   await deny(
-    act(f.owner, c.caseId, "reopen", { reason: "Owner cannot reopen" })
+    act(f.backup, c.caseId, "reopen", { reason: "Unassigned staff cannot reopen" })
   );
   await deny(act(a, c.caseId, "reply", { body: "Closed reply" }), 409);
   await act(a, c.caseId, "reopen", {
@@ -188,6 +188,9 @@ test("lifecycle, resolution, waiting reply, stale versions and reopen remain ind
     reason: "Thank you, I have what I need."
   });
   assert.equal((await detail(a, c.caseId)).status, "CLOSED");
+  await act(f.owner,c.caseId,"reopen",{reason:"A follow-up check found the same unresolved problem."});
+  assert.equal((await detail(a,c.caseId)).status,"RECEIVED");
+  assert.equal((await detail(a,c.caseId)).owner?.id,f.owner.id);
 });
 test("sharing is deliberate, scoped, removable, versioned and never silently restored", async () => {
   const c = await create(f.memberA, { churchId: f.churchA.id });

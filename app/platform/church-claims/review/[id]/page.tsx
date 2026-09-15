@@ -6,10 +6,13 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false }
 };
 export default async function Page({
-  params
+  params,
+  searchParams
 }: {
   params: Promise<{ id: string }>;
+  searchParams:Promise<{adminReturnTo?:string}>;
 }) {
   const { id } = await params;
-  return <ChurchClaimPage id={id} review />;
+  const query=await searchParams;
+  return <ChurchClaimPage id={id} review adminBack={query.adminReturnTo}/>;
 }

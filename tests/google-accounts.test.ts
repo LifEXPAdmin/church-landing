@@ -42,7 +42,11 @@ import {
   deactivateAccount,
   AccountLifecycleError
 } from "../lib/platform/account-lifecycle";
-import { type RecentAuthenticationPurpose } from "../lib/platform/account-credential";
+import { withOwnedSession } from "../lib/platform/account-sessions";
+import {
+  requireAccountCredential,
+  type RecentAuthenticationPurpose
+} from "../lib/platform/account-credential";
 import {
   handleAccountRequest,
   SESSION_COOKIE
@@ -1145,4 +1149,33 @@ test("revocation applies to Google sessions and unlink keeps password access, re
     "link-required"
   );
   assert.ok(await loginAccount(db, a.user.email, password, null));
+});
+
+test("admin Google confirmation purposes retain exact session, purpose and one-use boundaries", async () => {
+  const a = await newGoogle();
+  for (const purpose of [
+    "manage-admin-authenticator",
+    "manage-admin-access"
+  ] as const) {
+    const proof = await recent(a.outcome.token, a.subject, purpose);
+    const other =
+      purpose === "manage-admin-access"
+        ? "manage-admin-authenticator"
+        : "manage-admin-access";
+    await assert.rejects(
+      withOwnedSession(db, a.outcome.token, (tx, current) =>
+        requireAccountCredential(tx, current, proof, other)
+      ),
+      AccountError
+    );
+    await withOwnedSession(db, a.outcome.token, (tx, current) =>
+      requireAccountCredential(tx, current, proof, purpose)
+    );
+    await assert.rejects(
+      withOwnedSession(db, a.outcome.token, (tx, current) =>
+        requireAccountCredential(tx, current, proof, purpose)
+      ),
+      AccountError
+    );
+  }
 });

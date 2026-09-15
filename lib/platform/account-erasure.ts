@@ -7,6 +7,7 @@ import {
   type AccountDeletionJournal
 } from "./account-deletion";
 import { markUnretainedMessages } from "./messaging-retention";
+import { eraseAdminPersonalData } from "./admin-privacy";
 
 type Tx = Prisma.TransactionClient;
 const personalPost = (userId: string) => ({
@@ -15,6 +16,7 @@ const personalPost = (userId: string) => ({
 });
 
 async function erasePrivateCollections(tx: Tx, userId: string) {
+  await eraseAdminPersonalData(tx,userId,new Date());
   await tx.topicMembership.updateMany({
     where: { userId },
     data: {

@@ -19,7 +19,8 @@ export function SupportForm({
   fields = [],
   button,
   destination,
-  caution
+  caution,
+  onRefresh
 }: {
   owner: string;
   operation: string;
@@ -28,6 +29,7 @@ export function SupportForm({
   button: string;
   destination?: string;
   caution?: string;
+  onRefresh?: () => void;
 }) {
   const id = useId();
   const initialFixed = useRef(fixed);
@@ -39,6 +41,7 @@ export function SupportForm({
   const feedbackRef = useRef<HTMLParagraphElement>(null);
   const [retryBody, setRetryBody] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
+  const [sourceChanged, setSourceChanged] = useState(false);
   const [navigation, setNavigation] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const retryOriginal = useCallback(() => formRef.current?.requestSubmit(), []);
@@ -49,6 +52,16 @@ export function SupportForm({
       setFeedback("Save, retry or discard these local entries before leaving."),
     true
   );
+  useEffect(() => {
+    if (!dirty && !retryBody) {
+      initialFixed.current = fixed;
+      setSourceChanged(false);
+    } else if (
+      onRefresh &&
+      JSON.stringify(initialFixed.current) !== JSON.stringify(fixed)
+    )
+      setSourceChanged(true);
+  }, [fixed, dirty, retryBody, onRefresh]);
   useEffect(() => {
     if (navigation) window.location.assign(navigation);
   }, [navigation]);
@@ -64,7 +77,7 @@ export function SupportForm({
       className="space-y-4"
       onSubmit={async (e) => {
         e.preventDefault();
-        if (busy || inFlight.current) return;
+        if (busy || inFlight.current || (sourceChanged && !retryBody)) return;
         const form = e.currentTarget;
         const data = new FormData(form);
         const payload: Record<string, unknown> = {
@@ -124,6 +137,12 @@ export function SupportForm({
           // A fresh private document discards stale client route data after a write.
           else setNavigation(window.location.href);
         } catch (error) {
+          if (
+            onRefresh &&
+            error instanceof SocialClientError &&
+            error.status === 409
+          )
+            setSourceChanged(true);
           if (
             error instanceof SocialClientError &&
             [400, 409, 429].includes(error.status)
@@ -212,6 +231,34 @@ export function SupportForm({
       >
         {feedback}
       </p>
+      {sourceChanged && !retryBody && onRefresh && (
+        <div className="space-y-3 rounded-xl border border-gc-divider p-4">
+          <p>
+            The request changed. Your reply or reason is still here. Refresh and
+            review the current request before applying these entries.
+          </p>
+          <button
+            type="button"
+            className="gc-button gc-button-quiet"
+            onClick={onRefresh}
+          >
+            Refresh this request
+          </button>
+          <button
+            type="button"
+            className="gc-button gc-button-quiet"
+            onClick={() => {
+              initialFixed.current = fixed;
+              setSourceChanged(false);
+              setFeedback(
+                "Current version selected. Review these retained entries, then save."
+              );
+            }}
+          >
+            Use current request with these entries
+          </button>
+        </div>
+      )}
       {failed && (
         <button
           type="button"
@@ -246,6 +293,8 @@ export function SupportForm({
               return;
             setRetryBody(null);
             setDirty(false);
+            setSourceChanged(false);
+            initialFixed.current = fixed;
             formRef.current?.reset();
             setFeedback(
               "Local entries discarded. Previously saved changes remain."
@@ -256,7 +305,7 @@ export function SupportForm({
         </button>
       )}
       <button
-        disabled={busy}
+        disabled={busy || (sourceChanged && !retryBody)}
         type="submit"
         className="min-h-11 rounded-xl bg-gc-action px-5 py-3 text-sm font-semibold text-gc-on-action hover:bg-gc-action focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#f4c98c] disabled:opacity-60"
       >

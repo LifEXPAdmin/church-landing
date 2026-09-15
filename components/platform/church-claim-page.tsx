@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { adminReturnTo } from "@/lib/platform/admin-links";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { PortalError, publicChurches } from "@/lib/platform/portal";
@@ -47,7 +48,8 @@ export async function ChurchClaimPage({
   churchId,
   preview = false,
   query = "",
-  cursor
+  cursor,
+  adminBack
 }: {
   id?: string;
   create?: boolean;
@@ -56,6 +58,7 @@ export async function ChurchClaimPage({
   preview?: boolean;
   query?: string;
   cursor?: string;
+  adminBack?: string;
 }) {
   const path = create
     ? `/platform/church-claims/new${churchId ? `?churchId=${encodeURIComponent(churchId)}` : ""}`
@@ -151,6 +154,7 @@ export async function ChurchClaimPage({
   return (
     <PlatformShell user={snapshot.viewer}>
       <section className="container-shell space-y-6 py-8 sm:py-10">
+        {review&&adminBack&&<Link className={portalLinkClass} href={adminReturnTo(adminBack)}>Back to filtered admin requests</Link>}
         <PortalHeading
           title={
             create

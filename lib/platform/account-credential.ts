@@ -10,7 +10,9 @@ export const recentAuthenticationPurposes = [
   "delete-account",
   "request-email-change",
   "confirm-email-change",
-  "unlink-google"
+  "unlink-google",
+  "manage-admin-authenticator",
+  "manage-admin-access"
 ] as const;
 export type RecentAuthenticationPurpose =
   (typeof recentAuthenticationPurposes)[number];

@@ -128,6 +128,8 @@ export async function quarantineRestoredAccess(db: PrismaClient) {
         where: { revokedAt: null },
         data: { revokedAt: now }
       });
+      await tx.adminSavedView.deleteMany({});
+      await tx.adminAuthenticator.deleteMany({});
       const topicRoles = await tx.topicMembership.updateMany({
         where: { OR: [{ moderator: true }, { pendingRole: { not: null } }] },
         data: {

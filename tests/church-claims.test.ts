@@ -13,6 +13,8 @@ import {
   getChurchClaims,
   CLAIM_POLICY
 } from "../lib/platform/church-claims";
+import { readAdminQueue } from "../lib/platform/admin-queue";
+import { readAdminDetail } from "../lib/platform/admin-detail";
 import { projectListingData } from "../lib/platform/church-listing-data";
 import {
   projectClaimAuthority,
@@ -386,6 +388,31 @@ test("claims: authorized church management can review only its own delegable sco
     review: true,
     churchId
   });
+  const admin = await readAdminQueue(db, manager.token, {
+    type: "CLAIM",
+    state: "ALL",
+    churchId
+  });
+  assert.deepEqual(
+    admin.rows.map((r) => r.sourceId).sort(),
+    queue.claims.map((r) => r.id).sort()
+  );
+  await denied(
+    readAdminDetail(db, manager.token, {
+      sourceType: "CLAIM",
+      sourceId: dispute.id
+    }),
+    404
+  );
+  await denied(
+    readAdminDetail(db, manager.token, {
+      sourceType: "CLAIM",
+      sourceId: other.id
+    }),
+    404
+  );
+  assert.ok(!JSON.stringify(admin).includes("private-review@example.test"));
+
   assert.ok(
     !queue.claims.some(
       (row) =>

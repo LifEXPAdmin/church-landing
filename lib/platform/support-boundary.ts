@@ -5,6 +5,8 @@ import { readBody, requestSessionToken } from "./account-boundary";
 import { readAccountSession } from "./accounts";
 import { readSupport, supportCommand, SupportError } from "./support";
 import type { SupportView } from "./support-types";
+import { protectAdminCaseChanges } from "./admin-privacy";
+import { PortalError } from "./portal-policy";
 import {
   journalRetentionControls,
   protectedRetentionControls
@@ -104,6 +106,7 @@ export async function handleSupportRequest(
         "Too many attempts. Wait 15 minutes before trying again."
       );
     const result = await supportCommand(db, token, body);
+    if(body.operation==="redact") await protectAdminCaseChanges(db,[result.caseId]);
     const linked = await db.supportCase.findUnique({
       where: { id: result.caseId },
       select: { moderationDecision: { select: { reportId: true } } }
@@ -128,7 +131,7 @@ export async function handleSupportRequest(
     }
     return Response.json(result, { headers });
   } catch (error) {
-    if (error instanceof SupportError)
+    if (error instanceof SupportError || error instanceof PortalError)
       return Response.json(
         { message: error.message },
         { status: error.status, headers }

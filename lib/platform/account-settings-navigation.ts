@@ -10,7 +10,9 @@ const confirmationReturns: Record<RecentAuthenticationPurpose, string> = {
   "delete-account": "/platform/settings/data/delete",
   "request-email-change": "/platform/settings/account/email",
   "confirm-email-change": "/platform/settings/account/email",
-  "unlink-google": "/platform/settings/account/methods"
+  "unlink-google": "/platform/settings/account/methods",
+  "manage-admin-authenticator":"/platform/admin/access",
+  "manage-admin-access":"/platform/admin/access"
 };
 export function accountConfirmationReturn(
   purpose: RecentAuthenticationPurpose

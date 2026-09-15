@@ -30,6 +30,9 @@ export type RetentionControlEntry = {
     | "DISCOVERY_PREFERENCES"
     | "NOTIFICATION_PREFERENCES"
     | "AUTHOR_BELL"
+    | "ADMIN_SUPPORT"
+    | "ADMIN_REPORT"
+    | "ADMIN_CLAIM"
     | "APPEAL"
     | "ACCOUNT_STATE"
     | "AUTHOR_WITHDRAW_POST"
@@ -76,6 +79,7 @@ function validate(value: unknown): RetentionControlEntry {
       "DISCOVERY_PREFERENCES",
       "NOTIFICATION_PREFERENCES",
       "AUTHOR_BELL"
+      ,"ADMIN_SUPPORT","ADMIN_REPORT","ADMIN_CLAIM"
     ].includes(r.kind)
       ? r.target === "ACCOUNT" &&
         r.operatorId !== null &&
@@ -160,6 +164,12 @@ export function recordReportControl(
     reviewDueAt: report.reviewDueAt.toISOString(),
     endedAt: report.closedAt?.toISOString() ?? null
   });
+}
+// Opaque privacy versions only: never replicate internal notes, bug reports or
+// credentials into the separately protected recovery journal.
+export function recordAdminPrivacyControl(tx:Tx,source:{sourceType:"SUPPORT"|"REPORT"|"CLAIM";sourceId:string},actorId:string,version:number) {
+  const now=new Date();
+  return record(tx,{id:randomUUID(),kind:`ADMIN_${source.sourceType}`,target:"ACCOUNT",targetId:actorId,sourceId:source.sourceId,version,policy,outcome:"QUARANTINED",operatorId:actorId,recordedAt:now.toISOString(),startedAt:now.toISOString(),reviewDueAt:retentionDate(now,90).toISOString(),endedAt:null});
 }
 // Account recovery controls contain no login contact, report text or reason.
 export function recordAccountRestrictionControl(
@@ -513,6 +523,19 @@ export async function replayRetentionControls(
     async (tx) => {
       await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(730221, 2)`;
       for (const entry of entries) {
+        if (["ADMIN_SUPPORT","ADMIN_REPORT","ADMIN_CLAIM"].includes(entry.kind)) {
+          const table=entry.kind==="ADMIN_SUPPORT"?Prisma.sql`"SupportCase"`:entry.kind==="ADMIN_REPORT"?Prisma.sql`"CommunityReport"`:Prisma.sql`"ChurchClaim"`;
+          const noteKey=entry.kind==="ADMIN_SUPPORT"?Prisma.sql`"supportCaseId"`:entry.kind==="ADMIN_REPORT"?Prisma.sql`"reportId"`:Prisma.sql`"claimId"`;
+          // Clear older internal text. Do not advance the native version: a
+          // missing appeal/review must still fail its independent recovery check.
+          await tx.$executeRaw(Prisma.sql`UPDATE "AdminCaseGroup" SET title='[Removed for privacy.]',"engineeringUrl"='' WHERE id IN (SELECT "adminGroupId" FROM ${table} WHERE id=${entry.sourceId} AND "adminVersion"<${entry.version})`);
+          await tx.$executeRaw(Prisma.sql`UPDATE "AdminCaseNote" SET body='[Removed for privacy.]',"redactedAt"=coalesce("redactedAt",${entry.recordedAt}::timestamp) WHERE ${noteKey} IN (SELECT id FROM ${table} WHERE id=${entry.sourceId} AND "adminVersion"<${entry.version})`);
+          const extra=entry.kind==="ADMIN_SUPPORT"?Prisma.sql`,"bugSteps"='',"bugExpected"='',"bugActual"='',"bugEnvironment"='',"reproducibility"='UNREVIEWED',"engineeringUrl"=''`:Prisma.sql`,"assignedReviewerId"=NULL,"assignedReviewerProof"=NULL`;
+          await tx.$executeRaw(Prisma.sql`UPDATE ${table} SET "adminVersion"=${entry.version},"nextAction"='',"triageTags"=ARRAY[]::text[],"reminderAt"=NULL,"adminGroupId"=NULL ${extra} WHERE id=${entry.sourceId} AND "adminVersion"<${entry.version}`);
+          await record(tx,entry);
+          await tx.retentionControl.updateMany({where:{id:entry.id,journaledAt:null},data:{journaledAt:new Date()}});
+          continue;
+        }
         if (
           entry.kind === "AUTHOR_BELL" ||
           entry.kind === "NOTIFICATION_PREFERENCES"

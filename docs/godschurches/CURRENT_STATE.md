@@ -1,3 +1,35 @@
+## Admin console candidate in progress — September 15, 2026 UTC
+
+The local unified feature candidate adds a permission-scoped worklist over the
+existing support, report and claim sources, private saved filters and internal
+notes, native actions, duplicate groups, scoped assignment, partial bulk results,
+current request counts, operational health and runbooks, exact account lookup and
+separate access/audit duties. It is not released or complete. Production remains
+the discoverability release below, with 57 migrations and no new admin grants.
+Six additive migrations are applied only to the isolated test database (63 total).
+
+New access-grant changes require fresh password or purpose-bound Google proof and
+an unused authenticator code. Enrollment, recovery and backup restoration fail
+closed; this does not establish MFA on every older privileged action. Recovery
+controls redact stale private admin details, and group departure clears shared
+free text and removes empty groups. Restored or renewed reviewer permissions do
+not revive old assignments. The trusted real admin provisioning and existing
+account-restriction owner choice remain distinct operator prerequisites.
+
+The first production preview builds, including hydration/runtime packaging gates.
+The 68-check service pass had 67 successes and one fixture cleanup failure caused
+by an existing support read foreign key; it is corrected through ordinary ungroup
+operations. The latest 43-check admin/topic/Google pass succeeds, including the
+topic appeal inbox and purpose-bound confirmations. Types and focused lint pass.
+Browser checks reach private filters, narrow
+layouts, draft conflict recovery and keyboard return. They identified the disabled-
+Google/password-confirmation issue, now fixed in source; the revised build, native
+support handoff, selection retention, authenticator browser acceptance, full gates,
+protected schema upgrade, deployment and live verification are still in progress.
+No production test writes, privilege changes or real messages were made.
+See [the active contract](ADMIN_OPERATIONS_CONTRACT.md). Continue this feature to
+its release evidence, then the eligible aggregate metrics and feedback work.
+
 ## Public discoverability verified live — September 15, 2026 UTC
 
 **2026.09.15.5 / f292d8058deb52320cecb01d4ffd06edacf7b835** is READY in

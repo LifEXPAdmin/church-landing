@@ -293,6 +293,11 @@ model PlatformUser {
   supportMessages SupportMessage[]
   supportReads SupportRead[]
   supportOperations SupportOperation[]
+  adminSavedViews AdminSavedView[]
+  adminCaseNotes AdminCaseNote[]
+  adminOperations AdminOperation[]
+  adminCaseGroups AdminCaseGroup[]
+  adminAuthenticator AdminAuthenticator?
   following PlatformFollow[]      @relation("following")
   followers PlatformFollow[]      @relation("followers")
 
@@ -463,6 +468,12 @@ enum ChurchCapability {
 }
 
 enum OperatorCapability {
+  VIEW_PLATFORM_METRICS
+  EXPORT_PLATFORM_METRICS
+  VIEW_OPERATIONAL_HEALTH
+  LOOKUP_ACCOUNTS
+  VIEW_ADMIN_AUDIT
+  MANAGE_ADMIN_ACCESS
   ESTABLISH_CHURCH
   REVIEW_CHURCH_LISTINGS
   REVIEW_CHURCH_CLAIMS
@@ -499,6 +510,16 @@ enum CommunityReportStatus {
 
 model CommunityReport {
   id String @id @default(cuid())
+  adminVersion Int @default(0)
+  priority AdminPriority @default(NORMAL)
+  assignedReviewerId String?
+  assignedReviewerProof String?
+  nextAction String @default("")
+  triageTags String[] @default([])
+  reminderAt DateTime?
+  adminGroupId String?
+  adminGroup AdminCaseGroup? @relation(fields: [adminGroupId], references: [id], onDelete: SetNull)
+  internalNotes AdminCaseNote[]
   reporterId String
   targetType CommunityReportTarget
   targetId String
@@ -521,6 +542,8 @@ model CommunityReport {
 
   // A stable reference survives source withdrawal or removal without copying its body.
   @@unique([reporterId, targetType, targetId, targetVersion, contextVersion])
+  @@index([adminGroupId])
+  @@index([assignedReviewerId])
   @@index([reporterId, createdAt, id])
   @@index([scopeChurchId, status, createdAt])
   @@index([scopeTopicId, status, createdAt])
@@ -1005,6 +1028,8 @@ model ChurchCapabilityGrant {
 
 model PlatformOperatorGrant {
   id String @id @default(cuid())
+  version Int @default(1)
+  createdAt DateTime @default(now())
   userId String
   capability OperatorCapability
   revokedAt DateTime?
@@ -1082,6 +1107,20 @@ model SupportIntakeSetting {
 
 model SupportCase {
   id String @id @default(cuid())
+  adminVersion Int @default(0)
+  priority AdminPriority @default(NORMAL)
+  nextAction String @default("")
+  triageTags String[] @default([])
+  reminderAt DateTime?
+  bugSteps String @default("")
+  bugExpected String @default("")
+  bugActual String @default("")
+  bugEnvironment String @default("")
+  reproducibility String @default("UNREVIEWED")
+  engineeringUrl String @default("")
+  adminGroupId String?
+  adminGroup AdminCaseGroup? @relation(fields: [adminGroupId], references: [id], onDelete: SetNull)
+  internalNotes AdminCaseNote[]
   requesterId String
   churchId String?
   category SupportCategory
@@ -1107,6 +1146,7 @@ model SupportCase {
   reads SupportRead[]
   operations SupportOperation[]
   audit SupportAuditEvent[]
+  @@index([adminGroupId])
   @@index([requesterId, updatedAt])
   @@index([ownerGrantId, updatedAt])
   @@index([status, updatedAt])
@@ -1711,6 +1751,16 @@ enum ChurchClaimStatus {
 
 model ChurchClaim {
   id                    String                  @id @default(cuid())
+  priority              AdminPriority           @default(NORMAL)
+  assignedReviewerId    String?
+  assignedReviewerProof String?
+  adminVersion          Int                     @default(0)
+  nextAction            String                  @default("")
+  triageTags            String[]                @default([])
+  reminderAt            DateTime?
+  adminGroupId          String?
+  adminGroup            AdminCaseGroup?         @relation(fields: [adminGroupId], references: [id], onDelete: SetNull)
+  internalNotes         AdminCaseNote[]
   ownerId               String
   requestKey            String
   churchId              String?
@@ -1740,6 +1790,8 @@ model ChurchClaim {
   @@unique([ownerId, requestKey])
   @@index([ownerId, createdAt])
   @@index([status, createdAt])
+  @@index([adminGroupId])
+  @@index([assignedReviewerId])
   @@index([churchId])
 }
 
@@ -1755,6 +1807,97 @@ model ChurchClaimDecision {
   claim     ChurchClaim @relation(fields: [claimId], references: [id], onDelete: Restrict)
 
   @@index([claimId, createdAt])
+}
+
+enum AdminPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+// Only operator-authored metadata. Source bodies and requester conversations
+// stay in their native records. Group membership never grants source access.
+model AdminCaseGroup {
+  id String @id @default(cuid())
+  createdById String
+  title String
+  engineeringUrl String @default("")
+  createdAt DateTime @default(now())
+  createdBy PlatformUser @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  supportCases SupportCase[]
+  reports CommunityReport[]
+  claims ChurchClaim[]
+}
+
+// Each immutable internal note has exactly one native parent (DB CHECK).
+// It is never returned through requester-visible SupportMessage/claim history.
+model AdminCaseNote {
+  id String @id @default(cuid())
+  supportCaseId String?
+  reportId String?
+  claimId String?
+  actorId String
+  body String
+  sourceVersion Int
+  createdAt DateTime @default(now())
+  redactedAt DateTime?
+  supportCase SupportCase? @relation(fields: [supportCaseId], references: [id], onDelete: Cascade)
+  report CommunityReport? @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  claim ChurchClaim? @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  actor PlatformUser @relation(fields: [actorId], references: [id], onDelete: Restrict)
+  @@index([supportCaseId, createdAt, id])
+  @@index([reportId, createdAt, id])
+  @@index([claimId, createdAt, id])
+}
+
+// Private filters only; source authority is re-evaluated on every use.
+model AdminSavedView {
+  id String @id @default(cuid())
+  userId String
+  name String
+  filters Json
+  version Int @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user PlatformUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([userId, name])
+}
+
+// Actor-bound retry and structured audit receipt; never store a password,
+// raw request, case body, private note or verification proof here.
+model AdminOperation {
+  id String @id @default(cuid())
+  actorId String
+  requestKey String
+  fingerprint String
+  action String
+  sourceType String
+  sourceId String
+  version Int
+  targetId String?
+  result Json
+  createdAt DateTime @default(now())
+  actor PlatformUser @relation(fields: [actorId], references: [id], onDelete: Restrict)
+  @@unique([actorId, requestKey])
+  @@index([sourceType, sourceId, createdAt, id])
+  @@index([createdAt, id])
+}
+
+model AdminAuthenticator {
+  userId String @id
+  secretCiphertext String
+  version Int @default(1)
+  credentialVersion Int
+  sessionId String
+  enrollmentRequestKey String
+  confirmationRequestKey String?
+  startedAt DateTime @default(now())
+  confirmedAt DateTime?
+  expiresAt DateTime
+  lastCounter BigInt @default(-1)
+  recoveryHashes String[] @default([])
+  user PlatformUser @relation(fields:[userId],references:[id],onDelete:Cascade)
 }
 
 // Each contribution belongs to one appointment, never its reusable title.

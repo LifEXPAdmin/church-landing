@@ -160,6 +160,28 @@ test("export includes only the owner's explicit fields, directory choices and ow
       description: "Export own support description"
     }
   });
+  await db.adminSavedView.createMany({
+    data: [
+      {
+        userId: a.user.id,
+        name: "My private admin view",
+        filters: { q: "own filter" }
+      },
+      {
+        userId: b.user.id,
+        name: "Excluded other admin view",
+        filters: { q: "other filter" }
+      }
+    ]
+  });
+  await db.adminCaseNote.create({
+    data: {
+      supportCaseId: ownCase.id,
+      actorId: b.user.id,
+      body: "Excluded internal admin note",
+      sourceVersion: 1
+    }
+  });
   const otherCase = await db.supportCase.create({
     data: {
       requesterId: b.user.id,
@@ -246,7 +268,8 @@ test("export includes only the owner's explicit fields, directory choices and ow
   for (const [key, value] of Object.entries(notificationChoices))
     assert.deepEqual(data.socialPreferences[0][key], value, key);
   const exportedBell = data.socialRelationships.find(
-    (row: { targetUserId: string | null }) => row.targetUserId === privateBell.targetUserId
+    (row: { targetUserId: string | null }) =>
+      row.targetUserId === privateBell.targetUserId
   );
   assert.equal(exportedBell.authorBellSince, privateBellAt.toISOString());
   assert.equal(exportedBell.authorBellVersion, 4);
@@ -261,6 +284,9 @@ test("export includes only the owner's explicit fields, directory choices and ow
   assert.equal(data.likes[0].postId, otherPost.id);
   assert.equal(data.following[0].following.username, b.user.username);
   assert.equal(data.churchConnections[0].preference.contactEmail, a.user.email);
+  assert.equal(data.privateAdminViews.length, 1);
+  assert.equal(data.privateAdminViews[0].name, "My private admin view");
+  assert.deepEqual(data.privateAdminViews[0].filters, { q: "own filter" });
   assert.equal(data.supportRequests.length, 1);
   assert.equal(data.supportMessages.length, 1);
   for (const marker of [

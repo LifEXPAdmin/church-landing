@@ -14,38 +14,51 @@ import { recordReportControl } from "./retention-controls";
 import { recordReportActivity } from "./report-activity";
 
 export const CONTENT_RECONSIDERATION_NOTICE = "content-reconsideration-v1";
-type SupportActor = { id: string; eligible: boolean; adult: boolean };
+export type SupportActor = { id: string; eligible: boolean; adult: boolean };
+
+export const supportVisibilityJoins = Prisma.sql`
+    LEFT JOIN "CommunityReportDecision" d ON d.id=s."moderationDecisionId"
+    LEFT JOIN "CommunityReport" r ON r.id=d."reportId"
+    ${reviewReportJoins}`;
 
 // Filter BOTH ordinary requests and report-linked appeals before pagination or
 // selecting subjects/messages. A report grant never opens unrelated support.
+export async function supportVisibilityScope(
+  tx: PostTx,
+  actor: SupportActor,
+  grant: { id: string; version: number } | null,
+  assigned = false
+) {
+  if (!actor.adult) return Prisma.sql`FALSE`;
+  const context = await postContext(tx, actor.eligible ? actor.id : null);
+  const authority = await reportReviewAuthority(tx, context);
+  const ordinaryOwner = grant
+    ? Prisma.sql`s."ownerGrantId" = ${grant.id} AND s."ownerGrantVersion" = ${grant.version}`
+    : Prisma.sql`FALSE`;
+  const ordinary = assigned
+    ? ordinaryOwner
+    : Prisma.sql`s."requesterId" = ${actor.id} OR (${ordinaryOwner}) OR (${actor.eligible} AND EXISTS (SELECT 1 FROM "SupportCoordinatorShare" share JOIN "ChurchContactAssignment" a ON a.id=share."appointmentId" WHERE share."caseId"=s.id AND share."revokedAt" IS NULL AND a."userId"=${actor.id}))`;
+  const author = Prisma.sql`d."authorId" = ${actor.id} AND d."authorChurchId" IS NULL OR ${context.publishers.size ? Prisma.sql`d."authorChurchId" IN (${Prisma.join([...context.publishers])})` : Prisma.sql`FALSE`}`;
+  const reviewer = Prisma.sql`${actor.eligible} AND d."actorId"=${actor.id} AND (${reviewReportScope(authority)})`;
+  const appeal = assigned
+    ? reviewer
+    : Prisma.sql`(${reviewer}) OR (${actor.eligible} AND s."requesterId"=${actor.id} AND (${author}))`;
+  return Prisma.sql`((s."moderationDecisionId" IS NULL AND (${ordinary})) OR
+      (s."moderationDecisionId" IS NOT NULL AND d.action IS NOT NULL AND (${appeal})
+       AND NOT EXISTS (SELECT 1 FROM "RetentionPurge" purge WHERE purge.target='REPORT' AND purge."targetId"=r.id)))`;
+}
+
 export async function visibleSupportIds(
   tx: PostTx,
   actor: SupportActor,
   grant: { id: string; version: number } | null,
   options: { id?: string; page?: number; assigned?: boolean } = {}
 ) {
-  if (!actor.adult) return [];
-  const context = await postContext(tx, actor.eligible ? actor.id : null);
-  const authority = await reportReviewAuthority(tx, context);
-  const ordinaryOwner = grant
-    ? Prisma.sql`s."ownerGrantId" = ${grant.id} AND s."ownerGrantVersion" = ${grant.version}`
-    : Prisma.sql`FALSE`;
-  const ordinary = options.assigned
-    ? ordinaryOwner
-    : Prisma.sql`s."requesterId" = ${actor.id} OR (${ordinaryOwner}) OR (${actor.eligible} AND EXISTS (SELECT 1 FROM "SupportCoordinatorShare" share JOIN "ChurchContactAssignment" a ON a.id=share."appointmentId" WHERE share."caseId"=s.id AND share."revokedAt" IS NULL AND a."userId"=${actor.id}))`;
-  const author = Prisma.sql`d."authorId" = ${actor.id} AND d."authorChurchId" IS NULL OR ${context.publishers.size ? Prisma.sql`d."authorChurchId" IN (${Prisma.join([...context.publishers])})` : Prisma.sql`FALSE`}`;
-  const reviewer = Prisma.sql`${actor.eligible} AND d."actorId"=${actor.id} AND (${reviewReportScope(authority)})`;
-  const appeal = options.assigned
-    ? reviewer
-    : Prisma.sql`(${reviewer}) OR (${actor.eligible} AND s."requesterId"=${actor.id} AND (${author}))`;
+  const scope = await supportVisibilityScope(tx, actor, grant, options.assigned);
   return tx.$queryRaw<{ id: string }[]>(Prisma.sql`
     SELECT s.id FROM "SupportCase" s
-    LEFT JOIN "CommunityReportDecision" d ON d.id=s."moderationDecisionId"
-    LEFT JOIN "CommunityReport" r ON r.id=d."reportId"
-    ${reviewReportJoins}
-    WHERE ((s."moderationDecisionId" IS NULL AND (${ordinary})) OR
-      (s."moderationDecisionId" IS NOT NULL AND d.action IS NOT NULL AND (${appeal})
-       AND NOT EXISTS (SELECT 1 FROM "RetentionPurge" purge WHERE purge.target='REPORT' AND purge."targetId"=r.id)))
+    ${supportVisibilityJoins}
+    WHERE ${scope}
       ${options.id ? Prisma.sql`AND s.id=${options.id}` : Prisma.empty}
     ORDER BY s."updatedAt" DESC, s.id DESC
     OFFSET ${(options.page ?? 0) * 20} LIMIT ${options.id ? 1 : 21}`);

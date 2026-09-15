@@ -35,6 +35,10 @@ import { handleTopicRequest } from "../lib/platform/topic-boundary";
 import { accountConfig } from "../lib/platform/account-config";
 import { SESSION_COOKIE } from "../lib/platform/account-boundary";
 import { safeAccountReturn } from "../lib/platform/account-entry";
+import { readSupport, supportCommand } from "../lib/platform/support";
+import { contentAppealOffer } from "../lib/platform/moderation-support";
+import { readAdminQueue } from "../lib/platform/admin-queue";
+import { readAdminNavigation } from "../lib/platform/admin-authority";
 import { relationshipCommand } from "../lib/platform/relationships";
 
 const db = new PrismaClient();
@@ -430,6 +434,24 @@ test("topic content reports reach only its managers and platform reviewers; topi
     id: report.id
   });
   assert.equal(review.source?.type, "POST");
+  const admin = await readAdminQueue(db, f.owner.token, {
+    type: "REPORT",
+    topicId: f.topic.id
+  });
+  assert.equal(admin.rows.length, 1);
+  assert.equal(admin.rows[0].sourceId, report.id);
+  assert.equal(
+    (await readAdminNavigation(db, f.owner.token)).topics[0].id,
+    f.topic.id
+  );
+  await denied(
+    readAdminQueue(db, outsider.token, { type: "REPORT", topicId: f.topic.id }),
+    404
+  );
+  assert.ok(
+    !JSON.stringify(admin).includes("Fictional selected public source review")
+  );
+
   await denied(
     readCommunityReports(db, outsider.token, { view: "review", id: report.id }),
     404
@@ -445,6 +467,34 @@ test("topic content reports reach only its managers and platform reviewers; topi
   });
   await communityReportCommand(db, f.owner.token, decision);
   assert.equal(await getPost(db, undefined, post.id), null);
+  const savedDecision = await db.communityReportDecision.findFirstOrThrow({
+    where: { reportId: report.id, action: "REMOVE" }
+  });
+  const offered = await db.$transaction((tx) =>
+    contentAppealOffer(tx, f.member.id, savedDecision.id)
+  );
+  const appeal = await supportCommand(db, f.member.token, {
+    operation: "appeal",
+    requestKey: randomUUID(),
+    decisionId: savedDecision.id,
+    decisionVersion: offered.offer.decisionVersion,
+    reportVersion: offered.offer.reportVersion,
+    notice: offered.offer.notice,
+    consent: true,
+    description:
+      "Fictional private topic appeal explaining the original context."
+  });
+  assert.ok(
+    (await readSupport(db, f.owner.token, "inbox")).rows.some(
+      (c) => c.id === appeal.caseId
+    )
+  );
+  assert.ok(
+    (await readAdminQueue(db, f.owner.token, { type: "SUPPORT" })).rows.some(
+      (c) => c.sourceId === appeal.caseId
+    )
+  );
+
   const topicReport = await communityReportCommand(
     db,
     outsider.token,

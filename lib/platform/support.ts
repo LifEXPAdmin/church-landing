@@ -10,7 +10,8 @@ import { readAccountSession } from "./accounts";
 import { ADULT_POLICY } from "./portal-types";
 import { reconcileSupportAccess } from "./support-revocation";
 import { PortalError } from "./portal-policy";
-import { recordAppealControl } from "./retention-controls";
+import { recordAppealControl, recordAdminPrivacyControl } from "./retention-controls";
+import { emptyAdminText, emptyAdminBug, redactAdminCaseNotes } from "./admin-privacy";
 import { postContext } from "./post-access";
 import { reportReviewAuthority } from "./community-report-review";
 import { reportReviewHref } from "./community-report-types";
@@ -361,7 +362,7 @@ export async function readSupport(
       await postContext(tx, verified(actor) ? actor.id : null)
     );
     const reportReviewer =
-      reportAuthority.global || !!reportAuthority.churches.length;
+      reportAuthority.global || !!reportAuthority.churches.length || !!reportAuthority.topics.length;
     const recipientGrant =
       view === "new" && adult(actor)
         ? await intake(
@@ -845,7 +846,7 @@ export async function supportCommand(
         kind = "RESOLUTION";
       }
     } else if (op === "reopen") {
-      if (!rights.requester) throw denied();
+      if (!rights.requester && !rights.owner) throw denied();
       if (open) throw new SupportError(409, "This request is already open.");
       body = text(input.reason, 1000, 3);
       if (c.moderationDecisionId) {
@@ -945,6 +946,10 @@ export async function supportCommand(
         data.subject = "Content removed for privacy";
         data.description = marker;
         data.resolution = null;
+        Object.assign(data,emptyAdminText,emptyAdminBug,{adminVersion:{increment:1}});
+        const admin=await tx.supportCase.findUniqueOrThrow({where:{id:c.id},select:{adminGroupId:true}});
+        if(admin.adminGroupId) await tx.adminCaseGroup.update({where:{id:admin.adminGroupId},data:{title:marker,engineeringUrl:""}});
+        await redactAdminCaseNotes(tx,{supportCaseId:c.id});
         await tx.supportMessage.updateMany({
           where: { caseId: c.id },
           data: { body: marker, redactedAt: new Date() }
@@ -955,8 +960,9 @@ export async function supportCommand(
     const next = await tx.supportCase.update({
       where: { id: c.id },
       data,
-      select: { id: true, version: true, ownerGrantId: true }
+      select: { id: true, version: true, ownerGrantId: true,adminVersion:true }
     });
+    if(op==="redact"&&!input.messageId) await recordAdminPrivacyControl(tx,{sourceType:"SUPPORT",sourceId:c.id},actor.id,next.adminVersion);
     if (body)
       await tx.supportMessage.create({
         data: {

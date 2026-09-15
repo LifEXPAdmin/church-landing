@@ -136,6 +136,30 @@ async function requireReview(tx: Tx, userId: string, claim: ChurchClaim) {
       "An independent reviewer with the required church permissions must handle this request."
     );
 }
+
+// Shared by the native review queue and the admin projection. Filter each
+// church's exact held capability set before selecting private claim fields.
+export function claimReviewWhere(
+  userId: string,
+  operator: boolean,
+  grants: Awaited<ReturnType<typeof effectiveChurchGrants>>,
+  churchId?: string
+): Prisma.ChurchClaimWhereInput {
+  const managed = [...new Set(grants.filter(g => g.capability === "MANAGE_CHURCH_ACCESS").map(g => g.churchId))];
+  return {
+    submittedAt: { not: null },
+    status: { notIn: ["DRAFT", "WITHDRAWN"] },
+    ownerId: { not: userId },
+    ...(churchId ? { churchId } : {}),
+    ...(!operator ? {
+      OR: managed.map(id => ({
+        churchId: id,
+        kind: "ACCESS",
+        NOT: { scopes: { hasSome: Object.keys(claimScopes).filter(scope => !grants.some(g => g.churchId === id && g.capability === scope)) as ClaimScope[] } }
+      }))
+    } : {})
+  };
+}
 async function reviewAvailable(tx: Tx, claim: ChurchClaim) {
   const operators = await tx.platformOperatorGrant.count({
     where: {
@@ -298,29 +322,7 @@ export async function getChurchClaims(
       : queueReady
         ? await tx.churchClaim.findMany({
             where: options.review
-              ? {
-                  submittedAt: { not: null },
-                  status: { notIn: ["DRAFT", "WITHDRAWN"] },
-                  ownerId: { not: actor.id },
-                  ...(options.churchId ? { churchId: options.churchId } : {}),
-                  ...(!operator
-                    ? {
-                        kind: "ACCESS",
-                        NOT: {
-                          scopes: {
-                            hasSome: Object.keys(claimScopes).filter(
-                              (scope) =>
-                                !grants.some(
-                                  (grant) =>
-                                    grant.churchId === options.churchId &&
-                                    grant.capability === scope
-                                )
-                            ) as ClaimScope[]
-                          }
-                        }
-                      }
-                    : {})
-                }
+              ? claimReviewWhere(actor.id, operator, grants, options.churchId)
               : { ownerId: actor.id },
             select: ownSelect,
             orderBy: [{ createdAt: "desc" }, { id: "desc" }],

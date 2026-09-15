@@ -264,7 +264,9 @@ const confirmationActions: Record<RecentAuthenticationPurpose, string> = {
   "delete-account": "permanently deleting your account",
   "request-email-change": "requesting an email change",
   "confirm-email-change": "changing your sign-in email",
-  "unlink-google": "disconnecting Google"
+  "unlink-google": "disconnecting Google",
+  "manage-admin-authenticator":"your admin authenticator",
+  "manage-admin-access":"an admin access change"
 };
 export function AccountConfirmation({
   value,
