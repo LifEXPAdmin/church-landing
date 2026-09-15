@@ -159,3 +159,31 @@ All 56 current migration checksums match, only the additive onboarding migration
 is pending, and thirty original-column production fingerprints were captured
 before release. Exact deployment, new-field defaults, installed recovery registry,
 live behavior and after-read fingerprints are the remaining release steps.
+
+## First deployed acceptance and Help correction
+
+The initial onboarding deployment `3d0ff9541734f5af86719465704e49d1db833d37`
+(`dpl_3LMrD36j4cD71nwhuuT7vVygg78B`, version `2026.09.15.4`) was READY and
+independently canonical at 12:30:31 UTC. Twenty-one public checks and four health
+checks passed. Actual signed-in reads confirmed the owned guide, existing private
+representative draft and denial of ungranted church-host details. The member Help
+read then exposed a missing saved-guide link: guest Help had it, member Help did
+not. Feature completion was withheld and this omission was repaired in the same
+cycle, including public Help and regression coverage of all three entry points.
+
+Migration 57 was applied successfully; all 57 checksums match with none pending.
+The installed recovery registry now includes it. A 57→57 installed restore covers
+102 tables; this normal restore is distinct from the earlier protected upgrade
+replay. Nightly recovery verifies 46 encrypted sets without issues or removals.
+Thirty original-column production fingerprints remain unchanged, no ranking
+snapshot was created, and all new hint/welcome/tag/host-grant counts remain zero.
+There were zero test user-data writes or outbound sends. No runtime error rows
+were returned. These first-deployment receipts are preserved separately from the
+corrected deployment; the failed Help acceptance is not counted as a pass.
+
+The Help correction `0a59c38` passes its production build, types, scoped lint and
+four actual HTTPS groups, including public, guest and signed-in Help HTML. All
+nine final production-browser groups pass, with zero runtime errors, including
+actual Help-to-guide navigation and both owned draft returns. The full gate was
+not repeated for this small documented Help delta. Corrected canonical release
+acceptance remains pending at this checkpoint.
