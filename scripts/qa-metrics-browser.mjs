@@ -437,6 +437,8 @@ try {
   await page
     .getByRole("button", { name: "Retry unconfirmed change", exact: true })
     .waitFor();
+  await eventually(async () => abortedBody !== null);
+  await page.getByText(/You can retry the same change/).waitFor();
   await page.unroute("**/api/platform/measurement");
   const retried = page.waitForRequest(
     (r) =>
