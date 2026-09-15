@@ -39,9 +39,11 @@ restructuring was tested and reverted after reproduction.
 Five installer tests cover clean/cached installs, syntax, unknown versions,
 unexpected renderer bytes, and altered cached patches. Thirty controller/display
 tests cover existing recovery and stable private-data-free server snapshots.
-Browser acceptance must include repeated streamed reloads, all feed choices,
-appearance controls, private draft/comment/photo recovery, current account changes
-and the previously affected profile/navigation paths. The complete production
-gate and exact canonical release/live evidence remain required. Private edited
-asset probes are diagnostic evidence only; accepted builds must come from the
-checked source and verified installer.
+Final browser acceptance passes 97 groups across thirteen suites, including twelve
+streamed reloads, all feed choices, appearance controls, private draft/comment/photo
+recovery, current account changes and the previously affected profile/navigation
+paths. The uninterrupted complete gate passes 140 files / 869 checks with two
+expected disabled skips and no failures or cancellations. All accepted builds
+come from source and the verified installer, with no diagnostic instrumentation.
+Exact canonical release/live evidence remains required. Private edited-asset
+probes are diagnostic evidence only.

@@ -39,7 +39,7 @@ backport described in [the hydration report](HYDRATION_REPAIR.md).
 | --- | --- |
 | Discovery foundations | 52 passes, including independent recovery, withdrawal and erasure; populated upgrade and dump/restore pass |
 | Earlier complete discovery gates | Three 139-file gates pass, each 864 executions / 862 passes / two expected disabled skips / zero failures or cancellations |
-| Current complete release gate | Running against the candidate and isolated, patched dependency copy; not yet accepted |
+| Current complete release gate | Candidate passes all 140 discovered files: 871 executions / 869 passes / two expected disabled skips / zero failures or cancellations |
 | Built-browser acceptance | 13 suites / 97 groups pass, zero browser errors, no diagnostic instrumentation |
 | Streamed reload regression | Twelve Public reloads preserve one interactive shell, appearance and canonical posts at 320, 390 and 1,280 pixels |
 | Related browser coverage | Discovery/classification, old four feeds and cold-load selection, composer, draft library, comment reader/retry, retained privacy, photo recovery, profile pin, settings/display and topics |
@@ -51,6 +51,8 @@ backport described in [the hydration report](HYDRATION_REPAIR.md).
 Browser fixtures use fictional accounts and isolated PostgreSQL over verified
 local HTTPS. Email and phone delivery are disabled. These checks do not establish
 physical-phone installation, locked-screen delivery, or actual operator coverage.
+The uninterrupted full gate uses PostgreSQL 16.15; the final production-build
+browser fixtures and protected production-copy restore use PostgreSQL 17.11.
 
 ## Resource evidence
 
@@ -79,7 +81,7 @@ These results do not satisfy the separate 100-client hosting target.
 
 ## Release evidence still required
 
-Complete the current gate, then use the authorized Git publication process.
+The current gate is complete. Use the authorized Git publication process.
 Verify the exact READY deployment, canonical assignment and serving SHA/version.
 Check all 55 migration names and checksums, installed recovery registry, ordinary
 installed restore, nightly recovery health, public and authenticated live behavior,

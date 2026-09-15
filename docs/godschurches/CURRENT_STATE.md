@@ -1,38 +1,26 @@
-## Discovery feature implementation checkpoint — September 15, 2026 UTC
+## Discovery release gate accepted — September 15, 2026 UTC
 
-The discovery feature is in progress locally and has not been released. The current
-production receipt remains the topic-community release below. The feature adds
-explicit discovery selections, private preferences and presets, truthful ranking
-reasons, hidden controls, and consent-based public post classification to the
-existing reader. Following remains distinct from accepted Friends.
+The discovery candidate **2026.09.15.1 / 3c731b615a2829e459e6cad74d203da430968bc3**
+is ready for the authorized publication process. Production remains the verified
+topic release below until exact deployment, canonical assignment and live checks
+complete. The final uninterrupted gate passes all 140 discovered files: 871
+executions, 869 passes, two expected disabled skips and no failures/cancellations.
+All 13 final production-build browser suites pass their 97 groups without browser
+errors. Types pass and lint has zero errors / 35 existing warnings.
 
-The initial expanded foundation run passed 48 tests and a populated migration /
-dump / restore check with zero production writes. Additional HTTP, sparse Local,
-export and follow-change checks have been added for the production-build gate.
-The later foundation run passed 52 tests including independent classification
-recovery clocks, withdrawal and erasure cleanup. The first full gate stopped on
-an isolated dependency-copy layout error; its passing partial checks do not
-constitute a full gate. Subsequent full gates for the implementation and compressed
-catalog passed all 139 discovered files: 864 executions, 862 passes and two expected
-disabled skips, with zero failures/cancellations. Production-build browsers cover
-exact retry, account switch, standalone settings, finite pagination, consent and
-320-pixel larger-text checks. A later shared-shell hydration failure remains a
-release gate: diagnostics identified the bundled renderer's interrupted host replay
-defect, with its cursor still inside the same shell on retry. A footer-only change
-passed one complete eleven-group journey but failed a subsequent run and was reverted.
-The current candidate backports React's upstream host-replay fix into the exact
-Next 15.5.25 renderer, with whole-file checksum verification and no error suppression.
-Sixteen private mechanism probes pass; these edited-asset diagnostics are not release
-acceptance. Five install/integrity tests and thirty controller/display tests pass.
-Final source builds, regressions and release evidence remain pending. See
-[the renderer repair](HYDRATION_REPAIR.md).
-The public town shards are compressed from 4,711,979 to 1,355,796 bytes with exact
-decoded hashes preserved. The encrypted production-copy 54→55 upgrade and protected
-restore preserve all original columns across 100 tables with zero production writes.
-Migration 55 remains local. Final browser regressions, the complete release gate,
-exact deployment / canonical assignment and live behavior are still required.
-See [the discovery contract](DISCOVERY_FEEDS_CONTRACT.md). Physical-phone
-acceptance remains separately evidenced; the unified queue final review stays last.
+The feature adds seven explicit discovery modes, private filters and presets,
+truthful explanations and feedback, optional author-selected post classification,
+consent-based coarse locality and protected recovery. The reproduced shared-shell
+hydration defect is repaired with the checksum-verified upstream renderer backport;
+failed preliminary workarounds remain recorded in the repair report. The catalog
+compresses from 4,711,979 to 1,355,796 bytes with exact decoded hashes preserved.
+Protected production-copy upgrade 54→55 preserves all original columns across
+100 tables and completes protected restore with zero production writes.
+
+Migration 55 and live acceptance remain pending. Preserve physical-phone and
+actual operator/provider criteria and keep final review last. See
+[discovery acceptance](DISCOVERY_FEEDS_ACCEPTANCE.md),
+[the contract](DISCOVERY_FEEDS_CONTRACT.md) and [the renderer repair](HYDRATION_REPAIR.md).
 
 ## Topic communities verified live — September 15, 2026 UTC
 
