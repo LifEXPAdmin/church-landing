@@ -10,6 +10,7 @@ import {
 import { socialRequest, SocialClientError } from "@/lib/platform/social-client";
 import { useUnsavedSocialWork } from "./use-unsaved-social-work";
 import { usePrivateRecovery } from "./private-snapshot-guard";
+import { settlePhotoNavigation } from "./use-photo-back-guard";
 export type SupportField = {
   name: string;
   label: string;
@@ -33,7 +34,9 @@ export function SupportForm({
   readFields,
   onDiscard,
   createdBase = "/platform/help/cases",
-  available = true
+  available = true,
+  additionalWork,
+  onConfirmed
 }: {
   owner: string;
   operation: string;
@@ -49,6 +52,8 @@ export function SupportForm({
   onDiscard?: () => void;
   createdBase?: string;
   available?: boolean;
+  additionalWork?: { dirty: boolean; saving: boolean };
+  onConfirmed?: () => void;
 }) {
   const id = useId();
   const initialFixed = useRef(fixed);
@@ -66,7 +71,7 @@ export function SupportForm({
   const retryOriginal = useCallback(() => formRef.current?.requestSubmit(), []);
   usePrivateRecovery(id, !!retryBody, busy, retryOriginal);
   useUnsavedSocialWork(
-    { dirty, saving: busy || !!retryBody, conflict: false },
+    { dirty: dirty || !!additionalWork?.dirty, saving: busy || !!retryBody || !!additionalWork?.saving, conflict: false },
     () =>
       setFeedback("Save, retry or discard these local entries before leaving."),
     true
@@ -82,7 +87,9 @@ export function SupportForm({
       setSourceChanged(true);
   }, [fixed, dirty, retryBody, onRefresh]);
   useEffect(() => {
-    if (navigation) window.location.assign(navigation);
+    let active = true;
+    if (navigation) void settlePhotoNavigation().then(() => { if (active) window.location.assign(navigation); });
+    return () => { active = false; };
   }, [navigation]);
   useEffect(() => {
     if (feedback && !busy) feedbackRef.current?.focus();
@@ -153,6 +160,7 @@ export function SupportForm({
           setFeedback(result.message);
           setRetryBody(null);
           setDirty(false);
+          onConfirmed?.();
           form.reset();
           if (["create", "appeal", "feedback-create"].includes(operation))
             setNavigation(
@@ -186,7 +194,7 @@ export function SupportForm({
         }
       }}
     >
-      <fieldset disabled={busy || !!retryBody} className="space-y-4">
+      <fieldset disabled={busy || !!retryBody} className="min-w-0 space-y-4">
         {children}
         {fields.map((f) => (
           <div key={f.name}>

@@ -43,6 +43,8 @@ import {
   readContentNotices
 } from "./content-moderation";
 import { contentAppealOffer } from "./moderation-support";
+import { readableFeedbackImage } from "./feedback-image-access";
+import { projectImage } from "./media";
 
 type Target = {
   type: CommunityReportTarget;
@@ -91,6 +93,14 @@ async function targetIn(
 ): Promise<Target | null> {
   const type = targetType(kind),
     id = postId(value);
+  if (type === "FEEDBACK_ATTACHMENT") {
+    const asset = await tx.mediaAsset.findFirst({ where: { id, purpose: "SUPPORT_ATTACHMENT", status: "READY", feedbackCaseId: { not: null } } });
+    if (!asset) return null;
+    try { await readableFeedbackImage(tx, context.actorId, asset); }
+    catch (error) { if (error instanceof PortalError && [401,404].includes(error.status)) return null; throw error; }
+    return { type, id, version: asset.version, contextVersion: 0, scopeChurchId: null,
+      source: { label: "Selected private feedback attachment", href: `/platform/help/cases/${encodeURIComponent(asset.feedbackCaseId!)}` } };
+  }
   if (type === "MESSAGE") {
     const row = await tx.adultMessage.findFirst({
       where: {
@@ -542,6 +552,17 @@ export function readCommunityReports(
           releasedAt: true
         }
       });
+      let selectedAttachment;
+      if (report.targetType === "FEEDBACK_ATTACHMENT") {
+        const asset = await tx.mediaAsset.findFirst({ where: { id: report.targetId, purpose: "SUPPORT_ATTACHMENT", status: "READY", feedbackCaseId: { not: null } } });
+        if (asset) {
+          try {
+            // Report authority never grants private case or attachment access.
+            await readableFeedbackImage(tx, ownerId, asset);
+            selectedAttachment = { type: "FEEDBACK_ATTACHMENT" as const, attachment: projectImage(asset), version: asset.version, createdAt: asset.createdAt };
+          } catch (error) { if (!(error instanceof PortalError && [401,404].includes(error.status))) throw error; }
+        }
+      }
       const selectedRequest =
         report.targetType === "CONTACT_REQUEST"
           ? await tx.adultContactRequest.findUnique({
@@ -621,7 +642,7 @@ export function readCommunityReports(
         holds,
         reviewDueAt: report.reviewDueAt.toISOString(),
         closedAt: report.closedAt?.toISOString() ?? null,
-        evidence: selectedRequest
+        evidence: selectedAttachment ?? (selectedRequest
           ? { type: "CONTACT_REQUEST" as const, ...selectedRequest }
           : selectedMessage
             ? { type: "MESSAGE" as const, ...selectedMessage }
@@ -633,7 +654,7 @@ export function readCommunityReports(
                       : ("COMMENT" as const),
                   ...selectedText
                 }
-              : undefined,
+              : undefined),
         reportedVersion: report.targetVersion,
         source: contentSourceView(source),
         reconsiderationCases

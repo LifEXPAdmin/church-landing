@@ -106,7 +106,7 @@ export async function handleSupportRequest(
         "Too many attempts. Wait 15 minutes before trying again."
       );
     const result = await supportCommand(db, token, body);
-    if(body.operation==="redact") await protectAdminCaseChanges(db,[result.caseId]);
+    if(body.operation==="redact" || body.operation==="feedback-remove-attachment") await protectAdminCaseChanges(db,[result.caseId]);
     const linked = await db.supportCase.findUnique({
       where: { id: result.caseId },
       select: { moderationDecision: { select: { reportId: true } } }

@@ -142,6 +142,8 @@ export async function handleImageRequest(
     } catch {
       throw new PortalError(400, "Check the image details and try again.");
     }
+    if (input.purpose === "SUPPORT_ATTACHMENT" && !expectedAccount)
+      throw new PortalError(400, "Reload your feedback before uploading a private attachment.");
     const length = request.headers.get("content-length");
     if (
       length !== null &&
@@ -182,10 +184,11 @@ export async function handleImageDelivery(
   request: Request,
   id: string,
   variant: string,
-  injectedStore?: ImageStorage
+  injectedStore?: ImageStorage,
+  reader = readImage
 ) {
   try {
-    const bytes = await readImage(
+    const bytes = await reader(
       db,
       requestSessionToken(request),
       id,

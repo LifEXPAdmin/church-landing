@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { FeedbackAttachmentImages } from "./feedback-attachment-images";
 import type {
   SupportSnapshot,
   SupportView
@@ -269,6 +270,7 @@ export function SupportViews({
             </p>
           )}
           <SupportConversation detail={c} />
+          <FeedbackAttachmentImages owner={s.viewer.id} detail={c} onRefresh={onRefresh}/>
           <Pagination
             page={c.messagePage}
             more={c.moreMessages}

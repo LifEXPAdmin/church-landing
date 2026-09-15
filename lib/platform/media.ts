@@ -1,3 +1,6 @@
+import { garbage, retireImage } from "./media-lifecycle";
+export { retireImage } from "./media-lifecycle";
+import { FEEDBACK_ATTACHMENT_LIMIT, FEEDBACK_UPLOAD_LIFETIME } from "./feedback-image-access";
 import { createHash, randomUUID } from "node:crypto";
 import { setTimeout as delay } from "node:timers/promises";
 import type { MediaAsset, Prisma, PrismaClient } from "@prisma/client";
@@ -45,7 +48,9 @@ const targetOf = (a: ImageTarget) => ({
   purpose: a.purpose,
   profileUserId: a.profileUserId,
   churchId: a.churchId,
-  postId: a.postId
+  postId: a.postId,
+  feedbackOwnerId: a.feedbackOwnerId ?? null,
+  feedbackCaseId: a.feedbackCaseId ?? null
 });
 export function projectImage(asset: MediaAsset) {
   const manifest = asset.variants as ImageManifest;
@@ -60,7 +65,7 @@ export function projectImage(asset: MediaAsset) {
     variants: Object.fromEntries(
       IMAGE_VARIANTS.map((v) => [
         v,
-        { ...manifest[v], url: `/api/platform/images/${asset.id}/${v}` }
+        { ...manifest[v], url: asset.purpose === "SUPPORT_ATTACHMENT" ? `/api/platform/feedback/attachments/${asset.id}/${v}` : `/api/platform/images/${asset.id}/${v}` }
       ])
     ) as Record<
       string,
@@ -69,31 +74,6 @@ export function projectImage(asset: MediaAsset) {
   };
 }
 export type ImageView = ReturnType<typeof projectImage>;
-async function garbage(tx: PostTx, prefix: string) {
-  await tx.mediaGarbage.upsert({
-    where: { storagePrefix: prefix },
-    create: { storagePrefix: prefix, dueAt: new Date(Date.now() + 24 * HOUR) },
-    update: {}
-  });
-}
-export async function retireImage(tx: PostTx, asset: MediaAsset) {
-  // Album writes share the lifecycle lock. Removing a source never silently
-  // destroys another owned collection, even when album controls are disabled.
-  if (await tx.photoAlbumEntry.count({ where: { assetId: asset.id } }))
-    throw new PortalError(
-      409,
-      "This photo is used by an album. Remove it from your albums before deleting the photo."
-    );
-  await tx.mediaAsset.update({
-    where: { id: asset.id },
-    data: { status: "RETIRED", version: { increment: 1 } }
-  });
-  await tx.personalPhoto.updateMany({
-    where: { assetId: asset.id, deletedAt: null },
-    data: { deletedAt: new Date(), version: { increment: 1 } }
-  });
-  await garbage(tx, asset.storagePrefix);
-}
 function mutation<T>(
   db: PrismaClient,
   token: unknown,
@@ -180,7 +160,8 @@ export async function uploadImage(
   const privacy = direct
     ? directPhotoAudience(input.audience, input.audienceChurchId)
     : undefined;
-  const single = !target.postId && !direct;
+  const attachment = target.purpose === "SUPPORT_ATTACHMENT";
+  const single = !target.postId && !direct && !attachment;
   const currentTarget = {
     ...target,
     ...(profilePicture(target.purpose) ? { isCurrent: true } : {})
@@ -197,7 +178,7 @@ export async function uploadImage(
   if (!/^[a-f0-9-]{36}$/.test(requestKey))
     throw new PortalError(400, "Use a new image request reference.");
   const replacesId = input.replacesId ? postId(input.replacesId) : null;
-  if (direct && replacesId)
+  if ((direct || attachment) && replacesId)
     throw new PortalError(
       400,
       "Save a separate photo or change its details in Photos."
@@ -225,6 +206,8 @@ export async function uploadImage(
       where: { uploaderId_requestKey: { uploaderId: actorId, requestKey } }
     });
     if (previous) {
+      if (attachment && previous.createdAt.getTime() + FEEDBACK_UPLOAD_LIFETIME <= Date.now())
+        throw new PortalError(409, "This unsent attachment expired. Choose the image again for a new upload.");
       if (previous.fingerprint !== fingerprint)
         throw new PortalError(
           409,
@@ -279,7 +262,7 @@ export async function uploadImage(
       : 0;
     if (
       occupied + references >=
-      (direct ? 1000 : target.postId ? 10 : 1) + (old ? 1 : 0)
+      (direct ? 1000 : attachment ? FEEDBACK_ATTACHMENT_LIMIT : target.postId ? 10 : 1) + (old ? 1 : 0)
     )
       throw new PortalError(
         409,
@@ -427,7 +410,7 @@ export async function uploadImage(
         }
       });
       await associatePersonalPhoto(tx, ready, privacy);
-      await tx.mediaGarbage.delete({
+      if (!attachment) await tx.mediaGarbage.delete({
         where: { storagePrefix: asset.storagePrefix }
       });
       if (target.postId)
@@ -474,6 +457,7 @@ export function removeImage(
   return mutation(db, token, async (tx, actorId) => {
     const asset = await tx.mediaAsset.findUnique({ where: { id: postId(id) } });
     if (!asset) throw new PortalError(404, "Image unavailable.");
+    if (asset.purpose === "SUPPORT_ATTACHMENT") throw new PortalError(400, "Remove private attachments from your feedback controls.");
     await writableImageTarget(
       tx,
       await postContext(tx, actorId),
@@ -540,6 +524,9 @@ export async function readImage(
       if (!asset) throw new PortalError(404, "Image unavailable.");
       return asset;
     });
+  return readCheckedImage(check, variant, store, signal);
+}
+export async function readCheckedImage(check: () => Promise<MediaAsset>, variant: ReturnType<typeof imageVariant>, store: ImageStorage, signal: AbortSignal) {
   const before = await check();
   const bytes = await store.get(
     before.storagePrefix + "/" + variant + ".webp",
@@ -609,6 +596,10 @@ export async function collectImageGarbage(
         const row = await tx.mediaAsset.findUnique({
           where: { storagePrefix: candidate.storagePrefix }
         });
+        if (row?.status === "READY" && row.purpose === "SUPPORT_ATTACHMENT" && !row.feedbackCaseId && row.createdAt.getTime() + FEEDBACK_UPLOAD_LIFETIME <= now.getTime()) {
+          await retireImage(tx, row);
+          return true;
+        }
         if (row?.status === "READY") {
           // A lost commit acknowledgement can recreate the upload ledger after
           // the photo became ready. Release that obsolete slot, not its files,

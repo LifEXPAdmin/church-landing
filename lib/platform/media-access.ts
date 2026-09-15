@@ -9,11 +9,12 @@ import { postId } from "./post-input";
 import { hasChurchCapability } from "./portal";
 import { PortalError } from "./portal-policy";
 import { socialUserWhere } from "./social-policy";
+import { writableFeedbackImage } from "./feedback-image-access";
 
 export type ImageTarget = Pick<
   MediaAsset,
   "purpose" | "profileUserId" | "churchId" | "postId"
->;
+> & Partial<Pick<MediaAsset, "feedbackOwnerId" | "feedbackCaseId">>;
 export function imageTarget(purpose: unknown, targetId: unknown): ImageTarget {
   if (!Object.values(MediaPurpose).includes(purpose as MediaPurpose))
     throw new PortalError(400, "Choose a supported image destination.");
@@ -23,7 +24,9 @@ export function imageTarget(purpose: unknown, targetId: unknown): ImageTarget {
     purpose: p,
     profileUserId: p.startsWith("PROFILE_") ? id : null,
     churchId: p.startsWith("CHURCH_") ? id : null,
-    postId: p === "POST_PHOTO" ? id : null
+    postId: p === "POST_PHOTO" ? id : null,
+    feedbackOwnerId: p === "SUPPORT_ATTACHMENT" ? id : null,
+    feedbackCaseId: null
   };
 }
 export async function readableImageTarget(
@@ -62,6 +65,10 @@ export async function writableImageTarget(
   target: ImageTarget
 ) {
   if (!context.actorId) throw new PortalError(401, "Sign in to manage images.");
+  if (target.purpose === "SUPPORT_ATTACHMENT") {
+    await writableFeedbackImage(tx, context.actorId, target.feedbackOwnerId, target.feedbackCaseId);
+    return;
+  }
   await readableImageTarget(tx, context, target);
   if (target.profileUserId === context.actorId) return;
   if (target.churchId && context.churches.includes(target.churchId)) {

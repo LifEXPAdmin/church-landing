@@ -150,7 +150,7 @@ export async function expireRetentionReceipts(
       })
     )
       continue;
-    if (row.target === "ACCOUNT") continue; // Account erasure has its own journal owner.
+    if (row.target !== "REPORT" && row.target !== "MESSAGE") continue; // Other targets have dedicated lifecycle owners.
     const record: PurgeRecord = {
       target: row.target,
       id: row.targetId,

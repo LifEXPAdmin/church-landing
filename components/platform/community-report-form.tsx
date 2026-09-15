@@ -200,6 +200,7 @@ export function CommunityReportForm({
         Reports are private. Your identity is not shown to the reported person
         or the community. Share only the context needed for review.
       </p>
+      {type === "FEEDBACK_ATTACHMENT" && <p className="text-sm">This reports the selected image and the details you choose to write. It does not share the feedback conversation. The image still requires current private case access; a report reviewer does not receive that access automatically.</p>}
       <p role="status" aria-live="polite">
         {message}
       </p>

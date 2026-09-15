@@ -1,4 +1,8 @@
+import { supportRecipientSelect as grantSelect, supportRecipient as recipient, defaultSupportRecipient } from "./support-recipient";
 import { createHmac } from "node:crypto";
+import { attachFeedbackImages, feedbackAttachmentIds, retireFeedbackImages } from "./feedback-image-lifecycle";
+import { projectImage } from "./media";
+import { retireImage } from "./media-lifecycle";
 import { accountConfig } from "./account-config";
 import {
   Prisma,
@@ -13,7 +17,8 @@ import { PortalError } from "./portal-policy";
 import {
   recordAppealControl,
   recordAdminPrivacyControl,
-  recordSupportMessagePrivacyControl
+  recordSupportMessagePrivacyControl,
+  recordSupportAttachmentPrivacyControl
 } from "./retention-controls";
 import {
   emptyAdminText,
@@ -73,15 +78,6 @@ const eligible = {
   adultAcknowledgedAt: { not: null },
   adultPolicyVersion: ADULT_POLICY
 } as const;
-const grantSelect = {
-  id: true,
-  version: true,
-  userId: true,
-  user: { select: person }
-} as const;
-type Grant = Prisma.SupportCapabilityGrantGetPayload<{
-  select: typeof grantSelect;
-}>;
 const metadataSelect = {
   id: true,
   requesterId: true,
@@ -199,18 +195,6 @@ async function staffGrant(
       })
     : null;
 }
-async function recipient(tx: Tx, grantId: unknown): Promise<Grant | null> {
-  if (typeof grantId !== "string") return null;
-  return tx.supportCapabilityGrant.findFirst({
-    where: {
-      id: grantId,
-      capability: "RESPOND",
-      revokedAt: null,
-      user: eligible
-    },
-    select: grantSelect
-  });
-}
 async function ownerChoices(tx: Tx, excludeIds: string[] = []) {
   const grants = await tx.supportCapabilityGrant.findMany({
     where: {
@@ -245,13 +229,7 @@ async function context(tx: Tx, actor: Actor, churchId: string | null) {
 }
 async function intake(tx: Tx, actor: Actor, churchId: string | null) {
   const membership = await context(tx, actor, churchId);
-  const config =
-    process.env.SUPPORT_INTAKE_ENABLED === "true"
-      ? await tx.supportIntakeSetting.findUnique({ where: { id: "default" } })
-      : null;
-  if (!config?.enabled || config.approvedNoticeVersion !== SUPPORT_NOTICE)
-    return null;
-  const defaultOwner = await recipient(tx, config.ownerGrantId);
+  const defaultOwner = await defaultSupportRecipient(tx);
   if (!defaultOwner) return null;
   // A private contact may be a hint only for an already approved member, never pending intake.
   if (membership?.state === "APPROVED" && churchId) {
@@ -522,6 +500,7 @@ export async function readSupport(
         featureDecision: true,
         feedback: {
           select: {
+            attachments: { where: { status: "READY" }, orderBy: [{ position: "asc" }, { id: "asc" }], take: 4 },
             kind: true,
             notice: true,
             rating: true,
@@ -566,6 +545,7 @@ export async function readSupport(
       }
     });
     if (!c) throw denied();
+    if ((c.feedback?.attachments.length ?? 0) > 3) throw new SupportError(503, "This feedback attachment list needs review.");
     const rights = await access(tx, actor, c);
     const appealOwner = c.moderationDecision
       ? await activeContentReviewer(tx, c.moderationDecision)
@@ -586,6 +566,7 @@ export async function readSupport(
       feedback: c.feedback
         ? {
             ...c.feedback,
+            attachments: c.feedback.redactedAt ? [] : c.feedback.attachments.map(projectImage),
             redactedAt: c.feedback.redactedAt?.toISOString() ?? null
           }
         : null,
@@ -626,6 +607,7 @@ export async function readSupport(
 const operationFields: Record<string, string[]> = {
   "feedback-create": feedbackCreateFields,
   "feedback-choices": [...feedbackChoiceFields, "feedbackVersion"],
+  "feedback-remove-attachment": ["assetId", "assetVersion"],
   appeal: [
     "decisionId",
     "decisionVersion",
@@ -821,6 +803,7 @@ export async function supportCommand(
         await tx.feedbackSubmission.create({
           data: { caseId: c.id, ...feedback.metadata }
         });
+      if (feedback) await attachFeedbackImages(tx, actor.id, c.id, feedbackAttachmentIds(input.attachments));
       await tx.supportAuditEvent.create({
         data: {
           caseId: c.id,
@@ -916,6 +899,13 @@ export async function supportCommand(
           ...(sharingChanged ? { sharingVersion: { increment: 1 } } : {})
         }
       });
+    } else if (op === "feedback-remove-attachment") {
+      if (!rights.requester) throw denied();
+      const asset = await tx.mediaAsset.findFirst({ where: { id: identifier(input.assetId), purpose: "SUPPORT_ATTACHMENT", feedbackOwnerId: actor.id, feedbackCaseId: c.id, status: "READY" } });
+      if (!asset) throw denied();
+      expected(input.assetVersion, asset.version);
+      await retireImage(tx, asset);
+      targetId = asset.id;
     } else if (op === "reply") {
       if (!open)
         throw new SupportError(
@@ -1090,6 +1080,7 @@ export async function supportCommand(
         data.subject = "Content removed for privacy";
         data.description = marker;
         data.resolution = null;
+        await retireFeedbackImages(tx, { feedbackCaseId: c.id });
         await tx.feedbackSubmission.updateMany({
           where: { caseId: c.id, redactedAt: null },
           data: {
@@ -1129,6 +1120,8 @@ export async function supportCommand(
         adminVersion: true
       }
     });
+    if (op === "feedback-remove-attachment" && targetId)
+      await recordSupportAttachmentPrivacyControl(tx, c.id, targetId, actor.id, next.version);
     if (op === "redact" && !input.messageId)
       await recordAdminPrivacyControl(
         tx,

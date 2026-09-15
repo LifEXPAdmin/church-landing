@@ -1,3 +1,29 @@
+## Feedback forms and private attachments checkpoint — September 15, 2026 UTC
+
+Feature 31 remains **unreleased** and continues within the same feature cycle.
+Voluntary forms and My feedback now include native retry receipts, separate
+contact/sharing choices, selected private images and private harm-report entry.
+The existing image processor, garbage ledger, photo viewer and report service
+are reused. Attachment bytes require current case access; global report review
+alone grants none. Protected removal, whole-case redaction and erasure revoke
+images, and selected-image recovery preserves unrelated case changes.
+
+The isolated fixtures now have 73 migrations. Thirty-two media/intake/recovery
+checks and seventeen attachment/report checks pass, as do final types/lint and
+the production preview build. Six complete HTTPS browser groups pass at 320px:
+guest return, retained drafts/current-recipient review, identical lost-save retry,
+contact gating/concurrent drafts, private upload/enlargement/report/removal, and
+owned receipts/foreign denial. Browser failures are preserved, including repaired
+fieldset overflow and zero-width lazy images; the final navigation wait uses
+DOMContentLoaded plus actual receipt/image/report state. No browser errors or
+unexpected discard prompts remain in that final run.
+
+Continue durable quiet-point prompts/preferences, reviewed ideas/subscriptions,
+digest and shared metrics/admin acceptance, then the complete protected release
+cycle. This checkpoint does not close feature 31. No feature-31 production schema,
+configuration, case, image, grant or outbound send has changed. Actual intake
+operator readiness and physical/provider observations remain separate gates.
+
 ## Feedback intake candidate continuing — September 15, 2026 UTC
 
 Feature 31 is in progress and **unreleased**. The exact serving application remains

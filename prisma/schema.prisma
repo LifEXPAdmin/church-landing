@@ -15,6 +15,7 @@ enum MediaPurpose {
   CHURCH_COVER
   POST_PHOTO
   PROFILE_PHOTO
+  SUPPORT_ATTACHMENT
 }
 
 enum MediaStatus {
@@ -34,6 +35,8 @@ model MediaAsset {
   profileUserId String?
   churchId String?
   postId String?
+  feedbackOwnerId String?
+  feedbackCaseId String?
   isCurrent Boolean @default(true)
   personalPhoto PersonalPhoto?
   postReferences PostPhotoReference[]
@@ -51,11 +54,15 @@ model MediaAsset {
   profileUser PlatformUser? @relation("ProfileImage", fields: [profileUserId], references: [id], onDelete: Restrict)
   church Church? @relation(fields: [churchId], references: [id], onDelete: Restrict)
   post PlatformPost? @relation(fields: [postId], references: [id], onDelete: Restrict)
+  feedbackOwner PlatformUser? @relation("FeedbackImageOwner", fields: [feedbackOwnerId], references: [id], onDelete: Restrict)
+  feedbackCase FeedbackSubmission? @relation(fields: [feedbackCaseId], references: [caseId], onDelete: Restrict)
   @@unique([uploaderId, requestKey])
   @@index([profileUserId, purpose, status])
   @@index([churchId, purpose, status])
   @@index([postId, status, position])
   @@index([status, leaseUntil])
+  @@index([feedbackOwnerId, feedbackCaseId, status])
+  @@index([feedbackCaseId, status, position])
 }
 
 // Every external write is registered before I/O. Successful attachment removes
@@ -239,6 +246,7 @@ model PlatformUser {
   interests    String[]     @default([])
   uploadedImages MediaAsset[] @relation("ImageUploader")
   profileImages MediaAsset[] @relation("ProfileImage")
+  feedbackImages MediaAsset[] @relation("FeedbackImageOwner")
   personalPhotos PersonalPhoto[]
   photoAlbums PhotoAlbum[]
   postPhotoReferences PostPhotoReference[]
@@ -551,6 +559,7 @@ enum CommunityReportTarget {
   CHURCH
   CONTACT_REQUEST
   MESSAGE
+  FEEDBACK_ATTACHMENT
 }
 
 enum CommunityReportReason {
@@ -618,6 +627,7 @@ enum RetentionTarget {
   MESSAGE
   REPORT
   ACCOUNT
+  ASSET
 }
 
 model RetentionHold {
@@ -1239,6 +1249,7 @@ model FeedbackSubmission {
   updatedAt DateTime @updatedAt
   redactedAt DateTime?
   case SupportCase @relation(fields: [caseId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  attachments MediaAsset[]
   @@index([kind, createdAt])
   @@index([entryPoint, createdAt])
 }

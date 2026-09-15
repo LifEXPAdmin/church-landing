@@ -38,6 +38,7 @@ export type SupportRow = {
 };
 export type SupportDetail = SupportRow & {
   feedback: {
+    attachments: import("./media").ImageView[];
     notice: string;
     kind: string;
     rating: number | null;

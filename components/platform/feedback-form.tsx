@@ -12,6 +12,10 @@ import {
 } from "@/lib/platform/feedback-types";
 import { metricBrowsers, metricDevices } from "@/lib/platform/metric-policy";
 import { SupportForm } from "./support-form";
+import type { ImageView } from "@/lib/platform/media";
+import { socialRequest } from "@/lib/platform/social-client";
+import { PhotoUploadManager } from "./photo-upload-manager";
+import { FeedbackImagePreview } from "./feedback-attachment-images";
 
 export const feedbackInputClass =
   "block min-h-11 w-full min-w-0 rounded-xl border border-gc-divider bg-gc-canvas px-3 py-3 text-base text-gc-text focus:border-gc-action focus:outline-none focus:ring-2 focus:ring-gc-focus";
@@ -35,7 +39,7 @@ function FeedbackChoicesFields({
 }) {
   return (
     <div className="space-y-5">
-      <fieldset className="space-y-3 rounded-xl border border-gc-divider p-4">
+      <fieldset className="min-w-0 space-y-3 rounded-xl border border-gc-divider p-4">
         <legend className="px-1 font-semibold">May we follow up?</legend>
         <Check name="contactAllowed" checked={initial?.contactAllowed}>
           Allow staff to ask about this feedback.
@@ -65,7 +69,7 @@ function FeedbackChoicesFields({
       <fieldset
         hidden={kind !== "SUGGESTION"}
         disabled={kind !== "SUGGESTION"}
-        className="space-y-3 rounded-xl border border-gc-divider p-4"
+        className="min-w-0 space-y-3 rounded-xl border border-gc-divider p-4"
       >
         <legend className="px-1 font-semibold">
           A separate choice about sharing the idea
@@ -124,6 +128,10 @@ export function FeedbackForm({
   const [kind, setKind] = useState<FeedbackKind>("GENERAL"),
     [context, setContext] = useState(false);
   const id = useId();
+  const [attachments, setAttachments] = useState<ImageView[]>([]),
+    [uploadPending, setUploadPending] = useState(false),
+    [removing, setRemoving] = useState<string | null>(null),
+    [attachmentNotice, setAttachmentNotice] = useState("");
   const recipient = s.intake.recipient;
   // Keep a mounted draft when the recipient or availability changes. The native
   // form requires a deliberate version review, and the server checks readiness.
@@ -139,9 +147,15 @@ export function FeedbackForm({
         recipientVersion: recipient?.version ?? null,
         notice: FEEDBACK_NOTICE
       }}
-      available={s.intake.available}
+      available={s.intake.available && !uploadPending && !removing}
+      additionalWork={{
+        dirty: attachments.length > 0,
+        saving: uploadPending || !!removing
+      }}
+      onConfirmed={() => setAttachments([])}
       readFields={(data) => ({
         kind,
+        attachments: attachments.map((a) => a.id),
         rating: data.get("rating") ? Number(data.get("rating")) : null,
         subject: data.get("subject"),
         description: data.get("description"),
@@ -212,7 +226,7 @@ export function FeedbackForm({
       <fieldset
         hidden={kind !== "BUG"}
         disabled={kind !== "BUG"}
-        className="space-y-4"
+        className="min-w-0 space-y-4"
       >
         <legend className="sr-only">Problem details</legend>
         <TextField name="actual" label="What happened?" max={1200} required />
@@ -231,7 +245,7 @@ export function FeedbackForm({
       <fieldset
         hidden={kind !== "SUGGESTION"}
         disabled={kind !== "SUGGESTION"}
-        className="space-y-4"
+        className="min-w-0 space-y-4"
       >
         <legend className="sr-only">Suggestion details</legend>
         <TextField
@@ -262,7 +276,96 @@ export function FeedbackForm({
         information.
       </p>
       <FeedbackChoicesFields kind={kind} />
-      <div className="space-y-3 rounded-xl border border-gc-divider p-4">
+      <PhotoUploadManager
+        ownerId={s.viewer.id}
+        targetId={s.viewer.id}
+        purpose="SUPPORT_ATTACHMENT"
+        available={s.intake.available && !removing}
+        remaining={3 - attachments.length}
+        onPending={setUploadPending}
+        onSaved={(image) => {
+          setAttachments((current) =>
+            current.some((a) => a.id === image.id)
+              ? current
+              : [...current, image]
+          );
+        }}
+      />
+      {attachments.length > 0 && (
+        <section
+          className="min-w-0 space-y-4"
+          aria-label="Uploaded feedback attachments"
+        >
+          <h3 className="text-xl font-semibold">
+            Ready to include with your feedback
+          </h3>
+          <p className="text-sm text-gc-muted">
+            Sending feedback includes every image below. Remove an image here to
+            discard it. Discarding the written form does not remove these
+            uploads.
+          </p>
+          <ul className="min-w-0 space-y-4">
+            {attachments.map((image) => (
+              <li
+                key={image.id}
+                className="min-w-0 space-y-3 rounded-xl border border-gc-divider p-4"
+              >
+                <FeedbackImagePreview image={image} />
+                <button
+                  type="button"
+                  className="gc-button gc-button-quiet"
+                  disabled={!!removing}
+                  onClick={async () => {
+                    if (removing) return;
+                    setRemoving(image.id);
+                    setAttachmentNotice("");
+                    try {
+                      const { data } = await socialRequest<{
+                        removed: boolean;
+                      }>(
+                        "/api/platform/feedback",
+                        JSON.stringify({
+                          operation: "feedback-remove-upload",
+                          assetId: image.id,
+                          assetVersion: image.version
+                        }),
+                        s.viewer.id
+                      );
+                      if (!data.removed)
+                        throw Error(
+                          "Removal is unconfirmed. Retry removing this image."
+                        );
+                      setAttachments((current) =>
+                        current.filter((a) => a.id !== image.id)
+                      );
+                      setAttachmentNotice("Private upload removed.");
+                    } catch (error) {
+                      setAttachmentNotice(
+                        error instanceof Error
+                          ? error.message
+                          : "Removal is unconfirmed. Retry removing this image."
+                      );
+                    } finally {
+                      setRemoving(null);
+                    }
+                  }}
+                >
+                  {removing === image.id
+                    ? "Removing…"
+                    : "Remove uploaded attachment"}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+      <p role="status" className="text-sm text-gc-muted">
+        {attachmentNotice ||
+          (uploadPending
+            ? "Finish or remove selected uploads before sending feedback. Your written entries are kept."
+            : "")}
+      </p>
+      <div className="min-w-0 space-y-3 rounded-xl border border-gc-divider p-4">
         <label className="flex min-h-11 items-center gap-3">
           <input
             type="checkbox"
@@ -277,7 +380,7 @@ export function FeedbackForm({
           id={`${id}-context`}
           hidden={!context}
           disabled={!context}
-          className="space-y-4"
+          className="min-w-0 space-y-4"
         >
           <legend className="sr-only">Review optional technical context</legend>
           <p>App version: {release}</p>

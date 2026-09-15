@@ -6,6 +6,7 @@ import {
 } from "./retention-controls";
 import { PortalError } from "./portal-policy";
 import { emptyFeedback } from "./feedback-policy";
+import { retireFeedbackImages } from "./feedback-image-lifecycle";
 
 export const emptyAdminText = {
   nextAction: "",
@@ -36,6 +37,11 @@ export async function eraseAdminPersonalData(
   userId: string,
   now: Date
 ) {
+  await retireFeedbackImages(tx, { feedbackOwnerId: userId });
+  await tx.supportMessage.updateMany({
+    where: { case: { requesterId: userId, feedback: { isNot: null } } },
+    data: { body: "Removed after account deletion.", redactedAt: now }
+  });
   await tx.feedbackSubmission.updateMany({
     where: { case: { requesterId: userId }, redactedAt: null },
     data: { ...emptyFeedback, redactedAt: now, version: { increment: 1 }, sharingVersion: { increment: 1 } }
@@ -108,7 +114,7 @@ export async function protectAdminCaseChanges(
     const targets = await db.retentionControl.findMany({
       where: {
         sourceId: { in: sourceIds },
-        kind: { in: ["ADMIN_SUPPORT", "ADMIN_REPORT", "ADMIN_CLAIM", "SUPPORT_MESSAGE"] },
+        kind: { in: ["ADMIN_SUPPORT", "ADMIN_REPORT", "ADMIN_CLAIM", "SUPPORT_MESSAGE", "SUPPORT_ATTACHMENT"] },
         journaledAt: null
       },
       select: { targetId: true },

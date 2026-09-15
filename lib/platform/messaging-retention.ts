@@ -98,8 +98,8 @@ export async function inspectMessagingRetention(
       policy: MESSAGING_RETENTION_POLICY,
       candidates: [
         ...pending.map((p): MessagingPurgeCandidate => {
-          if (p.target === "ACCOUNT")
-            throw Error("Account erasure requires its dedicated owner");
+          if (p.target !== "REPORT" && p.target !== "MESSAGE")
+            throw Error("This retention target requires its dedicated owner");
           return { target: p.target, id: p.targetId, version: p.version };
         }),
         ...candidates.filter(
@@ -300,8 +300,8 @@ export async function runMessagingRetention(
   let messages = 0,
     reports = 0;
   for (const seal of sealed) {
-    if (seal.target === "ACCOUNT")
-      throw Error("Account erasure requires its dedicated owner");
+    if (seal.target !== "REPORT" && seal.target !== "MESSAGE")
+      throw Error("This retention target requires its dedicated owner");
     await db.retentionPurge.update({
       where: {
         target_targetId: { target: seal.target, targetId: seal.targetId }

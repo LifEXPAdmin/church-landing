@@ -30,6 +30,7 @@ export const feedbackCreateFields = [
   "outcome",
   "helps",
   "technicalContext",
+  "attachments",
   "recipientId",
   "recipientVersion",
   "notice",

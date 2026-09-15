@@ -6,6 +6,31 @@ released. The current serving application is the platform measurement core in
 
 ## Native intake checkpoint
 
+The later forms/attachment checkpoint reaches 73 migrations only in isolated
+fixtures. Three selected private images reuse normalized variants, metadata
+stripping, private delivery, upload leases and garbage cleanup. Atomic attachment
+binds only current owned ready uploads; images never enter a personal photo
+library. Current case access is checked before and after object-store reads.
+Unsent uploads expire after 24 hours. Requester removal, case redaction and account
+erasure retire images, with protected selected-image recovery markers.
+
+Harm reports reuse the canonical report receipt and reviewer authority. A reviewer
+can read submitted report details but also needs current private case access to
+view the selected image. Removing the source revokes future image evidence while
+preserving the private report receipt. Neither the case conversation nor attachment
+caption is copied into a public source or a broader reviewer permission.
+
+Thirty-two media/intake/recovery scenarios and seventeen attachment/report
+scenarios pass. Final types/lint and the isolated production build pass. Six HTTPS
+browser groups at 320px cover retained drafts/reconnect/current-recipient review,
+lost acknowledgment with identical retry, staff-contact gating, concurrent unsent
+replies, upload/removal/enlargement with restored focus, a real private report
+receipt, owner pagination and foreign denial. The final run has no browser errors
+or unexpected discard prompts. Earlier failures remain recorded: fieldset
+min-content overflow and zero-width lazy images were repaired; fixture certificate,
+visible-selector and navigation-load waits were corrected. This remains partial
+feature acceptance, not a production release.
+
 The first local candidate adds `FeedbackSubmission` to one canonical private
 support case in the same transaction and exposes a private feedback boundary.
 Rating-only, text-only, bug and suggestion inputs share native stable receipts;

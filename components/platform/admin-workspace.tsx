@@ -16,6 +16,7 @@ import { AdminPeople, AdminChurches, AdminAudit } from "./admin-operations";
 import type { AdminAccessSnapshot } from "@/lib/platform/admin-access";
 import type { AdminAuditSnapshot } from "@/lib/platform/admin-operations";
 import { AdminOverview } from "./admin-overview";
+import { ReadVisibility } from "./read-visibility";
 import type { AdminOverviewSnapshot } from "@/lib/platform/admin-overview";
 import type { MetricSnapshot } from "@/lib/platform/metric-report";
 import dynamic from "next/dynamic";
@@ -156,7 +157,7 @@ export function AdminWorkspace({
           </Link>
         </div>
       )}
-      <div
+      <ReadVisibility.Provider value={visible}><div
         hidden={!visible}
         style={{ display: visible ? undefined : "none" }}
         className="grid min-w-0 gap-6 lg:grid-cols-[13rem_minmax(0,1fr)]"
@@ -249,7 +250,7 @@ export function AdminWorkspace({
             "rows" in data &&
             !("filters" in data) && <AdminAudit data={data} />}
         </section>
-      </div>
+      </div></ReadVisibility.Provider>
     </div>
   );
 }

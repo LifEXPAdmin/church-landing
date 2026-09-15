@@ -56,7 +56,7 @@ export function PhotoUploadManager({
 }: {
   ownerId: string;
   targetId: string;
-  purpose: "POST_PHOTO" | "PROFILE_PHOTO";
+  purpose: "POST_PHOTO" | "PROFILE_PHOTO" | "SUPPORT_ATTACHMENT";
   available: boolean;
   remaining: number;
   details?: Record<string, string | null>;
@@ -138,7 +138,7 @@ export function PhotoUploadManager({
     );
     if (files.length > room) {
       setNotice(
-        `Choose at most ${room} more photos in this batch. Each post holds up to ten photos; a profile library holds up to 1,000.`
+        purpose === "SUPPORT_ATTACHMENT" ? `Choose at most ${room} more images. Each feedback receipt holds up to three.` : `Choose at most ${room} more photos in this batch. Each post holds up to ten photos; a profile library holds up to 1,000.`
       );
       return;
     }
@@ -230,6 +230,7 @@ export function PhotoUploadManager({
       });
       try {
         await onSavedRef.current(image);
+        if (purpose === "SUPPORT_ATTACHMENT") setEntries(rows => rows.filter(entry => entry.id !== id));
       } catch {
         setNotice(
           "The photo was saved. Refresh the collection to check its latest position."
@@ -259,12 +260,10 @@ export function PhotoUploadManager({
       className="space-y-4 rounded-xl border border-gc-divider p-4"
     >
       <h3 id={`${uid}-title`} className="text-xl">
-        Add photos
+        {purpose === "SUPPORT_ATTACHMENT" ? "Optional private attachments" : "Add photos"}
       </h3>
       <p className="text-sm text-gc-muted">
-        Select up to ten still JPEG, PNG or WebP files per batch, each up to 4
-        MiB. Captions and image descriptions are optional. Saved files stay
-        saved if another file fails.
+        {purpose === "SUPPORT_ATTACHMENT" ? "Choose up to three still JPEG, PNG or WebP images, each up to 4 MiB. Review and remove private details before uploading. Uploaded images join the private receipt only when you send feedback; unsent uploads expire after 24 hours." : "Select up to ten still JPEG, PNG or WebP files per batch, each up to 4 MiB. Captions and image descriptions are optional. Saved files stay saved if another file fails."}
       </p>
       {!available && (
         <p role="status">
@@ -303,7 +302,7 @@ export function PhotoUploadManager({
               if (!row.invalid && row.state !== "saved") void save(row.id);
           }}
         >
-          Save selected photos
+          {purpose === "SUPPORT_ATTACHMENT" ? "Upload selected attachments" : "Save selected photos"}
         </button>
       )}
       <p role="status">
@@ -382,7 +381,7 @@ export function PhotoUploadManager({
                   }
                   onClick={() => void save(row.id)}
                 >
-                  {row.body ? "Retry same upload" : "Save photo"}
+                  {row.body ? "Retry same upload" : purpose === "SUPPORT_ATTACHMENT" ? "Upload private attachment" : "Save photo"}
                 </button>
               )}
               {row.state === "uploading" ? (

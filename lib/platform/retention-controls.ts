@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
 import { emptyFeedback } from "./feedback-policy";
+import { retireFeedbackImages } from "./feedback-image-lifecycle";
 import {
   Prisma,
   type PrismaClient,
@@ -35,11 +36,12 @@ export type RetentionControlEntry = {
     | "ADMIN_REPORT"
     | "ADMIN_CLAIM"
     | "SUPPORT_MESSAGE"
+    | "SUPPORT_ATTACHMENT"
     | "APPEAL"
     | "ACCOUNT_STATE"
     | "AUTHOR_WITHDRAW_POST"
     | "AUTHOR_WITHDRAW_COMMENT";
-  target: "REPORT" | "MESSAGE" | "ACCOUNT";
+  target: "REPORT" | "MESSAGE" | "ACCOUNT" | "ASSET";
   targetId: string;
   sourceId: string;
   version: number;
@@ -86,6 +88,8 @@ function validate(value: unknown): RetentionControlEntry {
       ? r.target === "ACCOUNT" &&
         r.operatorId !== null &&
         (r.outcome === "QUARANTINED" || (r.kind === "ADMIN_SUPPORT" && r.outcome === "CASE_REDACTED"))
+      : r.kind === "SUPPORT_ATTACHMENT"
+        ? r.target === "ASSET" && r.operatorId !== null && r.outcome === "REDACTED"
       : r.kind === "SUPPORT_MESSAGE"
         ? r.target === "MESSAGE" && r.operatorId !== null && r.outcome === "REDACTED"
       : r.kind === "ACCOUNT_STATE"
@@ -184,6 +188,14 @@ export function recordSupportMessagePrivacyControl(
     targetId: messageId, sourceId: caseId, version, policy, outcome: "REDACTED",
     operatorId: actorId, recordedAt: now.toISOString(), startedAt: now.toISOString(),
     reviewDueAt: retentionDate(now, 90).toISOString(), endedAt: null
+  });
+}
+export function recordSupportAttachmentPrivacyControl(tx: Tx, sourceId: string, assetId: string, actorId: string, version: number) {
+  const now = new Date();
+  return record(tx, {
+    id: randomUUID(), kind: "SUPPORT_ATTACHMENT", target: "ASSET", targetId: assetId,
+    sourceId, version, policy, outcome: "REDACTED", operatorId: actorId,
+    recordedAt: now.toISOString(), startedAt: now.toISOString(), reviewDueAt: retentionDate(now, 90).toISOString(), endedAt: null
   });
 }
 // Account recovery controls contain no login contact, report text or reason.
@@ -538,6 +550,13 @@ export async function replayRetentionControls(
     async (tx) => {
       await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(730221, 2)`;
       for (const entry of entries) {
+        if (entry.kind === "SUPPORT_ATTACHMENT") {
+          await retireFeedbackImages(tx, { id: entry.targetId,
+            ...(entry.sourceId === entry.targetId ? { feedbackCaseId: null } : { feedbackCaseId: entry.sourceId }) });
+          await record(tx, entry);
+          await tx.retentionControl.updateMany({ where: { id: entry.id, journaledAt: null }, data: { journaledAt: new Date() } });
+          continue;
+        }
         if (entry.kind === "SUPPORT_MESSAGE") {
           const message = await tx.supportMessage.findFirst({
             where: { id: entry.targetId, caseId: entry.sourceId },
@@ -568,6 +587,7 @@ export async function replayRetentionControls(
             const source = { id: entry.sourceId };
             const removedAt = new Date(entry.recordedAt);
             const marker = "[Removed for privacy.]";
+            await retireFeedbackImages(tx, { feedbackCaseId: entry.sourceId, createdAt: { lte: removedAt } });
             await tx.feedbackSubmission.updateMany({
               where: { case: source, redactedAt: null },
               data: { ...emptyFeedback, redactedAt: removedAt, version: { increment: 1 }, sharingVersion: { increment: 1 } }

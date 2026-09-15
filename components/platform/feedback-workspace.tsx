@@ -194,6 +194,11 @@ function FeedbackViews({
               website without responding.
             </p>
             <p className="text-sm text-gc-muted">
+              Feedback is confidential and linked to your account. Only
+              authorized Godschurches staff can see this feedback unless you
+              choose to share an idea.
+            </p>
+            <p className="text-sm text-gc-muted">
               For an account problem needing help,{" "}
               <Link
                 href="/platform/help/new"
@@ -287,11 +292,16 @@ function FeedbackViews({
             {c.feedback.redactedAt ? (
               <p>Private feedback content and choices have been removed.</p>
             ) : (
-              <FeedbackChoices
-                owner={s.viewer.id}
-                detail={c}
-                onRefresh={onRefresh}
-              />
+              <details>
+                <summary className="min-h-11 cursor-pointer py-2 font-semibold text-gc-accent">
+                  Change contact and sharing choices
+                </summary>
+                <FeedbackChoices
+                  owner={s.viewer.id}
+                  detail={c}
+                  onRefresh={onRefresh}
+                />
+              </details>
             )}
           </PortalCard>
           <SupportViews
