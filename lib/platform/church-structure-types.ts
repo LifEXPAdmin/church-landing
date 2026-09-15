@@ -2,6 +2,8 @@ import type { ChurchRoleSummary } from "./church-role-library";
 import type { ChurchSummary, DirectoryEntry } from "./portal-types";
 
 export const structureCapabilities = {
+  HOST_CHURCH_WELCOME:
+    "Host church introductions, questions and participation totals",
   MANAGE_STRUCTURE: "Manage positions and assignments",
   EDIT_CHURCH_CALENDAR: "Edit church calendars and events",
   PUBLISH_CHURCH_EVENTS: "Publish church events",

@@ -449,6 +449,7 @@ enum ChurchConnectionState {
 }
 
 enum ChurchCapability {
+  HOST_CHURCH_WELCOME
   REVIEW_CONNECTIONS
   APPOINT_COORDINATORS
   MANAGE_CHURCH_PROFILE
@@ -633,6 +634,10 @@ enum DirectoryAudience {
 }
 
 model Church {
+  welcomePostId String?
+  welcomeVersion Int @default(0)
+  welcomePost PlatformPost? @relation("ChurchWelcomePost", fields: [welcomePostId], references: [id], onDelete: SetNull)
+  welcomeThreads ChurchWelcomeThread[]
   communityReports CommunityReport[]
   socialRelations SocialRelationship[]
   authoredComments PlatformPostComment[]
@@ -1289,6 +1294,8 @@ enum ContentModerationState {
 }
 
 model PlatformPost {
+  welcomeFor Church[] @relation("ChurchWelcomePost")
+  welcomeThread ChurchWelcomeThread?
   discoveryVersion Int @default(0)
   discoveryLanguage String?
   discoveryDenomination String?
@@ -1371,6 +1378,18 @@ model PlatformPost {
   @@index([audienceChurchId, status, publishedAt])
   @@index([status, moderationState, publishedAt(sort: Desc), id(sort: Desc)], map: "PlatformPost_visible_feed_idx")
   @@index([status, scheduleAt])
+}
+
+model ChurchWelcomeThread {
+  postId String @id
+  churchId String
+  purpose String
+  handled Boolean @default(false)
+  version Int @default(1)
+  updatedAt DateTime @updatedAt
+  post PlatformPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  church Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
+  @@index([churchId, handled, postId])
 }
 
 model PostAudit {
@@ -1843,6 +1862,8 @@ model PostWorkspaceOperation {
 
 
 model SocialPreferences {
+  onboardingDismissed String[] @default([])
+  onboardingVersion Int @default(0)
   notificationVersion Int @default(0)
   notificationRecoveryRequired Boolean @default(false)
   mutedNotificationCategories String[] @default([])

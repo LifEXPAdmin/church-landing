@@ -40,6 +40,7 @@ export async function ChurchPosts({
     path = `/platform/churches/${churchId}`;
   return (
     <section
+      id="church-posts"
       aria-label="Church posts"
       className="mx-auto mt-8 max-w-3xl space-y-5"
     >

@@ -14,6 +14,44 @@ export type Feature = {
 };
 export const features: Feature[] = [
   {
+    id: "getting-started",
+    category: "Account and profile",
+    name: "Getting started at your pace",
+    description: "Resume useful next steps without repeating completed setup.",
+    steps:
+      "Open Next steps and this week on Home, or Getting started in Help. Review your church request, optional profile and sharing choices, and saved church listing or representative drafts. Choose Later to hide a hint; restore it from the full guide.",
+    href: "/platform/getting-started",
+    eligibility:
+      "Signed-in accounts. Optional hints never change contact consent, follows, verification or church permissions. Existing listing and representative setup remain separate, resumable paths.",
+    availability: "available"
+  },
+  {
+    id: "church-this-week",
+    category: "Church tools",
+    name: "This week at your church",
+    description:
+      "Find current events, church notices, open serving roles and your commitments.",
+    steps:
+      "Open Next steps and this week on Home. Choose a current approved church connection, review its Start here welcome and next seven days, then open an event or post to decide whether to participate.",
+    href: "/platform/getting-started",
+    eligibility:
+      "Current approved church members see only permitted source records. Following a church or a pending request does not provide private access. Changed or withdrawn sources are checked again.",
+    availability: "conditional"
+  },
+  {
+    id: "church-welcome-hosts",
+    category: "Church tools",
+    name: "Church welcome and follow-up",
+    description:
+      "Choose a church welcome and help with deliberately labeled introductions and questions.",
+    steps:
+      "Church publishers choose an existing church-authored Start here post in Welcome and follow-up. Authors can label a published church post in Manage post → Welcome and questions. Separately authorized welcome hosts review unanswered or handled threads and date-filtered participation totals.",
+    href: "/platform/my-church",
+    eligibility:
+      "Current publishing or explicitly delegated church welcome host permission. Labels do not change audiences; handled status sends no message and is not a public score. Totals exclude private prayer participants, contact lists and passive reading activity.",
+    availability: "conditional"
+  },
+  {
     id: "author-bells",
     category: "Posts and conversations",
     name: "Choose new-post alerts",
@@ -638,6 +676,29 @@ export const features: Feature[] = [
   }
 ];
 export const releases: ReleaseEntry[] = [
+  {
+    id: "onboarding-church-welcome",
+    version: "2026.09.15.4",
+    date: "2026-09-15",
+    summary: "Get started at your pace and find your next church action.",
+    added: [
+      "Resume optional getting-started hints, church requests and private setup drafts from Home or Help.",
+      "See your church’s current Start here post, next events, notices and serving opportunities in This week.",
+      "Label church introductions and questions; explicitly delegated welcome hosts can handle follow-up and review current participation totals."
+    ],
+    improved: [
+      "Completed profile and church steps disappear from the short guide. Optional hints can be saved for later and restored.",
+      "The compact Home panel and post label controls load their data when opened. Current source permissions and account checks protect each read and save."
+    ],
+    fixed: [],
+    featureIds: [
+      "getting-started",
+      "church-this-week",
+      "church-welcome-hosts",
+      "church-welcome",
+      "discovery-feeds"
+    ]
+  },
   {
     id: "public-sharing-cards",
     version: "2026.09.15.3",

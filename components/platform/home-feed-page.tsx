@@ -14,6 +14,7 @@ import { PortalError } from "@/lib/platform/portal-policy";
 import { accountEntryHref } from "@/lib/platform/account-entry";
 import { accountDeliveryAvailable } from "@/lib/platform/account-availability";
 import { DiscoverySettings } from "./discovery-settings";
+import { OnboardingHome } from "./onboarding-home";
 
 export type FeedParams = {
   feed?: string;
@@ -163,6 +164,11 @@ export default async function HomeFeedPage({
             </div>
           )}
         <div className="gc-home-columns">
+          {currentUser && (
+            <div className="min-[1200px]:col-span-2">
+              <OnboardingHome ownerId={currentUser.id} />
+            </div>
+          )}
           {currentUser && (
             <nav
               className="mb-3 flex gap-4 lg:col-span-2"

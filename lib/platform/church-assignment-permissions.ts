@@ -6,6 +6,7 @@ import { expected, PortalError } from "./portal-policy";
 type Tx = Prisma.TransactionClient;
 // Deliberate allowlist: adding a new product capability never makes it delegable.
 export const delegableChurchCapabilities: ChurchCapability[] = [
+  "HOST_CHURCH_WELCOME",
   "MANAGE_STRUCTURE",
   "EDIT_CHURCH_CALENDAR",
   "PUBLISH_CHURCH_EVENTS",

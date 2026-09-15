@@ -24,6 +24,7 @@ import { delegableChurchCapabilities } from "../lib/platform/church-assignment-p
 import { loginAccount } from "../lib/platform/accounts";
 import { positionPlacementLabel } from "../lib/platform/church-position-placement";
 import { readActivity, openActivity } from "../lib/platform/activity";
+import { readChurchWelcomeHost } from "../lib/platform/church-welcome-host";
 import {
   readNotificationPreferences,
   notificationPreferenceCommand
@@ -126,6 +127,22 @@ async function fixture() {
     effective
   };
 }
+
+test("welcome host permission is deliberately delegated through the ordinary role review and removed with its assignment", async () => {
+  const f = await fixture();
+  const read = () =>
+    readChurchWelcomeHost(db, f.coordinator.token, { churchId: f.churchId });
+  await denied(read());
+  const position = await f.position();
+  await f.save(position.id, []);
+  await denied(read());
+  await f.save(position.id, ["HOST_CHURCH_WELCOME"]);
+  const host = await read();
+  assert.equal(host.host, true);
+  assert.equal(host.canPublish, false);
+  await f.save(position.id, []);
+  await denied(read());
+});
 
 test("reviewed role changes create owned, generic and retry-safe Activity while optional alerts preserve operational permissions", async () => {
   const f = await fixture(),

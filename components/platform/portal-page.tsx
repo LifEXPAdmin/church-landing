@@ -115,6 +115,7 @@ function PublicHelp() {
         title="Help and contacts"
         description="Contact Godschurches directly. Church-only contacts are available to approved members after sign-in."
       />
+      <Link className={`${portalLinkClass} mb-4`} href="/platform/getting-started">Getting started and saved next steps</Link>
       <div className="max-w-2xl">
         <PortalHelpContact />
       </div>

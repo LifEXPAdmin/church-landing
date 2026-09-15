@@ -7,6 +7,7 @@ import { claimReviewEnabled } from "./church-claims";
 import { isEligible } from "./portal-policy";
 import { listImagesIn } from "./media";
 import { imagesAvailable } from "./media-storage";
+import { currentChurchWelcome } from "./church-welcome-policy";
 
 /** Navigation projects existing permissions; it never appoints a contributor. */
 export function readChurchTools(db: PrismaClient, token: unknown, id: unknown) {
@@ -85,7 +86,53 @@ export function readChurchTools(db: PrismaClient, token: unknown, id: unknown) {
           select: { followingChurch: true }
         })
       : null;
+    const church = member
+      ? await tx.church.findUnique({
+          where: { id: churchId },
+          select: { summary: true, welcomePostId: true }
+        })
+      : null;
+    const approvedWelcome = church
+      ? await currentChurchWelcome(tx, context, churchId, church.welcomePostId)
+      : null;
+    const setup: Array<{ label: string; href: string; done: boolean }> = [];
+    const root = "/platform/churches/" + churchId;
+    if (profileClaim)
+      setup.push({
+        label: "Review church profile",
+        href: "/platform/church-claims/" + profileClaim.id + "#church-profile",
+        done: !!church?.summary.trim()
+      });
+    if (capabilities.includes("MANAGE_STRUCTURE"))
+      setup.push({
+        label: "Prepare ministries and roles",
+        href: root + "/structure",
+        done: !!(await tx.churchPosition.findFirst({
+          where: { churchId, archivedAt: null },
+          select: { id: true }
+        }))
+      });
+    if (
+      capabilities.includes("EDIT_CHURCH_CALENDAR") ||
+      capabilities.includes("PUBLISH_CHURCH_EVENTS")
+    )
+      setup.push({
+        label: "Prepare church calendar",
+        href: root + "/calendar",
+        done: !!(await tx.platformCalendar.findFirst({
+          where: { churchId, archivedAt: null },
+          select: { id: true }
+        }))
+      });
+    if (capabilities.includes("PUBLISH_CHURCH_POSTS"))
+      setup.push({
+        label: "Choose a Start here welcome",
+        href: root + "/welcome",
+        done: !!approvedWelcome
+      });
     return {
+      approvedWelcome,
+      setup,
       churchId,
       ownerId,
       member,

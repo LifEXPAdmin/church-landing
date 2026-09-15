@@ -11,6 +11,7 @@ import {
 } from "./post-draft-fields";
 import { portalInputClass } from "./portal-action-form";
 import { discussionModerationReasons } from "@/lib/platform/post-discussion-options";
+import { WelcomePostLabel } from "./welcome-post-label";
 
 function EditPost({ post, owner }: { post: PostEditorView; owner: string }) {
   const id = useId(),
@@ -201,7 +202,8 @@ export function PostControls({
   post: PostEditorView;
   ownerId: string;
 }) {
-  const [photosOpened, setPhotosOpened] = useState(false);
+  const [photosOpened, setPhotosOpened] = useState(false),
+    [welcomeOpened, setWelcomeOpened] = useState(false);
   useEffect(() => {
     const reveal = () => {
       if (
@@ -231,6 +233,23 @@ export function PostControls({
       className="space-y-4 rounded-xl border border-gc-divider p-4"
     >
       <h2 className="text-2xl">Manage post</h2>
+      {post.canEdit &&
+        post.churchId &&
+        post.status === "PUBLISHED" &&
+        !post.repostKind &&
+        !post.topicCommunityId && (
+          <details onToggle={(e) => setWelcomeOpened(e.currentTarget.open)}>
+            <summary className="min-h-11 cursor-pointer py-3 font-semibold">
+              Welcome and questions
+            </summary>
+            <WelcomePostLabel
+              ownerId={ownerId}
+              churchId={post.churchId}
+              postId={post.id}
+              active={welcomeOpened}
+            />
+          </details>
+        )}
       {post.canEdit && post.churchAuthor && post.status !== "PUBLISHED" && (
         <SchedulePost post={post} owner={ownerId} />
       )}

@@ -1,4 +1,6 @@
 export const claimScopes = {
+  HOST_CHURCH_WELCOME:
+    "Host church introductions, questions and participation totals",
   MANAGE_CHURCH_PROFILE: "Manage the public church profile",
   MANAGE_CHURCH_ACCESS: "Manage church access and review requests",
   MANAGE_STRUCTURE: "Manage church positions and assignments",

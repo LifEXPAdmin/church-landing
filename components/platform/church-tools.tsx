@@ -75,6 +75,38 @@ export function ChurchTools({
       aria-label="Your church tools"
     >
       {welcome && data && <ChurchWelcome church={welcome} data={data} />}
+      {data?.approvedWelcome && (
+        <div className="space-y-2">
+          <h3 className="text-xl">Start here</h3>
+          <Link className="underline" href={data.approvedWelcome.href}>
+            {data.approvedWelcome.label}
+          </Link>
+        </div>
+      )}
+      {!!data?.setup.length && (
+        <details>
+          <summary className="min-h-11 cursor-pointer py-2 font-semibold">
+            Church setup checklist
+          </summary>
+          <p className="text-sm text-gc-muted">
+            Resume the tools your current permissions allow. Saved content is
+            not approval or an appointment.
+          </p>
+          <ul>
+            {data.setup.map((step) => (
+              <li key={step.href}>
+                <Link
+                  className="inline-block min-h-11 py-2 underline"
+                  href={step.href}
+                >
+                  {step.label} ·{" "}
+                  {step.done ? "Available to review" : "Ready to prepare"}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
       {message && (
         <>
           <p role="status">{message}</p>
@@ -91,6 +123,12 @@ export function ChurchTools({
                 Manage church
               </summary>
               <nav className="flex flex-wrap gap-3" aria-label="Manage church">
+                {(caps.includes("HOST_CHURCH_WELCOME") ||
+                  caps.includes("PUBLISH_CHURCH_POSTS")) && (
+                  <Link className={link} href={`${root}/welcome`}>
+                    Welcome and follow-up
+                  </Link>
+                )}
                 <Link className={link} href={`${root}/responsibilities`}>
                   My permissions
                 </Link>
