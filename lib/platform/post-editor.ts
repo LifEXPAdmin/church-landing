@@ -1,4 +1,5 @@
 import { photoLibraryEnabled } from "./personal-photo-policy";
+import { postDiscoveryInput } from "./post-discovery";
 import type { PrismaClient } from "@prisma/client";
 import { PortalError } from "./portal-policy";
 import {
@@ -166,6 +167,7 @@ export function getPostEditor(db: PrismaClient, token: unknown, id: string) {
     );
     return {
       id: post.id,
+      discovery: postDiscoveryInput(post),
       topicCommunityId: post.topicCommunityId,
       version: post.version,
       content: post.content,

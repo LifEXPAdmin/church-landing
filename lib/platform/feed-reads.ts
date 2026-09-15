@@ -1,4 +1,13 @@
 import { readerDate, readerId } from "./reader-navigation";
+import {
+  discoveryMode,
+  guestDiscoveryPreferences,
+  type DiscoveryPreferences
+} from "./discovery-options";
+import { readDiscoveryFeedIn } from "./discovery-feed";
+import { storedDiscoveryPreferences } from "./discovery-preferences";
+import { discoveryHiddenWhere } from "./discovery-policy";
+import { discoverySources } from "./discovery-sources";
 import { gzipSync, gunzipSync } from "node:zlib";
 import { expireFeedSnapshots } from "./feed-snapshot-retention";
 import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
@@ -26,10 +35,12 @@ type Cursor = {
   before?: string;
   id?: string;
 };
-function codec(ownerId: string | null, mode: FeedMode) {
+function codec(ownerId: string | null, mode: FeedMode, filterKey = "") {
   const sign = (body: string) =>
     createHmac("sha256", accountConfig().rateSecret)
-      .update(`feed:v1:${ownerId ?? "public"}:${mode}:${body}`)
+      .update(
+        `feed:v1:${ownerId ?? "public"}:${mode}${filterKey ? ":" + filterKey : ""}:${body}`
+      )
       .digest("hex");
   return {
     encode: (value: Cursor) => {
@@ -106,13 +117,15 @@ async function rankedIds(
   tx: PostTx,
   context: PostContext,
   mode: "weekly" | "trending",
-  at: Date
+  at: Date,
+  prefs: DiscoveryPreferences
 ) {
   const from = new Date(at.getTime() - (mode === "weekly" ? 168 : 72) * HOUR);
   const candidates = await tx.platformPost.findMany({
     where: {
       AND: [
         feedReadableWhere(context, mode, at),
+        legacyHiddenWhere(context, prefs),
         // Plain reposts share the original's votes; rank that original once.
         { OR: [{ repostKind: null }, { repostKind: "QUOTE" }] },
         {
@@ -144,12 +157,20 @@ async function rankedIds(
       "This ranked feed needs a capacity review. Latest and Friends are still available."
     );
   if (!candidates.length) return [];
+  const candidateIds = await legacyVisibleIds(
+    tx,
+    context,
+    candidates.map((row) => row.id),
+    prefs,
+    at
+  );
+  if (!candidateIds.length) return [];
   const excluded = [...(context.blockedIds ?? []), ...(context.mutedIds ?? [])];
   const rows = await tx.$queryRaw<Array<{ id: string }>>(Prisma.sql`
     SELECT p.id FROM "PlatformPost" p
     JOIN "PlatformPostLike" l ON l."postId" = p.id
     JOIN "PlatformUser" u ON u.id = l."userId"
-    WHERE p.id IN (${Prisma.join(candidates.map((row) => row.id))})
+    WHERE p.id IN (${Prisma.join(candidateIds)})
       AND l.active = true AND l."userId" <> p."authorId"
       AND l."firstLikedAt" >= ${from.toISOString()}::timestamp AND l."firstLikedAt" < ${at.toISOString()}::timestamp
       AND u."suspendedAt" IS NULL AND u."deactivatedAt" IS NULL
@@ -160,6 +181,46 @@ async function rankedIds(
   `);
   return rows.map((row) => row.id);
 }
+export function legacyHiddenWhere(
+  context: PostContext,
+  prefs: DiscoveryPreferences
+): Prisma.PlatformPostWhereInput {
+  if (!prefs.hiddenWords.length && !prefs.hiddenTopics.length) return {};
+  return discoveryHiddenWhere(context, prefs);
+}
+export async function legacyVisibleIds(
+  tx: PostTx,
+  context: PostContext,
+  ids: string[],
+  prefs: DiscoveryPreferences,
+  now: Date
+) {
+  if ((!prefs.hiddenWords.length && !prefs.hiddenTopics.length) || !ids.length)
+    return ids;
+  const entries = await tx.platformPost.findMany({
+    where: { id: { in: ids }, repostSourceId: { not: null } },
+    select: { id: true, authorId: true, repostSourceId: true }
+  });
+  const sources = await discoverySources(tx, context, entries, now, prefs);
+  return ids.filter((id) => !sources.hiddenEntries.has(id));
+}
+export function legacyFeedFilterKey(
+  ownerId: string | null,
+  prefs: DiscoveryPreferences
+) {
+  return !prefs.hiddenWords.length && !prefs.hiddenTopics.length
+    ? ""
+    : createHmac("sha256", accountConfig().rateSecret)
+        .update(
+          JSON.stringify([
+            "hidden-feed-v1",
+            ownerId,
+            prefs.hiddenWords,
+            prefs.hiddenTopics
+          ])
+        )
+        .digest("hex");
+}
 export function readFeed(
   db: PrismaClient,
   token: unknown,
@@ -169,6 +230,7 @@ export function readFeed(
     guestMode?: unknown;
     scope?: unknown;
     refresh?: unknown;
+    guestDiscovery?: unknown;
     legacyThrough?: unknown;
     legacyAnchor?: unknown;
     legacyBefore?: unknown;
@@ -184,7 +246,13 @@ export function readFeed(
       const preference = context.actorId
         ? await tx.socialPreferences.findUnique({
             where: { ownerId: context.actorId },
-            select: { feedMode: true, feedVersion: true }
+            select: {
+              feedMode: true,
+              feedVersion: true,
+              discovery: true,
+              discoveryVersion: true,
+              discoveryRecoveryRequired: true
+            }
           })
         : null;
       const scope = createHmac("sha256", accountConfig().rateSecret)
@@ -196,7 +264,38 @@ export function readFeed(
         feedMode(sameOwner ? input.mode : undefined) ??
         feedMode(context.actorId ? preference?.feedMode : input.guestMode) ??
         "latest";
-      const cursors = codec(context.actorId, mode);
+      const advanced = discoveryMode(mode);
+      if (advanced)
+        return {
+          mode,
+          scope,
+          ownerId: context.actorId,
+          preferenceVersion: preference?.feedVersion ?? 0,
+          ...(await readDiscoveryFeedIn(
+            tx,
+            context,
+            advanced,
+            preference,
+            { ...input, cursor: sameOwner ? input.cursor : undefined },
+            now
+          ))
+        };
+      if (preference?.discoveryRecoveryRequired)
+        throw new PortalError(
+          409,
+          "Review and save your newer Feed Settings after recovery before reopening this feed."
+        );
+      const prefs = context.actorId
+        ? storedDiscoveryPreferences(preference?.discovery)
+        : guestDiscoveryPreferences(input.guestDiscovery);
+      const feedKey = legacyFeedFilterKey(context.actorId, prefs);
+      const readable = (time: Date) => ({
+        AND: [
+          feedReadableWhere(context, mode, time),
+          legacyHiddenWhere(context, prefs)
+        ]
+      });
+      const cursors = codec(context.actorId, mode, feedKey);
       let cursor = cursors.decode(sameOwner ? input.cursor : undefined, now);
       if (!cursor && ["latest", "friends"].includes(mode)) {
         const through = readerDate(input.legacyThrough),
@@ -224,6 +323,7 @@ export function readFeed(
                 id: cursor.snapshot,
                 ownerId: context.actorId,
                 mode,
+                selectionKey: feedKey || null,
                 createdAt: at,
                 expiresAt: { gt: now }
               }
@@ -240,14 +340,19 @@ export function readFeed(
           // thirty IDs; every body and identity is freshly authorized below.
           const rows = await tx.platformPost.findMany({
             where: {
-              AND: [
-                feedReadableWhere(context, mode, now),
-                { id: { in: cursor.page } }
-              ]
+              AND: [readable(now), { id: { in: cursor.page } }]
             },
             select: { id: true }
           });
-          const allowed = new Set(rows.map((row) => row.id));
+          const allowed = new Set(
+            await legacyVisibleIds(
+              tx,
+              context,
+              rows.map((row) => row.id),
+              prefs,
+              now
+            )
+          );
           ids = cursor.page.filter((id) => allowed.has(id));
           notice =
             "This ranking set has expired. Your current page is still here. Finish or save your entries, then refresh posts for a new set.";
@@ -261,13 +366,14 @@ export function readFeed(
                 where: {
                   ownerId: null,
                   mode,
+                  selectionKey: feedKey || null,
                   createdAt: { gte: new Date(+now - 30000), lte: now },
                   expiresAt: { gt: now }
                 },
                 orderBy: [{ createdAt: "desc" }, { id: "desc" }]
               });
             if (!snapshot) {
-              const postIds = await rankedIds(tx, context, mode, at);
+              const postIds = await rankedIds(tx, context, mode, at, prefs);
               // Only snapshot allocation is serialized; ranking and ordinary
               // reads keep the shared permission gate and current Like concurrency.
               await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(730221, 31)`;
@@ -277,6 +383,7 @@ export function readFeed(
                   where: {
                     ownerId: null,
                     mode,
+                    selectionKey: feedKey || null,
                     createdAt: { gte: new Date(+now - 30000), lte: now },
                     expiresAt: { gt: now }
                   },
@@ -309,6 +416,7 @@ export function readFeed(
                     id: randomUUID(),
                     ownerId: context.actorId,
                     mode,
+                    selectionKey: feedKey || null,
                     createdAt: at,
                     expiresAt: new Date(+at + TTL),
                     postIds
@@ -325,13 +433,21 @@ export function readFeed(
           const eligible = await tx.platformPost.findMany({
             where: {
               AND: [
-                feedReadableWhere(context, mode, now),
+                readable(now),
                 { id: { in: snapshot.postIds.slice(offset) } }
               ]
             },
             select: { id: true }
           });
-          const allowed = new Set(eligible.map((row) => row.id));
+          const allowed = new Set(
+            await legacyVisibleIds(
+              tx,
+              context,
+              eligible.map((row) => row.id),
+              prefs,
+              now
+            )
+          );
           const remaining = snapshot.postIds
             .slice(offset)
             .filter((id) => allowed.has(id));
@@ -345,37 +461,67 @@ export function readFeed(
         }
       } else {
         cursor ??= { at: at.toISOString() };
-        const rows = await tx.platformPost.findMany({
-          where: {
-            AND: [
-              feedReadableWhere(context, mode, now),
-              cursor.upperId
-                ? {
-                    OR: [
-                      { publishedAt: { lt: at } },
-                      { publishedAt: at, id: { lte: cursor.upperId } }
-                    ]
-                  }
-                : { publishedAt: { lte: at } },
-              ...(cursor.before && cursor.id
-                ? [
-                    {
+        const rows: { id: string; publishedAt: Date | null }[] = [];
+        let before = cursor.before,
+          beforeId = cursor.id,
+          scanned = 0;
+        const batch =
+          prefs.hiddenWords.length || prefs.hiddenTopics.length
+            ? 120
+            : PAGE + 1;
+        while (rows.length <= PAGE) {
+          const candidates = await tx.platformPost.findMany({
+            where: {
+              AND: [
+                readable(now),
+                cursor.upperId
+                  ? {
                       OR: [
-                        { publishedAt: { lt: new Date(cursor.before) } },
-                        {
-                          publishedAt: new Date(cursor.before),
-                          id: { lt: cursor.id }
-                        }
+                        { publishedAt: { lt: at } },
+                        { publishedAt: at, id: { lte: cursor.upperId } }
                       ]
                     }
-                  ]
-                : [])
-            ]
-          },
-          select: { id: true, publishedAt: true },
-          orderBy: [{ publishedAt: "desc" }, { id: "desc" }],
-          take: PAGE + 1
-        });
+                  : { publishedAt: { lte: at } },
+                ...(before && beforeId
+                  ? [
+                      {
+                        OR: [
+                          { publishedAt: { lt: new Date(before) } },
+                          {
+                            publishedAt: new Date(before),
+                            id: { lt: beforeId }
+                          }
+                        ]
+                      }
+                    ]
+                  : [])
+              ]
+            },
+            select: { id: true, publishedAt: true },
+            orderBy: [{ publishedAt: "desc" }, { id: "desc" }],
+            take: batch
+          });
+          scanned += candidates.length;
+          const allowed = new Set(
+            await legacyVisibleIds(
+              tx,
+              context,
+              candidates.map((row) => row.id),
+              prefs,
+              now
+            )
+          );
+          rows.push(...candidates.filter((row) => allowed.has(row.id)));
+          if (candidates.length < batch || rows.length > PAGE) break;
+          if (scanned >= MAX_RANKED_CANDIDATES)
+            throw new PortalError(
+              503,
+              "These hidden choices need a narrower feed selection before more posts can be checked."
+            );
+          const last = candidates.at(-1)!;
+          before = last.publishedAt!.toISOString();
+          beforeId = last.id;
+        }
         ids = rows.slice(0, PAGE).map((row) => row.id);
         const last = rows[PAGE - 1];
         if (rows.length > PAGE && last)
@@ -387,6 +533,8 @@ export function readFeed(
           };
       }
       return {
+        discovery: null,
+        feedKey,
         mode,
         scope,
         ownerId: context.actorId,

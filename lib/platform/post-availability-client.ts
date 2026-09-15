@@ -20,19 +20,25 @@ const queued = new Map<string, Waiting[]>();
 export function currentPostAvailability(
   id: string,
   owner: string | null,
-  mode?: FeedMode
+  mode?: FeedMode,
+  feedKey?: string
 ) {
-  const key = JSON.stringify([owner, mode]);
+  const key = JSON.stringify([owner, mode, feedKey]);
   return new Promise<PostAvailability>((resolve, reject) => {
     const waiting = queued.get(key);
     if (waiting) waiting.push({ id, resolve, reject });
     else {
       queued.set(key, [{ id, resolve, reject }]);
-      setTimeout(() => void flush(key, owner, mode), 0);
+      setTimeout(() => void flush(key, owner, mode, feedKey), 0);
     }
   });
 }
-async function flush(key: string, owner: string | null, mode?: FeedMode) {
+async function flush(
+  key: string,
+  owner: string | null,
+  mode?: FeedMode,
+  feedKey?: string
+) {
   const waiting = queued.get(key) ?? [];
   queued.delete(key);
   const ids = [...new Set(waiting.map((item) => item.id))];
@@ -42,6 +48,7 @@ async function flush(key: string, owner: string | null, mode?: FeedMode) {
     try {
       const query = new URLSearchParams({ view: "availability-batch" });
       if (mode) query.set("feed", mode);
+      if (feedKey) query.set("feedKey", feedKey);
       group.forEach((id) => query.append("postId", id));
       const { data } = await socialRequest<{ posts: PostAvailability[] }>(
         `/api/platform/posts?${query}`,

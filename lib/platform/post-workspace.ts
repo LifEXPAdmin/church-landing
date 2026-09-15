@@ -1,4 +1,5 @@
 import { postInteractionIdIn } from "./post-reads";
+import { parsePostDiscovery, type PostDiscoveryInput } from "./post-discovery";
 import {
   requireUnrestrictedTopicPost,
   requireTopicParticipation,
@@ -20,6 +21,7 @@ import { POST_TOPICS, postPreviewText } from "./post-options";
 
 export const WORKSPACE_PAGE_SIZE = 20;
 export type PrivateDraftPayload = {
+  discovery?: PostDiscoveryInput;
   content: string;
   contentNote?: string;
   safeExcerpt?: string;
@@ -37,6 +39,7 @@ export type PrivateDraftPayload = {
   topicCommunityId?: string | null;
 };
 const draftFields = [
+  "discovery",
   "content",
   "contentNote",
   "safeExcerpt",
@@ -103,6 +106,9 @@ export function privateDraftPayload(value: unknown): PrivateDraftPayload {
     throw new PortalError(400, "Choose a supported reply permission.");
   const reference = (v: unknown) => (v == null || v === "" ? null : postId(v));
   return {
+    ...(p.discovery !== undefined
+      ? { discovery: parsePostDiscovery(p.discovery, false) }
+      : {}),
     content: text(p.content ?? "", 20000),
     ...(p.contentNote !== undefined
       ? { contentNote: text(p.contentNote, 1000) }

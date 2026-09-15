@@ -5,6 +5,15 @@ const nextConfig: NextConfig = {
   // Private/withdrawable media must never enter the shared image optimizer cache.
   images: { localPatterns: [{ pathname: "/images/**", search: "" }] },
   outputFileTracingExcludes: { "/*": ["./.account-test/**/*"] },
+  outputFileTracingIncludes: Object.fromEntries(
+    [
+      "/platform",
+      "/platform/feed",
+      "/api/platform/discovery",
+      "/api/platform/posts",
+      "/api/platform/post-workspace"
+    ].map((route) => [route, ["./data/discovery/countries/*.json"]])
+  ),
   async headers() {
     return ["/platform/:path*", "/api/platform/:path*"].map((source) => ({
       source,

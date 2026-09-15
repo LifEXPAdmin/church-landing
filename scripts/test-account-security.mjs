@@ -635,6 +635,46 @@ try {
       if (JSON.stringify(prior) !== JSON.stringify(originals())) throw Error("Topic migration changed original content, accounts, reports or protected controls");
       if (psql(["-Atc", `SELECT (SELECT count(*) FROM "TopicCommunity") + (SELECT count(*) FROM "TopicMembership") + (SELECT count(*) FROM "TopicAudit") + (SELECT count(*) FROM "PlatformPost" WHERE "topicCommunityId" IS NOT NULL) + (SELECT count(*) FROM "PlatformPostComment" WHERE "topicCommunityId" IS NOT NULL) + (SELECT count(*) FROM "CommunityReport" WHERE "scopeTopicId" IS NOT NULL)`]).trim() !== "0") throw Error("Topic migration invented communities, choices, roles or content destinations");
       console.log("Topic migration preserves original accounts, posts, comments, reports and protected controls; no community, membership, authority or destination is inferred.");
+    } else if (name === "20260915033000_discovery_preferences") {
+      const originals = () => [
+        psql([
+          "-Atc",
+          `SELECT md5(coalesce(jsonb_agg(to_jsonb(t) - ARRAY['discoveryLanguage','discoveryDenomination','discoveryCountry','discoveryPlaceId','discoveryRegion','discoveryLatitude','discoveryLongitude'] ORDER BY id)::text,'[]')) FROM "PlatformPost" t`
+        ]),
+        psql([
+          "-Atc",
+          `SELECT md5(coalesce(jsonb_agg(to_jsonb(t) - ARRAY['discovery','discoveryVersion','discoveryRecoveryRequired'] ORDER BY "ownerId")::text,'[]')) FROM "SocialPreferences" t`
+        ]),
+        psql([
+          "-Atc",
+          `SELECT md5(coalesce(jsonb_agg(to_jsonb(t) - 'selectionKey' ORDER BY id)::text,'[]')) FROM "FeedSnapshot" t`
+        ]),
+        ...[
+          "PlatformUser",
+          "PlatformPostComment",
+          "RetentionControl",
+          "TopicCommunity",
+          "TopicMembership"
+        ].map((table) => fingerprint(table, "id"))
+      ];
+      const prior = originals();
+      psql(["-f", `prisma/migrations/${name}/migration.sql`]);
+      if (JSON.stringify(prior) !== JSON.stringify(originals()))
+        throw Error(
+          "Discovery migration changed original posts, preferences, reading sets, accounts, comments, recovery controls or topics"
+        );
+      if (
+        psql([
+          "-Atc",
+          `SELECT (SELECT count(*) FROM "PlatformPost" WHERE "discoveryLanguage" IS NOT NULL OR "discoveryDenomination" IS NOT NULL OR "discoveryCountry" IS NOT NULL OR "discoveryPlaceId" IS NOT NULL OR "discoveryRegion" IS NOT NULL OR "discoveryLatitude" IS NOT NULL OR "discoveryLongitude" IS NOT NULL) + (SELECT count(*) FROM "SocialPreferences" WHERE discovery IS NOT NULL OR "discoveryVersion"<>0 OR "discoveryRecoveryRequired") + (SELECT count(*) FROM "FeedSnapshot" WHERE "selectionKey" IS NOT NULL)`
+        ]).trim() !== "0"
+      )
+        throw Error(
+          "Discovery migration inferred classification, filters, location consent or reading selections"
+        );
+      console.log(
+        "Discovery migration preserves every original field and leaves new classifications and choices empty; no location, faith, language or feed consent is inferred."
+      );
     } else psql(["-f", `prisma/migrations/${name}/migration.sql`]);
   }
   for (const [i, [table, key]] of accountTables.entries()) {

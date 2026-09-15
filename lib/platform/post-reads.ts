@@ -1,4 +1,13 @@
 import { feedMode } from "./feed-options";
+import { discoveryMode, guestDiscoveryPreferences } from "./discovery-options";
+import { currentDiscoveryIds } from "./discovery-feed";
+import {
+  legacyHiddenWhere,
+  legacyFeedFilterKey,
+  legacyVisibleIds
+} from "./feed-reads";
+import { storedDiscoveryPreferences } from "./discovery-preferences";
+import { getDiscoveryPlace, discoveryPlaceLabel } from "./discovery-places";
 import { feedReadableWhere } from "./feed-policy";
 import { PortalError } from "./portal-policy";
 import { repostSourceWhere } from "./repost-policy";
@@ -99,8 +108,24 @@ async function pageInclude(tx: PostTx, context: PostContext, ids: string[]) {
   }
   return selection;
 }
-function project(post: PostRow, context: PostContext, now: Date) {
+function project(
+  post: PostRow,
+  context: PostContext,
+  now: Date,
+  locality: string | null = null
+) {
   return {
+    ...(post.discoveryLanguage ||
+    post.discoveryDenomination ||
+    post.discoveryCountry
+      ? {
+          discovery: {
+            language: post.discoveryLanguage,
+            denomination: post.discoveryDenomination,
+            locality: locality ?? post.discoveryCountry
+          }
+        }
+      : {}),
     id: post.id,
     topicCommunity: post.topicCommunity,
     createdAt: post.publishedAt ?? post.createdAt,
@@ -220,8 +245,23 @@ async function projectRows(
                 block.targetUserId === row.authorId)
           ))
     );
+  const localities = new Map<string, string>();
+  await Promise.all(
+    [...rows, ...sources].map(async (row) => {
+      if (!row.discoveryCountry || !row.discoveryPlaceId) return;
+      try {
+        const place = await getDiscoveryPlace(
+          row.discoveryCountry,
+          row.discoveryPlaceId
+        );
+        if (place) localities.set(row.id, discoveryPlaceLabel(place));
+      } catch {
+        /* A missing catalog label never invents a location or prevents reading the authorized post. */
+      }
+    })
+  );
   return rows.map((row) => ({
-    ...project(row, context, now),
+    ...project(row, context, now, localities.get(row.id) ?? null),
     repost: row.repostKind
       ? {
           kind: row.repostKind,
@@ -230,7 +270,14 @@ async function projectRows(
             (row.authorChurchId
               ? context.publishers.has(row.authorChurchId)
               : row.authorId === context.actorId),
-          source: sourceFor(row) ? project(sourceFor(row)!, context, now) : null
+          source: sourceFor(row)
+            ? project(
+                sourceFor(row)!,
+                context,
+                now,
+                localities.get(sourceFor(row)!.id) ?? null
+              )
+            : null
         }
       : null
   }));
@@ -440,7 +487,8 @@ export function getPostAvailabilityBatch(
   db: PrismaClient,
   token: unknown,
   values: string[],
-  scope?: unknown
+  scope?: unknown,
+  discovery?: { filterKey?: unknown; guestDiscovery?: unknown }
 ) {
   if (!values.length || values.length > 30)
     throw new PortalError(400, "Check up to 30 post references at once.");
@@ -448,11 +496,44 @@ export function getPostAvailabilityBatch(
   if (scope && !mode) throw new PortalError(400, "Choose a supported feed.");
   const ids = [...new Set(values.map(postId))];
   return withPostRead(db, token, async (tx, context) => {
+    const advanced = discoveryMode(mode);
+    let eligibleIds = advanced
+      ? await currentDiscoveryIds(tx, context, advanced, ids, discovery)
+      : ids;
+    let hidden: Prisma.PlatformPostWhereInput = {};
+    if (mode && !advanced) {
+      const row = context.actorId
+        ? await tx.socialPreferences.findUnique({
+            where: { ownerId: context.actorId },
+            select: { discovery: true, discoveryRecoveryRequired: true }
+          })
+        : null;
+      const prefs = context.actorId
+        ? storedDiscoveryPreferences(row?.discovery)
+        : guestDiscoveryPreferences(discovery?.guestDiscovery);
+      if (
+        row?.discoveryRecoveryRequired ||
+        (discovery?.filterKey &&
+          discovery.filterKey !== legacyFeedFilterKey(context.actorId, prefs))
+      )
+        eligibleIds = [];
+      hidden = legacyHiddenWhere(context, prefs);
+      eligibleIds = await legacyVisibleIds(
+        tx,
+        context,
+        eligibleIds,
+        prefs,
+        new Date()
+      );
+    }
     const rows = await tx.platformPost.findMany({
       where: {
         AND: [
-          { id: { in: ids } },
-          mode ? feedReadableWhere(context, mode) : postReadableWhere(context)
+          { id: { in: eligibleIds } },
+          hidden,
+          mode && !advanced
+            ? feedReadableWhere(context, mode)
+            : postReadableWhere(context)
         ]
       },
       select: {

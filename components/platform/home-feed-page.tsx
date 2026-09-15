@@ -8,10 +8,12 @@ import { FeedReader } from "@/components/platform/feed-reader";
 import { ComposePostButton } from "@/components/platform/compose-post-button";
 import { PlatformShell } from "@/components/platform/platform-shell";
 import { getCurrentPlatformUser } from "@/lib/platform/session";
+import { discoveryMode } from "@/lib/platform/discovery-options";
 import { feedChoices, feedMode } from "@/lib/platform/feed-options";
 import { PortalError } from "@/lib/platform/portal-policy";
 import { accountEntryHref } from "@/lib/platform/account-entry";
 import { accountDeliveryAvailable } from "@/lib/platform/account-availability";
+import { DiscoverySettings } from "./discovery-settings";
 
 export type FeedParams = {
   feed?: string;
@@ -62,6 +64,15 @@ export default async function HomeFeedPage({
           >
             Open Latest
           </Link>
+          <Link
+            className="gc-button gc-button-quiet"
+            href="/platform/settings/feed/discovery"
+          >
+            Review Feed Settings
+          </Link>
+          {!currentUser && (
+            <DiscoverySettings owner={null} initialMode={mode} />
+          )}
         </section>
       </PlatformShell>
     );
@@ -182,6 +193,10 @@ export default async function HomeFeedPage({
                   <PostCard
                     post={post}
                     feedMode={selectedFeed}
+                    feedKey={result.feedKey}
+                    discoveryExplanation={
+                      result.discovery?.explanations[post.id]
+                    }
                     currentUserId={currentUser?.id}
                     redirectTo={`/platform?${feedQuery}&post=${post.id}`}
                   />
@@ -205,8 +220,38 @@ export default async function HomeFeedPage({
                         : "Sign in to see posts from your accepted friends."
                       : selectedFeed === "latest"
                         ? "Conversations will appear here as people share."
-                        : "Try Latest for new posts from across the community."}
+                        : discoveryMode(selectedFeed)
+                          ? "You have reached the end of this selection. Review Feed Settings, check your connections, or refresh when you are ready for new posts."
+                          : "Try Latest for new posts from across the community."}
                   </p>
+                  {discoveryMode(selectedFeed) &&
+                    [
+                      "following",
+                      "favorites",
+                      "churches",
+                      "your-church"
+                    ].includes(selectedFeed) && (
+                      <Link
+                        prefetch={false}
+                        className="gc-button gc-button-quiet"
+                        href={
+                          !currentUser
+                            ? accountEntryHref(
+                                "login",
+                                `/platform?feed=${selectedFeed}`
+                              )
+                            : selectedFeed === "your-church"
+                              ? "/platform/my-church"
+                              : "/platform/relationships"
+                        }
+                      >
+                        {!currentUser
+                          ? "Sign in"
+                          : selectedFeed === "your-church"
+                            ? "Review church connections"
+                            : "Review follows and favorites"}
+                      </Link>
+                    )}
                   {selectedFeed === "friends" && (
                     <Link
                       href={

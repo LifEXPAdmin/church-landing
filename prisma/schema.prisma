@@ -1289,6 +1289,13 @@ enum ContentModerationState {
 }
 
 model PlatformPost {
+  discoveryLanguage String?
+  discoveryDenomination String?
+  discoveryCountry String?
+  discoveryPlaceId Int?
+  discoveryRegion String?
+  discoveryLatitude Float?
+  discoveryLongitude Float?
   topicCommunityId String?
   topicCommunity TopicCommunity? @relation(fields: [topicCommunityId], references: [id], onDelete: Restrict)
   topicAuthor TopicMembership? @relation("TopicPostAuthor", fields: [topicCommunityId, authorId], references: [communityId, userId], onDelete: NoAction, onUpdate: NoAction)
@@ -1355,6 +1362,8 @@ model PlatformPost {
   @@index([authorId])
   @@index([topicCommunityId, status, publishedAt(sort: Desc), id(sort: Desc)])
   @@index([type])
+  @@index([discoveryCountry, status, publishedAt(sort: Desc)])
+  @@index([discoveryDenomination, status, publishedAt(sort: Desc)])
   @@index([createdAt])
   @@index([audienceChurchId, status, publishedAt])
   @@index([status, moderationState, publishedAt(sort: Desc), id(sort: Desc)], map: "PlatformPost_visible_feed_idx")
@@ -1828,6 +1837,9 @@ model PostWorkspaceOperation {
 
 
 model SocialPreferences {
+  discovery Json?
+  discoveryVersion Int @default(0)
+  discoveryRecoveryRequired Boolean @default(false)
   feedMode String?
   feedVersion Int @default(0)
   profilePinPostId String?
@@ -2128,6 +2140,7 @@ model FounderAnnouncementRecipient {
 
 // Expiring ordered references only: no post bodies, scores, or viewing history.
 model FeedSnapshot {
+  selectionKey String?
   id String @id
   ownerId String?
   mode String
@@ -2137,4 +2150,5 @@ model FeedSnapshot {
   owner PlatformUser? @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   @@index([ownerId, createdAt])
   @@index([expiresAt])
+  @@index([ownerId, mode, selectionKey, createdAt])
 }

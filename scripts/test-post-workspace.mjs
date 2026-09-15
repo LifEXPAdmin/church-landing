@@ -108,7 +108,7 @@ try {
     sql(
       [
         "-Atc",
-        `SELECT md5(string_agg(row::text, '' ORDER BY row::text)) FROM (SELECT to_jsonb(t) AS row FROM "PlatformUser" t WHERE id='fixture-upgrade' UNION ALL SELECT to_jsonb(t) - ARRAY['contentNote','safeExcerpt','topicCommunityId'] FROM "PlatformPost" t WHERE id='fixture-retained-post' UNION ALL SELECT to_jsonb(t) - ARRAY['parentId','rootId','version','editedAt','deletedAt','authorChurchId','topicCommunityId'] FROM "PlatformPostComment" t WHERE id='fixture-retained-comment' UNION ALL SELECT to_jsonb(t) FROM "PlatformFollow" t WHERE id='fixture-retained-follow') t`
+        `SELECT md5(string_agg(row::text, '' ORDER BY row::text)) FROM (SELECT to_jsonb(t) AS row FROM "PlatformUser" t WHERE id='fixture-upgrade' UNION ALL SELECT to_jsonb(t) - ARRAY['contentNote','safeExcerpt','topicCommunityId','discoveryLanguage','discoveryDenomination','discoveryCountry','discoveryPlaceId','discoveryRegion','discoveryLatitude','discoveryLongitude'] FROM "PlatformPost" t WHERE id='fixture-retained-post' UNION ALL SELECT to_jsonb(t) - ARRAY['parentId','rootId','version','editedAt','deletedAt','authorChurchId','topicCommunityId'] FROM "PlatformPostComment" t WHERE id='fixture-retained-comment' UNION ALL SELECT to_jsonb(t) FROM "PlatformFollow" t WHERE id='fixture-retained-follow') t`
       ],
       url
     );
@@ -119,53 +119,61 @@ try {
   console.log(
     `PASS: ${migrations.length} migrations and populated upgrade preservation`
   );
-  const files = process.argv.includes("--topics")
+  const files = process.argv.includes("--discovery")
     ? [
-        "tests/topic-communities.test.ts",
+        "tests/discovery-options.test.ts",
+        "tests/discovery-feeds.test.ts",
+        "tests/four-feeds.test.ts",
         "tests/post-workspace.test.ts",
-        "tests/community-report-review.test.ts",
         "tests/retention-controls.test.ts"
       ]
-    : process.argv.includes("--media")
+    : process.argv.includes("--topics")
       ? [
-          "tests/media-processing.test.ts",
-          "tests/media.test.ts",
-          "tests/media-boundary.test.ts",
-          "tests/media-maintenance.test.ts"
+          "tests/topic-communities.test.ts",
+          "tests/post-workspace.test.ts",
+          "tests/community-report-review.test.ts",
+          "tests/retention-controls.test.ts"
         ]
-      : [
-          ...(process.argv.includes("--invitations")
-            ? [
-                "tests/friend-invitations.test.ts",
-                "tests/social-foundations.test.ts"
-              ]
-            : process.argv.includes("--social")
+      : process.argv.includes("--media")
+        ? [
+            "tests/media-processing.test.ts",
+            "tests/media.test.ts",
+            "tests/media-boundary.test.ts",
+            "tests/media-maintenance.test.ts"
+          ]
+        : [
+            ...(process.argv.includes("--invitations")
               ? [
-                  "tests/social-foundations.test.ts",
-                  "tests/gallery-sharing.test.ts"
+                  "tests/friend-invitations.test.ts",
+                  "tests/social-foundations.test.ts"
                 ]
-              : ["tests/post-workspace.test.ts"]),
-          "tests/post-publishing.test.ts",
-          "tests/community-search.test.ts",
-          ...(process.argv.includes("--activity-limits")
-            ? [
-                "tests/social-activity-limits.test.ts",
-                "tests/operational-health.test.ts",
-                "tests/social-foundations.test.ts",
-                "tests/community-reports.test.ts",
-                "tests/friend-invitations.test.ts"
-              ]
-            : []),
-          ...(process.argv.includes("--content-notes")
-            ? [
-                "tests/post-content-notes.test.ts",
-                "tests/draft-controller.test.ts",
-                "tests/post-editor.test.ts",
-                "tests/gallery-sharing.test.ts",
-                "tests/content-withdrawal.test.ts"
-              ]
-            : [])
-        ];
+              : process.argv.includes("--social")
+                ? [
+                    "tests/social-foundations.test.ts",
+                    "tests/gallery-sharing.test.ts"
+                  ]
+                : ["tests/post-workspace.test.ts"]),
+            "tests/post-publishing.test.ts",
+            "tests/community-search.test.ts",
+            ...(process.argv.includes("--activity-limits")
+              ? [
+                  "tests/social-activity-limits.test.ts",
+                  "tests/operational-health.test.ts",
+                  "tests/social-foundations.test.ts",
+                  "tests/community-reports.test.ts",
+                  "tests/friend-invitations.test.ts"
+                ]
+              : []),
+            ...(process.argv.includes("--content-notes")
+              ? [
+                  "tests/post-content-notes.test.ts",
+                  "tests/draft-controller.test.ts",
+                  "tests/post-editor.test.ts",
+                  "tests/gallery-sharing.test.ts",
+                  "tests/content-withdrawal.test.ts"
+                ]
+              : [])
+          ];
   for (const file of files) {
     sql(["-c", 'TRUNCATE "PlatformAuthLimit"']);
     run(

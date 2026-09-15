@@ -22,6 +22,7 @@ export function RepostSourceBoundary({
   commentCount,
   likeCount,
   feedMode,
+  feedKey,
   children
 }: {
   entryId: string;
@@ -33,6 +34,7 @@ export function RepostSourceBoundary({
   commentCount?: number;
   likeCount?: number;
   feedMode?: FeedMode;
+  feedKey?: string;
   children: ReactNode;
 }) {
   const router = useRouter(),
@@ -50,7 +52,12 @@ export function RepostSourceBoundary({
       const r = originalPost
         ? {
             data: {
-              ...(await currentPostAvailability(entryId, accountId, feedMode)),
+              ...(await currentPostAvailability(
+                entryId,
+                accountId,
+                feedMode,
+                feedKey
+              )),
               sourceVersion: null
             }
           }
@@ -93,6 +100,7 @@ export function RepostSourceBoundary({
     commentCount,
     likeCount,
     feedMode,
+    feedKey,
     router
   ]);
   useEffect(() => {
@@ -176,6 +184,7 @@ export function PostReadBoundary({
   commentCount,
   likeCount,
   feedMode,
+  feedKey,
   children
 }: {
   enabled: boolean;
@@ -185,6 +194,7 @@ export function PostReadBoundary({
   commentCount?: number;
   likeCount?: number;
   feedMode?: FeedMode;
+  feedKey?: string;
   children: ReactNode;
 }) {
   return enabled ? (
@@ -197,6 +207,7 @@ export function PostReadBoundary({
       commentCount={commentCount}
       likeCount={likeCount}
       feedMode={feedMode}
+      feedKey={feedKey}
     >
       {children}
     </RepostSourceBoundary>

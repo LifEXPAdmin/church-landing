@@ -70,6 +70,12 @@ test("export includes only the owner's explicit fields, directory choices and ow
   const notificationChoices = {
     feedMode: "friends",
     feedVersion: 3,
+    discovery: {
+      hiddenWords: ["own-private-discovery-marker"],
+      filters: { languages: ["en"] }
+    },
+    discoveryVersion: 4,
+    discoveryRecoveryRequired: false,
     reportAlerts: false,
     founderAnnouncements: false,
     pushCategories: ["replies", "mentions"],
@@ -81,7 +87,13 @@ test("export includes only the owner's explicit fields, directory choices and ow
     data: { ownerId: a.user.id, ...notificationChoices }
   });
   const ownPost = await db.platformPost.create({
-    data: { authorId: a.user.id, content: "Export own post marker" }
+    data: {
+      authorId: a.user.id,
+      content: "Export own post marker",
+      discoveryLanguage: "en",
+      discoveryDenomination: "author-selected-tradition",
+      discoveryCountry: "US"
+    }
   });
   const otherPost = await db.platformPost.create({
     data: { authorId: b.user.id, content: "Excluded stranger post marker" }

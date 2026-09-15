@@ -27,6 +27,9 @@ const NotificationSettings = dynamic(() =>
 const AccountDeletion = dynamic(() =>
   import("./account-deletion").then((m) => m.AccountDeletion)
 );
+const DiscoverySettings = dynamic(() =>
+  import("./discovery-settings").then((m) => m.DiscoverySettings)
+);
 
 export function SettingsControls({
   control,
@@ -37,6 +40,8 @@ export function SettingsControls({
 }) {
   const canConfirm = canConfirmSettings(data);
   switch (control) {
+    case "discovery":
+      return <DiscoverySettings owner={data.ownerId} />;
     case "reading":
       return <ReadingSettings allowReset />;
     case "privacy":

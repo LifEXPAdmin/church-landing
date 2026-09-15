@@ -85,6 +85,7 @@ export type SettingsControl =
   | "methods"
   | "password"
   | "reading"
+  | "discovery"
   | "privacy"
   | "contact"
   | "notifications"
@@ -352,7 +353,7 @@ export const settingsRegistry: readonly SettingRegistration[] = Object.freeze([
     "feed.default",
     "feed",
     "Default feed",
-    "Choose Latest, Friends, Top This Week or Trending. Your account remembers your choice.",
+    "Choose your saved community or discovery feed. Your account remembers your choice.",
     [
       "feed",
       "default feed",
@@ -369,6 +370,37 @@ export const settingsRegistry: readonly SettingRegistration[] = Object.freeze([
       write: "feed-preferences.ts saveFeedPreference"
     },
     { defaultValue: "latest" }
+  ),
+  entry(
+    "feed.discovery",
+    "feed",
+    "Discovery preferences and hidden choices",
+    "Choose your approved church, town or radius, reading languages, self-declared traditions, topics, strict presets and recommendation feedback.",
+    [
+      "for you",
+      "following",
+      "your church",
+      "churches",
+      "local",
+      "public",
+      "favorites",
+      "denomination",
+      "language",
+      "radius",
+      "hidden words",
+      "hidden topics",
+      "recommendations",
+      "more",
+      "less",
+      "reset feedback",
+      "presets"
+    ],
+    { control: "discovery" },
+    {
+      persistenceOwner: "SocialPreferences.discovery and discoveryVersion",
+      read: "discovery-preferences.ts getDiscoveryPreferences",
+      write: "discovery-preferences.ts saveDiscoveryPreferences"
+    }
   ),
   entry(
     "display.reading",

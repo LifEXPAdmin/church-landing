@@ -14,6 +14,7 @@ import { discussionModerationReasons } from "@/lib/platform/post-discussion-opti
 function EditPost({ post, owner }: { post: PostEditorView; owner: string }) {
   const id = useId(),
     [draft, setDraft] = useState<PostDraft>({
+      discovery: post.discovery,
       content: post.content,
       contentNote: post.contentNote,
       safeExcerpt: post.safeExcerpt,

@@ -1,5 +1,6 @@
 import { readFeed } from "./feed-reads";
 import { GUEST_FEED_COOKIE } from "./feed-options";
+import { GUEST_DISCOVERY_COOKIE } from "./discovery-options";
 import { prisma } from "@/lib/prisma";
 import { privateCookies } from "./private-cookies";
 import { PLATFORM_SESSION_COOKIE } from "./session";
@@ -30,7 +31,14 @@ export async function readHomeFeed(input: {
   legacyCursor?: string;
 }) {
   const guestMode = (await privateCookies()).get(GUEST_FEED_COOKIE)?.value;
-  return readFeed(prisma, await token(), { ...input, guestMode });
+  const guestDiscovery = (await privateCookies()).get(
+    GUEST_DISCOVERY_COOKIE
+  )?.value;
+  return readFeed(prisma, await token(), {
+    ...input,
+    guestMode,
+    guestDiscovery
+  });
 }
 export async function readPosts(query: PostQuery = {}) {
   return listPosts(prisma, await token(), query);

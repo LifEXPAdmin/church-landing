@@ -8,6 +8,8 @@ import { PortalError } from "./portal-policy";
 import { postCommand } from "./post-commands";
 import { getPostAvailability, getPostAvailabilityBatch } from "./post-reads";
 import { protectReportedWithdrawal } from "./retention-controls";
+import { GUEST_DISCOVERY_COOKIE } from "./discovery-options";
+import { protectDiscoveryRecovery } from "./discovery-recovery";
 import { previewPostLink } from "./post-links";
 import {
   getPostComposer,
@@ -41,7 +43,16 @@ export async function handlePostRequest(db: PrismaClient, request: Request) {
               db,
               token,
               url.searchParams.getAll("postId"),
-              url.searchParams.get("feed")
+              url.searchParams.get("feed"),
+              {
+                filterKey: url.searchParams.get("feedKey"),
+                guestDiscovery: request.headers
+                  .get("cookie")
+                  ?.split(";")
+                  .map((part) => part.trim())
+                  .find((part) => part.startsWith(GUEST_DISCOVERY_COOKIE + "="))
+                  ?.slice(GUEST_DISCOVERY_COOKIE.length + 1)
+              }
             )
           : view === "availability"
             ? await getPostAvailability(
@@ -161,6 +172,19 @@ export async function handlePostRequest(db: PrismaClient, request: Request) {
       return Response.json(result, { headers });
     }
     const result = await postCommand(db, token, input);
+    if (
+      input.discovery !== undefined &&
+      !(await protectDiscoveryRecovery(db, actor.id, request.signal))
+    )
+      return Response.json(
+        {
+          ...result,
+          message:
+            result.message +
+            " Protected recovery is pending and will be retried automatically."
+        },
+        { status: 202, headers }
+      );
     if (
       input.operation === "withdraw" &&
       !(await protectReportedWithdrawal(db, "POST", result.id))

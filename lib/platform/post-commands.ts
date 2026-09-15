@@ -1,4 +1,6 @@
 import { createHash } from "node:crypto";
+import { postDiscoveryData } from "./post-discovery";
+import { recordDiscoveryControl } from "./retention-controls";
 import { requireSocialActivity } from "./social-activity-limits";
 import { requireTopicParticipation } from "./topic-policy";
 import { topicAudit } from "./topic-communities";
@@ -280,6 +282,9 @@ export async function postCommandIn(
     const post = await tx.platformPost.create({
       data: {
         ...details(input),
+        ...(input.discovery !== undefined
+          ? await postDiscoveryData(input.discovery)
+          : {}),
         ...preparedLink,
         authorId: actorId,
         topicCommunityId,
@@ -305,6 +310,14 @@ export async function postCommandIn(
       }
     });
     await attachPostPhotosIn(tx, context, post, input.photos);
+    if (input.discovery !== undefined)
+      await recordDiscoveryControl(
+        tx,
+        "POST_DISCOVERY",
+        actorId,
+        post.id,
+        post.version
+      );
     await audit(tx, post, actorId, scheduled ? "scheduled" : "published");
     return {
       id: post.id,
@@ -413,6 +426,9 @@ export async function postCommandIn(
       where: { id: post.id },
       data: {
         ...details({ ...post, ...input }),
+        ...(input.discovery !== undefined
+          ? await postDiscoveryData(input.discovery)
+          : {}),
         ...preparedLink,
         audience: nextAudience,
         allowReposts: boolean(input.allowReposts ?? post.allowReposts),
@@ -421,6 +437,14 @@ export async function postCommandIn(
       }
     });
     await audit(tx, updated, actorId, "edited");
+    if (input.discovery !== undefined)
+      await recordDiscoveryControl(
+        tx,
+        "POST_DISCOVERY",
+        actorId,
+        updated.id,
+        updated.version
+      );
     return {
       id: updated.id,
       version: updated.version,

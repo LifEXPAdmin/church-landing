@@ -1,5 +1,11 @@
 "use client";
 import { useRef, useState } from "react";
+import dynamic from "next/dynamic";
+import { FeedBreakReminder } from "./feed-break-reminder";
+const DiscoverySettings = dynamic(
+  () => import("./discovery-settings").then((m) => m.DiscoverySettings),
+  { loading: () => <p role="status">Loading feed settings…</p> }
+);
 import {
   FEED_MODES,
   GUEST_FEED_COOKIE,
@@ -33,6 +39,7 @@ export function FeedChoice({
 }) {
   const [busy, setBusy] = useState(false),
     [message, setMessage] = useState("");
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const pending = useRef<{
     body: string;
     mode: FeedMode;
@@ -126,6 +133,45 @@ export function FeedChoice({
       <p className="text-sm text-gc-muted">
         {feedChoices[value.mode].description}
       </p>
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          className="gc-button gc-button-quiet"
+          disabled={busy || !!pending.current}
+          aria-expanded={settingsOpen}
+          onClick={() => {
+            if (canChange()) setSettingsOpen(!settingsOpen);
+          }}
+        >
+          Feed Settings
+        </button>
+        <button
+          type="button"
+          className="gc-button gc-button-quiet"
+          disabled={busy || !!pending.current}
+          onClick={() => {
+            if (canChange()) {
+              const url = new URL(destination(value.mode), location.origin);
+              url.searchParams.set("refreshFeed", "1");
+              onNavigate(url.pathname + url.search);
+            }
+          }}
+        >
+          Refresh for new posts
+        </button>
+      </div>
+      {settingsOpen && (
+        <DiscoverySettings
+          key={value.ownerId ?? "guest"}
+          owner={value.ownerId}
+          initialMode={value.mode}
+          onSaved={(mode) => {
+            setSettingsOpen(false);
+            onNavigate(destination(mode));
+          }}
+        />
+      )}
+      <FeedBreakReminder />
       {empty && value.mode !== "latest" && (
         <button
           type="button"

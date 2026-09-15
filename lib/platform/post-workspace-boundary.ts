@@ -6,6 +6,7 @@ import { readAccountSession } from "./accounts";
 import { AccountError } from "./account-error";
 import { PortalError } from "./portal-policy";
 import { postWorkspaceCommand, readPostWorkspace } from "./post-workspace";
+import { protectDiscoveryRecovery } from "./discovery-recovery";
 
 export const workspaceHeaders = {
   "Cache-Control": "private, no-store, max-age=0",
@@ -96,9 +97,21 @@ export async function handlePostWorkspaceRequest(
         "Too many saves. Keep your entries and retry in 15 minutes.",
         900
       );
-    return Response.json(await postWorkspaceCommand(db, token, input), {
-      headers: workspaceHeaders
-    });
+    const result = await postWorkspaceCommand(db, token, input);
+    const protectedRecovery =
+      input.operation !== "publish-draft" ||
+      (await protectDiscoveryRecovery(db, actor.id, request.signal));
+    return Response.json(
+      protectedRecovery
+        ? result
+        : {
+            ...result,
+            message:
+              result.message +
+              " Protected recovery is pending and will be retried automatically."
+          },
+      { status: protectedRecovery ? 200 : 202, headers: workspaceHeaders }
+    );
   } catch (error) {
     return workspaceError(error);
   }

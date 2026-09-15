@@ -27,7 +27,8 @@ export function mutualFriendWhere(
 export function feedReadableWhere(
   context: PostContext,
   mode: FeedMode,
-  now = new Date()
+  now = new Date(),
+  homeChurchId: string | null = null
 ): Prisma.PlatformPostWhereInput {
   return {
     AND: [
@@ -40,17 +41,71 @@ export function feedReadableWhere(
           { repostSource: { is: socialDiscoveryWhere(context) } }
         ]
       },
-      mode === "friends"
-        ? context.actorId
-          ? { authorChurchId: null, author: mutualFriendWhere(context) }
-          : { id: { in: [] } }
-        : {
-            audience: "PUBLIC",
-            OR: [
-              { eventOccurrenceId: null },
-              { eventOccurrence: { event: { visibility: "PUBLIC" } } }
-            ]
+      mode === "following" || mode === "favorites"
+        ? followedPostWhere(context, mode === "favorites")
+        : mode === "your-church"
+          ? homeChurchId && context.churches.includes(homeChurchId)
+            ? {
+                OR: [
+                  { authorChurchId: homeChurchId },
+                  { audienceChurchId: homeChurchId }
+                ]
+              }
+            : { id: { in: [] } }
+          : mode === "friends"
+            ? context.actorId
+              ? { authorChurchId: null, author: mutualFriendWhere(context) }
+              : { id: { in: [] } }
+            : {
+                audience: "PUBLIC",
+                ...(mode === "churches"
+                  ? {
+                      authorChurch: {
+                        socialRelations: {
+                          some: {
+                            ownerId: context.actorId ?? "",
+                            followingChurch: true
+                          }
+                        }
+                      }
+                    }
+                  : {}),
+                OR: [
+                  { eventOccurrenceId: null },
+                  { eventOccurrence: { event: { visibility: "PUBLIC" } } }
+                ]
+              }
+    ]
+  };
+}
+export function followedPostWhere(
+  context: PostContext,
+  favorite = false
+): Prisma.PlatformPostWhereInput {
+  if (!context.actorId) return { id: { in: [] } };
+  const ownerId = context.actorId;
+  return {
+    OR: [
+      {
+        authorChurchId: null,
+        author: {
+          followers: { some: { followerId: ownerId } },
+          ...(favorite
+            ? { socialTargets: { some: { ownerId, favorite: true } } }
+            : {})
+        }
+      },
+      {
+        authorChurch: {
+          socialRelations: {
+            some: {
+              ownerId,
+              followingChurch: true,
+              ...(favorite ? { favorite: true } : {})
+            }
           }
+        }
+      }
     ]
   };
 }

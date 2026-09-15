@@ -1,4 +1,6 @@
 import type { FeedMode } from "@/lib/platform/feed-options";
+import type { DiscoveryExplanation } from "@/lib/platform/discovery-ranking";
+import { DiscoveryPostExplanation } from "./discovery-post-explanation";
 import { RepostControl } from "./repost-control";
 import {
   RepostSourceBoundary,
@@ -18,6 +20,7 @@ import { PostLikeControl } from "./post-like-control";
 import { PrayerControl } from "./prayer-workspace";
 import { accountEntryHref } from "@/lib/platform/account-entry";
 import Link from "next/link";
+import { discoveryLanguageLabel } from "@/lib/platform/discovery-options";
 import { Heart, Globe, MessageCircle } from "lucide-react";
 import { formatDate, postTypeLabels } from "@/lib/platform/format";
 import { PostParticipation } from "./post-participation";
@@ -27,6 +30,8 @@ import { postPreviewText } from "@/lib/platform/post-options";
 
 interface PostCardProps {
   feedMode?: FeedMode;
+  feedKey?: string;
+  discoveryExplanation?: DiscoveryExplanation;
   post: PostView;
   currentUserId?: string;
   redirectTo?: string;
@@ -53,12 +58,19 @@ export function PostCard(props: PostCardProps) {
     <PostReadBoundary
       enabled
       feedMode={props.feedMode}
+      feedKey={props.feedKey}
       postId={post.id}
       version={post.version}
       accountId={currentUserId ?? null}
       commentCount={post.commentCount}
       likeCount={post.likeCount}
     >
+      {props.discoveryExplanation && (
+        <DiscoveryPostExplanation
+          value={props.discoveryExplanation}
+          owner={currentUserId ?? null}
+        />
+      )}
       <PostCardContent {...props} />
     </PostReadBoundary>
   );
@@ -200,6 +212,18 @@ function PostCardContent({
               {post.topics.length > 0 && (
                 <p className="text-sm text-gc-muted">
                   Topics: {post.topics.join(", ")}
+                </p>
+              )}
+              {post.discovery && (
+                <p className="text-sm text-gc-muted">
+                  Author-selected:{" "}
+                  {post.discovery.language
+                    ? `language ${discoveryLanguageLabel(post.discovery.language)}`
+                    : "unclassified language"}{" "}
+                  · {post.discovery.denomination ?? "unclassified tradition"}
+                  {post.discovery.locality
+                    ? ` · broad locality ${post.discovery.locality}`
+                    : ""}
                 </p>
               )}
               {post.topicCommunity && (

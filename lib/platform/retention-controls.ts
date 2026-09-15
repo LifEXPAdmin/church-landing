@@ -26,6 +26,8 @@ export type RetentionControlEntry = {
     | "MODERATION_COMMENT"
     | "MODERATION_TOPIC"
     | "TOPIC_ACCESS"
+    | "POST_DISCOVERY"
+    | "DISCOVERY_PREFERENCES"
     | "APPEAL"
     | "ACCOUNT_STATE"
     | "AUTHOR_WITHDRAW_POST"
@@ -66,7 +68,9 @@ function validate(value: unknown): RetentionControlEntry {
     r.policy !== policy ||
     ![r.recordedAt, r.startedAt, r.reviewDueAt].every(date) ||
     (r.endedAt !== null && !date(r.endedAt)) ||
-    !(r.kind === "TOPIC_ACCESS"
+    !(["TOPIC_ACCESS", "POST_DISCOVERY", "DISCOVERY_PREFERENCES"].includes(
+      r.kind
+    )
       ? r.target === "ACCOUNT" &&
         r.operatorId !== null &&
         r.outcome === "QUARANTINED"
@@ -197,6 +201,30 @@ export async function recordTopicAccessControl(
     targetId: actorId,
     sourceId: communityId,
     version: row.securityVersion,
+    policy,
+    outcome: "QUARANTINED",
+    operatorId: actorId,
+    recordedAt: now.toISOString(),
+    startedAt: now.toISOString(),
+    reviewDueAt: retentionDate(now, 90).toISOString(),
+    endedAt: null
+  });
+}
+export async function recordDiscoveryControl(
+  tx: Tx,
+  kind: "POST_DISCOVERY" | "DISCOVERY_PREFERENCES",
+  actorId: string,
+  sourceId: string,
+  version: number
+) {
+  const now = new Date();
+  await record(tx, {
+    id: randomUUID(),
+    kind,
+    target: "ACCOUNT",
+    targetId: actorId,
+    sourceId,
+    version,
     policy,
     outcome: "QUARANTINED",
     operatorId: actorId,
@@ -475,6 +503,55 @@ export async function replayRetentionControls(
     async (tx) => {
       await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(730221, 2)`;
       for (const entry of entries) {
+        if (
+          entry.kind === "POST_DISCOVERY" ||
+          entry.kind === "DISCOVERY_PREFERENCES"
+        ) {
+          if (entry.kind === "POST_DISCOVERY") {
+            // A newer author's classification cannot be reconstructed from an
+            // opaque receipt. Clear the older public classification before traffic.
+            await tx.$executeRaw`UPDATE "PlatformPost" SET
+              "discoveryLanguage"=NULL, "discoveryDenomination"=NULL,
+              "discoveryCountry"=NULL, "discoveryPlaceId"=NULL,
+              "discoveryRegion"=NULL, "discoveryLatitude"=NULL,
+              "discoveryLongitude"=NULL, version=${entry.version}
+              WHERE id=${entry.sourceId} AND version < ${entry.version}`;
+          } else {
+            // Missing newer private filters must not silently reopen a wider feed.
+            const owner = await tx.platformUser.findUnique({
+              where: { id: entry.sourceId },
+              select: { id: true, erasedAt: true }
+            });
+            if (owner && !owner.erasedAt) {
+              await tx.socialPreferences.upsert({
+                where: { ownerId: owner.id },
+                create: {
+                  ownerId: owner.id,
+                  discoveryVersion: entry.version,
+                  discoveryRecoveryRequired: true
+                },
+                update: {}
+              });
+              await tx.socialPreferences.updateMany({
+                where: {
+                  ownerId: owner.id,
+                  discoveryVersion: { lt: entry.version }
+                },
+                data: {
+                  discovery: Prisma.DbNull,
+                  discoveryVersion: entry.version,
+                  discoveryRecoveryRequired: true
+                }
+              });
+            }
+          }
+          await record(tx, entry);
+          await tx.retentionControl.updateMany({
+            where: { id: entry.id, journaledAt: null },
+            data: { journaledAt: new Date() }
+          });
+          continue;
+        }
         if (entry.kind === "TOPIC_ACCESS") {
           await tx.$executeRaw`UPDATE "TopicCommunity" SET "recoveryRequired"=true,
             "securityVersion"=${entry.version} WHERE id=${entry.sourceId} AND "securityVersion" < ${entry.version}`;

@@ -10,7 +10,10 @@ import {
 import { postTypeLabels } from "@/lib/platform/format";
 import { portalInputClass } from "./portal-action-form";
 import { PostLinkFields } from "./post-link-fields";
+import { PostDiscoveryFields } from "./post-discovery-fields";
+import type { PostDiscoveryInput } from "@/lib/platform/post-discovery";
 export type PostDraft = {
+  discovery?: PostDiscoveryInput;
   content: string;
   contentNote?: string;
   safeExcerpt?: string;
@@ -40,6 +43,11 @@ export function draftProblem(draft: PostDraft) {
   if (normalizedPostText(draft.safeExcerpt ?? "").length > SAFE_EXCERPT_LIMIT)
     return "Use up to 160 characters for the safe excerpt. Your draft has not been shortened.";
   if (draft.topics.length > 5) return "Choose up to five topics.";
+  if (
+    (draft.discovery?.country || draft.discovery?.placeId) &&
+    !draft.discovery.shareLocality
+  )
+    return "Confirm sharing the broad locality with this post, or clear its location fields.";
   return null;
 }
 export function PostDraftFields({
@@ -204,6 +212,10 @@ export function PostDraftFields({
           </div>
         </fieldset>
       </details>
+      <PostDiscoveryFields
+        value={draft.discovery}
+        onChange={(discovery) => change({ ...draft, discovery })}
+      />
     </>
   );
 }

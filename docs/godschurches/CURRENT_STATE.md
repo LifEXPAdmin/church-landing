@@ -1,3 +1,19 @@
+## Discovery feature implementation checkpoint — September 15, 2026 UTC
+
+The discovery feature is in progress locally and has not been released. The current
+production receipt remains the topic-community release below. The feature adds
+explicit discovery selections, private preferences and presets, truthful ranking
+reasons, hidden controls, and consent-based public post classification to the
+existing reader. Following remains distinct from accepted Friends.
+
+The initial expanded foundation run passed 46 tests and a populated migration /
+dump / restore check with zero production writes. Additional HTTP, sparse Local,
+export and follow-change checks have been added for the production-build gate.
+Migration 55 remains local. Browser acceptance, protected production-copy upgrade,
+release gate, exact deployment / canonical assignment and live behavior are still
+required. See [the discovery contract](DISCOVERY_FEEDS_CONTRACT.md). Physical-phone
+acceptance remains separately evidenced; the unified queue final review stays last.
+
 ## Topic communities verified live — September 15, 2026 UTC
 
 **2026.09.14.18 / 55c53f49c5aee39a0d07e48248c0d3f7e7bf8dde** is READY in

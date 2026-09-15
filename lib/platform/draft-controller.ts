@@ -49,6 +49,7 @@ export const emptyComposer = (
 // Explicit whitelist: short-lived preview credentials never enter snapshots.
 export function composerPayload(f: ComposerFields): PrivateDraftPayload {
   return {
+    ...(f.discovery !== undefined ? { discovery: { ...f.discovery } } : {}),
     content: f.content,
     ...(f.contentNote !== undefined ? { contentNote: f.contentNote } : {}),
     ...(f.safeExcerpt !== undefined ? { safeExcerpt: f.safeExcerpt } : {}),
