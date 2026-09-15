@@ -80,12 +80,20 @@ is compatible with that application. All 56 production checksums match and the
 25 original-column production fingerprints remain unchanged, with no new bells,
 preferences, schedules, fanout jobs, recipient intents or sends.
 
-The deployment repair keeps the existing comment-consumer route and registers
-the two new topics on that same private function. Dispatch uses the SDK's topic
-metadata; each domain retains its payload validation, current authorization,
-bounded work, acknowledgment and retry timing. No additional function, provider
-plan or public callback is needed. Six focused consumer/scheduling checks and
-fifteen existing comment-notification checks pass; types and scoped lint pass.
+The first consolidation attempt `0d58b7b` was rejected before deployment creation:
+the provider permits only one queue/v2beta trigger per function. A single exact
+Git-source API retry established this validation error after GitHub returned only
+a generic failure. No second deployment or migration was created by that attempt.
+
+The final repair keeps the existing comment-consumer route and topic. Legacy
+comment payloads remain unchanged; Activity and scheduled work have explicit,
+strictly validated message kinds and distinct idempotency-key namespaces. The SDK
+verifies delivery metadata before dispatch. Each domain retains its current
+authorization, bounded work, acknowledgment and retry timing. No additional
+function, trigger, provider plan or public callback is needed. Six focused
+consumer/scheduling checks and fifteen existing comment-notification checks pass;
+types and scoped lint pass. The intermediate production build passes and its
+eight fresh notification integration browser groups pass without page errors.
 The initial focused import failure used unsupported TypeScript parameter-property
 syntax in Node's fixture loader; ordinary field initialization repairs it.
 

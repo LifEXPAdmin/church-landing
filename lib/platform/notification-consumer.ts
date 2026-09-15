@@ -1,16 +1,8 @@
 import type { PrismaClient } from "@prisma/client";
-import {
-  advanceCommentFollowers,
-  COMMENT_FOLLOWER_TOPIC
-} from "./comment-followers";
-import {
-  advanceNotificationFanout,
-  NOTIFICATION_FANOUT_TOPIC
-} from "./notification-fanout";
-import {
-  advanceScheduledPost,
-  SCHEDULED_PUBLICATION_TOPIC
-} from "./scheduled-publication";
+import { advanceCommentFollowers } from "./comment-followers";
+import { advanceNotificationFanout } from "./notification-fanout";
+import { advanceScheduledPost } from "./scheduled-publication";
+import { NOTIFICATION_WORK_TOPIC } from "./notification-work-message";
 
 class RetryNotificationWork extends Error {
   readonly seconds: number;
@@ -27,7 +19,7 @@ export function retryNotificationWork(error: unknown) {
 }
 
 /** Called only inside the SDK callback, using its verified topic metadata.
- * Keep the existing comment consumer identity and domain-specific payloads;
+ * Keep the existing queue/consumer identity and exact legacy comment payload;
  * sharing a function does not merge jobs, consent or authorization owners.
  */
 export async function consumeNotificationWork(
@@ -36,6 +28,7 @@ export async function consumeNotificationWork(
   value: unknown
 ) {
   if (
+    topic !== NOTIFICATION_WORK_TOPIC ||
     !value ||
     typeof value !== "object" ||
     !("id" in value) ||
@@ -43,9 +36,10 @@ export async function consumeNotificationWork(
     !/^[\w-]{1,80}$/.test(value.id)
   )
     return;
-  if (topic === SCHEDULED_PUBLICATION_TOPIC) {
+  const kind = "kind" in value ? value.kind : "comment";
+  if (kind === "scheduled") {
     if (
-      Object.keys(value).length !== 2 ||
+      Object.keys(value).length !== 3 ||
       !("version" in value) ||
       typeof value.version !== "number" ||
       !Number.isSafeInteger(value.version) ||
@@ -63,21 +57,21 @@ export async function consumeNotificationWork(
       });
     return;
   }
-  if (Object.keys(value).length !== 1) return;
+  if (
+    kind === "comment"
+      ? Object.keys(value).length !== 1
+      : kind !== "activity" || Object.keys(value).length !== 2
+  )
+    return;
   const advance =
-    topic === COMMENT_FOLLOWER_TOPIC
-      ? advanceCommentFollowers
-      : topic === NOTIFICATION_FANOUT_TOPIC
-        ? advanceNotificationFanout
-        : null;
-  if (!advance) return;
+    kind === "comment" ? advanceCommentFollowers : advanceNotificationFanout;
   for (let i = 0; i < 3; i++) {
     const result = await advance(db, value.id);
     if (result.failed) throw Error("Notification handoff needs retry.");
     if (result.done) {
       if (value.id.startsWith("probe-"))
         console.info(
-          topic === COMMENT_FOLLOWER_TOPIC
+          kind === "comment"
             ? "comment_follower_queue_probe_completed"
             : "activity_fanout_queue_probe_completed",
           { applicationWrites: 0 }

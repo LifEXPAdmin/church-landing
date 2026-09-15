@@ -1,8 +1,12 @@
 import type { PrismaClient } from "@prisma/client";
 import { publishScheduledPost } from "./post-commands";
 import { dispatchNotificationFanout } from "./notification-fanout";
+import {
+  NOTIFICATION_WORK_TOPIC,
+  scheduledPublicationMessage
+} from "./notification-work-message";
 
-export const SCHEDULED_PUBLICATION_TOPIC = "scheduled-publication-v1";
+export const SCHEDULED_PUBLICATION_TOPIC = NOTIFICATION_WORK_TOPIC;
 const DAY = 86_400_000;
 export type ScheduledPublish = (
   plan: { id: string; version: number },
@@ -14,7 +18,7 @@ const publishPlan: ScheduledPublish = async (plan, delaySeconds, key) => {
     throw Error("Scheduled publication requires the deployed queue.");
   return (await import("@vercel/queue")).send(
     SCHEDULED_PUBLICATION_TOPIC,
-    plan,
+    scheduledPublicationMessage(plan),
     { delaySeconds, retentionSeconds: 604800, idempotencyKey: key }
   );
 };
@@ -68,7 +72,7 @@ export async function dispatchScheduledPosts(
         await publish(
           { id: plan.id, version: plan.version },
           delay,
-          `${plan.id}:${plan.version}:${Math.floor(now.getTime() / 3_600_000)}`
+          `scheduled:${plan.id}:${plan.version}:${Math.floor(now.getTime() / 3_600_000)}`
         );
         // A concurrent edit/cancel must never acknowledge the new plan with an old handoff.
         await db.platformPost.updateMany({

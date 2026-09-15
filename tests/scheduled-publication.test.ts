@@ -197,6 +197,7 @@ test("rolling dispatch is bounded, repairs failed acceptance and hands off edite
   ) => {
     assert.ok(delay >= 0 && delay <= 6 * 86400);
     assert.deepEqual(Object.keys(plan).sort(), ["id", "version"]);
+    assert.ok(key.startsWith(`scheduled:${plan.id}:${plan.version}:`));
     accepted.add(key);
     if (++calls === 1)
       throw Error("Acknowledgment lost after provider acceptance");
@@ -277,8 +278,9 @@ test("cancel, reschedule and racing consumers preserve revision authority and ne
     post = await f.create();
   assert.ok((await publishScheduledPost(db, post.id, 1)).retryAfterSeconds > 0);
   await assert.rejects(
-    consumeNotificationWork(db, "scheduled-publication-v1", {
+    consumeNotificationWork(db, "comment-followers-v1", {
       id: post.id,
+      kind: "scheduled",
       version: 1
     }),
     (error) => {
@@ -297,8 +299,9 @@ test("cancel, reschedule and racing consumers preserve revision authority and ne
   });
   const canceled = await postCommand(db, f.memberA.token, cancel);
   assert.deepEqual(await postCommand(db, f.memberA.token, cancel), canceled);
-  await consumeNotificationWork(db, "scheduled-publication-v1", {
+  await consumeNotificationWork(db, "comment-followers-v1", {
     id: post.id,
+    kind: "scheduled",
     version: 1
   });
   assert.equal(

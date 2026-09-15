@@ -1,8 +1,9 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { recordCommentActivity } from "./comment-activity";
 import { dispatchNotifications, type QueuePublish } from "./notification-queue";
+import { NOTIFICATION_WORK_TOPIC } from "./notification-work-message";
 
-export const COMMENT_FOLLOWER_TOPIC = "comment-followers-v1";
+export const COMMENT_FOLLOWER_TOPIC = NOTIFICATION_WORK_TOPIC;
 export const COMMENT_FOLLOWER_BATCH = 20;
 const DAY = 86400000;
 export type FollowerPublish = (

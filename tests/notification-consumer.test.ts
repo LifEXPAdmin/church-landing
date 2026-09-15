@@ -7,6 +7,11 @@ import {
   consumeNotificationWork,
   retryNotificationWork
 } from "../lib/platform/notification-consumer";
+import {
+  NOTIFICATION_WORK_TOPIC,
+  notificationFanoutMessage,
+  scheduledPublicationMessage
+} from "../lib/platform/notification-work-message";
 
 const db = new PrismaClient();
 before(() => assertPortalTestDatabase(db));
@@ -28,7 +33,13 @@ test("shared native consumer rejects unsupported topics and mismatched payloads 
       {},
       { id: "../../bad" },
       { id: "valid", version: 0 },
-      { id: "valid", version: 1, body: "unwanted" }
+      { id: "valid", version: 1, body: "unwanted" },
+      { id: "valid", kind: "comment" },
+      { id: "valid", kind: "unknown" },
+      { id: "valid", kind: "activity", version: 1 },
+      { id: "valid", kind: "scheduled" },
+      { id: "valid", kind: "scheduled", version: 0 },
+      { id: "valid", kind: "scheduled", version: 1, body: "unwanted" }
     ])
       await consumeNotificationWork(noDatabase, topic, value);
   await consumeNotificationWork(noDatabase, "unknown-topic", { id: "valid" });
@@ -46,7 +57,7 @@ test("shared native consumer rejects unsupported topics and mismatched payloads 
   );
 });
 
-test("all three topics reach their own canonical no-op path without creating work or delivery", async (t) => {
+test("legacy comments and both new message kinds reach their own canonical no-op path without creating work or delivery", async (t) => {
   const counts = async () =>
     Promise.all([
       db.commentFollowerJob.count(),
@@ -61,12 +72,12 @@ test("all three topics reach their own canonical no-op path without creating wor
     messages.push(args);
   });
   const id = "probe-" + randomUUID();
-  for (const topic of ["comment-followers-v1", "notification-fanout-v1"])
-    await consumeNotificationWork(db, topic, { id });
-  await consumeNotificationWork(db, "scheduled-publication-v1", {
-    id,
-    version: 1
-  });
+  for (const value of [
+    { id },
+    notificationFanoutMessage(id),
+    scheduledPublicationMessage({ id, version: 1 })
+  ])
+    await consumeNotificationWork(db, NOTIFICATION_WORK_TOPIC, value);
   assert.deepEqual(await counts(), before);
   assert.deepEqual(messages, [
     ["comment_follower_queue_probe_completed", { applicationWrites: 0 }],

@@ -4,19 +4,22 @@ import { eligibleWhere } from "./portal-policy";
 import { recordDomainActivity } from "./domain-activity";
 import { dispatchNotifications, type QueuePublish } from "./notification-queue";
 import type { FollowerPublish } from "./comment-followers";
+import {
+  NOTIFICATION_WORK_TOPIC,
+  notificationFanoutMessage
+} from "./notification-work-message";
 
-export const NOTIFICATION_FANOUT_TOPIC = "notification-fanout-v1";
+export const NOTIFICATION_FANOUT_TOPIC = NOTIFICATION_WORK_TOPIC;
 export const NOTIFICATION_FANOUT_BATCH = 20;
 const DAY = 86400000;
 const publishFanout: FollowerPublish = async (id, idempotencyKey) => {
   if (process.env.VERCEL !== "1")
     throw Error("Deployed activity queue required.");
   const { send } = await import("@vercel/queue");
-  return send(
-    NOTIFICATION_FANOUT_TOPIC,
-    { id },
-    { retentionSeconds: 604800, idempotencyKey }
-  );
+  return send(NOTIFICATION_FANOUT_TOPIC, notificationFanoutMessage(id), {
+    retentionSeconds: 604800,
+    idempotencyKey
+  });
 };
 
 export function processNotificationFanoutBatch(
@@ -261,7 +264,7 @@ export async function dispatchNotificationFanout(
       jobs.slice(i, i + 8).map(async (job) => {
         await publish(
           job.id,
-          `${job.id}:${Math.floor(now.getTime() / 3600000)}`
+          `activity:${job.id}:${Math.floor(now.getTime() / 3600000)}`
         );
         await db.notificationFanoutJob.updateMany({
           where: { id: job.id, completedAt: null },

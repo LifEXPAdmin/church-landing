@@ -17,8 +17,6 @@
   "functions": {
     "app/api/queues/comment-followers/route.ts": {
       "experimentalTriggers": [
-        { "type": "queue/v2beta", "topic": "scheduled-publication-v1" },
-        { "type": "queue/v2beta", "topic": "notification-fanout-v1" },
         {
           "type": "queue/v2beta",
           "topic": "comment-followers-v1"

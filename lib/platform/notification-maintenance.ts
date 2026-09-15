@@ -31,6 +31,10 @@ import {
 } from "./notification-queue";
 import { createHash, randomUUID } from "node:crypto";
 import { pushServerConfig } from "./push-config";
+import {
+  notificationFanoutMessage,
+  scheduledPublicationMessage
+} from "./notification-work-message";
 export async function handleNotificationMaintenance(
   db: PrismaClient,
   request: Request,
@@ -87,7 +91,11 @@ export async function handleNotificationMaintenance(
                 : mode === "probe-followers"
                   ? COMMENT_FOLLOWER_TOPIC
                   : PUSH_TOPIC,
-            mode === "probe-scheduled" ? { id, version: 1 } : { id },
+            mode === "probe-scheduled"
+              ? scheduledPublicationMessage({ id, version: 1 })
+              : mode === "probe-activity"
+                ? notificationFanoutMessage(id)
+                : { id },
             {
               retentionSeconds: 60,
               idempotencyKey: key
