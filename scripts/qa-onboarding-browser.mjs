@@ -485,6 +485,55 @@ try {
   ok(
     "Revoked and unrelated hosts receive no cached thread details, actions or totals."
   );
+  const { churchListingCommand } =
+    await import("../lib/platform/church-listings.ts");
+  const { churchClaimCommand } =
+    await import("../lib/platform/church-claims.ts");
+  const churchCount = await db.church.count();
+  const grantCount = await db.churchCapabilityGrant.count();
+  const listingDraft = await churchListingCommand(db, f.newcomer.token, {
+    operation: "create",
+    requestKey: crypto.randomUUID(),
+    kind: "COMMUNITY"
+  });
+  const claimDraft = await churchClaimCommand(db, f.newcomer.token, {
+    operation: "create",
+    requestKey: crypto.randomUUID()
+  });
+  await signin(f.newcomer);
+  const listingPath = "/platform/church-listings/" + listingDraft.id;
+  const claimPath = "/platform/church-claims/" + claimDraft.id;
+  await page.locator(`a[href="${listingPath}"]`).click();
+  await page.waitForURL(config.origin + listingPath);
+  await page
+    .getByRole("heading", { name: "Your private church draft", exact: true })
+    .waitFor();
+  await page.getByLabel("Church name", { exact: true }).waitFor();
+  await go("/platform/getting-started");
+  await page.locator(`a[href="${claimPath}"]`).click();
+  await page.waitForURL(config.origin + claimPath);
+  await page
+    .getByRole("heading", { name: "Your church setup", exact: true })
+    .waitFor();
+  await page.getByLabel("Church name", { exact: true }).waitFor();
+  await signin(f.blake);
+  await page
+    .getByRole("heading", {
+      name: "Adding or representing a church",
+      exact: true
+    })
+    .waitFor();
+  assert.equal(
+    await page
+      .locator(`a[href="${listingPath}"],a[href="${claimPath}"]`)
+      .count(),
+    0
+  );
+  assert.equal(await db.church.count(), churchCount);
+  assert.equal(await db.churchCapabilityGrant.count(), grantCount);
+  ok(
+    "The full guide resumes both existing private listing and representative drafts; another account sees neither, and no church or grant is created."
+  );
   assert.deepEqual(errors, []);
   writeFileSync(
     output + "/results.json",

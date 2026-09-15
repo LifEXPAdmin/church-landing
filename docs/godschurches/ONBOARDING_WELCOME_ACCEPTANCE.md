@@ -80,10 +80,11 @@ types and scoped lint pass. Two actual production HTTPS groups pass owner,
 origin, exact retry, stale-version, current permission, HTML/RSC privacy and
 revocation checks.
 
-Seven final production-browser groups pass guest signup return/Exploring Faith,
+Eight final production-browser groups pass guest signup return/Exploring Faith,
 actual sign-in/resumed hints, ordinary approval to persisted volunteering, church
 welcome selection, stale edits, response-loss exact retry, host handled/reopen,
-and revoked/unrelated access. Layouts at 320/390/1440 pixels were inspected.
+revoked/unrelated access, and both existing private setup draft links without
+creating a church or grant. Layouts at 320/390/1440 pixels were inspected.
 Browser runtime errors are zero. Earlier browser attempts exposed harness-only
 navigation waits, native-option selectors and an assertion before a dropped
 response finished; those failures are retained and excluded from success counts.
