@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { createRequire } from "node:module";
 import { execFileSync } from "node:child_process";
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 const fixtureDir = process.argv[2];
 assert.ok(fixtureDir, "Pass the existing isolated preview artifact directory");
 const config = JSON.parse(
@@ -61,13 +61,21 @@ const output = fixtureDir + "/seo-browser";
 mkdirSync(output, { recursive: true });
 const { seedSharing } = await import("../tests/seed-sharing.ts");
 const f = await seedSharing(db);
-await db.church.update({
+f.church = await db.church.update({
   where: { id: f.church.id },
   data: {
+    name: "Fictional community " + randomUUID().slice(0, 8),
     communityListed: false,
     city: "Fictional town",
     locationModel: "NO_BUILDING"
   }
+});
+await db.church.createMany({
+  data: Array.from({ length: 101 }, (_, index) => ({
+    name: "Fictional directory continuation " + index,
+    slug: randomUUID(),
+    communityListed: true
+  }))
 });
 const go = async (path) => {
   const response = await page.goto(config.origin + path);
