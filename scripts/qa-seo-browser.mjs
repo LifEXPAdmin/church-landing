@@ -72,7 +72,11 @@ await db.church.update({
 const go = async (path) => {
   const response = await page.goto(config.origin + path);
   assert.equal(response.status(), 200);
-  await page.locator("main h1").waitFor();
+  // Next can temporarily retain a hidden streamed segment while committing it.
+  // Assert the visible heading, including its uniqueness, rather than counting
+  // that inert transfer fragment as another rendered page.
+  await page.getByRole("heading", { level: 1 }).waitFor();
+  assert.equal(await page.getByRole("heading", { level: 1 }).count(), 1);
 };
 const fits = async () =>
   assert.ok(
