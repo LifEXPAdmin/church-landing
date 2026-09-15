@@ -50,6 +50,7 @@ export class CommentDraftController {
     createdId: null as string | null,
     latest: null as SavedCommentDraft | null
   };
+  private readonly serverState = this.state;
   constructor(
     transport: CommentTransport,
     postId: string,
@@ -64,6 +65,7 @@ export class CommentDraftController {
     this.resumeId = resumeId;
   }
   getSnapshot = () => this.state;
+  getServerSnapshot = () => this.serverState;
   subscribe = (fn: () => void) => {
     this.listeners.add(fn);
     return () => {

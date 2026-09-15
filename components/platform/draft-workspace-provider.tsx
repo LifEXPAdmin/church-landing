@@ -84,7 +84,7 @@ export function useDraftWorkspace() {
   const state = useSyncExternalStore(
     controller.subscribe,
     controller.getSnapshot,
-    controller.getSnapshot
+    controller.getServerSnapshot
   );
   return { controller, state };
 }

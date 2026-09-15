@@ -76,6 +76,38 @@ function fixture() {
 const settle = async () => {
   for (let i = 0; i < 20; i++) await Promise.resolve();
 };
+test("late hydration keeps the anonymous server state after sibling identity and private edits", async () => {
+  const f = fixture(),
+    c = f.controller;
+  const server = c.getServerSnapshot();
+  const original = structuredClone(server);
+  try {
+    await c.verify();
+    c.start();
+    c.change({ ...c.getSnapshot().fields, content: "Private current draft" });
+    c.setExternalWork("comment", {
+      dirty: true,
+      saving: false,
+      conflict: false
+    });
+    assert.equal(c.getSnapshot().ownerId, "owner-a");
+    assert.equal(c.getSnapshot().fields.content, "Private current draft");
+    assert.equal(c.getSnapshot().externalWork.dirty, true);
+    assert.equal(c.getServerSnapshot(), server);
+    assert.deepEqual(server, original);
+    assert.equal(server.ownerId, null);
+    assert.equal(server.hidden, true);
+    assert.equal(server.fields.content, "");
+    f.setOwner("owner-b");
+    await c.verify();
+    assert.equal(c.getSnapshot().ownerId, "owner-b");
+    assert.equal(c.getSnapshot().fields.content, "");
+    assert.equal(c.getServerSnapshot(), server);
+    assert.deepEqual(server, original);
+  } finally {
+    c.dispose();
+  }
+});
 test("autosave debounces five seconds, serializes and persists only supported fields", async (t) => {
   t.mock.timers.enable({ apis: ["setTimeout"] });
   const f = fixture(),

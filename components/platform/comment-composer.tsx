@@ -52,7 +52,7 @@ function OpenCommentComposer({
   const state = useSyncExternalStore(
     controller.subscribe,
     controller.getSnapshot,
-    controller.getSnapshot
+    controller.getServerSnapshot
   );
   const formRef = useRef<HTMLFormElement>(null);
   useEffect(() => {

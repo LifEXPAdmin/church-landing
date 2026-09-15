@@ -102,6 +102,9 @@ const initialState = (): DraftState => ({
 /** One in-memory controller per mounted platform layout, never browser storage. */
 export class DraftController {
   private state = initialState();
+  // Delayed hydration must see the same empty, concealed state as the server,
+  // even if a mounted sibling has already verified identity or edited a draft.
+  private readonly serverState = this.state;
   private listeners = new Set<() => void>();
   private timer: ReturnType<typeof setTimeout> | undefined;
   private generation = 0;
@@ -140,6 +143,7 @@ export class DraftController {
     });
   };
   getSnapshot = () => this.state;
+  getServerSnapshot = () => this.serverState;
   subscribe = (listener: () => void) => {
     this.listeners.add(listener);
     return () => {

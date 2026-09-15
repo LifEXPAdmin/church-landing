@@ -24,6 +24,36 @@ function fixture(
     () => `uuid-${++id}`
   );
 }
+test("late hydration uses the empty server state after a private comment draft loads", async () => {
+  const c = fixture(
+    async () => ({}),
+    [
+      {
+        id: "draft",
+        version: 3,
+        postId: "post",
+        replyToId: "reply",
+        ...fields("Private saved comment")
+      }
+    ]
+  );
+  const server = c.getServerSnapshot();
+  const original = structuredClone(server);
+  try {
+    await c.start();
+    assert.equal(c.getSnapshot().fields.content, "Private saved comment");
+    c.change(fields("Private edited comment"));
+    c.visibility(true);
+    assert.equal(c.getSnapshot().fields.content, "Private edited comment");
+    assert.equal(c.getSnapshot().dirty, true);
+    assert.equal(c.getServerSnapshot(), server);
+    assert.deepEqual(server, original);
+    assert.equal(server.ready, false);
+    assert.equal(server.fields.content, "");
+  } finally {
+    c.dispose();
+  }
+});
 test("saved target restores exact text, mention IDs and church identity", async () => {
   const c = fixture(
     async () => ({}),
