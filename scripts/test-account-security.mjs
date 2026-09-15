@@ -313,8 +313,8 @@ try {
       JOIN pg_namespace n ON n.oid = r.relnamespace
       WHERE n.nspname = 'public' AND r.relname IN (${churchNames})
       UNION ALL
-      SELECT 'trigger', t.tgname, pg_get_triggerdef(t.oid) FROM pg_trigger t JOIN pg_class r ON r.oid = t.tgrelid WHERE r.relname IN ('SupportCase','SupportCapabilityGrant','ChurchPosition','PlatformPostComment') AND NOT t.tgisinternal
-      UNION ALL SELECT 'function', p.proname, pg_get_functiondef(p.oid) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname IN ('church_position_acyclic','comment_thread_shape','reported_comment_retention')
+      SELECT 'trigger', t.tgname, pg_get_triggerdef(t.oid) FROM pg_trigger t JOIN pg_class r ON r.oid = t.tgrelid WHERE r.relname IN ('SupportCase','SupportCapabilityGrant','ChurchPosition','PlatformPost','PlatformPostComment') AND NOT t.tgisinternal
+      UNION ALL SELECT 'function', p.proname, pg_get_functiondef(p.oid) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname IN ('church_position_acyclic','comment_thread_shape','reported_comment_retention','enforceTopicCommentScope','preservePostTopicScope')
     ) t`
       ],
       url

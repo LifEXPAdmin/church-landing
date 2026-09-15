@@ -224,7 +224,7 @@ try {
     sql(
       [
         "-Atc",
-        `SELECT jsonb_build_object('drafts',(SELECT jsonb_agg(to_jsonb(t) ORDER BY "ownerId",id) FROM "PrivatePostDraft" t),'collections',(SELECT jsonb_agg(to_jsonb(t) ORDER BY "ownerId",id) FROM "SavedPostCollection" t),'items',(SELECT jsonb_agg(to_jsonb(t) ORDER BY id) FROM "SavedPostItem" t),'operations',(SELECT jsonb_agg(to_jsonb(t) ORDER BY "ownerId",key) FROM "PostWorkspaceOperation" t),'constraints',(SELECT jsonb_agg(pg_get_constraintdef(oid) ORDER BY conname) FROM pg_constraint WHERE conrelid IN ('"FriendInvitation"'::regclass,'"FriendAcceptance"'::regclass,'"PrivatePostDraft"'::regclass,'"SavedPostCollection"'::regclass,'"SavedPostItem"'::regclass,'"PostWorkspaceOperation"'::regclass)))`
+        `SELECT jsonb_build_object('drafts',(SELECT jsonb_agg(to_jsonb(t) ORDER BY "ownerId",id) FROM "PrivatePostDraft" t),'collections',(SELECT jsonb_agg(to_jsonb(t) ORDER BY "ownerId",id) FROM "SavedPostCollection" t),'items',(SELECT jsonb_agg(to_jsonb(t) ORDER BY id) FROM "SavedPostItem" t),'operations',(SELECT jsonb_agg(to_jsonb(t) ORDER BY "ownerId",key) FROM "PostWorkspaceOperation" t),'constraints',(SELECT jsonb_agg(pg_get_constraintdef(oid) ORDER BY conname) FROM pg_constraint WHERE conrelid IN ('"TopicCommunity"'::regclass,'"TopicMembership"'::regclass,'"TopicAudit"'::regclass,'"FriendInvitation"'::regclass,'"FriendAcceptance"'::regclass,'"PrivatePostDraft"'::regclass,'"SavedPostCollection"'::regclass,'"SavedPostItem"'::regclass,'"PostWorkspaceOperation"'::regclass)))`
       ],
       url
     );

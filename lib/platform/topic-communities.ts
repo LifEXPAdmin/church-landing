@@ -7,7 +7,12 @@ import { Prisma } from "@prisma/client";
 import { activityBudget } from "./account-limits";
 import { accountConfig } from "./account-config";
 import { eligibleWhere, expected, PortalError } from "./portal-policy";
-import { postContext, withPostRead, type PostTx } from "./post-access";
+import {
+  postContext,
+  withPostRead,
+  type PostTx,
+  type PostContext
+} from "./post-access";
 import { postField, postId } from "./post-input";
 import { socialCommand, socialInput } from "./social-operations";
 import { requireSocialActivity } from "./social-activity-limits";
@@ -646,47 +651,54 @@ export function readTopic(
   address: string,
   manage = false
 ) {
-  return withPostRead(db, token, async (tx, context) => {
-    if (manage && !context.eligible)
-      throw new PortalError(
-        403,
-        "Verify your account before managing a topic."
-      );
-    const row = await tx.topicCommunity.findFirst({
-      where: {
-        slug: slug(address),
-        ...(manage
-          ? {
-              OR: [
-                { ownerId: context.actorId ?? "" },
-                { id: { in: [...(context.topicModerators ?? [])] } }
-              ]
-            }
-          : topicPublicWhere)
-      },
-      select: { ...publicSelect, ownerId: true }
-    });
-    if (!row) throw new PortalError(404, "This topic is unavailable.");
-    const own = context.actorId
-      ? await tx.topicMembership.findUnique({
-          where: memberKey(row.id, context.actorId)
-        })
-      : null;
-    const { ownerId, ...community } = row;
-    const isOwner = !!context.eligible && ownerId === context.actorId;
-    return {
-      community,
-      viewer: {
-        accountId: context.actorId,
-        eligible: !!context.eligible,
-        ...ownChoice(own),
-        isOwner,
-        canManage: isOwner || !!context.topicModerators?.has(row.id),
-        canParticipate: !!context.topicParticipants?.has(row.id)
-      }
-    };
-  });
+  return withPostRead(db, token, (tx, context) =>
+    topicIn(tx, context, address, manage)
+  );
 }
+
+async function topicIn(
+  tx: PostTx,
+  context: PostContext,
+  address: string,
+  manage = false
+) {
+  if (manage && !context.eligible)
+    throw new PortalError(403, "Verify your account before managing a topic.");
+  const row = await tx.topicCommunity.findFirst({
+    where: {
+      slug: slug(address),
+      ...(manage
+        ? {
+            OR: [
+              { ownerId: context.actorId ?? "" },
+              { id: { in: [...(context.topicModerators ?? [])] } }
+            ]
+          }
+        : topicPublicWhere)
+    },
+    select: { ...publicSelect, ownerId: true }
+  });
+  if (!row) throw new PortalError(404, "This topic is unavailable.");
+  const own = context.actorId
+    ? await tx.topicMembership.findUnique({
+        where: memberKey(row.id, context.actorId)
+      })
+    : null;
+  const { ownerId, ...community } = row;
+  const isOwner = !!context.eligible && ownerId === context.actorId;
+  return {
+    community,
+    viewer: {
+      accountId: context.actorId,
+      eligible: !!context.eligible,
+      ...ownChoice(own),
+      isOwner,
+      canManage: isOwner || !!context.topicModerators?.has(row.id),
+      canParticipate: !!context.topicParticipants?.has(row.id)
+    }
+  };
+}
+
 export type TopicView = Awaited<ReturnType<typeof readTopic>>;
 
 export function topicEligibility(db: PrismaClient, token: unknown) {
@@ -712,62 +724,68 @@ export function readTopicMembers(
   communityId: unknown,
   after?: string
 ) {
-  return withPostRead(db, token, async (tx, context) => {
-    const id = postId(communityId);
-    if (!context.actorId || !context.topicModerators?.has(id))
-      throw new PortalError(
-        403,
-        "Current topic management access is required."
-      );
-    const where: Prisma.TopicMembershipWhereInput = {
-      communityId: id,
-      user: { AND: [eligibleWhere, socialUserWhere(context)] },
-      OR: [
-        { joined: true },
-        { restrictedAt: { not: null } },
-        { pendingRole: { not: null } }
-      ]
-    };
-    if (
-      after &&
-      !(await tx.topicMembership.findFirst({
-        where: { AND: [where, { id: postId(after) }] },
-        select: { id: true }
-      }))
-    )
-      throw new PortalError(
-        409,
-        "This membership page changed. Reload its first page."
-      );
-    const rows = await tx.topicMembership.findMany({
-      where,
-      select: {
-        id: true,
-        userId: true,
-        version: true,
-        joined: true,
-        moderator: true,
-        restrictedAt: true,
-        restrictionReason: true,
-        pendingRole: true,
-        user: { select: { name: true, username: true } }
-      },
-      take: 21,
-      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-      ...(after ? { cursor: { id: after }, skip: 1 } : {})
-    });
-    return {
-      ownerId: context.actorId,
-      communityOwnerId: (
-        await tx.topicCommunity.findUniqueOrThrow({
-          where: { id },
-          select: { ownerId: true }
-        })
-      ).ownerId,
-      members: rows.slice(0, 20),
-      after: rows.length > 20 ? rows[19].id : null
-    };
+  return withPostRead(db, token, (tx, context) =>
+    topicMembersIn(tx, context, communityId, after)
+  );
+}
+
+async function topicMembersIn(
+  tx: PostTx,
+  context: PostContext,
+  communityId: unknown,
+  after?: string
+) {
+  const id = postId(communityId);
+  if (!context.actorId || !context.topicModerators?.has(id))
+    throw new PortalError(403, "Current topic management access is required.");
+  const where: Prisma.TopicMembershipWhereInput = {
+    communityId: id,
+    user: { AND: [eligibleWhere, socialUserWhere(context)] },
+    OR: [
+      { joined: true },
+      { restrictedAt: { not: null } },
+      { pendingRole: { not: null } }
+    ]
+  };
+  if (
+    after &&
+    !(await tx.topicMembership.findFirst({
+      where: { AND: [where, { id: postId(after) }] },
+      select: { id: true }
+    }))
+  )
+    throw new PortalError(
+      409,
+      "This membership page changed. Reload its first page."
+    );
+  const rows = await tx.topicMembership.findMany({
+    where,
+    select: {
+      id: true,
+      userId: true,
+      version: true,
+      joined: true,
+      moderator: true,
+      restrictedAt: true,
+      restrictionReason: true,
+      pendingRole: true,
+      user: { select: { name: true, username: true } }
+    },
+    take: 21,
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+    ...(after ? { cursor: { id: after }, skip: 1 } : {})
   });
+  return {
+    ownerId: context.actorId,
+    communityOwnerId: (
+      await tx.topicCommunity.findUniqueOrThrow({
+        where: { id },
+        select: { ownerId: true }
+      })
+    ).ownerId,
+    members: rows.slice(0, 20),
+    after: rows.length > 20 ? rows[19].id : null
+  };
 }
 
 export async function readTopicManagement(
@@ -777,18 +795,20 @@ export async function readTopicManagement(
   after?: string,
   auditAfter?: string
 ) {
-  const view = await readTopic(db, token, address, true);
-  const active =
-    view.community.lifecycle === "ACTIVE" &&
-    view.community.moderationState === "VISIBLE" &&
-    !view.community.recoveryRequired;
-  const members = active
-    ? await readTopicMembers(db, token, view.community.id, after)
-    : null;
-  const history = view.community.recoveryRequired
-    ? null
-    : await readTopicHistory(db, token, view.community.id, auditAfter);
-  return { view, members, history };
+  return withPostRead(db, token, async (tx, context) => {
+    const view = await topicIn(tx, context, address, true);
+    const active =
+      view.community.lifecycle === "ACTIVE" &&
+      view.community.moderationState === "VISIBLE" &&
+      !view.community.recoveryRequired;
+    const members = active
+      ? await topicMembersIn(tx, context, view.community.id, after)
+      : null;
+    const history = view.community.recoveryRequired
+      ? null
+      : await topicHistoryIn(tx, context, view.community.id, auditAfter);
+    return { view, members, history };
+  });
 }
 
 export function readTopicHistory(
@@ -797,56 +817,62 @@ export function readTopicHistory(
   communityId: string,
   after?: string
 ) {
-  return withPostRead(db, token, async (tx, context) => {
-    const id = postId(communityId);
-    if (
-      !context.eligible ||
-      !context.actorId ||
-      !(await tx.topicCommunity.findFirst({
-        where: {
-          id,
-          recoveryRequired: false,
-          OR: [
-            { ownerId: context.actorId },
-            { id: { in: [...(context.topicModerators ?? [])] } }
-          ]
-        },
-        select: { id: true }
-      }))
-    )
-      throw new PortalError(
-        403,
-        "Current topic management access is required."
-      );
-    if (
-      after &&
-      !(await tx.topicAudit.findFirst({
-        where: { id: postId(after), communityId: id },
-        select: { id: true }
-      }))
-    )
-      throw new PortalError(
-        409,
-        "This history page changed. Reload the first page."
-      );
-    const rows = await tx.topicAudit.findMany({
-      where: { communityId: id },
-      select: {
-        id: true,
-        action: true,
-        reason: true,
-        fromState: true,
-        toState: true,
-        createdAt: true,
-        version: true
+  return withPostRead(db, token, (tx, context) =>
+    topicHistoryIn(tx, context, communityId, after)
+  );
+}
+
+async function topicHistoryIn(
+  tx: PostTx,
+  context: PostContext,
+  communityId: string,
+  after?: string
+) {
+  const id = postId(communityId);
+  if (
+    !context.eligible ||
+    !context.actorId ||
+    !(await tx.topicCommunity.findFirst({
+      where: {
+        id,
+        recoveryRequired: false,
+        OR: [
+          { ownerId: context.actorId },
+          { id: { in: [...(context.topicModerators ?? [])] } }
+        ]
       },
-      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-      take: 21,
-      ...(after ? { cursor: { id: after }, skip: 1 } : {})
-    });
-    return {
-      entries: rows.slice(0, 20),
-      after: rows.length > 20 ? rows[19].id : null
-    };
+      select: { id: true }
+    }))
+  )
+    throw new PortalError(403, "Current topic management access is required.");
+  if (
+    after &&
+    !(await tx.topicAudit.findFirst({
+      where: { id: postId(after), communityId: id },
+      select: { id: true }
+    }))
+  )
+    throw new PortalError(
+      409,
+      "This history page changed. Reload the first page."
+    );
+  const rows = await tx.topicAudit.findMany({
+    where: { communityId: id },
+    select: {
+      id: true,
+      action: true,
+      reason: true,
+      fromState: true,
+      toState: true,
+      createdAt: true,
+      version: true
+    },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    take: 21,
+    ...(after ? { cursor: { id: after }, skip: 1 } : {})
   });
+  return {
+    entries: rows.slice(0, 20),
+    after: rows.length > 20 ? rows[19].id : null
+  };
 }

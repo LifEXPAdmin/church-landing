@@ -14,6 +14,19 @@ export type Feature = {
 };
 export const features: Feature[] = [
   {
+    id: "topic-communities",
+    category: "Posts and conversations",
+    name: "Topic communities",
+    description:
+      "Explore public communities around faith and everyday life, or create a topic with its own rules.",
+    steps:
+      "Open Topic communities from Home, Explore or Menu. Read freely. Join and accept the current rules to start a discussion or reply as yourself. Follow separately to add posts to Topics I follow. Owners manage rules, membership restrictions, accepted moderator offers and ownership handoffs from Manage this topic.",
+    href: "/platform/topics",
+    eligibility:
+      "Anyone can read public topics. Creating, joining and contributing require a verified adult account. Topic authority stays within that community. Following does not turn on phone alerts. Archived or moderated topics and restricted content are unavailable to readers; public sharing always checks current access.",
+    availability: "available"
+  },
+  {
     id: "prayer-follow-up",
     category: "Posts and conversations",
     name: "Prayer and private follow-up",
@@ -573,6 +586,30 @@ export const features: Feature[] = [
   }
 ];
 export const releases: ReleaseEntry[] = [
+  {
+    id: "public-topic-communities",
+    version: "2026.09.14.18",
+    date: "2026-09-14",
+    summary:
+      "Discover public topic communities, join their discussions and follow the topics you care about.",
+    added: [
+      "Public topic pages, community rules, topic creation and a private Topics I follow stream.",
+      "Owners can offer moderator roles or ownership for explicit acceptance, review scoped reports and manage participation restrictions."
+    ],
+    improved: [
+      "Topic discussions use the existing post composer, comments, prayer, sharing and report review.",
+      "Current rules and a public-post confirmation make participation choices clear; private exports and protected recovery include topic choices."
+    ],
+    fixed: [
+      "Topic changes preserve exact retries and current-account permissions. Revoked roles, hidden topics and restricted authors cannot be restored by stale forms or older recovery copies."
+    ],
+    featureIds: [
+      "topic-communities",
+      "sharing",
+      "report-review",
+      "prayer-follow-up"
+    ]
+  },
   {
     id: "prayer-private-follow-up",
     version: "2026.09.14.17",

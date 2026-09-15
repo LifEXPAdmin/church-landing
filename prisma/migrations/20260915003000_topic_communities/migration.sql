@@ -151,9 +151,9 @@ ALTER TABLE "PlatformPost" ADD CONSTRAINT "PlatformPost_topic_scope_check" CHECK
 ALTER TABLE "PlatformPostComment" ADD CONSTRAINT "PlatformPostComment_topic_identity_check" CHECK (
   "topicCommunityId" IS NULL OR "authorChurchId" IS NULL);
 ALTER TABLE "TopicCommunity" ADD CONSTRAINT "TopicCommunity_shape_check" CHECK (
-  length(name) BETWEEN 3 AND 80 AND length(slug) BETWEEN 3 AND 60
+  length(name) >= 3 AND length(name) <= 80 AND length(slug) >= 3 AND length(slug) <= 60
   AND slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$' AND slug NOT IN ('following','new','manage')
-  AND length(description) BETWEEN 3 AND 1000 AND length(rules) BETWEEN 3 AND 4000
+  AND length(description) >= 3 AND length(description) <= 1000 AND length(rules) >= 3 AND length(rules) <= 4000
   AND version>0 AND "rulesVersion">0 AND "securityVersion">0
   AND (lifecycle='ARCHIVED' OR "ownerId" IS NOT NULL));
 ALTER TABLE "TopicMembership" ADD CONSTRAINT "TopicMembership_shape_check" CHECK (

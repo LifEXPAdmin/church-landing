@@ -217,10 +217,31 @@ try {
       exact: true
     })
     .waitFor();
+  let droppedFollow = false;
+  await page.route("**/api/platform/topics", async (route) => {
+    if (
+      route.request().method() === "POST" &&
+      route.request().postDataJSON()?.operation === "follow" &&
+      !droppedFollow
+    ) {
+      droppedFollow = true;
+      await route.fetch();
+      await route.abort("failed");
+    } else await route.continue();
+  });
   await clickForm("Follow topic");
+  await page
+    .getByRole("button", { name: "Retry the same topic request", exact: true })
+    .click();
   await page
     .getByRole("button", { name: "Unfollow topic", exact: true })
     .waitFor();
+  await page.unroute("**/api/platform/topics");
+  assert.equal(droppedFollow, true);
+  assert.equal(await memberVersion(member, topic.id), 2);
+  ok(
+    "A committed follow with a lost response retries the same request without another membership version"
+  );
   await page.reload();
   await page
     .getByRole("button", { name: "Unfollow topic", exact: true })
@@ -278,11 +299,9 @@ try {
   );
   await signIn(owner);
   await go(`/platform/topics/${slug}/manage`);
-  const row = page
-    .getByRole("article")
-    .filter({
-      has: page.getByRole("link", { name: member.name, exact: true })
-    });
+  const row = page.getByRole("article").filter({
+    has: page.getByRole("link", { name: member.name, exact: true })
+  });
   await row.getByText("Role and ownership offers", { exact: true }).click();
   await row
     .getByLabel("Role to offer", { exact: true })
@@ -358,6 +377,50 @@ try {
   await page
     .getByLabel("Community rules", { exact: true })
     .fill("Changed rules require fresh consent. Protect privacy.");
+  const concurrent = await db.topicCommunity.findUniqueOrThrow({
+    where: { id: topic.id }
+  });
+  await topicCommand(
+    db,
+    owner.token,
+    cmd("edit", {
+      communityId: topic.id,
+      expectedVersion: concurrent.version,
+      name: concurrent.name,
+      description: "Another owner tab changed this description.",
+      rules: concurrent.rules
+    })
+  );
+  await clickForm("Save topic details");
+  await page
+    .getByRole("button", {
+      name: "Discard local entries and reload current controls",
+      exact: true
+    })
+    .waitFor();
+  assert.equal(
+    await page.getByLabel("Community rules", { exact: true }).inputValue(),
+    "Changed rules require fresh consent. Protect privacy."
+  );
+  assert.equal(
+    (await db.topicCommunity.findUniqueOrThrow({ where: { id: topic.id } }))
+      .rulesVersion,
+    1
+  );
+  page.once("dialog", (dialog) => dialog.accept());
+  await page
+    .getByRole("button", {
+      name: "Discard local entries and reload current controls",
+      exact: true
+    })
+    .click();
+  await page.getByText("Edit topic details and rules", { exact: true }).click();
+  await page
+    .getByLabel("Community rules", { exact: true })
+    .fill("Changed rules require fresh consent. Protect privacy.");
+  ok(
+    "A stale owner edit retains the losing text and requires an explicit discard/reload before fresh editing"
+  );
   await clickForm("Save topic details");
   await waitDb(
     async () =>
@@ -380,11 +443,9 @@ try {
   );
   await signIn(owner);
   await go(`/platform/topics/${slug}/manage`);
-  const restrictRow = page
-    .getByRole("article")
-    .filter({
-      has: page.getByRole("link", { name: member.name, exact: true })
-    });
+  const restrictRow = page.getByRole("article").filter({
+    has: page.getByRole("link", { name: member.name, exact: true })
+  });
   await restrictRow
     .getByText("Restrict participation", { exact: true })
     .click();
