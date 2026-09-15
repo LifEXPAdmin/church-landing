@@ -99,7 +99,6 @@ const bounded = async () =>
     "No horizontal page overflow"
   );
 
-const { createPortalActor } = await import("../tests/seed-portal.ts");
 const { randomUUID } = await import("node:crypto");
 const signIn = (actor) =>
   context.addCookies([
@@ -130,6 +129,29 @@ const waitDb = async (query) => {
 };
 page.setDefaultTimeout(25000);
 try {
+  phase = "guest-schedule-return";
+  for (const path of [
+    "/platform/scheduled-posts",
+    "/platform/scheduled-posts/fictional-plan"
+  ]) {
+    await go(path);
+    for (const name of ["Join Godschurches", "Sign in"]) {
+      const href = await page
+        .locator("main")
+        .getByRole("link", { name, exact: true })
+        .getAttribute("href");
+      assert.equal(new URL(href, config.origin).searchParams.get("next"), path);
+    }
+    assert.equal(
+      await page
+        .getByRole("region", { name: "Publication plan", exact: true })
+        .count(),
+      0
+    );
+  }
+  ok(
+    "Signed-out scheduled-post routes retain exact signup/sign-in destinations without exposing a private plan"
+  );
   const f = await seedPortal(db);
   await portalCommand(db, f.operator.token, {
     operation: "grant",

@@ -337,6 +337,19 @@ test("account entry preserves only the known Photos tab on profile return paths"
 });
 
 test("Activity account return preserves a supported category and strips another account's cursor and private fields", () => {
+  for (const category of [
+    "posts",
+    "reactions",
+    "prayer",
+    "church",
+    "commitments"
+  ])
+    assert.equal(
+      safeAccountReturn(
+        `/platform/activity?category=${category}&cursor=private&token=secret`
+      ),
+      `/platform/activity?category=${category}`
+    );
   assert.equal(
     safeAccountReturn(
       "/platform/activity?category=comments&cursor=private-position&ownerId=other&token=secret"
@@ -359,12 +372,43 @@ test("Activity account return preserves a supported category and strips another 
   );
 });
 
+test("scheduled management account returns keep only a validated destination without replaying another session's plan or cursor", () => {
+  for (const path of [
+    "/platform/scheduled-posts",
+    "/platform/scheduled-posts/plan-123"
+  ])
+    for (const suffix of [
+      "",
+      "/",
+      "?after=private&scheduleLocal=2026-09-16&operation=schedule&token=secret#plan"
+    ])
+      for (const method of ["signup", "login"] as const) {
+        const next = safeAccountReturn(path + suffix);
+        assert.equal(next, path);
+        assert.equal(
+          new URL(
+            accountEntryHref(method, path + suffix),
+            "https://example.test"
+          ).searchParams.get("next"),
+          path
+        );
+      }
+  for (const path of [
+    "//evil.test/platform/scheduled-posts",
+    "/platform/scheduled-posts/plan/extra",
+    "/platform/scheduled-posts/%2foutside",
+    "/platform/scheduled-posts/" + "a".repeat(101)
+  ])
+    assert.equal(safeAccountReturn(path), "/platform");
+});
+
 test("content decision sign-in preserves only validated decision navigation", () => {
   for (const suffix of ["", "/"]) {
     const path = "/platform/reports/decisions" + suffix;
     assert.equal(
       safeAccountReturn(
-        path + "?id=decision_1&after=older_1&ownerId=other&description=private&status=CLOSED&token=secret#private"
+        path +
+          "?id=decision_1&after=older_1&ownerId=other&description=private&status=CLOSED&token=secret#private"
       ),
       "/platform/reports/decisions?id=decision_1&after=older_1"
     );
@@ -384,5 +428,6 @@ test("content decision sign-in preserves only validated decision navigation", ()
     "/platform/reports/decisions/arbitrary",
     "//other.test/platform/reports/decisions",
     "https://other.test/platform/reports/decisions"
-  ]) assert.equal(safeAccountReturn(path), "/platform");
+  ])
+    assert.equal(safeAccountReturn(path), "/platform");
 });
