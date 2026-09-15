@@ -59,7 +59,7 @@ function Table({
       role="region"
       aria-label={caption}
     >
-      <table className="w-full text-left text-sm">
+      <table className="w-full text-left text-sm [overflow-wrap:normal]">
         <caption className="p-3 text-left font-semibold">{caption}</caption>
         <thead>
           <tr>
