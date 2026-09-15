@@ -17,10 +17,12 @@ zero. Topic writes were tested in isolated fixtures. See
 [complete acceptance](TOPIC_COMMUNITIES_ACCEPTANCE.md) and
 [current contract](TOPIC_COMMUNITIES_CONTRACT.md).
 
-Reconcile the existing topic feature and children, credit overlapping moderation
-and feed integration, then continue the next eligible feature. Legitimate account
-operator coverage remains zero; broader discovery/provider/device work and the
-earlier intermittent rendering observation remain separate. Final review stays last.
+Private readbacks confirm topic and its three children are complete. Moderation's
+data/service and interface scopes are complete against their original criteria;
+actual operator acceptance remains open with zero eligible account-management
+operators. Topic prerequisites are credited in the existing feed owner. Continue
+the next eligible feature, preserving the shipped four modes and broader discovery,
+provider/device and earlier intermittent-rendering criteria. Final review stays last.
 
 ## Prayer and private follow-up verified live — September 14, 2026 UTC
 

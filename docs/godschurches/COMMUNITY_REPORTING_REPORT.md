@@ -1,5 +1,33 @@
 # Private reporting implementation receipt
 
+## Engineering scopes complete; operator acceptance remains open — 15 September 2026
+
+Current **2026.09.14.18 / 55c53f49c5aee39a0d07e48248c0d3f7e7bf8dde** is READY in
+**dpl_BsgcgZHjcEsP1v8Tmv1ah1p9F7tP**, independently canonical and verified live.
+Topic integration now uses the same reports, scoped decisions, author receipts,
+reconsideration, access predicates and protected recovery. Existing account
+restrictions, activity limits, sensitive-content notes and reasoned discussion
+moderation remain implemented; their older pending statements below are historical.
+
+The owning specification separates target/action rules and moderation records,
+reporter/reviewer/appeal interfaces, and actual operator acceptance. The first two
+engineering scopes are complete against current code and evidence. The full
+136-file gate passes 843 checks with two expected skips and no failures; its
+current report, account-restriction, content-note, rate-limit, retained-source and
+topic checks cover the required contracts. Seventy accepted browser groups include
+reviewer decisions, private author reconsideration, discussion reasons, recovery
+and complete topic participation. Twenty public, four health and seven signed-in
+live groups pass. See [topic release evidence](TOPIC_COMMUNITIES_ACCEPTANCE.md).
+
+Actual operational acceptance remains open. Production still has zero eligible
+account-management operators, zero suspensions and zero account-access decisions.
+The existing report-review capability is distinct from account-management authority;
+no new grant or real moderation action was performed. The established owner
+prerequisite remains with the existing account and Support owners. Sole-reviewer
+and retention choices are settled. Church-verification operations and broader
+device/provider criteria retain their own scopes. This engineering completion
+neither grants authority nor claims real operator or physical-device acceptance.
+
 ## Content decisions and reconsideration verified live — 13 September 2026
 
 Product **2026.09.13.32**, application
