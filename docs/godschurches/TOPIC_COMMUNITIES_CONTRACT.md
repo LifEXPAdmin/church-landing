@@ -1,6 +1,8 @@
 # Public topic communities
 
-Implementation contract · September 15, 2026 UTC · acceptance pending
+Implementation contract · September 15, 2026 UTC · verified live in 2026.09.14.18
+
+See [complete release and acceptance evidence](TOPIC_COMMUNITIES_ACCEPTANCE.md).
 
 Topic spaces are public communities around a shared subject. They use the existing
 canonical posts, comments, reactions, private drafts, reports and review decisions.
@@ -75,7 +77,10 @@ decisions. Only a verified current recovery source and legitimate ownership revi
 may establish permissions before traffic resumes. Account deletion retains active
 topic ownership as a handoff exception; archive or hand off the topic beforehand.
 
-## Foundation and interface checkpoint
+## Earlier foundation and interface checkpoints
+
+These retained implementation checkpoints are superseded by the verified release
+linked above; their pending-stage descriptions are historical.
 
 Public discovery, topic reading, creation, followed posts and private management
 pages now use the canonical composer/cards/report review. Joining and following

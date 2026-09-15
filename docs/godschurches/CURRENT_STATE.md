@@ -1,15 +1,26 @@
-## Topic communities in progress — September 15, 2026 UTC
+## Topic communities verified live — September 15, 2026 UTC
 
-Topic application **0d49b43** passes the complete 136-file gate with 843 passes,
-two expected skips and no failures/cancellations, plus 70 accepted browser groups.
-Migration 54, original-column preservation, topic-inclusive dump/restore, types,
-lint, runtime traces and bounded query/bundle checks pass. A protected production
-copy upgraded 53→54 at 01:30:13 UTC, preserving 97 original tables and replaying
-current protections without changing production. Exact deployment/live behavior,
-installed recovery and private reconciliation remain in this feature cycle.
-No topic feature/subtask is declared complete; the production release below is
-unchanged. See [acceptance evidence](TOPIC_COMMUNITIES_ACCEPTANCE.md) and
+**2026.09.14.18 / 55c53f49c5aee39a0d07e48248c0d3f7e7bf8dde** is READY in
+**dpl_BsgcgZHjcEsP1v8Tmv1ah1p9F7tP**, independently canonical and verified live.
+Public topic discovery, rule acceptance, private following, canonical discussions,
+scoped management and protected recovery ship in one complete feature cycle.
+Application **0d49b43** passes the 136-file gate with 843 passes, two expected skips
+and no failures/cancellations, plus 70 accepted browser groups. All 54 migration
+checksums, types/lint, query/bundle review and actual provider runtime traces pass.
+
+Protected 53→54 recovery preserves 97 original tables; installed 54→54 restore
+covers 100 tables, and nightly recovery verifies 39 sets with no issues/removals.
+Twenty public, four health and seven signed-in live groups pass. Fourteen original
+production fingerprints match; new topics, memberships, topic posts/comments,
+ranking snapshots, test user-data changes, sends and scoped provider errors are
+zero. Topic writes were tested in isolated fixtures. See
+[complete acceptance](TOPIC_COMMUNITIES_ACCEPTANCE.md) and
 [current contract](TOPIC_COMMUNITIES_CONTRACT.md).
+
+Reconcile the existing topic feature and children, credit overlapping moderation
+and feed integration, then continue the next eligible feature. Legitimate account
+operator coverage remains zero; broader discovery/provider/device work and the
+earlier intermittent rendering observation remain separate. Final review stays last.
 
 ## Prayer and private follow-up verified live — September 14, 2026 UTC
 
