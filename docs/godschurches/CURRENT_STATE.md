@@ -1,3 +1,35 @@
+## Notification choices and scheduled church posts verified live — September 15, 2026 UTC
+
+**2026.09.15.2 / 231fb8f54d8278fe043db8db74378092ac69d339** is READY in
+**dpl_8E7TGvnDuKrbHAM7avgKigzXpamw**, independently canonical and verified live.
+Explicit person/church bells, twelve independent Activity/phone categories,
+current church/commitment outcomes and private scheduled-publication management
+ship through existing permission and delivery owners. New phone categories are
+off; Follow and membership do not enable a bell. Protected recovery, bounded
+continuation, scheduling conflicts and a detected signup-return repair are included.
+
+The full gate on `fd86ffc` passes 881 checks across 143 files with two expected
+skips and no failures/cancellations. Eight production-browser suites on `de11570`
+pass 50 groups. Queue consolidation passes six fresh consumer/scheduling and
+fifteen retained comment checks; the final return repair passes eighteen navigation
+contracts and nine fresh integration browser groups. Production builds, types
+and scoped lint pass; the full gate was not repeated for those documented deltas.
+
+Final live acceptance passes fifteen public, four health and five signed-in
+groups. Both nonexistent-source native probes execute HTTP 200 on the exact final
+consumer with zero writes. All 56 migration/recovery checksums match; protected
+55→56 recovery preserves 100 original tables and installed 56→56 covers 101.
+Nightly recovery verifies 43 encrypted sets with no issues/removals. Twenty-five
+production fingerprints match: zero new consent, schedules, fanout/domain intents,
+ranking snapshots, test user-data changes or sends. Scoped browser/runtime errors
+are zero. Actual provider traces retain the repaired hydration renderer.
+
+See [complete acceptance](NOTIFICATION_INTEGRATION_ACCEPTANCE.md) for source
+provenance, measured costs and preserved provider/return-path failures. Notification
+engineering is complete; the broader parent retains actual locked-phone, tap/reply
+and physical Activity/detail/Back acceptance. Continue eligible sharing/preview
+work using its existing safe public projection. Final review remains last.
+
 ## Explicit discovery verified live — September 15, 2026 UTC
 
 **2026.09.15.1 / ee6071ccb9787bcb999a8ad9edb5dacd9d4dded8** is READY in

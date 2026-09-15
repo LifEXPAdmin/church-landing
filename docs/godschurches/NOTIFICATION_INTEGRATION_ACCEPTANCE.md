@@ -1,7 +1,9 @@
 # Notification and scheduled-publication acceptance
 
-15 September 2026 UTC. Release candidate `2026.09.15.2`,
-`complete-notification-choices`. This local receipt does not claim deployment.
+15 September 2026 UTC. **2026.09.15.2 / complete-notification-choices** is READY in
+**dpl_8E7TGvnDuKrbHAM7avgKigzXpamw**, application
+**231fb8f54d8278fe043db8db74378092ac69d339**. READY at 09:43:02.738 UTC;
+independent canonical assignment and serving identity verified at 09:44:39 UTC.
 
 ## Complete feature
 
@@ -67,11 +69,15 @@ Compared with the prior release, summed unique route/layout JavaScript gzip
 changes are Home +653 bytes, profile +10, Activity -220, Settings including its
 lazy notifications chunk +1, and post detail +1,116. New scheduled-list/manage
 routes total 144,714/165,156 gzip bytes. These are local per-file gzip comparisons,
-not network transfer or a claimed startup-speed improvement. The production build
-checks 162 traces, 35,519 entries and 411 server JavaScript files without private
-fixtures or credentials. Emitted hydration repair is verified separately.
+not network transfer or a claimed startup-speed improvement. The final local
+production build checks 160 traces, 35,493 entries and 407 server JavaScript files.
+The actual Vercel build checks 160 traces, 48,567 entries and 404 server JavaScript
+files, without private fixtures, environment files or Prisma configuration-loader
+paths. The canonical renderer is 173,096 bytes with SHA-256
+`2b7c5f99a8710e52520e7d0dc25c9fb65fd7c06e0a1d6cfee97276e0a452a3b7`;
+its retained hydration repair matches the actual emitted asset.
 
-## Remaining acceptance
+## Release repairs and recovery
 
 The first candidate `6a684d9` built successfully, but publication was rejected by
 the provider's Hobby limit of twelve serverless functions. Migration 56 had
@@ -102,10 +108,39 @@ ordinary encrypted restore passes across 101 tables with plaintext removed;
 nightly retention verifies 43 encrypted sets with zero issues or removals.
 Prior registry and failed-deployment receipts are retained privately.
 
-Before release completion: exact deployment READY and independent canonical
-assignment, serving version and emitted renderer, public and signed-in live
-behavior, both no-op native consumer probes, migration checksum reconciliation,
-installed recovery verification and production write accounting. Actual locked
-phone/tap/reply and physical cross-device acceptance retain their existing owner
-prerequisites. Optional email digests and unimplemented future feedback sources
-remain with their owning features. Final batch review remains last.
+The single-trigger release `80efc77` became READY and passed both native consumer
+probes. Its public acceptance then found that scheduled-post account entry lost
+the intended return destination. Repair `231fb8f` adds the narrowly validated list
+and detail paths, strips prior-session plan/cursor/action fields and preserves all
+supported Activity categories. Eighteen navigation contracts, types/scoped lint,
+the production build and nine fresh integration browser groups pass. The original
+live failure remains preserved. These are delta checks; the full gate was not
+repeated for this return-path repair.
+
+## Final live acceptance and disposition
+
+Fifteen public-browser groups pass on the exact final deployment, including the
+repaired guest return paths, private endpoint denials, current release guidance,
+earlier release links, narrow Home layouts and the actual emitted renderer.
+Four health groups pass with all expected configuration enabled, empty current
+backlogs and no alerts. Five read-only signed-in observations confirm twelve
+saved category pairs, unchanged consent, truthful device/quiet-hour availability,
+the authorized empty scheduled library and expanded Activity. Following the
+existing church leaves its new-post bell off. No real choice or device is changed.
+
+Both content-free native probes execute on the final deployment at 09:45 UTC:
+Activity and scheduled publication each return HTTP 200 from the existing private
+comment-consumer route, with zero application writes. These demonstrate native
+execution for nonexistent sources, not an actual recipient send or publication.
+Public and signed-in browser errors and scoped provider error/fatal rows are zero.
+All 56 production migration checksums and the installed recovery registry match.
+The 25 original-column production fingerprints remain unchanged; new bells,
+preferences, fanout jobs, scheduled posts, domain intents, protected choices,
+ranking snapshots, test user-data changes and outbound sends are all zero.
+
+Preference/interface and Activity/delivery engineering are complete against their
+current source, consent, retry and recovery criteria. The broader notification
+parent retains actual locked-phone, tap/reply, Activity/detail/Back and physical
+cross-device acceptance. Optional email digests and unimplemented future feedback
+sources remain with their owning features. Continue the next eligible sharing
+work; final batch review remains last.

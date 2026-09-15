@@ -56,7 +56,22 @@ browser checks precede exact READY/canonical/live acceptance. No production test
 user changes or real email/device send is authorized by engineering verification.
 Physical locked-phone/tap/reply acceptance retains its existing owner prerequisite.
 
-## Local source checkpoint
+## Current release and delivery contract
+
+Application `231fb8f` is verified live as `2026.09.15.2`; see
+[complete acceptance](NOTIFICATION_INTEGRATION_ACCEPTANCE.md). The current worker
+shares the existing `/api/queues/comment-followers` function and single
+`comment-followers-v1` trigger. Legacy comment messages are unchanged; strict
+Activity/scheduled kinds dispatch to separate canonical owners after SDK metadata
+verification. Domain-prefixed idempotency keys, bounded retries and exact schedule
+revisions remain enforced. No new function, trigger, cron or provider plan is used.
+
+Scheduled list/detail signup and sign-in preserve only their validated destination,
+never a prior-session cursor, action or form plan. All supported Activity categories
+survive account entry. The source checkpoints below are dated implementation
+history; current production/recovery evidence supersedes their pending wording.
+
+## Historical local source checkpoints
 
 The first integration checkpoint adds explicit bells, independent supported
 channels and recovery receipts, canonical reaction/prayer/church/commitment

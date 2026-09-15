@@ -1,5 +1,23 @@
 # Phone notification contract
 
+## Expanded preferences and shared worker — 15 September 2026
+
+The [notification integration](NOTIFICATION_INTEGRATION_CONTRACT.md) adds explicit
+person/church author bells, reaction/prayer grouping, church/commitment outcomes
+and twelve independent Activity/phone categories. New phone categories start off;
+Follow and membership do not grant notification consent. Current source, recipient,
+opt-in and device boundaries apply at delivery/opening. Group replacement tags
+are opaque and owner-scoped; phone previews stay generic.
+
+The existing `/api/queues/comment-followers` function retains its single
+`comment-followers-v1` queue trigger. Strict message kinds route new Activity and
+scheduled-publication work to their separate domain owners; legacy comment
+payloads are unchanged. Domain-prefixed keys prevent cross-kind deduplication.
+No additional function, trigger, cron or provider plan is required. The SDK's
+verified delivery metadata remains the boundary; there is no public callback.
+See [complete acceptance](NOTIFICATION_INTEGRATION_ACCEPTANCE.md) for the exact
+deployment, non-recipient native probes and remaining physical-phone acceptance.
+
 ## Explicit conversation followers — 14 September 2026 candidate
 
 A new canonical comment records one content-free continuation only when existing
