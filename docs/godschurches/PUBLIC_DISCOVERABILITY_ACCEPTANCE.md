@@ -1,10 +1,55 @@
 # Public discoverability
 
-September 15, 2026 UTC · Active feature; canonical release acceptance pending
+September 15, 2026 UTC · Engineering verified live; provider and physical acceptance open
+
+## Final canonical acceptance
+
+**2026.09.15.5 / f292d8058deb52320cecb01d4ffd06edacf7b835** became READY at
+14:14:02 UTC in **dpl_ESGoJGQoD9q3FpY7D5gqKKhMdS6z**. Independent canonical
+assignment and the serving build/version were verified at 14:20:00 UTC. This
+includes the final title/description correction in application `28315ef` and
+supersedes the first live candidate below. The exact deployment URL is
+`church-landing-e7kwf7qr1-andrew-mccuens-projects.vercel.app`.
+
+All **32 public live groups**, **four health groups** and **four actual signed-in
+Chrome groups** pass. The current church has its branded tab title, nonempty
+public description and truthful Organization data. An existing ordinary public
+post remains eligible; prayers without safe excerpts and the withdrawn post are
+excluded from every advertised sitemap child. Protected routes retain noindex
+and generic metadata. Actual PNG bytes, canonical URLs, narrow-view layouts,
+release/feature links and the previous onboarding/QR/header flow remain verified.
+The 320-pixel church screenshot was inspected. No live event fixture was created;
+event lifecycle evidence comes from the isolated production HTTPS environment.
+
+The deployed provider build passes 162 runtime traces, 49,482 entries and 410
+server JavaScript files, with no private fixtures or environment files. The
+canonical browser loads its exact 173,096-byte repaired hydration renderer,
+SHA-256 `2b7c5f99a8710e52520e7d0dc25c9fb65fd7c06e0a1d6cfee97276e0a452a3b7`.
+The provider has 335 route entries in **12 distinct function packages**, including
+middleware. The sitemap shares the existing main package (22,029,603 bytes,
+70 routes); no thirteenth function package is added. The final title delta retains
+the unchanged five-route client JavaScript measurements below.
+
+At 14:21:54 UTC, all 57 installed migration checksums match with none pending.
+No migration is added or applied. The still-current protected 56→57 recovery
+preserves 101 original tables. All 31 production baseline fingerprints match
+every current column; no new onboarding hints, welcome selections, host grants,
+welcome threads or ranking snapshots appear. Live checks perform **zero user-data
+writes and zero sends**. Automated browser errors, scoped authenticated-browser
+errors and exact-deployment runtime error rows since 14:20 UTC are zero.
+
+The staged 150-file regression baseline passes **916 checks and two expected
+skips**, with the documented final title delta separately passing 14 source/image
+checks, 12 HTTPS checks, four browser groups, production build, types and lint.
+Failed attempts remain preserved; this is not represented as one uninterrupted
+gate. Core engineering and the newly unlocked structured-data subtask are complete.
+Search Console account/property ownership and real phone/client observations
+remain the explicit prerequisites below. Continue the next eligible ordinary
+feature; final batch review remains last.
 
 ## Existing behavior and scope
 
-The current production baseline is onboarding `3d8b59a`, version `2026.09.15.4`.
+The starting production baseline was onboarding `3d8b59a`, version `2026.09.15.4`.
 Its icons, public share-card rendering and anonymous preview owner are reused.
 The old route inventory remains a dated checkpoint, not current readiness proof.
 Before this change, platform pages had blanket noindex headers, the sitemap held

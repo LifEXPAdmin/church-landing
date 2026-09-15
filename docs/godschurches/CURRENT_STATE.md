@@ -1,3 +1,30 @@
+## Public discoverability verified live — September 15, 2026 UTC
+
+**2026.09.15.5 / f292d8058deb52320cecb01d4ffd06edacf7b835** is READY in
+**dpl_ESGoJGQoD9q3FpY7D5gqKKhMdS6z**, independently canonical and verified live.
+Current public metadata, stable canonicals, complete bounded sitemap batches and
+truthful church/event structured data reuse existing anonymous sharing and source
+permissions. This feature includes the branded resource-title/absent-description
+correction found in signed-in live acceptance. Private profiles, account routes,
+withdrawn posts and prayers without safe excerpts stay excluded from indexing.
+
+The staged 150-file baseline passes 916 checks with two expected skips. The final
+title delta passes 14 focused source/image checks, 12 actual HTTPS checks, four
+browser groups, types/lint and production build. Final live acceptance passes 32
+public, four health and four signed-in groups, with zero browser/runtime errors.
+All 57 migration checksums match, none are pending, and all 31 current-column
+production fingerprints remain unchanged. Zero test user-data writes or sends.
+Provider packaging remains 12 distinct functions including middleware; five
+affected client bundles are unchanged. Event markup drops four SELECTs to one
+with identical measured output. Local timings do not establish a capacity SLA.
+
+See [complete acceptance](PUBLIC_DISCOVERABILITY_ACCEPTANCE.md) for exact source,
+staged regression, retained failures, recovery, resource costs and live evidence.
+Core engineering is complete. Search Console account/property ownership and real
+phone/client acceptance remain open in their existing tasks. Continue eligible
+admin permissions and queue work in feature 29 after inspecting its actual
+implementation and prerequisites. Final review stays last.
+
 ## Resumable onboarding and church welcome verified live — September 15, 2026 UTC
 
 **2026.09.15.4 / 3d8b59a206818e13aaef6b0a82baccbdbd7dff55** is READY in
