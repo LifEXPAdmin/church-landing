@@ -480,6 +480,15 @@ test("account recovery controls expire only after protected account deletion plu
       ["--exit-on-error", "--no-owner", "--no-acl", "--dbname", targetUrl.href],
       schema
     );
+    // A schema-only copy has no data, including the required operational baseline.
+    // The selected account is inserted next, so every copied version starts at zero.
+    for (const configuration of await db.platformMetricConfiguration.findMany())
+      await recoveryDb.platformMetricConfiguration.create({
+        data: {
+          ...configuration,
+          openingStates: { ENABLED: 0, DEACTIVATED: 0, SUSPENDED: 0 }
+        }
+      });
     await recoveryDb.platformUser.create({
       data: await db.platformUser.findUniqueOrThrow({
         where: { id: f.target.id }
