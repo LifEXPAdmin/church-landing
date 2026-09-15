@@ -702,6 +702,7 @@ export const releases: ReleaseEntry[] = [
       "Church and event details describe supplied facts without inventing a building, venue or verified affiliation."
     ],
     fixed: [
+      "Public church, event and topic tabs identify God’s Churches, and sources without a description receive useful public guidance.",
       "Official church pages receive the same public preview support as community listings. A community-listing label describes provenance, not privacy.",
       "Paginated public directories retain their own addresses, while tracking and private filters do not create duplicate indexable pages."
     ],

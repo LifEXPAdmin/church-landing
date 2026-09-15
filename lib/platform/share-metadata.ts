@@ -80,7 +80,9 @@ export async function publicResourceMetadata(
       absolute:
         discoverable && kind === "post"
           ? `${description.slice(0, 80)} | God’s Churches`
-          : title
+          : title === "God’s Churches"
+            ? title
+            : `${title} | God’s Churches`
     },
     description,
     ...(url ? { alternates: { canonical: url } } : {}),

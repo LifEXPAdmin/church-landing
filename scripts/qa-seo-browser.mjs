@@ -115,6 +115,7 @@ try {
   for (const width of [320, 390, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     await go("/platform/churches/" + f.church.id);
+    assert.equal(await page.title(), f.church.name + " | God’s Churches");
     await page
       .getByRole("heading", { level: 1, name: f.church.name, exact: true })
       .waitFor();
@@ -143,6 +144,7 @@ try {
     await page
       .getByRole("heading", { level: 1, name: f.occurrence.title, exact: true })
       .waitFor();
+    assert.equal(await page.title(), f.occurrence.title + " | God’s Churches");
     await fits();
     assert.equal((await structured()).name, f.occurrence.title);
     await page.screenshot({

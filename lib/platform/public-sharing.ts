@@ -190,7 +190,9 @@ export async function publicSharePreview(
             ...fallback,
             available: true,
             title: short(row.name, 110),
-            description: short(row.summary, 160),
+            description:
+              short(row.summary, 160) ||
+              "View public church details and current connection options on God’s Churches.",
             author: { name: short(row.name, 100), kind: "church" as const }
           }
         : fallback;
@@ -215,7 +217,9 @@ export async function publicSharePreview(
           ...fallback,
           available: true,
           title: short(row.title, 110),
-          description: short(row.description, 160),
+          description:
+            short(row.description, 160) ||
+            "Read the published event details and check current access before responding.",
           author: {
             name: short(row.event.calendar.church!.name, 100),
             kind: "church" as const

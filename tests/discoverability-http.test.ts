@@ -86,6 +86,7 @@ test("actual public crawler, guest and member HTML share current canonical metad
         assert.doesNotMatch(p.tags.robots, /noindex/);
         assert.equal(p.tags.canonical, origin + path);
         assert.equal(p.tags["og:url"], origin + path);
+        assert.match(p.tags.title, / \| God’s Churches$/);
         assert.ok(
           !JSON.stringify([p.tags, p.structured]).includes(f.author.email)
         );
@@ -104,6 +105,20 @@ test("actual public crawler, guest and member HTML share current canonical metad
         if (kind === "posts") assert.ok(p.tags.title.includes(f.post.content));
       }
     }
+  await db.church.update({ where: { id: f.church.id }, data: { summary: "" } });
+  const emptyChurch = await page("/platform/churches/" + f.church.id);
+  assert.match(emptyChurch.tags.description, /View public church details/);
+  assert.equal(
+    emptyChurch.tags.description,
+    emptyChurch.tags["og:description"]
+  );
+  await db.calendarOccurrence.update({
+    where: { id: f.occurrence.id },
+    data: { description: "" }
+  });
+  const emptyEvent = await page("/platform/events/" + f.occurrence.id);
+  assert.match(emptyEvent.tags.description, /Read the published event details/);
+  assert.equal(emptyEvent.tags.description, emptyEvent.tags["og:description"]);
 });
 test("public sitemap index covers current shards, static information and eligible resources with true optional dates", async () => {
   const f = await seedSharing(db),
