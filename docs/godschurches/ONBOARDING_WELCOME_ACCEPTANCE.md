@@ -97,6 +97,23 @@ cluster were removed. Production has not yet received the migration. The full
 fresh migration/restore/restart regression gate and exact canonical/live release
 acceptance remain in progress; this is not a completion claim.
 
+## Account export and permanent closure finishing repair
+
+The later privacy review found that the explicit account export projection omitted
+saved onboarding hints and the author's welcome label; permanent erasure also
+left the label attached to the retained withdrawn post stub. The same feature now
+exports only the owner's dismissed steps/version and their personal post's purpose.
+Host handled state, operational versions and another account's labels are excluded.
+Permanent closure removes personal welcome labels through the existing erasure
+owner while preserving shared church-authored content; deleting private preferences
+already removes the saved hints. Protected account restoration uses this same owner.
+
+The four-file onboarding/export/deletion/protected-restoration delta passes 25
+checks, including an actual ordinary approved member's export and permanent
+closure. Types and scoped lint pass. The existing full gate remains frozen on
+`6c9f74c`; a fresh production build, three actual HTTPS groups and final browser
+run verify this later delta before release. Earlier failure evidence is retained.
+
 ## Runtime and timing observations
 
 No dependency, API route, worker or provider was added. One minimal label/status

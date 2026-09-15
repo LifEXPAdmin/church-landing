@@ -132,6 +132,89 @@ test("first steps resume by current account, with optional hints isolated from c
   await denied(readOnboarding(db, null), 401);
 });
 
+test("account export includes owned hints and author labels only; permanent closure removes their retained metadata", async () => {
+  const owner = await createPortalActor(db, "onboardprivacy");
+  const connection = await requestConnection(db, owner, f.churchA.id);
+  await portalCommand(db, f.reviewerA.token, {
+    operation: "transition",
+    action: "APPROVE",
+    churchId: f.churchA.id,
+    connectionId: connection.id,
+    expectedVersion: connection.version
+  });
+  await saveOnboarding(db, owner.token, {
+    operation: "onboarding",
+    step: "profile",
+    dismissed: true,
+    expectedVersion: 0,
+    mutationId: randomUUID()
+  });
+  const created = await postCommand(db, owner.token, {
+    operation: "create",
+    requestKey: randomUUID(),
+    audienceChurchId: f.churchA.id,
+    audience: "CHURCH",
+    content: "Fictional account-owned welcome label"
+  });
+  await tag(owner.token, created.id, "QUESTION");
+  const { prepareAccountExport, downloadAccountExport } =
+    await import("../lib/platform/account-export");
+  const secret = "fictional-onboarding-export-secret".repeat(3);
+  const proof = await prepareAccountExport(
+    db,
+    owner.token,
+    owner.password,
+    secret
+  );
+  const exported = JSON.parse(
+    await downloadAccountExport(db, owner.token, proof.authorization, secret)
+  );
+  assert.deepEqual(exported.socialPreferences[0].onboardingDismissed, [
+    "profile"
+  ]);
+  assert.equal(exported.socialPreferences[0].onboardingVersion, 1);
+  assert.equal(exported.posts.length, 1);
+  assert.equal(exported.posts[0].id, created.id);
+  assert.deepEqual(exported.posts[0].welcomeThread, { purpose: "QUESTION" });
+  assert.ok(!Object.hasOwn(exported, "churchWelcomeThreads"));
+  const { requestPermanentAccountDeletion } =
+    await import("../lib/platform/account-deletion");
+  const { eraseRequestedAccountData } =
+    await import("../lib/platform/account-erasure");
+  const { createSessionToken } = await import("../lib/platform/auth");
+  const journal = { async recordAccount() {}, async completeAccount() {} };
+  await requestPermanentAccountDeletion(
+    db,
+    owner.token,
+    owner.password,
+    true,
+    createSessionToken(),
+    journal
+  );
+  const deletion = await db.accountDeletion.findUniqueOrThrow({
+    where: { userId: owner.id }
+  });
+  await eraseRequestedAccountData(db, deletion.id, journal);
+  assert.equal(
+    await db.socialPreferences.findUnique({ where: { ownerId: owner.id } }),
+    null
+  );
+  assert.equal(
+    await db.churchWelcomeThread.findUnique({ where: { postId: created.id } }),
+    null
+  );
+  assert.equal(
+    (await db.platformPost.findUniqueOrThrow({ where: { id: created.id } }))
+      .status,
+    "WITHDRAWN"
+  );
+  assert.equal(
+    (await db.platformPost.findUniqueOrThrow({ where: { id: f.post.id } }))
+      .status,
+    "PUBLISHED"
+  );
+});
+
 test("pending newcomer sees no church cards; ordinary approval unlocks real events, notices and progress without any follows", async () => {
   const newcomer = await createPortalActor(db, "resuming");
   const connection = await requestConnection(db, newcomer, f.churchA.id);
@@ -485,13 +568,11 @@ test("welcome queue pagination advances across answered candidates and never tru
   // A different currently active identity answers the first 100. These rows are
   // isolated pagination fixtures; no production rows or notification send exists.
   await db.platformPostComment.createMany({
-    data: ids
-      .slice(0, 100)
-      .map((postId) => ({
-        postId,
-        authorId: f.reviewerB.id,
-        content: "Fictional reply for pagination"
-      }))
+    data: ids.slice(0, 100).map((postId) => ({
+      postId,
+      authorId: f.reviewerB.id,
+      content: "Fictional reply for pagination"
+    }))
   });
   let page = await readChurchWelcomeHost(db, f.blake.token, {
     churchId: f.churchB.id

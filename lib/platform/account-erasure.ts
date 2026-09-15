@@ -110,6 +110,9 @@ async function erasePersonalCalendars(tx: Tx, userId: string, now: Date) {
 }
 
 async function eraseSocialData(tx: Tx, userId: string, now: Date) {
+  await tx.churchWelcomeThread.deleteMany({
+    where: { post: personalPost(userId) }
+  });
   await tx.prayerUpdate.deleteMany({
     where: { comment: { authorId: userId, authorChurchId: null } }
   });

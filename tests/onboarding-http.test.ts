@@ -87,6 +87,48 @@ test("actual HTTPS next-step endpoints require the current owner, reject cross-s
   await json(await write({ ...input, mutationId: randomUUID() }), 409);
 });
 
+test("actual HTTPS account download includes only the owner's saved hints and authored label, excluding host state", async () => {
+  const account = (actor: typeof f.val, body: Record<string, unknown>) =>
+    fetch(new URL("/api/platform/account", origin), {
+      method: "POST",
+      headers: {
+        origin,
+        "content-type": "application/json",
+        cookie: "church_platform_session=" + actor.token
+      },
+      body: JSON.stringify(body)
+    });
+  for (const actor of [f.newcomer, f.val]) {
+    const prepared = await account(actor, {
+      operation: "prepare-export",
+      currentPassword: actor.password
+    });
+    assert.equal(prepared.status, 200);
+    const proof = await prepared.json();
+    const response = await account(actor, {
+      operation: "download-export",
+      authorization: proof.authorization
+    });
+    assert.equal(response.status, 200);
+    assert.match(response.headers.get("cache-control")!, /no-store/);
+    assert.match(response.headers.get("content-disposition")!, /attachment/);
+    const exported = await response.json();
+    if (actor.id === f.newcomer.id) {
+      assert.deepEqual(exported.socialPreferences[0].onboardingDismissed, [
+        "profile"
+      ]);
+      assert.equal(exported.socialPreferences[0].onboardingVersion, 1);
+      assert.equal(exported.posts.length, 0);
+    } else {
+      const own = exported.posts.find(
+        (p: { id: string }) => p.id === f.introduction.id
+      );
+      assert.deepEqual(own.welcomeThread, { purpose: "INTRODUCTION" });
+    }
+    assert.ok(!Object.hasOwn(exported, "churchWelcomeThreads"));
+  }
+});
+
 test("actual production HTML and RSC contain no private onboarding or host projections; the authorized API scopes and then revokes data", async () => {
   const hostPath =
     "/api/platform/church-tools?view=welcome&churchId=" + f.churchA.id;
