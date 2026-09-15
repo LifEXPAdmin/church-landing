@@ -47,7 +47,8 @@ const nextConfig: NextConfig = {
           "/api/:path*",
           "/admin/:path*",
           "/platform/:path((?!$|churches$|churches/[^/]+$|posts/[^/]+$|events/[^/]+$|topics$|topics/[^/]+$).*)",
-          "/platform/topics/new"
+          "/platform/topics/new",
+          "/platform/topics/following"
         ]
       : ["/:path*"];
     return [

@@ -117,6 +117,20 @@ test("public sitemap index covers current shards, static information and eligibl
   assert.ok(!robots.includes("Disallow: /admin"));
 });
 test("tracking is canonicalized, filtered pages remain excluded and valid directory continuation keeps its identity", async () => {
+  const f = await seedSharing(db);
+  const invalidZone = await page(
+    "/platform/events/" + f.occurrence.id + "?timeZone=not-a-zone"
+  );
+  assert.match(invalidZone.tags.robots, /noindex/);
+  assert.equal(invalidZone.structured.length, 0);
+  const validZone = await page(
+    "/platform/events/" + f.occurrence.id + "?timeZone=America%2FChicago"
+  );
+  assert.doesNotMatch(validZone.tags.robots, /noindex/);
+  assert.equal(
+    validZone.tags.canonical,
+    origin + "/platform/events/" + f.occurrence.id
+  );
   const home = await page("/platform?utm_source=fixture");
   assert.equal(home.tags.canonical, origin + "/platform");
   assert.doesNotMatch(home.tags.robots, /noindex/);

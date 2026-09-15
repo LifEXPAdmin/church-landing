@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import {
   indexingEnvironment,
   publicPageIdentity,
+  validEventDisplayZone,
   type PublicQuery
 } from "../indexing-policy";
 import { publicDiscoverablePostWhere } from "./public-discovery-policy";
@@ -45,7 +46,8 @@ export async function publicResourceMetadata(
           : [];
     const identityQuery = { ...query };
     delete identityQuery.comment;
-    delete identityQuery.timeZone;
+    if (kind === "event" && validEventDisplayZone(identityQuery.timeZone))
+      delete identityQuery.timeZone;
     const identity = publicPageIdentity(path, identityQuery, pagination);
     filtered = identity.filtered;
     url = new URL(identity.path, origin).href;

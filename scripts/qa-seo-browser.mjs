@@ -77,6 +77,9 @@ const go = async (path) => {
   // that inert transfer fragment as another rendered page.
   await page.getByRole("heading", { level: 1 }).waitFor();
   assert.equal(await page.getByRole("heading", { level: 1 }).count(), 1);
+  await page.waitForFunction(
+    () => document.querySelectorAll("main h1").length === 1
+  );
 };
 const fits = async () =>
   assert.ok(
@@ -117,6 +120,12 @@ try {
       .getByRole("link", { name: f.occurrence.title, exact: true })
       .click();
     await page.waitForURL(
+      (url) =>
+        url.origin === config.origin &&
+        url.pathname === "/platform/events/" + f.occurrence.id
+    );
+    assert.equal(
+      await page.locator('link[rel="canonical"]').getAttribute("href"),
       config.origin + "/platform/events/" + f.occurrence.id
     );
     await page
@@ -251,6 +260,27 @@ try {
     { mode: 0o600 }
   );
 } catch (error) {
+  writeFileSync(
+    output + "/failure-structure.json",
+    JSON.stringify(
+      await page.evaluate(() => ({
+        headings: [...document.querySelectorAll("main h1")].map((e) => ({
+          text: e.textContent,
+          hidden: e.closest("[hidden]")?.outerHTML.slice(0, 300),
+          visible: e.checkVisibility()
+        })),
+        hidden: [...document.querySelectorAll("[hidden]")].map((e) => ({
+          tag: e.tagName,
+          id: e.id,
+          children: e.childElementCount
+        })),
+        scripts: [
+          ...document.querySelectorAll('script[type="application/ld+json"]')
+        ].map((e) => ({ text: e.textContent, hidden: !!e.closest("[hidden]") }))
+      }))
+    ),
+    { mode: 0o600 }
+  );
   writeFileSync(output + "/failure.txt", String(error.stack ?? error), {
     mode: 0o600
   });

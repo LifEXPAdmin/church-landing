@@ -1,6 +1,6 @@
 import { publicResourceMetadata } from "@/lib/platform/share-metadata";
 import type { Metadata } from "next";
-import type { PublicQuery } from "@/lib/indexing-policy";
+import { validEventDisplayZone, type PublicQuery } from "@/lib/indexing-policy";
 import { PublicStructuredData } from "@/components/platform/public-structured-data";
 import { CalendarEventPage } from "@/components/platform/calendar-event-page";
 export const dynamic = "force-dynamic";
@@ -21,10 +21,13 @@ export default async function Page({
   searchParams: Promise<{ timeZone?: string }>;
 }) {
   const { id } = await params;
+  const query = await searchParams;
   return (
     <>
-      <PublicStructuredData kind="event" id={id} />
-      <CalendarEventPage id={id} timeZone={(await searchParams).timeZone} />
+      {validEventDisplayZone(query.timeZone) && (
+        <PublicStructuredData kind="event" id={id} />
+      )}
+      <CalendarEventPage id={id} timeZone={query.timeZone} />
     </>
   );
 }

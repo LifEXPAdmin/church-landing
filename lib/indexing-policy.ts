@@ -31,6 +31,23 @@ export function indexingEnvironment(
 }
 
 export type PublicQuery = Record<string, string | string[] | undefined>;
+/** Invalid display options render an error, so they cannot describe a public event. */
+export function validEventDisplayZone(value: unknown) {
+  if (value === undefined) return true;
+  if (
+    typeof value !== "string" ||
+    !value ||
+    value.length > 100 ||
+    /^[+-]/.test(value)
+  )
+    return false;
+  try {
+    new Intl.DateTimeFormat("en", { timeZone: value });
+    return true;
+  } catch {
+    return false;
+  }
+}
 const tracking = /^(?:utm_[a-z_]+|gclid|fbclid)$/;
 export function publicPageIdentity(
   path: string,
