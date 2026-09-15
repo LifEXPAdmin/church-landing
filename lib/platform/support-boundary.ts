@@ -111,7 +111,7 @@ export async function handleSupportRequest(
       const feedbackOwner = await db.supportCase.findUniqueOrThrow({ where: { id: result.caseId }, select: { requesterId: true } });
       await protectFeedbackPromptPreferences(db, feedbackOwner.requesterId);
     }
-    if(body.operation==="redact" || body.operation==="feedback-remove-attachment") await protectAdminCaseChanges(db,[result.caseId]);
+    if(body.operation==="redact" || body.operation==="feedback-remove-attachment" || body.operation==="feedback-choices") await protectAdminCaseChanges(db,[result.caseId]);
     const linked = await db.supportCase.findUnique({
       where: { id: result.caseId },
       select: { moderationDecision: { select: { reportId: true } } }

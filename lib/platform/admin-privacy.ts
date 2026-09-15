@@ -39,6 +39,8 @@ export async function eraseAdminPersonalData(
 ) {
   await tx.feedbackPromptClaim.deleteMany({ where: { userId } });
   await tx.feedbackPromptPreference.deleteMany({ where: { userId } });
+  await tx.feedbackIdeaVote.deleteMany({ where: { userId } });
+  await tx.feedbackIdeaSubscription.deleteMany({ where: { userId } });
   await retireFeedbackImages(tx, { feedbackOwnerId: userId });
   await tx.supportMessage.updateMany({
     where: { case: { requesterId: userId, feedback: { isNot: null } } },
@@ -46,7 +48,12 @@ export async function eraseAdminPersonalData(
   });
   await tx.feedbackSubmission.updateMany({
     where: { case: { requesterId: userId }, redactedAt: null },
-    data: { ...emptyFeedback, redactedAt: now, version: { increment: 1 }, sharingVersion: { increment: 1 } }
+    data: {
+      ...emptyFeedback,
+      redactedAt: now,
+      version: { increment: 1 },
+      sharingVersion: { increment: 1 }
+    }
   });
   await tx.adminSavedView.deleteMany({ where: { userId } });
   await tx.adminAuthenticator.deleteMany({ where: { userId } });
@@ -116,7 +123,18 @@ export async function protectAdminCaseChanges(
     const targets = await db.retentionControl.findMany({
       where: {
         sourceId: { in: sourceIds },
-        kind: { in: ["ADMIN_SUPPORT", "ADMIN_REPORT", "ADMIN_CLAIM", "SUPPORT_MESSAGE", "SUPPORT_ATTACHMENT"] },
+        kind: {
+          in: [
+            "ADMIN_SUPPORT",
+            "ADMIN_REPORT",
+            "ADMIN_CLAIM",
+            "SUPPORT_MESSAGE",
+            "SUPPORT_ATTACHMENT",
+            "FEEDBACK_CHOICES",
+            "FEEDBACK_IDEA",
+            "FEEDBACK_SUBSCRIPTION"
+          ]
+        },
         journaledAt: null
       },
       select: { targetId: true },

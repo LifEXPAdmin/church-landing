@@ -44,7 +44,7 @@ export function adminFilters(
   return {
     type: choice(
       input.type,
-      ["ALL", "SUPPORT", "REPORT", "CLAIM", "BUG", "SUGGESTION"],
+      ["ALL", "SUPPORT", "REPORT", "CLAIM", "BUG", "SUGGESTION", "FEEDBACK"],
       "ALL"
     ),
     state: choice(

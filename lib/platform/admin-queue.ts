@@ -70,7 +70,11 @@ function queueFilters(f: AdminQueueFilters, actorId: string, asOf: Date) {
   const clauses: Prisma.Sql[] = [
     Prisma.sql`q."createdAt"<=${asOf.toISOString()}::timestamp`
   ];
-  if (f.type === "BUG")
+  if (f.type === "FEEDBACK")
+    clauses.push(
+      Prisma.sql`q."sourceType"='SUPPORT' AND EXISTS (SELECT 1 FROM "FeedbackSubmission" f WHERE f."caseId"=q."sourceId")`
+    );
+  else if (f.type === "BUG")
     clauses.push(
       Prisma.sql`q."sourceType"='SUPPORT' AND q.category='ACCOUNT_WEBSITE'`
     );
@@ -133,7 +137,7 @@ async function adminQueueData(
   const asOf = options.asOf ?? new Date();
   const supportOnly =
     options.source?.sourceType === "SUPPORT" ||
-    ["SUPPORT", "BUG", "SUGGESTION"].includes(filters.type);
+    ["SUPPORT", "BUG", "SUGGESTION", "FEEDBACK"].includes(filters.type);
   const assigned = supportOnly
     ? []
     : await tx.$queryRaw<{ id: string }[]>(Prisma.sql`SELECT DISTINCT id FROM (

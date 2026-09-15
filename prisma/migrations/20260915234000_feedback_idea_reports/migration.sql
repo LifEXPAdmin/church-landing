@@ -1,0 +1,1 @@
+ALTER TYPE "CommunityReportTarget" ADD VALUE 'FEEDBACK_IDEA';

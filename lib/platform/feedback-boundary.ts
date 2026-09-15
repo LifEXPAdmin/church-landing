@@ -36,9 +36,15 @@ export async function handleFeedbackRequest(
         throw new PortalError(400, "Check this feedback link.");
       const view = q.get("view") ?? "requests";
       if (view === "attachments") {
-        const snapshot = await readSupport(db, token, "detail", { caseId: q.get("caseId") ?? undefined });
-        if (!snapshot.detail?.feedback) throw new PortalError(404, "Feedback images are unavailable.");
-        return Response.json({ images: snapshot.detail.feedback.attachments }, { headers: socialHeaders });
+        const snapshot = await readSupport(db, token, "detail", {
+          caseId: q.get("caseId") ?? undefined
+        });
+        if (!snapshot.detail?.feedback)
+          throw new PortalError(404, "Feedback images are unavailable.");
+        return Response.json(
+          { images: snapshot.detail.feedback.attachments },
+          { headers: socialHeaders }
+        );
       }
       if (view !== "new" && view !== "requests" && view !== "detail")
         throw new PortalError(400, "Choose a supported feedback view.");
@@ -55,7 +61,9 @@ export async function handleFeedbackRequest(
       throw new PortalError(400, "Use the feedback form to save a change.");
     const { input } = await socialWriteInput(db, request, "feedback");
     if (input.operation === "feedback-remove-upload")
-      return Response.json(await removeFeedbackUpload(db, token, input), { headers: socialHeaders });
+      return Response.json(await removeFeedbackUpload(db, token, input), {
+        headers: socialHeaders
+      });
     if (
       input.operation !== "feedback-create" &&
       input.operation !== "feedback-choices" &&
@@ -66,8 +74,13 @@ export async function handleFeedbackRequest(
         "Use the private receipt for case conversation or status actions."
       );
     const result = await supportCommand(db, token, input);
-    if (input.operation === "feedback-create") await protectFeedbackPromptPreferences(db, owner);
-    if (input.operation === "feedback-remove-attachment") await protectAdminCaseChanges(db, [result.caseId]);
+    if (input.operation === "feedback-create")
+      await protectFeedbackPromptPreferences(db, owner);
+    if (
+      input.operation === "feedback-remove-attachment" ||
+      input.operation === "feedback-choices"
+    )
+      await protectAdminCaseChanges(db, [result.caseId]);
     return Response.json(result, {
       headers: socialHeaders
     });

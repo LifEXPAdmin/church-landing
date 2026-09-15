@@ -45,6 +45,7 @@ import {
 import { contentAppealOffer } from "./moderation-support";
 import { readableFeedbackImage } from "./feedback-image-access";
 import { projectImage } from "./media";
+import { requirePublicIdea } from "./feedback-idea-access";
 
 type Target = {
   type: CommunityReportTarget;
@@ -93,13 +94,54 @@ async function targetIn(
 ): Promise<Target | null> {
   const type = targetType(kind),
     id = postId(value);
+  if (type === "FEEDBACK_IDEA") {
+    if (process.env.FEEDBACK_IDEAS_ENABLED !== "true") return null;
+    try {
+      const idea = await requirePublicIdea(tx, id);
+      return {
+        type,
+        id,
+        version: idea.version,
+        contextVersion: 0,
+        scopeChurchId: null,
+        source: {
+          label: idea.title,
+          href: `/platform/feedback/ideas/${encodeURIComponent(id)}`
+        }
+      };
+    } catch (error) {
+      if (error instanceof PortalError && error.status === 404) return null;
+      throw error;
+    }
+  }
   if (type === "FEEDBACK_ATTACHMENT") {
-    const asset = await tx.mediaAsset.findFirst({ where: { id, purpose: "SUPPORT_ATTACHMENT", status: "READY", feedbackCaseId: { not: null } } });
+    const asset = await tx.mediaAsset.findFirst({
+      where: {
+        id,
+        purpose: "SUPPORT_ATTACHMENT",
+        status: "READY",
+        feedbackCaseId: { not: null }
+      }
+    });
     if (!asset) return null;
-    try { await readableFeedbackImage(tx, context.actorId, asset); }
-    catch (error) { if (error instanceof PortalError && [401,404].includes(error.status)) return null; throw error; }
-    return { type, id, version: asset.version, contextVersion: 0, scopeChurchId: null,
-      source: { label: "Selected private feedback attachment", href: `/platform/help/cases/${encodeURIComponent(asset.feedbackCaseId!)}` } };
+    try {
+      await readableFeedbackImage(tx, context.actorId, asset);
+    } catch (error) {
+      if (error instanceof PortalError && [401, 404].includes(error.status))
+        return null;
+      throw error;
+    }
+    return {
+      type,
+      id,
+      version: asset.version,
+      contextVersion: 0,
+      scopeChurchId: null,
+      source: {
+        label: "Selected private feedback attachment",
+        href: `/platform/help/cases/${encodeURIComponent(asset.feedbackCaseId!)}`
+      }
+    };
   }
   if (type === "MESSAGE") {
     const row = await tx.adultMessage.findFirst({
@@ -553,14 +595,52 @@ export function readCommunityReports(
         }
       });
       let selectedAttachment;
+      let selectedIdea;
+      if (
+        report.targetType === "FEEDBACK_IDEA" &&
+        process.env.FEEDBACK_IDEAS_ENABLED === "true"
+      ) {
+        try {
+          const idea = await requirePublicIdea(tx, report.targetId);
+          selectedIdea = {
+            type: "FEEDBACK_IDEA" as const,
+            content: `${idea.title}\n\n${idea.summary}\n\n${idea.explanation}`,
+            version: idea.version,
+            createdAt: idea.publishedAt
+          };
+        } catch (error) {
+          if (!(error instanceof PortalError && error.status === 404))
+            throw error;
+        }
+      }
       if (report.targetType === "FEEDBACK_ATTACHMENT") {
-        const asset = await tx.mediaAsset.findFirst({ where: { id: report.targetId, purpose: "SUPPORT_ATTACHMENT", status: "READY", feedbackCaseId: { not: null } } });
+        const asset = await tx.mediaAsset.findFirst({
+          where: {
+            id: report.targetId,
+            purpose: "SUPPORT_ATTACHMENT",
+            status: "READY",
+            feedbackCaseId: { not: null }
+          }
+        });
         if (asset) {
           try {
             // Report authority never grants private case or attachment access.
             await readableFeedbackImage(tx, ownerId, asset);
-            selectedAttachment = { type: "FEEDBACK_ATTACHMENT" as const, attachment: projectImage(asset), version: asset.version, createdAt: asset.createdAt };
-          } catch (error) { if (!(error instanceof PortalError && [401,404].includes(error.status))) throw error; }
+            selectedAttachment = {
+              type: "FEEDBACK_ATTACHMENT" as const,
+              attachment: projectImage(asset),
+              version: asset.version,
+              createdAt: asset.createdAt
+            };
+          } catch (error) {
+            if (
+              !(
+                error instanceof PortalError &&
+                [401, 404].includes(error.status)
+              )
+            )
+              throw error;
+          }
         }
       }
       const selectedRequest =
@@ -642,19 +722,22 @@ export function readCommunityReports(
         holds,
         reviewDueAt: report.reviewDueAt.toISOString(),
         closedAt: report.closedAt?.toISOString() ?? null,
-        evidence: selectedAttachment ?? (selectedRequest
-          ? { type: "CONTACT_REQUEST" as const, ...selectedRequest }
-          : selectedMessage
-            ? { type: "MESSAGE" as const, ...selectedMessage }
-            : selectedText
-              ? {
-                  type:
-                    report.targetType === "POST"
-                      ? ("POST" as const)
-                      : ("COMMENT" as const),
-                  ...selectedText
-                }
-              : undefined),
+        evidence:
+          selectedIdea ??
+          selectedAttachment ??
+          (selectedRequest
+            ? { type: "CONTACT_REQUEST" as const, ...selectedRequest }
+            : selectedMessage
+              ? { type: "MESSAGE" as const, ...selectedMessage }
+              : selectedText
+                ? {
+                    type:
+                      report.targetType === "POST"
+                        ? ("POST" as const)
+                        : ("COMMENT" as const),
+                    ...selectedText
+                  }
+                : undefined),
         reportedVersion: report.targetVersion,
         source: contentSourceView(source),
         reconsiderationCases

@@ -249,6 +249,9 @@ model PlatformUser {
   feedbackImages MediaAsset[] @relation("FeedbackImageOwner")
   feedbackPromptPreference FeedbackPromptPreference?
   feedbackPromptClaims FeedbackPromptClaim[]
+  feedbackIdeaVotes FeedbackIdeaVote[]
+  feedbackIdeaSubscriptions FeedbackIdeaSubscription[]
+  feedbackIdeaEvents FeedbackIdeaEvent[]
   personalPhotos PersonalPhoto[]
   photoAlbums PhotoAlbum[]
   postPhotoReferences PostPhotoReference[]
@@ -538,6 +541,7 @@ enum ChurchCapability {
 }
 
 enum OperatorCapability {
+  MANAGE_PRODUCT_FEEDBACK
   VIEW_PLATFORM_METRICS
   EXPORT_PLATFORM_METRICS
   VIEW_OPERATIONAL_HEALTH
@@ -562,6 +566,7 @@ enum CommunityReportTarget {
   CONTACT_REQUEST
   MESSAGE
   FEEDBACK_ATTACHMENT
+  FEEDBACK_IDEA
 }
 
 enum CommunityReportReason {
@@ -1109,6 +1114,8 @@ model PlatformOperatorGrant {
   capability OperatorCapability
   revokedAt DateTime?
   user PlatformUser @relation(fields: [userId], references: [id], onDelete: Restrict)
+  reviewedFeedbackIdeas FeedbackIdea[]
+  feedbackIdeaEvents FeedbackIdeaEvent[]
   @@unique([userId, capability])
 }
 
@@ -1254,6 +1261,7 @@ model FeedbackSubmission {
   redactedAt DateTime?
   case SupportCase @relation(fields: [caseId], references: [id], onDelete: Restrict, onUpdate: NoAction)
   attachments MediaAsset[]
+  idea FeedbackIdea?
   @@index([kind, createdAt])
   @@index([entryPoint, createdAt])
 }
@@ -1285,6 +1293,83 @@ model FeedbackPromptClaim {
   user PlatformUser @relation(fields: [userId], references: [id], onDelete: Cascade)
   feedback FeedbackSubmission?
   @@index([userId, createdAt])
+  @@index([createdAt])
+}
+
+// A human-reviewed public copy. The private source is never projected publicly.
+model FeedbackIdea {
+  id String @id @default(cuid())
+  sourceCaseId String @unique
+  reviewedSharingVersion Int
+  reviewedGrantId String
+  version Int @default(1)
+  title String
+  summary String
+  status String @default("CONSIDERING")
+  explanation String
+  releaseId String?
+  publishedAt DateTime?
+  withdrawnAt DateTime?
+  mergedIntoId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  source FeedbackSubmission @relation(fields: [sourceCaseId], references: [caseId], onDelete: Restrict, onUpdate: NoAction)
+  reviewedGrant PlatformOperatorGrant @relation(fields: [reviewedGrantId], references: [id], onDelete: Restrict)
+  mergedInto FeedbackIdea? @relation("FeedbackIdeaMerge", fields: [mergedIntoId], references: [id], onDelete: Restrict)
+  mergedIdeas FeedbackIdea[] @relation("FeedbackIdeaMerge")
+  votes FeedbackIdeaVote[]
+  subscriptions FeedbackIdeaSubscription[]
+  events FeedbackIdeaEvent[]
+  @@index([publishedAt, updatedAt, id])
+  @@index([mergedIntoId])
+}
+model FeedbackIdeaVote {
+  ideaId String
+  userId String
+  active Boolean @default(true)
+  version Int @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  idea FeedbackIdea @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  user PlatformUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@id([ideaId, userId])
+  @@index([userId])
+}
+model FeedbackIdeaSubscription {
+  id String @unique @default(cuid())
+  ideaId String
+  userId String
+  version Int @default(1)
+  inAppSince DateTime?
+  emailSince DateTime?
+  pushSince DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  idea FeedbackIdea @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  user PlatformUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@id([ideaId, userId])
+  @@index([userId])
+}
+// Public status explanations are separate from native private audit/note text.
+model FeedbackIdeaEvent {
+  id String @id @default(cuid())
+  ideaId String
+  version Int
+  actorId String
+  operatorGrantId String
+  operatorGrantVersion Int
+  action String
+  fromState String?
+  toState String
+  explanation String
+  releaseId String?
+  fromMergedIntoId String?
+  toMergedIntoId String?
+  createdAt DateTime @default(now())
+  idea FeedbackIdea @relation(fields: [ideaId], references: [id], onDelete: Restrict)
+  actor PlatformUser @relation(fields: [actorId], references: [id], onDelete: Restrict)
+  operatorGrant PlatformOperatorGrant @relation(fields: [operatorGrantId], references: [id], onDelete: Restrict)
+  @@unique([ideaId, version])
   @@index([createdAt])
 }
 

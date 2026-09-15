@@ -23,7 +23,7 @@ export const adminQueueStates = {
   CLOSED: "Closed"
 } as const;
 export type AdminQueueFilters = {
-  type: "ALL" | AdminSourceType | "BUG" | "SUGGESTION";
+  type: "ALL" | AdminSourceType | "BUG" | "SUGGESTION" | "FEEDBACK";
   state: keyof typeof adminQueueStates;
   priority: "ALL" | AdminPriority;
   owner: "ALL" | "ME" | "UNASSIGNED";
@@ -47,6 +47,7 @@ export const defaultAdminFilters: AdminQueueFilters = {
   due: false
 };
 export const adminCapabilityLabels = {
+  MANAGE_PRODUCT_FEEDBACK: "Review and publish product ideas",
   VIEW_PLATFORM_METRICS: "View aggregate metrics",
   EXPORT_PLATFORM_METRICS: "Export aggregate metrics",
   VIEW_OPERATIONAL_HEALTH: "View operational health",

@@ -7,9 +7,6 @@ export const metadata: Metadata = {
 };
 export default function Page() {
   return (
-    <AdminPage
-      section="feedback"
-      query="view=queue&type=SUGGESTION&state=ALL"
-    />
+    <AdminPage section="feedback" query="view=queue&type=FEEDBACK&state=ALL" />
   );
 }

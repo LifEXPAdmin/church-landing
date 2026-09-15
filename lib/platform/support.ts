@@ -1,7 +1,18 @@
-import { supportRecipientSelect as grantSelect, supportRecipient as recipient, defaultSupportRecipient } from "./support-recipient";
+import {
+  supportRecipientSelect as grantSelect,
+  supportRecipient as recipient,
+  defaultSupportRecipient
+} from "./support-recipient";
 import { createHmac } from "node:crypto";
-import { feedbackResponseSource, suppressFeedbackPromptIn } from "./feedback-prompts";
-import { attachFeedbackImages, feedbackAttachmentIds, retireFeedbackImages } from "./feedback-image-lifecycle";
+import {
+  feedbackResponseSource,
+  suppressFeedbackPromptIn
+} from "./feedback-prompts";
+import {
+  attachFeedbackImages,
+  feedbackAttachmentIds,
+  retireFeedbackImages
+} from "./feedback-image-lifecycle";
 import { projectImage } from "./media";
 import { retireImage } from "./media-lifecycle";
 import { accountConfig } from "./account-config";
@@ -19,6 +30,7 @@ import {
   recordAppealControl,
   recordAdminPrivacyControl,
   recordSupportMessagePrivacyControl,
+  recordFeedbackPrivacyControl,
   recordSupportAttachmentPrivacyControl
 } from "./retention-controls";
 import {
@@ -501,7 +513,11 @@ export async function readSupport(
         featureDecision: true,
         feedback: {
           select: {
-            attachments: { where: { status: "READY" }, orderBy: [{ position: "asc" }, { id: "asc" }], take: 4 },
+            attachments: {
+              where: { status: "READY" },
+              orderBy: [{ position: "asc" }, { id: "asc" }],
+              take: 4
+            },
             kind: true,
             notice: true,
             rating: true,
@@ -546,7 +562,11 @@ export async function readSupport(
       }
     });
     if (!c) throw denied();
-    if ((c.feedback?.attachments.length ?? 0) > 3) throw new SupportError(503, "This feedback attachment list needs review.");
+    if ((c.feedback?.attachments.length ?? 0) > 3)
+      throw new SupportError(
+        503,
+        "This feedback attachment list needs review."
+      );
     const rights = await access(tx, actor, c);
     const appealOwner = c.moderationDecision
       ? await activeContentReviewer(tx, c.moderationDecision)
@@ -567,7 +587,9 @@ export async function readSupport(
       feedback: c.feedback
         ? {
             ...c.feedback,
-            attachments: c.feedback.redactedAt ? [] : c.feedback.attachments.map(projectImage),
+            attachments: c.feedback.redactedAt
+              ? []
+              : c.feedback.attachments.map(projectImage),
             redactedAt: c.feedback.redactedAt?.toISOString() ?? null
           }
         : null,
@@ -802,10 +824,20 @@ export async function supportCommand(
       });
       if (feedback)
         await tx.feedbackSubmission.create({
-          data: { caseId: c.id, ...feedback.metadata, ...await feedbackResponseSource(tx, actor.id, input.promptClaimId) }
+          data: {
+            caseId: c.id,
+            ...feedback.metadata,
+            ...(await feedbackResponseSource(tx, actor.id, input.promptClaimId))
+          }
         });
       if (feedback) await suppressFeedbackPromptIn(tx, actor.id, "RESPONDED");
-      if (feedback) await attachFeedbackImages(tx, actor.id, c.id, feedbackAttachmentIds(input.attachments));
+      if (feedback)
+        await attachFeedbackImages(
+          tx,
+          actor.id,
+          c.id,
+          feedbackAttachmentIds(input.attachments)
+        );
       await tx.supportAuditEvent.create({
         data: {
           caseId: c.id,
@@ -901,9 +933,24 @@ export async function supportCommand(
           ...(sharingChanged ? { sharingVersion: { increment: 1 } } : {})
         }
       });
+      await recordFeedbackPrivacyControl(
+        tx,
+        "FEEDBACK_CHOICES",
+        c.id,
+        actor.id,
+        feedback.version + 1
+      );
     } else if (op === "feedback-remove-attachment") {
       if (!rights.requester) throw denied();
-      const asset = await tx.mediaAsset.findFirst({ where: { id: identifier(input.assetId), purpose: "SUPPORT_ATTACHMENT", feedbackOwnerId: actor.id, feedbackCaseId: c.id, status: "READY" } });
+      const asset = await tx.mediaAsset.findFirst({
+        where: {
+          id: identifier(input.assetId),
+          purpose: "SUPPORT_ATTACHMENT",
+          feedbackOwnerId: actor.id,
+          feedbackCaseId: c.id,
+          status: "READY"
+        }
+      });
       if (!asset) throw denied();
       expected(input.assetVersion, asset.version);
       await retireImage(tx, asset);
@@ -1123,7 +1170,13 @@ export async function supportCommand(
       }
     });
     if (op === "feedback-remove-attachment" && targetId)
-      await recordSupportAttachmentPrivacyControl(tx, c.id, targetId, actor.id, next.version);
+      await recordSupportAttachmentPrivacyControl(
+        tx,
+        c.id,
+        targetId,
+        actor.id,
+        next.version
+      );
     if (op === "redact" && !input.messageId)
       await recordAdminPrivacyControl(
         tx,

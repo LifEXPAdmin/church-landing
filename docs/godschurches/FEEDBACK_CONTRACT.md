@@ -6,6 +6,50 @@ released. The current serving application is the platform measurement core in
 
 ## Native intake checkpoint
 
+### Reviewed ideas and privacy recovery
+
+The current isolated candidate includes the public board and its admin interface.
+`MANAGE_PRODUCT_FEEDBACK` does not imply access to private feedback: publication,
+editing and merging additionally require current native source access. Human review
+and current contributor permission are checked with source and consent versions.
+Attribution is independently chosen; no requester ID, account link, private case
+body or attachment appears in a public projection. Released requires a compiled,
+available release entry. Public search filters before pagination and searches only
+reviewed titles and summaries.
+
+One eligible account adds or removes one vote. A merge counts each person once,
+retains original votes and channel subscription dates, displays the destination,
+and is auditable and reversible. A withdrawn destination cannot trap an otherwise
+permitted reversal; reversing never revives its withdrawn publication. Explicit
+unsubscribe clears the chosen channels throughout the merged family. Stored
+channel choices still await the existing outbox integration in this feature.
+
+Contributor publication withdrawal immediately hides the copy; reauthorization
+requires another human publication review. Name withdrawal alone hides attribution.
+Protected controls quarantine older restored sharing/contact choices, idea
+withdrawals and subscriptions. Native support and feedback routes return an
+unconfirmed response until recovery protection succeeds, then the identical retry
+returns the original receipt. Erasure removes votes/subscriptions and clears retained
+public text. A native report exposes only current public idea text and deliberately
+submitted report details. A product reviewer can retract public publication without
+receiving the private case; report evidence disappears when its source is withdrawn.
+
+Eleven final service scenarios pass, alongside earlier intake, retention and admin
+regressions. Six final HTTPS idea groups and six voluntary feedback/image/report
+groups pass at 320px without browser errors or unexpected discard prompts. They
+exercise keyboard review, retained unsent text after a source change, exact vote
+retry, public search/account return, subscriptions, merge/reversal, actual contributor
+choices and native reports. The preview build passes with 186 traces and the unchanged
+repaired renderer. The later native-support protection repair has service evidence;
+the final feature-wide release gate remains ahead. Both isolated databases now have
+80 migrations; no feature 31 production changes have occurred.
+
+Seven warm loopback samples measured a twenty-row public board at median/max
+1.51/1.76 ms, seven SQL commands and 8,383 bytes; public detail at 1.64/1.94 ms,
+nine commands and 940 bytes. These are small isolated service measurements, not
+production latency or hosting capacity. Complete selected-channel delivery, weekly
+review, shared reports, lifecycle/browser acceptance and protected release next.
+
 The later forms/attachment checkpoint reaches 73 migrations only in isolated
 fixtures. Three selected private images reuse normalized variants, metadata
 stripping, private delivery, upload leases and garbage cleanup. Atomic attachment

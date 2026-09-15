@@ -6,6 +6,11 @@ import { readAdminQueue } from "./admin-queue";
 import { readAdminDetail } from "./admin-detail";
 import { readAdminHealth } from "./admin-health";
 import { readAdminOverview } from "./admin-overview";
+import {
+  readFeedbackIdeaAdministration,
+  readFeedbackIdeaModeration,
+  feedbackIdeaAdminCommand
+} from "./feedback-idea-admin";
 import { readPlatformMetrics } from "./metric-report";
 import { exportPlatformMetrics } from "./metric-export";
 import { adminFields } from "./admin-input";
@@ -59,8 +64,20 @@ export async function handleAdminRequest(
               ? await readAdminHealth(db, token)
               : await readAdminNavigation(db, token);
       } else if (view === "metrics") {
-        adminFields(input,["view","from","through","preset"]);
-        result=await readPlatformMetrics(db,token,Object.fromEntries(Object.entries(input).filter(([key])=>key!=="view")));
+        adminFields(input, ["view", "from", "through", "preset"]);
+        result = await readPlatformMetrics(
+          db,
+          token,
+          Object.fromEntries(
+            Object.entries(input).filter(([key]) => key !== "view")
+          )
+        );
+      } else if (view === "feedback-idea-moderation") {
+        adminFields(input, ["view", "ideaId", "q", "page"]);
+        result = await readFeedbackIdeaModeration(db, token, input);
+      } else if (view === "feedback-idea") {
+        adminFields(input, ["view", "caseId", "ideaId", "q"]);
+        result = await readFeedbackIdeaAdministration(db, token, input);
       } else if (view === "access") {
         adminFields(input, ["view", "username"]);
         result = await readAdminAccess(db, token, input.username);
@@ -109,8 +126,16 @@ export async function handleAdminRequest(
           requestAccountCredential(request, input, accountConfig().secureCookie)
         );
       else if (input.operation === "metrics-export")
-        result=await exportPlatformMetrics(db,token,input);
-      else if (input.operation === "lookup")
+        result = await exportPlatformMetrics(db, token, input);
+      else if (
+        ["idea-save", "idea-withdraw", "idea-merge", "idea-unmerge"].includes(
+          String(input.operation)
+        )
+      ) {
+        const saved = await feedbackIdeaAdminCommand(db, token, input);
+        await protectAdminCaseChanges(db, [saved.id]);
+        result = saved;
+      } else if (input.operation === "lookup")
         result = await adminAccountLookup(db, token, input);
       else if (input.operation === "bulk")
         result = await adminBulkCommand(db, request, token, input, afterReport);

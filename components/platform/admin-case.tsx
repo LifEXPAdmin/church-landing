@@ -59,6 +59,15 @@ export function AdminCase({
           Reference: {row.sourceId}
         </p>
       </header>
+      {data.support?.detail?.feedback?.kind === "SUGGESTION" &&
+        navigation.capabilities.includes("MANAGE_PRODUCT_FEEDBACK") && (
+          <Link
+            className="gc-button gc-button-quiet"
+            href={`/platform/admin/feedback/ideas/${row.sourceId}`}
+          >
+            Review a public idea from this suggestion
+          </Link>
+        )}
       <details className="rounded-xl border border-gc-divider p-4">
         <summary className="min-h-11 cursor-pointer font-semibold">
           Priority, next action and reminder

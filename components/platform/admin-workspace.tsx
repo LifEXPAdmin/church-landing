@@ -19,8 +19,20 @@ import { AdminOverview } from "./admin-overview";
 import { ReadVisibility } from "./read-visibility";
 import type { AdminOverviewSnapshot } from "@/lib/platform/admin-overview";
 import type { MetricSnapshot } from "@/lib/platform/metric-report";
+import type {
+  FeedbackIdeaAdministration,
+  FeedbackIdeaModeration
+} from "@/lib/platform/feedback-idea-admin";
 import dynamic from "next/dynamic";
-const AdminMetrics=dynamic(()=>import("./admin-metrics").then(m=>m.AdminMetrics));
+const AdminMetrics = dynamic(() =>
+  import("./admin-metrics").then((m) => m.AdminMetrics)
+);
+const AdminFeedbackIdea = dynamic(() =>
+  import("./admin-feedback-idea").then((m) => m.AdminFeedbackIdea)
+);
+const AdminIdeaModeration = dynamic(() =>
+  import("./admin-idea-moderation").then((m) => m.AdminIdeaModeration)
+);
 type Health = Awaited<ReturnType<typeof readAdminHealth>>;
 type Payload =
   | AdminNavigation
@@ -30,7 +42,9 @@ type Payload =
   | AdminAccessSnapshot
   | AdminAuditSnapshot
   | AdminOverviewSnapshot
-  | MetricSnapshot;
+  | MetricSnapshot
+  | FeedbackIdeaAdministration
+  | FeedbackIdeaModeration;
 export function AdminWorkspace({
   navigation,
   section,
@@ -157,100 +171,123 @@ export function AdminWorkspace({
           </Link>
         </div>
       )}
-      <ReadVisibility.Provider value={visible}><div
-        hidden={!visible}
-        style={{ display: visible ? undefined : "none" }}
-        className="grid min-w-0 gap-6 lg:grid-cols-[13rem_minmax(0,1fr)]"
-      >
-        <aside className="min-w-0">
-          <label className="block font-semibold lg:hidden">
-            Admin section
-            <select
-              className={adminInputClass}
-              value={
-                nav.sections.find(
-                  (s) => s.key === (section === "case" ? "requests" : section)
-                )?.href ?? "/platform/admin"
-              }
-              onChange={(e) => window.location.assign(e.target.value)}
-            >
-              {nav.sections.map((s) => (
-                <option key={s.key} value={s.href}>
-                  {s.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <nav aria-label="Admin" className="hidden space-y-2 lg:block">
-            {nav.sections.map((s) => (
-              <Link
-                key={s.key}
-                className={`block rounded-xl px-4 py-3 ${s.key === (section === "case" ? "requests" : section) ? "bg-gc-action font-semibold text-gc-on-action" : "text-gc-accent hover:bg-gc-surface"}`}
-                aria-current={
-                  s.key === (section === "case" ? "requests" : section)
-                    ? "page"
-                    : undefined
+      <ReadVisibility.Provider value={visible}>
+        <div
+          hidden={!visible}
+          style={{ display: visible ? undefined : "none" }}
+          className="grid min-w-0 gap-6 lg:grid-cols-[13rem_minmax(0,1fr)]"
+        >
+          <aside className="min-w-0">
+            <label className="block font-semibold lg:hidden">
+              Admin section
+              <select
+                className={adminInputClass}
+                value={
+                  nav.sections.find(
+                    (s) => s.key === (section === "case" ? "requests" : section)
+                  )?.href ?? "/platform/admin"
                 }
-                href={s.href}
+                onChange={(e) => window.location.assign(e.target.value)}
               >
-                {s.label}
-              </Link>
-            ))}
-          </nav>
-        </aside>
-        <section className="min-w-0 space-y-5" aria-label="Admin workspace">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-sm text-gc-muted">
-              Platform admin · {nav.viewer.name}
-            </p>
-            <button
-              className="gc-button gc-button-quiet"
-              disabled={busy}
-              onClick={() => void load()}
-            >
-              Refresh current view
-            </button>
-          </div>
-          {(section === "requests" || section === "feedback") &&
-            data &&
-            "filters" in data && (
-              <>
-                <h1
-                  tabIndex={-1}
-                  data-admin-request-list-title
-                  className="text-3xl font-semibold"
+                {nav.sections.map((s) => (
+                  <option key={s.key} value={s.href}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <nav aria-label="Admin" className="hidden space-y-2 lg:block">
+              {nav.sections.map((s) => (
+                <Link
+                  key={s.key}
+                  className={`block rounded-xl px-4 py-3 ${s.key === (section === "case" ? "requests" : section) ? "bg-gc-action font-semibold text-gc-on-action" : "text-gc-accent hover:bg-gc-surface"}`}
+                  aria-current={
+                    s.key === (section === "case" ? "requests" : section)
+                      ? "page"
+                      : undefined
+                  }
+                  href={s.href}
                 >
-                  {section === "feedback" ? "Feedback requests" : "Requests"}
-                </h1>
-                <AdminWorklist
-                  data={data}
-                  initialSelection={selection}
-                  continuation={new URLSearchParams(query).get("after")}
-                  onRefresh={() => void load()}
-                />
-              </>
+                  {s.label}
+                </Link>
+              ))}
+            </nav>
+          </aside>
+          <section className="min-w-0 space-y-5" aria-label="Admin workspace">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-sm text-gc-muted">
+                Platform admin · {nav.viewer.name}
+              </p>
+              <button
+                className="gc-button gc-button-quiet"
+                disabled={busy}
+                onClick={() => void load()}
+              >
+                Refresh current view
+              </button>
+            </div>
+            {(section === "requests" || section === "feedback") &&
+              data &&
+              "filters" in data && (
+                <>
+                  <h1
+                    tabIndex={-1}
+                    data-admin-request-list-title
+                    className="text-3xl font-semibold"
+                  >
+                    {section === "feedback" ? "Feedback requests" : "Requests"}
+                  </h1>
+                  <AdminWorklist
+                    data={data}
+                    initialSelection={selection}
+                    continuation={new URLSearchParams(query).get("after")}
+                    onRefresh={() => void load()}
+                  />
+                </>
+              )}
+            {section === "feedback" &&
+              nav.capabilities.includes("MANAGE_PRODUCT_FEEDBACK") && (
+                <Link
+                  className="text-gc-accent underline"
+                  href="/platform/admin/feedback/ideas"
+                >
+                  Review published ideas
+                </Link>
+              )}
+            {section === "case" && data && "row" in data && (
+              <AdminCase
+                data={data}
+                back={back}
+                onRefresh={() => void load()}
+              />
             )}
-          {section === "case" && data && "row" in data && (
-            <AdminCase data={data} back={back} onRefresh={() => void load()} />
-          )}
-          {section === "overview" && data && "requests" in data && (
-            <AdminOverview data={data} />
-          )}
-          {section === "growth" && data && "report" in data && <AdminMetrics data={data}/>}
-          {section === "health" && data && "available" in data && (
-            <AdminHealth data={data} />
-          )}
-          {section === "access" && data && "authenticator" in data && (
-            <AdminAccess data={data} onRefresh={() => void load()} />
-          )}
-          {section === "people" && <AdminPeople navigation={nav} />}
-          {section === "churches" && <AdminChurches navigation={nav} />}
-          {section === "audit" &&
-            data &&
-            "rows" in data &&
-            !("filters" in data) && <AdminAudit data={data} />}
-        </section>
-      </div></ReadVisibility.Provider>
+            {section === "overview" && data && "requests" in data && (
+              <AdminOverview data={data} />
+            )}
+            {section === "growth" && data && "report" in data && (
+              <AdminMetrics data={data} />
+            )}
+            {section === "feedback" && data && "ideaReview" in data && (
+              <AdminFeedbackIdea data={data} onRefresh={() => void load()} />
+            )}
+            {section === "feedback" && data && "ideaModeration" in data && (
+              <AdminIdeaModeration data={data} onRefresh={() => void load()} />
+            )}
+            {section === "health" && data && "health" in data && (
+              <AdminHealth data={data} />
+            )}
+            {section === "access" && data && "authenticator" in data && (
+              <AdminAccess data={data} onRefresh={() => void load()} />
+            )}
+            {section === "people" && <AdminPeople navigation={nav} />}
+            {section === "churches" && <AdminChurches navigation={nav} />}
+            {section === "audit" &&
+              data &&
+              "rows" in data &&
+              !("filters" in data) && <AdminAudit data={data} />}
+          </section>
+        </div>
+      </ReadVisibility.Provider>
     </div>
   );
 }

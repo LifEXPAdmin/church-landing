@@ -3,7 +3,10 @@ import { isDeepStrictEqual } from "node:util";
 import { emptyFeedback } from "./feedback-policy";
 import { retireFeedbackImages } from "./feedback-image-lifecycle";
 import { mergeFeedbackSuppression } from "./feedback-prompt-preferences";
-import { feedbackPromptOutcomes, type FeedbackPromptOutcome } from "./feedback-prompt-policy";
+import {
+  feedbackPromptOutcomes,
+  type FeedbackPromptOutcome
+} from "./feedback-prompt-policy";
 import {
   Prisma,
   type PrismaClient,
@@ -40,6 +43,9 @@ export type RetentionControlEntry = {
     | "SUPPORT_MESSAGE"
     | "SUPPORT_ATTACHMENT"
     | "FEEDBACK_PROMPT"
+    | "FEEDBACK_CHOICES"
+    | "FEEDBACK_IDEA"
+    | "FEEDBACK_SUBSCRIPTION"
     | "APPEAL"
     | "ACCOUNT_STATE"
     | "AUTHOR_WITHDRAW_POST"
@@ -85,49 +91,66 @@ function validate(value: unknown): RetentionControlEntry {
       "POST_DISCOVERY",
       "DISCOVERY_PREFERENCES",
       "NOTIFICATION_PREFERENCES",
-      "AUTHOR_BELL"
-      ,"ADMIN_SUPPORT","ADMIN_REPORT","ADMIN_CLAIM"
+      "AUTHOR_BELL",
+      "ADMIN_SUPPORT",
+      "ADMIN_REPORT",
+      "ADMIN_CLAIM",
+      "FEEDBACK_CHOICES",
+      "FEEDBACK_IDEA",
+      "FEEDBACK_SUBSCRIPTION"
     ].includes(r.kind)
       ? r.target === "ACCOUNT" &&
         r.operatorId !== null &&
-        (r.outcome === "QUARANTINED" || (r.kind === "ADMIN_SUPPORT" && r.outcome === "CASE_REDACTED"))
+        (r.outcome === "QUARANTINED" ||
+          (r.kind === "ADMIN_SUPPORT" && r.outcome === "CASE_REDACTED"))
       : r.kind === "FEEDBACK_PROMPT"
-        ? r.target === "ACCOUNT" && r.sourceId === r.targetId && r.operatorId === r.targetId && feedbackPromptOutcomes.includes(r.outcome as FeedbackPromptOutcome)
-      : r.kind === "SUPPORT_ATTACHMENT"
-        ? r.target === "ASSET" && r.operatorId !== null && r.outcome === "REDACTED"
-      : r.kind === "SUPPORT_MESSAGE"
-        ? r.target === "MESSAGE" && r.operatorId !== null && r.outcome === "REDACTED"
-      : r.kind === "ACCOUNT_STATE"
         ? r.target === "ACCOUNT" &&
           r.sourceId === r.targetId &&
-          r.operatorId !== null &&
-          ["SUSPENDED", "RESTORED"].includes(r.outcome)
-        : r.kind === "REPORT"
-          ? r.target === "REPORT" &&
-            r.sourceId === r.targetId &&
-            ["RECEIVED", "FOLLOW_UP_REQUIRED", "CLOSED"].includes(r.outcome)
-          : r.kind === "MODERATION_POST" ||
-              r.kind === "MODERATION_COMMENT" ||
-              r.kind === "MODERATION_TOPIC"
-            ? r.target === "REPORT" &&
-              ["VISIBLE", "HIDDEN", "REMOVED"].includes(r.outcome)
-            : r.kind === "AUTHOR_WITHDRAW_POST" ||
-                r.kind === "AUTHOR_WITHDRAW_COMMENT"
-              ? r.target === "REPORT" &&
-                r.outcome === "WITHDRAWN" &&
-                r.endedAt === null
-              : r.kind === "APPEAL"
+          r.operatorId === r.targetId &&
+          feedbackPromptOutcomes.includes(r.outcome as FeedbackPromptOutcome)
+        : r.kind === "SUPPORT_ATTACHMENT"
+          ? r.target === "ASSET" &&
+            r.operatorId !== null &&
+            r.outcome === "REDACTED"
+          : r.kind === "SUPPORT_MESSAGE"
+            ? r.target === "MESSAGE" &&
+              r.operatorId !== null &&
+              r.outcome === "REDACTED"
+            : r.kind === "ACCOUNT_STATE"
+              ? r.target === "ACCOUNT" &&
+                r.sourceId === r.targetId &&
+                r.operatorId !== null &&
+                ["SUSPENDED", "RESTORED"].includes(r.outcome)
+              : r.kind === "REPORT"
                 ? r.target === "REPORT" &&
-                  [
-                    "RECEIVED",
-                    "IN_PROGRESS",
-                    "WAITING_FOR_REQUESTER",
-                    "RESOLVED",
-                    "CLOSED"
-                  ].includes(r.outcome)
-                : r.kind === "HOLD" &&
-                  ["REPORT", "MESSAGE"].includes(r.target) &&
-                  ["PRESERVE", "REVIEW", "RELEASE"].includes(r.outcome)) ||
+                  r.sourceId === r.targetId &&
+                  ["RECEIVED", "FOLLOW_UP_REQUIRED", "CLOSED"].includes(
+                    r.outcome
+                  )
+                : r.kind === "MODERATION_POST" ||
+                    r.kind === "MODERATION_COMMENT" ||
+                    r.kind === "MODERATION_TOPIC"
+                  ? r.target === "REPORT" &&
+                    ["VISIBLE", "HIDDEN", "REMOVED"].includes(r.outcome)
+                  : r.kind === "AUTHOR_WITHDRAW_POST" ||
+                      r.kind === "AUTHOR_WITHDRAW_COMMENT"
+                    ? r.target === "REPORT" &&
+                      r.outcome === "WITHDRAWN" &&
+                      r.endedAt === null
+                    : r.kind === "APPEAL"
+                      ? r.target === "REPORT" &&
+                        [
+                          "RECEIVED",
+                          "IN_PROGRESS",
+                          "WAITING_FOR_REQUESTER",
+                          "RESOLVED",
+                          "CLOSED"
+                        ].includes(r.outcome)
+                      : r.kind === "HOLD" &&
+                        ["REPORT", "MESSAGE"].includes(r.target) &&
+                        ["PRESERVE", "REVIEW", "RELEASE"].includes(
+                          r.outcome
+                        )) ||
     ["CLOSED", "RESOLVED", "RELEASE"].includes(r.outcome) !==
       (r.endedAt !== null)
   )
@@ -180,35 +203,126 @@ export function recordReportControl(
 }
 // Opaque privacy versions only: never replicate internal notes, bug reports or
 // credentials into the separately protected recovery journal.
-export function recordAdminPrivacyControl(tx:Tx,source:{sourceType:"SUPPORT"|"REPORT"|"CLAIM";sourceId:string},actorId:string,version:number,wholeCase=false) {
-  const now=new Date();
-  return record(tx,{id:randomUUID(),kind:`ADMIN_${source.sourceType}`,target:"ACCOUNT",targetId:actorId,sourceId:source.sourceId,version,policy,outcome:wholeCase&&source.sourceType==="SUPPORT"?"CASE_REDACTED":"QUARANTINED",operatorId:actorId,recordedAt:now.toISOString(),startedAt:now.toISOString(),reviewDueAt:retentionDate(now,90).toISOString(),endedAt:null});
-}
-export function recordSupportMessagePrivacyControl(
-  tx: Tx, caseId: string, messageId: string, actorId: string, version: number
+export function recordAdminPrivacyControl(
+  tx: Tx,
+  source: { sourceType: "SUPPORT" | "REPORT" | "CLAIM"; sourceId: string },
+  actorId: string,
+  version: number,
+  wholeCase = false
 ) {
   const now = new Date();
   return record(tx, {
-    id: randomUUID(), kind: "SUPPORT_MESSAGE", target: "MESSAGE",
-    targetId: messageId, sourceId: caseId, version, policy, outcome: "REDACTED",
-    operatorId: actorId, recordedAt: now.toISOString(), startedAt: now.toISOString(),
-    reviewDueAt: retentionDate(now, 90).toISOString(), endedAt: null
+    id: randomUUID(),
+    kind: `ADMIN_${source.sourceType}`,
+    target: "ACCOUNT",
+    targetId: actorId,
+    sourceId: source.sourceId,
+    version,
+    policy,
+    outcome:
+      wholeCase && source.sourceType === "SUPPORT"
+        ? "CASE_REDACTED"
+        : "QUARANTINED",
+    operatorId: actorId,
+    recordedAt: now.toISOString(),
+    startedAt: now.toISOString(),
+    reviewDueAt: retentionDate(now, 90).toISOString(),
+    endedAt: null
   });
 }
-export function recordSupportAttachmentPrivacyControl(tx: Tx, sourceId: string, assetId: string, actorId: string, version: number) {
+export function recordSupportMessagePrivacyControl(
+  tx: Tx,
+  caseId: string,
+  messageId: string,
+  actorId: string,
+  version: number
+) {
   const now = new Date();
   return record(tx, {
-    id: randomUUID(), kind: "SUPPORT_ATTACHMENT", target: "ASSET", targetId: assetId,
-    sourceId, version, policy, outcome: "REDACTED", operatorId: actorId,
-    recordedAt: now.toISOString(), startedAt: now.toISOString(), reviewDueAt: retentionDate(now, 90).toISOString(), endedAt: null
+    id: randomUUID(),
+    kind: "SUPPORT_MESSAGE",
+    target: "MESSAGE",
+    targetId: messageId,
+    sourceId: caseId,
+    version,
+    policy,
+    outcome: "REDACTED",
+    operatorId: actorId,
+    recordedAt: now.toISOString(),
+    startedAt: now.toISOString(),
+    reviewDueAt: retentionDate(now, 90).toISOString(),
+    endedAt: null
   });
 }
-export function recordFeedbackPromptControl(tx: Tx, userId: string, version: number, outcome: FeedbackPromptOutcome, now: Date) {
+export function recordSupportAttachmentPrivacyControl(
+  tx: Tx,
+  sourceId: string,
+  assetId: string,
+  actorId: string,
+  version: number
+) {
+  const now = new Date();
   return record(tx, {
-    id: randomUUID(), kind: "FEEDBACK_PROMPT", target: "ACCOUNT", targetId: userId,
-    sourceId: userId, version, policy, outcome, operatorId: userId,
-    recordedAt: now.toISOString(), startedAt: now.toISOString(),
-    reviewDueAt: retentionDate(now, 90).toISOString(), endedAt: null
+    id: randomUUID(),
+    kind: "SUPPORT_ATTACHMENT",
+    target: "ASSET",
+    targetId: assetId,
+    sourceId,
+    version,
+    policy,
+    outcome: "REDACTED",
+    operatorId: actorId,
+    recordedAt: now.toISOString(),
+    startedAt: now.toISOString(),
+    reviewDueAt: retentionDate(now, 90).toISOString(),
+    endedAt: null
+  });
+}
+export function recordFeedbackPromptControl(
+  tx: Tx,
+  userId: string,
+  version: number,
+  outcome: FeedbackPromptOutcome,
+  now: Date
+) {
+  return record(tx, {
+    id: randomUUID(),
+    kind: "FEEDBACK_PROMPT",
+    target: "ACCOUNT",
+    targetId: userId,
+    sourceId: userId,
+    version,
+    policy,
+    outcome,
+    operatorId: userId,
+    recordedAt: now.toISOString(),
+    startedAt: now.toISOString(),
+    reviewDueAt: retentionDate(now, 90).toISOString(),
+    endedAt: null
+  });
+}
+export function recordFeedbackPrivacyControl(
+  tx: Tx,
+  kind: "FEEDBACK_CHOICES" | "FEEDBACK_IDEA" | "FEEDBACK_SUBSCRIPTION",
+  sourceId: string,
+  actorId: string,
+  version: number
+) {
+  const now = new Date();
+  return record(tx, {
+    id: randomUUID(),
+    kind,
+    target: "ACCOUNT",
+    targetId: actorId,
+    sourceId,
+    version,
+    policy,
+    outcome: "QUARANTINED",
+    operatorId: actorId,
+    recordedAt: now.toISOString(),
+    startedAt: now.toISOString(),
+    reviewDueAt: retentionDate(now, 90).toISOString(),
+    endedAt: null
   });
 }
 // Account recovery controls contain no login contact, report text or reason.
@@ -563,18 +677,94 @@ export async function replayRetentionControls(
     async (tx) => {
       await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(730221, 2)`;
       for (const entry of entries) {
-        if (entry.kind === "FEEDBACK_PROMPT") {
-          if (await tx.platformUser.findFirst({ where: { id: entry.targetId, erasedAt: null }, select: { id: true } }))
-            await mergeFeedbackSuppression(tx, entry.targetId, entry.outcome as FeedbackPromptOutcome, new Date(entry.recordedAt), entry.version);
+        if (
+          [
+            "FEEDBACK_CHOICES",
+            "FEEDBACK_IDEA",
+            "FEEDBACK_SUBSCRIPTION"
+          ].includes(entry.kind)
+        ) {
+          if (entry.kind === "FEEDBACK_CHOICES") {
+            await tx.feedbackSubmission.updateMany({
+              where: {
+                caseId: entry.sourceId,
+                case: { requesterId: entry.targetId },
+                version: { lt: entry.version }
+              },
+              data: {
+                contactAllowed: false,
+                contactInApp: false,
+                contactEmail: false,
+                contactPush: false,
+                allowIdea: false,
+                publicAttribution: false,
+                version: entry.version,
+                sharingVersion: { increment: 1 }
+              }
+            });
+          } else if (entry.kind === "FEEDBACK_IDEA") {
+            await tx.feedbackIdea.updateMany({
+              where: { id: entry.sourceId, version: { lt: entry.version } },
+              data: {
+                withdrawnAt: new Date(entry.recordedAt),
+                version: entry.version
+              }
+            });
+          } else {
+            await tx.feedbackIdeaSubscription.updateMany({
+              where: {
+                id: entry.sourceId,
+                userId: entry.targetId,
+                version: { lt: entry.version }
+              },
+              data: {
+                inAppSince: null,
+                emailSince: null,
+                pushSince: null,
+                version: entry.version
+              }
+            });
+          }
           await record(tx, entry);
-          await tx.retentionControl.updateMany({ where: { id: entry.id, journaledAt: null }, data: { journaledAt: new Date() } });
+          await tx.retentionControl.updateMany({
+            where: { id: entry.id, journaledAt: null },
+            data: { journaledAt: new Date() }
+          });
+          continue;
+        }
+        if (entry.kind === "FEEDBACK_PROMPT") {
+          if (
+            await tx.platformUser.findFirst({
+              where: { id: entry.targetId, erasedAt: null },
+              select: { id: true }
+            })
+          )
+            await mergeFeedbackSuppression(
+              tx,
+              entry.targetId,
+              entry.outcome as FeedbackPromptOutcome,
+              new Date(entry.recordedAt),
+              entry.version
+            );
+          await record(tx, entry);
+          await tx.retentionControl.updateMany({
+            where: { id: entry.id, journaledAt: null },
+            data: { journaledAt: new Date() }
+          });
           continue;
         }
         if (entry.kind === "SUPPORT_ATTACHMENT") {
-          await retireFeedbackImages(tx, { id: entry.targetId,
-            ...(entry.sourceId === entry.targetId ? { feedbackCaseId: null } : { feedbackCaseId: entry.sourceId }) });
+          await retireFeedbackImages(tx, {
+            id: entry.targetId,
+            ...(entry.sourceId === entry.targetId
+              ? { feedbackCaseId: null }
+              : { feedbackCaseId: entry.sourceId })
+          });
           await record(tx, entry);
-          await tx.retentionControl.updateMany({ where: { id: entry.id, journaledAt: null }, data: { journaledAt: new Date() } });
+          await tx.retentionControl.updateMany({
+            where: { id: entry.id, journaledAt: null },
+            data: { journaledAt: new Date() }
+          });
           continue;
         }
         if (entry.kind === "SUPPORT_MESSAGE") {
@@ -585,21 +775,42 @@ export async function replayRetentionControls(
           if (message) {
             await tx.supportMessage.update({
               where: { id: message.id },
-              data: { body: "[Removed for privacy.]", redactedAt: new Date(entry.recordedAt) }
+              data: {
+                body: "[Removed for privacy.]",
+                redactedAt: new Date(entry.recordedAt)
+              }
             });
-            if (message.kind === "RESOLUTION" && !await tx.supportMessage.findFirst({
-              where: { caseId: entry.sourceId, kind: "RESOLUTION", version: { gt: message.version }, redactedAt: null },
-              select: { id: true }
-            })) await tx.supportCase.updateMany({
-              where: { id: entry.sourceId }, data: { resolution: "[Removed for privacy.]" }
-            });
+            if (
+              message.kind === "RESOLUTION" &&
+              !(await tx.supportMessage.findFirst({
+                where: {
+                  caseId: entry.sourceId,
+                  kind: "RESOLUTION",
+                  version: { gt: message.version },
+                  redactedAt: null
+                },
+                select: { id: true }
+              }))
+            )
+              await tx.supportCase.updateMany({
+                where: { id: entry.sourceId },
+                data: { resolution: "[Removed for privacy.]" }
+              });
           }
           await record(tx, entry);
-          await tx.retentionControl.updateMany({ where: { id: entry.id, journaledAt: null }, data: { journaledAt: new Date() } });
+          await tx.retentionControl.updateMany({
+            where: { id: entry.id, journaledAt: null },
+            data: { journaledAt: new Date() }
+          });
           continue;
         }
-        if (["ADMIN_SUPPORT","ADMIN_REPORT","ADMIN_CLAIM"].includes(entry.kind)) {
-          if (entry.kind === "ADMIN_SUPPORT" && entry.outcome === "CASE_REDACTED") {
+        if (
+          ["ADMIN_SUPPORT", "ADMIN_REPORT", "ADMIN_CLAIM"].includes(entry.kind)
+        ) {
+          if (
+            entry.kind === "ADMIN_SUPPORT" &&
+            entry.outcome === "CASE_REDACTED"
+          ) {
             // Original requester text is immutable except for privacy removal.
             // A newer unrelated admin control may replay first, so its version
             // must never mask an earlier full-source redaction. Later replies
@@ -607,34 +818,73 @@ export async function replayRetentionControls(
             const source = { id: entry.sourceId };
             const removedAt = new Date(entry.recordedAt);
             const marker = "[Removed for privacy.]";
-            await retireFeedbackImages(tx, { feedbackCaseId: entry.sourceId, createdAt: { lte: removedAt } });
+            await retireFeedbackImages(tx, {
+              feedbackCaseId: entry.sourceId,
+              createdAt: { lte: removedAt }
+            });
             await tx.feedbackSubmission.updateMany({
               where: { case: source, redactedAt: null },
-              data: { ...emptyFeedback, redactedAt: removedAt, version: { increment: 1 }, sharingVersion: { increment: 1 } }
+              data: {
+                ...emptyFeedback,
+                redactedAt: removedAt,
+                version: { increment: 1 },
+                sharingVersion: { increment: 1 }
+              }
             });
             await tx.supportMessage.updateMany({
               where: { case: source, createdAt: { lte: removedAt } },
               data: { body: marker, redactedAt: removedAt }
             });
             const laterResolution = await tx.supportMessage.findFirst({
-              where: { caseId: entry.sourceId, kind: "RESOLUTION", redactedAt: null, createdAt: { gt: removedAt } },
+              where: {
+                caseId: entry.sourceId,
+                kind: "RESOLUTION",
+                redactedAt: null,
+                createdAt: { gt: removedAt }
+              },
               select: { id: true }
             });
             await tx.supportCase.updateMany({
               where: source,
-              data: { subject: "Content removed for privacy", description: marker, ...(laterResolution ? {} : { resolution: null }) }
+              data: {
+                subject: "Content removed for privacy",
+                description: marker,
+                ...(laterResolution ? {} : { resolution: null })
+              }
             });
           }
-          const table=entry.kind==="ADMIN_SUPPORT"?Prisma.sql`"SupportCase"`:entry.kind==="ADMIN_REPORT"?Prisma.sql`"CommunityReport"`:Prisma.sql`"ChurchClaim"`;
-          const noteKey=entry.kind==="ADMIN_SUPPORT"?Prisma.sql`"supportCaseId"`:entry.kind==="ADMIN_REPORT"?Prisma.sql`"reportId"`:Prisma.sql`"claimId"`;
+          const table =
+            entry.kind === "ADMIN_SUPPORT"
+              ? Prisma.sql`"SupportCase"`
+              : entry.kind === "ADMIN_REPORT"
+                ? Prisma.sql`"CommunityReport"`
+                : Prisma.sql`"ChurchClaim"`;
+          const noteKey =
+            entry.kind === "ADMIN_SUPPORT"
+              ? Prisma.sql`"supportCaseId"`
+              : entry.kind === "ADMIN_REPORT"
+                ? Prisma.sql`"reportId"`
+                : Prisma.sql`"claimId"`;
           // Clear older internal text. Do not advance the native version: a
           // missing appeal/review must still fail its independent recovery check.
-          await tx.$executeRaw(Prisma.sql`UPDATE "AdminCaseGroup" SET title='[Removed for privacy.]',"engineeringUrl"='' WHERE id IN (SELECT "adminGroupId" FROM ${table} WHERE id=${entry.sourceId} AND "adminVersion"<${entry.version})`);
-          await tx.$executeRaw(Prisma.sql`UPDATE "AdminCaseNote" SET body='[Removed for privacy.]',"redactedAt"=coalesce("redactedAt",${entry.recordedAt}::timestamp) WHERE ${noteKey} IN (SELECT id FROM ${table} WHERE id=${entry.sourceId} AND "adminVersion"<${entry.version})`);
-          const extra=entry.kind==="ADMIN_SUPPORT"?Prisma.sql`,"bugSteps"='',"bugExpected"='',"bugActual"='',"bugEnvironment"='',"reproducibility"='UNREVIEWED',"engineeringUrl"=''`:Prisma.sql`,"assignedReviewerId"=NULL,"assignedReviewerProof"=NULL`;
-          await tx.$executeRaw(Prisma.sql`UPDATE ${table} SET "adminVersion"=${entry.version},"nextAction"='',"triageTags"=ARRAY[]::text[],"reminderAt"=NULL,"adminGroupId"=NULL ${extra} WHERE id=${entry.sourceId} AND "adminVersion"<${entry.version}`);
-          await record(tx,entry);
-          await tx.retentionControl.updateMany({where:{id:entry.id,journaledAt:null},data:{journaledAt:new Date()}});
+          await tx.$executeRaw(
+            Prisma.sql`UPDATE "AdminCaseGroup" SET title='[Removed for privacy.]',"engineeringUrl"='' WHERE id IN (SELECT "adminGroupId" FROM ${table} WHERE id=${entry.sourceId} AND "adminVersion"<${entry.version})`
+          );
+          await tx.$executeRaw(
+            Prisma.sql`UPDATE "AdminCaseNote" SET body='[Removed for privacy.]',"redactedAt"=coalesce("redactedAt",${entry.recordedAt}::timestamp) WHERE ${noteKey} IN (SELECT id FROM ${table} WHERE id=${entry.sourceId} AND "adminVersion"<${entry.version})`
+          );
+          const extra =
+            entry.kind === "ADMIN_SUPPORT"
+              ? Prisma.sql`,"bugSteps"='',"bugExpected"='',"bugActual"='',"bugEnvironment"='',"reproducibility"='UNREVIEWED',"engineeringUrl"=''`
+              : Prisma.sql`,"assignedReviewerId"=NULL,"assignedReviewerProof"=NULL`;
+          await tx.$executeRaw(
+            Prisma.sql`UPDATE ${table} SET "adminVersion"=${entry.version},"nextAction"='',"triageTags"=ARRAY[]::text[],"reminderAt"=NULL,"adminGroupId"=NULL ${extra} WHERE id=${entry.sourceId} AND "adminVersion"<${entry.version}`
+          );
+          await record(tx, entry);
+          await tx.retentionControl.updateMany({
+            where: { id: entry.id, journaledAt: null },
+            data: { journaledAt: new Date() }
+          });
           continue;
         }
         if (

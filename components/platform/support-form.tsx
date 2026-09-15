@@ -36,7 +36,9 @@ export function SupportForm({
   createdBase = "/platform/help/cases",
   available = true,
   additionalWork,
-  onConfirmed
+  onConfirmed,
+  receiptKey = "caseId",
+  requestKey = "requestKey"
 }: {
   owner: string;
   operation: string;
@@ -54,6 +56,8 @@ export function SupportForm({
   available?: boolean;
   additionalWork?: { dirty: boolean; saving: boolean };
   onConfirmed?: () => void;
+  receiptKey?: "caseId" | "id";
+  requestKey?: "requestKey" | "mutationId";
 }) {
   const id = useId();
   const initialFixed = useRef(fixed);
@@ -71,7 +75,11 @@ export function SupportForm({
   const retryOriginal = useCallback(() => formRef.current?.requestSubmit(), []);
   usePrivateRecovery(id, !!retryBody, busy, retryOriginal);
   useUnsavedSocialWork(
-    { dirty: dirty || !!additionalWork?.dirty, saving: busy || !!retryBody || !!additionalWork?.saving, conflict: false },
+    {
+      dirty: dirty || !!additionalWork?.dirty,
+      saving: busy || !!retryBody || !!additionalWork?.saving,
+      conflict: false
+    },
     () =>
       setFeedback("Save, retry or discard these local entries before leaving."),
     true
@@ -88,8 +96,13 @@ export function SupportForm({
   }, [fixed, dirty, retryBody, onRefresh]);
   useEffect(() => {
     let active = true;
-    if (navigation) void settlePhotoNavigation().then(() => { if (active) window.location.assign(navigation); });
-    return () => { active = false; };
+    if (navigation)
+      void settlePhotoNavigation().then(() => {
+        if (active) window.location.assign(navigation);
+      });
+    return () => {
+      active = false;
+    };
   }, [navigation]);
   useEffect(() => {
     if (feedback && !busy) feedbackRef.current?.focus();
@@ -136,7 +149,7 @@ export function SupportForm({
         }
         const serialized =
           retryBody ??
-          JSON.stringify({ ...payload, requestKey: crypto.randomUUID() });
+          JSON.stringify({ ...payload, [requestKey]: crypto.randomUUID() });
         setRetryBody(serialized);
         inFlight.current = true;
         setBusy(true);
@@ -144,11 +157,12 @@ export function SupportForm({
         try {
           const { data: result } = await socialRequest<{
             caseId: string;
+            id?: string;
             version: number;
             message: string;
           }>(endpoint, serialized, owner);
           if (
-            typeof result.caseId !== "string" ||
+            typeof result[receiptKey] !== "string" ||
             !Number.isSafeInteger(result.version) ||
             result.version < 1
           )

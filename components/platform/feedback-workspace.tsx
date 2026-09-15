@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { socialRequest } from "@/lib/platform/social-client";
+import { useRef } from "react";
+import { useFeedbackSnapshot } from "./use-feedback-snapshot";
 import type { SupportSnapshot } from "@/lib/platform/support-types";
 import { feedbackKinds } from "@/lib/platform/feedback-types";
 import { FeedbackForm, FeedbackChoices } from "./feedback-form";
@@ -26,93 +26,15 @@ export function FeedbackWorkspace({
   received?: boolean;
   promptClaimId?: string;
 }) {
-  const [data, setData] = useState<SupportSnapshot | null>(null),
-    [visible, setVisible] = useState(false),
-    [notice, setNotice] = useState("Checking your current feedback access…"),
-    [busy, setBusy] = useState(false);
-  const generation = useRef(0),
-    active = useRef(true),
-    reading = useRef(false),
-    queued = useRef(false),
-    latest = useRef<() => Promise<void>>(async () => {});
-  const load = useCallback(async () => {
-    if (!active.current || document.visibilityState === "hidden") return;
-    if (reading.current) {
-      queued.current = true;
-      return;
-    }
-    reading.current = true;
-    setBusy(true);
-    setVisible(false);
-    const seq = ++generation.current;
-    try {
-      const { data: next } = await socialRequest<SupportSnapshot>(
-        `/api/platform/feedback?${query}`,
-        undefined,
-        owner
-      );
-      if (seq !== generation.current) return;
-      if (
-        next.viewer.id !== owner ||
-        (view === "detail" &&
-          (!next.detail?.feedback || !next.detail.access.requester))
-      )
-        throw Error("This feedback is not available to this account.");
-      setData(next);
-      setVisible(true);
-      setNotice("");
-    } catch (error) {
-      if (seq === generation.current)
-        setNotice(
-          error instanceof Error
-            ? error.message
-            : "Feedback could not be loaded. Your retained entries are concealed."
-        );
-    } finally {
-      reading.current = false;
-      if (seq === generation.current) setBusy(false);
-      if (queued.current && active.current) {
-        queued.current = false;
-        void latest.current();
-      }
-    }
-  }, [owner, query, view]);
-  latest.current = load;
-  useEffect(() => {
-    const hide = () => {
-      active.current = false;
-      generation.current++;
-      setVisible(false);
-      setBusy(false);
-    };
-    const resume = () => {
-      if (document.visibilityState !== "hidden") {
-        active.current = true;
-        void load();
-      }
-    };
-    const visibility = () =>
-      document.visibilityState === "hidden" ? hide() : resume();
-    resume();
-    window.addEventListener("blur", hide);
-    window.addEventListener("offline", hide);
-    window.addEventListener("focus", resume);
-    window.addEventListener("online", resume);
-    window.addEventListener("pageshow", resume);
-    window.addEventListener("social-relationships-changed", resume);
-    document.addEventListener("visibilitychange", visibility);
-    return () => {
-      hide();
-      queued.current = false;
-      window.removeEventListener("blur", hide);
-      window.removeEventListener("offline", hide);
-      window.removeEventListener("focus", resume);
-      window.removeEventListener("online", resume);
-      window.removeEventListener("pageshow", resume);
-      window.removeEventListener("social-relationships-changed", resume);
-      document.removeEventListener("visibilitychange", visibility);
-    };
-  }, [load]);
+  const { data, visible, notice, busy, load } =
+    useFeedbackSnapshot<SupportSnapshot>(
+      owner,
+      `/api/platform/feedback?${query}`,
+      (next) =>
+        next.viewer.id === owner &&
+        (view !== "detail" ||
+          !!(next.detail?.feedback && next.detail.access.requester))
+    );
   return (
     <div className="space-y-6">
       <nav aria-label="Feedback" className="flex flex-wrap gap-x-6 gap-y-2">
@@ -132,6 +54,9 @@ export function FeedbackWorkspace({
         </Link>
         <Link href="/platform/help" className={portalLinkClass}>
           Help and contacts
+        </Link>
+        <Link href="/platform/feedback/ideas" className={portalLinkClass}>
+          Reviewed ideas
         </Link>
       </nav>
       {!visible && (

@@ -374,7 +374,9 @@ export function CommunityReportReview({
                     className="space-y-2 border-t pt-3"
                   >
                     <h3 className="font-semibold">Selected source only</h3>
-                    {data.evidence.attachment && <FeedbackImagePreview image={data.evidence.attachment}/>}
+                    {data.evidence.attachment && (
+                      <FeedbackImagePreview image={data.evidence.attachment} />
+                    )}
                     {data.evidence.contentNote && (
                       <p className="whitespace-pre-wrap break-words">
                         <strong>Content note:</strong>{" "}
@@ -390,7 +392,9 @@ export function CommunityReportReview({
                     <p className="whitespace-pre-wrap break-words">
                       {data.evidence.content ??
                         data.evidence.purpose ??
-                        (data.evidence.attachment ? "The private source image is shown under your current case permission." : "No text on this selected record.")}
+                        (data.evidence.attachment
+                          ? "The private source image is shown under your current case permission."
+                          : "No text on this selected record.")}
                     </p>
                     {data.evidence.version &&
                       data.evidence.version !== data.reportedVersion && (
@@ -407,7 +411,21 @@ export function CommunityReportReview({
                 )}
                 {!data.evidence && (
                   <p className="text-sm">
-                    {report.target.type === "FEEDBACK_ATTACHMENT" ? "The private image is removed or your account lacks current access to its feedback case. Report authority does not grant that access. Submitted details and review history remain available." : "No source text is available in this case view. The submitted details and review history remain available."}
+                    {report.target.type === "FEEDBACK_ATTACHMENT"
+                      ? "The private image is removed or your account lacks current access to its feedback case. Report authority does not grant that access. Submitted details and review history remain available."
+                      : "No source text is available in this case view. The submitted details and review history remain available."}
+                  </p>
+                )}
+                {report.target.type === "FEEDBACK_IDEA" && (
+                  <p className="text-sm">
+                    <Link
+                      className="text-gc-accent underline"
+                      href={`/platform/admin/feedback/public/${report.target.id}`}
+                    >
+                      Review public idea withdrawal
+                    </Link>
+                    . This requires product-review permission and grants no
+                    private feedback access.
                   </p>
                 )}
                 {report.relatedReview && (

@@ -1,3 +1,47 @@
+## Reviewed ideas checkpoint — September 15, 2026 UTC
+
+Feature 31 remains **unreleased**. Reviewed public summaries, unique removable
+votes, explicit channel subscriptions, six roadmap states, actual release links,
+merge/reversal and public-idea reporting now have isolated service and interface
+evidence. Publication requires current product-review permission, current private
+source access, human review and separate contributor consent. Attribution is its
+own choice. Public responses exclude the original case, attachments and account
+links. Withdrawing consent hides the copy immediately and requires another review
+before republishing. Merges retain original votes/subscriptions, count distinct
+eligible people, and remain reversible after a destination is withdrawn.
+
+The existing admin Feedback queue now includes every feedback kind. Current
+product reviewers can withdraw a public copy without gaining private case access.
+Native reports inspect only current public text; withdrawal revokes future source
+evidence while preserving the private report receipt. Erasure removes interest
+records and public copies' retained text. Protected content-free controls prevent
+older consent, subscriptions and publication from returning after recovery. Both
+feedback and native support boundaries protect changed choices before success.
+
+Eleven final service scenarios pass, including failed protection with exact receipt
+recovery. Earlier combined intake/retention and admin scenarios pass. Six final
+HTTPS idea groups pass at 320px: keyboard publication, retained unsent review text,
+public-only search and account return, lost vote acknowledgment, channel choices,
+merge/reversal, attribution/withdrawal and native report/moderation. Six voluntary
+feedback/image/report regression groups also pass, with no browser errors or
+unexpected discard prompts. Two fixture mistakes and one UTC publication defect
+were corrected; initial failures remain in private evidence.
+
+Both isolated fixtures reach 80 migrations; production remains at 69. The preview
+build passes with 186 traces, 42,911 entries, 473 server JavaScript files and the
+unchanged repaired renderer. The subsequent native-support protection repair is
+covered by the eleven service checks; final feature-wide build/browser acceptance
+still follows delivery and shared reports. Seven warm loopback samples measured a
+twenty-idea page at 1.51 ms median/1.76 max, seven SQL commands and 8,383 bytes;
+an idea detail took 1.64/1.94 ms, nine commands and 940 bytes. These measurements
+do not establish production latency or capacity.
+
+Next in this same feature cycle: connect the chosen case/idea channels to existing
+activity, fanout and delivery controls, then weekly review and shared A1–A3 reports,
+protected upgrade, exact canonical release and live acceptance. Saved channel
+choices are not delivery proof. No production schema, consent, grants, feature
+flags, user records or outbound messages changed for this checkpoint.
+
 ## Durable optional feedback prompt checkpoint — September 15, 2026 UTC
 
 Feature 31 is still **unreleased**, continuing through ideas, subscriptions and

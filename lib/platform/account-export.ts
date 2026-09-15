@@ -323,12 +323,26 @@ export async function downloadAccountExport(
         coordinatorShare: { select: { createdAt: true, revokedAt: true } },
         feedback: {
           select: {
-            attachments: { where: { status: "READY" }, select: { id: true, caption: true, alt: true, createdAt: true } },
-            kind: true, notice: true, rating: true, entryPoint: true, contactAllowed: true,
-            contactInApp: true, contactEmail: true, contactPush: true,
-            allowIdea: true, publicAttribution: true, contextRelease: true,
-            contextDevice: true, contextBrowser: true, contextErrorRef: true,
-            createdAt: true, redactedAt: true
+            attachments: {
+              where: { status: "READY" },
+              select: { id: true, caption: true, alt: true, createdAt: true }
+            },
+            kind: true,
+            notice: true,
+            rating: true,
+            entryPoint: true,
+            contactAllowed: true,
+            contactInApp: true,
+            contactEmail: true,
+            contactPush: true,
+            allowIdea: true,
+            publicAttribution: true,
+            contextRelease: true,
+            contextDevice: true,
+            contextBrowser: true,
+            contextErrorRef: true,
+            createdAt: true,
+            redactedAt: true
           }
         }
       }
@@ -869,23 +883,116 @@ export async function downloadAccountExport(
       churchConnections,
       supportRequests,
       supportMessages,
-      feedbackPromptPreferences: await tx.feedbackPromptPreference.findMany({ where: { userId }, select: { neverAskAt: true, shownUntil: true, dismissedUntil: true, respondedUntil: true, updatedAt: true } }),
-      feedbackPromptHistory: await tx.feedbackPromptClaim.findMany({ where: { userId, createdAt: { gte: measurementCutoff } }, select: { campaign: true, createdAt: true, expiresAt: true, shownAt: true, finishedAt: true }, orderBy: { createdAt: "asc" }, take: MAX_ROWS + 1 }),
-      measurementChoice: (await tx.platformMeasurementChoice.findMany({ where: { userId }, select: {
-        policy: true, enabledAt: true, updatedAt: true, shareDevice: true, referral: true,
-        sessionStarts: true, cohortEligible: true, onboardingStartedAt: true,
-        onboardingCompletedAt: true, onboardingSkippedAt: true
-      } })).map((row) => ({ ...row,
-        sessionStarts: row.sessionStarts.filter((at) => at >= measurementCutoff),
-        onboardingStartedAt: row.onboardingStartedAt && row.onboardingStartedAt >= measurementCutoff ? row.onboardingStartedAt : null,
-        onboardingCompletedAt: row.onboardingCompletedAt && row.onboardingCompletedAt >= measurementCutoff ? row.onboardingCompletedAt : null,
-        onboardingSkippedAt: row.onboardingSkippedAt && row.onboardingSkippedAt >= measurementCutoff ? row.onboardingSkippedAt : null
+      feedbackIdeaVotes: await tx.feedbackIdeaVote.findMany({
+        where: { userId },
+        select: {
+          ideaId: true,
+          active: true,
+          createdAt: true,
+          updatedAt: true
+        },
+        orderBy: { ideaId: "asc" },
+        take: MAX_ROWS + 1
+      }),
+      feedbackIdeaSubscriptions: await tx.feedbackIdeaSubscription.findMany({
+        where: { userId },
+        select: {
+          ideaId: true,
+          inAppSince: true,
+          emailSince: true,
+          pushSince: true,
+          createdAt: true,
+          updatedAt: true
+        },
+        orderBy: { ideaId: "asc" },
+        take: MAX_ROWS + 1
+      }),
+      feedbackPromptPreferences: await tx.feedbackPromptPreference.findMany({
+        where: { userId },
+        select: {
+          neverAskAt: true,
+          shownUntil: true,
+          dismissedUntil: true,
+          respondedUntil: true,
+          updatedAt: true
+        }
+      }),
+      feedbackPromptHistory: await tx.feedbackPromptClaim.findMany({
+        where: { userId, createdAt: { gte: measurementCutoff } },
+        select: {
+          campaign: true,
+          createdAt: true,
+          expiresAt: true,
+          shownAt: true,
+          finishedAt: true
+        },
+        orderBy: { createdAt: "asc" },
+        take: MAX_ROWS + 1
+      }),
+      measurementChoice: (
+        await tx.platformMeasurementChoice.findMany({
+          where: { userId },
+          select: {
+            policy: true,
+            enabledAt: true,
+            updatedAt: true,
+            shareDevice: true,
+            referral: true,
+            sessionStarts: true,
+            cohortEligible: true,
+            onboardingStartedAt: true,
+            onboardingCompletedAt: true,
+            onboardingSkippedAt: true
+          }
+        })
+      ).map((row) => ({
+        ...row,
+        sessionStarts: row.sessionStarts.filter(
+          (at) => at >= measurementCutoff
+        ),
+        onboardingStartedAt:
+          row.onboardingStartedAt &&
+          row.onboardingStartedAt >= measurementCutoff
+            ? row.onboardingStartedAt
+            : null,
+        onboardingCompletedAt:
+          row.onboardingCompletedAt &&
+          row.onboardingCompletedAt >= measurementCutoff
+            ? row.onboardingCompletedAt
+            : null,
+        onboardingSkippedAt:
+          row.onboardingSkippedAt &&
+          row.onboardingSkippedAt >= measurementCutoff
+            ? row.onboardingSkippedAt
+            : null
       })),
-      measuredForegroundDays: (await tx.platformMetricActivityDay.findMany({ where: {
-        userId, lastAt: { gte: measurementCutoff }
-      }, select: { version: true, day: true, firstAt: true, lastAt: true, device: true, browser: true },
-        orderBy: [{ day: "asc" }, { version: "asc" }], take: MAX_ROWS + 1 })).map(row=>({...row,firstAt:row.firstAt<measurementCutoff?row.lastAt:row.firstAt})),
-      privateAdminViews: await tx.adminSavedView.findMany({where:{userId},select:{name:true,filters:true,createdAt:true,updatedAt:true},orderBy:{id:"asc"},take:MAX_ROWS+1})
+      measuredForegroundDays: (
+        await tx.platformMetricActivityDay.findMany({
+          where: {
+            userId,
+            lastAt: { gte: measurementCutoff }
+          },
+          select: {
+            version: true,
+            day: true,
+            firstAt: true,
+            lastAt: true,
+            device: true,
+            browser: true
+          },
+          orderBy: [{ day: "asc" }, { version: "asc" }],
+          take: MAX_ROWS + 1
+        })
+      ).map((row) => ({
+        ...row,
+        firstAt: row.firstAt < measurementCutoff ? row.lastAt : row.firstAt
+      })),
+      privateAdminViews: await tx.adminSavedView.findMany({
+        where: { userId },
+        select: { name: true, filters: true, createdAt: true, updatedAt: true },
+        orderBy: { id: "asc" },
+        take: MAX_ROWS + 1
+      })
     };
     if (Object.values(collections).some((rows) => rows.length > MAX_ROWS))
       throw new AccountExportError("size");

@@ -98,7 +98,8 @@ export function AdminWorklist({
             ALL: "All types",
             ...adminSourceTypes,
             BUG: "Bug reports",
-            SUGGESTION: "Suggestions"
+            SUGGESTION: "Suggestions",
+            FEEDBACK: "Website feedback"
           })}
           {filter("state", "State", adminQueueStates)}
           {filter("priority", "Priority", {

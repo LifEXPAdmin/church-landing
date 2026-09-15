@@ -8,7 +8,14 @@ import type { RecentAuthenticationPurpose } from "@/lib/platform/account-credent
 export type AdminField = {
   name: string;
   label: string;
-  type?: "text" | "textarea" | "select" | "tags" | "datetime-local" | "number";
+  type?:
+    | "text"
+    | "textarea"
+    | "select"
+    | "tags"
+    | "datetime-local"
+    | "number"
+    | "checkbox";
   value?: string | number;
   max?: number;
   min?: number;
@@ -27,7 +34,8 @@ export function AdminForm({
   caution,
   onDraftChange,
   onResult,
-  confirmationPurpose
+  confirmationPurpose,
+  available = true
 }: {
   owner: string;
   operation: string;
@@ -39,6 +47,7 @@ export function AdminForm({
   onDraftChange?: (dirty: boolean) => void;
   onResult?: (result: Record<string, unknown>) => void;
   confirmationPurpose?: RecentAuthenticationPurpose;
+  available?: boolean;
 }) {
   const confirmation = useAccountConfirmation(
     confirmationPurpose ?? "manage-admin-access"
@@ -102,6 +111,7 @@ export function AdminForm({
         event.preventDefault();
         if (
           writing.current ||
+          (!available && !pending) ||
           retryAt ||
           (conflict && !pending) ||
           (confirmationPurpose && !confirmation.ready && !pending)
@@ -116,18 +126,26 @@ export function AdminForm({
         for (const field of fields) {
           const value = String(data.get(field.name) ?? "");
           payload[field.name] =
-            field.type === "tags"
-              ? value
-                  .split(",")
-                  .map((v) => v.trim())
-                  .filter(Boolean)
-              : field.type === "number"
-                ? Number(value)
-                : field.type === "datetime-local"
-                  ? value
-                    ? new Date(value).toISOString()
-                    : ""
-                  : value;
+            field.type === "checkbox"
+              ? data.get(field.name) === "on"
+              : field.type === "tags"
+                ? value
+                    .split(",")
+                    .map((v) => v.trim())
+                    .filter(Boolean)
+                : field.type === "number"
+                  ? Number(value)
+                  : field.type === "datetime-local"
+                    ? value
+                      ? new Date(value).toISOString()
+                      : ""
+                    : value;
+        }
+        if (typeof payload.destinationChoice === "string") {
+          const [destinationId, version] = payload.destinationChoice.split(":");
+          payload.destinationId = destinationId;
+          payload.destinationVersion = Number(version);
+          delete payload.destinationChoice;
         }
         const body =
           pending ??
@@ -205,7 +223,7 @@ export function AdminForm({
         }
       }}
     >
-      <fieldset className="space-y-4" disabled={busy || !!pending}>
+      <fieldset className="min-w-0 space-y-4" disabled={busy || !!pending}>
         {confirmationPurpose && (
           <AccountConfirmation
             value={confirmation}
@@ -222,7 +240,15 @@ export function AdminForm({
               {field.label}
               {field.optional ? " (optional)" : ""}
             </label>
-            {field.type === "textarea" ? (
+            {field.type === "checkbox" ? (
+              <input
+                id={`${id}-${field.name}`}
+                name={field.name}
+                type="checkbox"
+                required={!field.optional}
+                className="h-6 w-6 accent-gc-accent"
+              />
+            ) : field.type === "textarea" ? (
               <textarea
                 id={`${id}-${field.name}`}
                 name={field.name}
@@ -309,6 +335,7 @@ export function AdminForm({
           className="gc-button"
           disabled={
             busy ||
+            (!available && !pending) ||
             !!retryAt ||
             (conflict && !pending) ||
             !!(confirmationPurpose && !confirmation.ready && !pending)

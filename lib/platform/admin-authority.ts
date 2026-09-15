@@ -101,11 +101,13 @@ export async function adminAuthority(tx: AdminTx, userId: string) {
       label: "Requests",
       href: "/platform/admin/requests"
     });
-  if (respond)
+  if (respond || capabilities.has("MANAGE_PRODUCT_FEEDBACK"))
     sections.push({
       key: "feedback",
       label: "Feedback",
-      href: "/platform/admin/feedback"
+      href: respond
+        ? "/platform/admin/feedback"
+        : "/platform/admin/feedback/ideas"
     });
   if (
     capabilities.has("LOOKUP_ACCOUNTS") ||
@@ -133,7 +135,11 @@ export async function adminAuthority(tx: AdminTx, userId: string) {
       href: "/platform/admin/health"
     });
   if (capabilities.has("VIEW_PLATFORM_METRICS"))
-    sections.push({key:"growth",label:"Growth",href:"/platform/admin/growth"});
+    sections.push({
+      key: "growth",
+      label: "Growth",
+      href: "/platform/admin/growth"
+    });
   if (capabilities.has("MANAGE_ADMIN_ACCESS"))
     sections.push({
       key: "access",
