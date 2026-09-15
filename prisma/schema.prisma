@@ -1219,6 +1219,7 @@ model SupportCase {
 // Feedback adds metadata to one canonical private case, not a second inbox.
 model FeedbackSubmission {
   caseId String @id
+  notice String @default("confidential-feedback-v1")
   kind String
   rating Int?
   entryPoint String @default("VOLUNTARY")

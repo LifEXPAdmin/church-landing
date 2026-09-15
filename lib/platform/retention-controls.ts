@@ -34,6 +34,7 @@ export type RetentionControlEntry = {
     | "ADMIN_SUPPORT"
     | "ADMIN_REPORT"
     | "ADMIN_CLAIM"
+    | "SUPPORT_MESSAGE"
     | "APPEAL"
     | "ACCOUNT_STATE"
     | "AUTHOR_WITHDRAW_POST"
@@ -85,6 +86,8 @@ function validate(value: unknown): RetentionControlEntry {
       ? r.target === "ACCOUNT" &&
         r.operatorId !== null &&
         (r.outcome === "QUARANTINED" || (r.kind === "ADMIN_SUPPORT" && r.outcome === "CASE_REDACTED"))
+      : r.kind === "SUPPORT_MESSAGE"
+        ? r.target === "MESSAGE" && r.operatorId !== null && r.outcome === "REDACTED"
       : r.kind === "ACCOUNT_STATE"
         ? r.target === "ACCOUNT" &&
           r.sourceId === r.targetId &&
@@ -171,6 +174,17 @@ export function recordReportControl(
 export function recordAdminPrivacyControl(tx:Tx,source:{sourceType:"SUPPORT"|"REPORT"|"CLAIM";sourceId:string},actorId:string,version:number,wholeCase=false) {
   const now=new Date();
   return record(tx,{id:randomUUID(),kind:`ADMIN_${source.sourceType}`,target:"ACCOUNT",targetId:actorId,sourceId:source.sourceId,version,policy,outcome:wholeCase&&source.sourceType==="SUPPORT"?"CASE_REDACTED":"QUARANTINED",operatorId:actorId,recordedAt:now.toISOString(),startedAt:now.toISOString(),reviewDueAt:retentionDate(now,90).toISOString(),endedAt:null});
+}
+export function recordSupportMessagePrivacyControl(
+  tx: Tx, caseId: string, messageId: string, actorId: string, version: number
+) {
+  const now = new Date();
+  return record(tx, {
+    id: randomUUID(), kind: "SUPPORT_MESSAGE", target: "MESSAGE",
+    targetId: messageId, sourceId: caseId, version, policy, outcome: "REDACTED",
+    operatorId: actorId, recordedAt: now.toISOString(), startedAt: now.toISOString(),
+    reviewDueAt: retentionDate(now, 90).toISOString(), endedAt: null
+  });
 }
 // Account recovery controls contain no login contact, report text or reason.
 export function recordAccountRestrictionControl(
@@ -524,6 +538,27 @@ export async function replayRetentionControls(
     async (tx) => {
       await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(730221, 2)`;
       for (const entry of entries) {
+        if (entry.kind === "SUPPORT_MESSAGE") {
+          const message = await tx.supportMessage.findFirst({
+            where: { id: entry.targetId, caseId: entry.sourceId },
+            select: { id: true, kind: true, version: true }
+          });
+          if (message) {
+            await tx.supportMessage.update({
+              where: { id: message.id },
+              data: { body: "[Removed for privacy.]", redactedAt: new Date(entry.recordedAt) }
+            });
+            if (message.kind === "RESOLUTION" && !await tx.supportMessage.findFirst({
+              where: { caseId: entry.sourceId, kind: "RESOLUTION", version: { gt: message.version }, redactedAt: null },
+              select: { id: true }
+            })) await tx.supportCase.updateMany({
+              where: { id: entry.sourceId }, data: { resolution: "[Removed for privacy.]" }
+            });
+          }
+          await record(tx, entry);
+          await tx.retentionControl.updateMany({ where: { id: entry.id, journaledAt: null }, data: { journaledAt: new Date() } });
+          continue;
+        }
         if (["ADMIN_SUPPORT","ADMIN_REPORT","ADMIN_CLAIM"].includes(entry.kind)) {
           if (entry.kind === "ADMIN_SUPPORT" && entry.outcome === "CASE_REDACTED") {
             // Original requester text is immutable except for privacy removal.

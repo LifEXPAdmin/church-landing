@@ -4,11 +4,13 @@ Feature 31 is in progress and **unreleased**. The exact serving application rema
 the platform measurement core below. The native private-case transaction now owns
 feedback rating/type/context and separate contact/publication choices, with its
 existing retry receipt and current owner access. A private feedback API and
-owner-filtered receipt queries are added. One migration is installed only in an
-isolated fixture (69 to 70). Whole-case privacy replay is distinguished from
+owner-filtered receipt queries are added. Two migrations are installed only in an
+isolated fixture (69 to 71). Whole-case privacy replay is distinguished from
 ordinary internal-admin edits and cannot be skipped by a newer replayed marker.
 
-Five feedback plus six retention scenarios pass, alongside the previously passing
+Notice versions are retained and selected-message recovery preserves newer
+resolutions without changing the native case version. Six feedback plus six
+retention scenarios pass, alongside the previously passing
 ten admin and seventeen native support checks. Types and focused lint pass;
 initial test import/payload mistakes are retained. Read
 [the feedback contract and checkpoint](FEEDBACK_CONTRACT.md). Continue its forms,

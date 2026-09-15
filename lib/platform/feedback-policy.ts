@@ -165,6 +165,7 @@ export function parseFeedback(input: Record<string, unknown>) {
     bugExpected: expected,
     bugSteps: steps,
     metadata: {
+      notice: FEEDBACK_NOTICE,
       kind,
       rating: rating as number | null,
       entryPoint: "VOLUNTARY",

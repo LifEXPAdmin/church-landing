@@ -10,7 +10,7 @@ import { readAccountSession } from "./accounts";
 import { ADULT_POLICY } from "./portal-types";
 import { reconcileSupportAccess } from "./support-revocation";
 import { PortalError } from "./portal-policy";
-import { recordAppealControl, recordAdminPrivacyControl } from "./retention-controls";
+import { recordAppealControl, recordAdminPrivacyControl, recordSupportMessagePrivacyControl } from "./retention-controls";
 import { emptyAdminText, emptyAdminBug, redactAdminCaseNotes } from "./admin-privacy";
 import { postContext } from "./post-access";
 import {
@@ -498,7 +498,7 @@ export async function readSupport(
         featureDecision: true,
         feedback: {
           select: {
-            kind: true, rating: true, entryPoint: true, version: true,
+            kind: true, notice: true, rating: true, entryPoint: true, version: true,
             sharingVersion: true, contactAllowed: true, contactInApp: true,
             contactEmail: true, contactPush: true, allowIdea: true,
             publicAttribution: true, contextRelease: true, contextDevice: true,
@@ -997,14 +997,17 @@ export async function supportCommand(
       if (input.messageId) {
         const m = await tx.supportMessage.findFirst({
           where: { id: identifier(input.messageId), caseId: c.id },
-          select: { id: true, kind: true }
+          select: { id: true, kind: true, version: true }
         });
         if (!m) throw denied();
         await tx.supportMessage.update({
           where: { id: m.id },
           data: { body: marker, redactedAt: new Date() }
         });
-        if (m.kind === "RESOLUTION") data.resolution = marker;
+        if (m.kind === "RESOLUTION" && !await tx.supportMessage.findFirst({
+          where: { caseId: c.id, kind: "RESOLUTION", version: { gt: m.version }, redactedAt: null },
+          select: { id: true }
+        })) data.resolution = marker;
         targetId = m.id;
       } else {
         data.subject = "Content removed for privacy";
@@ -1031,6 +1034,7 @@ export async function supportCommand(
       select: { id: true, version: true, ownerGrantId: true,adminVersion:true }
     });
     if(op==="redact"&&!input.messageId) await recordAdminPrivacyControl(tx,{sourceType:"SUPPORT",sourceId:c.id},actor.id,next.adminVersion,true);
+    if(op==="redact"&&targetId) await recordSupportMessagePrivacyControl(tx,c.id,targetId,actor.id,next.version);
     if (body)
       await tx.supportMessage.create({
         data: {

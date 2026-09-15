@@ -20,19 +20,19 @@ when a newer admin marker arrives first; later replies/resolutions remain separa
 Earlier ordinary admin controls keep their original narrow meaning. This repairs a
 source privacy gap within this feature; it is not a production redaction action.
 
-Five new native/HTTP scenarios and six retention scenarios pass. The previously
+Six new native/HTTP scenarios and six retention scenarios pass. The previously
 run ten admin and seventeen support scenarios also pass. Final types and focused
 lint pass. Initial server-only test import and control-payload assertion failures
-are preserved with their corrections. The single new migration reaches only the
-isolated fixture, from 69 to 70. No production schema, feature setting, account,
+are preserved with their corrections. Two new migrations reach only the
+isolated fixture, from 69 to 71. The notice version is retained with each receipt.
+Selected-message redaction has a content-free recovery control and preserves a
+newer resolution, including after repeated replay. No production schema, feature setting, account,
 case, grant, consent or outbound delivery has changed for feature 31.
 
 The foundation is checkpointed for continuation, not complete feature acceptance.
 Forms, selected private attachments, durable prompt claims/preferences, reviewed
 public ideas, subscribed delivery, digest/report integration, full lifecycle and
-browser/release acceptance remain in this same feature cycle. Include explicit
-notice-version retention and selected-message privacy replay in the remaining
-source/lifecycle acceptance.
+browser/release acceptance remain in this same feature cycle.
 
 ## Existing owners and required boundaries
 

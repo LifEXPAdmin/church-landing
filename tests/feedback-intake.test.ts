@@ -81,6 +81,7 @@ test("rating-only and rating-free feedback create one native private case per ke
     })
   ).detail!;
   assert.equal(feedback.feedback?.rating, 2);
+  assert.equal(feedback.feedback?.notice, FEEDBACK_NOTICE);
   assert.equal(feedback.feedback?.contactAllowed, false);
   assert.equal(feedback.feedback?.allowIdea, false);
   assert.match(feedback.description, /2 out of 5/);
@@ -442,4 +443,79 @@ test("feedback HTTP reads and writes require the current owner, reject cross-sit
     ).rating,
     3
   );
+});
+
+test("selected-message redaction replays privately while preserving a newer resolution and exact native versions", async () => {
+  const f = await seedSupport(db);
+  const saved = await supportCommand(
+    db,
+    f.memberA.token,
+    await input(f.memberA.token, {
+      contactAllowed: true,
+      channels: ["IN_APP"]
+    })
+  );
+  await supportCommand(db, f.owner.token, {
+    operation: "transition",
+    requestKey: randomUUID(),
+    caseId: saved.caseId,
+    expectedVersion: 1,
+    status: "RESOLVED",
+    reason: "Fictional earlier resolution."
+  });
+  const earlier = await db.supportMessage.findFirstOrThrow({
+    where: { caseId: saved.caseId, kind: "RESOLUTION" }
+  });
+  await supportCommand(db, f.memberA.token, {
+    operation: "reopen",
+    requestKey: randomUUID(),
+    caseId: saved.caseId,
+    expectedVersion: 2,
+    reason: "The fictional issue needs another check."
+  });
+  await supportCommand(db, f.owner.token, {
+    operation: "transition",
+    requestKey: randomUUID(),
+    caseId: saved.caseId,
+    expectedVersion: 3,
+    status: "RESOLVED",
+    reason: "Fictional newer safe resolution."
+  });
+  await supportCommand(db, f.owner.token, {
+    operation: "redact",
+    requestKey: randomUUID(),
+    caseId: saved.caseId,
+    expectedVersion: 4,
+    messageId: earlier.id,
+    reason: "PRIVATE_INFORMATION"
+  });
+  let source = await db.supportCase.findUniqueOrThrow({
+    where: { id: saved.caseId }
+  });
+  assert.equal(source.version, 5);
+  assert.equal(source.resolution, "Fictional newer safe resolution.");
+  const control = await db.retentionControl.findFirstOrThrow({
+    where: {
+      kind: "SUPPORT_MESSAGE",
+      sourceId: saved.caseId,
+      targetId: earlier.id
+    }
+  });
+  assert.equal(JSON.stringify(control.payload).includes("Fictional"), false);
+  await db.supportMessage.update({
+    where: { id: earlier.id },
+    data: { body: earlier.body, redactedAt: null }
+  });
+  await replayRetentionControls(db, [control.payload as RetentionControlEntry]);
+  await replayRetentionControls(db, [control.payload as RetentionControlEntry]);
+  const removed = await db.supportMessage.findUniqueOrThrow({
+    where: { id: earlier.id }
+  });
+  assert.equal(removed.body, "[Removed for privacy.]");
+  assert.ok(removed.redactedAt);
+  source = await db.supportCase.findUniqueOrThrow({
+    where: { id: saved.caseId }
+  });
+  assert.equal(source.version, 5);
+  assert.equal(source.resolution, "Fictional newer safe resolution.");
 });

@@ -323,7 +323,7 @@ export async function downloadAccountExport(
         coordinatorShare: { select: { createdAt: true, revokedAt: true } },
         feedback: {
           select: {
-            kind: true, rating: true, entryPoint: true, contactAllowed: true,
+            kind: true, notice: true, rating: true, entryPoint: true, contactAllowed: true,
             contactInApp: true, contactEmail: true, contactPush: true,
             allowIdea: true, publicAttribution: true, contextRelease: true,
             contextDevice: true, contextBrowser: true, contextErrorRef: true,

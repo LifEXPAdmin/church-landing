@@ -108,7 +108,7 @@ export async function protectAdminCaseChanges(
     const targets = await db.retentionControl.findMany({
       where: {
         sourceId: { in: sourceIds },
-        kind: { in: ["ADMIN_SUPPORT", "ADMIN_REPORT", "ADMIN_CLAIM"] },
+        kind: { in: ["ADMIN_SUPPORT", "ADMIN_REPORT", "ADMIN_CLAIM", "SUPPORT_MESSAGE"] },
         journaledAt: null
       },
       select: { targetId: true },
