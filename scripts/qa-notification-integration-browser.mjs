@@ -67,6 +67,18 @@ page.on("pageerror", (e) => {
   errors.push(issue);
   console.log("BROWSER_ERROR", JSON.stringify(issue));
 });
+page.on("console", (message) => {
+  if (["error", "warning"].includes(message.type()))
+    console.log("BROWSER_CONSOLE", message.type(), message.text());
+});
+page.on("response", async (response) => {
+  if (response.status() >= 400)
+    console.log(
+      "HTTP_ERROR",
+      response.status(),
+      new URL(response.url()).pathname
+    );
+});
 const results = [];
 const ok = (s) => {
   results.push(s);
@@ -75,7 +87,8 @@ const ok = (s) => {
 const output = fixtureDir + "/notification-integration-browser-" + Date.now();
 mkdirSync(output, { recursive: true });
 const go = async (path) => {
-  await page.goto(config.origin + path);
+  const response = await page.goto(config.origin + path);
+  console.log("BROWSER_NAV", path, response?.status());
   await page.getByRole("heading", { level: 1 }).waitFor();
 };
 const bounded = async () =>
@@ -512,6 +525,17 @@ try {
   assert.deepEqual(errors, []);
   ok("All exercised production browser flows finish without page errors");
 } finally {
+  await page
+    .screenshot({ path: output + "/last-page.png", fullPage: true })
+    .catch(() => {});
+  writeFileSync(
+    output + "/last-page.txt",
+    await page
+      .locator("body")
+      .innerText()
+      .catch(() => ""),
+    { mode: 0o600 }
+  );
   writeFileSync(
     output + "/results.json",
     JSON.stringify({ phase, results, errors }, null, 2),

@@ -315,6 +315,36 @@ try {
   assert.deepEqual(preferences.pushCategories.sort(), ["messages", "requests"]);
   assert.equal(preferences.founderAnnouncements, false);
   for (const name of [
+    "New posts from authors whose bell you enabled",
+    "Likes on your posts and comments",
+    "Church requests, roles and connection changes",
+    "Event responses, changes and volunteer commitments"
+  ]) {
+    const group = page.getByRole("group", { name, exact: true });
+    assert.equal(
+      await group
+        .getByRole("checkbox", { name: "Phone alerts", exact: true })
+        .isChecked(),
+      false
+    );
+    assert.equal(
+      await group
+        .getByRole("checkbox", { name: "In-app alerts", exact: true })
+        .isChecked(),
+      true
+    );
+  }
+  const reactionChoices = page.getByRole("group", {
+    name: "Likes on your posts and comments",
+    exact: true
+  });
+  await reactionChoices
+    .getByRole("checkbox", { name: "Phone alerts", exact: true })
+    .check();
+  await reactionChoices
+    .getByRole("checkbox", { name: "In-app alerts", exact: true })
+    .uncheck();
+  for (const name of [
     "Replies to your posts and comments",
     "Mentions in comments",
     "Replies in conversations you follow",
@@ -344,7 +374,42 @@ try {
         where: { ownerId: actor.id }
       })
     ).pushCategories.sort(),
-    ["conversations", "mentions", "messages", "prayer", "replies", "requests"]
+    [
+      "conversations",
+      "mentions",
+      "messages",
+      "prayer",
+      "reactions",
+      "replies",
+      "requests"
+    ]
+  );
+  const expanded = await db.socialPreferences.findUniqueOrThrow({
+    where: { ownerId: actor.id }
+  });
+  assert.deepEqual(expanded.mutedNotificationCategories.sort(), [
+    "founder",
+    "reactions"
+  ]);
+  assert.ok(expanded.notificationPushSince.reactions);
+  await go("/platform/settings/notifications/availability");
+  await reactionChoices
+    .getByRole("checkbox", { name: "In-app alerts", exact: true })
+    .waitFor();
+  assert.equal(
+    await reactionChoices
+      .getByRole("checkbox", { name: "In-app alerts", exact: true })
+      .isChecked(),
+    false
+  );
+  assert.equal(
+    await reactionChoices
+      .getByRole("checkbox", { name: "Phone alerts", exact: true })
+      .isChecked(),
+    true
+  );
+  ok(
+    "All four new categories start without phone consent, and independent Activity-off/phone-on persists after a real reload"
   );
   const commenter = await createPortalActor(db, "commentpushui");
   const post = await db.platformPost.create({

@@ -439,7 +439,7 @@ export const settingsRegistry: readonly SettingRegistration[] = Object.freeze([
     "notifications.availability",
     "notifications",
     "Notification preferences",
-    "Choose message, reply, conversation, prayer and founder alerts, manage phone devices, and set quiet hours.",
+    "Choose independent Activity and phone alerts for messages, conversations, prayer, author bells, reactions, church changes and commitments. Manage devices and quiet hours.",
     [
       "alerts",
       "notifications",
@@ -450,7 +450,12 @@ export const settingsRegistry: readonly SettingRegistration[] = Object.freeze([
       "quiet hours",
       "mute conversation",
       "prayer updates",
-      "followed conversations"
+      "followed conversations",
+      "new post bell",
+      "reactions",
+      "church roles",
+      "event changes",
+      "volunteer commitments"
     ],
     { control: "notifications" },
     {
