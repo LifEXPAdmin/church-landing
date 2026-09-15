@@ -514,8 +514,8 @@ export async function replayRetentionControls(
               "discoveryLanguage"=NULL, "discoveryDenomination"=NULL,
               "discoveryCountry"=NULL, "discoveryPlaceId"=NULL,
               "discoveryRegion"=NULL, "discoveryLatitude"=NULL,
-              "discoveryLongitude"=NULL, version=${entry.version}
-              WHERE id=${entry.sourceId} AND version < ${entry.version}`;
+              "discoveryLongitude"=NULL, "discoveryVersion"=${entry.version}, version=version+1
+              WHERE id=${entry.sourceId} AND "discoveryVersion" < ${entry.version}`;
           } else {
             // Missing newer private filters must not silently reopen a wider feed.
             const owner = await tx.platformUser.findUnique({
@@ -586,7 +586,10 @@ export async function replayRetentionControls(
           // Source withdrawal has no reversal operation. Preserve it even when
           // a later moderation version is replayed first, without republishing.
           if (entry.kind === "AUTHOR_WITHDRAW_POST")
-            await tx.$executeRaw`UPDATE "PlatformPost" SET status='WITHDRAWN', "withdrawnAt"=coalesce("withdrawnAt",${entry.recordedAt}::timestamp), "discussionClosed"=true, version=greatest(version,${entry.version}) WHERE id=${entry.sourceId}`;
+            await tx.$executeRaw`UPDATE "PlatformPost" SET status='WITHDRAWN', "withdrawnAt"=coalesce("withdrawnAt",${entry.recordedAt}::timestamp), "discussionClosed"=true,
+              "discoveryLanguage"=NULL, "discoveryDenomination"=NULL, "discoveryCountry"=NULL, "discoveryPlaceId"=NULL,
+              "discoveryRegion"=NULL, "discoveryLatitude"=NULL, "discoveryLongitude"=NULL,
+              version=greatest(version,${entry.version}) WHERE id=${entry.sourceId}`;
           else
             await tx.$executeRaw`UPDATE "PlatformPostComment" SET "deletedAt"=coalesce("deletedAt",${entry.recordedAt}::timestamp), version=greatest(version,${entry.version}) WHERE id=${entry.sourceId}`;
           await record(tx, entry);

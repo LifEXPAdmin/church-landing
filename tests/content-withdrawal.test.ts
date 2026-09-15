@@ -21,7 +21,10 @@ async function fixture(type: "POST" | "COMMENT") {
   const post = await db.platformPost.create({
     data: {
       authorId: author.id,
-      content: "Selected post evidence " + randomUUID()
+      content: "Selected post evidence " + randomUUID(),
+      discoveryCountry: "US",
+      discoveryLanguage: "en",
+      discoveryDenomination: "withdrawn-tradition"
     }
   });
   const comment =
@@ -77,6 +80,9 @@ test("reported post withdrawal retains only selected canonical evidence, protect
   });
   assert.equal(saved.content, f.post.content);
   assert.equal(saved.status, "WITHDRAWN");
+  assert.equal(saved.discoveryCountry, null);
+  assert.equal(saved.discoveryLanguage, null);
+  assert.equal(saved.discoveryDenomination, null);
   assert.equal(await getPost(db, f.author.token, f.post.id), null);
   const entry = await db.retentionControl.findFirstOrThrow({
     where: { kind: "AUTHOR_WITHDRAW_POST", sourceId: f.post.id }
@@ -124,6 +130,7 @@ test("reported post withdrawal retains only selected canonical evidence, protect
         status: "PUBLISHED",
         withdrawnAt: null,
         discussionClosed: false,
+        discoveryCountry: "US",
         version: saved.version + 5
       }
     });
@@ -133,6 +140,7 @@ test("reported post withdrawal retains only selected canonical evidence, protect
     });
     assert.equal(restored.status, "WITHDRAWN");
     assert.equal(restored.discussionClosed, true);
+    assert.equal(restored.discoveryCountry, null);
     assert.equal(restored.version, saved.version + 5);
     assert.equal(await getPost(db, null, f.post.id), null);
   } finally {

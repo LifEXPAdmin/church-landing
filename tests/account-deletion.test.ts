@@ -561,7 +561,13 @@ test("erasure removes private collections/profile/credentials while preserving t
     }
   });
   const p = await db.platformPost.create({
-    data: { authorId: a.id, content: marker }
+    data: {
+      authorId: a.id,
+      content: marker,
+      discoveryCountry: "US",
+      discoveryLanguage: "en",
+      discoveryDenomination: "private-erasure-tradition"
+    }
   });
   const comment = await db.platformPostComment.create({
     data: { authorId: a.id, postId: p.id, content: marker }
@@ -572,6 +578,8 @@ test("erasure removes private collections/profile/credentials while preserving t
       contactRequests: "NOBODY",
       feedMode: "weekly",
       feedVersion: 2,
+      discovery: { hiddenWords: [marker], feedback: { community: 1 } },
+      discoveryVersion: 2,
       profilePinPostId: p.id,
       profilePinVersion: 1
     }
@@ -581,6 +589,7 @@ test("erasure removes private collections/profile/credentials while preserving t
       id: randomUUID(),
       ownerId: a.id,
       mode: "weekly",
+      selectionKey: "private-erasure-selection",
       postIds: [p.id],
       expiresAt: new Date(Date.now() + 3600000)
     }
@@ -638,6 +647,19 @@ test("erasure removes private collections/profile/credentials while preserving t
     (await db.platformPost.findUniqueOrThrow({ where: { id: p.id } })).content,
     ""
   );
+  const erasedPost = await db.platformPost.findUniqueOrThrow({
+    where: { id: p.id }
+  });
+  for (const key of [
+    "discoveryCountry",
+    "discoveryLanguage",
+    "discoveryDenomination",
+    "discoveryPlaceId",
+    "discoveryRegion",
+    "discoveryLatitude",
+    "discoveryLongitude"
+  ] as const)
+    assert.equal(erasedPost[key], null, key);
   assert.equal(
     (
       await db.platformPostComment.findUniqueOrThrow({

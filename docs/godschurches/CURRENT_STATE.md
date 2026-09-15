@@ -6,10 +6,13 @@ explicit discovery selections, private preferences and presets, truthful ranking
 reasons, hidden controls, and consent-based public post classification to the
 existing reader. Following remains distinct from accepted Friends.
 
-The initial expanded foundation run passed 46 tests and a populated migration /
+The initial expanded foundation run passed 48 tests and a populated migration /
 dump / restore check with zero production writes. Additional HTTP, sparse Local,
 export and follow-change checks have been added for the production-build gate.
-Migration 55 remains local. Browser acceptance, protected production-copy upgrade,
+The later foundation run passed 52 tests including independent classification
+recovery clocks, withdrawal and erasure cleanup. The first full gate stopped on
+an isolated dependency-copy layout error; its passing partial checks do not
+constitute a full gate. Migration 55 remains local. Browser acceptance, protected production-copy upgrade,
 release gate, exact deployment / canonical assignment and live behavior are still
 required. See [the discovery contract](DISCOVERY_FEEDS_CONTRACT.md). Physical-phone
 acceptance remains separately evidenced; the unified queue final review stays last.

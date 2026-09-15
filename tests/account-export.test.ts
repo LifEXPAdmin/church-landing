@@ -233,6 +233,12 @@ test("export includes only the owner's explicit fields, directory choices and ow
   for (const [key, value] of Object.entries(notificationChoices))
     assert.deepEqual(data.socialPreferences[0][key], value, key);
   assert.equal(data.posts.length, 1);
+  assert.equal(data.posts[0].discoveryLanguage, "en");
+  assert.equal(
+    data.posts[0].discoveryDenomination,
+    "author-selected-tradition"
+  );
+  assert.equal(data.posts[0].discoveryCountry, "US");
   assert.equal(data.comments.length, 1);
   assert.equal(data.likes[0].postId, otherPost.id);
   assert.equal(data.following[0].following.username, b.user.username);

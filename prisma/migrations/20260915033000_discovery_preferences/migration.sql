@@ -1,4 +1,5 @@
 ALTER TABLE "PlatformPost"
+  ADD COLUMN "discoveryVersion" INTEGER NOT NULL DEFAULT 0,
   ADD COLUMN "discoveryLanguage" TEXT,
   ADD COLUMN "discoveryDenomination" TEXT,
   ADD COLUMN "discoveryCountry" TEXT,
@@ -7,6 +8,7 @@ ALTER TABLE "PlatformPost"
   ADD COLUMN "discoveryLatitude" DOUBLE PRECISION,
   ADD COLUMN "discoveryLongitude" DOUBLE PRECISION;
 ALTER TABLE "PlatformPost" ADD CONSTRAINT "PlatformPost_discovery_shape_check" CHECK (
+  "discoveryVersion" >= 0 AND
   ("discoveryLanguage" IS NULL OR "discoveryLanguage" ~ '^[a-z]{2}$')
   AND ("discoveryDenomination" IS NULL OR (length("discoveryDenomination") >= 1 AND length("discoveryDenomination") <= 80))
   AND ("discoveryCountry" IS NULL OR "discoveryCountry" ~ '^[A-Z]{2}$')

@@ -1,4 +1,5 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
+import { emptyPostDiscovery } from "./post-options";
 import { retireImage } from "./media";
 import {
   accountDeletionRecord,
@@ -158,6 +159,7 @@ async function eraseSocialData(tx: Tx, userId: string, now: Date) {
       linkTitle: null,
       linkDescription: null,
       linkSourceUrl: null,
+      ...emptyPostDiscovery,
       topics: [],
       discussionClosed: true,
       scheduleAt: null,

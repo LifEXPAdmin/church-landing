@@ -108,7 +108,7 @@ try {
     sql(
       [
         "-Atc",
-        `SELECT md5(string_agg(row::text, '' ORDER BY row::text)) FROM (SELECT to_jsonb(t) AS row FROM "PlatformUser" t WHERE id='fixture-upgrade' UNION ALL SELECT to_jsonb(t) - ARRAY['contentNote','safeExcerpt','topicCommunityId','discoveryLanguage','discoveryDenomination','discoveryCountry','discoveryPlaceId','discoveryRegion','discoveryLatitude','discoveryLongitude'] FROM "PlatformPost" t WHERE id='fixture-retained-post' UNION ALL SELECT to_jsonb(t) - ARRAY['parentId','rootId','version','editedAt','deletedAt','authorChurchId','topicCommunityId'] FROM "PlatformPostComment" t WHERE id='fixture-retained-comment' UNION ALL SELECT to_jsonb(t) FROM "PlatformFollow" t WHERE id='fixture-retained-follow') t`
+        `SELECT md5(string_agg(row::text, '' ORDER BY row::text)) FROM (SELECT to_jsonb(t) AS row FROM "PlatformUser" t WHERE id='fixture-upgrade' UNION ALL SELECT to_jsonb(t) - ARRAY['contentNote','safeExcerpt','topicCommunityId','discoveryLanguage','discoveryDenomination','discoveryCountry','discoveryPlaceId','discoveryRegion','discoveryLatitude','discoveryLongitude','discoveryVersion'] FROM "PlatformPost" t WHERE id='fixture-retained-post' UNION ALL SELECT to_jsonb(t) - ARRAY['parentId','rootId','version','editedAt','deletedAt','authorChurchId','topicCommunityId'] FROM "PlatformPostComment" t WHERE id='fixture-retained-comment' UNION ALL SELECT to_jsonb(t) FROM "PlatformFollow" t WHERE id='fixture-retained-follow') t`
       ],
       url
     );
@@ -125,6 +125,7 @@ try {
         "tests/discovery-feeds.test.ts",
         "tests/four-feeds.test.ts",
         "tests/post-workspace.test.ts",
+        "tests/content-withdrawal.test.ts",
         "tests/retention-controls.test.ts"
       ]
     : process.argv.includes("--topics")

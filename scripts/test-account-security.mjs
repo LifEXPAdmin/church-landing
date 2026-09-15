@@ -639,7 +639,7 @@ try {
       const originals = () => [
         psql([
           "-Atc",
-          `SELECT md5(coalesce(jsonb_agg(to_jsonb(t) - ARRAY['discoveryLanguage','discoveryDenomination','discoveryCountry','discoveryPlaceId','discoveryRegion','discoveryLatitude','discoveryLongitude'] ORDER BY id)::text,'[]')) FROM "PlatformPost" t`
+          `SELECT md5(coalesce(jsonb_agg(to_jsonb(t) - ARRAY['discoveryLanguage','discoveryDenomination','discoveryCountry','discoveryPlaceId','discoveryRegion','discoveryLatitude','discoveryLongitude','discoveryVersion'] ORDER BY id)::text,'[]')) FROM "PlatformPost" t`
         ]),
         psql([
           "-Atc",
@@ -666,7 +666,7 @@ try {
       if (
         psql([
           "-Atc",
-          `SELECT (SELECT count(*) FROM "PlatformPost" WHERE "discoveryLanguage" IS NOT NULL OR "discoveryDenomination" IS NOT NULL OR "discoveryCountry" IS NOT NULL OR "discoveryPlaceId" IS NOT NULL OR "discoveryRegion" IS NOT NULL OR "discoveryLatitude" IS NOT NULL OR "discoveryLongitude" IS NOT NULL) + (SELECT count(*) FROM "SocialPreferences" WHERE discovery IS NOT NULL OR "discoveryVersion"<>0 OR "discoveryRecoveryRequired") + (SELECT count(*) FROM "FeedSnapshot" WHERE "selectionKey" IS NOT NULL)`
+          `SELECT (SELECT count(*) FROM "PlatformPost" WHERE "discoveryVersion"<>0 OR "discoveryLanguage" IS NOT NULL OR "discoveryDenomination" IS NOT NULL OR "discoveryCountry" IS NOT NULL OR "discoveryPlaceId" IS NOT NULL OR "discoveryRegion" IS NOT NULL OR "discoveryLatitude" IS NOT NULL OR "discoveryLongitude" IS NOT NULL) + (SELECT count(*) FROM "SocialPreferences" WHERE discovery IS NOT NULL OR "discoveryVersion"<>0 OR "discoveryRecoveryRequired") + (SELECT count(*) FROM "FeedSnapshot" WHERE "selectionKey" IS NOT NULL)`
         ]).trim() !== "0"
       )
         throw Error(

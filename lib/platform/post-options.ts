@@ -28,3 +28,13 @@ export function postPreviewText(post: {
       : post.content)
   );
 }
+
+export const emptyPostDiscovery = {
+  discoveryLanguage: null,
+  discoveryDenomination: null,
+  discoveryCountry: null,
+  discoveryPlaceId: null,
+  discoveryRegion: null,
+  discoveryLatitude: null,
+  discoveryLongitude: null
+};

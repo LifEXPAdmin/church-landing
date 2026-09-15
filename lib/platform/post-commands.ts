@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { postDiscoveryData } from "./post-discovery";
+import { emptyPostDiscovery } from "./post-options";
 import { recordDiscoveryControl } from "./retention-controls";
 import { requireSocialActivity } from "./social-activity-limits";
 import { requireTopicParticipation } from "./topic-policy";
@@ -283,7 +284,10 @@ export async function postCommandIn(
       data: {
         ...details(input),
         ...(input.discovery !== undefined
-          ? await postDiscoveryData(input.discovery)
+          ? {
+              ...(await postDiscoveryData(input.discovery)),
+              discoveryVersion: 1
+            }
           : {}),
         ...preparedLink,
         authorId: actorId,
@@ -316,7 +320,7 @@ export async function postCommandIn(
         "POST_DISCOVERY",
         actorId,
         post.id,
-        post.version
+        post.discoveryVersion
       );
     await audit(tx, post, actorId, scheduled ? "scheduled" : "published");
     return {
@@ -427,7 +431,10 @@ export async function postCommandIn(
       data: {
         ...details({ ...post, ...input }),
         ...(input.discovery !== undefined
-          ? await postDiscoveryData(input.discovery)
+          ? {
+              ...(await postDiscoveryData(input.discovery)),
+              discoveryVersion: { increment: 1 }
+            }
           : {}),
         ...preparedLink,
         audience: nextAudience,
@@ -443,7 +450,7 @@ export async function postCommandIn(
         "POST_DISCOVERY",
         actorId,
         updated.id,
-        updated.version
+        updated.discoveryVersion
       );
     return {
       id: updated.id,
@@ -469,6 +476,8 @@ export async function postCommandIn(
           : {}),
         scripture: null,
         ...emptyPostLink,
+        ...emptyPostDiscovery,
+        discoveryVersion: { increment: 1 },
         topics: [],
         pinUntil: null,
         scheduleAt: null,
@@ -478,6 +487,18 @@ export async function postCommandIn(
       }
     });
     await audit(tx, updated, actorId, "withdrawn");
+    if (
+      post.discoveryLanguage ||
+      post.discoveryDenomination ||
+      post.discoveryCountry
+    )
+      await recordDiscoveryControl(
+        tx,
+        "POST_DISCOVERY",
+        actorId,
+        updated.id,
+        updated.discoveryVersion
+      );
     if (reported)
       await recordReportedWithdrawal(
         tx,

@@ -75,7 +75,10 @@ convenience filters over post text, captions and tags, not access controls or an
 AI/semantic/image-text guarantee. They apply across both discovery and the four existing feeds. Original-post classification and hidden matches are considered only while the canonical source remains accessible, including current between-author blocks. Guest preferences remain on that browser and
 are not copied into another account. Unreadable guest cookies stop feed reads until the guest explicitly clears them. Account export/erasure and protected restore
 must cover newly stored choices and prevent withdrawn public classification from
-being accidentally restored.
+being accidentally restored. A separate classification revision prevents unrelated
+post or moderation revisions from suppressing a newer classification-removal
+receipt. Post withdrawal, personal account erasure and report-expiry cleanup clear
+these optional fields through the existing retention owners.
 
 ## Completion evidence required
 

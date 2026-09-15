@@ -486,7 +486,11 @@ test("private preference receipts are exact, versioned, account-scoped, and rese
 });
 test("protected recovery clears outdated public classification and requires review of missing newer private preferences", async () => {
   const f = await setup();
-  const p = await f.post(f.b.id, { discoveryCountry: "US" });
+  const p = await f.post(f.b.id, {
+    discoveryCountry: "US",
+    version: 9,
+    discoveryVersion: 1
+  });
   const { recordDiscoveryControl } =
     await import("../lib/platform/retention-controls");
   await db.$transaction(async (tx) => {
@@ -518,7 +522,18 @@ test("protected recovery clears outdated public classification and requires revi
   assert.equal(restored.discoveryCountry, null);
   assert.equal(restored.discoveryDenomination, null);
   assert.equal(restored.content, p.content);
-  assert.equal(restored.version, 2);
+  assert.equal(restored.discoveryVersion, 2);
+  assert.equal(restored.version, 10);
+  // A newer unrelated content/moderation version cannot suppress the independent
+  // classification withdrawal, and replaying it twice cannot change data again.
+  await replayRetentionControls(
+    db,
+    entries.map((e) => e.payload as unknown as RetentionControlEntry)
+  );
+  assert.equal(
+    (await db.platformPost.findUniqueOrThrow({ where: { id: p.id } })).version,
+    10
+  );
   assert.equal(
     (await getDiscoveryPreferences(db, f.a.token)).recoveryRequired,
     true

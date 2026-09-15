@@ -1289,6 +1289,7 @@ enum ContentModerationState {
 }
 
 model PlatformPost {
+  discoveryVersion Int @default(0)
   discoveryLanguage String?
   discoveryDenomination String?
   discoveryCountry String?

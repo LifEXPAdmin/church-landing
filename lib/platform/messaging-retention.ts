@@ -1,4 +1,5 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
+import { emptyPostDiscovery } from "./post-options";
 import {
   journalRetentionControls,
   protectedRetentionControls,
@@ -169,7 +170,12 @@ export async function purgeMessagingCandidate(
               }
             ]
           },
-          data: { content: "", contentNote: null, safeExcerpt: null }
+          data: {
+            content: "",
+            contentNote: null,
+            safeExcerpt: null,
+            ...emptyPostDiscovery
+          }
         });
       if (source.targetType === "COMMENT")
         await tx.platformPostComment.updateMany({

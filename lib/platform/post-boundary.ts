@@ -173,7 +173,7 @@ export async function handlePostRequest(db: PrismaClient, request: Request) {
     }
     const result = await postCommand(db, token, input);
     if (
-      input.discovery !== undefined &&
+      (input.discovery !== undefined || input.operation === "withdraw") &&
       !(await protectDiscoveryRecovery(db, actor.id, request.signal))
     )
       return Response.json(
