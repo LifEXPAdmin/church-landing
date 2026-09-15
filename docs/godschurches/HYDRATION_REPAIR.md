@@ -29,6 +29,17 @@ Remove the backport and its exact version pin when a reviewed Next upgrade
 includes the upstream repair. Do not change its checksums merely to make a build
 pass. `node scripts/patch-next-hydration.mjs --check` verifies installation.
 
+The first discovery deployment exposed a second build boundary: Next explicitly
+excludes its own package from cache dependencies. Vercel restored the previous
+Webpack cache, verified and patched all four installed renderers, then emitted
+the old App Router renderer. Live asset inspection caught its missing cursor
+restoration before feature acceptance. The follow-up namespaces Webpack's cache
+version with the upstream repair and verifies actual App Router manifest assets
+after every build. The emitted-code gate rejects the actual stale deployment's
+renderer and accepts the repaired source build. It includes application error
+and not-found entries; the separate Pages Router framework is not an App Router
+input. A changed asset filename alone is not evidence that the repair is present.
+
 The existing draft controllers also now retain the original empty, concealed
 server snapshot for delayed hydration, while current client snapshots continue
 to track identity, private drafts and unsaved work. Equal presentation cookies
