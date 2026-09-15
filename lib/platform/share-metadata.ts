@@ -26,7 +26,9 @@ export async function publicResourceMetadata(
       "Open God’s Churches to view this page and check your access.";
   let url: string | undefined;
   try {
-    url = new URL(canonicalSharePath(kind, id), origin).href;
+    // Plain reposts already normalize to their original in Copy/Share. Keep
+    // crawler canonical/OG addresses on that same current public projection.
+    url = preview?.url ?? new URL(canonicalSharePath(kind, id), origin).href;
   } catch {}
   const image = preview?.image ?? {
     url: new URL("/brand/share-card.png", origin).href,

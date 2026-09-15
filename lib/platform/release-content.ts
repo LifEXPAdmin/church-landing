@@ -651,6 +651,7 @@ export const releases: ReleaseEntry[] = [
       "Private, unavailable and unsupported-image previews use safe generic branding."
     ],
     fixed: [
+      "Plain repost previews point to the original post, matching Copy and Share; posts with your added thoughts keep their own address.",
       "Previously shared image addresses recheck current access after source changes and during image generation. Other apps may retain previews they already copied."
     ],
     featureIds: ["sharing"]

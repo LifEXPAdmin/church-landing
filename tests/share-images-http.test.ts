@@ -3,7 +3,9 @@ import assert from "node:assert/strict";
 import { PrismaClient } from "@prisma/client";
 import { parse, type DefaultTreeAdapterMap } from "parse5";
 import { seedSharing } from "./seed-sharing";
-import { assertPortalTestDatabase } from "./seed-portal";
+import { assertPortalTestDatabase, createPortalActor } from "./seed-portal";
+import { repostCommand } from "../lib/platform/reposts";
+import { randomUUID } from "node:crypto";
 
 const db = new PrismaClient(),
   origin = process.env.ACCOUNT_ORIGIN!;
@@ -28,6 +30,12 @@ async function metadata(path: string, token = "") {
       );
       if (attrs.property || attrs.name)
         tags[attrs.property || attrs.name] = attrs.content;
+    }
+    if ("tagName" in node && node.tagName === "link") {
+      const attrs = Object.fromEntries(
+        node.attrs.map((a) => [a.name, a.value])
+      );
+      if (attrs.rel === "canonical") tags.canonical = attrs.href;
     }
     if ("childNodes" in node) node.childNodes.forEach(visit);
   }
@@ -95,6 +103,7 @@ test("actual production HTTPS crawler HTML points to public-only PNGs; the old i
     const tags = await metadata(source.path);
     assert.ok(tags["og:title"].includes(source.title));
     assert.equal(tags["og:url"], origin + source.path);
+    assert.equal(tags.canonical, origin + source.path);
     assert.equal(tags["og:image:width"], "1200");
     assert.equal(tags["og:image:height"], "630");
     assert.equal(tags["twitter:card"], "summary_large_image");
@@ -133,6 +142,56 @@ test("actual production HTTPS crawler HTML points to public-only PNGs; the old i
       assert.ok(!JSON.stringify(hidden).includes("PRIVATE IMAGE SECRET"));
       assert.ok(!JSON.stringify(hidden).includes(source.title));
     }
+  }
+});
+
+test("plain repost crawler metadata uses the original canonical URL while quotes keep their own; source withdrawal revokes the old PNG", async () => {
+  const f = await seedSharing(db),
+    actor = await createPortalActor(db, "cardrepost");
+  await db.platformPost.update({
+    where: { id: f.post.id },
+    data: { allowReposts: true }
+  });
+  const repost = await repostCommand(db, actor.token, {
+    operation: "repost",
+    mutationId: randomUUID(),
+    sourceId: f.post.id,
+    expectedSourceVersion: f.post.version
+  });
+  const quote = await db.platformPost.create({
+    data: {
+      authorId: actor.id,
+      content: "Independent public quote words",
+      audience: "PUBLIC",
+      repostKind: "QUOTE",
+      repostSourceId: f.post.id
+    }
+  });
+  const original = origin + `/platform/posts/${f.post.id}`;
+  const tags = await metadata(`/platform/posts/${repost.id}`);
+  assert.equal(tags.canonical, original);
+  assert.equal(tags["og:url"], original);
+  const preview = await (
+    await get(`/api/platform/share-preview?kind=post&id=${repost.id}`)
+  ).json();
+  assert.equal(preview.url, original);
+  assert.equal(tags["og:image"], preview.image.url);
+  const fallback = await png("/brand/share-card.png");
+  assert.notDeepEqual(await png(tags["og:image"]), fallback);
+  const quoteTags = await metadata(`/platform/posts/${quote.id}`);
+  assert.equal(quoteTags.canonical, origin + `/platform/posts/${quote.id}`);
+  assert.equal(quoteTags["og:url"], quoteTags.canonical);
+  assert.ok(quoteTags["og:description"].includes(quote.content));
+  assert.ok(quoteTags["og:title"].includes(actor.name));
+  await db.platformPost.update({
+    where: { id: f.post.id },
+    data: { status: "WITHDRAWN", withdrawnAt: new Date() }
+  });
+  for (const token of ["", actor.token]) {
+    assert.deepEqual(await png(tags["og:image"], token), fallback);
+    const hidden = await metadata(`/platform/posts/${repost.id}`, token);
+    assert.ok(!JSON.stringify(hidden).includes(f.author.name));
+    assert.equal(hidden["og:image"], origin + "/brand/share-card.png");
   }
 });
 

@@ -58,7 +58,9 @@ PNG. The font's OFL notice is explicitly included with the deployment. The final
 local build on `8328c04` passes types, lint, retained hydration-output verification
 and the private-data trace guard: 160 traces, 35,498 entries, 408 server JavaScript
 files. No font, coverage or renderer module appears in emitted client chunks.
-The license-only packaging follow-up still requires a checked final build.
+The license-only packaging follow-up `0d35047` also passes the complete production
+build: 160 traces, 35,499 entries and 408 server JavaScript files. Its actual image
+route trace contains the 4,396-byte OFL notice alongside the font and fallback.
 
 The complete account/support/restore regression gate is running. It began with
 `375c395`; the safe 404 assertion (`913ee49`) and pixel crop repair (`8328c04`)
@@ -67,7 +69,11 @@ checks retain that base provenance. Record the actual final count and failures
 before release; a running gate is not a pass.
 
 The existing Copy/native Share/QR, repost/quote, Bookmark and sign-in-return owners
-are reused. Current production browser and exact live checks still need to pass.
+are reused. All nine final production-browser groups pass on `8328c04`: four
+Copy/Share/QR/RSVP-return groups and five repost/referral/private-Bookmark groups,
+with zero page errors. Native sharing and clipboard outcomes are deliberately
+simulated; the sign-in forms, source access and persistence are real isolated
+application flows. Exact deployed/live acceptance still needs to pass.
 Physical phone/self-draft preview, native share/crop and referral acceptance retain
 the existing owner prerequisites; simulated browsers do not close those criteria.
 Final batch review remains last.
