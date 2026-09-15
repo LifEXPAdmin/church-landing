@@ -161,6 +161,36 @@ authorization-aware in-app search is retained through its existing search owner
 and regression tests; this feature adds external public discovery, not a second
 search service or expanded access to member content.
 
+## First live acceptance and finishing correction
+
+Candidate `642d5e1bf0ae1a3b2cd0f63e03fb231792e7d592` became READY at
+14:01:52 UTC in `dpl_AmEPpByZNSAw7dqLdvi7Qj44yYhA`; its independent canonical
+assignment and serving version `2026.09.15.5` were verified at 14:02:29 UTC.
+The actual provider package remains 12 distinct function packages including
+middleware and 335 route entries. The dynamic sitemap shares an existing main
+package; it does not add a thirteenth function package.
+
+The first live run passed 27 groups before its sitemap assertion incorrectly
+expected a public prayer with no safe excerpt. Current source inspection confirms
+that exclusion is correct; the acceptance now distinguishes discoverable ordinary
+public posts from prayers without excerpts and withdrawn posts. Four live health
+checks pass. At 14:05 UTC, all 31 original release-baseline fingerprints match,
+including every current column, with zero new ranking snapshots, user-data writes
+or sends. No production source was changed to make the check pass.
+
+The actual signed-in church page exposed a separate finishing gap: its browser
+page title omitted the site name and an empty public summary yielded an empty
+metadata description. Application `28315ef` adds the consistent brand suffix to
+resource tab titles and uses truthful standard church/event guidance for absent
+summaries through the existing anonymous share projection. Public source names,
+body text, permissions, canonical URLs and existing card ownership remain intact.
+The same feature's release note and regression/browser assertions include this
+correction. Its production build, 14 focused source/image/gallery checks, 12
+actual production HTTPS checks, four browser groups, types and lint pass. The
+916-check staged baseline was not repeated for this wording-only application
+delta. Replacement exact deployment and live acceptance remain pending.
+The initial deployment and failed live receipt are preserved privately.
+
 ## Provider and physical prerequisites
 
 Connected Chrome is signed in to Search Console, but its expanded property list
