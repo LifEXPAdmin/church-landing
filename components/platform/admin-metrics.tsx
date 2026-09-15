@@ -104,6 +104,15 @@ export function AdminMetrics({ data }: { data: MetricSnapshot }) {
     [busy, setBusy] = useState(false),
     [message, setMessage] = useState("");
   const requestKey = useRef<string | null>(null);
+  const todayParts = new Intl.DateTimeFormat("en-US", {
+    timeZone: r.window.zone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).formatToParts(new Date(r.checkedAt));
+  const reportingToday = ["year", "month", "day"]
+    .map((key) => todayParts.find((part) => part.type === key)?.value)
+    .join("-");
   const time = (at: string) =>
     new Intl.DateTimeFormat(undefined, {
       timeZone: r.window.zone,
@@ -247,7 +256,7 @@ export function AdminMetrics({ data }: { data: MetricSnapshot }) {
             name="through"
             required
             defaultValue={r.window.through}
-            max={r.checkedAt.slice(0, 10)}
+            max={reportingToday}
           />
         </label>
         <button className="gc-button">Apply dates</button>

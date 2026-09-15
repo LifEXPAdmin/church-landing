@@ -280,6 +280,84 @@ try {
   ok(
     "Actual browser CSV download retains selected dates, suppression and its matching audit hash"
   );
+  await page.getByRole("link", { name: "Today", exact: true }).click();
+  await page.waitForURL("**/platform/admin/growth?preset=1");
+  await eventually(
+    async () =>
+      (await page.getByLabel("From", { exact: true }).inputValue()) === today
+  );
+  await page.getByText("No measured signup cohort", { exact: true }).waitFor();
+  assert.ok(
+    (await page.locator("main").innerText()).includes(
+      "Current period is partial"
+    )
+  );
+  await page
+    .getByLabel("From", { exact: true })
+    .fill(metricAddDays(today, -85));
+  await page
+    .getByLabel("Through", { exact: true })
+    .fill(metricAddDays(today, -80));
+  await page.getByRole("button", { name: "Apply dates", exact: true }).click();
+  await page.waitForURL(
+    (url) => url.searchParams.get("from") === metricAddDays(today, -85)
+  );
+  await page.getByText("No measured signup cohort", { exact: true }).waitFor();
+  assert.ok(
+    (await page.locator("main").innerText()).includes(
+      "Incomplete measurement coverage"
+    )
+  );
+  assert.ok(
+    (await funnel.innerText()).includes(
+      "Unavailable — no mature eligible denominator"
+    )
+  );
+  await fits();
+  await funnel.screenshot({ path: output + "/empty-cohort-320.png" });
+  const immature = await createPortalActor(db, "mqaimmature");
+  await saveMeasurementChoice(db, immature.token, {
+    operation: "choice",
+    mutationId: randomUUID(),
+    expectedVersion: 0,
+    enabled: true,
+    shareDevice: false,
+    referral: "UNKNOWN"
+  });
+  await page.getByRole("link", { name: "Today", exact: true }).click();
+  await page.waitForURL("**/platform/admin/growth?preset=1");
+  await eventually(async () =>
+    (await funnel.innerText()).includes("Not mature yet\t1")
+  );
+  await page
+    .getByRole("region", { name: "Signup-calendar-day cohorts", exact: true })
+    .screenshot({ path: output + "/immature-cohort-320.png" });
+  await page.route("**/api/platform/admin?**", (route) =>
+    route.fulfill({
+      status: 503,
+      contentType: "application/json",
+      body: JSON.stringify({
+        message: "Fictional temporarily unavailable report"
+      })
+    })
+  );
+  await page.evaluate(() =>
+    window.dispatchEvent(new Event("admin-access-changed"))
+  );
+  await page
+    .getByText("Fictional temporarily unavailable report", { exact: true })
+    .waitFor();
+  assert.equal(await funnel.isVisible(), false);
+  await page.unroute("**/api/platform/admin?**");
+  await page
+    .getByRole("button", { name: "Recheck current access", exact: true })
+    .click();
+  await funnel.waitFor();
+  await go(growthPath);
+  await funnel.waitFor();
+  ok(
+    "Preset and custom dates persist; empty, partial, suppressed, immature and failed-read states remain distinct and recoverable"
+  );
   await page.evaluate(() => window.dispatchEvent(new Event("offline")));
   await eventually(async () => !(await funnel.isVisible()));
   await page.evaluate(() => window.dispatchEvent(new Event("online")));
