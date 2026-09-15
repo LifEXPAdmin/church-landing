@@ -1,5 +1,12 @@
 "use client";
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type ReactNode
+} from "react";
 import { socialRequest, SocialClientError } from "@/lib/platform/social-client";
 import { useUnsavedSocialWork } from "./use-unsaved-social-work";
 import { usePrivateRecovery } from "./private-snapshot-guard";
@@ -20,7 +27,13 @@ export function SupportForm({
   button,
   destination,
   caution,
-  onRefresh
+  onRefresh,
+  endpoint = "/api/platform/support",
+  children,
+  readFields,
+  onDiscard,
+  createdBase = "/platform/help/cases",
+  available = true
 }: {
   owner: string;
   operation: string;
@@ -30,6 +43,12 @@ export function SupportForm({
   destination?: string;
   caution?: string;
   onRefresh?: () => void;
+  endpoint?: string;
+  children?: ReactNode;
+  readFields?: (data: FormData) => Record<string, unknown>;
+  onDiscard?: () => void;
+  createdBase?: string;
+  available?: boolean;
 }) {
   const id = useId();
   const initialFixed = useRef(fixed);
@@ -77,7 +96,12 @@ export function SupportForm({
       className="space-y-4"
       onSubmit={async (e) => {
         e.preventDefault();
-        if (busy || inFlight.current || (sourceChanged && !retryBody)) return;
+        if (
+          busy ||
+          inFlight.current ||
+          ((sourceChanged || !available) && !retryBody)
+        )
+          return;
         const form = e.currentTarget;
         const data = new FormData(form);
         const payload: Record<string, unknown> = {
@@ -90,6 +114,7 @@ export function SupportForm({
               ? data.get(f.name) === "on"
               : data.get(f.name);
         });
+        if (readFields && !retryBody) Object.assign(payload, readFields(data));
         // Choice values carry both the opaque assignment and the disclosed current version.
         for (const [choice, key, versionKey] of [
           ["appointmentChoice", "appointmentId", "appointmentVersion"],
@@ -114,7 +139,7 @@ export function SupportForm({
             caseId: string;
             version: number;
             message: string;
-          }>("/api/platform/support", serialized, owner);
+          }>(endpoint, serialized, owner);
           if (
             typeof result.caseId !== "string" ||
             !Number.isSafeInteger(result.version) ||
@@ -129,11 +154,12 @@ export function SupportForm({
           setRetryBody(null);
           setDirty(false);
           form.reset();
-          if (["create", "appeal"].includes(operation))
+          if (["create", "appeal", "feedback-create"].includes(operation))
             setNavigation(
-              `/platform/help/cases/${encodeURIComponent(result.caseId)}?received=1`
+              `${createdBase}/${encodeURIComponent(result.caseId)}?received=1`
             );
           else if (destination) setNavigation(destination);
+          else if (onRefresh) onRefresh();
           // A fresh private document discards stale client route data after a write.
           else setNavigation(window.location.href);
         } catch (error) {
@@ -161,6 +187,7 @@ export function SupportForm({
       }}
     >
       <fieldset disabled={busy || !!retryBody} className="space-y-4">
+        {children}
         {fields.map((f) => (
           <div key={f.name}>
             <label
@@ -296,6 +323,7 @@ export function SupportForm({
             setSourceChanged(false);
             initialFixed.current = fixed;
             formRef.current?.reset();
+            onDiscard?.();
             setFeedback(
               "Local entries discarded. Previously saved changes remain."
             );
@@ -305,7 +333,7 @@ export function SupportForm({
         </button>
       )}
       <button
-        disabled={busy || (sourceChanged && !retryBody)}
+        disabled={busy || ((sourceChanged || !available) && !retryBody)}
         type="submit"
         className="min-h-11 rounded-xl bg-gc-action px-5 py-3 text-sm font-semibold text-gc-on-action hover:bg-gc-action focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#f4c98c] disabled:opacity-60"
       >

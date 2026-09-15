@@ -14,6 +14,13 @@ import {
 } from "../lib/platform/account-entry";
 import { parseReadingPreferences } from "../lib/platform/reading-preferences";
 
+test("feedback account return keeps only an allowed private destination", () => {
+  for (const path of ["/platform/feedback", "/platform/feedback/requests", "/platform/feedback/cases/case-one"])
+    assert.equal(safeAccountReturn(`${path}/?description=private&received=1&page=3&token=secret`), path);
+  for (const path of ["//elsewhere.test/platform/feedback", "/platform/feedback/admin", "/platform/feedback/cases/one/extra", "/platform/feedback/cases/%2Fsecret"])
+    assert.equal(safeAccountReturn(path), "/platform");
+});
+
 test("contact account return preserves only validated navigation and strips private purposes", () => {
   for (const [input, output] of [
     [

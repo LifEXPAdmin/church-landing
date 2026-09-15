@@ -36,6 +36,17 @@ browser/release acceptance remain in this same feature cycle.
 
 ## Existing owners and required boundaries
 
+The voluntary form and My feedback pages are now connected locally through the
+native request/retry component and the owner-checked API. Menu and Help link to
+them; account entry preserves only their validated destination. Ratings, bug and
+suggestion fields, reviewed coarse context and separate choices are included.
+Private reads conceal retained forms during access checks; source changes require
+review before applying retained entries, and unconfirmed requests keep their
+original key and payload. Staff cannot request a response with contact permission
+off. Twenty-five focused intake/navigation checks, types and focused lint pass.
+These are source checks, not browser or release acceptance. Private attachments,
+the rest of the feature cycle and complete browser acceptance remain in progress.
+
 One accepted submission is one existing `SupportCase`. `SupportOperation` owns
 the client request key, fingerprint and stable retry receipt; the case transaction
 also creates its feedback metadata. Existing requesters, generation-bound support

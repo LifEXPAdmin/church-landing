@@ -717,6 +717,8 @@ export function PortalHelp({ snapshot }: { snapshot: PortalSnapshot }) {
         Getting started and saved next steps
       </Link>
       <nav aria-label="Private support" className="mb-6 flex flex-wrap gap-6">
+        <Link className={portalLinkClass} href="/platform/feedback">Share website feedback</Link>
+        <Link className={portalLinkClass} href="/platform/feedback/requests">My feedback</Link>
         <Link className={portalLinkClass} href="/platform/help/new">
           Get help
         </Link>

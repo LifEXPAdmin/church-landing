@@ -175,6 +175,22 @@ test("bug and suggestion choices preserve safe context, separate publication and
     allowIdea: false,
     publicAttribution: false
   };
+  await deny(
+    supportCommand(db, f.owner.token, {
+      operation: "transition",
+      requestKey: randomUUID(),
+      caseId: saved.caseId,
+      expectedVersion: 1,
+      status: "WAITING_FOR_REQUESTER",
+      reason: "A question still requires permission."
+    }),
+    403
+  );
+  assert.equal(
+    (await db.supportCase.findUniqueOrThrow({ where: { id: saved.caseId } }))
+      .version,
+    1
+  );
   await deny(supportCommand(db, f.owner.token, choices), 404);
   await supportCommand(db, f.memberA.token, choices);
   const reply = await supportCommand(db, f.owner.token, {

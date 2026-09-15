@@ -24,10 +24,12 @@ export function SupportTime({ value }: { value: string }) {
 }
 export function SupportRows({
   rows,
-  demo = false
+  demo = false,
+  detailBase = "/platform/help/cases"
 }: {
   rows: SupportRow[];
   demo?: boolean;
+  detailBase?: string;
 }) {
   return rows.length ? (
     <div className="space-y-4">
@@ -46,7 +48,7 @@ export function SupportRows({
               href={
                 demo
                   ? "/platform/demo/support-case"
-                  : `/platform/help/cases/${encodeURIComponent(c.id)}`
+                  : `${detailBase}/${encodeURIComponent(c.id)}`
               }
             >
               {c.subject}

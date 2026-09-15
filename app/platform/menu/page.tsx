@@ -241,6 +241,13 @@ export default async function PlatformMenuPage() {
                     icon={LifeBuoy}
                   />
                   <MenuLink
+                    href="/platform/feedback"
+                    prefetch={false}
+                    title="Feedback"
+                    description="Share your website experience and revisit My feedback."
+                    icon={LifeBuoy}
+                  />
+                  <MenuLink
                     href="/platform/reports"
                     prefetch={false}
                     title="Your reports"

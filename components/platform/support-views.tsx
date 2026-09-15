@@ -35,7 +35,8 @@ export function SupportViews({
   received,
   detailBase,
   handoffDestination,
-  onRefresh
+  onRefresh,
+  navigation = true
 }: {
   snapshot: SupportSnapshot;
   view: SupportView;
@@ -44,31 +45,34 @@ export function SupportViews({
   detailBase?: string;
   handoffDestination?: string;
   onRefresh?: () => void;
+  navigation?: boolean;
 }) {
   const c = s.detail;
   return (
     <div className="space-y-6">
-      <nav aria-label="Support" className="flex flex-wrap gap-x-6 gap-y-2">
-        <Link className={portalLinkClass} href="/platform/help">
-          Help and contacts
-        </Link>
-        <Link className={portalLinkClass} href="/platform/help/new">
-          Get help
-        </Link>
-        <Link className={portalLinkClass} href="/platform/help/requests">
-          My requests
-        </Link>
-        {s.staff.respond && (
-          <Link className={portalLinkClass} href="/platform/help/inbox">
-            Assigned inbox
+      {navigation && (
+        <nav aria-label="Support" className="flex flex-wrap gap-x-6 gap-y-2">
+          <Link className={portalLinkClass} href="/platform/help">
+            Help and contacts
           </Link>
-        )}
-        {s.staff.assign && (
-          <Link className={portalLinkClass} href="/platform/help/routing">
-            Assign requests
+          <Link className={portalLinkClass} href="/platform/help/new">
+            Get help
           </Link>
-        )}
-      </nav>
+          <Link className={portalLinkClass} href="/platform/help/requests">
+            My requests
+          </Link>
+          {s.staff.respond && (
+            <Link className={portalLinkClass} href="/platform/help/inbox">
+              Assigned inbox
+            </Link>
+          )}
+          {s.staff.assign && (
+            <Link className={portalLinkClass} href="/platform/help/routing">
+              Assign requests
+            </Link>
+          )}
+        </nav>
+      )}
       {!s.viewer.adult && (
         <PortalEmpty>
           Private requests are for adults.{" "}
@@ -280,29 +284,36 @@ export function SupportViews({
             />
           )}
           {!["RESOLVED", "CLOSED"].includes(c.status) ? (
-            <PortalCard title="Add a reply">
-              <p className="text-sm text-gc-muted">
-                Visible to {c.requester.name}
-                {c.owner ? `, ${c.owner.name}` : " (awaiting an owner)"}
-                {c.coordinator ? `, and ${c.coordinator.name}` : ""}. Do not
-                include passwords, codes or sensitive personal details.
-              </p>
-              <SupportForm
-                onRefresh={onRefresh}
-                owner={s.viewer.id}
-                operation="reply"
-                fixed={{ caseId: c.id, expectedVersion: c.version }}
-                fields={[
-                  {
-                    name: "body",
-                    label: "Your reply",
-                    type: "textarea",
-                    max: 2000
-                  }
-                ]}
-                button="Save reply"
-              />
-            </PortalCard>
+            c.feedback && !c.feedback.contactAllowed && !c.access.requester ? (
+              <PortalEmpty>
+                Follow-up permission is off. You can record a status or
+                resolution, but cannot ask the requester to reply.
+              </PortalEmpty>
+            ) : (
+              <PortalCard title="Add a reply">
+                <p className="text-sm text-gc-muted">
+                  Visible to {c.requester.name}
+                  {c.owner ? `, ${c.owner.name}` : " (awaiting an owner)"}
+                  {c.coordinator ? `, and ${c.coordinator.name}` : ""}. Do not
+                  include passwords, codes or sensitive personal details.
+                </p>
+                <SupportForm
+                  onRefresh={onRefresh}
+                  owner={s.viewer.id}
+                  operation="reply"
+                  fixed={{ caseId: c.id, expectedVersion: c.version }}
+                  fields={[
+                    {
+                      name: "body",
+                      label: "Your reply",
+                      type: "textarea",
+                      max: 2000
+                    }
+                  ]}
+                  button="Save reply"
+                />
+              </PortalCard>
+            )
           ) : (
             (c.access.requester || c.access.owner) && (
               <PortalCard title="Still need help?">
@@ -336,6 +347,11 @@ export function SupportViews({
                       .filter(
                         ([v]) =>
                           v !== c.status &&
+                          !(
+                            v === "WAITING_FOR_REQUESTER" &&
+                            c.feedback &&
+                            !c.feedback.contactAllowed
+                          ) &&
                           (c.status === "RESOLVED"
                             ? v === "CLOSED"
                             : c.access.owner
@@ -350,7 +366,7 @@ export function SupportViews({
               />
             </PortalCard>
           )}
-          {c.access.requester && (
+          {c.access.requester && !c.feedback && (
             <PortalCard title="Church coordinator sharing">
               {c.coordinator ? (
                 <>

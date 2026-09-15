@@ -1,14 +1,18 @@
 import { PortalError } from "./portal-policy";
 import { metricBrowsers, metricDevices } from "./metric-policy";
 
-export const FEEDBACK_NOTICE = "confidential-feedback-v1";
-export const feedbackKinds = {
-  GENERAL: "Share feedback",
-  BUG: "Report a problem",
-  SUGGESTION: "Suggest an improvement"
-} as const;
-export type FeedbackKind = keyof typeof feedbackKinds;
-export const feedbackChannels = ["IN_APP", "EMAIL", "PUSH"] as const;
+import {
+  FEEDBACK_NOTICE,
+  feedbackKinds,
+  feedbackChannels,
+  type FeedbackKind
+} from "./feedback-types";
+export {
+  FEEDBACK_NOTICE,
+  feedbackKinds,
+  feedbackChannels,
+  type FeedbackKind
+} from "./feedback-types";
 export const feedbackChoiceFields = [
   "contactAllowed",
   "channels",
