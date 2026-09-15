@@ -195,7 +195,14 @@ try {
     "Latest",
     "Friends",
     "Top This Week",
-    "Trending"
+    "Trending",
+    "For You",
+    "Following",
+    "Your Church",
+    "Churches",
+    "Local",
+    "Public",
+    "Favorites"
   ]);
   await choose("friends");
   await page
@@ -540,6 +547,65 @@ try {
     "Both ranked empty states are explicit and provide a working Latest action"
   );
   await bounded();
+  const coldContext = await browser.newContext({
+    viewport: { width: 390, height: 844 }
+  });
+  const coldPage = await coldContext.newPage();
+  coldPage.on("pageerror", (error) =>
+    errors.push({
+      phase: "cold-controls",
+      path: "/platform",
+      message: error.message,
+      stack: error.stack
+    })
+  );
+  let releaseChunks;
+  const chunksHeld = new Promise((resolve) => {
+    releaseChunks = resolve;
+  });
+  await coldContext.route("**/_next/static/chunks/**", async (route) => {
+    await chunksHeld;
+    await route.continue();
+  });
+  try {
+    await coldPage.goto(config.origin + "/platform?feed=latest&mode=list", {
+      waitUntil: "commit"
+    });
+    const coldSelector = coldPage.getByRole("combobox", {
+      name: "Choose feed",
+      exact: true
+    });
+    await coldSelector.waitFor();
+    assert.equal(
+      await coldSelector.isDisabled(),
+      true,
+      "Server-rendered choices must wait for their handlers"
+    );
+    assert.equal(
+      await coldPage
+        .getByRole("button", { name: "Feed Settings", exact: true })
+        .isDisabled(),
+      true
+    );
+    releaseChunks();
+    await coldPage.waitForFunction(
+      () => !document.querySelector('[aria-label="Choose feed"]')?.disabled
+    );
+    await coldSelector.selectOption("friends");
+    await coldPage
+      .getByRole("heading", {
+        name: "No posts from your friends yet",
+        exact: true
+      })
+      .waitFor();
+    assert.equal(await coldSelector.inputValue(), "friends");
+    ok(
+      "Cold loading keeps native feed choices unavailable until handlers mount, then accepts the first deliberate choice"
+    );
+  } finally {
+    releaseChunks();
+    await coldContext.close();
+  }
   assert.deepEqual(errors, []);
   writeFileSync(
     output + "/RESULT.json",

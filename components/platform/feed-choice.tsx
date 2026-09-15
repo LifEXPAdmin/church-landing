@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { FeedBreakReminder } from "./feed-break-reminder";
 const DiscoverySettings = dynamic(
@@ -39,6 +39,10 @@ export function FeedChoice({
 }) {
   const [busy, setBusy] = useState(false),
     [message, setMessage] = useState("");
+  // A visible native select can be changed before React owns its events.
+  // Keep the server-rendered controls unavailable until their handlers mount.
+  const [ready, setReady] = useState(false);
+  useEffect(() => setReady(true), []);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const pending = useRef<{
     body: string;
@@ -111,7 +115,7 @@ export function FeedChoice({
       id="feed-choice"
       tabIndex={-1}
       className="mb-4 space-y-2"
-      data-reader-busy={busy}
+      data-reader-busy={!ready || busy}
       data-reader-dirty={!!pending.current}
     >
       <label className="flex flex-wrap items-center gap-3 font-semibold">
@@ -120,7 +124,7 @@ export function FeedChoice({
           aria-label="Choose feed"
           className="min-h-11 max-w-full rounded-lg border border-gc-border bg-gc-surface px-3 py-2"
           value={value.mode}
-          disabled={busy || !!pending.current}
+          disabled={!ready || busy || !!pending.current}
           onChange={(event) => void choose(event.target.value as FeedMode)}
         >
           {FEED_MODES.map((mode) => (
@@ -137,7 +141,7 @@ export function FeedChoice({
         <button
           type="button"
           className="gc-button gc-button-quiet"
-          disabled={busy || !!pending.current}
+          disabled={!ready || busy || !!pending.current}
           aria-expanded={settingsOpen}
           onClick={() => {
             if (canChange()) setSettingsOpen(!settingsOpen);
@@ -148,7 +152,7 @@ export function FeedChoice({
         <button
           type="button"
           className="gc-button gc-button-quiet"
-          disabled={busy || !!pending.current}
+          disabled={!ready || busy || !!pending.current}
           onClick={() => {
             if (canChange()) {
               const url = new URL(destination(value.mode), location.origin);
@@ -176,7 +180,7 @@ export function FeedChoice({
         <button
           type="button"
           className="gc-button gc-button-quiet"
-          disabled={busy || !!pending.current}
+          disabled={!ready || busy || !!pending.current}
           onClick={() => void choose("latest")}
         >
           Open Latest
