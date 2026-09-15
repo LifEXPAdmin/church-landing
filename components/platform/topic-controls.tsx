@@ -232,12 +232,14 @@ export function TopicParticipation({
         </>
       ) : null}
       {viewer.canManage && (
-        <Link
+        // Enter management with a fresh document after role acceptance. A
+        // retained/prefetched route can overlap the participation refresh.
+        <a
           className="gc-button gc-button-quiet"
           href={`${topicHref(topic.slug)}/manage`}
         >
           Manage this topic
-        </Link>
+        </a>
       )}
       {viewer.following && (viewer.restricted || !viewer.eligible) && (
         <TopicActionForm
