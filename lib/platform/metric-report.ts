@@ -152,9 +152,10 @@ export async function aggregateMetrics(
         'newListings',(SELECT count(*) FROM "Church" WHERE "communityListed" AND "createdAt">=${metricUtc(window.start)} AND "createdAt"<${metricUtc(window.end)}),
         'pendingClaims',(SELECT count(*) FROM "ChurchClaim" c JOIN population u ON u.id=c."ownerId" WHERE c.status IN ('SUBMITTED','NEEDS_INFORMATION')),
         'managedChurches',(SELECT count(DISTINCT "churchId") FROM "ChurchClaim" WHERE status='APPROVED' AND "activatedAt" IS NOT NULL),
-        'newManagedChurches',(SELECT count(*) FROM (SELECT "churchId",min("activatedAt") at FROM "ChurchClaim" WHERE status='APPROVED' AND "activatedAt" IS NOT NULL GROUP BY "churchId") c WHERE at>=${metricUtc(window.start)} AND at<${metricUtc(window.end)}),
-        'topicSpaces',(SELECT count(*) FROM "TopicCommunity" WHERE lifecycle='ACTIVE' AND "moderationState"='VISIBLE' AND NOT "recoveryRequired"),
-        'newTopicSpaces',(SELECT count(*) FROM "TopicCommunity" WHERE lifecycle='ACTIVE' AND "moderationState"='VISIBLE' AND NOT "recoveryRequired" AND "createdAt">=${metricUtc(window.start)} AND "createdAt"<${metricUtc(window.end)}),
+        'newManagedChurches',(SELECT count(*) FROM (SELECT "churchId",min("activatedAt") at FROM "ChurchClaim" WHERE "activatedAt" IS NOT NULL GROUP BY "churchId") c WHERE at>=${metricUtc(window.start)} AND at<${metricUtc(window.end)}
+          AND EXISTS(SELECT 1 FROM "ChurchClaim" current_claim WHERE current_claim."churchId"=c."churchId" AND current_claim.status='APPROVED' AND current_claim."activatedAt" IS NOT NULL)),
+        'topicSpaces',(SELECT count(*) FROM "TopicCommunity" t JOIN public_accounts owner ON owner.id=t."ownerId" WHERE lifecycle='ACTIVE' AND "moderationState"='VISIBLE' AND NOT "recoveryRequired"),
+        'newTopicSpaces',(SELECT count(*) FROM "TopicCommunity" t JOIN public_accounts owner ON owner.id=t."ownerId" WHERE lifecycle='ACTIVE' AND "moderationState"='VISIBLE' AND NOT "recoveryRequired" AND t."createdAt">=${metricUtc(window.start)} AND t."createdAt"<${metricUtc(window.end)}),
         'activeChurches',(SELECT count(DISTINCT church) FROM source_actions WHERE kind IN ('POST','EVENT','VOLUNTEER') AND church IS NOT NULL AND at>=${metricUtc(metricDayStart(month, zone))} AND at<=${metricUtc(now)}),
         'activeTopics',(SELECT count(DISTINCT "topicCommunityId") FROM ordinary_posts WHERE "publishedAt">=${metricUtc(metricDayStart(month, zone))})
       ),

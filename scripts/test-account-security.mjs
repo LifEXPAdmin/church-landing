@@ -211,6 +211,10 @@ try {
     ["ChurchAuditEvent", "id"]
   ];
   const listingTables = [
+    ["PlatformMetricConfiguration", "version"],
+    ["PlatformMetricLifecycleDay", "version"],
+    ["PlatformMeasurementChoice", "userId"],
+    ["PlatformMetricActivityDay", "userId"],
     ["ChurchListingSubmission", "id"],
     ["ChurchListingDecision", "id"],
     ["ChurchClaim", "id"],
@@ -285,7 +289,7 @@ try {
   const fingerprint = (table, key, url = database, beforeChurch = false) => {
     const row =
       beforeChurch && table === "PlatformUser"
-        ? `to_jsonb(t) - ARRAY['deactivatedAt','suspendedAt','adultAcknowledgedAt','adultPolicyVersion','portalVersion','deletionRequestedAt','erasedAt','pendingFounderWelcomeAt']`
+        ? `to_jsonb(t) - ARRAY['deactivatedAt','suspendedAt','adultAcknowledgedAt','adultPolicyVersion','portalVersion','deletionRequestedAt','erasedAt','pendingFounderWelcomeAt','metricCreationMethod','metricExcluded']`
         : beforeChurch && table === "PlatformPostLike"
           ? "to_jsonb(t) - 'active' - 'version' - 'firstLikedAt'"
           : beforeChurch && table === "PlatformPostComment"
@@ -324,8 +328,8 @@ try {
       JOIN pg_namespace n ON n.oid = r.relnamespace
       WHERE n.nspname = 'public' AND r.relname IN (${churchNames})
       UNION ALL
-      SELECT 'trigger', t.tgname, pg_get_triggerdef(t.oid) FROM pg_trigger t JOIN pg_class r ON r.oid = t.tgrelid WHERE r.relname IN ('SupportCase','SupportCapabilityGrant','ChurchPosition','PlatformPost','PlatformPostComment') AND NOT t.tgisinternal
-      UNION ALL SELECT 'function', p.proname, pg_get_functiondef(p.oid) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname IN ('church_position_acyclic','comment_thread_shape','reported_comment_retention','enforceTopicCommentScope','preservePostTopicScope')
+      SELECT 'trigger', t.tgname, pg_get_triggerdef(t.oid) FROM pg_trigger t JOIN pg_class r ON r.oid = t.tgrelid WHERE r.relname IN ('SupportCase','SupportCapabilityGrant','ChurchPosition','PlatformPost','PlatformPostComment','PlatformUser','PlatformOperatorGrant','PlatformMeasurementChoice','PlatformMetricConfiguration','SocialRelationship','TopicMembership','CalendarResponse','PostVolunteerSignup','ChurchConnection') AND NOT t.tgisinternal
+      UNION ALL SELECT 'function', p.proname, pg_get_functiondef(p.oid) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND (p.proname IN ('church_position_acyclic','comment_thread_shape','reported_comment_retention','enforceTopicCommentScope','preservePostTopicScope','gc_current_success_time','gc_connection_success_times') OR p.proname LIKE 'gc\\_metric\\_%')
     ) t`
       ],
       url
@@ -385,8 +389,36 @@ try {
   const stage2a = accountTables.map(([table, key]) =>
     fingerprint(table, key, database, true)
   );
+  const metricSources = [
+    ["PlatformUser", ["metricCreationMethod", "metricExcluded"]],
+    ["SocialRelationship", ["followingSince"]],
+    ["TopicMembership", ["followingSince"]],
+    ["CalendarResponse", ["goingSince"]],
+    ["PostVolunteerSignup", ["activeSince"]],
+    ["ChurchConnection", ["requestedAt", "approvedSince"]],
+    ...[
+      "PlatformFollow",
+      "PlatformPost",
+      "PlatformPostComment",
+      "Church",
+      "TopicCommunity",
+      "SupportCase",
+      "PlatformOperatorGrant",
+      "SupportCapabilityGrant"
+    ].map((table) => [table, []])
+  ];
+  const metricOriginals = () =>
+    metricSources.map(([table, columns]) =>
+      psql([
+        "-Atc",
+        `SELECT md5(coalesce(jsonb_agg(to_jsonb(t)-ARRAY[${columns.map((c) => `'${c}'`).join(",")}]::text[] ORDER BY id)::text,'[]')) FROM "${table}" t`
+      ])
+    );
+  let beforeMetrics;
   // Apply every remaining migration even in account-only mode: the client uses the full schema.
   for (const name of migrations.slice(accountMigration + 1)) {
+    if (name === "20260915190000_platform_metrics")
+      beforeMetrics = metricOriginals();
     if (name === "20260909010000_ordinary_support") {
       // Actual seven-migration Stage2B schema, populated before support tables exist.
       psql([
@@ -837,6 +869,41 @@ try {
         "Notification upgrade preserves all original fields and creates no author consent or delivery work."
       );
     } else psql(["-f", `prisma/migrations/${name}/migration.sql`]);
+  }
+  if (beforeMetrics) {
+    if (JSON.stringify(beforeMetrics) !== JSON.stringify(metricOriginals()))
+      throw Error(
+        "Metric migrations changed an original account, source, permission or case field"
+      );
+    if (
+      psql([
+        "-Atc",
+        `SELECT
+      (SELECT count(*) FROM "PlatformUser" WHERE "metricCreationMethod"<>'UNKNOWN' OR "metricExcluded")+
+      (SELECT count(*) FROM "PlatformMeasurementChoice")+(SELECT count(*) FROM "PlatformMetricActivityDay")+(SELECT count(*) FROM "PlatformMetricLifecycleDay")+
+      (SELECT count(*) FROM "SocialRelationship" WHERE "followingSince" IS NOT NULL)+(SELECT count(*) FROM "TopicMembership" WHERE "followingSince" IS NOT NULL)+
+      (SELECT count(*) FROM "CalendarResponse" WHERE "goingSince" IS NOT NULL)+(SELECT count(*) FROM "PostVolunteerSignup" WHERE "activeSince" IS NOT NULL)+
+      (SELECT count(*) FROM "ChurchConnection" WHERE "requestedAt" IS NOT NULL OR "approvedSince" IS NOT NULL)`
+      ]).trim() !== "0"
+    )
+      throw Error(
+        "Metric migrations invented historical methods, consent, activity or source times"
+      );
+    if (
+      psql([
+        "-Atc",
+        `SELECT count(*)=1 AND bool_and(version=1 AND zone='America/Chicago' AND "openingStates"=(
+      SELECT jsonb_build_object('ENABLED',count(*) FILTER(WHERE gc_metric_account_state(u)='ENABLED'),
+        'DEACTIVATED',count(*) FILTER(WHERE gc_metric_account_state(u)='DEACTIVATED'),
+        'SUSPENDED',count(*) FILTER(WHERE gc_metric_account_state(u)='SUSPENDED')) FROM "PlatformUser" u)) FROM "PlatformMetricConfiguration"`
+      ]).trim() !== "t"
+    )
+      throw Error(
+        "Metric migration baseline does not match the current source population"
+      );
+    console.log(
+      "Metric migrations preserve all original account/source/case/grant fields, leave optional choices/activity and unknown historical source times empty, and record the actual lifecycle baseline."
+    );
   }
   for (const [i, [table, key]] of accountTables.entries()) {
     if (stage2a[i] !== fingerprint(table, key, database, true))

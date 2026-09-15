@@ -35,6 +35,7 @@ import { seedSupport, requestInput } from "./seed-support";
 import { supportCommand } from "../lib/platform/support";
 import { metricSupport } from "../lib/platform/metric-support";
 import { metricWindow } from "../lib/platform/metric-time";
+import { seedManagedChurch } from "./seed-church-management";
 const db = new PrismaClient();
 before(async () => {
   await assertPortalTestDatabase(db);
@@ -202,6 +203,77 @@ test("canonical successful-state timestamps survive edits and retries, clear on 
     data: { followingChurch: true }
   });
   assert.ok(on.followingSince! >= row.followingSince);
+});
+
+test("two existing church activations add management without duplicate listings, and reapproval or unavailable topic owners cannot inflate growth", async () => {
+  const owner = await createPortalActor(db, "metricorg");
+  const config = await metricConfiguration(db);
+  const day = metricDay(new Date(), config.zone);
+  const now = () => new Date();
+  const report = () => aggregateMetrics(db, { from: day, through: day }, now());
+  const baseline = (await report()).organizations;
+  const churches = [
+    await seedManagedChurch(db, owner),
+    await seedManagedChurch(db, await createPortalActor(db, "metricorgtwo"))
+  ];
+  const old = new Date(
+    metricDayStart(metricAddDays(day, -20), config.zone).getTime() + 3600000
+  );
+  // These existing-directory fixtures were listed before this reporting day.
+  await db.church.updateMany({
+    where: { id: { in: churches.map((c) => c.church.id) } },
+    data: { createdAt: old }
+  });
+  const activated = (await report()).organizations;
+  assert.equal(activated.listings, baseline.listings + 2);
+  assert.equal(activated.newListings, baseline.newListings);
+  assert.equal(activated.managedChurches, baseline.managedChurches + 2);
+  assert.equal(activated.newManagedChurches, baseline.newManagedChurches + 2);
+  const original = churches[0].claim;
+  await db.churchClaim.update({
+    where: { id: original.id },
+    data: { status: "REVOKED", activatedAt: old }
+  });
+  await db.churchClaim.create({
+    data: {
+      ownerId: original.ownerId,
+      requestKey: randomUUID(),
+      churchId: original.churchId,
+      kind: "ACCESS",
+      authority: {},
+      profile: {},
+      status: "APPROVED",
+      approvedAt: now(),
+      activatedAt: now()
+    }
+  });
+  const reapproved = (await report()).organizations;
+  assert.equal(reapproved.managedChurches, activated.managedChurches);
+  assert.equal(reapproved.newManagedChurches, activated.newManagedChurches - 1);
+  const topicOwner = await createPortalActor(db, "metricorgtopic");
+  const key = randomUUID();
+  await db.topicCommunity.create({
+    data: {
+      name: "Fictional metric topic",
+      nameKey: key,
+      slug: key,
+      description: "Isolated source visibility fixture",
+      rules: "Be kind",
+      createdAt: new Date(Date.now() - 1000),
+      ownerId: topicOwner.id,
+      creatorId: topicOwner.id
+    }
+  });
+  const visible = (await report()).organizations;
+  assert.equal(visible.topicSpaces, baseline.topicSpaces + 1);
+  assert.equal(visible.newTopicSpaces, baseline.newTopicSpaces + 1);
+  await db.platformUser.update({
+    where: { id: topicOwner.id },
+    data: { suspendedAt: now() }
+  });
+  const hidden = (await report()).organizations;
+  assert.equal(hidden.topicSpaces, baseline.topicSpaces);
+  assert.equal(hidden.newTopicSpaces, baseline.newTopicSpaces);
 });
 
 test("aggregate export needs separate current authority, contains definitions and suppression, and each downloadable snapshot has its own content hash receipt", async () => {
