@@ -78,6 +78,7 @@ export async function registerAccount(
           name,
           username,
           passwordHash,
+          metricCreationMethod: "EMAIL",
           role: input.role as PlatformRole,
           pendingFounderWelcomeAt: newFounderWelcomeAt(),
           interests: []

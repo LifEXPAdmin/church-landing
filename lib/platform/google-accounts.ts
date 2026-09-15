@@ -458,6 +458,7 @@ export async function finishGoogleSignup(
             name,
             username,
             email: proof.email,
+            metricCreationMethod: "GOOGLE",
             role: role as PlatformRole,
             pendingFounderWelcomeAt: newFounderWelcomeAt(),
             interests: [],

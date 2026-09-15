@@ -1,4 +1,5 @@
 import { expireFeedSnapshots } from "./feed-snapshot-retention";
+import { purgeExpiredMeasurements } from "./platform-measurement";
 import { Prisma, type PrismaClient } from "@prisma/client";
 import {
   maintenanceRequestError,
@@ -204,6 +205,13 @@ export async function runRetentionOperations(
   signal = AbortSignal.timeout(40000)
 ) {
   const feedSnapshotsExpired = await expireFeedSnapshots(db);
+  let measurementsExpired = { days: 0, choices: 0, trimmedDays: 0 }, measurementFailure = 0;
+  try {
+    measurementsExpired = await db.$transaction((tx) => purgeExpiredMeasurements(tx));
+  } catch {
+    // Optional measurement maintenance must not stop account or message erasure.
+    measurementFailure = 1;
+  }
   const seeded = await prepareRetentionControls(db);
   const protectedControls = await journalRetentionControls(
     db,
@@ -216,7 +224,7 @@ export async function runRetentionOperations(
     accountsCompleted = 0,
     messages = 0,
     reports = 0,
-    failed = protectedControls.failed;
+    failed = protectedControls.failed + measurementFailure;
   for (const account of inspected.accounts) {
     if (signal.aborted) break;
     try {
@@ -276,6 +284,7 @@ export async function runRetentionOperations(
   return {
     seeded,
     feedSnapshotsExpired,
+    measurementsExpired,
     protected: protectedControls.recorded,
     accountsErased,
     accountsCompleted,

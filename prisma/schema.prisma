@@ -201,6 +201,10 @@ enum PlatformPostType {
 }
 
 model PlatformUser {
+  metricCreationMethod String @default("UNKNOWN")
+  metricExcluded Boolean @default(false)
+  measurementChoice PlatformMeasurementChoice?
+  measuredDays PlatformMetricActivityDay[]
   createdTopicCommunities TopicCommunity[] @relation("TopicCreator")
   ownedTopicCommunities TopicCommunity[] @relation("TopicOwner")
   topicMemberships TopicMembership[]
@@ -303,6 +307,62 @@ model PlatformUser {
 
   @@index([role])
   @@index([createdAt])
+}
+
+// No account IDs, source IDs or private text are retained in this operational ledger.
+model PlatformMetricConfiguration {
+  version Int @id
+  zone String
+  startedAt DateTime @default(now())
+  openingStates Json
+  lifecycleDays PlatformMetricLifecycleDay[]
+  activityDays PlatformMetricActivityDay[]
+}
+
+model PlatformMetricLifecycleDay {
+  version Int
+  day DateTime @db.Date
+  fromState String
+  toState String
+  reason String
+  method String
+  count Int
+  configuration PlatformMetricConfiguration @relation(fields: [version], references: [version], onDelete: Restrict)
+  @@id([version, day, fromState, toState, reason, method])
+}
+
+model PlatformMeasurementChoice {
+  userId String @id
+  version Int @default(1)
+  policy String
+  enabledAt DateTime?
+  updatedAt DateTime @updatedAt
+  shareDevice Boolean @default(false)
+  referral String @default("UNKNOWN")
+  lastForegroundAt DateTime?
+  eligibleSessions Int @default(0)
+  sessionStarts DateTime[] @default([])
+  cohortEligible Boolean @default(false)
+  onboardingStartedAt DateTime?
+  onboardingCompletedAt DateTime?
+  onboardingSkippedAt DateTime?
+  user PlatformUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// One bounded foreground fact per account/calendar day; no route, target or message.
+model PlatformMetricActivityDay {
+  userId String
+  version Int
+  day DateTime @db.Date
+  firstAt DateTime
+  lastAt DateTime
+  device String @default("UNKNOWN")
+  browser String @default("UNKNOWN")
+  configuration PlatformMetricConfiguration @relation(fields: [version], references: [version], onDelete: Restrict)
+  user PlatformUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@id([userId, version, day])
+  @@index([version, day, userId])
+  @@index([lastAt])
 }
 
 model ProfilePresentation {
@@ -749,6 +809,8 @@ model ChurchListingDecision {
 }
 
 model ChurchConnection {
+  requestedAt DateTime?
+  approvedSince DateTime?
   id String @id @default(cuid())
   userId String
   churchId String
@@ -974,6 +1036,7 @@ model CalendarEventShare {
 }
 
 model CalendarResponse {
+  goingSince DateTime?
   id String @id @default(cuid())
   occurrenceId String
   userId String
@@ -1289,6 +1352,7 @@ model TopicCommunity {
 }
 
 model TopicMembership {
+  followingSince DateTime?
   id String @id @default(cuid())
   communityId String
   userId String
@@ -1501,6 +1565,7 @@ enum VolunteerSignupState {
 }
 
 model PostVolunteerSignup {
+  activeSince DateTime?
   id String @id @default(cuid())
   slotId String
   userId String
@@ -2202,6 +2267,7 @@ model AdultConversationState {
 }
 
 model SocialRelationship {
+  followingSince DateTime?
   authorBellSince DateTime?
   authorBellVersion Int @default(0)
   id String @id @default(cuid())

@@ -16,6 +16,8 @@ const personalPost = (userId: string) => ({
 });
 
 async function erasePrivateCollections(tx: Tx, userId: string) {
+  await tx.platformMetricActivityDay.deleteMany({ where: { userId } });
+  await tx.platformMeasurementChoice.deleteMany({ where: { userId } });
   await eraseAdminPersonalData(tx,userId,new Date());
   await tx.topicMembership.updateMany({
     where: { userId },
@@ -300,6 +302,7 @@ export async function eraseRequestedAccountData(
           website: null,
           interests: [],
           role: "BELIEVER",
+          metricCreationMethod: "UNKNOWN",
           erasedAt: user.erasedAt ?? now
         }
       });

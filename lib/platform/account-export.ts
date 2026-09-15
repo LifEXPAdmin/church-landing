@@ -8,6 +8,7 @@ import { projectListingData } from "./church-listing-data";
 import { validImageCrop } from "./image-crop";
 import { isEligible } from "./portal-policy";
 import { adultMemberWhere } from "./adult-message-policy";
+import { METRIC_RAW_DAYS } from "./metric-policy";
 
 const EXPORT_SECONDS = 60;
 const MAX_ROWS = 2000;
@@ -91,6 +92,7 @@ export async function downloadAccountExport(
         username: true,
         email: true,
         emailVerifiedAt: true,
+        metricCreationMethod: true,
         role: true,
         bio: true,
         location: true,
@@ -492,6 +494,7 @@ export async function downloadAccountExport(
       take: MAX_ROWS + 1,
       select: { occurrenceId: true, state: true, updatedAt: true }
     });
+    const measurementCutoff = new Date(Date.now() - METRIC_RAW_DAYS * 86400000);
     const collections = {
       privatePostDrafts: await tx.privatePostDraft.findMany({
         where: { ownerId: userId, deletedAt: null },
@@ -856,6 +859,20 @@ export async function downloadAccountExport(
       churchConnections,
       supportRequests,
       supportMessages,
+      measurementChoice: (await tx.platformMeasurementChoice.findMany({ where: { userId }, select: {
+        policy: true, enabledAt: true, updatedAt: true, shareDevice: true, referral: true,
+        sessionStarts: true, cohortEligible: true, onboardingStartedAt: true,
+        onboardingCompletedAt: true, onboardingSkippedAt: true
+      } })).map((row) => ({ ...row,
+        sessionStarts: row.sessionStarts.filter((at) => at >= measurementCutoff),
+        onboardingStartedAt: row.onboardingStartedAt && row.onboardingStartedAt >= measurementCutoff ? row.onboardingStartedAt : null,
+        onboardingCompletedAt: row.onboardingCompletedAt && row.onboardingCompletedAt >= measurementCutoff ? row.onboardingCompletedAt : null,
+        onboardingSkippedAt: row.onboardingSkippedAt && row.onboardingSkippedAt >= measurementCutoff ? row.onboardingSkippedAt : null
+      })),
+      measuredForegroundDays: (await tx.platformMetricActivityDay.findMany({ where: {
+        userId, lastAt: { gte: measurementCutoff }
+      }, select: { version: true, day: true, firstAt: true, lastAt: true, device: true, browser: true },
+        orderBy: [{ day: "asc" }, { version: "asc" }], take: MAX_ROWS + 1 })).map(row=>({...row,firstAt:row.firstAt<measurementCutoff?row.lastAt:row.firstAt})),
       privateAdminViews: await tx.adminSavedView.findMany({where:{userId},select:{name:true,filters:true,createdAt:true,updatedAt:true},orderBy:{id:"asc"},take:MAX_ROWS+1})
     };
     if (Object.values(collections).some((rows) => rows.length > MAX_ROWS))
@@ -866,7 +883,7 @@ export async function downloadAccountExport(
         version: 1,
         generatedAt: new Date().toISOString(),
         scope:
-          "Your account profile, presentation preferences and linked Google identity, authored community content and personal image metadata and photo albums, personal polls and your own ballots and volunteer signups, likes/following, your own topic memberships and private following choices, owned topic details, private social, conversation and prayer choices and your own prayer update labels (source content excluded), and friend invitation records, private comment drafts and comment Likes, private post drafts and saved collection organization (source posts excluded), church directory choices, your own church representative setup and listing drafts/submissions, personal calendars/events and their sharing choices, your event responses, your own sent contact requests and currently authorized accepted conversation messages, your own community reports and your own support submissions. Other people's content outside your accepted conversations, staff/church operations, credentials, session data and security audit records and private report-review notes are excluded. Cleared message history is excluded from your view; this does not erase the other participant's history. Image binaries are not embedded; image references still require current access. Reading preferences saved only on this browser are not in this account file.",
+          "Your account profile, presentation preferences and linked Google identity, authored community content and personal image metadata and photo albums, personal polls and your own ballots and volunteer signups, likes/following, your own topic memberships and private following choices, owned topic details, private social, conversation and prayer choices and your own prayer update labels (source content excluded), and friend invitation records, private comment drafts and comment Likes, private post drafts and saved collection organization (source posts excluded), church directory choices, your own church representative setup and listing drafts/submissions, personal calendars/events and their sharing choices, your event responses, your own sent contact requests and currently authorized accepted conversation messages, your own community reports and your own support submissions, current optional measurement choices and retained foreground-use facts. Other people's content outside your accepted conversations, staff/church operations, credentials, session data and security audit records and private report-review notes are excluded. Cleared message history is excluded from your view; this does not erase the other participant's history. Image binaries are not embedded; image references still require current access. Reading preferences saved only on this browser are not in this account file.",
         account,
         ...collections
       },

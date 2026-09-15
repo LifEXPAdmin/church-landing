@@ -14,6 +14,20 @@ export type Feature = {
 };
 export const features: Feature[] = [
   {
+    id:"platform-growth",category:"Privacy and account",name:"Platform growth reports",
+    description:"Explicitly authorized operators can review aggregate registrations, lifecycle, measured use and request outcomes.",
+    steps:"Open Admin → Growth. Choose dates, inspect definitions and measured coverage, and compare the preceding period. CSV export requires its own permission and records an audit receipt.",
+    href:"/platform/admin/growth",
+    eligibility:"Current explicit metric permission is required. Reports do not grant private account or case access. Optional collection, immature cohorts, small breakdowns and unavailable feedback are labeled separately.",availability:"conditional"
+  },
+  {
+    id:"optional-platform-measurement",category:"Privacy and account",name:"Your optional measurement choice",
+    description:"Choose limited platform-use measurement, with separate optional referral and device sharing.",
+    steps:"Open Settings → Privacy and interactions → Optional platform measurement. Review the disclosure and save your choice. It starts off; turning it off removes optional use and session facts.",
+    href:"/platform/settings/privacy/measurement",
+    eligibility:"Available to eligible verified adult accounts when configured. It excludes operational accounts, private messages, prayer content, page addresses and reading time. Raw use facts last up to 90 days. You can use the website with measurement off.",availability:"conditional"
+  },
+  {
     id: "admin-requests",
     category: "Privacy and account",
     name: "Admin requests and operations",
@@ -702,6 +716,14 @@ export const features: Feature[] = [
   }
 ];
 export const releases: ReleaseEntry[] = [
+  {
+    id:"platform-growth-measurement",version:"2026.09.15.7",date:"2026-09-15",
+    summary:"Review platform outcomes with clear coverage and an optional measurement choice.",
+    added:["Private aggregate Growth reports with date controls, lifecycle reconciliation, mature return cohorts and separately permitted CSV exports.","Default-off platform measurement with optional referral and coarse device choices in Privacy settings."],
+    improved:["Reports distinguish current service records, observed use, unknown history and suppressed small breakdowns.","Getting started can be deliberately finished while every profile, photo and church step remains optional."],
+    fixed:["Report boundaries preserve the reporting calendar independently of the database timezone.","Withdrawal, account lifecycle and protected backup restoration clear optional measurements before they can be reused."],
+    featureIds:["platform-growth","optional-platform-measurement","getting-started"]
+  },
   {
     id: "admin-request-operations",
     version: "2026.09.15.6",

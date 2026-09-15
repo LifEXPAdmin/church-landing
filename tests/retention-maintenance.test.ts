@@ -91,6 +91,12 @@ test("secured staged maintenance inspects first, continues after a journal failu
       schema
     );
     db = new PrismaClient({ datasourceUrl: targetUrl.href });
+    // A schema-only restore also needs the explicit immutable reporting baseline.
+    // These selected fixture accounts are inserted next, starting from zero.
+    for (const configuration of await source.platformMetricConfiguration.findMany())
+      await db.platformMetricConfiguration.create({ data: {
+        ...configuration, openingStates: { ENABLED: 0, DEACTIVATED: 0, SUSPENDED: 0 }
+      } });
     for (const actor of actors)
       await db.platformUser.create({
         data: await source.platformUser.findUniqueOrThrow({

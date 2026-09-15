@@ -71,6 +71,11 @@ export function AdminOverview({ data }: { data: AdminOverviewSnapshot }) {
         </>
       )}
       <h2 className="text-xl font-semibold">Your permitted sections</h2>
+      {data.growth&&<section className="space-y-3" aria-label="Permitted growth summary"><h2 className="text-xl font-semibold">Platform growth</h2>
+        <p>Current registered accounts: {data.growth.existing}. Since {data.growth.from} in {data.growth.zone}: {data.growth.registrations} registrations and {data.growth.active} distinct measured foreground accounts.</p>
+        <p className="text-sm text-gc-muted">Optional collection began {new Date(data.growth.startedAt).toLocaleString()}. Missing coverage and account withdrawals can restate measured totals.</p>
+        <Link className="text-gc-accent underline" href="/platform/admin/growth?preset=7">Open growth definitions and report</Link>
+      </section>}
       <ul className="grid gap-4 sm:grid-cols-2">
         {data.navigation.sections
           .filter((s) => s.key !== "overview")

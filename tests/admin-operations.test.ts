@@ -68,7 +68,7 @@ test("admin navigation and every queue query retain distinct current capabilitie
   const nav = await readAdminNavigation(db, metrics.token);
   assert.deepEqual(
     nav.sections.map((s) => s.key),
-    ["overview"]
+    ["overview", "growth"]
   );
   await deny(readAdminQueue(db, metrics.token));
   const queue = await readAdminQueue(db, f.owner.token);

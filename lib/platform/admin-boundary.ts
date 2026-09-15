@@ -6,6 +6,8 @@ import { readAdminQueue } from "./admin-queue";
 import { readAdminDetail } from "./admin-detail";
 import { readAdminHealth } from "./admin-health";
 import { readAdminOverview } from "./admin-overview";
+import { readPlatformMetrics } from "./metric-report";
+import { exportPlatformMetrics } from "./metric-export";
 import { adminFields } from "./admin-input";
 import { adminCaseCommand, adminSavedViewCommand } from "./admin-cases";
 import { adminBulkCommand } from "./admin-bulk";
@@ -56,6 +58,9 @@ export async function handleAdminRequest(
             : view === "health"
               ? await readAdminHealth(db, token)
               : await readAdminNavigation(db, token);
+      } else if (view === "metrics") {
+        adminFields(input,["view","from","through","preset"]);
+        result=await readPlatformMetrics(db,token,Object.fromEntries(Object.entries(input).filter(([key])=>key!=="view")));
       } else if (view === "access") {
         adminFields(input, ["view", "username"]);
         result = await readAdminAccess(db, token, input.username);
@@ -103,6 +108,8 @@ export async function handleAdminRequest(
           input,
           requestAccountCredential(request, input, accountConfig().secureCookie)
         );
+      else if (input.operation === "metrics-export")
+        result=await exportPlatformMetrics(db,token,input);
       else if (input.operation === "lookup")
         result = await adminAccountLookup(db, token, input);
       else if (input.operation === "bulk")

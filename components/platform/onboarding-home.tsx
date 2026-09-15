@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { OnboardingView } from "@/lib/platform/onboarding";
 import { useWelcomeView } from "./use-welcome-view";
 import { claimStatusLabels } from "@/lib/platform/church-claim-data";
@@ -23,6 +23,19 @@ export function OnboardingHome({
       expanded
     );
   const visible = data?.steps.filter((s) => !s.done && !s.dismissed) ?? [];
+  const presented=expanded&&!!data;
+  useEffect(()=>{
+    if(!presented||document.visibilityState!=="visible")return;
+    let live=true;const headers={"Content-Type":"application/json","X-Expected-Account":ownerId};
+    void (async()=>{try{
+      const read=await fetch("/api/platform/measurement",{headers,cache:"no-store",credentials:"same-origin"});
+      if(!read.ok){await read.body?.cancel();return;}const choice=await read.json();
+      if(!live||document.visibilityState!=="visible"||!choice.collecting||choice.ownerId!==ownerId)return;
+      const saved=await fetch("/api/platform/measurement",{method:"POST",headers,cache:"no-store",credentials:"same-origin",body:JSON.stringify({operation:"onboarding-start",choiceVersion:choice.version})});
+      await saved.body?.cancel();
+    }catch{/* Optional measurement never interrupts getting started. */}})();
+    return()=>{live=false;};
+  },[presented,ownerId]);
   const connectionLabels: Record<string, string> = {
     PENDING:
       "Your church request is pending review. Private church access begins only after approval.",
@@ -154,6 +167,9 @@ export function OnboardingHome({
                   >
                     Save hints for later
                   </button>
+                )}
+                {full && (
+                  <button disabled={saving} className={button} onClick={()=>void save({operation:"onboarding",step:"all",dismissed:true,completion:true,expectedVersion:data.version})}>Finish getting started</button>
                 )}
                 {full && (
                   <button

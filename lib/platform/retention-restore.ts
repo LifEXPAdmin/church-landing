@@ -1,4 +1,5 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
+import { clearRestoredMeasurements } from "./platform-measurement";
 import { createSessionToken, hashSessionToken } from "./auth";
 import { revokePushSubscriptions } from "./push-subscriptions";
 import { replayAccountDeletions } from "./account-deletion-journal";
@@ -130,6 +131,7 @@ export async function quarantineRestoredAccess(db: PrismaClient) {
       });
       await tx.adminSavedView.deleteMany({});
       await tx.adminAuthenticator.deleteMany({});
+      const measurementsRetired = await clearRestoredMeasurements(tx);
       const topicRoles = await tx.topicMembership.updateMany({
         where: { OR: [{ moderator: true }, { pendingRole: { not: null } }] },
         data: {
@@ -182,6 +184,7 @@ export async function quarantineRestoredAccess(db: PrismaClient) {
         conversationJobs: conversationJobs.count,
         googleAssociations: googleAssociations.count,
         topicsNeedingOwnershipReview: topics.count,
+        measurementsRetired,
         elevatedGrants:
           operators.count +
           churchCapabilities.count +
@@ -239,6 +242,26 @@ export async function replayProtectedRestoration(
   const appealsNeedingRecovery = await inspectRestoredAppeals(db);
   const accountsNeedingRestrictionReview =
     await inspectRestoredAccountRestrictions(db);
+  const replayComplete = unresolvedReports.length === 0 &&
+    holdsNeedingReasonReview === 0 && contentNeedingReinspection === 0 &&
+    appealsNeedingRecovery === 0 && accountsNeedingRestrictionReview === 0;
+  // A backup cannot reconstruct every lifecycle event since its snapshot.
+  // Begin a new explicit baseline after protected replay; keep earlier buckets
+  // under their old version instead of presenting restore-time edges as history.
+  const metricBaseline = replayComplete ? await db.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(730221, 2)`;
+    const prior = await tx.platformMetricConfiguration.findFirstOrThrow({ orderBy: { version: "desc" } });
+    const [counts] = await tx.$queryRaw<{ enabled: bigint; deactivated: bigint; suspended: bigint }[]>`
+      SELECT count(*) FILTER(WHERE gc_metric_account_state(u)='ENABLED') AS enabled,
+        count(*) FILTER(WHERE gc_metric_account_state(u)='DEACTIVATED') AS deactivated,
+        count(*) FILTER(WHERE gc_metric_account_state(u)='SUSPENDED') AS suspended FROM "PlatformUser" u`;
+    const baseline = await tx.platformMetricConfiguration.create({ data: {
+      version: prior.version + 1, zone: prior.zone, openingStates: {
+        ENABLED: Number(counts.enabled), DEACTIVATED: Number(counts.deactivated), SUSPENDED: Number(counts.suspended)
+      }
+    } });
+    return { version: baseline.version, zone: baseline.zone, startedAt: baseline.startedAt.toISOString() };
+  }) : null;
   return {
     quarantine,
     messageRecords,
@@ -249,12 +272,8 @@ export async function replayProtectedRestoration(
     contentNeedingReinspection,
     appealsNeedingRecovery,
     accountsNeedingRestrictionReview,
-    replayComplete:
-      unresolvedReports.length === 0 &&
-      holdsNeedingReasonReview === 0 &&
-      contentNeedingReinspection === 0 &&
-      appealsNeedingRecovery === 0 &&
-      accountsNeedingRestrictionReview === 0,
+    metricBaseline,
+    replayComplete,
     trafficEnabled: false,
     currentAuthorizationReviewRequired: true
   };

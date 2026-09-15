@@ -113,7 +113,7 @@ export function readAdminAudit(
     const cursor = after ? postId(after) : null;
     const rows = await tx.adminOperation.findMany({
       where: {
-        sourceType: { in: ["ACCESS", "MFA", "LOOKUP"] },
+        sourceType: { in: ["ACCESS", "MFA", "LOOKUP", "METRICS_EXPORT"] },
         ...(cursor ? { id: { lt: cursor } } : {})
       },
       select: {

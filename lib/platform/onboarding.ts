@@ -13,6 +13,7 @@ import {
   welcomePostLink
 } from "./church-welcome-policy";
 import { postId } from "./post-input";
+import { optionalOnboardingOutcome } from "./platform-measurement";
 
 export function saveOnboarding(
   db: PrismaClient,
@@ -25,11 +26,13 @@ export function saveOnboarding(
     "dismissed",
     "expectedVersion",
     "mutationId"
+    ,"completion"
   ]);
   if (
     input.operation !== "onboarding" ||
     (input.step !== "all" && !onboardingSteps.includes(input.step as never)) ||
-    typeof input.dismissed !== "boolean"
+    typeof input.dismissed !== "boolean" ||
+    (input.completion!==undefined&&(input.completion!==true||input.step!=="all"||input.dismissed!==true))
   )
     throw new PortalError(400, "Choose a supported getting-started step.");
   return socialCommand(
@@ -61,10 +64,12 @@ export function saveOnboarding(
           onboardingVersion: { increment: 1 }
         }
       });
+      if(input.step==="all"&&input.dismissed===true)
+        await optionalOnboardingOutcome(tx,ownerId,input.completion===true?"COMPLETED":"SKIPPED");
       return {
         id: ownerId,
         version: row.onboardingVersion,
-        message: input.dismissed
+        message: input.completion===true?"Getting started finished. Optional hints remain available in Help.":input.dismissed
           ? "Saved for later. Getting started stays available in Help."
           : "Getting-started hints restored."
       };

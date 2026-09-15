@@ -30,6 +30,7 @@ const AccountDeletion = dynamic(() =>
 const DiscoverySettings = dynamic(() =>
   import("./discovery-settings").then((m) => m.DiscoverySettings)
 );
+const MeasurementSettings=dynamic(()=>import("./measurement-settings").then(m=>m.MeasurementSettings));
 
 export function SettingsControls({
   control,
@@ -40,6 +41,8 @@ export function SettingsControls({
 }) {
   const canConfirm = canConfirmSettings(data);
   switch (control) {
+    case "measurement":
+      return <MeasurementSettings owner={data.ownerId}/>;
     case "discovery":
       return <DiscoverySettings owner={data.ownerId} />;
     case "reading":

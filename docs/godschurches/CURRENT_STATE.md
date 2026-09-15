@@ -1,3 +1,23 @@
+## Platform metrics candidate continuing — September 15, 2026 UTC
+
+The continuous Extra High run is implementing optional platform growth reporting.
+This candidate is **unreleased**; the exact serving application remains the admin
+core release immediately below. Six candidate migrations (63 to 69) are installed
+only in an isolated fixture. The current source includes private Growth reports,
+account choices, narrow foreground and onboarding signals, canonical source times,
+versioned lifecycle accounting, separate aggregate exports and privacy/recovery.
+See [the metric contract](PLATFORM_METRICS_CONTRACT.md) for definitions and evidence.
+
+The actual A2 cohort queries return 80/60/40/20 percent and remain invariant under
+different database timezones. Five expanded report/export/onboarding/support
+checks pass; five final collection/withdrawal/operator/expiry checks pass. Nineteen
+existing admin/onboarding checks pass after correcting the isolated recovery
+adapter. Earlier fixture, UTC-boundary and withdrawal-normalization failures are
+preserved. Types and focused lint pass. Full production/HTTPS, browser, cost,
+protected production-copy upgrade and exact canonical release acceptance remain
+required in this feature cycle. Feedback source integration follows in feature 31.
+No production measurement setting, data, schema or access grant has been changed.
+
 ## Admin requests and core operations verified live — September 15, 2026 UTC
 
 **2026.09.15.6 / 7384afdbce5a1b0cafbb56f99c41345d298b6b4f** is READY in

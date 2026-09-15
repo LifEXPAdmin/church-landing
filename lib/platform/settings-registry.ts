@@ -87,6 +87,7 @@ export type SettingsControl =
   | "reading"
   | "discovery"
   | "privacy"
+  | "measurement"
   | "contact"
   | "notifications"
   | "export"
@@ -164,6 +165,11 @@ const help = {
 };
 
 export const settingsRegistry: readonly SettingRegistration[] = Object.freeze([
+  entry("privacy.measurement","privacy","Optional platform measurement",
+    "Choose limited use measurement and optional source or device sharing. Off by default.",
+    ["analytics","measurement","data collection","referral"],{control:"measurement"},
+    {persistenceOwner:"PlatformMeasurementChoice",read:"platform-measurement.ts",write:"platform-measurement.ts"},
+    {valueType:"group",defaultValue:{enabled:false,shareDevice:false,referral:"UNKNOWN"}}),
   entry(
     "account.identity",
     "account",

@@ -103,6 +103,10 @@ test("an actual isolated database snapshot replays newer deletion and hold relea
   };
   process.env.FOUNDER_WELCOME_ENABLED = "false";
   const founder = await createPortalActor(source, "restorereviewer");
+  const measured=await createPortalActor(source,"restoremetric");
+  const metricConfig=await source.platformMetricConfiguration.findFirstOrThrow({orderBy:{version:"desc"}});
+  const measuredChoice=await source.platformMeasurementChoice.create({data:{userId:measured.id,policy:"platform-measurement-v1",enabledAt:new Date()}});
+  await source.platformMetricActivityDay.create({data:{userId:measured.id,version:metricConfig.version,day:new Date(new Date().toISOString().slice(0,10)),firstAt:new Date(),lastAt:new Date()}});
   await seedOperatorGrants(source, founder, ["REVIEW_COMMUNITY_REPORTS"]);
   const keys = webpush.generateVAPIDKeys();
   Object.assign(process.env, {
@@ -474,6 +478,19 @@ test("an actual isolated database snapshot replays newer deletion and hold relea
     assert.equal(result.holdsNeedingReasonReview, priorUnresolvedHolds);
     assert.deepEqual(result.unresolvedReports, []);
     assert.equal(result.replayComplete, priorUnresolvedHolds === 0);
+    assert.equal(await restored.platformMetricActivityDay.count(),0);
+    const retiredChoice=await restored.platformMeasurementChoice.findUniqueOrThrow({where:{userId:measured.id}});
+    assert.equal(retiredChoice.enabledAt,null);assert.equal(retiredChoice.version,measuredChoice.version+1);
+    if(result.replayComplete){
+      assert.equal(result.metricBaseline?.version,metricConfig.version+1);
+      const fresh=await restored.platformMetricConfiguration.findFirstOrThrow({orderBy:{version:"desc"}});
+      assert.equal(fresh.version,result.metricBaseline?.version);
+      const [counts]=await restored.$queryRaw<{enabled:number;deactivated:number;suspended:number}[]>`SELECT
+        count(*) FILTER(WHERE gc_metric_account_state(u)='ENABLED')::int enabled,
+        count(*) FILTER(WHERE gc_metric_account_state(u)='DEACTIVATED')::int deactivated,
+        count(*) FILTER(WHERE gc_metric_account_state(u)='SUSPENDED')::int suspended FROM "PlatformUser" u`;
+      assert.deepEqual(fresh.openingStates,{ENABLED:counts.enabled,DEACTIVATED:counts.deactivated,SUSPENDED:counts.suspended});
+    }
     assert.equal(result.trafficEnabled, false);
     assert.equal(result.currentAuthorizationReviewRequired, true);
     assert.ok(result.quarantine.sessions > 0);

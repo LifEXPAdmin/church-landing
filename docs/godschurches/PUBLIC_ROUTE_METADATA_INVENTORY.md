@@ -2,10 +2,10 @@
 
 ## Current candidate — September 15, 2026 UTC
 
-Enumerated directly from the current checkout: **107 page routes**, with
-**16 public candidate patterns** and **91 excluded patterns**.
+Enumerated directly from the current checkout: **108 page routes**, with
+**16 public candidate patterns** and **92 excluded patterns**.
 Dynamic patterns are conditional on current source eligibility, not counts of
-indexable records. The nine new admin patterns belong to the current private admin candidate. The table is a source inventory; exact live serving identity
+indexable records. The ten admin patterns include the current private Growth report candidate. The table is a source inventory; exact live serving identity
 and acceptance belong in [the current discoverability report](PUBLIC_DISCOVERABILITY_ACCEPTANCE.md).
 
 All public identities use the approved HTTPS host. Preview environments are
@@ -40,6 +40,7 @@ until the external service refreshes; no remote-erasure claim is made.
 | `/platform/admin/churches` | [page.tsx](../../app/platform/admin/churches/page.tsx) | Current explicit operator or scoped reviewer permission | Static private admin title; no case text in metadata | Noindex/nofollow; no indexed identity | No sitemap or public JSON-LD; server permission and no-store checks |
 | `/platform/admin/feedback` | [page.tsx](../../app/platform/admin/feedback/page.tsx) | Current explicit operator or scoped reviewer permission | Static private admin title; no case text in metadata | Noindex/nofollow; no indexed identity | No sitemap or public JSON-LD; server permission and no-store checks |
 | `/platform/admin/health` | [page.tsx](../../app/platform/admin/health/page.tsx) | Current explicit operator or scoped reviewer permission | Static private admin title; no case text in metadata | Noindex/nofollow; no indexed identity | No sitemap or public JSON-LD; server permission and no-store checks |
+| `/platform/admin/growth` | [page.tsx](../../app/platform/admin/growth/page.tsx) | Current explicit aggregate metric permission; exports separately gated | Static private report title; no account/case data in metadata | Noindex/nofollow; no indexed identity | No sitemap or public JSON-LD; current permission and no-store checks |
 | `/platform/admin/people` | [page.tsx](../../app/platform/admin/people/page.tsx) | Current explicit operator or scoped reviewer permission | Static private admin title; no case text in metadata | Noindex/nofollow; no indexed identity | No sitemap or public JSON-LD; server permission and no-store checks |
 | `/platform/admin/requests` | [page.tsx](../../app/platform/admin/requests/page.tsx) | Current explicit operator or scoped reviewer permission | Static private admin title; no case text in metadata | Noindex/nofollow; no indexed identity | No sitemap or public JSON-LD; server permission and no-store checks |
 | `/platform/account/change-email` | [page.tsx](../../app/platform/account/change-email/page.tsx) | Excluded | Local static metadata; existing private/generic copy | No indexed identity; token/filter parameters never enter sitemap | No sitemap or JSON-LD; existing access and preview protections |

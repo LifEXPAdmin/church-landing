@@ -1,5 +1,8 @@
 /** Presentation of existing capabilities; each destination retains its authority. */
 export const settingsHelpTopics = [
+  {id:"measurement",title:"Can I turn off optional platform measurement?",keywords:"analytics measurement privacy opt out referral device",
+    body:"Yes. Optional measurement starts off and is available under Privacy and interactions. Turning it off removes optional foreground/session facts and referral/device choices. Raw use facts last up to 90 days. Operational account, church and support totals remain separate; measurement never grants private account or case access.",
+    href:"/platform/settings/privacy/measurement",action:"Review measurement choices"},
   {
     id: "discovery",
     title: "How do discovery feeds and hidden choices work?",

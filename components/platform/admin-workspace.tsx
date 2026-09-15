@@ -17,6 +17,9 @@ import type { AdminAccessSnapshot } from "@/lib/platform/admin-access";
 import type { AdminAuditSnapshot } from "@/lib/platform/admin-operations";
 import { AdminOverview } from "./admin-overview";
 import type { AdminOverviewSnapshot } from "@/lib/platform/admin-overview";
+import type { MetricSnapshot } from "@/lib/platform/metric-report";
+import dynamic from "next/dynamic";
+const AdminMetrics=dynamic(()=>import("./admin-metrics").then(m=>m.AdminMetrics));
 type Health = Awaited<ReturnType<typeof readAdminHealth>>;
 type Payload =
   | AdminNavigation
@@ -25,7 +28,8 @@ type Payload =
   | Health
   | AdminAccessSnapshot
   | AdminAuditSnapshot
-  | AdminOverviewSnapshot;
+  | AdminOverviewSnapshot
+  | MetricSnapshot;
 export function AdminWorkspace({
   navigation,
   section,
@@ -231,6 +235,7 @@ export function AdminWorkspace({
           {section === "overview" && data && "requests" in data && (
             <AdminOverview data={data} />
           )}
+          {section === "growth" && data && "report" in data && <AdminMetrics data={data}/>}
           {section === "health" && data && "available" in data && (
             <AdminHealth data={data} />
           )}

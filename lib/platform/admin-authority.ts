@@ -132,6 +132,8 @@ export async function adminAuthority(tx: AdminTx, userId: string) {
       label: "Health",
       href: "/platform/admin/health"
     });
+  if (capabilities.has("VIEW_PLATFORM_METRICS"))
+    sections.push({key:"growth",label:"Growth",href:"/platform/admin/growth"});
   if (capabilities.has("MANAGE_ADMIN_ACCESS"))
     sections.push({
       key: "access",

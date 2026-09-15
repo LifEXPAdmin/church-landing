@@ -13,7 +13,7 @@ export default function PrivacyPage() {
         <h1 className="mb-6 text-5xl">Privacy Policy</h1>
         <p className="mb-8 text-sm">
           Original policy: February 21, 2026. Service information updated
-          September 13, 2026.
+          September 15, 2026.
         </p>
 
         <div className="space-y-8 text-base leading-relaxed">
@@ -38,6 +38,12 @@ export default function PrivacyPage() {
               usernames. Viewing member profiles requires sign-in. Your account
               email and password are excluded from profile and public content.
             </p>
+          </section>
+          <section>
+            <h2 className="mb-2 text-3xl">Optional Platform Measurement</h2>
+            <p>Settings → Privacy and interactions → Optional platform measurement lets you choose limited first-party measurement. It is off by default. When enabled, trusted foreground navigation on Home, Menu and discovery pages records your account and reporting day, and the service measures getting-started choices and successful ordinary follows, posts, replies, event responses and volunteering from current records. This is limited measured use, not reading time or proof of attention. It excludes private messages, prayer content and prayer acknowledgments, page addresses, advertising identifiers and faith scores.</p>
+            <p className="mt-3">You can separately choose a declared referral category and coarse device/browser family. Full user-agent strings, arbitrary referrer addresses and precise locations are not stored for this measurement. Optional raw use and session facts are retained for up to 90 days. Turning measurement off removes them and optional dimensions; re-enabling starts new coverage. Your account export includes your current choice and retained facts. Deactivation, suspension and deletion remove optional use records. Restoring a backup disables restored choices before traffic can resume.</p>
+            <p className="mt-3">Restricted administrators receive aggregate reports and need a separate permission for aggregate exports. Small complementary breakdowns are suppressed. Operational account creation method, current account states, church sources and unique support cases remain available from service records independently of optional use measurement. Anonymous daily lifecycle totals contain no account or content identifiers and remain as historical counts; personal-source reports can change after withdrawal or deletion. Metrics never grant access to an individual’s private case or content.</p>
           </section>
           <section>
             <h2 className="mb-2 text-3xl">Calendars, Events and Responses</h2>
