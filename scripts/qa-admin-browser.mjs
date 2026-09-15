@@ -142,13 +142,14 @@ try {
   await page
     .getByRole("heading", { name: "Admin view unavailable", exact: true })
     .waitFor();
+  await page.getByRole("button", { name: "Log out", exact: true }).waitFor();
   const denied = await context.request.get(
     config.origin + "/api/platform/admin?view=queue"
   );
   assert.equal(denied.status(), 404);
   assert.match(denied.headers()["cache-control"], /no-store/);
   ok(
-    "Ordinary member has no Admin entry and the actual API denies the private queue without caching it."
+    "Ordinary member has no Admin entry; the denied page preserves the signed-in account shell, and the actual API denies the private queue without caching it."
   );
   await signIn(f.owner);
   await go("/platform/menu");

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { readAdminPageNavigation } from "@/lib/platform/admin-session";
 import { adminReturnTo } from "@/lib/platform/admin-links";
+import { getCurrentPlatformUser } from "@/lib/platform/session";
 import { PlatformShell } from "./platform-shell";
 import { AdminWorkspace } from "./admin-workspace";
 export async function AdminPage({
@@ -33,8 +34,11 @@ export async function AdminPage({
     )
       throw Error("Unavailable");
   } catch {
+    // Losing an admin duty is not a sign-out. Keep the current account shell
+    // without loading any denied admin source or presenting a guest identity.
+    const user = await getCurrentPlatformUser().catch(() => null);
     return (
-      <PlatformShell user={null}>
+      <PlatformShell user={user}>
         <section className="container-shell space-y-5 py-10">
           <h1 className="text-3xl">Admin view unavailable</h1>
           <p>

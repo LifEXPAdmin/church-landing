@@ -20,7 +20,9 @@ The revised production preview passes five actual browser groups, 13 HTTPS/expor
 release checks, types and hydration/runtime packaging gates. It includes native
 resolve/reopen after admin refresh, retained selection and keyboard return, partial
 bulk outcomes, actual authenticator enrollment and a fixture grant, confirmation
-focus and revoked-manager concealment. Disabled-Google confirmation, stale native
+focus and revoked-manager concealment. Denied admin routes retain a valid account's
+signed-in shell; that final delta passes the production build and all five browser
+groups. Disabled-Google confirmation, stale native
 form versions and the hidden/grid concealment defect were repaired in this feature.
 The 43-check admin/topic/Google pass succeeds. Permission-read optimization passes
 54/55 checks; a topic fixture search exceeded the first page and is now scoped to

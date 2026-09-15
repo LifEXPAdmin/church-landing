@@ -46,7 +46,8 @@ production assignment, and no setup key or recovery code appears in screenshots.
   now uses a unique fixture prefix, and the complete 13-test topic file passes.
   No product permission failure occurred in that run.
 - Actual production-mode browser acceptance passes five groups with zero runtime
-  errors. It covers ordinary-member/API denial; private filters and saved views;
+  errors. It covers ordinary-member/API denial with the signed-in shell preserved;
+  private filters and saved views;
   320/390/1440 layouts; a conflicting note draft saved exactly once; requester
   exclusion of the note; native resolve/reopen; retained selection and keyboard
   return focus; mixed successful/stale bulk rows; authenticator setup and QR;
@@ -61,12 +62,14 @@ production assignment, and no setup key or recovery code appears in screenshots.
   in the accumulated main checkout. Its failure remains preserved. A clean current
   source snapshot is running the complete gate; this is pending, not a pass.
 
-Browser testing found and repaired three integration defects within this feature:
+Browser testing and final route review repaired four integration defects within this feature:
 disabled Google configuration blocked password confirmation; embedded native
 support forms retained an old source version after admin refresh; and Tailwind's
-grid display overrode the hidden attribute on retained private content. Explicit
+grid display overrode the hidden attribute on retained private content; and a denied
+admin route incorrectly presented a current signed-in account as a guest. Explicit
 concealment now survives revoked access. Confirmation focus waits for the refreshed
-form to become visible. Prior failing artifacts remain private.
+form to become visible. The final denied-route shell delta passes its production
+build, types/lint and all five actual browser groups. Prior failing artifacts remain private.
 
 ## Recovery and production boundary
 
