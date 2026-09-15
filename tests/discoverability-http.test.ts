@@ -49,10 +49,22 @@ const locs = (xml: string) =>
     m[1].replace(/&amp;/g, "&")
   );
 async function sitemap(kind: string) {
-  const r = await get("/sitemap.xml?kind=" + kind + "&page=0");
-  assert.equal(r.status, 200);
-  assert.match(r.headers.get("cache-control")!, /no-store/);
-  return r.text();
+  const index = await get("/sitemap.xml");
+  assert.equal(index.status, 200);
+  const children = locs(await index.text()).filter(
+    (url) => new URL(url).searchParams.get("kind") === kind
+  );
+  const pages: string[] = [];
+  for (const url of children) {
+    assert.equal(new URL(url).origin, origin);
+    const response = await get(url);
+    assert.equal(response.status, 200);
+    assert.match(response.headers.get("cache-control")!, /no-store/);
+    const body = await response.text();
+    assert.ok(locs(body).length <= 500);
+    pages.push(body);
+  }
+  return pages.join("\n");
 }
 test("actual public crawler, guest and member HTML share current canonical metadata and supplied structured facts", async () => {
   const f = await seedSharing(db);
@@ -107,7 +119,10 @@ test("public sitemap index covers current shards, static information and eligibl
     ["posts", f.post.id],
     ["events", f.occurrence.id]
   ])
-    assert.ok((await sitemap(kind)).includes(id));
+    assert.ok(
+      (await sitemap(kind)).includes(id),
+      kind + " includes its current source across all batches"
+    );
   const site = await sitemap("site");
   for (const path of ["/platform", "/about", "/help"])
     assert.ok(locs(site).includes(origin + path));
