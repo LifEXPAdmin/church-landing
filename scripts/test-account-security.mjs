@@ -1056,6 +1056,23 @@ try {
     ...churchTables,
     ...supportTables
   ]) {
+    if (table === "PlatformMetricConfiguration") {
+      if (
+        psql(
+          [
+            "-Atc",
+            `SELECT count(*)=1 AND bool_and(version=1 AND zone='America/Chicago'
+        AND "openingStates"='{"ENABLED":0,"DEACTIVATED":0,"SUSPENDED":0}'::jsonb)
+        FROM "PlatformMetricConfiguration"`
+          ],
+          freshUrl
+        ).trim() !== "t"
+      )
+        throw new Error(
+          "Fresh metrics setup must have one empty operational baseline"
+        );
+      continue;
+    }
     if (
       psql(["-Atc", `SELECT count(*) FROM "${table}"`], freshUrl).trim() !== "0"
     )

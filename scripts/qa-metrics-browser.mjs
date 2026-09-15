@@ -319,7 +319,12 @@ try {
       exact: true
     })
     .check();
-  await page.getByRole("combobox").selectOption("SEARCH");
+  await page
+    .getByRole("combobox", {
+      name: "How did you hear about God’s Churches?",
+      exact: true
+    })
+    .selectOption("SEARCH");
   await page.evaluate(() => {
     window.dispatchEvent(new Event("blur"));
     window.dispatchEvent(new Event("focus"));
@@ -375,7 +380,12 @@ try {
   );
   await go(settings);
   await checkbox().waitFor();
-  await page.getByRole("combobox").selectOption("CHURCH");
+  await page
+    .getByRole("combobox", {
+      name: "How did you hear about God’s Churches?",
+      exact: true
+    })
+    .selectOption("CHURCH");
   const beforeOther = await readMeasurementChoice(db, member.token);
   await saveMeasurementChoice(db, member.token, {
     operation: "choice",
@@ -387,7 +397,15 @@ try {
   });
   await save();
   await page.getByText(/Your unsaved choices are retained/).waitFor();
-  assert.equal(await page.getByRole("combobox").inputValue(), "CHURCH");
+  assert.equal(
+    await page
+      .getByRole("combobox", {
+        name: "How did you hear about God’s Churches?",
+        exact: true
+      })
+      .inputValue(),
+    "CHURCH"
+  );
   assert.equal(
     (await readMeasurementChoice(db, member.token)).referral,
     "SOCIAL"
@@ -396,7 +414,13 @@ try {
     .getByRole("button", { name: "Reload saved choices", exact: true })
     .click();
   await eventually(
-    async () => (await page.getByRole("combobox").inputValue()) === "SOCIAL"
+    async () =>
+      (await page
+        .getByRole("combobox", {
+          name: "How did you hear about God’s Churches?",
+          exact: true
+        })
+        .inputValue()) === "SOCIAL"
   );
   ok(
     "Idle navigation writes nothing; trusted foreground input creates one minimal fact; another-device change rejects stale save"
