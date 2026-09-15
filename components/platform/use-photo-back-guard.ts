@@ -41,7 +41,10 @@ function stop() {
   const done = settled;
   settled = null;
   settling = null;
-  done?.();
+  // A promise resolved inside one native popstate listener can resume before
+  // later listeners run. Let Next finish its restore dispatch before a waiting
+  // refresh/navigation; that restore would otherwise discard the new action.
+  if (done) setTimeout(done, 0);
 }
 function release() {
   if (!guard || pending.size) return;

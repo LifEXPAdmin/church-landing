@@ -643,7 +643,7 @@ try {
     .getByText("No topics match this search.", { exact: true })
     .waitFor();
   await page
-    .getByRole("textbox", { name: "Search topics", exact: true })
+    .getByRole("searchbox", { name: "Search topics", exact: true })
     .fill(`Browser paging ${tag}`);
   await page
     .getByRole("button", { name: "Search topics", exact: true })
