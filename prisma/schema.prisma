@@ -1169,6 +1169,7 @@ model SupportIntakeSetting {
 }
 
 model SupportCase {
+  feedback FeedbackSubmission?
   id String @id @default(cuid())
   adminVersion Int @default(0)
   priority AdminPriority @default(NORMAL)
@@ -1213,6 +1214,32 @@ model SupportCase {
   @@index([requesterId, updatedAt])
   @@index([ownerGrantId, updatedAt])
   @@index([status, updatedAt])
+}
+
+// Feedback adds metadata to one canonical private case, not a second inbox.
+model FeedbackSubmission {
+  caseId String @id
+  kind String
+  rating Int?
+  entryPoint String @default("VOLUNTARY")
+  version Int @default(1)
+  sharingVersion Int @default(1)
+  contactAllowed Boolean @default(false)
+  contactInApp Boolean @default(false)
+  contactEmail Boolean @default(false)
+  contactPush Boolean @default(false)
+  allowIdea Boolean @default(false)
+  publicAttribution Boolean @default(false)
+  contextRelease String?
+  contextDevice String?
+  contextBrowser String?
+  contextErrorRef String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  redactedAt DateTime?
+  case SupportCase @relation(fields: [caseId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  @@index([kind, createdAt])
+  @@index([entryPoint, createdAt])
 }
 
 model SupportCoordinatorShare {

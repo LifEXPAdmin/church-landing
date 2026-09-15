@@ -320,7 +320,16 @@ export async function downloadAccountExport(
         status: true,
         createdAt: true,
         updatedAt: true,
-        coordinatorShare: { select: { createdAt: true, revokedAt: true } }
+        coordinatorShare: { select: { createdAt: true, revokedAt: true } },
+        feedback: {
+          select: {
+            kind: true, rating: true, entryPoint: true, contactAllowed: true,
+            contactInApp: true, contactEmail: true, contactPush: true,
+            allowIdea: true, publicAttribution: true, contextRelease: true,
+            contextDevice: true, contextBrowser: true, contextErrorRef: true,
+            createdAt: true, redactedAt: true
+          }
+        }
       }
     });
     const supportMessages = await tx.supportMessage.findMany({

@@ -62,7 +62,7 @@ export async function visibleSupportIds(
   tx: PostTx,
   actor: SupportActor,
   grant: { id: string; version: number } | null,
-  options: { id?: string; page?: number; assigned?: boolean } = {}
+  options: { id?: string; page?: number; assigned?: boolean; feedbackOnly?: boolean } = {}
 ) {
   const scope = await supportVisibilityScope(
     tx,
@@ -74,6 +74,7 @@ export async function visibleSupportIds(
     SELECT s.id FROM "SupportCase" s
     ${supportVisibilityJoins}
     WHERE ${scope}
+      ${options.feedbackOnly ? Prisma.sql`AND s."requesterId"=${actor.id} AND EXISTS(SELECT 1 FROM "FeedbackSubmission" f WHERE f."caseId"=s.id)` : Prisma.empty}
       ${options.id ? Prisma.sql`AND s.id=${options.id}` : Prisma.empty}
     ORDER BY s."updatedAt" DESC, s.id DESC
     OFFSET ${(options.page ?? 0) * 20} LIMIT ${options.id ? 1 : 21}`);

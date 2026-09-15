@@ -13,6 +13,14 @@ import { PortalError } from "./portal-policy";
 import { recordAppealControl, recordAdminPrivacyControl } from "./retention-controls";
 import { emptyAdminText, emptyAdminBug, redactAdminCaseNotes } from "./admin-privacy";
 import { postContext } from "./post-access";
+import {
+  FEEDBACK_NOTICE,
+  feedbackCreateFields,
+  feedbackChoiceFields,
+  parseFeedback,
+  parseFeedbackChoices,
+  emptyFeedback
+} from "./feedback-policy";
 import { reportReviewAuthority } from "./community-report-review";
 import { reportReviewHref } from "./community-report-types";
 import {
@@ -294,7 +302,7 @@ async function visibleWhere(
   tx: Tx,
   actor: Actor,
   onlyAssigned = false,
-  options: { id?: string; page?: number } = {}
+  options: { id?: string; page?: number; feedbackOnly?: boolean } = {}
 ): Promise<Prisma.SupportCaseWhereInput> {
   const grant = await staffGrant(tx, actor, "RESPOND");
   const rows = await visibleSupportIds(
@@ -351,7 +359,7 @@ export async function readSupport(
   db: PrismaClient,
   token: unknown,
   view: SupportView,
-  input: { caseId?: string; churchId?: string; page?: unknown } = {}
+  input: { caseId?: string; churchId?: string; page?: unknown; feedbackOnly?: boolean } = {}
 ): Promise<SupportSnapshot> {
   return support(db, token, async (tx, actor) => {
     const page = pageNumber(input.page);
@@ -381,7 +389,7 @@ export async function readSupport(
       },
       staff: { respond: !!respond || reportReviewer, assign: !!assign },
       intake: {
-        available: !!recipientGrant,
+        available: !!recipientGrant && (!input.feedbackOnly || process.env.FEEDBACK_INTAKE_ENABLED === "true"),
         recipient: recipientGrant
           ? {
               id: recipientGrant.id,
@@ -389,7 +397,7 @@ export async function readSupport(
               name: recipientGrant.user.name
             }
           : null,
-        notice: SUPPORT_NOTICE
+        notice: input.feedbackOnly ? FEEDBACK_NOTICE : SUPPORT_NOTICE
       },
       churches: [],
       rows: [],
@@ -443,7 +451,7 @@ export async function readSupport(
     if (view === "requests" || view === "inbox") {
       if (view === "inbox" && !respond && !reportReviewer) throw denied();
       const rows = await tx.supportCase.findMany({
-        where: await visibleWhere(tx, actor, view === "inbox", { page }),
+        where: await visibleWhere(tx, actor, view === "inbox", { page, feedbackOnly: input.feedbackOnly }),
         select: {
           id: true,
           subject: true,
@@ -477,7 +485,7 @@ export async function readSupport(
       where: {
         AND: [
           { id: identifier(input.caseId) },
-          await visibleWhere(tx, actor, false, { id: input.caseId })
+          await visibleWhere(tx, actor, false, { id: input.caseId, feedbackOnly: input.feedbackOnly })
         ]
       },
       select: {
@@ -488,6 +496,15 @@ export async function readSupport(
         updatedAt: true,
         resolution: true,
         featureDecision: true,
+        feedback: {
+          select: {
+            kind: true, rating: true, entryPoint: true, version: true,
+            sharingVersion: true, contactAllowed: true, contactInApp: true,
+            contactEmail: true, contactPush: true, allowIdea: true,
+            publicAttribution: true, contextRelease: true, contextDevice: true,
+            contextBrowser: true, contextErrorRef: true, redactedAt: true
+          }
+        },
         requester: { select: person },
         church: { select: { id: true, name: true } },
         ownerGrant: { select: { user: { select: person } } },
@@ -530,6 +547,10 @@ export async function readSupport(
       unread: (c.reads[0]?.version ?? 0) < c.version,
       resolution: c.resolution,
       featureDecision: c.featureDecision,
+      feedback: c.feedback ? {
+        ...c.feedback,
+        redactedAt: c.feedback.redactedAt?.toISOString() ?? null
+      } : null,
       church: c.church,
       requester: c.requester,
       owner: appealOwner ?? c.ownerGrant?.user ?? null,
@@ -565,6 +586,8 @@ export async function readSupport(
 }
 
 const operationFields: Record<string, string[]> = {
+  "feedback-create": feedbackCreateFields,
+  "feedback-choices": [...feedbackChoiceFields, "feedbackVersion"],
   appeal: [
     "decisionId",
     "decisionVersion",
@@ -677,14 +700,22 @@ export async function supportCommand(
         429,
         "You have reached today's request update limit. Please try tomorrow."
       );
-    if (op === "create" || op === "appeal") {
+    if (op === "create" || op === "appeal" || op === "feedback-create") {
       if (input.caseId != null || input.expectedVersion != null)
         throw new SupportError(400, "Use the new request form.");
       let createData: Prisma.SupportCaseUncheckedCreateInput;
+      let feedback: ReturnType<typeof parseFeedback> | undefined;
       if (op === "appeal") {
         createData = await prepareContentAppeal(tx, actor.id, input);
       } else {
-        const category = text(input.category, 30) as SupportCategory;
+        if (op === "feedback-create") {
+          if (process.env.FEEDBACK_INTAKE_ENABLED !== "true")
+            throw new SupportError(503, "Feedback intake is unavailable. Nothing has been submitted.");
+          feedback = parseFeedback(input);
+        }
+        const category = feedback
+          ? feedback.metadata.kind === "SUGGESTION" ? "FEATURE_SUGGESTION" : "ACCOUNT_WEBSITE"
+          : text(input.category, 30) as SupportCategory;
         if (!Object.hasOwn(supportCategories, category))
           throw new SupportError(400, "Choose an ordinary help category.");
         if (category !== "ACCOUNT_WEBSITE" && !verified(actor))
@@ -703,7 +734,7 @@ export async function supportCommand(
             409,
             "The support recipient changed. Refresh to review who will receive your request."
           );
-        if (input.notice !== SUPPORT_NOTICE || input.consent !== true)
+        if (input.notice !== (feedback ? FEEDBACK_NOTICE : SUPPORT_NOTICE) || input.consent !== true)
           throw new SupportError(
             400,
             "Read and confirm who can see this request before sending it."
@@ -712,8 +743,13 @@ export async function supportCommand(
           requesterId: actor.id,
           churchId,
           category,
-          subject: text(input.subject, 120, 3),
-          description: text(input.description, 3000, 10),
+          subject: feedback?.subject ?? text(input.subject, 120, 3),
+          description: feedback?.description ?? text(input.description, 3000, 10),
+          ...(feedback ? {
+            bugActual: feedback.bugActual,
+            bugExpected: feedback.bugExpected,
+            bugSteps: feedback.bugSteps
+          } : {}),
           ownerGrantId: target.id,
           ownerGrantVersion: target.version,
           featureDecision: category === "FEATURE_SUGGESTION" ? "RECEIVED" : null
@@ -732,6 +768,10 @@ export async function supportCommand(
         data: createData,
         select: metadataSelect
       });
+      if (feedback)
+        await tx.feedbackSubmission.create({
+          data: { caseId: c.id, ...feedback.metadata }
+        });
       await tx.supportAuditEvent.create({
         data: {
           caseId: c.id,
@@ -761,6 +801,7 @@ export async function supportCommand(
         version: 1,
         message: c.moderationDecisionId
           ? "Reconsideration requested. Your explanation is saved in the help case for the assigned report reviewer."
+          : feedback ? "Feedback received. Your private receipt is saved here; no email or push was sent."
           : "Request received. Your request is saved here; no email was sent."
       };
     }
@@ -806,12 +847,35 @@ export async function supportCommand(
         version: c.version,
         message: "Marked as seen for your account."
       };
+    } else if (op === "feedback-choices") {
+      if (!rights.requester) throw denied();
+      const feedback = await tx.feedbackSubmission.findUnique({ where: { caseId: c.id } });
+      if (!feedback || feedback.redactedAt) throw denied();
+      expected(input.feedbackVersion, feedback.version);
+      const choices = parseFeedbackChoices(input, feedback.kind);
+      const sharingChanged = choices.allowIdea !== feedback.allowIdea ||
+        choices.publicAttribution !== feedback.publicAttribution;
+      await tx.feedbackSubmission.update({
+        where: { caseId: c.id },
+        data: {
+          ...choices,
+          version: { increment: 1 },
+          ...(sharingChanged ? { sharingVersion: { increment: 1 } } : {})
+        }
+      });
     } else if (op === "reply") {
       if (!open)
         throw new SupportError(
           409,
           "Reopen this request before adding a reply."
         );
+      if (!rights.requester) {
+        const feedback = await tx.feedbackSubmission.findUnique({
+          where: { caseId: c.id }, select: { contactAllowed: true }
+        });
+        if (feedback && !feedback.contactAllowed)
+          throw new SupportError(403, "This requester has not allowed feedback follow-up. You may update the case status without sending a question.");
+      }
       body = text(input.body, 2000, 1);
       if (rights.requester && c.status === "WAITING_FOR_REQUESTER")
         data.status =
@@ -946,6 +1010,10 @@ export async function supportCommand(
         data.subject = "Content removed for privacy";
         data.description = marker;
         data.resolution = null;
+        await tx.feedbackSubmission.updateMany({
+          where: { caseId: c.id, redactedAt: null },
+          data: { ...emptyFeedback, redactedAt: new Date(), version: { increment: 1 }, sharingVersion: { increment: 1 } }
+        });
         Object.assign(data,emptyAdminText,emptyAdminBug,{adminVersion:{increment:1}});
         const admin=await tx.supportCase.findUniqueOrThrow({where:{id:c.id},select:{adminGroupId:true}});
         if(admin.adminGroupId) await tx.adminCaseGroup.update({where:{id:admin.adminGroupId},data:{title:marker,engineeringUrl:""}});
@@ -962,7 +1030,7 @@ export async function supportCommand(
       data,
       select: { id: true, version: true, ownerGrantId: true,adminVersion:true }
     });
-    if(op==="redact"&&!input.messageId) await recordAdminPrivacyControl(tx,{sourceType:"SUPPORT",sourceId:c.id},actor.id,next.adminVersion);
+    if(op==="redact"&&!input.messageId) await recordAdminPrivacyControl(tx,{sourceType:"SUPPORT",sourceId:c.id},actor.id,next.adminVersion,true);
     if (body)
       await tx.supportMessage.create({
         data: {

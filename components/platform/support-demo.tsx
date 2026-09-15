@@ -50,6 +50,7 @@ const rows: SupportRow[] = [
   }
 ];
 const detail: SupportDetail = {
+  feedback: null,
   ...rows[1],
   status: "RECEIVED",
   subject: "Choosing what the directory shows",

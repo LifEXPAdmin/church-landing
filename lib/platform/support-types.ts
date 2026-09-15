@@ -37,6 +37,24 @@ export type SupportRow = {
   unread: boolean;
 };
 export type SupportDetail = SupportRow & {
+  feedback: {
+    kind: string;
+    rating: number | null;
+    entryPoint: string;
+    version: number;
+    sharingVersion: number;
+    contactAllowed: boolean;
+    contactInApp: boolean;
+    contactEmail: boolean;
+    contactPush: boolean;
+    allowIdea: boolean;
+    publicAttribution: boolean;
+    contextRelease: string | null;
+    contextDevice: string | null;
+    contextBrowser: string | null;
+    contextErrorRef: string | null;
+    redactedAt: string | null;
+  } | null;
   reconsideration?: boolean;
   reviewHref?: string;
   description: string;

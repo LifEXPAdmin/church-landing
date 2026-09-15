@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
+import { emptyFeedback } from "./feedback-policy";
 import {
   Prisma,
   type PrismaClient,
@@ -83,7 +84,7 @@ function validate(value: unknown): RetentionControlEntry {
     ].includes(r.kind)
       ? r.target === "ACCOUNT" &&
         r.operatorId !== null &&
-        r.outcome === "QUARANTINED"
+        (r.outcome === "QUARANTINED" || (r.kind === "ADMIN_SUPPORT" && r.outcome === "CASE_REDACTED"))
       : r.kind === "ACCOUNT_STATE"
         ? r.target === "ACCOUNT" &&
           r.sourceId === r.targetId &&
@@ -167,9 +168,9 @@ export function recordReportControl(
 }
 // Opaque privacy versions only: never replicate internal notes, bug reports or
 // credentials into the separately protected recovery journal.
-export function recordAdminPrivacyControl(tx:Tx,source:{sourceType:"SUPPORT"|"REPORT"|"CLAIM";sourceId:string},actorId:string,version:number) {
+export function recordAdminPrivacyControl(tx:Tx,source:{sourceType:"SUPPORT"|"REPORT"|"CLAIM";sourceId:string},actorId:string,version:number,wholeCase=false) {
   const now=new Date();
-  return record(tx,{id:randomUUID(),kind:`ADMIN_${source.sourceType}`,target:"ACCOUNT",targetId:actorId,sourceId:source.sourceId,version,policy,outcome:"QUARANTINED",operatorId:actorId,recordedAt:now.toISOString(),startedAt:now.toISOString(),reviewDueAt:retentionDate(now,90).toISOString(),endedAt:null});
+  return record(tx,{id:randomUUID(),kind:`ADMIN_${source.sourceType}`,target:"ACCOUNT",targetId:actorId,sourceId:source.sourceId,version,policy,outcome:wholeCase&&source.sourceType==="SUPPORT"?"CASE_REDACTED":"QUARANTINED",operatorId:actorId,recordedAt:now.toISOString(),startedAt:now.toISOString(),reviewDueAt:retentionDate(now,90).toISOString(),endedAt:null});
 }
 // Account recovery controls contain no login contact, report text or reason.
 export function recordAccountRestrictionControl(
@@ -524,6 +525,31 @@ export async function replayRetentionControls(
       await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(730221, 2)`;
       for (const entry of entries) {
         if (["ADMIN_SUPPORT","ADMIN_REPORT","ADMIN_CLAIM"].includes(entry.kind)) {
+          if (entry.kind === "ADMIN_SUPPORT" && entry.outcome === "CASE_REDACTED") {
+            // Original requester text is immutable except for privacy removal.
+            // A newer unrelated admin control may replay first, so its version
+            // must never mask an earlier full-source redaction. Later replies
+            // and later resolution text remain distinct from the removed source.
+            const source = { id: entry.sourceId };
+            const removedAt = new Date(entry.recordedAt);
+            const marker = "[Removed for privacy.]";
+            await tx.feedbackSubmission.updateMany({
+              where: { case: source, redactedAt: null },
+              data: { ...emptyFeedback, redactedAt: removedAt, version: { increment: 1 }, sharingVersion: { increment: 1 } }
+            });
+            await tx.supportMessage.updateMany({
+              where: { case: source, createdAt: { lte: removedAt } },
+              data: { body: marker, redactedAt: removedAt }
+            });
+            const laterResolution = await tx.supportMessage.findFirst({
+              where: { caseId: entry.sourceId, kind: "RESOLUTION", redactedAt: null, createdAt: { gt: removedAt } },
+              select: { id: true }
+            });
+            await tx.supportCase.updateMany({
+              where: source,
+              data: { subject: "Content removed for privacy", description: marker, ...(laterResolution ? {} : { resolution: null }) }
+            });
+          }
           const table=entry.kind==="ADMIN_SUPPORT"?Prisma.sql`"SupportCase"`:entry.kind==="ADMIN_REPORT"?Prisma.sql`"CommunityReport"`:Prisma.sql`"ChurchClaim"`;
           const noteKey=entry.kind==="ADMIN_SUPPORT"?Prisma.sql`"supportCaseId"`:entry.kind==="ADMIN_REPORT"?Prisma.sql`"reportId"`:Prisma.sql`"claimId"`;
           // Clear older internal text. Do not advance the native version: a

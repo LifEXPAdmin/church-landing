@@ -5,6 +5,7 @@ import {
   type RetentionControlJournal
 } from "./retention-controls";
 import { PortalError } from "./portal-policy";
+import { emptyFeedback } from "./feedback-policy";
 
 export const emptyAdminText = {
   nextAction: "",
@@ -35,6 +36,10 @@ export async function eraseAdminPersonalData(
   userId: string,
   now: Date
 ) {
+  await tx.feedbackSubmission.updateMany({
+    where: { case: { requesterId: userId }, redactedAt: null },
+    data: { ...emptyFeedback, redactedAt: now, version: { increment: 1 }, sharingVersion: { increment: 1 } }
+  });
   await tx.adminSavedView.deleteMany({ where: { userId } });
   await tx.adminAuthenticator.deleteMany({ where: { userId } });
   const sources = await tx.supportCase.findMany({

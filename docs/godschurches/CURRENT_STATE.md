@@ -1,3 +1,23 @@
+## Feedback intake candidate continuing — September 15, 2026 UTC
+
+Feature 31 is in progress and **unreleased**. The exact serving application remains
+the platform measurement core below. The native private-case transaction now owns
+feedback rating/type/context and separate contact/publication choices, with its
+existing retry receipt and current owner access. A private feedback API and
+owner-filtered receipt queries are added. One migration is installed only in an
+isolated fixture (69 to 70). Whole-case privacy replay is distinguished from
+ordinary internal-admin edits and cannot be skipped by a newer replayed marker.
+
+Five feedback plus six retention scenarios pass, alongside the previously passing
+ten admin and seventeen native support checks. Types and focused lint pass;
+initial test import/payload mistakes are retained. Read
+[the feedback contract and checkpoint](FEEDBACK_CONTRACT.md). Continue its forms,
+private attachments, durable prompts, reviewed ideas, subscriptions, digest/shared
+reports and full release acceptance within this feature. No feature-31 production
+schema, configuration, user data or outbound send has changed. Actual intake
+readiness, operator provisioning and physical observations remain explicit gates.
+The continuous Extra High run remains active; final review stays last.
+
 ## Platform growth measurement core verified live — September 15, 2026 UTC
 
 **2026.09.15.7 / 944d382d12742deec0aa36071dc30ffc444399d8** is READY in
