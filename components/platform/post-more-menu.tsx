@@ -12,6 +12,7 @@ export function PostMoreMenu({
   targetId,
   own,
   canEdit,
+  canModerate = false,
   canWithdraw
 }: {
   postId: string;
@@ -20,6 +21,7 @@ export function PostMoreMenu({
   targetId: string;
   own: boolean;
   canEdit: boolean;
+  canModerate?: boolean;
   canWithdraw: boolean;
 }) {
   const [open, setOpen] = useState(false);
@@ -42,6 +44,14 @@ export function PostMoreMenu({
   };
   const management = (
     <>
+      {canModerate && (
+        <Link
+          href={`/platform/posts/${postId}#post-discussion`}
+          onClick={() => reveal("post-discussion")}
+        >
+          Manage discussion
+        </Link>
+      )}
       {canEdit && (
         <Link
           href={`/platform/posts/${postId}#post-edit`}
@@ -73,7 +83,7 @@ export function PostMoreMenu({
         reportTarget={{ type: "POST", id: postId, label: "Report this post" }}
       />
     );
-  if (!canEdit && !canWithdraw && !canPin) return null;
+  if (!canEdit && !canWithdraw && !canModerate && !canPin) return null;
   return (
     <ActionPopover
       label="More post options"

@@ -110,6 +110,19 @@ export async function quarantineRestoredAccess(db: PrismaClient) {
         where: { revokedAt: null },
         data: { revokedAt: now }
       });
+      const topicRoles = await tx.topicMembership.updateMany({
+        where: { OR: [{ moderator: true }, { pendingRole: { not: null } }] },
+        data: {
+          moderator: false,
+          pendingRole: null,
+          invitedById: null,
+          version: { increment: 1 }
+        }
+      });
+      const topics = await tx.topicCommunity.updateMany({
+        where: { ownerId: { not: null } },
+        data: { recoveryRequired: true }
+      });
       const churchCapabilities = await tx.churchCapabilityGrant.updateMany({
         where: { revokedAt: null },
         data: { revokedAt: now, version: { increment: 1 } }
@@ -146,11 +159,13 @@ export async function quarantineRestoredAccess(db: PrismaClient) {
         deliveries: pendingDeliveries,
         conversationJobs: conversationJobs.count,
         googleAssociations: googleAssociations.count,
+        topicsNeedingOwnershipReview: topics.count,
         elevatedGrants:
           operators.count +
           churchCapabilities.count +
           churchRoles.count +
-          supportCapabilities.count
+          supportCapabilities.count +
+          topicRoles.count
       };
     },
     { maxWait: 10000, timeout: 60000 }

@@ -17,6 +17,32 @@ import {
 // Call only after the shared pinned/current report-scope authorization succeeds.
 // No author/audience changes, source copies, or arbitrary source IDs are accepted.
 export async function contentReviewSource(tx: PostTx, report: CommunityReport) {
+  if (report.targetType === "TOPIC") {
+    const topic = await tx.topicCommunity.findUnique({
+      where: { id: report.targetId },
+      select: {
+        id: true,
+        ownerId: true,
+        version: true,
+        moderationState: true,
+        lifecycle: true,
+        recoveryRequired: true
+      }
+    });
+    return (
+      topic && {
+        id: topic.id,
+        authorId: topic.ownerId,
+        authorChurchId: null,
+        version: topic.version,
+        moderationState: topic.moderationState,
+        type: "TOPIC" as const,
+        contextVersion: 0,
+        authorWithdrawn:
+          topic.lifecycle === "ARCHIVED" || topic.recoveryRequired
+      }
+    );
+  }
   if (report.targetType !== "POST" && report.targetType !== "COMMENT")
     return null;
   const fields = {
@@ -137,6 +163,8 @@ export async function moderateReportedContent(
   if (changed) {
     if (source.type === "POST")
       await tx.platformPost.update({ where: { id: source.id }, data });
+    else if (source.type === "TOPIC")
+      await tx.topicCommunity.update({ where: { id: source.id }, data });
     else
       await tx.platformPostComment.update({ where: { id: source.id }, data });
   }
@@ -258,6 +286,23 @@ export async function readContentNotices(
               ? ""
               : source.content,
           version: source.version
+        };
+    } else if (report.targetType === "TOPIC") {
+      const topic = await tx.topicCommunity.findFirst({
+        where: { id: report.targetId, ownerId: context.actorId ?? "" },
+        select: {
+          slug: true,
+          name: true,
+          description: true,
+          rules: true,
+          version: true
+        }
+      });
+      if (topic)
+        ownSource = {
+          href: `/platform/topics/${topic.slug}/manage`,
+          content: `${topic.name}\n\n${topic.description}\n\n${topic.rules}`,
+          version: topic.version
         };
     } else if (report.targetType === "COMMENT") {
       const source = await tx.platformPostComment.findFirst({

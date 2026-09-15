@@ -7,6 +7,7 @@ import {
   type PostTx
 } from "./post-access";
 import { postId } from "./post-input";
+import { requireTopicUnrestricted } from "./topic-policy";
 
 /** The source must remain public even when the viewer can read church content. */
 export function repostSourceWhere(
@@ -66,7 +67,10 @@ export async function originalForRepost(
     });
     if (!row) break;
     if (!row.repostKind) {
-      if (row.allowReposts) return row;
+      if (row.allowReposts) {
+        requireTopicUnrestricted(context, row.topicCommunityId);
+        return row;
+      }
       break;
     }
     if (!row.repostSourceId) break;

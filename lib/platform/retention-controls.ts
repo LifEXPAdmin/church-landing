@@ -24,6 +24,8 @@ export type RetentionControlEntry = {
     | "HOLD"
     | "MODERATION_POST"
     | "MODERATION_COMMENT"
+    | "MODERATION_TOPIC"
+    | "TOPIC_ACCESS"
     | "APPEAL"
     | "ACCOUNT_STATE"
     | "AUTHOR_WITHDRAW_POST"
@@ -64,35 +66,41 @@ function validate(value: unknown): RetentionControlEntry {
     r.policy !== policy ||
     ![r.recordedAt, r.startedAt, r.reviewDueAt].every(date) ||
     (r.endedAt !== null && !date(r.endedAt)) ||
-    !(r.kind === "ACCOUNT_STATE"
+    !(r.kind === "TOPIC_ACCESS"
       ? r.target === "ACCOUNT" &&
-        r.sourceId === r.targetId &&
         r.operatorId !== null &&
-        ["SUSPENDED", "RESTORED"].includes(r.outcome)
-      : r.kind === "REPORT"
-        ? r.target === "REPORT" &&
+        r.outcome === "QUARANTINED"
+      : r.kind === "ACCOUNT_STATE"
+        ? r.target === "ACCOUNT" &&
           r.sourceId === r.targetId &&
-          ["RECEIVED", "FOLLOW_UP_REQUIRED", "CLOSED"].includes(r.outcome)
-        : r.kind === "MODERATION_POST" || r.kind === "MODERATION_COMMENT"
+          r.operatorId !== null &&
+          ["SUSPENDED", "RESTORED"].includes(r.outcome)
+        : r.kind === "REPORT"
           ? r.target === "REPORT" &&
-            ["VISIBLE", "HIDDEN", "REMOVED"].includes(r.outcome)
-          : r.kind === "AUTHOR_WITHDRAW_POST" ||
-              r.kind === "AUTHOR_WITHDRAW_COMMENT"
+            r.sourceId === r.targetId &&
+            ["RECEIVED", "FOLLOW_UP_REQUIRED", "CLOSED"].includes(r.outcome)
+          : r.kind === "MODERATION_POST" ||
+              r.kind === "MODERATION_COMMENT" ||
+              r.kind === "MODERATION_TOPIC"
             ? r.target === "REPORT" &&
-              r.outcome === "WITHDRAWN" &&
-              r.endedAt === null
-            : r.kind === "APPEAL"
+              ["VISIBLE", "HIDDEN", "REMOVED"].includes(r.outcome)
+            : r.kind === "AUTHOR_WITHDRAW_POST" ||
+                r.kind === "AUTHOR_WITHDRAW_COMMENT"
               ? r.target === "REPORT" &&
-                [
-                  "RECEIVED",
-                  "IN_PROGRESS",
-                  "WAITING_FOR_REQUESTER",
-                  "RESOLVED",
-                  "CLOSED"
-                ].includes(r.outcome)
-              : r.kind === "HOLD" &&
-                ["REPORT", "MESSAGE"].includes(r.target) &&
-                ["PRESERVE", "REVIEW", "RELEASE"].includes(r.outcome)) ||
+                r.outcome === "WITHDRAWN" &&
+                r.endedAt === null
+              : r.kind === "APPEAL"
+                ? r.target === "REPORT" &&
+                  [
+                    "RECEIVED",
+                    "IN_PROGRESS",
+                    "WAITING_FOR_REQUESTER",
+                    "RESOLVED",
+                    "CLOSED"
+                  ].includes(r.outcome)
+                : r.kind === "HOLD" &&
+                  ["REPORT", "MESSAGE"].includes(r.target) &&
+                  ["PRESERVE", "REVIEW", "RELEASE"].includes(r.outcome)) ||
     ["CLOSED", "RESOLVED", "RELEASE"].includes(r.outcome) !==
       (r.endedAt !== null)
   )
@@ -168,6 +176,36 @@ export function recordAccountRestrictionControl(
     endedAt: null
   });
 }
+// Only opaque topic/account references and a monotonic security version leave
+// the database. An older backup must be quarantined, never guessed forward into
+// newer ownership, membership restrictions or role consent.
+export async function recordTopicAccessControl(
+  tx: Tx,
+  communityId: string,
+  actorId: string
+) {
+  const row = await tx.topicCommunity.update({
+    where: { id: communityId },
+    data: { securityVersion: { increment: 1 } },
+    select: { securityVersion: true }
+  });
+  const now = new Date();
+  await record(tx, {
+    id: randomUUID(),
+    kind: "TOPIC_ACCESS",
+    target: "ACCOUNT",
+    targetId: actorId,
+    sourceId: communityId,
+    version: row.securityVersion,
+    policy,
+    outcome: "QUARANTINED",
+    operatorId: actorId,
+    recordedAt: now.toISOString(),
+    startedAt: now.toISOString(),
+    reviewDueAt: retentionDate(now, 90).toISOString(),
+    endedAt: null
+  });
+}
 export function recordHoldControl(
   tx: Tx,
   hold: RetentionHold,
@@ -200,7 +238,11 @@ export function recordContentControl(
   return record(tx, {
     id: randomUUID(),
     kind:
-      report.targetType === "POST" ? "MODERATION_POST" : "MODERATION_COMMENT",
+      report.targetType === "POST"
+        ? "MODERATION_POST"
+        : report.targetType === "TOPIC"
+          ? "MODERATION_TOPIC"
+          : "MODERATION_COMMENT",
     target: "REPORT",
     targetId: report.id,
     sourceId: report.targetId,
@@ -433,6 +475,16 @@ export async function replayRetentionControls(
     async (tx) => {
       await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(730221, 2)`;
       for (const entry of entries) {
+        if (entry.kind === "TOPIC_ACCESS") {
+          await tx.$executeRaw`UPDATE "TopicCommunity" SET "recoveryRequired"=true,
+            "securityVersion"=${entry.version} WHERE id=${entry.sourceId} AND "securityVersion" < ${entry.version}`;
+          await record(tx, entry);
+          await tx.retentionControl.updateMany({
+            where: { id: entry.id, journaledAt: null },
+            data: { journaledAt: new Date() }
+          });
+          continue;
+        }
         if (entry.kind === "ACCOUNT_STATE") {
           // A newer restoration cannot authorize an older backup's account
           // credentials/assignments. Keep it suspended for current reinspection.
@@ -479,7 +531,8 @@ export async function replayRetentionControls(
         }
         if (
           entry.kind === "MODERATION_POST" ||
-          entry.kind === "MODERATION_COMMENT"
+          entry.kind === "MODERATION_COMMENT" ||
+          entry.kind === "MODERATION_TOPIC"
         ) {
           // An old backup cannot prove the text, audience and attachments that
           // were approved when a restriction was lifted. Keep that source hidden
@@ -491,7 +544,9 @@ export async function replayRetentionControls(
           const table =
             entry.kind === "MODERATION_POST"
               ? Prisma.sql`"PlatformPost"`
-              : Prisma.sql`"PlatformPostComment"`;
+              : entry.kind === "MODERATION_TOPIC"
+                ? Prisma.sql`"TopicCommunity"`
+                : Prisma.sql`"PlatformPostComment"`;
           await tx.$executeRaw(Prisma.sql`UPDATE ${table} SET "moderationState"=${visibility}::"ContentModerationState", version=${entry.version}
             WHERE id=${entry.sourceId} AND (version < ${entry.version} OR (version=${entry.version} AND ${entry.outcome !== "VISIBLE"}))`);
           await record(tx, entry);
@@ -591,12 +646,14 @@ export async function inspectRestoredHolds(db: PrismaClient) {
 }
 export async function inspectRestoredModeration(db: PrismaClient) {
   const [row] = await db.$queryRaw<Array<{ count: bigint }>>(Prisma.sql`
-    WITH latest AS (SELECT DISTINCT ON (kind, "sourceId") kind, "sourceId", version, payload FROM "RetentionControl" WHERE kind IN ('MODERATION_POST','MODERATION_COMMENT') ORDER BY kind, "sourceId", version DESC)
+    WITH latest AS (SELECT DISTINCT ON (kind, "sourceId") kind, "sourceId", version, payload FROM "RetentionControl" WHERE kind IN ('MODERATION_POST','MODERATION_COMMENT','MODERATION_TOPIC') ORDER BY kind, "sourceId", version DESC)
     SELECT count(*)::bigint AS count FROM latest r
     LEFT JOIN "PlatformPost" p ON r.kind='MODERATION_POST' AND p.id=r."sourceId"
     LEFT JOIN "PlatformPostComment" c ON r.kind='MODERATION_COMMENT' AND c.id=r."sourceId"
+    LEFT JOIN "TopicCommunity" t ON r.kind='MODERATION_TOPIC' AND t.id=r."sourceId"
     WHERE r.payload->>'outcome'='VISIBLE' AND
-      (p.version <= r.version AND p."moderationState" <> 'VISIBLE' OR c.version <= r.version AND c."moderationState" <> 'VISIBLE')`);
+      (p.version <= r.version AND p."moderationState" <> 'VISIBLE' OR c.version <= r.version AND c."moderationState" <> 'VISIBLE'
+       OR t.version <= r.version AND t."moderationState" <> 'VISIBLE')`);
   return Number(row.count);
 }
 export async function inspectRestoredAppeals(db: PrismaClient) {

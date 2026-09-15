@@ -46,6 +46,7 @@ async function accountRequest(body: Record<string, unknown>) {
 const date = (v: string) => new Date(v).toLocaleString();
 const duties: Record<string, string> = {
   churchAssignments: "Church positions",
+  topicOwnership: "Active topic community ownership",
   churchCapabilities: "Church permissions",
   operatorCapabilities: "Platform reviewer or operator permissions",
   contactAppointments: "Church contact appointments",

@@ -11,6 +11,7 @@ import { canOrganize } from "./post-participation";
 import { commentVisibleWhere, commentPreviewIds } from "./comment-policy";
 import {
   postCanEdit,
+  postCanModerate,
   postCanWithdraw,
   postCanReply,
   postInclude,
@@ -101,6 +102,7 @@ async function pageInclude(tx: PostTx, context: PostContext, ids: string[]) {
 function project(post: PostRow, context: PostContext, now: Date) {
   return {
     id: post.id,
+    topicCommunity: post.topicCommunity,
     createdAt: post.publishedAt ?? post.createdAt,
     updatedAt: post.updatedAt,
     type: post.type,
@@ -140,6 +142,7 @@ function project(post: PostRow, context: PostContext, now: Date) {
     commentCount: post._count.comments,
     photoCount: post._count.images + post._count.photoReferences,
     canEdit: postCanEdit(context, post),
+    canModerate: postCanModerate(context, post),
     canWithdraw: postCanWithdraw(context, post),
     canReply: postCanReply(context, post),
     hasParticipation: !!post.poll || post.volunteerSlots.length > 0,
@@ -249,6 +252,8 @@ export async function hydratePostPage(
   return ids.flatMap((id) => (byId.has(id) ? [byId.get(id)!] : []));
 }
 export type PostQuery = {
+  topicCommunityId?: string;
+  followedTopics?: boolean;
   excludePostId?: string;
   feed?: boolean;
   authorId?: string;
@@ -270,6 +275,16 @@ export async function listPostsIn(
   const filters: Prisma.PlatformPostWhereInput[] = [
     postReadableWhere(context, now)
   ];
+  if (query.topicCommunityId)
+    filters.push({ topicCommunityId: postId(query.topicCommunityId) });
+  if (query.followedTopics) {
+    if (!context.actorId)
+      throw new PortalError(401, "Sign in to read topics you follow.");
+    filters.push(
+      { topicCommunityId: { in: [...(context.topicFollowing ?? [])] } },
+      socialDiscoveryWhere(context)
+    );
+  }
   if (query.feed || query.search)
     filters.push(socialDiscoveryWhere(context), {
       OR: [
@@ -291,6 +306,7 @@ export async function listPostsIn(
     });
     filters.push({
       OR: [
+        { topicCommunityId: { in: [...(context.topicFollowing ?? [])] } },
         {
           authorChurchId: {
             in: followedChurches.flatMap((r) =>

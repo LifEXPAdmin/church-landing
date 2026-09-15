@@ -45,9 +45,10 @@ export default async function PostPage({
   if (!post) notFound();
   // An independent current-permission read may fail if access changed since the
   // post read. Never render management data or a partial editor in that case.
-  const editor = post.canWithdraw
-    ? await readPostEditor(post.id).catch(() => null)
-    : null;
+  const editor =
+    post.canWithdraw || post.canModerate
+      ? await readPostEditor(post.id).catch(() => null)
+      : null;
   const comments = post.comments.slice(0, 30);
   const last = comments.at(-1);
   const path = `/platform/posts/${post.id}`;

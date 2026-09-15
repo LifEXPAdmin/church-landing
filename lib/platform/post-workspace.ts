@@ -1,5 +1,10 @@
 import { postInteractionIdIn } from "./post-reads";
 import {
+  requireUnrestrictedTopicPost,
+  requireTopicParticipation,
+  topicPostReference
+} from "./topic-policy";
+import {
   savedPhotoReferences,
   type SavedPhotoReference
 } from "./post-photo-references";
@@ -29,6 +34,7 @@ export type PrivateDraftPayload = {
   linkUrl: string;
   photos?: SavedPhotoReference[];
   quoteSourceId?: string | null;
+  topicCommunityId?: string | null;
 };
 const draftFields = [
   "content",
@@ -44,7 +50,8 @@ const draftFields = [
   "eventOccurrenceId",
   "linkUrl",
   "photos",
-  "quoteSourceId"
+  "quoteSourceId",
+  "topicCommunityId"
 ];
 function plain(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value))
@@ -112,6 +119,9 @@ export function privateDraftPayload(value: unknown): PrivateDraftPayload {
     audienceChurchId: reference(p.audienceChurchId),
     eventOccurrenceId: reference(p.eventOccurrenceId),
     linkUrl: text(p.linkUrl ?? "", 2048),
+    ...(p.topicCommunityId !== undefined
+      ? { topicCommunityId: reference(p.topicCommunityId) }
+      : {}),
     ...(p.quoteSourceId !== undefined
       ? { quoteSourceId: reference(p.quoteSourceId) }
       : {}),
@@ -383,6 +393,31 @@ export async function postWorkspaceCommand(
     throw new PortalError(400, "Choose a supported workspace action.");
   const mutationId = key(input.mutationId),
     digest = fingerprint(input);
+  const checkTopicReceipt = async (
+    tx: PostTx,
+    ownerId: string,
+    result: Receipt
+  ) => {
+    if (op === "publish-draft" && result.postId) {
+      const post = await tx.platformPost.findUnique({
+        where: { id: result.postId },
+        select: { topicCommunityId: true }
+      });
+      if (post?.topicCommunityId)
+        requireTopicParticipation(
+          await postContext(tx, ownerId),
+          post.topicCommunityId
+        );
+    }
+    if (
+      op === "save-item" &&
+      (await topicPostReference(tx, postId(input.postId)))
+    ) {
+      const context = await postContext(tx, ownerId);
+      const id = await postInteractionIdIn(tx, context, postId(input.postId));
+      await requireUnrestrictedTopicPost(tx, context, id);
+    }
+  };
   let preparedLink: PostLink | undefined;
   if (op === "publish-draft") {
     const preflight = await withOwnedSession(db, token, async (tx, session) => {
@@ -395,6 +430,11 @@ export async function postWorkspaceCommand(
             409,
             "This retry key was used for different work."
           );
+        await checkTopicReceipt(
+          tx,
+          session.userId,
+          receipt.result as unknown as Receipt
+        );
         return { receipt: receipt.result as unknown as Receipt };
       }
       const row = await tx.privatePostDraft.findFirst({
@@ -429,6 +469,11 @@ export async function postWorkspaceCommand(
             409,
             "This retry key was used for different work."
           );
+        await checkTopicReceipt(
+          tx,
+          ownerId,
+          receipt.result as unknown as Receipt
+        );
         return receipt.result as unknown as Receipt;
       }
       if (
@@ -594,6 +639,7 @@ export async function postWorkspaceCommand(
             context,
             postId(input.postId)
           );
+          await requireUnrestrictedTopicPost(tx, context, id);
           if (
             !(await tx.platformPost.findFirst({
               where: { AND: [{ id }, postReadableWhere(context)] },

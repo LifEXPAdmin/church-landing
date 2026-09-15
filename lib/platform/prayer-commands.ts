@@ -1,4 +1,5 @@
 import type { PrismaClient } from "@prisma/client";
+import { requireUnrestrictedTopicPost } from "./topic-policy";
 import { postContext, type PostContext } from "./post-access";
 import { expected, PortalError } from "./portal-policy";
 import { socialCommand, socialInput } from "./social-operations";
@@ -219,6 +220,8 @@ export async function prayerCommand(
       context = await postContext(tx, ownerId);
       if (!removingSave) {
         target = await prayerTargetIn(tx, context, input);
+        if (input.desired === true)
+          await requireUnrestrictedTopicPost(tx, context, target.postId);
         if (operation === "update" && !target.canUpdate)
           throw new PortalError(
             403,

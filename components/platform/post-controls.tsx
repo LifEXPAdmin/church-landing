@@ -136,7 +136,12 @@ export function PostControls({
   const [photosOpened, setPhotosOpened] = useState(false);
   useEffect(() => {
     const reveal = () => {
-      if (!["#post-edit", "#post-remove"].includes(location.hash)) return;
+      if (
+        !["#post-edit", "#post-remove", "#post-discussion"].includes(
+          location.hash
+        )
+      )
+        return;
       const section = document.getElementById(location.hash.slice(1));
       if (section instanceof HTMLDetailsElement) {
         section.open = true;
@@ -181,7 +186,7 @@ export function PostControls({
         </details>
       )}
       {post.canDiscuss && (
-        <details>
+        <details id="post-discussion" className="scroll-mt-4">
           <summary className="min-h-11 cursor-pointer py-3 font-semibold">
             Discussion settings
           </summary>
@@ -218,7 +223,11 @@ export function PostControls({
               defaultValue={post.replyAudience}
               className={portalInputClass}
             >
-              <option value="VIEWERS">Eligible viewers with an account</option>
+              <option value="VIEWERS">
+                {post.topicCommunityId
+                  ? "Joined topic members who accept the current rules"
+                  : "Eligible viewers with an account"}
+              </option>
               {post.churchId && (
                 <option value="CHURCH_MEMBERS">
                   Approved church members only

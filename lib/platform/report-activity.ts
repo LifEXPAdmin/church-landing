@@ -68,6 +68,24 @@ export async function recordReportActivity(
       report.scopeChurchId,
       "MODERATE_CHURCH_POSTS"
     );
+  if (report.scopeTopicId && report.targetType !== "TOPIC") {
+    const topic = await tx.topicCommunity.findUnique({
+      where: { id: report.scopeTopicId },
+      select: { ownerId: true }
+    });
+    const managers = await tx.topicMembership.findMany({
+      where: {
+        communityId: report.scopeTopicId,
+        joined: true,
+        restrictedAt: null,
+        user: eligibleWhere,
+        OR: [{ moderator: true }, { userId: topic?.ownerId ?? "" }]
+      },
+      select: { userId: true },
+      take: 21
+    });
+    recipients.push(...managers.map((row) => row.userId));
+  }
   for (const recipientId of new Set(recipients)) {
     if (assignedReviewerId && assignedReviewerId !== recipientId) continue;
     const authority = await reportReviewAuthority(

@@ -5,6 +5,10 @@ import { postId as parsePostId } from "./post-input";
 import { postInteractionIdIn } from "./post-reads";
 import { socialCommand, socialInput } from "./social-operations";
 import { socialUserWhere } from "./social-policy";
+import {
+  requireUnrestrictedTopicPost,
+  topicPostReference
+} from "./topic-policy";
 
 export function readPostLike(
   db: PrismaClient,
@@ -47,11 +51,13 @@ export function postLikeCommand(
     "post-like",
     input,
     async (tx, ownerId) => {
+      const context = await postContext(tx, ownerId);
       const id = await postInteractionIdIn(
         tx,
-        await postContext(tx, ownerId),
+        context,
         parsePostId(input.postId)
       );
+      if (desired) await requireUnrestrictedTopicPost(tx, context, id);
       const where = { postId_userId: { postId: id, userId: ownerId } };
       const old = await tx.platformPostLike.findUnique({ where });
       expected(input.expectedVersion, old?.version ?? 0);
@@ -79,7 +85,20 @@ export function postLikeCommand(
         message: desired ? "Post liked." : "Like removed."
       };
     },
-    undefined,
+    async (tx, ownerId) => {
+      if (
+        desired &&
+        (await topicPostReference(tx, parsePostId(input.postId)))
+      ) {
+        const context = await postContext(tx, ownerId);
+        const id = await postInteractionIdIn(
+          tx,
+          context,
+          parsePostId(input.postId)
+        );
+        await requireUnrestrictedTopicPost(tx, context, id);
+      }
+    },
     "shared"
   );
 }

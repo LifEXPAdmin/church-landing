@@ -7,6 +7,10 @@ import {
   type PostTx
 } from "./post-access";
 import { postField, postId } from "./post-input";
+import {
+  requireTopicUnrestricted,
+  requireTopicParticipation
+} from "./topic-policy";
 import { expected, PortalError } from "./portal-policy";
 import { mentionAllowed } from "./social-policy";
 import { socialCommand, socialInput, socialKey } from "./social-operations";
@@ -111,6 +115,8 @@ export async function createCommentIn(
   const authorChurchId = input.authorChurchId
     ? postId(input.authorChurchId)
     : null;
+  if (post.topicCommunityId && authorChurchId)
+    throw new PortalError(400, "Topic discussions use your personal identity.");
   if (
     authorChurchId &&
     (!context.publishers.has(authorChurchId) ||
@@ -124,6 +130,7 @@ export async function createCommentIn(
   const row = await tx.platformPostComment.create({
     data: {
       postId: post.id,
+      topicCommunityId: post.topicCommunityId,
       authorId: context.actorId!,
       authorChurchId,
       content: postField(input.content, 1500, 2),
@@ -445,7 +452,27 @@ export async function commentCommand(
     "comments",
     input,
     run,
-    undefined,
+    async (tx, ownerId) => {
+      if (!input.postId) return;
+      const context = await postContext(tx, ownerId);
+      const post = await tx.platformPost.findUnique({
+        where: { id: postId(input.postId) }
+      });
+      if (!post?.topicCommunityId) return;
+      if (["create", "edit"].includes(String(input.operation))) {
+        await readableConversation(tx, context, post.id);
+        requireTopicParticipation(context, post.topicCommunityId);
+      } else if (
+        (input.operation === "like" && input.desired === true) ||
+        (input.operation === "conversation" && input.mode === "FOLLOW")
+      )
+        requireTopicUnrestricted(context, post.topicCommunityId);
+      else if (input.operation === "pin" && !canPinComment(context, post))
+        throw new PortalError(
+          403,
+          "Current topic or post management access is required."
+        );
+    },
     input.operation === "create" || input.operation === "like"
       ? "shared"
       : "exclusive"

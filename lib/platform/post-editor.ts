@@ -26,6 +26,12 @@ export function getPostComposer(db: PrismaClient, token: unknown) {
       orderBy: [{ name: "asc" }, { id: "asc" }]
     });
     return {
+      topics: await tx.topicCommunity.findMany({
+        where: { id: { in: [...(context.topicParticipants ?? [])] } },
+        select: { id: true, name: true, slug: true },
+        orderBy: [{ nameKey: "asc" }, { id: "asc" }],
+        take: 200
+      }),
       photoLibraryEnabled: photoLibraryEnabled(),
       churches: churches.map((c) => ({
         ...c,
@@ -104,10 +110,10 @@ export function getPostEditor(db: PrismaClient, token: unknown, id: string) {
       post.authorChurchId ??
       (post.audience === "CHURCH" ? post.audienceChurchId : null);
     const moderation =
-      moderationChurchId && (canEdit || canModerate)
-        ? await tx.churchAuditEvent.findMany({
+      post.topicCommunityId && (canEdit || canModerate)
+        ? await tx.topicAudit.findMany({
             where: {
-              churchId: moderationChurchId,
+              communityId: post.topicCommunityId,
               targetId: post.id,
               action: "DISCUSSION_MODERATED"
             },
@@ -123,7 +129,26 @@ export function getPostEditor(db: PrismaClient, token: unknown, id: string) {
             orderBy: [{ createdAt: "desc" }, { id: "desc" }],
             take: 10
           })
-        : [];
+        : moderationChurchId && (canEdit || canModerate)
+          ? await tx.churchAuditEvent.findMany({
+              where: {
+                churchId: moderationChurchId,
+                targetId: post.id,
+                action: "DISCUSSION_MODERATED"
+              },
+              select: {
+                id: true,
+                actorId: true,
+                reason: true,
+                fromState: true,
+                toState: true,
+                version: true,
+                createdAt: true
+              },
+              orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+              take: 10
+            })
+          : [];
     const names = new Map(
       moderation.length
         ? (
@@ -141,6 +166,7 @@ export function getPostEditor(db: PrismaClient, token: unknown, id: string) {
     );
     return {
       id: post.id,
+      topicCommunityId: post.topicCommunityId,
       version: post.version,
       content: post.content,
       contentNote: post.contentNote ?? "",

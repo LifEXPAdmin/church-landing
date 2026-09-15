@@ -10,6 +10,7 @@ import {
   requireRepostActor
 } from "./repost-policy";
 import { getPostViewIn } from "./post-reads";
+import { topicPostReference } from "./topic-policy";
 
 export function readRepostOptions(
   db: PrismaClient,
@@ -74,101 +75,118 @@ export function repostCommand(
     "audienceChurchId",
     "audience"
   ]);
-  return socialCommand(db, token, "reposts", input, async (tx, ownerId) => {
-    const context = await postContext(tx, ownerId);
-    if (input.operation === "undo") {
-      const row = await tx.platformPost.findUnique({
-        where: { id: postId(input.id) }
+  return socialCommand(
+    db,
+    token,
+    "reposts",
+    input,
+    async (tx, ownerId) => {
+      const context = await postContext(tx, ownerId);
+      if (input.operation === "undo") {
+        const row = await tx.platformPost.findUnique({
+          where: { id: postId(input.id) }
+        });
+        if (!row || row.repostKind !== "PLAIN")
+          throw new PortalError(404, "Repost unavailable.");
+        if (
+          row.authorChurchId
+            ? !context.publishers.has(row.authorChurchId)
+            : row.authorId !== ownerId
+        )
+          throw new PortalError(403, "You cannot remove this repost.");
+        expected(input.expectedVersion, row.version);
+        if (row.status !== "PUBLISHED" || row.withdrawnAt)
+          throw new PortalError(
+            409,
+            "This repost was already removed. Refresh its current state."
+          );
+        const removed = await tx.platformPost.update({
+          where: { id: row.id },
+          data: {
+            status: "WITHDRAWN",
+            withdrawnAt: new Date(),
+            version: { increment: 1 }
+          }
+        });
+        await tx.postAudit.create({
+          data: {
+            postId: row.id,
+            actorId: ownerId,
+            action: "repost-undone",
+            version: removed.version
+          }
+        });
+        return {
+          id: row.id,
+          version: removed.version,
+          message: "Repost removed. The original is unchanged."
+        };
+      }
+      if (input.operation !== "repost")
+        throw new PortalError(400, "Choose Repost or Undo repost.");
+      await requireRepostActor(tx, context);
+      const source = await originalForRepost(tx, context, input.sourceId);
+      expected(input.expectedSourceVersion, source.version);
+      const destination = repostDestination(context, input);
+      const existing = await tx.platformPost.findFirst({
+        where: {
+          repostKind: "PLAIN",
+          repostSourceId: source.id,
+          status: "PUBLISHED",
+          withdrawnAt: null,
+          authorChurchId: destination.authorChurchId,
+          audienceChurchId: destination.audienceChurchId,
+          ...(destination.authorChurchId ? {} : { authorId: ownerId })
+        }
       });
-      if (!row || row.repostKind !== "PLAIN")
-        throw new PortalError(404, "Repost unavailable.");
-      if (
-        row.authorChurchId
-          ? !context.publishers.has(row.authorChurchId)
-          : row.authorId !== ownerId
-      )
-        throw new PortalError(403, "You cannot remove this repost.");
-      expected(input.expectedVersion, row.version);
-      if (row.status !== "PUBLISHED" || row.withdrawnAt)
+      if (existing && existing.audience !== destination.audience)
         throw new PortalError(
           409,
-          "This repost was already removed. Refresh its current state."
+          "This destination already has a repost with a different audience. Review and undo that entry before creating another."
         );
-      const removed = await tx.platformPost.update({
-        where: { id: row.id },
+      if (existing)
+        return {
+          id: existing.id,
+          version: existing.version,
+          message: "This source is already reposted to this destination."
+        };
+      await requireSocialActivity(tx, ownerId, "post");
+      const row = await tx.platformPost.create({
         data: {
-          status: "WITHDRAWN",
-          withdrawnAt: new Date(),
-          version: { increment: 1 }
+          authorId: ownerId,
+          ...destination,
+          content: "",
+          repostKind: "PLAIN",
+          repostSourceId: source.id,
+          discussionClosed: true,
+          allowReposts: false,
+          publishedAt: new Date()
         }
       });
       await tx.postAudit.create({
         data: {
           postId: row.id,
           actorId: ownerId,
-          action: "repost-undone",
-          version: removed.version
+          action: "reposted",
+          version: row.version
         }
       });
       return {
         id: row.id,
-        version: removed.version,
-        message: "Repost removed. The original is unchanged."
+        version: row.version,
+        message: "Reposted with the original author's attribution."
       };
+    },
+    async (tx, ownerId) => {
+      if (
+        input.operation === "repost" &&
+        (await topicPostReference(tx, postId(input.sourceId)))
+      )
+        await originalForRepost(
+          tx,
+          await postContext(tx, ownerId),
+          input.sourceId
+        );
     }
-    if (input.operation !== "repost")
-      throw new PortalError(400, "Choose Repost or Undo repost.");
-    await requireRepostActor(tx, context);
-    const source = await originalForRepost(tx, context, input.sourceId);
-    expected(input.expectedSourceVersion, source.version);
-    const destination = repostDestination(context, input);
-    const existing = await tx.platformPost.findFirst({
-      where: {
-        repostKind: "PLAIN",
-        repostSourceId: source.id,
-        status: "PUBLISHED",
-        withdrawnAt: null,
-        authorChurchId: destination.authorChurchId,
-        audienceChurchId: destination.audienceChurchId,
-        ...(destination.authorChurchId ? {} : { authorId: ownerId })
-      }
-    });
-    if (existing && existing.audience !== destination.audience)
-      throw new PortalError(
-        409,
-        "This destination already has a repost with a different audience. Review and undo that entry before creating another."
-      );
-    if (existing)
-      return {
-        id: existing.id,
-        version: existing.version,
-        message: "This source is already reposted to this destination."
-      };
-    await requireSocialActivity(tx, ownerId, "post");
-    const row = await tx.platformPost.create({
-      data: {
-        authorId: ownerId,
-        ...destination,
-        content: "",
-        repostKind: "PLAIN",
-        repostSourceId: source.id,
-        discussionClosed: true,
-        allowReposts: false,
-        publishedAt: new Date()
-      }
-    });
-    await tx.postAudit.create({
-      data: {
-        postId: row.id,
-        actorId: ownerId,
-        action: "reposted",
-        version: row.version
-      }
-    });
-    return {
-      id: row.id,
-      version: row.version,
-      message: "Reposted with the original author's attribution."
-    };
-  });
+  );
 }

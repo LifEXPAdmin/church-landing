@@ -201,6 +201,9 @@ enum PlatformPostType {
 }
 
 model PlatformUser {
+  createdTopicCommunities TopicCommunity[] @relation("TopicCreator")
+  ownedTopicCommunities TopicCommunity[] @relation("TopicOwner")
+  topicMemberships TopicMembership[]
   pendingFounderWelcomeAt DateTime?
   founderWelcome FounderWelcome? @relation("WelcomeRecipient")
   sentFounderWelcomes FounderWelcome[] @relation("WelcomeFounder")
@@ -469,6 +472,7 @@ enum OperatorCapability {
 }
 
 enum CommunityReportTarget {
+  TOPIC
   POST
   COMMENT
   PROFILE
@@ -500,6 +504,8 @@ model CommunityReport {
   targetVersion Int
   contextVersion Int @default(0)
   scopeChurchId String?
+  scopeTopicId String?
+  scopeTopic TopicCommunity? @relation(fields: [scopeTopicId], references: [id], onDelete: Restrict)
   reason CommunityReportReason
   details String @default("")
   status CommunityReportStatus @default(RECEIVED)
@@ -516,6 +522,7 @@ model CommunityReport {
   @@unique([reporterId, targetType, targetId, targetVersion, contextVersion])
   @@index([reporterId, createdAt, id])
   @@index([scopeChurchId, status, createdAt])
+  @@index([scopeTopicId, status, createdAt])
   @@index([targetType, targetId])
   @@index([closedAt])
   @@index([reviewDueAt])
@@ -1199,6 +1206,82 @@ enum PostRepostKind {
   QUOTE
 }
 
+enum TopicLifecycle {
+  ACTIVE
+  ARCHIVED
+}
+
+enum TopicOfferedRole {
+  MODERATOR
+  OWNER
+}
+
+model TopicCommunity {
+  id String @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  name String
+  nameKey String @unique
+  slug String @unique
+  description String
+  rules String
+  rulesVersion Int @default(1)
+  version Int @default(1)
+  securityVersion Int @default(1)
+  recoveryRequired Boolean @default(false)
+  creatorId String?
+  ownerId String?
+  lifecycle TopicLifecycle @default(ACTIVE)
+  moderationState ContentModerationState @default(VISIBLE)
+  creator PlatformUser? @relation("TopicCreator", fields: [creatorId], references: [id], onDelete: Restrict)
+  owner PlatformUser? @relation("TopicOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  members TopicMembership[]
+  posts PlatformPost[]
+  reports CommunityReport[]
+  audit TopicAudit[]
+  @@index([lifecycle, moderationState, nameKey, id])
+  @@index([ownerId, lifecycle])
+}
+
+model TopicMembership {
+  id String @id @default(cuid())
+  communityId String
+  userId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  joined Boolean @default(false)
+  following Boolean @default(false)
+  rulesVersion Int @default(0)
+  moderator Boolean @default(false)
+  restrictedAt DateTime?
+  restrictionReason String?
+  pendingRole TopicOfferedRole?
+  invitedById String?
+  version Int @default(1)
+  community TopicCommunity @relation(fields: [communityId], references: [id], onDelete: Restrict)
+  user PlatformUser @relation(fields: [userId], references: [id], onDelete: Restrict)
+  posts PlatformPost[] @relation("TopicPostAuthor")
+  comments PlatformPostComment[] @relation("TopicCommentAuthor")
+  @@unique([communityId, userId])
+  @@index([userId, joined, following])
+  @@index([communityId, createdAt, id])
+}
+
+model TopicAudit {
+  id String @id @default(cuid())
+  communityId String
+  actorId String
+  targetId String?
+  action String
+  reason String?
+  fromState String?
+  toState String?
+  version Int
+  createdAt DateTime @default(now())
+  community TopicCommunity @relation(fields: [communityId], references: [id], onDelete: Restrict)
+  @@index([communityId, createdAt, id])
+}
+
 enum ContentModerationState {
   VISIBLE
   HIDDEN
@@ -1206,6 +1289,9 @@ enum ContentModerationState {
 }
 
 model PlatformPost {
+  topicCommunityId String?
+  topicCommunity TopicCommunity? @relation(fields: [topicCommunityId], references: [id], onDelete: Restrict)
+  topicAuthor TopicMembership? @relation("TopicPostAuthor", fields: [topicCommunityId, authorId], references: [communityId, userId], onDelete: NoAction, onUpdate: NoAction)
   id        String           @id @default(cuid())
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
@@ -1267,6 +1353,7 @@ model PlatformPost {
   @@index([repostSourceId])
   @@unique([authorId, requestKey])
   @@index([authorId])
+  @@index([topicCommunityId, status, publishedAt(sort: Desc), id(sort: Desc)])
   @@index([type])
   @@index([createdAt])
   @@index([audienceChurchId, status, publishedAt])
@@ -1375,6 +1462,8 @@ model PlatformPostLike {
 }
 
 model PlatformPostComment {
+  topicCommunityId String?
+  topicAuthor TopicMembership? @relation("TopicCommentAuthor", fields: [topicCommunityId, authorId], references: [communityId, userId], onDelete: NoAction, onUpdate: NoAction)
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
   postId    String

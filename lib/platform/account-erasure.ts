@@ -14,6 +14,29 @@ const personalPost = (userId: string) => ({
 });
 
 async function erasePrivateCollections(tx: Tx, userId: string) {
+  await tx.topicMembership.updateMany({
+    where: { userId },
+    data: {
+      joined: false,
+      following: false,
+      moderator: false,
+      pendingRole: null,
+      invitedById: null,
+      rulesVersion: 0,
+      restrictionReason: null,
+      version: { increment: 1 }
+    }
+  });
+  await tx.topicMembership.updateMany({
+    where: { invitedById: userId },
+    data: { pendingRole: null, invitedById: null, version: { increment: 1 } }
+  });
+  // Archived topic names/addresses stay reserved. Active shared ownership remains
+  // an explicit handoff exception; the inactive owner makes it unreadable.
+  await tx.topicCommunity.updateMany({
+    where: { ownerId: userId, lifecycle: "ARCHIVED" },
+    data: { ownerId: null, version: { increment: 1 } }
+  });
   await tx.prayerRecord.deleteMany({ where: { ownerId: userId } });
   await tx.prayerGuideReceipt.deleteMany({ where: { ownerId: userId } });
   await tx.savedPostItem.deleteMany({ where: { ownerId: userId } });

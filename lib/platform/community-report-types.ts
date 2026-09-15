@@ -1,4 +1,5 @@
 export const communityReportTargets = [
+  "TOPIC",
   "POST",
   "COMMENT",
   "PROFILE",
@@ -8,6 +9,7 @@ export const communityReportTargets = [
 ] as const;
 export type CommunityReportTarget = (typeof communityReportTargets)[number];
 export const communityReportTargetLabels = {
+  TOPIC: "topic community",
   POST: "post",
   COMMENT: "comment",
   PROFILE: "profile",
@@ -53,6 +55,7 @@ export type CommunityReviewPage = {
     status: keyof typeof communityReportStatusLabels;
     version: number;
     churchScoped: boolean;
+    topicScoped?: boolean;
     createdAt: string;
     updatedAt: string;
   }[];

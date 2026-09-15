@@ -20,6 +20,8 @@ import { eligibleWhere, expected, PortalError } from "./portal-policy";
 import { socialCommand, socialInput } from "./social-operations";
 import { socialUserWhere } from "./social-policy";
 import { adultMemberWhere } from "./adult-message-policy";
+import { topicPublicWhere } from "./topic-policy";
+import { topicHref } from "./topic-types";
 import {
   recordReportActivity,
   recordContentDecisionActivity
@@ -48,6 +50,7 @@ type Target = {
   version: number;
   contextVersion: number;
   scopeChurchId: string | null;
+  scopeTopicId?: string | null;
   source: { label: string; href: string };
 };
 
@@ -151,6 +154,23 @@ async function targetIn(
       }
     );
   }
+  if (type === "TOPIC") {
+    const row = await tx.topicCommunity.findFirst({
+      where: { id, ...topicPublicWhere },
+      select: { id: true, name: true, slug: true, version: true }
+    });
+    return (
+      row && {
+        type,
+        id,
+        version: row.version,
+        contextVersion: 0,
+        scopeChurchId: null,
+        scopeTopicId: row.id,
+        source: { label: row.name, href: topicHref(row.slug) }
+      }
+    );
+  }
   if (type === "POST") {
     const row = await tx.platformPost.findFirst({
       where: { AND: [{ id }, postReadableWhere(context)] },
@@ -159,7 +179,8 @@ async function targetIn(
         version: true,
         authorChurchId: true,
         audience: true,
-        audienceChurchId: true
+        audienceChurchId: true,
+        topicCommunityId: true
       }
     });
     return (
@@ -169,7 +190,8 @@ async function targetIn(
         version: row.version,
         contextVersion: 0,
         source: { label: "Selected post", href: `/platform/posts/${id}` },
-        scopeChurchId: churchScope(row)
+        scopeChurchId: churchScope(row),
+        scopeTopicId: row.topicCommunityId
       }
     );
   }
@@ -191,7 +213,8 @@ async function targetIn(
             version: true,
             authorChurchId: true,
             audience: true,
-            audienceChurchId: true
+            audienceChurchId: true,
+            topicCommunityId: true
           }
         }
       }
@@ -206,7 +229,8 @@ async function targetIn(
           label: "Selected comment",
           href: `/platform/posts/${row.post.id}?comment=${id}`
         },
-        scopeChurchId: churchScope(row.post)
+        scopeChurchId: churchScope(row.post),
+        scopeTopicId: row.post.topicCommunityId
       }
     );
   }
@@ -273,13 +297,35 @@ function reportLimit() {
 
 export async function communityReportIntakeAvailable(
   tx: PostTx,
-  scopeChurchId: string | null
+  scopeChurchId: string | null,
+  scopeTopicId?: string | null,
+  targetType?: string
 ) {
   if (
     process.env.COMMUNITY_REPORTS_ENABLED !== "true" ||
     reportLimit() === null
   )
     return false;
+  if (scopeTopicId && targetType !== "TOPIC") {
+    const community = await tx.topicCommunity.findFirst({
+      where: { id: scopeTopicId, ...topicPublicWhere },
+      select: { ownerId: true }
+    });
+    if (
+      community &&
+      (await tx.topicMembership.findFirst({
+        where: {
+          communityId: scopeTopicId,
+          joined: true,
+          restrictedAt: null,
+          user: eligibleWhere,
+          OR: [{ moderator: true }, { userId: community.ownerId! }]
+        },
+        select: { id: true }
+      }))
+    )
+      return true;
+  }
   if (!scopeChurchId)
     return !!(await tx.platformOperatorGrant.findFirst({
       where: {
@@ -406,14 +452,20 @@ export function readCommunityReports(
         target,
         available: await communityReportIntakeAvailable(
           tx,
-          target.scopeChurchId
+          target.scopeChurchId,
+          target.scopeTopicId,
+          target.type
         )
       };
     }
     if (query.view === "queue") {
       await eligibleActor(tx, ownerId);
       const authority = await reportReviewAuthority(tx, context);
-      if (!authority.global && !authority.churches.length)
+      if (
+        !authority.global &&
+        !authority.churches.length &&
+        !authority.topics.length
+      )
         throw new PortalError(
           403,
           "Report review is unavailable for this account."
@@ -450,6 +502,7 @@ export function readCommunityReports(
           status: row.status,
           version: row.version,
           churchScoped: !!row.scopeChurchId,
+          topicScoped: !!row.scopeTopicId,
           createdAt: row.createdAt.toISOString(),
           updatedAt: row.updatedAt.toISOString()
         })),
@@ -530,7 +583,28 @@ export function readCommunityReports(
                 where: { id: report.targetId },
                 select: { content: true, version: true, createdAt: true }
               })
-            : undefined;
+            : report.targetType === "TOPIC"
+              ? await tx.topicCommunity
+                  .findUnique({
+                    where: { id: report.targetId },
+                    select: {
+                      name: true,
+                      description: true,
+                      rules: true,
+                      version: true,
+                      createdAt: true
+                    }
+                  })
+                  .then((row) =>
+                    row
+                      ? {
+                          content: `${row.name}\n\n${row.description}\n\n${row.rules}`,
+                          version: row.version,
+                          createdAt: row.createdAt
+                        }
+                      : null
+                  )
+              : undefined;
       const source = await contentReviewSource(tx, report);
       const reconsiderationCases = await tx.supportCase.findMany({
         where: {
@@ -889,7 +963,14 @@ export function communityReportCommand(
           message:
             "You already reported this version. Your original private receipt is available."
         };
-      if (!(await communityReportIntakeAvailable(tx, target.scopeChurchId)))
+      if (
+        !(await communityReportIntakeAvailable(
+          tx,
+          target.scopeChurchId,
+          target.scopeTopicId,
+          target.type
+        ))
+      )
         throw new PortalError(
           503,
           "Reporting is unavailable for this item right now. Your report has not been submitted."
@@ -922,6 +1003,7 @@ export function communityReportCommand(
           targetVersion: target.version,
           contextVersion: target.contextVersion,
           scopeChurchId: target.scopeChurchId,
+          scopeTopicId: target.scopeTopicId,
           reason,
           details,
           reviewDueAt: retentionDate(new Date(), 30)

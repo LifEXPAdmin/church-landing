@@ -6,6 +6,7 @@ import { eligibleWhere } from "./portal-policy";
 export async function reportReviewAuthority(tx: PostTx, context: PostContext) {
   return {
     churches: [...context.moderators],
+    topics: [...(context.topicModerators ?? [])],
     global: !!(
       context.actorId &&
       (await tx.platformOperatorGrant.findFirst({
@@ -33,6 +34,7 @@ export type ReviewRow = Pick<
   | "createdAt"
   | "updatedAt"
   | "scopeChurchId"
+  | "scopeTopicId"
 >;
 
 // SQL aliases r (report), c (comment), p (post) are shared by the review
@@ -50,10 +52,20 @@ export function reviewReportScope(authority: ReportReviewAuthority) {
       authority.churches.length
         ? Prisma.sql`r."scopeChurchId" IN (${Prisma.join(authority.churches)})`
         : Prisma.sql`FALSE`
+    } OR ${
+      authority.topics.length
+        ? Prisma.sql`(r."scopeTopicId" IN (${Prisma.join(authority.topics)}) AND r."targetType" IN ('POST','COMMENT') AND r."scopeChurchId" IS NULL)`
+        : Prisma.sql`FALSE`
     })`;
   const currentScope = Prisma.sql`coalesce(p."authorChurchId",
     CASE WHEN p.audience = 'CHURCH' THEN p."audienceChurchId" END)`;
+  const currentTopic = Prisma.sql`CASE WHEN r."targetType" = 'TOPIC' THEN r."targetId" ELSE p."topicCommunityId" END`;
   return Prisma.sql`${original}
+      AND (${authority.global} OR ${currentTopic} IS NULL OR ${
+        authority.topics.length
+          ? Prisma.sql`${currentTopic} IN (${Prisma.join(authority.topics)})`
+          : Prisma.sql`FALSE`
+      })
       AND NOT EXISTS (SELECT 1 FROM "RetentionPurge" purge WHERE purge.target = 'REPORT' AND purge."targetId" = r.id)
       AND (${currentScope} IS NULL OR ${
         authority.churches.length
@@ -79,7 +91,7 @@ export function reviewReportRows(
 ) {
   return tx.$queryRaw<ReviewRow[]>(Prisma.sql`
     SELECT r.id, r."targetType", r.reason, r.status, r.version,
-      r."createdAt", r."updatedAt", r."scopeChurchId"
+      r."createdAt", r."updatedAt", r."scopeChurchId", r."scopeTopicId"
     FROM "CommunityReport" r
     ${reviewReportJoins}
     WHERE ${reviewReportScope(authority)}

@@ -32,6 +32,9 @@ async function handoffsIn(tx: Tx, userId: string) {
   // Duties retain their original scope and the request clock. They must be
   // resolved through current authorized transfers, never by guessing a successor.
   return {
+    topicOwnership: await tx.topicCommunity.count({
+      where: { ownerId: userId, lifecycle: "ACTIVE" }
+    }),
     churchAssignments: await tx.churchPositionAssignment.count({
       where: { connection: { userId }, revokedAt: null }
     }),

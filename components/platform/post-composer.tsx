@@ -139,6 +139,7 @@ function EventChoice({
 function ComposerDraft({
   options,
   initialChurch = "",
+  initialTopic,
   onSaved,
   onClose,
   closeChoice,
@@ -147,6 +148,7 @@ function ComposerDraft({
 }: {
   options: PostComposerOptions;
   initialChurch?: string;
+  initialTopic?: string;
   onSaved: () => void;
   onClose: () => void;
   closeChoice: boolean;
@@ -155,6 +157,7 @@ function ComposerDraft({
 }) {
   const id = useId();
   const [problem, setProblem] = useState("");
+  const [publicTopicConfirmed, setPublicTopicConfirmed] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   useEffect(() => {
     formRef.current
@@ -185,9 +188,12 @@ function ComposerDraft({
     controller.start(
       options.churches.some((c) => c.id === initialChurch)
         ? initialChurch
-        : null
+        : null,
+      options.topics.some((topic) => topic.id === initialTopic)
+        ? initialTopic
+        : undefined
     );
-  }, [controller, options, initialChurch]);
+  }, [controller, options, initialChurch, initialTopic]);
   useEffect(() => {
     if (state.postId) onSaved();
   }, [state.postId, onSaved]);
@@ -245,6 +251,12 @@ function ComposerDraft({
       onSubmit={(e) => {
         e.preventDefault();
         const problem = draftProblem(draft);
+        if (draft.topicCommunityId && !publicTopicConfirmed) {
+          setProblem(
+            "Confirm that this topic post will be public before publishing."
+          );
+          return;
+        }
         if (problem) {
           setProblem(problem);
           return;
@@ -326,6 +338,71 @@ function ComposerDraft({
           disabled={state.publishing || !!state.postId}
         >
           <PostDraftFields draft={draft} change={setDraft} />
+          {(options.topics.length > 0 || draft.topicCommunityId) && (
+            <div className="space-y-2">
+              <label className="block font-semibold" htmlFor={`${id}-topic`}>
+                Topic community
+              </label>
+              <select
+                id={`${id}-topic`}
+                className={portalInputClass}
+                value={draft.topicCommunityId ?? ""}
+                disabled={!!draft.quoteSourceId}
+                onChange={(event) => {
+                  setPublicTopicConfirmed(false);
+                  const topicCommunityId = event.target.value || null;
+                  controller.change({
+                    ...draft,
+                    topicCommunityId,
+                    ...(topicCommunityId
+                      ? {
+                          authorChurchId: null,
+                          audienceChurchId: null,
+                          eventOccurrenceId: null,
+                          audience: "PUBLIC",
+                          replyAudience: "VIEWERS"
+                        }
+                      : {})
+                  });
+                }}
+              >
+                <option value="">No topic community</option>
+                {draft.topicCommunityId &&
+                  !options.topics.some(
+                    (topic) => topic.id === draft.topicCommunityId
+                  ) && (
+                    <option value={draft.topicCommunityId}>
+                      Saved topic · access needs review
+                    </option>
+                  )}
+                {options.topics.map((topic) => (
+                  <option key={topic.id} value={topic.id}>
+                    {topic.name}
+                  </option>
+                ))}
+              </select>
+              <p className="text-sm text-gc-muted">
+                Join a topic and accept its current rules to publish there. A
+                published post keeps its destination.
+              </p>
+              {draft.topicCommunityId && (
+                <label className="flex min-h-11 items-start gap-2">
+                  <input
+                    type="checkbox"
+                    checked={publicTopicConfirmed}
+                    required
+                    onChange={(event) =>
+                      setPublicTopicConfirmed(event.target.checked)
+                    }
+                  />
+                  <span>
+                    I understand this topic post is public, including for
+                    guests. I am posting as myself.
+                  </span>
+                </label>
+              )}
+            </div>
+          )}
           {draft.quoteSourceId && state.ownerId && (
             <QuoteDraftPreview
               key={draft.quoteSourceId}
@@ -343,7 +420,7 @@ function ComposerDraft({
                 ? "Church members may reply"
                 : "Eligible viewers may reply"}
           </p>
-          <details className="space-y-3">
+          <details className="space-y-3" hidden={!!draft.topicCommunityId}>
             <summary className="cursor-pointer py-2 font-semibold">
               Author, audience and replies
             </summary>
@@ -619,10 +696,12 @@ function ComposerDraft({
 }
 function OpenPostComposer({
   initialChurch,
+  initialTopic,
   resumeId,
   dismiss
 }: {
   initialChurch?: string;
+  initialTopic?: string;
   resumeId?: string;
   dismiss: () => void;
 }) {
@@ -756,6 +835,7 @@ function OpenPostComposer({
             key={`${draftNumber}:${state.id}:${state.loadNumber}`}
             options={options}
             initialChurch={initialChurch}
+            initialTopic={initialTopic}
             onSaved={() => setFinished(true)}
             onClose={close}
             closeChoice={closeChoice}
@@ -790,11 +870,13 @@ function OpenPostComposer({
 
 export function PostComposer({
   initialChurch,
+  initialTopic,
   resumeId,
   id,
   label = "Share what's on your heart"
 }: {
   initialChurch?: string;
+  initialTopic?: string;
   resumeId?: string;
   id?: string;
   label?: string;
@@ -813,6 +895,7 @@ export function PostComposer({
       {open && (
         <OpenPostComposer
           initialChurch={initialChurch}
+          initialTopic={initialTopic}
           resumeId={resumeId}
           dismiss={() => setOpen(false)}
         />

@@ -1,5 +1,7 @@
 import { createHash } from "node:crypto";
 import { requireSocialActivity } from "./social-activity-limits";
+import { requireTopicParticipation } from "./topic-policy";
+import { topicAudit } from "./topic-communities";
 import {
   discussionModerationReasons,
   discussionSettingsState
@@ -188,6 +190,26 @@ export async function postCommandIn(
       "Use the publishing form to add or change a link."
     );
   if (op === "create") {
+    const topicCommunityId = input.topicCommunityId
+      ? postId(input.topicCommunityId)
+      : null;
+    requireTopicParticipation(context, topicCommunityId);
+    if (
+      topicCommunityId &&
+      (input.authorChurchId ||
+        input.audienceChurchId ||
+        input.eventOccurrenceId ||
+        input.quoteSourceId ||
+        input.scheduleLocal ||
+        input.scheduleZone ||
+        (input.audience !== undefined && input.audience !== "PUBLIC") ||
+        (input.replyAudience !== undefined &&
+          input.replyAudience !== "VIEWERS"))
+    )
+      throw new PortalError(
+        400,
+        "Topic posts are public personal discussions. Choose this topic without a church, event, schedule or quote destination."
+      );
     const authorChurchId = input.authorChurchId
       ? postId(input.authorChurchId)
       : null;
@@ -260,6 +282,7 @@ export async function postCommandIn(
         ...details(input),
         ...preparedLink,
         authorId: actorId,
+        topicCommunityId,
         authorChurchId,
         audienceChurchId,
         requestKey,
@@ -295,6 +318,20 @@ export async function postCommandIn(
     where: { id: postId(input.postId) }
   });
   if (!post) throw new PortalError(404, "Post unavailable.");
+  if (
+    input.topicCommunityId !== undefined &&
+    input.topicCommunityId !== post.topicCommunityId
+  )
+    throw new PortalError(400, "A published post keeps its topic destination.");
+  if (
+    post.topicCommunityId &&
+    ((input.audience !== undefined && input.audience !== "PUBLIC") ||
+      (input.replyAudience !== undefined && input.replyAudience !== "VIEWERS"))
+  )
+    throw new PortalError(
+      400,
+      "Topic posts remain public with topic member replies."
+    );
   if (
     op === "withdraw"
       ? !postCanWithdraw(context, post)
@@ -454,7 +491,21 @@ export async function postCommandIn(
       }
     });
     await audit(tx, updated, actorId, "discussion-changed");
-    if (asModerator)
+    if (asModerator && post.topicCommunityId)
+      await topicAudit(
+        tx,
+        post.topicCommunityId,
+        actorId,
+        "DISCUSSION_MODERATED",
+        updated.version,
+        {
+          targetId: post.id,
+          reason: input.moderationReason as string,
+          fromState: discussionSettingsState(post),
+          toState: discussionSettingsState(updated)
+        }
+      );
+    else if (asModerator)
       await tx.churchAuditEvent.create({
         data: {
           churchId: post.authorChurchId ?? post.audienceChurchId,

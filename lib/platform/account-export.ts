@@ -758,6 +758,42 @@ export async function downloadAccountExport(
         select: { guideVersion: true, version: true, acceptedAt: true },
         take: 1
       }),
+      topicChoices: await tx.topicMembership.findMany({
+        where: { userId },
+        select: {
+          communityId: true,
+          joined: true,
+          following: true,
+          rulesVersion: true,
+          moderator: true,
+          pendingRole: true,
+          restrictedAt: true,
+          restrictionReason: true,
+          version: true,
+          createdAt: true,
+          updatedAt: true
+        },
+        orderBy: { id: "asc" },
+        take: MAX_ROWS + 1
+      }),
+      ownedTopics: await tx.topicCommunity.findMany({
+        where: { ownerId: userId },
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          description: true,
+          rules: true,
+          rulesVersion: true,
+          lifecycle: true,
+          moderationState: true,
+          version: true,
+          createdAt: true,
+          updatedAt: true
+        },
+        orderBy: { id: "asc" },
+        take: MAX_ROWS + 1
+      }),
       prayerChoices: await tx.prayerRecord.findMany({
         where: { ownerId: userId },
         select: {

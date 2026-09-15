@@ -61,6 +61,9 @@ export function composerPayload(f: ComposerFields): PrivateDraftPayload {
     audienceChurchId: f.audienceChurchId,
     eventOccurrenceId: f.eventOccurrenceId,
     linkUrl: f.linkUrl,
+    ...(f.topicCommunityId !== undefined
+      ? { topicCommunityId: f.topicCommunityId }
+      : {}),
     ...(f.quoteSourceId !== undefined
       ? { quoteSourceId: f.quoteSourceId }
       : {}),
@@ -216,9 +219,10 @@ export class DraftController {
       return false;
     }
   };
-  start = (churchId: string | null = null) => {
+  start = (churchId: string | null = null, topicCommunityId?: string) => {
     if (!this.state.ownerId || this.state.id) return;
     const fields = emptyComposer(churchId);
+    if (topicCommunityId) fields.topicCommunityId = topicCommunityId;
     this.acknowledged = JSON.stringify(composerPayload(fields));
     this.set({ id: this.uuid(), fields });
   };

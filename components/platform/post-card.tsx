@@ -179,6 +179,7 @@ function PostCardContent({
                 own={currentUserId === post.author.id}
                 canEdit={post.canEdit}
                 canWithdraw={post.canWithdraw}
+                canModerate={post.canModerate}
               />
             </header>
             <>
@@ -201,6 +202,23 @@ function PostCardContent({
                   Topics: {post.topics.join(", ")}
                 </p>
               )}
+              {post.topicCommunity && (
+                <Link
+                  className="inline-flex min-h-11 items-center text-gc-accent underline"
+                  href={`/platform/topics/${post.topicCommunity.slug}`}
+                >
+                  {post.topicCommunity.name}
+                </Link>
+              )}
+              {post.topicCommunity &&
+                currentUserId &&
+                !post.canReply &&
+                !post.discussionClosed && (
+                  <p className="text-sm text-gc-muted">
+                    Open this topic to review its rules and your participation
+                    access.
+                  </p>
+                )}
               {post.eventOccurrenceId && (
                 <Link
                   className="inline-flex min-h-11 items-center text-gc-accent underline"

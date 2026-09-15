@@ -23,6 +23,14 @@ export function commentVisibleWhere(
   context: PostContext
 ): Prisma.PlatformPostCommentWhereInput {
   return {
+    AND: [
+      {
+        OR: [
+          { topicCommunityId: null },
+          { topicAuthor: { restrictedAt: null } }
+        ]
+      }
+    ],
     deletedAt: null,
     moderationState: "VISIBLE",
     OR: [
@@ -56,6 +64,10 @@ export async function commentPreviewIds(
     CROSS JOIN LATERAL (
       SELECT c.id FROM "PlatformPostComment" c
       WHERE c."postId"=page.id AND c."deletedAt" IS NULL
+        AND (c."topicCommunityId" IS NULL OR EXISTS (
+          SELECT 1 FROM "TopicMembership" tm WHERE tm."communityId"=c."topicCommunityId"
+            AND tm."userId"=c."authorId" AND tm."restrictedAt" IS NULL
+        ))
         AND c."moderationState"='VISIBLE'
         AND (c."authorChurchId" IS NOT NULL OR EXISTS (
           SELECT 1 FROM "PlatformUser" a WHERE a.id=c."authorId"
@@ -97,7 +109,7 @@ export function requireReply(context: PostContext, post: PlatformPost) {
   if (!postCanReply(context, post))
     throw new PortalError(
       403,
-      "Replies are closed or limited to approved church members."
+      "Replies are closed or limited to approved church or topic members. Check the current topic rules and your access."
     );
 }
 export function canPinComment(context: PostContext, post: PlatformPost) {

@@ -317,7 +317,11 @@ export function CommunityReportReview({
                         </strong>
                         <span className="block">
                           {communityReportStatusLabels[row.status]} ·{" "}
-                          {row.churchScoped ? "Church scope" : "Platform scope"}
+                          {row.churchScoped
+                            ? "Church scope"
+                            : row.topicScoped
+                              ? "Topic scope"
+                              : "Platform scope"}
                         </span>
                         <time dateTime={row.createdAt}>
                           {new Date(row.createdAt).toLocaleString()}
