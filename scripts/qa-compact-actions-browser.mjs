@@ -172,14 +172,15 @@ try {
   await menu.focus();
   await page.keyboard.press("Tab");
   assert.equal(
-    await menu.getByRole("link", { name: "Report this post", exact: true })
+    await menu
+      .getByRole("link", { name: "Report this post", exact: true })
       .evaluate((el) => el === document.activeElement),
     true
   );
   await page.keyboard.press("Tab");
   assert.equal(
     await page.evaluate(() => document.activeElement.textContent.trim()),
-    "Follow"
+    "Notify me of new posts"
   );
   await page.keyboard.press("Escape");
   await menu.waitFor({ state: "detached" });
@@ -315,7 +316,10 @@ try {
     .getByRole("dialog", { name: "More post options", exact: true })
     .getByRole("link", { name: "Edit", exact: true })
     .click();
-  await page.locator("#post-edit textarea").waitFor();
+  await page
+    .locator("#post-edit")
+    .getByLabel("Post content", { exact: true })
+    .waitFor();
   assert.equal(
     await page.locator("#post-edit").evaluate((el) => el.open),
     true

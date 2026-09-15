@@ -1,7 +1,9 @@
 # Complete notification integration
 
-Implementation in progress, 15 September 2026. This extends the accepted Activity,
-conversation and prayer services; it is not a release receipt.
+Release candidate, 15 September 2026. This extends the accepted Activity,
+conversation and prayer services. Local acceptance is recorded in
+[notification acceptance](NOTIFICATION_INTEGRATION_ACCEPTANCE.md); deployment and
+live verification remain required before completion.
 
 SocialEvent remains the recipient's canonical intent, with an immutable category,
 opaque source reference and source version for the new adapters. Source actions

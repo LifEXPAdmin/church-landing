@@ -78,15 +78,6 @@ const go = async (path) => {
   await page.goto(config.origin + path);
   await page.getByRole("heading", { level: 1 }).waitFor();
 };
-const bounded = async () =>
-  assert.ok(
-    await page.evaluate(
-      () => document.documentElement.scrollWidth <= innerWidth + 1
-    ),
-    "No horizontal page overflow"
-  );
-
-const { createPortalActor } = await import("../tests/seed-portal.ts");
 const { randomUUID } = await import("node:crypto");
 const signIn = (actor) =>
   context.addCookies([
@@ -228,7 +219,8 @@ try {
   release();
   await finished.promise;
   await page.unroute("**/api/platform/notifications");
-  await go("/platform/settings/notifications/availability");
+  await page.waitForLoadState("networkidle");
+  await page.reload();
   await group()
     .getByRole("checkbox", { name: "In-app alerts", exact: true })
     .waitFor();
@@ -315,7 +307,12 @@ try {
     []
   );
   await page.unroute("**/api/platform/notifications");
-  await go("/platform/settings/notifications/availability");
+  await page.waitForLoadState("networkidle");
+  assert.deepEqual(
+    await page.evaluate(() => window.__notificationOwnerWrites),
+    []
+  );
+  await page.reload();
   await page
     .getByRole("button", { name: "Save notification choices", exact: true })
     .waitFor();

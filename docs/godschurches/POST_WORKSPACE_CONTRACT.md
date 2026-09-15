@@ -212,7 +212,11 @@ null through reload and require a choice before publication.
 
 Controller verification: `node --import ./tests/register.mjs --test
 tests/draft-controller.test.ts`; isolated HTTPS browser verification:
-`scripts/qa-draft-controller-browser.mjs <fixture-directory>`.
+`scripts/qa-composer-shell-browser.mjs <fixture-directory>` exercises the current
+dialog, including exact save/publication retries, conflict recovery, resumed
+permissions, account changes, Back and focus restoration. The earlier
+`qa-draft-controller-browser.mjs` records the superseded inline composer and is
+not the current shared-editor acceptance entry point.
 
 Draft-library Resume opens the shared composer after checking the current
 session. It retains the acknowledged ID/version and all supported fields. Dirty

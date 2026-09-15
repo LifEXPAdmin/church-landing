@@ -152,6 +152,7 @@ export function NotificationSettings({ owner }: { owner: string }) {
     return () => {
       // A concealed or replaced settings page must also retire mutation replies,
       // including a late device acknowledgment that would write browser storage.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
       actionEpoch.current++;
       // Request generation counter, not a DOM ref.
       // eslint-disable-next-line react-hooks/exhaustive-deps

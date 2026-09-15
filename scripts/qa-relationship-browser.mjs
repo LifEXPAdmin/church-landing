@@ -92,7 +92,8 @@ const signIn = async (actor) =>
   ]);
 
 const { randomUUID } = await import("node:crypto");
-const { relationshipCommand } = await import("../lib/platform/relationships.ts");
+const { relationshipCommand } =
+  await import("../lib/platform/relationships.ts");
 try {
   const f = await seedPortal(db);
   await signIn(f.memberA);
@@ -264,19 +265,22 @@ try {
   );
   await go(`/platform/posts/${post.id}`);
   await page
-    .getByText(`Connections with ${f.memberB.name}`, { exact: true })
+    .getByRole("button", {
+      name: `More options for ${f.memberB.name}'s post`,
+      exact: true
+    })
     .click();
-  await choices()
-    .getByRole("button", { name: "Block personal account", exact: true })
-    .waitFor();
+  const menu = page.getByRole("dialog", {
+    name: `More options for ${f.memberB.name}'s post`,
+    exact: true
+  });
+  await menu.getByRole("button", { name: "Block", exact: true }).waitFor();
   page.once("dialog", (d) => {
     assert.match(d.message(), /signed out/);
     return d.accept();
   });
-  await choices()
-    .getByRole("button", { name: "Block personal account", exact: true })
-    .click();
-  await page.locator(".gc-post").waitFor({state:"detached"});
+  await menu.getByRole("button", { name: "Block", exact: true }).click();
+  await page.locator(".gc-post").waitFor({ state: "detached" });
   assert.ok(
     !(await page.locator("body").innerText()).includes(
       "Relationship visible source"
