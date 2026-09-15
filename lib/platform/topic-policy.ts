@@ -42,13 +42,15 @@ export async function topicContext(tx: PostTx, context: PostContext) {
       r.community.moderationState === "VISIBLE" &&
       r.community.owner &&
       !r.community.owner.suspendedAt &&
-      !r.community.owner.deactivatedAt
+      !r.community.owner.deactivatedAt &&
+      !context.blockedIds?.includes(r.community.ownerId ?? "")
   );
   return {
     topicParticipants: new Set(
       active
         .filter(
           (r) =>
+            context.eligible &&
             r.joined &&
             !r.restrictedAt &&
             r.rulesVersion === r.community.rulesVersion
@@ -59,6 +61,7 @@ export async function topicContext(tx: PostTx, context: PostContext) {
       active
         .filter(
           (r) =>
+            context.eligible &&
             r.joined &&
             !r.restrictedAt &&
             (r.moderator || r.community.ownerId === context.actorId)

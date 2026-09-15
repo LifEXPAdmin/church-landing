@@ -53,9 +53,9 @@ export async function postContext(
     ...(await socialPolicy(tx, actor.id)),
     actorId: actor.id
   };
-  if (!isEligible(actor)) return context;
-  Object.assign(context, { eligible: true });
+  Object.assign(context, { eligible: isEligible(actor) });
   Object.assign(context, await topicContext(tx, context));
+  if (!isEligible(actor)) return context;
   const connections = await tx.churchConnection.findMany({
     where: { userId, state: "APPROVED" },
     select: { churchId: true },

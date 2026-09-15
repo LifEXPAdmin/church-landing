@@ -16,7 +16,7 @@ export function PublicShareControls({
   showSiteQr = false,
   compact = false
 }: {
-  kind: "post" | "church" | "event" | "site";
+  kind: "post" | "church" | "event" | "site" | "topic";
   id: string;
   siteUrl?: string;
   showSiteQr?: boolean;

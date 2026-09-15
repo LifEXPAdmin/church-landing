@@ -127,6 +127,12 @@ export default async function HomeFeedPage({
           </div>
           {currentUser && <ComposePostButton />}
         </div>
+        <Link
+          className="mb-4 inline-flex min-h-11 items-center underline"
+          href="/platform/topics"
+        >
+          Explore topic communities
+        </Link>
         {currentUser &&
           !currentUser.emailVerifiedAt &&
           accountDeliveryAvailable() && (

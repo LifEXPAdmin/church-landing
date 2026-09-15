@@ -75,7 +75,16 @@ decisions. Only a verified current recovery source and legitimate ownership revi
 may establish permissions before traffic resumes. Account deletion retains active
 topic ownership as a handoff exception; archive or hand off the topic beforehand.
 
-## Foundation checkpoint
+## Foundation and interface checkpoint
+
+Public discovery, topic reading, creation, followed posts and private management
+pages now use the canonical composer/cards/report review. Joining and following
+remain separate. Current rules, explicit public-post confirmation, accepted role
+offers, bounded member/history pages, public sharing and retained-page visibility
+guards are implemented. Topic restrictions continue after verification loss;
+negative private choices remain available. The expanded isolated gate passes 38
+checks and types/focused lint pass. Full HTML/RSC, built browser and release
+acceptance below are still pending; this checkpoint is not a feature completion.
 
 The isolated 54-migration upgrade preserves existing account, follow, post and
 comment values after excluding the explicitly added nullable topic columns from
@@ -85,4 +94,5 @@ review, stale role consent, restrictions, safe account returns and recovery repl
 The dump/restore check passes. These are local foundation checks, not a complete
 feature or a production release. Public pages, member management UI, expanded
 integration/HTML/RSC/browser tests, costs, full gate, release and reconciliation
-remain in this same feature cycle.
+remain in this same feature cycle. The later interface checkpoint above supersedes
+the earlier statement that the pages had not yet been implemented.

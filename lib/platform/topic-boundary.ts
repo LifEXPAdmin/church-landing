@@ -9,6 +9,9 @@ import {
   listTopics,
   readTopic,
   readTopicMembers,
+  readTopicManagement,
+  topicEligibility,
+  topicFollowingAccess,
   topicCommand
 } from "./topic-communities";
 import {
@@ -34,23 +37,42 @@ export async function handleTopicRequest(db: PrismaClient, request: Request) {
     if (request.method === "GET") {
       const view = q.get("view") ?? "list";
       const result =
-        view === "topic" || view === "manage"
-          ? await readTopic(db, token, q.get("slug") ?? "", view === "manage")
-          : view === "members"
-            ? await readTopicMembers(
-                db,
-                token,
-                q.get("communityId"),
-                q.get("after") ?? undefined
-              )
-            : view === "list"
-              ? await listTopics(db, token, {
-                  q: q.get("q") ?? undefined,
-                  after: q.get("after") ?? undefined,
-                  mine: q.get("mine") === "1",
-                  owned: q.get("owned") === "1"
-                })
-              : null;
+        view === "eligibility"
+          ? await topicEligibility(db, token)
+          : view === "following"
+            ? await topicFollowingAccess(db, token)
+            : view === "public"
+              ? (await readTopic(db, token, q.get("slug") ?? "")).community
+              : view === "management"
+                ? await readTopicManagement(
+                    db,
+                    token,
+                    q.get("slug") ?? "",
+                    q.get("after") ?? undefined,
+                    q.get("auditAfter") ?? undefined
+                  )
+                : view === "topic" || view === "manage"
+                  ? await readTopic(
+                      db,
+                      token,
+                      q.get("slug") ?? "",
+                      view === "manage"
+                    )
+                  : view === "members"
+                    ? await readTopicMembers(
+                        db,
+                        token,
+                        q.get("communityId"),
+                        q.get("after") ?? undefined
+                      )
+                    : view === "list"
+                      ? await listTopics(db, token, {
+                          q: q.get("q") ?? undefined,
+                          after: q.get("after") ?? undefined,
+                          mine: q.get("mine") === "1",
+                          owned: q.get("owned") === "1"
+                        })
+                      : null;
       if (!result) throw new PortalError(400, "Choose a supported topic view.");
       return Response.json(result, { headers });
     }

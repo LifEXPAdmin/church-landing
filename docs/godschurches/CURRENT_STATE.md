@@ -1,3 +1,13 @@
+## Topic communities in progress — September 15, 2026 UTC
+
+The local topic foundation and public/member/owner pages are checkpointed.
+Thirteen topic checks plus 25 existing draft/review/retention checks pass with
+54-migration upgrade and topic-inclusive dump/restore fingerprints. Types and
+focused lint pass. Expanded production HTML/RSC, clean full regression, browser,
+costs, protected upgrade, deployment and private reconciliation remain within this
+same feature cycle. No topic feature/subtask is declared complete; the exact
+production release below is unchanged. See [current contract](TOPIC_COMMUNITIES_CONTRACT.md).
+
 ## Prayer and private follow-up verified live — September 14, 2026 UTC
 
 **2026.09.14.17 / e0dff560010e8bd785756d9f3c1abb4f5d335712** is READY in

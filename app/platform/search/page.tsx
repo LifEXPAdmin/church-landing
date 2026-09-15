@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { ExploreSearchForm } from "@/components/platform/explore-search-form";
 import { CommunitySearchResults } from "@/components/platform/community-search-results";
 import { PlatformShell } from "@/components/platform/platform-shell";
@@ -45,6 +46,12 @@ export default async function PlatformSearchPage({
             Explore
           </p>
           <h1 className="text-4xl">Find your community.</h1>
+          <Link
+            className="inline-flex min-h-11 items-center underline"
+            href={`/platform/topics${query.q && query.q.length <= 80 ? `?${new URLSearchParams({ q: query.q })}` : ""}`}
+          >
+            Explore topic communities
+          </Link>
           <ExploreSearchForm
             key={JSON.stringify(query)}
             query={query.q}

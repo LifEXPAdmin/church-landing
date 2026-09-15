@@ -6,16 +6,36 @@ import { postId } from "./post-input";
 import { commentVisibleWhere } from "./comment-policy";
 import { PortalError } from "./portal-policy";
 import type { PrismaClient } from "@prisma/client";
+import { topicPublicWhere } from "./topic-policy";
 
-export type ShareKind = "post" | "comment" | "church" | "event" | "profile";
+export type ShareKind =
+  | "post"
+  | "comment"
+  | "church"
+  | "event"
+  | "profile"
+  | "topic";
 export function canonicalSharePath(
   kind: unknown,
   id: unknown,
   commentId?: unknown
 ) {
-  if (!["post", "comment", "church", "event", "profile"].includes(String(kind)))
+  if (
+    !["post", "comment", "church", "event", "profile", "topic"].includes(
+      String(kind)
+    )
+  )
     throw new PortalError(400, "Choose a supported sharing destination.");
   const safeId = postId(id);
+  if (kind === "topic") {
+    if (
+      safeId.length < 3 ||
+      safeId.length > 60 ||
+      !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(safeId)
+    )
+      throw new PortalError(400, "Choose a valid topic address.");
+    return `/platform/topics/${safeId}`;
+  }
   if (kind === "comment")
     return `/platform/posts/${safeId}?comment=${postId(commentId)}`;
   return `/platform/${kind === "post" ? "posts" : kind === "church" ? "churches" : kind === "event" ? "events" : "profile"}/${safeId}`;
@@ -61,6 +81,20 @@ export function publicSharePreview(
   // narrow it; a session or crawler never expands the public preview audience.
   return withPostRead(db, token, async (tx, context) => {
     if (query.kind === "profile") return fallback;
+    if (query.kind === "topic") {
+      const topic = await tx.topicCommunity.findFirst({
+        where: { ...topicPublicWhere, slug: String(query.id) },
+        select: { name: true, description: true }
+      });
+      return topic
+        ? {
+            ...fallback,
+            available: true,
+            title: short(topic.name, 110),
+            description: short(topic.description, 160)
+          }
+        : fallback;
+    }
     if (query.kind === "post" || query.kind === "comment") {
       const row = await tx.platformPost.findFirst({
         where: {

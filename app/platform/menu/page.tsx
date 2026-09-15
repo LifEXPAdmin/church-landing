@@ -102,6 +102,20 @@ export default async function PlatformMenuPage() {
             <h2 id="menu-reading">Read and explore</h2>
             <ul className="gc-menu-links">
               <MenuLink
+                href="/platform/topics"
+                title="Topic communities"
+                description="Read public discussions, join a topic or start your own."
+                icon={BookOpen}
+              />
+              {user && (
+                <MenuLink
+                  href="/platform/topics/following"
+                  title="Topics I follow"
+                  description="Read the latest posts from topics you follow."
+                  icon={BookOpen}
+                />
+              )}
+              <MenuLink
                 href="/platform/features"
                 title="Explore features"
                 description="A guide to current capabilities and how to use them."

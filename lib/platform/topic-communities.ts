@@ -118,7 +118,13 @@ async function current(
   actorId: string,
   input: Record<string, unknown>
 ) {
-  await eligible(tx, actorId);
+  if (
+    !(
+      ["join", "follow"].includes(String(input.operation)) &&
+      input.desired === false
+    )
+  )
+    await eligible(tx, actorId);
   const context = await postContext(tx, actorId);
   if (input.operation === "create") return { context, row: null };
   const row = await tx.topicCommunity.findUnique({
@@ -539,9 +545,11 @@ export async function topicCommand(
               : "MEMBER",
           toState: saved.restrictedAt
             ? "RESTRICTED"
-            : saved.moderator
-              ? "MODERATOR"
-              : "MEMBER"
+            : op === "offer-role"
+              ? String(input.role)
+              : saved.moderator
+                ? "MODERATOR"
+                : "MEMBER"
         }
       );
       return {
@@ -670,6 +678,7 @@ export function readTopic(
       community,
       viewer: {
         accountId: context.actorId,
+        eligible: !!context.eligible,
         ...ownChoice(own),
         isOwner,
         canManage: isOwner || !!context.topicModerators?.has(row.id),
@@ -679,6 +688,23 @@ export function readTopic(
   });
 }
 export type TopicView = Awaited<ReturnType<typeof readTopic>>;
+
+export function topicEligibility(db: PrismaClient, token: unknown) {
+  return withPostRead(db, token, async (_tx, context) => ({
+    accountId: context.actorId,
+    eligible: !!context.eligible
+  }));
+}
+export function topicFollowingAccess(db: PrismaClient, token: unknown) {
+  return withPostRead(db, token, async (_tx, context) => {
+    if (!context.actorId)
+      throw new PortalError(401, "Sign in to read topics you follow.");
+    return {
+      accountId: context.actorId,
+      following: [...(context.topicFollowing ?? [])].sort()
+    };
+  });
+}
 
 export function readTopicMembers(
   db: PrismaClient,
@@ -732,7 +758,94 @@ export function readTopicMembers(
     });
     return {
       ownerId: context.actorId,
+      communityOwnerId: (
+        await tx.topicCommunity.findUniqueOrThrow({
+          where: { id },
+          select: { ownerId: true }
+        })
+      ).ownerId,
       members: rows.slice(0, 20),
+      after: rows.length > 20 ? rows[19].id : null
+    };
+  });
+}
+
+export async function readTopicManagement(
+  db: PrismaClient,
+  token: unknown,
+  address: string,
+  after?: string,
+  auditAfter?: string
+) {
+  const view = await readTopic(db, token, address, true);
+  const active =
+    view.community.lifecycle === "ACTIVE" &&
+    view.community.moderationState === "VISIBLE" &&
+    !view.community.recoveryRequired;
+  const members = active
+    ? await readTopicMembers(db, token, view.community.id, after)
+    : null;
+  const history = view.community.recoveryRequired
+    ? null
+    : await readTopicHistory(db, token, view.community.id, auditAfter);
+  return { view, members, history };
+}
+
+export function readTopicHistory(
+  db: PrismaClient,
+  token: unknown,
+  communityId: string,
+  after?: string
+) {
+  return withPostRead(db, token, async (tx, context) => {
+    const id = postId(communityId);
+    if (
+      !context.eligible ||
+      !context.actorId ||
+      !(await tx.topicCommunity.findFirst({
+        where: {
+          id,
+          recoveryRequired: false,
+          OR: [
+            { ownerId: context.actorId },
+            { id: { in: [...(context.topicModerators ?? [])] } }
+          ]
+        },
+        select: { id: true }
+      }))
+    )
+      throw new PortalError(
+        403,
+        "Current topic management access is required."
+      );
+    if (
+      after &&
+      !(await tx.topicAudit.findFirst({
+        where: { id: postId(after), communityId: id },
+        select: { id: true }
+      }))
+    )
+      throw new PortalError(
+        409,
+        "This history page changed. Reload the first page."
+      );
+    const rows = await tx.topicAudit.findMany({
+      where: { communityId: id },
+      select: {
+        id: true,
+        action: true,
+        reason: true,
+        fromState: true,
+        toState: true,
+        createdAt: true,
+        version: true
+      },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take: 21,
+      ...(after ? { cursor: { id: after }, skip: 1 } : {})
+    });
+    return {
+      entries: rows.slice(0, 20),
       after: rows.length > 20 ? rows[19].id : null
     };
   });

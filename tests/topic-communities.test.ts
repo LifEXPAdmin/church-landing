@@ -671,6 +671,7 @@ test("blocking and account lifecycle are checked again for public sources and ro
     })
   );
   assert.equal(await getPost(db, f.owner.token, post.id), null);
+  await denied(publish(f.member, f.topic.id), 403);
   await denied(
     topicCommand(
       db,
@@ -690,4 +691,226 @@ test("blocking and account lifecycle are checked again for public sources and ro
   });
   await denied(readTopic(db, undefined, f.topic.slug), 404);
   assert.equal(await getPost(db, undefined, post.id), null);
+});
+
+test("lost verification cannot bypass topic restrictions and preserves negative private choices", async () => {
+  const f = await fixture(),
+    p = await publish(f.owner, f.topic.id);
+  await topicCommand(
+    db,
+    f.member.token,
+    input("follow", {
+      communityId: f.topic.id,
+      desired: true,
+      expectedVersion: (await own(f.member, f.topic.id)).version
+    })
+  );
+  const like = {
+    mutationId: randomUUID(),
+    postId: p.id,
+    desired: true,
+    expectedVersion: 0
+  };
+  await postLikeCommand(db, f.member.token, like);
+  await topicCommand(
+    db,
+    f.owner.token,
+    input("restrict", {
+      communityId: f.topic.id,
+      targetId: f.member.id,
+      desired: true,
+      reason: "RULES",
+      expectedVersion: (await own(f.member, f.topic.id)).version
+    })
+  );
+  await db.platformUser.update({
+    where: { id: f.member.id },
+    data: { emailVerifiedAt: null }
+  });
+  await denied(postLikeCommand(db, f.member.token, like), 403);
+  await denied(publish(f.member, f.topic.id), 403);
+  assert.equal(
+    (await readTopic(db, f.member.token, f.topic.slug)).viewer.restricted,
+    true
+  );
+  await topicCommand(
+    db,
+    f.member.token,
+    input("follow", {
+      communityId: f.topic.id,
+      desired: false,
+      expectedVersion: (await own(f.member, f.topic.id)).version
+    })
+  );
+  await topicCommand(
+    db,
+    f.member.token,
+    input("join", {
+      communityId: f.topic.id,
+      desired: false,
+      expectedVersion: (await own(f.member, f.topic.id)).version
+    })
+  );
+  const state = await own(f.member, f.topic.id);
+  assert.equal(state.following, false);
+  assert.equal(state.joined, false);
+  assert.ok(state.restrictedAt);
+});
+
+test("topic sharing withdraws current metadata and scoped management history never discloses private follow choices", async () => {
+  const { publicSharePreview } = await import("../lib/platform/public-sharing");
+  const { readTopicManagement, readTopicHistory } =
+    await import("../lib/platform/topic-communities");
+  const f = await fixture(),
+    stranger = await createPortalActor(db, "topicoutsider");
+  const preview = await publicSharePreview(db, {
+    kind: "topic",
+    id: f.topic.slug
+  });
+  assert.equal(preview.available, true);
+  assert.equal(preview.path, `/platform/topics/${f.topic.slug}`);
+  const current = await readTopicManagement(db, f.owner.token, f.topic.slug);
+  assert.equal(current.members?.communityOwnerId, f.owner.id);
+  assert.equal(current.history?.entries[0].action, "CREATED");
+  for (const forbidden of [f.member.email, '"following"', '"invitedById"'])
+    assert.equal(
+      JSON.stringify({
+        members: current.members,
+        history: current.history
+      }).includes(forbidden),
+      false
+    );
+  await denied(readTopicHistory(db, stranger.token, f.topic.id), 403);
+  await db.topicAudit.createMany({
+    data: Array.from({ length: 22 }, (_, i) => ({
+      communityId: f.topic.id,
+      actorId: f.owner.id,
+      action: "EDITED",
+      version: i + 2
+    }))
+  });
+  const first = await readTopicHistory(db, f.owner.token, f.topic.id);
+  const second = await readTopicHistory(
+    db,
+    f.owner.token,
+    f.topic.id,
+    first.after!
+  );
+  assert.equal(first.entries.length, 20);
+  assert.equal(second.entries.length, 3);
+  assert.equal(
+    new Set([...first.entries, ...second.entries].map((e) => e.id)).size,
+    23
+  );
+  await topicCommand(
+    db,
+    f.owner.token,
+    input("archive", {
+      communityId: f.topic.id,
+      desired: true,
+      confirmed: true,
+      expectedVersion: f.topic.version
+    })
+  );
+  const hidden = await publicSharePreview(db, {
+    kind: "topic",
+    id: f.topic.slug
+  });
+  assert.equal(hidden.available, false);
+  assert.equal(
+    JSON.stringify(hidden).includes(String(f.topic.body.name)),
+    false
+  );
+  assert.equal(
+    (await readTopicManagement(db, f.owner.token, f.topic.slug)).members,
+    null
+  );
+});
+
+test("topic export is owner-scoped; archive permits closure and erasure preserves other members and restricted canonical content", async () => {
+  const { prepareAccountExport, downloadAccountExport } =
+    await import("../lib/platform/account-export");
+  const { requestPermanentAccountDeletion } =
+    await import("../lib/platform/account-deletion");
+  const { eraseRequestedAccountData } =
+    await import("../lib/platform/account-erasure");
+  const { deactivateAccount, AccountLifecycleError } =
+    await import("../lib/platform/account-lifecycle");
+  const { createSessionToken } = await import("../lib/platform/auth");
+  const f = await fixture(),
+    post = await publish(
+      f.member,
+      f.topic.id,
+      "Other member words must survive topic owner erasure"
+    );
+  await topicCommand(
+    db,
+    f.member.token,
+    input("follow", {
+      communityId: f.topic.id,
+      desired: true,
+      expectedVersion: (await own(f.member, f.topic.id)).version
+    })
+  );
+  const secret = process.env.AUTH_RATE_LIMIT_SECRET!;
+  const proof = await prepareAccountExport(
+    db,
+    f.owner.token,
+    f.owner.password,
+    secret
+  );
+  const exported = await downloadAccountExport(
+      db,
+      f.owner.token,
+      proof.authorization,
+      secret
+    ),
+    data = JSON.parse(exported);
+  assert.equal(data.ownedTopics.length, 1);
+  assert.equal(data.topicChoices.length, 1);
+  assert.equal(data.topicChoices[0].following, false);
+  assert.equal(exported.includes(f.member.email), false);
+  assert.equal(
+    exported.includes("Other member words must survive topic owner erasure"),
+    false
+  );
+  await assert.rejects(
+    deactivateAccount(db, f.owner.token, f.owner.password, true),
+    (e: unknown) => e instanceof AccountLifecycleError && e.code === "handoff"
+  );
+  await topicCommand(
+    db,
+    f.owner.token,
+    input("archive", {
+      communityId: f.topic.id,
+      desired: true,
+      confirmed: true,
+      expectedVersion: f.topic.version
+    })
+  );
+  const journal = { async recordAccount() {}, async completeAccount() {} };
+  await requestPermanentAccountDeletion(
+    db,
+    f.owner.token,
+    f.owner.password,
+    true,
+    createSessionToken(),
+    journal
+  );
+  const deletion = await db.accountDeletion.findUniqueOrThrow({
+    where: { userId: f.owner.id }
+  });
+  await eraseRequestedAccountData(db, deletion.id, journal);
+  const topic = await db.topicCommunity.findUniqueOrThrow({
+    where: { id: f.topic.id }
+  });
+  assert.equal(topic.ownerId, null);
+  assert.equal(topic.lifecycle, "ARCHIVED");
+  assert.equal((await own(f.member, f.topic.id)).following, true);
+  assert.equal(
+    (await db.platformPost.findUniqueOrThrow({ where: { id: post.id } }))
+      .content,
+    "Other member words must survive topic owner erasure"
+  );
+  await denied(readTopic(db, undefined, f.topic.slug), 404);
 });

@@ -120,6 +120,31 @@ test("an actual isolated database snapshot replays newer deletion and hold relea
     d = await createPortalActor(source, "restoreclearb");
   const e = await createPortalActor(source, "restorepriorclosure"),
     priorProof = createSessionToken();
+  const topicTag = randomUUID();
+  const restoredTopic = await source.topicCommunity.create({
+    data: {
+      name: `Fictional recovery topic ${topicTag}`,
+      nameKey: `fictional recovery topic ${topicTag}`,
+      slug: `recovery-${topicTag}`,
+      description: "Isolated recovery topic",
+      rules: "Respect privacy and discuss kindly.",
+      ownerId: b.id,
+      creatorId: b.id,
+      members: {
+        create: [
+          { userId: b.id, joined: true, rulesVersion: 1 },
+          { userId: c.id, joined: true, rulesVersion: 1, moderator: true },
+          {
+            userId: d.id,
+            joined: true,
+            rulesVersion: 1,
+            pendingRole: "OWNER",
+            invitedById: b.id
+          }
+        ]
+      }
+    }
+  });
   const priorClosure = await requestPermanentAccountDeletion(
     source,
     e.token,
@@ -423,6 +448,32 @@ test("an actual isolated database snapshot replays newer deletion and hold relea
     assert.ok(result.quarantine.devices > 0);
     assert.ok(result.quarantine.deliveries > 0);
     assert.ok(result.quarantine.conversationJobs > 0);
+    assert.ok(result.quarantine.topicsNeedingOwnershipReview > 0);
+    assert.equal(
+      (
+        await restored.topicCommunity.findUniqueOrThrow({
+          where: { id: restoredTopic.id }
+        })
+      ).recoveryRequired,
+      true
+    );
+    assert.equal(
+      await restored.topicMembership.count({
+        where: {
+          communityId: restoredTopic.id,
+          OR: [{ moderator: true }, { pendingRole: { not: null } }]
+        }
+      }),
+      0
+    );
+    assert.equal(
+      (
+        await source.topicCommunity.findUniqueOrThrow({
+          where: { id: restoredTopic.id }
+        })
+      ).recoveryRequired,
+      false
+    );
     assert.equal(
       await restored.commentFollowerJob.count({ where: { completedAt: null } }),
       0
