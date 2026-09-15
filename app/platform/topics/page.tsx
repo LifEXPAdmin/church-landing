@@ -53,13 +53,9 @@ export default async function TopicDiscoveryPage({
       const rows = (
         <div className="space-y-4">
           {query.after && (
-            <Link
-              prefetch={false}
-              className="gc-button gc-button-quiet"
-              href={path}
-            >
+            <a className="gc-button gc-button-quiet" href={path}>
               First topic page
-            </Link>
+            </a>
           )}
           {!result.topics.length && (
             <p>
@@ -94,13 +90,12 @@ export default async function TopicDiscoveryPage({
             ))}
           </ul>
           {result.after && (
-            <Link
-              prefetch={false}
+            <a
               className="gc-button gc-button-quiet"
               href={`/platform/topics?${new URLSearchParams({ ...Object.fromEntries(url), after: result.after })}`}
             >
               More topics
-            </Link>
+            </a>
           )}
         </div>
       );

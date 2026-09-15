@@ -540,13 +540,12 @@ export function TopicManagement({
             </article>
           ))}
           {members.after && (
-            <Link
-              prefetch={false}
+            <a
               className="gc-button gc-button-quiet"
               href={`${topicHref(topic.slug)}/manage?after=${encodeURIComponent(members.after)}`}
             >
               More topic members
-            </Link>
+            </a>
           )}
         </section>
       )}

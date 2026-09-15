@@ -137,9 +137,11 @@ try {
   await page.getByRole("link", { name: "Photos", exact: true }).click();
   await library.getByLabel("Choose photos", { exact: true }).setInputFiles({ name: "account-change.png", mimeType: "image/png", buffer: bytes });
   await signIn(other); await page.evaluate(() => window.dispatchEvent(new Event("focus")));
-  await library.getByText("Your sign-in changed. Reload before continuing.", { exact: true }).waitFor();
+  await page.getByRole("button", { name: "Recheck current access", exact: true }).waitFor();
+  await library.waitFor({ state: "hidden" });
   assert.equal(await library.getByRole("listitem", { name: "Upload account-change.png", exact: true }).count(), 0);
   assert.equal(await db.mediaAsset.count({ where: { profileUserId: other.id } }), 0);
+  await pauseUntil(async () => !(await page.evaluate(() => !!history.state?.gcPhotoWork)), "finish account-switch history cleanup");
   ok("Foreground account replacement clears selected files without a write under the replacement identity");
 
   await signIn(owner); await go(profile + "?tab=photos");

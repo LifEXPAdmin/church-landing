@@ -66,13 +66,9 @@ export default async function ManageTopicPage({
               Open public topic
             </Link>
             {after && (
-              <Link
-                prefetch={false}
-                className="gc-button gc-button-quiet"
-                href={path}
-              >
+              <a className="gc-button gc-button-quiet" href={path}>
                 First member page
-              </Link>
+              </a>
             )}
             <TopicManagement
               view={data.view}
@@ -140,13 +136,12 @@ export default async function ManageTopicPage({
                   ))}
                 </ol>
                 {data.history.after && (
-                  <Link
-                    prefetch={false}
+                  <a
                     className="gc-button gc-button-quiet"
                     href={`${path}?${new URLSearchParams({ auditAfter: data.history.after })}`}
                   >
                     Older management history
-                  </Link>
+                  </a>
                 )}
               </section>
             )}

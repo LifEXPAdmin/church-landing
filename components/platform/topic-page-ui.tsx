@@ -132,13 +132,9 @@ export async function TopicPosts({
         {followed ? "Posts in topics you follow" : "Topic discussions"}
       </h2>
       {before && cursor && (
-        <Link
-          prefetch={false}
-          className="gc-button gc-button-quiet"
-          href={path}
-        >
+        <a className="gc-button gc-button-quiet" href={path}>
           Latest topic posts
-        </Link>
+        </a>
       )}
       {!posts.length && (
         <p>
@@ -156,13 +152,12 @@ export async function TopicPosts({
         />
       ))}
       {all.length > 20 && last && (
-        <Link
-          prefetch={false}
+        <a
           className="gc-button gc-button-quiet"
           href={`${path}?${new URLSearchParams({ before: last.createdAt.toISOString(), cursor: last.id })}`}
         >
           Older topic posts
-        </Link>
+        </a>
       )}
     </section>
   );
