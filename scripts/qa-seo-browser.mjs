@@ -83,6 +83,12 @@ const structured = async () =>
   JSON.parse(
     await page.locator('script[type="application/ld+json"]').textContent()
   );
+const robots = () =>
+  page
+    .locator('meta[name="robots"]')
+    .evaluateAll((nodes) =>
+      nodes.map((node) => node.getAttribute("content")).join(", ")
+    );
 const ok = (message) => {
   results.push(message);
   console.log("PASS " + message);
@@ -117,10 +123,7 @@ try {
       .waitFor();
     await fits();
     assert.equal((await structured())["@type"], "Organization");
-    assert.doesNotMatch(
-      await page.locator('meta[name="robots"]').getAttribute("content"),
-      /noindex/
-    );
+    assert.doesNotMatch(await robots(), /noindex/);
     await page.screenshot({
       path: output + "/church-" + width + ".png",
       fullPage: true
@@ -162,10 +165,7 @@ try {
   );
   await fits();
   await go("/platform/churches?q=" + encodeURIComponent(f.church.name));
-  assert.match(
-    await page.locator('meta[name="robots"]').getAttribute("content"),
-    /noindex/
-  );
+  assert.match(await robots(), /noindex/);
   await page.getByText(f.church.name, { exact: true }).waitFor();
   ok(
     "Actual directory continuation keeps its own canonical address; user search remains noindex."
@@ -201,10 +201,7 @@ try {
     }
   });
   await page.reload();
-  assert.match(
-    await page.locator('meta[name="robots"]').getAttribute("content"),
-    /noindex/
-  );
+  assert.match(await robots(), /noindex/);
   assert.ok(
     !(await page.locator("body").innerText()).includes(
       "PRIVATE BROWSER SEO BODY"
@@ -232,10 +229,7 @@ try {
     await page.locator('script[type="application/ld+json"]').count(),
     0
   );
-  assert.match(
-    await page.locator('meta[name="robots"]').getAttribute("content"),
-    /noindex/
-  );
+  assert.match(await robots(), /noindex/);
   await go("/help");
   assert.equal(
     await page.locator('meta[property="og:image"]').getAttribute("content"),
@@ -248,10 +242,7 @@ try {
     })
     .click();
   await page.waitForURL(config.origin + "/platform/getting-started");
-  assert.match(
-    await page.locator('meta[name="robots"]').getAttribute("content"),
-    /noindex/
-  );
+  assert.match(await robots(), /noindex/);
   ok(
     "Canceled events retain honest guidance without scheduled markup; public Help retains branding and its protected guide link."
   );
