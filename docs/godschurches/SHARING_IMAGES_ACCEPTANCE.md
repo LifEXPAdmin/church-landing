@@ -1,7 +1,10 @@
 # Dynamic public sharing images
 
-15 September 2026. Implementation candidate for `2026.09.15.3`,
-`public-sharing-cards`. Exact release and live acceptance remain in progress.
+**Verified live — 15 September 2026 UTC.** `2026.09.15.3` /
+`public-sharing-cards`, application **433416388b95be194e8df2cf81fda4cff7c58ec8**,
+READY **dpl_6UrjCLi2uBktvPDW2CMmfiPpUZYE** at 10:48:07.803 UTC. Independent
+`godschurches.com` alias and serving product/build identity match at 10:49:31 UTC.
+The application delta is `03f72a8`; `4334163` adds the completed gate receipt.
 
 The existing public-preview endpoint accepts `format=png`. Its canonical
 public-only projection supplies bounded title/description and the current kind;
@@ -22,7 +25,7 @@ The installed Sharp dependency renders text from a bundled licensed font without
 remote font/image requests. Latin, Greek and Cyrillic are supported; missing glyphs
 use the generic card while HTML preserves the original public title. Font bytes,
 coverage, runtime traces, output size, rendering time and bounded source reads
-must be recorded before release. No new table, worker, scheduled task, service or
+are recorded below. No new table, worker, scheduled task, service or
 runtime package is introduced. The static/React SVG and PNG paths share one layout.
 
 The initial image/source run passed 23 of 26 checks. Three tests hit the retained
@@ -86,7 +89,45 @@ are reused. All nine final production-browser groups pass on `8328c04`: four
 Copy/Share/QR/RSVP-return groups and five repost/referral/private-Bookmark groups,
 with zero page errors. Native sharing and clipboard outcomes are deliberately
 simulated; the sign-in forms, source access and persistence are real isolated
-application flows. Exact deployed/live acceptance still needs to pass.
+application flows.
 Physical phone/self-draft preview, native share/crop and referral acceptance retain
 the existing owner prerequisites; simulated browsers do not close those criteria.
 Final batch review remains last.
+
+## Exact live acceptance and limits
+
+Fourteen public groups pass on the canonical deployment, including actual source
+HTML and PNG bytes, current branded public post/church previews, generic missing/
+profile/injected/invalid-kind fallbacks, no-store responses, optimizer denial,
+three Home widths, current feature/release guidance and preserved onboarding and
+older release links. The static fallback matches the reviewed 40,766-byte PNG.
+Both generated public images were visually inspected after downloading the actual
+live responses. One observed serial post-image request was 335.583 ms / 41,122
+bytes; the church image was 142.318 ms / 37,488 bytes. These single request timings
+include network and transfer and are not a capacity or latency guarantee.
+
+Four private health groups pass: the database is available, configured workers and
+protected maintenance retain their boundaries, and relevant backlogs/alerts are
+empty. Three actual signed-in Chrome groups verify the current version, canonical
+post/church share links and unchanged account/representative boundaries. No Copy,
+native sharing, new consent, message, post or live event fixture was submitted.
+The actual live database has no event occurrences; event variants and withdrawal
+were therefore tested on the isolated production HTTPS server, not fabricated in
+production. Physical phone/self-draft messaging previews remain unverified.
+
+Actual provider packaging passes 160 traces, 48,573 entries and 405 server
+JavaScript files. The canonical page loads the exact provider-emitted, repaired
+173,096-byte React renderer; its SHA-256 is
+`2b7c5f99a8710e52520e7d0dc25c9fb65fd7c06e0a1d6cfee97276e0a452a3b7`.
+All 56 production migration checksums match and none are pending. No migration was
+added or applied. The still-current protected recovery rehearsal from 08:31 UTC
+is reused; no new backup execution is claimed for this image-only release.
+
+All current columns across thirty production data tables match the pre-release
+fingerprints at 10:52 UTC. No ranking snapshot was created. Application/user-data
+writes, outbound sends, public/signed-in browser errors and scoped deployment
+error/fatal rows are zero. Live private source withdrawal was not induced; its
+full lifecycle and race evidence is isolated. Third-party cache/crop behavior and
+actual phone referral acceptance remain in the existing private tasks. Engineering
+scope is complete; these physical acceptance gates and the final batch review
+remain open. Continue the next eligible ordinary onboarding/welcome feature.

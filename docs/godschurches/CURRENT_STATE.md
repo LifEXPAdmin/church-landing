@@ -1,3 +1,31 @@
+## Dynamic public sharing images verified live — September 15, 2026 UTC
+
+**2026.09.15.3 / 433416388b95be194e8df2cf81fda4cff7c58ec8** is READY in
+**dpl_6UrjCLi2uBktvPDW2CMmfiPpUZYE**, independently canonical and verified live.
+The existing preview owner now renders branded public cards with a bundled font,
+current source checks before/after rendering, safe generic fallback and square
+crop margins. Plain repost metadata shares the original canonical address while
+quotes retain their own. No new runtime package, table, worker or service is added.
+
+The full 146-file gate passes 892 checks with two expected development-delivery
+skips and no failures/cancellations; nine final browser groups pass. The later
+metadata correction passes thirteen focused repost/actual-HTTPS checks plus its
+production build, types and lint. Source provenance, preserved failures, measured
+query/render costs and the licensed font packaging are in
+[complete acceptance](SHARING_IMAGES_ACCEPTANCE.md).
+
+Live acceptance passes fourteen public, four health and three actual signed-in
+groups. Actual post/church PNGs, source HTML, fallback bytes, no-store behavior and
+the retained hydration repair are verified. All 56 migration checksums match;
+none are pending or newly applied. Thirty production fingerprints match all
+current columns; no new ranking snapshot, user-data write or send occurred.
+Browser and scoped runtime error rows are zero. No production event was fabricated.
+
+Sharing-image engineering is complete. Existing tasks retain actual phone/self-
+draft preview and referral acceptance; third-party copied previews cannot be
+remotely erased. Continue eligible ordinary onboarding, relevant Home and church
+welcome work against its current services/specification. Final review stays last.
+
 ## Notification choices and scheduled church posts verified live — September 15, 2026 UTC
 
 **2026.09.15.2 / 231fb8f54d8278fe043db8db74378092ac69d339** is READY in
