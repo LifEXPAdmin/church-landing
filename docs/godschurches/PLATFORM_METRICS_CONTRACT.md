@@ -174,21 +174,37 @@ The production source remained read-only. The historical gate now compares new
 default fields separately, verifies no invented methods/consent/source timestamps,
 and requires exactly one empty baseline in a fresh schema.
 
-Seven production-preview browser behavior groups pass with no runtime errors:
-narrow/keyboard mature cohorts, actual filtered CSV and matching audit hash,
-reconnect and revocation, default-off choices and retained edits, trusted navigation
-and cross-device conflicts, exact interrupted withdrawal retry, and identity/access
-concealment. The report response is approximately 10 KB; seven warm local samples
-have medians about 12 ms for Growth, 3.2 ms for overview and 1.8 ms for a saved
-choice. These small fictional source fixtures do not establish production capacity.
-Additional empty/immature/failure-state verification found a stale date-form value
-after preset navigation; the form now resets when report dates change and uses
-the reporting zone for its maximum date. Its final build/browser check is pending.
+Eight final production-preview browser behavior groups pass, followed by runtime
+and service-cost checks with no browser errors: 320-pixel/keyboard mature reports;
+actual filtered CSV and matching audit hash; date presets and empty, partial,
+suppressed, immature and failed report states; reconnect and revocation; default-off
+choices and retained edits; trusted navigation and cross-device conflicts; exact
+interrupted withdrawal retry; and identity/access concealment. Date presets reset
+the form, the maximum date uses the reporting zone, and narrow table values retain
+whole words inside their keyboard-scrollable region. All 27 additional public,
+private-denial, release-guide, privacy and renderer preview probes pass.
 
-Remaining in this feature: final interface/browser acceptance; complete production
-and HTTPS gate; configuration and exact canonical release/live checks. Feedback-owned intake/exposure/ratings integrate
-in the specified subsequent feature, followed by shared acceptance. Real operator,
-provider, host and physical-device prerequisites stay in their existing tasks.
+Seven warm local samples have median/max timings of 12.647/13.771 ms for Growth,
+3.592/5.590 ms for overview and 1.700/1.730 ms for saved choice. Respective response
+sizes are 10,088, 558 and 297 bytes; command ranges are 15–16, 13–14 and 11–13.
+These small fictional source fixtures do not establish production capacity.
+
+The staged full gate covers all 155 discovered test files. The original successful
+upgrade, restoration, fresh-schema, build/restart and service stages are retained;
+the remaining 88 files pass after correcting the schema-only recovery fixture's
+missing configuration baseline. The actual production trigger correctly fails
+closed without that baseline. Final-source production rebuild passes. This is
+staged verification, not a claim that failed attempts were clean passes. A further
+focused test covers all six real source categories and their canonical withdrawal,
+current church access, hidden reply ancestors, and prayer/repost exclusion. Its
+initial fixture connection and missing event-version attempts are retained.
+Final types and focused lint pass.
+
+Remaining in this core release: production configuration and exact canonical
+release/live checks, followed by installed recovery verification. Feedback-owned
+intake/exposure/ratings integrate in feature 31, then shared acceptance. Real
+operator, provider, host and physical-device prerequisites remain in their
+existing tasks. No production metric grant is inferred or created by QA.
 
 ## Successful source times
 
