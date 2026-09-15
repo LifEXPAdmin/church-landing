@@ -27,7 +27,13 @@ The latest focused gate passes 38 checks: 13 topic service/boundary groups and
 25 existing draft, report review and protected-control groups. Populated migration
 54 preserves original values. Topic records and topic constraints survive actual
 PostgreSQL dump/restore. Types, focused lint and release-content checks pass.
-Actual production HTML/RSC and built browser tests are prepared but not yet passed.
+The first ten built browser groups passed after correcting a saved-topic redirect
+race with unsaved-work history cleanup. Expanded checks exposed a clean form that
+could briefly submit the membership version from before joining; clean forms now
+use current props, and uncertain requests retain their original payload. The
+expanded browser and production HTTP suites remain in progress. Replies use the
+existing canonical comment reader; its JSON and built browser checks are separate
+from the post's HTML/RSC assertions.
 
 The first clean full gate stopped because its older comment fingerprint had not
 excluded the newly added nullable topic column. The second passed service checks
@@ -51,10 +57,9 @@ SLA. Browser request and final bundle/trace measurements remain pending.
 
 ## Recovery and release work remaining
 
-The first encrypted production-copy rehearsal verified 53→54, preserved original
-columns across 97 tables and completed protected replay without production changes.
-The final stable CHECK expression changes the unreleased migration checksum, so
-repeat that rehearsal before publication. Confirm the final full gate and browser
+The final encrypted production-copy rehearsal completed at 01:30:13 UTC and
+verified 53→54 with the stable CHECK expression, preserved original columns across
+97 tables and completed protected replay without production changes. Confirm the final full gate and browser
 flows, runtime traces, protected recovery, exact READY/canonical deployment and
 live behavior. Then synchronize the installed registry, run its ordinary restore,
 compare live write fingerprints and reconcile the existing private feature/subtasks.

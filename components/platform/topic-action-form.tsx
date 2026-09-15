@@ -1,13 +1,14 @@
 "use client";
 import {
   useCallback,
-  useEffect,
+  useLayoutEffect,
   useId,
   useRef,
   useState,
   type ReactNode
 } from "react";
 import { useRouter } from "next/navigation";
+import { flushSync } from "react-dom";
 import {
   currentSocialOwner,
   socialRequest,
@@ -15,6 +16,7 @@ import {
 } from "@/lib/platform/social-client";
 import { useUnsavedSocialWork } from "./use-unsaved-social-work";
 import { usePrivateRecovery } from "./private-snapshot-guard";
+import { settlePhotoNavigation } from "./use-photo-back-guard";
 
 type Receipt = { id: string; version: number; message: string };
 /** Topic forms keep one immutable request until its outcome is confirmed. */
@@ -46,7 +48,7 @@ export function TopicActionForm({
     [message, setMessage] = useState("");
   const key = JSON.stringify(payload),
     previous = useRef(key);
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (key === previous.current || pending || busy || (dirty && !saved))
       return;
     previous.current = key;
@@ -82,7 +84,7 @@ export function TopicActionForm({
         const body =
           pending ??
           JSON.stringify({
-            ...base.current,
+            ...(dirty ? base.current : payload),
             ...fields?.(new FormData(event.currentTarget)),
             mutationId: crypto.randomUUID()
           });
@@ -106,13 +108,19 @@ export function TopicActionForm({
               503,
               "The result could not be confirmed. Retry the same topic request."
             );
-          setPending(null);
-          setDirty(false);
-          setSaved(true);
-          setConflict(false);
-          setMessage(data.message);
-          onDone?.(data, JSON.parse(body));
-          router.refresh();
+          // Clearing protected work removes its same-address Back entry.
+          // Finish that traversal before navigating or refreshing the route.
+          flushSync(() => {
+            setPending(null);
+            setDirty(false);
+            setBusy(false);
+            setSaved(true);
+            setConflict(false);
+            setMessage(data.message);
+          });
+          await settlePhotoNavigation();
+          if (onDone) onDone(data, JSON.parse(body));
+          else router.refresh();
         } catch (error) {
           if (
             error instanceof SocialClientError &&
@@ -165,10 +173,13 @@ export function TopicActionForm({
         <button
           type="button"
           className="gc-button gc-button-quiet"
-          onClick={() => {
-            setDirty(false);
-            setConflict(false);
-            form.current?.reset();
+          onClick={async () => {
+            flushSync(() => {
+              setDirty(false);
+              setConflict(false);
+              form.current?.reset();
+            });
+            await settlePhotoNavigation();
             window.location.reload();
           }}
         >

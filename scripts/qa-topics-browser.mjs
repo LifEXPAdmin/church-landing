@@ -56,6 +56,51 @@ const context = await browser.newContext({
 });
 const page = await context.newPage();
 const errors = [];
+const requests = [],
+  navigation = [];
+page.on("response", (response) => {
+  const url = new URL(response.url());
+  if (url.origin === config.origin)
+    requests.push({
+      path: url.pathname,
+      method: response.request().method(),
+      status: response.status(),
+      type: response.request().resourceType()
+    });
+});
+page.on("framenavigated", (frame) => {
+  if (frame === page.mainFrame())
+    navigation.push({ at: Date.now(), path: new URL(frame.url()).pathname });
+});
+page.on("console", (message) => {
+  if (message.text().startsWith("TOPIC_NAV"))
+    navigation.push({ at: Date.now(), event: message.text() });
+});
+await page.addInitScript(() => {
+  window.addEventListener("popstate", () =>
+    console.log(
+      "TOPIC_NAV popstate",
+      location.pathname,
+      !!history.state?.gcPhotoWork
+    )
+  );
+  document.addEventListener(
+    "click",
+    (event) => {
+      const link = event.target?.closest?.("a[href]");
+      if (link)
+        queueMicrotask(() =>
+          console.log(
+            "TOPIC_NAV click",
+            new URL(link.href).pathname,
+            event.defaultPrevented,
+            !!history.state?.gcPhotoWork
+          )
+        );
+    },
+    true
+  );
+});
 page.on("pageerror", (e) => {
   const issue = { path: new URL(page.url()).pathname, message: e.message };
   errors.push(issue);
@@ -66,7 +111,7 @@ const ok = (s) => {
   results.push(s);
   console.log("PASS " + s);
 };
-const output = fixtureDir + "/topic-browser";
+const output = fixtureDir + "/topic-browser-" + Date.now();
 mkdirSync(output, { recursive: true });
 const go = async (path) => {
   await page.goto(config.origin + path);
@@ -94,6 +139,8 @@ const signIn = async (actor) =>
 
 const { randomUUID } = await import("node:crypto");
 const { topicCommand } = await import("../lib/platform/topic-communities.ts");
+const { postCommand } = await import("../lib/platform/post-commands.ts");
+const { commentCommand } = await import("../lib/platform/comment-commands.ts");
 const cmd = (operation, fields = {}) => ({
   operation,
   mutationId: randomUUID(),
@@ -127,15 +174,20 @@ try {
     name = `Fictional browser topic ${tag}`;
   await signIn(owner);
   await go("/platform/topics/new");
-  await page.getByLabel("Community name", { exact: true }).fill(name);
-  await page.getByLabel("Topic address", { exact: true }).fill(slug);
-  await page
+  const createForm = page.getByRole("form", {
+    name: "Create public topic",
+    exact: true
+  });
+  await createForm.waitFor();
+  await createForm.getByLabel("Community name", { exact: true }).fill(name);
+  await createForm.getByLabel("Topic address", { exact: true }).fill(slug);
+  await createForm
     .getByLabel("What is this community about?", { exact: true })
     .fill("Fictional browser discussion community.");
-  await page
+  await createForm
     .getByLabel("Community rules", { exact: true })
     .fill("Discuss kindly and protect personal information.");
-  await page
+  await createForm
     .getByLabel(
       "I understand the topic, its posts and its rules will be public. I accept responsibility for managing this community.",
       { exact: true }
@@ -158,6 +210,20 @@ try {
       description: "Second isolated community",
       rules: "Respect privacy and one another.",
       acceptedRules: true
+    })
+  );
+  const secondPost = await postCommand(db, owner.token, {
+    operation: "create",
+    requestKey: randomUUID(),
+    topicCommunityId: second.id,
+    content: `Second topic public discussion ${tag}`
+  });
+  await commentCommand(
+    db,
+    owner.token,
+    cmd("create", {
+      postId: secondPost.id,
+      content: `Second topic public reply ${tag}`
     })
   );
   await context.clearCookies();
@@ -199,6 +265,55 @@ try {
   });
   ok(
     "Guests discover two communities, read their rules and receive a safe signup return without a membership write"
+  );
+  await go(`/platform/topics/second-${tag}`);
+  await page
+    .getByText(`Second topic public discussion ${tag}`, { exact: true })
+    .waitFor();
+  await page
+    .getByRole("link", { name: "View post and comments", exact: true })
+    .click();
+  await page
+    .getByText(`Second topic public reply ${tag}`, { exact: true })
+    .waitFor();
+  await go(`/platform/topics/${slug}`);
+  await page
+    .getByText(
+      "No public discussions on this page yet. Join and accept the rules to start one.",
+      { exact: true }
+    )
+    .waitFor();
+  const publicRead = `**/api/platform/topics?view=public&slug=${slug}`;
+  await page.route(publicRead, (route) =>
+    route.fulfill({
+      status: 503,
+      contentType: "application/json",
+      body: JSON.stringify({ error: "Isolated temporary failure" })
+    })
+  );
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await page
+    .getByRole("heading", { name, exact: true })
+    .waitFor({ state: "hidden" });
+  await page
+    .getByText(
+      "Current topic access could not be confirmed. Reconnect and check again.",
+      { exact: true }
+    )
+    .waitFor();
+  await page.unroute(publicRead);
+  await page
+    .getByRole("button", { name: "Check topic access", exact: true })
+    .click();
+  await page.getByRole("heading", { name, exact: true }).waitFor();
+  ok(
+    "Guests read the second topic's canonical post and reply; an empty topic and failed read recover without signup or membership writes"
+  );
+  assert.equal(
+    await db.topicMembership.count({
+      where: { communityId: { in: [topic.id, second.id] } }
+    }),
+    before
   );
   await signIn(member);
   await go(`/platform/topics/${slug}`);
@@ -509,12 +624,59 @@ try {
   ok(
     "Desktop management fits the viewport; account switching conceals the prior owner's controls"
   );
+  const pageTag = `paging-${tag}`;
+  await db.topicCommunity.createMany({
+    data: Array.from({ length: 21 }, (_, i) => ({
+      name: `Browser paging ${tag} ${String(i).padStart(2, "0")}`,
+      nameKey: `browser paging ${tag} ${String(i).padStart(2, "0")}`,
+      slug: `${pageTag}-${i}`,
+      description: "Isolated pagination fixture",
+      rules: "Protect privacy and discuss kindly.",
+      creatorId: i < 11 ? owner.id : outsider.id,
+      ownerId: i < 11 ? owner.id : outsider.id
+    }))
+  });
+  await context.clearCookies();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await go(`/platform/topics?q=missing-${tag}`);
+  await page
+    .getByText("No topics match this search.", { exact: true })
+    .waitFor();
+  await page
+    .getByRole("textbox", { name: "Search topics", exact: true })
+    .fill(`Browser paging ${tag}`);
+  await page
+    .getByRole("button", { name: "Search topics", exact: true })
+    .press("Enter");
+  await page.getByRole("link", { name: "More topics", exact: true }).waitFor();
+  const topicLinks = () =>
+    page.getByRole("heading", { level: 2 }).getByRole("link");
+  const firstPage = await topicLinks().allTextContents();
+  assert.equal(firstPage.length, 20);
+  await page.getByRole("link", { name: "More topics", exact: true }).click();
+  await page
+    .getByRole("link", { name: "First topic page", exact: true })
+    .waitFor();
+  const nextPage = await topicLinks().allTextContents();
+  assert.equal(nextPage.length, 1);
+  assert.equal(firstPage.includes(nextPage[0]), false);
+  await bounded();
+  await page
+    .getByRole("link", { name: "First topic page", exact: true })
+    .click();
+  await page.getByRole("link", { name: "More topics", exact: true }).waitFor();
+  assert.deepEqual(await topicLinks().allTextContents(), firstPage);
+  ok(
+    "Keyboard search displays the empty state and disjoint 20/1 pagination, with a stable first-page return on a touch viewport"
+  );
   assert.deepEqual(errors, []);
   writeFileSync(
     output + "/result.json",
     JSON.stringify(
       {
         passed: results,
+        requests,
+        navigation,
         pageErrors: errors,
         fixtureOnly: true,
         realMessages: 0,
@@ -526,6 +688,11 @@ try {
     )
   );
 } catch (error) {
+  writeFileSync(
+    output + "/network.json",
+    JSON.stringify({ requests, navigation }, null, 2)
+  );
+  writeFileSync(output + "/failure.html", await page.content());
   writeFileSync(
     output + "/failure.txt",
     String(error) + "\n" + (await page.locator("body").innerText())

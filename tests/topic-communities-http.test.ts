@@ -147,8 +147,15 @@ test("production HTTPS topic controls require current identity and explicit cons
   for (const headers of [{}, { RSC: "1" }] as Record<string, string>[]) {
     const text = await (await req(path, "", undefined, headers)).text();
     assert.ok(text.includes(`Topic visible words ${tag}`));
-    assert.ok(text.includes(`Topic public comment ${tag}`));
+    const discussion = await (
+      await req(`/platform/posts/${publicPost.id}`, "", undefined, headers)
+    ).text();
+    assert.ok(discussion.includes(`Topic visible words ${tag}`));
   }
+  const commentPath = `/api/platform/comments?postId=${publicPost.id}&view=roots`;
+  const comments = await req(commentPath);
+  assert.equal(comments.status, 200);
+  assert.ok((await comments.text()).includes(`Topic public comment ${tag}`));
   await topicCommand(
     db,
     owner.token,
@@ -171,6 +178,12 @@ test("production HTTPS topic controls require current identity and explicit cons
       assert.equal(text.includes(`Topic public comment ${tag}`), false);
     }
   }
+  const restrictedComments = await req(commentPath);
+  assert.equal(restrictedComments.status, 404);
+  assert.equal(
+    (await restrictedComments.text()).includes(`Topic public comment ${tag}`),
+    false
+  );
   const preview = await (
     await req(
       `/api/platform/share-preview?kind=comment&id=${publicPost.id}&commentId=${reply.id}`

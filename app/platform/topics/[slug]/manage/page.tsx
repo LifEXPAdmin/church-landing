@@ -103,7 +103,8 @@ export default async function ManageTopicPage({
                             "CANCEL-ROLE": "Role offer cancelled",
                             "REVOKE-ROLE": "Moderator role revoked",
                             RESTRICT: "Participation restriction reviewed",
-                            DISCUSSION: "Discussion permissions changed"
+                            DISCUSSION_MODERATED:
+                              "Discussion permissions changed"
                           } as Record<string, string>
                         )[entry.action] ?? "Topic management change"}
                       </p>
