@@ -36,7 +36,7 @@ cleanup retires late notification acknowledgments after identity concealment;
 its production build, types/scoped lint and 13 release/settings contracts pass.
 The full gate was not repeated on that UI delta.
 
-Eight current production-built browser suites pass 60 groups on `de11570`:
+Eight current production-built browser suites pass 50 groups on `de11570`:
 account transitions 2, notification integration 8, settings 11, relationships 3,
 compact actions 4, Activity 12, shared composer 7 and post discovery 3. These cover
 exact lost-acknowledgment retries, current choices after logout/account switching,
@@ -72,6 +72,27 @@ checks 162 traces, 35,519 entries and 411 server JavaScript files without privat
 fixtures or credentials. Emitted hydration repair is verified separately.
 
 ## Remaining acceptance
+
+The first candidate `6a684d9` built successfully, but publication was rejected by
+the provider's Hobby limit of twelve serverless functions. Migration 56 had
+already applied; the prior application remained canonical. Its additive schema
+is compatible with that application. All 56 production checksums match and the
+25 original-column production fingerprints remain unchanged, with no new bells,
+preferences, schedules, fanout jobs, recipient intents or sends.
+
+The deployment repair keeps the existing comment-consumer route and registers
+the two new topics on that same private function. Dispatch uses the SDK's topic
+metadata; each domain retains its payload validation, current authorization,
+bounded work, acknowledgment and retry timing. No additional function, provider
+plan or public callback is needed. Six focused consumer/scheduling checks and
+fifteen existing comment-notification checks pass; types and scoped lint pass.
+The initial focused import failure used unsupported TypeScript parameter-property
+syntax in Node's fixture loader; ordinary field initialization repairs it.
+
+The installed recovery registry now matches production's 56 migrations. Its
+ordinary encrypted restore passes across 101 tables with plaintext removed;
+nightly retention verifies 43 encrypted sets with zero issues or removals.
+Prior registry and failed-deployment receipts are retained privately.
 
 Before release completion: exact deployment READY and independent canonical
 assignment, serving version and emitted renderer, public and signed-in live

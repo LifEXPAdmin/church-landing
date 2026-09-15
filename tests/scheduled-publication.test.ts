@@ -20,6 +20,10 @@ import {
   dispatchScheduledPosts
 } from "../lib/platform/scheduled-publication";
 import { processNotificationFanoutBatch } from "../lib/platform/notification-fanout";
+import {
+  consumeNotificationWork,
+  retryNotificationWork
+} from "../lib/platform/notification-consumer";
 const db = new PrismaClient();
 before(() => assertPortalTestDatabase(db));
 after(() => db.$disconnect());
@@ -272,12 +276,36 @@ test("cancel, reschedule and racing consumers preserve revision authority and ne
   const f = await fixture(),
     post = await f.create();
   assert.ok((await publishScheduledPost(db, post.id, 1)).retryAfterSeconds > 0);
+  await assert.rejects(
+    consumeNotificationWork(db, "scheduled-publication-v1", {
+      id: post.id,
+      version: 1
+    }),
+    (error) => {
+      const retry = retryNotificationWork(error);
+      return retry.afterSeconds > 0 && retry.afterSeconds <= 3600;
+    }
+  );
+  assert.equal(
+    (await db.platformPost.findUniqueOrThrow({ where: { id: post.id } }))
+      .status,
+    "SCHEDULED"
+  );
   const cancel = mutation("cancel-schedule", {
     postId: post.id,
     expectedVersion: 1
   });
   const canceled = await postCommand(db, f.memberA.token, cancel);
   assert.deepEqual(await postCommand(db, f.memberA.token, cancel), canceled);
+  await consumeNotificationWork(db, "scheduled-publication-v1", {
+    id: post.id,
+    version: 1
+  });
+  assert.equal(
+    (await db.platformPost.findUniqueOrThrow({ where: { id: post.id } }))
+      .status,
+    "DRAFT"
+  );
   assert.equal(
     (await publishScheduledPost(db, post.id, 1, f.due)).changed,
     false
