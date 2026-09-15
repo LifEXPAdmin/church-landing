@@ -1,5 +1,21 @@
 # Shared brand assets
 
+## Shared image renderer — 15 September 2026
+
+The existing share-card composition now uses a single layout in `lib/share-card.ts`
+for the React SVG, editable SVG exports, static default and dynamic public PNGs.
+The visible wordmark is God’s Churches. Public post/comment/church/event/topic
+labels are bounded within the existing central crop area. Render with Node 24:
+`node --import ./tests/register.mjs scripts/render-share-cards.mjs`.
+
+The installed Sharp renderer uses the bundled licensed Noto Sans font and its
+checked coverage; there are no remote image/font requests. Unsupported glyphs
+use generic branding while ordinary HTML preserves the original public title.
+The font and license live under `assets/share-card`. Wide and square sample
+artifacts remain ignored under `.account-test/brand-review`.
+See [current acceptance](SHARING_IMAGES_ACCEPTANCE.md) for release status and
+source-withdrawal rules; this presentation is never an authorization boundary.
+
 ## Header correction — September 14, 2026
 
 Product **2026.09.14.3** uses **God’s Churches** in public, account and demo

@@ -7,6 +7,7 @@ import { commentVisibleWhere } from "./comment-policy";
 import { PortalError } from "./portal-policy";
 import type { PrismaClient } from "@prisma/client";
 import { topicPublicWhere } from "./topic-policy";
+import { shareCardLabel } from "../share-card";
 
 export type ShareKind =
   | "post"
@@ -55,7 +56,7 @@ export const publicPreviewHeaders = {
   "X-Robots-Tag": "noindex, nofollow",
   Vary: "Cookie"
 };
-export function publicSharePreview(
+export async function publicSharePreview(
   db: PrismaClient,
   query: { kind: unknown; id: unknown; commentId?: unknown },
   token?: unknown
@@ -68,18 +69,18 @@ export function publicSharePreview(
     path,
     url: new URL(path, origin).href,
     title: "God’s Churches",
-    description: "Open Godschurches to view this page and check your access.",
+    description: "Open God’s Churches to view this page and check your access.",
     author: null as { name: string; kind: "person" | "church" } | null,
     image: {
       url: new URL("/brand/share-card.png", origin).href,
       width: 1200,
       height: 630,
-      alt: "Godschurches — faith and community"
+      alt: shareCardLabel
     }
   };
   // Anonymous access is the upper bound. A signed-in viewer's blocks can only
   // narrow it; a session or crawler never expands the public preview audience.
-  return withPostRead(db, token, async (tx, context) => {
+  const preview = await withPostRead(db, token, async (tx, context) => {
     if (query.kind === "profile") return fallback;
     if (query.kind === "topic") {
       const topic = await tx.topicCommunity.findFirst({
@@ -226,4 +227,19 @@ export function publicSharePreview(
         }
       : fallback;
   });
+  if (!preview.available) return preview;
+  const imagePath = new URL("/api/platform/share-preview", origin);
+  imagePath.searchParams.set("format", "png");
+  imagePath.searchParams.set("kind", String(query.kind));
+  imagePath.searchParams.set("id", postId(query.id));
+  if (query.kind === "comment")
+    imagePath.searchParams.set("commentId", postId(query.commentId));
+  return {
+    ...preview,
+    image: {
+      ...preview.image,
+      url: imagePath.href,
+      alt: `${preview.title} — God’s Churches`
+    }
+  };
 }

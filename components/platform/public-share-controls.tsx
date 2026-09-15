@@ -38,7 +38,7 @@ export function PublicShareControls({
       return {
         available: true,
         url: siteUrl,
-        title: "Godschurches",
+        title: "God’s Churches",
         description: "Faith and community."
       };
     const r = await socialRequest<Preview>(path);

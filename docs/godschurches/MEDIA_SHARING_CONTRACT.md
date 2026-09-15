@@ -1,5 +1,22 @@
 # Gallery and public sharing foundations
 
+## Current public image integration — 15 September 2026
+
+The existing preview endpoint now accepts `format=png`; eligible public
+post/comment/church/event/topic projections select a branded image URL. Current
+source/viewer scope is rechecked before and after rendering. All controlled
+responses are no-store and excluded from the image optimizer; no resource-specific
+image is persisted. Restricted/missing/profile and failed-render cases use the
+same static brand card. Input text and remote image URLs are never accepted from
+query parameters. A link still grants no authority and sends nothing itself.
+
+See [current image acceptance](SHARING_IMAGES_ACCEPTANCE.md) for implementation,
+font fallback, measured costs and exact release status. The September 11 receipt
+below preserves foundation history; its pending dynamic-image wording is superseded
+by this current integration. Existing media, sharing and repost owners are reused.
+
+## Historical foundation receipt
+
 September 11, 2026. Reuse existing image processing/delivery and canonical data.
 See the newest batch report for release evidence. Photo UI, upload-provider
 acceptance, dynamic page metadata, QR rendering and mobile sharing remain focused

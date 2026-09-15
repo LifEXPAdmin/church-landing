@@ -577,12 +577,12 @@ export const features: Feature[] = [
     category: "Sharing and installation",
     name: "Links and QR codes",
     description:
-      "Share the website or an eligible public post, church or event.",
+      "Share the website or an eligible public post, church or event with a branded preview.",
     steps:
       "Open Menu and tap Share Godschurches near the top to see the website QR immediately. Copy, share or download its PNG. Use Share on posts and Share publicly on church or event pages.",
     href: "/platform/share?qr=1",
     eligibility:
-      "Only eligible public pages have public share links. A QR code grants no account or church permissions.",
+      "Only eligible public pages have public share links. Restricted or unavailable pages use generic branding. Other apps control their own preview caches and crops. A QR code grants no account or church permissions.",
     availability: "available"
   },
   {
@@ -638,6 +638,23 @@ export const features: Feature[] = [
   }
 ];
 export const releases: ReleaseEntry[] = [
+  {
+    id: "public-sharing-cards",
+    version: "2026.09.15.3",
+    date: "2026-09-15",
+    summary: "Public links now have clear, branded preview images.",
+    added: [
+      "God’s Churches cards for eligible public posts, churches, events and topics, with current public titles and short descriptions."
+    ],
+    improved: [
+      "The brand and website address remain readable in wide and square preview crops.",
+      "Private, unavailable and unsupported-image previews use safe generic branding."
+    ],
+    fixed: [
+      "Previously shared image addresses recheck current access after source changes and during image generation. Other apps may retain previews they already copied."
+    ],
+    featureIds: ["sharing"]
+  },
   {
     id: "complete-notification-choices",
     version: "2026.09.15.2",
