@@ -18,11 +18,14 @@ disabled skips, with zero failures/cancellations. Production-build browsers cove
 exact retry, account switch, standalone settings, finite pagination, consent and
 320-pixel larger-text checks. A later shared-shell hydration failure remains a
 release gate: diagnostics identified the bundled renderer's interrupted host replay
-defect, with its cursor still inside the same shell on retry. Keeping the outlined
-footer in a synchronous client component passed the complete eleven-group discovery
-journey, including twelve repeated reloads and interactive appearance checks across
-three widths. Thirty controller/display tests also verify stable empty server
-snapshots. Final source regressions and release evidence remain pending.
+defect, with its cursor still inside the same shell on retry. A footer-only change
+passed one complete eleven-group journey but failed a subsequent run and was reverted.
+The current candidate backports React's upstream host-replay fix into the exact
+Next 15.5.25 renderer, with whole-file checksum verification and no error suppression.
+Sixteen private mechanism probes pass; these edited-asset diagnostics are not release
+acceptance. Five install/integrity tests and thirty controller/display tests pass.
+Final source builds, regressions and release evidence remain pending. See
+[the renderer repair](HYDRATION_REPAIR.md).
 The public town shards are compressed from 4,711,979 to 1,355,796 bytes with exact
 decoded hashes preserved. The encrypted production-copy 54→55 upgrade and protected
 restore preserve all original columns across 100 tables with zero production writes.

@@ -628,7 +628,7 @@ export const releases: ReleaseEntry[] = [
       "Town lookup uses compressed public data without GPS, personal addresses or an external location service."
     ],
     fixed: [
-      "The shared page footer stays stable during streamed reloads, preserving appearance controls and feed choices.",
+      "Streamed page reloads preserve the shared shell, appearance controls and feed choices.",
       "Feed choices wait until the page is ready, so a first selection during slower loading is not silently lost.",
       "Private settings, draft publication and classification edits preserve exact retries and current-account checks.",
       "Unreadable guest choices require an explicit reset; withdrawal, erasure and protected recovery prevent older public classifications from returning."
