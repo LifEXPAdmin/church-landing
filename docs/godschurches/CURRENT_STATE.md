@@ -1,40 +1,38 @@
-## Admin console candidate in progress — September 15, 2026 UTC
+## Admin requests and core operations verified live — September 15, 2026 UTC
 
-The local unified feature candidate adds a permission-scoped worklist over the
-existing support, report and claim sources, private saved filters and internal
-notes, native actions, duplicate groups, scoped assignment, partial bulk results,
-current request counts, operational health and runbooks, exact account lookup and
-separate access/audit duties. It is not released or complete. Production remains
-the discoverability release below, with 57 migrations and no new admin grants.
-Six additive migrations are applied only to the isolated test database (63 total).
+**2026.09.15.6 / 7384afdbce5a1b0cafbb56f99c41345d298b6b4f** is READY in
+**dpl_HVdiV3cpLz4L98FvhVNiDbhsJobg**, independently canonical and verified live.
+The scoped worklist reuses support/report/claim owners, private notes and views,
+native resolve/reopen, generation-bound assignments, duplicate groups and partial
+bulk results. Separate health, lookup, audit and access duties remain server-checked.
+New access changes require fresh confirmation and an unused authenticator code;
+this does not establish MFA for every older privileged action.
 
-New access-grant changes require fresh password or purpose-bound Google proof and
-an unused authenticator code. Enrollment, recovery and backup restoration fail
-closed; this does not establish MFA on every older privileged action. Recovery
-controls redact stale private admin details, and group departure clears shared
-free text and removes empty groups. Restored or renewed reviewer permissions do
-not revive old assignments. The trusted real admin provisioning and existing
-account-restriction owner choice remain distinct operator prerequisites.
+The 152-file full gate passes 931 tests, two expected skips, zero failures. Final
+signed-in denial-shell changes pass their production build, types/lint, five
+browser groups and 22 preview probes; all 969 application/schema/data/configuration
+files match that tested preview. The earlier accumulated-checkout heap failure and
+other repaired failures remain preserved. Live acceptance passes 22 public, four
+health and six actual authenticated Chrome observations with zero browser errors.
+The founder sees only current permitted Overview/Requests; forbidden sections keep
+the signed-in shell, and native report review remains available.
 
-The revised production preview passes five actual browser groups, 13 HTTPS/export/
-release checks, types and hydration/runtime packaging gates. It includes native
-resolve/reopen after admin refresh, retained selection and keyboard return, partial
-bulk outcomes, actual authenticator enrollment and a fixture grant, confirmation
-focus and revoked-manager concealment. Denied admin routes retain a valid account's
-signed-in shell; that final delta passes the production build and all five browser
-groups. Disabled-Google confirmation, stale native
-form versions and the hidden/grid concealment defect were repaired in this feature.
-The 43-check admin/topic/Google pass succeeds. Permission-read optimization passes
-54/55 checks; a topic fixture search exceeded the first page and is now scoped to
-its own unique prefix, with all 13 topic tests passing. The protected production-copy
-57-to-63 upgrade preserves all 102 original tables and completes protected replay.
-The full gate reached its build but exhausted the configured heap in the accumulated
-checkout; a clean current source snapshot is running the complete gate. That gate,
-the real production migration, deployment and live verification remain in progress.
-No production test writes, privilege changes or real messages were made.
-See [the active contract](ADMIN_OPERATIONS_CONTRACT.md) and
-[staged acceptance](ADMIN_OPERATIONS_ACCEPTANCE.md). Continue this feature to
-its release evidence, then the eligible aggregate metrics and feedback work.
+All 63 production migration checksums match, none are pending, and all 42 tracked
+original-column fingerprints are unchanged. Protected 57-to-63 recovery preserves
+102 original tables; installed daily 63-to-63 restore covers 107 tables. No new
+admin grants, notes, saved views, groups, operations or authenticators were created
+in production. Support intake stays disabled; account managers remain zero.
+Production test-data writes and outbound sends: zero. Actual packaging remains
+12 distinct functions across 355 route entries; local paired service query costs
+improve but do not establish hosting latency or a capacity SLA.
+
+See [complete core acceptance](ADMIN_OPERATIONS_ACCEPTANCE.md) and
+[the implementation contract](ADMIN_OPERATIONS_CONTRACT.md). Queue/case engineering
+and their immediate interface children are complete. The admin parent remains open
+for actual first-operator provisioning/enrollment and the explicitly subsequent
+metrics/feedback integration. Continue eligible feature 30, then 31 and shared
+acceptance; preserve the separate account-management, provider and physical-phone
+prerequisites. The continuous Extra High run remains active. Final review stays last.
 
 ## Public discoverability verified live — September 15, 2026 UTC
 

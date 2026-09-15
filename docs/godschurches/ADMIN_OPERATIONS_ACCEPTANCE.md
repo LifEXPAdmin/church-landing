@@ -1,10 +1,14 @@
 # Scoped admin requests and access
 
-September 15, 2026 UTC. Candidate product **2026.09.15.6** is not yet released.
-Production remains **2026.09.15.5 / f292d8058deb52320cecb01d4ffd06edacf7b835**.
-The initial implementation is checkpointed at `f0792ac`; finishing changes below
-remain part of this same feature. Exact deployment, canonical assignment and live
-acceptance are still required. No production grant or requester message was made.
+September 15, 2026 UTC. Product **2026.09.15.6**, application commit
+**7384afdbce5a1b0cafbb56f99c41345d298b6b4f**, is **READY** in
+**dpl_HVdiV3cpLz4L98FvhVNiDbhsJobg** as of **17:00:20 UTC**. An independent
+alias read assigns `godschurches.com` to that deployment; the canonical release
+endpoint returns the exact application SHA and product build. Core request/admin
+engineering is verified live. Real operator provisioning and the specified
+metrics/feedback integration remain open. No production grant or requester message
+was made for acceptance. Implementation checkpoints are `f0792ac`, `cff8b2e` and
+`7384afd`; later receipt-only commits do not change this serving identity.
 
 ## Behavior and authority
 
@@ -34,7 +38,7 @@ authenticated identity, authority and narrow approval procedure in
 
 ## Isolated verification
 
-The candidate uses PostgreSQL 17 on loopback with fictional accounts, local media,
+The isolated acceptance uses PostgreSQL 17 on loopback with fictional accounts, local media,
 disabled production transport and verified local HTTPS. No fixture grant is a
 production assignment, and no setup key or recovery code appears in screenshots.
 
@@ -57,10 +61,17 @@ production assignment, and no setup key or recovery code appears in screenshots.
   admin noindex behavior, own saved-view export and private-note exclusion.
   Types pass. The final production preview passes compile, lint/type validation,
   renderer verification and runtime trace inspection.
-- The full established service/recovery gate passed its early services, synthetic
-  backup/restore and fresh migrations but exhausted the configured 6 GB build heap
-  in the accumulated main checkout. Its failure remains preserved. A clean current
-  source snapshot is running the complete gate; this is pending, not a pass.
+- The full established gate in a clean current source snapshot discovers 152 test
+  files and passes **931 of 933 tests, two expected skips, zero failures**. It includes
+  synthetic upgrades, full restore, fresh migrations, both production builds,
+  development privacy checks, verified HTTPS and server restart. The original run
+  exhausted its configured 6 GB build heap in the accumulated main checkout; that
+  failure is preserved. The clean run retains the same heap limit.
+- The later signed-in denial-shell change passes the final production build,
+  types/lint, all five browser groups and 22 anonymous preview probes. A manifest
+  confirms all 969 application/schema/data/configuration files in the deployed
+  candidate match this tested preview. The full baseline and this later delta are
+  recorded separately; a receipt-only file is not treated as tested application code.
 
 Browser testing and final route review repaired four integration defects within this feature:
 disabled Google configuration blocked password confirmation; embedded native
@@ -77,10 +88,40 @@ At **16:09:02 UTC**, a read-only, verified-TLS encrypted production copy upgrade
 from 57 to 63 migrations in a separate local PostgreSQL cluster. All **102 original
 tables' original-column fingerprints matched**, and protected replay completed.
 The plaintext restore and temporary cluster were removed; production was unchanged.
-The six additive migrations remain unapplied to production. Before publication,
-revalidate this receipt's four-hour age limit and migration checksums. After the
-upgrade, verify preserved original columns and install the matching 63-entry
-recovery registry through the established guarded procedure.
+The six additive migrations were subsequently applied by the configured provider
+build. At **17:11:00 UTC**, all **63 production migration checksums match**, with
+none pending. At **17:11:38 UTC**, all **42 tracked original-column production
+fingerprints match** the pre-release baseline. New groups, notes, views, operations,
+authenticators and source metadata remain zero; no new admin grant exists, account
+managers remain zero, and support intake remains disabled.
+
+The guarded installed recovery registry now contains all 63 matching checksums.
+Its independent encrypted daily **63-to-63** restore completed at **17:01:07 UTC**,
+covering 107 restored tables. That daily mode does not run the upgrade fingerprint
+comparison or protected activation replay; its false upgrade flag is not a failed
+comparison. The separate 57-to-63 receipt above establishes those upgrade checks.
+The installed retention implementation hash is unchanged. No production test data
+was written and no outbound message was sent.
+
+## Actual live acceptance
+
+- **22 public checks** pass at 17:07:48 UTC: exact release/build, one application
+  shell and brand at 320/390/1280 widths, exact renderer bytes, guest Menu, all nine
+  private page denials/noindex behavior, six private GET API denials, release notes
+  and conditional feature guidance. Runtime errors and attempted test writes: zero.
+- **Four health checks** pass at 17:07:43 UTC. Current database inspection succeeds
+  in 126 ms, configured uploads/push/retention/welcome/scheduling remain enabled,
+  all observed pending/due backlogs and alerts are empty, private endpoints reject
+  anonymous access, and an unknown maintenance mode rejects before cleanup.
+  The health endpoint reports worker-last-success as unavailable and directs the
+  operator to scoped completion logs; it does not invent a success timestamp.
+- **Six actual authenticated Chrome observations** pass: Menu and exact version;
+  Overview limited to existing authorized sections and current zero counts; an
+  applied Content report filter with a truthful empty queue; denied health and
+  access pages preserving Settings/Log out; and the retained native review link,
+  authorized empty review queue and noindex metadata. Browser warnings/errors are
+  zero. Populated mutations and MFA enrollment remain isolated-fixture evidence.
+  No actual case, note, view, grant, account or message was created for this check.
 
 ## Measured costs and limits
 
@@ -104,21 +145,38 @@ assigned reviewers returns an explicit unavailable result pending a measured rev
 
 The production preview has 172 runtime traces, 39,011 trace entries and 436 server
 JavaScript files. No private fixtures, environment files or Prisma configuration
-loader entered runtime traces. The verified renderer is 173,096 bytes, SHA-256
+loader entered runtime traces. The local preview renderer is 173,096 bytes, SHA-256
 `647e9e5fbb96baa9ebe3cf0aa8d816f57e0e46354f2b8ad0fb9db18029e29f15`.
+The actual provider build renderer, also fetched and verified from the canonical
+page, is 173,096 bytes, SHA-256
+`2b7c5f99a8710e52520e7d0dc25c9fb65fd7c06e0a1d6cfee97276e0a452a3b7`.
+
+Actual provider build output has **355 lambda route entries**, up from 335, while
+remaining at **12 distinct function packages**, including middleware. Distinct
+package sizes sum to 148,581,136 bytes; this sum is not billed storage. Functions
+use Node.js 24, configured 2,048 MB memory, regional execution in `iad1` with the
+existing multiregion middleware. These are provisioned settings, not measured
+resident memory. No new worker, runtime dependency or external service is added.
 
 The authenticated Vercel usage view at about 16:15 UTC reports 40,451 of one million
 function invocations, 2.3 of 360 GB-hours fluid memory, 35m46s of four hours active
 CPU, 1.01 of 10 GB deployment storage, and **10.31 of 10 GB function storage**.
 Blob has 7,044 of 10,000 simple and 1,566 of 2,000 advanced operations. This is a
-displayed usage observation; an actual publication block has not been observed.
+displayed usage observation; this subsequent deployment reached READY successfully,
+so no actual publication block occurred in this feature.
 No purchase or deployment-history removal was performed.
 
 ## Remaining acceptance
 
-Complete the full gate, exact canonical release, current migration/data checks,
-actual provider packaging and read-only authenticated live acceptance. Keep real
-admin provisioning, account-management ownership, provider delivery and physical
-phone observations separate. Then continue the specified metrics and feedback
-features and finish their shared overview/integration acceptance. Final review
-remains last; this candidate document is not a feature-completion receipt.
+The core queue, case actions and their immediately required interface children
+are complete with the evidence above. First real operator provisioning and personal
+authenticator enrollment remain in the existing access subtask. The separate
+account-management owner prerequisite remains unassigned. Real provider delivery,
+church-representative/host coverage and physical-phone observations are unperformed.
+
+Continue metrics and feedback in their specified order, then finish their shared
+summary cards and integrated acceptance in the existing admin integration subtask.
+This is an explicit cross-feature dependency, not deferred lightweight finishing
+work. The admin parent stays open for those requirements. Final review stays last.
+Private detailed test artifacts, failed attempts, identities, fingerprints, provider
+logs and encrypted recovery receipts remain in the existing local evidence folder.
