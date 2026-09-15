@@ -15,6 +15,7 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "/api/platform/share-preview": [
       "./assets/share-card/NotoSans.ttf",
+      "./assets/share-card/OFL.txt",
       "./assets/share-card/fonts.conf",
       "./public/brand/share-card.png"
     ],

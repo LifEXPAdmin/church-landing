@@ -25,12 +25,46 @@ coverage, runtime traces, output size, rendering time and bounded source reads
 must be recorded before release. No new table, worker, scheduled task, service or
 runtime package is introduced. The static/React SVG and PNG paths share one layout.
 
-Initial image/source service acceptance passes 23 of 26 checks. Three tests hit
-the retained protected-recovery guard because the private runner reused a fixture
-directory outside its new checkout. Correcting only the runner's owned fixture
-paths makes those three pass. The failure remains preserved. Source restriction
-during rendering and actual production HTTPS metadata/PNG checks are added to
-the complete gate. Wide and square default/church samples have been inspected.
+The initial image/source run passed 23 of 26 checks. Three tests hit the retained
+protected-recovery guard because the private runner reused a fixture directory
+outside its checkout; correcting only those owned fixture paths made all three
+pass. The failures remain preserved. Six fresh image checks then passed, including
+source restriction during rendering. The final six-check run also compares actual
+PNG pixels to prove that even long runs of wide glyphs retain square crop margins.
+Default, public post/church/event, long, supported Unicode, unsupported fallback and
+wide-letter samples have been rendered; representative wide and square PNGs were
+visually inspected.
+
+Actual production HTTPS metadata/image acceptance passes both groups on
+`8328c04`. The first attempt exposed an overly narrow test expectation: a withdrawn
+page can legitimately inherit the site's generic “God’s Churches | The Revival”
+404 metadata. The corrected test accepts that generic title while still rejecting
+former source copy, private titles and nongeneric images. Public post/church/event
+source withdrawal, old URLs, signed-in upper bounds, missing/profile/injected
+requests and optimizer denial pass against the real built server.
+
+Five local repetitions per direct controller call measured median public PNG
+latency of 21.165 ms (post), 13.266 ms (church), and 14.454 ms (event), while another
+isolated gate was running. The corresponding images were 46,301, 39,221 and 38,919
+bytes. JSON medians were 11.445, 1.816 and 2.250 ms. Public PNG requests made 6/4/10
+SELECTs, including both current-authority reads; JSON made 3/2/5. These are local
+fixture observations, not a hosting latency claim or comparative speed improvement.
+
+The bundled unmodified font is 2,049,096 bytes, SHA-256
+`bfb7bb691513f12e734dc346c03a03f784912432d7e3fa8e56efcf906fe86b3d`;
+its recorded coverage contains 3,094 code points in 64 ranges. The actual preview
+route trace includes the font, local font configuration and 40,766-byte generic
+PNG. The font's OFL notice is explicitly included with the deployment. The final
+local build on `8328c04` passes types, lint, retained hydration-output verification
+and the private-data trace guard: 160 traces, 35,498 entries, 408 server JavaScript
+files. No font, coverage or renderer module appears in emitted client chunks.
+The license-only packaging follow-up still requires a checked final build.
+
+The complete account/support/restore regression gate is running. It began with
+`375c395`; the safe 404 assertion (`913ee49`) and pixel crop repair (`8328c04`)
+were applied before its builds and new image tests. Earlier unrelated service
+checks retain that base provenance. Record the actual final count and failures
+before release; a running gate is not a pass.
 
 The existing Copy/native Share/QR, repost/quote, Bookmark and sign-in-return owners
 are reused. Current production browser and exact live checks still need to pass.
