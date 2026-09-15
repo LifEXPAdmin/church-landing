@@ -2,12 +2,31 @@ import HomeFeedPage, {
   type FeedParams
 } from "@/components/platform/home-feed-page";
 import { publicMetadata } from "@/lib/site-metadata";
+import {
+  indexingEnvironment,
+  publicPageIdentity,
+  type PublicQuery
+} from "@/lib/indexing-policy";
+import { serializeStructuredData } from "@/lib/platform/public-structured-data";
 
-export const metadata = publicMetadata(
-  "Home",
-  "Grow in faith, connect with your community, and share everyday life on Godschurches.",
-  "/platform"
-);
+export async function generateMetadata({
+  searchParams
+}: {
+  searchParams: Promise<PublicQuery>;
+}) {
+  const identity = publicPageIdentity("/platform", await searchParams);
+  return {
+    ...publicMetadata(
+      "Home",
+      "Grow in faith, connect with your community, and share everyday life on Godschurches.",
+      "/platform"
+    ),
+    robots: {
+      index: indexingEnvironment().index && !identity.filtered,
+      follow: true
+    }
+  };
+}
 export const dynamic = "force-dynamic";
 
 export default function PlatformPage({
@@ -15,5 +34,21 @@ export default function PlatformPage({
 }: {
   searchParams: Promise<FeedParams>;
 }) {
-  return <HomeFeedPage searchParams={searchParams} />;
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: serializeStructuredData({
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            name: "God’s Churches",
+            url: indexingEnvironment().origin + "/platform",
+            inLanguage: "en"
+          })
+        }}
+      />
+      <HomeFeedPage searchParams={searchParams} />
+    </>
+  );
 }

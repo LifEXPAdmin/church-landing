@@ -66,6 +66,13 @@ async function png(url: string, token = "") {
 test("actual production HTTPS crawler HTML points to public-only PNGs; the old image URL is revoked with its source", async () => {
   const f = await seedSharing(db),
     fallback = await png("/brand/share-card.png");
+  const removableChurch = await db.church.create({
+    data: {
+      name: "Fictional removable canonical church",
+      slug: randomUUID(),
+      summary: "Published canonical fixture"
+    }
+  });
   const sources = [
     {
       path: `/platform/posts/${f.post.id}`,
@@ -81,13 +88,9 @@ test("actual production HTTPS crawler HTML points to public-only PNGs; the old i
         })
     },
     {
-      path: `/platform/churches/${f.church.id}`,
-      title: f.church.name,
-      revoke: () =>
-        db.church.update({
-          where: { id: f.church.id },
-          data: { communityListed: false }
-        })
+      path: `/platform/churches/${removableChurch.id}`,
+      title: removableChurch.name,
+      revoke: () => db.church.delete({ where: { id: removableChurch.id } })
     },
     {
       path: `/platform/events/${f.occurrence.id}`,

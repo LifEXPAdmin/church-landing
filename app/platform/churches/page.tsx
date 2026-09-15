@@ -1,12 +1,16 @@
-import type { Metadata } from "next";
+import { discoveryMetadata } from "@/lib/platform/discovery-metadata";
+import type { PublicQuery } from "@/lib/indexing-policy";
 import { PortalPage } from "@/components/platform/portal-page";
 import { churchSearchQuery } from "@/lib/platform/church-search";
 
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = {
-  title: { absolute: "Find your church | God’s Churches" },
-  robots: { index: false, follow: false }
-};
+export async function generateMetadata({
+  searchParams
+}: {
+  searchParams: Promise<PublicQuery>;
+}) {
+  return discoveryMetadata("churches", await searchParams);
+}
 
 export default async function Page({
   searchParams

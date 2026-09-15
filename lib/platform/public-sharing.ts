@@ -8,6 +8,7 @@ import { PortalError } from "./portal-policy";
 import type { PrismaClient } from "@prisma/client";
 import { topicPublicWhere } from "./topic-policy";
 import { shareCardLabel } from "../share-card";
+import { publicChurchWhere, publicEventWhere } from "./public-discovery-policy";
 
 export type ShareKind =
   | "post"
@@ -181,7 +182,7 @@ export async function publicSharePreview(
     }
     if (query.kind === "church") {
       const row = await tx.church.findFirst({
-        where: { id: postId(query.id), communityListed: true },
+        where: { ...publicChurchWhere, id: postId(query.id) },
         select: { name: true, summary: true }
       });
       return row
@@ -196,13 +197,8 @@ export async function publicSharePreview(
     }
     const row = await tx.calendarOccurrence.findFirst({
       where: {
-        id: postId(query.id),
-        canceledAt: null,
-        event: {
-          canceledAt: null,
-          visibility: "PUBLIC",
-          calendar: { archivedAt: null, churchId: { not: null } }
-        }
+        ...publicEventWhere,
+        id: postId(query.id)
       },
       select: {
         title: true,

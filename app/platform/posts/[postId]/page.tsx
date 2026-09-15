@@ -3,6 +3,7 @@ import { PrivateSnapshotGuard } from "@/components/platform/private-snapshot-gua
 import { publicResourceMetadata } from "@/lib/platform/share-metadata";
 import { DiscussionBack } from "@/components/platform/discussion-back";
 import type { Metadata } from "next";
+import type { PublicQuery } from "@/lib/indexing-policy";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PostCard } from "@/components/platform/post-card";
@@ -13,11 +14,17 @@ import { getCurrentPlatformUser } from "@/lib/platform/session";
 
 export const dynamic = "force-dynamic";
 export async function generateMetadata({
-  params
+  params,
+  searchParams
 }: {
   params: Promise<{ postId: string }>;
+  searchParams: Promise<PublicQuery>;
 }): Promise<Metadata> {
-  return publicResourceMetadata("post", (await params).postId);
+  return publicResourceMetadata(
+    "post",
+    (await params).postId,
+    await searchParams
+  );
 }
 export default async function PostPage({
   params,

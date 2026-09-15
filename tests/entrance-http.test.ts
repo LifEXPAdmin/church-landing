@@ -223,9 +223,11 @@ test("public information has canonical metadata, useful account links and no act
     const body = await (await get(path, true, true)).text();
     noPrivateData(body);
   }
-  const sitemap = await (await get("/sitemap.xml")).text();
+  const sitemapIndex = await (await get("/sitemap.xml")).text();
+  assert.ok(sitemapIndex.includes("<sitemapindex"));
+  const sitemap = await (await get("/sitemap.xml?kind=site&page=0")).text();
   for (const path of paths) assert.ok(sitemap.includes(origin + path));
-  assert.ok(!sitemap.includes(origin + "/platform"));
+  assert.ok(sitemap.includes(origin + "/platform</loc>"));
   assert.ok(!sitemap.includes(origin + "/join"));
   assert.ok(!sitemap.includes(origin + "/thanks"));
   assert.ok(!sitemap.includes("<loc>" + origin + "</loc>"));
@@ -243,8 +245,12 @@ test("existing account and selected-post/profile links stay stable and private p
   ]) {
     const response = await get(path);
     assert.equal(response.status, 200, path);
-    assert.match(response.headers.get("x-robots-tag") ?? "", /noindex/);
-    noPrivateData(await response.text());
+    const html = await response.text();
+    assert.ok(
+      (response.headers.get("x-robots-tag") ?? "").includes("noindex") ||
+        /<meta name="robots" content="[^"]*noindex/.test(html)
+    );
+    noPrivateData(html);
   }
   const selected = await (
     await get("/platform?post=" + postId + "&mode=pages", true)

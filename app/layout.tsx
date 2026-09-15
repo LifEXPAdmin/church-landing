@@ -7,6 +7,7 @@ import { PublicChrome } from "@/components/layout/public-chrome";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 import { cn } from "@/lib/utils";
+import { indexingEnvironment } from "@/lib/indexing-policy";
 
 const headingFont = Cormorant_Garamond({
   subsets: ["latin"],
@@ -21,9 +22,8 @@ const bodyFont = Source_Sans_3({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(
-    process.env.NEXT_PUBLIC_SITE_URL ?? "https://godschurches.com"
-  ),
+  metadataBase: new URL(indexingEnvironment().origin),
+  robots: { index: indexingEnvironment().index, follow: true },
   title: {
     default: "God’s Churches | The Revival",
     template: "%s | God’s Churches"

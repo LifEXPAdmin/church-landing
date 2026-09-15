@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { indexingEnvironment } from "./lib/indexing-policy";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
@@ -30,14 +31,32 @@ const nextConfig: NextConfig = {
     )
   },
   async headers() {
-    return ["/platform/:path*", "/api/platform/:path*"].map((source) => ({
-      source,
-      headers: [
-        { key: "Referrer-Policy", value: "no-referrer" },
-        { key: "Cache-Control", value: "private, no-store, max-age=0" },
-        { key: "X-Robots-Tag", value: "noindex, nofollow" }
-      ]
-    }));
+    const privacy = ["/platform/:path*", "/api/platform/:path*"].map(
+      (source) => ({
+        source,
+        headers: [
+          { key: "Referrer-Policy", value: "no-referrer" },
+          { key: "Cache-Control", value: "private, no-store, max-age=0" }
+        ]
+      })
+    );
+    // Candidate public pages make a current, anonymous metadata decision. Every
+    // other platform route keeps its header, including future private children.
+    const sources = indexingEnvironment().index
+      ? [
+          "/api/:path*",
+          "/admin/:path*",
+          "/platform/:path((?!$|churches$|churches/[^/]+$|posts/[^/]+$|events/[^/]+$|topics$|topics/[^/]+$).*)",
+          "/platform/topics/new"
+        ]
+      : ["/:path*"];
+    return [
+      ...privacy,
+      ...sources.map((source) => ({
+        source,
+        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }]
+      }))
+    ];
   }
 };
 

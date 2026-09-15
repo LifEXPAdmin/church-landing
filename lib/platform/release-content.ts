@@ -14,6 +14,19 @@ export type Feature = {
 };
 export const features: Feature[] = [
   {
+    id: "public-search-pages",
+    category: "Posts and conversations",
+    name: "Public pages and search",
+    description:
+      "Useful public pages have clear titles, stable links and current public details.",
+    steps:
+      "Browse church pages, published public events and public conversations. Follow their links to read the current source and its audience. Search engines refresh their own results on their own schedules.",
+    href: "/platform/churches",
+    eligibility:
+      "Member profiles, private tools, drafts and search filters stay excluded from indexing. Prayers and posts with a content note need an author-supplied safe excerpt for search discovery. A search result never grants private access or verifies church authority.",
+    availability: "available"
+  },
+  {
     id: "getting-started",
     category: "Account and profile",
     name: "Getting started at your pace",
@@ -676,6 +689,24 @@ export const features: Feature[] = [
   }
 ];
 export const releases: ReleaseEntry[] = [
+  {
+    id: "public-page-discoverability",
+    version: "2026.09.15.5",
+    date: "2026-09-15",
+    summary: "Find useful public pages through clear titles and stable links.",
+    added: [
+      "Search guidance for current public church pages, published public events and eligible public conversations."
+    ],
+    improved: [
+      "Public page details and previews follow the current source. Private pages, drafts and member profiles remain excluded from search indexing.",
+      "Church and event details describe supplied facts without inventing a building, venue or verified affiliation."
+    ],
+    fixed: [
+      "Official church pages receive the same public preview support as community listings. A community-listing label describes provenance, not privacy.",
+      "Paginated public directories retain their own addresses, while tracking and private filters do not create duplicate indexable pages."
+    ],
+    featureIds: ["public-search-pages", "sharing"]
+  },
   {
     id: "onboarding-church-welcome",
     version: "2026.09.15.4",

@@ -1,7 +1,13 @@
 import type { Metadata } from "next";
 import { unstable_noStore as noStore } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { accountConfig } from "./account-config";
+import {
+  indexingEnvironment,
+  publicPageIdentity,
+  type PublicQuery
+} from "../indexing-policy";
+import { publicDiscoverablePostWhere } from "./public-discovery-policy";
+import { withPostRead } from "./post-access";
 import {
   publicSharePreview,
   canonicalSharePath,
@@ -10,10 +16,11 @@ import {
 /** Anonymous preview is the only source of resource metadata, even when signed in. */
 export async function publicResourceMetadata(
   kind: ShareKind,
-  id: string
+  id: string,
+  query: PublicQuery = {}
 ): Promise<Metadata> {
   noStore();
-  const origin = accountConfig().origin;
+  const { origin, index: environmentIndex } = indexingEnvironment();
   let preview: Awaited<ReturnType<typeof publicSharePreview>> | null = null;
   try {
     preview = await publicSharePreview(prisma, { kind, id });
@@ -25,11 +32,41 @@ export async function publicResourceMetadata(
       preview?.description ??
       "Open God’s Churches to view this page and check your access.";
   let url: string | undefined;
+  let filtered = true;
   try {
     // Plain reposts already normalize to their original in Copy/Share. Keep
     // crawler canonical/OG addresses on that same current public projection.
-    url = preview?.url ?? new URL(canonicalSharePath(kind, id), origin).href;
+    const path = preview?.path ?? canonicalSharePath(kind, id);
+    const pagination =
+      kind === "church"
+        ? ["postBefore", "postCursor"]
+        : kind === "post" || kind === "topic"
+          ? ["before", "cursor"]
+          : [];
+    const identityQuery = { ...query };
+    delete identityQuery.comment;
+    delete identityQuery.timeZone;
+    const identity = publicPageIdentity(path, identityQuery, pagination);
+    filtered = identity.filtered;
+    url = new URL(identity.path, origin).href;
   } catch {}
+  let discoverable =
+    !!preview?.available &&
+    !filtered &&
+    kind !== "profile" &&
+    kind !== "comment";
+  if (discoverable && kind === "post") {
+    try {
+      discoverable = !!(await withPostRead(prisma, null, (tx, context) =>
+        tx.platformPost.findFirst({
+          where: { AND: [publicDiscoverablePostWhere(context), { id }] },
+          select: { id: true }
+        })
+      ));
+    } catch {
+      discoverable = false;
+    }
+  }
   const image = preview?.image ?? {
     url: new URL("/brand/share-card.png", origin).href,
     width: 1200,
@@ -37,12 +74,18 @@ export async function publicResourceMetadata(
     alt: "God’s Churches — faith and community"
   };
   return {
-    title: { absolute: title },
+    title: {
+      absolute:
+        discoverable && kind === "post"
+          ? `${description.slice(0, 80)} | God’s Churches`
+          : title
+    },
     description,
     ...(url ? { alternates: { canonical: url } } : {}),
-    ...(!preview?.available || kind === "church" || kind === "event"
-      ? { robots: { index: false, follow: false } }
-      : {}),
+    robots: {
+      index: environmentIndex && discoverable,
+      follow: !!preview?.available
+    },
     openGraph: {
       title,
       description,

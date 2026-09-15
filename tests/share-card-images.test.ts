@@ -206,12 +206,34 @@ test("source restriction during PNG rendering discards the earlier public projec
 
 test("church removal, event restriction/cancellation and member profiles never leave a controlled public derivative", async () => {
   const f = await seedSharing(db);
+  const removable = await db.church.create({
+    data: {
+      name: "Fictional removable public church",
+      slug: randomUUID(),
+      summary: "Published canonical fixture"
+    }
+  });
   await db.church.update({
     where: { id: f.church.id },
     data: { communityListed: false }
   });
+  assert.equal(
+    (await publicSharePreview(db, { kind: "church", id: f.church.id }))
+      .available,
+    true,
+    "An official/unmanaged canonical page is still public"
+  );
+  assert.notDeepEqual(
+    await bytes(
+      await sharePreviewResponse(db, request("church", removable.id))
+    ),
+    await defaultShareCard()
+  );
+  await db.church.delete({ where: { id: removable.id } });
   assert.deepEqual(
-    await bytes(await sharePreviewResponse(db, request("church", f.church.id))),
+    await bytes(
+      await sharePreviewResponse(db, request("church", removable.id))
+    ),
     await defaultShareCard()
   );
   await db.calendarEvent.update({

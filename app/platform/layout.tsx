@@ -7,7 +7,10 @@ import type { Metadata } from "next";
 import { DraftWorkspaceProvider } from "@/components/platform/draft-workspace-provider";
 
 // Keep font-relative platform controls in step with supported OS text settings.
-export const metadata: Metadata = { other: { "text-scale": "scale" } };
+export const metadata: Metadata = {
+  other: { "text-scale": "scale" },
+  robots: { index: false, follow: false }
+};
 
 export default function PlatformLayout({
   children

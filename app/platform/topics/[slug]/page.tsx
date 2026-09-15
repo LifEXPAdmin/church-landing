@@ -15,13 +15,20 @@ import { getCurrentPlatformUser } from "@/lib/platform/session";
 import { topicPage } from "@/lib/platform/topic-session";
 import { topicHref } from "@/lib/platform/topic-types";
 import { publicResourceMetadata } from "@/lib/platform/share-metadata";
+import type { PublicQuery } from "@/lib/indexing-policy";
 export const dynamic = "force-dynamic";
 export async function generateMetadata({
-  params
+  params,
+  searchParams
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<PublicQuery>;
 }) {
-  return publicResourceMetadata("topic", (await params).slug);
+  return publicResourceMetadata(
+    "topic",
+    (await params).slug,
+    await searchParams
+  );
 }
 export default async function PublicTopicPage({
   params,

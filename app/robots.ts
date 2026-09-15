@@ -1,13 +1,13 @@
 import type { MetadataRoute } from "next";
+import { indexingEnvironment } from "@/lib/indexing-policy";
 
 export default function robots(): MetadataRoute.Robots {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://godschurches.com";
+  const baseUrl = indexingEnvironment().origin;
 
   return {
     rules: {
       userAgent: "*",
-      allow: "/",
-      disallow: ["/admin/"]
+      allow: "/"
     },
     sitemap: `${baseUrl}/sitemap.xml`
   };

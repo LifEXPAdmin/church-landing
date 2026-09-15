@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { indexingEnvironment } from "./indexing-policy";
 
 export function publicMetadata(
   title: string,
@@ -10,6 +11,7 @@ export function publicMetadata(
     title: { absolute: fullTitle },
     description,
     alternates: { canonical: path },
+    robots: { index: indexingEnvironment().index, follow: true },
     openGraph: {
       title: fullTitle,
       description,
@@ -18,10 +20,10 @@ export function publicMetadata(
       type: "website",
       images: [
         {
-          url: "/hero.jpg",
-          width: 1600,
-          height: 1067,
-          alt: "Sunrise over mountains and clouds"
+          url: "/brand/share-card.png",
+          width: 1200,
+          height: 630,
+          alt: "God’s Churches — faith and community"
         }
       ]
     },
@@ -29,7 +31,7 @@ export function publicMetadata(
       card: "summary_large_image",
       title: fullTitle,
       description,
-      images: ["/hero.jpg"]
+      images: ["/brand/share-card.png"]
     }
   };
 }

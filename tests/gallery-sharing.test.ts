@@ -246,7 +246,8 @@ test("public sharing always uses anonymous permission and redacts private, withd
   });
   assert.equal(
     (await publicSharePreview(db, { kind: "church", id: church.id })).available,
-    false
+    true,
+    "Canonical church facts stay public; the community flag is provenance, not privacy"
   );
   await db.platformPost.update({
     where: { id: p.id },

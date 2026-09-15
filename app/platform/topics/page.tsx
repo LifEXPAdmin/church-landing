@@ -1,4 +1,5 @@
-import type { Metadata } from "next";
+import { discoveryMetadata } from "@/lib/platform/discovery-metadata";
+import type { PublicQuery } from "@/lib/indexing-policy";
 import Link from "next/link";
 import { PlatformShell } from "@/components/platform/platform-shell";
 import { PrivateSnapshotGuard } from "@/components/platform/private-snapshot-guard";
@@ -14,11 +15,13 @@ import { topicListPage } from "@/lib/platform/topic-session";
 import { topicHref } from "@/lib/platform/topic-types";
 
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = {
-  title: { absolute: "Topic communities | God’s Churches" },
-  description:
-    "Explore public communities and conversations about faith and everyday life."
-};
+export async function generateMetadata({
+  searchParams
+}: {
+  searchParams: Promise<PublicQuery>;
+}) {
+  return discoveryMetadata("topics", await searchParams);
+}
 export default async function TopicDiscoveryPage({
   searchParams
 }: {
