@@ -507,8 +507,8 @@ function DiscoverySettingsForm({
               !data.churches.some(
                 (church) => church.id === prefs.filters.homeChurchId
               ) && (
-                <option value={prefs.filters.homeChurchId}>
-                  Previous connection unavailable — choose again
+                <option value={prefs.filters.homeChurchId} disabled>
+                  Saved church is no longer approved — choose again
                 </option>
               )}
             {data.churches.map((church) => (

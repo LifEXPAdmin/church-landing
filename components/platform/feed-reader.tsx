@@ -222,7 +222,7 @@ export function FeedReader({
         event.stopPropagation();
         setLeaveHref(link.href);
         setNotice(
-          "You have unsent entries on these posts. Keep reading, or open the destination in a new tab to keep your entries here."
+          "You have unsent entries. Keep reading, or open the destination in a new tab to keep your entries here."
         );
       }
     };
@@ -701,7 +701,7 @@ export function FeedReader({
                   className="gc-button gc-button-quiet"
                 >
                   {feedChoice &&
-                  ["weekly", "trending"].includes(feedChoice.mode)
+                  !["latest", "friends"].includes(feedChoice.mode)
                     ? "Read more posts"
                     : "Read older posts"}
                   <ArrowRight aria-hidden="true" />

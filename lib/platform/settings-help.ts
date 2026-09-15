@@ -1,6 +1,15 @@
 /** Presentation of existing capabilities; each destination retains its authority. */
 export const settingsHelpTopics = [
   {
+    id: "discovery",
+    title: "How do discovery feeds and hidden choices work?",
+    keywords:
+      "feed for you following friends favorites church local public ranking preferences preset topics language denomination hidden words reset",
+    body: "Feed Settings saves explicit reading choices. Following is separate from accepted Friends; Your Church needs a current approved connection. Public and Local remain public-only. Geographic expansion is off until you choose it. More/Less affects recommendations; resetting that feedback keeps filters and follows. Hidden words and topics filter all Home feeds, while direct links retain their existing permissions. Refresh starts a new reading set.",
+    href: "/platform/settings/feed/discovery",
+    action: "Review Feed Settings"
+  },
+  {
     id: "audiences",
     title: "Who can see my profile and posts?",
     keywords:

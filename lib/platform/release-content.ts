@@ -14,6 +14,32 @@ export type Feature = {
 };
 export const features: Feature[] = [
   {
+    id: "discovery-feeds",
+    category: "Posts and conversations",
+    name: "Discovery and private feed settings",
+    description:
+      "Read For You, Following, Your Church, Churches, Local, Public or Favorites using choices you control.",
+    steps:
+      "Choose a feed in Home or My feed, then open Feed Settings. Select exact topics, languages, traditions, post types or a broad area, and save a strict or explicitly expanded preset. Why this post explains the reading set. More/Less changes topic recommendations; hidden words and topics apply across all Home feeds. Refresh when you want a new set.",
+    href: "/platform/settings/feed/discovery",
+    eligibility:
+      "Guest choices stay on that browser. Account preferences and favorites stay private. Following uses current follows; Your Church requires an approved connection. Public and Local never include church-only posts. Recommendations use explicit choices, not inferred faith or reading time.",
+    availability: "available"
+  },
+  {
+    id: "post-discovery",
+    category: "Posts and conversations",
+    name: "Optional post discovery labels",
+    description:
+      "Choose a language, tradition or broad locality for an individual post.",
+    steps:
+      "Open Optional discovery choices in the post editor. Leave labels unclassified or choose your own description. To publish a country or town, confirm that you want to share that locality. Changing the area asks for a new confirmation. Private drafts retain your entries; editing can clear the labels later.",
+    href: "/platform",
+    eligibility:
+      "Labels follow the post's existing audience and never change account beliefs, membership or permission to read. Locality uses a named town center, with no GPS or personal address. Public discovery requires an eligible public post.",
+    availability: "available"
+  },
+  {
     id: "topic-communities",
     category: "Posts and conversations",
     name: "Topic communities",
@@ -401,7 +427,7 @@ export const features: Feature[] = [
     category: "Posts and conversations",
     name: "Feed choices and focused reading",
     description:
-      "Choose Latest, Friends, Top This Week or Trending, then read in List or Pages.",
+      "Choose a community or discovery feed, then read in List or Pages.",
     steps:
       "Choose a feed in Home or My feed. Your account remembers that choice. Latest shows public posts; Friends shows accepted mutual friends; Top This Week counts Likes received in the last seven days; Trending gives more weight to recent Likes. Refresh posts updates the reading set. List, Pages and display settings stay separate.",
     href: "/platform/feed",
@@ -586,6 +612,27 @@ export const features: Feature[] = [
   }
 ];
 export const releases: ReleaseEntry[] = [
+  {
+    id: "explicit-discovery-feeds",
+    version: "2026.09.15.1",
+    date: "2026-09-15",
+    summary:
+      "Choose discovery feeds, save private preferences and understand why posts appear.",
+    added: [
+      "For You, Following, Your Church, Churches, Local, Public and private Favorites alongside the four existing feeds.",
+      "Exact filters, strict or explicitly expanded presets, readable ranking reasons, More/Less topic choices and editable hidden words or topics.",
+      "Optional author-selected language, tradition and broad locality, with explicit location-sharing consent and private draft support."
+    ],
+    improved: [
+      "Reading sets stay in place until you refresh, with finite paging, clear empty states and an optional browser-only break reminder.",
+      "Town lookup uses compressed public data without GPS, personal addresses or an external location service."
+    ],
+    fixed: [
+      "Private settings, draft publication and classification edits preserve exact retries and current-account checks.",
+      "Unreadable guest choices require an explicit reset; withdrawal, erasure and protected recovery prevent older public classifications from returning."
+    ],
+    featureIds: ["discovery-feeds", "post-discovery", "reader", "drafts"]
+  },
   {
     id: "public-topic-communities",
     version: "2026.09.14.18",

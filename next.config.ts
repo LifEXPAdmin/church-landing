@@ -12,7 +12,7 @@ const nextConfig: NextConfig = {
       "/api/platform/discovery",
       "/api/platform/posts",
       "/api/platform/post-workspace"
-    ].map((route) => [route, ["./data/discovery/countries/*.json"]])
+    ].map((route) => [route, ["./data/discovery/countries/*.json.gz"]])
   ),
   async headers() {
     return ["/platform/:path*", "/api/platform/:path*"].map((source) => ({

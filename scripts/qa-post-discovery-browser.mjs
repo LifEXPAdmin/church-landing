@@ -102,8 +102,13 @@ const signIn = (actor) =>
 const form = () =>
   page.getByRole("form", { name: "Publish post", exact: true });
 const field = () => form().getByLabel("Post content", { exact: true });
-const save = () =>
-  form().getByRole("button", { name: "Save draft now", exact: true }).click();
+const save = async () => {
+  const button = form().getByRole("button", {
+    name: "Save draft",
+    exact: true
+  });
+  if (await button.isEnabled()) await button.click();
+};
 const saved = () =>
   page.waitForFunction(() =>
     document
@@ -136,7 +141,7 @@ try {
   const marker = "Fictional post discovery " + randomUUID();
   phase = "draft-without-public-consent";
   await go("/platform?feed=latest");
-  await page.locator("#compose-post > summary").click();
+  await page.locator("#compose-post").click();
   await field().waitFor();
   await field().fill(marker);
   await openChoices(form());
@@ -168,19 +173,33 @@ try {
   assert.equal(draft.payload.discovery.country, "US");
   assert.ok(draft.payload.discovery.placeId);
   assert.equal(draft.payload.discovery.language, "en");
+  await form().getByRole("button", { name: "Post", exact: true }).click();
   await form()
-    .getByRole("button", { name: "Publish post", exact: true })
-    .click();
-  await form()
-    .getByText(/Confirm sharing this broad locality/)
+    .getByText(/Confirm sharing the broad locality/)
     .waitFor();
   assert.equal(
     await db.platformPost.count({ where: { authorId: actor.id } }),
     0
   );
   assert.equal(await field().inputValue(), marker);
+  await page.setViewportSize({ width: 320, height: 568 });
+  await page.evaluate(() => {
+    document.documentElement.style.fontSize = "20px";
+  });
   await bounded();
+  for (const name of ["Save draft", "Post"]) {
+    const box = await form()
+      .getByRole("button", { name, exact: true })
+      .boundingBox();
+    assert.ok(
+      box && box.y >= 0 && box.y + box.height <= 568 && box.height >= 44
+    );
+  }
   await form().screenshot({ path: output + "/unconfirmed-locality.png" });
+  await page.evaluate(() => {
+    document.documentElement.style.fontSize = "";
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
   ok(
     "Optional author classification survives a private draft without public locality consent; publication is blocked without losing entries"
   );
@@ -224,9 +243,7 @@ try {
     }
     await route.continue();
   });
-  await form()
-    .getByRole("button", { name: "Publish post", exact: true })
-    .click();
+  await form().getByRole("button", { name: "Post", exact: true }).click();
   await form()
     .getByRole("button", { name: "Retry same request", exact: true })
     .waitFor();
@@ -288,10 +305,10 @@ try {
     .getByRole("button", { name: "Save post changes", exact: true })
     .click();
   await editor()
-    .getByRole("button", { name: "Retry same request", exact: true })
+    .getByRole("button", { name: "Retry original request", exact: true })
     .waitFor();
   await editor()
-    .getByRole("button", { name: "Retry same request", exact: true })
+    .getByRole("button", { name: "Retry original request", exact: true })
     .click();
   await waitDb(
     async () =>
@@ -302,7 +319,7 @@ try {
   await page.unroute("**/api/platform/posts");
   await go(`/platform/posts/${published.id}`);
   assert.ok(
-    !(await page.locator(".gc-post-card").first().textContent()).includes(
+    !(await page.locator(".gc-post").first().textContent()).includes(
       "Author-selected:"
     )
   );

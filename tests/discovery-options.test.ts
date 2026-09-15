@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
+import { gunzipSync } from "node:zlib";
 import {
   defaultDiscoveryPreferences,
   parseDiscoveryPreferences,
@@ -24,7 +25,12 @@ test("catalog provenance matches generated public files and search exposes label
   assert.ok(manifest.places > 40000 && manifest.countries > 180);
   for (const [name, expected] of Object.entries(manifest.outputs) as [
     string,
-    { bytes: number; sha256: string }
+    {
+      bytes: number;
+      sha256: string;
+      uncompressedBytes?: number;
+      uncompressedSha256?: string;
+    }
   ][]) {
     const data = readFileSync("data/discovery/" + name);
     assert.equal(data.length, expected.bytes);
@@ -32,6 +38,14 @@ test("catalog provenance matches generated public files and search exposes label
       createHash("sha256").update(data).digest("hex"),
       expected.sha256
     );
+    if (name.endsWith(".gz")) {
+      const raw = gunzipSync(data);
+      assert.equal(raw.length, expected.uncompressedBytes);
+      assert.equal(
+        createHash("sha256").update(raw).digest("hex"),
+        expected.uncompressedSha256
+      );
+    }
   }
   const result = await searchDiscoveryPlaces("US", "Chicago");
   const city = result.places.find((place) =>

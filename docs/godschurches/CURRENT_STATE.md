@@ -12,9 +12,14 @@ export and follow-change checks have been added for the production-build gate.
 The later foundation run passed 52 tests including independent classification
 recovery clocks, withdrawal and erasure cleanup. The first full gate stopped on
 an isolated dependency-copy layout error; its passing partial checks do not
-constitute a full gate. Migration 55 remains local. Browser acceptance, protected production-copy upgrade,
-release gate, exact deployment / canonical assignment and live behavior are still
-required. See [the discovery contract](DISCOVERY_FEEDS_CONTRACT.md). Physical-phone
+constitute a full gate. The production-build browser checks now pass thirteen
+discovery and author-classification groups, including exact retry, account switch,
+standalone settings, finite pagination, consent and 320-pixel larger-text checks.
+The public town shards are compressed from 4,711,979 to 1,355,796 bytes with exact
+decoded hashes preserved. Migration 55 remains local. The final compressed build,
+related browser regressions, protected production-copy upgrade, complete release
+gate, exact deployment / canonical assignment and live behavior are still required.
+See [the discovery contract](DISCOVERY_FEEDS_CONTRACT.md). Physical-phone
 acceptance remains separately evidenced; the unified queue final review stays last.
 
 ## Topic communities verified live — September 15, 2026 UTC

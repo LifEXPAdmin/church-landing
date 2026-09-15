@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Rebuild the attributed public town catalog; never runs during app startup."""
 import hashlib
+import gzip
 import io
 import json
 from pathlib import Path
@@ -56,13 +57,19 @@ def main():
     outputs = {}
     def write(relative, value):
         raw = (json.dumps(value, ensure_ascii=False, separators=(",", ":")) + "\n").encode()
+        uncompressed = raw
+        if relative.endswith(".gz"):
+            raw = gzip.compress(raw, mtime=0)
         (ROOT / relative).write_bytes(raw)
         outputs[relative] = {"bytes": len(raw), "sha256": hashlib.sha256(raw).hexdigest()}
+        if relative.endswith(".gz"):
+            outputs[relative].update({"uncompressedBytes": len(uncompressed), "uncompressedSha256": hashlib.sha256(uncompressed).hexdigest()})
     for country, places in sorted(by_country.items()):
-        write(f"countries/{country}.json", sorted(places, key=lambda row: row[0]))
+        write(f"countries/{country}.json.gz", sorted(places, key=lambda row: row[0]))
     write("countries.json", sorted(countries, key=lambda row: row["name"]))
     write("languages.json", sorted(languages, key=lambda row: row["name"]))
     manifest = {"generatedAt": datetime.now(timezone.utc).isoformat(), "license": "CC BY 4.0", "attribution": "GeoNames", "source": BASE, "selection": "cities5000: towns over 5000 people or first-order administrative seats; coordinates rounded to 0.001 degrees", "sources": {name: {"bytes": len(raw), "sha256": hashlib.sha256(raw).hexdigest()} for name, raw in inputs.items()}, "countries": len(by_country), "places": sum(map(len, by_country.values())), "outputs": outputs}
+    manifest["storage"] = "Deterministic gzip country shards; original decoded hashes preserved."
     (ROOT / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
     print(json.dumps({"countries": len(by_country), "places": manifest["places"], "languages": len(languages), "totalBytes": sum(item["bytes"] for item in outputs.values())}))
 

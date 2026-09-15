@@ -300,12 +300,14 @@ try {
   await form()
     .getByRole("link", { name: "Open your saved feed", exact: true })
     .click();
-  await form()
-    .getByText(
-      "Save, retry or discard your local feed choices before leaving.",
-      { exact: true }
-    )
+  await page
+    .getByRole("button", { name: "Keep reading", exact: true })
     .waitFor();
+  assert.equal(
+    await form().getByLabel("Preset name", { exact: true }).inputValue(),
+    "My strict Chicago feed"
+  );
+  await page.getByRole("button", { name: "Keep reading", exact: true }).click();
   assert.equal(new URL(page.url()).searchParams.get("feed"), "for-you");
   await saveSettings("local");
   const presetSaved = await db.socialPreferences.findUniqueOrThrow({
@@ -361,6 +363,17 @@ try {
   await form()
     .getByRole("button", { name: "Retry the same feed settings", exact: true })
     .waitFor();
+  await page.waitForFunction(() =>
+    [
+      ...document.querySelectorAll(
+        'form[aria-label="Save feed settings"] button'
+      )
+    ].some(
+      (button) =>
+        button.textContent === "Retry the same feed settings" &&
+        !button.disabled
+    )
+  );
   const afterLoss = await db.socialPreferences.findUniqueOrThrow({
     where: { ownerId: a.id }
   });
@@ -470,7 +483,7 @@ try {
   posts.push(fresh);
   assert.deepEqual(await getIds(), beforePage);
   await page
-    .getByRole("link", { name: "Read more posts", exact: true })
+    .getByRole("link", { name: /^Read (?:more|older) posts$/, exact: true })
     .click();
   await page.waitForFunction((url) => location.href !== url, firstUrl);
   assert.deepEqual(
@@ -544,6 +557,65 @@ try {
   await ready();
   ok(
     "Account switches conceal retained private entries, prevent cross-account writes and restore the original owner's unsent form"
+  );
+  phase = "standalone-settings";
+  await go("/platform/settings/feed/discovery");
+  await form()
+    .getByLabel("Saved feed", { exact: true })
+    .waitFor({ state: "visible" });
+  await page.setViewportSize({ width: 320, height: 568 });
+  await page.evaluate(() => {
+    document.documentElement.style.fontSize = "20px";
+  });
+  await bounded();
+  await form().screenshot({ path: output + "/standalone-large-text-320.png" });
+  await expand(
+    form(),
+    "Hidden words, hidden topics and recommendation feedback"
+  );
+  await form()
+    .getByLabel("Hidden words or phrases", { exact: true })
+    .fill("standalone private marker");
+  await form()
+    .getByRole("button", { name: "Save feed settings", exact: true })
+    .click();
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector('form[aria-label="Save feed settings"]')
+        ?.getAttribute("data-reader-dirty") === "false" &&
+      [
+        ...document.querySelectorAll(
+          'form[aria-label="Save feed settings"] button'
+        )
+      ].some(
+        (button) =>
+          button.textContent === "Save feed settings" && !button.disabled
+      )
+  );
+  assert.deepEqual(
+    (await db.socialPreferences.findUniqueOrThrow({ where: { ownerId: a.id } }))
+      .discovery.hiddenWords,
+    ["standalone private marker"]
+  );
+  await page.reload();
+  await form()
+    .getByLabel("Saved feed", { exact: true })
+    .waitFor({ state: "visible" });
+  await expand(
+    form(),
+    "Hidden words, hidden topics and recommendation feedback"
+  );
+  assert.equal(
+    await form()
+      .getByLabel("Hidden words or phrases", { exact: true })
+      .inputValue(),
+    "standalone private marker"
+  );
+  await go("/platform");
+  await ready();
+  ok(
+    "The standalone Settings destination saves and reloads the same private choices and remains usable with larger text at 320 pixels"
   );
   phase = "break-reminder";
   const reminder = page

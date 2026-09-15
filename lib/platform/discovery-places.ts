@@ -1,4 +1,5 @@
 import { readFile } from "node:fs/promises";
+import { gunzipSync } from "node:zlib";
 import { join } from "node:path";
 import { discoveryCountry, discoveryPlaceId } from "./discovery-options";
 import { PortalError } from "./portal-policy";
@@ -24,10 +25,16 @@ async function towns(value: unknown) {
   let result = cache.get(country);
   if (!result) {
     result = readFile(
-      join(process.cwd(), "data/discovery/countries", country + ".json"),
-      "utf8"
+      join(process.cwd(), "data/discovery/countries", country + ".json.gz")
     )
-      .then((text) => JSON.parse(text) as Town[])
+      .then(
+        (bytes) =>
+          JSON.parse(
+            gunzipSync(bytes, { maxOutputLength: 8 * 1024 * 1024 }).toString(
+              "utf8"
+            )
+          ) as Town[]
+      )
       .catch((error) => {
         cache.delete(country);
         if (error.code === "ENOENT") return [];
