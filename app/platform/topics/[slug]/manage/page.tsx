@@ -58,11 +58,19 @@ export default async function ManageTopicPage({
                 ? "No topic visibility restriction"
                 : "Topic visibility is restricted by moderation"}
             </p>
-            <Link className="gc-button gc-button-quiet" href={topicHref(slug)}>
+            <Link
+              prefetch={false}
+              className="gc-button gc-button-quiet"
+              href={topicHref(slug)}
+            >
               Open public topic
             </Link>
             {after && (
-              <Link className="gc-button gc-button-quiet" href={path}>
+              <Link
+                prefetch={false}
+                className="gc-button gc-button-quiet"
+                href={path}
+              >
                 First member page
               </Link>
             )}
@@ -82,7 +90,11 @@ export default async function ManageTopicPage({
                   Private follow choices are excluded.
                 </p>
                 {auditAfter && (
-                  <Link className="gc-button gc-button-quiet" href={path}>
+                  <Link
+                    prefetch={false}
+                    className="gc-button gc-button-quiet"
+                    href={path}
+                  >
                     Latest history
                   </Link>
                 )}
@@ -129,6 +141,7 @@ export default async function ManageTopicPage({
                 </ol>
                 {data.history.after && (
                   <Link
+                    prefetch={false}
                     className="gc-button gc-button-quiet"
                     href={`${path}?${new URLSearchParams({ auditAfter: data.history.after })}`}
                   >

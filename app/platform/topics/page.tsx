@@ -53,7 +53,11 @@ export default async function TopicDiscoveryPage({
       const rows = (
         <div className="space-y-4">
           {query.after && (
-            <Link className="gc-button gc-button-quiet" href={path}>
+            <Link
+              prefetch={false}
+              className="gc-button gc-button-quiet"
+              href={path}
+            >
               First topic page
             </Link>
           )}
@@ -76,6 +80,7 @@ export default async function TopicDiscoveryPage({
               >
                 <h2 className="break-words text-2xl">
                   <Link
+                    prefetch={false}
                     className="underline"
                     href={`${topicHref(topic.slug)}${query.owned ? "/manage" : ""}`}
                   >
@@ -90,6 +95,7 @@ export default async function TopicDiscoveryPage({
           </ul>
           {result.after && (
             <Link
+              prefetch={false}
               className="gc-button gc-button-quiet"
               href={`/platform/topics?${new URLSearchParams({ ...Object.fromEntries(url), after: result.after })}`}
             >

@@ -15,30 +15,35 @@ export function TopicNavigation() {
       className="flex flex-wrap gap-x-5 gap-y-1"
     >
       <Link
+        prefetch={false}
         className="inline-flex min-h-11 items-center underline"
         href="/platform/topics"
       >
         Discover topics
       </Link>
       <Link
+        prefetch={false}
         className="inline-flex min-h-11 items-center underline"
         href="/platform/topics/following"
       >
         Topics I follow
       </Link>
       <Link
+        prefetch={false}
         className="inline-flex min-h-11 items-center underline"
         href="/platform/topics?mine=1"
       >
         My topic choices
       </Link>
       <Link
+        prefetch={false}
         className="inline-flex min-h-11 items-center underline"
         href="/platform/topics?owned=1"
       >
         Topics I own
       </Link>
       <Link
+        prefetch={false}
         className="inline-flex min-h-11 items-center underline"
         href="/platform/topics/new"
       >
@@ -62,7 +67,7 @@ export function TopicUnavailable({
           ? error.message
           : "This page could not be loaded. Your saved choices are unchanged. Reconnect and try again."}
       </p>
-      <Link className="gc-button gc-button-quiet" href={href}>
+      <Link prefetch={false} className="gc-button gc-button-quiet" href={href}>
         Reload current topic page
       </Link>
       <TopicNavigation />
@@ -73,12 +78,14 @@ export function TopicAccountLinks({ next }: { next: string }) {
   return (
     <div className="flex flex-wrap items-center gap-3">
       <Link
+        prefetch={false}
         className="gc-button"
         href={accountEntryHref("signup", next, "topic")}
       >
         Create an account to participate
       </Link>
       <Link
+        prefetch={false}
         className="gc-button gc-button-quiet"
         href={accountEntryHref("login", next, "topic")}
       >
@@ -125,7 +132,11 @@ export async function TopicPosts({
         {followed ? "Posts in topics you follow" : "Topic discussions"}
       </h2>
       {before && cursor && (
-        <Link className="gc-button gc-button-quiet" href={path}>
+        <Link
+          prefetch={false}
+          className="gc-button gc-button-quiet"
+          href={path}
+        >
           Latest topic posts
         </Link>
       )}
@@ -146,6 +157,7 @@ export async function TopicPosts({
       ))}
       {all.length > 20 && last && (
         <Link
+          prefetch={false}
           className="gc-button gc-button-quiet"
           href={`${path}?${new URLSearchParams({ before: last.createdAt.toISOString(), cursor: last.id })}`}
         >

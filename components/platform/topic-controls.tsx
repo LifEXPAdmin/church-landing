@@ -140,7 +140,11 @@ export function TopicParticipation({
       {!viewer.eligible && (
         <p>
           Verify your email and adult participation in{" "}
-          <Link className="underline" href="/platform/settings/account">
+          <Link
+            prefetch={false}
+            className="underline"
+            href="/platform/settings/account"
+          >
             account settings
           </Link>{" "}
           before joining or contributing.
@@ -199,7 +203,11 @@ export function TopicParticipation({
           >
             <p className="text-sm text-gc-muted">
               Following adds posts to{" "}
-              <Link className="underline" href="/platform/topics/following">
+              <Link
+                prefetch={false}
+                className="underline"
+                href="/platform/topics/following"
+              >
                 Topics I follow
               </Link>
               . It is separate from joining and does not turn on phone alerts.
@@ -233,6 +241,7 @@ export function TopicParticipation({
       ) : null}
       {viewer.canManage && (
         <Link
+          prefetch={false}
           className="gc-button gc-button-quiet"
           href={`${topicHref(topic.slug)}/manage`}
         >
@@ -296,6 +305,7 @@ export function TopicManagement({
         review system; authors retain ownership of their words.
       </p>
       <Link
+        prefetch={false}
         className="gc-button gc-button-quiet"
         href="/platform/reports/review"
       >
@@ -373,6 +383,7 @@ export function TopicManagement({
             >
               <h3 className="text-xl">
                 <Link
+                  prefetch={false}
                   className="underline"
                   href={`/platform/profile/${member.user.username}`}
                 >
@@ -530,6 +541,7 @@ export function TopicManagement({
           ))}
           {members.after && (
             <Link
+              prefetch={false}
               className="gc-button gc-button-quiet"
               href={`${topicHref(topic.slug)}/manage?after=${encodeURIComponent(members.after)}`}
             >
