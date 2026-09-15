@@ -1,6 +1,6 @@
 # Discovery feeds and private preferences
 
-Implementation contract · September 15, 2026 UTC · in progress, not released.
+Implementation contract · September 15, 2026 UTC · verified in 2026.09.15.1.
 
 This extends the existing bounded Home/My feed reader. Latest, Friends, Top This
 Week and Trending retain their approved behavior and saved defaults. Following
@@ -80,7 +80,7 @@ post or moderation revisions from suppressing a newer classification-removal
 receipt. Post withdrawal, personal account erasure and report-expiry cleanup clear
 these optional fields through the existing retention owners.
 
-## Completion evidence required
+## Completion evidence
 
 Frozen-clock exact-ID fixtures cover every mode/sort, strict sparse feeds,
 explicit broadening, unknown classification, blocks, pending/revoked church
@@ -92,3 +92,5 @@ costs. Complete the migration, protected restore, established full release gate,
 READY/canonical identity and actual live checks before calling engineering done.
 Physical-phone acceptance remains a separately evidenced criterion within its
 existing acceptance owner. Final review remains last.
+
+Actual implementation, resource, release and remaining physical acceptance are recorded in [discovery acceptance](DISCOVERY_FEEDS_ACCEPTANCE.md).

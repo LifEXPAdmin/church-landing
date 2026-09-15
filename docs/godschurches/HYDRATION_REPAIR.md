@@ -1,6 +1,6 @@
 # Interrupted streaming hydration
 
-September 15, 2026 UTC · candidate repair, not yet released.
+September 15, 2026 UTC · verified live in 2026.09.15.1 / ee6071c.
 
 Production-build fixture diagnostics reproduced React error 418 while hydrating
 an identical shared shell. The host div had already claimed its DOM node and
@@ -56,5 +56,8 @@ recovery, current account changes and the previously affected profile/navigation
 paths. The uninterrupted complete gate passes 140 files / 869 checks with two
 expected disabled skips and no failures or cancellations. All accepted builds
 come from source and the verified installer, with no diagnostic instrumentation.
-Exact canonical release/live evidence remains required. Private edited-asset
-probes are diagnostic evidence only.
+The build-cache repair also passes 32 fresh browser groups. Final canonical live
+checks verify the actual repaired renderer bytes and twelve streamed Public reloads
+without browser errors. The failed first deployment and accepted final identity are
+in [discovery acceptance](DISCOVERY_FEEDS_ACCEPTANCE.md). Private edited-asset
+probes remain diagnostic evidence only.

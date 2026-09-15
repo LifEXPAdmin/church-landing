@@ -1,26 +1,32 @@
-## Discovery release gate accepted — September 15, 2026 UTC
+## Explicit discovery verified live — September 15, 2026 UTC
 
-The discovery candidate **2026.09.15.1 / 3c731b615a2829e459e6cad74d203da430968bc3**
-is ready for the authorized publication process. Production remains the verified
-topic release below until exact deployment, canonical assignment and live checks
-complete. The final uninterrupted gate passes all 140 discovered files: 871
-executions, 869 passes, two expected disabled skips and no failures/cancellations.
-All 13 final production-build browser suites pass their 97 groups without browser
-errors. Types pass and lint has zero errors / 35 existing warnings.
+**2026.09.15.1 / ee6071ccb9787bcb999a8ad9edb5dacd9d4dded8** is READY in
+**dpl_92BSPBt8tXvWFxPZz93aWi74bSFS**, independently canonical and verified live.
+Seven additional discovery modes, private filters/presets, truthful explanations
+and feedback, optional author-selected classification, deliberate coarse locality
+and protected recovery ship together. The shared hydration defect and a subsequently
+detected Vercel cache boundary are repaired within this same feature cycle.
 
-The feature adds seven explicit discovery modes, private filters and presets,
-truthful explanations and feedback, optional author-selected post classification,
-consent-based coarse locality and protected recovery. The reproduced shared-shell
-hydration defect is repaired with the checksum-verified upstream renderer backport;
-failed preliminary workarounds remain recorded in the repair report. The catalog
-compresses from 4,711,979 to 1,355,796 bytes with exact decoded hashes preserved.
-Protected production-copy upgrade 54→55 preserves all original columns across
-100 tables and completes protected restore with zero production writes.
+Application `3c731b6` passes the uninterrupted 140-file gate: 869 passes, two
+expected skips and no failures/cancellations. Thirteen production-browser suites
+pass 97 groups. The build-only cache repair adds an emitted-renderer gate and passes
+32 fresh browser groups, types/lint and five installer checks. Final live acceptance
+passes 26 public, four health and six signed-in groups, including twelve Public
+reloads and exact repaired asset bytes. Browser and scoped runtime errors are zero.
 
-Migration 55 and live acceptance remain pending. Preserve physical-phone and
-actual operator/provider criteria and keep final review last. See
-[discovery acceptance](DISCOVERY_FEEDS_ACCEPTANCE.md),
-[the contract](DISCOVERY_FEEDS_CONTRACT.md) and [the renderer repair](HYDRATION_REPAIR.md).
+All 55 migration/recovery checksums match. Protected 54→55 and installed 55→55
+restores preserve 100 tables; nightly recovery verifies 41 sets without issues or
+removals. Seventeen original production fingerprints match: zero new classifications,
+private discovery choices, test user-data changes or sends; five temporary reading
+sets are counted separately. Actual provider traces and serial latency are recorded
+in [complete acceptance](DISCOVERY_FEEDS_ACCEPTANCE.md).
+
+Data/service and interface scopes are complete. Actual phone/browser-edge feel
+and larger-text gestures remain in existing cross-surface acceptance; actual
+operator/provider and unmet capacity prerequisites remain explicit. Continue the
+next eligible notification feature using its existing Activity/outbox owners.
+The final batch review remains last. See [the contract](DISCOVERY_FEEDS_CONTRACT.md)
+and [the hydration/cache repair](HYDRATION_REPAIR.md).
 
 ## Topic communities verified live — September 15, 2026 UTC
 
