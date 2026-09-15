@@ -164,6 +164,21 @@ announcements and pending contact/invitation actions. Elevated operator/church/
 support grants are retired. Normal verified account recovery/provider linking
 and scoped appointment are required again; an old backup does not renew authority.
 
+Topic restoration also retires moderator roles and unaccepted offers and marks
+owned communities `recoveryRequired`. The protected `TOPIC_ACCESS` security version
+quarantines an older topic when a newer permission change exists; `MODERATION_TOPIC`
+preserves hidden/removed status. No ordinary owner form can clear that quarantine.
+Before reopening a recovered topic, the recovery operator must compare a verified
+current, frozen source with the restored owner, membership restrictions, rules and
+moderation state. Recover missing current rows and reconcile every newer decision
+under the traffic-disabled recovery gate, then record the reviewed identity and
+source receipt. A backup owner or pending offer is insufficient authority. Current
+roles must be explicitly offered and accepted again after legitimate ownership is
+re-established. If the current source or legitimate ownership cannot be verified,
+keep that topic quarantined and record the exact prerequisite; do not infer a
+successor or clear the flag merely because replay passed. Physical/real-operator
+acceptance is separate from the isolated replay check.
+
 Replay all protected control, message/report purge and account pages. Newer
 versions win regardless of object-page order. A newer completed receipt replaces
 an older pending state with its original completion date, preventing a retry from

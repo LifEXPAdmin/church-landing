@@ -237,6 +237,9 @@ try {
     ["PrayerGuideReceipt", "ownerId"],
     ["PrayerRecord", "id"],
     ["PrayerUpdate", "commentId"],
+    ["TopicCommunity", "id"],
+    ["TopicMembership", "id"],
+    ["TopicAudit", "id"],
     ...[
       "SocialRelationship",
       "SocialOperation",
@@ -275,7 +278,7 @@ try {
         : beforeChurch && table === "PlatformPostLike"
           ? "to_jsonb(t) - 'active' - 'version' - 'firstLikedAt'"
           : beforeChurch && table === "PlatformPostComment"
-          ? `to_jsonb(t) - ARRAY['parentId','rootId','version','editedAt','deletedAt','authorChurchId','moderationState']`
+          ? `to_jsonb(t) - ARRAY['parentId','rootId','version','editedAt','deletedAt','authorChurchId','moderationState','topicCommunityId']`
           : beforeChurch && table === "PlatformPost"
             ? `jsonb_build_object('id',t.id,'createdAt',t."createdAt",'updatedAt',t."updatedAt",'authorId',t."authorId",'type',t.type,'content',t.content,'scripture',t.scripture)`
             : "to_jsonb(t)";
@@ -621,6 +624,17 @@ try {
       console.log(
         "Prayer migration preserves original comments, activity, preferences and fanout jobs; no consent or historical work is backfilled."
       );
+    } else if (name === "20260915003000_topic_communities") {
+      const originals = () => [
+        ...["PlatformPost", "PlatformPostComment"].map(table => psql(["-Atc", `SELECT md5(coalesce(jsonb_agg(to_jsonb(t) - 'topicCommunityId' ORDER BY id)::text,'[]')) FROM "${table}" t`])),
+        psql(["-Atc", `SELECT md5(coalesce(jsonb_agg(to_jsonb(t) - 'scopeTopicId' ORDER BY id)::text,'[]')) FROM "CommunityReport" t`]),
+        fingerprint("PlatformUser", "id"), fingerprint("RetentionControl", "id")
+      ];
+      const prior = originals();
+      psql(["-f", `prisma/migrations/${name}/migration.sql`]);
+      if (JSON.stringify(prior) !== JSON.stringify(originals())) throw Error("Topic migration changed original content, accounts, reports or protected controls");
+      if (psql(["-Atc", `SELECT (SELECT count(*) FROM "TopicCommunity") + (SELECT count(*) FROM "TopicMembership") + (SELECT count(*) FROM "TopicAudit") + (SELECT count(*) FROM "PlatformPost" WHERE "topicCommunityId" IS NOT NULL) + (SELECT count(*) FROM "PlatformPostComment" WHERE "topicCommunityId" IS NOT NULL) + (SELECT count(*) FROM "CommunityReport" WHERE "scopeTopicId" IS NOT NULL)`]).trim() !== "0") throw Error("Topic migration invented communities, choices, roles or content destinations");
+      console.log("Topic migration preserves original accounts, posts, comments, reports and protected controls; no community, membership, authority or destination is inferred.");
     } else psql(["-f", `prisma/migrations/${name}/migration.sql`]);
   }
   for (const [i, [table, key]] of accountTables.entries()) {
@@ -675,6 +689,7 @@ try {
   if (portalTests) await runTests("tests/community-search.test.ts");
   if (portalTests) await runTests("tests/social-foundations.test.ts");
   if (portalTests) await runTests("tests/prayer.test.ts");
+  if (portalTests) await runTests("tests/topic-communities.test.ts");
   if (portalTests) await runTests("tests/gallery-sharing.test.ts");
   if (portalTests) await runTests("tests/install-policy.test.ts");
   if (portalTests) await runTests("tests/post-participation.test.ts");
