@@ -35,6 +35,11 @@ const fixtures = {
     title: "Espérance · Paz · Ελπίδα",
     description: "Faith across languages — a fictional typography sample."
   },
+  wide: {
+    variant: "post",
+    title: "W".repeat(1000),
+    description: "W".repeat(1000)
+  },
   missing: { title: "", description: "" },
   unsupported: {
     title: "平安",

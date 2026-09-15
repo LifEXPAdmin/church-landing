@@ -54,12 +54,18 @@ export async function renderShareCard(input: PublicShareCardInput = {}) {
     })
       .png()
       .toBuffer({ resolveWithObject: true });
+    // Character counts alone cannot bound wide glyphs such as a run of W's.
+    // Fit every text layer inside the comfortable central square crop.
+    const scale = Math.min(1, 540 / result.info.width);
+    const data =
+      scale < 1
+        ? await sharp(result.data).resize({ width: 540 }).png().toBuffer()
+        : result.data;
+    const width = Math.min(540, result.info.width);
     layers.push({
-      input: result.data,
-      left: Math.round(
-        line.anchor === "middle" ? line.x - result.info.width / 2 : line.x
-      ),
-      top: line.y - line.size
+      input: data,
+      left: Math.round(line.anchor === "middle" ? line.x - width / 2 : line.x),
+      top: line.y - Math.round(line.size * scale)
     });
   }
   return sharp(Buffer.from(shareCardSvg({}, true)))

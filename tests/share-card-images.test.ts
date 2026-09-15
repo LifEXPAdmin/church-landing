@@ -60,7 +60,7 @@ test("the shared brand layout escapes hostile copy and renders bounded PNGs with
       { title: "Espérance · Ελπίδα · Мир" },
       {
         title: "W".repeat(1000),
-        description: "Long public sample ".repeat(100)
+        description: "W".repeat(1000)
       }
     ];
     for (const input of samples) {
@@ -69,6 +69,27 @@ test("the shared brand layout escapes hostile copy and renders bounded PNGs with
       assert.equal(m.width, 1200);
       assert.equal(m.height, 630);
       assert.ok(output.length < 150000);
+      const [actual, decoration] = await Promise.all([
+        sharp(output).ensureAlpha().raw().toBuffer(),
+        sharp(Buffer.from(shareCardSvg({}, true)))
+          .ensureAlpha()
+          .raw()
+          .toBuffer()
+      ]);
+      // All copy and the mark must survive a centered square crop with margin,
+      // including unbroken wide glyphs that defeat character-count wrapping.
+      for (let y = 0; y < 630; y++)
+        for (const [left, right] of [
+          [0, 315],
+          [885, 1200]
+        ]) {
+          const from = (y * 1200 + left) * 4;
+          const to = (y * 1200 + right) * 4;
+          assert.deepEqual(
+            actual.subarray(from, to),
+            decoration.subarray(from, to)
+          );
+        }
     }
     assert.deepEqual(
       await renderShareCard({ title: "平安" }),
