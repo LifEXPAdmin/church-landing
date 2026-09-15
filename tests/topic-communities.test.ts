@@ -65,10 +65,10 @@ const denied = (work: Promise<unknown>, status: number) =>
     work,
     (e: unknown) => e instanceof PortalError && e.status === status
   );
-async function create(owner: PortalActor) {
+async function create(owner: PortalActor, namePrefix = "Fictional topic") {
   const tag = randomUUID();
   const body = input("create", {
-    name: `Fictional topic ${tag}`,
+    name: `${namePrefix} ${tag}`,
     slug: `topic-${tag}`,
     description: "A fictional isolated community",
     rules: "Keep discussion respectful and protect private information.",
@@ -117,15 +117,16 @@ const own = (actor: PortalActor, communityId: string) =>
 
 test("two public topics persist; reading creates no membership; duplicates, forged ownership and abuse fail", async () => {
   const owner = await createPortalActor(db, "topicnames");
-  const a = await create(owner),
-    b = await create(owner);
+  const prefix = `Fictional topic ${randomUUID().slice(0, 8)}`;
+  const a = await create(owner, prefix),
+    b = await create(owner, prefix);
   assert.deepEqual(await topicCommand(db, owner.token, a.body), {
     id: a.id,
     version: a.version,
     message: a.message
   });
   const count = await db.topicMembership.count();
-  const topics = await listTopics(db, undefined, { q: "Fictional topic" });
+  const topics = await listTopics(db, undefined, { q: prefix });
   assert.ok(topics.topics.some((t) => t.id === a.id));
   assert.ok(topics.topics.some((t) => t.id === b.id));
   assert.equal((await readTopic(db, undefined, a.slug)).viewer.accountId, null);

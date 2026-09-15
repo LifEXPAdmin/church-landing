@@ -1,6 +1,7 @@
 import type { PrismaClient } from "@prisma/client";
 import { withAdmin, requireAdminCapability } from "./admin-authority";
 import { readOperationalHealth } from "./operational-health";
+import { accountConfig } from "./account-config";
 
 export function readAdminHealth(db: PrismaClient, token: unknown) {
   return withAdmin(db, token, async (_tx, a) => {
@@ -11,12 +12,14 @@ export function readAdminHealth(db: PrismaClient, token: unknown) {
       return {
         navigation: a.navigation,
         available: true as const,
+        emailDelivery: accountConfig().delivery,
         health: await readOperationalHealth(db)
       };
     } catch {
       return {
         navigation: a.navigation,
         available: false as const,
+        emailDelivery: "unavailable" as const,
         health: null
       };
     }

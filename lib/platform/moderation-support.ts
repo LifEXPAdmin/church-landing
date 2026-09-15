@@ -27,18 +27,28 @@ export async function supportVisibilityScope(
   tx: PostTx,
   actor: SupportActor,
   grant: { id: string; version: number } | null,
-  assigned = false
+  assigned = false,
+  checkedReviewAuthority?: Parameters<typeof reviewReportScope>[0]
 ) {
   if (!actor.adult) return Prisma.sql`FALSE`;
-  const context = await postContext(tx, actor.eligible ? actor.id : null);
-  const authority = await reportReviewAuthority(tx, context);
+  // The admin assigned-only projection already established this exact review
+  // authority under its shared gate. Reuse it without loading author context;
+  // requester/coordinator paths still load their own current context below.
+  const context =
+    assigned && checkedReviewAuthority
+      ? null
+      : await postContext(tx, actor.eligible ? actor.id : null);
+  const authority =
+    assigned && checkedReviewAuthority
+      ? checkedReviewAuthority
+      : await reportReviewAuthority(tx, context!);
   const ordinaryOwner = grant
     ? Prisma.sql`s."ownerGrantId" = ${grant.id} AND s."ownerGrantVersion" = ${grant.version}`
     : Prisma.sql`FALSE`;
   const ordinary = assigned
     ? ordinaryOwner
     : Prisma.sql`s."requesterId" = ${actor.id} OR (${ordinaryOwner}) OR (${actor.eligible} AND EXISTS (SELECT 1 FROM "SupportCoordinatorShare" share JOIN "ChurchContactAssignment" a ON a.id=share."appointmentId" WHERE share."caseId"=s.id AND share."revokedAt" IS NULL AND a."userId"=${actor.id}))`;
-  const author = Prisma.sql`d."authorId" = ${actor.id} AND d."authorChurchId" IS NULL OR ${context.publishers.size ? Prisma.sql`d."authorChurchId" IN (${Prisma.join([...context.publishers])})` : Prisma.sql`FALSE`}`;
+  const author = Prisma.sql`d."authorId" = ${actor.id} AND d."authorChurchId" IS NULL OR ${context?.publishers.size ? Prisma.sql`d."authorChurchId" IN (${Prisma.join([...context.publishers])})` : Prisma.sql`FALSE`}`;
   const reviewer = Prisma.sql`${actor.eligible} AND d."actorId"=${actor.id} AND (${reviewReportScope(authority)})`;
   const appeal = assigned
     ? reviewer
@@ -54,7 +64,12 @@ export async function visibleSupportIds(
   grant: { id: string; version: number } | null,
   options: { id?: string; page?: number; assigned?: boolean } = {}
 ) {
-  const scope = await supportVisibilityScope(tx, actor, grant, options.assigned);
+  const scope = await supportVisibilityScope(
+    tx,
+    actor,
+    grant,
+    options.assigned
+  );
   return tx.$queryRaw<{ id: string }[]>(Prisma.sql`
     SELECT s.id FROM "SupportCase" s
     ${supportVisibilityJoins}

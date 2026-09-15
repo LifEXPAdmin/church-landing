@@ -19,9 +19,9 @@ export async function readAdminDetail(
 ) {
   const source = adminSource(input),
     page = adminPageNumber(input.page);
-  // The native owner remains responsible for private conversations. Recheck
-  // admin scope and the native version after that separate, serialized read.
-  await withAdmin(db, token, (tx, a) => requireAdminCase(tx, a, source));
+  // The native owner authorizes private conversations itself. Before returning
+  // any data, check current admin scope and the native version under the shared
+  // gate below. A duplicate earlier admin read would not strengthen that check.
   const support =
     source.sourceType === "SUPPORT"
       ? await readSupport(db, token, "detail", {

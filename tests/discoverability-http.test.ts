@@ -198,6 +198,10 @@ test("private routes and sensitive posts retain noindex without private metadata
     "/platform/account/recover",
     "/platform/profile/" + f.author.username,
     "/platform/getting-started",
+    "/platform/admin",
+    "/platform/admin/requests",
+    "/platform/admin/access",
+    "/platform/admin/health",
     "/platform/churches/" + f.church.id + "/directory",
     "/platform/demo"
   ]) {

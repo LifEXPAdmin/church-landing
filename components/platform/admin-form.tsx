@@ -55,6 +55,7 @@ export function AdminForm({
     [conflict, setConflict] = useState(false),
     [retryAt, setRetryAt] = useState(0);
   const status = useRef<HTMLParagraphElement>(null);
+  const focusPending = useRef(false);
   useUnsavedSocialWork(
     { dirty, saving: busy || !!pending, conflict },
     () =>
@@ -70,7 +71,16 @@ export function AdminForm({
     onDraftChange?.(dirty || !!pending);
   }, [onDraftChange, dirty, pending]);
   useEffect(() => {
-    if (notice && !busy) status.current?.focus();
+    if (notice && !busy) focusPending.current = true;
+    const focus = () => {
+      if (focusPending.current && status.current?.getClientRects().length) {
+        status.current.focus();
+        focusPending.current = false;
+      }
+    };
+    focus();
+    window.addEventListener("admin-view-visible", focus);
+    return () => window.removeEventListener("admin-view-visible", focus);
   }, [notice, busy]);
   useEffect(() => {
     if (retryAt) {

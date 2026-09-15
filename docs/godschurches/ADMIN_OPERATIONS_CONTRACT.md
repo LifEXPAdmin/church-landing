@@ -112,10 +112,10 @@ The fresh-authentication and recovery boundaries follow the existing account mod
 and the [OWASP MFA guidance](https://cheatsheetseries.owasp.org/cheatsheets/Multifactor_Authentication_Cheat_Sheet.html).
 Broader legacy privileged-MFA coverage remains separate from these new grant actions.
 
-The first source snapshot passes production build and private trace checks. Initial
-browser testing established ordinary-member denial, private filters, 320/390/1440
-layouts, stale-write draft recovery and keyboard return. The updated candidate also
-repairs native support form versions after admin refresh and retains selected rows
-in bounded return references, filtered again against currently visible rows. Its
-fresh browser/full-service/release evidence is pending; this is a checkpoint, not a
-completion receipt. First failing test/build artifacts remain private.
+The revised production preview passes five actual browser groups, including narrow
+layouts, native resolve/reopen, retained selection, partial bulk results, authenticator
+enrollment/confirmation and revoked-access concealment. Thirteen actual HTTPS/export/
+release checks pass, and protected 57-to-63 production-copy recovery preserves all
+102 original tables. The complete regression gate and exact canonical publication
+remain pending. See [the current acceptance evidence](ADMIN_OPERATIONS_ACCEPTANCE.md)
+for staged checks, retained failures, measured costs and real-operator limits.

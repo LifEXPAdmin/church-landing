@@ -126,13 +126,17 @@ async function adminQueueData(
     tx,
     { id: a.actor.id, adult: true, eligible: true },
     a.respond,
-    true
+    true,
+    a.reports
   );
   const routing = Prisma.sql`${!!a.assign} AND s."moderationDecisionId" IS NULL AND owner.id IS NULL AND s.status NOT IN ('RESOLVED','CLOSED')`;
   const asOf = options.asOf ?? new Date();
-  const assigned = await tx.$queryRaw<
-    { id: string }[]
-  >(Prisma.sql`SELECT DISTINCT id FROM (
+  const supportOnly =
+    options.source?.sourceType === "SUPPORT" ||
+    ["SUPPORT", "BUG", "SUGGESTION"].includes(filters.type);
+  const assigned = supportOnly
+    ? []
+    : await tx.$queryRaw<{ id: string }[]>(Prisma.sql`SELECT DISTINCT id FROM (
     SELECT r."assignedReviewerId" AS id FROM "CommunityReport" r ${reviewReportJoins}
       WHERE r."assignedReviewerId" IS NOT NULL AND ${reviewReportScope(a.reports)} ${options.source ? Prisma.sql`AND ${options.source.sourceType === "REPORT"} AND r.id=${options.source.sourceId}` : Prisma.empty}
     UNION SELECT c."assignedReviewerId" AS id FROM "ChurchClaim" c

@@ -2,10 +2,10 @@
 
 ## Current candidate — September 15, 2026 UTC
 
-Enumerated directly from the current checkout: **98 page routes**, with
-**16 public candidate patterns** and **82 excluded patterns**.
+Enumerated directly from the current checkout: **107 page routes**, with
+**16 public candidate patterns** and **91 excluded patterns**.
 Dynamic patterns are conditional on current source eligibility, not counts of
-indexable records. The table is a source inventory; exact live serving identity
+indexable records. The nine new admin patterns belong to the current private admin candidate. The table is a source inventory; exact live serving identity
 and acceptance belong in [the current discoverability report](PUBLIC_DISCOVERABILITY_ACCEPTANCE.md).
 
 All public identities use the approved HTTPS host. Preview environments are
@@ -33,6 +33,15 @@ until the external service refreshes; no remote-erasure claim is made.
 | `/for-users` | [page.tsx](../../app/for-users/page.tsx) | Public information | For believers \| God’s Churches; Share encouragement and connect with people growing in faith. | /for-users | Static sitemap; branded default card |
 | `/help` | [page.tsx](../../app/help/page.tsx) | Public information | Help \| God’s Churches; Get started, sign in, and understand public content and church access on Godschurches. | /help | Static sitemap; branded default card |
 | `/manifesto` | [page.tsx](../../app/manifesto/page.tsx) | Public information | Manifesto \| God’s Churches; The convictions and long-term vision behind Godschurches and The Revival. | /manifesto | Static sitemap; branded default card |
+| `/platform/admin` | [page.tsx](../../app/platform/admin/page.tsx) | Current explicit operator or scoped reviewer permission | Static private admin title; no case text in metadata | Noindex/nofollow; no indexed identity | No sitemap or public JSON-LD; server permission and no-store checks |
+| `/platform/admin/access` | [page.tsx](../../app/platform/admin/access/page.tsx) | Current explicit operator or scoped reviewer permission | Static private admin title; no case text in metadata | Noindex/nofollow; no indexed identity | No sitemap or public JSON-LD; server permission and no-store checks |
+| `/platform/admin/audit` | [page.tsx](../../app/platform/admin/audit/page.tsx) | Current explicit operator or scoped reviewer permission | Static private admin title; no case text in metadata | Noindex/nofollow; no indexed identity | No sitemap or public JSON-LD; server permission and no-store checks |
+| `/platform/admin/cases/[sourceType]/[sourceId]` | [page.tsx](../../app/platform/admin/cases/[sourceType]/[sourceId]/page.tsx) | Current explicit operator or scoped reviewer permission | Static private admin title; no case text in metadata | Noindex/nofollow; no indexed identity | No sitemap or public JSON-LD; server permission and no-store checks |
+| `/platform/admin/churches` | [page.tsx](../../app/platform/admin/churches/page.tsx) | Current explicit operator or scoped reviewer permission | Static private admin title; no case text in metadata | Noindex/nofollow; no indexed identity | No sitemap or public JSON-LD; server permission and no-store checks |
+| `/platform/admin/feedback` | [page.tsx](../../app/platform/admin/feedback/page.tsx) | Current explicit operator or scoped reviewer permission | Static private admin title; no case text in metadata | Noindex/nofollow; no indexed identity | No sitemap or public JSON-LD; server permission and no-store checks |
+| `/platform/admin/health` | [page.tsx](../../app/platform/admin/health/page.tsx) | Current explicit operator or scoped reviewer permission | Static private admin title; no case text in metadata | Noindex/nofollow; no indexed identity | No sitemap or public JSON-LD; server permission and no-store checks |
+| `/platform/admin/people` | [page.tsx](../../app/platform/admin/people/page.tsx) | Current explicit operator or scoped reviewer permission | Static private admin title; no case text in metadata | Noindex/nofollow; no indexed identity | No sitemap or public JSON-LD; server permission and no-store checks |
+| `/platform/admin/requests` | [page.tsx](../../app/platform/admin/requests/page.tsx) | Current explicit operator or scoped reviewer permission | Static private admin title; no case text in metadata | Noindex/nofollow; no indexed identity | No sitemap or public JSON-LD; server permission and no-store checks |
 | `/platform/account/change-email` | [page.tsx](../../app/platform/account/change-email/page.tsx) | Excluded | Local static metadata; existing private/generic copy | No indexed identity; token/filter parameters never enter sitemap | No sitemap or JSON-LD; existing access and preview protections |
 | `/platform/account/deletion` | [page.tsx](../../app/platform/account/deletion/page.tsx) | Excluded | Local static metadata; existing private/generic copy | No indexed identity; token/filter parameters never enter sitemap | No sitemap or JSON-LD; existing access and preview protections |
 | `/platform/account/google` | [page.tsx](../../app/platform/account/google/page.tsx) | Excluded | Local static metadata; existing private/generic copy | No indexed identity; token/filter parameters never enter sitemap | No sitemap or JSON-LD; existing access and preview protections |

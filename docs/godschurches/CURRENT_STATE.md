@@ -16,18 +16,22 @@ free text and removes empty groups. Restored or renewed reviewer permissions do
 not revive old assignments. The trusted real admin provisioning and existing
 account-restriction owner choice remain distinct operator prerequisites.
 
-The first production preview builds, including hydration/runtime packaging gates.
-The 68-check service pass had 67 successes and one fixture cleanup failure caused
-by an existing support read foreign key; it is corrected through ordinary ungroup
-operations. The latest 43-check admin/topic/Google pass succeeds, including the
-topic appeal inbox and purpose-bound confirmations. Types and focused lint pass.
-Browser checks reach private filters, narrow
-layouts, draft conflict recovery and keyboard return. They identified the disabled-
-Google/password-confirmation issue, now fixed in source; the revised build, native
-support handoff, selection retention, authenticator browser acceptance, full gates,
-protected schema upgrade, deployment and live verification are still in progress.
+The revised production preview passes five actual browser groups, 13 HTTPS/export/
+release checks, types and hydration/runtime packaging gates. It includes native
+resolve/reopen after admin refresh, retained selection and keyboard return, partial
+bulk outcomes, actual authenticator enrollment and a fixture grant, confirmation
+focus and revoked-manager concealment. Disabled-Google confirmation, stale native
+form versions and the hidden/grid concealment defect were repaired in this feature.
+The 43-check admin/topic/Google pass succeeds. Permission-read optimization passes
+54/55 checks; a topic fixture search exceeded the first page and is now scoped to
+its own unique prefix, with all 13 topic tests passing. The protected production-copy
+57-to-63 upgrade preserves all 102 original tables and completes protected replay.
+The full gate reached its build but exhausted the configured heap in the accumulated
+checkout; a clean current source snapshot is running the complete gate. That gate,
+the real production migration, deployment and live verification remain in progress.
 No production test writes, privilege changes or real messages were made.
-See [the active contract](ADMIN_OPERATIONS_CONTRACT.md). Continue this feature to
+See [the active contract](ADMIN_OPERATIONS_CONTRACT.md) and
+[staged acceptance](ADMIN_OPERATIONS_ACCEPTANCE.md). Continue this feature to
 its release evidence, then the eligible aggregate metrics and feedback work.
 
 ## Public discoverability verified live — September 15, 2026 UTC

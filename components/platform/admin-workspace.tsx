@@ -128,6 +128,9 @@ export function AdminWorkspace({
       document.removeEventListener("visibilitychange", visibility);
     };
   }, [load]);
+  useEffect(() => {
+    if (visible) window.dispatchEvent(new Event("admin-view-visible"));
+  }, [visible]);
   const nav = data && "navigation" in data ? data.navigation : navigation;
   return (
     <div className="space-y-5">
@@ -151,6 +154,7 @@ export function AdminWorkspace({
       )}
       <div
         hidden={!visible}
+        style={{ display: visible ? undefined : "none" }}
         className="grid min-w-0 gap-6 lg:grid-cols-[13rem_minmax(0,1fr)]"
       >
         <aside className="min-w-0">
@@ -262,6 +266,21 @@ function AdminHealth({ data }: { data: Health }) {
               : "No current queue threshold is exceeded."}
           </p>
           <dl className="grid gap-3 sm:grid-cols-2">
+            <div className="rounded-xl border border-gc-divider p-4">
+              <dt>Account email</dt>
+              <dd className="font-semibold">
+                {data.emailDelivery === "resend"
+                  ? "Provider configured"
+                  : data.emailDelivery === "test-sink"
+                    ? "Isolated test delivery"
+                    : "Disabled awaiting setup"}
+              </dd>
+              <dd className="text-sm text-gc-muted">
+                Delivery and receipt are unverified here. Inspect the authorized
+                provider logs; configuration does not prove that a person
+                received an email.
+              </dd>
+            </div>
             {Object.entries(data.health.configuration)
               .filter(([, value]) => typeof value === "boolean")
               .map(([key, value]) => (
@@ -307,10 +326,10 @@ function AdminHealth({ data }: { data: Health }) {
           </p>
           <h2 className="text-xl font-semibold">Runbooks and ownership</h2>
           <p className="text-sm text-gc-muted">
-            Platform operations owns these procedures. The current support lead
-            and backup are recorded in the support intake configuration; a
-            capability alone does not assign that duty. These links open the
-            public procedure, never private credentials or live account data.
+            Platform operations owns these procedures. Support lead and backup
+            coverage follow the support runbook; viewing health does not assign
+            that duty. These links open the public procedure, never private
+            credentials or live account data.
           </p>
           <ul className="space-y-3">
             {[

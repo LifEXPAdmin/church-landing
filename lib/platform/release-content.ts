@@ -14,6 +14,19 @@ export type Feature = {
 };
 export const features: Feature[] = [
   {
+    id: "admin-requests",
+    category: "Privacy and account",
+    name: "Admin requests and operations",
+    description:
+      "Review permitted help requests, reports and church requests in one workspace.",
+    steps:
+      "Authorized operators and reviewers open Admin from Menu. Filter and save a private queue view, open the original request, keep internal notes separate from requester replies, and use its existing review actions. Current health, account lookup and access management appear only for separately assigned duties.",
+    href: "/platform/admin",
+    eligibility:
+      "Current explicit permissions are required for every source and action. Assignment and grouping do not widen access or share private conversations. New platform access changes require current sign-in confirmation and an unused authenticator code. Real support coverage and verification remain separate responsibilities.",
+    availability: "conditional"
+  },
+  {
     id: "public-search-pages",
     category: "Posts and conversations",
     name: "Public pages and search",
@@ -689,6 +702,26 @@ export const features: Feature[] = [
   }
 ];
 export const releases: ReleaseEntry[] = [
+  {
+    id: "admin-request-operations",
+    version: "2026.09.15.6",
+    date: "2026-09-15",
+    summary: "Handle permitted requests in one private admin workspace.",
+    added: [
+      "A scoped request queue with private saved views, internal notes, priorities, reminders and original requester conversations.",
+      "Duplicate links and bounded batch actions preserve original requests and report each result separately.",
+      "Separately permitted operational health, account lookup, audit and authenticator-protected access management."
+    ],
+    improved: [
+      "Phone and keyboard navigation retain filtered returns and selected requests; conflicting edits preserve unsent entries.",
+      "Current permission checks keep revoked access and older reviewer assignments from reopening private work."
+    ],
+    fixed: [
+      "Authorized topic reviewers can find their assigned content reconsideration cases in the support inbox.",
+      "Assigned support owners can reopen a resolved request for follow-up through its existing conversation."
+    ],
+    featureIds: ["admin-requests", "support", "account"]
+  },
   {
     id: "public-page-discoverability",
     version: "2026.09.15.5",

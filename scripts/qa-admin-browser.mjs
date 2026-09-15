@@ -128,6 +128,13 @@ try {
     })
   );
   const note = "Private internal fixture note " + randomUUID();
+  const other = await supportCommand(
+    db,
+    f.memberA.token,
+    await requestInput(db, f.memberA.token, {
+      subject: "Fictional admin browser request for bulk recovery"
+    })
+  );
   await signIn(f.memberA);
   await go("/platform/menu");
   assert.equal(await page.locator('a[href="/platform/admin"]').count(), 0);
@@ -262,6 +269,44 @@ try {
   );
   await fits();
   await page.screenshot({ path: output + "/case-320.png", fullPage: true });
+  const statusForm = page.getByRole("form", {
+    name: "Save status",
+    exact: true
+  });
+  await statusForm
+    .getByLabel("New status", { exact: true })
+    .selectOption("RESOLVED");
+  await statusForm
+    .getByLabel("What changed or resolved the issue?", { exact: true })
+    .fill("Fictional fix verified after internal admin change");
+  await statusForm
+    .getByRole("button", { name: "Save status", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Reopen request", exact: true })
+    .waitFor();
+  assert.equal(
+    (await db.supportCase.findUniqueOrThrow({ where: { id: created.caseId } }))
+      .status,
+    "RESOLVED"
+  );
+  const reopen = page.getByRole("form", {
+    name: "Reopen request",
+    exact: true
+  });
+  await reopen
+    .getByLabel("Why are you reopening this request?", { exact: true })
+    .fill("Fictional follow-up needs another check");
+  await reopen
+    .getByRole("button", { name: "Reopen request", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Save reply", exact: true }).waitFor();
+  assert.equal(
+    (await db.supportCase.findUniqueOrThrow({ where: { id: created.caseId } }))
+      .status,
+    "RECEIVED"
+  );
+
   await page
     .getByRole("link", { name: "Back to filtered requests", exact: true })
     .first()
@@ -287,7 +332,64 @@ try {
     true
   );
   ok(
-    "Support queue and case fit 320/390/1440; private saved filters, stale-write draft recovery, one internal note, and keyboard return focus work."
+    "Support queue and case fit 320/390/1440; private saved filters, stale-write draft recovery, one private internal note, native resolve/reopen, and selected-row keyboard return focus work."
+  );
+  const otherCheckbox = page.getByRole("checkbox", {
+    name: "Select Fictional admin browser request for bulk recovery",
+    exact: true
+  });
+  await otherCheckbox.check();
+  const bulkForm = page.getByRole("form", {
+    name: "Apply to selected requests",
+    exact: true
+  });
+  await bulkForm
+    .getByLabel("Internal tags, separated by commas")
+    .fill("browser-check");
+  assert.equal(await otherCheckbox.isEnabled(), false);
+  await adminCaseCommand(db, f.owner.token, {
+    operation: "triage",
+    sourceType: "SUPPORT",
+    sourceId: other.caseId,
+    expectedVersion: other.version,
+    requestKey: randomUUID(),
+    priority: "HIGH",
+    nextAction: "Another reviewer changed this fixture",
+    tags: [],
+    reminderAt: ""
+  });
+  await bulkForm
+    .getByRole("button", { name: "Apply to selected requests", exact: true })
+    .click();
+  const partial = bulkForm.getByRole("alert");
+  await partial.filter({ hasText: /Unconfirmed/ }).waitFor();
+  assert.match(await partial.innerText(), /Saved:/);
+  assert.equal(
+    await bulkForm
+      .getByLabel("Internal tags, separated by commas")
+      .inputValue(),
+    "browser-check"
+  );
+  assert.deepEqual(
+    (await db.supportCase.findUniqueOrThrow({ where: { id: created.caseId } }))
+      .triageTags,
+    ["browser-check"]
+  );
+  assert.deepEqual(
+    (await db.supportCase.findUniqueOrThrow({ where: { id: other.caseId } }))
+      .triageTags,
+    []
+  );
+  await fits();
+  await page.screenshot({
+    path: output + "/bulk-partial-320.png",
+    fullPage: true
+  });
+  await bulkForm
+    .getByRole("button", { name: "Discard local entries", exact: true })
+    .click();
+  ok(
+    "The actual bulk form preserves each row's partial outcome, retained tags and a locked selection after a concurrent change; only the current fixture row is updated."
   );
   await signIn(manager);
   await go("/platform/admin/access");
@@ -382,6 +484,11 @@ try {
   await page
     .getByRole("button", { name: "Revoke this capability", exact: true })
     .waitFor();
+  await page.waitForFunction(
+    () =>
+      document.activeElement?.getAttribute("role") === "status" &&
+      !!document.activeElement?.getClientRects().length
+  );
   assert.equal(
     await db.platformOperatorGrant.count({
       where: {
@@ -415,12 +522,21 @@ try {
     false
   );
   ok(
-    "Actual browser authenticator setup, QR, confirmation, invalid-code edit recovery, one explicit fixture grant and revoked-manager concealment pass."
+    "Actual browser authenticator setup, QR, confirmation, invalid-code edit recovery, one explicit fixture grant, confirmation focus and revoked-manager concealment pass."
+  );
+  await page.evaluate(() => window.dispatchEvent(new Event("blur")));
+  assert.equal(
+    await page
+      .getByRole("button", { name: "Revoke this capability", exact: true })
+      .isVisible(),
+    false
   );
   await signIn(target);
   await go("/platform/admin/health");
   await waitWorkspace();
   await fits();
+  await page.getByText("Disabled awaiting setup", { exact: true }).waitFor();
+  await page.getByText(/Delivery and receipt are unverified here/).waitFor();
   assert.equal(
     await page
       .getByRole("combobox", { name: /^Admin section/ })
