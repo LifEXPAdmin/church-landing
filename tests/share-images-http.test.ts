@@ -122,7 +122,13 @@ test("actual production HTTPS crawler HTML points to public-only PNGs; the old i
     for (const token of ["", f.author.token]) {
       assert.deepEqual(await png(imageUrl.href, token), fallback);
       const hidden = await metadata(source.path, token);
-      assert.equal(hidden["og:title"], "God’s Churches");
+      // Next's not-found boundary can use the site's generic root metadata.
+      // Both generic titles are safe; neither may retain former source copy.
+      assert.ok(
+        ["God’s Churches", "God’s Churches | The Revival"].includes(
+          hidden["og:title"]
+        )
+      );
       assert.equal(hidden["og:image"], origin + "/brand/share-card.png");
       assert.ok(!JSON.stringify(hidden).includes("PRIVATE IMAGE SECRET"));
       assert.ok(!JSON.stringify(hidden).includes(source.title));
