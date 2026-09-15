@@ -1,35 +1,37 @@
-## Platform metrics candidate continuing — September 15, 2026 UTC
+## Platform growth measurement core verified live — September 15, 2026 UTC
 
-The continuous Extra High run is implementing optional platform growth reporting.
-This candidate is **unreleased**; the exact serving application remains the admin
-core release immediately below. Six candidate migrations (63 to 69) are installed
-only in an isolated fixture. The current source includes private Growth reports,
-account choices, narrow foreground and onboarding signals, canonical source times,
-versioned lifecycle accounting, separate aggregate exports and privacy/recovery.
-See [the metric contract](PLATFORM_METRICS_CONTRACT.md) for definitions and evidence.
+**2026.09.15.7 / 944d382d12742deec0aa36071dc30ffc444399d8** is READY in
+**dpl_4ppv8oT9ZRKMBA4xeDiicHhQ1TcF**, independently canonical and verified live.
+The release includes private Growth reports and date controls, optional default-off
+measurement settings, bounded foreground/onboarding facts, original signup methods,
+current-source adoption, lifecycle accounting, separate audited exports and
+withdrawal/expiry/erasure/recovery protections. Read the
+[complete core acceptance](PLATFORM_METRICS_ACCEPTANCE.md) and
+[metric contract](PLATFORM_METRICS_CONTRACT.md).
 
-The actual A2 cohort queries return 80/60/40/20 percent and remain invariant under
-different database timezones. Six expanded report/export/onboarding/support
-checks and five collection/withdrawal/operator/expiry checks pass. The staged
-production/HTTPS regression gate covers all 155 discovered files: earlier upgrade,
-restore, fresh-schema, build, restart and service stages, followed by all remaining
-files after initializing the schema-only recovery fixture's required baseline.
-The additional six-source adoption scenario passes separately, including current
-visibility, withdrawal, and exclusion of prayers and reposts. Earlier failed logs
-remain preserved. Final types and focused lint pass.
+The staged production/HTTPS gate covers 155 discovered files, plus one later
+six-source adoption test. Eight final browser groups, runtime/cost checks, 27
+preview probes, final types/lint and production builds pass. Prior failed attempts
+are preserved. All 986 application/schema/data/configuration files match the
+verified preview; later changes are tests and documentation only.
 
-The protected production-copy upgrade 63 to 69 passes, preserving every original
-column across 107 tables and completing replay. Eight final browser groups pass,
-plus runtime and service-cost checks, with no browser errors. These cover mature,
-empty, partial, suppressed, immature and failed reports; actual CSV/audit hashes;
-default-off choices; foreground input; conflicts; interrupted retries; withdrawal;
-and current access. The 320-pixel table and date-preset repairs are verified.
-All 27 additional read-only public/private-denial preview checks pass. Warm local
-Growth/overview/choice medians are 12.647/3.592/1.700 ms; these small fictional
-fixtures do not establish production capacity. Configuration and exact canonical
-release/live acceptance remain required in this feature cycle. Feedback-owned
-source integration follows in feature 31. No production measurement setting,
-data, schema or access grant has been changed at this checkpoint.
+Live checks pass 27 public/private-denial probes, four operational checks and six
+actual signed-in Chrome observations with no browser errors. All 69 migration
+checksums match with none pending. All original columns across 107 production
+tables are unchanged. Protected 63-to-69 recovery preserves those 107 tables and
+completes replay; installed ordinary 69-to-69 restoration covers 111 tables.
+Measurement choices, facts and metric grants remain zero; every account stays off
+unless it deliberately opts in and is eligible. Production test-data writes and
+outbound sends are zero. Actual packaging remains 12 functions across 359 entries;
+small local query timings do not establish production capacity.
+
+Dictionary/baseline and minimal measurement engineering are complete. The parent,
+report integration and shared acceptance remain open for feature 31's feedback
+ratings, prompt exposures and response funnel, plus actual operator provisioning.
+Positive privileged production Growth access has not been claimed: it is tested
+with isolated fixtures, while the current production account is correctly denied.
+Continue feature 31 now, then shared acceptance and the next eligible priorities.
+The continuous Extra High run remains active and final review stays last.
 
 ## Admin requests and core operations verified live — September 15, 2026 UTC
 

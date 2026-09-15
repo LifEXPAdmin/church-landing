@@ -1,10 +1,12 @@
 # Platform growth and optional measurement
 
-September 15, 2026 UTC. This feature is in progress and is not released.
-Production remains the admin core release recorded in
-[admin acceptance](ADMIN_OPERATIONS_ACCEPTANCE.md). The complete feature includes
-its reporting interface, choices, privacy lifecycle, meaningful tests, configured
-release and actual canonical acceptance. No production metric grant is inferred.
+September 15, 2026 UTC. The core is released as **2026.09.15.7**, application
+**944d382d12742deec0aa36071dc30ffc444399d8**, READY and canonical in
+**dpl_4ppv8oT9ZRKMBA4xeDiicHhQ1TcF**. See
+[the final core acceptance](PLATFORM_METRICS_ACCEPTANCE.md) for exact live,
+regression, recovery and cost evidence. Earlier candidate entries below preserve
+implementation history. Feedback-owned integration and actual privileged
+production report acceptance remain open. No production metric grant is inferred.
 
 ## Source owners and definitions
 
@@ -200,8 +202,8 @@ current church access, hidden reply ancestors, and prayer/repost exclusion. Its
 initial fixture connection and missing event-version attempts are retained.
 Final types and focused lint pass.
 
-Remaining in this core release: production configuration and exact canonical
-release/live checks, followed by installed recovery verification. Feedback-owned
+The subsequent configuration, exact canonical release/live checks and installed
+recovery verification passed; see the final core acceptance linked above. Feedback-owned
 intake/exposure/ratings integrate in feature 31, then shared acceptance. Real
 operator, provider, host and physical-device prerequisites remain in their
 existing tasks. No production metric grant is inferred or created by QA.
