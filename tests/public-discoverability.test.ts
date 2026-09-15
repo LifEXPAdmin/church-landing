@@ -133,6 +133,7 @@ test("sitemaps cover every current canonical church beyond the first 500, includ
   assert.ok(site.includes(origin + "/platform</loc>"));
   assert.ok(!site.includes("lastmod"));
   assert.ok(!site.includes("/signup"));
+  assert.ok(!site.includes("/platform/demo"));
   for (const query of [
     "kind=posts&page=-1",
     "kind=private&page=0",

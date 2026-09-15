@@ -77,9 +77,89 @@ private/sensitive publication transitions, safe hostile JSON, all-day dates and
 the preserved gallery/card regressions. Types and scoped lint pass after correcting
 fixture type narrowing. First failure logs are retained privately.
 
-Actual production HTTPS, browser, full relevant regression, hosting packaging,
-exact deployment/alias, live behavior and final data accounting remain pending.
-No production completion, search submission or physical-phone claim is made here.
+At that initial foundation checkpoint, production HTTPS, browser, full regression,
+hosting packaging, exact deployment/alias and live/data accounting were pending.
+The following receipt supersedes its local verification status; no search
+submission or physical-phone claim is made.
+
+### Final candidate checks
+
+The final application candidate is `5fdb5be`; subsequent `f9ab63b` and `6362cc0`
+change only browser/HTTP acceptance; `00b92e8` completes the same batch-aware
+service assertion. The actual production build passes types,
+lint, hydration output and runtime-trace inspection: 162 traces, 36,290 entries
+and 413 server JavaScript files contain no private fixtures or environment files.
+The reviewed 173,096-byte hydration renderer is retained with SHA-256
+`647e9e5fbb96baa9ebe3cf0aa8d816f57e0e46354f2b8ad0fb9db18029e29f15`.
+
+Twelve actual production HTTPS checks pass, including the new invalid/valid event
+time-zone cases, current public/private sources and every advertised sitemap batch.
+Four browser groups pass on the final production build: church/event navigation
+at 320/390/1440 pixels, directory continuation and search, signed-in/guest scope
+and source restriction, and canceled-event/Help guidance. The narrow screenshots
+were visually inspected. Browser page errors are zero. These are automated
+desktop-browser viewports, not physical-device observations.
+
+Preserved browser failures exposed test assumptions about inert streamed fragments,
+display-zone query strings, required fixture fields and Next's additional noindex
+directive on a restricted not-found response. The harness now waits for committed
+visible content, validates canonical identity separately, supplies independent
+directory fixtures, combines exclusion directives and cleans up after setup errors.
+The time-zone review also repaired actual metadata/JSON-LD on an invalid display
+request: the error page is noindex and contains no event markup.
+
+The full gate on `230a618` passed upgrades, fresh migrations, full restore, both
+build modes, the new server-process restart and 89 complete distinct test files
+before one assertion assumed a newly created sitemap record was in page zero.
+That assertion is corrected to follow every actual index child, including for
+withdrawal checks. The unchanged isolated database and a fresh final-candidate
+production build then passed 38 more complete files before the parallel service
+helper exposed the same first-batch assumption. Both helpers now traverse all
+advertised batches. The next 22 files passed against the identical application;
+the final demo test needed its old sitemap source-file reference updated. That
+file then passed all five checks, and the actual service XML exclusion passed
+again. All **150 discovered files** are now verified: **916 successful checks,
+two expected development-delivery skips and zero cancellations**, counted from
+completed suites and excluding partial successes in failed attempts. All three
+failed attempts are retained. This is staged coverage, not an uninterrupted gate.
+
+### Measured runtime and release preflight
+
+No runtime package, client component, table, worker or telemetry is added.
+Comparing the retained onboarding and final SEO production manifests finds
+identical unique uncompressed JavaScript bytes for Home (684,875), church
+directory (756,803), church detail (756,804), event detail (541,083) and post
+detail (643,828). This is a bundle comparison, not a download-latency claim.
+
+Five warm read-only samples per case, after one warm-up, measured the local
+fictional database. Event JSON-LD initially selected unused event/calendar/church
+relations. Removing them changes four SELECTs to one while preserving its exact
+328-byte sample output; mean elapsed time was 0.816 ms before and 0.473 ms after.
+The final source change passes the four public-discoverability service checks.
+Church JSON-LD remains one SELECT. The sitemap index uses five SELECTs including
+the existing retention read, plus transaction statements; static children use
+three SELECTs and content children two. Each content child returns at most 500
+records. Local timing samples do not establish a production concurrency SLA.
+
+At 13:38 UTC, production has all 57 expected migration checksums with none pending,
+and the protected 56→57 restore from 12:19 UTC still preserves 101 original tables.
+No new migration is required. The release baseline fingerprints all current columns
+of 31 production user-data tables; no columns are excluded. Current account-manager
+eligibility remains zero, retaining the existing operator-acceptance prerequisite.
+
+Refreshed authenticated project usage for the last 30 days shows 38,318 function
+invocations of 1 million, 2.2/360 GB-hours provisioned memory, 34m18s/4h active CPU,
+295.41 MB/100 GB data transfer, 149.67 MB/10 GB origin transfer, 990.71 MB/10 GB
+deployment storage and 9.71 GB/10 GB function storage. Storage remains close to
+its allowance; no plan, provider configuration or deployment history was changed.
+The exact provider build/READY/alias and final live/data receipts remain pending.
+
+The updated [route inventory](PUBLIC_ROUTE_METADATA_INVENTORY.md) enumerates all
+98 actual page routes: 16 conditional public candidate patterns and 82 excluded
+patterns. The earlier 67-route inventory is preserved as history. Legacy Step 107's
+authorization-aware in-app search is retained through its existing search owner
+and regression tests; this feature adds external public discovery, not a second
+search service or expanded access to member content.
 
 ## Provider and physical prerequisites
 

@@ -154,6 +154,9 @@ test("routes are static, bounded, noindex, and absent from the sitemap", () => {
     source("app/platform/demo/[view]/page.tsx"),
     /generateStaticParams/
   );
-  assert.doesNotMatch(source("app/sitemap.ts"), /\/platform\/demo/);
+  assert.doesNotMatch(
+    source("lib/platform/public-sitemap.ts"),
+    /\/platform\/demo/
+  );
   assert.match(source("app/api/track/route.ts"), /status: 410/);
 });

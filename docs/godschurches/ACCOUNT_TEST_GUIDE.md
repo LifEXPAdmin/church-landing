@@ -267,6 +267,23 @@ the existing isolated production preview. All fixture writers enforce loopback
 PostgreSQL and the test-sink boundary. Maintenance tests inject isolated storage;
 they do not call a real provider or use a production cron secret.
 
+## Public discovery verification
+
+The existing `npm run test:support` gate discovers the public-discoverability
+service and actual HTTPS suites. Sitemap checks follow every advertised child,
+so a source beyond the first 500 records receives the same inclusion/withdrawal
+checks. Production/indexable behavior requires the guarded isolated loopback
+fixture; a preview deployment cannot opt into production indexing.
+
+With that isolated production preview still running, the supplementary browser
+suite is `node --import ./tests/register.mjs scripts/qa-seo-browser.mjs
+.account-test/<active-directory>`. Use Node 24, the fixture certificate as
+`NODE_EXTRA_CA_CERTS`, and the established Playwright module/runtime. This suite
+creates only fictional local records and writes its screenshots and result inside
+the supplied fixture directory. It checks real navigation, narrow layouts,
+canonical/structured facts and current source restrictions. Physical phones,
+external preview clients and Search Console retain separate acceptance evidence.
+
 ## Follow a discussion
 
 On an available post, choose **Follow conversation** to receive future replies
