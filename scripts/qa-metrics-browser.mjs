@@ -489,11 +489,12 @@ try {
   ok(
     "Account switching conceals old choices, ordinary members cannot open Growth, and revoked viewers lose retained reports"
   );
-  await seedOperatorGrants(db, viewer, ["VIEW_PLATFORM_METRICS"]);
+  const costViewer = await createPortalActor(db, "mqacost");
+  await seedOperatorGrants(db, costViewer, ["VIEW_PLATFORM_METRICS"]);
   const cost = {};
   for (const [label, read] of Object.entries({
-    growth: () => readPlatformMetrics(db, viewer.token, filters),
-    overview: () => readAdminOverview(db, viewer.token),
+    growth: () => readPlatformMetrics(db, costViewer.token, filters),
+    overview: () => readAdminOverview(db, costViewer.token),
     choice: () => readMeasurementChoice(db, member.token)
   })) {
     await read();
