@@ -232,6 +232,52 @@ try {
   ok(
     "Guest filters save on this browser, survive reload and fit 320, 390 and desktop widths without a server account preference"
   );
+  phase = "streamed-shell-reloads";
+  for (let i = 0; i < 12; i++) {
+    const appearance = ["light", "dark", "system"][i % 3];
+    await page.setViewportSize({ width: [320, 390, 1280][i % 3], height: 844 });
+    await page
+      .getByRole("combobox", { name: "Appearance", exact: true })
+      .selectOption(appearance);
+    await page.waitForFunction(
+      (value) =>
+        document
+          .querySelector(".platform-design[data-reader-size]")
+          ?.getAttribute("data-appearance") === value,
+      appearance
+    );
+    await page.reload();
+    await ready();
+    await page.waitForFunction(
+      () =>
+        !document.querySelector('select[aria-label="Choose feed"]')?.disabled
+    );
+    assert.equal(await page.locator(".gc-shell").count(), 1);
+    assert.equal(
+      await page
+        .getByRole("combobox", { name: "Appearance", exact: true })
+        .inputValue(),
+      appearance
+    );
+    assert.equal(await selector().inputValue(), "public");
+    assert.deepEqual(
+      await getIds(),
+      posts.slice(0, 30).map((p) => p.id)
+    );
+    await page
+      .locator(".gc-platform-footer")
+      .getByRole("link", { name: "Explore features", exact: true })
+      .waitFor();
+    await bounded();
+    assert.deepEqual(
+      errors,
+      [],
+      `Reload ${i + 1} must hydrate without recovery errors`
+    );
+  }
+  ok(
+    "Twelve streamed Public reloads preserve one interactive shell, appearance, canonical posts and all three widths without hydration errors"
+  );
   phase = "guest-unreadable";
   await context.addCookies([
     {
