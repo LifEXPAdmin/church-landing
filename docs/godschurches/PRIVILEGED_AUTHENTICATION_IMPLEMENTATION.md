@@ -66,40 +66,79 @@ notification maintenance path retries pending notices with bounded attempts.
 The settings screen distinguishes provider acceptance from unconfirmed delivery.
 These notices are separate from optional social preferences and are removed by
 account erasure and protected restore. Delivery failure never claims success.
+Private operational health reports only pending/exhausted counts and oldest age;
+exhausted retries or more than five minutes pending raise an attention flag.
+The existing maintenance result continues to report pending notices after the
+automatic retry limit, and no provider body, email address or key enters health.
 
 ## Current verification and remaining work
 
-Fourteen focused checks pass on a fresh isolated fixture with **91 migrations**,
-populated upgrade preservation and an actual fixture dump/restore. They cover
-library vectors, key protection, owner enrollment, forged requests, fixed expiry,
-authority changes, another session, consumed step-up, concurrent recovery,
-retired codes and retained personal access. The expanded matrix covers every
-church capability, topic management, requester versus staff/coordinator Support,
-ordinary Google adapter sessions, primary-password recovery and exhausted notice
-retries. The actual protected restore retires an enrolled factor, proof and notice.
-Type checking and website-copy
-validation pass at this intermediate checkpoint. No production writes occurred.
+The final authentication/health service run passes **20 checks**: nine broad
+privilege/authentication groups, four existing authenticator/access-manager
+groups, and seven operational health groups. Fresh **91-migration** installation,
+populated upgrade and fixture dump/restore pass. The separate protected-form run
+passes **55 checks** across authentication, protected restore, church/calendar,
+topic and portal boundaries. The historical Stage2A upgrade case needs the full
+gate's special fixture and was excluded from that focused portal run; the complete
+gate retains it. These counts overlap and are not a sum of unique checks.
 
-Two earlier failures are preserved privately: Node's strip-only TypeScript runner
-rejected a parameter-property declaration, and the existing factor constraint
-rejected the new quarantined empty-secret state. Both were repaired before the
-passing focused run. Additional fixture corrections supplied the required church
-summary, Support intake/consent fields, password confirmation and a correctly
-formatted fictional recovery code. This is not full regression or real-device
-evidence.
+Six browser groups pass against the actual enforcement-mode production build at
+`1ef3919`: guest/unverified denial, real QR decoding and exact lost-response
+retry, eight private recovery codes and focus concealment, a complete unsent
+topic form resumed through confirmation in another tab, phone/desktop doubled
+text and navigation boundaries, invalid-code editing, factor replacement and
+account-switch removal of retained secrets. Enrollment mode passes its separate
+production-build check at `3ef52b1`: explicit setup is available without creating
+a factor/proof or locking an existing operator out of assigned work.
 
-Challenge retries now match the exact request and current session proof. A
-session without a proof incurs one indexed lookup before rejecting privileged
-projection, rather than loading every authority source. The authenticator screen
-conceals private entries on backgrounding and rechecks its account and opaque
-session view key before revealing them. Changed sign-ins remove retained secrets;
+Provider transport was a fictional loopback fixture with external sends blocked;
+production policy was unchanged. No real factor, production test account, email,
+phone alert or permission was created. Screenshots exclude keys/codes/passwords.
+Types, copy validation and lint pass (35 existing unrelated warnings). The final
+local build has 193 traces, 61,627 entries and 490 server JavaScript files, with
+no private fixture/environment material or Prisma configuration-loader path.
+The full regression gate is still running against checkpoint `f8810b8`; later
+changes have the scoped service and browser checks above. Do not claim the full
+gate passed until its final receipt is recorded.
+
+The actual protected production-copy rehearsal completed **11:06:59 UTC**:
+90 to 91 migrations, all 121 original-table column fingerprints preserved,
+protected replay complete and plaintext removed. The source connection was
+read-only. Installed recovery-registry propagation belongs to the same release
+and remains pending until the exact production migration history is verified.
+
+Earlier test-fixture and build failures are preserved privately. They include
+strip-only TypeScript syntax, the quarantined-factor constraint, required fixture
+fields, a legacy-upgrade fixture mismatch, browser selector/DNS setup, and a
+heap-limited build in the long-lived checkout. Corrected scoped tests and clean
+worktree builds pass; none is represented as a successful initial attempt.
+
+Challenge retries match the exact request and current session proof. A session
+without a proof incurs one indexed lookup before rejecting privileged projection,
+rather than loading every authority source. The authenticator screen conceals
+private entries on backgrounding and rechecks its account and opaque session
+view key before revealing them. Changed sign-ins remove retained secrets;
 unchanged sign-ins can resume. Setup keys and recovery codes remain only in
 component memory and expire from view after ten minutes.
 
-Still required within this feature: complete the privilege-surface and alternate
-sign-in audit, source/HTTP/browser bypass and recovery tests, complete regression
-and restore acceptance, notice failure/maintenance checks, polished challenge and
-return flows, runtime-cost review, release notes, protected backup and recovery
-registry integration, exact deployment/canonical/live verification and private
-task reconciliation. Actual adult enrollment and enforcement activation require
-their own evidence and are not implied by the engineering tests.
+## Activation and release acceptance
+
+The engineering release is prepared for `enroll`. It must complete the full gate,
+exact deployment/canonical/live checks, current migration and installed recovery
+registry verification, and private task reconciliation before publication is
+claimed. The public release candidate is **2026.09.16.9**. Production remains the
+version stated at the top of this report until those receipts supersede it.
+
+Actual adults must enroll privately and retain their recovery codes themselves.
+Before changing to `enforce`, inventory every current privileged authority and
+verify each required person's real factor, normal duty, another-sign-in challenge
+and recovery readiness without copying keys or codes into evidence. Confirm the
+actual essential notice channel and inspect pending/exhausted counts. An enabled
+configuration or passing fictional test cannot substitute for these observations.
+Do not create test grants or bypass identity review to make this gate appear met.
+Ordinary accounts remain available throughout.
+
+Loss of both factors and recovery codes needs trusted human identity review;
+this release supplies no email-only or self-service administrative override.
+Google configuration and optional passkeys remain their own existing priorities,
+not new prerequisites or inferred purchase requirements for native enrollment.
