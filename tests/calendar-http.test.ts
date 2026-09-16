@@ -93,6 +93,31 @@ const get = (path: string, token = "", rsc = false) =>
       ...(rsc ? { RSC: "1" } : {})
     }
   });
+
+test("signed-out commitment entry retains the exact signup without replaying a prior action or calendar month", async () => {
+  const response = await get(
+    "/platform/commitments?signup=fixture-signup&action=cancel&month=2000-01"
+  );
+  assert.equal(response.status, 200);
+  const body = await response.text();
+  if (!production) {
+    assert.match(body, /Open the calendar production preview/);
+    return;
+  }
+  const links = [...body.matchAll(/href="([^"]+)"/g)].map(
+    (match) => new URL(match[1].replaceAll("&amp;", "&"), origin)
+  );
+  for (const kind of ["signup", "login"])
+    assert.ok(
+      links.some(
+        (link) =>
+          link.pathname === `/platform/${kind}` &&
+          link.searchParams.get("next") ===
+            "/platform/commitments?signup=fixture-signup"
+      )
+    );
+  assert.doesNotMatch(body, /Cancel my signup/);
+});
 const post = (input: unknown, token = ada.token, extra = {}) =>
   fetch(origin + "/api/platform/calendars", {
     method: "POST",

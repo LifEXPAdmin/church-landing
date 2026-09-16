@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { PortalError } from "@/lib/platform/portal";
+import { safeAccountReturn } from "@/lib/platform/account-entry";
 import { getCurrentPlatformUser } from "@/lib/platform/session";
 import {
   readCalendars,
@@ -75,12 +76,17 @@ export async function CalendarPage({
       : view === "calendar"
         ? calendarPath(id ?? "")
         : view === "commitments"
-          ? "/platform/commitments"
+          ? safeAccountReturn(
+              "/platform/commitments" +
+                (typeof query.signup === "string"
+                  ? "?" + new URLSearchParams({ signup: query.signup })
+                  : "")
+            )
           : "/platform/calendars";
   const user = await getCurrentPlatformUser();
   if (!user && view !== "church")
     return (
-      <PlatformShell user={null}>
+      <PlatformShell user={null} signInReturnTo={path}>
         <GuestAccountPrompt next={path} reason="calendar" />
       </PlatformShell>
     );
