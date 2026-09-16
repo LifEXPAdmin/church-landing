@@ -1,8 +1,8 @@
 # Optional device-area suggestions acceptance
 
 September 16, 2026 UTC. Candidate for `2026.09.16.7`, not a live completion
-receipt. Regional/private-location prerequisites must complete their full gate
-and exact release before this follow-through is published.
+receipt. Regional/private-location prerequisites completed their full gate and exact live
+release in 2026.09.16.6. This follow-through is integrated for publication.
 
 Runtime checkpoint `e8644ee` implements the
 [device-location contract](DEVICE_LOCATION_CONTRACT.md): explicit verified-adult
@@ -49,8 +49,7 @@ Twenty-nine isolated public/access checks pass for exact candidate identity,
 privacy/help/features/release copy and widths, guest returns, minimal catalog
 responses and private endpoint denials. They are not canonical-live evidence.
 
-Remaining: prerequisite full-gate and release acceptance, integration into the
-release branch, exact READY/canonical/serving identity, current signed-in control
+Remaining: exact READY/canonical/serving identity, current signed-in control
 inspection without requesting the owner's position, live public/health checks,
 production data comparison, and Notion/Todoist readback. Actual device and
 translation-provider acceptance retain their distinct scopes.

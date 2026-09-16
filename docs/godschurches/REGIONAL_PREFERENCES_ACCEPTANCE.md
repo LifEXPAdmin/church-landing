@@ -1,7 +1,51 @@
 # Regional formats and private profile location
 
-September 16, 2026 UTC. Candidate for 2026.09.16.6; not yet a live completion
-receipt. The prior verified release is 2026.09.16.5, documented in
+## Verified canonical release
+
+**2026.09.16.6 / ed6c89457912a0ab4ec53c13dbf7761b0f378e7c** is READY in
+**dpl_3sUKNMQqS1ebqfs7MyL6wfewfCME** at **09:01:17.516 UTC** on September 16,
+2026. Independent canonical alias lookup and the serving release/product-build
+identity match. Runtime candidate `8d4134e` has only isolated test fixes afterward.
+
+The complete `npm run test:support` gate passed at 08:53:56 UTC: all 171
+discovered files, 185 test invocations, **1,034 passes, zero failures and two
+expected skips**. Fresh migration, protected recovery, production/development
+build, real HTTPS and restart coverage are included. All **16 production-browser
+groups** pass: seven regional/privacy/support/demo, four language/discovery and
+five profile-editor groups, with zero browser errors. The original five static
+demo checks pass unchanged. Failed earlier gates below remain historical evidence.
+
+Live verification passes **23 public/access checks**, **four health checks** and
+**three signed-in read-only inspections**. The actual account shows default date
+and time choices, preview/save controls, independent Only me/permitted-member
+location choices, and unchanged private discovery entry. No real preference,
+profile, read-state or other user-data change was made. The public renderer bytes
+match the hash from this provider build. Scoped error/fatal logs from 09:01:17
+to 09:07:54 UTC contain zero rows. Verification writes and sends are zero.
+
+All **90 production migration checksums** match; the one additive migration
+applied at 08:58:44 UTC. All original-column fingerprints across **121 tables**
+match the 08:48 baseline at 09:08:24 UTC. Existing account preferences retain their
+defaults; no regional/privacy edits or recovery holds were created for testing.
+The installed recovery registry now has 90 checksums. Its ordinary daily copy
+restored all 90 at 09:00:10 UTC, and nightly validation passed with no attention
+or expiry actions across 58 encrypted sets. Ordinary daily recovery did not run
+protected replay; that separate production-copy upgrade passed at 06:49:29 UTC,
+preserving all original columns and completing protected replay without modifying
+production. Restored plaintext was removed.
+
+Provider build checks pass with 190 traces, 60,177 entries and 477 server JavaScript
+files. The final local build separately has 190 traces, 43,947 entries and 478
+server JavaScript files. Against the prior build, unique emitted JavaScript at
+gzip level 9 changes by **+1,981 bytes Settings, +2,780 profile, +1,332 Home and
++1,239 event details**. These are asset measurements, not latency or transfer claims.
+No extra startup request, dependency or provider was introduced. Physical devices
+and assistive technology remain unverified. The same-feature optional device
+helper follows immediately; translation and family launch remain distinct gates.
+
+## Preserved implementation and verification history
+
+The prior verified integration release was 2026.09.16.5, documented in
 [Language and location acceptance](LANGUAGE_LOCATION_ACCEPTANCE.md).
 
 The [contract](REGIONAL_PREFERENCES_CONTRACT.md) separates account date/time

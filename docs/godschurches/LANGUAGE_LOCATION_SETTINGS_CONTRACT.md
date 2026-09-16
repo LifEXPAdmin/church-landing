@@ -11,14 +11,14 @@ translation service. A disabled translation row explains that availability will
 not imply coverage of every media item. The original absence statements below
 are historical; publication requires the feature's exact acceptance receipt.
 
-## Regional formats and profile audience candidate — September 16, 2026
+## Regional formats and profile audience verified — September 16, 2026
 
-The next increment implements saved date/time presentation and an independent
+Release 2026.09.16.6 implements saved date/time presentation and an independent
 Only me or permitted-member profile-location audience. See the
 [regional/privacy contract](REGIONAL_PREFERENCES_CONTRACT.md). The controls reuse
 the existing account, profile, discovery and protected-recovery owners. This
-candidate is not a deployment receipt; the last verified release remains the
-integration below until exact publication and live checks are recorded.
+release is verified by the [regional acceptance receipt](REGIONAL_PREFERENCES_ACCEPTANCE.md).
+The earlier integration and original capability map below remain historical.
 
 ## Verified integration baseline — September 16, 2026
 

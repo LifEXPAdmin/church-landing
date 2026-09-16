@@ -1,3 +1,24 @@
+## Regional formats and private location verified live — September 16, 2026 UTC
+
+**2026.09.16.6 / ed6c89457912a0ab4ec53c13dbf7761b0f378e7c** is READY in
+**dpl_3sUKNMQqS1ebqfs7MyL6wfewfCME**, independently canonical with exact
+serving identity verified. Account formats now drive existing time presentation;
+profile location has an independent server-enforced audience and protected restore.
+See [the regional acceptance receipt](REGIONAL_PREFERENCES_ACCEPTANCE.md).
+
+The full 171-file gate passes 1,034 checks with two expected skips; all 16 relevant
+browser groups pass. Live verification passes 23 public/access, four health and
+three signed-in checks, with zero writes or sends. All 121 original-column table
+fingerprints match; all 90 production and installed recovery checksums match.
+Protected upgrade, ordinary daily restore and 58-set nightly validation pass.
+Scoped runtime error/fatal rows are zero. Physical-device scope remains separate.
+
+The optional device helper is integrated from its separately verified candidate:
+31 focused checks, 25 browser groups and 29 isolated public/access checks pass.
+Continue its exact deployment and live acceptance in this same feature cycle,
+then re-audit the next operational/capacity and other eligible queue priorities.
+Final review remains last.
+
 ## Language and private discovery settings verified live — September 16, 2026 UTC
 
 **2026.09.16.5 / cd74d94c6c00f66a95fc3c0c08a23905d2ba52ff** is READY in
