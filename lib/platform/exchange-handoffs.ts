@@ -606,6 +606,27 @@ async function projection(
     available: !!source,
     reportable: !row.bodyPurgedAt && !row.recoveryRequired,
     pickupReportable: state === "RESERVED" && !!source,
+    noShowAvailable:
+      state === "RESERVED" &&
+      !!source &&
+      !!row.windowEnd &&
+      row.windowEnd <= now,
+    history: canRead
+      ? (
+          await tx.exchangeInquiryAudit.findMany({
+            where: { inquiryId: row.id, action: { not: "CLEAR" } },
+            orderBy: { version: "desc" },
+            take: 20,
+            select: { action: true, version: true, createdAt: true }
+          })
+        )
+          .reverse()
+          .map((item) => ({
+            action: item.action,
+            version: item.version,
+            at: item.createdAt.toISOString()
+          }))
+      : [],
     canClear: !activeExchangeInquiry(state),
     completionRecordedBy:
       row.state === "COMPLETED"

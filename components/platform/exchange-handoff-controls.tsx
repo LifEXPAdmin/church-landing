@@ -489,13 +489,15 @@ export function ExchangeHandoffActions({
                   setReason(e.target.value as ExchangeCancellationReason)
                 }
               >
-                {Object.entries(exchangeCancellationReasons).map(
-                  ([value, label]) => (
+                {Object.entries(exchangeCancellationReasons)
+                  .filter(
+                    ([value]) => value !== "NO_SHOW" || inquiry.noShowAvailable
+                  )
+                  .map(([value, label]) => (
                     <option key={value} value={value}>
                       {label}
                     </option>
-                  )
-                )}
+                  ))}
               </select>
             </label>
             <label className="block space-y-2" htmlFor={`${id}-note`}>

@@ -79,11 +79,18 @@ async function candidatesIn(tx: Tx, now: Date) {
       AND NOT EXISTS (SELECT 1 FROM "CommunityReport" r WHERE r."targetType" IN ('EXCHANGE_INQUIRY','EXCHANGE_HANDOFF') AND r."targetId"=i.id)
       AND NOT EXISTS (SELECT 1 FROM "RetentionHold" h WHERE h.target='EXCHANGE_INQUIRY' AND h."targetId"=i.id AND h."releasedAt" IS NULL)
     ORDER BY i."unretainedAt", i.id LIMIT 100`;
-  return [
-    ...inquiries.map(i => ({ target: "EXCHANGE_INQUIRY" as const, ...i })),
-    ...reports.map((r) => ({ target: "REPORT" as const, ...r })),
-    ...messages.map((m) => ({ target: "MESSAGE" as const, ...m }))
+  // Each daily slice must keep making progress on the established owners as
+  // well as inquiries; a busy new category must not starve message cleanup.
+  const groups = [
+    inquiries.map(i => ({ target: "EXCHANGE_INQUIRY" as const, ...i })),
+    reports.map(r => ({ target: "REPORT" as const, ...r })),
+    messages.map(m => ({ target: "MESSAGE" as const, ...m }))
   ];
+  const batch: MessagingPurgeCandidate[] = [];
+  for (let index = 0; index < Math.max(...groups.map(group => group.length)); index++) {
+    for (const group of groups) if (group[index]) batch.push(group[index]);
+  }
+  return batch;
 }
 
 export async function inspectMessagingRetention(

@@ -50,11 +50,20 @@ export default function TermsPage() {
               stated by the person offering help; Godschurches does not verify
               professional licenses, training, insurance or suitability. A
               displayed price, needed-by date or reserved status does not create
-              a payment, booking, employment or fulfillment agreement.
+              a payment, booking, employment or fulfillment agreement by itself.
               Godschurches does not take payments or deposits or provide escrow.
               Account verification does not guarantee another person&apos;s
               safety. Existing contact preferences, consent and reporting
               controls apply.
+            </p>
+            <p className="mt-3">
+              Private Exchange handoffs record a proposed window and the
+              participants’ agreement to that plan. Either participant may
+              cancel. A completion or missed-pickup record is that participant’s
+              statement, not independent proof of fulfillment or a public
+              misconduct finding. Expired and canceled holds leave the listing
+              closed for owner review. Reminders do not guarantee delivery,
+              exact timing or attendance.
             </p>
           </section>
           <section>

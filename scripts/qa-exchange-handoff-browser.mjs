@@ -393,6 +393,28 @@ try {
     .check();
   await exact("Agree to pickup plan").click();
   await state("Pickup agreed");
+  const history = page.getByRole("region", {
+    name: "Handoff status history",
+    exact: true
+  });
+  assert.deepEqual(
+    await history.locator("li > p:first-child").allTextContents(),
+    [
+      "Inquiry sent",
+      "Pickup window proposed",
+      "Pickup window replaced",
+      "Pickup agreed"
+    ]
+  );
+  assert.equal(
+    await page
+      .getByRole("option", {
+        name: "The agreed handoff was missed",
+        exact: true
+      })
+      .count(),
+    0
+  );
   await state(pickup);
   await bounded();
   await page.screenshot({

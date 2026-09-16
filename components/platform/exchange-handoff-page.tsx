@@ -22,6 +22,7 @@ import {
 } from "@/lib/platform/exchange-session";
 import {
   exchangeInquiryStateLabels,
+  exchangeHandoffActionLabels,
   exchangeCancellationReasons,
   type ExchangeInquiryState,
   type ExchangeCancellationReason
@@ -271,6 +272,32 @@ export async function ExchangeHandoffsPage({
                   Completion was recorded by {inquiry.completionRecordedBy}.
                   This records that participant’s statement about the handoff.
                 </p>
+              )}
+              {!!inquiry.history.length && (
+                <section
+                  className="space-y-3"
+                  aria-label="Handoff status history"
+                >
+                  <h3 className="font-semibold">Recent status changes</h3>
+                  <ol className="space-y-2 border-l border-gc-divider pl-4">
+                    {inquiry.history.map((item) => (
+                      <li key={item.version}>
+                        <p>
+                          {exchangeHandoffActionLabels[item.action] ??
+                            "Handoff updated"}
+                        </p>
+                        <p className="text-sm text-gc-muted">
+                          <RegionalTime value={item.at} />
+                        </p>
+                      </li>
+                    ))}
+                  </ol>
+                  {inquiry.history.length === 20 && (
+                    <p className="text-sm text-gc-muted">
+                      Showing the latest 20 status changes.
+                    </p>
+                  )}
+                </section>
               )}
               {inquiry.listing && (
                 <Link

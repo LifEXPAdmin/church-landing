@@ -1320,3 +1320,108 @@ test("bounded summaries preserve current source, contact, audience epoch and par
   });
   assert.equal((await check(second, "outgoing")).inquiries?.[0].person, null);
 });
+
+test("missed pickup is available only after mutual agreement and the actual window end, and remains private", async () => {
+  const { owner, requester, listing } = await setup();
+  await enable(owner, listing.id);
+  const { receipt } = await inquire(requester, listing.id);
+  const selected = await command(
+    db,
+    owner.token,
+    input("select", {
+      id: receipt.id,
+      expectedVersion: receipt.version,
+      schema: 1,
+      plan: plan()
+    })
+  );
+  await denied(
+    command(
+      db,
+      requester.token,
+      input("cancel", {
+        id: receipt.id,
+        expectedVersion: selected.version,
+        reason: "NO_SHOW",
+        note: ""
+      })
+    ),
+    409
+  );
+  const confirmed = await command(
+    db,
+    requester.token,
+    input("confirm", {
+      id: receipt.id,
+      expectedVersion: selected.version,
+      planVersion: 1
+    })
+  );
+  assert.equal(
+    (await read(db, requester.token, { view: "detail", id: receipt.id }))
+      .inquiry?.noShowAvailable,
+    false
+  );
+  await denied(
+    command(
+      db,
+      requester.token,
+      input("cancel", {
+        id: receipt.id,
+        expectedVersion: confirmed.version,
+        reason: "NO_SHOW",
+        note: ""
+      })
+    ),
+    409
+  );
+  await db.exchangeInquiry.update({
+    where: { id: receipt.id },
+    data: {
+      windowStart: new Date(Date.now() - 2 * 3600000),
+      windowEnd: new Date(Date.now() - 3600000)
+    }
+  });
+  assert.equal(
+    (await read(db, requester.token, { view: "detail", id: receipt.id }))
+      .inquiry?.noShowAvailable,
+    true
+  );
+  await command(
+    db,
+    requester.token,
+    input("cancel", {
+      id: receipt.id,
+      expectedVersion: confirmed.version,
+      reason: "NO_SHOW",
+      note: "Fictional private explanation"
+    })
+  );
+  const result = (
+    await read(db, owner.token, { view: "detail", id: receipt.id })
+  ).inquiry!;
+  assert.equal(result.state, "CANCELED");
+  assert.equal(result.cancelReason, "NO_SHOW");
+  assert.equal(result.pickupDetails, "");
+  assert.deepEqual(
+    result.history.map((h) => h.action),
+    ["INQUIRE", "SELECT", "CONFIRM", "CANCELED"]
+  );
+  const source = await db.exchangeListing.findUniqueOrThrow({
+    where: { id: listing.id }
+  });
+  assert.equal(source.state, "CLOSED");
+  assert.equal(
+    source.description.includes("Fictional private explanation"),
+    false
+  );
+  const events = await db.socialEvent.findMany({
+    where: { sourceId: receipt.id }
+  });
+  assert.equal(
+    JSON.stringify(events, (_, value) =>
+      typeof value === "bigint" ? String(value) : value
+    ).includes("Fictional private explanation"),
+    false
+  );
+});

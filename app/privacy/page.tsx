@@ -221,6 +221,34 @@ export default function PrivacyPage() {
               backups from silently restoring removed choices or alert consent.
             </p>
             <p className="mt-3">
+              Private inquiries store your brief purpose and go only to the
+              listing’s named receiving adult. Other church managers do not gain
+              that adult’s private inquiry history. Both participants must agree
+              to the current pickup window before the inquirer can see precise
+              instructions. Current account, block, church and listing access is
+              checked again when these details are read. Handoff notification
+              previews exclude the inquiry body and pickup instructions.
+            </p>
+            <p className="mt-3">
+              Ending a handoff removes its ordinary pickup instructions. Details
+              deliberately selected for a report remain under restricted review
+              and report retention. Clearing an ended inquiry removes it from
+              your history, without removing the other participant’s receipt or
+              report evidence. Shared inquiry text is eligible for protected
+              cleanup when neither participant retains it and no report or
+              retention hold requires it. Recovery cannot silently restore an
+              ended agreement or an older disclosure permission.
+            </p>
+            <p className="mt-3">
+              Personal listing defaults, including reusable pickup instructions,
+              belong only to your account. Applying defaults to a new personal
+              draft copies listing choices without private pickup text or
+              inquiry consent. Pickup text is copied separately when you choose
+              to propose a plan. Export includes your private defaults and
+              currently authorized inquiry details; permanent deletion removes
+              your defaults and deidentifies retained handoff history.
+            </p>
+            <p className="mt-3">
               Opening a listing does not contact its owner or change your
               contact consent. Account export includes your personal listings.
               Permanent deletion removes unreported personal listing text and

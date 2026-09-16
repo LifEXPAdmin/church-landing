@@ -63,3 +63,16 @@ export const emptyExchangeDefaults = (): ExchangeDefaultFields => ({
   placeId: null,
   pickupDetails: ""
 });
+
+export const exchangeHandoffActionLabels: Record<string, string> = {
+  INQUIRE: "Inquiry sent",
+  SELECT: "Pickup window proposed",
+  PLAN: "Pickup window replaced",
+  CONFIRM: "Pickup agreed",
+  COMPLETED: "Handoff marked complete",
+  CANCELED: "Handoff canceled",
+  DECLINED: "Inquiry declined",
+  WITHDRAWN: "Inquiry withdrawn",
+  EXPIRED: "Inquiry or handoff expired",
+  REVOKED: "Current handoff access ended"
+};
