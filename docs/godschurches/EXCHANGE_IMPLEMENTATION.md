@@ -111,11 +111,14 @@ Thirty-eight input/navigation/registry/release/regional checks also pass.
 The feature guide and factual Exchange privacy/service information are updated
 in the same cycle. Their rebuilt rendering passes **47 public/access groups**
 with zero page errors or writes, including Privacy and Terms at 320/390/1280
-pixels. The final intent/filter browser run passes all **15 groups** and the
+pixels. The final intent/filter/gallery browser run passes all **16 groups** and the
 isolated production HTTPS listing test passes. The clean complete gate runs at
 `8dd0820`; the later guidance and harness-only delta is separately built and
 verified. The isolated overlay preview's Git identity is its earlier base, not
 the final application commit; it is not a canonical deployment receipt.
+The added gallery group loses a successful upload response, verifies an exact
+same-file retry without a duplicate, reorders two actual photos through the
+editor, checks the order after reload and removes one while preserving the other.
 
 Read-cost review reduces a 20-card synthetic long-field response from 184,173 to
 13,813 bytes for guests and 184,196 to 13,836 bytes for owners. Both retain one

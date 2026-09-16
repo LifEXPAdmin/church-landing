@@ -375,6 +375,57 @@ try {
     "Actual local photo upload, caption and alternative text use the listing gallery; blur conceals and preserves unsent photo edits"
   );
 
+  let lostPhotoReply = false, uploadDetails, uploadBytes;
+  await page.route("**/api/platform/images", async (route) => {
+    const request = route.request();
+    if (request.method() !== "POST") return route.continue();
+    if (!lostPhotoReply) {
+      lostPhotoReply = true;
+      uploadDetails = request.headers()["x-image-details"];
+      uploadBytes = request.postDataBuffer();
+      const received = await route.fetch({
+        url: config.localOrigin + new URL(request.url()).pathname
+      });
+      assert.ok([200, 201, 202].includes(received.status()), await received.text());
+      return route.abort("failed");
+    }
+    assert.equal(request.headers()["x-image-details"], uploadDetails);
+    assert.deepEqual(request.postDataBuffer(), uploadBytes);
+    return route.continue();
+  });
+  await page.getByLabel("Choose photos", { exact: true }).setInputFiles({
+    name: "fictional-second-item.png",
+    mimeType: "image/png",
+    buffer: await sharp({
+      create: { width: 90, height: 70, channels: 3, background: "red" }
+    }).png().toBuffer()
+  });
+  await page.getByRole("button", { name: "Save photo", exact: true }).click();
+  const retryPhoto = page.getByRole("button", { name: "Retry same upload", exact: true });
+  await retryPhoto.waitFor();
+  await waitUntil(() => retryPhoto.isEnabled());
+  assert.equal(await db.mediaAsset.count({ where: { exchangeListingId: id, status: "READY" } }), 2);
+  await retryPhoto.click();
+  await page.getByRole("button", { name: "Open listing photo 2 of 2", exact: true }).waitFor();
+  await page.unroute("**/api/platform/images");
+  assert.equal(await db.mediaAsset.count({ where: { exchangeListingId: id, status: "READY" } }), 2);
+  const secondImage = await db.mediaAsset.findFirstOrThrow({
+    where: { exchangeListingId: id, status: "READY", id: { not: image.id } }
+  });
+  const moveEarlier = page.getByRole("button", { name: "Move photo 2 earlier", exact: true });
+  await waitUntil(() => moveEarlier.isEnabled());
+  await moveEarlier.click();
+  await waitUntil(async () => (await db.mediaAsset.findUniqueOrThrow({ where: { id: secondImage.id } })).position === 0);
+  await go(`/platform/exchange/${id}/edit`);
+  const firstPhoto = page.getByRole("button", { name: "Open listing photo 1 of 2", exact: true });
+  await firstPhoto.waitFor();
+  assert.ok((await firstPhoto.locator("img").getAttribute("src")).includes(secondImage.id));
+  await page.getByRole("button", { name: "Remove photo 1", exact: true }).click();
+  await page.getByRole("button", { name: "Open listing photo 1 of 1", exact: true }).waitFor();
+  assert.equal(await db.mediaAsset.count({ where: { exchangeListingId: id, status: "READY" } }), 1);
+  assert.equal((await db.mediaAsset.findUniqueOrThrow({ where: { id: image.id } })).status, "READY");
+  ok("Lost upload response retries the exact file once; photo reordering survives reload and removal preserves the other photo");
+
   await confirmItem();
   await page
     .getByRole("button", { name: "Publish as active", exact: true })
