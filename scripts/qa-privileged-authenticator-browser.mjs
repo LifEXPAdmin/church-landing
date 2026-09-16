@@ -72,6 +72,23 @@ const challenge = async (actor, purpose, p = page) => {
   await form.getByText(purpose === "privileged-work" ? /Assigned duties are confirmed/ : /This protected action is confirmed once/).waitFor();
 };
 try {
+  if (process.argv.includes("--enroll")) {
+    const actor = await createPortalActor(db, "mfastaged");
+    await seedOperatorGrants(db, actor, ["VIEW_OPERATIONAL_HEALTH"]);
+    await signIn(actor); await go("/platform/account/authenticator");
+    await page.getByText("Enrollment is being prepared. Broader enforcement is not active yet.", { exact: true }).waitFor();
+    await page.getByRole("form", { name: "Start authenticator setup", exact: true }).waitFor();
+    const state = await fetchIn("/api/platform/authenticator", undefined, actor.id);
+    assert.equal(state.status, 200); assert.equal(state.body.mode, "enroll");
+    assert.equal(state.body.available, true); assert.equal(state.body.factor, null);
+    assert.equal((await fetchIn("/api/platform/admin?view=navigation")).status, 200);
+    assert.equal(await db.adminAuthenticator.count({ where: { userId: actor.id } }), 0);
+    assert.equal(await db.privilegedSessionProof.count({ where: { session: { userId: actor.id } } }), 0);
+    ok("Enrollment mode offers explicit setup while an existing assigned operator retains access without invented factor or confirmation proof");
+    assert.deepEqual(errors, []);
+    writeFileSync(output + "/enrollment-result.json", JSON.stringify({ results, errors, productionBuild: true, provider: "fictional local stub", productionWrites: 0, externalSends: 0 }, null, 2), { mode: 0o600 });
+    console.log("PRIVILEGED_ENROLLMENT_BROWSER_PASS " + results.length);
+  } else {
   await go("/platform/account/authenticator");
   await page.getByRole("link", { name: "Sign in", exact: true }).first().waitFor();
   assert.equal((await fetchIn("/api/platform/authenticator")).status, 401);
@@ -201,4 +218,5 @@ try {
   assert.deepEqual(errors, []);
   writeFileSync(output + "/result.json", JSON.stringify({ results, errors, productionBuild: true, provider: "fictional local stub", productionWrites: 0, externalSends: 0 }, null, 2), { mode: 0o600 });
   console.log("PRIVILEGED_AUTHENTICATOR_BROWSER_PASS " + results.length);
+  }
 } finally { await browser.close(); await db.$disconnect(); }
