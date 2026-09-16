@@ -1239,26 +1239,38 @@ test("handoff phone consent is separate and dated; an old preferences form prese
     false
   );
   assert.equal(notificationPushAllowed(row, "handoffs", new Date()), true);
-  const { handoffs: unused, ...oldChoices } =
-    projectNotificationPreferences(row).inApp;
-  void unused;
-  await notificationPreferenceCommand(
-    db,
-    owner.token,
-    input("preferences", {
-      ownerId: owner.id,
-      expectedVersion: row.version,
-      inApp: oldChoices,
-      pushCategories: [],
-      quietHours: null,
-      feedbackEmail: false
-    })
-  );
-  row = await db.socialPreferences.findUniqueOrThrow({
-    where: { ownerId: owner.id }
-  });
-  assert.ok(row.pushCategories.includes("handoffs"));
-  assert.equal(notificationPushAllowed(row, "handoffs", new Date()), true);
+  // Actual earlier form shapes stay fixed when new categories are introduced.
+  const legacy = ["messages", "requests", "reports", "founder"];
+  const expanded = [...legacy, "replies", "mentions", "conversations", "prayer",
+    "posts", "reactions", "church", "commitments", "photos"];
+  for (const fields of [legacy, expanded, [...expanded, "feedback"],
+    [...expanded, "exchange"], [...expanded, "feedback", "exchange"]]) {
+    const projected = projectNotificationPreferences(row).inApp;
+    const oldChoices = Object.fromEntries(fields.map(category => [
+      category, projected[category as keyof typeof projected]
+    ]));
+    await notificationPreferenceCommand(
+      db,
+      owner.token,
+      input("preferences", {
+        ownerId: owner.id,
+        expectedVersion: row.version,
+        inApp: oldChoices,
+        pushCategories: [],
+        quietHours: null,
+        feedbackEmail: false
+      })
+    );
+    row = await db.socialPreferences.findUniqueOrThrow({
+      where: { ownerId: owner.id }
+    });
+    assert.ok(row.pushCategories.includes("handoffs"));
+    assert.equal(notificationPushAllowed(row, "handoffs", new Date()), true);
+    assert.equal(
+      (row.notificationPushSince as Record<string, string>).handoffs,
+      since.toISOString()
+    );
+  }
 });
 
 test("handoff HTTP boundary rejects cross-site writes, switched accounts and guessed identifiers with private cache headers", async () => {

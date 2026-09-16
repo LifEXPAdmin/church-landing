@@ -523,8 +523,18 @@ test("global email withdrawal is protected, older clients preserve new choices, 
   const c = await submission(["EMAIL"]),
     pending = await reply(c.caseId);
   const old = await readNotificationPreferences(db, f.memberA.token);
-  const { feedback: ignored, ...inApp } = old.preferences.inApp;
-  void ignored;
+  // Pin the historical form instead of deriving an impossible old client from
+  // future categories that it never displayed.
+  const inApp = Object.fromEntries(
+    [
+      "messages", "requests", "reports", "founder", "replies", "mentions",
+      "conversations", "prayer", "posts", "reactions", "church",
+      "commitments", "photos", "exchange"
+    ].map((category) => [
+      category,
+      old.preferences.inApp[category as keyof typeof old.preferences.inApp]
+    ])
+  );
   await notificationPreferenceCommand(db, f.memberA.token, {
     operation: "preferences",
     mutationId: randomUUID(),

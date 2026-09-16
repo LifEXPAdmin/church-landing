@@ -78,6 +78,16 @@ updated; this is a test-only repair. All four affected cleanup suites now pass
 Rerun the frozen complete gate before publication. Earlier passing scoped suites
 and the failed full-gate receipt remain distinct evidence.
 
+The next full run passed the repaired cleanup checks and stopped after 767 passes
+at a historical notification fixture that dynamically inherited the newly added
+handoff category. That combination was never an earlier client format. The
+fixture now pins its actual historical fields; expanded acceptance exercises all
+five supported earlier form shapes and verifies that each retains the newer
+dated handoff consent. These are test-only changes. All 30 checks across affected
+feedback, notification and handoff suites pass in a fresh isolated database,
+followed by successful populated upgrade and dump/restore checks. Types and
+targeted lint pass. Rerun the complete gate before publication.
+
 Local bundle estimates add 5,203 gzip bytes to browse/new-listing routes and 5,193
 to listing detail, with no new dependency. A fresh protected production-copy
 upgrade from 94 to 95 migrations preserves all 128 original tables with restrictive
