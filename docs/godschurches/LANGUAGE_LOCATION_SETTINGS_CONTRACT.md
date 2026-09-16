@@ -1,5 +1,33 @@
 # Language and location settings boundaries
 
+## Current supported integration — September 16, 2026
+
+The Language and location folder now links to the existing canonical discovery
+editor, member profile and calendars. Interface guidance lists English alone;
+reading-language choices are content filters, not translated interface packs.
+The same private discovery owner stores explicit countries, towns, radii and
+language filters. Manual catalog search needs no device geolocation permission.
+No preference store, mutation, database field, provider or disclosure rule is
+added by this integration. Settings search and Help link to these actual paths.
+
+Discovery choices do not populate the optional shared profile-location field,
+alter church membership or move event instants. Existing current-account guards,
+versions, exact retries and source permissions remain authoritative. The editor
+explains which discovery feeds consume its filters; the earlier community feed
+modes keep their established behavior.
+
+An account-wide date/time-format service, further interface packs, a separate
+profile-location audience selector and device-location/translation adapters are
+still absent. These are distinct unfinished capabilities, not a reason to hide
+working manual discovery controls. Restricted/child audiences are not offered;
+family accounts remain under their existing launch boundary. See
+[integration acceptance](LANGUAGE_LOCATION_ACCEPTANCE.md) for actual checks and
+release state. The dated map below preserves the earlier absence of discovery;
+its discovery-language/location rows are superseded by this current integration
+and [discovery acceptance](DISCOVERY_FEEDS_ACCEPTANCE.md).
+
+## Original capability map — September 12, 2026
+
 September 12, 2026. Focused capability reconciliation, not activation of a new
 location or translation service. Read [feed boundaries](FEED_SETTINGS_CONTRACT.md)
 and [profile disclosure](PROFILE_SETTINGS_REPORT.md) before integration.

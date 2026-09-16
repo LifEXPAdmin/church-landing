@@ -749,6 +749,14 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "language-and-private-discovery", version: "2026.09.16.5", date: "2026-09-16",
+    summary: "Find language guidance and private discovery location together in Settings.",
+    added: ["Language and location settings link to your existing town, radius, reading-language, profile and calendar controls."],
+    improved: ["Guidance explains the English interface, content-language filters and separate profile location.", "Manual town selection works without device location permission and does not change your shared profile."],
+    fixed: [],
+    featureIds: []
+  },
+  {
     id: "help-and-product-progress", version: "2026.09.16.4", date: "2026-09-16",
     summary: "Find feedback, private receipts and product progress from Help and Settings.",
     added: ["Help and Settings link directly to feedback, your private receipts and reviewed ideas."],

@@ -30,6 +30,9 @@ const AccountDeletion = dynamic(() =>
 const DiscoverySettings = dynamic(() =>
   import("./discovery-settings").then((m) => m.DiscoverySettings)
 );
+const SettingsLanguage = dynamic(() =>
+  import("./settings-language").then((m) => m.SettingsLanguage)
+);
 const MeasurementSettings=dynamic(()=>import("./measurement-settings").then(m=>m.MeasurementSettings));
 
 export function SettingsControls({
@@ -41,6 +44,8 @@ export function SettingsControls({
 }) {
   const canConfirm = canConfirmSettings(data);
   switch (control) {
+    case "language":
+      return <SettingsLanguage />;
     case "measurement":
       return <MeasurementSettings owner={data.ownerId}/>;
     case "discovery":

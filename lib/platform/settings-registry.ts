@@ -38,6 +38,11 @@ export const settingsFolders = [
     description: "Your saved feed and accounts you have muted."
   },
   {
+    id: "language",
+    label: "Language and location",
+    description: "Interface language, private discovery area and separate profile location."
+  },
+  {
     id: "church",
     label: "My church",
     description: "Your connection, directory choices and church tools."
@@ -86,6 +91,7 @@ export type SettingsControl =
   | "password"
   | "reading"
   | "discovery"
+  | "language"
   | "privacy"
   | "measurement"
   | "contact"
@@ -428,6 +434,43 @@ export const settingsRegistry: readonly SettingRegistration[] = Object.freeze([
       read: "discovery-preferences.ts getDiscoveryPreferences",
       write: "discovery-preferences.ts saveDiscoveryPreferences"
     }
+  ),
+  entry(
+    "language.interface",
+    "language",
+    "Interface language and time display",
+    "English is currently available. Reading languages and calendar time zones have separate purposes.",
+    ["app language", "translation", "English", "region", "date format", "time format", "timezone"],
+    { control: "language" },
+    { persistenceOwner: "maintained interface content", read: "app/layout.tsx; local-event-time.tsx", write: null },
+    { valueType: "information", state: "explanation" }
+  ),
+  entry(
+    "language.discovery",
+    "language",
+    "Private discovery area and reading languages",
+    "Choose a country, town, radius and reading languages in your existing discovery preferences. No device location permission is needed.",
+    ["city", "town", "location", "country", "radius", "local area", "content language", "manual location"],
+    { href: "/platform/settings/feed/discovery" },
+    linked("discovery-preferences.ts getDiscoveryPreferences", "discovery-preferences.ts saveDiscoveryPreferences")
+  ),
+  entry(
+    "language.profile",
+    "language",
+    "Location on your member profile",
+    "Review or clear the optional location that permitted members can see. It is separate from your private discovery area.",
+    ["shared location", "public location", "profile city", "location visibility"],
+    { href: "/platform/profile/me" },
+    linked("profiles.ts getProfileEditor", "account-boundary.ts update-profile")
+  ),
+  entry(
+    "language.calendar",
+    "language",
+    "Calendar and event time zones",
+    "Review the source time zone of an event. Discovery location does not change its date or time.",
+    ["event time", "calendar timezone", "regional time"],
+    { href: "/platform/calendars" },
+    linked("calendar-reads.ts; calendar-access.ts", "calendar-commands.ts")
   ),
   entry(
     "display.reading",
