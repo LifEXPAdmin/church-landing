@@ -1,11 +1,46 @@
 # Exchange implementation and acceptance
 
-September 16, 2026 UTC. Work continues in the same unified feature cycle.
-**Unpublished engineering checkpoint. Exchange is not yet a completed feature.**
-The live release remains `2026.09.16.9 / 4b834fb`; there are no production listing,
-grant, content or provider writes for this checkpoint.
+September 16, 2026 UTC. **Personal and church listing engineering is verified live.**
+Product **2026.09.16.10**, application commit
+**5806549c22d05cf5cd4b737b3986536e2856b752**, is READY in
+**dpl_Fq1Gqg3QBL2PeTQVktuX6aDWxhjW** at **14:49:25.250 UTC**.
+Independent canonical assignment and the actual serving release/build agree.
+Business delegation and the later inquiry/fulfillment pilot retain their named
+prerequisites. The dated candidate checkpoints below preserve engineering history.
 
-## Implemented locally
+## Exact release acceptance
+
+The complete 177-file gate passes 1,081 reported checks with zero failures and
+two expected skips. Twenty-seven focused checks, 38 related checks, 16 integrated
+browser groups and actual isolated production HTTPS acceptance pass. The actual
+provider build verifies 199 runtime traces and its checksum-pinned hydration
+renderer, with no private fixtures, environment files or Prisma CLI loader in
+the runtime graph. Separately verified guidance and harness changes follow the
+frozen complete-gate source, as detailed below.
+
+Live acceptance passes **47 public/access**, **five private health** and **four
+actual signed-in interface groups**. The real editor exposes only the account's
+actual personal authority, leaves publication unconfirmed and disables Church
+need without an assigned duty. Browse, My listings and Menu behave correctly.
+Public browser errors and deployment-scoped error/fatal rows are zero through
+14:56:19 UTC. These are bounded observations, not continuous uptime acceptance.
+
+All **93 production and installed recovery migration checksums** match. The
+protected pre-release upgrade preserves all **123 original-table column
+fingerprints**. The live comparison with that copy matches 115 exactly; eight
+tables contain already-recorded activity before deployment, with content and
+preference timestamps no later than 14:24:26 UTC and rate-limit expirations
+before deployment. Those eight match the first post-migration observation.
+Do not describe concurrent live use as an all-table no-change result. No
+migration-related data loss was found. Installed daily recovery restores all
+**125 current tables**; 62-set nightly validation has zero issues or expiry.
+
+This release applies **two additive migrations**. Verification creates **zero
+application content/permission writes and zero sends**; no provider configuration
+or plan changes were made. Production listing, listing-audit, Exchange-image and
+active Exchange-duty counts are all zero. No real appointment or pilot is invented.
+
+## Implemented
 
 The [listing contract](EXCHANGE_LISTING_CONTRACT.md) now has canonical personal
 and church-owned listing records, private incomplete drafts, exact integer minor
@@ -137,12 +172,14 @@ HTTP stages pass. Production preview builds pass with 199 verified traces and
 the pinned hydration renderer. The separately verified final guidance, browser
 harness and report changes are recorded above.
 
-## Work remaining in this feature cycle
+## Remaining dependent scope
 
-Complete release acceptance in this same feature cycle. Church delegation has
-isolated acceptance;
-business delegation still lacks its canonical organization authority service.
-The complete established gate and integrated browser checks pass. Retain the
-fresh protected migration rehearsal and release through exact canonical live checks.
-Reconcile the existing private task and feature checklist at completion. Keep
-the broader final review last and continue eligible children in the same run.
+The released personal/church listing, request/service, gallery, status, report
+and block scope is complete. Business delegation needs the canonical business
+ownership, verification and delegated-authority contract and service. This is
+prerequisite engineering, not a provider-access or purchase blocker. Real church
+appointments and consenting-adult fulfillment pilots keep their own acceptance.
+The broader relationship/report adapters remain open for actual inquiry and
+reservation resources as those ship. Continue the eligible search/local-discovery
+work from this released foundation; credit the existing literal/type/category
+search and rebuild only missing scope. The broader final review remains last.

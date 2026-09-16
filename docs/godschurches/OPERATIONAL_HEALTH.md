@@ -1,5 +1,18 @@
 # Operational health and measured hosting resources
 
+## Exchange recovery acceptance: September 16, 14:56 UTC
+
+The exact [Exchange release](EXCHANGE_IMPLEMENTATION.md) is live as
+**2026.09.16.10 / 5806549**. Five private health checks pass with no current alerts;
+authenticator enrollment remains enabled and broader enforcement disabled.
+All 93 production and installed recovery migration checksums match. The protected
+upgrade preserves all 123 original table projections; ordinary daily recovery
+restores 125 current tables. Nightly validation covers 62 backup sets with no
+issues, expiry or removal. The installed retention module matches the repository.
+No application writes, sends, provider changes or new hosting-load tests were
+performed. Earlier resource measurements and actual operator/provider/physical
+prerequisites retain their dated scope below.
+
 ## Authenticator notice acceptance: September 16, 11:48 UTC
 
 The exact [authenticator enrollment release](PRIVILEGED_AUTHENTICATION_IMPLEMENTATION.md)

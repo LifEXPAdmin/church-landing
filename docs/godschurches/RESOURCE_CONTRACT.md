@@ -7,9 +7,11 @@ reconciles the current focused scope, original listing/safety requirements and
 actual identity, relationship, report, media and lifecycle services. It specifies
 the owner/delegate/member/stranger/blocked/child matrix, exact currency handling,
 permitted initial items and draft/publication/archive behavior. Listing, media,
-report and block adapters remain implementation work. The runtime resource stays
-reserved until those real adapters and their acceptance are complete; no future
-business authority or church delegate is appointed by this contract.
+report, lifecycle and block adapters are implemented and verified in the exact
+`2026.09.16.10 / 5806549` [release](EXCHANGE_IMPLEMENTATION.md). The listing
+registry entry names those actual services. Inquiry and reservation adapters
+remain dependent on their own resources; future business authority and real
+church appointments are not created by a registry entry.
 
 ## Original registry foundation
 

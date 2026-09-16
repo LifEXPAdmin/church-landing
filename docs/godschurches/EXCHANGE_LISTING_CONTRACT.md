@@ -4,7 +4,8 @@ September 16, 2026. Implementation contract for the first adult Exchange listing
 journey. The inspected baseline is the verified `2026.09.16.9 / 4b834fb` release,
 with report-only checkpoint `1c8efc4`. Exchange was reserved at that baseline;
 the [implementation receipt](EXCHANGE_IMPLEMENTATION.md) tracks the subsequent
-unpublished service and interface. This contract is not a publication receipt.
+service, interface and exact verified release. This contract is not itself a
+publication receipt.
 
 The current focused listing brief retains the original blueprint's steps 075 to
 082: distinct intents, scoped ownership/audience, local discovery, fulfillment

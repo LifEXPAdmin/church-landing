@@ -1,3 +1,28 @@
+## Exchange listings verified live — September 16, 2026 UTC
+
+**2026.09.16.10 / 5806549c22d05cf5cd4b737b3986536e2856b752** is READY in
+**dpl_Fq1Gqg3QBL2PeTQVktuX6aDWxhjW**, independently canonical and confirmed
+by the serving release/build. Personal and church Free, For sale, Wanted, Service
+and Church need use current authority, private drafts, protected photos, exact
+prices, explicit publication, status/duplicate recovery and shared report/block
+owners. Mobile entry, literal/type/category search and guidance ship together.
+See [the complete implementation and live receipt](EXCHANGE_IMPLEMENTATION.md).
+
+The 177-file complete gate passes 1,081 reported checks, zero failures and two
+expected skips. Sixteen integrated browser groups and the production build pass.
+Live: 47 public/access, five health and four signed-in groups pass; runtime
+error/fatal rows are zero. All 93 migration checksums match. The protected upgrade
+preserves 123 original tables; the live comparison distinguishes 115 exact
+fingerprints from eight tables with activity recorded before deployment. Daily
+recovery restores 125 tables and 62-set nightly validation passes. Two additive
+migrations, zero application content/permission writes or sends, no provider change.
+
+Business delegation remains dependent on canonical business authority; real
+appointments and fulfillment pilots are not fabricated. Continue eligible
+search/local-discovery work, crediting the already implemented basic filters.
+The broader report/relationship adapters retain later inquiry/reservation scope.
+Keep final review last and continue the same unified run.
+
 ## Authenticator enrollment verified live — September 16, 2026 UTC
 
 **2026.09.16.9 / 4b834fba491a0d1c031aafe6dbfed03d8ab5e4e2** is READY in
