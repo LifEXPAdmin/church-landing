@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { Church, Home, Search, Menu, MessageCircle } from "lucide-react";
 import { MessageBadge } from "./message-badge";
@@ -14,6 +15,15 @@ export function PortalNavigation({
   reviewerNavigation: { href: string; label: string }[];
 }) {
   const pathname = usePathname();
+  const navigation = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const nav = navigation.current, shell = nav?.closest<HTMLElement>(".gc-shell");
+    if (!nav || !shell) return;
+    const measure = () => shell.style.setProperty("--gc-navigation-height", `${nav.getBoundingClientRect().height}px`);
+    const observer = new ResizeObserver(measure);
+    observer.observe(nav); measure();
+    return () => { observer.disconnect(); shell.style.removeProperty("--gc-navigation-height"); };
+  }, []);
   const links = [
     { href: "/platform", label: "Home", icon: Home },
     {
@@ -31,6 +41,7 @@ export function PortalNavigation({
   return (
     <aside className="gc-navigation">
       <nav
+        ref={navigation}
         aria-label="Platform"
         id="platform-navigation"
         className="gc-primary-nav"
