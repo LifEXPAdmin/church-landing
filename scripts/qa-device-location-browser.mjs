@@ -185,6 +185,41 @@ try {
   });
   await signIn(a);
   await go("/platform/settings/feed/discovery");
+  for (const width of [320, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const size of [32, 48]) {
+      await page.evaluate((size) => {
+        document.documentElement.style.fontSize = size + "px";
+        document.activeElement?.blur();
+      }, size);
+      const skip = page.locator(".gc-skip");
+      assert.ok(
+        await skip.evaluate((el) => el.getBoundingClientRect().bottom <= 0.1),
+        "An unfocused skip link must not cover content at doubled or tripled text size"
+      );
+      await skip.focus();
+      assert.ok(
+        await skip.evaluate((el) => {
+          const r = el.getBoundingClientRect();
+          return (
+            r.top >= 0 &&
+            r.left >= 0 &&
+            r.right <= innerWidth + 1 &&
+            r.bottom <= innerHeight
+          );
+        }),
+        "A focused skip link remains fully reachable"
+      );
+      await page.keyboard.press("Enter");
+      await page.waitForFunction(
+        () => document.activeElement?.id === "platform-content"
+      );
+    }
+  }
+  await page.evaluate(() => {
+    document.documentElement.style.fontSize = "";
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
   await form()
     .getByLabel("Saved feed", { exact: true })
     .selectOption("for-you");
@@ -217,7 +252,7 @@ try {
     "Use device location once"
   );
   ok(
-    "No location request on load; optional purpose copy, phone/desktop doubled-text layouts and keyboard focus are available"
+    "No location request on load; optional purpose copy, doubled-text layouts and keyboard focus work, with usable hidden-until-focused skip links through tripled text"
   );
 
   phase = "browser geolocation grant and separate save";

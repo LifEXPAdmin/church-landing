@@ -761,7 +761,7 @@ export const releases: ReleaseEntry[] = [
     summary: "Optionally use this device once to suggest a private discovery area.",
     added: ["Eligible adults can request approximate town suggestions, choose an area and save it separately."],
     improved: ["Manual town selection stays available after denied permission, cancellation, timeout or unavailable device location.", "The interface clearly marks automatic translation as unavailable; language filters do not translate posts or other media."],
-    fixed: [],
+    fixed: ["Keyboard skip links stay hidden until focused even at larger text sizes."],
     featureIds: ["language-location-preferences"]
   },
   {

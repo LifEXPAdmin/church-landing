@@ -523,7 +523,8 @@
 }
 .gc-skip {
   position: fixed;
-  top: -100px;
+  top: 0;
+  transform: translateY(-100%);
   left: 1rem;
   z-index: 100;
   background: var(--gc-action);
@@ -532,6 +533,7 @@
 }
 .gc-skip:focus {
   top: 1rem;
+  transform: none;
 }
 .gc-eyebrow {
   font-size: 0.75rem;
