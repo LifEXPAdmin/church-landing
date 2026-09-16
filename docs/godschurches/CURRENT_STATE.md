@@ -1,3 +1,23 @@
+## Help and product progress verified live — September 16, 2026 UTC
+
+**2026.09.16.4 / 7f7d5dae40470330d9d9d3375ad4d2fedaa613bb** is READY in
+**dpl_3HQzyqU1K1UyVdGwsf8R8yyhEEDA**, independently canonical with serving
+identity verified. Help/Settings link to private feedback, owned receipts and
+the canonical reviewed-ideas board. Planned versus released status and separate
+contributor credit are explained; stale deletion and reading-reset guidance is
+corrected from existing contracts. See [the Help receipt](HELP_SETTINGS_REPORT.md).
+
+Ten focused checks and five production-browser groups pass, with types, scoped
+lint, copy guard and build verification. Live: 22 public/access, four health and
+three signed-in observations; scoped error/fatal rows zero. All 89 migrations
+match and all 121 table fingerprints are unchanged. Verification writes/sends
+are zero. No schema/provider/dependency change or actual intake activation.
+
+[The queue reconciliation](FEATURE_QUEUE_RECONCILIATION.md) credits the already
+shipped discovery, feedback binding, scheduling and event-alert engineering.
+Their dated tests remain distinct from this run's fresh read-only observations.
+Continue the actual prerequisite audit and next eligible work; final review stays last.
+
 ## Website writing verified live — September 16, 2026 UTC
 
 **2026.09.16.3 / a33e8d5c28b901cba2651b00f252a578ca0d6bc4** is READY in

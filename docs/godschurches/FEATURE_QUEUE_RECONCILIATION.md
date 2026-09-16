@@ -24,8 +24,10 @@ post/event was changed, no actual support case was submitted and no notification
 was marked read or sent during these checks. Historical fixture checks above are
 dated evidence; they were not repeated as part of this documentation audit.
 
-The broader help/product-information task still requires its remaining entry-point
-audit. Optional email for Likes, security-event alerts and digests is not supplied
+The remaining Help/product-information entry points are now completed in
+**2026.09.16.4 / 7f7d5da**, with exact release and live evidence in
+[the Help receipt](HELP_SETTINGS_REPORT.md). Optional email for Likes,
+security-event alerts and digests is not supplied
 by the feedback-only email capability. Those broader tasks remain open. Physical
 phones, actual support/operator coverage and other provider prerequisites remain
 with their existing acceptance actions. Final batch review stays last.
