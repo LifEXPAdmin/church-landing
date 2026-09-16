@@ -169,7 +169,7 @@ export async function churchCapability(
   churchId: string,
   capability: ChurchCapability
 ) {
-  if (!(await hasChurchCapability(tx, actor, churchId, capability)))
+  if (!isEligible(actor) || !(await effectiveChurchGrants(tx, actor.id, [churchId], [capability])).length)
     throw new PortalError(
       403,
       "You do not have this permission for this church."

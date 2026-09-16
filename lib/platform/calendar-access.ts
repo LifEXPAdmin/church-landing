@@ -1,5 +1,5 @@
 import { effectiveChurchGrants } from "./church-permissions";
-import { privilegedProjectionAvailable } from "./privileged-auth-policy";
+import { privilegedProjectionAvailable, PrivilegedAuthenticationError } from "./privileged-auth-policy";
 import type {
   Prisma,
   CalendarOccurrence,
@@ -50,6 +50,7 @@ export type CalendarContext = {
   actor: Actor | null;
   churches: { id: string; name: string; connectionId: string }[];
   scopes: Set<string>;
+  unconfirmedScopes?: Set<string>;
   sharedNames: Map<string, string>;
 };
 export async function calendarContext(
@@ -69,27 +70,22 @@ export async function calendarContext(
       503,
       "Your church connections need an administrator to review their size."
     );
-  const grants = await privilegedProjectionAvailable(tx, actor.id) ? await effectiveChurchGrants(
+  const grants = await effectiveChurchGrants(
     tx,
     actor.id,
     connections.map((c) => c.church.id),
     ["EDIT_CHURCH_CALENDAR", "PUBLISH_CHURCH_EVENTS"]
-  ) : [];
+  );
+  const scopes = new Set(grants.filter(g => !g.dependency ||
+    (g.dependency.userId === actor.id && g.dependency.churchId === g.churchId && g.dependency.state === "APPROVED"))
+    .map(g => `${g.churchId}:${g.capability}`));
+  const assured = await privilegedProjectionAvailable(tx, actor.id);
   return {
     actor,
     sharedNames: new Map(),
     churches: connections.map((c) => ({ ...c.church, connectionId: c.id })),
-    scopes: new Set(
-      grants
-        .filter(
-          (g) =>
-            !g.dependency ||
-            (g.dependency.userId === actor.id &&
-              g.dependency.churchId === g.churchId &&
-              g.dependency.state === "APPROVED")
-        )
-        .map((g) => `${g.churchId}:${g.capability}`)
-    )
+    scopes: assured ? scopes : new Set(),
+    unconfirmedScopes: assured ? undefined : scopes
   };
 }
 export function calendarHas(
@@ -117,11 +113,19 @@ export function requireCalendarEdit(
   context: CalendarContext,
   calendar: CalendarRow
 ) {
+  if (!calendar.archivedAt && calendar.churchId && !calendarOwn(context, calendar))
+    requireCalendarCapability(context, calendar.churchId, "EDIT_CHURCH_CALENDAR");
   if (!calendarCanEdit(context, calendar))
     throw new PortalError(
       403,
       "You cannot edit this calendar. Refresh to review your current access."
     );
+}
+export function requireCalendarCapability(context: CalendarContext, churchId: string, scope: ChurchCapability) {
+  if (context.unconfirmedScopes?.has(`${churchId}:${scope}`))
+    throw new PrivilegedAuthenticationError("privileged-work", false);
+  if (!calendarHas(context, churchId, scope))
+    throw new PortalError(403, "This church calendar action requires its current assigned permission.");
 }
 type Share = {
   churchId: string;

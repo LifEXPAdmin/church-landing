@@ -178,7 +178,7 @@ export function PortalActionForm({
             }
           );
           const body: unknown = await response.json().catch(() => null);
-          if (!response.ok) announcePrivilegedChallenge(body);
+          const needsAuthenticator = response.status === 403 && announcePrivilegedChallenge(body);
           const message =
             body &&
             typeof body === "object" &&
@@ -197,6 +197,7 @@ export function PortalActionForm({
                   ? "Your session has ended. Sign in again before continuing."
                   : message
           });
+          if (needsAuthenticator) return;
           if (
             response.ok &&
             structureAction &&

@@ -14,6 +14,7 @@ import {
   calendarHas,
   calendarOwn,
   requireCalendarEdit,
+  requireCalendarCapability,
   eventAccess,
   calendarField as field,
   calendarId as id,
@@ -63,6 +64,8 @@ function detail(input: Record<string, unknown>) {
 }
 function requirePublishedEdit(context: CalendarContext, event: EventRow) {
   requireCalendarEdit(context, event.calendar);
+  if (event.visibility !== "PRIVATE" && event.calendar.churchId)
+    requireCalendarCapability(context, event.calendar.churchId, "PUBLISH_CHURCH_EVENTS");
   if (
     event.visibility !== "PRIVATE" &&
     (!event.calendar.churchId ||
@@ -85,6 +88,7 @@ function visibility(
       400,
       "Personal events stay private. Use an explicit calendar or event share."
     );
+  if (churchId && input !== "PRIVATE") requireCalendarCapability(context, churchId, "PUBLISH_CHURCH_EVENTS");
   if (
     input !== "PRIVATE" &&
     (!churchId || !calendarHas(context, churchId, "PUBLISH_CHURCH_EVENTS"))
@@ -105,6 +109,7 @@ export async function calendarCommand(
       op = input.operation;
     if (op === "create-calendar") {
       const churchId = input.churchId ? id(input.churchId) : null;
+      if (churchId) requireCalendarCapability(context, churchId, "EDIT_CHURCH_CALENDAR");
       if (churchId && !calendarHas(context, churchId, "EDIT_CHURCH_CALENDAR"))
         throw new PortalError(
           403,
@@ -499,6 +504,8 @@ export async function calendarCommand(
       };
     }
     if (op === "set-visibility") {
+      if (event.calendar.churchId && !event.calendar.archivedAt)
+        requireCalendarCapability(context, event.calendar.churchId, "PUBLISH_CHURCH_EVENTS");
       if (
         !event.calendar.churchId ||
         !calendarHas(

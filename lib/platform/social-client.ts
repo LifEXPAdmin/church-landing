@@ -3,10 +3,12 @@ import { announcePrivilegedChallenge } from "./privileged-auth-navigation";
 export class SocialClientError extends Error {
   status: number;
   retryAfter?: number;
-  constructor(status: number, message: string, retryAfter?: number) {
+  needsAuthenticator: boolean;
+  constructor(status: number, message: string, retryAfter?: number, needsAuthenticator = false) {
     super(message);
     this.status = status;
     this.retryAfter = retryAfter;
+    this.needsAuthenticator = needsAuthenticator;
   }
 }
 export async function currentSocialOwner(): Promise<string | null> {
@@ -60,7 +62,7 @@ export async function socialRequest<T>(
       "Your sign-in changed. Reload before continuing."
     );
   if (!response.ok) {
-    announcePrivilegedChallenge(data);
+    const needsAuthenticator = response.status === 403 && announcePrivilegedChallenge(data);
     throw new SocialClientError(
       response.status,
       data.message ??
@@ -68,7 +70,8 @@ export async function socialRequest<T>(
       response.status === 429 &&
         /^\d+$/.test(response.headers.get("retry-after") ?? "")
         ? Number(response.headers.get("retry-after"))
-        : undefined
+        : undefined,
+      needsAuthenticator
     );
   }
   return { owner, data };

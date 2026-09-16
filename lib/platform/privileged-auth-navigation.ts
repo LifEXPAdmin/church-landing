@@ -6,8 +6,11 @@ export function privilegedChallengeHref(value: unknown) {
 // This event only offers a link. The server still requires a current session,
 // actual assigned authority and a verified one-use authenticator code.
 export function announcePrivilegedChallenge(value: unknown) {
-  if (typeof window === "undefined" || !value || typeof value !== "object") return;
+  if (typeof window === "undefined" || !value || typeof value !== "object") return false;
   const purpose = (value as Record<string, unknown>).authenticatorPurpose;
-  if (privilegedChallengeHref(purpose))
+  if (privilegedChallengeHref(purpose)) {
     window.dispatchEvent(new CustomEvent("gc-authenticator-needed", { detail: purpose }));
+    return true;
+  }
+  return false;
 }

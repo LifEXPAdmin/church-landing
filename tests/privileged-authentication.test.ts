@@ -17,6 +17,7 @@ import { sessionCookie } from "../lib/platform/account-boundary";
 import { portal, churchCapability, getPortalSnapshot } from "../lib/platform/portal";
 import { postContext, withPostRead } from "../lib/platform/post-access";
 import { calendarContext } from "../lib/platform/calendar-access";
+import { calendarCommand } from "../lib/platform/calendar-commands";
 import { topicCommand, readTopic, readTopicMembers } from "../lib/platform/topic-communities";
 import { seedSupport, requestInput } from "./seed-support";
 import { readSupport, supportCommand } from "../lib/platform/support";
@@ -174,6 +175,7 @@ test("all church capabilities and topic management require assurance while ordin
   assert.equal(before.topicModerators?.size, 0);
   const unconfirmedCalendar = await portal(db, actor.token, (tx, a) => calendarContext(tx, a));
   assert.equal(unconfirmedCalendar.scopes.size, 0);
+  await assert.rejects(calendarCommand(db, actor.token, { operation: "create-calendar", churchId: church.id, requestKey: randomUUID(), name: "Fictional calendar" }), /authenticator/);
   const factor = await enrolled(actor);
   await command(db, actor.token, { operation: "mfa-challenge", requestKey: randomUUID(), expectedVersion: factor.version,
     purpose: "privileged-work", code: authenticatorTotp(factor.secret, factor.counter) }, undefined);

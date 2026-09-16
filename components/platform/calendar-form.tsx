@@ -161,7 +161,7 @@ export function CalendarForm({
             })
           });
           const body: unknown = await response.json().catch(() => null);
-          if (!response.ok) announcePrivilegedChallenge(body);
+          const needsAuthenticator = response.status === 403 && announcePrivilegedChallenge(body);
           const result =
             body && typeof body === "object"
               ? (body as Record<string, unknown>)
@@ -193,7 +193,7 @@ export function CalendarForm({
             tell(
               `${text} Your entries are still here. Load the latest saved version, review it, then save again.`
             );
-          } else if ([401, 403, 404].includes(response.status)) {
+          } else if (!needsAuthenticator && [401, 403, 404].includes(response.status)) {
             // Replace private content promptly when this session or its access ends.
             startRefresh(() => router.refresh());
           }

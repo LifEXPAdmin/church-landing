@@ -124,6 +124,7 @@ export function TopicActionForm({
         } catch (error) {
           if (
             error instanceof SocialClientError &&
+            !error.needsAuthenticator &&
             [400, 403, 404, 409, 429].includes(error.status)
           ) {
             setPending(null);
