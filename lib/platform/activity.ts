@@ -110,6 +110,7 @@ const categorySql = Prisma.sql`CASE
   WHEN e.kind IN ('ADULT_REQUEST_CREATED','ADULT_REQUEST_ACCEPTED','FRIEND_CONNECTED') THEN 'requests'
   WHEN e.kind IN ('FEEDBACK_CASE','FEEDBACK_IDEA') THEN 'feedback'
   WHEN e.kind IN ('PHOTO_TAG_REQUEST','PHOTO_TAG_APPROVED') THEN 'photos'
+  WHEN e.kind = 'EXCHANGE_MATCH' THEN 'exchange'
   WHEN e.kind = 'POST_MENTION' THEN 'comments'
   WHEN e.kind = 'AUTHOR_POST' THEN 'posts'
   WHEN e.kind IN ('POST_REACTION','COMMENT_REACTION') THEN 'reactions'
@@ -118,6 +119,7 @@ const categorySql = Prisma.sql`CASE
   WHEN e.kind IN ('EVENT_CHANGED','RSVP_CHANGED','VOLUNTEER_CHANGED','VOLUNTEER_REQUEST','VOLUNTEER_CONFIRMATION') THEN 'commitments'
   WHEN e.kind = 'COMMENT_ACTIVITY' THEN 'comments' ELSE 'reports' END`;
 const groupSql = Prisma.sql`CASE
+  WHEN e.kind = 'EXCHANGE_MATCH' THEN 'exchange-listing:' || coalesce(e."sourceId",e.id)
   WHEN e.kind = 'FRIEND_CONNECTED' THEN 'friend:' || coalesce(e."sourceId",e.id)
   WHEN e.kind IN ('PHOTO_TAG_REQUEST','PHOTO_TAG_APPROVED') THEN 'photo-tag:' || coalesce(e."sourceId",e.id)
   WHEN e.kind IN ('FEEDBACK_CASE','FEEDBACK_IDEA') THEN e.kind || ':' || coalesce(e."sourceId",e.id)

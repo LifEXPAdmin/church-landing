@@ -35,6 +35,7 @@ const labels: Record<NotificationCategory, string> = {
   church: "Church requests, roles and connection changes",
   feedback: "Feedback and ideas you chose to follow",
   photos: "Photo tag requests and approvals",
+  exchange: "New listings matching searches you chose to follow",
   commitments: "Event changes, new church volunteer requests and commitments"
 };
 const categories = Object.keys(labels) as NotificationCategory[];
@@ -335,17 +336,20 @@ export function NotificationSettings({ owner }: { owner: string }) {
                       "prayer",
                       "conversations",
                       "posts",
-                      "commitments"
+                      "commitments",
+                      "exchange"
                     ] as NotificationCategory[]
                   ).includes(category) && (
                     <p className="text-sm text-gc-muted">
-                      {category === "posts"
-                        ? "Enable the bell on a person or church separately. Following and membership do not enable it."
-                        : category === "prayer"
-                          ? "Prayer acknowledgment alerts never include a participant's name. Choose future updates separately on each saved prayer."
-                          : category === "conversations"
-                            ? "Follow a conversation on its post for future replies. Mute there stops its Activity and phone alerts."
-                            : "Your actual responses and reservations stay available in My commitments, even when alerts are off."}
+                      {category === "exchange"
+                        ? "Enable matching alerts separately on each saved Exchange search. Saving a search alone does not turn them on."
+                        : category === "posts"
+                          ? "Enable the bell on a person or church separately. Following and membership do not enable it."
+                          : category === "prayer"
+                            ? "Prayer acknowledgment alerts never include a participant's name. Choose future updates separately on each saved prayer."
+                            : category === "conversations"
+                              ? "Follow a conversation on its post for future replies. Mute there stops its Activity and phone alerts."
+                              : "Your actual responses and reservations stay available in My commitments, even when alerts are off."}
                     </p>
                   )}
                   <label className="flex min-h-11 items-center gap-3">

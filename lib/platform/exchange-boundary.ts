@@ -1,3 +1,5 @@
+import { scheduleDomainActivity } from "./notification-fanout";
+import { exchangeSavedCommand, readExchangeSaved } from "./exchange-saved";
 import type { PrismaClient } from "@prisma/client";
 import { accountConfig } from "./account-config";
 import { readBody, requestSessionToken } from "./account-boundary";
@@ -27,7 +29,8 @@ const headers = {
 };
 export async function handleExchangeRequest(
   db: PrismaClient,
-  request: Request
+  request: Request,
+  afterResponse?: (work: () => Promise<void>) => void
 ) {
   try {
     const token = requestSessionToken(request),
@@ -51,9 +54,13 @@ export async function handleExchangeRequest(
               ...exchangeSearchKeys,
               view === "mine" ? "state" : "availability"
             ]
-          : view === "context"
-            ? ["view"]
-            : ["view", "id"];
+          : view === "favorites" || view === "searches"
+            ? ["view", "after"]
+            : view === "favorite"
+              ? ["view", "listingId"]
+              : view === "context"
+                ? ["view"]
+                : ["view", "id"];
       if (
         [...q.keys()].some(
           (key) => !allowed.includes(key) || q.getAll(key).length !== 1
@@ -78,6 +85,16 @@ export async function handleExchangeRequest(
         );
       else if (view === "context")
         result = await exchangeEditorContext(db, token);
+      else if (
+        view === "favorites" ||
+        view === "searches" ||
+        view === "favorite"
+      )
+        result = await readExchangeSaved(db, token, {
+          view,
+          after: q.get("after"),
+          listingId: q.get("listingId")
+        });
       else if (view === "gallery")
         result = await readExchangeGallery(db, token, q.get("id"));
       else throw new PortalError(400, "Choose a supported listing view.");
@@ -125,7 +142,15 @@ export async function handleExchangeRequest(
         "Check the listing entries. Nothing has been shortened."
       );
     }
-    const result = await exchangeListingCommand(db, token, input);
+    const result = [
+      "favorite-add",
+      "favorite-remove",
+      "search-save",
+      "search-delete"
+    ].includes(String(input.operation))
+      ? await exchangeSavedCommand(db, token, input)
+      : await exchangeListingCommand(db, token, input);
+    scheduleDomainActivity(db, actor.id, afterResponse);
     let protectedRecovery = false;
     try {
       const controls = await journalRetentionControls(

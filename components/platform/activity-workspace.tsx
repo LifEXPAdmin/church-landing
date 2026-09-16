@@ -26,6 +26,7 @@ const labels: Record<ActivityCategory, string> = {
   church: "Church connections",
   feedback: "Feedback and ideas",
   photos: "Photo tags",
+  exchange: "Exchange",
   commitments: "Commitments"
 };
 const endpoint = "/api/platform/activity";
@@ -359,7 +360,10 @@ export function ActivityWorkspace({
                       {item.count} update{item.count === 1 ? "" : "s"} ·{" "}
                       {item.unread ? `${item.unread} unread` : "Read"} ·{" "}
                       <time dateTime={item.createdAt}>
-                        <RegionalTime value={item.createdAt} options={{dateStyle: "medium", timeStyle: "short"}} />
+                        <RegionalTime
+                          value={item.createdAt}
+                          options={{ dateStyle: "medium", timeStyle: "short" }}
+                        />
                       </time>
                     </p>
                     <div className="flex flex-wrap gap-3">

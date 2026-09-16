@@ -26,7 +26,8 @@ export const notificationCategories = [
   "church",
   "commitments",
   "feedback",
-  "photos"
+  "photos",
+  "exchange"
 ] as const;
 export type NotificationCategory = (typeof notificationCategories)[number];
 export type QuietHours = {
@@ -136,9 +137,14 @@ export function notificationPushAllowed(
     return !!row.prayerPushSince && row.prayerPushSince < sourceAt;
   // Preserve already supported choices on older accounts. Newly supported
   // channels require a dated opt-in; a raw category name cannot backfill them.
-  return !["posts", "reactions", "church", "commitments", "feedback"].includes(
-    category
-  );
+  return ![
+    "posts",
+    "reactions",
+    "church",
+    "commitments",
+    "feedback",
+    "exchange"
+  ].includes(category);
 }
 export function notificationEmailAllowed(
   row: SocialPreferences | null,
@@ -240,6 +246,14 @@ export async function notificationPreferenceCommand(
         ![
           [...legacyInAppCategories].sort().join(),
           notificationCategories
+            .filter((c) => c !== "exchange")
+            .sort()
+            .join(),
+          notificationCategories
+            .filter((c) => c !== "exchange" && c !== "feedback")
+            .sort()
+            .join(),
+          notificationCategories
             .filter((c) => c !== "feedback")
             .sort()
             .join(),
@@ -297,8 +311,6 @@ export async function notificationPreferenceCommand(
           "Feedback email is not available yet. You can still turn it off."
         );
       const quiet = parseQuietHours(input.quietHours);
-      const legacy =
-        Object.keys(choices).length === legacyInAppCategories.length;
       if (
         Object.keys(choices).length !== notificationCategories.length &&
         old.recoveryRequired
@@ -312,19 +324,13 @@ export async function notificationPreferenceCommand(
         NotificationCategory,
         boolean
       >;
-      // Legacy clients know eight phone categories. Preserve newer saved values.
+      // An older settings form cannot remove categories it never displayed.
       const nextPush = [
         ...new Set([
           ...categories,
-          ...(!Object.hasOwn(choices, "feedback") &&
-          old.pushCategories.includes("feedback")
-            ? ["feedback"]
-            : []),
-          ...(legacy
-            ? old.pushCategories.filter((c) =>
-                ["posts", "reactions", "church", "commitments"].includes(c)
-              )
-            : [])
+          ...old.pushCategories.filter(
+            (category) => !Object.hasOwn(choices, category)
+          )
         ])
       ].sort();
       const beforeSince = prior?.notificationPushSince;
@@ -343,7 +349,9 @@ export async function notificationPreferenceCommand(
                   now.toISOString())
                 : category === "prayer"
                   ? (prior?.prayerPushSince?.toISOString() ?? now.toISOString())
-                  : new Date(0).toISOString()
+                  : category === "exchange"
+                    ? now.toISOString()
+                    : new Date(0).toISOString()
         ])
       );
       const data = {

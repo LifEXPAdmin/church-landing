@@ -1,5 +1,6 @@
 // Shared display and validation values. No database, account or provider state.
 export const EXCHANGE_EDITOR_SCHEMA = 2;
+export const EXCHANGE_SAVED_SCHEMA = 1;
 export const EXCHANGE_ITEM_POLICY = "exchange-listings-v2";
 export const EXCHANGE_MAX_PRICE_MINOR = 99_999_999;
 export const EXCHANGE_PHOTO_LIMIT = 8;

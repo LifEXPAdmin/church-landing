@@ -48,6 +48,9 @@ async function erasePrivateCollections(tx: Tx, userId: string) {
   });
   await tx.prayerRecord.deleteMany({ where: { ownerId: userId } });
   await tx.prayerGuideReceipt.deleteMany({ where: { ownerId: userId } });
+  await tx.exchangeSearchMatch.deleteMany({ where: { ownerId: userId } });
+  await tx.exchangeFavorite.deleteMany({ where: { ownerId: userId } });
+  await tx.exchangeSavedSearch.deleteMany({ where: { ownerId: userId } });
   await tx.savedPostItem.deleteMany({ where: { ownerId: userId } });
   await tx.savedPostCollection.deleteMany({ where: { ownerId: userId } });
   await tx.privatePostDraft.deleteMany({ where: { ownerId: userId } });

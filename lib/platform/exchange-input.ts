@@ -20,6 +20,7 @@ import {
   exchangeCategoryLabels,
   exchangeStateLabels,
   exchangePriceText,
+  exchangeSearchParams,
   exchangeSortLabels,
   exchangePriceBasisLabels,
   exchangeAvailabilityLabels,
@@ -488,4 +489,20 @@ export function exchangeEditorFields(
     servicePricing: value.servicePricing ?? "",
     serviceUnit: value.serviceUnit ?? ""
   };
+}
+
+export function parseSavedExchangeCriteria(value: unknown) {
+  if (
+    !value ||
+    typeof value !== "object" ||
+    Array.isArray(value) ||
+    Object.hasOwn(value, "after") ||
+    Buffer.byteLength(JSON.stringify(value)) > 4000
+  )
+    throw new PortalError(
+      400,
+      "Save supported search choices without a page cursor."
+    );
+  const query = parseExchangeListQuery(value as Record<string, unknown>);
+  return { query, criteria: Object.fromEntries(exchangeSearchParams(query)) };
 }

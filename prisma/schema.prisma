@@ -213,6 +213,9 @@ enum PlatformPostType {
 }
 
 model PlatformUser {
+  exchangeFavorites ExchangeFavorite[]
+  exchangeSavedSearches ExchangeSavedSearch[]
+  exchangeSearchMatches ExchangeSearchMatch[]
   exchangeListings ExchangeListing[] @relation("ExchangePersonalOwner")
   createdExchangeListings ExchangeListing[] @relation("ExchangeCreator")
   metricCreationMethod String @default("UNKNOWN")
@@ -1662,11 +1665,67 @@ model ExchangeListing {
   personalAudienceConnection ChurchConnection? @relation(fields: [ownerId, audienceChurchId], references: [userId, churchId], onDelete: NoAction, onUpdate: NoAction)
   images MediaAsset[]
   audit ExchangeListingAudit[]
+  favorites ExchangeFavorite[]
+  searchMatches ExchangeSearchMatch[]
   @@index([ownerId, updatedAt(sort: Desc), id(sort: Desc)])
   @@index([ownerChurchId, updatedAt(sort: Desc), id(sort: Desc)])
   @@index([state, moderationState, publishedAt(sort: Desc), id(sort: Desc)])
   @@index([audienceChurchId, state, publishedAt(sort: Desc)])
   @@index([country, placeId, state, publishedAt(sort: Desc)])
+}
+
+// Private canonical references only. Tombstones prevent stale writes and restored
+// backups from recreating removed choices. No listing body is copied here.
+model ExchangeFavorite {
+  id String @id
+  ownerId String
+  listingId String?
+  version Int @default(1)
+  deletedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  owner PlatformUser @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  listing ExchangeListing? @relation(fields: [listingId], references: [id], onDelete: SetNull)
+  @@unique([ownerId, listingId])
+  @@index([ownerId, deletedAt, id])
+}
+
+model ExchangeSavedSearch {
+  id String @id
+  ownerId String
+  name String
+  schema Int @default(1)
+  criteria Json
+  version Int @default(1)
+  alertsSince DateTime?
+  deletedAt DateTime?
+  recoveryRequired Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  owner PlatformUser @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  matches ExchangeSearchMatch[]
+  @@unique([ownerId, id])
+  @@index([ownerId, deletedAt, id])
+  @@index([alertsSince, id])
+}
+
+// One consent-bound match per recipient/listing prevents duplicate alerts from
+// overlapping searches, delayed jobs and reopened publications.
+model ExchangeSearchMatch {
+  id String @id @default(cuid())
+  ownerId String
+  listingId String
+  searchId String
+  searchVersion Int
+  listingVersion Int
+  publishedAt DateTime
+  createdAt DateTime @default(now())
+  owner PlatformUser @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  listing ExchangeListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  search ExchangeSavedSearch @relation(fields: [ownerId, searchId], references: [ownerId, id], onDelete: Cascade)
+  @@unique([ownerId, listingId])
+  @@index([ownerId, searchId])
+  @@index([listingId])
 }
 
 // No listing text, contact details or old audience bodies are duplicated here.

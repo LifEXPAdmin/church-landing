@@ -567,6 +567,28 @@ export async function downloadAccountExport(
     });
     const measurementCutoff = new Date(Date.now() - METRIC_RAW_DAYS * 86400000);
     const collections = {
+      exchangeFavorites: await tx.exchangeFavorite.findMany({
+        where: { ownerId: userId, deletedAt: null },
+        orderBy: { id: "asc" },
+        take: MAX_ROWS + 1,
+        // Private organization only. Do not export another person's source or location.
+        select: { id: true, version: true, createdAt: true, updatedAt: true }
+      }),
+      exchangeSavedSearches: await tx.exchangeSavedSearch.findMany({
+        where: { ownerId: userId, deletedAt: null, recoveryRequired: false },
+        orderBy: { id: "asc" },
+        take: MAX_ROWS + 1,
+        select: {
+          id: true,
+          name: true,
+          schema: true,
+          criteria: true,
+          alertsSince: true,
+          version: true,
+          createdAt: true,
+          updatedAt: true
+        }
+      }),
       photoTags: await tx.photoTag.findMany({
         where: { OR: [{ requesterId: userId }, { recipientId: userId }] },
         select: {
@@ -1094,7 +1116,7 @@ export async function downloadAccountExport(
         version: 1,
         generatedAt: new Date().toISOString(),
         scope:
-          "Your account profile, presentation preferences and linked Google identity, authored community content, your personal Exchange listings and their image metadata, personal image metadata and photo albums, personal polls and your own ballots and volunteer signups, likes/following, your own topic memberships and private following choices, owned topic details, private social, conversation and prayer choices and your own prayer update labels (source content excluded), and friend invitation records, private comment drafts and comment Likes, private post drafts and saved collection organization (source posts excluded), church directory choices, your own church representative setup and listing drafts/submissions, personal calendars/events and their sharing choices, your event responses, your own sent contact requests and currently authorized accepted conversation messages, your own community reports and your own support submissions, current optional measurement choices and retained foreground-use facts. Other people's content outside your accepted conversations, staff/church operations, credentials, session data and security audit records and private report-review notes are excluded. Cleared message history is excluded from your view; this does not erase the other participant's history. Image binaries are not embedded; image references still require current access. Reading preferences saved only on this browser are not in this account file.",
+          "Your account profile, presentation preferences and linked Google identity, authored community content, your personal Exchange listings and their image metadata, your private Exchange favorites and saved-search choices (other people’s listing content excluded), personal image metadata and photo albums, personal polls and your own ballots and volunteer signups, likes/following, your own topic memberships and private following choices, owned topic details, private social, conversation and prayer choices and your own prayer update labels (source content excluded), and friend invitation records, private comment drafts and comment Likes, private post drafts and saved collection organization (source posts excluded), church directory choices, your own church representative setup and listing drafts/submissions, personal calendars/events and their sharing choices, your event responses, your own sent contact requests and currently authorized accepted conversation messages, your own community reports and your own support submissions, current optional measurement choices and retained foreground-use facts. Other people's content outside your accepted conversations, staff/church operations, credentials, session data and security audit records and private report-review notes are excluded. Cleared message history is excluded from your view; this does not erase the other participant's history. Image binaries are not embedded; image references still require current access. Reading preferences saved only on this browser are not in this account file.",
         account,
         ...collections
       },

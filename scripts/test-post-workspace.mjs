@@ -237,6 +237,9 @@ try {
       ? [
           "ExchangeListing",
           "ExchangeListingAudit",
+          "ExchangeFavorite",
+          "ExchangeSavedSearch",
+          "ExchangeSearchMatch",
           "MediaAsset",
           "MediaGarbage"
         ]

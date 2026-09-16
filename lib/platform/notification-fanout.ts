@@ -1,3 +1,4 @@
+import { recordExchangeSearchMatch } from "./exchange-alerts";
 import { feedbackNotificationFamily } from "./feedback-notification-source";
 import { feedbackFollowupEnabled } from "./feedback-followup-policy";
 import type { Prisma, PrismaClient } from "@prisma/client";
@@ -44,7 +45,33 @@ export function processNotificationFanoutBatch(
         orderBy: { id: "asc" as const },
         take: NOTIFICATION_FANOUT_BATCH
       };
-      if (valid && job.kind === "AUTHOR_POST") {
+      if (valid && job.kind === "EXCHANGE_LISTING") {
+        valid = !!(await tx.exchangeListing.findFirst({
+          where: {
+            id: job.sourceId,
+            state: "ACTIVE",
+            moderationState: "VISIBLE",
+            erasedAt: null,
+            recoveryRequired: false,
+            publishedAt: job.createdAt,
+            version: { gte: job.sourceVersion }
+          },
+          select: { id: true }
+        }));
+        if (valid)
+          recipients = await tx.exchangeSavedSearch.findMany({
+            where: {
+              deletedAt: null,
+              recoveryRequired: false,
+              alertsSince: { lt: job.createdAt },
+              ownerId: { not: job.actorId },
+              owner: eligibleWhere,
+              ...after
+            },
+            select: { id: true, ownerId: true },
+            ...page
+          });
+      } else if (valid && job.kind === "AUTHOR_POST") {
         const post = await tx.platformPost.findUnique({
           where: { id: job.sourceId },
           select: {
@@ -249,6 +276,10 @@ export function processNotificationFanoutBatch(
       } else valid = false;
       for (const recipient of recipients) {
         if (recipient.ownerId === job.actorId) continue;
+        if (job.kind === "EXCHANGE_LISTING") {
+          await recordExchangeSearchMatch(tx, job, recipient.id);
+          continue;
+        }
         await recordDomainActivity(tx, {
           kind: job.kind,
           sourceId: job.sourceId,

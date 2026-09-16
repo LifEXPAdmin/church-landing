@@ -1,3 +1,11 @@
+import {
+  exchangeSavedCommand,
+  readExchangeSaved,
+  exchangeFavoriteId
+} from "../lib/platform/exchange-saved";
+import { processNotificationFanoutBatch } from "../lib/platform/notification-fanout";
+import { notificationSources } from "../lib/platform/notification-source";
+import { readActivity } from "../lib/platform/activity";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -1897,4 +1905,506 @@ test("approximate nearest paging crosses authorized distance bands without candi
     radiusKm: 10
   });
   assert.ok(newest.listings.every((row) => row.distanceBandKm === 10));
+});
+
+test("favorite references are owned, exact retries do not duplicate them, and removed or inaccessible sources never leak content", async () => {
+  const owner = await createPortalActor(db, "exfavowner"),
+    viewer = await createPortalActor(db, "exfavviewer"),
+    stranger = await createPortalActor(db, "exfavstranger");
+  const c = await church(
+    [owner, viewer],
+    [[viewer, "MODERATE_EXCHANGE_LISTINGS"]]
+  );
+  const listing = await publish(
+    owner,
+    await draft(
+      owner,
+      ready({
+        title: "Fictional private favorite " + randomUUID(),
+        audience: "CHURCH",
+        audienceChurchId: c.id
+      })
+    )
+  );
+  const body = input("favorite-add", {
+    listingId: listing.id,
+    expectedVersion: 0
+  });
+  await denied(exchangeSavedCommand(db, stranger.token, body), 404);
+  const [saved, retried] = await Promise.all([
+    exchangeSavedCommand(db, viewer.token, body),
+    exchangeSavedCommand(db, viewer.token, body)
+  ]);
+  assert.deepEqual(retried, saved);
+  assert.equal(
+    await db.exchangeFavorite.count({
+      where: { ownerId: viewer.id, listingId: listing.id }
+    }),
+    1
+  );
+  await denied(
+    exchangeSavedCommand(db, viewer.token, {
+      ...body,
+      listingId: "changed-source"
+    }),
+    409
+  );
+  const first = await readExchangeSaved(db, viewer.token, {
+    view: "favorites"
+  });
+  assert.equal(first.favorites?.[0].listing?.id, listing.id);
+  await db.churchConnection.update({
+    where: { userId_churchId: { userId: viewer.id, churchId: c.id } },
+    data: { state: "LEFT" }
+  });
+  const unavailable = await readExchangeSaved(db, viewer.token, {
+    view: "favorites"
+  });
+  assert.equal(unavailable.favorites?.[0].listing, null);
+  assert.doesNotMatch(
+    JSON.stringify(unavailable),
+    /Fictional private favorite|Chicago/
+  );
+  await denied(
+    exchangeSavedCommand(
+      db,
+      stranger.token,
+      input("favorite-remove", {
+        favoriteId: saved.id,
+        expectedVersion: saved.version
+      })
+    ),
+    404
+  );
+  const removed = await exchangeSavedCommand(
+    db,
+    viewer.token,
+    input("favorite-remove", {
+      favoriteId: saved.id,
+      expectedVersion: saved.version
+    })
+  );
+  assert.equal(
+    (await readExchangeSaved(db, viewer.token, { view: "favorites" })).favorites
+      ?.length,
+    0
+  );
+  assert.equal(removed.version, saved.version + 1);
+  await denied(
+    exchangeSavedCommand(
+      db,
+      viewer.token,
+      input("favorite-add", {
+        listingId: listing.id,
+        expectedVersion: removed.version
+      })
+    ),
+    404
+  );
+});
+
+test("named searches require complete explicit consent, stable owner versions and deliberate removal", async () => {
+  const owner = await createPortalActor(db, "exsearchowner"),
+    other = await createPortalActor(db, "exsearchother"),
+    searchId = randomUUID();
+  const body = input("search-save", {
+    searchId,
+    expectedVersion: 0,
+    schema: 1,
+    name: "Fictional table search",
+    criteria: { q: "table", currency: "KWD", basis: "item", maxPrice: "1.001" },
+    alerts: false
+  });
+  const saved = await exchangeSavedCommand(db, owner.token, body);
+  assert.deepEqual(await exchangeSavedCommand(db, owner.token, body), saved);
+  assert.equal(
+    (await readExchangeSaved(db, other.token, { view: "searches" })).searches
+      ?.length,
+    0
+  );
+  await denied(
+    exchangeSavedCommand(db, other.token, {
+      ...body,
+      mutationId: randomUUID()
+    }),
+    404
+  );
+  const page = await readExchangeSaved(db, owner.token, { view: "searches" });
+  assert.equal(page.searches?.[0].alerts, false);
+  assert.equal(page.searches?.[0].criteria.maxPrice, "1.001");
+  for (const change of [
+    { alerts: undefined },
+    { alerts: "true" },
+    { schema: 0 },
+    { criteria: { after: "page" } },
+    { criteria: { currency: "USD" } },
+    { criteria: { availability: "RESERVED" }, alerts: true }
+  ])
+    await denied(
+      exchangeSavedCommand(db, owner.token, {
+        ...body,
+        ...change,
+        expectedVersion: 1,
+        mutationId: randomUUID()
+      }),
+      400
+    );
+  const enabled = await exchangeSavedCommand(db, owner.token, {
+    ...body,
+    expectedVersion: 1,
+    mutationId: randomUUID(),
+    alerts: true
+  });
+  const consent = await db.exchangeSavedSearch.findUniqueOrThrow({
+    where: { id: searchId }
+  });
+  assert.ok(consent.alertsSince);
+  await denied(
+    exchangeSavedCommand(db, owner.token, {
+      ...body,
+      expectedVersion: 1,
+      mutationId: randomUUID()
+    }),
+    409
+  );
+  const disabled = await exchangeSavedCommand(db, owner.token, {
+    ...body,
+    expectedVersion: enabled.version,
+    mutationId: randomUUID()
+  });
+  assert.equal(
+    (
+      await db.exchangeSavedSearch.findUniqueOrThrow({
+        where: { id: searchId }
+      })
+    ).alertsSince,
+    null
+  );
+  const deleted = await exchangeSavedCommand(
+    db,
+    owner.token,
+    input("search-delete", { searchId, expectedVersion: disabled.version })
+  );
+  assert.equal(
+    (await readExchangeSaved(db, owner.token, { view: "searches" })).searches
+      ?.length,
+    0
+  );
+  await denied(
+    exchangeSavedCommand(db, owner.token, {
+      ...body,
+      expectedVersion: deleted.version,
+      mutationId: randomUUID()
+    }),
+    409
+  );
+});
+
+test("saved-choice restoration is restrictive across reordered receipts and missing backup rows", async () => {
+  const owner = await createPortalActor(db, "exsaverestore"),
+    publisher = await createPortalActor(db, "exsaverestorepub");
+  const listing = await publish(publisher, await draft(publisher));
+  const favorite = await exchangeSavedCommand(
+    db,
+    owner.token,
+    input("favorite-add", { listingId: listing.id, expectedVersion: 0 })
+  );
+  const searchId = randomUUID(),
+    search = await exchangeSavedCommand(
+      db,
+      owner.token,
+      input("search-save", {
+        searchId,
+        expectedVersion: 0,
+        schema: 1,
+        name: "Fictional recovery search",
+        criteria: { q: "table" },
+        alerts: true
+      })
+    );
+  const beforeFavorite = await db.exchangeFavorite.findUniqueOrThrow({
+      where: { id: favorite.id }
+    }),
+    beforeSearch = await db.exchangeSavedSearch.findUniqueOrThrow({
+      where: { id: searchId }
+    });
+  const removed = await exchangeSavedCommand(
+    db,
+    owner.token,
+    input("favorite-remove", {
+      favoriteId: favorite.id,
+      expectedVersion: favorite.version
+    })
+  );
+  await exchangeSavedCommand(
+    db,
+    owner.token,
+    input("search-delete", { searchId, expectedVersion: search.version })
+  );
+  const controls = (
+    await db.retentionControl.findMany({
+      where: {
+        targetId: owner.id,
+        kind: { in: ["EXCHANGE_FAVORITE", "EXCHANGE_SAVED_SEARCH"] }
+      },
+      orderBy: { version: "desc" }
+    })
+  ).map((row) => row.payload as unknown as RetentionControlEntry);
+  await db.exchangeFavorite.delete({ where: { id: favorite.id } });
+  await db.exchangeSavedSearch.delete({ where: { id: searchId } });
+  await replayRetentionControls(db, controls);
+  assert.equal(
+    (await readExchangeSaved(db, owner.token, { view: "favorites" })).favorites
+      ?.length,
+    0
+  );
+  assert.equal(
+    (await readExchangeSaved(db, owner.token, { view: "searches" })).searches
+      ?.length,
+    0
+  );
+  await denied(
+    exchangeSavedCommand(
+      db,
+      owner.token,
+      input("favorite-add", { listingId: listing.id, expectedVersion: 0 })
+    ),
+    409
+  );
+  assert.equal(exchangeFavoriteId(owner.id, listing.id), favorite.id);
+  await db.exchangeFavorite.update({
+    where: { id: favorite.id },
+    data: beforeFavorite
+  });
+  await db.exchangeSavedSearch.update({
+    where: { id: searchId },
+    data: {
+      ...beforeSearch,
+      criteria:
+        beforeSearch.criteria as import("@prisma/client").Prisma.InputJsonObject
+    }
+  });
+  await replayRetentionControls(db, controls);
+  const restoredSearch = await db.exchangeSavedSearch.findUniqueOrThrow({
+    where: { id: searchId }
+  });
+  assert.equal(restoredSearch.alertsSince, null);
+  assert.equal(restoredSearch.recoveryRequired, true);
+  assert.deepEqual(restoredSearch.criteria, {});
+  const current = await readExchangeSaved(db, owner.token, {
+    view: "favorite",
+    listingId: listing.id
+  });
+  assert.equal(current.favorite?.version, removed.version);
+  assert.equal(current.favorite?.saved, false);
+  // An explicit new favorite action uses the current version after recovery.
+  await exchangeSavedCommand(
+    db,
+    owner.token,
+    input("favorite-add", {
+      listingId: listing.id,
+      expectedVersion: removed.version
+    })
+  );
+  await replayRetentionControls(db, controls);
+  assert.equal(
+    (await readExchangeSaved(db, owner.token, { view: "favorites" })).favorites
+      ?.length,
+    1
+  );
+});
+
+test("matching alerts use bounded persisted jobs, deduplicate overlapping searches and reject late consent or changed sources", async () => {
+  const publisher = await createPortalActor(db, "exalertpub"),
+    viewer = await createPortalActor(db, "exalertviewer"),
+    late = await createPortalActor(db, "exalertlate");
+  const marker = "New match " + randomUUID();
+  const addSearch = async (actor: PortalActor, q: string, alerts = true) =>
+    exchangeSavedCommand(
+      db,
+      actor.token,
+      input("search-save", {
+        searchId: randomUUID(),
+        expectedVersion: 0,
+        schema: 1,
+        name: "Fictional matching search",
+        criteria: { q },
+        alerts
+      })
+    );
+  for (let i = 0; i < 22; i++) await addSearch(viewer, marker);
+  await addSearch(viewer, "does not match this item");
+  await addSearch(publisher, marker);
+  const listing = await publish(
+    publisher,
+    await draft(publisher, ready({ title: marker }))
+  );
+  await addSearch(late, marker);
+  const job = await db.notificationFanoutJob.findFirstOrThrow({
+    where: { kind: "EXCHANGE_LISTING", sourceId: listing.id }
+  });
+  const first = await processNotificationFanoutBatch(db, job.id);
+  assert.equal(first.processed, 20);
+  assert.equal(first.done, false);
+  const second = await processNotificationFanoutBatch(db, job.id);
+  assert.ok(second.processed <= 20);
+  assert.equal(second.done, true);
+  assert.equal((await processNotificationFanoutBatch(db, job.id)).processed, 0);
+  const events = await db.socialEvent.findMany({
+    where: { kind: "EXCHANGE_MATCH", sourceId: listing.id }
+  });
+  assert.equal(events.length, 1);
+  assert.equal(events[0].recipientId, viewer.id);
+  assert.equal(
+    await db.exchangeSearchMatch.count({
+      where: { ownerId: viewer.id, listingId: listing.id }
+    }),
+    1
+  );
+  const sources = await db.$transaction((tx) =>
+    notificationSources(tx, events, false)
+  );
+  assert.equal(sources.size, 1);
+  assert.equal(
+    sources.get(events[0].id)?.href,
+    `/platform/exchange/${listing.id}`
+  );
+  assert.doesNotMatch(
+    JSON.stringify([...sources.values()]),
+    /New match|Chicago|USD/
+  );
+  const activity = await readActivity(db, viewer.token, {
+    category: "exchange"
+  });
+  assert.ok(
+    activity.items.some(
+      (row) => row.available && row.href === `/platform/exchange/${listing.id}`
+    )
+  );
+  assert.equal(
+    (await db.$transaction((tx) => notificationSources(tx, events, "EMAIL")))
+      .size,
+    0
+  );
+  const reserved = await status(publisher, listing, "RESERVED");
+  assert.equal(
+    (await db.$transaction((tx) => notificationSources(tx, events, false)))
+      .size,
+    0
+  );
+  const reopened = await publish(publisher, reserved);
+  assert.equal(
+    await db.notificationFanoutJob.count({
+      where: { sourceId: listing.id, kind: "EXCHANGE_LISTING" }
+    }),
+    1
+  );
+  assert.equal(
+    (await db.$transaction((tx) => notificationSources(tx, events, false)))
+      .size,
+    0
+  );
+  assert.equal(
+    await db.socialEvent.count({
+      where: { kind: "EXCHANGE_MATCH", sourceId: listing.id }
+    }),
+    1
+  );
+  assert.ok(reopened.version > listing.version);
+});
+
+test("alert delivery rechecks saved consent, exact money and radius criteria, current audience and account blocks", async () => {
+  const publisher = await createPortalActor(db, "exalertaccess"),
+    viewer = await createPortalActor(db, "exalertaccessview"),
+    stranger = await createPortalActor(db, "exalertaccessno");
+  const c = await church(
+    [publisher, viewer],
+    [[viewer, "MODERATE_EXCHANGE_LISTINGS"]]
+  );
+  const marker = "Scoped alert " + randomUUID();
+  const criteria = {
+    q: marker,
+    country: "US",
+    placeId: String(placeId),
+    radiusKm: "25",
+    currency: "KWD",
+    basis: "item",
+    maxPrice: "1.001"
+  };
+  const body = input("search-save", {
+    searchId: randomUUID(),
+    expectedVersion: 0,
+    schema: 1,
+    name: "Fictional private alert",
+    criteria,
+    alerts: true
+  });
+  const search = await exchangeSavedCommand(db, viewer.token, body);
+  await exchangeSavedCommand(db, stranger.token, {
+    ...body,
+    mutationId: randomUUID(),
+    searchId: randomUUID()
+  });
+  const listing = await publish(
+    publisher,
+    await draft(
+      publisher,
+      ready({
+        title: marker,
+        intent: "SALE",
+        currency: "KWD",
+        price: "1.001",
+        audience: "CHURCH",
+        audienceChurchId: c.id
+      })
+    )
+  );
+  const job = await db.notificationFanoutJob.findFirstOrThrow({
+    where: { kind: "EXCHANGE_LISTING", sourceId: listing.id }
+  });
+  while (!(await processNotificationFanoutBatch(db, job.id)).done) {
+    /* bounded persisted pages */
+  }
+  const events = await db.socialEvent.findMany({
+    where: { kind: "EXCHANGE_MATCH", sourceId: listing.id }
+  });
+  assert.equal(events.length, 1);
+  assert.equal(events[0].recipientId, viewer.id);
+  const current = () =>
+    db.$transaction((tx) => notificationSources(tx, events, true));
+  assert.equal((await current()).size, 1);
+  await relationshipCommand(db, viewer.token, {
+    operation: "block",
+    mutationId: randomUUID(),
+    kind: "person",
+    targetId: publisher.id,
+    expectedVersion: 0,
+    desired: true
+  });
+  assert.equal((await current()).size, 0);
+  const block = await db.socialRelationship.findFirstOrThrow({
+    where: { ownerId: viewer.id, targetUserId: publisher.id }
+  });
+  await relationshipCommand(db, viewer.token, {
+    operation: "block",
+    mutationId: randomUUID(),
+    kind: "person",
+    targetId: publisher.id,
+    expectedVersion: block.version,
+    desired: false
+  });
+  assert.equal((await current()).size, 1);
+  await exchangeSavedCommand(db, viewer.token, {
+    ...body,
+    mutationId: randomUUID(),
+    expectedVersion: search.version,
+    alerts: false
+  });
+  assert.equal((await current()).size, 0);
+  const after = await readActivity(db, viewer.token, { category: "exchange" });
+  assert.ok(
+    after.items.every(
+      (row) => !row.available && row.href === null && row.summary === null
+    )
+  );
 });

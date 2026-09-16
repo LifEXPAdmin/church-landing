@@ -36,6 +36,8 @@ export type RetentionControlEntry = {
     | "TOPIC_ACCESS"
     | "POST_DISCOVERY"
     | "EXCHANGE_VISIBILITY"
+    | "EXCHANGE_FAVORITE"
+    | "EXCHANGE_SAVED_SEARCH"
     | "DISCOVERY_PREFERENCES"
     | "PROFILE_LOCATION"
     | "NOTIFICATION_PREFERENCES"
@@ -98,6 +100,8 @@ function validate(value: unknown): RetentionControlEntry {
       "TOPIC_ACCESS",
       "POST_DISCOVERY",
       "EXCHANGE_VISIBILITY",
+      "EXCHANGE_FAVORITE",
+      "EXCHANGE_SAVED_SEARCH",
       "DISCOVERY_PREFERENCES",
       "PROFILE_LOCATION",
       "NOTIFICATION_PREFERENCES",
@@ -403,6 +407,8 @@ export async function recordDiscoveryControl(
   kind:
     | "POST_DISCOVERY"
     | "EXCHANGE_VISIBILITY"
+    | "EXCHANGE_FAVORITE"
+    | "EXCHANGE_SAVED_SEARCH"
     | "DISCOVERY_PREFERENCES"
     | "PROFILE_LOCATION"
     | "NOTIFICATION_PREFERENCES"
@@ -1109,6 +1115,25 @@ export async function replayRetentionControls(
             where: { id: entry.id, journaledAt: null },
             data: { journaledAt: new Date() }
           });
+          continue;
+        }
+        if (entry.kind === "EXCHANGE_FAVORITE" || entry.kind === "EXCHANGE_SAVED_SEARCH") {
+          const owner = await tx.platformUser.findFirst({ where: { id: entry.targetId, erasedAt: null }, select: { id: true } });
+          if (owner) {
+            const deletedAt = new Date(entry.recordedAt);
+            if (entry.kind === "EXCHANGE_FAVORITE") {
+              await tx.exchangeFavorite.upsert({ where: { id: entry.sourceId },
+                create: { id: entry.sourceId, ownerId: owner.id, version: entry.version, deletedAt }, update: {} });
+              await tx.exchangeFavorite.updateMany({ where: { id: entry.sourceId, ownerId: owner.id, version: { lt: entry.version } },
+                data: { deletedAt, version: entry.version } });
+            } else {
+              const data = { name: "", criteria: {}, alertsSince: null, deletedAt, recoveryRequired: true, version: entry.version };
+              await tx.exchangeSavedSearch.upsert({ where: { id: entry.sourceId }, create: { id: entry.sourceId, ownerId: owner.id, ...data }, update: {} });
+              await tx.exchangeSavedSearch.updateMany({ where: { id: entry.sourceId, ownerId: owner.id, version: { lt: entry.version } }, data });
+            }
+          }
+          await record(tx, entry);
+          await tx.retentionControl.updateMany({ where: { id: entry.id, journaledAt: null }, data: { journaledAt: new Date() } });
           continue;
         }
         if (entry.kind === "EXCHANGE_VISIBILITY") {

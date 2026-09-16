@@ -1,4 +1,5 @@
 import type { ExchangeListing, Prisma, PrismaClient } from "@prisma/client";
+import { recordFanout } from "./domain-activity";
 import { accountConfig } from "./account-config";
 import { activityBudget } from "./account-limits";
 import {
@@ -564,6 +565,29 @@ export function exchangeListingCommand(
           visibilityVersion: { increment: 1 }
         }
       });
+      if (
+        op === "status" &&
+        saved.state === "ACTIVE" &&
+        !row.publishedAt &&
+        saved.publishedAt &&
+        (await tx.exchangeSavedSearch.findFirst({
+          where: {
+            ownerId: { not: actorId },
+            deletedAt: null,
+            recoveryRequired: false,
+            alertsSince: { lt: saved.publishedAt }
+          },
+          select: { id: true }
+        }))
+      )
+        await recordFanout(
+          tx,
+          "EXCHANGE_LISTING",
+          saved.id,
+          saved.version,
+          actorId,
+          saved.publishedAt
+        );
       await audit(
         tx,
         saved,
