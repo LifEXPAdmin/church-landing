@@ -18,9 +18,14 @@ Settings, Exchange presents listing, area and saved-choice destinations followed
 by the existing related contact and notification rows. Static labels/aliases
 participate in current Settings search. The folder and linked private screens
 retain sign-in returns, current-account concealment and their original service
-checks. Loading the folder neither reads private pickup instructions nor fetches
-an additional Exchange collection. Financial sections remain hidden for every
+checks. The folder uses the existing Settings context without adding an Exchange
+query or reading private pickup instructions. Financial sections remain hidden for every
 current account because no approved payment capability is implemented.
+
+The current editor starts with Free, a Public audience selection and no selected
+country/town. A new record is still a private Draft until deliberate publication;
+these editor defaults are not stored personal preferences and never change an
+existing draft. No saved address is automatically copied into published content.
 
 This completes the capability map and available navigation portion. Persistent
 listing/pickup defaults remain dependent on private handoff authority. Broader

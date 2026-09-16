@@ -1,3 +1,28 @@
+## Exchange search and saved choices verified live — September 16, 2026 UTC
+
+**2026.09.16.11 / ea0c977c0c263e6657d5c5dbb62142d9627adc33** is READY in
+**dpl_4DKX9VRQADhheDhAsCQC1ofzMR6X** at **17:48:52.138 UTC**, independently
+canonical and confirmed by the serving release/build. Advanced authorized search,
+approximate town-area sorting, safe navigation, private favorites/named searches
+and explicit matching alerts ship with Settings, Exchange, mobile/recovery fixes
+and guidance. See [the complete live receipt](EXCHANGE_SEARCH_IMPLEMENTATION.md).
+
+The 177-file full gate reports 1,094 passes, zero failures and two expected skips;
+88 focused checks, 12 Settings/navigation/release checks, eight new browser groups
+and 16 applicable listing groups pass. Live: 59 public/access, five health and
+five signed-in groups. The native queue probe is observed in its actual consumer;
+scoped error/fatal rows are zero through 17:51:46 UTC. All 94 production/recovery
+migration checksums match. Protected upgrade preserves 125 original tables;
+all 125 fresh live fingerprints match. Daily recovery restores 128 tables and
+64-set nightly validation passes. One additive migration; zero verification
+application/preference/permission writes or recipient sends.
+
+Complete the current search feature and available Settings capability/navigation
+children. Keep broader giving/receipt settings and private pickup defaults open
+for their actual prerequisites. Continue reservations/handoff and the smaller
+steps it unlocks in this same unified run. Existing hosted latency, provider,
+operator and physical-device limitations remain; final review stays last.
+
 ## Exchange listings verified live — September 16, 2026 UTC
 
 **2026.09.16.10 / 5806549c22d05cf5cd4b737b3986536e2856b752** is READY in

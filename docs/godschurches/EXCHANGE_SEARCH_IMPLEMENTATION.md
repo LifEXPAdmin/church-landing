@@ -1,7 +1,80 @@
-# Exchange search implementation in progress
+# Exchange search, saved choices and alerts verified live
 
-September 16, 2026 UTC. This is a local feature checkpoint, not a release receipt.
-Production remains the separately verified `2026.09.16.10 / 5806549`.
+September 16, 2026 UTC. **2026.09.16.11 / ea0c977c0c263e6657d5c5dbb62142d9627adc33**
+is READY in **dpl_4DKX9VRQADhheDhAsCQC1ofzMR6X** at **17:48:52.138 UTC**.
+The independent canonical alias points to that deployment, and the serving
+release/build matches. The deployment URL is
+`church-landing-1sdwr3fe4-andrew-mccuens-projects.vercel.app`.
+
+The complete feature adds grouped price, condition, availability, permitted
+audience and named-town radius filters; comparable-price and approximate-distance
+sorting; stable authorized pagination; safe result returns; private favorites and
+named searches; and explicit future matching alerts. Required Settings, Exchange
+navigation, recovery repairs, mobile wrapping, privacy/help and release guidance
+ship in the same cycle. No household or device coordinates are introduced.
+
+Favorites do not contact or notify a publisher. Saving a search leaves alerts
+off. An alert requires current per-search consent, current source and audience,
+and duplicate suppression. Phone delivery additionally requires dated category
+consent and a current device; shared quiet-hours, retry and revocation checks
+remain authoritative. There is no Exchange email delivery.
+
+## Final acceptance and preservation
+
+- The frozen release source passes the complete 177-file gate: **1,096 reported
+  tests, 1,094 passes, zero failures and two expected production-only skips**.
+  The skipped delivery-link/email cases passed in the earlier development stage.
+  The gate includes populated upgrade preservation, all 94 migrations, complete
+  isolated dump/restore, builds and actual production HTTPS privacy checks.
+- The expanded focused gate passes **88/88**, including 42 Exchange query/service
+  checks and shared Activity, preferences, delivery and comment regressions.
+  Twelve Settings/navigation/release checks, types, scoped lint and copy checks pass.
+- Eight search/saved-choice/Settings production-build browser groups pass with
+  zero browser errors. All 16 listing regression groups also pass on the unchanged
+  listing runtime. Runtime `e2c1c93` includes Settings; the final `ea0c977` difference
+  is test/report only. Lost successful replies, private account changes, export/
+  erasure, narrow enlarged-text layouts and restrictive restoration are exercised.
+- Canonical production passes **59 public/access checks**, **five private health
+  checks** and **five existing signed-in groups**. The latter cover expanded
+  filters, alert-off save entry, both saved-choice lists, the Exchange Settings
+  folder and the separate phone category, without submitting a form.
+- The actual provider build verifies **200 runtime traces, 65,547 entries and 506
+  server JavaScript files**, excluding private fixture/environment/config-loader
+  paths. Canonical Home serves the exact provider-verified 173,096-byte hydration
+  renderer, SHA-256 `2b7c5f99a8710e52520e7d0dc25c9fb65fd7c06e0a1d6cfee97276e0a452a3b7`.
+- All **94 production and installed recovery migration checksums** match. The
+  protected 93-to-94 upgrade preserves all 125 original table projections and
+  completes protected replay. The post-release installed daily copy restores
+  **128 tables** and removes plaintext; nightly validation passes **64 sets**,
+  zero issues and zero removals. All original 93 registry checksums are preserved.
+- Fresh production fingerprints at 17:42:17 and 17:52:38 UTC match for **all 125
+  original tables and columns**. Favorites, named searches, matches, listings,
+  listing audits/photos and active Exchange duties remain zero. One additive
+  migration, zero verification application writes, grants or recipient sends.
+- One reserved nonexistent-reference queue probe is accepted and actually
+  consumed: `/api/queues/comment-followers` returns 200 with
+  `activity_fanout_queue_probe_completed { applicationWrites: 0 }`.
+  Scoped provider error/fatal rows are zero from READY through **17:51:46 UTC**.
+  This establishes queue execution, not physical phone delivery or uptime.
+
+The final isolated client chunks add 5,247/5,245 gzip bytes to browse/detail
+relative to the earlier listing build. The 12,000-row experiment below supports
+retaining existing indexes; it is not hosted latency or capacity acceptance.
+Detailed private receipts and synthetic screenshots remain outside this public
+repository.
+
+The available Settings capability map/navigation is complete. The saved-search
+portion of broader alert settings is credited without closing giving/receipt
+scope. Persistent listing/pickup defaults require accepted-participant handoff
+authority; payment controls retain their provider and financial gates. Continue
+the current reservation/handoff feature, including its unlocked smaller steps.
+Physical delivery and real appointments remain explicit acceptance boundaries;
+the final batch review stays last.
+
+## Earlier local checkpoints
+
+The following dated checkpoints preserve implementation history. Their pending
+release/gate statements are superseded by the verified receipt above.
 
 The existing listing owner now supports explicit availability, item condition,
 church-only/public audience, exact currency and item/hour/task price comparison,
