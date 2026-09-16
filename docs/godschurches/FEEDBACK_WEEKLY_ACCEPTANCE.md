@@ -1,11 +1,19 @@
 # Weekly feedback review and shared reports
 
 September 16, 2026 UTC. This is an **unreleased feature-31 checkpoint**, following
-[selected follow-up](FEEDBACK_FOLLOWUP_ACCEPTANCE.md). The full feature gate,
-protected upgrade, deployment and exact canonical live checks remain ahead.
+[selected follow-up](FEEDBACK_FOLLOWUP_ACCEPTANCE.md). The staged feature gate and
+protected upgrade pass; deployment and exact canonical live checks remain ahead.
 Actual operator, notice, provider and physical-device prerequisites still apply.
 
 ## Complete-feature verification checkpoint
+
+Final candidate `a1520e4` completes all 163 discovered files across the preserved
+stages: 997 passing checks and two expected disabled-delivery skips. The final
+32-file continuation passes 122 checks. Earlier fixture failures remain in their
+original logs; this is not an uninterrupted gate. Final build/runtime verification
+passes, and the complete application code is unchanged from the 35-group browser
+source below. Fresh production preflight confirms 69 matching migrations, fifteen
+additions pending and the still-current protected 69-to-84 rehearsal.
 
 The exact `be2b46a` production preview passes all 35 browser groups across
 private feedback, prompts, reviewed ideas, chosen follow-up, weekly review and

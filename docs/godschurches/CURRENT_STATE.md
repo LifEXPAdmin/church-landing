@@ -1,3 +1,18 @@
+## Feedback candidate ready for release — September 16, 2026 UTC
+
+Candidate `a1520e4` completes staged regression coverage of all 163 discovered
+files: 997 passing checks and two expected disabled-delivery skips. Earlier
+fixture failures and their corrected continuations remain preserved. Upgrade,
+restore, development/production builds and actual HTTPS restart passed; the final
+production build verifies 187 traces, 43,205 entries and 476 server JavaScript files.
+All 35 final browser groups remain applicable: subsequent changes are tests and
+documentation only. The protected production copy upgrades 69 to 84 migrations
+and preserves all 111 original-table fingerprints with protected replay.
+
+Fresh production preflight still confirms 69 matching migrations and the intended
+canonical project. Publication and actual live acceptance are next; this is not a
+live release claim. Real operator, provider and physical prerequisites remain.
+
 ## Feedback measurement-fixture continuation — September 16, 2026 UTC
 
 The staged regression now covers 131 distinct files and 875 passing checks, with
