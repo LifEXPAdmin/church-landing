@@ -6,7 +6,7 @@ export function postField(value: unknown, maximum: number, minimum = 0) {
   if (text === null || text.length > maximum || text.trim().length < minimum)
     throw new PortalError(
       400,
-      `Use ${minimum}–${maximum} characters for this field. Your text has not been shortened.`
+      `Use ${minimum} to ${maximum} characters for this field. Your text has not been shortened.`
     );
   return text.trim();
 }

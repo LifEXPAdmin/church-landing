@@ -368,7 +368,7 @@ function ConfigurePoll({
           maxLength={200}
         />
         <label htmlFor={id} className="block font-semibold">
-          Options — one per line
+          Options, one per line
           <textarea
             id={id}
             name="options"
@@ -380,7 +380,7 @@ function ConfigurePoll({
           />
         </label>
         <p className="text-sm text-gc-muted">
-          Use 2–8 distinct options, up to 100 characters each. The question,
+          Use 2 to 8 distinct options, up to 100 characters each. The question,
           choices and closing time lock after the first vote.
         </p>
         <label className="flex min-h-11 items-center gap-3">
@@ -447,7 +447,7 @@ function ConfigureSlot({
           maxLength={100}
         />
         <TextField
-          label="Number of places (1–500)"
+          label="Number of places (1 to 500)"
           name="capacity"
           type="number"
           value={String(slot?.capacity ?? 1)}

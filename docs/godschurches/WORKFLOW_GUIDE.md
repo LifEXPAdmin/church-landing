@@ -1,6 +1,6 @@
 # Godschurches workflow guide
 
-Version 2.0 · Updated 14 September 2026 UTC
+Version 2.1 · Updated 16 September 2026 UTC
 
 This is the repository entry point for work that continues between ChatGPT, Codex,
 the private second brain, and the development workstation. Keep this file's path
@@ -131,6 +131,16 @@ exact retries, conflict handling and accessibility while optimizing.
 
 ## Working routine
 
+- **Website writing:** Do not use em dashes, en dashes or double hyphens as
+  sentence breaks or placeholder separators in platform-authored copy. Use
+  periods, commas, colons, parentheses or separate sentences, and "to" for ranges.
+  Apply this to visible text, labels, accessibility, metadata, forms, errors,
+  notifications, automatic welcome templates and release notes, including encoded
+  or generated forms. Preserve member content and verbatim third-party quotations;
+  ordinary hyphens, URLs and code syntax remain valid. Review quotation matches
+  explicitly. `npm run check:copy` checks authored source and also runs in the
+  production build. Inspect rendered text and narrow-screen wrapping when changing
+  shared copy; do not rewrite existing conversation data to satisfy a source rule.
 - Capture ideas with source/date, project, horizon, and one next exploration.
   Check for an existing matching record before creating another.
 - Record decisions with the actual answer, owner/date, rationale, scope, and
@@ -254,6 +264,12 @@ test evidence in their appropriate private systems. The exact page titles above
 allow an authorized assistant to locate the context without publishing it.
 
 ## Change log
+
+- **2.1, 16 September 2026 UTC:** Propagated the owner's 15 September website
+  writing rule into this guide and the root instructions. The focused build check
+  covers authored strings, templates, JSX, static metadata and generated long-dash
+  characters while leaving stored member content unchanged. Feature acceptance
+  records the actual source/rendered checks and release separately.
 
 - **2.0 — 14 September 2026 UTC:** Adopted the owner's unified Extra High run,
   ordinary feature/subtask queue, complete-feature release cycles and continuous

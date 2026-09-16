@@ -31,6 +31,13 @@ costs before claiming performance improvements.
 
 ## Work and verify
 
+- Website-authored copy uses no em dashes, en dashes or double hyphens as sentence
+  breaks or placeholders. Use natural sentences, commas, colons or parentheses;
+  write ranges with "to". Include accessibility labels, metadata, errors,
+  notifications, welcome templates and release notes. Preserve members' content
+  and verbatim third-party quotations. Ordinary hyphens, URLs and code syntax stay
+  valid. Run `npm run check:copy`; the production build enforces this source check.
+  Review any quotation exception explicitly rather than rewriting its words.
 - Carry out the current authorized task. A captured idea, historical prompt, or archived approval does not by itself expand this session's scope.
 - Use concrete done criteria and the existing verification appropriate to the change. Read current package scripts and the relevant test guide; do not invent a generic test command.
 - Distinguish code inspected, reports read, checks run locally, observed live behavior, and physical-device tests. A passing historical report is not a fresh test result.

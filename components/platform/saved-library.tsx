@@ -278,7 +278,7 @@ export function SavedLibrary({
               />
             </label>
             <p className="text-sm text-gc-muted">
-              Use 1–80 characters. {name.trim().length}/80
+              Use 1 to 80 characters. {name.trim().length}/80
             </p>
             <div className="flex flex-wrap gap-2">
               <button

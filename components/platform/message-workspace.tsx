@@ -140,7 +140,7 @@ function ConversationLink({
         <span className="block truncate text-sm text-gc-muted">
           {row.latest
             ? `${row.latest.mine ? "You: " : ""}${row.latest.content}`
-            : "Accepted contact — no messages yet"}
+            : "Accepted contact, no messages yet"}
         </span>
         <time className="text-xs text-gc-muted" dateTime={row.updatedAt}>
           {time(row.updatedAt)}

@@ -277,7 +277,7 @@ export class CommentDraftController {
     if (length < 2 || length > 1500) {
       this.set({
         message:
-          "Use 2–1,500 characters before sending. Your full draft is kept."
+          "Use 2 to 1,500 characters before sending. Your full draft is kept."
       });
       return false;
     }

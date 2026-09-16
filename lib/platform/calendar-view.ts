@@ -65,5 +65,5 @@ export function eventWhen(
       minute: "2-digit",
       timeZoneName: "short"
     });
-  return `${format(event.startAt)} – ${format(event.endAt)}`;
+  return `${format(event.startAt)} to ${format(event.endAt)}`;
 }

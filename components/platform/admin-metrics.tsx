@@ -41,7 +41,7 @@ function percent(value: {
   percent: number | null;
 }) {
   return value.percent === null
-    ? "Unavailable — no mature eligible denominator"
+    ? "Unavailable: no mature eligible denominator"
     : `${value.percent.toFixed(1)}% (${value.numerator} / ${value.denominator})`;
 }
 function Table({
@@ -306,7 +306,7 @@ export function AdminMetrics({ data }: { data: MetricSnapshot }) {
             r.current.methods.rows.length
               ? r.current.methods.rows.map((v) => [
                   labels[v.key] ?? v.key,
-                  v.count ?? "Suppressed — small breakdown"
+                  v.count ?? "Suppressed: small breakdown"
                 ])
               : [["No eligible registrations", 0]]
           }
@@ -348,7 +348,15 @@ export function AdminMetrics({ data }: { data: MetricSnapshot }) {
                   e.reason,
                   e.count
                 ])
-              : [["No recorded transitions", "—", "—", "—", 0]]
+              : [
+                  [
+                    "No recorded transitions",
+                    "Not available",
+                    "Not available",
+                    "Not available",
+                    0
+                  ]
+                ]
           }
         />
       </section>
@@ -455,7 +463,14 @@ export function AdminMetrics({ data }: { data: MetricSnapshot }) {
                         ? percent(c.d30)
                         : "Unavailable"
                 ])
-              : [["No measured signup cohort", "—", "—", "—"]]
+              : [
+                  [
+                    "No measured signup cohort",
+                    "Not available",
+                    "Not available",
+                    "Not available"
+                  ]
+                ]
           }
         />
       </section>
@@ -519,7 +534,7 @@ export function AdminMetrics({ data }: { data: MetricSnapshot }) {
               a?.suppressed ? "Suppressed" : (a?.actors ?? 0),
               a?.suppressed ? "Suppressed" : (a?.actions ?? 0),
               a?.suppressed
-                ? "Suppressed — small complementary breakdown"
+                ? "Suppressed: small complementary breakdown"
                 : r.coverage.measuredAccounts
                   ? (
                       ((a?.actors ?? 0) / r.coverage.measuredAccounts) *
@@ -584,7 +599,9 @@ export function AdminMetrics({ data }: { data: MetricSnapshot }) {
                   s.meanResolutionHours?.toFixed(2) ?? "Unavailable",
                   s.type === "CLAIM"
                     ? "Unavailable"
-                    : `${s.reopened} (${s.reopenedPercent?.toFixed(1) ?? "—"}%)`
+                    : s.reopenedPercent === null
+                      ? `${s.reopened} (percentage unavailable)`
+                      : `${s.reopened} (${s.reopenedPercent.toFixed(1)}%)`
                 ])
               : [
                   [
@@ -626,7 +643,7 @@ export function AdminMetrics({ data }: { data: MetricSnapshot }) {
               value.rows.length
                 ? value.rows.map((v) => [
                     labels[v.key] ?? v.key,
-                    v.count ?? "Suppressed — small complementary breakdown"
+                    v.count ?? "Suppressed: small complementary breakdown"
                   ])
                 : [["No eligible observations", "Unavailable"]]
             }

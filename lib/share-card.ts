@@ -6,7 +6,7 @@ export type PublicShareCardInput = {
   variant?: "post" | "comment" | "church" | "event" | "topic";
 };
 export const shareCardSize = { width: 1200, height: 630 };
-export const shareCardLabel = "God’s Churches — faith and community";
+export const shareCardLabel = "God’s Churches: faith and community";
 export const xmlText = (value: string) =>
   value.replace(
     /[&<>"']/g,

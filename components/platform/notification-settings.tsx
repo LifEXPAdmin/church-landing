@@ -368,7 +368,7 @@ export function NotificationSettings({ owner }: { owner: string }) {
                       }
                     />
                     Phone alerts
-                    {!view.channels.push && " — currently unavailable"}
+                    {!view.channels.push && " (currently unavailable)"}
                   </label>
                   {category === "feedback" && (
                     <>
@@ -387,7 +387,7 @@ export function NotificationSettings({ owner }: { owner: string }) {
                           }
                         />
                         Email updates
-                        {!view.channels.email && " — currently unavailable"}
+                        {!view.channels.email && " (currently unavailable)"}
                       </label>
                       <p className="text-sm text-gc-muted">
                         Choose follow-up separately on each feedback case or
@@ -669,7 +669,7 @@ export function NotificationSettings({ owner }: { owner: string }) {
                   >
                     <span>
                       {device.label}
-                      {device.id === currentId ? " — this browser" : ""}
+                      {device.id === currentId ? " (this browser)" : ""}
                     </span>
                     <button
                       type="button"

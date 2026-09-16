@@ -246,7 +246,7 @@ export function useMessageWorkspace(
         text: input.operation === "send" ? "" : v.text,
         notice:
           input.operation === "send"
-            ? "Sent — saved in this conversation."
+            ? "Sent and saved in this conversation."
             : data.message
       }));
       if (input.operation === "clear" || input.operation === "send")

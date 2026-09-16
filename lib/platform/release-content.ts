@@ -380,7 +380,7 @@ export const features: Feature[] = [
     description:
       "Ask a question and choose one or several answers with readable vote totals.",
     steps:
-      "Write and publish a post, then choose Add a poll from the composer. Set 2–8 choices and a closing time. Members can change their vote before closing; authorized post editors can close voting.",
+      "Write and publish a post, then choose Add a poll from the composer. Set 2 to 8 choices and a closing time. Members can change their vote before closing; authorized post editors can close voting.",
     href: "/platform",
     eligibility:
       "Verified adult accounts; church polls also require current church approval. Private drafts retain the post and reply permissions; poll setup happens after publication. Other members see totals, not your ballot.",
@@ -748,6 +748,19 @@ export const features: Feature[] = [
   }
 ];
 export const releases: ReleaseEntry[] = [
+  {
+    id: "clear-website-writing", version: "2026.09.16.3", date: "2026-09-16",
+    summary: "Read clearer guidance, date ranges and status labels across the website.",
+    added: [],
+    improved: [
+      "Forms, notifications, help, welcome text and sharing descriptions use clearer sentence punctuation.",
+      "Character limits and date ranges use the word to, and report placeholders say when information is unavailable."
+    ],
+    fixed: [
+      "Unavailable report percentages use an explicit explanation instead of an ambiguous separator."
+    ],
+    featureIds: ["personal-activity", "private-messages", "public-search-pages"]
+  },
   {
     id: "notifications-and-photo-tag-approval", version: "2026.09.16.2", date: "2026-09-16",
     summary: "Find your notifications immediately and approve photo tags before they appear.",

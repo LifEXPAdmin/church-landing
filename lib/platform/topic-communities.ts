@@ -46,7 +46,7 @@ function slug(value: unknown) {
   )
     throw new PortalError(
       400,
-      "Use a topic address of 3–60 lowercase letters, numbers and single hyphens."
+      "Use a topic address of 3 to 60 lowercase letters, numbers and single hyphens."
     );
   return value;
 }
@@ -56,7 +56,7 @@ function identity(input: Record<string, unknown>) {
     .replace(/\s+/g, " ")
     .trim();
   if (name.length < 3 || name.length > 80)
-    throw new PortalError(400, "Use a topic name of 3–80 characters.");
+    throw new PortalError(400, "Use a topic name of 3 to 80 characters.");
   return {
     name,
     nameKey: name.toLowerCase(),

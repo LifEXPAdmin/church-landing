@@ -23,7 +23,7 @@ export function publicMetadata(
           url: "/brand/share-card.png",
           width: 1200,
           height: 630,
-          alt: "God’s Churches — faith and community"
+          alt: "God’s Churches: faith and community"
         }
       ]
     },

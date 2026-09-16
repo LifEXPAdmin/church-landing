@@ -351,7 +351,7 @@ export async function ChurchListingPage({
                 {snapshot.canonical && (
                   <details>
                     <summary className="min-h-11 cursor-pointer">
-                      Current public details — compare before saving
+                      Current public details: compare before saving
                     </summary>
                     <ChurchPublicDetails
                       church={snapshot.canonical}

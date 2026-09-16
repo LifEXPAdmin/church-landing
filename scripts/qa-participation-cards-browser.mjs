@@ -160,7 +160,7 @@ try {
   await page.getByLabel("Poll question").waitFor();
   assert.ok(await page.locator("#poll-create").evaluate((e) => e.open));
   await page.getByLabel("Poll question").fill("Which fictional activity?");
-  await page.getByLabel("Options — one per line").fill("Tea\nCoffee\nWater");
+  await page.getByLabel("Options, one per line").fill("Tea\nCoffee\nWater");
   await page.getByRole("link", { name: "Menu", exact: true }).first().click();
   await page
     .getByText(

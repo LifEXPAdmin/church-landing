@@ -36,7 +36,7 @@ export function draftProblem(draft: PostDraft) {
     normalizedPostText(draft.content).length > 3000 ||
     draft.content.trim().length < 3
   )
-    return "Use 3–3,000 characters for your post. Your draft has not been shortened.";
+    return "Use 3 to 3,000 characters for your post. Your draft has not been shortened.";
   if (normalizedPostText(draft.scripture).length > 120)
     return "Use up to 120 characters for the Scripture reference. Your draft has not been shortened.";
   if (normalizedPostText(draft.contentNote ?? "").length > CONTENT_NOTE_LIMIT)

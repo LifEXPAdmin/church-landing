@@ -265,7 +265,7 @@ try {
     )
     .waitFor();
   await page
-    .getByText("Rooted in Matthew 28:18–20.", { exact: true })
+    .getByText("Rooted in Matthew 28:18 to 20.", { exact: true })
     .waitFor();
   assert.equal(await page.getByText(signature, { exact: true }).count(), 1);
   await page.waitForLoadState("networkidle");

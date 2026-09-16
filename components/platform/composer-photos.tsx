@@ -265,7 +265,7 @@ export function ComposerPhotos({ enabled }: { enabled: boolean }) {
                   <span className="block break-words text-sm">
                     {image.caption || "Saved photo"} ·{" "}
                     {image.audience === "ONLY_ME"
-                      ? "Only me — choose a sharing audience first"
+                      ? "Only me: choose a sharing audience first"
                       : image.audience.toLowerCase().replaceAll("_", " ")}
                   </span>
                 </button>

@@ -28,7 +28,7 @@ function IdentityFields({ value }: { value?: TopicView["community"] }) {
         aria-describedby={`${id}-name-help`}
       />
       <p id={`${id}-name-help`} className="text-sm text-gc-muted">
-        3–80 characters. Choose a distinct name that describes your topic.
+        3 to 80 characters. Choose a distinct name that describes your topic.
       </p>
       {!value && (
         <>
@@ -47,7 +47,7 @@ function IdentityFields({ value }: { value?: TopicView["community"] }) {
             aria-describedby={`${id}-slug-help`}
           />
           <p id={`${id}-slug-help`} className="text-sm text-gc-muted">
-            3–60 lowercase letters, numbers and single hyphens. This address
+            3 to 60 lowercase letters, numbers and single hyphens. This address
             stays with the topic.
           </p>
         </>

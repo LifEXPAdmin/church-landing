@@ -90,7 +90,7 @@ export async function searchDiscoveryPlaces(country: unknown, query: unknown) {
   )
     throw new PortalError(
       400,
-      "Enter 2–100 characters of a town or area name."
+      "Enter 2 to 100 characters of a town or area name."
     );
   const key = searchKey(query.trim()),
     rows = await towns(country);

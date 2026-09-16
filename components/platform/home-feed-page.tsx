@@ -107,7 +107,7 @@ export default async function HomeFeedPage({
             </h1>
             <p className="gc-mission-description">
               We’re building Godschurches to equip everyday believers to share
-              the gospel, serve their neighbors, and make disciples—together.
+              the gospel, serve their neighbors, and make disciples together.
             </p>
             <p>
               Connect with believers, discover churches, and build relationships

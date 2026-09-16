@@ -281,7 +281,7 @@ export function RelationshipControls({
               className="gc-button gc-button-quiet"
               disabled={busy || !!pending || conflict || data.blocked}
               aria-label={
-                data.friends ? "Friends — remove friendship" : undefined
+                data.friends ? "Friends: remove friendship" : undefined
               }
               onClick={() => change("follow", !data.following)}
             >

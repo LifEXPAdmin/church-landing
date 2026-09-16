@@ -3,7 +3,7 @@ import type { MetricReport } from "@/lib/platform/metric-report";
 const entryLabels: Record<string, string> = {
   VOLUNTARY: "Voluntary Menu feedback",
   PROMPT: "Linked to a displayed prompt",
-  UNATTRIBUTED: "Unattributed — prompt evidence unavailable"
+  UNATTRIBUTED: "Unattributed: prompt evidence unavailable"
 };
 
 export function FeedbackMetrics({
@@ -56,8 +56,8 @@ export function FeedbackMetrics({
                   <dd>
                     {value.prompt.numerator} / {value.prompt.denominator}
                     {value.prompt.percent === null
-                      ? " — no eligible displayed exposures"
-                      : ` — ${value.prompt.percent.toFixed(1)}%`}
+                      ? ": no eligible displayed exposures"
+                      : `: ${value.prompt.percent.toFixed(1)}%`}
                   </dd>
                 </div>
               </dl>

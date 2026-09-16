@@ -417,7 +417,7 @@ export function ChurchRoleLibrary({
                 >
                   {Object.entries(rolePresets).map(([key, preset]) => (
                     <option key={key} value={key}>
-                      {key} — {preset.name}
+                      {key}: {preset.name}
                     </option>
                   ))}
                 </select>
@@ -616,7 +616,7 @@ export function ChurchRoleLibrary({
                 {role.description}
               </p>
               <p className="text-sm text-gc-muted">
-                {role.presetKey} — {rolePresets[role.presetKey].name} · title
+                {role.presetKey}: {rolePresets[role.presetKey].name} · title
                 version {role.version}
               </p>
               <div className="flex flex-wrap gap-x-4">
@@ -678,7 +678,7 @@ export function ChurchRoleLibrary({
               <h3 className="font-semibold">{role.name}</h3>
               <p className="text-sm text-gc-muted">{role.family}</p>
               <p className="text-sm text-gc-muted">
-                {role.presetKey} — {rolePresets[role.presetKey].name}
+                {role.presetKey}: {rolePresets[role.presetKey].name}
               </p>
               <button
                 type="button"

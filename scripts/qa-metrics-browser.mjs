@@ -310,7 +310,7 @@ try {
   );
   assert.ok(
     (await funnel.innerText()).includes(
-      "Unavailable — no mature eligible denominator"
+      "Unavailable: no mature eligible denominator"
     )
   );
   await fits();

@@ -292,7 +292,7 @@ try {
     await composer().fill("Fictional browser new send");
     await button("Send message").click();
     await page
-      .getByText("Sent — saved in this conversation.", { exact: true })
+      .getByText("Sent and saved in this conversation.", { exact: true })
       .waitFor();
     await page
       .getByText("Fictional browser new send", { exact: true })
@@ -334,7 +334,7 @@ try {
     assert.equal(await composer().isDisabled(), true);
     await button("Retry same action").click();
     await page
-      .getByText("Sent — saved in this conversation.", { exact: true })
+      .getByText("Sent and saved in this conversation.", { exact: true })
       .waitFor();
     assert.equal(
       bodies.filter((b) => JSON.parse(b).operation === "send").at(-1),
@@ -379,7 +379,7 @@ try {
     await ready();
     await button("Retry same action").click();
     await page
-      .getByText("Sent — saved in this conversation.", { exact: true })
+      .getByText("Sent and saved in this conversation.", { exact: true })
       .waitFor();
     assert.equal(
       await db.adultMessage.count({
@@ -822,7 +822,7 @@ try {
     assert.equal(await composer().inputValue(), "Fictional conflict kept");
     await button("Send message").click();
     await page
-      .getByText("Sent — saved in this conversation.", { exact: true })
+      .getByText("Sent and saved in this conversation.", { exact: true })
       .waitFor();
     assert.equal(
       await db.adultMessage.count({
@@ -884,7 +884,7 @@ try {
     await composer().fill("Fictional complete recipient reply");
     await button("Send message").click();
     await page
-      .getByText("Sent — saved in this conversation.", { exact: true })
+      .getByText("Sent and saved in this conversation.", { exact: true })
       .waitFor();
     await login(f.memberA);
     await go("/platform/messages");

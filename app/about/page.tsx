@@ -18,7 +18,7 @@ export default function AboutPage() {
         <p className="gc-info-intro">
           Jesus Christ holds all authority in heaven and on earth. Under His
           authority, He commissions His followers to go and make
-          disciples—baptizing them and teaching them to obey His commands.
+          disciples, baptizing them and teaching them to obey His commands.
         </p>
         <p>
           Godschurches exists to help believers put that calling into practice.
@@ -28,7 +28,7 @@ export default function AboutPage() {
         <p>
           The mission comes from Christ. Our part is to help you take yours.
         </p>
-        <p className="text-sm text-gc-muted">Rooted in Matthew 28:18–20.</p>
+        <p className="text-sm text-gc-muted">Rooted in Matthew 28:18 to 20.</p>
         <section>
           <h2>Start with a conversation</h2>
           <p>

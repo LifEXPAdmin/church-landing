@@ -73,7 +73,7 @@ export async function publicResourceMetadata(
     url: new URL("/brand/share-card.png", origin).href,
     width: 1200,
     height: 630,
-    alt: "God’s Churches — faith and community"
+    alt: "God’s Churches: faith and community"
   };
   return {
     title: {

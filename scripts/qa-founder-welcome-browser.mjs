@@ -194,7 +194,7 @@ try {
     .getByRole("button", { name: "Retry same action", exact: true })
     .click();
   await notice
-    .filter({ hasText: "Sent — saved in this conversation." })
+    .filter({ hasText: "Sent and saved in this conversation." })
     .waitFor();
   assert.equal(bodies.length, 2);
   assert.equal(bodies[0], bodies[1]);
@@ -238,7 +238,7 @@ try {
   );
   await page.getByRole("button", { name: "Send message", exact: true }).click();
   await notice
-    .filter({ hasText: "Sent — saved in this conversation." })
+    .filter({ hasText: "Sent and saved in this conversation." })
     .waitFor();
   await go("/platform/messages?filter=unanswered");
   await page

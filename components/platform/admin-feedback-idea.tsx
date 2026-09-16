@@ -127,7 +127,7 @@ export function AdminFeedbackIdea({
                       { value: "", label: "No released change yet" },
                       ...s.releases.map((r) => ({
                         value: r.id,
-                        label: `Version ${r.version} — ${r.summary}`
+                        label: `Version ${r.version}: ${r.summary}`
                       }))
                     ]
                   },

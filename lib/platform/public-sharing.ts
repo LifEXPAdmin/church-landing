@@ -239,7 +239,7 @@ export async function publicSharePreview(
     image: {
       ...preview.image,
       url: imagePath.href,
-      alt: `${preview.title} — God’s Churches`
+      alt: `${preview.title}: God’s Churches`
     }
   };
 }

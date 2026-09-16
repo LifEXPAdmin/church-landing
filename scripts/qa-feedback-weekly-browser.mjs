@@ -256,7 +256,7 @@ try {
     )
     .waitFor();
   await staff.getByText("5 / 3.60 out of 5", { exact: true }).waitFor();
-  await staff.getByText("2 / 10 — 20.0%", { exact: true }).waitFor();
+  await staff.getByText("2 / 10: 20.0%", { exact: true }).waitFor();
   await fits(staff);
   await staff.screenshot({ path: output + "/weekly-320.png", fullPage: true });
   ok(

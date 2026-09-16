@@ -454,7 +454,7 @@ export function FounderAnnouncements({ owner }: { owner: string }) {
                             <li key={r.recipientId}>
                               {r.recipient.name}
                               {r.status === "SKIPPED"
-                                ? " — no longer eligible"
+                                ? " (no longer eligible)"
                                 : ""}
                             </li>
                           ))}
@@ -526,8 +526,7 @@ export function FounderAnnouncements({ owner }: { owner: string }) {
                         {r.recipient.name}: {r.status.toLowerCase()}
                         {r.href && (
                           <>
-                            {" "}
-                            —{" "}
+                            :{" "}
                             <Link href={r.href} prefetch={false}>
                               Open sent conversation
                             </Link>
@@ -579,7 +578,7 @@ export function FounderAnnouncements({ owner }: { owner: string }) {
                     disabled={disabled || dirty}
                     onClick={() => void load(item.id, true)}
                   >
-                    {stamp(item.updatedAt)} — {item.status.toLowerCase()} ·{" "}
+                    {stamp(item.updatedAt)}, {item.status.toLowerCase()} ·{" "}
                     {item.sentCount}/{item.selectedCount} sent
                   </button>
                 </li>

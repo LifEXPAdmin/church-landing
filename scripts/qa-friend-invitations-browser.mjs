@@ -366,7 +366,7 @@ try {
     .getByText(`Connections with ${owner.name}`, { exact: true })
     .click();
   await page
-    .getByRole("button", { name: "Friends — remove friendship", exact: true })
+    .getByRole("button", { name: "Friends: remove friendship", exact: true })
     .waitFor();
   ok(
     "Real signup and adult acknowledgement preserve chosen inviter; independent-browser verification boundary connects atomically and profile confirms friendship"

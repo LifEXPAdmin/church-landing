@@ -216,7 +216,7 @@ export function FeedbackForm({
             >
               {label}
               {value === "SUGGESTION" && !s.viewer.verified
-                ? " — verify email first"
+                ? " (verify email first)"
                 : ""}
             </option>
           ))}
@@ -228,7 +228,7 @@ export function FeedbackForm({
           <option value="">Skip rating</option>
           {[1, 2, 3, 4, 5].map((n) => (
             <option key={n} value={n}>
-              {n} of 5{n === 1 ? " — poor" : n === 5 ? " — excellent" : ""}
+              {n} of 5{n === 1 ? ": poor" : n === 5 ? ": excellent" : ""}
             </option>
           ))}
         </select>
