@@ -194,7 +194,9 @@ try {
   ok("Settings loads without asking permission or creating a device");
 
   await page
-    .getByRole("checkbox", { name: "Pause phone alerts during quiet hours" })
+    .getByRole("checkbox", {
+      name: "Pause phone and feedback email alerts during quiet hours"
+    })
     .check();
   await page.getByLabel("Time zone", { exact: true }).fill("America/Chicago");
   await page
@@ -217,7 +219,9 @@ try {
   );
 
   await page
-    .getByRole("checkbox", { name: "Pause phone alerts during quiet hours" })
+    .getByRole("checkbox", {
+      name: "Pause phone and feedback email alerts during quiet hours"
+    })
     .uncheck();
   let lost = false;
   const bodies = [];
@@ -318,7 +322,8 @@ try {
     "New posts from authors whose bell you enabled",
     "Likes on your posts and comments",
     "Church requests, roles and connection changes",
-    "Event responses, changes and volunteer commitments"
+    "Event changes, new church volunteer requests and commitments",
+    "Photo tag requests and approvals"
   ]) {
     const group = page.getByRole("group", { name, exact: true });
     assert.equal(
@@ -344,9 +349,19 @@ try {
   await reactionChoices
     .getByRole("checkbox", { name: "In-app alerts", exact: true })
     .uncheck();
+  const photoChoices = page.getByRole("group", {
+    name: "Photo tag requests and approvals",
+    exact: true
+  });
+  await photoChoices
+    .getByRole("checkbox", { name: "Phone alerts", exact: true })
+    .check();
+  await photoChoices
+    .getByRole("checkbox", { name: "In-app alerts", exact: true })
+    .uncheck();
   for (const name of [
     "Replies to your posts and comments",
-    "Mentions in comments",
+    "Mentions in posts and comments",
     "Replies in conversations you follow",
     "Prayer acknowledgments and saved prayer updates"
   ]) {
@@ -378,6 +393,7 @@ try {
       "conversations",
       "mentions",
       "messages",
+      "photos",
       "prayer",
       "reactions",
       "replies",
@@ -389,9 +405,11 @@ try {
   });
   assert.deepEqual(expanded.mutedNotificationCategories.sort(), [
     "founder",
+    "photos",
     "reactions"
   ]);
   assert.ok(expanded.notificationPushSince.reactions);
+  assert.ok(expanded.notificationPushSince.photos);
   await go("/platform/settings/notifications/availability");
   await reactionChoices
     .getByRole("checkbox", { name: "In-app alerts", exact: true })
@@ -408,8 +426,20 @@ try {
       .isChecked(),
     true
   );
+  assert.equal(
+    await photoChoices
+      .getByRole("checkbox", { name: "In-app alerts", exact: true })
+      .isChecked(),
+    false
+  );
+  assert.equal(
+    await photoChoices
+      .getByRole("checkbox", { name: "Phone alerts", exact: true })
+      .isChecked(),
+    true
+  );
   ok(
-    "All four new categories start without phone consent, and independent Activity-off/phone-on persists after a real reload"
+    "Author, reaction, church, commitment and photo categories start without phone consent; independent in-app-off/phone-on choices persist after reload"
   );
   const commenter = await createPortalActor(db, "commentpushui");
   const post = await db.platformPost.create({

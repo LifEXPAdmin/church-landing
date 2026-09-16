@@ -1,5 +1,11 @@
 ## Notifications and adult tag integration checkpoint — September 16, 2026 UTC
 
+The final application candidate `827d57e` passes 47 isolated production-browser
+groups, including current photo review/decline/account-change boundaries and
+independent photo notification choices. [Acceptance evidence](NOTIFICATION_CENTER_ACCEPTANCE.md)
+records the precise scope and preserved failures. The complete fresh-fixture gate
+is still running; publication and actual live verification remain pending.
+
 The first production-browser pass completed all eight source/navigation groups
 without page errors. The first full gate stopped at an older church-role summary
 assertion; the updated assertion preserves private role/capability exclusions and

@@ -269,10 +269,12 @@ try {
   await page
     .getByText("Fictional tag acceptance photo", { exact: true })
     .waitFor();
-  await page.locator('img[alt="Photo for tag review"]').evaluate((img) => {
-    if (!img.complete || !img.naturalWidth)
-      throw Error("Permissioned photo failed to render");
-  });
+  await page
+    .locator('img[alt="Photo for tag review"]')
+    .evaluate(async (img) => {
+      await img.decode();
+      if (!img.naturalWidth) throw Error("Permissioned photo failed to render");
+    });
   await signIn(b);
   await go(`/platform/photo-tags?tag=${tag.id}`);
   await page.getByRole("button", { name: "Remove tag", exact: true }).click();
