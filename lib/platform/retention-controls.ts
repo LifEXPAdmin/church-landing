@@ -46,6 +46,7 @@ export type RetentionControlEntry = {
     | "FEEDBACK_CHOICES"
     | "FEEDBACK_IDEA"
     | "FEEDBACK_SUBSCRIPTION"
+    | "FEEDBACK_REVIEW"
     | "APPEAL"
     | "ACCOUNT_STATE"
     | "AUTHOR_WITHDRAW_POST"
@@ -97,7 +98,8 @@ function validate(value: unknown): RetentionControlEntry {
       "ADMIN_CLAIM",
       "FEEDBACK_CHOICES",
       "FEEDBACK_IDEA",
-      "FEEDBACK_SUBSCRIPTION"
+      "FEEDBACK_SUBSCRIPTION",
+      "FEEDBACK_REVIEW"
     ].includes(r.kind)
       ? r.target === "ACCOUNT" &&
         r.operatorId !== null &&
@@ -303,7 +305,11 @@ export function recordFeedbackPromptControl(
 }
 export function recordFeedbackPrivacyControl(
   tx: Tx,
-  kind: "FEEDBACK_CHOICES" | "FEEDBACK_IDEA" | "FEEDBACK_SUBSCRIPTION",
+  kind:
+    | "FEEDBACK_CHOICES"
+    | "FEEDBACK_IDEA"
+    | "FEEDBACK_SUBSCRIPTION"
+    | "FEEDBACK_REVIEW",
   sourceId: string,
   actorId: string,
   version: number
@@ -681,10 +687,26 @@ export async function replayRetentionControls(
           [
             "FEEDBACK_CHOICES",
             "FEEDBACK_IDEA",
-            "FEEDBACK_SUBSCRIPTION"
+            "FEEDBACK_SUBSCRIPTION",
+            "FEEDBACK_REVIEW"
           ].includes(entry.kind)
         ) {
-          if (entry.kind === "FEEDBACK_CHOICES") {
+          if (entry.kind === "FEEDBACK_REVIEW") {
+            await tx.feedbackWeeklyReview.updateMany({
+              where: {
+                id: entry.sourceId,
+                userId: entry.targetId,
+                version: { lt: entry.version }
+              },
+              data: {
+                learned: "",
+                tryNext: "",
+                checkNext: "",
+                buildUrl: "",
+                version: entry.version
+              }
+            });
+          } else if (entry.kind === "FEEDBACK_CHOICES") {
             await tx.feedbackSubmission.updateMany({
               where: {
                 caseId: entry.sourceId,

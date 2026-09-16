@@ -19,6 +19,7 @@ import { AdminOverview } from "./admin-overview";
 import { ReadVisibility } from "./read-visibility";
 import type { AdminOverviewSnapshot } from "@/lib/platform/admin-overview";
 import type { MetricSnapshot } from "@/lib/platform/metric-report";
+import type { FeedbackWeeklySnapshot } from "@/lib/platform/feedback-weekly";
 import type {
   FeedbackIdeaAdministration,
   FeedbackIdeaModeration
@@ -33,6 +34,9 @@ const AdminFeedbackIdea = dynamic(() =>
 const AdminIdeaModeration = dynamic(() =>
   import("./admin-idea-moderation").then((m) => m.AdminIdeaModeration)
 );
+const AdminFeedbackWeekly = dynamic(() =>
+  import("./admin-feedback-weekly").then((m) => m.AdminFeedbackWeekly)
+);
 type Health = Awaited<ReturnType<typeof readAdminHealth>>;
 type Payload =
   | AdminNavigation
@@ -44,7 +48,8 @@ type Payload =
   | AdminOverviewSnapshot
   | MetricSnapshot
   | FeedbackIdeaAdministration
-  | FeedbackIdeaModeration;
+  | FeedbackIdeaModeration
+  | FeedbackWeeklySnapshot;
 export function AdminWorkspace({
   navigation,
   section,
@@ -247,12 +252,20 @@ export function AdminWorkspace({
               )}
             {section === "feedback" &&
               nav.capabilities.includes("MANAGE_PRODUCT_FEEDBACK") && (
-                <Link
-                  className="text-gc-accent underline"
-                  href="/platform/admin/feedback/ideas"
-                >
-                  Review published ideas
-                </Link>
+                <div className="flex flex-wrap gap-4">
+                  <Link
+                    className="text-gc-accent underline"
+                    href="/platform/admin/feedback/ideas"
+                  >
+                    Review published ideas
+                  </Link>
+                  <Link
+                    className="text-gc-accent underline"
+                    href="/platform/admin/feedback/weekly"
+                  >
+                    Weekly feedback review
+                  </Link>
+                </div>
               )}
             {section === "case" && data && "row" in data && (
               <AdminCase
@@ -272,6 +285,9 @@ export function AdminWorkspace({
             )}
             {section === "feedback" && data && "ideaModeration" in data && (
               <AdminIdeaModeration data={data} onRefresh={() => void load()} />
+            )}
+            {section === "feedback" && data && "weekly" in data && (
+              <AdminFeedbackWeekly data={data} onRefresh={() => void load()} />
             )}
             {section === "health" && data && "health" in data && (
               <AdminHealth data={data} />

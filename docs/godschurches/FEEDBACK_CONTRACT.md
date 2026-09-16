@@ -1,8 +1,23 @@
 # Feedback and product follow-up
 
-September 15, 2026 UTC. Implementation in progress; nothing in this candidate is
+September 16, 2026 UTC. Implementation in progress; nothing in this candidate is
 released. The current serving application is the platform measurement core in
 [its acceptance receipt](PLATFORM_METRICS_ACCEPTANCE.md).
+
+## Weekly review and shared reporting checkpoint
+
+The [weekly acceptance receipt](FEEDBACK_WEEKLY_ACCEPTANCE.md) records the current
+source-scoped theme view, author-bound learning notes, exact-retry and protected
+recovery, rating/exposure integration, equal preceding windows, suppression and
+missing-attribution behavior. Metric permission never grants case access;
+product-review permission never grants platform aggregates. Case message counts
+include the original submission and retained replies. Weekly notes remain private
+staff working data and outside ordinary account exports.
+
+Both isolated databases have 84 migrations. Combined services, narrow weekly
+browser flows and broader Growth checks pass. The final candidate's full gate
+and protected canonical release remain ahead. Actual readiness is not inferred
+from isolated fixtures.
 
 ## Selected follow-up checkpoint
 

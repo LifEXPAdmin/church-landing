@@ -12,6 +12,7 @@ import {
   feedbackIdeaAdminCommand
 } from "./feedback-idea-admin";
 import { readPlatformMetrics } from "./metric-report";
+import { readFeedbackWeekly, saveFeedbackWeekly } from "./feedback-weekly";
 import { exportPlatformMetrics } from "./metric-export";
 import { adminFields } from "./admin-input";
 import { adminCaseCommand, adminSavedViewCommand } from "./admin-cases";
@@ -72,6 +73,9 @@ export async function handleAdminRequest(
             Object.entries(input).filter(([key]) => key !== "view")
           )
         );
+      } else if (view === "feedback-weekly") {
+        adminFields(input, ["view", "week"]);
+        result = await readFeedbackWeekly(db, token, input.week);
       } else if (view === "feedback-idea-moderation") {
         adminFields(input, ["view", "ideaId", "q", "page"]);
         result = await readFeedbackIdeaModeration(db, token, input);
@@ -125,7 +129,11 @@ export async function handleAdminRequest(
           input,
           requestAccountCredential(request, input, accountConfig().secureCookie)
         );
-      else if (input.operation === "metrics-export")
+      else if (input.operation === "feedback-review") {
+        const saved = await saveFeedbackWeekly(db, token, input);
+        await protectAdminCaseChanges(db, [saved.id]);
+        result = saved;
+      } else if (input.operation === "metrics-export")
         result = await exportPlatformMetrics(db, token, input);
       else if (
         ["idea-save", "idea-withdraw", "idea-merge", "idea-unmerge"].includes(

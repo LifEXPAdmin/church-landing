@@ -65,7 +65,12 @@ export function metricLifecycleBalance(
 }
 
 export type MetricFeedbackInput = {
-  receipts: { id: string; rating: number | null; exposureId: string | null }[];
+  receipts: {
+    id: string;
+    rating: number | null;
+    exposureId: string | null;
+    entryPoint?: "VOLUNTARY" | "PROMPT" | "UNATTRIBUTED";
+  }[];
   displayedExposureIds: string[];
 };
 /** Shared 30/31 aggregation contract: inputs must already pass source/period/lifecycle eligibility. */
@@ -84,7 +89,8 @@ export function metricFeedbackSummary(input: MetricFeedbackInput) {
     if (
       previous &&
       (previous.rating !== receipt.rating ||
-        previous.exposureId !== receipt.exposureId)
+        previous.exposureId !== receipt.exposureId ||
+        previous.entryPoint !== receipt.entryPoint)
     )
       throw Error("Conflicting feedback receipt source");
     unique.set(receipt.id, receipt);
@@ -94,16 +100,25 @@ export function metricFeedbackSummary(input: MetricFeedbackInput) {
   const distribution = [1, 2, 3, 4, 5].map((rating) => ({ rating, count: 0 }));
   let ratingCount = 0,
     total = 0,
-    voluntary = 0;
+    voluntary = 0,
+    unattributed = 0;
   for (const receipt of unique.values()) {
     if (receipt.rating !== null) {
       distribution[receipt.rating - 1].count++;
       ratingCount++;
       total += receipt.rating;
     }
-    if (receipt.exposureId === null) voluntary++;
-    else if (exposures.has(receipt.exposureId))
+    const entry =
+      receipt.entryPoint ??
+      (receipt.exposureId === null ? "VOLUNTARY" : "PROMPT");
+    if (entry === "VOLUNTARY") voluntary++;
+    else if (
+      entry === "PROMPT" &&
+      receipt.exposureId !== null &&
+      exposures.has(receipt.exposureId)
+    )
       responses.add(receipt.exposureId);
+    else unattributed++;
   }
   return {
     feedbackCount: unique.size,
@@ -111,6 +126,7 @@ export function metricFeedbackSummary(input: MetricFeedbackInput) {
     mean: ratingCount ? total / ratingCount : null,
     distribution,
     voluntary,
+    unattributed,
     prompt: metricRatio(responses.size, exposures.size)
   };
 }

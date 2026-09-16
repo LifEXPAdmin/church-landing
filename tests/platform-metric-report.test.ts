@@ -123,6 +123,7 @@ test("actual aggregate queries resolve A2's 10/8/6/4/2 cohort, exact-day maturit
     percent: 20
   });
   assert.equal(report.current.active, 8);
+  assert.equal(report.current.returning, 0);
   for (const zone of ["America/Los_Angeles", "Asia/Tokyo"]) {
     const other = await db.$transaction(async (tx) => {
       await tx.$executeRawUnsafe(`SET LOCAL TIME ZONE '${zone}'`);
@@ -153,6 +154,16 @@ test("actual aggregate queries resolve A2's 10/8/6/4/2 cohort, exact-day maturit
   assert.equal(ten.returns.d30.denominator, 0);
   assert.equal(ten.returns.d30.percent, null);
   assert.equal(ten.returns.d30Immature, 10);
+  const returned = (
+    await readPlatformMetrics(
+      db,
+      viewer.token,
+      { from: metricAddDays(day, 7), through: metricAddDays(day, 7) },
+      at(9)
+    )
+  ).report;
+  assert.equal(returned.current.registrations, 0);
+  assert.equal(returned.current.returning, 4);
   await db.platformFollow.deleteMany({ where: { followerId: actors[0].id } });
   const removed = (
     await readPlatformMetrics(

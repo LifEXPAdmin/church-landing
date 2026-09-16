@@ -1,5 +1,23 @@
 # Platform growth and optional measurement
 
+## Feedback integration candidate — September 16, 2026 UTC
+
+The **unreleased** feedback candidate now connects current and preceding rating
+distributions, means, counts and displayed-exposure response coverage to Growth
+and the same permitted CSV projection. It separates voluntary and unattributed
+receipts, applies current consent/lifecycle and ninety-day exposure retention,
+and suppresses complementary detail cells for small groups. Overall operational
+receipt counts do not require optional activity consent. Later responses can
+restate their exposure cohort; a lost exposure is never a voluntary submission.
+
+Weekly reviews reuse these aggregates only with explicit metric permission.
+Native source authority separately governs case/theme links. Returning accounts
+are existing measured accounts using the selected interval, distinct from D7/D30.
+A staff resolution-only reply now counts toward first human response timing.
+See [shared acceptance](FEEDBACK_WEEKLY_ACCEPTANCE.md). Final feature-wide and
+production acceptance remain ahead; the following receipt identifies the last
+verified production core.
+
 September 15, 2026 UTC. The core is released as **2026.09.15.7**, application
 **944d382d12742deec0aa36071dc30ffc444399d8**, READY and canonical in
 **dpl_4ppv8oT9ZRKMBA4xeDiicHhQ1TcF**. See

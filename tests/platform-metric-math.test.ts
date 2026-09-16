@@ -147,6 +147,19 @@ test("feedback A2 deduplicates receipts and displayed exposures without treating
     { rating: 5, count: 2 }
   ]);
   assert.equal(actual.voluntary, 4);
+  const unknown = metricFeedbackSummary({
+    receipts: [
+      {
+        id: "withdrawn",
+        rating: null,
+        exposureId: null,
+        entryPoint: "UNATTRIBUTED"
+      }
+    ],
+    displayedExposureIds: []
+  });
+  assert.equal(unknown.voluntary, 0);
+  assert.equal(unknown.unattributed, 1);
   assert.deepEqual(actual.prompt, {
     numerator: 2,
     denominator: 10,

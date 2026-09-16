@@ -10,6 +10,7 @@ import {
 } from "@/lib/platform/metric-policy";
 import { socialRequest } from "@/lib/platform/social-client";
 import type { ReactNode } from "react";
+import { FeedbackMetrics } from "./feedback-metrics";
 const box = "rounded-xl border border-gc-divider p-4";
 const labels: Record<string, string> = {
   ...metricActions,
@@ -635,7 +636,7 @@ export function AdminMetrics({ data }: { data: MetricSnapshot }) {
       <section className="space-y-3">
         <h2 className="text-2xl">Feedback and prompt coverage</h2>
         <p>{r.definitions.feedback}</p>
-        <p>{r.feedback.message}</p>
+        <FeedbackMetrics feedback={r.feedback} />
       </section>
       <section className="space-y-3">
         <h2 className="text-2xl">Release context and definitions</h2>

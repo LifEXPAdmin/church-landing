@@ -14,11 +14,35 @@ export type Feature = {
 };
 export const features: Feature[] = [
   {
+    id: "private-feedback", category: "Help and feedback", name: "Feedback and private receipts",
+    description: "Share an optional website rating, report a problem or suggest an improvement through a private help case.",
+    steps: "Open Feedback from Menu or Help. Review any optional context and selected screenshot, choose whether staff may follow up, and revisit the saved receipt in My feedback. Optional prompts can be dismissed or permanently turned off.",
+    href: "/platform/feedback",
+    eligibility: "Intake requires available authorized support and the current notice. Signed-in adults may submit when available. Automatic prompts additionally require eligible opted-in use. Feedback stays confidential; no rating causes an email or public post.",
+    availability: "conditional"
+  },
+  {
+    id: "reviewed-ideas", category: "Help and feedback", name: "Reviewed ideas and chosen updates",
+    description: "Browse separately reviewed public ideas, add or remove your vote, and choose whether to receive updates.",
+    steps: "Open Ideas from Feedback. A signed-in adult can vote or choose channels. Manage an idea subscription on its page, case contact choices on your receipt, and available delivery channels in Notification settings.",
+    href: "/platform/feedback/ideas",
+    eligibility: "The board requires activation. Public copies need contributor consent and authorized human review; private cases and screenshots stay private. Votes do not promise delivery. Optional email and phone alerts require their available channel and your choices.",
+    availability: "conditional"
+  },
+  {
+    id: "feedback-review", category: "Help and feedback", name: "Weekly feedback review",
+    description: "Authorized product reviewers can inspect source-linked themes and keep private weekly learning notes.",
+    steps: "Open Admin → Feedback → Weekly feedback review. Choose a completed week, inspect authorized cases and manual themes, and record what to learn, try and check next with one canonical work link.",
+    href: "/platform/admin/feedback/weekly",
+    eligibility: "Current product-review permission is required. Each case still requires its own native permission. Platform growth and ratings require separate metric access; small detailed groups are suppressed. Review notes remain private to their author.",
+    availability: "conditional"
+  },
+  {
     id:"platform-growth",category:"Privacy and account",name:"Platform growth reports",
     description:"Explicitly authorized operators can review aggregate registrations, lifecycle, measured use and request outcomes.",
     steps:"Open Admin → Growth. Choose dates, inspect definitions and measured coverage, and compare the preceding period. CSV export requires its own permission and records an audit receipt.",
     href:"/platform/admin/growth",
-    eligibility:"Current explicit metric permission is required. Reports do not grant private account or case access. Optional collection, immature cohorts, small breakdowns and unavailable feedback are labeled separately.",availability:"conditional"
+    eligibility:"Current explicit metric permission is required. Reports do not grant private account or case access. Optional collection, immature cohorts, small breakdowns and missing prompt evidence are labeled separately.",availability:"conditional"
   },
   {
     id:"optional-platform-measurement",category:"Privacy and account",name:"Your optional measurement choice",
@@ -716,6 +740,26 @@ export const features: Feature[] = [
   }
 ];
 export const releases: ReleaseEntry[] = [
+  {
+    id: "feedback-and-product-review", version: "2026.09.16.1", date: "2026-09-16",
+    summary: "Keep feedback private, choose follow-up and review product outcomes with traceable sources.",
+    added: [
+      "Feedback forms and private receipts support optional ratings, bug details, suggestions and deliberately selected private screenshots when staffed intake is available.",
+      "An optional, dismissible prompt respects measurement consent, quiet moments, cross-device cooldowns and the permanent Don't ask again choice.",
+      "A reviewed idea board supports contributor consent, removable votes, honest roadmap states, merge reversal and chosen updates when activated.",
+      "Authorized weekly product reviews combine source-scoped manual themes, reopened and high-impact cases, released changes and private learning notes."
+    ],
+    improved: [
+      "Growth reports and permitted CSV exports include retained ratings, displayed-prompt coverage, voluntary submissions and missing-attribution states with small-group protection.",
+      "Selected feedback channels share existing Activity, notification preferences, quiet hours and delivery retries. Current consent and source access are rechecked before delivery.",
+      "Saved privacy choices and review edits participate in protected recovery; unavailable channels can still be switched off."
+    ],
+    fixed: [
+      "A staff reply that directly resolves a request now counts as the first substantive human response.",
+      "Withdrawn or expired prompt evidence never becomes a fabricated voluntary response or historical exposure."
+    ],
+    featureIds: ["private-feedback", "reviewed-ideas", "feedback-review", "platform-growth", "admin-requests"]
+  },
   {
     id:"platform-growth-measurement",version:"2026.09.15.7",date:"2026-09-15",
     summary:"Review platform outcomes with clear coverage and an optional measurement choice.",

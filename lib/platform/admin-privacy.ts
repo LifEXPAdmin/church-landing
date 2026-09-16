@@ -39,6 +39,7 @@ export async function eraseAdminPersonalData(
 ) {
   await tx.feedbackPromptClaim.deleteMany({ where: { userId } });
   await tx.feedbackPromptPreference.deleteMany({ where: { userId } });
+  await tx.feedbackWeeklyReview.deleteMany({ where: { userId } });
   await tx.feedbackIdeaVote.deleteMany({ where: { userId } });
   await tx.feedbackIdeaSubscription.deleteMany({ where: { userId } });
   await retireFeedbackImages(tx, { feedbackOwnerId: userId });
@@ -132,7 +133,8 @@ export async function protectAdminCaseChanges(
             "SUPPORT_ATTACHMENT",
             "FEEDBACK_CHOICES",
             "FEEDBACK_IDEA",
-            "FEEDBACK_SUBSCRIPTION"
+            "FEEDBACK_SUBSCRIPTION",
+            "FEEDBACK_REVIEW"
           ]
         },
         journaledAt: null

@@ -8,6 +8,7 @@ import {
 import { metricConfiguration } from "./platform-measurement";
 import { metricSources } from "./metric-sources";
 import { metricSupport } from "./metric-support";
+import { metricFeedback } from "./metric-feedback";
 import { releases } from "./release-content";
 import {
   metricWindow,
@@ -36,6 +37,7 @@ type Period = {
   registrations: number;
   methods: { key: string; count: number }[];
   active: number;
+  returning: number;
   firstValues: number;
   adoption: { key: string; actors: number; actions: number }[];
 };
@@ -105,6 +107,9 @@ export async function aggregateMetrics(
       'methods',(SELECT coalesce(jsonb_agg(jsonb_build_object('key',method,'count',n)),'[]') FROM
         (SELECT u."metricCreationMethod" AS method,count(*) AS n FROM population u WHERE u."createdAt">=w.start AND u."createdAt"<w.finish GROUP BY 1) q),
       'active',(SELECT count(DISTINCT d."userId") FROM activity d WHERE d.day>=(w.start AT TIME ZONE 'UTC' AT TIME ZONE ${zone})::date
+        AND d.day<(w.finish AT TIME ZONE 'UTC' AT TIME ZONE ${zone})::date+CASE WHEN w.key='current' AND ${window.partial} THEN 1 ELSE 0 END),
+      'returning',(SELECT count(DISTINCT d."userId") FROM activity d JOIN measured m ON m.id=d."userId"
+        WHERE m."createdAt"<w.start AND d.day>=(w.start AT TIME ZONE 'UTC' AT TIME ZONE ${zone})::date
         AND d.day<(w.finish AT TIME ZONE 'UTC' AT TIME ZONE ${zone})::date+CASE WHEN w.key='current' AND ${window.partial} THEN 1 ELSE 0 END),
       'firstValues',(SELECT count(*) FROM (SELECT actor,min(at) first_at FROM actions WHERE kind<>'EVENT' GROUP BY actor) f WHERE f.first_at>=w.start AND f.first_at<w.finish),
       'adoption',(SELECT coalesce(jsonb_agg(jsonb_build_object('key',kind,'actors',actors,'actions',n)),'[]') FROM
@@ -337,11 +342,7 @@ export async function aggregateMetrics(
       device: bins(core.dimensions.device, Object.keys(metricDevices)),
       browser: bins(core.dimensions.browser, Object.keys(metricBrowsers))
     },
-    feedback: {
-      available: false as const,
-      message:
-        "Feedback ratings and displayed prompt exposures are not yet collected. No response rate or historical rating is inferred."
-    }
+    feedback: await metricFeedback(tx, window, configuration.version, now)
   };
 }
 export function readPlatformMetrics(

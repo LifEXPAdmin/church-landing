@@ -252,6 +252,7 @@ model PlatformUser {
   feedbackIdeaVotes FeedbackIdeaVote[]
   feedbackIdeaSubscriptions FeedbackIdeaSubscription[]
   feedbackIdeaEvents FeedbackIdeaEvent[]
+  feedbackWeeklyReviews FeedbackWeeklyReview[]
   personalPhotos PersonalPhoto[]
   photoAlbums PhotoAlbum[]
   postPhotoReferences PostPhotoReference[]
@@ -1267,6 +1268,24 @@ model FeedbackSubmission {
   idea FeedbackIdea?
   @@index([kind, createdAt])
   @@index([entryPoint, createdAt])
+  @@index([createdAt])
+}
+
+// Private operator working notes. Never a public summary or a source-access grant.
+model FeedbackWeeklyReview {
+  id String @id @default(cuid())
+  userId String
+  week String
+  zone String
+  version Int @default(1)
+  learned String @default("")
+  tryNext String @default("")
+  checkNext String @default("")
+  buildUrl String @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user PlatformUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([userId, week, zone])
 }
 
 // Operational refusal survives optional measurement withdrawal; never a score.

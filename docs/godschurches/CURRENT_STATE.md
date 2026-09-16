@@ -1,3 +1,22 @@
+## Weekly feedback and shared-report checkpoint — September 16, 2026 UTC
+
+Feature 31 remains **unreleased**. Weekly review now checks native case scope
+before manual-theme totals and links; messages, cases and people remain separate.
+Private author-bound notes reuse permission, conflict/retry and protected-recovery
+controls. Growth and CSV share actual ratings, displayed-exposure coverage and
+explicit missing-attribution/suppression states. A staff resolution-only reply
+now counts toward first human response time.
+
+[Weekly acceptance](FEEDBACK_WEEKLY_ACCEPTANCE.md) records 29 passing combined
+scenarios, 14 final math/report/release checks, four narrow weekly browser groups,
+eight broader Growth browser groups plus cost checks, and the production preview.
+Both isolated databases have 84 migrations. Local costs and corrected initial
+fixture/selector failures are retained. Complete-feedback release notes are
+prepared. Continue the full upgrade/regression gate, protected production
+rehearsal, exact canonical release and live acceptance. Actual prerequisites still
+gate activation; no production feature-31 data, permissions, flags or messages
+have changed.
+
 ## Selected feedback follow-up checkpoint — September 15, 2026 UTC
 
 Feature 31 remains **unreleased**. Selected native private-case updates and reviewed

@@ -25,7 +25,7 @@ export async function metricSupport(tx: AdminTx, w: MetricWindow, now: Date) {
       c."createdAt" AS received,c.status NOT IN ('RESOLVED','CLOSED') AS open,c."ownerGrantId" IS NULL AND c."moderationDecisionId" IS NULL AS unassigned,
       (SELECT min(m."createdAt") FROM "SupportMessage" m WHERE m."caseId"=c.id AND m."authorId"<>c."requesterId"
         AND m.kind IN ('REPLY','RESOLUTION') AND m."redactedAt" IS NULL
-        AND EXISTS(SELECT 1 FROM "SupportAuditEvent" a WHERE a."caseId"=c.id AND a."actorId"=m."authorId" AND a.version=m.version AND a.action IN ('REPLY','TRANSITION'))) AS responded,
+        AND EXISTS(SELECT 1 FROM "SupportAuditEvent" a WHERE a."caseId"=c.id AND a."actorId"=m."authorId" AND a.version=m.version AND a.action IN ('REPLY','TRANSITION','RESOLUTION'))) AS responded,
       CASE WHEN c.status IN ('RESOLVED','CLOSED') THEN (SELECT max(a."createdAt") FROM "SupportAuditEvent" a WHERE a."caseId"=c.id AND a."toState" IN ('RESOLVED','CLOSED')) ELSE NULL END AS resolved,
       EXISTS(SELECT 1 FROM "SupportAuditEvent" a WHERE a."caseId"=c.id AND a.action='REOPEN') AS reopened
     FROM "SupportCase" c
