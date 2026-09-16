@@ -1,3 +1,27 @@
+## Language and location feature completed live — September 16, 2026 UTC
+
+**2026.09.16.7 / 777760c5422758f20101504b4c35192615835548** is READY in
+**dpl_DoF7XfQKKEgFid5GpFMddqozn4FL**, independently canonical and confirmed
+by the serving release/build. The optional one-shot device helper completes the
+same feature: transient coarse suggestions, explicit named-place selection/save,
+manual denial recovery, honest disabled translation, privacy guidance and the
+reproduced larger-text skip-link repair. See [acceptance](DEVICE_LOCATION_ACCEPTANCE.md).
+
+Thirty-one focused checks and all 25 relevant production-browser groups pass.
+Live: 29 public/access, four health and three signed-in checks. All 121 table
+fingerprints and 90 migration checksums match; applicable protected and installed
+recovery checks pass. No production preference/location/read-state writes, GPS
+request, permission grant or sends. Scoped error/fatal rows and browser errors
+are zero. Physical OS/GPS and optional translation-provider scope remain separate.
+
+The completed feature joins the earlier regional/private-location release below.
+Return to the explicit capacity/operational priorities: investigate the remaining
+feed cost using isolated measurements, retain the unmet hosted 100-client target
+and actual provider/operator limits, then continue other eligible work. Final
+review stays last. The private focused pages and Todoist are writable; main-queue
+propagation still returns a connector internal error, with browser fallback
+requiring sign-in. Do not claim that entire private queue was synchronized.
+
 ## Regional formats and private location verified live — September 16, 2026 UTC
 
 **2026.09.16.6 / ed6c89457912a0ab4ec53c13dbf7761b0f378e7c** is READY in
