@@ -4,6 +4,8 @@ import { PlatformShell } from "./platform-shell";
 import { PrivateSnapshotGuard } from "./private-snapshot-guard";
 import { TopicReadBoundary } from "./topic-read-boundary";
 import { ExchangeEditor } from "./exchange-editor";
+import { ExchangeSearchPosition } from "./exchange-search-position";
+import { exchangeReturnHref } from "@/lib/platform/exchange-navigation";
 import { ExchangeFilters } from "./exchange-filters";
 import { accountEntryHref } from "@/lib/platform/account-entry";
 import { PortalError } from "@/lib/platform/portal-policy";
@@ -16,7 +18,8 @@ import {
 import {
   exchangeIntentLabels,
   exchangeStateLabels,
-  exchangeDisplayPrice
+  exchangeDisplayPrice,
+  exchangeSearchParams
 } from "@/lib/platform/exchange-options";
 import { discoveryCountryLabel } from "@/lib/platform/discovery-options";
 import { parseExchangeListQuery } from "@/lib/platform/exchange-input";
@@ -110,15 +113,7 @@ export function ExchangePrice({
 }) {
   return <>{exchangeDisplayPrice(listing)}</>;
 }
-export type ExchangeQuery = {
-  intent?: string | string[];
-  country?: string | string[];
-  placeId?: string | string[];
-  after?: string | string[];
-  q?: string | string[];
-  category?: string | string[];
-  state?: string | string[];
-};
+export type ExchangeQuery = Record<string, string | string[] | undefined>;
 export async function ExchangeList({
   query: params,
   mine = false
@@ -128,48 +123,31 @@ export async function ExchangeList({
 }) {
   const user = await getCurrentPlatformUser(),
     path = mine ? "/platform/exchange/mine" : "/platform/exchange";
-  let content;
+  let content,
+    retryHref = path;
   if (mine && !user) content = <ExchangeAccountLinks next={path} />;
   else
     try {
-      const { intent, country, placeId, after, q, category, state } =
-        parseExchangeListQuery(params, mine);
-      const result = await exchangeListPage({
-        mine,
-        intent,
-        country,
-        placeId,
-        after,
-        q,
-        category,
-        state
-      });
-      const filters = new URLSearchParams({
-        ...(q ? { q } : {}),
-        ...(category ? { category } : {}),
-        ...(state ? { state } : {}),
-        ...(intent ? { intent } : {}),
-        ...(country ? { country } : {}),
-        ...(placeId ? { placeId: String(placeId) } : {})
-      });
-      const readUrl = `/api/platform/exchange?${new URLSearchParams({ ...Object.fromEntries(filters), view: mine ? "mine" : "list", ...(after ? { after } : {}) })}`;
+      const query = { ...parseExchangeListQuery(params, mine), mine };
+      const result = await exchangeListPage(query);
+      const filters = exchangeSearchParams(query);
+      const readUrl = `/api/platform/exchange?${new URLSearchParams({ ...Object.fromEntries(filters), view: mine ? "mine" : "list", after: result.pageCursor })}`;
       const first = path + (filters.size ? "?" + filters : "");
+      retryHref = first;
+      const pageFilters = exchangeSearchParams(query, true);
+      const current = path + (pageFilters.size ? "?" + pageFilters : "");
       const rows = (
         <div className="space-y-4">
+          <ExchangeSearchPosition owner={user?.id ?? null} path={current} />
           <ExchangeFilters
             key={filters.toString()}
             path={path}
-            intent={intent}
-            country={country}
-            placeId={placeId}
-            mine={mine}
-            q={q}
-            category={category}
-            state={state}
+            query={query}
+            churches={result.churches}
           />
-          {after && (
+          {query.after && (
             <a href={first} className="gc-button gc-button-quiet">
-              Newest listings
+              Refresh this search
             </a>
           )}
           {!result.listings.length && (
@@ -179,6 +157,10 @@ export async function ExchangeList({
                 : "No available listings match these choices. Clear the filters or check again later."}
             </p>
           )}
+          <p className="text-sm text-gc-muted" role="status">
+            Showing {result.listings.length} listings on this page
+            {result.after ? ". More results are available." : "."}
+          </p>
           <ul className="grid gap-4 sm:grid-cols-2">
             {result.listings.map((listing) => (
               <li
@@ -196,7 +178,7 @@ export async function ExchangeList({
                   <Link
                     prefetch={false}
                     className="underline"
-                    href={`/platform/exchange/${listing.id}${mine ? "/edit" : ""}`}
+                    href={`/platform/exchange/${listing.id}${mine ? "/edit" : ""}?${new URLSearchParams({ returnTo: current })}`}
                   >
                     {listing.title || "Untitled private draft"}
                   </Link>
@@ -207,6 +189,12 @@ export async function ExchangeList({
                 <p className="whitespace-pre-wrap break-words">
                   {listing.description}
                 </p>
+                {listing.distanceBandKm !== null && (
+                  <p className="text-sm">
+                    Within about {listing.distanceBandKm} km of the selected
+                    town center
+                  </p>
+                )}
                 <p className="text-sm text-gc-muted">
                   {listing.placeLabel ||
                     (listing.country
@@ -250,7 +238,7 @@ export async function ExchangeList({
         </TopicReadBoundary>
       );
     } catch (error) {
-      content = <ExchangeUnavailable error={error} href={path} />;
+      content = <ExchangeUnavailable error={error} href={retryHref} />;
     }
   return (
     <PlatformShell user={user}>
@@ -269,7 +257,13 @@ export async function ExchangeList({
     </PlatformShell>
   );
 }
-export async function ExchangeEditorPage({ id }: { id?: string }) {
+export async function ExchangeEditorPage({
+  id,
+  returnTo
+}: {
+  id?: string;
+  returnTo?: unknown;
+}) {
   const user = await getCurrentPlatformUser(),
     path = id ? `/platform/exchange/${id}/edit` : "/platform/exchange/new";
   let content;
@@ -298,6 +292,15 @@ export async function ExchangeEditorPage({ id }: { id?: string }) {
             {id ? "Manage listing" : "Create a listing"}
           </h1>
           <ExchangeNavigation />
+          {typeof returnTo === "string" && (
+            <Link
+              prefetch={false}
+              className="inline-flex min-h-11 items-center underline"
+              href={exchangeReturnHref(returnTo, "/platform/exchange/mine")}
+            >
+              Return to listing results
+            </Link>
+          )}
           {content}
         </div>
       </section>

@@ -1,4 +1,12 @@
 import test from "node:test";
+import { exchangeReturnHref } from "../lib/platform/exchange-navigation";
+import { exchangeSearchCursor } from "../lib/platform/exchange-search";
+import {
+  discoveryPlaceBands,
+  getDiscoveryPlace,
+  searchDiscoveryPlaces,
+  townDistanceKm
+} from "../lib/platform/discovery-places";
 import assert from "node:assert/strict";
 import {
   EXCHANGE_EDITOR_SCHEMA,
@@ -6,7 +14,8 @@ import {
   exchangeDisplayPrice,
   emptyExchangeFields,
   exchangeCurrencies,
-  exchangePriceText
+  exchangePriceText,
+  exchangeSearchParams
 } from "../lib/platform/exchange-options";
 import {
   exchangePriceMinor,
@@ -343,4 +352,146 @@ test("changing listing type clears every type-specific field while retaining com
     );
   }
   assert.equal(changeExchangeIntent(fields, "SERVICE"), fields);
+});
+
+test("advanced listing criteria require explicit compatible money, audience and approximate area choices", () => {
+  for (const [currency, min, max, expected] of [
+    ["USD", "0", "0.29", 29],
+    ["JPY", "0", "299", 299],
+    ["KWD", "0.000", "1.001", 1001]
+  ] as const) {
+    const query = parseExchangeListQuery({
+      currency,
+      basis: "item",
+      minPrice: min,
+      maxPrice: max,
+      sort: "price-low"
+    });
+    assert.equal(query.minPriceMinor, 0);
+    assert.equal(query.maxPriceMinor, expected);
+    assert.deepEqual(
+      parseExchangeListQuery(Object.fromEntries(exchangeSearchParams(query))),
+      query
+    );
+  }
+  const valid = parseExchangeListQuery({
+    country: "US",
+    placeId: "4887398",
+    radiusKm: "25",
+    sort: "nearest",
+    condition: "GOOD",
+    availability: "RESERVED",
+    scope: "church",
+    churchId: "current-church"
+  });
+  assert.equal(valid.radiusKm, 25);
+  assert.equal(valid.scope, "church");
+  for (const value of [
+    { currency: "USD" },
+    { basis: "item" },
+    { minPrice: "0" },
+    { sort: "price-low" },
+    { currency: "USD", basis: "hour", freeOnly: "1" },
+    { freeOnly: "true" },
+    { currency: "KWD", basis: "task", minPrice: "2", maxPrice: "1.999" },
+    { currency: "JPY", basis: "item", maxPrice: "1.1" },
+    { country: "US", placeId: "4887398", radiusKm: "25.0" },
+    { radiusKm: "25" },
+    { country: "US", radiusKm: "25" },
+    { sort: "nearest" },
+    { scope: "church" },
+    { scope: "public", churchId: "other" },
+    { churchId: "other" },
+    { availability: "DRAFT" },
+    { condition: "constructor" },
+    { currency: ["USD", "CAD"] }
+  ])
+    assert.throws(() => parseExchangeListQuery(value), JSON.stringify(value));
+  assert.throws(() =>
+    parseExchangeListQuery({ availability: "RESERVED" }, true)
+  );
+});
+
+test("search cursors bind viewer, criteria and scope, expire, reject tampering and preserve the same recheck page", () => {
+  const now = new Date(),
+    query = parseExchangeListQuery({
+      q: "lamp",
+      currency: "USD",
+      basis: "item",
+      sort: "price-low"
+    });
+  const codec = exchangeSearchCursor("viewer-one", query, now),
+    page = codec.decode(undefined);
+  const reference = codec.encode(page);
+  assert.deepEqual(codec.decode(reference), page);
+  assert.equal(codec.encode(codec.decode(reference)), reference);
+  for (const wrong of [
+    exchangeSearchCursor("viewer-two", query, now),
+    exchangeSearchCursor(null, query, now),
+    exchangeSearchCursor("viewer-one", { ...query, mine: true }, now),
+    exchangeSearchCursor("viewer-one", { ...query, currency: "CAD" }, now),
+    exchangeSearchCursor("viewer-one", { ...query, sort: "price-high" }, now),
+    exchangeSearchCursor("viewer-one", query, new Date(now.getTime() + 3600001))
+  ])
+    assert.throws(() => wrong.decode(reference));
+  for (const wrong of [
+    reference + "x",
+    reference.slice(1),
+    "old-id",
+    "x".repeat(1801),
+    reference.replace(/.$/, reference.endsWith("0") ? "1" : "0")
+  ])
+    assert.throws(() => codec.decode(wrong));
+});
+
+test("catalog distance bands contain every eligible town once and disclose no coordinates", async () => {
+  const origin = (await searchDiscoveryPlaces("US", "Chicago")).places[0];
+  const bands = await discoveryPlaceBands("US", origin.id, 250);
+  assert.deepEqual(
+    bands.map((band) => band.radiusKm),
+    [10, 25, 50, 100, 250]
+  );
+  assert.ok(bands[0].placeIds.includes(origin.id));
+  const ids = bands.flatMap((band) => band.placeIds);
+  assert.equal(new Set(ids).size, ids.length);
+  const center = (await getDiscoveryPlace("US", origin.id))!;
+  for (let index = 0; index < bands.length; index++) {
+    const band = bands[index];
+    for (const id of [band.placeIds[0], band.placeIds.at(-1)].filter(
+      (id) => id !== undefined
+    )) {
+      const distance = townDistanceKm(
+        center,
+        (await getDiscoveryPlace("US", id))!
+      );
+      assert.ok(distance <= band.radiusKm);
+      if (index) assert.ok(distance > bands[index - 1].radiusKm);
+    }
+  }
+  assert.doesNotMatch(JSON.stringify(bands), /latitude|longitude/);
+  await assert.rejects(discoveryPlaceBands("CA", origin.id, 25));
+  await assert.rejects(discoveryPlaceBands("US", origin.id, 30));
+});
+
+test("listing return destinations retain only supported local search criteria", () => {
+  assert.equal(
+    exchangeReturnHref("/platform/exchange?country=US&q=desk&sort=newest"),
+    "/platform/exchange?q=desk&country=US"
+  );
+  assert.equal(
+    exchangeReturnHref("/platform/exchange/mine?state=ARCHIVED"),
+    "/platform/exchange/mine?state=ARCHIVED"
+  );
+  for (const value of [
+    "https://evil.invalid",
+    "//evil.invalid",
+    "/platform/exchange/../settings/account",
+    "/platform/exchange?returnTo=https://evil.invalid",
+    "/platform/exchange?q=desk&q=other",
+    "/platform/exchange#target",
+    ["/platform/exchange"],
+    "/platform/exchange?state=DRAFT",
+    "javascript:alert(1)"
+  ])
+    assert.equal(exchangeReturnHref(value), "/platform/exchange");
 });

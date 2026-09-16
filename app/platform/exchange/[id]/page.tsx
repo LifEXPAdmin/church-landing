@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { exchangeReturnHref } from "@/lib/platform/exchange-navigation";
 import { PlatformShell } from "@/components/platform/platform-shell";
 import { TopicReadBoundary } from "@/components/platform/topic-read-boundary";
 import { PrivateSnapshotGuard } from "@/components/platform/private-snapshot-guard";
@@ -30,13 +31,16 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false }
 };
 export default async function Page({
-  params
+  params,
+  searchParams
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ returnTo?: string | string[] }>;
 }) {
   const user = await getCurrentPlatformUser(),
     { id } = await params,
     path = `/platform/exchange/${encodeURIComponent(id)}`;
+  const returnHref = exchangeReturnHref((await searchParams).returnTo);
   let content;
   try {
     const result = await exchangeListingPage(id),
@@ -180,7 +184,11 @@ export default async function Page({
           )}
         </section>
         {result.canManage && (
-          <Link prefetch={false} className="gc-button" href={`${path}/edit`}>
+          <Link
+            prefetch={false}
+            className="gc-button"
+            href={`${path}/edit?${new URLSearchParams({ returnTo: returnHref })}`}
+          >
             Manage this listing
           </Link>
         )}
@@ -215,6 +223,13 @@ export default async function Page({
       <section className="container-shell py-8 sm:py-10">
         <div className="mx-auto max-w-3xl space-y-6">
           <ExchangeNavigation />
+          <Link
+            prefetch={false}
+            className="inline-flex min-h-11 items-center underline"
+            href={returnHref}
+          >
+            Return to listing results
+          </Link>
           {content}
         </div>
       </section>

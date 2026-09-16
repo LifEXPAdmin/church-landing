@@ -11,12 +11,24 @@ import { postId, postField } from "./post-input";
 import { expected, PortalError } from "./portal-policy";
 import { socialCommand, socialInput } from "./social-operations";
 import { communityAuthorSelect } from "./public-profile";
-import { discoveryPlaceLabel, getDiscoveryPlace } from "./discovery-places";
+import {
+  discoveryPlaceLabel,
+  getDiscoveryPlace,
+  discoveryPlaceBands
+} from "./discovery-places";
+import {
+  exchangePageChanged,
+  exchangeSearchCursor,
+  exchangeSearchWhere,
+  exchangeSearchAfter,
+  type ExchangeSearchAnchor
+} from "./exchange-search";
 import {
   EXCHANGE_EDITOR_SCHEMA,
   EXCHANGE_ITEM_POLICY,
   EXCHANGE_PHOTO_LIMIT,
-  type ExchangeState
+  type ExchangeState,
+  type ExchangeSearchQuery
 } from "./exchange-options";
 import {
   exchangeEditorFields,
@@ -81,6 +93,7 @@ const cardSelect = {
   servicePricing: true,
   serviceUnit: true,
   country: true,
+  placeId: true,
   placeLabel: true,
   audience: true,
   state: true,
@@ -647,98 +660,152 @@ export function readExchangeListing(
 export function listExchangeListings(
   db: PrismaClient,
   token: unknown,
-  query: {
-    mine?: boolean;
-    after?: string;
-    intent?: import("./exchange-options").ExchangeIntent;
-    category?: import("./exchange-options").ExchangeCategory;
-    state?: ExchangeState;
-    q?: string;
-    country?: string;
-    placeId?: number;
-  } = {}
+  query: ExchangeSearchQuery = {}
 ) {
   return withPostRead(db, token, async (tx, context) => {
     if (query.state && !query.mine)
       throw new PortalError(400, "Status filters belong to My listings.");
-    const search = query.q?.replace(/[\\%_]/g, "\\$&");
     const authority = query.mine
       ? await exchangeAuthority(tx, context)
       : { publishers: [], managers: [], moderators: [] };
     if (query.mine) requireExchangeActor(context);
+    // Validate named-place/country membership even without a radius.
+    if (query.placeId) await getDiscoveryPlace(query.country, query.placeId);
+    const bands =
+      query.radiusKm && query.country && query.placeId
+        ? await discoveryPlaceBands(
+            query.country,
+            query.placeId,
+            query.radiusKm
+          )
+        : null;
+    const codec = exchangeSearchCursor(context.actorId, query),
+      page = codec.decode(query.after),
+      at = new Date(page.at);
     const where: Prisma.ExchangeListingWhereInput = {
       AND: [
         query.mine
           ? exchangeManagementWhere(context, authority)
           : exchangeDiscoveryWhere(context),
+        exchangeSearchWhere(query),
         {
-          ...(query.intent ? { intent: query.intent } : {}),
-          ...(query.category ? { category: query.category } : {}),
-          ...(query.state ? { state: query.state } : {}),
-          ...(search
-            ? {
-                OR: [
-                  "title",
-                  "description",
-                  "requestedItems",
-                  "serviceArea"
-                ].map((key) => ({
-                  [key]: { contains: search, mode: "insensitive" }
-                }))
-              }
-            : {}),
-          ...(query.country ? { country: query.country } : {}),
-          ...(query.placeId ? { placeId: query.placeId } : {})
-        }
+          updatedAt: { lte: at },
+          ...(!query.mine ? { publishedAt: { lte: at } } : {})
+        },
+        ...(query.scope === "church" &&
+        !context.churches.includes(query.churchId!)
+          ? [{ id: { in: [] } }]
+          : []),
+        ...(bands
+          ? [{ placeId: { in: bands.flatMap((band) => band.placeIds) } }]
+          : [])
       ]
     };
-    const cursor = query.after
-      ? await tx.exchangeListing.findFirst({
-          where: { AND: [{ id: postId(query.after) }, where] },
-          select: { id: true, updatedAt: true, publishedAt: true }
-        })
-      : null;
-    if (query.after && !cursor)
-      throw new PortalError(
-        409,
-        "This listing page changed. Start again from the newest listings."
+    if (page.anchor) {
+      const anchor = await tx.exchangeListing.findFirst({
+        where: { AND: [where, { id: page.anchor.id }] },
+        select: {
+          updatedAt: true,
+          publishedAt: true,
+          priceMinor: true,
+          placeId: true
+        }
+      });
+      if (
+        !anchor ||
+        anchor.updatedAt.toISOString() !== page.anchor.updatedAt ||
+        (anchor.publishedAt?.toISOString() ?? null) !==
+          page.anchor.publishedAt ||
+        anchor.priceMinor !== page.anchor.priceMinor ||
+        (bands?.find((band) => band.placeIds.includes(anchor.placeId!))
+          ?.radiusKm ?? null) !== page.anchor.band
+      )
+        throw exchangePageChanged();
+    }
+    const orderBy: Prisma.ExchangeListingOrderByWithRelationInput[] = [
+      ...(query.sort?.startsWith("price-")
+        ? [
+            {
+              priceMinor:
+                query.sort === "price-low"
+                  ? ("asc" as const)
+                  : ("desc" as const)
+            }
+          ]
+        : []),
+      query.mine ? { updatedAt: "desc" } : { publishedAt: "desc" },
+      { id: "desc" }
+    ];
+    const selections =
+      query.sort === "nearest" && bands
+        ? bands.filter(
+            (band) => !page.anchor?.band || band.radiusKm >= page.anchor.band
+          )
+        : [null];
+    const rows: (Prisma.ExchangeListingGetPayload<{
+      select: typeof cardSelect;
+    }> & { distanceBandKm: number | null })[] = [];
+    for (const band of selections) {
+      if (band && !band.placeIds.length) continue;
+      const continued =
+        page.anchor && (!band || band.radiusKm === page.anchor.band);
+      const batch = await tx.exchangeListing.findMany({
+        where: {
+          AND: [
+            where,
+            ...(band ? [{ placeId: { in: band.placeIds } }] : []),
+            ...(continued ? [exchangeSearchAfter(query, page.anchor!)] : [])
+          ]
+        },
+        select: cardSelect,
+        orderBy,
+        take: EXCHANGE_PAGE_SIZE + 1 - rows.length
+      });
+      rows.push(
+        ...batch.map((row) => ({
+          ...row,
+          distanceBandKm:
+            bands?.find((item) => item.placeIds.includes(row.placeId!))
+              ?.radiusKm ?? null
+        }))
       );
-    const page: Prisma.ExchangeListingWhereInput[] = cursor
-      ? [
-          {
-            OR: query.mine
-              ? [
-                  { updatedAt: { lt: cursor.updatedAt } },
-                  { updatedAt: cursor.updatedAt, id: { lt: cursor.id } }
-                ]
-              : [
-                  { publishedAt: { lt: cursor.publishedAt! } },
-                  { publishedAt: cursor.publishedAt, id: { lt: cursor.id } }
-                ]
-          }
-        ]
+      if (rows.length > EXCHANGE_PAGE_SIZE) break;
+    }
+    const churches = context.churches.length
+      ? await tx.church.findMany({
+          where: { id: { in: context.churches } },
+          select: { id: true, name: true },
+          orderBy: [{ name: "asc" }, { id: "asc" }],
+          take: 201
+        })
       : [];
-    const rows = await tx.exchangeListing.findMany({
-      where: { AND: [where, ...page] },
-      select: cardSelect,
-      orderBy: [
-        query.mine ? { updatedAt: "desc" } : { publishedAt: "desc" },
-        { id: "desc" }
-      ],
-      take: EXCHANGE_PAGE_SIZE + 1
-    });
+    const last = rows[EXCHANGE_PAGE_SIZE - 1];
+    const anchor: ExchangeSearchAnchor | null = last
+      ? {
+          id: last.id,
+          updatedAt: last.updatedAt.toISOString(),
+          publishedAt: last.publishedAt?.toISOString() ?? null,
+          priceMinor: last.priceMinor,
+          band: last.distanceBandKm
+        }
+      : null;
     return {
-      listings: rows.slice(0, EXCHANGE_PAGE_SIZE).map((row) => ({
-        ...project(row),
-        description:
-          row.description.length > 220
-            ? row.description.slice(0, 220) + "…"
-            : row.description
-      })),
+      listings: rows.slice(0, EXCHANGE_PAGE_SIZE).map(({ placeId, ...row }) => {
+        void placeId;
+        return {
+          ...project(row),
+          description:
+            row.description.length > 220
+              ? row.description.slice(0, 220) + "…"
+              : row.description
+        };
+      }),
       viewerId: context.actorId,
+      churches,
+      pageCursor: codec.encode(page),
       after:
         rows.length > EXCHANGE_PAGE_SIZE
-          ? rows[EXCHANGE_PAGE_SIZE - 1].id
+          ? codec.encode({ at: page.at, anchor })
           : null
     };
   });

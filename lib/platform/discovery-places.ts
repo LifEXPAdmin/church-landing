@@ -1,7 +1,11 @@
 import { readFile } from "node:fs/promises";
 import { gunzipSync } from "node:zlib";
 import { join } from "node:path";
-import { discoveryCountry, discoveryPlaceId } from "./discovery-options";
+import {
+  DISCOVERY_RADII,
+  discoveryCountry,
+  discoveryPlaceId
+} from "./discovery-options";
 import { PortalError } from "./portal-policy";
 import { isDeviceArea } from "./device-location";
 
@@ -126,6 +130,47 @@ export function townDistanceKm(
       Math.cos(b.latitude * rad) *
       Math.sin(dlon / 2) ** 2;
   return 6371.0088 * 2 * Math.asin(Math.min(1, Math.sqrt(half)));
+}
+
+// Server-only catalog centers. Consumers receive IDs grouped into approximate
+// bands, never device or household coordinates. Bound the selection cache too.
+const bandCache = new Map<
+  string,
+  Promise<{ radiusKm: number; placeIds: number[] }[]>
+>();
+export async function discoveryPlaceBands(
+  country: string,
+  placeId: number,
+  radiusKm: number
+) {
+  if (!DISCOVERY_RADII.some((radius) => radius === radiusKm))
+    throw new PortalError(400, "Choose a supported approximate radius.");
+  const key = `${country}:${placeId}:${radiusKm}`;
+  let result = bandCache.get(key);
+  if (!result) {
+    result = (async () => {
+      const center = await getDiscoveryPlace(country, placeId);
+      if (!center) throw new PortalError(400, "Choose a named town.");
+      const bands = DISCOVERY_RADII.filter((radius) => radius <= radiusKm).map(
+        (radius) => ({ radiusKm: radius, placeIds: [] as number[] })
+      );
+      for (const row of await towns(country)) {
+        const distance = townDistanceKm(center, {
+          latitude: row[4],
+          longitude: row[5]
+        });
+        const band = bands.find((item) => distance <= item.radiusKm);
+        if (band) band.placeIds.push(row[0]);
+      }
+      return bands;
+    })().catch((error) => {
+      bandCache.delete(key);
+      throw error;
+    });
+    if (bandCache.size >= 16) bandCache.delete(bandCache.keys().next().value!);
+    bandCache.set(key, result);
+  }
+  return result;
 }
 
 export async function nearbyDiscoveryPlaces(input: Record<string, unknown>) {

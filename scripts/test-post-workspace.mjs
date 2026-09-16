@@ -146,7 +146,13 @@ try {
     `PASS: ${migrations.length} migrations and populated upgrade preservation`
   );
   const files = process.argv.includes("--exchange")
-    ? ["tests/exchange-input.test.ts", "tests/exchange-listings.test.ts"]
+    ? [
+        "tests/exchange-input.test.ts",
+        "tests/exchange-listings.test.ts",
+        ...(process.argv.includes("--exchange-cost")
+          ? ["tests/exchange-query-cost.ts"]
+          : [])
+      ]
     : process.argv.includes("--discovery")
       ? [
           "tests/discovery-options.test.ts",

@@ -83,6 +83,87 @@ export const exchangeCurrencies = {
 } as const;
 export type ExchangeCurrency = keyof typeof exchangeCurrencies;
 
+export const exchangeSortLabels = {
+  newest: "Newest first",
+  "price-low": "Lowest price first",
+  "price-high": "Highest price first",
+  nearest: "Nearest approximate area"
+} as const;
+export const exchangePriceBasisLabels = {
+  item: "For sale items",
+  hour: "Services per hour",
+  task: "Services per described task"
+} as const;
+export const exchangeAvailabilityLabels = {
+  ACTIVE: "Available now",
+  RESERVED: "Reserved",
+  ALL: "Available and reserved"
+} as const;
+export type ExchangeSearchQuery = {
+  mine?: boolean;
+  after?: string;
+  intent?: ExchangeIntent;
+  category?: ExchangeCategory;
+  condition?: ExchangeCondition;
+  state?: ExchangeState;
+  q?: string;
+  country?: string;
+  placeId?: number;
+  radiusKm?: number;
+  scope?: "all" | "public" | "church";
+  churchId?: string;
+  availability?: keyof typeof exchangeAvailabilityLabels;
+  freeOnly?: boolean;
+  currency?: ExchangeCurrency;
+  basis?: keyof typeof exchangePriceBasisLabels;
+  minPriceMinor?: number;
+  maxPriceMinor?: number;
+  sort?: keyof typeof exchangeSortLabels;
+};
+
+/** Canonical, shareable criteria; neither account state nor pagination is inferred. */
+export function exchangeSearchParams(
+  query: ExchangeSearchQuery,
+  pagination = false
+) {
+  const result = new URLSearchParams();
+  for (const key of [
+    "intent",
+    "category",
+    "condition",
+    "state",
+    "q",
+    "country",
+    "placeId",
+    "radiusKm",
+    "churchId",
+    "currency",
+    "basis"
+  ] as const) {
+    const value = query[key];
+    if (value !== undefined && value !== "") result.set(key, String(value));
+  }
+  if (query.scope && query.scope !== "all") result.set("scope", query.scope);
+  if (query.availability && query.availability !== "ACTIVE")
+    result.set("availability", query.availability);
+  if (query.sort && query.sort !== "newest") result.set("sort", query.sort);
+  if (query.freeOnly) result.set("freeOnly", "1");
+  if (query.currency) {
+    if (query.minPriceMinor !== undefined)
+      result.set(
+        "minPrice",
+        exchangePriceText(query.minPriceMinor, query.currency)
+      );
+    if (query.maxPriceMinor !== undefined)
+      result.set(
+        "maxPrice",
+        exchangePriceText(query.maxPriceMinor, query.currency)
+      );
+  }
+  if (pagination && query.after) result.set("after", query.after);
+  return result;
+}
+
 export type ExchangeEditorFields = {
   intent: ExchangeIntent;
   title: string;

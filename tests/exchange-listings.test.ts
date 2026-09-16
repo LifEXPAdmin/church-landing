@@ -769,7 +769,7 @@ test("discovery and owned pagination filter before their bounded pages and stale
   void ignoredId;
   void ignoredCreated;
   void ignoredUpdated;
-  const clock = new Date(Date.now() + 1000);
+  const clock = new Date(Date.now() - 1000);
   await db.exchangeListing.createMany({
     data: ids.map((id, index) => ({
       ...fields,
@@ -803,7 +803,7 @@ test("discovery and owned pagination filter before their bounded pages and stale
     )
   );
   await db.exchangeListing.update({
-    where: { id: first.after },
+    where: { id: first.listings.at(-1)!.id },
     data: { state: "ARCHIVED" }
   });
   await denied(
@@ -1602,4 +1602,299 @@ test("photo metadata and order use complete current listing versions; byte deliv
     (await readExchangeGallery(db, owner.token, row.id)).canManage,
     false
   );
+});
+
+test("advanced availability, price basis, condition and church scope narrow current authorized rows", async () => {
+  const owner = await createPortalActor(db, "exfilters"),
+    viewer = await createPortalActor(db, "exfilterview"),
+    stranger = await createPortalActor(db, "exfilterstranger");
+  const c = await church(
+    [owner, viewer],
+    [[viewer, "MODERATE_EXCHANGE_LISTINGS"]]
+  );
+  const marker = "Filter fixture " + randomUUID();
+  const create = async (fields: Partial<ExchangeEditorFields>) =>
+    publish(owner, await draft(owner, ready({ title: marker, ...fields })));
+  const free = await create({});
+  const wanted = await create({
+    intent: "WANTED",
+    requestedItems: "Fictional table",
+    condition: ""
+  });
+  const sale = await create({
+    intent: "SALE",
+    currency: "KWD",
+    price: "1.001"
+  });
+  const expensive = await create({
+    intent: "SALE",
+    currency: "KWD",
+    price: "1.002",
+    condition: "FAIR"
+  });
+  const otherCurrency = await create({
+    intent: "SALE",
+    currency: "USD",
+    price: "1.00"
+  });
+  const hourly = await create({
+    ...serviceFields(),
+    title: marker,
+    serviceUnit: "HOUR"
+  });
+  const task = await create({
+    ...serviceFields(),
+    title: marker,
+    serviceUnit: "TASK"
+  });
+  const freeService = await create({
+    ...serviceFields(),
+    title: marker,
+    servicePricing: "FREE",
+    serviceUnit: "",
+    price: "",
+    currency: ""
+  });
+  const privateItem = await create({
+    audience: "CHURCH",
+    audienceChurchId: c.id
+  });
+  const reserved = await status(owner, await create({}), "RESERVED");
+  const closedSource = await db.exchangeListing.findUniqueOrThrow({
+    where: { id: free.id }
+  });
+  const closed = await db.exchangeListing.create({
+    data: {
+      ...closedSource,
+      id: "fixture-closed-" + randomUUID(),
+      state: "CLOSED"
+    }
+  });
+  const ids = async (query = {}, token = viewer.token) =>
+    (await list(db, token, { q: marker, ...query })).listings.map(
+      (row) => row.id
+    );
+  assert.ok(!(await ids()).includes(reserved.id));
+  assert.deepEqual(await ids({ availability: "RESERVED" }), [reserved.id]);
+  assert.ok((await ids({ availability: "ALL" })).includes(reserved.id));
+  assert.ok(!(await ids({ availability: "ALL" })).includes(closed.id));
+  assert.deepEqual(
+    new Set(await ids({ freeOnly: true })),
+    new Set([free.id, freeService.id, privateItem.id])
+  );
+  assert.ok(!(await ids({ freeOnly: true })).includes(wanted.id));
+  assert.deepEqual(
+    await ids({
+      currency: "KWD",
+      basis: "item",
+      minPriceMinor: 0,
+      maxPriceMinor: 1001
+    }),
+    [sale.id]
+  );
+  assert.deepEqual(
+    await ids({ currency: "KWD", basis: "item", condition: "FAIR" }),
+    [expensive.id]
+  );
+  assert.deepEqual(await ids({ currency: "USD", basis: "item" }), [
+    otherCurrency.id
+  ]);
+  assert.deepEqual(await ids({ currency: "KWD", basis: "hour" }), [hourly.id]);
+  assert.deepEqual(await ids({ currency: "KWD", basis: "task" }), [task.id]);
+  assert.deepEqual(await ids({ scope: "church", churchId: c.id }), [
+    privateItem.id
+  ]);
+  assert.deepEqual(
+    await ids({ scope: "church", churchId: c.id }, stranger.token),
+    []
+  );
+  assert.ok(!(await ids({ scope: "public" })).includes(privateItem.id));
+  await db.churchConnection.update({
+    where: { userId_churchId: { userId: viewer.id, churchId: c.id } },
+    data: { state: "LEFT" }
+  });
+  assert.deepEqual(await ids({ scope: "church", churchId: c.id }), []);
+  const badTown = await handleExchangeRequest(
+    db,
+    new Request(
+      "https://127.0.0.1:3000/api/platform/exchange?country=CA&placeId=" +
+        placeId
+    )
+  );
+  assert.equal(badTown.status, 400);
+});
+
+test("signed price pages remain stable across ties and arrivals, rechecks agree, and changed anchors require refresh", async () => {
+  const owner = await createPortalActor(db, "exprices"),
+    viewer = await createPortalActor(db, "expricesview"),
+    other = await createPortalActor(db, "expricesother");
+  const marker = "Price pages " + randomUUID();
+  const base = await publish(
+    owner,
+    await draft(
+      owner,
+      ready({ title: marker, intent: "SALE", currency: "USD", price: "9.00" })
+    )
+  );
+  const {
+    id: _id,
+    createdAt: _created,
+    updatedAt: _updated,
+    ...source
+  } = await db.exchangeListing.findUniqueOrThrow({ where: { id: base.id } });
+  void _id;
+  void _created;
+  void _updated;
+  const at = new Date(Date.now() - 1000),
+    ids = Array.from({ length: 44 }, () => "fixture-price-" + randomUUID());
+  await db.exchangeListing.createMany({
+    data: ids.map((id, i) => ({
+      ...source,
+      id,
+      title: marker,
+      priceMinor: 100 + Math.floor(i / 4),
+      publishedAt: at,
+      updatedAt: at
+    }))
+  });
+  for (const sort of ["price-low", "price-high"] as const) {
+    const query = {
+      q: marker,
+      currency: "USD" as const,
+      basis: "item" as const,
+      sort
+    };
+    const first = await list(db, viewer.token, query);
+    assert.deepEqual(
+      await list(db, viewer.token, { ...query, after: first.pageCursor }),
+      first
+    );
+    assert.ok(first.after);
+    const current = [...first.listings];
+    let after: string | null = first.after;
+    while (after) {
+      const next = await list(db, viewer.token, { ...query, after });
+      current.push(...next.listings);
+      after = next.after;
+    }
+    assert.equal(current.length, 45);
+    assert.equal(new Set(current.map((row) => row.id)).size, 45);
+    assert.deepEqual(
+      current.map((row) => row.priceMinor),
+      [...current.map((row) => row.priceMinor!)].sort((a, b) =>
+        sort === "price-low" ? a - b : b - a
+      )
+    );
+    await denied(list(db, other.token, { ...query, after: first.after }), 409);
+    await denied(
+      list(db, viewer.token, { ...query, currency: "CAD", after: first.after }),
+      409
+    );
+  }
+  const query = {
+    q: marker,
+    currency: "USD" as const,
+    basis: "item" as const,
+    sort: "price-low" as const
+  };
+  const first = await list(db, viewer.token, query);
+  const arrival = await publish(
+    owner,
+    await draft(
+      owner,
+      ready({ title: marker, intent: "SALE", currency: "USD", price: "1.05" })
+    )
+  );
+  const lastId = first.listings.at(-1)!.id;
+  const second = await list(db, viewer.token, {
+    ...query,
+    after: first.after!
+  });
+  assert.ok(!second.listings.some((row) => row.id === arrival.id));
+  await db.exchangeListing.update({
+    where: { id: lastId },
+    data: { priceMinor: 101 }
+  });
+  await denied(list(db, viewer.token, { ...query, after: first.after! }), 409);
+});
+
+test("approximate nearest paging crosses authorized distance bands without candidate truncation or coordinate output", async () => {
+  const owner = await createPortalActor(db, "exdistance"),
+    viewer = await createPortalActor(db, "exdistanceview"),
+    c = await church([owner]);
+  const marker = "Distance pages " + randomUUID();
+  const base = await publish(
+    owner,
+    await draft(owner, ready({ title: marker }))
+  );
+  const { discoveryPlaceBands, getDiscoveryPlace, discoveryPlaceLabel } =
+    await import("../lib/platform/discovery-places");
+  const bands = await discoveryPlaceBands("US", placeId, 250);
+  const {
+    id: _id,
+    createdAt: _created,
+    updatedAt: _updated,
+    ...source
+  } = await db.exchangeListing.findUniqueOrThrow({ where: { id: base.id } });
+  void _id;
+  void _created;
+  void _updated;
+  const at = new Date(Date.now() - 1000);
+  const publicIds: string[] = [];
+  for (const band of bands) {
+    const place = (await getDiscoveryPlace("US", band.placeIds[0]))!;
+    const rows = Array.from({ length: 12 }, (_, index) => {
+      const id = "fixture-distance-" + randomUUID();
+      if (index < 8) publicIds.push(id);
+      return {
+        ...source,
+        id,
+        title: marker,
+        placeId: place.id,
+        placeLabel: discoveryPlaceLabel(place),
+        publishedAt: at,
+        updatedAt: at,
+        ...(index >= 8
+          ? { audience: "CHURCH" as const, audienceChurchId: c.id }
+          : {})
+      };
+    });
+    await db.exchangeListing.createMany({ data: rows });
+  }
+  const query = {
+    q: marker,
+    country: "US",
+    placeId,
+    radiusKm: 250,
+    sort: "nearest" as const
+  };
+  const found: Awaited<ReturnType<typeof list>>["listings"] = [];
+  let after: string | undefined;
+  do {
+    const page = await list(db, viewer.token, { ...query, after });
+    assert.deepEqual(
+      await list(db, viewer.token, { ...query, after: page.pageCursor }),
+      page
+    );
+    assert.ok(page.listings.length <= 20);
+    assert.doesNotMatch(
+      JSON.stringify(page.listings),
+      /latitude|longitude|placeId/
+    );
+    found.push(...page.listings);
+    after = page.after ?? undefined;
+  } while (after);
+  assert.equal(found.length, 41);
+  assert.equal(new Set(found.map((row) => row.id)).size, 41);
+  assert.ok(publicIds.every((id) => found.some((row) => row.id === id)));
+  assert.deepEqual(
+    found.map((row) => row.distanceBandKm),
+    [...found.map((row) => row.distanceBandKm!)].sort((a, b) => a - b)
+  );
+  const newest = await list(db, viewer.token, {
+    ...query,
+    sort: "newest",
+    radiusKm: 10
+  });
+  assert.ok(newest.listings.every((row) => row.distanceBandKm === 10));
 });

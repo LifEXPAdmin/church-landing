@@ -1,7 +1,11 @@
 import { PortalError } from "./portal-policy";
 import { postField, postId } from "./post-input";
 import { socialInput } from "./social-operations";
-import { discoveryCountry, discoveryPlaceId } from "./discovery-options";
+import {
+  DISCOVERY_RADII,
+  discoveryCountry,
+  discoveryPlaceId
+} from "./discovery-options";
 import { calendarDate } from "./calendar-time";
 import {
   EXCHANGE_EDITOR_SCHEMA,
@@ -16,24 +20,41 @@ import {
   exchangeCategoryLabels,
   exchangeStateLabels,
   exchangePriceText,
+  exchangeSortLabels,
+  exchangePriceBasisLabels,
+  exchangeAvailabilityLabels,
+  type ExchangeSearchQuery,
   type ExchangeCurrency,
   type ExchangeEditorFields,
   type ExchangeCategory,
   type ExchangeCondition
 } from "./exchange-options";
 
+export const exchangeSearchKeys = [
+  "intent",
+  "country",
+  "placeId",
+  "after",
+  "q",
+  "category",
+  "condition",
+  "radiusKm",
+  "scope",
+  "churchId",
+  "freeOnly",
+  "currency",
+  "basis",
+  "minPrice",
+  "maxPrice",
+  "sort"
+] as const;
 export function parseExchangeListQuery(
   input: Record<string, unknown>,
   mine = false
-) {
-  const allowed = [
-    "intent",
-    "country",
-    "placeId",
-    "after",
-    "q",
-    "category",
-    ...(mine ? ["state"] : [])
+): ExchangeSearchQuery {
+  const allowed: readonly string[] = [
+    ...exchangeSearchKeys,
+    mine ? "state" : "availability"
   ];
   if (
     Object.entries(input).some(
@@ -65,6 +86,84 @@ export function parseExchangeListQuery(
     discoveryPlaceId(input.placeId ? Number(input.placeId) : null) ?? undefined;
   if (placeId && !country)
     throw new PortalError(400, "Choose the country for this town.");
+  const radiusKm = input.radiusKm ? Number(input.radiusKm) : undefined;
+  if (
+    input.radiusKm &&
+    (!DISCOVERY_RADII.some((r) => String(r) === input.radiusKm) || !placeId)
+  )
+    throw new PortalError(
+      400,
+      "Choose a named town and a supported approximate radius."
+    );
+  const scope = input.scope
+    ? choice(input.scope, { all: 1, public: 1, church: 1 }, "audience scope")
+    : undefined;
+  const churchId = input.churchId ? postId(input.churchId) : undefined;
+  if ((scope === "church") !== !!churchId)
+    throw new PortalError(
+      400,
+      "Choose one of your current churches for church-only results."
+    );
+  const condition = input.condition
+    ? choice(input.condition, exchangeConditionLabels, "condition")
+    : undefined;
+  const availability = input.availability
+    ? choice(input.availability, exchangeAvailabilityLabels, "availability")
+    : undefined;
+  const sort = input.sort
+    ? choice(input.sort, exchangeSortLabels, "sort order")
+    : undefined;
+  const freeOnly = input.freeOnly === "1" || undefined;
+  if (input.freeOnly && input.freeOnly !== "1")
+    throw new PortalError(400, "Use the Free only choice.");
+  const currency = input.currency
+    ? choice(input.currency, exchangeCurrencies, "currency")
+    : undefined;
+  const basis = input.basis
+    ? choice(input.basis, exchangePriceBasisLabels, "price basis")
+    : undefined;
+  const priced = !!(
+    currency ||
+    basis ||
+    input.minPrice ||
+    input.maxPrice ||
+    sort?.startsWith("price-")
+  );
+  if (priced && (!currency || !basis || freeOnly))
+    throw new PortalError(
+      400,
+      "Choose both a currency and price basis, or clear paid-price choices to use Free only."
+    );
+  const minPriceMinor = input.minPrice
+    ? exchangePriceMinor(input.minPrice, currency, true)
+    : undefined;
+  const maxPriceMinor = input.maxPrice
+    ? exchangePriceMinor(input.maxPrice, currency, true)
+    : undefined;
+  if (
+    minPriceMinor !== undefined &&
+    maxPriceMinor !== undefined &&
+    minPriceMinor > maxPriceMinor
+  )
+    throw new PortalError(
+      400,
+      "The minimum price must not exceed the maximum price."
+    );
+  if (sort === "nearest" && !radiusKm)
+    throw new PortalError(
+      400,
+      "Choose a named town and approximate radius before sorting by nearest area."
+    );
+  if (
+    input.after &&
+    (typeof input.after !== "string" ||
+      input.after.length > 1800 ||
+      !/^[A-Za-z0-9_-]+\.[a-f0-9]{64}$/.test(input.after))
+  )
+    throw new PortalError(
+      409,
+      "This listing page changed. Refresh the current search."
+    );
   return {
     intent,
     category,
@@ -72,7 +171,18 @@ export function parseExchangeListQuery(
     q: q || undefined,
     country,
     placeId,
-    after: input.after ? postId(input.after) : undefined
+    radiusKm,
+    scope,
+    churchId,
+    condition,
+    availability,
+    sort,
+    freeOnly,
+    currency,
+    basis,
+    minPriceMinor,
+    maxPriceMinor,
+    after: (input.after as string) || undefined
   };
 }
 
@@ -86,7 +196,11 @@ function choice<T extends object>(
   return value as keyof T;
 }
 
-export function exchangePriceMinor(value: unknown, currency: unknown) {
+export function exchangePriceMinor(
+  value: unknown,
+  currency: unknown,
+  allowZero = false
+) {
   const code = choice(
     currency,
     exchangeCurrencies,
@@ -113,7 +227,7 @@ export function exchangePriceMinor(value: unknown, currency: unknown) {
     Number((parts[2] ?? "").padEnd(digits, "0"));
   if (
     !Number.isSafeInteger(minor) ||
-    minor < 1 ||
+    minor < (allowZero ? 0 : 1) ||
     minor > EXCHANGE_MAX_PRICE_MINOR
   )
     throw new PortalError(

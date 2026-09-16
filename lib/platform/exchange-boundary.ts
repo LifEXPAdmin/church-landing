@@ -5,7 +5,7 @@ import { readAccountSession } from "./accounts";
 import { allowWorkspaceAttempt } from "./account-limits";
 import { PortalError } from "./portal-policy";
 import { workspaceError, workspaceHeaders } from "./post-workspace-boundary";
-import { parseExchangeListQuery } from "./exchange-input";
+import { exchangeSearchKeys, parseExchangeListQuery } from "./exchange-input";
 import {
   exchangeListingCommand,
   listExchangeListings,
@@ -48,13 +48,8 @@ export async function handleExchangeRequest(
         view === "list" || view === "mine"
           ? [
               "view",
-              "after",
-              "intent",
-              "country",
-              "placeId",
-              "q",
-              "category",
-              ...(view === "mine" ? ["state"] : [])
+              ...exchangeSearchKeys,
+              view === "mine" ? "state" : "availability"
             ]
           : view === "context"
             ? ["view"]

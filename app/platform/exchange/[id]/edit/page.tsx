@@ -6,9 +6,16 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false }
 };
 export default async function Page({
-  params
+  params,
+  searchParams
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ returnTo?: string | string[] }>;
 }) {
-  return <ExchangeEditorPage id={(await params).id} />;
+  return (
+    <ExchangeEditorPage
+      id={(await params).id}
+      returnTo={(await searchParams).returnTo}
+    />
+  );
 }
