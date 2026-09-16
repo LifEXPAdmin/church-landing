@@ -138,11 +138,21 @@ const saved = () =>
   page
     .getByText("Your measurement choices were saved.", { exact: true })
     .waitFor();
+let priorIncludedIds = [];
 try {
   // Synthetic dates are used only in this guarded local fixture. They never
   // stand in for production maturity or real people's choices.
+  // A reused isolated database can contain opted-in actors from other suites.
+  // Temporarily exclude those fictional actors so empty/cohort assertions are
+  // owned by this run, then restore their existing measurement flags.
+  priorIncludedIds = (
+    await db.platformUser.findMany({
+      where: { username: { startsWith: "p_" }, metricExcluded: false },
+      select: { id: true }
+    })
+  ).map((actor) => actor.id);
   await db.platformUser.updateMany({
-    where: { username: { startsWith: "p_mqa" } },
+    where: { id: { in: priorIncludedIds } },
     data: { metricExcluded: true }
   });
   const previous = await db.platformMetricConfiguration.findFirstOrThrow({
@@ -636,5 +646,9 @@ try {
   throw error;
 } finally {
   await browser.close();
+  await db.platformUser.updateMany({
+    where: { id: { in: priorIncludedIds } },
+    data: { metricExcluded: false }
+  });
   await db.$disconnect();
 }

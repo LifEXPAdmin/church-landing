@@ -1,3 +1,15 @@
+## Website writing ready for publication — September 16, 2026 UTC
+
+Application candidate `de9f665` prepares **2026.09.16.3 / clear-website-writing**.
+The [copy acceptance receipt](WEBSITE_COPY_ACCEPTANCE.md) records the complete
+source audit, standing instructions and enforced build check. Eight focused test
+files contribute 60 passing checks, and 39 isolated production-browser groups
+pass with member content preserved. Types, scoped lint and the clean production
+build pass. Schema/provider/account protections are unchanged.
+
+Continue exact canonical release and actual live verification before closing the
+feature, then continue the unified queue. Keep final review last.
+
 ## Notifications and adult photo tags verified live — September 16, 2026 UTC
 
 **2026.09.16.2 / 8023e809f30acf52a863fc11c0f06d8d304ee8c1** is READY in

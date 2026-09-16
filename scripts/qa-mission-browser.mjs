@@ -180,10 +180,7 @@ try {
       await page
         .getByRole("heading", { name: "No posts yet.", exact: true })
         .waitFor();
-    else
-      await page
-        .getByText(post.content, { exact: true })
-        .waitFor();
+    else await page.getByText(post.content, { exact: true }).waitFor();
     await page.screenshot({
       path: output + "/first-screen-" + (empty ? "empty" : "populated") + ".png"
     });
@@ -303,7 +300,9 @@ try {
     .getByRole("heading", { name: "Home", exact: true, level: 1 })
     .waitFor();
   assert.equal(await page.locator(".gc-mission").count(), 0);
-  await page.locator("#compose-post summary").waitFor();
+  await page
+    .getByRole("button", { name: "Share what's on your heart", exact: true })
+    .waitFor();
   assert.equal(
     await page
       .getByText("You have a place in this mission.", { exact: true })
@@ -311,7 +310,7 @@ try {
     0
   );
   await page
-    .getByRole("navigation", { name: "Platform", exact: true })
+    .getByRole("navigation", { name: "Feed choices", exact: true })
     .getByRole("link", { name: "My feed", exact: true })
     .click();
   await page

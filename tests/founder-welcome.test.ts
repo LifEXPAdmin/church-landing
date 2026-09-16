@@ -98,7 +98,7 @@ test("only new eligible accounts receive one exact approved canonical welcome ac
   );
   assert.equal(
     createHash("sha256").update(FOUNDER_WELCOME_BODY).digest("hex"),
-    "755254c9da06c9d529073d0e1569a38bff0a9ceaa24c15354ba9eba6f852fee5"
+    "9d070a4b6cb67f548330e673c96608f1b974d525fd2713b7c9e6a14cc59b09dd"
   );
   assert.equal(welcome.conversation.sendingAllowed, false);
   assert.equal(

@@ -8,6 +8,11 @@ conversation/physical-device acceptance remains separate.
 
 ## New accounts and canonical messages
 
+The 16 September website-writing change removes only the dash before Andrew's
+signature in the template used for future welcomes. Existing stored welcomes and
+conversation receipts stay unchanged. [Copy acceptance](WEBSITE_COPY_ACCEPTANCE.md)
+records the new exact-body checksum check and canonical reply/browser regression.
+
 Only password/Google accounts created while `FOUNDER_WELCOME_ENABLED=true` receive
 a durable pending-welcome intent. No migration, login or content update creates
 intents for existing accounts. Signup commits independently of queue, founder or
