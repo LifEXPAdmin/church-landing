@@ -7,6 +7,7 @@ import { pushAvailable } from "./push-config";
 import { imagesAvailable } from "./media-storage";
 import { eligibleWhere } from "./portal-policy";
 import { socialActivityConfiguration } from "./social-activity-limits";
+import { privilegedMode } from "./privileged-auth-policy";
 
 type Backlog = {
   pending: number;
@@ -19,6 +20,7 @@ type WorkerSnapshot = {
   uploads: { active: number; expired: number };
   notifications: Backlog;
   failedDeliveries24h: number;
+  securityNotices: { pending: number; exhausted: number; oldestPendingAt: string | null };
   retention: {
     pendingControls: number;
     oldestControlAt: string | null;
@@ -61,6 +63,8 @@ export async function readOperationalHealth(
             FROM "NotificationDelivery" WHERE state IN ('QUEUED','IN_FLIGHT')) n),
         'failedDeliveries24h', (SELECT count(*) FROM "NotificationDelivery" WHERE state='FINISHED'
           AND outcome='FAILED' AND "finishedAt">=${new Date(now.getTime() - 86_400_000).toISOString()}::timestamp),
+        'securityNotices', (SELECT json_build_object('pending',count(*),'exhausted',count(*) FILTER (WHERE attempts>=5),
+          'oldestPendingAt',min("createdAt") AT TIME ZONE 'UTC') FROM "PrivilegedSecurityNotice" WHERE "deliveredAt" IS NULL),
         'retention', json_build_object(
           'pendingControls',(SELECT count(*) FROM "RetentionControl" WHERE "journaledAt" IS NULL),
           'oldestControlAt',(SELECT min("createdAt") AT TIME ZONE 'UTC' FROM "RetentionControl" WHERE "journaledAt" IS NULL),
@@ -94,6 +98,7 @@ export async function readOperationalHealth(
     { maxWait: 3000, timeout: 6000 }
   );
   const ages = {
+    securityNoticeSeconds: secondsSince(snapshot.securityNotices.oldestPendingAt, now),
     scheduledDueSeconds: secondsSince(snapshot.scheduledPosts.oldestDueAt, now),
     activityPendingSeconds: secondsSince(
       snapshot.activityFanout.oldestPendingAt,
@@ -127,6 +132,8 @@ export async function readOperationalHealth(
   if ((ages.notificationDueSeconds ?? 0) > 300)
     alerts.push("notification_backlog");
   if (snapshot.failedDeliveries24h) alerts.push("notification_failures");
+  if (snapshot.securityNotices.exhausted || (ages.securityNoticeSeconds ?? 0) > 300)
+    alerts.push("authenticator_notice_backlog");
   if ((ages.activityPendingSeconds ?? 0) > 300)
     alerts.push("domain_activity_backlog");
   if ((ages.conversationPendingSeconds ?? 0) > 300)
@@ -155,6 +162,8 @@ export async function readOperationalHealth(
     },
     configuration: {
       socialActivity,
+      authenticatorEnrollmentEnabled: privilegedMode() !== "off",
+      privilegedMfaEnforced: privilegedMode() === "enforce",
       uploadsEnabled: imagesAvailable(),
       privateStorageConfigured: !!(
         process.env.BLOB_READ_WRITE_TOKEN || process.env.BLOB_STORE_ID

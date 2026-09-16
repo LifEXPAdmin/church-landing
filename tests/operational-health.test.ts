@@ -34,6 +34,25 @@ const request = (authorization = `Bearer ${secret}`, method = "GET") =>
     }
   });
 
+test("essential authenticator notices remain in aggregate private health after automatic retries end", async () => {
+  const actor = await createPortalActor(db, "mfahealth");
+  const now = new Date(), baseline = await readOperationalHealth(db, now);
+  const notice = await db.privilegedSecurityNotice.create({ data: {
+    userId: actor.id, factorVersion: 1, action: "confirmed", attempts: 5,
+    createdAt: new Date(now.getTime() - 360000)
+  } });
+  try {
+    const pending = await readOperationalHealth(db, now);
+    assert.equal(pending.queues.securityNotices.pending, baseline.queues.securityNotices.pending + 1);
+    assert.equal(pending.queues.securityNotices.exhausted, baseline.queues.securityNotices.exhausted + 1);
+    assert.ok(pending.alerts.includes("authenticator_notice_backlog"));
+    assert.ok((pending.ages.securityNoticeSeconds ?? 0) >= 360);
+    for (const privateValue of [actor.id, actor.email, actor.token, notice.id]) assert.ok(!JSON.stringify(pending).includes(privateValue));
+    await db.privilegedSecurityNotice.update({ where: { id: notice.id }, data: { deliveredAt: now } });
+    assert.equal((await readOperationalHealth(db, now)).queues.securityNotices.pending, baseline.queues.securityNotices.pending);
+  } finally { await db.privilegedSecurityNotice.delete({ where: { id: notice.id } }); }
+});
+
 test("pending conversation fanout appears in private health with its age and clears after completion", async () => {
   const actor = await createPortalActor(db, "followerhealth");
   const post = await db.platformPost.create({

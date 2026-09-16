@@ -443,6 +443,10 @@ function AdminHealth({ data }: { data: Health }) {
   );
 }
 const healthLabels: Record<string, string> = {
+  securityNotices: "Authenticator security notices",
+  exhausted: "Automatic retries exhausted",
+  authenticatorEnrollmentEnabled: "Authenticator enrollment",
+  privilegedMfaEnforced: "Authenticator required for assigned duties",
   uploadsEnabled: "Photo uploads",
   privateStorageConfigured: "Private storage",
   pushConfigured: "Push delivery",
