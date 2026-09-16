@@ -314,7 +314,7 @@ export function MessageWorkspace({
             prefetch={false}
             className="gc-button gc-button-quiet"
           >
-            Activity
+            Notifications
           </Link>
           <Link
             prefetch={false}

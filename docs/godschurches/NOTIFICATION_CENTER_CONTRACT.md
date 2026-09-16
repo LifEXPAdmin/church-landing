@@ -31,7 +31,10 @@ Explicit post mention selections persist in private drafts. Draft save produces
 no alert; publication and scheduled execution use current adult consent, bilateral
 blocks and source access. A recipient has one canonical mention intent per post,
 including after edits/retries. An older client cannot silently drop a saved draft's
-selected mentions. Existing comment consent behavior remains with its current owner.
+selected mentions. Reopened selections resolve current permitted names without
+storing a name copy in the draft; current blocks, consent and adult eligibility
+also govern this bounded lookup. Existing comment consent behavior remains with
+its current owner.
 
 A newly opened church volunteer role creates one bounded fanout through the
 existing worker. Eligible current church members must have enabled that church's

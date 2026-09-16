@@ -84,7 +84,8 @@ export function readPostMentionSuggestions(
   db: PrismaClient,
   token: unknown,
   q: unknown,
-  after?: unknown
+  after?: unknown,
+  selected?: unknown
 ) {
   return withPostRead(db, token, async (tx, context) => {
     if (!context.actorId || !context.eligible)
@@ -92,7 +93,12 @@ export function readPostMentionSuggestions(
         403,
         "Complete adult account setup before choosing mentions."
       );
-    if (typeof q !== "string" || q.trim().length < 2 || q.length > 100)
+    const ids = selected === undefined ? null : personMentionIds(selected);
+    const query = typeof q === "string" ? q.trim() : "";
+    if (
+      ids === null &&
+      (query.length < 2 || typeof q !== "string" || q.length > 100)
+    )
       throw new PortalError(
         400,
         "Enter at least two characters to find someone."
@@ -105,23 +111,31 @@ export function readPostMentionSuggestions(
           {
             id: {
               not: context.actorId,
-              ...(after ? { gt: postId(after) } : {})
+              ...(ids !== null
+                ? { in: ids }
+                : after
+                  ? { gt: postId(after) }
+                  : {})
             },
-            OR: [
-              { name: { contains: q.trim(), mode: "insensitive" } },
-              {
-                username: {
-                  contains: q.trim().replace(/^@/, ""),
-                  mode: "insensitive"
-                }
-              }
-            ]
+            ...(ids !== null
+              ? {}
+              : {
+                  OR: [
+                    { name: { contains: query, mode: "insensitive" } },
+                    {
+                      username: {
+                        contains: query.replace(/^@/, ""),
+                        mode: "insensitive"
+                      }
+                    }
+                  ]
+                })
           }
         ]
       },
       select: { id: true, name: true, username: true },
       orderBy: { id: "asc" },
-      take: 21
+      take: ids !== null ? 5 : 21
     });
     const items = [];
     for (const person of rows.slice(0, 20))
@@ -133,7 +147,7 @@ export function readPostMentionSuggestions(
     return {
       ownerId: context.actorId,
       items,
-      nextCursor: rows.length > 20 ? rows[19].id : null
+      nextCursor: ids === null && rows.length > 20 ? rows[19].id : null
     };
   });
 }

@@ -359,6 +359,7 @@ function ComposerDraft({
                 Mention people ({draft.mentionIds?.length ?? 0})
               </summary>
               <CommentMentions
+                resolveSelections
                 owner={state.ownerId}
                 ids={draft.mentionIds ?? []}
                 onChange={(mentionIds) =>

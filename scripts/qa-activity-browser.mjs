@@ -157,7 +157,7 @@ try {
     .locator(".gc-menu-page a")
     .evaluateAll((a) => a.map((l) => l.getAttribute("href")));
   assert.equal(menuLinks[0], "/platform/invitations");
-  await page.locator('a[href="/platform/activity"]').click();
+  await page.locator('main a[href="/platform/activity"]').click();
   await total(50);
   assert.equal(await rows().count(), 20);
   assert.equal(
@@ -462,9 +462,9 @@ try {
   await go("/platform/features");
   await page
     .getByRole("searchbox", { name: "Search features" })
-    .fill("Your Activity");
+    .fill("Notifications");
   await page
-    .getByRole("heading", { name: "Your Activity", exact: true })
+    .getByRole("heading", { name: "Notifications", exact: true })
     .waitFor();
   await go("/platform/releases/personal-activity");
   await page.getByRole("heading", { name: "Version 2026.09.13.31" }).waitFor();

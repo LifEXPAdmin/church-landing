@@ -74,6 +74,7 @@ function EditPost({ post, owner }: { post: PostEditorView; owner: string }) {
       </p>
       <PostDraftFields draft={draft} change={setDraft} />
       <CommentMentions
+        resolveSelections
         owner={owner}
         ids={draft.mentionIds ?? []}
         onChange={(mentionIds) => setDraft({ ...draft, mentionIds })}

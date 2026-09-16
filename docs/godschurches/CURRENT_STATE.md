@@ -1,5 +1,14 @@
 ## Notifications and adult tag integration checkpoint — September 16, 2026 UTC
 
+The first production-browser pass completed all eight source/navigation groups
+without page errors. The first full gate stopped at an older church-role summary
+assertion; the updated assertion preserves private role/capability exclusions and
+all 11 focused checks pass. Reopened mention labels now use current permitted
+names; five mention checks, types and scoped lint pass. The protected production
+copy upgrades 84 to 89 migrations, preserving all original columns in 119 tables,
+with protected replay complete and restored plaintext removed. A fresh full gate
+and rebuilt browser acceptance remain required for these final changes.
+
 The P1 visible Notifications feature is implemented locally on the unified branch.
 The shared labeled header, All/Unread/read controls, post mentions, private adult
 photo-tag review and approved associations, friend acceptance and new volunteer

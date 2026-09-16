@@ -43,6 +43,61 @@ const publish = (token: string, fields: object) =>
     ...fields
   });
 
+test("reopened mention selections resolve current permitted names and cannot bypass consent, blocks or adult eligibility", async () => {
+  const a = await createPortalActor(db, "mentionlabelsactor"),
+    b = await createPortalActor(db, "mentionlabelsreader");
+  const selected = () =>
+    readPostMentionSuggestions(db, a.token, undefined, undefined, [b.id]);
+  assert.deepEqual((await selected()).items, [
+    { id: b.id, name: b.name, username: b.username }
+  ]);
+  await db.platformUser.update({
+    where: { id: b.id },
+    data: { name: "Updated permitted name" }
+  });
+  assert.equal((await selected()).items[0].name, "Updated permitted name");
+  await db.socialPreferences.create({
+    data: { ownerId: b.id, mentions: "NOBODY" }
+  });
+  assert.deepEqual((await selected()).items, []);
+  await db.socialPreferences.update({
+    where: { ownerId: b.id },
+    data: { mentions: "EVERYONE" }
+  });
+  await db.socialRelationship.create({
+    data: { ownerId: b.id, targetUserId: a.id, blocked: true }
+  });
+  assert.deepEqual((await selected()).items, []);
+  await db.socialRelationship.deleteMany({ where: { ownerId: b.id } });
+  await db.platformUser.update({
+    where: { id: b.id },
+    data: { adultAcknowledgedAt: null }
+  });
+  assert.deepEqual((await selected()).items, []);
+  assert.deepEqual(
+    (
+      await readPostMentionSuggestions(db, a.token, undefined, undefined, [
+        a.id
+      ])
+    ).items,
+    []
+  );
+  await assert.rejects(
+    readPostMentionSuggestions(db, a.token, undefined, undefined, [b.id, b.id]),
+    /once/
+  );
+  await assert.rejects(
+    readPostMentionSuggestions(
+      db,
+      a.token,
+      undefined,
+      undefined,
+      Array.from({ length: 6 }, () => randomUUID())
+    ),
+    /five/
+  );
+});
+
 test("a selected post mention creates one canonical event, exact source and summary while edits and retries do not repeat it", async () => {
   const author = await createPortalActor(db, "postmentionauthor"),
     reader = await createPortalActor(db, "postmentionreader");

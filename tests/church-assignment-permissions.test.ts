@@ -144,7 +144,7 @@ test("welcome host permission is deliberately delegated through the ordinary rol
   await denied(read());
 });
 
-test("reviewed role changes create owned, generic and retry-safe Activity while optional alerts preserve operational permissions", async () => {
+test("reviewed role changes create owned, church-labeled and retry-safe Activity while optional alerts preserve operational permissions", async () => {
   const f = await fixture(),
     position = await f.position(),
     key = randomUUID();
@@ -168,7 +168,8 @@ test("reviewed role changes create owned, generic and retry-safe Activity while 
   });
   assert.ok(
     activity.items.some(
-      (row) => row.summary === "Your church role or access changed"
+      (row) =>
+        row.summary === `Your role or access at ${f.churchA.name} changed`
     )
   );
   assert.doesNotMatch(

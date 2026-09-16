@@ -442,6 +442,22 @@ try {
 
   phase = "post-mention-composer";
   await signIn(author);
+  const selectionsPath = `/api/platform/posts?view=mention-selections&id=${reader.id}`;
+  for (const [suffix, expectedOwner, status] of [
+    ["", undefined, 401],
+    ["", reader.id, 401],
+    ["&q=unexpected", author.id, 400],
+    [`&id=${reader.id}`, author.id, 400],
+    ["&view=mentions", author.id, 400]
+  ]) {
+    const response = await context.request.get(
+      config.origin + selectionsPath + suffix,
+      {
+        headers: expectedOwner ? { "X-Expected-Account": expectedOwner } : {}
+      }
+    );
+    assert.equal(response.status(), status);
+  }
   await go("/platform");
   await page.locator("#compose-post").click();
   const form = page.getByRole("form", { name: "Publish post", exact: true });
@@ -473,6 +489,14 @@ try {
     }),
     0
   );
+  await go(
+    `/platform/drafts?resume=${encodeURIComponent(savedDraft.id)}#resume`
+  );
+  await form.getByLabel("Post content", { exact: true }).waitFor();
+  await form.locator("summary").filter({ hasText: "Mention people" }).click();
+  await form
+    .getByRole("button", { name: `Remove ${reader.name}`, exact: true })
+    .waitFor();
   await form.getByRole("button", { name: "Post", exact: true }).click();
   await form
     .getByRole("link", { name: "View published post", exact: true })
@@ -492,7 +516,7 @@ try {
   await openCenter(reader);
   await sourceRow(`/platform/posts/${liveMention.id}`).waitFor();
   ok(
-    "The real composer persists a chosen mention privately and publishes its canonical notification"
+    "The real composer saves and reopens a chosen mention with its permitted name, then publishes its canonical notification"
   );
 
   phase = "church-volunteer-request";
@@ -665,13 +689,37 @@ try {
     }
   });
   assert.equal(state?.readThrough ?? 0, 0);
+  const observedRead = page.waitForResponse(
+    (response) =>
+      new URL(response.url()).pathname === "/api/platform/messages" &&
+      response.request().method() === "POST" &&
+      response.request().postDataJSON()?.operation === "read"
+  );
   await messageRow
     .getByRole("link", { name: "Open item", exact: true })
     .click();
   await page
+    .getByLabel("Conversation", { exact: true })
     .getByText("Fictional notification message 1", { exact: true })
     .waitFor();
+  assert.equal((await observedRead).ok(), true);
+  assert.equal(
+    (
+      await db.adultConversationState.findUniqueOrThrow({
+        where: {
+          conversationId_ownerId: {
+            conversationId: accepted.conversationId,
+            ownerId: messageOwner.id
+          }
+        }
+      })
+    ).readThrough,
+    2
+  );
   await page.goBack();
+  await page
+    .locator('[aria-label="2 unread message or request alerts"]')
+    .waitFor({ state: "detached" });
   await badge(0);
   ok(
     "Real contact and message actions create exact links and grouped alerts; reading notifications never falsely reads the messages"
@@ -688,6 +736,12 @@ try {
   assert.deepEqual(errors, []);
   await page.screenshot({
     path: output + "/notifications.png",
+    fullPage: true
+  });
+  await page.setViewportSize({ width: 320, height: 900 });
+  await bounded();
+  await page.screenshot({
+    path: output + "/notifications-mobile.png",
     fullPage: true
   });
   writeFileSync(

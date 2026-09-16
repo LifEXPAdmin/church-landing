@@ -1,5 +1,5 @@
 "use client";
-import { useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { socialRequest } from "@/lib/platform/social-client";
 type Person = { id: string; name: string; username: string };
 export function CommentMentions({
@@ -8,6 +8,7 @@ export function CommentMentions({
   owner,
   ids,
   onChange,
+  resolveSelections = false,
   disabled = false
 }: {
   postId?: string;
@@ -15,6 +16,7 @@ export function CommentMentions({
   owner: string;
   ids: string[];
   onChange: (ids: string[], person?: Person) => void;
+  resolveSelections?: boolean;
   disabled?: boolean;
 }) {
   const limit = photoId ? 1 : 5;
@@ -27,6 +29,45 @@ export function CommentMentions({
     [active, setActive] = useState(0),
     [pending, setPending] = useState(false),
     [message, setMessage] = useState("");
+  const selectionKey = JSON.stringify([owner, ids]);
+  const [resolved, setResolved] = useState<{
+    key: string;
+    names: Record<string, string>;
+  } | null>(null);
+  useEffect(() => {
+    if (!resolveSelections) return;
+    const [selectedOwner, selectedIds] = JSON.parse(selectionKey) as [
+      string,
+      string[]
+    ];
+    if (!selectedIds.length) return;
+    let current = true;
+    const query = new URLSearchParams({ view: "mention-selections" });
+    for (const id of selectedIds) query.append("id", id);
+    void socialRequest<{ items: Person[] }>(
+      `/api/platform/posts?${query}`,
+      undefined,
+      selectedOwner
+    )
+      .then(({ data }) => {
+        if (current)
+          setResolved({
+            key: selectionKey,
+            names: Object.fromEntries(data.items.map((p) => [p.id, p.name]))
+          });
+      })
+      .catch(() => {
+        if (current) {
+          setResolved({ key: selectionKey, names: {} });
+          setMessage(
+            "Selected names could not be confirmed. Your text and selections are still here."
+          );
+        }
+      });
+    return () => {
+      current = false;
+    };
+  }, [resolveSelections, selectionKey]);
   async function search(after?: string) {
     const request = ++seq.current;
     setPending(true);
@@ -178,7 +219,12 @@ export function CommentMentions({
                 disabled={disabled}
                 onClick={() => onChange(ids.filter((v) => v !== id))}
               >
-                Remove {names[id] ?? `selected mention ${i + 1}`}
+                Remove{" "}
+                {(resolveSelections
+                  ? resolved?.key === selectionKey
+                    ? resolved.names[id]
+                    : undefined
+                  : names[id]) ?? `selected mention ${i + 1}`}
               </button>
             </li>
           ))}

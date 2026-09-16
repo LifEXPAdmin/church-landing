@@ -45,7 +45,7 @@ export async function handlePostRequest(
           "Your sign-in changed. Reload before continuing."
         );
       const view = url.searchParams.get("view");
-      if (view === "mentions") {
+      if (view === "mentions" || view === "mention-selections") {
         if (!expectedAccount)
           throw new PortalError(
             401,
@@ -54,19 +54,25 @@ export async function handlePostRequest(
         if (
           [...url.searchParams.keys()].some(
             (key) =>
-              !["view", "q", "after"].includes(key) ||
-              url.searchParams.getAll(key).length !== 1
+              !(
+                view === "mentions" ? ["view", "q", "after"] : ["view", "id"]
+              ).includes(key) ||
+              (!(view === "mention-selections" && key === "id") &&
+                url.searchParams.getAll(key).length !== 1)
           )
         )
           throw new PortalError(400, "Choose supported mention search fields.");
       }
       const result =
-        view === "mentions"
+        view === "mentions" || view === "mention-selections"
           ? await readPostMentionSuggestions(
               db,
               token,
               url.searchParams.get("q"),
-              url.searchParams.get("after")
+              url.searchParams.get("after"),
+              view === "mention-selections"
+                ? url.searchParams.getAll("id")
+                : undefined
             )
           : view === "scheduled"
             ? await getScheduledPosts(db, token, url.searchParams.get("after"))
