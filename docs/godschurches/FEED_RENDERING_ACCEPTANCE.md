@@ -41,13 +41,21 @@ results are not browser response times or hosted percentile claims. An earlier
 comparison concurrent with focused fixture tests is retained separately and is
 not the reported clean comparison.
 
+Built candidate `c632ab4` completed the same bounded HTTP staircase with all
+333 Home reads successful: five-client p95 162 ms, 25-client 530 ms, and
+100-client 2,125 ms. Response bytes were 122,284,940 versus 122,604,979 before.
+This single warmed before/after diagnostic supports a local improvement, but the
+100-client response time remains above one second and does not certify hosting.
+
 Focused verification passes 57 checks across seven files: regional presentation,
 dense comment visibility, both feed families, reposts, profile pins and regional
 preferences. It includes current block/count equivalence, source discussion
 preservation, locale/options/zone separation, bounded-cache churn and changing
 implicit zones. Fresh/populated migration and isolated restore checks, TypeScript
-and scoped lint pass. Build, browser, release and canonical live acceptance remain
-within this feature cycle.
+and scoped lint pass. The production build passes hydration and all 191 runtime
+trace guards. Thirty-seven production-browser groups pass: 11 four-feed, eight
+repost, seven regional and 11 discovery, with zero browser errors. Publication
+and exact canonical live acceptance remain within this feature cycle.
 
 ## Current hosting limits
 
@@ -66,6 +74,14 @@ team against a displayed 10 GB allowance; this observation does not establish
 an outage or authorize deletion. No purchase, provider reconfiguration or
 production retention change occurred. No new cloud load was added; cumulative
 experiment budgets and the earlier unmet hosted target remain binding.
+
+The authenticated production Neon view shows the Free plan, one branch, fixed
+0.25-CU minimum and maximum (approximately 1 GB RAM), 105 direct or 10,000 pooled
+connections and suspension after five idle minutes. Since 1 September it reports
+22.31 of 100 CU-hours, 0.04 of 0.5 GB storage, 0.12 of 5 GB network transfer and
+zero history storage; the dashboard allows up to one hour of reporting delay.
+The compute inspection was cancelled without saving. This does not reproduce the
+larger fictional workload on production or establish sustainable concurrency.
 
 Private raw profiles, fixtures, paired timings, failed certificate attempt and
 provider receipts are retained outside Git. Production writes and sends: zero.
