@@ -1,5 +1,21 @@
 # Pilot capacity, costs and recovery limits
 
+## Resource and local-cost refresh — September 16, 2026 UTC
+
+Fresh authenticated hosting measurements and the current dense-fixture feed
+comparison are in [the feed-cost receipt](FEED_RENDERING_ACCEPTANCE.md). Local
+100-client response p95 improves from 2.339 to 2.125 seconds, still above the
+proposed one-second target. This short diagnostic does not replace the distinct
+sustained/hosted results below. The hosted feed and medium-photo targets remain
+unmet; no additional cloud experiment or production compute change occurred.
+
+Current shared Blob simple/advanced usage is 71.09%/78.95%, triggering the existing
+headroom review. Production Neon remains fixed at 0.25 CU, with 22.31/100 CU-hours
+reported since September 1. Cumulative cloud experiment counters and the 85%
+bulk-experiment pause threshold below remain binding. Actual Resend plan/usage
+is still inaccessible through existing-integration sign-in; operator coverage
+remains a separate prerequisite. Preserve user content and rollback history.
+
 ## Additional shared-build observation — September 15, 2026 UTC
 
 Read-only provider inspection confirms a second project linked to the same main

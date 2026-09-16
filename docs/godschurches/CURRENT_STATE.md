@@ -1,18 +1,22 @@
-## Measured feed-cost candidate — September 16, 2026 UTC
+## Measured feed-cost repair verified live — September 16, 2026 UTC
 
-Candidate **2026.09.16.8 / c632ab4** removes unused feed comment-preview reads
-and repeated timestamp-formatter construction. Production remains verified
-**2026.09.16.7 / 777760c** until exact release acceptance.
+**2026.09.16.8 / 012ccf7562c157fad7f1780af457f0559f94aad9** is READY in
+**dpl_jZgnVRHm9HHrRHLsaXAeFsRRW68J**, independently canonical and verified by
+the serving build. Runtime `c632ab4` removes unused feed comment-preview reads
+and repeated timestamp-formatter construction.
 See [the feed-cost receipt](FEED_RENDERING_ACCEPTANCE.md).
 
 Fifty-seven focused checks, migration/restore preservation, types/lint, the
 production build and 37 browser groups pass. Paired isolated service reads retain
 all 30 authorized posts with five fewer SELECTs; the built 100-client local burst
 improves p95 from 2.339 to 2.125 seconds, still above the one-second target.
-No hosted-capacity success is claimed. Current Vercel/Neon usage and binding
-experiment limits are recorded; no provider settings or production data changed.
-Finish publication and live acceptance within this capacity feature, then
-continue eligible work with final review last.
+Live: 29 public/access, four health and three signed-in groups pass. All 121 table
+fingerprints and 90 migration checksums match; the applicable protected restore
+passes. Runtime error/fatal rows and public browser errors are zero. No writes,
+sends, provider changes or hosted-capacity success are claimed. Current usage,
+experiment limits, Resend access and actual operator prerequisites are recorded.
+The targeted repair is complete; broader capacity/operational tasks retain their
+unmet criteria. Continue next eligible priorities with final review last.
 
 ## Language and location feature completed live — September 16, 2026 UTC
 

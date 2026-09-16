@@ -1,5 +1,15 @@
 # Isolated capacity and recovery rehearsal
 
+## Current feed-cost follow-through — September 16, 2026 UTC
+
+[The current feed-cost receipt](FEED_RENDERING_ACCEPTANCE.md) records a preserved
+dense fixture upgraded to 90 migrations, measured unused-preview and repeated
+formatter costs, the targeted repair and its current verification state. The
+built local 100-client p95 improves from 2.339 to 2.125 seconds, remaining above
+one second. This bounded warm local diagnostic does not supersede the sustained
+or hosted workload, canonical-write and cleanup evidence below. No new cloud
+load, production data mutation or provider purchase occurred.
+
 ## Concurrency repair verified live — September 14, 11:00 UTC
 
 Product **2026.09.14.8**, application

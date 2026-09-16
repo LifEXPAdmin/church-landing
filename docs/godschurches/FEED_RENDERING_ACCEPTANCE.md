@@ -1,10 +1,31 @@
 # Feed rendering and read cost
 
-## Candidate, 16 September 2026 UTC
+## Verified release, 16 September 2026 UTC
 
-Candidate **2026.09.16.8** is local, not yet deployed. Canonical production
-remains **2026.09.16.7 / 777760c**. This continues the existing capacity feature;
-it does not certify the outstanding hosted 100-client latency target.
+**2026.09.16.8 / 012ccf7562c157fad7f1780af457f0559f94aad9** is READY in
+**dpl_jZgnVRHm9HHrRHLsaXAeFsRRW68J**, independently assigned to
+**godschurches.com** and confirmed by the serving product/build. READY time is
+09:57:47.835 UTC, after 170.440 seconds in the shared build queue. Runtime is
+identical to tested `c632ab4`; the later commit records evidence. This completes
+the measured repair within the existing capacity feature, while the outstanding
+hosted 100-client latency target remains unmet.
+
+Actual live verification passes 29 public/access groups, four health groups and
+three signed-in observations. Home retains its feed/view and current counts;
+the native empty discussion opens/closes without losing the reading position;
+an existing populated reader retains its comment, Reply and conversation choices.
+All 121 table fingerprints are unchanged from 09:50:45 to 10:01:26 UTC. All 90
+migration checksums match; no migration was needed. The protected 06:49:29 restore
+remained within the release gate. Production test writes, preference edits,
+grants and sends are zero. Scoped runtime error/fatal rows from READY through
+10:00:25 UTC and public browser errors are zero.
+
+Provider output verifies 191 runtime traces, 60,598 entries and 480 server JS
+files; canonical Home loads the exact verified hydration-renderer bytes. A small
+live sample of five ordinary serial GETs per public path has complete-response
+median/range of 69/53 to 116 ms for release identity, 367/177 to 1,024 ms for
+guest Home, and 59/53 to 73 ms for liveness. These are actual warm public
+observations from this Mac, not signed-in paint time or a reliable tail percentile.
 
 The current production runtime was profiled against an isolated clone containing
 10,000 fictional accounts, 100,001 posts and 502,363 comments, upgraded to all
@@ -54,8 +75,11 @@ preservation, locale/options/zone separation, bounded-cache churn and changing
 implicit zones. Fresh/populated migration and isolated restore checks, TypeScript
 and scoped lint pass. The production build passes hydration and all 191 runtime
 trace guards. Thirty-seven production-browser groups pass: 11 four-feed, eight
-repost, seven regional and 11 discovery, with zero browser errors. Publication
-and exact canonical live acceptance remain within this feature cycle.
+repost, seven regional and 11 discovery, with zero browser errors. All 29 public
+checks also passed on the isolated build before publication. An initial private
+public-check helper used the wrong release URL; its failure was preserved and
+the helper corrected before the passing candidate check. No application change
+or weakened assertion was needed.
 
 ## Current hosting limits
 

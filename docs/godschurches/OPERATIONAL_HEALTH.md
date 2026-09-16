@@ -1,5 +1,21 @@
 # Operational health and measured hosting resources
 
+## Resource and access refresh: September 16, 09:30 to 09:53 UTC
+
+The [feed-cost receipt](FEED_RENDERING_ACCEPTANCE.md) records fresh authenticated
+Vercel team/project and Neon measurements. Blob simple/advanced operations are
+71.09%/78.95% of included allowances; fixed Neon compute remains 0.25 CU with
+five-minute idle suspension. No provider setting, retention, plan or user data was
+changed. Local feed improvements do not certify the outstanding hosted target.
+
+Fresh existing-integration SSO again reaches Resend `account_not_found`; actual
+email plan/usage remains unavailable. Read-only production inspection at
+09:53:01 UTC still finds only the separate report-review capability, no general
+Support, health, access-manager or account-manager grants, and no Support intake
+settings/cases. Established owner setup and response-coverage prerequisites
+remain. Do not rebuild the completed Admin/metrics/feedback engineering or grant
+authority merely to make this acceptance check pass.
+
 ## Current operational acceptance: September 16, 2026
 
 The verified `2026.09.16.2 / 8023e80` release preserves the private maintenance
