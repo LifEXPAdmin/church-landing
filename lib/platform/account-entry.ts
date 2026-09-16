@@ -18,7 +18,7 @@ export function safeAccountReturn(value: unknown): string {
   const url = new URL(value, "https://return.invalid");
   // Exchange account entry returns to an explicit destination, never a saved
   // action, draft payload, cursor or an automatic publication request.
-  if (url.origin === "https://return.invalid" && /^\/platform\/exchange(?:\/(?:new|mine|[a-zA-Z0-9_-]{1,100}(?:\/edit)?))?\/?$/.test(url.pathname))
+  if (url.origin === "https://return.invalid" && /^\/platform\/exchange(?:\/(?:new|mine|handoffs\/[a-zA-Z0-9_-]{1,100}|[a-zA-Z0-9_-]{1,100}(?:\/edit)?))?\/?$/.test(url.pathname))
     return url.pathname.replace(/\/$/, "");
   if (url.origin === "https://return.invalid" && url.pathname === "/platform/account/authenticator")
     return "/platform/account/authenticator";

@@ -1,3 +1,4 @@
+import { safeAccountReturn, accountEntryHref } from "../lib/platform/account-entry";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { emptyExchangeDefaults } from "../lib/platform/exchange-handoff-options";
@@ -121,4 +122,15 @@ test("cancellation accepts bounded private explanations and rejects inherited re
   assert.throws(() => parseExchangeCancellation("constructor", ""));
   assert.throws(() => parseExchangeCancellation("OTHER", "x".repeat(501)));
   assert.throws(() => parseExchangeCancellation("OTHER", null));
+});
+
+
+test("handoff account entry preserves only the known read destination and never replays private actions", () => {
+  const path="/platform/exchange/handoffs/fictional-handoff_123";
+  assert.equal(safeAccountReturn(path+"/?operation=confirm&pickupDetails=private&after=stale#private"),path);
+  const entry=new URL(accountEntryHref("signup",path),"https://example.test");
+  assert.equal(entry.pathname,"/platform/signup");
+  assert.equal(entry.searchParams.get("next"),path);
+  for(const target of ["https://other.example"+path,path+"/confirm","/platform/exchange/handoffs/"+"x".repeat(101),"/platform/exchange/handoffs/%2f%2fother.example"])
+    assert.equal(safeAccountReturn(target),"/platform");
 });

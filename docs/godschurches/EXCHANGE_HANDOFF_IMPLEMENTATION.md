@@ -29,7 +29,7 @@ provider is introduced. Private personal defaults seed a new personal draft only
 by deliberate action; pickup text is copied separately into an unconfirmed plan.
 
 Local acceptance so far: 95 migrations, populated upgrade preservation and
-isolated dump/restore; 23 focused input, database, service, HTTP and queue consumer tests pass.
+isolated dump/restore; 24 focused input, database, service, HTTP and queue consumer tests pass.
 The related Exchange suite reports 106 passes, zero failures and zero skips. These cover concurrent selection, stale/exact retry,
 block/unblock, expiry settlement, database constraints, case evidence/purge,
 missing/older-row recovery, church receiver replacement, exports/deletion,
@@ -46,7 +46,7 @@ regression compares bounded summaries with private detail after contact narrowin
 church-connection epoch changes and blocks.
 
 The interface is implemented locally using existing private snapshot, unsaved-work
-and uncertain-save controls. Seven isolated browser groups pass, including lost
+and uncertain-save controls. Eight isolated browser groups pass, including lost
 responses, stale plan confirmation, participant-local clear, account-switch and
 block concealment, enlarged mobile/dark views and browser Back protection. The
 latest finishing changes add a bounded status history, hide premature missed-pickup
@@ -56,7 +56,10 @@ will rerun on those final changes. Private operational health now reports stalle
 handoff ages/dispatch errors without identities. An expired church authenticator
 proof requires confirmation without revoking the pair’s consent; actual enrollment
 and session challenge tests pass. Uncertain browser requests preserve their plan
-through that challenge. Required next work: complete browser
+through that challenge. The final public acceptance caught and repaired an
+individual handoff link missing from the account-return allowlist. It preserves
+only the known read destination and strips action parameters and private text;
+focused account-entry and Settings regressions pass. Required next work: complete browser
 acceptance (including lost responses, account changes, mobile/enlarged/dark views),
 measure affected query/bundle costs, repair any failures, run the frozen complete
 gate, protect the upgrade, publish through the established release process, verify
