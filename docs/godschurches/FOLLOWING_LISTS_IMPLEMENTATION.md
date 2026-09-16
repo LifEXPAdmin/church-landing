@@ -5,7 +5,9 @@
 The private following list contract is implemented for isolated acceptance.
 Product candidate **2026.09.16.13**, release **private-following-lists**.
 The currently verified production application remains **2026.09.16.12**.
-Built-browser, complete release gate and exact production acceptance are pending.
+The complete release gate and exact production acceptance are pending.
+A final guidance edit names the actual Settings, Feed and discovery destination.
+It does not alter list services or interface behavior.
 
 Reuse SocialPreferences with three additive fields, independently versioned from
 discovery forms, and existing follow records. Twenty private lists may each hold
@@ -47,20 +49,28 @@ were corrected to obey existing audience/church constraints. A legacy-feed test
 caught a changed synchronous validation contract; that contract is preserved.
 These failed checkpoints are diagnostic evidence, not release acceptance.
 
-The initial built candidate passes seven real browser groups: guest returns,
-lost-successful-response retry after foreground recheck, atomic editing and
-unsaved navigation, mobile/enlarged dark layout, actual filtered feed selection,
-account-switch concealment, current block and selected-list deletion. The browser
-fixture selectors were corrected to target the intended guest link, the native
-follow picker and the existing List view. No application error was observed.
-A further editor change compares the current visible member projection as well
-as the saved version, so a suspended/unavailable member also conceals stale
-identities. Its additional built-browser acceptance is pending.
+The final runtime candidate `f869ec7` passes eight built-browser groups: guest
+returns, lost-successful-response retry after foreground recheck, atomic editing
+and unsaved navigation, mobile/enlarged dark layout, actual filtered feed
+selection, account-switch concealment, changed member availability without a
+saved-version change, current block and selected-list deletion. The final mobile
+screens were visually inspected. Eight existing private Exchange handoff browser
+groups also pass after extracting the shared save hook. No browser runtime errors
+were observed in either flow. Seventy-two isolated public/access checks also pass,
+including release copy, safe guest returns and private API denial, with zero
+browser errors or writes. The initial list-browser fixture selectors were
+corrected to target the intended guest link, native picker and existing List view.
 
-The initial isolated client bundle comparison adds **940 gzip bytes** to Home
+The final isolated client bundle comparison adds **940 gzip bytes** to Home
 and My feed, **125** to Connections and **151** to Exchange. The new private list
-route totals **153,224 gzip bytes**, including shared application chunks. There
+route totals **153,248 gzip bytes**, including shared application chunks. There
 is no added dependency. These local compressed sizes do not establish latency.
+
+The protected production-copy rehearsal upgrades 95 to 96 migrations, preserves
+all 131 original table projections and replays the protected recovery journal.
+It uses verified TLS, an encrypted backup and an isolated restore. Production
+is not modified. Exact production migration and installed-recovery acceptance
+remain part of the release gate.
 
 The bounded local query fixture uses 100 follows/posts and 20 lists of 100 entries
 each. The selected and unselected post-page projections have the same SHA-256.
@@ -69,7 +79,6 @@ private editor returns 100 members and a 20-candidate page in 23,058 response
 bytes with 15 SELECTs. Exact timings and feed query counts remain in the private
 measurement receipt; these are isolated local observations, not hosted targets.
 
-Complete the browser/privacy/mobile checks, measured query and bundle review,
-full clean gate, protected pre-migration replay, exact READY/canonical deployment,
+Complete the full clean gate, exact READY/canonical deployment,
 live read-only acceptance and private task reconciliation before closing scope.
 Then continue eligible church Needs work. Final batch review remains last.

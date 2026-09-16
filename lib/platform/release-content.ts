@@ -20,7 +20,7 @@ export const features: Feature[] = [
     description:
       "Organize people and churches you follow into named private lists, then choose a list for Following.",
     steps:
-      "Open Connections, Private lists, or find Private following lists in Feed Settings. Create a list, add from your current follows and save. Choose Use this list in Following, or use the private list selector in the Following feed.",
+      "Open Connections, then Private lists, or open Settings, Feed and discovery, Private following lists. Create a list, add from your current follows and save. Choose Use this list in Following, or use the private list selector in the Following feed.",
     href: "/platform/relationships/lists",
     eligibility:
       "Available to signed-in accounts. Only you can read the names and membership. Lists grant no church access or public endorsement. Deleting a list leaves follows intact. Existing post permissions, muted accounts and discovery filters still apply.",
