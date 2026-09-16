@@ -1,9 +1,69 @@
 # Exchange inquiries and handoff implementation
 
-## Local implementation checkpoint, September 16, 2026
+## Verified live, September 16, 2026 UTC
 
-This is unfinished local work following verified `2026.09.16.11 / ea0c977`.
-The candidate product version is `2026.09.16.12`; it is not a deployment receipt.
+**2026.09.16.12 / eebbe643b6f526bcbb5ca5fbaa7bc203e0d11d3e** is READY in
+**dpl_2iyPCZA5esBstMLSdmX4GKPP7gtN** at **21:27:56.645 UTC**. The independent
+`godschurches.com` alias and serving release/build match that exact deployment.
+Named receiver consent, private inquiries, one atomic single-item hold, exact
+pickup agreement, completion/cancellation/expiry, private missed-pickup recovery,
+separate handoff alerts and personal defaults are released together with their
+Settings, mobile/retry, shared safety, privacy/help and release guidance.
+
+The complete frozen gate passes **179 discovered files: 1,118 reported tests,
+1,116 passes, zero failures and two expected delivery-disabled phase skips**.
+Those delivery cases pass in the development stage. Production build, fresh
+migrations, populated upgrade, dump/restore, restart persistence and actual
+production HTTPS HTML/RSC boundaries pass. Types and targeted lint pass. Earlier
+test-only cleanup and historical-client fixture repairs are retained below;
+application code and migration are unchanged from `d8723ea`.
+
+Scoped evidence includes 24 focused input/service/HTTP/consumer checks, 106
+related Exchange checks, 47 cleanup checks, 30 feedback/notification/handoff
+checks, 44 additional compatibility checks and four isolated abuse groups.
+These suites overlap and are not added to the full-gate total. Eight handoff,
+16 listing and eight search/Settings browser groups pass. Mobile and enlarged
+dark handoff screenshots were visually reviewed. All five supported earlier
+notification-form shapes preserve newer dated handoff consent.
+
+Canonical live acceptance passes **68 public/access groups, six health groups
+and six existing signed-in groups**, with zero public browser errors. Actual
+Settings links, private defaults, both empty inquiry directions and the separate
+handoff notification category work on the deployed version. Existing consent
+and read state remain unchanged. A reserved nonexistent
+handoff probe executes in the native queue consumer with HTTP 200 and zero
+application writes. Scoped provider error/fatal rows are zero through
+**21:33:11.457 UTC**; this is an observation window, not an uptime promise.
+
+All **95 production and installed-recovery migration checksums** match. The
+protected 94-to-95 rehearsal at 19:26:40.085 UTC preserves all 128 original
+table projections with restrictive replay. All 128 live before/after table
+fingerprints match from **20:14:39.991 to 21:33:46.299 UTC**, including the
+completed signed-in checks. Installed daily recovery restores **131 tables**
+and removes plaintext; nightly validation passes **66 sets**, zero issues and
+zero removals. The previous 94 registry entries and installed helper are preserved.
+
+Release changes: **one additive migration**. Verification application, account,
+preference and permission writes and recipient sends: **zero**. One internal
+nonexistent-reference queue probe is recorded separately. Production inquiries,
+inquiry audits, private defaults, enabled inquiry entries, listings and Exchange
+duties remain zero. No provider setting or real appointment was changed.
+
+The 20-inquiry read uses 31 SELECTs versus 285 before batching. Earlier quiet
+local samples were about 24 to 37 ms versus 104 to 109 ms; these do not establish
+hosted latency. The affected bundle delta is about 5.2 KB gzip with no dependency.
+Real pickup and physical phone-delivery pilots remain unverified. Initial shared
+Exchange block/report/abuse adapters and personal defaults meet their scoped
+acceptance; later module adapters ship with their own features. Continue the
+newly unlocked named private following lists, then eligible church-needs work.
+Optional contact lookup retains its consent/policy prerequisite. Final review
+stays last in the continuous unified run.
+
+## Earlier local implementation checkpoints, September 16, 2026
+
+The following records describe the earlier unfinished local work following
+`2026.09.16.11 / ea0c977`. The verified release above supersedes their pending
+publication statements while preserving the original acceptance history.
 The [reviewed handoff contract](EXCHANGE_HANDOFF_CONTRACT.md) remains authoritative.
 
 Implemented locally: explicit per-listing named receiver consent; current adult,

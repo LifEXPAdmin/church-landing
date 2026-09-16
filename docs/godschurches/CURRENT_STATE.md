@@ -1,3 +1,32 @@
+## Private Exchange handoffs verified live, September 16, 2026 UTC
+
+**2026.09.16.12 / eebbe643b6f526bcbb5ca5fbaa7bc203e0d11d3e** is READY in
+**dpl_2iyPCZA5esBstMLSdmX4GKPP7gtN** at **21:27:56.645 UTC**, independently
+canonical and confirmed by the serving release/build. Private inquiry, named
+receiver consent, one atomic hold, exact pickup agreement, completion/cancellation,
+expiry and missed-pickup recovery ship with personal defaults, separate alerts,
+Settings and shared safety/recovery integration. See [the exact release receipt](EXCHANGE_HANDOFF_IMPLEMENTATION.md).
+
+The 179-file full gate reports **1,116 passes, zero failures and two expected
+skips** across 1,118 reported tests. Scoped service/privacy/abuse checks and eight
+handoff, 16 listing and eight search/Settings browser groups pass. Live: 68
+public/access, six health and six existing signed-in groups, with zero public
+browser errors. The native handoff queue consumer is observed; scoped provider
+error/fatal rows are zero through 21:33:11.457 UTC. All 95 production/recovery
+migration checksums match. All 128 original live table fingerprints match through
+21:33:46.299 UTC. Installed recovery restores 131 tables; 66-set nightly validation
+passes. One additive migration; zero verification application/preference/permission
+writes or recipient sends. Real pickups and physical phone delivery are unverified.
+
+Complete this feature and the unlocked personal-default and initial shared
+Exchange block/report/abuse scopes, preserving later module acceptance with each
+module's own release. Continue named private following lists, then eligible
+church-needs commitments. Broader giving/receipt settings, optional contact lookup,
+hosted-latency targets and actual provider/operator/device prerequisites remain
+separate. Extra High throughout; finish the next feature completely and keep the
+final review last. The recorded main-queue propagation limitation remains distinct
+from focused-page and task synchronization.
+
 ## Exchange search and saved choices verified live — September 16, 2026 UTC
 
 **2026.09.16.11 / ea0c977c0c263e6657d5c5dbb62142d9627adc33** is READY in
