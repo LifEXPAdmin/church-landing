@@ -434,7 +434,7 @@ export const settingsRegistry: readonly SettingRegistration[] = Object.freeze([
     linked("friend-invitations.ts", "friend-invitations.ts")
   ),
   entry(
-    "feed.following-lists",
+    "feed.lists",
     "feed",
     "Private following lists",
     "Organize current follows into private lists and use them in Following.",

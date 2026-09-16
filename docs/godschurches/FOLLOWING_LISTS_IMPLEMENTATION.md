@@ -49,6 +49,11 @@ were corrected to obey existing audience/church constraints. A legacy-feed test
 caught a changed synchronous validation contract; that contract is preserved.
 These failed checkpoints are diagnostic evidence, not release acceptance.
 
+The first full gate stopped at the existing Settings registry contract because
+the new internal setting ID contained a hyphen. The entry now uses `feed.lists`,
+which follows the established two-part letters-only contract. Its public link
+and behavior are unchanged. A fresh complete gate is required before release.
+
 The final runtime candidate `f869ec7` passes eight built-browser groups: guest
 returns, lost-successful-response retry after foreground recheck, atomic editing
 and unsaved navigation, mobile/enlarged dark layout, actual filtered feed
