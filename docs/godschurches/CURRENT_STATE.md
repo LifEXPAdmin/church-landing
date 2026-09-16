@@ -1,14 +1,20 @@
-## Website writing ready for publication — September 16, 2026 UTC
+## Website writing verified live — September 16, 2026 UTC
 
-Application candidate `de9f665` prepares **2026.09.16.3 / clear-website-writing**.
+**2026.09.16.3 / a33e8d5c28b901cba2651b00f252a578ca0d6bc4** is READY in
+**dpl_DBmmzzCkBLPG2gubtT2vYR6gPjBa**, independently canonical with exact serving
+identity verified. Runtime candidate is `de9f665`.
 The [copy acceptance receipt](WEBSITE_COPY_ACCEPTANCE.md) records the complete
 source audit, standing instructions and enforced build check. Eight focused test
 files contribute 60 passing checks, and 39 isolated production-browser groups
 pass with member content preserved. Types, scoped lint and the clean production
-build pass. Schema/provider/account protections are unchanged.
+build pass. Actual live checks pass: 23 public, four health and three signed-in
+observations; checked runtime error/fatal rows are zero. All 89 migrations match.
+120 of 121 table fingerprints are unchanged; the existing daily worker expired
+five feed snapshots with zero account/message/report removals. Verification made
+zero user-data/test writes or sends. Schema/provider/account protections are unchanged.
 
-Continue exact canonical release and actual live verification before closing the
-feature, then continue the unified queue. Keep final review last.
+Continue the unified queue using actual implementation and prerequisites, including
+reconciling older completed engineering entries. Keep final review last.
 
 ## Notifications and adult photo tags verified live — September 16, 2026 UTC
 

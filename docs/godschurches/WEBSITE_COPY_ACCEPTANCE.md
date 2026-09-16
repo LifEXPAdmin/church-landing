@@ -1,10 +1,14 @@
 # Website writing acceptance
 
-## Candidate, 16 September 2026 UTC
+## Published and verified, 16 September 2026 UTC
 
-Application candidate `de9f665` prepares **2026.09.16.3 / clear-website-writing**.
-Publication and exact canonical live verification are pending. This is an
-editorial release with no schema, account-policy or provider-configuration change.
+**2026.09.16.3 / clear-website-writing** is READY as
+`a33e8d5c28b901cba2651b00f252a578ca0d6bc4` in
+`dpl_DBmmzzCkBLPG2gubtT2vYR6gPjBa`. Independent canonical assignment and the
+serving SHA/product build match. READY time is **05:02:55.204 UTC**; canonical
+identity was verified at **05:03:41 UTC**. Runtime candidate `de9f665` is unchanged
+by the later QA/report commit. This editorial release changes no schema,
+account policy or provider configuration.
 
 Authored Home/About text, form limits, calendar ranges, notification options,
 relationship accessibility, message notices, report placeholders, role labels,
@@ -53,10 +57,31 @@ The previous complete notification regression remains the full-suite baseline;
 this copy-only change uses focused verification. No new capacity or physical
 device claim is made. Preserve existing operational/provider/device prerequisites.
 
-## Release acceptance still required
+## Actual release acceptance
 
-Verify the exact READY deployment, independent `godschurches.com` assignment,
-serving SHA/version and actual public/signed-in copy. Confirm the unchanged 89
-migrations and preserved production-data fingerprints. Record zero live test
-writes/sends, reconcile private task/workflow receipts and continue the unified
-queue. Keep final review last.
+- **23 public live checks pass** at 320/390/1280px, covering actual public copy,
+  accessibility, metadata, wrapping, release notes, mission/brand and the exact
+  provider-verified hydration renderer. Browser errors and mutation requests are
+  zero. Provider trace verification passes 189 traces, 59,758 entries and 474
+  server JavaScript files, excluding private fixture/environment paths.
+- **Four secured health checks pass.** Existing storage, notification, welcome,
+  retention and scheduling configuration remains available with empty current
+  queues. No maintenance run or notification probe was initiated for this change.
+- **Three actual signed-in observations pass:** the exact version/header, revised
+  unavailable-email wording and unchanged existing choices/two-unread count.
+  No preference, read-state, device or browser-permission action was performed.
+  Future welcome creation/replies remain isolated-fixture evidence; no real
+  welcome or message was sent to test the editorial change.
+- All **89 production migration checksums match**, with none pending. The earlier
+  protected upgrade remains fresh; the installed recovery registry is unchanged.
+  Across 121 production-table fingerprints, **120 are unchanged**. The existing
+  daily 05:00 UTC retention worker removed exactly **five expired FeedSnapshot
+  rows**, confirmed by its HTTP 200 completion log on the preceding deployment.
+  That job removed no accounts, messages or reports and reported no failures.
+  Release verification performed **zero user-data/test writes and zero sends**.
+- Exact-deployment runtime logs from 05:02:55 to 05:05:35 UTC contain **zero error
+  or fatal rows**, queried with a limit of 100 per severity.
+
+The engineering feature is verified live. Reconcile private task/workflow
+receipts and continue the unified queue; physical/operational prerequisites and
+final review remain separate.
