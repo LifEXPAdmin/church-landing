@@ -514,6 +514,8 @@ try {
     "Switched accounts and unavailable or guest reads conceal regional controls without saving to the wrong account"
   );
   phase = "live support formats and static demo";
+  // The database and origin were checked as isolated before enabling fixture intake.
+  process.env.SUPPORT_INTAKE_ENABLED = "true";
   const { seedSupport, requestInput } = await import("../tests/seed-support.ts");
   const { supportCommand } = await import("../lib/platform/support.ts");
   const support = await seedSupport(db);
@@ -527,22 +529,22 @@ try {
     db, support.memberA.token,
     await requestInput(db, support.memberA.token, { subject })
   );
-  const stamp = "2026-10-25T13:05:00.000Z";
+  const stamp = "2026-09-15T13:05:00.000Z";
   await db.supportCase.update({
     where: { id: created.caseId },
     data: { createdAt: new Date(stamp), updatedAt: new Date(stamp) }
   });
   await signIn(support.memberA);
   await go("/platform/help/cases/" + created.caseId);
-  assert.match(await page.locator(`time[datetime="${stamp}"]`).first().innerText(), /25\/10\/2026, 13:05 UTC/);
+  assert.match(await page.locator(`time[datetime="${stamp}"]`).first().innerText(), /15\/09\/2026, 13:05 UTC/);
   await go("/platform/help/requests");
-  assert.match(await page.locator("article").filter({ hasText: subject }).innerText(), /25\/10\/2026, 13:05 UTC/);
+  assert.match(await page.locator("article").filter({ hasText: subject }).innerText(), /15\/09\/2026, 13:05 UTC/);
   await signIn(support.owner);
   await go("/platform/admin/requests");
   const caseLink = page.getByRole("link", { name: subject, exact: true });
   await caseLink.waitFor();
   await go(await caseLink.getAttribute("href"));
-  assert.match(await page.locator(`time[datetime="${stamp}"]`).first().innerText(), /25\/10\/2026, 13:05 UTC/);
+  assert.match(await page.locator(`time[datetime="${stamp}"]`).first().innerText(), /15\/09\/2026, 13:05 UTC/);
   await context.clearCookies();
   const demoApiRequests = [];
   const demoRequest = (request) => {
