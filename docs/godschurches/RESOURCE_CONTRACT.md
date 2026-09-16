@@ -13,6 +13,12 @@ registry entry names those actual services. Inquiry and reservation adapters
 remain dependent on their own resources; future business authority and real
 church appointments are not created by a registry entry.
 
+The subsequent [inquiry and private handoff contract](EXCHANGE_HANDOFF_CONTRACT.md)
+defines participant consent, atomic holds, expiry, receiver delegation, pickup
+disclosure, shared report/block/recovery and newly unlocked private defaults.
+The verified search baseline is `2026.09.16.11 / ea0c977`; the inquiry resource
+remains unimplemented until those actual services and acceptance exist.
+
 ## Original registry foundation
 
 September 12, 2026. This is a bounded extension contract for the existing
