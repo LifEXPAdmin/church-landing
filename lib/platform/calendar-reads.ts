@@ -454,7 +454,7 @@ function overlaps(
 export async function getCalendarCommitments(
   db: PrismaClient,
   token: unknown,
-  options: { from: string; until: string; timeZone: string }
+  options: { from: string; until: string; timeZone: string; signup?: string }
 ) {
   const range = calendarWindow(options.from, options.until, options.timeZone);
   return portal(db, token, async (tx, actor) => {
@@ -491,8 +491,11 @@ export async function getCalendarCommitments(
     const volunteerRows = await volunteerCommitmentsIn(
       tx,
       await postContext(tx, actor.id),
-      timeWhere(range)
+      timeWhere(range),
+      options.signup ? id(options.signup) : undefined
     );
+    if (options.signup && !volunteerRows.length)
+      throw new PortalError(404, "This volunteer signup is unavailable.");
     await loadCalendarSourceNames(
       tx,
       context,
@@ -519,6 +522,7 @@ export async function getCalendarCommitments(
       volunteerCommitments: volunteerRows.map(({ occurrence, ...row }) => ({
         ...row,
         conflict:
+          !options.signup &&
           occurrence &&
           !row.event?.canceled &&
           busy.some(

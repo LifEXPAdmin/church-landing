@@ -37,6 +37,8 @@ export type RetentionControlEntry = {
     | "DISCOVERY_PREFERENCES"
     | "NOTIFICATION_PREFERENCES"
     | "AUTHOR_BELL"
+    | "PHOTO_TAG"
+    | "PHOTO_TAG_PREFERENCES"
     | "ADMIN_SUPPORT"
     | "ADMIN_REPORT"
     | "ADMIN_CLAIM"
@@ -93,6 +95,8 @@ function validate(value: unknown): RetentionControlEntry {
       "DISCOVERY_PREFERENCES",
       "NOTIFICATION_PREFERENCES",
       "AUTHOR_BELL",
+      "PHOTO_TAG",
+      "PHOTO_TAG_PREFERENCES",
       "ADMIN_SUPPORT",
       "ADMIN_REPORT",
       "ADMIN_CLAIM",
@@ -392,7 +396,9 @@ export async function recordDiscoveryControl(
     | "POST_DISCOVERY"
     | "DISCOVERY_PREFERENCES"
     | "NOTIFICATION_PREFERENCES"
-    | "AUTHOR_BELL",
+    | "AUTHOR_BELL"
+    | "PHOTO_TAG"
+    | "PHOTO_TAG_PREFERENCES",
   actorId: string,
   sourceId: string,
   version: number
@@ -905,6 +911,55 @@ export async function replayRetentionControls(
           await tx.$executeRaw(
             Prisma.sql`UPDATE ${table} SET "adminVersion"=${entry.version},"nextAction"='',"triageTags"=ARRAY[]::text[],"reminderAt"=NULL,"adminGroupId"=NULL ${extra} WHERE id=${entry.sourceId} AND "adminVersion"<${entry.version}`
           );
+          await record(tx, entry);
+          await tx.retentionControl.updateMany({
+            where: { id: entry.id, journaledAt: null },
+            data: { journaledAt: new Date() }
+          });
+          continue;
+        }
+        if (
+          entry.kind === "PHOTO_TAG" ||
+          entry.kind === "PHOTO_TAG_PREFERENCES"
+        ) {
+          if (entry.kind === "PHOTO_TAG") {
+            await tx.photoTag.updateMany({
+              where: { id: entry.sourceId, version: { lt: entry.version } },
+              data: {
+                state: "REMOVED",
+                version: entry.version,
+                decidedAt: new Date(entry.recordedAt)
+              }
+            });
+          } else {
+            const owner = await tx.platformUser.findFirst({
+              where: { id: entry.sourceId, erasedAt: null },
+              select: { id: true }
+            });
+            if (owner) {
+              await tx.socialPreferences.upsert({
+                where: { ownerId: owner.id },
+                create: {
+                  ownerId: owner.id,
+                  photoTagRequests: "NOBODY",
+                  photoTagVersion: entry.version,
+                  photoTagRecoveryRequired: true
+                },
+                update: {}
+              });
+              await tx.socialPreferences.updateMany({
+                where: {
+                  ownerId: owner.id,
+                  photoTagVersion: { lt: entry.version }
+                },
+                data: {
+                  photoTagRequests: "NOBODY",
+                  photoTagVersion: entry.version,
+                  photoTagRecoveryRequired: true
+                }
+              });
+            }
+          }
           await record(tx, entry);
           await tx.retentionControl.updateMany({
             where: { id: entry.id, journaledAt: null },

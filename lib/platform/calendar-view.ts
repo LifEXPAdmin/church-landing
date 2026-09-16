@@ -1,5 +1,6 @@
 // Presentation helpers are safe to use in the browser; they never read accounts.
 export type CalendarQuery = {
+  signup?: string;
   month?: string;
   timeZone?: string;
   layer?: string | string[];

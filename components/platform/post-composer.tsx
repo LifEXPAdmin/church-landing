@@ -1,4 +1,5 @@
 "use client";
+import { CommentMentions } from "./comment-mentions";
 import { useEffect, useId, useRef, useState } from "react";
 import type {
   PostComposerOptions,
@@ -352,6 +353,24 @@ function ComposerDraft({
           disabled={state.publishing || !!state.postId}
         >
           <PostDraftFields draft={draft} change={setDraft} />
+          {state.ownerId && (
+            <details className="space-y-3">
+              <summary className="cursor-pointer py-2 font-semibold">
+                Mention people ({draft.mentionIds?.length ?? 0})
+              </summary>
+              <CommentMentions
+                owner={state.ownerId}
+                ids={draft.mentionIds ?? []}
+                onChange={(mentionIds) =>
+                  controller.change({ ...draft, mentionIds })
+                }
+              />
+              <p className="text-sm text-gc-muted">
+                Only eligible people who can read the published post receive a
+                mention. Private drafts do not notify anyone.
+              </p>
+            </details>
+          )}
           {((authorChurchId &&
             !draft.topicCommunityId &&
             !draft.quoteSourceId) ||

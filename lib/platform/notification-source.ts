@@ -20,6 +20,7 @@ export type NotificationSource = {
   category: NotificationCategory | "test";
   href: string;
   group: string;
+  summary?: string;
 };
 
 // All channels reuse current canonical authority. Bounded pages share metadata
@@ -261,7 +262,7 @@ export async function notificationSources(
       )
         result.set(event.id, {
           category: "requests",
-          href: "/platform/messages/requests",
+          href: `/platform/messages/requests?id=${request.id}`,
           group: request.id
         });
     }

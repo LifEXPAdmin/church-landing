@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import { recordDomainActivity } from "./domain-activity";
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { accountConfig } from "./account-config";
 import { withOwnedSession } from "./account-sessions";
@@ -246,6 +247,15 @@ async function finishAcceptance(tx: Tx, id: string) {
   await tx.friendAcceptance.update({
     where: { id },
     data: { state: "CONNECTED" }
+  });
+  await recordDomainActivity(tx, {
+    kind: "FRIEND_CONNECTED",
+    sourceId: row.id,
+    sourceVersion: 1,
+    actorId: row.recipientId,
+    recipientId: row.inviterId,
+    category: "requests",
+    once: true
   });
   return "CONNECTED";
 }

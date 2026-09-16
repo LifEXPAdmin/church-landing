@@ -13,6 +13,7 @@ import { PostLinkFields } from "./post-link-fields";
 import { PostDiscoveryFields } from "./post-discovery-fields";
 import type { PostDiscoveryInput } from "@/lib/platform/post-discovery";
 export type PostDraft = {
+  mentionIds?: string[];
   discovery?: PostDiscoveryInput;
   content: string;
   contentNote?: string;

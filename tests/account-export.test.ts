@@ -262,7 +262,8 @@ test("export includes only the owner's explicit fields, directory choices and ow
     {
       id: activityEvent.id,
       activitySequence: activityEvent.activitySequence.toString(),
-      activityReadAt: activityReadAt.toISOString()
+      activityReadAt: activityReadAt.toISOString(),
+      activityMarkedUnreadAt: null
     }
   ]);
   for (const [key, value] of Object.entries(notificationChoices))

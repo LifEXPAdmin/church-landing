@@ -1,3 +1,4 @@
+import { personMentionIds } from "./person-mentions";
 import { postInteractionIdIn } from "./post-reads";
 import { parsePostDiscovery, type PostDiscoveryInput } from "./post-discovery";
 import {
@@ -21,6 +22,7 @@ import { POST_TOPICS, postPreviewText } from "./post-options";
 
 export const WORKSPACE_PAGE_SIZE = 20;
 export type PrivateDraftPayload = {
+  mentionIds?: string[];
   discovery?: PostDiscoveryInput;
   scheduleLocal?: string;
   scheduleZone?: string;
@@ -41,6 +43,7 @@ export type PrivateDraftPayload = {
   topicCommunityId?: string | null;
 };
 const draftFields = [
+  "mentionIds",
   "scheduleLocal",
   "scheduleZone",
   "discovery",
@@ -110,6 +113,9 @@ export function privateDraftPayload(value: unknown): PrivateDraftPayload {
     throw new PortalError(400, "Choose a supported reply permission.");
   const reference = (v: unknown) => (v == null || v === "" ? null : postId(v));
   return {
+    ...(p.mentionIds !== undefined
+      ? { mentionIds: personMentionIds(p.mentionIds) }
+      : {}),
     ...(p.scheduleLocal !== undefined
       ? { scheduleLocal: text(p.scheduleLocal, 32) }
       : {}),
@@ -521,6 +527,14 @@ export async function postWorkspaceCommand(
         if (op === "save-draft") {
           const payload = privateDraftPayload(input.payload);
           const previous = row ? privateDraftPayload(row.payload) : null;
+          if (
+            previous?.mentionIds?.length &&
+            !Object.hasOwn(payload, "mentionIds")
+          )
+            throw new PortalError(
+              400,
+              "This draft has selected mentions. Reload it before saving so those choices are preserved."
+            );
           if (
             previous &&
             [

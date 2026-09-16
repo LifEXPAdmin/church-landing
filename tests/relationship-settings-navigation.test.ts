@@ -73,3 +73,32 @@ test("sign-in return preserves bounded list search and cursor without introducin
     100
   );
 });
+
+test("photo review and signup returns keep the exact destination but discard prior-session actions and cursors", () => {
+  assert.equal(
+    safeAccountReturn(
+      "/platform/photo-tags?tag=tag1&operation=accept&after=old&recipientId=other"
+    ),
+    "/platform/photo-tags?tag=tag1"
+  );
+  assert.equal(
+    safeAccountReturn("/platform/photo-tags/?profile=adult1&after=old"),
+    "/platform/photo-tags?profile=adult1"
+  );
+  assert.equal(
+    safeAccountReturn(
+      "/platform/photo-tags?view=preferences&choice=EVERYONE&tag=ignored"
+    ),
+    "/platform/photo-tags?view=preferences"
+  );
+  assert.equal(
+    safeAccountReturn("/platform/photo-tags?scope=sent&after=old"),
+    "/platform/photo-tags?scope=sent"
+  );
+  assert.equal(
+    safeAccountReturn(
+      "/platform/commitments?signup=signup1&operation=cancel&month=2000-01"
+    ),
+    "/platform/commitments?signup=signup1"
+  );
+});

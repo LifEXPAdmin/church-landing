@@ -34,6 +34,7 @@ export async function recordDomainActivity(tx: Tx, intent: DomainIntent) {
     commentId: intent.commentId ?? null,
     createdAt: intent.createdAt ?? new Date(),
     activityReadAt: null,
+    activityMarkedUnreadAt: null,
     activitySequence: BigInt(0),
     requestId: null,
     conversationId: null,
@@ -67,6 +68,7 @@ export async function recordFanout(
     | "CHURCH_REVIEW"
     | "EVENT_CHANGED"
     | "VOLUNTEER_CHANGED"
+    | "VOLUNTEER_REQUEST"
     | "FEEDBACK_IDEA",
   sourceId: string,
   sourceVersion: number,
@@ -106,7 +108,32 @@ export async function recordChurchRoleChanges(
       recipientId: assignment.connection.userId
     });
 }
+export async function recordPostMentions(tx: Tx, post: PlatformPost) {
+  if (
+    post.status !== "PUBLISHED" ||
+    !post.publishedAt ||
+    post.repostKind === "PLAIN"
+  )
+    return;
+  const mentions = await tx.postMention.findMany({
+    where: { postId: post.id, active: true },
+    take: 6
+  });
+  if (mentions.length > 5) throw Error("Post mention bound exceeded.");
+  for (const mention of mentions)
+    await recordDomainActivity(tx, {
+      kind: "POST_MENTION",
+      category: "mentions",
+      sourceId: mention.id,
+      sourceVersion: 1,
+      actorId: post.authorId,
+      recipientId: mention.recipientId,
+      postId: post.id,
+      once: true
+    });
+}
 export async function recordPostPublication(tx: Tx, post: PlatformPost) {
+  await recordPostMentions(tx, post);
   if (
     post.status !== "PUBLISHED" ||
     !post.publishedAt ||

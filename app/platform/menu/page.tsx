@@ -57,9 +57,13 @@ function MenuLink({
 
 export default async function PlatformMenuPage() {
   const user = await getCurrentPlatformUser();
-  let adminAvailable=false;
-  if(user&&process.env.NODE_ENV==="production") {
-    try {adminAvailable=!!(await readAdminPageNavigation()).sections.length;}catch{/* Optional entry fails closed; the rest of Menu remains usable. */}
+  let adminAvailable = false;
+  if (user && process.env.NODE_ENV === "production") {
+    try {
+      adminAvailable = !!(await readAdminPageNavigation()).sections.length;
+    } catch {
+      /* Optional entry fails closed; the rest of Menu remains usable. */
+    }
   }
   return (
     <PlatformShell user={user}>
@@ -165,7 +169,7 @@ export default async function PlatformMenuPage() {
                 <>
                   <MenuLink
                     href="/platform/activity"
-                    title="Activity"
+                    title="Notifications"
                     description="See grouped updates and manage what is unread."
                     icon={Bell}
                     prefetch={false}
@@ -282,7 +286,20 @@ export default async function PlatformMenuPage() {
             <InstallationHelp />
             <InstallationHelp bookmark />
           </section>
-          {adminAvailable&&<section aria-labelledby="menu-admin"><h2 id="menu-admin">Platform operations</h2><ul className="gc-menu-links"><MenuLink href="/platform/admin" title="Admin" description="Open your currently permitted requests and operations." icon={Shield} prefetch={false}/></ul></section>}
+          {adminAvailable && (
+            <section aria-labelledby="menu-admin">
+              <h2 id="menu-admin">Platform operations</h2>
+              <ul className="gc-menu-links">
+                <MenuLink
+                  href="/platform/admin"
+                  title="Admin"
+                  description="Open your currently permitted requests and operations."
+                  icon={Shield}
+                  prefetch={false}
+                />
+              </ul>
+            </section>
+          )}
           <section aria-labelledby="menu-about">
             <h2 id="menu-about">About Godschurches</h2>
             <ul className="gc-menu-links">

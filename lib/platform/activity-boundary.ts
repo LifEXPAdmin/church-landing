@@ -6,7 +6,12 @@ import {
   socialWriteInput
 } from "./social-boundary";
 import { PortalError } from "./portal-policy";
-import { activityCommand, openActivity, readActivity } from "./activity";
+import {
+  activityCommand,
+  openActivity,
+  readActivity,
+  readActivitySummary
+} from "./activity";
 export async function handleActivityRequest(
   db: PrismaClient,
   request: Request
@@ -16,7 +21,7 @@ export async function handleActivityRequest(
       const query = new URL(request.url).searchParams;
       if (
         [...query.keys()].some(
-          (key) => !["view", "category", "cursor", "id"].includes(key)
+          (key) => !["view", "category", "cursor", "id", "filter"].includes(key)
         ) ||
         [...new Set(query.keys())].some((key) => query.getAll(key).length > 1)
       )
@@ -25,18 +30,29 @@ export async function handleActivityRequest(
       const view = query.get("view") ?? "inbox";
       if (
         (view === "inbox" && query.has("id")) ||
-        (view === "open" && (query.has("category") || query.has("cursor")))
+        (view !== "inbox" &&
+          (query.has("category") ||
+            query.has("cursor") ||
+            query.has("filter"))) ||
+        (view === "summary" && query.has("id"))
       )
         throw new PortalError(400, "Use a supported activity view.");
       const result =
         view === "inbox"
           ? await readActivity(db, token, {
               category: query.get("category"),
-              cursor: query.get("cursor")
+              cursor: query.get("cursor"),
+              filter: query.get("filter")
             })
           : view === "open"
             ? await openActivity(db, token, query.get("id"))
-            : null;
+            : view === "summary"
+              ? await readActivitySummary(
+                  db,
+                  token,
+                  request.headers.get("x-expected-account")
+                )
+              : null;
       if (!result) throw new PortalError(400, "Use a supported activity view.");
       return Response.json(result, { headers: socialHeaders });
     }

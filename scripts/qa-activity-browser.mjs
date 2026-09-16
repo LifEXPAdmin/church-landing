@@ -454,7 +454,10 @@ try {
     await bounded();
   }
   await go("/platform/messages");
-  await page.getByRole("link", { name: "Activity", exact: true }).click();
+  await page
+    .locator("main")
+    .getByRole("link", { name: "Notifications", exact: true })
+    .click();
   await total(0);
   await go("/platform/features");
   await page

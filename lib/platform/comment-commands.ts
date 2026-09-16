@@ -25,15 +25,8 @@ import {
   deleteCommentIn
 } from "./comment-policy";
 
-export function commentMentionIds(input: unknown) {
-  if (input === undefined) return [];
-  if (!Array.isArray(input) || input.length > 5)
-    throw new PortalError(400, "Choose at most five people to mention.");
-  const ids = input.map(postId);
-  if (new Set(ids).size !== ids.length)
-    throw new PortalError(400, "Choose each mention once.");
-  return ids;
-}
+import { personMentionIds as commentMentionIds } from "./person-mentions";
+export { personMentionIds as commentMentionIds } from "./person-mentions";
 export async function eligibleMention(
   tx: PostTx,
   context: PostContext,

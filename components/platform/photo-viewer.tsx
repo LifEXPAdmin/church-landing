@@ -1,6 +1,7 @@
 "use client";
 /* eslint-disable @next/next/no-img-element -- Permissioned media bypasses shared image optimization. */
 import { useCallback, useEffect, useId, useRef, useState } from "react";
+import Link from "next/link";
 import type { ImageView } from "@/lib/platform/media";
 import { socialRequest } from "@/lib/platform/social-client";
 import { useReadVisibility } from "./read-visibility";
@@ -229,6 +230,21 @@ export function PhotoViewer({
       )}
       {image && (
         <nav aria-label="Photo controls" className="flex flex-wrap gap-2">
+          {accountId &&
+            [
+              "PROFILE_PHOTO",
+              "PROFILE_AVATAR",
+              "PROFILE_COVER",
+              "POST_PHOTO"
+            ].includes(image.purpose) && (
+              <Link
+                className="gc-button gc-button-quiet"
+                prefetch={false}
+                href={`/platform/photo-tags?photo=${image.id}`}
+              >
+                Photo tags and approvals
+              </Link>
+            )}
           {images.length > 1 && (
             <>
               <button

@@ -24,6 +24,7 @@ import { accountEntryHref } from "@/lib/platform/account-entry";
 import { PrayerWorkspaceProvider } from "./prayer-workspace";
 import { MeasurementForeground } from "./measurement-foreground";
 import { FeedbackPrompt } from "./feedback-prompt";
+import { NotificationsLink } from "./notifications-link";
 
 interface PlatformShellProps {
   user:
@@ -95,6 +96,9 @@ export async function PlatformShell({
             <nav aria-label="Account and website" className="gc-utilities">
               {user ? (
                 <>
+                  {user.id && (
+                    <NotificationsLink key={user.id} owner={user.id} />
+                  )}
                   <Link href="/platform/settings" className="gc-utility">
                     <Settings aria-hidden="true" />
                     <span>Settings</span>

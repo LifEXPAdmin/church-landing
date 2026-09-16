@@ -1,3 +1,27 @@
+## Notifications and adult tag integration checkpoint — September 16, 2026 UTC
+
+The P1 visible Notifications feature is implemented locally on the unified branch.
+The shared labeled header, All/Unread/read controls, post mentions, private adult
+photo-tag review and approved associations, friend acceptance and new volunteer
+requests reuse existing account, source, notification and recovery owners.
+Five additive migrations bring the isolated fixture to 89; production remains the
+84-migration feedback release below. Candidate notes are prepared as 2026.09.16.2.
+
+Focused integration currently passes 22 checks after preserving the existing
+anonymous reaction/prayer contract. Earlier focused coverage passes 29 checks;
+a later 38-check run preserved 37 passes and the caught privacy regression. Types
+pass. Browser exploration passes private tag request/exact retry, approval/removal,
+privacy-focus persistence, denied-push operation, narrow/zoomed screens and mention
+read/unread/cross-tab/mark-all behavior. The development renderer intentionally
+conceals private church posts; exact volunteer navigation requires the isolated
+production renderer. This checkpoint is not a release or full-gate acceptance.
+
+Continue [the contract](NOTIFICATION_CENTER_CONTRACT.md), complete remaining
+browser integration, established full regression, protected upgrade and release.
+Verify exact canonical deployment, live behavior and recovery before closing any
+feature children. Preserve real operator/provider/device blockers and keep final
+review last.
+
 ## Feedback and shared reports verified live — September 16, 2026 UTC
 
 **2026.09.16.1 / 799549dcfd2b74709c0ebd8e07f8304f97a34a20** is READY in

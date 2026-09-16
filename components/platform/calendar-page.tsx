@@ -90,7 +90,10 @@ export async function CalendarPage({
       calendarZone(query.timeZone ?? "UTC")
     );
     if (view === "commitments") {
-      const result = await readCalendarCommitments(range);
+      const result = await readCalendarCommitments({
+        ...range,
+        signup: query.signup
+      });
       return (
         <PlatformShell user={user}>
           <section
@@ -102,12 +105,20 @@ export async function CalendarPage({
               description="Your event responses and volunteer reservations, with private conflict hints visible only to you. Canceled events stay clearly marked."
             />
             <CalendarNavigation />
-            <CalendarRange range={range} path={path} query={query} />
-            <CalendarAgenda
-              events={result.commitments}
-              timeZone={range.timeZone}
-              commitments
-            />
+            {query.signup ? (
+              <a href="/platform/commitments" className="underline">
+                All my commitments
+              </a>
+            ) : (
+              <CalendarRange range={range} path={path} query={query} />
+            )}
+            {!query.signup && (
+              <CalendarAgenda
+                events={result.commitments}
+                timeZone={range.timeZone}
+                commitments
+              />
+            )}
             <VolunteerCommitments
               rows={result.volunteerCommitments}
               timeZone={range.timeZone}

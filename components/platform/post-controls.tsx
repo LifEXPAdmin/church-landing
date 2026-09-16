@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useId, useState } from "react";
 import type { PostEditorView } from "@/lib/platform/post-editor";
+import { CommentMentions } from "./comment-mentions";
 import { PostGalleryManager } from "./post-gallery-manager";
 import { PostActionForm } from "./post-action-form";
 import { PostScheduleFields } from "./post-schedule-fields";
@@ -17,6 +18,7 @@ function EditPost({ post, owner }: { post: PostEditorView; owner: string }) {
   const id = useId(),
     [draft, setDraft] = useState<PostDraft>({
       discovery: post.discovery,
+      mentionIds: post.mentionIds,
       content: post.content,
       contentNote: post.contentNote,
       safeExcerpt: post.safeExcerpt,
@@ -71,6 +73,11 @@ function EditPost({ post, owner }: { post: PostEditorView; owner: string }) {
         {post.churchName && `Shared on ${post.churchName}'s page.`}
       </p>
       <PostDraftFields draft={draft} change={setDraft} />
+      <CommentMentions
+        owner={owner}
+        ids={draft.mentionIds ?? []}
+        onChange={(mentionIds) => setDraft({ ...draft, mentionIds })}
+      />
       {!post.repostKind && (
         <label className="flex min-h-11 items-start gap-2">
           <input

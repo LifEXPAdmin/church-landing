@@ -18,7 +18,7 @@ const personalPost = (userId: string) => ({
 async function erasePrivateCollections(tx: Tx, userId: string) {
   await tx.platformMetricActivityDay.deleteMany({ where: { userId } });
   await tx.platformMeasurementChoice.deleteMany({ where: { userId } });
-  await eraseAdminPersonalData(tx,userId,new Date());
+  await eraseAdminPersonalData(tx, userId, new Date());
   await tx.topicMembership.updateMany({
     where: { userId },
     data: {
@@ -132,6 +132,12 @@ async function eraseSocialData(tx: Tx, userId: string, now: Date) {
   await tx.friendInvitation.deleteMany({ where: { ownerId: userId } });
   await tx.platformPostLike.deleteMany({ where: { userId } });
   await tx.commentLike.deleteMany({ where: { userId } });
+  await tx.photoTag.deleteMany({
+    where: { OR: [{ requesterId: userId }, { recipientId: userId }] }
+  });
+  await tx.postMention.deleteMany({
+    where: { OR: [{ recipientId: userId }, { post: { authorId: userId } }] }
+  });
   await tx.commentMention.deleteMany({
     where: { OR: [{ recipientId: userId }, { comment: { authorId: userId } }] }
   });

@@ -234,11 +234,11 @@ export const features: Feature[] = [
   {
     id: "personal-activity",
     category: "Posts and conversations",
-    name: "Your Activity",
+    name: "Notifications",
     description:
-      "See grouped messages, contact requests, replies, mentions, saved-prayer updates and report updates in one personal view.",
+      "See messages, mentions, adult photo tags, friend requests and church updates in one personal view.",
     steps:
-      "Open Activity from Menu or Messages. Choose a category, open an available item or mark a group read. Mark all read covers every category through the loaded page; later updates stay unread. Older activity keeps your place, and an unconfirmed read change offers the same retry.",
+      "Choose the labeled Notifications bell in the header. Filter All, Unread or a category; open the exact source or mark a group read or unread. Mark all read covers its loaded boundary, so later arrivals stay unread. Reading a notification does not mark unseen messages read.",
     href: "/platform/activity",
     eligibility:
       "Verified eligible adult accounts. Links and names require current source access. Optional notification choices and mutes still apply; Messages retains its own history and pending requests. Reading Activity cancels an optional phone alert that has not started delivery. Already delivered phone notifications remain under your device controls.",
@@ -435,6 +435,14 @@ export const features: Feature[] = [
     href: "/platform/profile/me",
     eligibility:
       "Signed-in account. Name and username identify public contributions; other profile details require permitted member access. Directory contacts require a current approved church connection and verified adult eligibility. Sign-in email stays private; street-address sharing is unavailable.",
+    availability: "available"
+  },
+  {
+    id: "adult-photo-tags", category: "Profiles", name: "Adult photo tags and approvals",
+    description: "Review a photo tag before it becomes an approved association.",
+    steps: "Open Photo tags and approvals from a readable photo, or Review photo tags in Notifications. Approve, decline or remove a request. Find approved photos from a profile’s Photos tab and choose who may ask to tag you in Privacy settings.",
+    href: "/platform/photo-tags",
+    eligibility: "Verified adult accounts with current photo access. Pending requests stay private, and approved tags keep the original photo audience. Removing a tag does not delete someone else’s photo. Family and child tagging remain unavailable; phone alerts are a separate choice.",
     availability: "available"
   },
   {
@@ -740,6 +748,25 @@ export const features: Feature[] = [
   }
 ];
 export const releases: ReleaseEntry[] = [
+  {
+    id: "notifications-and-photo-tag-approval", version: "2026.09.16.2", date: "2026-09-16",
+    summary: "Find your notifications immediately and approve photo tags before they appear.",
+    added: [
+      "A labeled Notifications bell and unread count stay available in the signed-in header on phones and larger screens.",
+      "Choose people to mention in a post; private drafts keep the selection and publication checks current consent and access.",
+      "Adults can request, approve, decline and remove photo tags, with separate privacy choices and approved photo associations."
+    ],
+    improved: [
+      "All, Unread and category views support read, unread and mark-all choices across sessions without falsely reading unseen messages.",
+      "Accepted friend invitations and newly opened volunteer roles join existing notifications under current consent, subscriptions and privacy rules.",
+      "Volunteer alerts open the exact role or owned signup; canceled and older signups remain reviewable without exposing lost source details."
+    ],
+    fixed: [
+      "New arrivals remain unread after an earlier mark-all boundary, and retries do not overwrite later read choices.",
+      "Photo tags never widen an audience, revive a removed association after protected recovery or delete someone else’s photo."
+    ],
+    featureIds: ["personal-activity", "adult-photo-tags", "private-messages", "photo-library"]
+  },
   {
     id: "feedback-and-product-review", version: "2026.09.16.1", date: "2026-09-16",
     summary: "Keep feedback private, choose follow-up and review product outcomes with traceable sources.",

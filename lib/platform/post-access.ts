@@ -151,7 +151,18 @@ export function postReadableWhere(
     ]
   };
 }
-export function postCanEdit(context: PostContext, post: PlatformPost) {
+export function postCanEdit(
+  context: PostContext,
+  post: Pick<
+    PlatformPost,
+    | "topicCommunityId"
+    | "repostKind"
+    | "audienceChurchId"
+    | "status"
+    | "authorChurchId"
+    | "authorId"
+  >
+) {
   return (
     (!post.topicCommunityId ||
       !!context.topicParticipants?.has(post.topicCommunityId)) &&

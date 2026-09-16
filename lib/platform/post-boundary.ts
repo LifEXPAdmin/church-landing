@@ -1,3 +1,4 @@
+import { readPostMentionSuggestions } from "./person-mentions";
 import { scheduleDomainActivity } from "./notification-fanout";
 import { schedulePublicationHandoff } from "./scheduled-publication";
 import type { PrismaClient } from "@prisma/client";
@@ -44,47 +45,69 @@ export async function handlePostRequest(
           "Your sign-in changed. Reload before continuing."
         );
       const view = url.searchParams.get("view");
+      if (view === "mentions") {
+        if (!expectedAccount)
+          throw new PortalError(
+            401,
+            "Reload the composer before choosing mentions."
+          );
+        if (
+          [...url.searchParams.keys()].some(
+            (key) =>
+              !["view", "q", "after"].includes(key) ||
+              url.searchParams.getAll(key).length !== 1
+          )
+        )
+          throw new PortalError(400, "Choose supported mention search fields.");
+      }
       const result =
-        view === "scheduled"
-          ? await getScheduledPosts(db, token, url.searchParams.get("after"))
-          : view === "availability-batch"
-            ? await getPostAvailabilityBatch(
-                db,
-                token,
-                url.searchParams.getAll("postId"),
-                url.searchParams.get("feed"),
-                {
-                  filterKey: url.searchParams.get("feedKey"),
-                  guestDiscovery: request.headers
-                    .get("cookie")
-                    ?.split(";")
-                    .map((part) => part.trim())
-                    .find((part) =>
-                      part.startsWith(GUEST_DISCOVERY_COOKIE + "=")
-                    )
-                    ?.slice(GUEST_DISCOVERY_COOKIE.length + 1)
-                }
-              )
-            : view === "availability"
-              ? await getPostAvailability(
+        view === "mentions"
+          ? await readPostMentionSuggestions(
+              db,
+              token,
+              url.searchParams.get("q"),
+              url.searchParams.get("after")
+            )
+          : view === "scheduled"
+            ? await getScheduledPosts(db, token, url.searchParams.get("after"))
+            : view === "availability-batch"
+              ? await getPostAvailabilityBatch(
                   db,
                   token,
-                  url.searchParams.get("postId") ?? ""
+                  url.searchParams.getAll("postId"),
+                  url.searchParams.get("feed"),
+                  {
+                    filterKey: url.searchParams.get("feedKey"),
+                    guestDiscovery: request.headers
+                      .get("cookie")
+                      ?.split(";")
+                      .map((part) => part.trim())
+                      .find((part) =>
+                        part.startsWith(GUEST_DISCOVERY_COOKIE + "=")
+                      )
+                      ?.slice(GUEST_DISCOVERY_COOKIE.length + 1)
+                  }
                 )
-              : view === "composer"
-                ? await getPostComposer(db, token)
-                : view === "events"
-                  ? await getPostEventOptions(
-                      db,
-                      token,
-                      url.searchParams.get("churchId"),
-                      url.searchParams.get("cursor")
-                    )
-                  : await getPostEditor(
-                      db,
-                      token,
-                      url.searchParams.get("postId") ?? ""
-                    );
+              : view === "availability"
+                ? await getPostAvailability(
+                    db,
+                    token,
+                    url.searchParams.get("postId") ?? ""
+                  )
+                : view === "composer"
+                  ? await getPostComposer(db, token)
+                  : view === "events"
+                    ? await getPostEventOptions(
+                        db,
+                        token,
+                        url.searchParams.get("churchId"),
+                        url.searchParams.get("cursor")
+                      )
+                    : await getPostEditor(
+                        db,
+                        token,
+                        url.searchParams.get("postId") ?? ""
+                      );
       return Response.json(result, { headers });
     }
     if (request.method !== "POST")

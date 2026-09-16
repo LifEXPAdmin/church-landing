@@ -623,6 +623,7 @@ export function PostParticipationControls({
           {view.slots.map((slot) => (
             <section
               key={slot.id}
+              id={`volunteer-${slot.id}`}
               className="space-y-3 rounded-lg border border-gc-divider p-4"
               aria-label={slot.role}
             >
@@ -711,6 +712,7 @@ export function VolunteerCommitments({
       {rows.map((row) => (
         <article
           key={row.id}
+          id={`signup-${row.id}`}
           className="space-y-3 rounded-lg border border-gc-divider bg-gc-surface p-5"
         >
           <h3 className="font-semibold">{row.role}</h3>
@@ -746,14 +748,17 @@ export function VolunteerCommitments({
               View volunteer post
             </Link>
           )}
-          <ParticipationForm
-            label="Cancel my signup"
-            payload={{
-              operation: "cancel-volunteer",
-              signupId: row.id,
-              expectedVersion: row.version
-            }}
-          />
+          {row.state !== "ACTIVE" && <p>Your reservation is canceled.</p>}
+          {row.state === "ACTIVE" && (
+            <ParticipationForm
+              label="Cancel my signup"
+              payload={{
+                operation: "cancel-volunteer",
+                signupId: row.id,
+                expectedVersion: row.version
+              }}
+            />
+          )}
         </article>
       ))}
     </section>

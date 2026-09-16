@@ -4,17 +4,20 @@ import { socialRequest } from "@/lib/platform/social-client";
 type Person = { id: string; name: string; username: string };
 export function CommentMentions({
   postId,
+  photoId,
   owner,
   ids,
   onChange,
   disabled = false
 }: {
-  postId: string;
+  postId?: string;
+  photoId?: string;
   owner: string;
   ids: string[];
   onChange: (ids: string[], person?: Person) => void;
   disabled?: boolean;
 }) {
+  const limit = photoId ? 1 : 5;
   const label = useId(),
     seq = useRef(0);
   const [query, setQuery] = useState(""),
@@ -33,7 +36,7 @@ export function CommentMentions({
         items: Person[];
         nextCursor: string | null;
       }>(
-        `/api/platform/comments?${new URLSearchParams({ view: "mentions", postId, q: query, ...(after ? { after } : {}) })}`,
+        `/api/platform/${photoId ? "photo-tags" : postId ? "comments" : "posts"}?${new URLSearchParams({ view: photoId ? "people" : "mentions", ...(photoId ? { assetId: photoId } : postId ? { postId } : {}), q: query, ...(after ? { after } : {}) })}`,
         undefined,
         owner
       );
@@ -60,9 +63,9 @@ export function CommentMentions({
   }
   function select(person: Person) {
     if (ids.includes(person.id)) return;
-    if (ids.length >= 5) {
+    if (ids.length >= limit) {
       setMessage(
-        "Choose at most five people. Remove one before adding another."
+        `Choose at most ${limit} ${limit === 1 ? "person" : "people"}. Remove one before adding another.`
       );
       return;
     }
@@ -76,7 +79,7 @@ export function CommentMentions({
   return (
     <div className="space-y-2">
       <label htmlFor={label} className="font-semibold">
-        Mention someone (optional)
+        {photoId ? "Choose an adult to tag" : "Mention someone (optional)"}
       </label>
       <div className="flex flex-wrap gap-2">
         <input
@@ -126,10 +129,14 @@ export function CommentMentions({
           disabled={disabled || pending || query.trim().length < 2}
           onClick={() => void search()}
         >
-          Find mentions
+          {photoId ? "Find eligible adults" : "Find mentions"}
         </button>
       </div>
-      <ul id={`${label}-list`} role="listbox" aria-label="Mention suggestions">
+      <ul
+        id={`${label}-list`}
+        role="listbox"
+        aria-label={photoId ? "Photo tag suggestions" : "Mention suggestions"}
+      >
         {people.map((p, i) => (
           <li
             id={`${label}-${i}`}
@@ -155,11 +162,14 @@ export function CommentMentions({
           disabled={pending || disabled}
           onClick={() => void search(cursor)}
         >
-          More mention suggestions
+          {photoId ? "More tag suggestions" : "More mention suggestions"}
         </button>
       )}
       {ids.length > 0 && (
-        <ul aria-label="Selected mentions" className="flex flex-wrap gap-2">
+        <ul
+          aria-label={photoId ? "Selected adult for tag" : "Selected mentions"}
+          className="flex flex-wrap gap-2"
+        >
           {ids.map((id, i) => (
             <li key={id}>
               <button
@@ -175,7 +185,10 @@ export function CommentMentions({
         </ul>
       )}
       <p className="text-sm text-gc-muted">
-        {ids.length}/5 selected. Typed @names alone do not notify anyone.
+        {ids.length}/{limit} selected.{" "}
+        {photoId
+          ? "A private request asks for approval. Nothing is approved automatically."
+          : "Typed @names alone do not notify anyone."}
       </p>
       <p role="status">{pending ? "Finding eligible people…" : message}</p>
     </div>

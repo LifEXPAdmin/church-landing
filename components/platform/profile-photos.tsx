@@ -523,6 +523,15 @@ export function ProfilePhotos({
       <p role="status">{message}</p>
       <div hidden={!visible} className="space-y-5">
         <nav aria-label="Photo collections" className="flex flex-wrap gap-3">
+          {ownerId && data && (
+            <Link
+              className={portalButtonClass}
+              prefetch={false}
+              href={`/platform/photo-tags?profile=${profileId}`}
+            >
+              Approved photos of this person
+            </Link>
+          )}
           {[
             ["all", "All photos"],
             ["profile", "Profile pictures"],

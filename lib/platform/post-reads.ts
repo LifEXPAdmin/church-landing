@@ -49,6 +49,11 @@ function include(
 ) {
   return {
     ...postInclude,
+    mentions: {
+      where: { active: true, recipient: socialUserWhere(context) },
+      select: { recipient: { select: communityAuthorSelect } },
+      take: 5
+    },
     likes: {
       where: { userId: context.actorId ?? "", user: socialUserWhere(context) },
       select: { active: true, version: true }
@@ -131,6 +136,7 @@ function project(
     createdAt: post.publishedAt ?? post.createdAt,
     updatedAt: post.updatedAt,
     type: post.type,
+    mentions: post.mentions.map((m) => m.recipient),
     content: post.content,
     contentNote: post.contentNote,
     safeExcerpt: post.safeExcerpt,

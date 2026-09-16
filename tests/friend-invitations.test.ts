@@ -1,6 +1,7 @@
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
+import { readActivity, openActivity } from "../lib/platform/activity";
 import { PrismaClient } from "@prisma/client";
 import { createPortalActor, assertPortalTestDatabase } from "./seed-portal";
 import {
@@ -519,4 +520,66 @@ test("a connection failure after adult acknowledgement preserves completed eligi
   }
   await command(db, b.login, input("retry-signup", b.account.id));
   assert.equal(await count(a.id, b.account.id), 2);
+});
+
+test("accepted friend invitations create one current in-app request alert, honor mute and removal, and never alert the accepting actor", async () => {
+  const { a, code } = await enabled(),
+    b = await createPortalActor(db, "friendalert");
+  const body = input("accept", b.id, { code, consent: true });
+  await command(db, b.token, body);
+  await command(db, b.token, body);
+  const events = await db.socialEvent.findMany({
+    where: { kind: "FRIEND_CONNECTED", recipientId: a.id }
+  });
+  assert.equal(events.length, 1);
+  assert.equal(
+    await db.socialEvent.count({
+      where: { kind: "FRIEND_CONNECTED", recipientId: b.id }
+    }),
+    0
+  );
+  const page = await readActivity(db, a.token, { category: "requests" });
+  assert.equal(page.unread, 1);
+  assert.equal(page.items[0].href, `/platform/profile/${b.username}`);
+  assert.equal(
+    page.items[0].summary,
+    `${b.name} accepted your friend invitation`
+  );
+  await db.socialPreferences.upsert({
+    where: { ownerId: a.id },
+    create: { ownerId: a.id, requestAlerts: false },
+    update: { requestAlerts: false }
+  });
+  assert.equal((await readActivity(db, a.token)).items.length, 0);
+  await db.socialPreferences.update({
+    where: { ownerId: a.id },
+    data: { requestAlerts: true }
+  });
+  await db.socialRelationship.updateMany({
+    where: { ownerId: a.id, targetUserId: b.id },
+    data: { muted: true }
+  });
+  assert.equal((await readActivity(db, a.token)).items.length, 0);
+  await db.socialRelationship.updateMany({
+    where: { ownerId: a.id, targetUserId: b.id },
+    data: { muted: false }
+  });
+  const status = (await readRelationships(db, b.token, {
+    view: "status",
+    kind: "person",
+    targetId: a.id
+  })) as { version: number };
+  await relationshipCommand(db, b.token, {
+    operation: "follow",
+    mutationId: randomUUID(),
+    kind: "person",
+    targetId: a.id,
+    expectedVersion: status.version,
+    desired: false
+  });
+  assert.deepEqual(await openActivity(db, a.token, events[0].id), {
+    ownerId: a.id,
+    available: false,
+    href: null
+  });
 });

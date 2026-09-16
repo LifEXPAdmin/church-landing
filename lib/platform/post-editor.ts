@@ -191,6 +191,15 @@ export function getPostEditor(db: PrismaClient, token: unknown, id: string) {
       discovery: postDiscoveryInput(post),
       topicCommunityId: post.topicCommunityId,
       version: post.version,
+      mentionIds: canEdit
+        ? (
+            await tx.postMention.findMany({
+              where: { postId: post.id, active: true },
+              select: { recipientId: true },
+              take: 5
+            })
+          ).map((m) => m.recipientId)
+        : [],
       content: post.content,
       contentNote: post.contentNote ?? "",
       safeExcerpt: post.safeExcerpt ?? "",

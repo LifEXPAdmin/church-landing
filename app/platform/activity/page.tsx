@@ -9,14 +9,18 @@ import {
 } from "@/lib/platform/activity-types";
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
-  title: "Activity",
+  title: "Notifications",
   robots: { index: false, follow: false },
   referrer: "no-referrer"
 };
 export default async function ActivityPage({
   searchParams
 }: {
-  searchParams: Promise<{ category?: string; cursor?: string }>;
+  searchParams: Promise<{
+    category?: string;
+    cursor?: string;
+    filter?: string;
+  }>;
 }) {
   const [user, query] = await Promise.all([
     getCurrentPlatformUser(),
@@ -27,6 +31,11 @@ export default async function ActivityPage({
   )
     ? (query.category as ActivityCategory)
     : undefined;
+  const filter = query.filter === "unread" ? "unread" : "all";
+  const returnQuery = new URLSearchParams({
+    ...(category ? { category } : {}),
+    ...(filter === "unread" ? { filter } : {})
+  }).toString();
   const cursor =
     typeof query.cursor === "string" &&
     query.cursor.length <= 400 &&
@@ -38,18 +47,17 @@ export default async function ActivityPage({
       {user ? (
         <div className="container-shell py-6">
           <ActivityWorkspace
-            key={`${user.id}-${category ?? "all"}-${cursor ?? "newest"}`}
+            key={`${user.id}-${category ?? "all"}-${filter}-${cursor ?? "newest"}`}
             owner={user.id}
             category={category}
             cursor={cursor}
+            filter={filter}
           />
         </div>
       ) : (
         <GuestAccountPrompt
           reason="account"
-          next={
-            "/platform/activity" + (category ? "?category=" + category : "")
-          }
+          next={"/platform/activity" + (returnQuery ? "?" + returnQuery : "")}
         />
       )}
     </PlatformShell>

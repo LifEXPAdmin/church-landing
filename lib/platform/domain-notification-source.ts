@@ -1,3 +1,4 @@
+import { photoTagNotificationSources } from "./photo-tag-notification-source";
 import { feedbackNotificationSources } from "./feedback-notification-source";
 import type { FeedbackChannel } from "./feedback-followup-policy";
 import type { Prisma, SocialEvent } from "@prisma/client";
@@ -17,6 +18,10 @@ export const domainNotificationKinds = [
   "FEEDBACK_CASE",
   "FEEDBACK_IDEA",
   "AUTHOR_POST",
+  "POST_MENTION",
+  "FRIEND_CONNECTED",
+  "PHOTO_TAG_REQUEST",
+  "PHOTO_TAG_APPROVED",
   "POST_REACTION",
   "COMMENT_REACTION",
   "PRAYER_ACK",
@@ -27,6 +32,7 @@ export const domainNotificationKinds = [
   "EVENT_CHANGED",
   "RSVP_CHANGED",
   "VOLUNTEER_CHANGED",
+  "VOLUNTEER_REQUEST",
   "VOLUNTEER_CONFIRMATION"
 ];
 
@@ -52,13 +58,79 @@ export async function domainNotificationSources(
     e: SocialEvent,
     category: NotificationSource["category"],
     href: string,
-    group: string
+    group: string,
+    summary?: string
   ) => {
     if (e.notificationCategory === category)
-      result.set(e.id, { category, href, group });
+      result.set(e.id, {
+        category,
+        href,
+        group,
+        ...(summary ? { summary } : {})
+      });
   };
   const context = suppliedContext ?? (await postContext(tx, ownerId));
   if (context.actorId !== ownerId || !context.eligible) return result;
+  const friends = events.filter((e) => e.kind === "FRIEND_CONNECTED");
+  if (friends.length) {
+    const rows = await tx.friendAcceptance.findMany({
+      where: {
+        id: { in: friends.map((e) => e.sourceId!) },
+        inviterId: ownerId,
+        state: "CONNECTED",
+        inviter: eligibleWhere,
+        recipient: eligibleWhere
+      },
+      select: {
+        id: true,
+        recipientId: true,
+        recipient: { select: { username: true } }
+      },
+      take: 50
+    });
+    const ids = rows.map((r) => r.recipientId);
+    const follows = await tx.platformFollow.findMany({
+      where: {
+        OR: [
+          { followerId: ownerId, followingId: { in: ids } },
+          { followingId: ownerId, followerId: { in: ids } }
+        ]
+      },
+      select: { followerId: true, followingId: true },
+      take: 100
+    });
+    for (const e of friends) {
+      const row = rows.find((r) => r.id === e.sourceId);
+      if (
+        row &&
+        row.recipientId === e.actorId &&
+        e.actorId !== ownerId &&
+        e.sourceVersion === 1 &&
+        !context.blockedIds?.includes(e.actorId) &&
+        !context.mutedIds?.includes(e.actorId) &&
+        follows.some(
+          (f) => f.followerId === ownerId && f.followingId === e.actorId
+        ) &&
+        follows.some(
+          (f) => f.followingId === ownerId && f.followerId === e.actorId
+        )
+      )
+        add(
+          e,
+          "requests",
+          `/platform/profile/${row.recipient.username}`,
+          `friend:${row.id}`
+        );
+    }
+  }
+  const photoTags = await photoTagNotificationSources(
+    tx,
+    events.filter(
+      (e) => e.kind === "PHOTO_TAG_REQUEST" || e.kind === "PHOTO_TAG_APPROVED"
+    ),
+    context
+  );
+  for (const [id, source] of photoTags) result.set(id, source);
   const feedback = await feedbackNotificationSources(
     tx,
     events.filter(
@@ -130,7 +202,51 @@ export async function domainNotificationSources(
     p.authorChurchId
       ? context.mutedChurchIds?.includes(p.authorChurchId)
       : context.mutedIds?.includes(p.authorId);
-  const authors = events.filter((e) => e.kind === "AUTHOR_POST");
+  const mentionEvents = events.filter((e) => e.kind === "POST_MENTION");
+  if (mentionEvents.length) {
+    const mentions = await tx.postMention.findMany({
+      where: {
+        id: { in: mentionEvents.map((e) => e.sourceId!) },
+        recipientId: ownerId,
+        active: true
+      },
+      take: 50
+    });
+    const preference = await tx.socialPreferences.findUnique({
+      where: { ownerId },
+      select: { mentions: true }
+    });
+    const follows =
+      preference?.mentions === "FOLLOWED"
+        ? await tx.platformFollow.findMany({
+            where: {
+              followerId: ownerId,
+              followingId: { in: mentionEvents.map((e) => e.actorId) }
+            },
+            select: { followingId: true },
+            take: 50
+          })
+        : [];
+    for (const e of mentionEvents) {
+      const p = e.postId ? posts.get(e.postId) : null;
+      if (
+        p &&
+        p.authorId === e.actorId &&
+        e.actorId !== ownerId &&
+        !context.blockedIds?.includes(e.actorId) &&
+        !mutedPost(p) &&
+        mentions.some((m) => m.id === e.sourceId && m.postId === p.id) &&
+        (!preference ||
+          preference.mentions === "EVERYONE" ||
+          (preference.mentions === "FOLLOWED" &&
+            follows.some((f) => f.followingId === e.actorId)))
+      )
+        add(e, "mentions", `/platform/posts/${p.id}`, `post-mention:${p.id}`);
+    }
+  }
+  const authors = events.filter((e) =>
+    ["AUTHOR_POST", "VOLUNTEER_REQUEST"].includes(e.kind)
+  );
   const bells = authors.length
     ? await tx.socialRelationship.findMany({
         where: {
@@ -345,6 +461,7 @@ export async function domainNotificationSources(
             id: true,
             userId: true,
             churchId: true,
+            church: { select: { name: true } },
             state: true,
             version: true
           },
@@ -364,7 +481,13 @@ export async function domainNotificationSources(
       const c = connections.get(e.sourceId!);
       if (!c || c.version < (e.sourceVersion ?? Infinity)) continue;
       if (e.kind === "CHURCH_CONNECTION" && c.userId === ownerId)
-        add(e, "church", "/platform/my-church", `connection:${c.id}`);
+        add(
+          e,
+          "church",
+          "/platform/my-church",
+          `connection:${c.id}`,
+          `Your connection with ${c.church.name} changed`
+        );
       if (
         e.kind === "CHURCH_REVIEW" &&
         c.userId === e.actorId &&
@@ -379,7 +502,8 @@ export async function domainNotificationSources(
           e,
           "church",
           `/platform/churches/${c.churchId}/review`,
-          `connection:${c.id}`
+          `connection:${c.id}`,
+          `A connection request for ${c.church.name} needs review`
         );
     }
   }
@@ -397,7 +521,12 @@ export async function domainNotificationSources(
       (directIds.length
         ? await tx.churchCapabilityGrant.findMany({
             where: { id: { in: directIds }, userId: ownerId },
-            select: { id: true, version: true, churchId: true },
+            select: {
+              id: true,
+              version: true,
+              churchId: true,
+              church: { select: { name: true } }
+            },
             take: 50
           })
         : []
@@ -407,11 +536,16 @@ export async function domainNotificationSources(
       (roleIds.length
         ? await tx.churchPositionAssignment.findMany({
             where: { id: { in: roleIds }, connection: { userId: ownerId } },
-            select: { id: true, version: true, churchId: true },
+            select: {
+              id: true,
+              version: true,
+              churchId: true,
+              connection: { select: { church: { select: { name: true } } } }
+            },
             take: 50
           })
         : []
-      ).map((row) => [row.id, row])
+      ).map((row) => [row.id, { ...row, church: row.connection.church }])
     );
     for (const event of access) {
       const row = (event.kind === "CHURCH_ROLE" ? roles : direct).get(
@@ -422,7 +556,66 @@ export async function domainNotificationSources(
           event,
           "church",
           "/platform/my-church",
-          `church-access:${row.churchId}`
+          `church-access:${row.churchId}`,
+          `Your role or access at ${row.church.name} changed`
+        );
+    }
+  }
+  const volunteerRequests = events.filter(
+    (e) => e.kind === "VOLUNTEER_REQUEST"
+  );
+  if (volunteerRequests.length) {
+    const slots = await tx.postVolunteerSlot.findMany({
+      where: {
+        id: { in: volunteerRequests.map((e) => e.sourceId!) },
+        closedAt: null
+      },
+      select: {
+        id: true,
+        postId: true,
+        version: true,
+        post: {
+          select: {
+            eventOccurrence: {
+              select: {
+                canceledAt: true,
+                endAt: true,
+                event: { select: { canceledAt: true } }
+              }
+            }
+          }
+        }
+      },
+      take: 50
+    });
+    for (const e of volunteerRequests) {
+      const slot = slots.find(
+          (s) => s.id === e.sourceId && s.postId === e.postId
+        ),
+        p = slot ? posts.get(slot.postId) : null,
+        event = slot?.post.eventOccurrence,
+        bell = p?.authorChurchId
+          ? bells.find((b) => b.churchId === p.authorChurchId)
+          : null;
+      if (
+        slot &&
+        p?.authorChurchId &&
+        context.churches.includes(p.authorChurchId) &&
+        !mutedPost(p) &&
+        event &&
+        !event.canceledAt &&
+        !event.event.canceledAt &&
+        event.endAt > now &&
+        slot.version >= (e.sourceVersion ?? Infinity) &&
+        e.actorId !== ownerId &&
+        bell?.authorBellSince &&
+        bell.authorBellSince < e.createdAt
+      )
+        add(
+          e,
+          "commitments",
+          `/platform/posts/${p.id}#volunteer-${slot.id}`,
+          `slot:${slot.id}`
         );
     }
   }
@@ -560,7 +753,15 @@ export async function domainNotificationSources(
               r.updatedAt <= e.createdAt
           );
         if (o && o.version >= (e.sourceVersion ?? Infinity) && participating)
-          add(e, "commitments", `/platform/events/${o.id}`, `event:${o.id}`);
+          add(
+            e,
+            "commitments",
+            `/platform/events/${o.id}`,
+            `event:${o.id}`,
+            o.event.calendar.church
+              ? `An event from ${o.event.calendar.church.name} in your commitments changed`
+              : undefined
+          );
       } else if (e.kind === "RSVP_CHANGED") {
         const r = responses.find((r) => r.id === e.sourceId),
           o = r && details(r.occurrenceId);
@@ -580,7 +781,12 @@ export async function domainNotificationSources(
           r.version >= (e.sourceVersion ?? Infinity)
         ) {
           // An owned confirmation remains available without revealing lost details.
-          add(e, "commitments", "/platform/commitments", `signup:${r.id}`);
+          add(
+            e,
+            "commitments",
+            `/platform/commitments?signup=${r.id}`,
+            `signup:${r.id}`
+          );
         } else if (
           details(r.slot.post.eventOccurrenceId) &&
           posts.has(r.slot.postId) &&
@@ -589,7 +795,7 @@ export async function domainNotificationSources(
           add(
             e,
             "commitments",
-            `/platform/posts/${r.slot.postId}`,
+            `/platform/posts/${r.slot.postId}#volunteer-${r.slot.id}`,
             `slot:${r.slot.id}`
           );
       }

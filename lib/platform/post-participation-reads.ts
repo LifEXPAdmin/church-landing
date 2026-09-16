@@ -191,13 +191,15 @@ export function getVolunteerRoster(
 export async function volunteerCommitmentsIn(
   tx: PostTx,
   context: PostContext,
-  where: Prisma.CalendarOccurrenceWhereInput
+  where: Prisma.CalendarOccurrenceWhereInput,
+  signupId?: string
 ) {
   const rows = await tx.postVolunteerSignup.findMany({
     where: {
       userId: context.actorId ?? "",
-      state: "ACTIVE",
-      slot: { post: { eventOccurrence: where } }
+      ...(signupId
+        ? { id: postId(signupId) }
+        : { state: "ACTIVE", slot: { post: { eventOccurrence: where } } })
     },
     include: { slot: { include: { post: { include: participationInclude } } } },
     take: 1001,
@@ -221,6 +223,7 @@ export async function volunteerCommitmentsIn(
     return {
       id: r.id,
       version: r.version,
+      state: r.state,
       role: allowed ? r.slot.role : "Unavailable volunteer commitment",
       postId: allowed ? r.slot.postId : null,
       event: allowed

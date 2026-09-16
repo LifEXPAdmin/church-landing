@@ -72,6 +72,13 @@ export function SettingsPrivacy({ data }: { data: SettingsContext }) {
       <div className="flex flex-wrap gap-3">
         <Link
           className="gc-button gc-button-quiet"
+          href="/platform/photo-tags?view=preferences"
+          prefetch={false}
+        >
+          Photo tag privacy and approvals
+        </Link>
+        <Link
+          className="gc-button gc-button-quiet"
           href="/platform/settings/privacy/relationships"
         >
           Edit mention and relationship choices

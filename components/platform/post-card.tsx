@@ -259,6 +259,22 @@ function PostCardContent({
               ) : (
                 <>
                   <PostText content={post.content} />
+                  {post.mentions.length > 0 && (
+                    <p className="text-sm text-gc-muted">
+                      Mentioned:{" "}
+                      {post.mentions.map((person, index) => (
+                        <span key={person.id}>
+                          {index > 0 ? ", " : ""}
+                          <Link
+                            className="underline"
+                            href={`/platform/profile/${person.username}`}
+                          >
+                            {person.name}
+                          </Link>
+                        </span>
+                      ))}
+                    </p>
+                  )}
                   <PostLink {...post} />
                   {post.photoCount > 0 && (
                     <PostPhotos

@@ -25,7 +25,8 @@ export const notificationCategories = [
   "reactions",
   "church",
   "commitments",
-  "feedback"
+  "feedback",
+  "photos"
 ] as const;
 export type NotificationCategory = (typeof notificationCategories)[number];
 export type QuietHours = {

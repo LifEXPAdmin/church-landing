@@ -1,4 +1,5 @@
-import { recordPostPublication } from "./domain-activity";
+import { setPostMentions } from "./person-mentions";
+import { recordPostMentions, recordPostPublication } from "./domain-activity";
 import { createHash } from "node:crypto";
 import { postDiscoveryData } from "./post-discovery";
 import { emptyPostDiscovery } from "./post-options";
@@ -312,6 +313,7 @@ export async function postCommandIn(
       }
     });
     await attachPostPhotosIn(tx, context, post, input.photos);
+    await setPostMentions(tx, context, post, input.mentionIds);
     if (input.discovery !== undefined)
       await recordDiscoveryControl(
         tx,
@@ -442,6 +444,10 @@ export async function postCommandIn(
         version: { increment: 1 }
       }
     });
+    if (input.mentionIds !== undefined) {
+      await setPostMentions(tx, context, updated, input.mentionIds);
+      await recordPostMentions(tx, updated);
+    }
     await audit(tx, updated, actorId, "edited");
     if (input.discovery !== undefined)
       await recordDiscoveryControl(

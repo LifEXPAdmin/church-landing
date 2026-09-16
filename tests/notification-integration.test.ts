@@ -2,6 +2,7 @@ import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { PrismaClient } from "@prisma/client";
+import { getCalendarCommitments } from "../lib/platform/calendar-reads";
 import webpush from "web-push";
 import {
   assertPortalTestDatabase,
@@ -533,13 +534,34 @@ test("reactions and private prayer acknowledgments retain one intent, never expo
       .length,
     0
   );
-  const retainedIntents = await db.socialEvent.count({ where: { postId: post.id, recipientId: author.id } });
-  await relationshipCommand(db, author.token, input("mute", {
-    kind: "person", targetId: reader.id, desired: true, expectedVersion: 0
-  }));
-  assert.equal((await readActivity(db, author.token, { category: "prayer" })).items.length, 0);
-  assert.equal((await readActivity(db, author.token, { category: "reactions" })).items.length, 0);
-  assert.equal(await db.socialEvent.count({ where: { postId: post.id, recipientId: author.id } }), retainedIntents);
+  const retainedIntents = await db.socialEvent.count({
+    where: { postId: post.id, recipientId: author.id }
+  });
+  await relationshipCommand(
+    db,
+    author.token,
+    input("mute", {
+      kind: "person",
+      targetId: reader.id,
+      desired: true,
+      expectedVersion: 0
+    })
+  );
+  assert.equal(
+    (await readActivity(db, author.token, { category: "prayer" })).items.length,
+    0
+  );
+  assert.equal(
+    (await readActivity(db, author.token, { category: "reactions" })).items
+      .length,
+    0
+  );
+  assert.equal(
+    await db.socialEvent.count({
+      where: { postId: post.id, recipientId: author.id }
+    }),
+    retainedIntents
+  );
 });
 
 test("church requests, changed events and volunteer confirmations use current domain access and keep canonical outcomes", async () => {
@@ -645,9 +667,32 @@ test("church requests, changed events and volunteer confirmations use current do
     expectedVersion: signup.version
   });
   assert.match(cancelled.message, /canceled/);
+  const exact = await getCalendarCommitments(db, f.lee.token, {
+    from: "2000-01-01",
+    until: "2000-02-01",
+    timeZone: "UTC",
+    signup: signup.id
+  });
+  assert.equal(exact.volunteerCommitments.length, 1);
+  assert.equal(exact.volunteerCommitments[0].id, signup.id);
+  assert.equal(exact.volunteerCommitments[0].state, "CANCELED");
+  assert.equal(exact.volunteerCommitments[0].event, null);
+  assert.equal(exact.volunteerCommitments[0].postId, null);
+  await assert.rejects(
+    getCalendarCommitments(db, f.ada.token, {
+      from: "2000-01-01",
+      until: "2000-02-01",
+      timeZone: "UTC",
+      signup: signup.id
+    })
+  );
+
   assert.ok(
     (
       await readActivity(db, f.lee.token, { category: "commitments" })
-    ).items.some((i) => i.available && i.href === "/platform/commitments")
+    ).items.some(
+      (i) =>
+        i.available && i.href === `/platform/commitments?signup=${signup.id}`
+    )
   );
 });

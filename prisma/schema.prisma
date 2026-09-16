@@ -40,6 +40,7 @@ model MediaAsset {
   isCurrent Boolean @default(true)
   personalPhoto PersonalPhoto?
   postReferences PostPhotoReference[]
+  personTags PhotoTag[]
   status MediaStatus @default(UPLOADING)
   version Int @default(1)
   storagePrefix String @unique
@@ -275,6 +276,9 @@ model PlatformUser {
   receivedFriendAcceptances FriendAcceptance[] @relation("FriendRecipient")
   commentLikes CommentLike[]
   commentMentions CommentMention[]
+  postMentions PostMention[]
+  requestedPhotoTags PhotoTag[] @relation("PhotoTagRequester")
+  receivedPhotoTags PhotoTag[] @relation("PhotoTagRecipient")
   conversationPreferences ConversationPreference[]
   commentDrafts PrivateCommentDraft[]
   privatePostDrafts PrivatePostDraft[]
@@ -1592,6 +1596,7 @@ model PlatformPost {
   topicCommunityId String?
   topicCommunity TopicCommunity? @relation(fields: [topicCommunityId], references: [id], onDelete: Restrict)
   topicAuthor TopicMembership? @relation("TopicPostAuthor", fields: [topicCommunityId, authorId], references: [communityId, userId], onDelete: NoAction, onUpdate: NoAction)
+  mentions PostMention[]
   id        String           @id @default(cuid())
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
@@ -1828,6 +1833,39 @@ model CommentLike {
   @@index([userId])
 }
 
+// Consent narrows the canonical photo. An association never grants image access.
+model PhotoTag {
+  id String @id @default(cuid())
+  assetId String
+  requesterId String
+  recipientId String
+  state String @default("PENDING")
+  version Int @default(1)
+  imageVersion Int
+  audienceChurchId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  decidedAt DateTime?
+  asset MediaAsset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  requester PlatformUser @relation("PhotoTagRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  recipient PlatformUser @relation("PhotoTagRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  @@unique([assetId, recipientId])
+  @@index([recipientId, state, id])
+  @@index([requesterId, id])
+}
+
+model PostMention {
+  id String @id @default(cuid())
+  postId String
+  recipientId String
+  active Boolean @default(true)
+  createdAt DateTime @default(now())
+  post PlatformPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  recipient PlatformUser @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+  @@unique([postId, recipientId])
+  @@index([recipientId])
+}
+
 model CommentMention {
   id String @id @default(cuid())
   commentId String
@@ -1954,6 +1992,8 @@ model SocialEvent {
   id String @id @default(cuid())
   activitySequence BigInt @default(autoincrement())
   activityReadAt DateTime?
+  // A personal reminder only; it never resets delivery or canonical message reads.
+  activityMarkedUnreadAt DateTime?
   key String @unique
   kind String
   actorId String
@@ -2270,6 +2310,9 @@ model SocialPreferences {
   activityReadThrough BigInt @default(0)
   version Int @default(1)
   mentions String @default("EVERYONE")
+  photoTagRequests String @default("EVERYONE")
+  photoTagVersion Int @default(0)
+  photoTagRecoveryRequired Boolean @default(false)
   contactRequests AdultContactAudience @default(NOBODY)
   requestAlerts Boolean @default(true)
   messageAlerts Boolean @default(true)

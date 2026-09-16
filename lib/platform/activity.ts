@@ -107,21 +107,26 @@ async function currentBoundary(tx: Tx, ownerId: string) {
 const categorySql = Prisma.sql`CASE
   WHEN e.kind = 'ADULT_MESSAGE_CREATED' AND m.kind = 'FOUNDER_ANNOUNCEMENT' THEN 'founder'
   WHEN e.kind = 'ADULT_MESSAGE_CREATED' THEN 'messages'
-  WHEN e.kind IN ('ADULT_REQUEST_CREATED','ADULT_REQUEST_ACCEPTED') THEN 'requests'
+  WHEN e.kind IN ('ADULT_REQUEST_CREATED','ADULT_REQUEST_ACCEPTED','FRIEND_CONNECTED') THEN 'requests'
   WHEN e.kind IN ('FEEDBACK_CASE','FEEDBACK_IDEA') THEN 'feedback'
+  WHEN e.kind IN ('PHOTO_TAG_REQUEST','PHOTO_TAG_APPROVED') THEN 'photos'
+  WHEN e.kind = 'POST_MENTION' THEN 'comments'
   WHEN e.kind = 'AUTHOR_POST' THEN 'posts'
   WHEN e.kind IN ('POST_REACTION','COMMENT_REACTION') THEN 'reactions'
   WHEN e.kind = 'PRAYER_ACK' OR (e.kind='COMMENT_ACTIVITY' AND e."notificationCategory"='prayer') THEN 'prayer'
   WHEN e.kind IN ('CHURCH_REVIEW','CHURCH_CONNECTION','CHURCH_ROLE','CHURCH_CAPABILITY') THEN 'church'
-  WHEN e.kind IN ('EVENT_CHANGED','RSVP_CHANGED','VOLUNTEER_CHANGED','VOLUNTEER_CONFIRMATION') THEN 'commitments'
+  WHEN e.kind IN ('EVENT_CHANGED','RSVP_CHANGED','VOLUNTEER_CHANGED','VOLUNTEER_REQUEST','VOLUNTEER_CONFIRMATION') THEN 'commitments'
   WHEN e.kind = 'COMMENT_ACTIVITY' THEN 'comments' ELSE 'reports' END`;
 const groupSql = Prisma.sql`CASE
+  WHEN e.kind = 'FRIEND_CONNECTED' THEN 'friend:' || coalesce(e."sourceId",e.id)
+  WHEN e.kind IN ('PHOTO_TAG_REQUEST','PHOTO_TAG_APPROVED') THEN 'photo-tag:' || coalesce(e."sourceId",e.id)
   WHEN e.kind IN ('FEEDBACK_CASE','FEEDBACK_IDEA') THEN e.kind || ':' || coalesce(e."sourceId",e.id)
   WHEN e.kind='AUTHOR_POST' THEN 'author:' || coalesce(p."authorChurchId",e."actorId")
   WHEN e.kind IN ('POST_REACTION','COMMENT_REACTION','PRAYER_ACK') THEN 'reaction:' || coalesce(e."commentId",e."postId",e.id)
-  WHEN e.kind IN ('CHURCH_REVIEW','CHURCH_CONNECTION','CHURCH_ROLE','CHURCH_CAPABILITY','EVENT_CHANGED','RSVP_CHANGED','VOLUNTEER_CHANGED','VOLUNTEER_CONFIRMATION') THEN e.kind || ':' || coalesce(e."sourceId",e.id)
+  WHEN e.kind IN ('CHURCH_REVIEW','CHURCH_CONNECTION','CHURCH_ROLE','CHURCH_CAPABILITY','EVENT_CHANGED','RSVP_CHANGED','VOLUNTEER_CHANGED','VOLUNTEER_REQUEST','VOLUNTEER_CONFIRMATION') THEN e.kind || ':' || coalesce(e."sourceId",e.id)
   WHEN e.kind = 'ADULT_MESSAGE_CREATED' THEN 'conversation:' || coalesce(e."conversationId", e.id)
   WHEN e.kind IN ('ADULT_REQUEST_CREATED','ADULT_REQUEST_ACCEPTED') THEN 'request:' || coalesce(e."requestId", e.id)
+  WHEN e.kind = 'POST_MENTION' THEN 'post-mention:' || coalesce(e."postId", e.id)
   WHEN e.kind = 'COMMENT_ACTIVITY' THEN 'post:' || coalesce(e."postId", e.id)
   WHEN e.kind = 'CONTENT_DECISION' THEN 'decision:' || coalesce(e."decisionId", e.id)
   ELSE 'report:' || coalesce(e."reportId", e.id) END`;
@@ -136,8 +141,8 @@ async function activityRows(tx: Tx, ownerId: string, through: bigint) {
   const context = await postContext(tx, ownerId);
   const sql = Prisma.sql`
     SELECT e.id, e."activitySequence" AS sequence, e."activityReadAt" AS "readAt", ${categorySql} AS category, ${groupSql} AS "groupKey",
-      CASE WHEN e."activityReadAt" IS NULL AND e."activitySequence" > ${preferences?.activityReadThrough ?? BigInt(0)}
-        AND (e.kind <> 'ADULT_MESSAGE_CREATED' OR m.id IS NULL OR m.sequence > coalesce(s."readThrough",0)) THEN 1 ELSE 0 END AS unread
+      CASE WHEN e."activityMarkedUnreadAt" IS NOT NULL OR (e."activityReadAt" IS NULL AND e."activitySequence" > ${preferences?.activityReadThrough ?? BigInt(0)}
+        AND (e.kind <> 'ADULT_MESSAGE_CREATED' OR m.id IS NULL OR m.sequence > coalesce(s."readThrough",0))) THEN 1 ELSE 0 END AS unread
     FROM "SocialEvent" e
     LEFT JOIN "AdultMessage" m ON e.kind = 'ADULT_MESSAGE_CREATED' AND m.id = e."messageId" AND m."conversationId" = e."conversationId" AND m."senderId" = e."actorId"
     LEFT JOIN "AdultConversationState" s ON s."conversationId" = e."conversationId" AND s."ownerId" = ${ownerId}
@@ -148,9 +153,10 @@ async function activityRows(tx: Tx, ownerId: string, through: bigint) {
       AND ${feedbackActivityWhere(ownerId)}
       AND ${!preferences?.notificationRecoveryRequired}
       AND NOT (coalesce(e."notificationCategory", CASE WHEN e.kind='COMMENT_ACTIVITY' THEN 'replies' ELSE '' END) = ANY(${preferences?.mutedNotificationCategories ?? []}::text[]))
-      AND (e.kind NOT IN ('ADULT_REQUEST_CREATED','ADULT_REQUEST_ACCEPTED') OR ${preferences?.requestAlerts ?? true})
+      AND (e.kind NOT IN ('ADULT_REQUEST_CREATED','ADULT_REQUEST_ACCEPTED','FRIEND_CONNECTED') OR ${preferences?.requestAlerts ?? true})
       AND (e.kind NOT IN ('REPORT_RECEIVED','REPORT_RECONSIDERATION','CONTENT_DECISION') OR ${preferences?.reportAlerts ?? true})
-      AND (e.kind NOT IN ('AUTHOR_POST','POST_REACTION','COMMENT_REACTION','PRAYER_ACK') OR (
+      AND (e.kind NOT IN ('FRIEND_CONNECTED','PHOTO_TAG_REQUEST','PHOTO_TAG_APPROVED') OR ${context.mutedIds?.length ? Prisma.sql`e."actorId" NOT IN (${Prisma.join(context.mutedIds)})` : Prisma.sql`TRUE`})
+      AND (e.kind NOT IN ('AUTHOR_POST','POST_MENTION','VOLUNTEER_REQUEST','POST_REACTION','COMMENT_REACTION','PRAYER_ACK') OR (
         (p.id IS NULL OR ${notMuted(Prisma.sql`p."authorId"`, Prisma.sql`p."authorChurchId"`, context)})
         AND (e.kind = 'AUTHOR_POST' OR ${context.mutedIds?.length ? Prisma.sql`e."actorId" NOT IN (${Prisma.join(context.mutedIds)})` : Prisma.sql`TRUE`})))
       AND (e.kind <> 'ADULT_MESSAGE_CREATED' OR (
@@ -174,7 +180,13 @@ async function activitySummaries(
   sources: Awaited<ReturnType<typeof notificationSources>>
 ) {
   const available = events.filter((e) => sources.has(e.id));
-  const adults = available.filter((e) => e.kind.startsWith("ADULT_"));
+  const adults = available.filter(
+    (e) =>
+      e.kind.startsWith("ADULT_") ||
+      ["PHOTO_TAG_REQUEST", "PHOTO_TAG_APPROVED", "FRIEND_CONNECTED"].includes(
+        e.kind
+      )
+  );
   const comments = available.filter(
     (e) => e.kind === "COMMENT_ACTIVITY" && e.commentId
   );
@@ -202,8 +214,8 @@ async function activitySummaries(
       : []
     ).map((c) => [c.id, c.authorChurch?.name ?? c.author.name])
   );
-  const authorEvents = available.filter(
-    (event) => event.kind === "AUTHOR_POST"
+  const authorEvents = available.filter((event) =>
+    ["AUTHOR_POST", "POST_MENTION", "VOLUNTEER_REQUEST"].includes(event.kind)
   );
   const authorNames = new Map(
     (authorEvents.length
@@ -222,41 +234,54 @@ async function activitySummaries(
   return new Map(
     available.map((e) => [
       e.id,
-      e.kind === "FEEDBACK_CASE"
-        ? "An update to your private feedback"
-        : e.kind === "FEEDBACK_IDEA"
-          ? "An update to an idea you subscribed to"
-          : e.kind === "AUTHOR_POST"
-            ? `New posts from ${authorNames.get(e.postId!) ?? "an author whose bell you enabled"}`
-            : ["POST_REACTION", "COMMENT_REACTION"].includes(e.kind)
-              ? "Reactions to your post or comment"
-              : e.kind === "PRAYER_ACK"
-                ? "Prayer acknowledgments on your post or comment"
-                : e.kind === "CHURCH_REVIEW"
-                  ? "A church connection request within your review access"
-                  : e.kind === "CHURCH_CONNECTION"
-                    ? "Your church connection changed"
-                    : ["CHURCH_ROLE", "CHURCH_CAPABILITY"].includes(e.kind)
-                      ? "Your church role or access changed"
-                      : e.kind === "EVENT_CHANGED"
-                        ? "An event in your commitments changed"
-                        : e.kind === "RSVP_CHANGED"
-                          ? "Your event response was saved"
-                          : [
-                                "VOLUNTEER_CHANGED",
-                                "VOLUNTEER_CONFIRMATION"
-                              ].includes(e.kind)
-                            ? "An update to your volunteer commitment"
-                            : e.kind === "COMMENT_ACTIVITY"
-                              ? `Latest from ${speakers.get(e.commentId!)}`
-                              : e.kind === "CONTENT_DECISION"
-                                ? "A private decision about your content"
-                                : [
-                                      "REPORT_RECEIVED",
-                                      "REPORT_RECONSIDERATION"
-                                    ].includes(e.kind)
-                                  ? "Within your current reviewer access"
-                                  : `With ${people.get(e.actorId)}`
+      sources.get(e.id)?.summary ??
+        (e.kind === "FRIEND_CONNECTED"
+          ? `${people.get(e.actorId) ?? "A member"} accepted your friend invitation`
+          : e.kind === "PHOTO_TAG_REQUEST"
+            ? `${people.get(e.actorId) ?? "A member"} asked to tag you in a photo`
+            : e.kind === "PHOTO_TAG_APPROVED"
+              ? `${people.get(e.actorId) ?? "A member"} approved your photo tag request`
+              : e.kind === "FEEDBACK_CASE"
+                ? "An update to your private feedback"
+                : e.kind === "FEEDBACK_IDEA"
+                  ? "An update to an idea you subscribed to"
+                  : e.kind === "VOLUNTEER_REQUEST"
+                    ? `${authorNames.get(e.postId!) ?? "Your church"} has a new volunteer request`
+                    : e.kind === "POST_MENTION"
+                      ? `${authorNames.get(e.postId!) ?? "An author"} mentioned you in a post`
+                      : e.kind === "AUTHOR_POST"
+                        ? `New posts from ${authorNames.get(e.postId!) ?? "an author whose bell you enabled"}`
+                        : ["POST_REACTION", "COMMENT_REACTION"].includes(e.kind)
+                          ? "Reactions to your post or comment"
+                          : e.kind === "PRAYER_ACK"
+                            ? "Prayer acknowledgments on your post or comment"
+                            : e.kind === "CHURCH_REVIEW"
+                              ? "A church connection request within your review access"
+                              : e.kind === "CHURCH_CONNECTION"
+                                ? "Your church connection changed"
+                                : ["CHURCH_ROLE", "CHURCH_CAPABILITY"].includes(
+                                      e.kind
+                                    )
+                                  ? "Your church role or access changed"
+                                  : e.kind === "EVENT_CHANGED"
+                                    ? "An event in your commitments changed"
+                                    : e.kind === "RSVP_CHANGED"
+                                      ? "Your event response was saved"
+                                      : [
+                                            "VOLUNTEER_CHANGED",
+                                            "VOLUNTEER_CONFIRMATION"
+                                          ].includes(e.kind)
+                                        ? "An update to your volunteer commitment"
+                                        : e.kind === "COMMENT_ACTIVITY"
+                                          ? `Latest from ${speakers.get(e.commentId!)}`
+                                          : e.kind === "CONTENT_DECISION"
+                                            ? "A private decision about your content"
+                                            : [
+                                                  "REPORT_RECEIVED",
+                                                  "REPORT_RECONSIDERATION"
+                                                ].includes(e.kind)
+                                              ? "Within your current reviewer access"
+                                              : `With ${people.get(e.actorId)}`)
     ])
   );
 }
@@ -264,10 +289,16 @@ async function activitySummaries(
 export function readActivity(
   db: PrismaClient,
   token: unknown,
-  options: { category?: unknown; cursor?: unknown } = {}
+  options: { category?: unknown; cursor?: unknown; filter?: unknown } = {}
 ): Promise<ActivityPage> {
   return withAccountRead(db, token, async (tx, userId) => {
     const ownerId = await requireOwner(tx, userId);
+    if (
+      options.filter != null &&
+      (typeof options.filter !== "string" ||
+        !["all", "unread"].includes(options.filter))
+    )
+      throw new PortalError(400, "Choose All or Unread notifications.");
     if (
       options.category != null &&
       !activityCategories.includes(options.category as ActivityCategory)
@@ -281,13 +312,9 @@ export function readActivity(
     const through = cursor ? sequence(cursor.through) : latest;
     if (through > latest)
       throw new PortalError(409, "Activity changed. Refresh to continue.");
-    const {
-      sql: rows,
-      context,
-      readThrough
-    } = await activityRows(tx, ownerId, through);
+    const { sql: rows, context } = await activityRows(tx, ownerId, through);
     const totals = await tx.$queryRaw<Array<{ unread: bigint }>>(
-      Prisma.sql`SELECT coalesce(sum(unread),0)::bigint AS unread FROM (${rows}) activity WHERE sequence > ${readThrough} AND "readAt" IS NULL`
+      Prisma.sql`SELECT coalesce(sum(unread),0)::bigint AS unread FROM (${rows}) activity`
     );
     const groups = await tx.$queryRaw<
       Array<{
@@ -299,7 +326,9 @@ export function readActivity(
     >(Prisma.sql`
       SELECT category, max(sequence) AS latest, count(*) AS count, sum(unread)::bigint AS unread
       FROM (${rows}) activity ${options.category ? Prisma.sql`WHERE category = ${options.category as string}` : Prisma.empty}
-      GROUP BY category, "groupKey" ${cursor ? Prisma.sql`HAVING max(sequence) < ${sequence(cursor.after)}` : Prisma.empty}
+      GROUP BY category, "groupKey"
+      HAVING ${cursor ? Prisma.sql`max(sequence) < ${sequence(cursor.after)}` : Prisma.sql`TRUE`}
+        AND ${options.filter === "unread" ? Prisma.sql`sum(unread) > 0` : Prisma.sql`TRUE`}
       ORDER BY max(sequence) DESC LIMIT ${PAGE_SIZE + 1}`);
     const page = groups.slice(0, PAGE_SIZE);
     const events = page.length
@@ -351,6 +380,25 @@ export function readActivity(
   });
 }
 
+/** Navigation fetches only current scalar counts, never source descriptions. */
+export function readActivitySummary(
+  db: PrismaClient,
+  token: unknown,
+  expectedOwner: unknown
+) {
+  return withAccountRead(db, token, async (tx, userId) => {
+    const ownerId = await requireOwner(tx, userId);
+    if (expectedOwner !== ownerId)
+      throw new PortalError(401, "Your sign-in changed. Reload notifications.");
+    const through = await currentBoundary(tx, ownerId);
+    const { sql: rows } = await activityRows(tx, ownerId, through);
+    const totals = await tx.$queryRaw<Array<{ unread: bigint }>>(
+      Prisma.sql`SELECT coalesce(sum(unread),0)::bigint AS unread FROM (${rows}) activity`
+    );
+    return { ownerId, unread: count(totals[0].unread) };
+  });
+}
+
 export function openActivity(db: PrismaClient, token: unknown, id: unknown) {
   return withAccountRead(db, token, async (tx, userId) => {
     const ownerId = await requireOwner(tx, userId);
@@ -372,7 +420,7 @@ export function activityCommand(
 ) {
   socialInput(input, ["operation", "ownerId", "mutationId", "boundary", "id"]);
   if (
-    !["read", "read-all"].includes(input.operation as string) ||
+    !["read", "unread", "read-all"].includes(input.operation as string) ||
     (input.operation === "read-all" && input.id !== undefined)
   )
     throw new PortalError(400, "Choose a supported activity action.");
@@ -400,6 +448,14 @@ export function activityCommand(
             create: { ownerId, activityReadThrough: through },
             update: { activityReadThrough: through }
           });
+        await tx.socialEvent.updateMany({
+          where: {
+            recipientId: ownerId,
+            activitySequence: { lte: through },
+            activityMarkedUnreadAt: { not: null }
+          },
+          data: { activityMarkedUnreadAt: null }
+        });
       } else {
         const id = postId(input.id);
         const { sql: rows } = await activityRows(tx, ownerId, through);
@@ -413,11 +469,24 @@ export function activityCommand(
             404,
             "This activity is unavailable. Refresh before continuing."
           );
-        await tx.$executeRaw(Prisma.sql`UPDATE "SocialEvent" e SET "activityReadAt" = CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
-        WHERE e."recipientId" = ${ownerId} AND e."activityReadAt" IS NULL AND e.id IN (
+        // Mark unread is an in-app reminder. Retain prior read/delivery evidence
+        // so it cannot send an old alert again or change a conversation receipt.
+        const change =
+          input.operation === "unread"
+            ? Prisma.sql`"activityMarkedUnreadAt" = CURRENT_TIMESTAMP AT TIME ZONE 'UTC'`
+            : Prisma.sql`"activityReadAt" = CURRENT_TIMESTAMP AT TIME ZONE 'UTC', "activityMarkedUnreadAt" = NULL`;
+        await tx.$executeRaw(Prisma.sql`UPDATE "SocialEvent" e SET ${change}
+        WHERE e."recipientId" = ${ownerId} AND e.id IN (
           SELECT id FROM (${rows}) activity WHERE "groupKey" = ${target[0].groupKey} AND category = ${target[0].category})`);
       }
-      return { id: ownerId, version: 0, message: "Activity marked as read." };
+      return {
+        id: ownerId,
+        version: 0,
+        message:
+          input.operation === "unread"
+            ? "Notification marked as unread. Message read status is unchanged."
+            : "Activity marked as read."
+      };
     },
     async (tx, ownerId) => {
       if (input.ownerId !== ownerId)

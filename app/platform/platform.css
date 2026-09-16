@@ -1941,3 +1941,19 @@ body:has(dialog:modal) {
 .gc-prayer-dialog textarea {
   resize: vertical;
 }
+
+/* Keep the Notifications name and count visible at phone widths and text zoom. */
+.gc-utilities {
+  flex-wrap: wrap;
+}
+.gc-utility.gc-notifications-link {
+  flex-shrink: 0;
+}
+.gc-utility.gc-notifications-link .gc-notifications-label,
+.gc-utility.gc-notifications-link .gc-message-count {
+  position: static;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  clip-path: none;
+}

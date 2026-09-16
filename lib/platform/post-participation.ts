@@ -369,6 +369,14 @@ export async function participationCommandIn(
       saved.id,
       saved.version
     );
+    if (!prior && !saved.closedAt)
+      await recordFanout(
+        tx,
+        "VOLUNTEER_REQUEST",
+        saved.id,
+        saved.version,
+        actorId
+      );
     if (
       prior &&
       (prior.capacity !== saved.capacity ||

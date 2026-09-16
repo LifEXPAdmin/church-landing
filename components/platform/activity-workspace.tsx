@@ -9,6 +9,10 @@ import {
 } from "@/lib/platform/activity-types";
 import { socialRequest, SocialClientError } from "@/lib/platform/social-client";
 import { useUnsavedSocialWork } from "./use-unsaved-social-work";
+import {
+  notificationChanged,
+  onNotificationChanged
+} from "./notification-refresh";
 const labels: Record<ActivityCategory, string> = {
   messages: "Messages",
   requests: "Contact requests",
@@ -20,6 +24,7 @@ const labels: Record<ActivityCategory, string> = {
   prayer: "Prayer",
   church: "Church connections",
   feedback: "Feedback and ideas",
+  photos: "Photo tags",
   commitments: "Commitments"
 };
 const endpoint = "/api/platform/activity";
@@ -30,10 +35,12 @@ const date = new Intl.DateTimeFormat(undefined, {
 export function ActivityWorkspace({
   owner,
   category,
+  filter = "all",
   cursor
 }: {
   owner: string;
   category?: ActivityCategory;
+  filter?: "all" | "unread";
   cursor?: string;
 }) {
   const router = useRouter();
@@ -50,10 +57,17 @@ export function ActivityWorkspace({
     reload = useRef<() => void>(() => {});
   const query = new URLSearchParams({
     ...(category ? { category } : {}),
-    ...(cursor ? { cursor } : {})
+    ...(cursor ? { cursor } : {}),
+    ...(filter === "unread" ? { filter } : {})
   }).toString();
-  const newestHref =
-    "/platform/activity" + (category ? "?category=" + category : "");
+  const href = (choice: "all" | "unread", selected?: ActivityCategory) => {
+    const params = new URLSearchParams({
+      ...(selected ? { category: selected } : {}),
+      ...(choice === "unread" ? { filter: choice } : {})
+    });
+    return "/platform/activity" + (params.size ? "?" + params : "");
+  };
+  const newestHref = href(filter, category);
   useUnsavedSocialWork(
     { dirty: false, saving: busy || !!pending, conflict: false },
     () => setMessage("Retry or stop retrying this read change before leaving."),
@@ -125,22 +139,30 @@ export function ActivityWorkspace({
         setView(null);
       } else refresh();
     };
+    const unsubscribe = onNotificationChanged(owner, refresh);
+    const timer = setInterval(refresh, 60000);
+    window.addEventListener("messages-changed", refresh);
+    window.addEventListener("social-relationships-changed", refresh);
     window.addEventListener("focus", refresh);
     window.addEventListener("online", refresh);
     document.addEventListener("visibilitychange", visibility);
     return () => {
       mounted.current = false;
+      clearInterval(timer);
+      unsubscribe();
+      window.removeEventListener("messages-changed", refresh);
+      window.removeEventListener("social-relationships-changed", refresh);
       window.removeEventListener("focus", refresh);
       window.removeEventListener("online", refresh);
       document.removeEventListener("visibilitychange", visibility);
     };
-  }, [load]);
-  async function act(id?: string) {
+  }, [load, owner]);
+  async function act(id?: string, unread = false) {
     if (inFlight.current || (!pendingBody.current && !view)) return;
     const body =
       pendingBody.current ??
       JSON.stringify({
-        operation: id ? "read" : "read-all",
+        operation: id ? (unread ? "unread" : "read") : "read-all",
         mutationId: crypto.randomUUID(),
         ownerId: owner,
         boundary: view!.boundary,
@@ -160,6 +182,7 @@ export function ActivityWorkspace({
       if (!mounted.current) return;
       pendingBody.current = null;
       setPending(null);
+      notificationChanged(owner);
       if (await load()) setMessage(data.message);
     } catch (error) {
       if (!mounted.current) return;
@@ -187,9 +210,10 @@ export function ActivityWorkspace({
     <section className="space-y-6" aria-busy={loading || busy}>
       <header className="space-y-3">
         <p className="gc-eyebrow">Your updates</p>
-        <h1>Activity</h1>
+        <h1>Notifications</h1>
         <p className="text-gc-muted">
-          Messages, replies, requests and reports for you.
+          Updates for you, newest first. Marking a notification read does not
+          mark its messages read.
         </p>
         <div className="flex flex-wrap gap-3">
           <Link
@@ -206,6 +230,13 @@ export function ActivityWorkspace({
           >
             Notification choices
           </Link>
+          <Link
+            href="/platform/photo-tags"
+            prefetch={false}
+            className="gc-button gc-button-quiet"
+          >
+            Review photo tags
+          </Link>
           <button
             type="button"
             className="gc-button gc-button-quiet"
@@ -216,9 +247,22 @@ export function ActivityWorkspace({
           </button>
         </div>
       </header>
+      <nav aria-label="Notification status" className="flex flex-wrap gap-2">
+        {(["all", "unread"] as const).map((choice) => (
+          <Link
+            key={choice}
+            href={href(choice, category)}
+            prefetch={false}
+            aria-current={filter === choice ? "page" : undefined}
+            className="gc-button gc-button-quiet"
+          >
+            {choice === "all" ? "All notifications" : "Unread notifications"}
+          </Link>
+        ))}
+      </nav>
       <nav aria-label="Activity categories" className="flex flex-wrap gap-2">
         <Link
-          href="/platform/activity"
+          href={href(filter)}
           prefetch={false}
           aria-current={!category ? "page" : undefined}
           className="gc-button gc-button-quiet"
@@ -228,7 +272,7 @@ export function ActivityWorkspace({
         {activityCategories.map((c) => (
           <Link
             key={c}
-            href={"/platform/activity?category=" + c}
+            href={href(filter, c)}
             prefetch={false}
             aria-current={category === c ? "page" : undefined}
             className="gc-button gc-button-quiet"
@@ -287,9 +331,11 @@ export function ActivityWorkspace({
           </div>
           {!view.items.length ? (
             <p>
-              {category
-                ? "No activity in this category yet."
-                : "No activity yet."}
+              {filter === "unread"
+                ? "No unread notifications in this view."
+                : category
+                  ? "No activity in this category yet."
+                  : "No activity yet."}
             </p>
           ) : (
             <ul aria-label="Activity updates" className="space-y-4">
@@ -329,7 +375,7 @@ export function ActivityWorkspace({
                           Open item
                         </Link>
                       )}
-                      {item.unread > 0 && (
+                      {item.unread > 0 ? (
                         <button
                           type="button"
                           className="gc-button gc-button-quiet"
@@ -337,6 +383,15 @@ export function ActivityWorkspace({
                           onClick={() => void act(item.id)}
                         >
                           Mark group read
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className="gc-button gc-button-quiet"
+                          disabled={blocked}
+                          onClick={() => void act(item.id, true)}
+                        >
+                          Mark group unread
                         </button>
                       )}
                     </div>
@@ -360,7 +415,7 @@ export function ActivityWorkspace({
                 className="gc-button gc-button-quiet"
                 href={
                   newestHref +
-                  (category ? "&" : "?") +
+                  (newestHref.includes("?") ? "&" : "?") +
                   "cursor=" +
                   encodeURIComponent(view.nextCursor)
                 }

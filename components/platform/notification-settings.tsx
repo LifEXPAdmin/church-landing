@@ -23,18 +23,19 @@ type Devices = Awaited<ReturnType<typeof readPushSubscriptions>>;
 type Choices = View["preferences"];
 const labels: Record<NotificationCategory, string> = {
   messages: "Personal messages and replies",
-  requests: "Contact requests and acceptances",
+  requests: "Contact requests, acceptances and new friends",
   reports: "Reports, reconsideration and your content decisions",
   founder: "Founder announcements",
   replies: "Replies to your posts and comments",
-  mentions: "Mentions in comments",
+  mentions: "Mentions in posts and comments",
   conversations: "Replies in conversations you follow",
   prayer: "Prayer acknowledgments and saved prayer updates",
   posts: "New posts from authors whose bell you enabled",
   reactions: "Likes on your posts and comments",
   church: "Church requests, roles and connection changes",
   feedback: "Feedback and ideas you chose to follow",
-  commitments: "Event responses, changes and volunteer commitments"
+  photos: "Photo tag requests and approvals",
+  commitments: "Event changes, new church volunteer requests and commitments"
 };
 const categories = Object.keys(labels) as NotificationCategory[];
 const endpoint = "/api/platform/notifications";

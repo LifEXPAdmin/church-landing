@@ -329,6 +329,15 @@ export const settingsRegistry: readonly SettingRegistration[] = Object.freeze([
     }
   ),
   entry(
+    "privacy.photo-tags",
+    "privacy",
+    "Photo tags and approvals",
+    "Choose who may ask to tag you, review requests and remove approved tags without deleting a photo.",
+    ["photo tags", "tag approval", "photos of me", "remove tag"],
+    { href: "/platform/photo-tags?view=preferences" },
+    linked("photo-tag-reads.ts", "photo-tags.ts")
+  ),
+  entry(
     "privacy.directory",
     "privacy",
     "Church directory sharing",

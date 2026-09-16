@@ -18,7 +18,7 @@ export function safeAccountReturn(value: unknown): string {
   const url = new URL(value, "https://return.invalid");
   if (
     url.origin !== "https://return.invalid" ||
-    !/^\/platform(?:\/(?:notifications\/[a-zA-Z0-9_-]{1,80}|activity|feed|search|share|invitations|invite\/[A-Za-z0-9_-]{43}|features|releases(?:\/[a-zA-Z0-9_-]{1,100})?|menu|getting-started|scheduled-posts(?:\/[a-zA-Z0-9_-]{1,100})?|drafts|comment-drafts|relationships|saved|prayers|topics(?:\/[a-z0-9-]{3,60}(?:\/manage)?)?|reports(?:\/(?:review|decisions))?|messages(?:\/[a-zA-Z0-9_-]{1,100})?|settings(?:\/[a-z]+(?:\/[a-z]+)?)?|calendars(?:\/[a-zA-Z0-9_-]{1,100})?|commitments|events\/[a-zA-Z0-9_-]{1,100}|profile(?:\/(?:me|[a-zA-Z0-9_]{3,24}))?|posts\/[a-zA-Z0-9_-]{1,100}|church-listings(?:\/[a-zA-Z0-9_-]{1,100})?|church-claims(?:\/(?:review(?:\/[a-zA-Z0-9_-]{1,100})?|[a-zA-Z0-9_-]{1,100}))?|churches(?:\/[a-zA-Z0-9_-]{1,100}(?:\/(?:directory|review|overview|calendar|responsibilities|access|welcome|structure(?:\/[a-zA-Z0-9_-]{1,100})?|people\/[a-zA-Z0-9_-]{1,100}))?)?|my-church(?:\/sharing)?|feedback(?:\/(?:requests|cases\/[a-zA-Z0-9_-]{1,100}|ideas(?:\/[a-zA-Z0-9_-]{1,100})?))?|help|support(?:\/[a-zA-Z0-9_-]{1,100})?))?\/?$/.test(
+    !/^\/platform(?:\/(?:notifications\/[a-zA-Z0-9_-]{1,80}|activity|photo-tags|feed|search|share|invitations|invite\/[A-Za-z0-9_-]{43}|features|releases(?:\/[a-zA-Z0-9_-]{1,100})?|menu|getting-started|scheduled-posts(?:\/[a-zA-Z0-9_-]{1,100})?|drafts|comment-drafts|relationships|saved|prayers|topics(?:\/[a-z0-9-]{3,60}(?:\/manage)?)?|reports(?:\/(?:review|decisions))?|messages(?:\/[a-zA-Z0-9_-]{1,100})?|settings(?:\/[a-z]+(?:\/[a-z]+)?)?|calendars(?:\/[a-zA-Z0-9_-]{1,100})?|commitments|events\/[a-zA-Z0-9_-]{1,100}|profile(?:\/(?:me|[a-zA-Z0-9_]{3,24}))?|posts\/[a-zA-Z0-9_-]{1,100}|church-listings(?:\/[a-zA-Z0-9_-]{1,100})?|church-claims(?:\/(?:review(?:\/[a-zA-Z0-9_-]{1,100})?|[a-zA-Z0-9_-]{1,100}))?|churches(?:\/[a-zA-Z0-9_-]{1,100}(?:\/(?:directory|review|overview|calendar|responsibilities|access|welcome|structure(?:\/[a-zA-Z0-9_-]{1,100})?|people\/[a-zA-Z0-9_-]{1,100}))?)?|my-church(?:\/sharing)?|feedback(?:\/(?:requests|cases\/[a-zA-Z0-9_-]{1,100}|ideas(?:\/[a-zA-Z0-9_-]{1,100})?))?|help|support(?:\/[a-zA-Z0-9_-]{1,100})?))?\/?$/.test(
       url.pathname
     )
   )
@@ -59,10 +59,35 @@ export function safeAccountReturn(value: unknown): string {
     if (mode) query.set("feed", mode);
     // Snapshot cursors are account-bound. Account entry begins a fresh set.
   }
+  if (
+    url.pathname.replace(/\/$/, "") === "/platform/commitments" &&
+    url.searchParams.has("signup")
+  ) {
+    const signup = readerId(url.searchParams.get("signup"));
+    return "/platform/commitments" + (signup ? "?signup=" + signup : "");
+  }
+  if (url.pathname.replace(/\/$/, "") === "/platform/photo-tags") {
+    if (url.searchParams.get("view") === "preferences")
+      query.set("view", "preferences");
+    else {
+      for (const key of ["tag", "photo", "profile"]) {
+        const value = readerId(url.searchParams.get(key));
+        if (value) {
+          query.set(key, value);
+          break;
+        }
+      }
+      if (!query.size && url.searchParams.get("scope") === "sent")
+        query.set("scope", "sent");
+    }
+    return "/platform/photo-tags" + (query.size ? "?" + query : "");
+  }
   if (url.pathname.replace(/\/$/, "") === "/platform/activity") {
     const category = url.searchParams.get("category");
     if (category && activityCategories.some((value) => value === category))
       query.set("category", category);
+    if (url.searchParams.get("filter") === "unread")
+      query.set("filter", "unread");
     return "/platform/activity" + (query.size ? "?" + query : "");
   }
   if (

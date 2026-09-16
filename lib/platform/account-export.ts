@@ -523,6 +523,41 @@ export async function downloadAccountExport(
     });
     const measurementCutoff = new Date(Date.now() - METRIC_RAW_DAYS * 86400000);
     const collections = {
+      photoTags: await tx.photoTag.findMany({
+        where: { OR: [{ requesterId: userId }, { recipientId: userId }] },
+        select: {
+          id: true,
+          assetId: true,
+          requesterId: true,
+          recipientId: true,
+          state: true,
+          version: true,
+          imageVersion: true,
+          audienceChurchId: true,
+          createdAt: true,
+          updatedAt: true,
+          decidedAt: true
+        },
+        orderBy: { id: "asc" },
+        take: MAX_ROWS + 1
+      }),
+      postMentions: await tx.postMention.findMany({
+        where: {
+          OR: [
+            { recipientId: userId },
+            { post: { authorId: userId, authorChurchId: null } }
+          ]
+        },
+        select: {
+          id: true,
+          postId: true,
+          recipientId: true,
+          active: true,
+          createdAt: true
+        },
+        orderBy: { id: "asc" },
+        take: MAX_ROWS + 1
+      }),
       privatePostDrafts: await tx.privatePostDraft.findMany({
         where: { ownerId: userId, deletedAt: null },
         orderBy: { id: "asc" },
@@ -620,7 +655,12 @@ export async function downloadAccountExport(
       activityReadState: (
         await tx.socialEvent.findMany({
           where: { recipientId: userId },
-          select: { id: true, activitySequence: true, activityReadAt: true },
+          select: {
+            id: true,
+            activitySequence: true,
+            activityReadAt: true,
+            activityMarkedUnreadAt: true
+          },
           orderBy: { activitySequence: "asc" },
           take: MAX_ROWS + 1
         })
@@ -642,6 +682,9 @@ export async function downloadAccountExport(
             profilePinPostId: true,
             profilePinVersion: true,
             mentions: true,
+            photoTagRequests: true,
+            photoTagVersion: true,
+            photoTagRecoveryRequired: true,
             contactRequests: true,
             requestAlerts: true,
             activityReadThrough: true,

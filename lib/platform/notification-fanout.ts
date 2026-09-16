@@ -166,6 +166,29 @@ export function processNotificationFanoutBatch(
               })
             ).map((r) => ({ id: r.id, ownerId: r.userId }));
         }
+      } else if (valid && job.kind === "VOLUNTEER_REQUEST") {
+        const slot = await tx.postVolunteerSlot.findFirst({
+          where: {
+            id: job.sourceId,
+            version: { gte: job.sourceVersion },
+            closedAt: null
+          },
+          select: { postId: true, post: { select: { authorChurchId: true } } }
+        });
+        valid = !!slot?.post.authorChurchId;
+        if (slot?.post.authorChurchId) {
+          postId = slot.postId;
+          recipients = await tx.socialRelationship.findMany({
+            where: {
+              churchId: slot.post.authorChurchId,
+              authorBellSince: { lt: job.createdAt },
+              blocked: false,
+              ...after
+            },
+            select: { id: true, ownerId: true },
+            ...page
+          });
+        }
       } else if (valid && job.kind === "VOLUNTEER_CHANGED") {
         const slot = await tx.postVolunteerSlot.findFirst({
           where: { id: job.sourceId, version: { gte: job.sourceVersion } },

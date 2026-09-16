@@ -55,6 +55,7 @@ export function composerPayload(f: ComposerFields): PrivateDraftPayload {
       : {}),
     ...(f.scheduleZone !== undefined ? { scheduleZone: f.scheduleZone } : {}),
     ...(f.discovery !== undefined ? { discovery: { ...f.discovery } } : {}),
+    ...(f.mentionIds !== undefined ? { mentionIds: [...f.mentionIds] } : {}),
     content: f.content,
     ...(f.contentNote !== undefined ? { contentNote: f.contentNote } : {}),
     ...(f.safeExcerpt !== undefined ? { safeExcerpt: f.safeExcerpt } : {}),
