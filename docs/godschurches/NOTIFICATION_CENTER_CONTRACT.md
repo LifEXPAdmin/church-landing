@@ -73,10 +73,11 @@ alert, never a self-alert. Volunteer confirmations open the exact owned signup,
 including canceled or out-of-month reservations, while revoked source details stay
 concealed. Signed-out return links discard prior-session actions and cursors.
 
-Finish source-action-to-center/browser checks, safe Back/reload,
-cross-tab read synchronization, narrow-screen/text-zoom layout, unavailable/retry
-and identity changes. Run the complete established isolated gate and protected
-upgrade, release notes and authorized deployment. Verify exact READY/canonical
+Source-action-to-center browser checks, safe Back/reload, cross-tab reads,
+narrow-screen/text-zoom layout, unavailable/retry and identity changes pass.
+[Acceptance evidence](NOTIFICATION_CENTER_ACCEPTANCE.md) records the complete
+staged gate, protected upgrade and final small corrections. Release notes are
+prepared. Continue authorized deployment and verify exact READY/canonical
 identity, current live read-only behavior, data fingerprints, migrations and
 installed recovery before completion. Retain physical-phone and actual cross-device
 acceptance separately; create no production fixtures or real outbound sends.

@@ -1,8 +1,8 @@
 # Notifications and adult photo-tag acceptance
 
-September 16, 2026. Candidate application source: `827d57e`. This is a local
+September 16, 2026. Candidate application source: `6349ece`. This is a local
 acceptance checkpoint, not a production-release receipt. Production remains the
-feedback release until the full gate, canonical deployment and live verification
+feedback release until canonical deployment and live verification
 are complete.
 
 ## Complete feature scope
@@ -32,7 +32,7 @@ The production preview builds successfully with 189 traces, 43,670 entries and
 `647e9e5fbb96baa9ebe3cf0aa8d816f57e0e46354f2b8ad0fb9db18029e29f15`.
 Types, scoped lint and release-content validation pass.
 
-Browser acceptance covers 47 groups against this application source:
+Browser acceptance covers 47 groups against `827d57e`:
 
 - Eight core groups cover actual photo requests/retries/approval/removal,
   independent privacy, saved/reopened post mentions, new volunteer requests,
@@ -56,12 +56,25 @@ push permission and without installation. Narrow screens and enlarged text pass.
 Browser page errors are zero; expected failed transport, conflict, denied-source
 and fictional missing-avatar requests are preserved in the private logs.
 
-The first full gate stopped at an obsolete generic church-role summary assertion.
-The corrected assertion still excludes role/capability details; all 11 focused
-checks pass. Five mention checks verify current name resolution, consent, blocks
-and eligibility. Earlier integration caught and corrected a reaction-identity
-regression; the final focused integration passes 22 checks. A fresh complete gate
-at `827d57e` is running; do not substitute these focused counts for full acceptance.
+The final calendar change preserves an exact volunteer signup through guest
+account entry. Eight core browser groups and 20 read-only guest/private-entry
+checks pass again against `47b3ae9`. The only subsequent application change is
+the new photo setting's ID: `privacy.photos` follows the existing registry
+contract. All six registry checks and the final production build pass.
+
+Complete staged regression covers all 167 discovered files: 1,018 passing checks
+and two expected disabled-delivery skips. This includes fresh/upgrade migrations,
+synthetic full restore, development and production builds, actual HTTPS boundaries
+and restart. Successful stages are retained; failed partial suites and the
+superseded production-calendar run are excluded from the accepted count.
+
+Preserved failures led to three specific corrections: an obsolete generic church
+summary assertion, the preference expectation missing the new photos category,
+and the new setting ID that did not follow the established registry convention.
+Church summaries still exclude private role/capability details. Earlier focused
+integration caught and corrected a reaction-identity regression; the final
+integration passes 22 checks. Five mention checks verify current name resolution,
+consent, blocks and eligibility. No failures remain in the accepted gate.
 
 ## Recovery and release gate
 
@@ -70,7 +83,7 @@ all original columns in 119 tables. Protected replay completes, restored plainte
 is removed and production is unchanged. Fresh preflight confirms all 84 installed
 checksums and exactly five intended additive migrations.
 
-Complete the full regression gate, verify the exact READY deployment and independent
+Verify the exact READY deployment and independent
 canonical alias, then verify live behavior, original-column fingerprints, all 89
 migration checksums and the installed recovery registry. Keep physical-device,
 cross-device, actual operator/provider and pilot observations separate. Do not

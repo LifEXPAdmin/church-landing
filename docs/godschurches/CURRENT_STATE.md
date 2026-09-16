@@ -1,3 +1,20 @@
+## Notifications and adult tags ready for publication — September 16, 2026 UTC
+
+Candidate `6349ece` completes staged coverage of all 167 test files: 1,018 passing
+checks and two expected disabled-delivery skips. Upgrade/restore, production and
+development builds, actual HTTPS boundaries and restart pass. The final production
+build verifies 189 traces, 43,670 entries and 475 server JavaScript files.
+
+The 47 browser groups are retained, with eight core and 20 read-only entry checks
+rerun after preserving an exact volunteer signup through signed-out account entry.
+The final photo-setting ID follows the existing registry convention; all six
+contract checks pass. [Acceptance evidence](NOTIFICATION_CENTER_ACCEPTANCE.md)
+preserves earlier failures and corrected continuations without double-counting.
+The protected production-copy upgrade preserves 119 original tables across all
+five additive migrations. Production remains the 84-migration feedback release
+until exact canonical publication and live verification. Continue release and
+recovery acceptance before completing the engineering children.
+
 ## Notifications and adult tag integration checkpoint — September 16, 2026 UTC
 
 The final application candidate `827d57e` passes 47 isolated production-browser
