@@ -1,5 +1,18 @@
 # Shared resource contracts
 
+## Exchange contract follow-through, September 16, 2026
+
+The [listing ownership and audience contract](EXCHANGE_LISTING_CONTRACT.md)
+reconciles the current focused scope, original listing/safety requirements and
+actual identity, relationship, report, media and lifecycle services. It specifies
+the owner/delegate/member/stranger/blocked/child matrix, exact currency handling,
+permitted initial items and draft/publication/archive behavior. Listing, media,
+report and block adapters remain implementation work. The runtime resource stays
+reserved until those real adapters and their acceptance are complete; no future
+business authority or church delegate is appointed by this contract.
+
+## Original registry foundation
+
 September 12, 2026. This is a bounded extension contract for the existing
 platform and its next settings/Exchange work. It does not activate future
 modules, publish church content, or appoint a representative.
