@@ -482,7 +482,18 @@ test("listing return destinations retain only supported local search criteria", 
     exchangeReturnHref("/platform/exchange/mine?state=ARCHIVED"),
     "/platform/exchange/mine?state=ARCHIVED"
   );
+  assert.equal(
+    exchangeReturnHref("/platform/exchange/saved?view=searches&after=search-1"),
+    "/platform/exchange/saved?view=searches&after=search-1"
+  );
+  assert.equal(
+    exchangeReturnHref("/platform/exchange?q=desk&savedSearch=search-1"),
+    "/platform/exchange?q=desk&savedSearch=search-1"
+  );
   for (const value of [
+    "/platform/exchange/saved?view=other",
+    "/platform/exchange/saved?view=searches&view=favorites",
+    "/platform/exchange/saved?q=desk",
     "https://evil.invalid",
     "//evil.invalid",
     "/platform/exchange/../settings/account",

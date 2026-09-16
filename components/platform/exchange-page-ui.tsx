@@ -4,6 +4,11 @@ import { PlatformShell } from "./platform-shell";
 import { PrivateSnapshotGuard } from "./private-snapshot-guard";
 import { TopicReadBoundary } from "./topic-read-boundary";
 import { ExchangeEditor } from "./exchange-editor";
+import {
+  ExchangeSaveSearchForm,
+  ExchangeSavedItems
+} from "./exchange-saved-controls";
+import { postId } from "@/lib/platform/post-input";
 import { ExchangeSearchPosition } from "./exchange-search-position";
 import { exchangeReturnHref } from "@/lib/platform/exchange-navigation";
 import { ExchangeFilters } from "./exchange-filters";
@@ -11,6 +16,7 @@ import { accountEntryHref } from "@/lib/platform/account-entry";
 import { PortalError } from "@/lib/platform/portal-policy";
 import { getCurrentPlatformUser } from "@/lib/platform/session";
 import {
+  exchangeSavedPage,
   exchangeContextPage,
   exchangeListPage,
   exchangeListingPage
@@ -35,6 +41,7 @@ export function ExchangeNavigation() {
       {[
         ["/platform/exchange", "Browse listings"],
         ["/platform/exchange/mine", "My listings"],
+        ["/platform/exchange/saved", "Saved listings and searches"],
         ["/platform/exchange/new", "Create a listing"]
       ].map(([href, label]) => (
         <Link
@@ -128,13 +135,21 @@ export async function ExchangeList({
   if (mine && !user) content = <ExchangeAccountLinks next={path} />;
   else
     try {
-      const query = { ...parseExchangeListQuery(params, mine), mine };
+      const { savedSearch: selectedSearch, ...filterInput } = params;
+      if (mine && selectedSearch)
+        throw new PortalError(400, "Saved searches belong to Browse listings.");
+      const savedSearch = selectedSearch ? postId(selectedSearch) : undefined;
+      const query = { ...parseExchangeListQuery(filterInput, mine), mine };
       const result = await exchangeListPage(query);
       const filters = exchangeSearchParams(query);
       const readUrl = `/api/platform/exchange?${new URLSearchParams({ ...Object.fromEntries(filters), view: mine ? "mine" : "list", after: result.pageCursor })}`;
-      const first = path + (filters.size ? "?" + filters : "");
+      const navigationFilters = new URLSearchParams(filters);
+      if (savedSearch) navigationFilters.set("savedSearch", savedSearch);
+      const first =
+        path + (navigationFilters.size ? "?" + navigationFilters : "");
       retryHref = first;
       const pageFilters = exchangeSearchParams(query, true);
+      if (savedSearch) pageFilters.set("savedSearch", savedSearch);
       const current = path + (pageFilters.size ? "?" + pageFilters : "");
       const rows = (
         <div className="space-y-4">
@@ -144,7 +159,15 @@ export async function ExchangeList({
             path={path}
             query={query}
             churches={result.churches}
+            savedSearch={savedSearch}
           />
+          {!mine && user && (
+            <ExchangeSearchSaveRegion
+              owner={user.id}
+              query={query}
+              searchId={savedSearch}
+            />
+          )}
           {query.after && (
             <a href={first} className="gc-button gc-button-quiet">
               Refresh this search
@@ -211,7 +234,7 @@ export async function ExchangeList({
           {result.after && (
             <a
               className="gc-button gc-button-quiet"
-              href={`${path}?${new URLSearchParams({ ...Object.fromEntries(filters), after: result.after })}`}
+              href={`${path}?${new URLSearchParams({ ...Object.fromEntries(navigationFilters), after: result.after })}`}
             >
               More listings
             </a>
@@ -303,6 +326,103 @@ export async function ExchangeEditorPage({
           )}
           {content}
         </div>
+      </section>
+    </PlatformShell>
+  );
+}
+
+async function ExchangeSearchSaveRegion({
+  owner,
+  query,
+  searchId
+}: {
+  owner: string;
+  query: import("@/lib/platform/exchange-options").ExchangeSearchQuery;
+  searchId?: string;
+}) {
+  if (!searchId) return <ExchangeSaveSearchForm owner={owner} query={query} />;
+  try {
+    const result = await exchangeSavedPage({ view: "search", searchId });
+    if (result.ownerId !== owner)
+      throw new PortalError(
+        401,
+        "Your sign-in changed. Reload current choices."
+      );
+    return (
+      <PrivateSnapshotGuard
+        owner={owner}
+        url={`/api/platform/exchange?${new URLSearchParams({ view: "search", searchId })}`}
+        checksum={exchangeChecksum(result)}
+        label="saved search"
+      >
+        <ExchangeSaveSearchForm
+          key={`${searchId}:${result.searches?.[0].version}`}
+          owner={owner}
+          query={query}
+          existing={result.searches?.[0]}
+        />
+      </PrivateSnapshotGuard>
+    );
+  } catch (error) {
+    return (
+      <ExchangeUnavailable
+        error={error}
+        href="/platform/exchange/saved?view=searches"
+      />
+    );
+  }
+}
+
+export async function ExchangeSavedPage({ query }: { query: ExchangeQuery }) {
+  const user = await getCurrentPlatformUser(),
+    path = "/platform/exchange/saved";
+  let content;
+  if (!user) content = <ExchangeAccountLinks next={path} />;
+  else
+    try {
+      if (
+        Object.keys(query).some((key) => !["view", "after"].includes(key)) ||
+        (query.view &&
+          !["favorites", "searches"].includes(query.view as string))
+      )
+        throw new PortalError(
+          400,
+          "Choose favorite listings or named searches."
+        );
+      const view = query.view === "searches" ? "searches" : "favorites";
+      const result = await exchangeSavedPage({ view, after: query.after });
+      const params = new URLSearchParams({
+        view,
+        ...(query.after ? { after: postId(query.after) } : {})
+      });
+      content = (
+        <PrivateSnapshotGuard
+          owner={user.id}
+          url={`/api/platform/exchange?${params}`}
+          checksum={exchangeChecksum(result)}
+          label="saved Exchange choices"
+        >
+          <ExchangeSavedItems
+            owner={user.id}
+            result={result}
+            view={view}
+            returnHref={`${path}?${params}`}
+          />
+        </PrivateSnapshotGuard>
+      );
+    } catch (error) {
+      content = <ExchangeUnavailable error={error} href={path} />;
+    }
+  return (
+    <PlatformShell user={user}>
+      <section className="container-shell space-y-6 py-8 sm:py-10">
+        <h1 className="text-4xl">Saved listings and searches</h1>
+        <p>
+          These choices belong to your account. Listing access is checked again
+          when you open them.
+        </p>
+        <ExchangeNavigation />
+        {content}
       </section>
     </PlatformShell>
   );

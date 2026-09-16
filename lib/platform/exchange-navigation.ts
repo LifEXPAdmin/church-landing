@@ -1,3 +1,4 @@
+import { postId } from "./post-input";
 import { parseExchangeListQuery } from "./exchange-input";
 import { exchangeSearchParams } from "./exchange-options";
 
@@ -17,9 +18,11 @@ export function exchangeReturnHref(
     if (
       url.origin !== "https://exchange.invalid" ||
       url.hash ||
-      !["/platform/exchange", "/platform/exchange/mine"].includes(
-        url.pathname
-      ) ||
+      ![
+        "/platform/exchange",
+        "/platform/exchange/mine",
+        "/platform/exchange/saved"
+      ].includes(url.pathname) ||
       value.includes("\\")
     )
       return fallback;
@@ -29,11 +32,30 @@ export function exchangeReturnHref(
       )
     )
       return fallback;
+    if (url.pathname === "/platform/exchange/saved") {
+      if (
+        [...url.searchParams.keys()].some(
+          (key) => !["view", "after"].includes(key)
+        ) ||
+        (url.searchParams.has("view") &&
+          !["favorites", "searches"].includes(url.searchParams.get("view")!))
+      )
+        return fallback;
+      if (url.searchParams.has("after")) postId(url.searchParams.get("after"));
+      return (
+        url.pathname + (url.searchParams.size ? "?" + url.searchParams : "")
+      );
+    }
+    const savedSearch = url.searchParams.get("savedSearch");
+    if (savedSearch) postId(savedSearch);
+    url.searchParams.delete("savedSearch");
     const query = parseExchangeListQuery(
       Object.fromEntries(url.searchParams),
       url.pathname.endsWith("/mine")
     );
     const params = exchangeSearchParams(query, true);
+    if (savedSearch && !url.pathname.endsWith("/mine"))
+      params.set("savedSearch", savedSearch);
     return url.pathname + (params.size ? "?" + params : "");
   } catch {
     return fallback;

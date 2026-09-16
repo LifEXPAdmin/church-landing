@@ -25,11 +25,13 @@ import { portalInputClass } from "./portal-action-form";
 export function ExchangeFilters({
   path,
   query,
-  churches
+  churches,
+  savedSearch
 }: {
   path: string;
   query: ExchangeSearchQuery;
   churches: { id: string; name: string }[];
+  savedSearch?: string;
 }) {
   const id = useId();
   const [country, setCountry] = useState(query.country ?? null),
@@ -46,6 +48,7 @@ export function ExchangeFilters({
         : exchangeCategoryLabels;
   const href = (value: ExchangeSearchQuery) => {
     const params = exchangeSearchParams(value);
+    if (savedSearch) params.set("savedSearch", savedSearch);
     return path + (params.size ? "?" + params : "");
   };
   const typeHref = (intent: string) => {
@@ -134,9 +137,10 @@ export function ExchangeFilters({
     empty = "Any"
   ) => (
     <label className="block min-w-0 space-y-2" htmlFor={`${id}-${name}`}>
-      <span>{label}</span>
+      <span id={`${id}-${name}-label`}>{label}</span>
       <select
         id={`${id}-${name}`}
+        aria-labelledby={`${id}-${name}-label`}
         name={name}
         defaultValue={initial}
         className={portalInputClass}
@@ -182,6 +186,9 @@ export function ExchangeFilters({
           )
         )}
       </nav>
+      {savedSearch && (
+        <input type="hidden" name="savedSearch" value={savedSearch} />
+      )}
       <input type="hidden" name="intent" value={query.intent ?? ""} />
       {chips.length > 0 && (
         <ul aria-label="Applied filters" className="flex flex-wrap gap-2">
@@ -264,9 +271,10 @@ export function ExchangeFilters({
         <fieldset className="min-w-0 space-y-3">
           <legend className="font-semibold">Audience</legend>
           <label className="block space-y-2" htmlFor={`${id}-scope`}>
-            <span>Visibility</span>
+            <span id={`${id}-scope-label`}>Visibility</span>
             <select
               id={`${id}-scope`}
+              aria-labelledby={`${id}-scope-label`}
               name="scope"
               value={scope}
               onChange={(event) => setScope(event.target.value as typeof scope)}
@@ -388,9 +396,10 @@ export function ExchangeFilters({
           <input type="hidden" name="country" value={country ?? ""} />
           <input type="hidden" name="placeId" value={placeId ?? ""} />
           <label className="block space-y-2" htmlFor={`${id}-radius`}>
-            <span>Distance from selected town</span>
+            <span id={`${id}-radius-label`}>Distance from selected town</span>
             <select
               id={`${id}-radius`}
+              aria-labelledby={`${id}-radius-label`}
               name="radiusKm"
               value={radius}
               disabled={!placeId}
@@ -416,9 +425,10 @@ export function ExchangeFilters({
           </p>
         </fieldset>
         <label className="block space-y-2" htmlFor={`${id}-sort`}>
-          <span>Sort listings</span>
+          <span id={`${id}-sort-label`}>Sort listings</span>
           <select
             id={`${id}-sort`}
+            aria-labelledby={`${id}-sort-label`}
             name="sort"
             value={sort}
             onChange={(event) => setSort(event.target.value as typeof sort)}
@@ -444,7 +454,14 @@ export function ExchangeFilters({
         <button className="gc-button" type="submit">
           Show listings
         </button>
-        <a className="gc-button gc-button-quiet" href={path}>
+        <a
+          className="gc-button gc-button-quiet"
+          href={
+            savedSearch
+              ? `${path}?${new URLSearchParams({ savedSearch })}`
+              : path
+          }
+        >
           Clear filters
         </a>
       </div>

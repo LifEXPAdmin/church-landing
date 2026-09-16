@@ -2408,3 +2408,258 @@ test("alert delivery rechecks saved consent, exact money and radius criteria, cu
     )
   );
 });
+
+test("saved-choice export contains only owned organization and account erasure removes choices without changing another publisher", async () => {
+  const publisher = await createPortalActor(db, "exexportpub"),
+    owner = await createPortalActor(db, "exexportsave");
+  const listing = await publish(
+    publisher,
+    await draft(
+      publisher,
+      ready({
+        title: "Other publisher source must stay private to this export"
+      })
+    )
+  );
+  const favorite = await exchangeSavedCommand(
+    db,
+    owner.token,
+    input("favorite-add", { listingId: listing.id, expectedVersion: 0 })
+  );
+  const saved = await exchangeSavedCommand(
+    db,
+    owner.token,
+    input("search-save", {
+      searchId: randomUUID(),
+      expectedVersion: 0,
+      schema: 1,
+      name: "Owned export search",
+      criteria: { q: "furniture" },
+      alerts: false
+    })
+  );
+  const secret = process.env.AUTH_RATE_LIMIT_SECRET!;
+  const authorization = await prepareAccountExport(
+    db,
+    owner.token,
+    owner.password,
+    secret
+  );
+  const result = await downloadAccountExport(
+    db,
+    owner.token,
+    authorization.authorization,
+    secret
+  );
+  const encoded = typeof result === "string" ? result : JSON.stringify(result);
+  for (const value of [
+    favorite.id,
+    saved.id,
+    "Owned export search",
+    "furniture"
+  ])
+    assert.ok(encoded.includes(value));
+  for (const value of [
+    listing.id,
+    "Other publisher source must stay private to this export",
+    publisher.email
+  ])
+    assert.ok(!encoded.includes(value));
+  const before = await db.exchangeListing.findUniqueOrThrow({
+    where: { id: listing.id }
+  });
+  const journal = {
+    async completeAccount() {},
+    async recordAccount() {}
+  };
+  await requestPermanentAccountDeletion(
+    db,
+    owner.token,
+    owner.password,
+    true,
+    createSessionToken(),
+    journal
+  );
+  const request = await db.accountDeletion.findUniqueOrThrow({
+    where: { userId: owner.id }
+  });
+  await eraseRequestedAccountData(db, request.id, journal);
+  for (const model of [
+    db.exchangeFavorite,
+    db.exchangeSavedSearch,
+    db.exchangeSearchMatch
+  ])
+    assert.equal(
+      await (model.count as typeof db.exchangeFavorite.count)({
+        where: { ownerId: owner.id }
+      }),
+      0
+    );
+  assert.deepEqual(
+    await db.exchangeListing.findUniqueOrThrow({ where: { id: listing.id } }),
+    before
+  );
+});
+
+test("matching phone alerts require dated category and device consent, honor quiet hours and retries, and cancel after search revocation", async () => {
+  const { default: webpush } = await import("web-push");
+  const { seedNotificationDevice } = await import("./seed-notifications");
+  const { readNotificationPreferences, notificationPreferenceCommand } =
+    await import("../lib/platform/notification-preferences");
+  const { deliverNotification } =
+    await import("../lib/platform/notification-outbox");
+  const names = [
+    "PUSH_ENABLED",
+    "PUSH_VAPID_PUBLIC_KEY",
+    "PUSH_VAPID_PRIVATE_KEY",
+    "PUSH_VAPID_SUBJECT"
+  ];
+  const original = Object.fromEntries(
+    names.map((name) => [name, process.env[name]])
+  );
+  const keys = webpush.generateVAPIDKeys();
+  Object.assign(process.env, {
+    PUSH_ENABLED: "true",
+    PUSH_VAPID_PUBLIC_KEY: keys.publicKey,
+    PUSH_VAPID_PRIVATE_KEY: keys.privateKey,
+    PUSH_VAPID_SUBJECT: "https://example.test/contact"
+  });
+  try {
+    const publisher = await createPortalActor(db, "exphonepub"),
+      viewer = await createPortalActor(db, "exphoneview"),
+      undated = await createPortalActor(db, "exphoneundated"),
+      late = await createPortalActor(db, "exphonelate");
+    const marker = "Phone match " + randomUUID();
+    const saveBody = input("search-save", {
+      searchId: randomUUID(),
+      expectedVersion: 0,
+      schema: 1,
+      name: "Fictional phone consent",
+      criteria: { q: marker },
+      alerts: true
+    });
+    const saved = await exchangeSavedCommand(db, viewer.token, saveBody);
+    for (const actor of [undated, late])
+      await exchangeSavedCommand(db, actor.token, {
+        ...saveBody,
+        mutationId: randomUUID(),
+        searchId: randomUUID()
+      });
+    for (const actor of [viewer, undated, late])
+      await seedNotificationDevice(db, actor);
+    const prefs = async (actor: PortalActor) => {
+      const current = await readNotificationPreferences(db, actor.token);
+      return notificationPreferenceCommand(
+        db,
+        actor.token,
+        input("preferences", {
+          ownerId: actor.id,
+          expectedVersion: current.preferences.version,
+          inApp: current.preferences.inApp,
+          pushCategories: ["exchange"],
+          quietHours: null
+        })
+      );
+    };
+    await prefs(viewer);
+    // An old raw category string is not dated Exchange consent.
+    await db.socialPreferences.upsert({
+      where: { ownerId: undated.id },
+      create: { ownerId: undated.id, pushCategories: ["exchange"] },
+      update: { pushCategories: ["exchange"], notificationPushSince: {} }
+    });
+    const listing = await publish(
+      publisher,
+      await draft(publisher, ready({ title: marker }))
+    );
+    await prefs(late);
+    const drain = async (id: string) => {
+      const job = await db.notificationFanoutJob.findFirstOrThrow({
+        where: { sourceId: id, kind: "EXCHANGE_LISTING" }
+      });
+      let done = false;
+      for (let page = 0; page < 10 && !done; page++)
+        done = (await processNotificationFanoutBatch(db, job.id)).done;
+      assert.ok(done);
+    };
+    await drain(listing.id);
+    const deliveries = await db.notificationDelivery.findMany({
+      where: { event: { sourceId: listing.id, kind: "EXCHANGE_MATCH" } }
+    });
+    assert.equal(deliveries.length, 1);
+    assert.equal(deliveries[0].ownerId, viewer.id);
+    const delivery = deliveries[0];
+    const now = new Date(),
+      minute = now.getUTCHours() * 60 + now.getUTCMinutes();
+    await db.socialPreferences.update({
+      where: { ownerId: viewer.id },
+      data: {
+        quietStart: (minute + 1439) % 1440,
+        quietEnd: (minute + 60) % 1440,
+        quietTimeZone: "UTC"
+      }
+    });
+    let calls = 0;
+    const payloads: string[] = [];
+    const success = async (_subscription: unknown, payload: unknown) => {
+      calls++;
+      payloads.push(JSON.stringify(payload));
+      return 201;
+    };
+    assert.ok(!(await deliverNotification(db, delivery.id, success, now)).done);
+    assert.equal(calls, 0);
+    await db.socialPreferences.update({
+      where: { ownerId: viewer.id },
+      data: { quietStart: null, quietEnd: null, quietTimeZone: null }
+    });
+    await db.notificationDelivery.update({
+      where: { id: delivery.id },
+      data: { availableAt: new Date(Date.now() - 1) }
+    });
+    assert.ok(
+      !(
+        await deliverNotification(db, delivery.id, async () => {
+          calls++;
+          return 503;
+        })
+      ).done
+    );
+    await deliverNotification(db, delivery.id, success);
+    assert.equal(calls, 1);
+    await db.notificationDelivery.update({
+      where: { id: delivery.id },
+      data: { availableAt: new Date(Date.now() - 1) }
+    });
+    assert.ok((await deliverNotification(db, delivery.id, success)).done);
+    await deliverNotification(db, delivery.id, success);
+    assert.equal(calls, 2);
+    assert.doesNotMatch(payloads.join(), new RegExp(marker));
+    assert.doesNotMatch(payloads.join(), /Chicago|FURNITURE|listingId|price/);
+    const second = await publish(
+      publisher,
+      await draft(publisher, ready({ title: marker + " second" }))
+    );
+    await drain(second.id);
+    const pending = await db.notificationDelivery.findFirstOrThrow({
+      where: {
+        ownerId: viewer.id,
+        event: { sourceId: second.id, kind: "EXCHANGE_MATCH" }
+      }
+    });
+    await exchangeSavedCommand(db, viewer.token, {
+      ...saveBody,
+      mutationId: randomUUID(),
+      expectedVersion: saved.version,
+      alerts: false
+    });
+    assert.deepEqual(await deliverNotification(db, pending.id, success), {
+      done: true,
+      outcome: "cancelled"
+    });
+    assert.equal(calls, 2);
+  } finally {
+    for (const [name, value] of Object.entries(original))
+      if (value === undefined) delete process.env[name];
+      else process.env[name] = value;
+  }
+});

@@ -244,7 +244,8 @@ export function readExchangeSaved(
   db: PrismaClient,
   token: unknown,
   query: {
-    view: "favorites" | "searches" | "favorite";
+    view: "favorites" | "searches" | "favorite" | "search";
+    searchId?: unknown;
     after?: unknown;
     listingId?: unknown;
   }
@@ -265,7 +266,7 @@ export function readExchangeSaved(
       };
     }
     const after = query.after ? postId(query.after) : null;
-    if (query.view === "searches") {
+    if (query.view === "searches" || query.view === "search") {
       if (
         after &&
         !(await tx.exchangeSavedSearch.findFirst({
@@ -280,6 +281,7 @@ export function readExchangeSaved(
       const rows = await tx.exchangeSavedSearch.findMany({
         where: {
           ownerId,
+          ...(query.view === "search" ? { id: postId(query.searchId) } : {}),
           deletedAt: null,
           recoveryRequired: false,
           ...(after ? { id: { gt: after } } : {})
@@ -287,6 +289,11 @@ export function readExchangeSaved(
         orderBy: { id: "asc" },
         take: PAGE + 1
       });
+      if (query.view === "search" && !rows.length)
+        throw new PortalError(
+          404,
+          "This saved search is unavailable. Open your current named searches."
+        );
       return {
         ownerId,
         searches: rows.slice(0, PAGE).map((row) => {

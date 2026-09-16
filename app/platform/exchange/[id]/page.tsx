@@ -5,6 +5,7 @@ import { PlatformShell } from "@/components/platform/platform-shell";
 import { TopicReadBoundary } from "@/components/platform/topic-read-boundary";
 import { PrivateSnapshotGuard } from "@/components/platform/private-snapshot-guard";
 import { RelationshipControls } from "@/components/platform/relationship-controls";
+import { ExchangeFavoriteButton } from "@/components/platform/exchange-saved-controls";
 import { ExchangePhotos } from "@/components/platform/exchange-photos";
 import { RegionalWallTime } from "@/components/platform/regional-presentation";
 import {
@@ -183,6 +184,13 @@ export default async function Page({
             />
           )}
         </section>
+        {user && (
+          <ExchangeFavoriteButton
+            owner={user.id}
+            listingId={listing.id}
+            favorite={result.favorite}
+          />
+        )}
         {result.canManage && (
           <Link
             prefetch={false}

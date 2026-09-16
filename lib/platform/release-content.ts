@@ -14,6 +14,19 @@ export type Feature = {
 };
 export const features: Feature[] = [
   {
+    id: "exchange-search-saved",
+    category: "Churches and community",
+    name: "Exchange search and saved choices",
+    description:
+      "Narrow listings by availability, audience, exact price or approximate area, and keep private favorites and named searches.",
+    steps:
+      "Open Exchange and choose More filters and sorting. Select a currency and price basis together, or choose a country, named town and distance. Open a listing to save a favorite. Use Save this search and Saved listings and searches to manage your choices.",
+    href: "/platform/exchange",
+    eligibility:
+      "Saved choices require a verified adult account and remain private. Matching alerts require an explicit choice on each search. Phone alerts additionally require your Exchange notification preference and a registered device. Alerts cover future matching publications only. Current listing access is checked again; approximate distances use town centers and do not reveal homes.",
+    availability: "available"
+  },
+  {
     id: "exchange-listings",
     category: "Churches and community",
     name: "Exchange listings",
@@ -819,6 +832,25 @@ export const features: Feature[] = [
   }
 ];
 export const releases: ReleaseEntry[] = [
+  {
+    id: "exchange-search-saved-choices",
+    version: "2026.09.16.11",
+    date: "2026-09-16",
+    summary:
+      "Find Exchange listings with clearer filters, private favorites and saved searches.",
+    added: [
+      "Filter by availability, item condition, audience, exact currency and price basis, free offers or an approximate area. Choose newest, comparable price or nearest-area sorting.",
+      "Keep private favorite listings and named searches. Choose optional matching alerts for future available listings; phone delivery uses your separate notification and device choices."
+    ],
+    improved: [
+      "Applied filters can be removed individually, and returning from a listing preserves the search context.",
+      "Unavailable favorites show a private generic state and can still be removed. Saved choices are included in account export and deletion."
+    ],
+    fixed: [
+      "Changed listing access and account changes are checked again before saved content or matching alerts are shown. Uncertain saves can confirm the original request."
+    ],
+    featureIds: ["exchange-search-saved", "exchange-listings"]
+  },
   {
     id: "exchange-items-requests-services",
     version: "2026.09.16.10",

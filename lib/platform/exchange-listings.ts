@@ -1,4 +1,5 @@
 import type { ExchangeListing, Prisma, PrismaClient } from "@prisma/client";
+import { exchangeFavoriteId } from "./exchange-saved";
 import { recordFanout } from "./domain-activity";
 import { accountConfig } from "./account-config";
 import { activityBudget } from "./account-limits";
@@ -659,8 +660,25 @@ export function readExchangeListing(
       recoveryRequired,
       ...visible
     } = row;
+    const favorite =
+      context.actorId && context.eligible
+        ? await tx.exchangeFavorite.findFirst({
+            where: {
+              id: exchangeFavoriteId(context.actorId, row.id),
+              ownerId: context.actorId
+            },
+            select: { id: true, version: true, deletedAt: true }
+          })
+        : null;
     return {
       listing: project(visible),
+      favorite: favorite
+        ? {
+            id: favorite.id,
+            version: favorite.version,
+            saved: !favorite.deletedAt
+          }
+        : null,
       viewerId: context.actorId,
       canManage: exchangeCanManage(context, authority, {
         ownerId,

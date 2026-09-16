@@ -1,3 +1,4 @@
+import { readExchangeSaved } from "./exchange-saved";
 import { prisma } from "@/lib/prisma";
 import { privateCookies } from "./private-cookies";
 import { PLATFORM_SESSION_COOKIE } from "./session";
@@ -21,4 +22,10 @@ export async function exchangeListPage(
   query: Parameters<typeof listExchangeListings>[2]
 ) {
   return listExchangeListings(prisma, await token(), query);
+}
+
+export async function exchangeSavedPage(
+  query: Parameters<typeof readExchangeSaved>[2]
+) {
+  return readExchangeSaved(prisma, await token(), query);
 }

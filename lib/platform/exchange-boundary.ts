@@ -56,11 +56,13 @@ export async function handleExchangeRequest(
             ]
           : view === "favorites" || view === "searches"
             ? ["view", "after"]
-            : view === "favorite"
-              ? ["view", "listingId"]
-              : view === "context"
-                ? ["view"]
-                : ["view", "id"];
+            : view === "search"
+              ? ["view", "searchId"]
+              : view === "favorite"
+                ? ["view", "listingId"]
+                : view === "context"
+                  ? ["view"]
+                  : ["view", "id"];
       if (
         [...q.keys()].some(
           (key) => !allowed.includes(key) || q.getAll(key).length !== 1
@@ -88,12 +90,14 @@ export async function handleExchangeRequest(
       else if (
         view === "favorites" ||
         view === "searches" ||
-        view === "favorite"
+        view === "favorite" ||
+        view === "search"
       )
         result = await readExchangeSaved(db, token, {
           view,
           after: q.get("after"),
-          listingId: q.get("listingId")
+          listingId: q.get("listingId"),
+          searchId: q.get("searchId")
         });
       else if (view === "gallery")
         result = await readExchangeGallery(db, token, q.get("id"));

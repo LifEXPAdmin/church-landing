@@ -67,3 +67,23 @@ Continue this same feature through favorites, named searches, explicit matching
 alerts, export/erasure/recovery, current notification owners, production browser
 acceptance, guidance/release notes and exact canonical release/live verification.
 Do not mark remaining private feature children complete from this checkpoint.
+
+## Integrated acceptance checkpoint
+
+The complete owned interface is implemented, including safe return destinations
+from favorites, deliberate editing of existing searches, removable saved choices,
+explicit alert selection and immutable retry confirmation. Filter dropdowns have
+explicit accessible names. Four new production-build browser groups and all 16
+existing listing groups pass on isolated HTTPS fixtures. Browser Back restores
+criteria and scroll. Favorites survive sign-out and remain account-only; a lost
+successful reply creates one choice. Named-search update and removal preserve
+versions and consent. Narrow, enlarged-text and dark layouts fit without overflow.
+
+The focused gate now passes 41 checks (11 query/navigation and 30 integrated
+service checks), all 94 migrations, populated upgrade and complete restore.
+New nonempty export/erasure acceptance proves another publisher's content is not
+exported or modified. Mock phone transport proves dated category/device consent,
+no late opt-in delivery, quiet hours, delayed retries, generic payloads and
+cancellation after search opt-out. No real sends occur. Product notes are prepared
+for the next version; complete-gate, protected upgrade and exact canonical live
+acceptance remain required before release/completion.
