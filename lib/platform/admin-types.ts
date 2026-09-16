@@ -86,7 +86,7 @@ export type AdminQueueRow = AdminSource & {
   canTriage: boolean;
 };
 export type AdminNavigation = {
-  viewer: { id: string; name: string; username: string };
+  viewer: { id: string; name: string; username: string; dateFormat: string; timeFormat: string };
   sections: { key: string; label: string; href: string }[];
   capabilities: string[];
   canReviewClaims: boolean;

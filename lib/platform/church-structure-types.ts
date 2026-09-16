@@ -58,7 +58,7 @@ export type PositionSummary = {
   }[];
 };
 export type StructureSnapshot = {
-  viewer: { id: string; name: string; username: string };
+  viewer: { id: string; name: string; username: string; dateFormat: string; timeFormat: string };
   church: ChurchSummary;
   version: number;
   ownConnectionId: string;

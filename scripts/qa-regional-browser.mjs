@@ -513,6 +513,50 @@ try {
   ok(
     "Switched accounts and unavailable or guest reads conceal regional controls without saving to the wrong account"
   );
+  phase = "live support formats and static demo";
+  const { seedSupport, requestInput } = await import("../tests/seed-support.ts");
+  const { supportCommand } = await import("../lib/platform/support.ts");
+  const support = await seedSupport(db);
+  for (const actor of [support.memberA, support.owner])
+    await saveRegionalPreferences(db, actor.token, {
+      mutationId: randomUUID(), expectedVersion: 0,
+      dateFormat: "DMY", timeFormat: "H24"
+    });
+  const subject = "Regional support QA " + randomUUID();
+  const created = await supportCommand(
+    db, support.memberA.token,
+    await requestInput(db, support.memberA.token, { subject })
+  );
+  const stamp = "2026-10-25T13:05:00.000Z";
+  await db.supportCase.update({
+    where: { id: created.caseId },
+    data: { createdAt: new Date(stamp), updatedAt: new Date(stamp) }
+  });
+  await signIn(support.memberA);
+  await go("/platform/help/cases/" + created.caseId);
+  assert.match(await page.locator(`time[datetime="${stamp}"]`).first().innerText(), /25\/10\/2026, 13:05 UTC/);
+  await go("/platform/help/requests");
+  assert.match(await page.locator("article").filter({ hasText: subject }).innerText(), /25\/10\/2026, 13:05 UTC/);
+  await signIn(support.owner);
+  await go("/platform/admin/requests");
+  const caseLink = page.getByRole("link", { name: subject, exact: true });
+  await caseLink.waitFor();
+  await go(await caseLink.getAttribute("href"));
+  assert.match(await page.locator(`time[datetime="${stamp}"]`).first().innerText(), /25\/10\/2026, 13:05 UTC/);
+  await context.clearCookies();
+  const demoApiRequests = [];
+  const demoRequest = (request) => {
+    if (new URL(request.url()).pathname.startsWith("/api/"))
+      demoApiRequests.push(new URL(request.url()).pathname);
+  };
+  page.on("request", demoRequest);
+  for (const view of ["support-requests", "support-case", "support-inbox"]) {
+    await go("/platform/demo/" + view);
+    assert.match(await page.locator("time").first().innerText(), /Sep 8, 2026, \d+:\d+ [AP]M UTC/);
+  }
+  page.off("request", demoRequest);
+  assert.deepEqual(demoApiRequests, []);
+  ok("Actual private support and admin pages use saved formats while all support demos retain static dates and make no API requests");
   assert.deepEqual(errors, []);
   writeFileSync(
     output + "/result.json",

@@ -7,7 +7,7 @@ import type {
   AdminAuditSnapshot
 } from "@/lib/platform/admin-operations";
 import { AdminForm } from "./admin-form";
-import { SupportTime } from "./support-presentation";
+import { SupportTime } from "./regional-support-presentation";
 export function AdminPeople({ navigation }: { navigation: AdminNavigation }) {
   const [person, setPerson] = useState<AdminLookupResult["person"]>(null),
     [checked, setChecked] = useState("");

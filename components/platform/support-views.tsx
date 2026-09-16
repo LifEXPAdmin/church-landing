@@ -15,7 +15,7 @@ import {
   SupportConversation,
   SupportRows,
   SupportTime
-} from "./support-presentation";
+} from "./regional-support-presentation";
 import {
   PortalCard,
   PortalEmpty,

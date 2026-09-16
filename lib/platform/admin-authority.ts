@@ -20,7 +20,7 @@ export const adminDenied = () =>
 export async function adminAuthority(tx: AdminTx, userId: string) {
   const actor = await tx.platformUser.findFirst({
     where: { id: userId, ...eligibleWhere },
-    select: { id: true, name: true, username: true }
+    select: { id: true, name: true, username: true, dateFormat: true, timeFormat: true }
   });
   if (!actor) throw adminDenied();
   const grants = await tx.platformOperatorGrant.findMany({

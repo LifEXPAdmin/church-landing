@@ -634,6 +634,8 @@ export async function domainNotificationSources(
         id: true,
         name: true,
         username: true,
+        dateFormat: true,
+        timeFormat: true,
         suspendedAt: true,
         deactivatedAt: true,
         emailVerifiedAt: true,

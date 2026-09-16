@@ -61,6 +61,8 @@ export type PortalSnapshot = {
     id: string;
     name: string;
     username: string;
+    dateFormat: string;
+    timeFormat: string;
     verified: boolean;
     adult: boolean;
     version: number;

@@ -701,7 +701,10 @@ export async function getChurchStructure(
       throw new PortalError(404, "Position not found.");
     const { structureVersion, ...publicChurch } = church;
     const snapshot: StructureSnapshot = {
-      viewer: { id: actor.id, name: actor.name, username: actor.username },
+      viewer: {
+        id: actor.id, name: actor.name, username: actor.username,
+        dateFormat: actor.dateFormat, timeFormat: actor.timeFormat
+      },
       church: publicChurch,
       version: structureVersion,
       ownConnectionId: own.id,

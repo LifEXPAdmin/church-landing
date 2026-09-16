@@ -82,6 +82,8 @@ const person = { id: true, name: true } as const;
 const actorSelect = {
   ...person,
   username: true,
+  dateFormat: true,
+  timeFormat: true,
   adultAcknowledgedAt: true,
   adultPolicyVersion: true,
   emailVerifiedAt: true,
@@ -395,6 +397,8 @@ export async function readSupport(
         id: actor.id,
         name: actor.name,
         username: actor.username,
+        dateFormat: actor.dateFormat,
+        timeFormat: actor.timeFormat,
         adult: adult(actor),
         verified: verified(actor)
       },

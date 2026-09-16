@@ -6,7 +6,7 @@ import type { SupportSnapshot } from "@/lib/platform/support-types";
 import { feedbackKinds } from "@/lib/platform/feedback-types";
 import { FeedbackForm, FeedbackChoices } from "./feedback-form";
 import { PortalCard, PortalEmpty, portalLinkClass } from "./portal-ui";
-import { SupportRows } from "./support-presentation";
+import { SupportRows } from "./regional-support-presentation";
 import { SupportViews } from "./support-views";
 import { ReadVisibility } from "./read-visibility";
 import { FeedbackPromptPreferences } from "./feedback-prompt-preferences";

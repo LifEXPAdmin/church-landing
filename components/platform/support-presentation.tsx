@@ -1,4 +1,3 @@
-import { RegionalTime } from "@/components/platform/regional-presentation";
 import Link from "next/link";
 import {
   supportCategories,
@@ -8,29 +7,38 @@ import {
   type SupportDetail
 } from "@/lib/platform/support-types";
 import { PortalCard, PortalEmpty, portalLinkClass } from "./portal-ui";
-export function SupportTime({ value }: { value: string }) {
+export const supportTimeOptions = {
+  timeZone: "UTC",
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+  hour: "numeric",
+  minute: "2-digit"
+} as const;
+export function SupportTime({
+  value,
+  children
+}: {
+  value: string;
+  children?: React.ReactNode;
+}) {
   return (
     <time dateTime={value}>
-      {<RegionalTime value={value} locale={"en-US"} options={{
-        timeZone: "UTC",
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-        hour: "numeric",
-        minute: "2-digit"
-      }} />}{" "}
-      UTC
+      {children ?? new Date(value).toLocaleString("en-US", supportTimeOptions)} UTC
     </time>
   );
 }
+const staticTime = (value: string) => <SupportTime value={value} />;
 export function SupportRows({
   rows,
   demo = false,
-  detailBase = "/platform/help/cases"
+  detailBase = "/platform/help/cases",
+  renderTime = staticTime
 }: {
   rows: SupportRow[];
   demo?: boolean;
   detailBase?: string;
+  renderTime?: (value: string) => React.ReactNode;
 }) {
   return rows.length ? (
     <div className="space-y-4">
@@ -60,7 +68,7 @@ export function SupportRows({
             {c.unassigned ? " / Awaiting assignment" : ""}
           </p>
           <p className="mt-2 text-xs text-gc-muted">
-            Updated <SupportTime value={c.updatedAt} />
+            Updated {renderTime(c.updatedAt)}
           </p>
         </article>
       ))}
@@ -71,7 +79,13 @@ export function SupportRows({
     </PortalEmpty>
   );
 }
-export function SupportConversation({ detail: c }: { detail: SupportDetail }) {
+export function SupportConversation({
+  detail: c,
+  renderTime = staticTime
+}: {
+  detail: SupportDetail;
+  renderTime?: (value: string) => React.ReactNode;
+}) {
   return (
     <div className="space-y-5">
       <PortalCard title="Your request">
@@ -82,7 +96,7 @@ export function SupportConversation({ detail: c }: { detail: SupportDetail }) {
           {c.description}
         </p>
         <p className="text-xs text-gc-muted">
-          Received <SupportTime value={c.createdAt} />
+          Received {renderTime(c.createdAt)}
         </p>
         {c.church && (
           <p className="text-sm text-gc-muted">
@@ -160,7 +174,7 @@ export function SupportConversation({ detail: c }: { detail: SupportDetail }) {
                   {m.body}
                 </p>
                 <p className="text-xs text-gc-muted">
-                  <SupportTime value={m.createdAt} />
+                  {renderTime(m.createdAt)}
                   {m.redacted ? " / Privacy redaction" : ""}
                 </p>
               </li>

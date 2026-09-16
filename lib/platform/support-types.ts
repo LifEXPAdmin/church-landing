@@ -90,6 +90,8 @@ export type SupportSnapshot = {
     id: string;
     name: string;
     username: string;
+    dateFormat: string;
+    timeFormat: string;
     adult: boolean;
     verified: boolean;
   };

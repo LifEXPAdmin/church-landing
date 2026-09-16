@@ -9,7 +9,7 @@ import { useFeedbackSnapshot } from "./use-feedback-snapshot";
 import { SupportForm } from "./support-form";
 import { PortalCard, PortalEmpty, portalLinkClass } from "./portal-ui";
 import { ReadVisibility } from "./read-visibility";
-import { SupportTime } from "./support-presentation";
+import { SupportTime } from "./regional-support-presentation";
 import { reportEntryHref } from "@/lib/platform/community-report-types";
 const base = "/platform/feedback/ideas";
 export function FeedbackIdeas({

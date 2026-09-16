@@ -2,7 +2,7 @@ import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { PrismaClient } from "@prisma/client";
-import { assertPortalTestDatabase, createPortalActor } from "./seed-portal";
+import { assertPortalTestDatabase, createPortalActor, seedPortal } from "./seed-portal";
 import {
   readRegionalPreferences,
   saveRegionalPreferences
@@ -11,6 +11,12 @@ import { handleRegionalRequest } from "../lib/platform/regional-boundary";
 import { loginAccount, readAccountSession } from "../lib/platform/accounts";
 import { readSettingsContext } from "../lib/platform/settings-context";
 import { accountConfig } from "../lib/platform/account-config";
+import { getPortalSnapshot } from "../lib/platform/portal";
+import { getChurchListings } from "../lib/platform/church-listings";
+import { getChurchClaims } from "../lib/platform/church-claims";
+import { getChurchStructure } from "../lib/platform/church-structure";
+import { readSupport } from "../lib/platform/support";
+import { readAdminNavigation } from "../lib/platform/admin-authority";
 const db = new PrismaClient();
 before(() => assertPortalTestDatabase(db));
 after(() => db.$disconnect());
@@ -19,6 +25,29 @@ const input = (expectedVersion = 0) => ({
   expectedVersion,
   dateFormat: "DMY",
   timeFormat: "H24"
+});
+
+test("church, support and admin viewer projections retain the acting account's saved formats", async () => {
+  const f = await seedPortal(db), a = f.memberA;
+  await saveRegionalPreferences(db, a.token, input());
+  await db.supportCapabilityGrant.create({ data: { userId: a.id, capability: "RESPOND" } });
+  const views = [
+    await getPortalSnapshot(db, a.token, "my-church"),
+    await getChurchListings(db, a.token),
+    await getChurchClaims(db, a.token),
+    await getChurchStructure(db, a.token, { churchId: f.churchA.id }),
+    await readSupport(db, a.token, "requests"),
+    await readAdminNavigation(db, a.token)
+  ];
+  for (const { viewer } of views) {
+    assert.equal(viewer.id, a.id);
+    assert.equal(viewer.dateFormat, "DMY");
+    assert.equal(viewer.timeFormat, "H24");
+    assert.doesNotMatch(JSON.stringify(viewer), /email|password|token|location|bio/);
+  }
+  const other = await getPortalSnapshot(db, f.memberB.token, "my-church");
+  assert.equal(other.viewer.dateFormat, "DEFAULT");
+  assert.equal(other.viewer.timeFormat, "DEFAULT");
 });
 
 test("formats belong to the account across sessions, match settings, and do not need verified adult authority", async () => {

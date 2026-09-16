@@ -56,3 +56,34 @@ after this correction. A subsequent timestamp audit also integrates source wall
 times in event-series, upcoming-event, poll and scheduling labels without zone
 conversion. These finishing changes still require the final browser/build and
 complete-gate receipt below before publication.
+
+The production build and browser checks on `7fe0c6b` pass all six regional
+groups, four language/discovery groups and five existing profile-editor groups
+pass with zero browser errors. Narrow and doubled-text screenshots were reviewed.
+Recurring-event dates and source-zone labels are covered. The original account
+repair suite passes all six checks, including its unchanged HTTP save flow and
+the new private-location assertion. A separate keyboard diagnostic reproduces
+the native select arrow-key limitation in plain HTML in the same headless Mac
+Chrome; Tab navigation and selection/save behavior pass. This does not claim
+physical-device or assistive-technology verification.
+
+The encrypted production-copy upgrade completed at 06:49:29 UTC, applied all 90
+target migrations, preserved original columns across 121 tables and completed
+protected replay. It made no production writes. The production build verifies
+190 runtime traces, 43,947 trace entries and 478 server JavaScript files. Unique
+emitted JavaScript gzip totals increase by 1,979 bytes on Settings, 2,780 on the
+profile editor, 1,332 on Home and 1,239 on event details against the prior release.
+These are build asset comparisons, not network-transfer or latency measurements.
+No dependency, provider or additional startup request is introduced.
+
+The full gate on `7fe0c6b` stopped at the demo isolation check after the account,
+HTTP, regional, privacy and remaining service regressions had passed. The shared
+support presenter imported the live client formatter. The repaired shared
+presenter is static again, while a separate live wrapper supplies regional time
+elements; the original five demo tests pass unchanged. A follow-up projection
+audit also found missing format fields in church, support and admin viewer
+snapshots. Their existing queries now select and project the acting account's
+two format fields. Three regional service groups pass, including all six viewer
+paths and another account's unchanged defaults. New browser coverage checks live
+support/admin dates alongside static demo routes. This correction still requires
+the rebuilt browser checks and a fresh complete gate before release.

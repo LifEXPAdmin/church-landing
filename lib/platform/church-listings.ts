@@ -216,6 +216,8 @@ export async function getChurchListings(
         id: actor.id,
         name: actor.name,
         username: actor.username,
+        dateFormat: actor.dateFormat,
+        timeFormat: actor.timeFormat,
         verified: !!actor.emailVerifiedAt,
         adult:
           !!actor.adultAcknowledgedAt &&

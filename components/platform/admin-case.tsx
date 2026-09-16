@@ -5,7 +5,7 @@ import { adminPriorities, adminSourceTypes } from "@/lib/platform/admin-types";
 import { AdminForm, type AdminField } from "./admin-form";
 import { adminCaseHref } from "./admin-worklist";
 import { SupportViews } from "./support-views";
-import { SupportTime } from "./support-presentation";
+import { SupportTime } from "./regional-support-presentation";
 import { CommunityReportReview } from "./community-report-review";
 const options = (values: Record<string, string>) =>
   Object.entries(values).map(([value, label]) => ({ value, label }));
