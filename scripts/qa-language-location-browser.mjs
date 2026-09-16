@@ -269,6 +269,11 @@ try {
   await form()
     .getByRole("button", { name: "Retry the same feed settings", exact: true })
     .waitFor();
+  await page.waitForFunction(() =>
+    [...document.querySelectorAll('form[aria-label="Save feed settings"] button')].some(
+      (button) => button.textContent === "Retry the same feed settings" && !button.disabled
+    )
+  );
   saved = await db.socialPreferences.findUniqueOrThrow({
     where: { ownerId: a.id }
   });
