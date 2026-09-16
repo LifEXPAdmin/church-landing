@@ -290,6 +290,13 @@ try {
     .click();
   await page
     .getByRole("button", { name: "Confirm original save", exact: true })
+    .waitFor();
+  await page.evaluate(() => {
+    window.dispatchEvent(new Event("blur"));
+    window.dispatchEvent(new Event("focus"));
+  });
+  await page
+    .getByRole("button", { name: "Confirm original request", exact: true })
     .click();
   await page
     .getByRole("button", { name: "Remove favorite", exact: true })
@@ -343,7 +350,7 @@ try {
       })) === 0
   );
   ok(
-    "Favorites confirm a lost successful reply once, survive sign-out, stay owner-only and conceal unavailable sources before removal"
+    "Favorites confirm a lost successful reply after tab resume once, survive sign-out, stay owner-only and conceal unavailable sources before removal"
   );
 
   await go("/platform/exchange?q=" + encodeURIComponent(marker));
@@ -465,6 +472,81 @@ try {
   );
   ok(
     "Named searches default to alerts off; editing filters and explicit consent preserves ownership and versions; removal stops alerts; narrow, dark and enlarged layouts fit"
+  );
+  await go("/platform/exchange?q=NoMatchingFixture" + randomUUID());
+  await page
+    .getByText(
+      "No available listings match these choices. Clear the filters or check again later.",
+      { exact: true }
+    )
+    .waitFor();
+  await go("/platform/exchange?q=" + encodeURIComponent(marker));
+  const currentCard = page.getByRole("link", {
+    name: marker + " 2.000",
+    exact: true
+  });
+  await currentCard.waitFor();
+  await page.route("**/api/platform/exchange?*", (route) =>
+    route.fulfill({
+      status: 503,
+      contentType: "application/json",
+      body: JSON.stringify({
+        message: "Fictional search temporarily unavailable"
+      })
+    })
+  );
+  await page.evaluate(() => {
+    window.dispatchEvent(new Event("blur"));
+    window.dispatchEvent(new Event("focus"));
+  });
+  await page
+    .getByText("Fictional search temporarily unavailable", { exact: true })
+    .first()
+    .waitFor();
+  assert.equal(await currentCard.isVisible(), false);
+  await page.unroute("**/api/platform/exchange?*");
+  await page
+    .getByRole("button", { name: "Recheck current access", exact: true })
+    .first()
+    .click();
+  await currentCard.waitFor();
+  const longTitle = "LongFixture" + "w".repeat(109);
+  const longDraft = await exchangeListingCommand(db, publisher.token, {
+    operation: "create",
+    mutationId: randomUUID(),
+    expectedVersion: 0,
+    ownerChurchId: null,
+    schema: EXCHANGE_EDITOR_SCHEMA,
+    fields: {
+      ...emptyExchangeFields(),
+      title: longTitle,
+      description: "Fictional long-title card without a photo",
+      category: "FURNITURE",
+      condition: "GOOD",
+      country: "US",
+      placeId: place.id
+    }
+  });
+  await exchangeListingCommand(db, publisher.token, {
+    operation: "status",
+    mutationId: randomUUID(),
+    listingId: longDraft.id,
+    expectedVersion: longDraft.version,
+    state: "ACTIVE",
+    itemPolicy: EXCHANGE_ITEM_POLICY,
+    itemConfirmed: true
+  });
+  await go("/platform/exchange?q=LongFixture");
+  await page.getByRole("link", { name: longTitle, exact: true }).waitFor();
+  await page.setViewportSize({ width: 320, height: 844 });
+  await page.addStyleTag({ content: "html{font-size:24px!important}" });
+  await bounded();
+  await page.screenshot({
+    path: output + "/long-title-search-mobile.png",
+    fullPage: true
+  });
+  ok(
+    "Empty searches explain recovery, failed access rechecks conceal stale rows and retry, and a 120-character unbroken title fits enlarged 320px results without a photo"
   );
   assert.deepEqual(errors, []);
   ok("No browser errors in saved-search and favorite flows");

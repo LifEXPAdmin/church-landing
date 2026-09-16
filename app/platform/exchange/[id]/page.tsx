@@ -184,7 +184,7 @@ export default async function Page({
             />
           )}
         </section>
-        {user && (
+        {user && result.canSave && (
           <ExchangeFavoriteButton
             owner={user.id}
             listingId={listing.id}
@@ -203,26 +203,25 @@ export default async function Page({
       </article>
     );
     const readUrl = `/api/platform/exchange?view=listing&id=${encodeURIComponent(id)}`;
-    content =
-      listing.audience === "CHURCH" && user ? (
-        <PrivateSnapshotGuard
-          owner={user.id}
-          url={readUrl}
-          checksum={exchangeChecksum(result)}
-          label="listing"
-        >
-          {article}
-        </PrivateSnapshotGuard>
-      ) : (
-        <TopicReadBoundary
-          owner={user?.id ?? null}
-          url={readUrl}
-          checksum={exchangeChecksum(result)}
-          label="listing"
-        >
-          {article}
-        </TopicReadBoundary>
-      );
+    content = user ? (
+      <PrivateSnapshotGuard
+        owner={user.id}
+        url={readUrl}
+        checksum={exchangeChecksum(result)}
+        label="listing"
+      >
+        {article}
+      </PrivateSnapshotGuard>
+    ) : (
+      <TopicReadBoundary
+        owner={null}
+        url={readUrl}
+        checksum={exchangeChecksum(result)}
+        label="listing"
+      >
+        {article}
+      </TopicReadBoundary>
+    );
   } catch (error) {
     content = <ExchangeUnavailable error={error} href={path} />;
   }

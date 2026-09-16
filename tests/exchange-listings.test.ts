@@ -2663,3 +2663,28 @@ test("matching phone alerts require dated category and device consent, honor qui
       else process.env[name] = value;
   }
 });
+
+test("unverified browsers can read public offers but receive no usable saved-choice controls or writes", async () => {
+  const publisher = await createPortalActor(db, "exeligiblepub"),
+    viewer = await createPortalActor(db, "exunverified");
+  const listing = await publish(publisher, await draft(publisher));
+  await db.platformUser.update({
+    where: { id: viewer.id },
+    data: { emailVerifiedAt: null }
+  });
+  assert.equal((await read(db, viewer.token, listing.id)).canSave, false);
+  assert.equal((await list(db, viewer.token, {})).canSave, false);
+  assert.equal((await read(db, null, listing.id)).canSave, false);
+  await denied(
+    exchangeSavedCommand(
+      db,
+      viewer.token,
+      input("favorite-add", { listingId: listing.id, expectedVersion: 0 })
+    ),
+    403
+  );
+  assert.equal(
+    await db.exchangeFavorite.count({ where: { ownerId: viewer.id } }),
+    0
+  );
+});

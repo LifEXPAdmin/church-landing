@@ -161,7 +161,7 @@ export async function ExchangeList({
             churches={result.churches}
             savedSearch={savedSearch}
           />
-          {!mine && user && (
+          {!mine && user && result.canSave && (
             <ExchangeSearchSaveRegion
               owner={user.id}
               query={query}

@@ -210,6 +210,17 @@ export default function PrivacyPage() {
               identity documents out of descriptions and photos.
             </p>
             <p className="mt-3">
+              Favorites and named searches belong only to your account. A
+              favorite stores a reference to a listing, and its current access
+              is checked again when displayed. Saved searches retain the name,
+              filters, sorting and alert choice you select. Search areas use
+              named town centers; they do not change your profile location or
+              save device coordinates. Removing a search stops its alerts.
+              Account export includes your saved choices, and permanent account
+              deletion removes them. Protected recovery records prevent older
+              backups from silently restoring removed choices or alert consent.
+            </p>
+            <p className="mt-3">
               Opening a listing does not contact its owner or change your
               contact consent. Account export includes your personal listings.
               Permanent deletion removes unreported personal listing text and

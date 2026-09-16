@@ -680,6 +680,7 @@ export function readExchangeListing(
           }
         : null,
       viewerId: context.actorId,
+      canSave: !!context.actorId && context.eligible,
       canManage: exchangeCanManage(context, authority, {
         ownerId,
         ownerChurchId,
@@ -843,6 +844,7 @@ export function listExchangeListings(
         };
       }),
       viewerId: context.actorId,
+      canSave: !!context.actorId && context.eligible,
       churches,
       pageCursor: codec.encode(page),
       after:
