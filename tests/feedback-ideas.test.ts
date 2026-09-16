@@ -40,6 +40,8 @@ beforeEach(async () => {
   process.env.FEEDBACK_INTAKE_ENABLED = "true";
   process.env.SUPPORT_INTAKE_ENABLED = "true";
   process.env.FEEDBACK_IDEAS_ENABLED = "true";
+  process.env.COMMUNITY_REPORTS_ENABLED = "true";
+  process.env.COMMUNITY_REPORTS_PER_10_MINUTES = "5";
   await seedOperatorGrants(db, f.owner, ["MANAGE_PRODUCT_FEEDBACK"]);
   await seedOperatorGrants(db, f.backup, ["MANAGE_PRODUCT_FEEDBACK"]);
 });
@@ -632,12 +634,14 @@ test("native public-idea reports expose only current public text and product mod
   const c = await suggestion(),
     a = await publish(c.caseId);
   await seedOperatorGrants(db, f.backup, ["REVIEW_COMMUNITY_REPORTS"]);
+  process.env.COMMUNITY_REPORTS_ENABLED = "false";
   const target = await readCommunityReports(db, f.memberB.token, {
     view: "target",
     targetType: "FEEDBACK_IDEA",
     targetId: a.id
   });
   assert.ok(target.target);
+  assert.equal(target.available, false);
   const input = {
     operation: "create",
     mutationId: randomUUID(),
@@ -648,6 +652,28 @@ test("native public-idea reports expose only current public text and product mod
     reason: "PRIVACY",
     details: "A deliberate fictional concern about the public summary."
   };
+  await deny(communityReportCommand(db, f.memberB.token, input), 503);
+  assert.equal(
+    await db.communityReport.count({
+      where: {
+        reporterId: f.memberB.id,
+        targetType: "FEEDBACK_IDEA",
+        targetId: a.id
+      }
+    }),
+    0
+  );
+  process.env.COMMUNITY_REPORTS_ENABLED = "true";
+  assert.equal(
+    (
+      await readCommunityReports(db, f.memberB.token, {
+        view: "target",
+        targetType: "FEEDBACK_IDEA",
+        targetId: a.id
+      })
+    ).available,
+    true
+  );
   const [report, retry] = await Promise.all([
     communityReportCommand(db, f.memberB.token, input),
     communityReportCommand(db, f.memberB.token, input)

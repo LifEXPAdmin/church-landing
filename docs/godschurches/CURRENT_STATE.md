@@ -1,3 +1,15 @@
+## Feedback regression continuation — September 16, 2026 UTC
+
+Feature 31 remains unreleased. The fresh gate passes upgrade/restore, development
+and production builds, HTTPS restart and 100 distinct files (697 checks plus two
+expected skips), including the corrected Activity categories. The next suite
+found an inherited reporting-flag dependency in the idea-report fixture. The
+self-contained test now verifies disabled intake stores nothing and the same
+request succeeds after enabling; the focused check passes. Application code is
+unchanged. Retain those successful stages and complete the corrected suite plus
+62 remaining files on the preserved isolated fixture before publication. All 35
+final browser groups and the protected production-copy upgrade remain valid.
+
 ## Complete feedback verification checkpoint — September 16, 2026 UTC
 
 Feature 31 remains unreleased. The exact candidate production preview passes 35
