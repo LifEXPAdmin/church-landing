@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { flushSync } from "react-dom";
+import dynamic from "next/dynamic";
 import {
   currentSocialOwner,
   socialRequest,
@@ -33,8 +34,13 @@ import {
 import { useUnsavedSocialWork } from "./use-unsaved-social-work";
 import { settlePhotoNavigation } from "./use-photo-back-guard";
 import { DiscoveryPlacePicker } from "./discovery-place-picker";
-import { DiscoveryDeviceLocation } from "./discovery-device-location";
 import { portalInputClass } from "./portal-action-form";
+
+const DiscoveryDeviceLocation = dynamic(() =>
+  import("./discovery-device-location").then(
+    (module) => module.DiscoveryDeviceLocation
+  )
+);
 
 type SettingsData = Awaited<ReturnType<typeof getDiscoveryPreferences>>;
 const cookie = (name: string) =>

@@ -9,6 +9,8 @@ movement. Manual country/town search remains available. The selected country is
 deliberate; the request cannot infer or change country, church, profile location,
 its audience, time zone, feed mode or radius. Translation is independently
 unavailable and does not block this feature or imply coverage of all media.
+The device helper is loaded only with the owned discovery form; the ordinary
+Home feed and guest manual editor do not load its client module.
 
 Before invoking the browser API, a private account-pinned read verifies the same
 active, verified adult account under existing launch policy. Browser permission

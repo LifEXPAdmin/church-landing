@@ -100,10 +100,14 @@ const form = () =>
   page.getByRole("form", { name: "Save feed settings", exact: true });
 const helper = () =>
   page.getByRole("region", { name: "Optional device location" });
-const start = () =>
-  helper()
+const start = async () => {
+  await page.evaluate(() => {
+    window.__lateLocation = null;
+  });
+  await helper()
     .getByRole("button", { name: "Use device location once", exact: true })
     .click();
+};
 const mode = (value) =>
   page.evaluate((v) => {
     window.__geoMode = v;
@@ -266,7 +270,9 @@ try {
   assert.ok(Number.isSafeInteger(saved.discovery.filters.placeId));
   assert.ok(
     !/latitude|longitude|accuracy|41\.8781234|87\.6299876/.test(
-      JSON.stringify(saved)
+      JSON.stringify(saved, (_key, value) =>
+        typeof value === "bigint" ? String(value) : value
+      )
     )
   );
   const profile = await db.platformUser.findUniqueOrThrow({
