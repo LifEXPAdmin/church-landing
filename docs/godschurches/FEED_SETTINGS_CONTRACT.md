@@ -1,5 +1,25 @@
 # Feed preferences: existing authority and activation gates
 
+## Current authority: September 16, 2026
+
+The broader discovery feature is implemented and was verified in
+**2026.09.15.1 / ee6071c**, READY and canonical in
+`dpl_92BSPBt8tXvWFxPZz93aWi74bSFS`. Its authoritative behavior and acceptance are
+in [the discovery contract](DISCOVERY_FEEDS_CONTRACT.md) and
+[the release receipt](DISCOVERY_FEEDS_ACCEPTANCE.md). The four original modes
+remain supported alongside For You, Following, Your Church, Churches, Local,
+Public and Favorites. Private defaults, approved-church fallback, coarse radius,
+explicit traditions and reading languages, interests, hidden topics/words,
+account mutes, six presets, explanations and scoped recommendation reset are
+available. Reading language does not change the interface language. Reset clears
+only More/Less weights and preserves filters, relationships and privacy choices.
+
+The September 16 task audit inspected the source and earlier test receipts and
+observed the current signed-in discovery settings on **2026.09.16.3 / a33e8d5**
+without saving preferences. Historical assertions below that these capabilities
+are absent are superseded. Their privacy and eligibility requirements remain in
+force. Physical-device and broader pilot acceptance keep their existing owners.
+
 ## Active four-mode feature — September 14, 2026
 
 The current unified queue explicitly selects one complete early feed feature:
