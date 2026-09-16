@@ -31,3 +31,22 @@ security-event alerts and digests is not supplied
 by the feedback-only email capability. Those broader tasks remain open. Physical
 phones, actual support/operator coverage and other provider prerequisites remain
 with their existing acceptance actions. Final batch review stays last.
+
+## Account checklist reconciliation
+
+The privileged MFA gap assessment is complete in
+[the authority and recovery policy](PRIVILEGED_AUTHENTICATION_ASSESSMENT.md).
+Four existing authenticator regressions pass on September 16. A read-only
+production inventory found one report-review grant and zero enrolled
+authenticators. This does not establish all-role MFA enforcement. The existing
+implementation task retains provider/adapter engineering and actual enrollment;
+missing code alone is not classified as an external blocker.
+
+The enabled-resource deletion and deletion-progress tasks were already completed at
+11:59 UTC on September 13, after **2026.09.13.27 / 396eb12** was independently
+verified READY and canonical. Their original enabled-resource and consequence/UI
+scope remains recorded in [the deletion contract](ACCOUNT_DELETION_CONTRACT.md)
+and [release receipt](MESSAGING_RETENTION_REPORT.md). The focused Notion page had
+stale open boxes. Reconciliation preserves those original completions, rather
+than claiming new implementation, repeating a real erasure, or closing broader
+MFA or physical-device work.

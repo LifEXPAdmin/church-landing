@@ -111,6 +111,10 @@ The authenticator matches the published [RFC 6238 test vectors](https://www.rfc-
 The fresh-authentication and recovery boundaries follow the existing account model
 and the [OWASP MFA guidance](https://cheatsheetseries.owasp.org/cheatsheets/Multifactor_Authentication_Cheat_Sheet.html).
 Broader legacy privileged-MFA coverage remains separate from these new grant actions.
+The [September 16 assessment](PRIVILEGED_AUTHENTICATION_ASSESSMENT.md) maps the
+actual account/provider gap, every privileged authority, enrollment and recovery
+policy, and the remaining provider-backed implementation/activation requirements.
+It does not widen the current authenticator gate or alter existing grants.
 
 The revised production preview passes five actual browser groups, including narrow
 layouts, native resolve/reopen, retained selection, partial bulk results, authenticator
