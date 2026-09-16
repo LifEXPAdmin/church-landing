@@ -115,7 +115,9 @@ function ListWorkspace({
   const [name, setName] = useState(base.name),
     [members, setMembers] = useState<FollowingListMember[]>(base.members);
   const [query, setQuery] = useState(search);
-  const changed = base.version !== page.version;
+  const changed =
+    base.version !== page.version ||
+    JSON.stringify(base.members) !== JSON.stringify(page.list?.members ?? []);
   const dirty =
     name !== base.name ||
     JSON.stringify(members) !== JSON.stringify(base.members);

@@ -35,7 +35,7 @@ Verification so far:
   protected restore, export/erasure, unfollow journals, atomic editor saves and
   explicit list/picker bounds.
 - The related 15 discovery and 14 legacy-feed tests pass in the prior focused
-  run. A fresh combined run checks the final read-cost adjustment.
+  run. The fresh combined 38-test run also passes after the read-cost adjustment.
 - Ninety-six fresh migrations and populated upgrade preservation pass. The prior
   combined 38-test run also passes dump/restore. Tests use isolated fictional data.
 - TypeScript and website copy checks pass. Full ESLint has zero errors and the
@@ -46,6 +46,28 @@ the migration now updates both explicit allowlists. Two invalid post fixtures
 were corrected to obey existing audience/church constraints. A legacy-feed test
 caught a changed synchronous validation contract; that contract is preserved.
 These failed checkpoints are diagnostic evidence, not release acceptance.
+
+The initial built candidate passes seven real browser groups: guest returns,
+lost-successful-response retry after foreground recheck, atomic editing and
+unsaved navigation, mobile/enlarged dark layout, actual filtered feed selection,
+account-switch concealment, current block and selected-list deletion. The browser
+fixture selectors were corrected to target the intended guest link, the native
+follow picker and the existing List view. No application error was observed.
+A further editor change compares the current visible member projection as well
+as the saved version, so a suspended/unavailable member also conceals stale
+identities. Its additional built-browser acceptance is pending.
+
+The initial isolated client bundle comparison adds **940 gzip bytes** to Home
+and My feed, **125** to Connections and **151** to Exchange. The new private list
+route totals **153,224 gzip bytes**, including shared application chunks. There
+is no added dependency. These local compressed sizes do not establish latency.
+
+The bounded local query fixture uses 100 follows/posts and 20 lists of 100 entries
+each. The selected and unselected post-page projections have the same SHA-256.
+The owned list document is 227,673 bytes; other feed modes do not read it. The
+private editor returns 100 members and a 20-candidate page in 23,058 response
+bytes with 15 SELECTs. Exact timings and feed query counts remain in the private
+measurement receipt; these are isolated local observations, not hosted targets.
 
 Complete the browser/privacy/mobile checks, measured query and bundle review,
 full clean gate, protected pre-migration replay, exact READY/canonical deployment,
