@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { RegionalSettings } from "./regional-settings";
+import type { RegionalState } from "@/lib/platform/regional-preferences";
 
-export function SettingsLanguage() {
+export function SettingsLanguage({ initial }: { initial: RegionalState }) {
   return (
     <section
       className="gc-settings space-y-5"
@@ -42,10 +44,9 @@ export function SettingsLanguage() {
         <div>
           <dt className="font-semibold">Location on your member profile</dt>
           <dd>
-            Optional profile location is shared with permitted signed-in
-            members. You can edit or clear it in your profile. Saving a
-            discovery city never fills this field. A separate audience selector
-            for profile location is not available.
+            Choose Only me or permitted signed-in members for your optional
+            profile location. You can edit or clear it in your profile. Saving a
+            discovery city never fills this field or changes its audience.
           </dd>
         </div>
         <div>
@@ -53,10 +54,12 @@ export function SettingsLanguage() {
           <dd>
             Events keep their source time zone and show your device time zone
             where supported. Changing discovery location does not move an event.
-            A saved account-wide date or time format is not available yet.
+            Your saved date and time formats change presentation without
+            changing an event&apos;s time zone or scheduled time.
           </dd>
         </div>
       </dl>
+      <RegionalSettings initial={initial} />
       <div className="flex flex-wrap gap-3">
         <Link
           className="gc-button"

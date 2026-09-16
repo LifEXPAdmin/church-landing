@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { RegionalTime } from "./regional-presentation";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { socialRequest, SocialClientError } from "@/lib/platform/social-client";
@@ -167,11 +168,11 @@ export function CommunitySearchResults({
           {query.kind === "events" && item.startAt && item.timeZone && (
             <p>
               <time dateTime={item.startAt}>
-                {new Intl.DateTimeFormat("en-US", {
+                <RegionalTime value={item.startAt} options={{
                   dateStyle: "medium",
                   timeStyle: "short",
                   timeZone: item.timeZone
-                }).format(new Date(item.startAt))}
+                }} />
               </time>{" "}
               · {item.timeZone}
             </p>

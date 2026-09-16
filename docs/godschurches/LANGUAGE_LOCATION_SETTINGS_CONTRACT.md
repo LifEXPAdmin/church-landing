@@ -1,6 +1,15 @@
 # Language and location settings boundaries
 
-## Current supported integration — September 16, 2026
+## Regional formats and profile audience candidate — September 16, 2026
+
+The next increment implements saved date/time presentation and an independent
+Only me or permitted-member profile-location audience. See the
+[regional/privacy contract](REGIONAL_PREFERENCES_CONTRACT.md). The controls reuse
+the existing account, profile, discovery and protected-recovery owners. This
+candidate is not a deployment receipt; the last verified release remains the
+integration below until exact publication and live checks are recorded.
+
+## Verified integration baseline — September 16, 2026
 
 The Language and location folder now links to the existing canonical discovery
 editor, member profile and calendars. Interface guidance lists English alone;

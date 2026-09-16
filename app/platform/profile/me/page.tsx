@@ -8,11 +8,15 @@ import { readProfileEditor } from "@/lib/platform/profile-session";
 import { getCurrentPlatformUser } from "@/lib/platform/session";
 import { accountReasons } from "@/lib/platform/account-entry";
 import { PortalError } from "@/lib/platform/portal";
+import { createHash } from "node:crypto";
+import { PrivateSnapshotGuard } from "@/components/platform/private-snapshot-guard";
 export async function generateMetadata(): Promise<Metadata> {
   const user = await getCurrentPlatformUser();
   return {
     title: {
-      absolute: user ? "Edit your God’s Churches profile" : accountReasons.profile
+      absolute: user
+        ? "Edit your God’s Churches profile"
+        : accountReasons.profile
     },
     description: user
       ? "Choose what to share with other Godschurches members."
@@ -64,7 +68,16 @@ export default async function EditProfilePage({
   return (
     <PlatformShell user={user}>
       <section className="container-shell py-8 sm:py-10">
-        <ProfileEditor profile={profile} />
+        <PrivateSnapshotGuard
+          owner={profile.id}
+          url="/api/platform/profile?view=identity"
+          checksum={createHash("sha256")
+            .update(JSON.stringify({ id: profile.id }))
+            .digest("hex")}
+          label="account"
+        >
+          <ProfileEditor profile={profile} />
+        </PrivateSnapshotGuard>
       </section>
     </PlatformShell>
   );

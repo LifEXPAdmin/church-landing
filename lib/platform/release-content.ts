@@ -14,6 +14,14 @@ export type Feature = {
 };
 export const features: Feature[] = [
   {
+    id: "language-location-preferences", category: "Privacy and account", name: "Date formats and location choices",
+    description: "Save your preferred date and time formats, choose a private discovery area, and decide who can see your optional profile location.",
+    steps: "Open Settings → Language and location. Preview and save date and time formats, follow the discovery link for a town and radius, or edit your profile location and its audience.",
+    href: "/platform/settings/language/interface",
+    eligibility: "Formats are saved to your signed-in account. The interface is in English. Member location sharing requires verified adult eligibility; Only me remains private. Discovery choices do not change profile disclosure or event times.",
+    availability: "available"
+  },
+  {
     id: "private-feedback", category: "Help and feedback", name: "Feedback and private receipts",
     description: "Share an optional website rating, report a problem or suggest an improvement through a private help case.",
     steps: "Open Feedback from Menu or Help. Review any optional context and selected screenshot, choose whether staff may follow up, and revisit the saved receipt in My feedback. Optional prompts can be dismissed or permanently turned off.",
@@ -748,6 +756,14 @@ export const features: Feature[] = [
   }
 ];
 export const releases: ReleaseEntry[] = [
+  {
+    id: "regional-formats-and-private-location", version: "2026.09.16.6", date: "2026-09-16",
+    summary: "Save date and time formats and choose who can see your profile location.",
+    added: ["Preview and save date order and 12-hour or 24-hour time for your account.", "Choose Only me or permitted signed-in members for your optional profile location."],
+    improved: ["Calendars, messages, activity and account views use your formats while preserving event time zones and all-day dates.", "Private discovery areas remain separate from profile location and its audience."],
+    fixed: ["A restored older profile cannot disclose a location hidden or removed by a newer privacy choice."],
+    featureIds: ["language-location-preferences"]
+  },
   {
     id: "language-and-private-discovery", version: "2026.09.16.5", date: "2026-09-16",
     summary: "Find language guidance and private discovery location together in Settings.",

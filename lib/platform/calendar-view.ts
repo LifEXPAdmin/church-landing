@@ -1,3 +1,9 @@
+import {
+  defaultRegionalPreferences,
+  formatRegionalTimestamp,
+  formatRegionalCalendarDate,
+  type RegionalPreferences
+} from "./regional-format";
 // Presentation helpers are safe to use in the browser; they never read accounts.
 export type CalendarQuery = {
   signup?: string;
@@ -47,16 +53,23 @@ export function eventWhen(
     startAt: string;
     endAt: string;
   },
-  timeZone: string
+  timeZone: string,
+  preferences: RegionalPreferences = defaultRegionalPreferences
 ) {
   if (event.allDay) {
+    if (
+      formatRegionalCalendarDate(event.endLocal, preferences) ===
+      "Date unavailable"
+    )
+      return "Date unavailable";
     const end = new Date(event.endLocal + "T12:00:00Z");
+    if (!Number.isFinite(end.getTime())) return "Date unavailable";
     end.setUTCDate(end.getUTCDate() - 1);
     const finalDate = end.toISOString().slice(0, 10);
-    return `All day · ${event.startLocal}${finalDate !== event.startLocal ? ` through ${finalDate}` : ""}`;
+    return `All day · ${formatRegionalCalendarDate(event.startLocal, preferences)}${finalDate !== event.startLocal ? ` through ${formatRegionalCalendarDate(finalDate, preferences)}` : ""}`;
   }
   const format = (value: string) =>
-    new Date(value).toLocaleString("en-US", {
+    formatRegionalTimestamp(value, preferences, {
       timeZone,
       month: "short",
       day: "numeric",

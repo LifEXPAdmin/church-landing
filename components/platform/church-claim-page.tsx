@@ -1,3 +1,4 @@
+import { RegionalTime } from "@/components/platform/regional-presentation";
 import { randomUUID } from "node:crypto";
 import { adminReturnTo } from "@/lib/platform/admin-links";
 import Link from "next/link";
@@ -339,9 +340,9 @@ export async function ChurchClaimPage({
               )}
               <p className="text-sm text-gc-muted">
                 Updated{" "}
-                {new Date(row.updatedAt).toLocaleString("en-US", {
+                {<RegionalTime value={row.updatedAt} locale={"en-US"} options={{
                   timeZone: "UTC"
-                })}{" "}
+                }} />}{" "}
                 UTC
               </p>
               {row.churchId && (
@@ -809,9 +810,9 @@ export async function ChurchClaimPage({
                     <li key={`${item.createdAt}-${index}`}>
                       <p className="font-semibold text-gc-text">
                         {item.action.replaceAll("_", " ")} ·{" "}
-                        {new Date(item.createdAt).toLocaleString("en-US", {
+                        {<RegionalTime value={item.createdAt} locale={"en-US"} options={{
                           timeZone: "UTC"
-                        })}{" "}
+                        }} />}{" "}
                         UTC
                       </p>
                       <p className="whitespace-pre-wrap text-gc-muted">

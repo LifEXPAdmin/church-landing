@@ -29,6 +29,9 @@ export function ProfileForm({
   const feedback = useRef<HTMLParagraphElement>(null);
   const latestHeading = useRef<HTMLHeadingElement>(null);
   const [version, setVersion] = useState(profile.presentation.version);
+  const [locationVersion, setLocationVersion] = useState(
+    profile.locationVersion
+  );
   const [palette, setPalette] = useState(profile.presentation.palette),
     [background, setBackground] = useState(profile.presentation.background);
   const [conflict, setConflict] = useState(false),
@@ -38,10 +41,11 @@ export function ProfileForm({
     onBusy(true);
     try {
       const response = await fetch("/api/platform/profile", {
-        cache: "no-store"
+        cache: "no-store",
+        headers: { "X-Expected-Account": profile.id }
       });
       const result = await response.json();
-      if (!response.ok)
+      if (!response.ok || result.id !== profile.id)
         throw new Error(
           result.message ?? "The saved profile could not be loaded."
         );
@@ -79,10 +83,14 @@ export function ProfileForm({
         try {
           const response = await fetch("/api/platform/account", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              "Content-Type": "application/json",
+              "X-Expected-Account": profile.id
+            },
             body: JSON.stringify({
               ...fields,
               expectedVersion: version,
+              expectedLocationVersion: locationVersion,
               operation: "update-profile"
             })
           });
@@ -100,7 +108,7 @@ export function ProfileForm({
           setMessage(
             `${result.message ?? "Your changes were not confirmed."} Reference: ${response.headers.get("X-Account-Request-Id") ?? "unavailable"}`
           );
-          setConflict(response.status === 409);
+          setConflict(response.status === 409 || response.status === 202);
         } catch {
           setMessage(
             "We could not confirm the save. Check your connection and try again. Your edits are still here."
@@ -151,8 +159,9 @@ export function ProfileForm({
         <fieldset className="min-w-0 space-y-4">
           <legend className="text-2xl">Introduction and about you</legend>
           <p className="text-sm text-gc-muted">
-            Everything in this section is optional and visible to permitted
-            signed-in members. Leave any field empty if you prefer.
+            Everything in this section is optional. Your location has its own
+            audience choice; other fields are visible to permitted signed-in
+            members. Leave any field empty if you prefer.
           </p>
           <div>
             <label htmlFor="profile-bio">Bio (optional)</label>
@@ -202,6 +211,41 @@ export function ProfileForm({
                 A general place, such as your city. Up to 80 characters. Avoid
                 sharing your home address here.
               </p>
+              <label className="mt-3 block" htmlFor="profile-location-audience">
+                Who can see your location?
+              </label>
+              <select
+                id="profile-location-audience"
+                name="locationAudience"
+                className={accountInputClass}
+                defaultValue={
+                  profile.canShareLocation
+                    ? profile.locationAudience
+                    : "ONLY_ME"
+                }
+              >
+                <option value="ONLY_ME">Only me</option>
+                <option value="MEMBERS" disabled={!profile.canShareLocation}>
+                  Permitted signed-in members
+                </option>
+              </select>
+              <p className="mt-2 text-sm text-gc-muted">
+                This does not change your private discovery area or church
+                directory contacts.
+              </p>
+              {!profile.canShareLocation && (
+                <p className="mt-2 text-sm text-gc-muted">
+                  Member sharing requires a verified email and confirmed adult
+                  eligibility.
+                </p>
+              )}
+              {profile.locationRecoveryRequired && (
+                <p role="status">
+                  Your location was cleared during recovery to protect a newer
+                  privacy choice. Review the text and audience before saving
+                  again.
+                </p>
+              )}
             </div>
             <div>
               <label htmlFor="profile-website">Website (optional)</label>
@@ -358,6 +402,14 @@ export function ProfileForm({
                 </dd>
               </div>
               <div>
+                <dt>Location audience</dt>
+                <dd>
+                  {latest.locationAudience === "MEMBERS"
+                    ? "Permitted signed-in members"
+                    : "Only me"}
+                </dd>
+              </div>
+              <div>
                 <dt>Interests</dt>
                 <dd>{latest.interests.join(", ") || "Empty"}</dd>
               </div>
@@ -379,6 +431,7 @@ export function ProfileForm({
               className="gc-profile-text-button"
               onClick={() => {
                 setVersion(latest.presentation.version);
+                setLocationVersion(latest.locationVersion);
                 setLatest(null);
                 setConflict(false);
                 setMessage(

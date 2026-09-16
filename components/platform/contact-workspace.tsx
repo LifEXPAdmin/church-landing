@@ -1,4 +1,5 @@
 "use client";
+import { RegionalTime } from "@/components/platform/regional-presentation";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -145,12 +146,12 @@ export function ContactWorkspace({
         <p className="text-sm text-gc-muted">
           Sent{" "}
           <time dateTime={row.createdAt}>
-            {new Date(row.createdAt).toLocaleString()}
+            {<RegionalTime value={row.createdAt} />}
           </time>
         </p>
         {row.status === "PENDING" && (
           <p className="text-sm">
-            Expires {new Date(row.expiresAt).toLocaleDateString()}. Acceptance
+            Expires {<RegionalTime value={row.expiresAt} dateOnly />}. Acceptance
             opens contact only between the two of you.
           </p>
         )}
@@ -272,7 +273,7 @@ export function ContactWorkspace({
       </div>
       {s.waitingUntil > 0 && !s.hidden && (
         <p>
-          Try again after {new Date(s.waitingUntil).toLocaleString()}. Your
+          Try again after {<RegionalTime value={s.waitingUntil} />}. Your
           unsent entries are kept.
         </p>
       )}

@@ -1,3 +1,4 @@
+import { RegionalTime } from "@/components/platform/regional-presentation";
 import type { Metadata } from "next";
 import { createHash } from "node:crypto";
 import Link from "next/link";
@@ -124,7 +125,7 @@ export default async function ContentDecisionsPage({
                       <p>
                         {n.church ? "Church" : "Your"} {n.type.toLowerCase()} ·{" "}
                         <time dateTime={n.createdAt}>
-                          {new Date(n.createdAt).toLocaleString()}
+                          {<RegionalTime value={n.createdAt} />}
                         </time>
                       </p>
                       <p>{contentDecisionReasons[n.reason]}</p>

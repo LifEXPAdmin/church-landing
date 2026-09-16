@@ -1,4 +1,5 @@
 "use client";
+import { RegionalTime } from "@/components/platform/regional-presentation";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -285,7 +286,7 @@ export function AdminWorklist({
                       {row.ownerName
                         ? `Owner: ${row.ownerName}`
                         : "Awaiting assignment"}{" "}
-                      · Received {new Date(row.createdAt).toLocaleDateString()}{" "}
+                      · Received {<RegionalTime value={row.createdAt} dateOnly />}{" "}
                       ·{" "}
                       {Math.max(
                         0,

@@ -1,4 +1,5 @@
 "use client";
+import { RegionalTime } from "@/components/platform/regional-presentation";
 import { FOUNDER_WELCOME_LABEL } from "@/lib/platform/founder-welcome-content";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
@@ -24,12 +25,12 @@ const inboxHref = (archived: boolean, after?: string, filter = "all") =>
       })
     : "");
 const time = (value: string) =>
-  new Date(value).toLocaleString(undefined, {
+  <RegionalTime value={value} options={{
     month: "short",
     day: "numeric",
     hour: "numeric",
     minute: "2-digit"
-  });
+  }} />;
 
 function founderText(content: string) {
   return content
@@ -402,7 +403,7 @@ export function MessageWorkspace({
       </div>
       {!s.hidden && s.waitingUntil > 0 && (
         <p>
-          Try again after {new Date(s.waitingUntil).toLocaleString()}. Your text
+          Try again after {<RegionalTime value={s.waitingUntil} />}. Your text
           is kept.
         </p>
       )}

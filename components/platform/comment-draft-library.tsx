@@ -1,4 +1,5 @@
 "use client";
+import { RegionalTime } from "@/components/platform/regional-presentation";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -225,7 +226,7 @@ export function CommentDraftLibrary({ owner }: { owner: string }) {
                 {row.replyToId ? "Unsent reply" : "Unsent comment"}
               </h2>
               <time dateTime={row.updatedAt}>
-                {new Date(row.updatedAt).toLocaleString()}
+                {<RegionalTime value={row.updatedAt} />}
               </time>
               <textarea
                 aria-label="Saved draft text"

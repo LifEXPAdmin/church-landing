@@ -438,12 +438,12 @@ export const settingsRegistry: readonly SettingRegistration[] = Object.freeze([
   entry(
     "language.interface",
     "language",
-    "Interface language and time display",
-    "English is currently available. Reading languages and calendar time zones have separate purposes.",
+    "Interface language and date formats",
+    "Use the English interface and save your date and time formats. Reading languages and calendar time zones stay separate.",
     ["app language", "translation", "English", "region", "date format", "time format", "timezone"],
     { control: "language" },
-    { persistenceOwner: "maintained interface content", read: "app/layout.tsx; local-event-time.tsx", write: null },
-    { valueType: "information", state: "explanation" }
+    { persistenceOwner: "PlatformUser regional preferences", read: "settings-context.ts; regional-preferences.ts readRegionalPreferences", write: "regional-preferences.ts saveRegionalPreferences" },
+    { valueType: "group", state: "working" }
   ),
   entry(
     "language.discovery",
@@ -458,7 +458,7 @@ export const settingsRegistry: readonly SettingRegistration[] = Object.freeze([
     "language.profile",
     "language",
     "Location on your member profile",
-    "Review or clear the optional location that permitted members can see. It is separate from your private discovery area.",
+    "Choose Only me or permitted signed-in members for your optional profile location. It is separate from your private discovery area.",
     ["shared location", "public location", "profile city", "location visibility"],
     { href: "/platform/profile/me" },
     linked("profiles.ts getProfileEditor", "account-boundary.ts update-profile")

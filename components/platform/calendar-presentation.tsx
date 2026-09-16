@@ -1,3 +1,4 @@
+import { RegionalEventTime } from "./regional-presentation";
 import Link from "next/link";
 import type {
   getCalendarAgenda,
@@ -5,7 +6,6 @@ import type {
   getCalendars
 } from "@/lib/platform/calendar-reads";
 import {
-  eventWhen,
   type monthRange,
   type CalendarQuery
 } from "@/lib/platform/calendar-view";
@@ -223,7 +223,7 @@ export function CalendarAgenda({
           {deviceLocal ? (
             <LocalEventTime event={event} rsvp />
           ) : (
-            <p>{eventWhen(event, timeZone)}</p>
+            <p>{<RegionalEventTime event={event} timeZone={timeZone} />}</p>
           )}
           {event.canceled && (
             <p className="font-semibold text-gc-error">

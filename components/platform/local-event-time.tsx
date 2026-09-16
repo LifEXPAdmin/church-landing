@@ -1,7 +1,7 @@
 "use client";
+import { RegionalEventTime } from "./regional-presentation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { eventWhen } from "@/lib/platform/calendar-view";
 
 /** Uses the source zone for SSR, then labels the device zone explicitly. */
 export function LocalEventTime({
@@ -31,7 +31,7 @@ export function LocalEventTime({
   const zone = deviceZone || event.timeZone;
   return (
     <div className="space-y-2 text-sm">
-      <p>{eventWhen(event, zone)}</p>
+      <p>{<RegionalEventTime event={event} timeZone={zone} />}</p>
       {!event.allDay && (
         <p className="text-gc-muted">
           {deviceZone ? "Your time" : "Event time"} · {zone}

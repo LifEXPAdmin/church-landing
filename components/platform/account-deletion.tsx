@@ -1,4 +1,5 @@
 "use client";
+import { RegionalTime } from "@/components/platform/regional-presentation";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { AccountDeletionProgress } from "@/lib/platform/account-deletion";
@@ -43,7 +44,7 @@ async function accountRequest(body: Record<string, unknown>) {
     );
   return result as AccountDeletionProgress;
 }
-const date = (v: string) => new Date(v).toLocaleString();
+const date = (v: string) => <RegionalTime value={v} />;
 const duties: Record<string, string> = {
   churchAssignments: "Church positions",
   topicOwnership: "Active topic community ownership",
@@ -130,7 +131,7 @@ export function AccountDeletion({
               <dt>Completion</dt>
               <dd>
                 {result.completedAt
-                  ? `Nonexempt active data deletion completed ${date(result.completedAt)}.`
+                  ? <>Nonexempt active data deletion completed {date(result.completedAt)}.</>
                   : "Not yet complete."}
               </dd>
             </div>

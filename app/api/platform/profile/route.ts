@@ -17,6 +17,19 @@ export async function GET(request: Request) {
     "X-Robots-Tag": "noindex, nofollow"
   };
   try {
+    const expectedOwner = request.headers.get("x-expected-account");
+    if (expectedOwner)
+      await withOwnedSession(
+        prisma,
+        requestSessionToken(request),
+        async (_, current) => {
+          if (current.userId !== expectedOwner)
+            throw new PortalError(
+              401,
+              "Your sign-in changed. Reload before continuing."
+            );
+        }
+      );
     const query = new URL(request.url).searchParams;
     return Response.json(
       query.get("view") === "member-snapshot"

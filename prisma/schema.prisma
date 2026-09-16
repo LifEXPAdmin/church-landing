@@ -243,6 +243,12 @@ model PlatformUser {
   role         PlatformRole @default(BELIEVER)
   bio          String?
   location     String?
+  locationAudience String @default("MEMBERS")
+  locationVersion Int @default(0)
+  locationRecoveryRequired Boolean @default(false)
+  dateFormat String @default("DEFAULT")
+  timeFormat String @default("DEFAULT")
+  regionalVersion Int @default(0)
   website      String?
   interests    String[]     @default([])
   uploadedImages MediaAsset[] @relation("ImageUploader")

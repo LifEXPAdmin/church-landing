@@ -53,6 +53,8 @@ import {
   type AccountDeletionJournal
 } from "./account-deletion";
 import { protectedAccountDeletionJournal } from "./account-deletion-journal";
+import { protectDiscoveryRecovery } from "./discovery-recovery";
+import { readAccountSession } from "./accounts";
 
 export const SESSION_COOKIE = "church_platform_session";
 export function sessionCookie(token: string, secure: boolean) {
@@ -563,11 +565,17 @@ async function processAccountRequest(
       );
     }
     if (operation === "update-profile") {
+      const token = requestSessionToken(request);
       const profile = await updateAccountProfile(
         db,
-        requestSessionToken(request),
-        body
+        token,
+        body,
+        request.headers.get("x-expected-account")
       );
+      const owner = await readAccountSession(db, token);
+      if (!owner) throw new AccountError("session");
+      if (!(await protectDiscoveryRecovery(db, owner.id, request.signal)))
+        return reply("Your profile is saved. Protected recovery is pending and will be retried automatically. Review your saved profile before making another change.", 202);
       return reply(
         "Profile saved.",
         200,
@@ -637,6 +645,7 @@ async function processAccountRequest(
       );
     if (error instanceof AccountError) {
       const messages = {
+        "profile-disclosure": "Choose Only me for your location. Sharing with members requires a verified email and confirmed adult eligibility.",
         "profile-conflict":
           "Your profile changed in another tab. Your edits are still here. Review the saved profile before trying again.",
         "handle-invalid":

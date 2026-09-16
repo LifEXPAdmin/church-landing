@@ -1,4 +1,5 @@
 "use client";
+import { RegionalTime } from "@/components/platform/regional-presentation";
 import Link from "next/link";
 import { Ellipsis, UserPlus, VolumeX, Ban, Bell } from "lucide-react";
 import { ActionPopover } from "./action-popover";
@@ -260,7 +261,7 @@ export function RelationshipControls({
             <p>
               Snoozed until{" "}
               <time dateTime={data.snoozedUntil!}>
-                {new Date(data.snoozedUntil!).toLocaleString()}
+                {<RegionalTime value={data.snoozedUntil!} />}
               </time>
             </p>
           )}

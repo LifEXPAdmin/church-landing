@@ -1,3 +1,4 @@
+import { RegionalTime } from "@/components/platform/regional-presentation";
 import { randomUUID } from "node:crypto";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
@@ -490,9 +491,9 @@ export async function ChurchListingPage({
                     <li key={index}>
                       <p className="font-semibold">
                         {listingStatusLabels[event.action] ?? event.action} ·{" "}
-                        {new Date(event.createdAt).toLocaleDateString("en-US", {
+                        {<RegionalTime value={event.createdAt} dateOnly locale={"en-US"} options={{
                           timeZone: "UTC"
-                        })}
+                        }} />}
                       </p>
                       <p className="whitespace-pre-wrap text-gc-muted">
                         {event.reason}

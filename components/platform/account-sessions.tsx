@@ -1,4 +1,5 @@
 "use client";
+import { RegionalTime } from "@/components/platform/regional-presentation";
 import { useRef, useState } from "react";
 import Link from "next/link";
 import type { AccountSessionList } from "@/lib/platform/account-sessions";
@@ -123,13 +124,13 @@ export function AccountSessions({
                 <p className="text-sm text-gc-muted">
                   Started{" "}
                   <time dateTime={session.createdAt}>
-                    {new Date(session.createdAt).toLocaleString()}
+                    {<RegionalTime value={session.createdAt} />}
                   </time>
                 </p>
                 <p className="text-sm text-gc-muted">
                   Expires{" "}
                   <time dateTime={session.expiresAt}>
-                    {new Date(session.expiresAt).toLocaleString()}
+                    {<RegionalTime value={session.expiresAt} />}
                   </time>
                 </p>
               </li>

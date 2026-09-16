@@ -1,4 +1,5 @@
 "use client";
+import { RegionalTime } from "@/components/platform/regional-presentation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { PrivateDraftPayload } from "@/lib/platform/post-workspace";
@@ -259,7 +260,7 @@ export function DraftLibrary({ ownerId }: { ownerId: string }) {
                 <p className="text-sm text-gc-muted">
                   Last saved{" "}
                   <time dateTime={draft.updatedAt}>
-                    {new Date(draft.updatedAt).toLocaleString()}
+                    {<RegionalTime value={draft.updatedAt} />}
                   </time>
                 </p>
                 <p className="whitespace-pre-wrap break-words">

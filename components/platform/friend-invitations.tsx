@@ -1,4 +1,5 @@
 "use client";
+import { RegionalTime } from "@/components/platform/regional-presentation";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { socialRequest, SocialClientError } from "@/lib/platform/social-client";
@@ -385,7 +386,7 @@ export function FriendInvitations({
                     onDownload={validateDownload}
                   />
                   <p>
-                    Expires {new Date(data.expiresAt!).toLocaleDateString()}.
+                    Expires {<RegionalTime value={data.expiresAt!} dateOnly />}.
                   </p>
                   <label className="block">
                     Your invitation link

@@ -1,4 +1,5 @@
 "use client";
+import { RegionalEventTime } from "./regional-presentation";
 import {
   useEffect,
   useId,
@@ -15,7 +16,6 @@ import { accountEntryHref } from "@/lib/platform/account-entry";
 import { portalInputClass, portalButtonClass } from "./portal-action-form";
 import { useUnsavedSocialWork } from "./use-unsaved-social-work";
 import { LocalEventTime } from "./local-event-time";
-import { eventWhen } from "@/lib/platform/calendar-view";
 
 function ParticipationForm({
   payload,
@@ -198,7 +198,7 @@ function EventTime({
 }) {
   return (
     <p className="text-sm text-gc-muted">
-      {eventWhen(event, timeZone)}
+      {<RegionalEventTime event={event} timeZone={timeZone} />}
       {!event.allDay && ` · ${timeZone}`}
       {event.organizer && ` · Organized by ${event.organizer}`}
     </p>

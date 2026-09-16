@@ -1,4 +1,5 @@
 "use client";
+import { RegionalTime } from "@/components/platform/regional-presentation";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { socialRequest } from "@/lib/platform/social-client";
@@ -319,7 +320,7 @@ function AdminHealth({ data }: { data: Health }) {
       ) : (
         <>
           <p>
-            Checked {new Date(data.health.checkedAt).toLocaleString()}.{" "}
+            Checked {<RegionalTime value={data.health.checkedAt} />}.{" "}
             {data.health.needsAttention
               ? "Attention is needed."
               : "No current queue threshold is exceeded."}

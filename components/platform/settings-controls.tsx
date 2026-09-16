@@ -45,7 +45,7 @@ export function SettingsControls({
   const canConfirm = canConfirmSettings(data);
   switch (control) {
     case "language":
-      return <SettingsLanguage />;
+      return <SettingsLanguage key={data.ownerId} initial={data.regional} />;
     case "measurement":
       return <MeasurementSettings owner={data.ownerId}/>;
     case "discovery":

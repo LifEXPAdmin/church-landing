@@ -13,6 +13,8 @@ import {
 } from "@prisma/client";
 import { activePublicAccount } from "./public-profile";
 import { defaultProfileStyle, validProfileStyle } from "./profile-style";
+import { isEligible } from "./portal-policy";
+import { recordDiscoveryControl } from "./retention-controls";
 import {
   isGoogleCredential,
   requireAccountCredential
@@ -219,6 +221,8 @@ export async function readAccountSession(
           role: true,
           bio: true,
           location: true,
+          dateFormat: true,
+          timeFormat: true,
           website: true,
           interests: true,
           emailVerifiedAt: true,
@@ -250,7 +254,8 @@ export async function readAccountSession(
 export async function updateAccountProfile(
   db: PrismaClient,
   token: unknown,
-  input: Record<string, unknown>
+  input: Record<string, unknown>,
+  expectedOwner?: string | null
 ) {
   const allowed = [
     "operation",
@@ -258,6 +263,8 @@ export async function updateAccountProfile(
     "role",
     "bio",
     "location",
+    "locationAudience",
+    "expectedLocationVersion",
     "website",
     "interests",
     "expectedVersion",
@@ -267,6 +274,13 @@ export async function updateAccountProfile(
     "introduction"
   ];
   if (Object.keys(input).some((key) => !allowed.includes(key)))
+    throw new AccountError("profile");
+  if (
+    input.locationAudience !== undefined &&
+    (!["ONLY_ME", "MEMBERS"].includes(String(input.locationAudience)) ||
+      !Number.isSafeInteger(input.expectedVersion) ||
+      !Number.isSafeInteger(input.expectedLocationVersion))
+  )
     throw new AccountError("profile");
   // Older clients may omit the choice. New edits share the existing version
   // check, and cannot turn a self-description into an authority grant.
@@ -325,13 +339,54 @@ export async function updateAccountProfile(
     }
   }
   const snapshot = await readAccountSession(db, token);
-  if (!snapshot) throw new AccountError("session");
+  if (!snapshot || (expectedOwner && expectedOwner !== snapshot.id))
+    throw new AccountError("session");
   return db.$transaction(async (tx) => {
     await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(730221, 2)`;
     await lockUser(tx, snapshot.id);
     const current = await readAccountSession(tx, token);
     if (!current || current.id !== snapshot.id)
       throw new AccountError("session");
+    const locationState = await tx.platformUser.findUniqueOrThrow({
+      where: { id: current.id },
+      select: {
+        location: true,
+        locationAudience: true,
+        locationVersion: true,
+        locationRecoveryRequired: true,
+        suspendedAt: true,
+        deactivatedAt: true,
+        emailVerifiedAt: true,
+        adultAcknowledgedAt: true,
+        adultPolicyVersion: true
+      }
+    });
+    const locationAudience =
+      input.locationAudience === undefined
+        ? locationState.locationAudience
+        : String(input.locationAudience);
+    if (
+      input.expectedLocationVersion !== undefined &&
+      input.expectedLocationVersion !== locationState.locationVersion
+    )
+      throw new AccountError("profile-conflict");
+    const locationChanged =
+      (location || null) !== locationState.location ||
+      locationAudience !== locationState.locationAudience;
+    if (
+      locationAudience === "MEMBERS" &&
+      !isEligible(locationState) &&
+      ((locationChanged && !!location) || input.locationAudience === "MEMBERS")
+    )
+      throw new AccountError("profile-disclosure");
+    // Restored records require an explicit versioned audience decision, even
+    // when an older client supplies location text through this same endpoint.
+    if (
+      locationState.locationRecoveryRequired &&
+      locationAudience === "MEMBERS" &&
+      input.locationAudience !== "MEMBERS"
+    )
+      throw new AccountError("profile-conflict");
     const presentation = await tx.profilePresentation.findUnique({
       where: { userId: current.id }
     });
@@ -360,6 +415,15 @@ export async function updateAccountProfile(
       create: { userId: current.id, ...style },
       update: { ...style, version: { increment: 1 } }
     });
+    if (locationChanged || locationState.locationRecoveryRequired) {
+      await recordDiscoveryControl(
+        tx,
+        "PROFILE_LOCATION",
+        current.id,
+        current.id,
+        locationState.locationVersion + 1
+      );
+    }
     return tx.platformUser.update({
       where: { id: current.id },
       data: {
@@ -369,6 +433,13 @@ export async function updateAccountProfile(
           : {}),
         bio: bio || null,
         location: location || null,
+        locationAudience,
+        ...(locationChanged || locationState.locationRecoveryRequired
+          ? {
+              locationVersion: { increment: 1 },
+              locationRecoveryRequired: false
+            }
+          : {}),
         website: website || null,
         interests
       },

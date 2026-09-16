@@ -1,4 +1,5 @@
 "use client";
+import { RegionalTime } from "@/components/platform/regional-presentation";
 import { MoreActions } from "./action-popover";
 import { AuthorAvatar } from "./author-avatar";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -284,7 +285,7 @@ export function CommentThread({
                 <span className="text-sm text-gc-muted">Edited</span>
               )}
               <time className="text-sm text-gc-muted" dateTime={row.createdAt}>
-                {new Date(row.createdAt).toLocaleDateString()}
+                {<RegionalTime value={row.createdAt} dateOnly />}
               </time>
               {owner && (
                 <span className="ml-auto self-start">

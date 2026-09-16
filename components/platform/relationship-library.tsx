@@ -1,4 +1,5 @@
 "use client";
+import { RegionalTime } from "@/components/platform/regional-presentation";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -230,7 +231,7 @@ export function RelationshipLibrary({
                             ? "Snoozed until "
                             : "Snooze ended "}
                           <time dateTime={expiry}>
-                            {new Date(expiry).toLocaleString()}
+                            {<RegionalTime value={expiry} />}
                           </time>
                         </p>
                       )}

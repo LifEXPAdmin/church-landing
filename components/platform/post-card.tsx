@@ -22,7 +22,8 @@ import { accountEntryHref } from "@/lib/platform/account-entry";
 import Link from "next/link";
 import { discoveryLanguageLabel } from "@/lib/platform/discovery-options";
 import { Heart, Globe, MessageCircle } from "lucide-react";
-import { formatDate, postTypeLabels } from "@/lib/platform/format";
+import { postTypeLabels } from "@/lib/platform/format";
+import { RegionalTime } from "./regional-presentation";
 import { PostParticipation } from "./post-participation";
 import { PostText } from "./post-text";
 import { PostContentNote } from "./post-content-note";
@@ -104,7 +105,7 @@ function PostCardContent({
             </Link>{" "}
             reposted ·{" "}
             <time dateTime={post.createdAt.toISOString()}>
-              {formatDate(post.createdAt)}
+              <RegionalTime value={post.createdAt} locale="en" options={{month: "short", day: "numeric", hour: "numeric", minute: "2-digit"}} />
             </time>
             {post.audience === "CHURCH" ? " · Church members" : ""}
           </span>
@@ -197,7 +198,7 @@ function PostCardContent({
             <>
               <div className="gc-post-meta">
                 <time dateTime={post.createdAt.toISOString()}>
-                  {formatDate(post.createdAt)}
+                  <RegionalTime value={post.createdAt} locale="en" options={{month: "short", day: "numeric", hour: "numeric", minute: "2-digit"}} />
                 </time>
                 <span>
                   <Globe aria-hidden="true" />

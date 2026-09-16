@@ -35,6 +35,7 @@ export type RetentionControlEntry = {
     | "TOPIC_ACCESS"
     | "POST_DISCOVERY"
     | "DISCOVERY_PREFERENCES"
+    | "PROFILE_LOCATION"
     | "NOTIFICATION_PREFERENCES"
     | "AUTHOR_BELL"
     | "PHOTO_TAG"
@@ -87,12 +88,15 @@ function validate(value: unknown): RetentionControlEntry {
     !Number.isSafeInteger(r.version) ||
     r.version < 1 ||
     r.policy !== policy ||
+    (r.kind === "PROFILE_LOCATION" &&
+      (r.sourceId !== r.targetId || r.operatorId !== r.targetId)) ||
     ![r.recordedAt, r.startedAt, r.reviewDueAt].every(date) ||
     (r.endedAt !== null && !date(r.endedAt)) ||
     !([
       "TOPIC_ACCESS",
       "POST_DISCOVERY",
       "DISCOVERY_PREFERENCES",
+      "PROFILE_LOCATION",
       "NOTIFICATION_PREFERENCES",
       "AUTHOR_BELL",
       "PHOTO_TAG",
@@ -395,6 +399,7 @@ export async function recordDiscoveryControl(
   kind:
     | "POST_DISCOVERY"
     | "DISCOVERY_PREFERENCES"
+    | "PROFILE_LOCATION"
     | "NOTIFICATION_PREFERENCES"
     | "AUTHOR_BELL"
     | "PHOTO_TAG"
@@ -1016,6 +1021,33 @@ export async function replayRetentionControls(
               });
             }
           }
+          await record(tx, entry);
+          await tx.retentionControl.updateMany({
+            where: { id: entry.id, journaledAt: null },
+            data: { journaledAt: new Date() }
+          });
+          continue;
+        }
+        if (entry.kind === "PROFILE_LOCATION") {
+          const changed = await tx.platformUser.updateMany({
+            where: {
+              id: entry.sourceId,
+              erasedAt: null,
+              locationVersion: { lt: entry.version }
+            },
+            data: {
+              location: null,
+              locationAudience: "ONLY_ME",
+              locationRecoveryRequired: true,
+              locationVersion: entry.version
+            }
+          });
+          if (changed.count)
+            await tx.profilePresentation.upsert({
+              where: { userId: entry.sourceId },
+              create: { userId: entry.sourceId, version: 1 },
+              update: { version: { increment: 1 } }
+            });
           await record(tx, entry);
           await tx.retentionControl.updateMany({
             where: { id: entry.id, journaledAt: null },

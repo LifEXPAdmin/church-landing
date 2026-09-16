@@ -1,3 +1,4 @@
+import { RegionalEventTime } from "./regional-presentation";
 import { PublicShareControls } from "./public-share-controls";
 import Link from "next/link";
 import { readPost } from "@/lib/platform/post-session";
@@ -8,7 +9,6 @@ import { getCurrentPlatformUser } from "@/lib/platform/session";
 import { readCalendarEvent } from "@/lib/platform/calendar-session";
 import { getPublicCalendarEvent } from "@/lib/platform/calendar-reads";
 import { calendarZone } from "@/lib/platform/calendar-time";
-import { eventWhen } from "@/lib/platform/calendar-view";
 import { accountEntryHref } from "@/lib/platform/account-entry";
 import { PlatformShell } from "./platform-shell";
 import { PortalCard, PortalHeading, portalLinkClass } from "./portal-ui";
@@ -102,7 +102,7 @@ export async function CalendarEventPage({
             </Link>
           )}
           <PortalCard title="Event details">
-            <p>{eventWhen(event, zone)}</p>
+            <p>{<RegionalEventTime event={event} timeZone={zone} />}</p>
             {!event.allDay && (
               <p className="text-sm text-gc-muted">
                 Viewing in {zone}. Event time zone: {event.timeZone}.

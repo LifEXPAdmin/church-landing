@@ -1,0 +1,139 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { eventWhen } from "../lib/platform/calendar-view";
+import {
+  defaultRegionalPreferences,
+  formatRegionalCalendarDate,
+  formatRegionalTimestamp,
+  regionalPresentation
+} from "../lib/platform/regional-format";
+
+test("regional date and time choices are independent and preserve the source instant and zone", () => {
+  const value = "2026-09-16T18:05:00Z";
+  const options = {
+    timeZone: "America/Chicago",
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit"
+  } as const;
+  assert.equal(
+    formatRegionalTimestamp(value, defaultRegionalPreferences, options),
+    new Intl.DateTimeFormat("en-US", options).format(new Date(value))
+  );
+  assert.equal(
+    formatRegionalTimestamp(
+      value,
+      { dateFormat: "DMY", timeFormat: "H24" },
+      options
+    ),
+    "16/09/2026, 13:05"
+  );
+  assert.equal(
+    formatRegionalTimestamp(
+      value,
+      { dateFormat: "MDY", timeFormat: "H12" },
+      options
+    ),
+    "09/16/2026, 1:05 PM"
+  );
+  assert.equal(
+    formatRegionalTimestamp(
+      value,
+      { dateFormat: "YMD", timeFormat: "H24" },
+      { ...options, timeZone: "Asia/Tokyo" }
+    ),
+    "2026-09-17, 03:05"
+  );
+  assert.equal(value, "2026-09-16T18:05:00Z");
+});
+
+test("source instants render both DST transitions without changing or guessing the local time", () => {
+  const options = {
+    timeZone: "America/Chicago",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZoneName: "short"
+  } as const;
+  const prefs = { dateFormat: "YMD", timeFormat: "H24" } as const;
+  assert.equal(
+    formatRegionalTimestamp("2026-03-08T07:30:00Z", prefs, options),
+    "2026-03-08, 01:30 CST"
+  );
+  assert.equal(
+    formatRegionalTimestamp("2026-03-08T08:30:00Z", prefs, options),
+    "2026-03-08, 03:30 CDT"
+  );
+  assert.equal(
+    formatRegionalTimestamp("2026-11-01T06:30:00Z", prefs, options),
+    "2026-11-01, 01:30 CDT"
+  );
+  assert.equal(
+    formatRegionalTimestamp("2026-11-01T07:30:00Z", prefs, options),
+    "2026-11-01, 01:30 CST"
+  );
+});
+
+test("calendar dates keep their day, validate leap dates, and do not silently normalize invalid source data", () => {
+  assert.equal(
+    formatRegionalCalendarDate("2028-02-29", {
+      dateFormat: "DMY",
+      timeFormat: "H24"
+    }),
+    "29/02/2028"
+  );
+  assert.equal(
+    formatRegionalCalendarDate("2026-11-01", defaultRegionalPreferences),
+    "2026-11-01"
+  );
+  for (const bad of [
+    "2026-02-29",
+    "2026-13-01",
+    "2026-02-30",
+    "",
+    "2026-01-01T00:00:00Z"
+  ])
+    assert.equal(
+      formatRegionalCalendarDate(bad, defaultRegionalPreferences),
+      "Date unavailable"
+    );
+  assert.equal(
+    formatRegionalTimestamp("invalid", defaultRegionalPreferences),
+    "Date unavailable"
+  );
+  assert.equal(
+    formatRegionalTimestamp(
+      "2026-09-16T00:00:00Z",
+      defaultRegionalPreferences,
+      { timeZone: "Not/A_Zone" }
+    ),
+    "Date unavailable"
+  );
+  assert.deepEqual(
+    regionalPresentation({ dateFormat: "unsupported", timeFormat: "unbuilt" }),
+    defaultRegionalPreferences
+  );
+});
+
+test("all-day event ranges keep their calendar days in every viewer zone", () => {
+  const event = {
+    allDay: true,
+    startLocal: "2028-02-29",
+    endLocal: "2028-03-02",
+    startAt: "2028-02-29T06:00:00Z",
+    endAt: "2028-03-02T06:00:00Z"
+  };
+  for (const zone of ["America/Chicago", "Asia/Tokyo", "Pacific/Honolulu"])
+    assert.equal(
+      eventWhen(event, zone, { dateFormat: "DMY", timeFormat: "H24" }),
+      "All day · 29/02/2028 through 01/03/2028"
+    );
+  assert.equal(
+    eventWhen({ ...event, endLocal: "2028-02-30" }, "UTC"),
+    "Date unavailable"
+  );
+});

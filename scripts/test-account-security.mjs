@@ -289,7 +289,7 @@ try {
   const fingerprint = (table, key, url = database, beforeChurch = false) => {
     const row =
       beforeChurch && table === "PlatformUser"
-        ? `to_jsonb(t) - ARRAY['deactivatedAt','suspendedAt','adultAcknowledgedAt','adultPolicyVersion','portalVersion','deletionRequestedAt','erasedAt','pendingFounderWelcomeAt','metricCreationMethod','metricExcluded']`
+        ? `to_jsonb(t) - ARRAY['deactivatedAt','suspendedAt','adultAcknowledgedAt','adultPolicyVersion','portalVersion','deletionRequestedAt','erasedAt','pendingFounderWelcomeAt','metricCreationMethod','metricExcluded','dateFormat','timeFormat','regionalVersion','locationAudience','locationVersion','locationRecoveryRequired']`
         : beforeChurch && table === "PlatformPostLike"
           ? "to_jsonb(t) - 'active' - 'version' - 'firstLikedAt'"
           : beforeChurch && table === "PlatformPostComment"
@@ -390,7 +390,7 @@ try {
     fingerprint(table, key, database, true)
   );
   const metricSources = [
-    ["PlatformUser", ["metricCreationMethod", "metricExcluded"]],
+    ["PlatformUser", ["metricCreationMethod", "metricExcluded", "dateFormat", "timeFormat", "regionalVersion", "locationAudience", "locationVersion", "locationRecoveryRequired"]],
     ["SocialRelationship", ["followingSince"]],
     ["TopicMembership", ["followingSince"]],
     ["CalendarResponse", ["goingSince"]],
@@ -868,6 +868,14 @@ try {
       console.log(
         "Notification upgrade preserves all original fields and creates no author consent or delivery work."
       );
+    } else if (name === "20260916020000_regional_preferences_and_profile_location") {
+      const before = fingerprint("PlatformUser", "id");
+      psql(["-f", `prisma/migrations/${name}/migration.sql`]);
+      const after = psql(["-Atc", `SELECT md5(COALESCE(jsonb_agg(to_jsonb(t) - ARRAY['dateFormat','timeFormat','regionalVersion','locationAudience','locationVersion','locationRecoveryRequired'] ORDER BY t.id, to_jsonb(t)::text)::text, '[]')) FROM "PlatformUser" t`]);
+      if (before !== after) throw Error("Regional migration changed an original account field");
+      if (psql(["-Atc", `SELECT count(*) FROM "PlatformUser" WHERE "dateFormat"<>'DEFAULT' OR "timeFormat"<>'DEFAULT' OR "regionalVersion"<>0 OR "locationAudience"<>'MEMBERS' OR "locationVersion"<>0 OR "locationRecoveryRequired"`]).trim() !== "0")
+        throw Error("Regional migration changed existing presentation or location disclosure");
+      console.log("Regional upgrade preserved every original account field and existing location audience.");
     } else psql(["-f", `prisma/migrations/${name}/migration.sql`]);
   }
   if (beforeMetrics) {

@@ -1,3 +1,4 @@
+import { RegionalTime } from "@/components/platform/regional-presentation";
 import Link from "next/link";
 import {
   supportCategories,
@@ -10,14 +11,14 @@ import { PortalCard, PortalEmpty, portalLinkClass } from "./portal-ui";
 export function SupportTime({ value }: { value: string }) {
   return (
     <time dateTime={value}>
-      {new Date(value).toLocaleString("en-US", {
+      {<RegionalTime value={value} locale={"en-US"} options={{
         timeZone: "UTC",
         month: "short",
         day: "numeric",
         year: "numeric",
         hour: "numeric",
         minute: "2-digit"
-      })}{" "}
+      }} />}{" "}
       UTC
     </time>
   );

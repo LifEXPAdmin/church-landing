@@ -52,6 +52,8 @@ export function getMemberProfile(
       where: { username, ...socialUserWhere(context) },
       select: {
         ...publicProfileSelect,
+        locationAudience: true,
+        locationRecoveryRequired: true,
         socialPreferences: {
           select: { showRelationships: true, profilePinPostId: true }
         },
@@ -122,12 +124,22 @@ export function getMemberProfile(
       },
       select: { id: true }
     }));
-    const { socialPreferences, ...visibleProfile } = profile;
+    const {
+      socialPreferences,
+      locationAudience,
+      locationRecoveryRequired,
+      ...visibleProfile
+    } = profile;
     const relationshipsVisible =
       (profile.id === context.actorId && !memberPreview) ||
       socialPreferences?.showRelationships !== false;
     return {
       ...visibleProfile,
+      location:
+        (profile.id === context.actorId && !memberPreview) ||
+        (locationAudience === "MEMBERS" && !locationRecoveryRequired)
+          ? profile.location
+          : null,
       // Never serialize a private participation choice to another member or
       // a member preview. The owner edits it through getProfileEditor.
       role:
@@ -157,11 +169,15 @@ export function getProfileEditor(db: PrismaClient, token: unknown) {
       where: { id: context.actorId },
       select: {
         ...publicProfileSelect,
+        locationAudience: true,
+        locationVersion: true,
+        locationRecoveryRequired: true,
         presentation: { select: profilePresentationSelect }
       }
     });
     return {
       ...profile,
+      canShareLocation: !!context.eligible,
       presentation: profile.presentation ?? defaultProfileStyle,
       imagesAvailable: imagesAvailable(),
       photoLibraryEnabled: photoLibraryEnabled(),

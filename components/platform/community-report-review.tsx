@@ -1,4 +1,5 @@
 "use client";
+import { RegionalTime } from "@/components/platform/regional-presentation";
 import Link from "next/link";
 import { FeedbackImagePreview } from "./feedback-attachment-images";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -325,7 +326,7 @@ export function CommunityReportReview({
                               : "Platform scope"}
                         </span>
                         <time dateTime={row.createdAt}>
-                          {new Date(row.createdAt).toLocaleString()}
+                          {<RegionalTime value={row.createdAt} />}
                         </time>
                       </Link>
                     </li>
@@ -711,7 +712,7 @@ export function CommunityReportReview({
                           {row.reason}
                         </p>
                         <time className="text-sm" dateTime={row.createdAt}>
-                          {new Date(row.createdAt).toLocaleString()}
+                          {<RegionalTime value={row.createdAt} />}
                         </time>
                       </li>
                     ))}

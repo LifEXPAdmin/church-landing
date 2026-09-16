@@ -9,6 +9,7 @@ import { photoLibraryEnabled } from "./personal-photo-policy";
 import { isEligible, PortalError } from "./portal-policy";
 import { accountSignInMethods } from "./google-accounts";
 import { socialPrivacyIn } from "./social-privacy";
+import { regionalSelect, regionalState } from "./regional-preferences";
 
 /** Private settings summaries; mutations remain in their owning services. */
 export function readSettingsContext(
@@ -29,6 +30,7 @@ export function readSettingsContext(
         where: { id: session.userId },
         select: {
           id: true,
+          ...regionalSelect,
           name: true,
           username: true,
           email: true,
@@ -55,6 +57,7 @@ export function readSettingsContext(
       const at = user.email.lastIndexOf("@");
       return {
         ownerId: user.id,
+        regional: regionalState(user),
         name: user.name,
         username: user.username,
         emailLabel:

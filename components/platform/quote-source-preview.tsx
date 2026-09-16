@@ -1,4 +1,5 @@
 "use client";
+import { RegionalTime } from "@/components/platform/regional-presentation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { socialRequest } from "@/lib/platform/social-client";
@@ -28,11 +29,11 @@ export function SourcePreview({
       </Link>
       <p className="text-sm text-gc-muted">
         <time dateTime={new Date(source.createdAt).toISOString()}>
-          {new Date(source.createdAt).toLocaleString("en", {
+          {<RegionalTime value={source.createdAt} locale={"en"} options={{
             timeZone: "UTC",
             dateStyle: "medium",
             timeStyle: "short"
-          })}
+          }} />}
         </time>
         {" UTC"}
         {source.editedAt ? " · Edited" : ""} · Public

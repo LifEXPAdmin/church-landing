@@ -1,4 +1,5 @@
 "use client";
+import { RegionalTime } from "@/components/platform/regional-presentation";
 /* eslint-disable @next/next/no-img-element -- Canonical permissioned images bypass shared optimization. */
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -488,7 +489,7 @@ export function PhotoTagWorkspace({
                 )}
                 <p className="text-sm text-gc-muted">
                   <time dateTime={tag.createdAt}>
-                    {new Date(tag.createdAt).toLocaleString()}
+                    {<RegionalTime value={tag.createdAt} />}
                   </time>
                 </p>
                 <div className="flex flex-wrap gap-3">

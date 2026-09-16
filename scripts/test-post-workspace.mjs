@@ -104,11 +104,13 @@ try {
     "-c",
     `INSERT INTO "PlatformUser" (id,email,username,name,"passwordHash",role,"updatedAt") VALUES ('fixture-upgrade','fixture-upgrade@example.test','fixture_upgrade','Fictional retained account','not-a-login-hash','BELIEVER',CURRENT_TIMESTAMP); INSERT INTO "PlatformUser" (id,email,username,name,role,"updatedAt") VALUES ('fixture-upgrade-second','fixture-upgrade-second@example.test','fixture_second','Fictional second account','BELIEVER',CURRENT_TIMESTAMP); INSERT INTO "PlatformFollow" (id,"followerId","followingId") VALUES ('fixture-retained-follow','fixture-upgrade','fixture-upgrade-second'); INSERT INTO "PlatformPost" (id,"authorId",content,"updatedAt") VALUES ('fixture-retained-post','fixture-upgrade','Retained published content',CURRENT_TIMESTAMP); INSERT INTO "PlatformPostComment" (id,"postId","authorId",content) VALUES ('fixture-retained-comment','fixture-retained-post','fixture-upgrade-second','Retained legacy comment');`
   ]);
+  // Freeze the existing account projection before the additive migration.
+  const retainedUserColumns = sql(["-Atc", "SELECT string_agg(quote_ident(column_name), ',' ORDER BY ordinal_position) FROM information_schema.columns WHERE table_schema='public' AND table_name='PlatformUser'"]).trim();
   const fingerprint = (url) =>
     sql(
       [
         "-Atc",
-        `SELECT md5(string_agg(row::text, '' ORDER BY row::text)) FROM (SELECT to_jsonb(t) AS row FROM "PlatformUser" t WHERE id='fixture-upgrade' UNION ALL SELECT to_jsonb(t) - ARRAY['contentNote','safeExcerpt','topicCommunityId','discoveryLanguage','discoveryDenomination','discoveryCountry','discoveryPlaceId','discoveryRegion','discoveryLatitude','discoveryLongitude','discoveryVersion'] FROM "PlatformPost" t WHERE id='fixture-retained-post' UNION ALL SELECT to_jsonb(t) - ARRAY['parentId','rootId','version','editedAt','deletedAt','authorChurchId','topicCommunityId'] FROM "PlatformPostComment" t WHERE id='fixture-retained-comment' UNION ALL SELECT to_jsonb(t) FROM "PlatformFollow" t WHERE id='fixture-retained-follow') t`
+        `SELECT md5(string_agg(row::text, '' ORDER BY row::text)) FROM (SELECT to_jsonb(t) AS row FROM (SELECT ${retainedUserColumns} FROM "PlatformUser") t WHERE id='fixture-upgrade' UNION ALL SELECT to_jsonb(t) - ARRAY['contentNote','safeExcerpt','topicCommunityId','discoveryLanguage','discoveryDenomination','discoveryCountry','discoveryPlaceId','discoveryRegion','discoveryLatitude','discoveryLongitude','discoveryVersion'] FROM "PlatformPost" t WHERE id='fixture-retained-post' UNION ALL SELECT to_jsonb(t) - ARRAY['parentId','rootId','version','editedAt','deletedAt','authorChurchId','topicCommunityId'] FROM "PlatformPostComment" t WHERE id='fixture-retained-comment' UNION ALL SELECT to_jsonb(t) FROM "PlatformFollow" t WHERE id='fixture-retained-follow') t`
       ],
       url
     );

@@ -1,4 +1,5 @@
 "use client";
+import { RegionalTime } from "@/components/platform/regional-presentation";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { socialRequest } from "@/lib/platform/social-client";
@@ -123,7 +124,7 @@ export function CommunityReportReceipts({
           <p>
             Submitted{" "}
             <time dateTime={receipt.createdAt}>
-              {new Date(receipt.createdAt).toLocaleString()}
+              {<RegionalTime value={receipt.createdAt} />}
             </time>
           </p>
           <p className="break-all text-sm">Reference: {receipt.id}</p>
@@ -165,7 +166,7 @@ export function CommunityReportReceipts({
                     </strong>
                     <span>
                       {communityReportStatusLabels[row.status]} ·{" "}
-                      {new Date(row.createdAt).toLocaleDateString()}
+                      {<RegionalTime value={row.createdAt} dateOnly />}
                     </span>
                   </Link>
                 </li>

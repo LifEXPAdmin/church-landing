@@ -1,4 +1,5 @@
 "use client";
+import { RegionalTime } from "@/components/platform/regional-presentation";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { socialRequest, SocialClientError } from "@/lib/platform/social-client";
@@ -8,7 +9,7 @@ type Result = Awaited<ReturnType<typeof readFounderAnnouncements>>;
 type Announcement = NonNullable<Result["announcement"]>;
 type Member = NonNullable<Result["audience"]>[number];
 const endpoint = "/api/platform/founder-announcements";
-const stamp = (date: string) => new Date(date).toLocaleString();
+const stamp = (date: string) => <RegionalTime value={date} />;
 const sameIds = (a: string[], b: string[]) =>
   a.length === b.length && a.every((id) => b.includes(id));
 export function FounderAnnouncements({ owner }: { owner: string }) {

@@ -1,4 +1,5 @@
 "use client";
+import { RegionalTime } from "./regional-presentation";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -28,10 +29,6 @@ const labels: Record<ActivityCategory, string> = {
   commitments: "Commitments"
 };
 const endpoint = "/api/platform/activity";
-const date = new Intl.DateTimeFormat(undefined, {
-  dateStyle: "medium",
-  timeStyle: "short"
-});
 export function ActivityWorkspace({
   owner,
   category,
@@ -362,7 +359,7 @@ export function ActivityWorkspace({
                       {item.count} update{item.count === 1 ? "" : "s"} ·{" "}
                       {item.unread ? `${item.unread} unread` : "Read"} ·{" "}
                       <time dateTime={item.createdAt}>
-                        {date.format(new Date(item.createdAt))}
+                        <RegionalTime value={item.createdAt} options={{dateStyle: "medium", timeStyle: "short"}} />
                       </time>
                     </p>
                     <div className="flex flex-wrap gap-3">
