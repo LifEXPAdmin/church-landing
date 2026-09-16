@@ -36,6 +36,25 @@ const stampOptions: Intl.DateTimeFormatOptions = {
   timeZone: "UTC"
 };
 
+// Formatters contain presentation rules only, never dates or account data.
+// Bound the process/browser cache, and do not retain an implicit system zone.
+const formatters = new Map<string, Intl.DateTimeFormat>();
+function dateFormatter(locale: string, options: Intl.DateTimeFormatOptions) {
+  if (!options.timeZone) return new Intl.DateTimeFormat(locale, options);
+  const key = JSON.stringify([
+    locale,
+    Object.entries(options)
+      .filter(([, value]) => value !== undefined)
+      .sort(([a], [b]) => a.localeCompare(b))
+  ]);
+  const saved = formatters.get(key);
+  if (saved) return saved;
+  const formatter = new Intl.DateTimeFormat(locale, options);
+  if (formatters.size >= 64) formatters.delete(formatters.keys().next().value!);
+  formatters.set(key, formatter);
+  return formatter;
+}
+
 /** The caller owns the zone and source instant; preferences affect presentation only. */
 export function formatRegionalTimestamp(
   value: string | number | Date,
@@ -54,8 +73,8 @@ export function formatRegionalTimestamp(
   }
   try {
     if (prefs.dateFormat === "DEFAULT" || !(options.day || options.dateStyle))
-      return new Intl.DateTimeFormat(locale, adjusted).format(date);
-    const parts = new Intl.DateTimeFormat("en-US", {
+      return dateFormatter(locale, adjusted).format(date);
+    const parts = dateFormatter("en-US", {
       timeZone: options.timeZone,
       year: "numeric",
       month: "2-digit",
@@ -73,7 +92,7 @@ export function formatRegionalTimestamp(
           ? `${day}/${month}/${year}`
           : `${year}-${month}-${day}`;
     const weekday = options.weekday
-      ? new Intl.DateTimeFormat(locale, {
+      ? dateFormatter(locale, {
           timeZone: options.timeZone,
           weekday: options.weekday
         }).format(date) + ", "
@@ -95,7 +114,7 @@ export function formatRegionalTimestamp(
         ? {}
         : { hourCycle: adjusted.hourCycle })
     };
-    return `${weekday}${numeric}, ${new Intl.DateTimeFormat(locale, timeOptions).format(date)}`;
+    return `${weekday}${numeric}, ${dateFormatter(locale, timeOptions).format(date)}`;
   } catch {
     // Invalid source dates/zones must not silently become a different event time.
     return "Date unavailable";
@@ -139,7 +158,7 @@ export function formatRegionalWallTime(
   const clock =
     time === "DEFAULT"
       ? `${match[2]}:${match[3]}`
-      : new Intl.DateTimeFormat("en-US", {
+      : dateFormatter("en-US", {
           timeZone: "UTC",
           hour: time === "H12" ? "numeric" : "2-digit",
           minute: "2-digit",

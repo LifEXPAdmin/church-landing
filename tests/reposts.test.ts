@@ -26,6 +26,7 @@ import { handlePostWorkspaceRequest } from "../lib/platform/post-workspace-bound
 import { handleRepostRequest } from "../lib/platform/repost-boundary";
 import { allowWorkspaceAttempt } from "../lib/platform/account-limits";
 import { accountConfig } from "../lib/platform/account-config";
+import { readFeed } from "../lib/platform/feed-reads";
 import { communityCommand } from "./community-fixture";
 import {
   postWorkspaceCommand as workspace,
@@ -101,7 +102,25 @@ test("plain repost is one attributed reference across concurrent exact retries, 
   assert.equal(row.repostSourceId, source.id);
   assert.equal(row.repostKind, "PLAIN");
   assert.equal(await db.mediaAsset.count({ where: { postId: row.id } }), 0);
+  await db.platformPostComment.create({
+    data: {
+      postId: source.id,
+      authorId: sourceAuthor.id,
+      content: "Current discussion remains available from the source"
+    }
+  });
   const view = await getPost(db, actor.token, row.id);
+  assert.equal(view?.repost?.source?.comments.length, 1);
+  for (const mode of ["latest", "public"] as const) {
+    const feed = await readFeed(db, actor.token, { mode });
+    const card = feed.posts.find((post) => post.id === row.id);
+    assert.ok(card?.repost?.source);
+    assert.deepEqual(card.repost.source, {
+      ...view!.repost!.source,
+      comments: []
+    });
+    assert.equal(card.repost.source.commentCount, 1);
+  }
   assert.equal(view?.author.id, actor.id);
   assert.equal(view?.repost?.source?.author.id, sourceAuthor.id);
   assert.equal(

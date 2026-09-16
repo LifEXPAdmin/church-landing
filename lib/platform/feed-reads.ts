@@ -539,7 +539,9 @@ export function readFeed(
         scope,
         ownerId: context.actorId,
         preferenceVersion: preference?.feedVersion ?? 0,
-        posts: await hydratePostPage(tx, context, ids, now),
+        posts: await hydratePostPage(tx, context, ids, now, {
+          commentPreviews: false
+        }),
         notice,
         pageCursor: cursors.encode(
           mode === "weekly" || mode === "trending"

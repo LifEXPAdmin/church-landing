@@ -757,6 +757,14 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "feed-rendering-efficiency", version: "2026.09.16.8", date: "2026-09-16",
+    summary: "Feed pages do less repeated work while keeping current conversations and your chosen date formats.",
+    added: [],
+    improved: ["Feed cards load current discussions when opened and retain current visible comment counts.", "Repeated date labels reuse formatting rules while preserving your date order, time format and the source time zone."],
+    fixed: [],
+    featureIds: ["discovery-feeds", "language-location-preferences"]
+  },
+  {
     id: "optional-device-area-suggestions", version: "2026.09.16.7", date: "2026-09-16",
     summary: "Optionally use this device once to suggest a private discovery area.",
     added: ["Eligible adults can request approximate town suggestions, choose an area and save it separately."],

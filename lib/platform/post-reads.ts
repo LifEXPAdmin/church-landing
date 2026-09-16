@@ -105,9 +105,14 @@ function include(
 type PostRow = Prisma.PlatformPostGetPayload<{
   include: ReturnType<typeof include>;
 }>;
-async function pageInclude(tx: PostTx, context: PostContext, ids: string[]) {
-  const selection = include(context, ids);
-  if (ids.length > 1) {
+async function pageInclude(
+  tx: PostTx,
+  context: PostContext,
+  ids: string[],
+  commentPreviews = true
+) {
+  const selection = include(context, ids, commentPreviews ? 6 : 0);
+  if (commentPreviews && ids.length > 1) {
     const previews = await commentPreviewIds(tx, context, ids, 6);
     selection.comments.where.AND.push({ id: { in: previews } });
   }
@@ -208,7 +213,8 @@ async function projectRows(
   tx: PostTx,
   rows: PostRow[],
   context: PostContext,
-  now: Date
+  now: Date,
+  commentPreviews = true
 ): Promise<PostView[]> {
   const ids = [
     ...new Set(
@@ -218,7 +224,7 @@ async function projectRows(
   const sources = ids.length
     ? await tx.platformPost.findMany({
         where: { AND: [{ id: { in: ids } }, repostSourceWhere(context, now)] },
-        include: await pageInclude(tx, context, ids)
+        include: await pageInclude(tx, context, ids, commentPreviews)
       })
     : [];
   // A personal source blocking the original acting account also revokes the
@@ -293,14 +299,18 @@ export async function hydratePostPage(
   tx: PostTx,
   context: PostContext,
   ids: string[],
-  now = new Date()
+  now = new Date(),
+  options: { commentPreviews?: boolean } = {}
 ) {
   if (!ids.length) return [];
+  // Feed cards open the current discussion separately. They still need exact,
+  // permission-filtered counts, but never display these legacy preview rows.
+  const commentPreviews = options.commentPreviews !== false;
   const rows = await tx.platformPost.findMany({
     where: { AND: [{ id: { in: ids } }, postReadableWhere(context, now)] },
-    include: await pageInclude(tx, context, ids)
+    include: await pageInclude(tx, context, ids, commentPreviews)
   });
-  const views = await projectRows(tx, rows, context, now);
+  const views = await projectRows(tx, rows, context, now, commentPreviews);
   const byId = new Map(views.map((view) => [view.id, view]));
   return ids.flatMap((id) => (byId.has(id) ? [byId.get(id)!] : []));
 }

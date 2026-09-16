@@ -379,7 +379,9 @@ export async function readDiscoveryFeedIn(
     : [];
   return {
     feedKey: keys.filterKey,
-    posts: await hydratePostPage(tx, context, ids, now),
+    posts: await hydratePostPage(tx, context, ids, now, {
+      commentPreviews: false
+    }),
     notice,
     pageCursor: cursors.encode({ ...cursor, page: ids }),
     nextCursor: next,

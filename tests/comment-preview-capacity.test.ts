@@ -6,6 +6,7 @@ import { assertPortalTestDatabase } from "./seed-portal";
 import { seedParticipation } from "./seed-post-participation";
 import { postCommand } from "../lib/platform/post-commands";
 import { listPosts } from "../lib/platform/post-reads";
+import { readFeed } from "../lib/platform/feed-reads";
 import { withPostRead } from "../lib/platform/post-access";
 import {
   commentPreviewIds,
@@ -88,6 +89,15 @@ test("dense multi-post previews stay bounded and match current comment visibilit
     );
     assert.ok(row.commentCount > 6);
   }
+  for (const mode of ["latest", "public"] as const) {
+    const feed = await readFeed(db, f.lee.token, { mode });
+    for (const postId of posts) {
+      const row = feed.posts.find((post) => post.id === postId);
+      const original = page.find((post) => post.id === postId)!;
+      assert.ok(row, "Every authorized post remains in the feed");
+      assert.deepEqual(row, { ...original, comments: [] });
+    }
+  }
   // Later policy changes are re-evaluated; no cross-request preview cache exists.
   await db.socialRelationship.create({
     data: { ownerId: f.lee.id, targetUserId: f.ada.id, blocked: true }
@@ -98,4 +108,12 @@ test("dense multi-post previews stay bounded and match current comment visibilit
       post.comments.every((c) => c.author.id !== f.ada.id)
     )
   );
+  const afterBlockFeed = await readFeed(db, f.lee.token, { mode: "latest" });
+  for (const postId of posts) {
+    const original = afterBlock.find((post) => post.id === postId)!;
+    assert.deepEqual(
+      afterBlockFeed.posts.find((post) => post.id === postId),
+      { ...original, comments: [] }
+    );
+  }
 });

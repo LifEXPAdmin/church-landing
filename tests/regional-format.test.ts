@@ -165,3 +165,60 @@ test("source wall-time labels preserve their date and zone boundary without reso
   ])
     assert.equal(formatRegionalWallTime(value, prefs), "Date unavailable");
 });
+
+test("repeated presentation keeps distinct locales, options and source zones after bounded formatter reuse", () => {
+  const value = new Date("2026-11-01T06:30:45.123Z");
+  const zones = ["UTC", ...Intl.supportedValuesOf("timeZone").slice(0, 80)];
+  for (const locale of ["en-US", "en-GB", "fr-FR"]) {
+    for (const timeZone of zones) {
+      for (const hourCycle of ["h12", "h23"] as const) {
+        const options = {
+          timeZone,
+          dateStyle: "full",
+          timeStyle: "long",
+          hourCycle
+        } as const;
+        const expected = new Intl.DateTimeFormat(locale, options).format(value);
+        for (const instant of [value, new Date(+value + 86400000), value])
+          assert.equal(
+            formatRegionalTimestamp(
+              instant,
+              defaultRegionalPreferences,
+              options,
+              locale
+            ),
+            instant === value
+              ? expected
+              : new Intl.DateTimeFormat(locale, options).format(instant)
+          );
+      }
+    }
+  }
+  const options = { timeZone: "UTC", hour: "numeric" } as const;
+  assert.equal(
+    formatRegionalTimestamp(value, defaultRegionalPreferences, options),
+    formatRegionalTimestamp(value, defaultRegionalPreferences, {
+      hour: "numeric",
+      timeZone: "UTC",
+      minute: undefined
+    })
+  );
+});
+
+test("implicit system zones remain current between calls", () => {
+  const original = process.env.TZ;
+  try {
+    const date = new Date("2026-09-16T18:05:00Z");
+    for (const timeZone of ["UTC", "America/Chicago", "Asia/Tokyo", "UTC"]) {
+      process.env.TZ = timeZone;
+      const options = { dateStyle: "full", timeStyle: "long" } as const;
+      assert.equal(
+        formatRegionalTimestamp(date, defaultRegionalPreferences, options),
+        new Intl.DateTimeFormat("en-US", options).format(date)
+      );
+    }
+  } finally {
+    if (original === undefined) delete process.env.TZ;
+    else process.env.TZ = original;
+  }
+});
