@@ -15,7 +15,10 @@ import {
 import { metricSources } from "../lib/platform/metric-sources";
 
 const db = new PrismaClient();
-before(() => assertPortalTestDatabase(db));
+before(async () => {
+  await assertPortalTestDatabase(db);
+  process.env.PLATFORM_MEASUREMENT_ENABLED = "true";
+});
 after(() => db.$disconnect());
 
 test("aggregate adoption uses all six canonical sources, excludes prayer and reposts, and rechecks current visibility and withdrawal", async () => {

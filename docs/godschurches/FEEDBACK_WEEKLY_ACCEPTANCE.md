@@ -25,7 +25,7 @@ Activity/comment/notification checks pass. No runtime guard was changed. Preserv
 the failed gate and rerun the entire fresh-fixture gate before publication.
 
 The second fresh-fixture gate passed the corrected Activity integration and
-completed the upgrade, restore, both builds, actual HTTPS restart and 100 fully
+completed the upgrade, restore, both builds, actual HTTPS restart and 99 fully
 passing distinct files (697 checks plus two expected skips). The next ideas
 suite passed ten scenarios but exposed one fixture dependency: public-idea
 reporting relied on an inherited reporting-enable flag. Its fixture now sets
@@ -33,9 +33,18 @@ the reporting configuration explicitly. The corrected scenario also proves
 disabled intake creates no report, then accepts the same request once enabled;
 it passes with inherited feedback/reporting/measurement flags removed. No
 application source changed. Retain the successful stages and run the corrected
-suite plus the 62 remaining discovered files against a rebuilt production
+suite plus the 63 remaining discovered files against a rebuilt production
 server on the same isolated database. This is staged coverage, not an
 uninterrupted final gate; publication remains pending.
+
+The first continuation passes 32 additional files and 178 checks, including all
+feedback suites, bringing accepted staged coverage to 131 distinct files and
+875 checks plus two expected skips. It stops at the older measurement-source
+fixture, which also relied on inherited feature configuration. The fixture now
+explicitly enables measurement only after asserting the isolated database; its
+focused check passes with inherited feature flags removed. No application guard
+changed. Preserve this receipt and complete the remaining 32 files on the same
+isolated database. Failed attempts remain separate from accepted check totals.
 
 ## Implemented behavior
 

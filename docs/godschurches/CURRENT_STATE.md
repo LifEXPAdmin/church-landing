@@ -1,13 +1,23 @@
+## Feedback measurement-fixture continuation — September 16, 2026 UTC
+
+The staged regression now covers 131 distinct files and 875 passing checks, with
+two expected disabled-delivery skips. The continuation passed all feedback suites
+and then found another inherited configuration dependency in the older canonical
+measurement-source fixture. That fixture now explicitly enables measurement after
+asserting its isolated database; its focused check passes with inherited feature
+flags removed. Runtime behavior is unchanged. Preserve completed stages and run
+the remaining 32 files, starting with this corrected fixture, before publication.
+
 ## Feedback regression continuation — September 16, 2026 UTC
 
 Feature 31 remains unreleased. The fresh gate passes upgrade/restore, development
-and production builds, HTTPS restart and 100 distinct files (697 checks plus two
+and production builds, HTTPS restart and 99 distinct files (697 checks plus two
 expected skips), including the corrected Activity categories. The next suite
 found an inherited reporting-flag dependency in the idea-report fixture. The
 self-contained test now verifies disabled intake stores nothing and the same
 request succeeds after enabling; the focused check passes. Application code is
 unchanged. Retain those successful stages and complete the corrected suite plus
-62 remaining files on the preserved isolated fixture before publication. All 35
+63 remaining files on the preserved isolated fixture before publication. All 35
 final browser groups and the protected production-copy upgrade remain valid.
 
 ## Complete feedback verification checkpoint — September 16, 2026 UTC
