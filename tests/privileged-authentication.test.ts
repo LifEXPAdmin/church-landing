@@ -212,6 +212,23 @@ test("private Support and coordinator shares stay closed before a challenge; the
   }
 });
 
+test("a topic-only manager receives a usable authenticator challenge before privileged navigation", async () => {
+  process.env.PRIVILEGED_MFA_MODE = "off";
+  const actor = await createPortalActor(db, "mfatopic");
+  const slug = "mfa-topic-" + randomUUID();
+  await topicCommand(db, actor.token, { operation: "create", mutationId: randomUUID(),
+    name: "Fictional MFA topic-only manager " + slug.slice(-8), slug,
+    description: "Fictional isolated topic", rules: "Respect others and keep private data private.", acceptedRules: true });
+  process.env.PRIVILEGED_MFA_MODE = "enforce";
+  await assert.rejects(readAdminNavigation(db, actor.token), /authenticator/);
+  const factor = await enrolled(actor);
+  await command(db, actor.token, { operation: "mfa-challenge", requestKey: randomUUID(), expectedVersion: factor.version,
+    purpose: "privileged-work", code: authenticatorTotp(factor.secret, factor.counter) }, undefined);
+  const navigation = await readAdminNavigation(db, actor.token);
+  assert.equal(navigation.topics.length, 1);
+  assert.equal(navigation.capabilities.length, 0);
+});
+
 test("Google sign-in and password recovery issue ordinary sessions without replacing or satisfying the enrolled factor", async () => {
   process.env.PRIVILEGED_MFA_MODE = "enforce";
   const actor = await createPortalActor(db, "mfamethod");

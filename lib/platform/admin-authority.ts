@@ -54,6 +54,7 @@ export async function adminAuthority(tx: AdminTx, userId: string) {
   const churches = candidate.church
     ? await effectiveChurchGrants(tx, userId)
     : [];
+  await requirePrivilegedAuthentication(tx, userId);
   const context =
     candidate.church || candidate.topic ? await postContext(tx, userId) : null;
   const reports = {
@@ -93,7 +94,6 @@ export async function adminAuthority(tx: AdminTx, userId: string) {
     capabilities.has("REVIEW_CHURCH_CLAIMS") || !!claimChurches.length;
   const canQueue = !!respond || !!assign || reportReviewer || canClaims;
   if (!canQueue && !grants.length) throw adminDenied();
-  await requirePrivilegedAuthentication(tx, userId);
   const sections: AdminNavigation["sections"] = [
     { key: "overview", label: "Overview", href: "/platform/admin" }
   ];

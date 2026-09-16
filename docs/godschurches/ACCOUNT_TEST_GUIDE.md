@@ -6,6 +6,25 @@ file under `tests` and `lib` and runs it in the isolated HTTPS fixture. Its fina
 coverage count must include all discovered files. A diagnostic continuation after
 a failure is useful evidence but does not replace a passing complete gate.
 
+## Privileged authenticator verification
+
+`tests/privileged-authentication.test.ts` exercises staged enrollment, current
+session and role binding, one-use sensitive confirmation, another sign-in method,
+primary-password recovery, rejected codes, retained ordinary access and essential
+notice failure. The existing authenticator vector tests and actual protected
+restore test remain part of the same feature gate.
+
+`scripts/qa-privileged-authenticator-browser.mjs` requires an isolated built HTTPS
+fixture at `mfa-fixture.example.test`, mapped only to loopback. Its provider
+transport must be a fictional local stub with external sends blocked; no real
+provider key or production data belongs in that fixture. The browser checks real
+enrollment, QR decoding, exact lost-response retry, private recovery-code handling,
+account-switch concealment, retained forms across a separate confirmation tab,
+replacement and enlarged phone navigation. Pass the preview's artifact directory;
+use its local certificate through `NODE_EXTRA_CA_CERTS` for the lost-response
+transport check. Only screenshots without keys, codes or passwords are retained.
+These tests do not enroll a real adult or establish delivery to a real inbox.
+
 ## Google foundation test scope
 
 The Google account service and interface are implemented but Google stays hidden
