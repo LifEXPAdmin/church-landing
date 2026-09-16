@@ -1,3 +1,4 @@
+import { privilegedMode } from "./privileged-auth-policy";
 import {
   OperatorCapability,
   type PrismaClient,
@@ -85,6 +86,7 @@ export async function readAdminAccess(
       navigation: a.navigation,
       managerVersion: manager.version,
       googleAvailable: googleAvailable(),
+      accountAuthenticator: privilegedMode() !== "off",
       authenticator: factor
         ? {
             version: factor.version,
@@ -144,6 +146,8 @@ export async function adminAuthenticatorCommand(
   input: Record<string, unknown>,
   credential: unknown
 ) {
+  if (privilegedMode() !== "off")
+    throw new PortalError(403, "Manage your authenticator in Account security, then return to this access form.");
   adminFields(input, [
     "operation",
     "requestKey",
@@ -169,6 +173,8 @@ export async function adminAuthenticatorCommand(
       const row = await tx.adminAuthenticator.findUnique({
         where: { userId: a.actor.id }
       });
+      if (row?.quarantinedAt)
+        throw new PortalError(403, "This factor was retired during protected recovery. Trusted identity review is required.");
       const retry = await adminPriorOperation(tx, a.actor.id, input);
       if (retry.prior) {
         if (!row || row.sessionId !== current.id) throw adminDenied();

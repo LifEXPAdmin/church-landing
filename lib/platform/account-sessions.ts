@@ -2,6 +2,7 @@ import { Prisma, type PrismaClient } from "@prisma/client";
 import { AccountError } from "./account-error";
 import { requireAccountCredential } from "./account-credential";
 import { hashSessionToken, validToken } from "./auth";
+import { bindPrivilegedSession } from "./privileged-session";
 
 const sessionSelect = {
   id: true,
@@ -64,6 +65,7 @@ export async function withOwnedSession<T>(
         current.credentialVersion !== current.user.credentialVersion
       )
         throw new AccountError("session");
+      bindPrivilegedSession(tx, current);
       return action(tx, current);
     },
     { maxWait: 5000, timeout: 15000 }

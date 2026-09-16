@@ -1,3 +1,4 @@
+import { requirePrivilegedAuthentication } from "./privileged-auth-policy";
 import type {
   PrismaClient,
   TopicCommunity,
@@ -131,12 +132,17 @@ async function current(
   )
     await eligible(tx, actorId);
   const context = await postContext(tx, actorId);
-  if (input.operation === "create") return { context, row: null };
+  if (input.operation === "create") {
+    await requirePrivilegedAuthentication(tx, actorId);
+    return { context, row: null };
+  }
   const row = await tx.topicCommunity.findUnique({
     where: { id: postId(input.communityId) }
   });
   if (!row) throw new PortalError(404, "This topic is unavailable.");
   const op = input.operation;
+  if (["edit", "archive", "offer-role", "cancel-role", "revoke-role", "restrict", "accept-role"].includes(String(op)))
+    await requirePrivilegedAuthentication(tx, actorId);
   if (
     row.recoveryRequired &&
     !(["join", "follow"].includes(String(op)) && input.desired === false)
@@ -222,6 +228,8 @@ export async function topicCommand(
     async (tx, actorId) => {
       const { context, row } = await current(tx, actorId, input);
       const op = input.operation;
+      if (["create", "offer-role", "cancel-role", "revoke-role", "accept-role"].includes(String(op)))
+        await requirePrivilegedAuthentication(tx, actorId, "change-access");
       if (op === "create") {
         const data = identity(input),
           address = slug(input.slug);
@@ -664,6 +672,7 @@ async function topicIn(
 ) {
   if (manage && !context.eligible)
     throw new PortalError(403, "Verify your account before managing a topic.");
+  if (manage && context.actorId) await requirePrivilegedAuthentication(tx, context.actorId);
   const row = await tx.topicCommunity.findFirst({
     where: {
       slug: slug(address),
@@ -797,6 +806,7 @@ export async function readTopicManagement(
 ) {
   return withPostRead(db, token, async (tx, context) => {
     const view = await topicIn(tx, context, address, true);
+    if (context.actorId) await requirePrivilegedAuthentication(tx, context.actorId);
     const active =
       view.community.lifecycle === "ACTIVE" &&
       view.community.moderationState === "VISIBLE" &&
@@ -845,6 +855,7 @@ async function topicHistoryIn(
     }))
   )
     throw new PortalError(403, "Current topic management access is required.");
+  await requirePrivilegedAuthentication(tx, context.actorId);
   if (
     after &&
     !(await tx.topicAudit.findFirst({

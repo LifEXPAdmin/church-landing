@@ -12,6 +12,7 @@ export const recentAuthenticationPurposes = [
   "confirm-email-change",
   "unlink-google",
   "manage-admin-authenticator",
+  "manage-privileged-authenticator",
   "manage-admin-access"
 ] as const;
 export type RecentAuthenticationPurpose =

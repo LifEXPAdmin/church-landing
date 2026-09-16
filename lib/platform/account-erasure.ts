@@ -16,6 +16,8 @@ const personalPost = (userId: string) => ({
 });
 
 async function erasePrivateCollections(tx: Tx, userId: string) {
+  await tx.privilegedSessionProof.deleteMany({ where: { session: { userId } } });
+  await tx.privilegedSecurityNotice.deleteMany({ where: { userId } });
   await tx.platformMetricActivityDay.deleteMany({ where: { userId } });
   await tx.platformMeasurementChoice.deleteMany({ where: { userId } });
   await eraseAdminPersonalData(tx, userId, new Date());

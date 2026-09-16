@@ -326,6 +326,7 @@ model PlatformUser {
   adminOperations AdminOperation[]
   adminCaseGroups AdminCaseGroup[]
   adminAuthenticator AdminAuthenticator?
+  privilegedNotices PrivilegedSecurityNotice[]
   following PlatformFollow[]      @relation("following")
   followers PlatformFollow[]      @relation("followers")
 
@@ -484,6 +485,7 @@ model PlatformRecentAuthentication {
 }
 
 model PlatformSession {
+  privilegedProofs PrivilegedSessionProof[]
   pushSubscriptions PushSubscription[]
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
@@ -2177,6 +2179,8 @@ model AdminOperation {
 }
 
 model AdminAuthenticator {
+  recoveryRequired Boolean @default(false)
+  quarantinedAt DateTime?
   userId String @id
   secretCiphertext String
   version Int @default(1)
@@ -2190,6 +2194,40 @@ model AdminAuthenticator {
   lastCounter BigInt @default(-1)
   recoveryHashes String[] @default([])
   user PlatformUser @relation(fields:[userId],references:[id],onDelete:Cascade)
+}
+
+// A challenge is bound to one real database session and current role/factor
+// generations. Session revocation cascades; restored proofs are never reusable.
+model PrivilegedSessionProof {
+  sessionId                String
+  purpose                  String
+  factorVersion            Int
+  credentialVersion        Int
+  authorityDigest          String
+  confirmedAt              DateTime
+  expiresAt                DateTime
+  consumedAt               DateTime?
+  session                  PlatformSession         @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@id([sessionId, purpose])
+  @@index([expiresAt])
+}
+
+// Essential factor-change receipt/outbox, separate from optional social alerts.
+// No secret, raw recovery code, email address or provider error is stored here.
+model PrivilegedSecurityNotice {
+  id            String       @id @default(cuid())
+  userId        String
+  factorVersion Int
+  action        String
+  createdAt     DateTime     @default(now())
+  deliveredAt   DateTime?
+  attemptedAt   DateTime?
+  attempts      Int          @default(0)
+  user          PlatformUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, factorVersion, action])
+  @@index([deliveredAt, createdAt])
 }
 
 // Each contribution belongs to one appointment, never its reusable title.

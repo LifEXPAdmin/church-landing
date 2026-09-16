@@ -2,8 +2,11 @@ import { Prisma } from "@prisma/client";
 import type { CommunityReport } from "@prisma/client";
 import type { PostContext, PostTx } from "./post-access";
 import { eligibleWhere } from "./portal-policy";
+import { privilegedProjectionAvailable } from "./privileged-auth-policy";
 
 export async function reportReviewAuthority(tx: PostTx, context: PostContext) {
+  if (context.actorId && !(await privilegedProjectionAvailable(tx, context.actorId)))
+    return { churches: [], topics: [], global: false };
   return {
     churches: [...context.moderators],
     topics: [...(context.topicModerators ?? [])],

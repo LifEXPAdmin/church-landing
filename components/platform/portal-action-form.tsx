@@ -1,4 +1,5 @@
 "use client";
+import { announcePrivilegedChallenge } from "@/lib/platform/privileged-auth-navigation";
 
 import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -177,6 +178,7 @@ export function PortalActionForm({
             }
           );
           const body: unknown = await response.json().catch(() => null);
+          if (!response.ok) announcePrivilegedChallenge(body);
           const message =
             body &&
             typeof body === "object" &&

@@ -1,3 +1,4 @@
+import { privilegedErrorFields } from "./privileged-auth-policy";
 import type { PrismaClient } from "@prisma/client";
 import { accountConfig } from "./account-config";
 import { allowAccountAttempt } from "./account-limits";
@@ -83,7 +84,7 @@ export async function handleChurchListingRequest(
   } catch (error) {
     if (error instanceof PortalError)
       return Response.json(
-        { message: error.message },
+        { message: error.message, ...privilegedErrorFields(error) },
         { status: error.status, headers }
       );
     if (

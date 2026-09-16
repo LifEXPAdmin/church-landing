@@ -1,3 +1,4 @@
+import { requirePrivilegedAuthentication } from "./privileged-auth-policy";
 import type { Prisma } from "@prisma/client";
 import {
   postReadableWhere,
@@ -69,6 +70,7 @@ export async function requireWelcomeMember(
       403,
       "A current church welcome host permission is required."
     );
+  if (host) await requirePrivilegedAuthentication(tx, context.actorId);
 }
 export const welcomePostSelect = {
   id: true,

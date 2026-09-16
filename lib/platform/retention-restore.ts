@@ -130,7 +130,15 @@ export async function quarantineRestoredAccess(db: PrismaClient) {
         data: { revokedAt: now }
       });
       await tx.adminSavedView.deleteMany({});
-      await tx.adminAuthenticator.deleteMany({});
+      // Keep an opaque retired-factor marker: deleting it would let a restored
+      // primary account bypass lost-factor review by enrolling from scratch.
+      await tx.adminAuthenticator.updateMany({ data: {
+        quarantinedAt: now, recoveryRequired: true, secretCiphertext: "",
+        recoveryHashes: [], confirmedAt: null, expiresAt: now,
+        sessionId: "", version: { increment: 1 }
+      } });
+      await tx.privilegedSessionProof.deleteMany({});
+      await tx.privilegedSecurityNotice.deleteMany({});
       const measurementsRetired = await clearRestoredMeasurements(tx);
       const topicRoles = await tx.topicMembership.updateMany({
         where: { OR: [{ moderator: true }, { pendingRole: { not: null } }] },

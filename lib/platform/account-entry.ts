@@ -16,6 +16,8 @@ export function safeAccountReturn(value: unknown): string {
   )
     return "/platform";
   const url = new URL(value, "https://return.invalid");
+  if (url.origin === "https://return.invalid" && url.pathname === "/platform/account/authenticator")
+    return "/platform/account/authenticator";
   if (
     url.origin !== "https://return.invalid" ||
     !/^\/platform(?:\/(?:notifications\/[a-zA-Z0-9_-]{1,80}|activity|photo-tags|feed|search|share|invitations|invite\/[A-Za-z0-9_-]{43}|features|releases(?:\/[a-zA-Z0-9_-]{1,100})?|menu|getting-started|scheduled-posts(?:\/[a-zA-Z0-9_-]{1,100})?|drafts|comment-drafts|relationships|saved|prayers|topics(?:\/[a-z0-9-]{3,60}(?:\/manage)?)?|reports(?:\/(?:review|decisions))?|messages(?:\/[a-zA-Z0-9_-]{1,100})?|settings(?:\/[a-z]+(?:\/[a-z]+)?)?|calendars(?:\/[a-zA-Z0-9_-]{1,100})?|commitments|events\/[a-zA-Z0-9_-]{1,100}|profile(?:\/(?:me|[a-zA-Z0-9_]{3,24}))?|posts\/[a-zA-Z0-9_-]{1,100}|church-listings(?:\/[a-zA-Z0-9_-]{1,100})?|church-claims(?:\/(?:review(?:\/[a-zA-Z0-9_-]{1,100})?|[a-zA-Z0-9_-]{1,100}))?|churches(?:\/[a-zA-Z0-9_-]{1,100}(?:\/(?:directory|review|overview|calendar|responsibilities|access|welcome|structure(?:\/[a-zA-Z0-9_-]{1,100})?|people\/[a-zA-Z0-9_-]{1,100}))?)?|my-church(?:\/sharing)?|feedback(?:\/(?:requests|cases\/[a-zA-Z0-9_-]{1,100}|ideas(?:\/[a-zA-Z0-9_-]{1,100})?))?|help|support(?:\/[a-zA-Z0-9_-]{1,100})?))?\/?$/.test(

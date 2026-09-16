@@ -1,4 +1,5 @@
 import { Prisma } from "@prisma/client";
+import { privilegedProjectionAvailable } from "./privileged-auth-policy";
 import { postContext, type PostTx } from "./post-access";
 import { eligibleWhere, PortalError, expected } from "./portal-policy";
 import { authorDecisionWhere } from "./content-moderation";
@@ -31,6 +32,7 @@ export async function supportVisibilityScope(
   checkedReviewAuthority?: Parameters<typeof reviewReportScope>[0]
 ) {
   if (!actor.adult) return Prisma.sql`FALSE`;
+  const assured = await privilegedProjectionAvailable(tx, actor.id);
   // The admin assigned-only projection already established this exact review
   // authority under its shared gate. Reuse it without loading author context;
   // requester/coordinator paths still load their own current context below.
@@ -42,12 +44,12 @@ export async function supportVisibilityScope(
     assigned && checkedReviewAuthority
       ? checkedReviewAuthority
       : await reportReviewAuthority(tx, context!);
-  const ordinaryOwner = grant
+  const ordinaryOwner = grant && assured
     ? Prisma.sql`s."ownerGrantId" = ${grant.id} AND s."ownerGrantVersion" = ${grant.version}`
     : Prisma.sql`FALSE`;
   const ordinary = assigned
     ? ordinaryOwner
-    : Prisma.sql`s."requesterId" = ${actor.id} OR (${ordinaryOwner}) OR (${actor.eligible} AND EXISTS (SELECT 1 FROM "SupportCoordinatorShare" share JOIN "ChurchContactAssignment" a ON a.id=share."appointmentId" WHERE share."caseId"=s.id AND share."revokedAt" IS NULL AND a."userId"=${actor.id}))`;
+    : Prisma.sql`s."requesterId" = ${actor.id} OR (${ordinaryOwner}) OR (${actor.eligible && assured} AND EXISTS (SELECT 1 FROM "SupportCoordinatorShare" share JOIN "ChurchContactAssignment" a ON a.id=share."appointmentId" WHERE share."caseId"=s.id AND share."revokedAt" IS NULL AND a."userId"=${actor.id}))`;
   const author = Prisma.sql`d."authorId" = ${actor.id} AND d."authorChurchId" IS NULL OR ${context?.publishers.size ? Prisma.sql`d."authorChurchId" IN (${Prisma.join([...context.publishers])})` : Prisma.sql`FALSE`}`;
   const reviewer = Prisma.sql`${actor.eligible} AND d."actorId"=${actor.id} AND (${reviewReportScope(authority)})`;
   const appeal = assigned

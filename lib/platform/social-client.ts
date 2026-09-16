@@ -1,4 +1,5 @@
 /** Browser transport for existing social APIs. Never caches private responses. */
+import { announcePrivilegedChallenge } from "./privileged-auth-navigation";
 export class SocialClientError extends Error {
   status: number;
   retryAfter?: number;
@@ -58,7 +59,8 @@ export async function socialRequest<T>(
       401,
       "Your sign-in changed. Reload before continuing."
     );
-  if (!response.ok)
+  if (!response.ok) {
+    announcePrivilegedChallenge(data);
     throw new SocialClientError(
       response.status,
       data.message ??
@@ -68,6 +70,7 @@ export async function socialRequest<T>(
         ? Number(response.headers.get("retry-after"))
         : undefined
     );
+  }
   return { owner, data };
 }
 export type CommentAuthor = {

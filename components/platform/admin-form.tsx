@@ -10,6 +10,7 @@ export type AdminField = {
   label: string;
   type?:
     | "text"
+    | "password"
     | "textarea"
     | "select"
     | "tags"
@@ -35,6 +36,7 @@ export function AdminForm({
   onDraftChange,
   onResult,
   confirmationPurpose,
+  endpoint = "/api/platform/admin",
   available = true
 }: {
   owner: string;
@@ -47,6 +49,7 @@ export function AdminForm({
   onDraftChange?: (dirty: boolean) => void;
   onResult?: (result: Record<string, unknown>) => void;
   confirmationPurpose?: RecentAuthenticationPurpose;
+  endpoint?: "/api/platform/admin" | "/api/platform/authenticator";
   available?: boolean;
 }) {
   const confirmation = useAccountConfirmation(
@@ -165,7 +168,7 @@ export function AdminForm({
               status: number;
               message: string;
             }[];
-          }>("/api/platform/admin", body, owner);
+          }>(endpoint, body, owner);
           if (
             typeof result.message !== "string" ||
             (!result.results &&
@@ -278,7 +281,7 @@ export function AdminForm({
                 id={`${id}-${field.name}`}
                 name={field.name}
                 type={
-                  field.type === "datetime-local" || field.type === "number"
+                  field.type === "datetime-local" || field.type === "number" || field.type === "password"
                     ? field.type
                     : "text"
                 }

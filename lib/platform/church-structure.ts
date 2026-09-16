@@ -1,3 +1,4 @@
+import { privilegedProjectionAvailable, requirePrivilegedAuthentication } from "./privileged-auth-policy";
 import { readChurchChartHistory } from "./church-chart-history";
 import { recordChurchRoleChanges } from "./domain-activity";
 import { saveChurchChart } from "./church-chart-save";
@@ -153,6 +154,8 @@ export async function churchStructureCommand(
       ].includes(String(op))
     )
       throw new PortalError(400, "Choose an available church action.");
+    if (["grant", "revoke", "assign", "unassign", "assignment-privileges", "template-edit", "template-archive", "archive"].includes(String(op)))
+      await requirePrivilegedAuthentication(tx, actor.id, "change-access");
     if (op === "grant" || op === "revoke") {
       await churchCapability(tx, actor, churchId, "MANAGE_CHURCH_ACCESS");
       expected(input.expectedVersion, church.structureVersion);
@@ -640,7 +643,7 @@ export async function getChurchStructure(
     });
     const capabilities: StructureCapability[] = [
       ...new Set(
-        (await effectiveChurchGrants(tx, actor.id, [churchId])).map(
+        (await privilegedProjectionAvailable(tx, actor.id) ? await effectiveChurchGrants(tx, actor.id, [churchId]) : []).map(
           (g) => g.capability
         )
       )

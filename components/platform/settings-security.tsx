@@ -70,11 +70,13 @@ export function SettingsSecurity({ data }: { data: SettingsContext }) {
         confirmation for that action.
       </p>
       <p className="text-sm text-gc-muted">
-        Passkeys, multi-factor setup and configurable security alerts are not
-        available here. No additional protection is implied by these settings.
+        Authenticator protection for assigned duties has its own setup and
+        recovery screen. Passkeys and configurable security alerts are not
+        available here.
       </p>
       {!canConfirmSettings(data) && <SettingsCredentialHelp data={data} />}
       <div className="flex flex-wrap gap-3">
+        <Link className="gc-button gc-button-quiet" href="/platform/account/authenticator">Review authenticator protection</Link>
         <Link
           className="gc-button gc-button-quiet"
           href="/platform/settings/account/sessions"

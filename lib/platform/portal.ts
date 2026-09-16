@@ -35,6 +35,7 @@ import {
 } from "@prisma/client";
 import { verifiedChurchManagement } from "./church-management";
 import { readAccountSession, normalizeEmail } from "./accounts";
+import { requirePrivilegedAuthentication, privilegedProjectionAvailable } from "./privileged-auth-policy";
 import { reconcileSupportAccess } from "./support-revocation";
 import { churchSearchQuery } from "./church-search";
 import { socialCommand, socialInput } from "./social-operations";
@@ -148,6 +149,7 @@ export async function operator(
       403,
       "This action requires an explicitly assigned Godschurches capability."
     );
+  await requirePrivilegedAuthentication(tx, actor.id);
 }
 export async function hasChurchCapability(
   tx: Tx,
@@ -155,7 +157,7 @@ export async function hasChurchCapability(
   churchId: string,
   capability: ChurchCapability
 ) {
-  if (!isEligible(actor)) return false;
+  if (!isEligible(actor) || !(await privilegedProjectionAvailable(tx, actor.id))) return false;
   return (
     (await effectiveChurchGrants(tx, actor.id, [churchId], [capability]))
       .length > 0
@@ -172,6 +174,7 @@ export async function churchCapability(
       403,
       "You do not have this permission for this church."
     );
+  await requirePrivilegedAuthentication(tx, actor.id);
 }
 export async function membership(tx: Tx, actor: Actor, churchId: string) {
   eligibility(actor);
@@ -694,6 +697,7 @@ export async function portalCommand(
     )
       throw new PortalError(404, "Church not found.");
     if (op === "grant" || op === "revoke-grant") {
+      await requirePrivilegedAuthentication(tx, actor.id, "change-access");
       await operator(tx, actor, "MANAGE_CHURCH_ACCESS");
       if (op === "revoke-grant") {
         const grant = await tx.churchCapabilityGrant.findFirst({
@@ -764,6 +768,7 @@ export async function portalCommand(
       return "Scoped capability explicitly assigned. Contact titles and account categories do not grant it.";
     }
     if (op === "assign-contact" || op === "revoke-contact") {
+      await requirePrivilegedAuthentication(tx, actor.id, "change-access");
       if (
         op === "assign-contact" &&
         !Object.values(ChurchContactSlot).includes(
@@ -947,7 +952,8 @@ export async function getPortalSnapshot(
       version: c.version,
       isSelf: c.userId === actor.id
     });
-    const grants = isEligible(actor)
+    const assured = await privilegedProjectionAvailable(tx, actor.id);
+    const grants = isEligible(actor) && assured
       ? await effectiveChurchGrants(tx, actor.id)
       : [];
     const scoped = (churchId: string, capability: ChurchCapability) =>
@@ -970,7 +976,7 @@ export async function getPortalSnapshot(
     const coordinatorChurches = assignedChurches.filter((c) =>
       scoped(c.id, "APPOINT_COORDINATORS")
     );
-    const operatorCapabilities = isEligible(actor)
+    const operatorCapabilities = isEligible(actor) && assured
       ? (
           await tx.platformOperatorGrant.findMany({
             where: { userId: actor.id, revokedAt: null },

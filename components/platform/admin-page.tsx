@@ -4,6 +4,8 @@ import { adminReturnTo } from "@/lib/platform/admin-links";
 import { getCurrentPlatformUser } from "@/lib/platform/session";
 import { PlatformShell } from "./platform-shell";
 import { AdminWorkspace } from "./admin-workspace";
+import { PrivilegedAuthenticationError } from "@/lib/platform/privileged-auth-policy";
+import { privilegedChallengeHref } from "@/lib/platform/privileged-auth-navigation";
 export async function AdminPage({
   section = "overview",
   query,
@@ -33,7 +35,7 @@ export async function AdminPage({
       )
     )
       throw Error("Unavailable");
-  } catch {
+  } catch (error) {
     // Losing an admin duty is not a sign-out. Keep the current account shell
     // without loading any denied admin source or presenting a guest identity.
     const user = await getCurrentPlatformUser().catch(() => null);
@@ -45,6 +47,10 @@ export async function AdminPage({
             This section could not be opened with your current account and
             permissions.
           </p>
+          {error instanceof PrivilegedAuthenticationError && <>
+            <p>{error.message}</p>
+            <Link className="gc-button" href={privilegedChallengeHref(error.purpose)!}>Review authenticator protection</Link>
+          </>}
           <Link className="gc-button" href="/platform/menu">
             Return to Menu
           </Link>

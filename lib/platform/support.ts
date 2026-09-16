@@ -1,4 +1,5 @@
 import { recordDomainActivity } from "./domain-activity";
+import { privilegedProjectionAvailable, requirePrivilegedAuthentication, PrivilegedAuthenticationError } from "./privileged-auth-policy";
 import {
   feedbackContactDates,
   feedbackFollowupEnabled
@@ -198,6 +199,7 @@ async function support<T>(
       { maxWait: 10000, timeout: 15000 }
     )
     .catch((error) => {
+      if (error instanceof PrivilegedAuthenticationError) throw error;
       if (error instanceof PortalError)
         throw new SupportError(error.status, error.message);
       throw error;
@@ -208,7 +210,7 @@ async function staffGrant(
   actor: Actor,
   capability: "RESPOND" | "ASSIGN" | "REDACT"
 ) {
-  return verified(actor)
+  return verified(actor) && await privilegedProjectionAvailable(tx, actor.id)
     ? tx.supportCapabilityGrant.findFirst({
         where: { userId: actor.id, capability, revokedAt: null },
         select: grantSelect
@@ -296,7 +298,7 @@ async function access(tx: Tx, actor: Actor, c: CaseMeta) {
     where: { caseId: c.id, revokedAt: null, appointment: { userId: actor.id } },
     select: { caseId: true }
   });
-  const coordinator = verified(actor) && !!share;
+  const coordinator = verified(actor) && !!share && await privilegedProjectionAvailable(tx, actor.id);
   return {
     requester,
     owner,
@@ -1109,6 +1111,7 @@ export async function supportCommand(
       data.featureDecision = decision;
     } else if (op === "redact") {
       if (!rights.redact) throw denied();
+      await requirePrivilegedAuthentication(tx, actor.id, "redact-support");
       if (input.reason !== "SECRET" && input.reason !== "PRIVATE_INFORMATION")
         throw new SupportError(400, "Choose the structured privacy reason.");
       const marker = "[Removed for privacy.]";

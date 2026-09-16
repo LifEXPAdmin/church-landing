@@ -266,6 +266,7 @@ const confirmationActions: Record<RecentAuthenticationPurpose, string> = {
   "confirm-email-change": "changing your sign-in email",
   "unlink-google": "disconnecting Google",
   "manage-admin-authenticator":"your admin authenticator",
+  "manage-privileged-authenticator":"your authenticator",
   "manage-admin-access":"an admin access change"
 };
 export function AccountConfirmation({

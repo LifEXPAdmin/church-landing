@@ -1,3 +1,4 @@
+import { requirePrivilegedAuthentication } from "./privileged-auth-policy";
 import {
   Prisma,
   type PrismaClient,
@@ -25,6 +26,7 @@ async function requireFounder(tx: Tx, ownerId: string) {
       403,
       "Founder announcement controls are unavailable for this account."
     );
+  await requirePrivilegedAuthentication(tx, ownerId);
 }
 function audienceWhere(
   founderId: string,
@@ -321,6 +323,7 @@ export function founderAnnouncementCommand(
       }
       if (input.operation !== "send")
         throw new PortalError(400, "Choose a supported announcement action.");
+      await requirePrivilegedAuthentication(tx, ownerId, "send-announcement");
       if (
         input.confirmed !== true ||
         !row.previewedAt ||

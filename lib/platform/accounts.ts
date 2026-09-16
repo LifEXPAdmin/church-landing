@@ -1,4 +1,5 @@
 import { newFounderWelcomeAt } from "./founder-config";
+import { bindPrivilegedSession, clearPrivilegedSession } from "./privileged-session";
 import { AccountError } from "./account-error";
 export { AccountError } from "./account-error";
 import {
@@ -207,10 +208,16 @@ export async function readAccountSession(
   db: PrismaClient | Prisma.TransactionClient,
   token: unknown
 ) {
+  // Never attach request identity to the shared Prisma client. Only transaction
+  // clients are scoped to this call chain and can carry privileged assurance.
+  const transaction = !("$transaction" in db);
+  if (transaction) clearPrivilegedSession(db);
   if (!validToken(token)) return null;
   const session = await db.platformSession.findUnique({
     where: { tokenHash: hashSessionToken(token) },
     select: {
+      id: true,
+      userId: true,
       credentialVersion: true,
       expiresAt: true,
       user: {
@@ -248,6 +255,7 @@ export async function readAccountSession(
     session.credentialVersion !== session.user.credentialVersion
   )
     return null;
+  if (transaction) bindPrivilegedSession(db, session);
   return session.user;
 }
 

@@ -1,3 +1,4 @@
+import { privilegedErrorFields } from "./privileged-auth-policy";
 import { scheduleDomainActivity } from "./notification-fanout";
 import { scheduleFounderWelcome } from "./founder-welcome-queue";
 import type { PrismaClient } from "@prisma/client";
@@ -136,7 +137,7 @@ export async function handlePortalRequest(
       );
     if (error instanceof PortalError)
       return Response.json(
-        { message: error.message },
+        { message: error.message, ...privilegedErrorFields(error) },
         { status: error.status, headers }
       );
     if (

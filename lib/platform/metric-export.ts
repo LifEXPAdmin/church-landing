@@ -6,6 +6,7 @@ import { adminFields } from "./admin-input";
 import { adminPriorOperation, recordAdminOperation } from "./admin-cases";
 import { aggregateMetrics, type MetricReport } from "./metric-report";
 import { PortalError } from "./portal-policy";
+import { requirePrivilegedAuthentication } from "./privileged-auth-policy";
 
 /** Serialize only the same suppressed, filtered aggregate report the UI receives. */
 export function metricCsv(report: MetricReport) {
@@ -43,6 +44,7 @@ export function exportPlatformMetrics(
           409,
           "This export was already recorded. Generate a new current export to receive a new audit receipt."
         );
+      await requirePrivilegedAuthentication(tx, a.actor.id, "export-metrics");
       const filters = Object.fromEntries(
         Object.entries(input).filter(
           ([key]) => !["operation", "requestKey"].includes(key)

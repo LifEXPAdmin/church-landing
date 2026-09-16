@@ -1,3 +1,4 @@
+import { privilegedErrorFields } from "./privileged-auth-policy";
 import type { PrismaClient } from "@prisma/client";
 import { scheduleDomainActivity } from "./notification-fanout";
 import { accountConfig } from "./account-config";
@@ -100,7 +101,7 @@ export async function handleChurchStructureRequest(
   } catch (error) {
     if (error instanceof PortalError)
       return Response.json(
-        { message: error.message },
+        { message: error.message, ...privilegedErrorFields(error) },
         { status: error.status, headers }
       );
     if (

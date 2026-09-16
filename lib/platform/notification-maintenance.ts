@@ -15,6 +15,7 @@ import {
   COMMENT_FOLLOWER_TOPIC
 } from "./comment-followers";
 import { dispatchPendingFounderWelcomes } from "./founder-welcome-queue";
+import { dispatchPrivilegedNotices } from "./privileged-auth-notices";
 import type { PrismaClient } from "@prisma/client";
 import {
   maintenanceHeaders as headers,
@@ -190,6 +191,8 @@ export async function handleNotificationMaintenance(
       announcements.failed +
       followers.failed +
       activity.failed;
+    const security = signal.aborted ? { delivered: 0, pending: 1 } : await dispatchPrivilegedNotices(db);
+    failed += security.pending;
     const result = {
       ok: failed === 0,
       ...cleanup,
@@ -199,7 +202,8 @@ export async function handleNotificationMaintenance(
       welcomeQueued: welcomes.queued,
       announcementQueued: announcements.queued,
       conversationQueued: followers.queued,
-      activityQueued: activity.queued
+      activityQueued: activity.queued,
+      securityNoticesDelivered: security.delivered
     };
     console.info("notification_maintenance_completed", result);
     return Response.json(result, { status: failed ? 503 : 200, headers });

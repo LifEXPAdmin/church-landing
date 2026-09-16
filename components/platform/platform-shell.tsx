@@ -26,6 +26,7 @@ import { MeasurementForeground } from "./measurement-foreground";
 import { FeedbackPrompt } from "./feedback-prompt";
 import { NotificationsLink } from "./notifications-link";
 import { RegionalProvider } from "./regional-presentation";
+import { PrivilegedChallengeHelp } from "./privileged-challenge-help";
 
 interface PlatformShellProps {
   user:
@@ -94,6 +95,7 @@ export async function PlatformShell({
         >
           <div className="gc-shell">
             <PushSessionBoundary owner={user?.id ?? null} />
+            {user?.id && <PrivilegedChallengeHelp key={user.id} />}
             <MeasurementForeground owner={user?.id ?? null} />
             <FeedbackPrompt
               key={user?.id ?? "guest"}

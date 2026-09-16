@@ -1,3 +1,4 @@
+import { privilegedProjectionAvailable, requirePrivilegedAuthentication } from "./privileged-auth-policy";
 import { recordDomainActivity } from "./domain-activity";
 import {
   effectiveChurchGrants,
@@ -101,10 +102,11 @@ function scopesData(value: unknown): ClaimScope[] {
   return [...new Set(values)].sort() as ClaimScope[];
 }
 async function activeGrants(tx: Tx, userId: string, churchId?: string) {
-  return effectiveChurchGrants(tx, userId, churchId ? [churchId] : undefined);
+  return await privilegedProjectionAvailable(tx, userId)
+    ? effectiveChurchGrants(tx, userId, churchId ? [churchId] : undefined) : [];
 }
 async function isOperator(tx: Tx, userId: string) {
-  return !!(await tx.platformOperatorGrant.count({
+  return await privilegedProjectionAvailable(tx, userId) && !!(await tx.platformOperatorGrant.count({
     where: {
       userId,
       capability: "REVIEW_CHURCH_CLAIMS",
@@ -706,6 +708,7 @@ export async function churchClaimCommand(
       };
     }
     if (input.operation === "review") {
+      await requirePrivilegedAuthentication(tx, actor.id, "change-access");
       enabled();
       if (claim.status !== "SUBMITTED")
         throw new PortalError(
@@ -783,6 +786,7 @@ export async function churchClaimCommand(
       };
     }
     if (input.operation === "activate") {
+      await requirePrivilegedAuthentication(tx, actor.id, "change-access");
       enabled();
       if (
         claim.status !== "APPROVED" ||

@@ -1,4 +1,5 @@
 "use client";
+import { announcePrivilegedChallenge } from "@/lib/platform/privileged-auth-navigation";
 import { useId, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { portalInputClass, portalButtonClass } from "./portal-action-form";
@@ -160,6 +161,7 @@ export function CalendarForm({
             })
           });
           const body: unknown = await response.json().catch(() => null);
+          if (!response.ok) announcePrivilegedChallenge(body);
           const result =
             body && typeof body === "object"
               ? (body as Record<string, unknown>)

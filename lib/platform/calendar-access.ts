@@ -1,4 +1,5 @@
 import { effectiveChurchGrants } from "./church-permissions";
+import { privilegedProjectionAvailable } from "./privileged-auth-policy";
 import type {
   Prisma,
   CalendarOccurrence,
@@ -68,12 +69,12 @@ export async function calendarContext(
       503,
       "Your church connections need an administrator to review their size."
     );
-  const grants = await effectiveChurchGrants(
+  const grants = await privilegedProjectionAvailable(tx, actor.id) ? await effectiveChurchGrants(
     tx,
     actor.id,
     connections.map((c) => c.church.id),
     ["EDIT_CHURCH_CALENDAR", "PUBLISH_CHURCH_EVENTS"]
-  );
+  ) : [];
   return {
     actor,
     sharedNames: new Map(),

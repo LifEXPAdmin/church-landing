@@ -12,6 +12,7 @@ const confirmationReturns: Record<RecentAuthenticationPurpose, string> = {
   "confirm-email-change": "/platform/settings/account/email",
   "unlink-google": "/platform/settings/account/methods",
   "manage-admin-authenticator":"/platform/admin/access",
+  "manage-privileged-authenticator":"/platform/account/authenticator",
   "manage-admin-access":"/platform/admin/access"
 };
 export function accountConfirmationReturn(

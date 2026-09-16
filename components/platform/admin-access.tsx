@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import Image from "next/image";
 import QRCode from "qrcode";
 import type { AdminAccessSnapshot } from "@/lib/platform/admin-access";
@@ -81,7 +82,11 @@ export function AdminAccess({
           replace church verification or change who can read an existing help
           conversation.
         </p>
-        <section className="space-y-4 rounded-xl border border-gc-divider p-5">
+        {data.accountAuthenticator ? <section className="space-y-3 rounded-xl border border-gc-divider p-5">
+          <h2 className="text-xl font-semibold">Your authenticator</h2>
+          <p>Setup and recovery are in Account security. Access changes still require current sign-in confirmation and a new unused authenticator code.</p>
+          <Link className="gc-button gc-button-quiet" href="/platform/account/authenticator" target="_blank" rel="noopener noreferrer">Open authenticator security in another tab</Link>
+        </section> : <section className="space-y-4 rounded-xl border border-gc-divider p-5">
           <h2 className="text-xl font-semibold">Your admin authenticator</h2>
           <p>
             {factor?.confirmed
@@ -202,7 +207,7 @@ export function AdminAccess({
               </p>
             </details>
           )}
-        </section>
+        </section>}
         <section className="space-y-4">
           <h2 className="text-xl font-semibold">
             Choose an account for an explicit duty

@@ -8,6 +8,7 @@ import { isEligible } from "./portal-policy";
 import { listImagesIn } from "./media";
 import { imagesAvailable } from "./media-storage";
 import { currentChurchWelcome } from "./church-welcome-policy";
+import { privilegedProjectionAvailable } from "./privileged-auth-policy";
 
 /** Navigation projects existing permissions; it never appoints a contributor. */
 export function readChurchTools(db: PrismaClient, token: unknown, id: unknown) {
@@ -21,7 +22,7 @@ export function readChurchTools(db: PrismaClient, token: unknown, id: unknown) {
     const ownerId = context.actorId,
       member = context.churches.includes(churchId);
     const grants =
-      ownerId && member
+      ownerId && member && await privilegedProjectionAvailable(tx, ownerId)
         ? await effectiveChurchGrants(tx, ownerId, [churchId])
         : [];
     const capabilities = [...new Set(grants.map((grant) => grant.capability))];

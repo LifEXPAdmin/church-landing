@@ -10,6 +10,7 @@ import { eligibleWhere, PortalError } from "./portal-policy";
 import type { AdminNavigation } from "./admin-types";
 import { createHmac } from "node:crypto";
 import { accountConfig } from "./account-config";
+import { requirePrivilegedAuthentication } from "./privileged-auth-policy";
 
 export type AdminTx = Prisma.TransactionClient;
 export const adminDenied = () =>
@@ -92,6 +93,7 @@ export async function adminAuthority(tx: AdminTx, userId: string) {
     capabilities.has("REVIEW_CHURCH_CLAIMS") || !!claimChurches.length;
   const canQueue = !!respond || !!assign || reportReviewer || canClaims;
   if (!canQueue && !grants.length) throw adminDenied();
+  await requirePrivilegedAuthentication(tx, userId);
   const sections: AdminNavigation["sections"] = [
     { key: "overview", label: "Overview", href: "/platform/admin" }
   ];

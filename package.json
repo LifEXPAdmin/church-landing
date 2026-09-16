@@ -23,6 +23,9 @@
   },
   "dependencies": {
     "@js-temporal/polyfill": "0.5.1",
+    "@otplib/plugin-base32-scure": "13.5.0",
+    "@otplib/plugin-crypto-node": "13.5.0",
+    "@otplib/totp": "13.5.0",
     "@prisma/client": "^6.19.3",
     "@radix-ui/react-slot": "^1.1.1",
     "@vercel/blob": "2.8.0",

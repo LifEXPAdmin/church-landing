@@ -1,3 +1,4 @@
+import { privilegedErrorFields } from "./privileged-auth-policy";
 import { scheduleDomainActivity } from "./notification-fanout";
 import type { PrismaClient } from "@prisma/client";
 import { accountConfig } from "./account-config";
@@ -115,7 +116,7 @@ export async function handleCalendarRequest(
   } catch (error) {
     if (error instanceof PortalError)
       return Response.json(
-        { message: error.message },
+        { message: error.message, ...privilegedErrorFields(error) },
         { status: error.status, headers }
       );
     if (

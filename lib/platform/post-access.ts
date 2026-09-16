@@ -10,6 +10,7 @@ import { communityAuthorSelect } from "./public-profile";
 import { isEligible, PortalError } from "./portal-policy";
 import { withAccountRead } from "./account-read";
 import { topicContext, topicPublicWhere } from "./topic-policy";
+import { privilegedProjectionAvailable } from "./privileged-auth-policy";
 
 export type PostTx = Prisma.TransactionClient;
 export type PostContext = SocialPolicy & {
@@ -86,6 +87,12 @@ export async function postContext(
         ? context.moderators
         : context.volunteers
     ).add(grant.churchId);
+  }
+  if (!(await privilegedProjectionAvailable(tx, actor.id))) {
+    context.publishers.clear();
+    context.moderators.clear();
+    context.volunteers.clear();
+    context.topicModerators?.clear();
   }
   return context;
 }

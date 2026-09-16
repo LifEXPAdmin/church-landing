@@ -3,29 +3,20 @@ import {
   createDecipheriv,
   createHmac,
   hkdfSync,
-  randomBytes,
-  timingSafeEqual
+  randomBytes
 } from "node:crypto";
+import { generateSync, verifySync } from "@otplib/totp";
+import { NodeCryptoPlugin } from "@otplib/plugin-crypto-node";
+import { ScureBase32Plugin } from "@otplib/plugin-base32-scure";
 import { accountConfig } from "./account-config";
 import { PortalError } from "./portal-policy";
-const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+const crypto = new NodeCryptoPlugin();
+const base32 = new ScureBase32Plugin();
 export function authenticatorSecret() {
   return randomBytes(20);
 }
 export function authenticatorBase32(value: Buffer) {
-  let bits = 0,
-    pending = 0,
-    result = "";
-  for (const byte of value) {
-    pending = (pending << 8) | byte;
-    bits += 8;
-    while (bits >= 5) {
-      result += alphabet[(pending >>> (bits - 5)) & 31];
-      bits -= 5;
-    }
-  }
-  if (bits) result += alphabet[(pending << (5 - bits)) & 31];
-  return result;
+  return base32.encode(value);
 }
 const encryptionKey = (userId: string) =>
   Buffer.from(
@@ -65,16 +56,11 @@ export function openAuthenticator(userId: string, value: string) {
     decipher.final()
   ]);
 }
-// RFC 6238 dynamic truncation. Eight-digit mode is used only by the published
-// standard vectors; account enrollment always advertises six digits/30 seconds.
+// Maintained RFC 6238 implementation. Keep the existing encrypted factor format
+// and six-digit/30-second enrollment compatible; no new account provider.
 export function authenticatorTotp(secret: Buffer, counter: bigint, digits = 6) {
-  const value = Buffer.alloc(8);
-  value.writeBigUInt64BE(counter);
-  const mac = createHmac("sha1", secret).update(value).digest(),
-    offset = mac[mac.length - 1] & 15;
-  return String(
-    (mac.readUInt32BE(offset) & 0x7fffffff) % 10 ** digits
-  ).padStart(digits, "0");
+  if (digits !== 6 && digits !== 8) throw Error("Unsupported authenticator digits");
+  return generateSync({ secret, epoch: Number(counter) * 30, digits, crypto });
 }
 export function verifyAuthenticatorCode(
   secret: Buffer,
@@ -87,26 +73,19 @@ export function verifyAuthenticatorCode(
       400,
       "Enter the six-digit code from your authenticator."
     );
-  const current = BigInt(Math.floor(now / 30000));
-  let match: bigint | null = null;
-  for (const delta of [BigInt(-1), BigInt(0), BigInt(1)]) {
-    const candidate = current + delta;
-    if (
-      candidate > lastCounter &&
-      candidate >= BigInt(0) &&
-      timingSafeEqual(
-        Buffer.from(code),
-        Buffer.from(authenticatorTotp(secret, candidate))
-      )
-    )
-      match = candidate;
-  }
-  if (match === null)
+  const current = Math.floor(now / 30000);
+  const result = lastCounter >= BigInt(current + 1)
+    ? { valid: false as const }
+    : verifySync({
+        secret, token: code, epoch: now / 1000, epochTolerance: 30, crypto,
+        ...(lastCounter >= BigInt(0) ? { afterTimeStep: Number(lastCounter) } : {})
+      });
+  if (!result.valid)
     throw new PortalError(
       400,
       "That authenticator code is invalid or already used. Wait for the next code and try again."
     );
-  return match;
+  return BigInt(result.timeStep);
 }
 export function authenticatorRecoveryCodes(secret: Buffer, requestKey: string) {
   return Array.from({ length: 8 }, (_, i) =>

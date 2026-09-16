@@ -1,4 +1,5 @@
 import { scheduleDomainActivity } from "./notification-fanout";
+import { privilegedErrorFields } from "./privileged-auth-policy";
 import { schedulePublicationHandoff } from "./scheduled-publication";
 import type { PrismaClient } from "@prisma/client";
 import { accountConfig } from "./account-config";
@@ -25,6 +26,7 @@ export function workspaceError(error: unknown) {
         : 503;
   return Response.json(
     {
+      ...privilegedErrorFields(error),
       message:
         error instanceof PortalError
           ? error.message
