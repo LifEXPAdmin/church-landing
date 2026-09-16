@@ -749,6 +749,14 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "help-and-product-progress", version: "2026.09.16.4", date: "2026-09-16",
+    summary: "Find feedback, private receipts and product progress from Help and Settings.",
+    added: ["Help and Settings link directly to feedback, your private receipts and reviewed ideas."],
+    improved: ["Product guidance distinguishes plans from released changes and explains optional contributor credit."],
+    fixed: ["Help now describes the existing permanent-deletion flow and all browser reading-reset choices."],
+    featureIds: ["private-feedback", "reviewed-ideas"]
+  },
+  {
     id: "clear-website-writing", version: "2026.09.16.3", date: "2026-09-16",
     summary: "Read clearer guidance, date ranges and status labels across the website.",
     added: [],

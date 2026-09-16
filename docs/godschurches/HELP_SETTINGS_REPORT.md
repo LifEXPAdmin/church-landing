@@ -1,5 +1,26 @@
 # Help settings and supported navigation
 
+## Product progress and feedback: September 16, 2026
+
+The current candidate adds direct Help/Settings entries for private feedback,
+owned receipts and the existing public reviewed-ideas board. This board is the
+canonical product-progress destination; no parallel roadmap or public copy of
+private submissions is created. Help and the board distinguish plans/testing
+from released changes and explain separate, optional contributor recognition.
+The existing receipt, human review, consent and provider gates remain intact.
+
+Help now describes the implemented permanent-deletion confirmation/progress
+flow and all six browser reading-reset choices. Older statements below that
+feedback, reviewed ideas or deletion are unimplemented are superseded by their
+own release receipts. This entry is an implementation checkpoint; the exact
+release and live acceptance are still pending.
+
+Ten existing help/search/registry/release checks pass, as does the authored-copy
+guard over 706 files and 45,996 fragments. The existing browser suite is being
+updated to assert current notification controls and the actual loaded release,
+then verify the new canonical links and explanations at narrow widths. No schema,
+provider setting, authority or new dependency changes are required.
+
 September 12, 2026. Help and About reuses the current Help/contact and private
 request destinations, Privacy and Terms pages, loaded-release context, retained
 release notes and Explore features. It adds seven searchable summaries covering

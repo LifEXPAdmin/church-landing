@@ -117,16 +117,11 @@ try {
   await page.keyboard.press("Enter");
   assert.match(
     await quiet.innerText(),
-    /Quiet hours, delivery channels and notification categories are unavailable/
+    /Quiet hours pause phone alerts and selected feedback email/
   );
   await quiet.getByRole("link").click();
   await page.waitForURL("**/settings/notifications/availability");
-  await page
-    .getByText(
-      "In-app notification categories, email alerts, push and quiet hours are not available yet.",
-      { exact: true }
-    )
-    .waitFor();
+  await page.getByRole("group", { name: "Quiet hours", exact: true }).waitFor();
   await go("/platform/settings/help");
   await help.waitFor();
   await search.fill("unknown help term");
@@ -149,8 +144,11 @@ try {
     await help.innerText(),
     /Calendar and event-series shares are separate/
   );
-  assert.match(await help.innerText(), /five reading choices/);
+  assert.match(await help.innerText(), /photo data use and hidden Like counts/);
   assert.match(await help.innerText(), /does not reset your profile/);
+  assert.match(await help.innerText(), /Permanent deletion has its own confirmation/);
+  assert.match(await help.innerText(), /Planned, Building and Testing do not mean a change is live/);
+  assert.match(await help.innerText(), /showing a contributor's name is a separate optional choice/);
   for (const width of [320, 390, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     await page.evaluate(
@@ -188,28 +186,40 @@ try {
   }
   await go("/platform/settings/help");
   await help.waitFor();
-  const loaded = help.getByRole("link", {
-    name: "App version 2026.09.12.18",
-    exact: true
-  });
-  await loaded.waitFor();
   const release = await (
     await context.request.get(config.origin + "/api/platform/release")
   ).json();
-  assert.equal(release.product.version, "2026.09.12.18");
+  const { releases } = await import("../lib/platform/release-content.ts");
+  assert.equal(release.product.version, releases[0].version);
+  const loaded = help.getByRole("link", {
+    name: `App version ${release.product.version}`,
+    exact: true
+  });
+  await loaded.waitFor();
   await loaded.click();
   await page
-    .getByRole("heading", { name: "Version 2026.09.12.18", exact: true })
+    .getByRole("heading", { name: `Version ${release.product.version}`, exact: true })
     .waitFor();
   await page
     .getByRole("link", { name: "All release notes", exact: true })
     .click();
   await page
-    .getByRole("link", { name: "Version 2026.09.12.17", exact: true })
+    .getByRole("link", { name: `Version ${releases[1].version}`, exact: true })
     .waitFor();
   ok(
     "Every current help/topic/policy destination resolves; policy dates stay on their source pages and loaded version reuses retained release content"
   );
+
+  await go("/platform/settings/help");
+  await page.getByRole("link", { name: "What we're building", exact: true }).click();
+  await page.waitForURL("**/platform/feedback/ideas");
+  await page.getByRole("heading", { name: "Reviewed ideas", exact: true }).waitFor();
+  await page.getByText(/Considering, Planned, Building and Testing are work in progress/).waitFor();
+  await bounded();
+  await go("/platform/help");
+  await page.getByRole("link", { name: "What we're building", exact: true }).click();
+  await page.waitForURL("**/platform/feedback/ideas");
+  ok("Help and searchable Settings open the canonical public ideas board with planned/released and contributor-consent explanations");
 
   await go("/platform/settings/help");
   await help.waitFor();

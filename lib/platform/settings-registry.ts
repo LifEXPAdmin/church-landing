@@ -643,6 +643,33 @@ export const settingsRegistry: readonly SettingRegistration[] = Object.freeze([
     help
   ),
   entry(
+    "help.feedback",
+    "help",
+    "Share website feedback",
+    "Share a private suggestion or problem when feedback intake is available.",
+    ["feedback", "suggestion", "problem", "rating", "diagnostics"],
+    { href: "/platform/feedback" },
+    help
+  ),
+  entry(
+    "help.receipts",
+    "help",
+    "My feedback",
+    "Return to your private receipts and chosen follow-up preferences.",
+    ["feedback receipt", "my feedback", "follow-up", "suggestion status"],
+    { href: "/platform/feedback/requests" },
+    help
+  ),
+  entry(
+    "help.ideas",
+    "help",
+    "What we're building",
+    "Browse reviewed ideas and their status. Planned work is separate from released changes.",
+    ["roadmap", "building", "ideas", "suggestion credit", "planned"],
+    { href: "/platform/feedback/ideas" },
+    help
+  ),
+  entry(
     "help.privacy",
     "help",
     "Privacy policy",

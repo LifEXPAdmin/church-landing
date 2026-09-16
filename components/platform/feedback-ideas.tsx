@@ -43,6 +43,12 @@ export function FeedbackIdeas({
         Public summaries reviewed by God’s Churches, with the contributor’s
         permission. Votes express interest and do not promise a delivery date.
       </p>
+      <p>
+        Considering, Planned, Building and Testing are work in progress.
+        Released ideas link to the changes that are available. A contributor’s
+        name is shown only with their separate permission; private submissions
+        and screenshots stay private.
+      </p>
       {!visible && (
         <div className="space-y-3 rounded-xl border border-gc-divider p-4">
           <p role="status">

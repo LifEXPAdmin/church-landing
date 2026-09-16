@@ -1,6 +1,22 @@
 /** Presentation of existing capabilities; each destination retains its authority. */
 export const settingsHelpTopics = [
   {
+    id: "feedback",
+    title: "How can I share feedback and find my receipt?",
+    keywords: "feedback suggestion problem rating diagnostics screenshot receipt private support",
+    body: "Share feedback is optional and available when support intake is open. Review the details and any selected screenshot before sending; diagnostics are optional. Your receipt and contact choices stay in My feedback. Submitting feedback does not publish it or sign you up for updates.",
+    href: "/platform/feedback",
+    action: "Open feedback and private receipts"
+  },
+  {
+    id: "product-progress",
+    title: "Where can I see what's being built and released?",
+    keywords: "roadmap building ideas planned released suggestion credit recognition updates",
+    body: "Reviewed ideas is the public place for suggestions and their current status when the board is available. Considering, Planned, Building and Testing do not mean a change is live. Released ideas link to their release notes. A public summary requires contributor permission and human review; showing a contributor's name is a separate optional choice. Private submissions and screenshots stay private. Votes express interest, not a delivery promise.",
+    href: "/platform/feedback/ideas",
+    action: "Open reviewed ideas"
+  },
+  {
     id: "measurement",
     title: "Can I turn off optional platform measurement?",
     keywords: "analytics measurement privacy opt out referral device",
@@ -47,7 +63,7 @@ export const settingsHelpTopics = [
     id: "reset",
     title: "What does resetting Display change?",
     keywords: "reset restore defaults browser cookie data",
-    body: "After confirmation, reset restores only this browser’s five reading choices: theme, text size, layout, reduced motion and photo data use. It does not reset your profile, church sharing, mention permissions, account credentials or browser camera/location permissions.",
+    body: "After confirmation, reset restores only this browser’s reading choices: theme, text size, layout, reduced motion, photo data use and hidden Like counts. It does not reset your profile, church sharing, mention permissions, account credentials or browser camera/location permissions.",
     href: "/platform/settings/display/reading",
     action: "Review display reset"
   },
@@ -65,7 +81,7 @@ export const settingsHelpTopics = [
     title: "How do I download my data or take a break?",
     keywords:
       "export download delete deactivate permission camera microphone location",
-    body: "Confirm your account to prepare a private data file, then save it within one minute. An expired download needs fresh confirmation. Deactivation is reversible and retains your records; review sharing effects and hand off required duties first. Permanent account deletion is unavailable.",
+    body: "Confirm your account to prepare a private data file, then save it within one minute. An expired download needs fresh confirmation. Deactivation is reversible and retains your records; review sharing effects and hand off required duties first. Permanent deletion has its own confirmation, immediately hides the account and shows cleanup progress. Retained shared records and expiring backups follow the stated retention policy.",
     href: "/platform/settings/data",
     action: "Review your data"
   },
