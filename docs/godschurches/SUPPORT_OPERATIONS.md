@@ -1,5 +1,26 @@
 # Ordinary support operations
 
+## Current integrated readiness: September 16, 2026
+
+Admin requests, scoped working notes, assignments, native resolution/reopening,
+private feedback, weekly review and actual aggregate reports are implemented.
+The [admin](ADMIN_OPERATIONS_ACCEPTANCE.md) and
+[feedback](FEEDBACK_WEEKLY_ACCEPTANCE.md) receipts cover isolated A1/A2/A3
+permission, exact retry, denial, revocation, safe diagnostics and actual browser
+journeys. Current release `2026.09.16.2 / 8023e80` retains those checks in its
+167-file regression gate. Reuse this implementation rather than rebuilding it.
+
+Production inspection at 04:33:59 UTC finds no general Support grants, intake
+settings or cases. The existing report-review grant is separate from Support,
+account restrictions, health access and admin-access management. Actual trusted
+first-operator setup, personal authenticator enrollment, scoped Support
+provisioning/notice and response coverage remain prerequisites. The intended
+operator and sole-report-reviewer policy are settled; no new choice or broader
+authority is inferred. Current disabled intake remains truthful and the public
+help route remains available. No real case, grant, intake activation or message
+was created for this audit. Family, physical-device and pilot acceptance remain
+separate from engineering evidence.
+
 ## Report reconsideration live — 13 September 2026
 
 Version 2026.09.13.32 reuses SupportCase, messages, audits, versions and exact receipts

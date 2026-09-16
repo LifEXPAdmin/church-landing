@@ -1,5 +1,36 @@
 # Operational health and measured hosting resources
 
+## Current operational acceptance: September 16, 2026
+
+The verified `2026.09.16.2 / 8023e80` release preserves the private maintenance
+health endpoint and supplies the scoped Admin health interface. Admin, metrics
+and feedback engineering are implemented and isolated A1/A2/A3 acceptance is
+recorded in their existing reports. They are no longer missing code dependencies.
+
+The current protected health check passes with no pending activity/schedule
+backlogs or alerts. Both content-free native activity and scheduled-publication
+probes complete on the exact release with HTTP 200 and zero application writes.
+Scheduled publication uses the existing private notification consumer and
+maintenance repair; the historical no-dispatcher statement is superseded.
+
+Read-only production inspection at 04:33:59 UTC confirms no health-view,
+access-manager, account-manager or general Support grants. The existing report
+reviewer has separate authority. Real operator setup, authenticator enrollment,
+support ownership and response coverage remain operational prerequisites; the
+engineering release does not assign them. The health snapshot and worker logs
+do not establish continuous alerting or a human response commitment.
+
+The new release waited 150.692 seconds in the provider's concurrent-build queue
+while a same-source counterpart project built. Actual provider output contains
+389 function routes, 12 distinct packages and 168,517,375 packaged bytes, including
+middleware. These figures are package/build observations, not request latency or
+capacity. See [the exact release receipt](NOTIFICATION_CENTER_ACCEPTANCE.md).
+The unmet 100-client feed target and provider usage-access limitation in the
+[capacity receipt](CAPACITY_REHEARSAL.md) remain unresolved. No new cloud load,
+shared-project configuration change or purchase was performed.
+
+## Original health implementation and measured inventory
+
 September 14, 2026. Verified live on version 2026.09.14.7; exact deployment,
 47 migration checksums and actual worker evidence are in
 [the capacity receipt](CAPACITY_REHEARSAL.md). The 10:03 UTC operational probe
@@ -18,8 +49,8 @@ and announcements, and scheduled posts. It excludes account/content IDs, names,
 addresses, text, object keys and credentials. Unverified signup intent is excluded
 from dispatchable welcome backlog. Configuration booleans are not delivery probes.
 An empty queue does not establish the last worker success: that field explicitly
-requires scoped completion logs. Scheduled publishing has no configured dispatcher;
-due scheduled work raises attention rather than claiming delivery.
+requires scoped completion logs. Due scheduled work raises attention; configured
+dispatch and actual consumer completion must be verified separately.
 
 Responses are private/no-store/noindex. HTTP 503 means attention is required or
 the bounded snapshot could not be obtained. A safe failure returns no database
