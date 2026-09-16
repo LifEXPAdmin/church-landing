@@ -14,6 +14,14 @@ export type Feature = {
 };
 export const features: Feature[] = [
   {
+    id: "account-authenticator", category: "Privacy and account", name: "Authenticator for assigned duties",
+    description: "Set up a private authenticator and recovery codes for church, topic, Support and platform duties.",
+    steps: "Open Settings → Security → Your authenticator. Confirm your current sign-in, add the private key to your authenticator, confirm a code and save your recovery codes separately.",
+    href: "/platform/account/authenticator",
+    eligibility: "Available to eligible verified adults when enrollment is enabled. Setup gives no permissions. Broader enforcement is activated separately after operator enrollment. Protected actions then require a current code; personal account access remains available. Email recovery alone cannot replace a lost factor.",
+    availability: "conditional"
+  },
+  {
     id: "language-location-preferences", category: "Privacy and account", name: "Date formats and location choices",
     description: "Save your preferred date and time formats, choose a private discovery area, and decide who can see your optional profile location.",
     steps: "Open Settings → Language and location. Preview date and time formats, choose a discovery town and radius manually or from optional device suggestions, or edit your profile location and its audience. Save each choice separately.",
@@ -756,6 +764,14 @@ export const features: Feature[] = [
   }
 ];
 export const releases: ReleaseEntry[] = [
+  {
+    id: "account-authenticator-enrollment", version: "2026.09.16.9", date: "2026-09-16",
+    summary: "Prepare an authenticator and private recovery codes for your assigned duties.",
+    added: ["Eligible adults can enroll from Account security when setup is enabled, with current sign-in confirmation and private recovery codes."],
+    improved: ["Replacement retires the old factor, recovery codes and other sign-ins. Essential security notices show whether the email provider accepted them.", "Protected-action confirmation can open in another tab while your original form stays available. Broader enforcement remains a separate activation step."],
+    fixed: ["Protected database recovery cannot reactivate an old authenticator or its confirmed sessions."],
+    featureIds: ["account-authenticator", "admin-requests"]
+  },
   {
     id: "feed-rendering-efficiency", version: "2026.09.16.8", date: "2026-09-16",
     summary: "Feed pages do less repeated work while keeping current conversations and your chosen date formats.",

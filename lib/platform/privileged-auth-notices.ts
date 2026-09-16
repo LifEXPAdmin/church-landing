@@ -41,7 +41,7 @@ export async function dispatchPrivilegedNotices(
       OR: [{ attemptedAt: null }, { attemptedAt: { lt: new Date(Date.now() - 60000) } }] },
     orderBy: [{ createdAt: "asc" }, { id: "asc" }], take: 5
   });
-  let delivered = 0, pending = 0;
+  let delivered = 0;
   for (const row of rows) {
     const claimed = await db.privilegedSecurityNotice.updateMany({
       where: { id: row.id, attempts: row.attempts, deliveredAt: null },
@@ -52,12 +52,15 @@ export async function dispatchPrivilegedNotices(
       where: { id: row.userId, emailVerifiedAt: { not: null }, deactivatedAt: null, suspendedAt: null },
       select: { email: true }
     });
-    if (!user) { pending++; continue; }
+    if (!user) continue;
     try {
       await delivery({ id: row.id, email: user.email, action: row.action, createdAt: row.createdAt });
       await db.privilegedSecurityNotice.update({ where: { id: row.id }, data: { deliveredAt: new Date() } });
       delivered++;
-    } catch { pending++; }
+    } catch { /* Keep the undelivered receipt visible to the owner and maintenance. */ }
   }
+  const pending = await db.privilegedSecurityNotice.count({
+    where: { ...(userId ? { userId } : {}), deliveredAt: null }
+  });
   return { delivered, pending };
 }

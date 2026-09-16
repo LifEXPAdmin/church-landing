@@ -42,6 +42,7 @@ import { founderAnnouncementCommand } from "../lib/platform/founder-announcement
 import { pushSubscriptionCommand } from "../lib/platform/push-subscriptions";
 import { createSessionToken } from "../lib/platform/auth";
 import { readAccountSession, loginAccount } from "../lib/platform/accounts";
+import { sealAuthenticator, authenticatorRecoveryHash, authenticatorRecoveryCodes } from "../lib/platform/admin-authenticator-crypto";
 const source = new PrismaClient();
 const names = [
   "RETENTION_RESTORE_ISOLATED",
@@ -103,6 +104,20 @@ test("an actual isolated database snapshot replays newer deletion and hold relea
   };
   process.env.FOUNDER_WELCOME_ENABLED = "false";
   const founder = await createPortalActor(source, "restorereviewer");
+  const factorSession = await source.platformSession.findFirstOrThrow({ where: { userId: founder.id } });
+  const fixtureFactorSecret = randomBytes(20);
+  const restoredFactor = await source.adminAuthenticator.create({ data: {
+    userId: founder.id, secretCiphertext: sealAuthenticator(founder.id, fixtureFactorSecret),
+    credentialVersion: factorSession.credentialVersion, sessionId: factorSession.id,
+    enrollmentRequestKey: randomUUID(), confirmedAt: new Date(), expiresAt: new Date(Date.now() + 600000),
+    recoveryRequired: true, recoveryHashes: [authenticatorRecoveryHash(founder.id, authenticatorRecoveryCodes(fixtureFactorSecret, randomUUID())[0])]
+  } });
+  await source.privilegedSessionProof.create({ data: {
+    sessionId: factorSession.id, purpose: "privileged-work", requestKey: randomUUID(),
+    factorVersion: restoredFactor.version, credentialVersion: factorSession.credentialVersion,
+    authorityDigest: "fictional-restored-authority", confirmedAt: new Date(), expiresAt: new Date(Date.now() + 600000)
+  } });
+  await source.privilegedSecurityNotice.create({ data: { userId: founder.id, factorVersion: restoredFactor.version, action: "confirmed" } });
   const measured=await createPortalActor(source,"restoremetric");
   const metricConfig=await source.platformMetricConfiguration.findFirstOrThrow({orderBy:{version:"desc"}});
   const measuredChoice=await source.platformMeasurementChoice.create({data:{userId:measured.id,policy:"platform-measurement-v1",enabledAt:new Date()}});
@@ -475,6 +490,15 @@ test("an actual isolated database snapshot replays newer deletion and hold relea
       /restoration database/
     );
     const result = await replayProtectedRestoration(restored, journals);
+    const retiredFactor = await restored.adminAuthenticator.findUniqueOrThrow({ where: { userId: founder.id } });
+    assert.ok(retiredFactor.quarantinedAt);
+    assert.equal(retiredFactor.secretCiphertext, "");
+    assert.equal(retiredFactor.confirmedAt, null);
+    assert.equal(retiredFactor.recoveryRequired, true);
+    assert.deepEqual(retiredFactor.recoveryHashes, []);
+    assert.equal(retiredFactor.version, restoredFactor.version + 1);
+    assert.equal(await restored.privilegedSessionProof.count(), 0);
+    assert.equal(await restored.privilegedSecurityNotice.count(), 0);
     assert.equal(result.holdsNeedingReasonReview, priorUnresolvedHolds);
     assert.deepEqual(result.unresolvedReports, []);
     assert.equal(result.replayComplete, priorUnresolvedHolds === 0);

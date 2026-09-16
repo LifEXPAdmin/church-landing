@@ -69,17 +69,32 @@ account erasure and protected restore. Delivery failure never claims success.
 
 ## Current verification and remaining work
 
-Eight focused checks pass on a fresh isolated fixture with **91 migrations**,
+Fourteen focused checks pass on a fresh isolated fixture with **91 migrations**,
 populated upgrade preservation and an actual fixture dump/restore. They cover
 library vectors, key protection, owner enrollment, forged requests, fixed expiry,
 authority changes, another session, consumed step-up, concurrent recovery,
-retired codes and retained personal access. Type checking and website-copy
+retired codes and retained personal access. The expanded matrix covers every
+church capability, topic management, requester versus staff/coordinator Support,
+ordinary Google adapter sessions, primary-password recovery and exhausted notice
+retries. The actual protected restore retires an enrolled factor, proof and notice.
+Type checking and website-copy
 validation pass at this intermediate checkpoint. No production writes occurred.
 
 Two earlier failures are preserved privately: Node's strip-only TypeScript runner
 rejected a parameter-property declaration, and the existing factor constraint
 rejected the new quarantined empty-secret state. Both were repaired before the
-passing focused run. This is not full regression or real-device evidence.
+passing focused run. Additional fixture corrections supplied the required church
+summary, Support intake/consent fields, password confirmation and a correctly
+formatted fictional recovery code. This is not full regression or real-device
+evidence.
+
+Challenge retries now match the exact request and current session proof. A
+session without a proof incurs one indexed lookup before rejecting privileged
+projection, rather than loading every authority source. The authenticator screen
+conceals private entries on backgrounding and rechecks its account and opaque
+session view key before revealing them. Changed sign-ins remove retained secrets;
+unchanged sign-ins can resume. Setup keys and recovery codes remain only in
+component memory and expire from view after ten minutes.
 
 Still required within this feature: complete the privilege-surface and alternate
 sign-in audit, source/HTTP/browser bypass and recovery tests, complete regression

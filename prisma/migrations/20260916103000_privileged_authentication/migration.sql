@@ -10,6 +10,7 @@ ALTER TABLE "AdminAuthenticator" ADD CONSTRAINT "AdminAuthenticator_bounds" CHEC
 CREATE TABLE "PrivilegedSessionProof" (
   "sessionId" TEXT NOT NULL,
   "purpose" TEXT NOT NULL,
+  "requestKey" TEXT NOT NULL,
   "factorVersion" INTEGER NOT NULL,
   "credentialVersion" INTEGER NOT NULL,
   "authorityDigest" TEXT NOT NULL,

@@ -1,4 +1,5 @@
 import type { PrismaClient } from "@prisma/client";
+import { createHmac } from "node:crypto";
 import { withOwnedSession } from "./account-sessions";
 import { readAccountSession } from "./accounts";
 import { allowAccountAttempt } from "./account-limits";
@@ -30,6 +31,8 @@ export function readPrivilegedAuthentication(db: PrismaClient, token: unknown) {
     });
     return {
       ownerId: session.userId, username: authority?.actor.username ?? "",
+      viewKey: createHmac("sha256", accountConfig().rateSecret + ":authenticator-view")
+        .update(session.id + ":" + session.credentialVersion).digest("hex"),
       eligible: !!authority, hasDuties: authority?.hasDuties ?? false,
       mode: privilegedMode(), available: privilegedMode() !== "off" && accountDeliveryAvailable(),
       googleAvailable: googleAvailable(),
@@ -70,8 +73,11 @@ export async function privilegedAuthenticatorCommand(
         return { ...retry.prior, recoveryCodes: authenticatorRecoveryCodes(openAuthenticator(userId, row.secretCiphertext), key) };
       if (["mfa-start", "mfa-recover", "mfa-replace"].includes(operation) && row.enrollmentRequestKey === key && !row.confirmedAt && row.expiresAt > new Date())
         return { ...retry.prior, secret: authenticatorBase32(openAuthenticator(userId, row.secretCiphertext)) };
-      if (operation === "mfa-challenge" && await privilegedAssurance(tx, userId, privilegedPurpose(input.purpose)))
-        return retry.prior;
+      if (operation === "mfa-challenge") {
+        const purpose = privilegedPurpose(input.purpose);
+        const proof = await tx.privilegedSessionProof.findUnique({ where: { sessionId_purpose: { sessionId: session.id, purpose } } });
+        if (proof?.requestKey === key && await privilegedAssurance(tx, userId, purpose)) return retry.prior;
+      }
       throw new PortalError(409, "This authenticator operation has expired or changed. Review the current status before retrying.");
     }
     expected(input.expectedVersion, row?.version ?? 0);
@@ -100,7 +106,7 @@ export async function privilegedAuthenticatorCommand(
       await tx.adminAuthenticator.update({ where: { userId }, data: { lastCounter: counter } });
       const now = new Date();
       const save = async (purpose: PrivilegedPurpose, milliseconds: number) => {
-        const values = { factorVersion: row.version, credentialVersion: session.credentialVersion,
+        const values = { requestKey: key, factorVersion: row.version, credentialVersion: session.credentialVersion,
           authorityDigest: authority.digest, confirmedAt: now, expiresAt: new Date(now.getTime() + milliseconds), consumedAt: null };
         await tx.privilegedSessionProof.upsert({ where: { sessionId_purpose: { sessionId: session.id, purpose } },
           create: { sessionId: session.id, purpose, ...values }, update: values });

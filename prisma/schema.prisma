@@ -2201,6 +2201,7 @@ model AdminAuthenticator {
 model PrivilegedSessionProof {
   sessionId                String
   purpose                  String
+  requestKey               String
   factorVersion            Int
   credentialVersion        Int
   authorityDigest          String

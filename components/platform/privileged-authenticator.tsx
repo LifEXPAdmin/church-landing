@@ -1,12 +1,12 @@
 "use client";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import QRCode from "qrcode";
 import type { PrivilegedAuthenticationSnapshot } from "@/lib/platform/privileged-auth";
 import { GoogleAccountOptions } from "./google-account";
 import { AdminForm } from "./admin-form";
+import { socialRequest, SocialClientError } from "@/lib/platform/social-client";
 
 const purposes = [
   { value: "privileged-work", label: "Use my assigned duties" },
@@ -16,9 +16,58 @@ const purposes = [
   { value: "send-announcement", label: "Send a reviewed founder announcement" }
 ];
 export function PrivilegedAuthenticator({ data, purpose }: { data: PrivilegedAuthenticationSnapshot; purpose?: string }) {
-  const router = useRouter();
+  const [current, setCurrent] = useState(data), [visible, setVisible] = useState(false),
+    [notice, setNotice] = useState("Checking your current sign-in…"), [retired, setRetired] = useState(false);
+  const generation = useRef(0);
+  const refresh = useCallback(async () => {
+    const request = ++generation.current;
+    setVisible(false);
+    try {
+      const { data: next } = await socialRequest<PrivilegedAuthenticationSnapshot>("/api/platform/authenticator", undefined, data.ownerId);
+      if (request !== generation.current) return;
+      if (next.ownerId !== data.ownerId || next.viewKey !== data.viewKey)
+        throw new SocialClientError(401, "Your sign-in changed. Reload your authenticator settings.");
+      setCurrent(next); setVisible(true); setNotice("");
+    } catch (error) {
+      if (request !== generation.current) return;
+      if (error instanceof SocialClientError && error.status === 401) setRetired(true);
+      setNotice(error instanceof Error ? error.message : "Your sign-in could not be checked. Private entries are concealed.");
+    }
+  }, [data.ownerId, data.viewKey]);
+  useEffect(() => {
+    const hide = () => { generation.current++; setVisible(false); };
+    const resume = () => { if (document.visibilityState !== "hidden") void refresh(); };
+    const visibility = () => document.visibilityState === "hidden" ? hide() : resume();
+    resume();
+    window.addEventListener("blur", hide); window.addEventListener("offline", hide);
+    window.addEventListener("focus", resume); window.addEventListener("online", resume);
+    window.addEventListener("pageshow", resume); window.addEventListener("admin-access-changed", resume);
+    document.addEventListener("visibilitychange", visibility);
+    return () => {
+      generation.current++;
+      window.removeEventListener("blur", hide); window.removeEventListener("offline", hide);
+      window.removeEventListener("focus", resume); window.removeEventListener("online", resume);
+      window.removeEventListener("pageshow", resume); window.removeEventListener("admin-access-changed", resume);
+      document.removeEventListener("visibilitychange", visibility);
+    };
+  }, [refresh]);
+  return <div className="space-y-4">
+    {!visible && <div className="space-y-3"><p role="status">{notice || "Checking your current sign-in. Private entries are concealed."}</p>
+      {retired ? <a className="gc-button" href="/platform/account/authenticator">Reload authenticator settings</a>
+        : <button className="gc-button gc-button-quiet" onClick={() => void refresh()}>Recheck current sign-in</button>}
+    </div>}
+    {!retired && <div hidden={!visible}><AuthenticatorContent data={current} purpose={purpose} refresh={refresh} /></div>}
+  </div>;
+}
+function AuthenticatorContent({ data, purpose, refresh }: { data: PrivilegedAuthenticationSnapshot; purpose?: string; refresh: () => Promise<void> }) {
   const [secret, setSecret] = useState(""), [codes, setCodes] = useState<string[]>([]), [qr, setQr] = useState("");
+  const displayedVersion = useRef<number | null>(null);
   const factor = data.factor;
+  useEffect(() => {
+    if (displayedVersion.current !== null && displayedVersion.current !== factor?.version) {
+      setSecret(""); setCodes([]); setQr(""); displayedVersion.current = null;
+    }
+  }, [factor?.version]);
   useEffect(() => {
     let active = true;
     setQr("");
@@ -35,6 +84,7 @@ export function PrivilegedAuthenticator({ data, purpose }: { data: PrivilegedAut
     return () => clearTimeout(timer);
   }, [secret, codes.length]);
   const receive = (result: Record<string, unknown>) => {
+    displayedVersion.current = Number(result.version);
     if (typeof result.secret === "string") { setSecret(result.secret); setCodes([]); }
     if (Array.isArray(result.recoveryCodes)) {
       setCodes(result.recoveryCodes.filter((v): v is string => typeof v === "string"));
@@ -42,7 +92,7 @@ export function PrivilegedAuthenticator({ data, purpose }: { data: PrivilegedAut
     }
   };
   const common = { owner: data.ownerId, endpoint: "/api/platform/authenticator" as const,
-    fixed: { expectedVersion: factor?.version ?? 0 }, onSaved: () => router.refresh(), onResult: receive };
+    fixed: { expectedVersion: factor?.version ?? 0 }, onSaved: () => void refresh(), onResult: receive };
   const code = { name: "code", label: "Six-digit authenticator code", min: 6, max: 6 };
   return <GoogleAccountOptions enabled={data.googleAvailable}>
     <div className="space-y-6">

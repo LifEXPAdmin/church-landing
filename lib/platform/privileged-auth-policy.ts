@@ -85,16 +85,18 @@ export class PrivilegedAuthenticationError extends PortalError {
 export async function privilegedAssurance(tx: Tx, userId: string, purpose: PrivilegedPurpose = "privileged-work") {
   const session = privilegedSession(tx, userId);
   if (!session) return false;
-  const [authority, factor, proof] = await Promise.all([
-    privilegedAuthority(tx, userId),
-    tx.adminAuthenticator.findUnique({ where: { userId }, select: { version: true, confirmedAt: true } }),
-    tx.privilegedSessionProof.findUnique({ where: { sessionId_purpose: { sessionId: session.id, purpose } } })
-  ]);
+  // Most ordinary sessions have no proof. One indexed read avoids loading every
+  // privilege source on each ordinary feed or calendar request.
+  const proof = await tx.privilegedSessionProof.findUnique({ where: { sessionId_purpose: { sessionId: session.id, purpose } } });
   const now = new Date();
-  return !!(authority && factor?.confirmedAt && proof &&
-    !proof.consumedAt && proof.confirmedAt <= now && proof.expiresAt > now &&
+  if (!proof || proof.consumedAt || proof.confirmedAt > now || proof.expiresAt <= now ||
+    proof.credentialVersion !== session.credentialVersion) return false;
+  const [authority, factor] = await Promise.all([
+    privilegedAuthority(tx, userId),
+    tx.adminAuthenticator.findUnique({ where: { userId }, select: { version: true, confirmedAt: true, quarantinedAt: true } })
+  ]);
+  return !!(authority && factor?.confirmedAt && !factor.quarantinedAt &&
     proof.factorVersion === factor.version &&
-    proof.credentialVersion === session.credentialVersion &&
     proof.authorityDigest === authority.digest);
 }
 

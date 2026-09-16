@@ -14,7 +14,11 @@ export async function handlePrivilegedAuthentication(
     const token = requestSessionToken(request);
     if (request.method === "GET") {
       if (new URL(request.url).search) throw new PortalError(400, "Open the authenticator page without extra fields.");
-      return Response.json(await readPrivilegedAuthentication(db, token), { headers: socialHeaders });
+      const snapshot = await readPrivilegedAuthentication(db, token);
+      const expectedOwner = request.headers.get("x-expected-account");
+      if (expectedOwner && expectedOwner !== snapshot.ownerId)
+        throw new PortalError(401, "The signed-in account changed. Reload your authenticator settings.");
+      return Response.json(snapshot, { headers: socialHeaders });
     }
     if (!request.headers.get("x-expected-account"))
       throw new PortalError(401, "Reload this account's authenticator form before continuing.");
