@@ -1,3 +1,4 @@
+import { revokeAccountContact } from "./adult-contact-policy";
 import { Prisma, type PrismaClient } from "@prisma/client";
 import { emptyPostDiscovery } from "./post-options";
 import { retireImage } from "./media";
@@ -131,6 +132,16 @@ async function erasePersonalCalendars(tx: Tx, userId: string, now: Date) {
 }
 
 async function eraseSocialData(tx: Tx, userId: string, now: Date) {
+  await revokeAccountContact(tx, userId);
+  await tx.exchangeDefaults.deleteMany({ where: { ownerId: userId } });
+  await tx.exchangeInquiryAudit.updateMany({ where: { actorId: userId }, data: { actorId: null } });
+  await tx.exchangeInquiry.updateMany({ where: { requesterId: userId }, data: { requesterClearedAt: now, requesterId: null } });
+  await tx.exchangeInquiry.updateMany({ where: { receiverId: userId }, data: { receiverClearedAt: now, receiverId: null } });
+  await tx.exchangeInquiry.updateMany({ where: { unretainedAt: null, AND: [
+    { OR: [{ requesterId: null }, { requesterClearedAt: { not: null } }] },
+    { OR: [{ receiverId: null }, { receiverClearedAt: { not: null } }] }
+  ] }, data: { unretainedAt: now } });
+
   await tx.churchWelcomeThread.deleteMany({
     where: { post: personalPost(userId) }
   });

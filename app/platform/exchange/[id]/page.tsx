@@ -1,3 +1,4 @@
+import { ExchangeInquiryEntry } from "@/components/platform/exchange-handoff-page";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { exchangeReturnHref } from "@/lib/platform/exchange-navigation";
@@ -75,8 +76,9 @@ export default async function Page({
         )}
         {listing.state === "RESERVED" && (
           <p>
-            The owner has marked this listing reserved. This status does not
-            create a payment or a reservation agreement.
+            This listing is reserved. An owner-set status alone is not a pickup
+            agreement. Participants must open their private handoff to check its
+            actual agreement.
           </p>
         )}
         <p className="whitespace-pre-wrap">{listing.description}</p>
@@ -150,6 +152,7 @@ export default async function Page({
           accountId={user?.id ?? null}
           version={listing.version}
         />
+        {user && <ExchangeInquiryEntry owner={user.id} listingId={id} />}
         <section
           className="space-y-3 rounded-xl border border-gc-divider p-4"
           aria-label="Owner and listing safety"

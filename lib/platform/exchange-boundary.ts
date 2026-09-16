@@ -1,3 +1,6 @@
+import { exchangeHandoffCommand, readExchangeHandoffs } from "./exchange-handoffs";
+import { exchangeDefaultsCommand, readExchangeDefaults } from "./exchange-defaults";
+import { scheduleExchangeHandoffs } from "./exchange-handoff-queue";
 import { scheduleDomainActivity } from "./notification-fanout";
 import { exchangeSavedCommand, readExchangeSaved } from "./exchange-saved";
 import type { PrismaClient } from "@prisma/client";
@@ -47,7 +50,7 @@ export async function handleExchangeRequest(
       );
     if (request.method === "GET") {
       const view = q.get("view") ?? "list";
-      const allowed =
+      const allowed = view.startsWith("handoff-") ? ["view", "id", "listingId", "after"] : view === "defaults" ? ["view"] :
         view === "list" || view === "mine"
           ? [
               "view",
@@ -70,7 +73,10 @@ export async function handleExchangeRequest(
       )
         throw new PortalError(400, "Use only the supported listing filters.");
       let result;
-      if (view === "list" || view === "mine") {
+      if (view.startsWith("handoff-")) {
+        result = await readExchangeHandoffs(db, token, { ...Object.fromEntries(q), view: view.slice(8) });
+      } else if (view === "defaults") result = await readExchangeDefaults(db, token);
+      else if (view === "list" || view === "mine") {
         result = await listExchangeListings(db, token, {
           mine: view === "mine",
           ...parseExchangeListQuery(
@@ -146,7 +152,9 @@ export async function handleExchangeRequest(
         "Check the listing entries. Nothing has been shortened."
       );
     }
-    const result = [
+    const handoff = typeof input.operation === "string" && input.operation.startsWith("handoff-");
+    const result = handoff ? await exchangeHandoffCommand(db, token, { ...input, operation: String(input.operation).slice(8) })
+      : input.operation === "defaults-save" ? await exchangeDefaultsCommand(db, token, input) : [
       "favorite-add",
       "favorite-remove",
       "search-save",
@@ -155,6 +163,7 @@ export async function handleExchangeRequest(
       ? await exchangeSavedCommand(db, token, input)
       : await exchangeListingCommand(db, token, input);
     scheduleDomainActivity(db, actor.id, afterResponse);
+    if (handoff) scheduleExchangeHandoffs(db, result.id, afterResponse);
     let protectedRecovery = false;
     try {
       const controls = await journalRetentionControls(

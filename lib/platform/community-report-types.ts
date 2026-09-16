@@ -1,5 +1,7 @@
 export const communityReportTargets = [
   "EXCHANGE_LISTING",
+  "EXCHANGE_INQUIRY",
+  "EXCHANGE_HANDOFF",
   "TOPIC",
   "POST",
   "COMMENT",
@@ -13,6 +15,8 @@ export const communityReportTargets = [
 export type CommunityReportTarget = (typeof communityReportTargets)[number];
 export const communityReportTargetLabels = {
   EXCHANGE_LISTING: "Exchange listing",
+  EXCHANGE_INQUIRY: "private Exchange inquiry",
+  EXCHANGE_HANDOFF: "agreed private pickup plan",
   TOPIC: "topic community",
   POST: "post",
   COMMENT: "comment",

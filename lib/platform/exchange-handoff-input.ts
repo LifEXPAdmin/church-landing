@@ -146,7 +146,7 @@ export function exchangeDefaultDraftFields(
     ...emptyExchangeFields(),
     intent: value.intent,
     audience: value.audience,
-    audienceChurchId: value.audienceChurchId,
+    audienceChurchId: value.audienceChurchId ?? "",
     country: value.country ?? "",
     placeId: value.placeId
   };

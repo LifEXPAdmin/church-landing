@@ -150,7 +150,7 @@ export async function expireRetentionReceipts(
       })
     )
       continue;
-    if (row.target !== "REPORT" && row.target !== "MESSAGE") continue; // Other targets have dedicated lifecycle owners.
+    if (row.target !== "REPORT" && row.target !== "MESSAGE" && row.target !== "EXCHANGE_INQUIRY") continue; // Other targets have dedicated lifecycle owners.
     const record: PurgeRecord = {
       target: row.target,
       id: row.targetId,

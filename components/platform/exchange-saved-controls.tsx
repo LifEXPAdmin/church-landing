@@ -20,7 +20,11 @@ type Search = NonNullable<SavedPage["searches"]>[number];
 type Favorite = { id: string; version: number; saved: boolean } | null;
 const endpoint = "/api/platform/exchange";
 
-function useSavedChoice(owner: string, dirty = false, onSaved?: () => void) {
+export function useExchangeAction(
+  owner: string,
+  dirty = false,
+  onSaved?: (receipt: { id: string; version: number; message: string }) => void
+) {
   const router = useRouter(),
     visible = useReadVisibility(),
     id = useId();
@@ -37,15 +41,24 @@ function useSavedChoice(owner: string, dirty = false, onSaved?: () => void) {
       setPending(body);
       setMessage("Saving your private choice…");
       try {
-        const { data } = await socialRequest<{ message: string }>(
-          endpoint,
-          body,
-          owner
-        );
+        const { data } = await socialRequest<{
+          id: string;
+          version: number;
+          message: string;
+        }>(endpoint, body, owner);
+        if (
+          typeof data.id !== "string" ||
+          !Number.isInteger(data.version) ||
+          typeof data.message !== "string"
+        )
+          throw new SocialClientError(
+            503,
+            "The response could not be confirmed. Confirm the original save before another change."
+          );
         setPending(null);
         setConflict(false);
         setMessage(data.message);
-        onSaved?.();
+        onSaved?.(data);
         router.refresh();
         return true;
       } catch (error) {
@@ -129,7 +142,7 @@ export function ExchangeFavoriteButton({
   listingId: string;
   favorite: Favorite;
 }) {
-  const command = useSavedChoice(owner);
+  const command = useExchangeAction(owner);
   return (
     <div className="space-y-2">
       <button
@@ -187,7 +200,7 @@ export function ExchangeSaveSearchForm({
       searchId.current = null;
     }
   }, [existing]);
-  const command = useSavedChoice(owner, dirty, onSaved);
+  const command = useExchangeAction(owner, dirty, onSaved);
   return (
     <details
       className="space-y-3 rounded-xl border border-gc-divider p-4"
@@ -284,7 +297,7 @@ export function ExchangeSavedItems({
   view: "favorites" | "searches";
   returnHref: string;
 }) {
-  const command = useSavedChoice(owner);
+  const command = useExchangeAction(owner);
   return (
     <div className="space-y-4">
       <nav aria-label="Saved Exchange choices" className="flex flex-wrap gap-3">

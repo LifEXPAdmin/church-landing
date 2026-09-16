@@ -1,4 +1,5 @@
 "use client";
+import type { readExchangeDefaults } from "@/lib/platform/exchange-defaults";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { useRouter } from "next/navigation";
@@ -78,6 +79,7 @@ export function ExchangeEditor({
     initial?.fields ?? emptyExchangeFields()
   );
   const [ownerChurchId, setOwnerChurchId] = useState("");
+  const defaultSeed = useRef<Fields | null>(null);
   const [visible, setVisible] = useState(false),
     [changedAccount, setChangedAccount] = useState(false);
   const [busy, setBusy] = useState(false),
@@ -347,6 +349,62 @@ export function ExchangeEditor({
       setConflict(true);
     }
   }
+  async function applyPersonalDefaults() {
+    if (
+      record ||
+      ownerChurchId ||
+      flight.current ||
+      pending ||
+      conflict ||
+      !visible
+    )
+      return;
+    if (
+      dirty &&
+      !confirm(
+        "Apply your defaults to this draft's type, audience and general town? Other entered fields remain here."
+      )
+    )
+      return;
+    const seq = ++generation.current;
+    flight.current = true;
+    setBusy(true);
+    try {
+      const { data } = await socialRequest<
+        Awaited<ReturnType<typeof readExchangeDefaults>>
+      >("/api/platform/exchange?view=defaults", undefined, owner);
+      if (seq !== generation.current || changedRef.current) return;
+      if (!data.available || !data.draftFields) {
+        setNotice(
+          "Review your saved personal defaults before applying them. Their previous audience or recovery status is unavailable."
+        );
+        return;
+      }
+      const next = {
+        ...fields,
+        intent: data.draftFields.intent,
+        audience: data.draftFields.audience,
+        audienceChurchId: data.draftFields.audienceChurchId,
+        country: data.draftFields.country,
+        placeId: data.draftFields.placeId
+      };
+      defaultSeed.current = next;
+      setFields(next);
+      setNotice(
+        "Personal defaults applied to this new draft. Review its type, audience and general town. Private pickup text and inquiry consent were not copied."
+      );
+    } catch (error) {
+      if (seq === generation.current)
+        setNotice(
+          error instanceof Error
+            ? error.message
+            : "Your personal defaults could not be checked."
+        );
+    } finally {
+      flight.current = false;
+      setBusy(false);
+    }
+  }
   const disabled = busy || !!pending || conflict;
   const church = record?.listing.ownerChurch;
   const audienceChurches =
@@ -407,6 +465,33 @@ export function ExchangeEditor({
           </div>
         )}
         <div hidden={!visible} inert={!visible} className="space-y-6">
+          {!record && !ownerChurchId && (
+            <section
+              className="space-y-2"
+              aria-label="Apply personal listing defaults"
+            >
+              <button
+                type="button"
+                className="gc-button gc-button-quiet"
+                disabled={disabled}
+                onClick={() => void applyPersonalDefaults()}
+              >
+                Apply my personal defaults
+              </button>
+              <p>
+                Only the listing type, audience and general town are copied.{" "}
+                <Link
+                  prefetch={false}
+                  className="underline"
+                  href="/platform/exchange/defaults"
+                >
+                  Review personal defaults
+                </Link>
+                .
+              </p>
+            </section>
+          )}
+
           {record && (
             <div className="space-y-2">
               <p>
@@ -456,7 +541,41 @@ export function ExchangeEditor({
                 className={portalInputClass}
                 disabled={disabled || photoWork}
                 value={ownerChurchId}
-                onChange={(e) => setOwnerChurchId(e.target.value)}
+                onChange={(e) => {
+                  const nextOwner = e.target.value;
+                  if (nextOwner && defaultSeed.current) {
+                    const seed = defaultSeed.current,
+                      empty = emptyExchangeFields();
+                    setFields((current) => ({
+                      ...current,
+                      intent:
+                        current.intent === seed.intent
+                          ? empty.intent
+                          : current.intent,
+                      audience:
+                        current.audience === seed.audience
+                          ? empty.audience
+                          : current.audience,
+                      audienceChurchId:
+                        current.audienceChurchId === seed.audienceChurchId
+                          ? empty.audienceChurchId
+                          : current.audienceChurchId,
+                      country:
+                        current.country === seed.country
+                          ? empty.country
+                          : current.country,
+                      placeId:
+                        current.placeId === seed.placeId
+                          ? empty.placeId
+                          : current.placeId
+                    }));
+                    defaultSeed.current = null;
+                    setNotice(
+                      "Personal defaults were removed from this church draft. Review its audience and area deliberately."
+                    );
+                  }
+                  setOwnerChurchId(nextOwner);
+                }}
               >
                 <option value="">My personal account</option>
                 {context.churches

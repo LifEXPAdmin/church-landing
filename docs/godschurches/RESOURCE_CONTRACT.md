@@ -16,8 +16,14 @@ church appointments are not created by a registry entry.
 The subsequent [inquiry and private handoff contract](EXCHANGE_HANDOFF_CONTRACT.md)
 defines participant consent, atomic holds, expiry, receiver delegation, pickup
 disclosure, shared report/block/recovery and newly unlocked private defaults.
-The verified search baseline is `2026.09.16.11 / ea0c977`; the inquiry resource
-remains unimplemented until those actual services and acceptance exist.
+The verified search baseline is `2026.09.16.11 / ea0c977`. The local inquiry
+adapter now names `exchange-handoff-policy`, `exchange-handoffs` and
+`exchange-handoff-lifecycle`; it shares existing report, block, Activity and
+protected retention owners. Local service acceptance is recorded in
+[the implementation checkpoint](EXCHANGE_HANDOFF_IMPLEMENTATION.md). Browser,
+complete release and canonical live acceptance remain open at this checkpoint.
+The original foundation below is historical and does not override these later
+implemented adapters.
 
 ## Original registry foundation
 

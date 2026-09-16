@@ -54,6 +54,17 @@ export async function quarantineRestoredAccess(db: PrismaClient) {
         where: { state: { not: "FINISHED" } }
       });
       const devices = await revokePushSubscriptions(tx, {}, now);
+      // Restored plan agreement cannot authorize new disclosure or reminders.
+      // Explicit report evidence remains canonical but hidden from participants.
+      await tx.exchangeInquiry.updateMany({ where: { state: { in: ["INQUIRED", "SELECTED", "RESERVED"] } },
+        data: { state: "REVOKED", endedAt: now, wakeAt: null, dispatchedAt: null, dispatchClaimedAt: null, version: { increment: 1 } } });
+      await tx.$executeRaw`UPDATE "ExchangeInquiry" i SET "pickupDetails"='' WHERE i.state='REVOKED'
+        AND NOT EXISTS (SELECT 1 FROM "CommunityReport" r WHERE r."targetType"='EXCHANGE_HANDOFF' AND r."targetId"=i.id)
+        AND NOT EXISTS (SELECT 1 FROM "RetentionHold" h WHERE h.target='EXCHANGE_INQUIRY' AND h."targetId"=i.id AND h."releasedAt" IS NULL)`;
+      await tx.exchangeListing.updateMany({ where: { inquiriesEnabled: true }, data: {
+        inquiriesEnabled: false, inquiryReceiverId: null, inquiryAuthorityKey: null, inquiryContactVersion: { increment: 1 },
+        state: "DRAFT", recoveryRequired: true, version: { increment: 1 }
+      } });
       const scheduledPosts = await tx.platformPost.updateMany({
         where: { status: "SCHEDULED" },
         data: {

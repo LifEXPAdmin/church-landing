@@ -12,7 +12,7 @@ export const retentionDate = (from: Date, days: number) =>
   new Date(from.getTime() + days * DAY);
 type Tx = Prisma.TransactionClient;
 export type MessagingPurgeCandidate = {
-  target: "MESSAGE" | "REPORT";
+  target: "MESSAGE" | "REPORT" | "EXCHANGE_INQUIRY";
   id: string;
   version: number;
 };
@@ -72,7 +72,15 @@ async function candidatesIn(tx: Tx, now: Date) {
       AND NOT EXISTS (SELECT 1 FROM "CommunityReport" r WHERE r."targetType" = 'MESSAGE' AND r."targetId" = m.id)
       AND NOT EXISTS (SELECT 1 FROM "RetentionHold" h WHERE h.target = 'MESSAGE' AND h."targetId" = m.id AND h."releasedAt" IS NULL)
     ORDER BY m."unretainedAt", m.id LIMIT 100`;
+  const inquiries = await tx.$queryRaw<Array<{ id: string; version: number }>>`
+    SELECT i.id, i.version FROM "ExchangeInquiry" i
+    WHERE i."unretainedAt" <= ${now.toISOString()}::timestamp AND i."bodyPurgedAt" IS NULL
+      AND i.state NOT IN ('INQUIRED','SELECTED','RESERVED')
+      AND NOT EXISTS (SELECT 1 FROM "CommunityReport" r WHERE r."targetType" IN ('EXCHANGE_INQUIRY','EXCHANGE_HANDOFF') AND r."targetId"=i.id)
+      AND NOT EXISTS (SELECT 1 FROM "RetentionHold" h WHERE h.target='EXCHANGE_INQUIRY' AND h."targetId"=i.id AND h."releasedAt" IS NULL)
+    ORDER BY i."unretainedAt", i.id LIMIT 100`;
   return [
+    ...inquiries.map(i => ({ target: "EXCHANGE_INQUIRY" as const, ...i })),
     ...reports.map((r) => ({ target: "REPORT" as const, ...r })),
     ...messages.map((m) => ({ target: "MESSAGE" as const, ...m }))
   ];
@@ -98,7 +106,7 @@ export async function inspectMessagingRetention(
       policy: MESSAGING_RETENTION_POLICY,
       candidates: [
         ...pending.map((p): MessagingPurgeCandidate => {
-          if (p.target !== "REPORT" && p.target !== "MESSAGE")
+          if (p.target !== "REPORT" && p.target !== "MESSAGE" && p.target !== "EXCHANGE_INQUIRY")
             throw Error("This retention target requires its dedicated owner");
           return { target: p.target, id: p.targetId, version: p.version };
         }),
@@ -157,6 +165,10 @@ export async function purgeMessagingCandidate(
     // selected report expires. Active accounts and shared church content retain
     // their normal lifecycle; messages use their participant-retention check.
     if (source && !(await tx.communityReport.count({ where: source }))) {
+      if (source.targetType === "EXCHANGE_HANDOFF") {
+        if (!(await tx.retentionHold.findFirst({ where: { target: "EXCHANGE_INQUIRY", targetId: source.targetId, releasedAt: null }, select: { id: true } })))
+          await tx.exchangeInquiry.updateMany({ where: { id: source.targetId, state: { notIn: ["INQUIRED", "SELECTED", "RESERVED"] } }, data: { pickupDetails: "" } });
+      }
       if (source.targetType === "EXCHANGE_LISTING")
         await tx.exchangeListing.updateMany({
           where: {
@@ -236,6 +248,16 @@ export async function purgeMessagingCandidate(
           data: { purpose: "Removed after account deletion." }
         });
     }
+  } else if (candidate.target === "EXCHANGE_INQUIRY") {
+    await tx.socialEvent.deleteMany({ where: { sourceId: candidate.id, kind: { in: ["EXCHANGE_INQUIRY", "EXCHANGE_HANDOFF", "EXCHANGE_REMINDER"] } } });
+    // Preserve only the immutable reference, preventing late original writes
+    // and protected restoration from recreating the deleted body.
+    const at = new Date();
+    const data = { state: "REVOKED" as const, recoveryRequired: true, purpose: "", pickupDetails: "", cancelNote: "", cancelReason: null,
+      windowStart: null, windowEnd: null, timeZone: null, wakeAt: null, endedAt: at, bodyPurgedAt: at };
+    await tx.exchangeInquiry.upsert({ where: { id: candidate.id },
+      create: { id: candidate.id, version: candidate.version, expiresAt: at, ...data },
+      update: data });
   } else {
     await tx.socialEvent.deleteMany({ where: { messageId: candidate.id } });
     await tx.adultMessage.deleteMany({ where: { id: candidate.id } });
@@ -333,7 +355,7 @@ export async function runMessagingRetention(
   let messages = 0,
     reports = 0;
   for (const seal of sealed) {
-    if (seal.target !== "REPORT" && seal.target !== "MESSAGE")
+    if (seal.target !== "REPORT" && seal.target !== "MESSAGE" && seal.target !== "EXCHANGE_INQUIRY")
       throw Error("This retention target requires its dedicated owner");
     await db.retentionPurge.update({
       where: {
@@ -367,7 +389,7 @@ export async function runMessagingRetention(
     });
     if (result.deleted) {
       if (seal.target === "REPORT") reports++;
-      else messages++;
+      else if (seal.target === "MESSAGE") messages++;
     }
     await journal.complete(record, result.completedAt.toISOString());
     await db.retentionPurge.updateMany({

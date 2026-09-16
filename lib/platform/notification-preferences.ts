@@ -27,7 +27,8 @@ export const notificationCategories = [
   "commitments",
   "feedback",
   "photos",
-  "exchange"
+  "exchange",
+  "handoffs"
 ] as const;
 export type NotificationCategory = (typeof notificationCategories)[number];
 export type QuietHours = {
@@ -143,7 +144,8 @@ export function notificationPushAllowed(
     "church",
     "commitments",
     "feedback",
-    "exchange"
+    "exchange",
+    "handoffs"
   ].includes(category);
 }
 export function notificationEmailAllowed(
@@ -246,17 +248,18 @@ export async function notificationPreferenceCommand(
         ![
           [...legacyInAppCategories].sort().join(),
           notificationCategories
-            .filter((c) => c !== "exchange")
+            .filter((c) => c !== "exchange" && c !== "handoffs")
             .sort()
             .join(),
           notificationCategories
-            .filter((c) => c !== "exchange" && c !== "feedback")
+            .filter((c) => c !== "exchange" && c !== "feedback" && c !== "handoffs")
             .sort()
             .join(),
           notificationCategories
-            .filter((c) => c !== "feedback")
+            .filter((c) => c !== "feedback" && c !== "handoffs")
             .sort()
             .join(),
+          notificationCategories.filter(c => c !== "handoffs").sort().join(),
           [...notificationCategories].sort().join()
         ].includes(Object.keys(choices).sort().join()) ||
         Object.values(choices).some((v) => typeof v !== "boolean") ||
@@ -349,7 +352,7 @@ export async function notificationPreferenceCommand(
                   now.toISOString())
                 : category === "prayer"
                   ? (prior?.prayerPushSince?.toISOString() ?? now.toISOString())
-                  : category === "exchange"
+                  : (category === "exchange" || category === "handoffs")
                     ? now.toISOString()
                     : new Date(0).toISOString()
         ])

@@ -17,6 +17,7 @@ export const resourceContracts = Object.freeze({
   exchangeListing: implemented(
     "exchange-policy/exchange-listings/exchange-boundary"
   ),
+  exchangeInquiry: implemented("exchange-handoff-policy/exchange-handoffs/exchange-handoff-lifecycle"),
   gatherGroup: reserved("group membership, leadership and audience"),
   mediaCatalogItem: reserved("catalog source, rights, audience and provider"),
   volunteerOpportunity: reserved(

@@ -1,3 +1,4 @@
+import { revokeExchangeInquiries } from "./exchange-handoff-lifecycle";
 import type { ExchangeListing, Prisma, PrismaClient } from "@prisma/client";
 import { exchangeFavoriteId } from "./exchange-saved";
 import { recordFanout } from "./domain-activity";
@@ -419,6 +420,12 @@ export function exchangeListingCommand(
             "A new private draft is saved. Review its audience and select any photos deliberately before publishing."
         };
       }
+      const held = await tx.exchangeInquiry.findFirst({ where: { listingId: row.id, state: { in: ["SELECTED", "RESERVED"] } }, select: { id: true } });
+      if (held && (op === "save" || (op === "status" && input.state !== "ARCHIVED")))
+        throw new PortalError(409, "This listing has an active handoff. Complete or cancel it before changing its terms or availability. You may archive the listing to withdraw it and end the handoff.");
+      if (op === "save" || op === "status") {
+        await revokeExchangeInquiries(tx, { listingId: row.id }, actorId);
+      }
       let data: Prisma.ExchangeListingUncheckedUpdateInput;
       if (op === "photo-metadata" || op === "photo-order") {
         if (row.state === "ARCHIVED")
@@ -562,10 +569,12 @@ export function exchangeListingCommand(
         where: { id: row.id },
         data: {
           ...data,
+          ...(op === "save" || op === "status" ? { inquiriesEnabled: false, inquiryContactVersion: { increment: 1 } } : {}),
           version: { increment: 1 },
           visibilityVersion: { increment: 1 }
         }
       });
+      if (op === "save" || op === "status") await recordDiscoveryControl(tx, "EXCHANGE_CONTACT", actorId, saved.id, saved.inquiryContactVersion);
       if (
         op === "status" &&
         saved.state === "ACTIVE" &&

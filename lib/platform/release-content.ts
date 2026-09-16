@@ -14,6 +14,14 @@ export type Feature = {
 };
 export const features: Feature[] = [
   {
+    id: "exchange-private-handoffs", category: "Churches and community", name: "Private Exchange inquiries and handoffs",
+    description: "Send a private inquiry, agree to one pickup plan and keep personal listing defaults without publishing precise instructions.",
+    steps: "On a published listing, its owner or current church Exchange manager can volunteer to receive inquiries. The receiving adult selects an inquirer and proposes a window. The inquirer confirms the exact plan before seeing private instructions. Open My inquiries and handoffs to complete, cancel, clear or report your own record. Settings, Exchange links to personal defaults that you can apply deliberately to a new personal draft.",
+    href: "/platform/exchange/handoffs",
+    eligibility: "Both people need current verified adult accounts. Each listing and the receiving adult’s contact preferences must permit new inquiries, and private report intake must be available. Church management does not grant another adult’s private history. Expired or canceled holds stay closed for owner review. Phone alerts require a separate dated handoff choice and current device; exact timing and physical fulfillment are not guaranteed.",
+    availability: "conditional"
+  },
+  {
     id: "exchange-search-saved",
     category: "Churches and community",
     name: "Exchange search and saved choices",
@@ -832,6 +840,21 @@ export const features: Feature[] = [
   }
 ];
 export const releases: ReleaseEntry[] = [
+  {
+    id: "exchange-private-handoffs", version: "2026.09.16.12", date: "2026-09-16",
+    summary: "Agree to private Exchange handoffs with clear consent, pickup windows and personal defaults.",
+    added: [
+      "Send and review private listing inquiries when the receiving adult’s choices permit them. Each listing can have one selected or agreed handoff at a time.",
+      "Propose a pickup window, confirm its exact plan and then share private instructions with the two participants. Complete, cancel or record a missed handoff privately. Expired holds require owner review before reopening.",
+      "Save private personal defaults for listing type, audience, general town and reusable pickup text. Apply listing defaults only to a new personal draft, and copy pickup text deliberately into a proposed plan."
+    ],
+    improved: [
+      "Incoming and outgoing histories, private reporting and account export keep current participant access. Blocking, source withdrawal, lost authority and protected recovery cannot silently revive an old agreement.",
+      "Handoff updates and reminders have their own optional phone category. Saved-search notification choices stay separate."
+    ],
+    fixed: ["An active handoff cannot be bypassed by changing a listing’s terms or availability. Uncertain saves confirm the original request before another action."],
+    featureIds: ["exchange-private-handoffs", "exchange-listings", "exchange-search-saved"]
+  },
   {
     id: "exchange-search-saved-choices",
     version: "2026.09.16.11",

@@ -1,3 +1,4 @@
+import { revokeExchangeInquiries } from "./exchange-handoff-lifecycle";
 import type { AdultContactRequest, Prisma, PrismaClient } from "@prisma/client";
 import { accountConfig } from "./account-config";
 import { activityBudget } from "./account-limits";
@@ -117,6 +118,10 @@ export function adultContactCommand(
             data: { status: "REVOKED", version: { increment: 1 } }
           });
         }
+        if (audience !== "EVERYONE") await revokeExchangeInquiries(tx, {
+          receiverId: ownerId, state: "INQUIRED",
+          ...(audience === "NOBODY" ? {} : { requester: { followers: { none: { followerId: ownerId } } } })
+        }, ownerId);
         return {
           id: ownerId,
           version: saved.version,

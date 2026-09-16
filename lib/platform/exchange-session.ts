@@ -1,3 +1,5 @@
+import { readExchangeHandoffs } from "./exchange-handoffs";
+import { readExchangeDefaults } from "./exchange-defaults";
 import { readExchangeSaved } from "./exchange-saved";
 import { prisma } from "@/lib/prisma";
 import { privateCookies } from "./private-cookies";
@@ -28,4 +30,11 @@ export async function exchangeSavedPage(
   query: Parameters<typeof readExchangeSaved>[2]
 ) {
   return readExchangeSaved(prisma, await token(), query);
+}
+
+export async function exchangeHandoffPage(query: Parameters<typeof readExchangeHandoffs>[2]) {
+  return readExchangeHandoffs(prisma, await token(), query);
+}
+export async function exchangeDefaultsPage() {
+  return readExchangeDefaults(prisma, await token());
 }

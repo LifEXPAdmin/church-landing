@@ -1,3 +1,4 @@
+import { ExchangeContactRegion } from "./exchange-handoff-page";
 import { createHash } from "node:crypto";
 import Link from "next/link";
 import { PlatformShell } from "./platform-shell";
@@ -42,7 +43,9 @@ export function ExchangeNavigation() {
         ["/platform/exchange", "Browse listings"],
         ["/platform/exchange/mine", "My listings"],
         ["/platform/exchange/saved", "Saved listings and searches"],
-        ["/platform/exchange/new", "Create a listing"]
+        ["/platform/exchange/new", "Create a listing"],
+        ["/platform/exchange/handoffs", "My inquiries and handoffs"],
+        ["/platform/exchange/defaults", "Personal defaults"]
       ].map(([href, label]) => (
         <Link
           key={href}
@@ -271,7 +274,7 @@ export async function ExchangeList({
           <p>
             {mine
               ? "Manage personal listings and church listings covered by your current Exchange duties. Drafts and archived listings stay here."
-              : "Find items, requests and skilled help. Review each listing’s details and area, then use the owner’s existing contact choices."}
+              : "Find items, requests and skilled help. Review each listing’s details and area, then check whether private inquiries are available."}
           </p>
         </header>
         <ExchangeNavigation />
@@ -298,11 +301,14 @@ export async function ExchangeEditorPage({
         id ? exchangeListingPage(id, true) : Promise.resolve(null)
       ]);
       content = (
-        <ExchangeEditor
-          key={`${user.id}:${id ?? "new"}`}
-          access={access}
-          initial={initial}
-        />
+        <>
+          <ExchangeEditor
+            key={`${user.id}:${id ?? "new"}`}
+            access={access}
+            initial={initial}
+          />
+          {id && <ExchangeContactRegion owner={user.id} listingId={id} />}
+        </>
       );
     } catch (error) {
       content = <ExchangeUnavailable error={error} href={path} />;

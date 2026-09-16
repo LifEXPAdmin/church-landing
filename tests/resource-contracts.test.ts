@@ -58,7 +58,8 @@ test("implemented resources point to their existing authority without granting a
     "personalPhoto",
     "photoAlbum",
     "setting",
-    "exchangeListing"
+    "exchangeListing",
+    "exchangeInquiry"
   ] as const) {
     const contract = requireImplementedResource(kind);
     assert.equal(contract.state, "implemented");

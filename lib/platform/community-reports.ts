@@ -1,3 +1,5 @@
+import { currentExchangeInquiry, exchangeInquiryCleared, exchangeInquiryParticipant } from "./exchange-handoff-policy";
+import { exchangeHandoffEvidence } from "./exchange-handoff-evidence";
 import type { CommunityReport, PrismaClient } from "@prisma/client";
 import { accountConfig } from "./account-config";
 import { activityBudget } from "./account-limits";
@@ -60,6 +62,7 @@ type Target = {
   scopeChurchId: string | null;
   scopeTopicId?: string | null;
   source: { label: string; href: string };
+  evidencePreview?: string;
 };
 
 function targetType(value: unknown): CommunityReportTarget {
@@ -99,6 +102,16 @@ async function targetIn(
 ): Promise<Target | null> {
   const type = targetType(kind),
     id = postId(value);
+  if (type === "EXCHANGE_INQUIRY" || type === "EXCHANGE_HANDOFF") {
+    const row = await tx.exchangeInquiry.findUnique({ where: { id } });
+    if (!row || !context.actorId || !exchangeInquiryParticipant(row, context.actorId) ||
+      exchangeInquiryCleared(row, context.actorId) || row.recoveryRequired || row.bodyPurgedAt) return null;
+    if (type === "EXCHANGE_HANDOFF" && (row.state !== "RESERVED" || !(await currentExchangeInquiry(tx, row)))) return null;
+    if (await tx.retentionPurge.findUnique({ where: { target_targetId: { target: "EXCHANGE_INQUIRY", targetId: id } } })) return null;
+    return { type, id, version: row.version, contextVersion: type === "EXCHANGE_HANDOFF" ? row.planVersion : 0,
+      scopeChurchId: null, source: { label: type === "EXCHANGE_HANDOFF" ? "Selected agreed pickup plan" : "Selected private inquiry",
+        href: `/platform/exchange/handoffs/${id}` }, evidencePreview: exchangeHandoffEvidence(row, type === "EXCHANGE_HANDOFF") };
+  }
   if (type === "EXCHANGE_LISTING") {
     const row = await tx.exchangeListing.findFirst({
       where: { AND: [{ id }, exchangeReadableWhere(context)] },
@@ -632,6 +645,14 @@ export function readCommunityReports(
       let selectedAttachment;
       let selectedIdea;
       let selectedListing;
+      let selectedHandoff;
+      if (report.targetType === "EXCHANGE_INQUIRY" || report.targetType === "EXCHANGE_HANDOFF") {
+        const row = await tx.exchangeInquiry.findUnique({ where: { id: report.targetId } });
+        if (row && !row.recoveryRequired && !row.bodyPurgedAt &&
+          (report.targetType !== "EXCHANGE_HANDOFF" || (row.confirmedAt && row.planVersion === report.contextVersion)))
+          selectedHandoff = { type: report.targetType, content: exchangeHandoffEvidence(row, report.targetType === "EXCHANGE_HANDOFF"),
+            version: row.version, createdAt: row.createdAt };
+      }
       if (report.targetType === "EXCHANGE_LISTING") {
         const listing = await tx.exchangeListing.findUnique({
           where: { id: report.targetId },
@@ -772,6 +793,7 @@ export function readCommunityReports(
         reviewDueAt: report.reviewDueAt.toISOString(),
         closedAt: report.closedAt?.toISOString() ?? null,
         evidence:
+          selectedHandoff ??
           selectedListing ??
           selectedIdea ??
           selectedAttachment ??
@@ -895,7 +917,7 @@ export function communityReportCommand(
         const report = reviewed!;
         expected(input.expectedVersion, report.version);
         const { status: requestedStatus, ...decision } =
-          await moderateReportedContent(tx, report, input);
+          await moderateReportedContent(tx, report, input, ownerId);
         const openAppeals = await tx.supportCase.count({
           where: {
             moderationDecision: { reportId: report.id },

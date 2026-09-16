@@ -27,6 +27,7 @@ const labels: Record<ActivityCategory, string> = {
   feedback: "Feedback and ideas",
   photos: "Photo tags",
   exchange: "Exchange",
+  handoffs: "Exchange handoffs",
   commitments: "Commitments"
 };
 const endpoint = "/api/platform/activity";

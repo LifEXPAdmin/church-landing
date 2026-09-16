@@ -1,3 +1,5 @@
+import { revokeExchangeInquiries } from "./exchange-handoff-lifecycle";
+import { recordDiscoveryControl } from "./retention-controls";
 import type {
   CommunityReport,
   ContentModerationState,
@@ -135,7 +137,8 @@ export function contentSourceView(
 export async function moderateReportedContent(
   tx: PostTx,
   report: CommunityReport,
-  input: Record<string, unknown>
+  input: Record<string, unknown>,
+  actorId: string
 ) {
   const source = await contentReviewSource(tx, report);
   if (!source)
@@ -197,11 +200,14 @@ export async function moderateReportedContent(
       await tx.platformPost.update({ where: { id: source.id }, data });
     else if (source.type === "TOPIC")
       await tx.topicCommunity.update({ where: { id: source.id }, data });
-    else if (source.type === "EXCHANGE_LISTING")
-      await tx.exchangeListing.update({
+    else if (source.type === "EXCHANGE_LISTING") {
+      await revokeExchangeInquiries(tx, { listingId: source.id }, actorId);
+      const listing = await tx.exchangeListing.update({
         where: { id: source.id },
-        data: { ...data, moderationVersion: source.version + 1 }
+        data: { ...data, moderationVersion: source.version + 1, inquiriesEnabled: false, inquiryContactVersion: { increment: 1 } }
       });
+      await recordDiscoveryControl(tx, "EXCHANGE_CONTACT", actorId, source.id, listing.inquiryContactVersion);
+    }
     else
       await tx.platformPostComment.update({ where: { id: source.id }, data });
   }

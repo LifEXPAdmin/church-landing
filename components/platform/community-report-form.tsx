@@ -17,6 +17,7 @@ type Target = {
   version: number;
   contextVersion: number;
   source: { label: string; href: string };
+  evidencePreview?: string;
 };
 export function CommunityReportForm({
   owner,
@@ -200,7 +201,14 @@ export function CommunityReportForm({
         Reports are private. Your identity is not shown to the reported person
         or the community. Share only the context needed for review.
       </p>
-      {type === "FEEDBACK_ATTACHMENT" && <p className="text-sm">This reports the selected image and the details you choose to write. It does not share the feedback conversation. The image still requires current private case access; a report reviewer does not receive that access automatically.</p>}
+      {type === "FEEDBACK_ATTACHMENT" && (
+        <p className="text-sm">
+          This reports the selected image and the details you choose to write.
+          It does not share the feedback conversation. The image still requires
+          current private case access; a report reviewer does not receive that
+          access automatically.
+        </p>
+      )}
       <p role="status" aria-live="polite">
         {message}
       </p>
@@ -233,6 +241,23 @@ export function CommunityReportForm({
             {target.source.label}
           </Link>
         </p>
+      )}
+      {!hidden && target?.evidencePreview && !receipt && (
+        <section
+          className="space-y-2 rounded-xl border p-4"
+          aria-label="Selected report evidence"
+        >
+          <h3 className="font-semibold">
+            Private evidence included with this report
+          </h3>
+          <p>
+            Only this selected inquiry or agreed plan goes to authorized
+            platform reviewers. Other handoffs and conversations are excluded.
+          </p>
+          <p className="whitespace-pre-wrap break-words">
+            {target.evidencePreview}
+          </p>
+        </section>
       )}
       {!hidden && receipt ? (
         <div className="space-y-3">

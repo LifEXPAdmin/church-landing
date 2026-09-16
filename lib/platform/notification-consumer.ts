@@ -1,3 +1,4 @@
+import { advanceExchangeHandoff } from "./exchange-handoff-queue";
 import type { PrismaClient } from "@prisma/client";
 import { advanceCommentFollowers } from "./comment-followers";
 import { advanceNotificationFanout } from "./notification-fanout";
@@ -37,6 +38,15 @@ export async function consumeNotificationWork(
   )
     return;
   const kind = "kind" in value ? value.kind : "comment";
+  if (kind === "handoff") {
+    if (Object.keys(value).length !== 3 || !("version" in value) || typeof value.version !== "number" ||
+      !Number.isSafeInteger(value.version) || value.version < 1) return;
+    const result = await advanceExchangeHandoff(db, value.id, value.version);
+    if (result.failed) throw Error("Exchange handoff work needs retry.");
+    if (result.retryAfterSeconds) throw new RetryNotificationWork(Math.min(604799, result.retryAfterSeconds));
+    if (value.id.startsWith("probe-")) console.info("exchange_handoff_queue_probe_completed", { applicationWrites: 0 });
+    return;
+  }
   if (kind === "scheduled") {
     if (
       Object.keys(value).length !== 3 ||

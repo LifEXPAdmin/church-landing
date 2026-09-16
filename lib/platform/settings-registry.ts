@@ -196,6 +196,20 @@ export const settingsRegistry: readonly SettingRegistration[] = Object.freeze([
     linked("exchange-listings.ts exchangeEditorContext", "exchangeListingCommand")
   ),
   entry(
+    "exchange.defaults", "exchange", "Personal listing defaults",
+    "Save a personal listing type, audience and general town, plus reusable private pickup instructions. Apply them deliberately to a new personal draft.",
+    ["marketplace defaults", "pickup address", "collection instructions", "listing audience"],
+    { href: "/platform/exchange/defaults" },
+    { persistenceOwner: "ExchangeDefaults", read: "exchange-defaults.ts readExchangeDefaults", write: "exchangeDefaultsCommand" }
+  ),
+  entry(
+    "exchange.handoffs", "exchange", "Private inquiries and pickup agreements",
+    "Review your incoming and outgoing inquiries, agreed pickup windows, completion, cancellation and expiry.",
+    ["marketplace", "reservations", "handoff", "no show", "pickup agreement"],
+    { href: "/platform/exchange/handoffs" },
+    { persistenceOwner: "ExchangeInquiry", read: "exchange-handoffs.ts readExchangeHandoffs", write: "exchangeHandoffCommand" }
+  ),
+  entry(
     "exchange.saved",
     "exchange",
     "Saved listings and matching alerts",

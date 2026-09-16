@@ -213,6 +213,11 @@ enum PlatformPostType {
 }
 
 model PlatformUser {
+  exchangeDefaults ExchangeDefaults?
+  receivedExchangeListings ExchangeListing[] @relation("ExchangeInquiryReceiver")
+  sentExchangeInquiries ExchangeInquiry[] @relation("ExchangeInquirer")
+  receivedExchangeInquiries ExchangeInquiry[] @relation("ExchangeReceiver")
+  exchangeInquiryActions ExchangeInquiryAudit[]
   exchangeFavorites ExchangeFavorite[]
   exchangeSavedSearches ExchangeSavedSearch[]
   exchangeSearchMatches ExchangeSearchMatch[]
@@ -583,6 +588,8 @@ enum OperatorCapability {
 }
 
 enum CommunityReportTarget {
+  EXCHANGE_INQUIRY
+  EXCHANGE_HANDOFF
   EXCHANGE_LISTING
   TOPIC
   POST
@@ -657,6 +664,7 @@ model CommunityReport {
 // A hold preserves only the explicitly selected canonical message or report.
 // It never grants access, changes ordinary audiences, or copies message history.
 enum RetentionTarget {
+  EXCHANGE_INQUIRY
   MESSAGE
   REPORT
   ACCOUNT
@@ -1629,6 +1637,10 @@ model ExchangeListing {
   version Int @default(1)
   visibilityVersion Int @default(1)
   recoveryRequired Boolean @default(false)
+  inquiriesEnabled Boolean @default(false)
+  inquiryContactVersion Int @default(0)
+  inquiryReceiverId String?
+  inquiryAuthorityKey String?
   ownerId String?
   ownerChurchId String?
   creatorId String?
@@ -1661,17 +1673,116 @@ model ExchangeListing {
   owner PlatformUser? @relation("ExchangePersonalOwner", fields: [ownerId], references: [id], onDelete: Restrict)
   ownerChurch Church? @relation("ExchangeChurchOwner", fields: [ownerChurchId], references: [id], onDelete: Restrict)
   creator PlatformUser? @relation("ExchangeCreator", fields: [creatorId], references: [id], onDelete: SetNull)
+  inquiryReceiver PlatformUser? @relation("ExchangeInquiryReceiver", fields: [inquiryReceiverId], references: [id], onDelete: SetNull)
   audienceChurch Church? @relation("ExchangeChurchAudience", fields: [audienceChurchId], references: [id], onDelete: Restrict)
   personalAudienceConnection ChurchConnection? @relation(fields: [ownerId, audienceChurchId], references: [userId, churchId], onDelete: NoAction, onUpdate: NoAction)
   images MediaAsset[]
   audit ExchangeListingAudit[]
   favorites ExchangeFavorite[]
   searchMatches ExchangeSearchMatch[]
+  inquiries ExchangeInquiry[]
+  @@index([inquiryReceiverId, inquiriesEnabled])
   @@index([ownerId, updatedAt(sort: Desc), id(sort: Desc)])
   @@index([ownerChurchId, updatedAt(sort: Desc), id(sort: Desc)])
   @@index([state, moderationState, publishedAt(sort: Desc), id(sort: Desc)])
   @@index([audienceChurchId, state, publishedAt(sort: Desc)])
   @@index([country, placeId, state, publishedAt(sort: Desc)])
+}
+
+enum ExchangeInquiryState {
+  INQUIRED
+  SELECTED
+  RESERVED
+  COMPLETED
+  CANCELED
+  DECLINED
+  WITHDRAWN
+  EXPIRED
+  REVOKED
+}
+
+// The listing and two original adults define the scope. Nullable references allow
+// opaque recovery tombstones without reconstructing people or private text.
+model ExchangeInquiry {
+  id String @id
+  listingId String?
+  requesterId String?
+  receiverId String?
+  contactVersion Int @default(0)
+  authorityKey String?
+  listingVersion Int @default(0)
+  state ExchangeInquiryState @default(INQUIRED)
+  version Int @default(1)
+  planVersion Int @default(0)
+  recoveryRequired Boolean @default(false)
+  purpose String @default("")
+  pickupDetails String @default("")
+  cancelReason String?
+  cancelNote String @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  expiresAt DateTime
+  selectedAt DateTime?
+  confirmedAt DateTime?
+  endedAt DateTime?
+  windowStart DateTime?
+  windowEnd DateTime?
+  timeZone String?
+  requesterClearedAt DateTime?
+  receiverClearedAt DateTime?
+  unretainedAt DateTime?
+  bodyPurgedAt DateTime?
+  // A bounded reminder/expiry wake-up uses the existing delayed-work transport.
+  wakeAt DateTime?
+  dispatchedAt DateTime?
+  dispatchClaimedAt DateTime?
+  dispatchAttempts Int @default(0)
+  lastDispatchErrorAt DateTime?
+  remindedPlanVersion Int @default(0)
+  listing ExchangeListing? @relation(fields: [listingId], references: [id], onDelete: SetNull)
+  requester PlatformUser? @relation("ExchangeInquirer", fields: [requesterId], references: [id], onDelete: SetNull)
+  receiver PlatformUser? @relation("ExchangeReceiver", fields: [receiverId], references: [id], onDelete: SetNull)
+  audit ExchangeInquiryAudit[]
+  @@index([requesterId, createdAt(sort: Desc), id(sort: Desc)])
+  @@index([receiverId, createdAt(sort: Desc), id(sort: Desc)])
+  @@index([listingId, state, id])
+  @@index([state, expiresAt, id])
+  @@index([wakeAt, dispatchedAt, id])
+  @@index([unretainedAt, bodyPurgedAt, id])
+  // Migration partial unique indexes enforce one active inquiry per requester/
+  // listing and one selected or confirmed hold for the entire listing.
+}
+
+// Content-free status timeline; never a copy of purpose or pickup instructions.
+model ExchangeInquiryAudit {
+  id String @id @default(cuid())
+  inquiryId String
+  actorId String?
+  action String
+  state ExchangeInquiryState
+  version Int
+  createdAt DateTime @default(now())
+  inquiry ExchangeInquiry @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+  actor PlatformUser? @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  @@unique([inquiryId, version])
+  @@index([actorId])
+}
+
+// Private personal defaults never grant publication, contact or pickup access.
+model ExchangeDefaults {
+  ownerId String @id
+  version Int @default(1)
+  schema Int @default(1)
+  intent ExchangeListingIntent @default(FREE)
+  audience PostAudience @default(PUBLIC)
+  audienceChurchId String?
+  country String?
+  placeId Int?
+  pickupDetails String @default("")
+  recoveryRequired Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  owner PlatformUser @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 }
 
 // Private canonical references only. Tombstones prevent stale writes and restored

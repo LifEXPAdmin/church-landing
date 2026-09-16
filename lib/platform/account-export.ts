@@ -1,3 +1,4 @@
+import { currentExchangeInquiry } from "./exchange-handoff-policy";
 import { projectClaimAuthority, claimScopes } from "./church-claim-data";
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import type { PrismaClient } from "@prisma/client";
@@ -566,7 +567,23 @@ export async function downloadAccountExport(
       select: { occurrenceId: true, state: true, updatedAt: true }
     });
     const measurementCutoff = new Date(Date.now() - METRIC_RAW_DAYS * 86400000);
+    const inquiryRows = await tx.exchangeInquiry.findMany({ where: { recoveryRequired: false, bodyPurgedAt: null,
+      OR: [{ requesterId: userId, requesterClearedAt: null }, { receiverId: userId, receiverClearedAt: null }] },
+      orderBy: { id: "asc" }, take: MAX_ROWS + 1 });
+    if (inquiryRows.length > MAX_ROWS) throw new AccountExportError("size");
+    const exchangeInquiries = [];
+    for (const row of inquiryRows) {
+      // The account's own inquiry text belongs to its export; another adult's
+      // purpose and private pickup text require the current accepted plan.
+      const accepted = row.state === "RESERVED" && await currentExchangeInquiry(tx, row);
+      exchangeInquiries.push({ id: row.id, version: row.version, state: row.state, createdAt: row.createdAt, endedAt: row.endedAt,
+        purpose: row.requesterId === userId || accepted ? row.purpose : "",
+        ...(accepted ? { windowStart: row.windowStart, windowEnd: row.windowEnd, timeZone: row.timeZone, pickupDetails: row.pickupDetails } : {}) });
+    }
     const collections = {
+      exchangeInquiries,
+      exchangeDefaults: await tx.exchangeDefaults.findMany({ where: { ownerId: userId, recoveryRequired: false },
+        select: { version: true, schema: true, intent: true, audience: true, audienceChurchId: true, country: true, placeId: true, pickupDetails: true, updatedAt: true } }),
       exchangeFavorites: await tx.exchangeFavorite.findMany({
         where: { ownerId: userId, deletedAt: null },
         orderBy: { id: "asc" },
@@ -1116,7 +1133,7 @@ export async function downloadAccountExport(
         version: 1,
         generatedAt: new Date().toISOString(),
         scope:
-          "Your account profile, presentation preferences and linked Google identity, authored community content, your personal Exchange listings and their image metadata, your private Exchange favorites and saved-search choices (other people’s listing content excluded), personal image metadata and photo albums, personal polls and your own ballots and volunteer signups, likes/following, your own topic memberships and private following choices, owned topic details, private social, conversation and prayer choices and your own prayer update labels (source content excluded), and friend invitation records, private comment drafts and comment Likes, private post drafts and saved collection organization (source posts excluded), church directory choices, your own church representative setup and listing drafts/submissions, personal calendars/events and their sharing choices, your event responses, your own sent contact requests and currently authorized accepted conversation messages, your own community reports and your own support submissions, current optional measurement choices and retained foreground-use facts. Other people's content outside your accepted conversations, staff/church operations, credentials, session data and security audit records and private report-review notes are excluded. Cleared message history is excluded from your view; this does not erase the other participant's history. Image binaries are not embedded; image references still require current access. Reading preferences saved only on this browser are not in this account file.",
+          "Your account profile, presentation preferences and linked Google identity, authored community content, your personal Exchange listings and their image metadata, your private Exchange favorites, saved-search choices and personal defaults, retained inquiry receipts and currently agreed pickup plans (other people’s listing content excluded), personal image metadata and photo albums, personal polls and your own ballots and volunteer signups, likes/following, your own topic memberships and private following choices, owned topic details, private social, conversation and prayer choices and your own prayer update labels (source content excluded), and friend invitation records, private comment drafts and comment Likes, private post drafts and saved collection organization (source posts excluded), church directory choices, your own church representative setup and listing drafts/submissions, personal calendars/events and their sharing choices, your event responses, your own sent contact requests and currently authorized accepted conversation messages, your own community reports and your own support submissions, current optional measurement choices and retained foreground-use facts. Other people's content outside your accepted conversations, staff/church operations, credentials, session data and security audit records and private report-review notes are excluded. Cleared message history is excluded from your view; this does not erase the other participant's history. Image binaries are not embedded; image references still require current access. Reading preferences saved only on this browser are not in this account file.",
         account,
         ...collections
       },

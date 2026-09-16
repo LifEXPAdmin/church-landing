@@ -27,7 +27,7 @@ function validate(value: unknown): JournalEntry {
     Array.isArray(r) ||
     Object.keys(r).sort().join() !==
       "completedAt,id,policy,recordedAt,target,version" ||
-    !["MESSAGE", "REPORT"].includes(r.target) ||
+    !["MESSAGE", "REPORT", "EXCHANGE_INQUIRY"].includes(r.target) ||
     !/^[A-Za-z0-9_-]{1,100}$/.test(r.id) ||
     !Number.isSafeInteger(r.version) ||
     r.version < 1 ||
