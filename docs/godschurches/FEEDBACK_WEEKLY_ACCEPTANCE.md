@@ -5,6 +5,25 @@ September 16, 2026 UTC. This is an **unreleased feature-31 checkpoint**, followi
 protected upgrade, deployment and exact canonical live checks remain ahead.
 Actual operator, notice, provider and physical-device prerequisites still apply.
 
+## Complete-feature verification checkpoint
+
+The exact `be2b46a` production preview passes all 35 browser groups across
+private feedback, prompts, reviewed ideas, chosen follow-up, weekly review and
+Growth, with no browser errors. Its final runtime trace check passes 187 traces,
+43,205 entries and 476 server JavaScript files; the repaired renderer is unchanged.
+The first browser attempt stopped before application checks because the isolated
+database restarted on its default port. The corrected fixture port is now checked
+before preview startup; the original failure log is retained.
+
+A protected production-copy rehearsal upgrades 69 to 84 migrations, preserves
+all 111 original-table fingerprints and completes protected-control replay.
+The first complete gate passed 492 checks with two expected disabled-delivery
+skips before an Activity category assertion failed. Its expected list omitted
+the new Feedback category. The related notification-preference assertion had
+the same omission. Both expectations now include the category; 28 focused
+Activity/comment/notification checks pass. No runtime guard was changed. Preserve
+the failed gate and rerun the entire fresh-fixture gate before publication.
+
 ## Implemented behavior
 
 Growth and its separately permitted CSV read persisted feedback metadata. Means

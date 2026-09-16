@@ -1,3 +1,15 @@
+## Complete feedback verification checkpoint — September 16, 2026 UTC
+
+Feature 31 remains unreleased. The exact candidate production preview passes 35
+browser groups across all feedback paths and Growth. The protected production
+copy upgrades 69 to 84 migrations with all 111 original-table fingerprints and
+current protected controls preserved. The complete gate reached 492 passes and
+two expected skips, then found an Activity test list missing the new Feedback
+category. That assertion and the related notification-preference expectation
+are corrected; 28 focused regression checks pass. Runtime behavior is unchanged.
+See [the retained evidence](FEEDBACK_WEEKLY_ACCEPTANCE.md). Rerun the complete gate,
+then publish and verify the exact canonical release before closing any scope.
+
 ## Weekly feedback and shared-report checkpoint — September 16, 2026 UTC
 
 Feature 31 remains **unreleased**. Weekly review now checks native case scope

@@ -97,7 +97,8 @@ test("activity has an exact empty state and denies guests, ineligible accounts a
     "reactions",
     "prayer",
     "church",
-    "commitments"
+    "commitments",
+    "feedback"
   ]);
   const guest = await handleActivityRequest(db, request(null));
   assert.equal(guest.status, 401);
