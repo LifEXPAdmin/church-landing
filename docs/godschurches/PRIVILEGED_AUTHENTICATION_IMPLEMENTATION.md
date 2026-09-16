@@ -100,9 +100,14 @@ phone alert or permission was created. Screenshots exclude keys/codes/passwords.
 Types, copy validation and lint pass (35 existing unrelated warnings). The final
 local build has 193 traces, 61,627 entries and 490 server JavaScript files, with
 no private fixture/environment material or Prisma configuration-loader path.
-The full regression gate is still running against checkpoint `f8810b8`; later
-changes have the scoped service and browser checks above. Do not claim the full
-gate passed until its final receipt is recorded.
+The full regression gate passed against checkpoint `f8810b8`: **174 discovered
+test files**, 1047 reported passes and 2 expected skips, including development
+and production HTTPS, actual server-process restart, synthetic staged upgrades,
+fresh installation and full restore. Later changes have the scoped service and
+browser checks above. The final runtime is `3ef52b1`; subsequent commits change
+only evidence and the additional owner export/erasure regression. The final
+production-build public/access pass has **32 checks**, no browser errors and no
+writes. Counts from overlapping stages are not distinct test-case totals.
 
 The actual protected production-copy rehearsal completed **11:06:59 UTC**:
 90 to 91 migrations, all 121 original-table column fingerprints preserved,
@@ -126,8 +131,8 @@ component memory and expire from view after ten minutes.
 
 ## Activation and release acceptance
 
-The engineering release is prepared for `enroll`. It must complete the full gate,
-exact deployment/canonical/live checks, current migration and installed recovery
+The engineering release is verified locally and prepared for `enroll`. It must
+complete exact deployment/canonical/live checks, current migration and installed recovery
 registry verification, and private task reconciliation before publication is
 claimed. The public release candidate is **2026.09.16.9**. Production remains the
 version stated at the top of this report until those receipts supersede it.
