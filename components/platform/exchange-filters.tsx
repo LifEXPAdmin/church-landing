@@ -199,7 +199,10 @@ export function ExchangeFilters({
                 className="inline-flex min-h-11 max-w-full items-center gap-2 break-words rounded-full border border-gc-divider px-3 py-2 text-sm"
                 aria-label={`Remove filter: ${label}`}
               >
-                {label} <span aria-hidden="true">×</span>
+                <span className="min-w-0 break-words">{label}</span>
+                <span className="shrink-0" aria-hidden="true">
+                  ×
+                </span>
               </a>
             </li>
           ))}
