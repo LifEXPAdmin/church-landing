@@ -142,9 +142,10 @@ export function RegionalSettings({ initial }: { initial: RegionalState }) {
         >
           <fieldset className="space-y-4" disabled={busy || !!pending.current}>
             <legend className="sr-only">Your regional formats</legend>
-            <label className="block">
-              Date format
+            <div>
+              <label htmlFor="regional-date-format">Date format</label>
               <select
+                id="regional-date-format"
                 className="gc-input mt-2 w-full"
                 value={draft.dateFormat}
                 onChange={(e) => {
@@ -161,10 +162,11 @@ export function RegionalSettings({ initial }: { initial: RegionalState }) {
                 <option value="DMY">Day/month/year</option>
                 <option value="YMD">Year-month-day</option>
               </select>
-            </label>
-            <label className="block">
-              Time format
+            </div>
+            <div>
+              <label htmlFor="regional-time-format">Time format</label>
               <select
+                id="regional-time-format"
                 className="gc-input mt-2 w-full"
                 value={draft.timeFormat}
                 onChange={(e) => {
@@ -180,7 +182,7 @@ export function RegionalSettings({ initial }: { initial: RegionalState }) {
                 <option value="H12">12-hour</option>
                 <option value="H24">24-hour</option>
               </select>
-            </label>
+            </div>
             <p aria-live="polite">
               Preview:{" "}
               <span data-regional-preview>
