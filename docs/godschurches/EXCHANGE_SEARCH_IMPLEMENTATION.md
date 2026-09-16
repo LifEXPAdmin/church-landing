@@ -87,3 +87,27 @@ no late opt-in delivery, quiet hours, delayed retries, generic payloads and
 cancellation after search opt-out. No real sends occur. Product notes are prepared
 for the next version; complete-gate, protected upgrade and exact canonical live
 acceptance remain required before release/completion.
+
+## Final browser and recovery repairs
+
+Application source `93f9067` and isolated product `2026.09.16.11` pass 58
+public/access checks and all 23 browser groups (seven search/saved-choice and
+16 listing regressions), with zero browser errors or live application writes.
+Forty-two focused service/query checks pass, including verified-adult save
+eligibility. Resuming a public listing now uses the signed-in recovery guard so
+an uncertain favorite save can confirm its original request after focus changes.
+Maximum-length unbroken search chips wrap at 320 pixels with enlarged text.
+Privacy guidance now describes private saved choices and restrictive restoration.
+
+The first complete-gate run stopped on the Activity fixture's old explicit
+category list. Its only mismatch was the newly supported Exchange category;
+all other Activity checks passed. The expectation is updated and those shared
+Activity/preferences/notification checks now join the focused Exchange gate.
+The full gate is rerun on the final source rather than accepted from the failed
+receipt. The production domain remains on the earlier release until it passes.
+
+The local candidate checks 200 runtime traces, 65,640 entries and 507 server
+JavaScript files, excluding private fixtures, environment files and the Prisma
+configuration loader. Compared with the earlier isolated listing build, listed
+browse/detail chunks increase by 4,850/4,848 gzip bytes. Those are local compressed
+artifact measurements, not a network latency or hosting-capacity claim.

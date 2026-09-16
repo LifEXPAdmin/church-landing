@@ -149,6 +149,11 @@ try {
     ? [
         "tests/exchange-input.test.ts",
         "tests/exchange-listings.test.ts",
+        "tests/activity.test.ts",
+        "tests/push-subscriptions.test.ts",
+        "tests/notification-integration.test.ts",
+        "tests/notification-outbox.test.ts",
+        "tests/notification-source-batch.test.ts",
         ...(process.argv.includes("--exchange-cost")
           ? ["tests/exchange-query-cost.ts"]
           : [])
