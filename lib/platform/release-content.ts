@@ -20,7 +20,7 @@ export const features: Feature[] = [
     description:
       "Narrow listings by availability, audience, exact price or approximate area, and keep private favorites and named searches.",
     steps:
-      "Open Exchange and choose More filters and sorting. Select a currency and price basis together, or choose a country, named town and distance. Open a listing to save a favorite. Use Save this search and Saved listings and searches to manage your choices.",
+      "Open Exchange and choose More filters and sorting. Select a currency and price basis together, or choose a country, named town and distance. Open a listing to save a favorite. Use Save this search and Saved listings and searches to manage your choices. Settings, Exchange brings your listings, saved choices, contact and notification controls together.",
     href: "/platform/exchange",
     eligibility:
       "Saved choices require a verified adult account and remain private. Matching alerts require an explicit choice on each search. Phone alerts additionally require your Exchange notification preference and a registered device. Alerts cover future matching publications only. Current listing access is checked again; approximate distances use town centers and do not reveal homes.",
@@ -844,7 +844,8 @@ export const releases: ReleaseEntry[] = [
     ],
     improved: [
       "Applied filters can be removed individually, and returning from a listing preserves the search context.",
-      "Unavailable favorites show a private generic state and can still be removed. Saved choices are included in account export and deletion."
+      "Unavailable favorites show a private generic state and can still be removed. Saved choices are included in account export and deletion.",
+      "Settings, Exchange links your listing audiences, general listing area, saved choices, contact requests and notification preferences."
     ],
     fixed: [
       "Changed listing access and account changes are checked again before saved content or matching alerts are shown. Uncertain saves can confirm the original request."

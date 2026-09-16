@@ -53,6 +53,11 @@ export const settingsFolders = [
     description: "Your calendars and deliberate schedule sharing."
   },
   {
+    id: "exchange",
+    label: "Exchange",
+    description: "Your listings, private saved searches, contact choices and alerts."
+  },
+  {
     id: "safety",
     label: "Safety",
     description: "Blocked and muted accounts, and where to find help."
@@ -78,6 +83,7 @@ export const relatedSettingIds: Partial<
   privacy: ["profile.information", "calendar.sharing"],
   church: ["privacy.directory", "calendar.sharing"],
   calendar: ["profile.information", "privacy.directory"],
+  exchange: ["privacy.messages", "notifications.availability"],
   notifications: ["privacy.relationships", "safety.muted"],
   feed: ["safety.muted"],
   safety: ["notifications.availability"]
@@ -171,6 +177,37 @@ const help = {
 };
 
 export const settingsRegistry: readonly SettingRegistration[] = Object.freeze([
+  entry(
+    "exchange.listings",
+    "exchange",
+    "Your listings and audiences",
+    "Manage your listings and choose Public or One approved church for each one. Review its audience before publishing.",
+    ["marketplace", "free items", "for sale", "wanted", "services", "listing audience"],
+    { href: "/platform/exchange/mine" },
+    linked("exchange-listings.ts listExchangeListings", "exchangeListingCommand")
+  ),
+  entry(
+    "exchange.area",
+    "exchange",
+    "Listing area and pickup privacy",
+    "Choose a general town when creating a listing. Keep exact pickup instructions out of published text.",
+    ["pickup", "collection", "marketplace location", "listing town"],
+    { href: "/platform/exchange/new" },
+    linked("exchange-listings.ts exchangeEditorContext", "exchangeListingCommand")
+  ),
+  entry(
+    "exchange.saved",
+    "exchange",
+    "Saved listings and matching alerts",
+    "Manage private favorites and named searches. Turn matching alerts on or off for each search without removing it.",
+    ["marketplace", "saved search", "favorite items", "wanted matches", "local listings"],
+    { href: "/platform/exchange/saved" },
+    {
+      persistenceOwner: "ExchangeFavorite and ExchangeSavedSearch",
+      read: "exchange-saved.ts readExchangeSaved",
+      write: "exchangeSavedCommand"
+    }
+  ),
   entry(
     "privacy.measurement",
     "privacy",
@@ -528,7 +565,9 @@ export const settingsRegistry: readonly SettingRegistration[] = Object.freeze([
       "volunteer commitments",
       "feedback email",
       "idea updates",
-      "unsubscribe feedback"
+      "unsubscribe feedback",
+      "exchange alerts",
+      "marketplace notifications"
     ],
     { control: "notifications" },
     {

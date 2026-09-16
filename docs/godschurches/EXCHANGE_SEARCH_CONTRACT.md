@@ -151,6 +151,11 @@ giving/payment preferences keep their own prerequisites.
 
 ## Acceptance and release
 
+Finish the newly available Settings entry in this same cycle. The
+[Exchange settings map](EXCHANGE_SETTINGS_CONTRACT.md) links current listings,
+general-area entry, saved choices, contact requests and notification preferences
+without duplicating a preference owner or enabling financial controls.
+
 Prove invalid/combined filters, exact zero/two/three-decimal money, approximate
 boundary distances, equal-sort keysets, concurrent changes, blocked/muted actors,
 private church denial, no precise coordinates, lost-response saves, competing

@@ -1,5 +1,14 @@
 # Settings inventory and reuse map
 
+## Exchange integration, September 16, 2026
+
+The current search/saved-choice feature adds Settings, Exchange through the
+existing registry. Listing audiences and general town remain per-listing choices;
+favorites, named searches and optional matching alerts use their existing owned
+screen. Related contact and notification rows retain their canonical services.
+See [the capability map](EXCHANGE_SETTINGS_CONTRACT.md). Reusable pickup defaults,
+giving and financial controls retain their own unimplemented prerequisites.
+
 ## Notification inventory update — September 14, 2026
 
 The dated table below preserves the original routing inventory. Current
