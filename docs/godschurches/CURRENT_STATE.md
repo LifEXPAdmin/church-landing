@@ -1,3 +1,26 @@
+## Notifications and adult photo tags verified live — September 16, 2026 UTC
+
+**2026.09.16.2 / 8023e809f30acf52a863fc11c0f06d8d304ee8c1** is READY in
+**dpl_6WQEd4ms8mf73s4YkEkt4VdjNmP8**, independently canonical at
+`godschurches.com`, with exact serving SHA verified. The labeled shared header,
+All/Unread/read controls, post mentions, friend and volunteer source completion,
+private adult photo-tag approval/removal and independent choices ship together.
+
+[Complete evidence](NOTIFICATION_CENTER_ACCEPTANCE.md): all 167 test files,
+1,018 passes/two expected skips; 47 browser groups plus the final calendar entry
+rechecks; 20 public/privacy, four health and eight actual signed-in live groups.
+Both native probes execute with zero application writes. All 119 original table
+fingerprints are unchanged; all 89 production and installed recovery checksums
+match. Installed ordinary/daily restores and 56-set nightly validation pass.
+No production test-data, read-state or preference changes or sends occurred.
+Checked live error/fatal rows are zero. Physical devices, actual cross-device
+behavior, family-policy and existing operator/provider acceptance remain separate.
+
+Continue the unified queue by actual prerequisites and current scope, including
+remaining operational/capacity acceptance and newly requested copy cleanup.
+Do not rebuild the completed notification center or adult-tag dependencies.
+Keep final review last.
+
 ## Notifications and adult tags ready for publication — September 16, 2026 UTC
 
 Candidate `6349ece` completes staged coverage of all 167 test files: 1,018 passing

@@ -1,9 +1,10 @@
 # Notifications and adult photo-tag acceptance
 
-September 16, 2026. Candidate application source: `6349ece`. This is a local
-acceptance checkpoint, not a production-release receipt. Production remains the
-feedback release until canonical deployment and live verification
-are complete.
+September 16, 2026. **Published and verified:** `2026.09.16.2`, application SHA
+`8023e809f30acf52a863fc11c0f06d8d304ee8c1`, READY deployment
+`dpl_6WQEd4ms8mf73s4YkEkt4VdjNmP8`. Independent alias lookup and the canonical
+release endpoint agree. Final application acceptance source is `6349ece`; the
+release commit changes documentation only.
 
 ## Complete feature scope
 
@@ -76,15 +77,45 @@ integration caught and corrected a reaction-identity regression; the final
 integration passes 22 checks. Five mention checks verify current name resolution,
 consent, blocks and eligibility. No failures remain in the accepted gate.
 
-## Recovery and release gate
+## Recovery and live release
 
 The protected production-copy rehearsal upgrades 84 to 89 migrations and preserves
 all original columns in 119 tables. Protected replay completes, restored plaintext
 is removed and production is unchanged. Fresh preflight confirms all 84 installed
 checksums and exactly five intended additive migrations.
 
-Verify the exact READY deployment and independent
-canonical alias, then verify live behavior, original-column fingerprints, all 89
-migration checksums and the installed recovery registry. Keep physical-device,
-cross-device, actual operator/provider and pilot observations separate. Do not
-close the parent feature's remaining physical acceptance from automated evidence.
+Production reached READY at 04:19:15.300 UTC; exact serving identity and independent
+canonical assignment were verified at 04:20:34 UTC. Twenty public/private-entry
+checks, four secured health checks and eight connected signed-in browser
+observations pass. Home and Menu show the labeled Notifications entry with the
+existing unread count; All/Unread, private photo review, adult request choices,
+the registered privacy entry and separate initially-off photo phone alerts are
+visible. Navigation leaves both existing unread updates unchanged. No real tag,
+read-state change, preference save, message or device registration was created.
+
+All 89 production checksums and the installed recovery registry match. Original
+column fingerprints in all 119 existing tables are unchanged. New mentions,
+photo tags/approvals, personal unread reminders, explicit tag preference changes
+and new feature events are zero. Two nonexistent-source probes execute on this
+deployment with HTTP 200 and zero application writes. No outbound sends occur.
+Public-browser page errors and deployment-scoped error/fatal rows are zero in
+the checked 04:19:15–04:25:30 UTC window, with a 100-row limit per severity.
+
+Installed ordinary and daily 89-to-89 restores each cover 121 tables and remove
+restored plaintext. Nightly recovery validates 56 encrypted sets with no issues
+or removals, retaining the existing 28-day expiry and 30-day maximum policy.
+The local execution host must remain awake.
+
+Actual provider output verifies 189 traces, 59,758 entries and 474 server
+JavaScript files with no private fixture/environment/configuration-loader path.
+The deployed renderer is 173,096 bytes, SHA256
+`2b7c5f99a8710e52520e7d0dc25c9fb65fd7c06e0a1d6cfee97276e0a452a3b7`.
+There are 389 function route entries, 12 distinct packages and 168,517,375 packaged
+bytes, including middleware. Application functions use Node 24, 2,048 MB and
+`iad1`; middleware lists eight regions. The 150.692-second concurrent build wait
+and package sizes are provider observations, not latency, billing or capacity
+guarantees. No shared-project configuration was changed.
+
+The required notification and adult photo-tag engineering is complete. Keep
+physical-device, actual cross-device, operator/provider and pilot acceptance
+separate. Family tagging remains unavailable behind its own policy gate.

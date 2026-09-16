@@ -63,7 +63,7 @@ approved profile associations, export/erasure, current-access event adapters and
 initially-off phone choices belong to this feature. Child/family tag controls stay
 unavailable behind the separate policy gate.
 
-## Acceptance remaining
+## Acceptance and remaining external gates
 
 Service/UI integration now includes photo review, manager and profile links, adult
 privacy choices, account export/erasure and protected controls. Source descriptions
@@ -76,8 +76,8 @@ concealed. Signed-out return links discard prior-session actions and cursors.
 Source-action-to-center browser checks, safe Back/reload, cross-tab reads,
 narrow-screen/text-zoom layout, unavailable/retry and identity changes pass.
 [Acceptance evidence](NOTIFICATION_CENTER_ACCEPTANCE.md) records the complete
-staged gate, protected upgrade and final small corrections. Release notes are
-prepared. Continue authorized deployment and verify exact READY/canonical
-identity, current live read-only behavior, data fingerprints, migrations and
-installed recovery before completion. Retain physical-phone and actual cross-device
-acceptance separately; create no production fixtures or real outbound sends.
+staged gate, protected upgrade, exact READY/canonical release, live read-only
+behavior, unchanged original data, migrations and installed recovery. Required
+engineering and release integration are complete. Retain physical-phone and
+actual cross-device acceptance separately; family tagging remains unavailable.
+No production fixtures or real outbound sends were created for acceptance.
