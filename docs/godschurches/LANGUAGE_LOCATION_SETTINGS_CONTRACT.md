@@ -1,5 +1,16 @@
 # Language and location settings boundaries
 
+## Optional device suggestions candidate — September 16, 2026
+
+The device follow-through reuses private discovery preferences after the
+regional/privacy prerequisite. Its [device contract](DEVICE_LOCATION_CONTRACT.md)
+defines explicit adult-account preflight, one-shot permission, immediate coarse
+conversion, transient catalog lookup, independent named-area choice and Save,
+manual recovery and discarded late results. It adds no coordinate storage or
+translation service. A disabled translation row explains that availability will
+not imply coverage of every media item. The original absence statements below
+are historical; publication requires the feature's exact acceptance receipt.
+
 ## Regional formats and profile audience candidate — September 16, 2026
 
 The next increment implements saved date/time presentation and an independent

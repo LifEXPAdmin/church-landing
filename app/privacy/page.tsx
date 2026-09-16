@@ -13,7 +13,7 @@ export default function PrivacyPage() {
         <h1 className="mb-6 text-5xl">Privacy Policy</h1>
         <p className="mb-8 text-sm">
           Original policy: February 21, 2026. Service information updated
-          September 15, 2026.
+          September 16, 2026.
         </p>
 
         <div className="space-y-8 text-base leading-relaxed">
@@ -37,6 +37,30 @@ export default function PrivacyPage() {
               church pages and basic author information such as names and
               usernames. Viewing member profiles requires sign-in. Your account
               email and password are excluded from profile and public content.
+            </p>
+          </section>
+          <section>
+            <h2 className="mb-2 text-3xl">Discovery and Profile Location</h2>
+            <p>
+              Your discovery country, named area, radius and reading-language
+              choices are private account preferences. You can enter an area
+              manually without device location permission. Eligible adult
+              accounts can optionally ask the browser for location once to
+              suggest towns in their selected country. The position is rounded
+              on your device before an approximate area is sent to this website
+              for that lookup. We do not save device coordinates. Your browser
+              or operating system may use its own location service under its
+              own permission controls.
+            </p>
+            <p className="mt-3">
+              Choose a named area and save separately; requesting suggestions
+              does not save a discovery preference. Denying permission or
+              cancelling keeps manual entry available. Your optional profile
+              location has its own Only me or permitted-member audience.
+              Discovery choices never fill that field or broaden its audience.
+              Your account download includes saved discovery choices and profile
+              location; permanent deletion clears them under the existing
+              deletion and backup-retention process.
             </p>
           </section>
           <section>

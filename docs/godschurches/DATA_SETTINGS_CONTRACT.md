@@ -1,5 +1,13 @@
 # Data settings and current lifecycle scope
 
+## Device-location boundary update — September 16, 2026
+
+The optional [device suggestion flow](DEVICE_LOCATION_CONTRACT.md) is separate
+from this read-only browser-permission display. Only an explicit request in
+owned discovery settings can invoke it. Permission status checks still request
+no position, retain no coordinates and grant no sharing or account authority.
+This update describes the candidate; use its acceptance receipt for live status.
+
 September 12, 2026. The Data folder consumes the existing account confirmation,
 export and reversible deactivation services. It adds no storage or permission
 authority. Settings context remains owner-scoped, private and revalidated on

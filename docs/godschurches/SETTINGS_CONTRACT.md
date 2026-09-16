@@ -6,6 +6,13 @@ searchable settings implementation; it does not activate every proposed setting.
 
 ## Related settings — September 14, 2026
 
+The September 16 regional/privacy and optional device candidates extend the
+initial location row below through their existing account and discovery owners.
+See [regional preferences](REGIONAL_PREFERENCES_CONTRACT.md) and
+[device-area suggestions](DEVICE_LOCATION_CONTRACT.md). No default requests
+device permission. Explicit suggestions, manual discovery and profile disclosure
+remain separate, with their own current-account checks and release acceptance.
+
 A small curated registry-ID map connects related folder pages. Related links use
 only currently working personal registrations and their canonical destinations;
 future/explanatory rows and selected-church controls are excluded. The section
