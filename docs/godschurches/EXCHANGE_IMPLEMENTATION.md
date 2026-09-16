@@ -109,7 +109,13 @@ The expanded public candidate check passes **44 groups** with zero page errors
 or writes, across 320/390/1280-pixel public, entry, release and access screens.
 Thirty-eight input/navigation/registry/release/regional checks also pass.
 The feature guide and factual Exchange privacy/service information are updated
-in the same cycle. The latest authored-copy changes await built rendering.
+in the same cycle. Their rebuilt rendering passes **47 public/access groups**
+with zero page errors or writes, including Privacy and Terms at 320/390/1280
+pixels. The final intent/filter browser run passes all **15 groups** and the
+isolated production HTTPS listing test passes. The clean complete gate runs at
+`8dd0820`; the later guidance and harness-only delta is separately built and
+verified. The isolated overlay preview's Git identity is its earlier base, not
+the final application commit; it is not a canonical deployment receipt.
 
 Read-cost review reduces a 20-card synthetic long-field response from 184,173 to
 13,813 bytes for guests and 184,196 to 13,836 bytes for owners. Both retain one
@@ -126,8 +132,8 @@ builds already pass with 199 verified traces and the pinned hydration renderer.
 
 ## Work remaining in this feature cycle
 
-Verify the integrated intent forms in the built browser and complete release
-acceptance in this same feature cycle. Church delegation has isolated acceptance;
+Complete release acceptance in this same feature cycle. Church delegation has
+isolated acceptance;
 business delegation still lacks its canonical organization authority service.
 Finish the complete established gate and integrated browser checks, retain the
 fresh protected migration rehearsal, and release through exact canonical live checks.
