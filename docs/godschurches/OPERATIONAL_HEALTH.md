@@ -1,5 +1,24 @@
 # Operational health and measured hosting resources
 
+## Authenticator notice acceptance: September 16, 11:48 UTC
+
+The exact [authenticator enrollment release](PRIVILEGED_AUTHENTICATION_IMPLEMENTATION.md)
+is live as **2026.09.16.9 / 4b834fb**. The existing private aggregate health read
+now includes pending/exhausted essential security-notice counts and oldest age,
+plus enrollment/enforcement booleans. Exhausted attempts or more than five minutes
+pending raise attention; neither addresses nor provider bodies are projected.
+The same bounded two-query inspection and maintenance delivery owner remain.
+
+The actual health response confirms enrollment enabled, enforcement disabled,
+zero pending/exhausted notices and no alerts. No production enrollment or notice
+send was performed, so an empty backlog is not delivery acceptance. The adults'
+private enrollment and actual essential-notice/recovery checks remain activation
+prerequisites. Installed recovery is aligned with 91 migrations, and actual daily
+restore plus 60-set nightly validation pass. Canonical build-queue wait was
+234.693 seconds behind the pre-existing shared project, whose purpose/configuration
+was not changed. Earlier hosting-use and provider-access measurements below retain
+their original timestamps.
+
 ## Resource and access refresh: September 16, 09:30 to 09:53 UTC
 
 The [feed-cost receipt](FEED_RENDERING_ACCEPTANCE.md) records fresh authenticated

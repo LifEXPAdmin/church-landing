@@ -1,9 +1,12 @@
 # Privileged authentication implementation
 
-September 16, 2026 UTC. Work in progress, not published or activated. The current
-canonical application remains **2026.09.16.8 / 012ccf7**. This feature follows
-[the accepted assessment](PRIVILEGED_AUTHENTICATION_ASSESSMENT.md); its final
-acceptance, release and actual enrollment evidence remain outstanding.
+September 16, 2026 UTC. **Enrollment engineering is published and verified live**
+on **2026.09.16.9 / 4b834fba491a0d1c031aafe6dbfed03d8ab5e4e2**. The exact
+READY canonical deployment is **dpl_4V71AAVKY7MvWySTY2kGQwyusvtM**.
+This follows [the accepted assessment](PRIVILEGED_AUTHENTICATION_ASSESSMENT.md).
+Enrollment is available; broader enforcement remains disabled pending the real
+adults' private enrollment, recovery readiness and controlled activation checks.
+The overall privileged-MFA acceptance therefore remains open.
 
 ## Adapter and staged rollout
 
@@ -71,7 +74,7 @@ exhausted retries or more than five minutes pending raise an attention flag.
 The existing maintenance result continues to report pending notices after the
 automatic retry limit, and no provider body, email address or key enters health.
 
-## Current verification and remaining work
+## Verification
 
 The final authentication/health service run passes **21 checks**: ten broad
 privilege/authentication groups, four existing authenticator/access-manager
@@ -112,8 +115,8 @@ writes. Counts from overlapping stages are not distinct test-case totals.
 The actual protected production-copy rehearsal completed **11:06:59 UTC**:
 90 to 91 migrations, all 121 original-table column fingerprints preserved,
 protected replay complete and plaintext removed. The source connection was
-read-only. Installed recovery-registry propagation belongs to the same release
-and remains pending until the exact production migration history is verified.
+read-only. Installed recovery-registry propagation was completed in this same release after the exact production
+migration history was verified, as recorded below.
 
 Earlier test-fixture and build failures are preserved privately. They include
 strip-only TypeScript syntax, the quarantined-factor constraint, required fixture
@@ -129,13 +132,48 @@ view key before revealing them. Changed sign-ins remove retained secrets;
 unchanged sign-ins can resume. Setup keys and recovery codes remain only in
 component memory and expire from view after ten minutes.
 
-## Activation and release acceptance
+## Exact production and recovery acceptance
 
-The engineering release is verified locally and prepared for `enroll`. It must
-complete exact deployment/canonical/live checks, current migration and installed recovery
-registry verification, and private task reconciliation before publication is
-claimed. The public release candidate is **2026.09.16.9**. Production remains the
-version stated at the top of this report until those receipts supersede it.
+The authorized fast-forward release uses the existing canonical project and Git
+integration. One production setting was added: `PRIVILEGED_MFA_MODE=enroll`.
+The provider applied migration `20260916103000_privileged_authentication` at
+**11:43:03 UTC**. All **91** production migration checksums match. The release
+was **READY at 11:46:00.963 UTC**; the independent alias lookup and canonical
+release endpoint both match the full application SHA above. It waited **234.693
+seconds** behind the pre-existing counterpart project's shared build slot. No
+other project's configuration, plan or domain was changed.
+
+**32 public/access checks, five private health checks and four actual signed-in
+UI groups pass.** The real authenticator screen offers primary-confirmed setup
+and says no factor is confirmed; Account Security links to it. Existing assigned
+Admin access and the original post/discussion remain available. Health confirms
+enrollment enabled, enforcement disabled and zero pending/exhausted security
+notices, with no attention flag. These read-only observations do not enroll the
+owner, send a notice or certify a physical authenticator/device.
+
+All **121 original-table column fingerprints** match between **11:37:30.357 and
+11:50:58.850 UTC**. Production factors, session proofs and security notices are
+all zero. Application account/content/preference/grant writes, test accounts and
+outbound sends are **zero**. The release's actual production changes are the one
+additive schema migration and one configuration setting. Public browser errors
+are zero, as are provider error/fatal rows in the scoped **11:46:00.963 to
+11:50:00 UTC** observation window.
+
+The provider build verifies **193 traces, 61,534 entries and 489 server JavaScript
+files**, without private fixtures, environment files or a Prisma configuration
+loader. Canonical Home loads the provider-verified 173,096-byte hydration renderer,
+SHA256 `2b7c5f99a8710e52520e7d0dc25c9fb65fd7c06e0a1d6cfee97276e0a452a3b7`.
+
+The installed recovery registry now has **91** matching entries and preserves
+all 90 prior checksums; its existing backup-retention source hash is unchanged.
+The actual installed daily encrypted-copy restore passed **91 to 91** migrations
+and restored **123 tables** at **11:45:38.620 UTC**, with plaintext removed. This
+ordinary daily check does not perform the protected-replay/upgrade comparison;
+the separate **11:06:59 UTC protected release rehearsal** supplies that evidence.
+Nightly validation at **11:47:14.104 UTC** checks **60 encrypted sets**, with no
+issues, expiry removals or attention flag. The local recovery host must be awake.
+
+## Remaining activation prerequisite
 
 Actual adults must enroll privately and retain their recovery codes themselves.
 Before changing to `enforce`, inventory every current privileged authority and

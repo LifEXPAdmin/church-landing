@@ -1,3 +1,30 @@
+## Authenticator enrollment verified live — September 16, 2026 UTC
+
+**2026.09.16.9 / 4b834fba491a0d1c031aafe6dbfed03d8ab5e4e2** is READY in
+**dpl_4V71AAVKY7MvWySTY2kGQwyusvtM**, independently canonical and verified by
+the serving build. Native-account enrollment, purpose-bound challenges, recovery,
+essential notices and protected-restore quarantine use maintained otplib modules.
+Actual production mode is **enroll**; broader enforcement is **disabled**.
+See [the implementation and exact release receipt](PRIVILEGED_AUTHENTICATION_IMPLEMENTATION.md).
+
+The full 174-file baseline gate passes 1,047 reported checks with two expected
+skips; later changes pass scoped service, privacy, health and browser verification.
+Live: 32 public/access, five private health and four actual signed-in groups pass.
+All 121 original-table column fingerprints match. All 91 production and installed
+recovery migration checksums match; protected upgrade, installed daily restore
+and 60-set nightly validation pass. Scoped error/fatal rows and browser errors
+are zero. Production has zero factors, proofs and security notices. Application
+writes and sends are zero; one additive migration and one enrollment-mode setting
+are the release changes.
+
+Engineering is released. Actual responsible adults must enroll privately, retain
+recovery codes and verify normal duty, another sign-in and recovery readiness
+before controlled enforcement. No test grant, email-only override or owner factor
+was created. Keep the overall MFA task open for that genuine activation gate and
+continue independent eligible priorities. Final review remains last. Focused
+private task, feature checklist and handoff writes are verified by readback; the previously recorded
+main-queue connector write failure remains a separate propagation limitation.
+
 ## Measured feed-cost repair verified live — September 16, 2026 UTC
 
 **2026.09.16.8 / 012ccf7562c157fad7f1780af457f0559f94aad9** is READY in
