@@ -25,6 +25,7 @@ const nextConfig: NextConfig = {
         "/platform",
         "/platform/feed",
         "/api/platform/discovery",
+        "/api/platform/discovery/device",
         "/api/platform/posts",
         "/api/platform/post-workspace"
       ].map((route) => [route, ["./data/discovery/countries/*.json.gz"]])

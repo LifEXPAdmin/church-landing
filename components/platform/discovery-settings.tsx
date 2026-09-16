@@ -33,6 +33,7 @@ import {
 import { useUnsavedSocialWork } from "./use-unsaved-social-work";
 import { settlePhotoNavigation } from "./use-photo-back-guard";
 import { DiscoveryPlacePicker } from "./discovery-place-picker";
+import { DiscoveryDeviceLocation } from "./discovery-device-location";
 import { portalInputClass } from "./portal-action-form";
 
 type SettingsData = Awaited<ReturnType<typeof getDiscoveryPreferences>>;
@@ -325,6 +326,7 @@ function DiscoverySettingsForm({
     [conflict, setConflict] = useState(false),
     [message, setMessage] = useState(""),
     [presetName, setPresetName] = useState("");
+  const [manualLocationVersion, setManualLocationVersion] = useState(0);
   const [denominations, setDenominations] = useState(
       prefs.filters.denominations.join("\n")
     ),
@@ -561,7 +563,19 @@ function DiscoverySettingsForm({
             placeId={prefs.filters.placeId}
             onCountry={(country) => filters({ country, placeId: null })}
             onPlace={(placeId) => filters({ placeId })}
+            onManualChange={() =>
+              setManualLocationVersion((value) => value + 1)
+            }
           />
+          {owner && (
+            <DiscoveryDeviceLocation
+              key={`${owner}:${prefs.filters.country}:${prefs.filters.placeId}:${manualLocationVersion}`}
+              owner={owner}
+              country={prefs.filters.country}
+              disabled={busy || !!pending || conflict}
+              onPlace={(placeId) => filters({ placeId })}
+            />
+          )}
           <label className="block font-semibold" htmlFor={`${id}-radius`}>
             Approximate distance between town centers
           </label>

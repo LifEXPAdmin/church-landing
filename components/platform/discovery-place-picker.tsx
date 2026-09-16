@@ -8,12 +8,14 @@ export function DiscoveryPlacePicker({
   placeId,
   onCountry,
   onPlace,
+  onManualChange,
   disabled = false
 }: {
   country: string | null;
   placeId: number | null;
   onCountry: (country: string | null) => void;
   onPlace: (id: number | null) => void;
+  onManualChange?: () => void;
   disabled?: boolean;
 }) {
   const id = useId(),
@@ -65,6 +67,7 @@ export function DiscoveryPlacePicker({
     };
   }, [country, placeId]);
   async function search() {
+    onManualChange?.();
     if (!country || query.trim().length < 2 || busy) {
       setMessage(
         "Choose a country and enter at least two letters of a town or area."
@@ -117,6 +120,7 @@ export function DiscoveryPlacePicker({
         value={country ?? ""}
         disabled={disabled || busy}
         onChange={(e) => {
+          onManualChange?.();
           onCountry(e.target.value || null);
           setQuery("");
         }}
@@ -138,7 +142,10 @@ export function DiscoveryPlacePicker({
           value={query}
           maxLength={100}
           disabled={disabled || busy || !country}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => {
+            onManualChange?.();
+            setQuery(e.target.value);
+          }}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               e.preventDefault();
@@ -169,6 +176,7 @@ export function DiscoveryPlacePicker({
                 className="min-h-11 w-full px-3 py-2 text-left hover:bg-gc-hover"
                 disabled={disabled || busy}
                 onClick={() => {
+                  onManualChange?.();
                   setPlaces([]);
                   onPlace(p.id);
                 }}
@@ -188,7 +196,10 @@ export function DiscoveryPlacePicker({
             type="button"
             className="min-h-11 underline"
             disabled={disabled || busy}
-            onClick={() => onPlace(null)}
+            onClick={() => {
+              onManualChange?.();
+              onPlace(null);
+            }}
           >
             Clear area
           </button>

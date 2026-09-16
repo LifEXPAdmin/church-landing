@@ -449,7 +449,7 @@ export const settingsRegistry: readonly SettingRegistration[] = Object.freeze([
     "language.discovery",
     "language",
     "Private discovery area and reading languages",
-    "Choose a country, town, radius and reading languages in your existing discovery preferences. No device location permission is needed.",
+    "Choose a country, town, radius and reading languages. Manual entry needs no device permission; eligible adults can optionally request approximate town suggestions.",
     ["city", "town", "location", "country", "radius", "local area", "content language", "manual location"],
     { href: "/platform/settings/feed/discovery" },
     linked("discovery-preferences.ts getDiscoveryPreferences", "discovery-preferences.ts saveDiscoveryPreferences")

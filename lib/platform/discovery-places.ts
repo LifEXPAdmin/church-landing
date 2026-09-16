@@ -3,6 +3,7 @@ import { gunzipSync } from "node:zlib";
 import { join } from "node:path";
 import { discoveryCountry, discoveryPlaceId } from "./discovery-options";
 import { PortalError } from "./portal-policy";
+import { isDeviceArea } from "./device-location";
 
 type Town = [number, string, string, string, number, number, string];
 export type DiscoveryPlace = {
@@ -125,4 +126,43 @@ export function townDistanceKm(
       Math.cos(b.latitude * rad) *
       Math.sin(dlon / 2) ** 2;
   return 6371.0088 * 2 * Math.asin(Math.min(1, Math.sqrt(half)));
+}
+
+export async function nearbyDiscoveryPlaces(input: Record<string, unknown>) {
+  if (
+    Object.keys(input).some(
+      (key) => !["country", "latitudeCell", "longitudeCell"].includes(key)
+    ) ||
+    !isDeviceArea(input)
+  )
+    throw new PortalError(
+      400,
+      "Use an approximate area from the device-location control, or choose a town manually."
+    );
+  const country = discoveryCountry(input.country);
+  if (!country)
+    throw new PortalError(
+      400,
+      "Choose a country before requesting nearby areas."
+    );
+  const center = {
+    latitude: (input.latitudeCell + 0.5) / 4 - 90,
+    longitude: (input.longitudeCell + 0.5) / 4 - 180
+  };
+  const matches: { row: Town; distance: number }[] = [];
+  for (const row of await towns(country)) {
+    const distance = townDistanceKm(center, {
+      latitude: row[4],
+      longitude: row[5]
+    });
+    if (distance > 100) continue;
+    matches.push({ row, distance });
+    matches.sort((a, b) => a.distance - b.distance || a.row[0] - b.row[0]);
+    if (matches.length > 5) matches.pop();
+  }
+  return matches.map(({ row }) => ({
+    id: row[0],
+    country,
+    label: discoveryPlaceLabel(place(country, row))
+  }));
 }

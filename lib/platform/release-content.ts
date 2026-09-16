@@ -16,9 +16,9 @@ export const features: Feature[] = [
   {
     id: "language-location-preferences", category: "Privacy and account", name: "Date formats and location choices",
     description: "Save your preferred date and time formats, choose a private discovery area, and decide who can see your optional profile location.",
-    steps: "Open Settings → Language and location. Preview and save date and time formats, follow the discovery link for a town and radius, or edit your profile location and its audience.",
+    steps: "Open Settings → Language and location. Preview date and time formats, choose a discovery town and radius manually or from optional device suggestions, or edit your profile location and its audience. Save each choice separately.",
     href: "/platform/settings/language/interface",
-    eligibility: "Formats are saved to your signed-in account. The interface is in English. Member location sharing requires verified adult eligibility; Only me remains private. Discovery choices do not change profile disclosure or event times.",
+    eligibility: "Formats are saved to your signed-in account. The interface is in English; translation is unavailable. Device suggestions and member location sharing require verified adult eligibility. Device coordinates are not saved. Only me stays private, and discovery choices do not change profile disclosure or event times.",
     availability: "available"
   },
   {
@@ -756,6 +756,14 @@ export const features: Feature[] = [
   }
 ];
 export const releases: ReleaseEntry[] = [
+  {
+    id: "optional-device-area-suggestions", version: "2026.09.16.7", date: "2026-09-16",
+    summary: "Optionally use this device once to suggest a private discovery area.",
+    added: ["Eligible adults can request approximate town suggestions, choose an area and save it separately."],
+    improved: ["Manual town selection stays available after denied permission, cancellation, timeout or unavailable device location.", "The interface clearly marks automatic translation as unavailable; language filters do not translate posts or other media."],
+    fixed: [],
+    featureIds: ["language-location-preferences"]
+  },
   {
     id: "regional-formats-and-private-location", version: "2026.09.16.6", date: "2026-09-16",
     summary: "Save date and time formats and choose who can see your profile location.",

@@ -4,7 +4,7 @@ export const settingsHelpTopics = [
     id: "language-location",
     title: "Does choosing a discovery city share my location?",
     keywords: "language English translation city town region location radius device permission private profile",
-    body: "No. Your discovery area and reading languages are private account choices in Feed Settings. Choose a country and town manually without device location permission. Your optional profile location has its own Only me or permitted-member audience. Reading languages filter discovery posts; they do not translate content or change the English interface. Save date and time formats in Language and location. These formats change presentation; event instants, all-day dates, source zones and notification quiet hours stay separate.",
+    body: "No. Your discovery area and reading languages are private account choices in Feed Settings. Choose a country and town manually without device permission. Eligible adults can optionally request approximate town suggestions once, then choose and save an area. Device coordinates are not saved; denial or cancellation leaves manual entry available. Your profile location has its own Only me or permitted-member audience. Reading languages filter discovery posts; they do not translate content. Date and time formats stay separate from event instants, all-day dates, source zones and quiet hours.",
     href: "/platform/settings/language/interface",
     action: "Review language and location choices"
   },
