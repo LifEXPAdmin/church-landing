@@ -25,6 +25,9 @@ import { beginGoogleAttempt, finishGoogleAttempt } from "../lib/platform/google-
 import { GOOGLE_ISSUER } from "../lib/platform/google-provider";
 import { createSessionToken } from "../lib/platform/auth";
 import { requestAccountGrant, consumeAccountGrant } from "../lib/platform/accounts";
+import { prepareAccountExport, downloadAccountExport } from "../lib/platform/account-export";
+import { requestPermanentAccountDeletion } from "../lib/platform/account-deletion";
+import { eraseRequestedAccountData } from "../lib/platform/account-erasure";
 const db = new PrismaClient();
 const initialIntake = process.env.SUPPORT_INTAKE_ENABLED;
 after(async () => { delete process.env.PRIVILEGED_MFA_MODE; if (initialIntake === undefined) delete process.env.SUPPORT_INTAKE_ENABLED; else process.env.SUPPORT_INTAKE_ENABLED = initialIntake; await db.$disconnect(); });
@@ -147,6 +150,34 @@ test("failed essential security notices remain pending after the automatic retry
   assert.deepEqual(await dispatchPrivilegedNotices(db, actor.id, fail), { delivered: 0, pending: 1 });
   assert.equal(attempts, 1);
   assert.equal((await readPrivilegedAuthentication(db, actor.token)).notices[0].deliveredAt, null);
+});
+
+test("owner export excludes factor material and permanent erasure removes only that owner's security records", async () => {
+  process.env.PRIVILEGED_MFA_MODE = "enroll";
+  const actor = await createPortalActor(db, "mfaerase");
+  const other = await createPortalActor(db, "mfakeep");
+  const factor = await enrolled(actor);
+  await enrolled(other);
+  await command(db, actor.token, { operation: "mfa-challenge", requestKey: randomUUID(), expectedVersion: factor.version,
+    purpose: "privileged-work", code: authenticatorTotp(factor.secret, factor.counter) }, undefined);
+  const stored = await db.adminAuthenticator.findUniqueOrThrow({ where: { userId: actor.id } });
+  const proof = await db.privilegedSessionProof.findFirstOrThrow({ where: { session: { userId: actor.id } } });
+  const authorization = await prepareAccountExport(db, actor.token, actor.password, accountConfig().rateSecret);
+  const exported = JSON.stringify(await downloadAccountExport(db, actor.token, authorization.authorization, accountConfig().rateSecret));
+  for (const secret of [stored.secretCiphertext, ...stored.recoveryHashes, ...factor.recoveryCodes, proof.authorityDigest, proof.requestKey])
+    assert.ok(!exported.includes(secret), "A personal export must not serialize authentication material");
+  assert.doesNotMatch(exported, /secretCiphertext|recoveryHashes|privilegedSessionProof|privilegedSecurityNotice/);
+  const journal = { async completeAccount() {}, async recordAccount() {} };
+  await requestPermanentAccountDeletion(db, actor.token, actor.password, true, createSessionToken(), journal);
+  const deletion = await db.accountDeletion.findUniqueOrThrow({ where: { userId: actor.id } });
+  await eraseRequestedAccountData(db, deletion.id, journal);
+  assert.equal(await readAccountSession(db, actor.token), null);
+  assert.equal(await db.adminAuthenticator.count({ where: { userId: actor.id } }), 0);
+  assert.equal(await db.privilegedSessionProof.count({ where: { sessionId: proof.sessionId } }), 0);
+  assert.equal(await db.privilegedSecurityNotice.count({ where: { userId: actor.id } }), 0);
+  assert.equal(await db.adminAuthenticator.count({ where: { userId: other.id } }), 1);
+  assert.equal(await db.privilegedSecurityNotice.count({ where: { userId: other.id } }), 1);
+  assert.equal((await readAccountSession(db, other.token))?.id, other.id);
 });
 
 test("all church capabilities and topic management require assurance while ordinary membership and reading remain available", async () => {

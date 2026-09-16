@@ -73,14 +73,17 @@ automatic retry limit, and no provider body, email address or key enters health.
 
 ## Current verification and remaining work
 
-The final authentication/health service run passes **20 checks**: nine broad
+The final authentication/health service run passes **21 checks**: ten broad
 privilege/authentication groups, four existing authenticator/access-manager
 groups, and seven operational health groups. Fresh **91-migration** installation,
 populated upgrade and fixture dump/restore pass. The separate protected-form run
 passes **55 checks** across authentication, protected restore, church/calendar,
 topic and portal boundaries. The historical Stage2A upgrade case needs the full
 gate's special fixture and was excluded from that focused portal run; the complete
-gate retains it. These counts overlap and are not a sum of unique checks.
+gate retains it. These counts overlap and are not a sum of unique checks. The final privacy case
+uses a confirmed factor and real session proof: personal export excludes factor
+material, and the existing permanent-erasure service removes only that owner's
+factor, proofs and notices while preserving another enrolled account.
 
 Six browser groups pass against the actual enforcement-mode production build at
 `1ef3919`: guest/unverified denial, real QR decoding and exact lost-response
