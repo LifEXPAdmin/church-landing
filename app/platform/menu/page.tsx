@@ -111,6 +111,12 @@ export default async function PlatformMenuPage() {
             <h2 id="menu-reading">Read and explore</h2>
             <ul className="gc-menu-links">
               <MenuLink
+                href="/platform/exchange"
+                title="Exchange"
+                description="Find items offered free or for sale, or manage your own listings."
+                icon={HandHeart}
+              />
+              <MenuLink
                 href="/platform/topics"
                 title="Topic communities"
                 description="Read public discussions, join a topic or start your own."

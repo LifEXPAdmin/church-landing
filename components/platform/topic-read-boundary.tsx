@@ -15,11 +15,13 @@ export function TopicReadBoundary({
   owner,
   url,
   checksum,
+  label = "topic",
   children
 }: {
   owner: string | null;
   url: string;
   checksum: string;
+  label?: string;
   children: ReactNode;
 }) {
   const [visible, setVisible] = useState(true),
@@ -44,17 +46,17 @@ export function TopicReadBoundary({
       setNotice(
         same
           ? ""
-          : "Topic information changed. Reload to read the current page."
+          : `This ${label} information changed. Reload to read the current page.`
       );
     } catch {
       if (seq === generation.current) {
         setVisible(false);
         setNotice(
-          "Current topic access could not be confirmed. Reconnect and check again."
+          `Current ${label} access could not be confirmed. Reconnect and check again.`
         );
       }
     }
-  }, [owner, url, checksum]);
+  }, [owner, url, checksum, label]);
   useEffect(() => {
     const hide = () => {
       generation.current++;
@@ -96,13 +98,13 @@ export function TopicReadBoundary({
     <>
       {!visible && (
         <div className="space-y-3 rounded-xl border border-gc-divider p-4">
-          <p role="status">{notice || "Checking current topic information…"}</p>
+          <p role="status">{notice || `Checking current ${label} information…`}</p>
           <button
             className="gc-button gc-button-quiet"
             type="button"
             onClick={() => void check()}
           >
-            Check topic access
+            Check {label} access
           </button>{" "}
           <button
             className="gc-button gc-button-quiet"
@@ -116,7 +118,7 @@ export function TopicReadBoundary({
                 window.location.reload();
             }}
           >
-            Reload current topic page
+            Reload current {label} page
           </button>
         </div>
       )}

@@ -14,8 +14,8 @@ export const resourceContracts = Object.freeze({
   setting: implemented(
     "setting-specific account/portal/relationship/browser adapter"
   ),
-  exchangeListing: reserved(
-    "listing ownership, audience, moderation and lifecycle"
+  exchangeListing: implemented(
+    "exchange-policy/exchange-listings/exchange-boundary"
   ),
   gatherGroup: reserved("group membership, leadership and audience"),
   mediaCatalogItem: reserved("catalog source, rights, audience and provider"),

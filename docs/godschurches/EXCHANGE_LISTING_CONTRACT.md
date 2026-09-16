@@ -2,8 +2,9 @@
 
 September 16, 2026. Implementation contract for the first adult Exchange listing
 journey. The inspected baseline is the verified `2026.09.16.9 / 4b834fb` release,
-with report-only checkpoint `1c8efc4`. **Exchange remains reserved and unavailable.**
-This document does not create a listing, grant, payment service or public feature.
+with report-only checkpoint `1c8efc4`. Exchange was reserved at that baseline;
+the [implementation receipt](EXCHANGE_IMPLEMENTATION.md) tracks the subsequent
+unpublished service and interface. This contract is not a publication receipt.
 
 The current focused listing brief retains the original blueprint's steps 075 to
 082: distinct intents, scoped ownership/audience, local discovery, fulfillment
@@ -28,7 +29,7 @@ Later commerce/storefront architecture is not activated by a displayed price.
 | Account lifecycle | Export, erasure, account restrictions and protected restoration | Include only the owner's listing data in export, retire their sources and references on erasure, and replay restrictive controls before restored data can be served. |
 
 The identity/registry/relationship foundation tasks have actual completed receipts.
-Current source has no listing table, service, endpoint, report target or listing
+That baseline had no listing table, service, endpoint, report target or listing
 media adapter. Those are engineering work within this feature, not evidence of
 an external access blocker. Actual church delegation requires real appointments;
 no production grants may be invented for acceptance.

@@ -1,5 +1,6 @@
 import type { ImageView } from "./media";
 import { currentSocialOwner, SocialClientError } from "./social-client";
+import { announcePrivilegedChallenge } from "./privileged-auth-navigation";
 
 /** A retry repeats the caller's immutable details string and the same File. */
 export function uploadPhotoFile(
@@ -38,7 +39,9 @@ export function uploadPhotoFile(
             throw new SocialClientError(
               xhr!.status,
               value.message ??
-                "Upload was not confirmed. Keep this file and retry."
+                "Upload was not confirmed. Keep this file and retry.",
+              undefined,
+              xhr!.status === 403 && announcePrivilegedChallenge(value)
             );
           if (!value.id || !value.variants)
             throw new SocialClientError(

@@ -14,6 +14,13 @@ import {
 } from "../lib/platform/account-entry";
 import { parseReadingPreferences } from "../lib/platform/reading-preferences";
 
+test("Exchange account return keeps destinations without replaying private entries or actions", () => {
+  for (const path of ["/platform/exchange", "/platform/exchange/mine", "/platform/exchange/new", "/platform/exchange/listing-one", "/platform/exchange/listing-one/edit"])
+    assert.equal(safeAccountReturn(`${path}/?operation=publish&fields=private&after=other&token=secret#private`), path);
+  for (const path of ["//elsewhere.test/platform/exchange", "/platform/exchange/one/edit/extra", "/platform/exchange/%2fsecret", "/platform/exchange/one/delete"])
+    assert.equal(safeAccountReturn(path), "/platform");
+});
+
 test("feedback account return keeps only an allowed private destination", () => {
   for (const path of ["/platform/feedback", "/platform/feedback/requests", "/platform/feedback/cases/case-one"])
     assert.equal(safeAccountReturn(`${path}/?description=private&received=1&page=3&token=secret`), path);

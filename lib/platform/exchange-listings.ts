@@ -237,12 +237,14 @@ export function listExchangeListings(db: PrismaClient, token: unknown,
     const where: Prisma.ExchangeListingWhereInput = { AND: [query.mine ? exchangeManagementWhere(context, authority) : exchangeDiscoveryWhere(context),
       { ...(query.intent ? { intent: query.intent } : {}), ...(query.country ? { country: query.country } : {}), ...(query.placeId ? { placeId: query.placeId } : {}) }] };
     const cursor = query.after ? await tx.exchangeListing.findFirst({
-      where: { AND: [{ id: postId(query.after) }, where] }, select: { id: true, updatedAt: true }
+      where: { AND: [{ id: postId(query.after) }, where] }, select: { id: true, updatedAt: true, publishedAt: true }
     }) : null;
     if (query.after && !cursor) throw new PortalError(409, "This listing page changed. Start again from the newest listings.");
-    const rows = await tx.exchangeListing.findMany({ where: { AND: [where, ...(cursor ? [{ OR: [
+    const page: Prisma.ExchangeListingWhereInput[] = cursor ? [{ OR: query.mine ? [
       { updatedAt: { lt: cursor.updatedAt } }, { updatedAt: cursor.updatedAt, id: { lt: cursor.id } }
-    ] }] : [])] }, select: publicSelect, orderBy: [{ updatedAt: "desc" }, { id: "desc" }], take: EXCHANGE_PAGE_SIZE + 1 });
+    ] : [{ publishedAt: { lt: cursor.publishedAt! } }, { publishedAt: cursor.publishedAt, id: { lt: cursor.id } }] }] : [];
+    const rows = await tx.exchangeListing.findMany({ where: { AND: [where, ...page] }, select: publicSelect,
+      orderBy: [query.mine ? { updatedAt: "desc" } : { publishedAt: "desc" }, { id: "desc" }], take: EXCHANGE_PAGE_SIZE + 1 });
     return { listings: rows.slice(0, EXCHANGE_PAGE_SIZE).map(project), viewerId: context.actorId,
       after: rows.length > EXCHANGE_PAGE_SIZE ? rows[EXCHANGE_PAGE_SIZE - 1].id : null };
   });

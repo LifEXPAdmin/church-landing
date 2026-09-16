@@ -34,7 +34,8 @@ export async function currentSocialOwner(): Promise<string | null> {
 export async function socialRequest<T>(
   path: string,
   body?: string,
-  expectedOwner?: string | null
+  expectedOwner?: string | null,
+  method: "POST" | "DELETE" = "POST"
 ): Promise<{ owner: string | null; data: T }> {
   const owner = await currentSocialOwner();
   if (
@@ -46,7 +47,7 @@ export async function socialRequest<T>(
       "Your sign-in changed. Reload before continuing."
     );
   const response = await fetch(path, {
-    method: body ? "POST" : "GET",
+    method: body ? method : "GET",
     cache: "no-store",
     credentials: "same-origin",
     headers: {

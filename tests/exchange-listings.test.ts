@@ -20,6 +20,11 @@ import { prepareAccountExport, downloadAccountExport } from "../lib/platform/acc
 import { requestPermanentAccountDeletion, type AccountDeletionRecord } from "../lib/platform/account-deletion";
 import { eraseRequestedAccountData } from "../lib/platform/account-erasure";
 import { createSessionToken } from "../lib/platform/auth";
+import { DAY, inspectMessagingRetention, runMessagingRetention } from "../lib/platform/messaging-retention";
+import { readSupport, supportCommand, SupportError } from "../lib/platform/support";
+import { CONTENT_RECONSIDERATION_NOTICE } from "../lib/platform/moderation-support";
+import { privilegedAuthenticatorCommand } from "../lib/platform/privileged-auth";
+import { authenticatorTotp, openAuthenticator } from "../lib/platform/admin-authenticator-crypto";
 
 const db = new PrismaClient();
 let reviewer: PortalActor, placeId: number;
@@ -64,6 +69,130 @@ async function report(actor: PortalActor, row: { id: string; version: number }) 
   return communityReportCommand(db, actor.token, input("create", { targetType: "EXCHANGE_LISTING", targetId: row.id,
     expectedTargetVersion: row.version, expectedContextVersion: 0, reason: "PRIVACY", details: "Fictional privacy concern" }));
 }
+
+test("listing report queues require both the original and current church scope before selecting evidence or a cursor", async () => {
+  const owner = await createPortalActor(db, "exscopes"), member = await createPortalActor(db, "exscoperep");
+  const first = await createPortalActor(db, "exscopea"), second = await createPortalActor(db, "exscopeb");
+  const a = await church([owner, member, first], [[first, "MODERATE_EXCHANGE_LISTINGS"]]);
+  const b = await church([second], [[second, "MODERATE_EXCHANGE_LISTINGS"]]);
+  const row = await publish(owner, await draft(owner, ready({ audience: "CHURCH", audienceChurchId: a.id })));
+  const selected = await report(member, row);
+  await db.churchConnection.update({ where: { userId_churchId: { userId: owner.id, churchId: a.id } }, data: { state: "LEFT" } });
+  await db.churchConnection.create({ data: { userId: owner.id, churchId: b.id, state: "APPROVED" } });
+  const moved = await save(owner, row, ready({ audience: "CHURCH", audienceChurchId: b.id }));
+  for (const actor of [first, second, reviewer]) {
+    await denied(readCommunityReports(db, actor.token, { view: "review", id: selected.id }), 404);
+    const queue = await readCommunityReports(db, actor.token, { view: "queue" });
+    assert.ok(!queue.reviews?.some(r => r.id === selected.id));
+    await denied(readCommunityReports(db, actor.token, { view: "queue", after: selected.id }), 409);
+  }
+  await save(owner, moved, ready({ audience: "PUBLIC", audienceChurchId: "" }));
+  const current = await readCommunityReports(db, first.token, { view: "review", id: selected.id });
+  assert.equal(current.evidence?.type, "EXCHANGE_LISTING");
+  await denied(readCommunityReports(db, second.token, { view: "review", id: selected.id }), 404);
+  await denied(readCommunityReports(db, reviewer.token, { view: "review", id: selected.id }), 404);
+});
+
+test("church listing notices and appeals belong to current Exchange managers, never an old post publisher or former delegate", async () => {
+  const author = await createPortalActor(db, "exdeleg"), manager = await createPortalActor(db, "exmgrnote"), moderator = await createPortalActor(db, "exmodnote"), reporter = await createPortalActor(db, "exnoterep");
+  const c = await church([author, manager, moderator, reporter], [[author, "PUBLISH_EXCHANGE_LISTINGS"], [author, "PUBLISH_CHURCH_POSTS"], [manager, "MANAGE_EXCHANGE_LISTINGS"], [moderator, "MODERATE_EXCHANGE_LISTINGS"]]);
+  const row = await publish(manager, await draft(author, ready({ audience: "CHURCH", audienceChurchId: c.id }), c.id));
+  const selected = await report(reporter, row);
+  await communityReportCommand(db, moderator.token, input("moderate", { id: selected.id, expectedVersion: selected.version,
+    expectedSourceVersion: row.version, expectedContextVersion: 0, action: "HIDE", authorReason: "PRIVATE_INFORMATION", decisionReason: "Private fictional review rationale" }));
+  const notices = await readCommunityReports(db, manager.token, { view: "decisions" });
+  assert.equal(notices.notices?.length, 1);
+  assert.equal((await readCommunityReports(db, author.token, { view: "decisions" })).notices?.length, 0);
+  const notice = notices.notices![0], detail = await readCommunityReports(db, manager.token, { view: "decisions", id: notice.id });
+  assert.ok(detail.appeal?.available); assert.ok(detail.ownSource?.content?.includes(ready().title));
+  await denied(readCommunityReports(db, author.token, { view: "decisions", id: notice.id }), 404);
+  const body = { operation: "appeal", requestKey: randomUUID(), decisionId: notice.id,
+    decisionVersion: detail.appeal!.decisionVersion, reportVersion: detail.appeal!.reportVersion,
+    notice: CONTENT_RECONSIDERATION_NOTICE, consent: true, description: "Please review this fictional church listing correction." };
+  const appeal = await supportCommand(db, manager.token, body);
+  assert.equal((await supportCommand(db, manager.token, body)).caseId, appeal.caseId);
+  for (const actor of [manager, moderator]) {
+    const support = await readSupport(db, actor.token, "detail", { caseId: appeal.caseId });
+    assert.equal(support.detail?.description, body.description);
+    const serialized = JSON.stringify(support);
+    assert.ok(!serialized.includes("Private fictional review rationale")); assert.ok(!serialized.includes(reporter.email));
+  }
+  await db.churchCapabilityGrant.updateMany({ where: { userId: manager.id, churchId: c.id, capability: "MANAGE_EXCHANGE_LISTINGS" }, data: { revokedAt: new Date(), version: { increment: 1 } } });
+  await denied(readCommunityReports(db, manager.token, { view: "decisions", id: notice.id }), 404);
+  await assert.rejects(readSupport(db, manager.token, "detail", { caseId: appeal.caseId }), e => e instanceof SupportError && e.status === 404);
+  await assert.rejects(supportCommand(db, manager.token, body), e => e instanceof SupportError && [403, 404].includes(e.status));
+  assert.ok(!(await readSupport(db, manager.token, "requests")).rows.some(r => r.id === appeal.caseId));
+});
+
+test("reported personal listing text remains only until its final selected report expires after permanent erasure", async () => {
+  const owner = await createPortalActor(db, "exretained"), reporter = await createPortalActor(db, "exretaina"), other = await createPortalActor(db, "exretainb");
+  const row = await publish(owner, await draft(owner)), one = await report(reporter, row), two = await report(other, row);
+  for (const selected of [one, two]) await communityReportCommand(db, reviewer.token, input("resolve", {
+    id: selected.id, expectedVersion: selected.version, resolution: "CLOSED", decisionReason: "Fictional selected review complete."
+  }));
+  const records: AccountDeletionRecord[] = [], journal = { async completeAccount() {}, async recordAccount(record: AccountDeletionRecord) { records.push(record); } };
+  await requestPermanentAccountDeletion(db, owner.token, owner.password, true, createSessionToken(), journal);
+  const deletion = await db.accountDeletion.findUniqueOrThrow({ where: { userId: owner.id } });
+  await eraseRequestedAccountData(db, deletion.id, journal);
+  assert.equal((await db.exchangeListing.findUniqueOrThrow({ where: { id: row.id } })).description, ready().description);
+  await denied(read(db, undefined, row.id), 404); await denied(read(db, reporter.token, row.id), 404);
+  const now = new Date(Date.now() + 179 * DAY);
+  for (const [index, selected] of [one, two].entries()) {
+    const plan = await inspectMessagingRetention(db, now);
+    const candidates = plan.candidates.filter(r => r.id === selected.id);
+    assert.equal(candidates.length, 1);
+    assert.deepEqual(await runMessagingRetention(db, candidates, { async record() {}, async complete() {} }, now), { messages: 0, reports: 1 });
+    const retained = await db.exchangeListing.findUniqueOrThrow({ where: { id: row.id } });
+    assert.equal(retained.description, index === 0 ? ready().description : "");
+    assert.equal(retained.title, index === 0 ? ready().title : "");
+  }
+});
+
+test("discovery and owned pagination filter before their bounded pages and stale cursors fail closed", async () => {
+  const owner = await createPortalActor(db, "expaging"), viewer = await createPortalActor(db, "expagerview");
+  const base = await publish(owner, await draft(owner)), source = await db.exchangeListing.findUniqueOrThrow({ where: { id: base.id } });
+  const ids = Array.from({ length: 24 }, () => "fixture-ex-page-" + randomUUID());
+  const { id: ignoredId, createdAt: ignoredCreated, updatedAt: ignoredUpdated, ...fields } = source;
+  void ignoredId; void ignoredCreated; void ignoredUpdated;
+  const clock = new Date(Date.now() + 1000);
+  await db.exchangeListing.createMany({ data: ids.map((id, index) => ({ ...fields, id, title: `Fictional paginated item ${index}`, publishedAt: clock, updatedAt: clock })) });
+  const first = await list(db, viewer.token, { country: "US", placeId });
+  assert.equal(first.listings.length, 20); assert.ok(first.after);
+  const second = await list(db, viewer.token, { country: "US", placeId, after: first.after });
+  assert.ok(!second.listings.some(row => first.listings.some(previous => previous.id === row.id)));
+  assert.ok(ids.every(id => [...first.listings, ...second.listings].some(row => row.id === id)));
+  await db.exchangeListing.update({ where: { id: first.after }, data: { state: "ARCHIVED" } });
+  await denied(list(db, viewer.token, { country: "US", placeId, after: first.after }), 409);
+  const mine = await list(db, owner.token, { mine: true }); assert.equal(mine.listings.length, 20);
+  await relationshipCommand(db, viewer.token, { operation: "block", mutationId: randomUUID(), kind: "person", targetId: owner.id, expectedVersion: 0, desired: true });
+  assert.ok(!(await list(db, viewer.token)).listings.some(row => row.owner?.id === owner.id));
+});
+
+test("enforced church listing duties require a real session-bound authenticator proof and lose access after revocation", async () => {
+  const oldMode = process.env.PRIVILEGED_MFA_MODE;
+  process.env.PRIVILEGED_MFA_MODE = "enroll";
+  try {
+    const manager = await createPortalActor(db, "exmfa"), c = await church([manager], [[manager, "MANAGE_EXCHANGE_LISTINGS"]]);
+    const row = await draft(manager, ready(), c.id);
+    const setup = await privilegedAuthenticatorCommand(db, manager.token, { operation: "mfa-start", requestKey: randomUUID(), expectedVersion: 0 }, manager.password);
+    assert.equal(typeof setup.secret, "string");
+    const factor = await db.adminAuthenticator.findUniqueOrThrow({ where: { userId: manager.id } });
+    const secret = openAuthenticator(manager.id, factor.secretCiphertext), counter = BigInt(Math.floor(Date.now() / 30000));
+    const enrolled = await privilegedAuthenticatorCommand(db, manager.token, { operation: "mfa-confirm", requestKey: randomUUID(), expectedVersion: factor.version,
+      code: authenticatorTotp(secret, counter - BigInt(1)) }, undefined);
+    process.env.PRIVILEGED_MFA_MODE = "enforce";
+    await denied(read(db, manager.token, row.id, true), 404);
+    await denied(draft(manager, ready(), c.id), 403);
+    await privilegedAuthenticatorCommand(db, manager.token, { operation: "mfa-challenge", requestKey: randomUUID(), expectedVersion: enrolled.version,
+      purpose: "privileged-work", code: authenticatorTotp(secret, counter) }, undefined);
+    assert.ok((await read(db, manager.token, row.id, true)).canManage);
+    const saved = await save(manager, row, ready({ title: "Confirmed church listing draft" }));
+    await db.churchCapabilityGrant.updateMany({ where: { userId: manager.id, churchId: c.id, capability: "MANAGE_EXCHANGE_LISTINGS" }, data: { revokedAt: new Date(), version: { increment: 1 } } });
+    await denied(read(db, manager.token, saved.id, true), 404);
+    await denied(command(db, manager.token, row.body), 403);
+    assert.equal((await db.exchangeListing.findUniqueOrThrow({ where: { id: row.id } })).ownerChurchId, c.id);
+  } finally { if (oldMode === undefined) delete process.env.PRIVILEGED_MFA_MODE; else process.env.PRIVILEGED_MFA_MODE = oldMode; }
+});
 
 test("incomplete private drafts are owned, survive reload and exact concurrent retries, and reject forged or stale work", async () => {
   const owner = await createPortalActor(db, "exdraft"), stranger = await createPortalActor(db, "exother");

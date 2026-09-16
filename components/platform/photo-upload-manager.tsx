@@ -138,7 +138,7 @@ export function PhotoUploadManager({
     );
     if (files.length > room) {
       setNotice(
-        purpose === "SUPPORT_ATTACHMENT" ? `Choose at most ${room} more images. Each feedback receipt holds up to three.` : `Choose at most ${room} more photos in this batch. Each post holds up to ten photos; a profile library holds up to 1,000.`
+        purpose === "SUPPORT_ATTACHMENT" ? `Choose at most ${room} more images. Each feedback receipt holds up to three.` : purpose === "EXCHANGE_PHOTO" ? `Choose at most ${room} more photos. Each listing holds up to eight.` : `Choose at most ${room} more photos in this batch. Each post holds up to ten photos; a profile library holds up to 1,000.`
       );
       return;
     }
@@ -263,7 +263,7 @@ export function PhotoUploadManager({
         {purpose === "SUPPORT_ATTACHMENT" ? "Optional private attachments" : "Add photos"}
       </h3>
       <p className="text-sm text-gc-muted">
-        {purpose === "SUPPORT_ATTACHMENT" ? "Choose up to three still JPEG, PNG or WebP images, each up to 4 MiB. Review and remove private details before uploading. Uploaded images join the private receipt only when you send feedback; unsent uploads expire after 24 hours." : "Select up to ten still JPEG, PNG or WebP files per batch, each up to 4 MiB. Captions and image descriptions are optional. Saved files stay saved if another file fails."}
+        {purpose === "SUPPORT_ATTACHMENT" ? "Choose up to three still JPEG, PNG or WebP images, each up to 4 MiB. Review and remove private details before uploading. Uploaded images join the private receipt only when you send feedback; unsent uploads expire after 24 hours." : purpose === "EXCHANGE_PHOTO" ? "Choose up to eight still JPEG, PNG or WebP listing photos, each up to 4 MiB. Keep private contact details and exact pickup addresses out of photos. Captions and image descriptions are optional." : "Select up to ten still JPEG, PNG or WebP files per batch, each up to 4 MiB. Captions and image descriptions are optional. Saved files stay saved if another file fails."}
       </p>
       {!available && (
         <p role="status">
