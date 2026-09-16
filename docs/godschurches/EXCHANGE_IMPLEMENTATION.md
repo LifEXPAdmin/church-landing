@@ -130,15 +130,19 @@ A fresh encrypted production copy upgrades from **91 to 93 migrations**, retains
 all **123 original-table column fingerprints**, and passes protected restrictive
 replay. Production is unmodified. The broad gate's initial account/church/media
 checks passed before the long-lived checkout exhausted the build's Node heap.
-The same gate is being rerun in a clean isolated checkout; production preview
-builds already pass with 199 verified traces and the pinned hydration renderer.
+The same gate passes in a clean isolated checkout at `8dd0820`: **177 discovered
+test files**, **1,081 reported checks**, zero failures and two expected skips.
+Its populated upgrade, full restore, fresh migration and development/production
+HTTP stages pass. Production preview builds pass with 199 verified traces and
+the pinned hydration renderer. The separately verified final guidance, browser
+harness and report changes are recorded above.
 
 ## Work remaining in this feature cycle
 
 Complete release acceptance in this same feature cycle. Church delegation has
 isolated acceptance;
 business delegation still lacks its canonical organization authority service.
-Finish the complete established gate and integrated browser checks, retain the
-fresh protected migration rehearsal, and release through exact canonical live checks.
+The complete established gate and integrated browser checks pass. Retain the
+fresh protected migration rehearsal and release through exact canonical live checks.
 Reconcile the existing private task and feature checklist at completion. Keep
 the broader final review last and continue eligible children in the same run.
