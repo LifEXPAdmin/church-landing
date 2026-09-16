@@ -788,6 +788,10 @@
     font-size: 0.875rem;
     text-align: center;
   }
+  .gc-primary-nav a > span {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
   .gc-primary-nav a[aria-current="page"] {
     padding: 0.375rem 0;
     border-left: 1px solid transparent;

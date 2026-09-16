@@ -125,8 +125,14 @@ export async function privilegedAuthenticatorCommand(
     } else {
       if (!row?.confirmedAt) throw new PortalError(409, "There is no confirmed authenticator to replace.");
       if (operation === "mfa-recover") {
-        if (!row.recoveryHashes.includes(authenticatorRecoveryHash(userId, input.recoveryCode)))
-          throw new PortalError(403, "That recovery code is invalid or already used.");
+        let hash: string;
+        try { hash = authenticatorRecoveryHash(userId, input.recoveryCode); }
+        catch (error) {
+          if (error instanceof PortalError && error.status === 403) throw new PortalError(400, error.message);
+          throw error;
+        }
+        if (!row.recoveryHashes.includes(hash))
+          throw new PortalError(400, "That recovery code is invalid or already used.");
       } else verifyAuthenticatorCode(openAuthenticator(userId, row.secretCiphertext), input.code, row.lastCounter);
       await tx.platformSession.deleteMany({ where: { userId, id: { not: session.id } } });
     }

@@ -769,7 +769,7 @@ export const releases: ReleaseEntry[] = [
     summary: "Prepare an authenticator and private recovery codes for your assigned duties.",
     added: ["Eligible adults can enroll from Account security when setup is enabled, with current sign-in confirmation and private recovery codes."],
     improved: ["Replacement retires the old factor, recovery codes and other sign-ins. Essential security notices show whether the email provider accepted them.", "Protected-action confirmation can open in another tab while your original form stays available. Broader enforcement remains a separate activation step."],
-    fixed: ["Protected database recovery cannot reactivate an old authenticator or its confirmed sessions."],
+    fixed: ["Protected database recovery cannot reactivate an old authenticator or its confirmed sessions.", "Phone navigation labels wrap within their own buttons at larger text sizes."],
     featureIds: ["account-authenticator", "admin-requests"]
   },
   {
