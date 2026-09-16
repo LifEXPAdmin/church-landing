@@ -1,3 +1,25 @@
+## Language and private discovery settings verified live — September 16, 2026 UTC
+
+**2026.09.16.5 / cd74d94c6c00f66a95fc3c0c08a23905d2ba52ff** is READY in
+**dpl_BzGk6gncWPzxJWsBH6C1rwSg6BGk**, with independent canonical assignment
+and serving identity verified. Language and location settings reuse the existing
+private discovery form and explain English interface, reading-language filters,
+manual town/radius, independent profile location and event time zones. See
+[the complete receipt](LANGUAGE_LOCATION_ACCEPTANCE.md).
+
+Nineteen focused checks and four production-browser groups pass, including denied
+device location, persisted manual choices, unchanged profile location and exact
+lost-response retry. Types, lint, copy guard and runtime traces pass. Live:
+19 public/access, four health and three signed-in checks; no errors or writes.
+All 89 migrations match and all 121 table fingerprints remain unchanged.
+No schema/provider/permission changes or new preference store were introduced.
+
+The [privileged MFA assessment](PRIVILEGED_AUTHENTICATION_ASSESSMENT.md) is
+complete; broader enrollment/enforcement remains implementation work. Existing
+deletion completions were reconciled without another erasure. Continue the
+regional-format and disclosure capability work and the next eligible queue
+priorities; final review remains last.
+
 ## Help and product progress verified live — September 16, 2026 UTC
 
 **2026.09.16.4 / 7f7d5dae40470330d9d9d3375ad4d2fedaa613bb** is READY in
