@@ -510,7 +510,8 @@ try {
     .first()
     .click();
   await currentCard.waitFor();
-  const longTitle = "LongFixture" + "w".repeat(109);
+  const longTitle =
+    "LongFixture" + randomUUID().replaceAll("-", "") + "w".repeat(77);
   const longDraft = await exchangeListingCommand(db, publisher.token, {
     operation: "create",
     mutationId: randomUUID(),
@@ -536,7 +537,7 @@ try {
     itemPolicy: EXCHANGE_ITEM_POLICY,
     itemConfirmed: true
   });
-  await go("/platform/exchange?q=LongFixture");
+  await go("/platform/exchange?q=" + encodeURIComponent(longTitle));
   await page.getByRole("link", { name: longTitle, exact: true }).waitFor();
   await page.setViewportSize({ width: 320, height: 844 });
   await page.addStyleTag({ content: "html{font-size:24px!important}" });
