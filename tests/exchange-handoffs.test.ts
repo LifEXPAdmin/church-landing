@@ -1,3 +1,9 @@
+import { privilegedAuthenticatorCommand } from "../lib/platform/privileged-auth";
+import {
+  authenticatorTotp,
+  openAuthenticator
+} from "../lib/platform/admin-authenticator-crypto";
+import { readOperationalHealth } from "../lib/platform/operational-health";
 import {
   communityReportCommand,
   readCommunityReports
@@ -862,6 +868,89 @@ test("a church receiver is a named adult; other managers cannot see the inquiry 
   });
   await enable(owner, listing.id);
   const { receipt } = await inquire(requester, listing.id);
+  const oldMode = process.env.PRIVILEGED_MFA_MODE;
+  try {
+    process.env.PRIVILEGED_MFA_MODE = "enforce";
+    await denied(read(db, owner.token, { view: "incoming" }), 403);
+    await denied(
+      read(db, owner.token, { view: "detail", id: receipt.id }),
+      403
+    );
+    await denied(
+      command(
+        db,
+        owner.token,
+        input("select", {
+          id: receipt.id,
+          expectedVersion: 1,
+          schema: 1,
+          plan: plan()
+        })
+      ),
+      403
+    );
+    assert.equal(
+      (
+        await db.exchangeInquiry.findUniqueOrThrow({
+          where: { id: receipt.id }
+        })
+      ).state,
+      "INQUIRED"
+    );
+    assert.equal(
+      (await read(db, requester.token, { view: "detail", id: receipt.id }))
+        .inquiry?.available,
+      true
+    );
+    process.env.PRIVILEGED_MFA_MODE = "enroll";
+    await privilegedAuthenticatorCommand(
+      db,
+      owner.token,
+      { operation: "mfa-start", requestKey: randomUUID(), expectedVersion: 0 },
+      owner.password
+    );
+    const factor = await db.adminAuthenticator.findUniqueOrThrow({
+        where: { userId: owner.id }
+      }),
+      secret = openAuthenticator(owner.id, factor.secretCiphertext),
+      counter = BigInt(Math.floor(Date.now() / 30000));
+    const enrolled = await privilegedAuthenticatorCommand(
+      db,
+      owner.token,
+      {
+        operation: "mfa-confirm",
+        requestKey: randomUUID(),
+        expectedVersion: factor.version,
+        code: authenticatorTotp(secret, counter - BigInt(1))
+      },
+      undefined
+    );
+    process.env.PRIVILEGED_MFA_MODE = "enforce";
+    await privilegedAuthenticatorCommand(
+      db,
+      owner.token,
+      {
+        operation: "mfa-challenge",
+        requestKey: randomUUID(),
+        expectedVersion: enrolled.version,
+        purpose: "privileged-work",
+        code: authenticatorTotp(secret, counter)
+      },
+      undefined
+    );
+    assert.equal(
+      (await read(db, owner.token, { view: "detail", id: receipt.id })).inquiry
+        ?.available,
+      true
+    );
+    assert.equal(
+      (await read(db, owner.token, { view: "incoming" })).inquiries?.length,
+      1
+    );
+  } finally {
+    if (oldMode === undefined) delete process.env.PRIVILEGED_MFA_MODE;
+    else process.env.PRIVILEGED_MFA_MODE = oldMode;
+  }
   await denied(
     read(db, manager.token, { view: "detail", id: receipt.id }),
     404
@@ -1423,5 +1512,44 @@ test("missed pickup is available only after mutual agreement and the actual wind
       typeof value === "bigint" ? String(value) : value
     ).includes("Fictional private explanation"),
     false
+  );
+});
+
+test("private aggregate health surfaces stalled handoff work and clears after its canonical terminal transition", async () => {
+  const { owner, requester, listing } = await setup();
+  await enable(owner, listing.id);
+  const { receipt } = await inquire(requester, listing.id);
+  const now = new Date();
+  await db.exchangeInquiry.update({
+    where: { id: receipt.id },
+    data: { wakeAt: new Date(now.getTime() - 360000), lastDispatchErrorAt: now }
+  });
+  const stalled = await readOperationalHealth(db, now);
+  assert.ok(stalled.queues.exchangeHandoffs.pending >= 1);
+  assert.ok(stalled.queues.exchangeHandoffs.due >= 1);
+  assert.ok(stalled.queues.exchangeHandoffs.dispatchErrors >= 1);
+  assert.ok((stalled.ages.exchangeHandoffDueSeconds ?? 0) >= 360);
+  assert.ok(stalled.alerts.includes("exchange_handoff_backlog"));
+  for (const value of [
+    requester.id,
+    owner.id,
+    receipt.id,
+    listing.id,
+    "Fictional purpose"
+  ])
+    assert.equal(JSON.stringify(stalled).includes(value), false);
+  await command(
+    db,
+    requester.token,
+    input("withdraw", { id: receipt.id, expectedVersion: receipt.version })
+  );
+  const ended = await readOperationalHealth(db, now);
+  assert.equal(
+    ended.queues.exchangeHandoffs.pending,
+    stalled.queues.exchangeHandoffs.pending - 1
+  );
+  assert.equal(
+    ended.queues.exchangeHandoffs.dispatchErrors,
+    stalled.queues.exchangeHandoffs.dispatchErrors - 1
   );
 });

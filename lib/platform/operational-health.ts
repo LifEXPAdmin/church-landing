@@ -34,6 +34,7 @@ type WorkerSnapshot = {
   announcements: { pending: number; oldestPendingAt: string | null };
   activityFanout: { pending: number; oldestPendingAt: string | null };
   conversationFollowers: { pending: number; oldestPendingAt: string | null };
+  exchangeHandoffs: { pending: number; due: number; dispatchErrors: number; oldestDueAt: string | null };
   scheduledPosts: { pending: number; due: number; oldestDueAt: string | null };
 };
 const secondsSince = (time: string | null, now: Date) =>
@@ -78,6 +79,10 @@ export async function readOperationalHealth(
         'activityFanout',(SELECT json_build_object('pending',count(*),'oldestPendingAt',min("createdAt") AT TIME ZONE 'UTC') FROM "NotificationFanoutJob" WHERE "completedAt" IS NULL),
         'conversationFollowers',(SELECT json_build_object('pending',count(*),'oldestPendingAt',min("createdAt") AT TIME ZONE 'UTC')
           FROM "CommentFollowerJob" WHERE "completedAt" IS NULL),
+        'exchangeHandoffs',(SELECT json_build_object('pending',count(*),'due',count(*) FILTER (WHERE "wakeAt"<=${now.toISOString()}::timestamp),
+          'dispatchErrors',count(*) FILTER (WHERE "lastDispatchErrorAt" IS NOT NULL),
+          'oldestDueAt',(min("wakeAt") FILTER (WHERE "wakeAt"<=${now.toISOString()}::timestamp)) AT TIME ZONE 'UTC')
+          FROM "ExchangeInquiry" WHERE state IN ('INQUIRED','SELECTED','RESERVED') AND NOT "recoveryRequired"),
         'scheduledPosts',(SELECT json_build_object('pending',count(*),'due',count(*) FILTER (WHERE "scheduleAt"<=${now.toISOString()}::timestamp),
           'oldestDueAt',(min("scheduleAt") FILTER (WHERE "scheduleAt"<=${now.toISOString()}::timestamp)) AT TIME ZONE 'UTC') FROM "PlatformPost" WHERE status='SCHEDULED')
       ) AS snapshot`;
@@ -99,6 +104,7 @@ export async function readOperationalHealth(
   );
   const ages = {
     securityNoticeSeconds: secondsSince(snapshot.securityNotices.oldestPendingAt, now),
+    exchangeHandoffDueSeconds: secondsSince(snapshot.exchangeHandoffs.oldestDueAt, now),
     scheduledDueSeconds: secondsSince(snapshot.scheduledPosts.oldestDueAt, now),
     activityPendingSeconds: secondsSince(
       snapshot.activityFanout.oldestPendingAt,
@@ -151,6 +157,8 @@ export async function readOperationalHealth(
     (ages.announcementPendingSeconds ?? 0) > 300
   )
     alerts.push("founder_delivery_backlog");
+  if (snapshot.exchangeHandoffs.dispatchErrors || (ages.exchangeHandoffDueSeconds ?? 0) > 300)
+    alerts.push("exchange_handoff_backlog");
   if ((ages.scheduledDueSeconds ?? 0) > 300)
     alerts.push("scheduled_publication_backlog");
   return {

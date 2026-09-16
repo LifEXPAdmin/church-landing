@@ -329,8 +329,45 @@ try {
         .getByLabel("Private pickup instructions (optional)", { exact: false })
         .inputValue()) === pickup
   );
+  let challengeBody;
+  await page.route("**/api/platform/exchange", async (route) => {
+    if (route.request().method() !== "POST") return route.continue();
+    if (!challengeBody) {
+      challengeBody = route.request().postData();
+      return route.fulfill({
+        status: 403,
+        contentType: "application/json",
+        body: JSON.stringify({
+          message: "Fictional authenticator confirmation needed",
+          authenticatorPurpose: "privileged-work",
+          enrollment: false
+        })
+      });
+    }
+    assert.equal(route.request().postData(), challengeBody);
+    return route.continue();
+  });
   await exact("Select and propose this plan").click();
+  await page
+    .getByRole("link", { name: "Confirm in another tab", exact: true })
+    .waitFor();
+  assert.equal(
+    await page
+      .getByLabel("Private pickup instructions (optional)", { exact: false })
+      .inputValue(),
+    pickup
+  );
+  assert.equal(
+    (await db.exchangeInquiry.findUniqueOrThrow({ where: { id: inquiry.id } }))
+      .state,
+    "INQUIRED"
+  );
+  await exact("Confirm original save").click();
   await state("Waiting for pickup agreement");
+  await page.unroute("**/api/platform/exchange");
+  ok(
+    "An authenticator challenge retains the private plan and immutable request until the original action is confirmed"
+  );
   await signIn(requester);
   await go(`/platform/exchange/handoffs/${inquiry.id}`);
   assert.equal(await page.getByText(pickup, { exact: true }).count(), 0);

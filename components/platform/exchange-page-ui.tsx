@@ -1,3 +1,5 @@
+import { PrivilegedAuthenticationError } from "@/lib/platform/privileged-auth-policy";
+import { privilegedChallengeHref } from "@/lib/platform/privileged-auth-navigation";
 import { ExchangeContactRegion } from "./exchange-handoff-page";
 import { createHash } from "node:crypto";
 import Link from "next/link";
@@ -103,6 +105,16 @@ export function ExchangeUnavailable({
         <a className="gc-button gc-button-quiet" href={href}>
           Reload current listing page
         </a>
+        {error instanceof PrivilegedAuthenticationError && (
+          <a
+            className="gc-button gc-button-quiet"
+            href={privilegedChallengeHref(error.purpose)!}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Confirm authenticator in another tab
+          </a>
+        )}
         {error instanceof PortalError && [401, 403].includes(error.status) && (
           <Link
             prefetch={false}

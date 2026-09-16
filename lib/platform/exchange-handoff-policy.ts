@@ -5,7 +5,6 @@ import { effectiveChurchGrants } from "./church-permissions";
 import { postContext, type PostContext, type PostTx } from "./post-access";
 import { exchangeReadableWhere } from "./exchange-policy";
 import { eligibleWhere, PortalError } from "./portal-policy";
-import { privilegedProjectionAvailable } from "./privileged-auth-policy";
 
 export const activeExchangeInquiry = (state: string) =>
   ["INQUIRED", "SELECTED", "RESERVED"].includes(state);
@@ -44,7 +43,6 @@ export async function exchangeReceiverKey(
       ? digest(["exchange-receiver-v1", receiverId, connection])
       : null;
   }
-  if (!(await privilegedProjectionAvailable(tx, receiverId))) return null;
   const grants = await effectiveChurchGrants(
     tx,
     receiverId,

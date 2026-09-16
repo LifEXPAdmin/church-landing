@@ -14,7 +14,10 @@ import {
   exchangeCanManage,
   requireExchangeActor
 } from "./exchange-policy";
-import { requirePrivilegedAuthentication } from "./privileged-auth-policy";
+import {
+  privilegedMode,
+  requirePrivilegedAuthentication
+} from "./privileged-auth-policy";
 import { recordDiscoveryControl } from "./retention-controls";
 import {
   parseExchangeHandoffPlan,
@@ -60,6 +63,26 @@ async function available(tx: PostTx) {
       "Private inquiries need an available report reviewer. Keep your unsent entries and try again later."
     );
 }
+// An expired operator proof blocks that adult's church duty; it must never
+// revoke the pair's consent or change another participant's agreed handoff.
+async function requireReceiverSession(
+  tx: PostTx,
+  rows: ExchangeInquiry[],
+  ownerId: string
+) {
+  if (privilegedMode() !== "enforce") return;
+  const listingIds = rows.flatMap((row) =>
+    row.receiverId === ownerId && row.listingId ? [row.listingId] : []
+  );
+  if (
+    listingIds.length &&
+    (await tx.exchangeListing.findFirst({
+      where: { id: { in: listingIds }, ownerChurchId: { not: null } },
+      select: { id: true }
+    }))
+  )
+    await requirePrivilegedAuthentication(tx, ownerId);
+}
 async function owned(tx: PostTx, id: unknown, ownerId: string) {
   const row = await tx.exchangeInquiry.findUnique({
     where: { id: postId(id) }
@@ -71,6 +94,7 @@ async function owned(tx: PostTx, id: unknown, ownerId: string) {
     exchangeInquiryCleared(row, ownerId)
   )
     throw unavailable();
+  await requireReceiverSession(tx, [row], ownerId);
   return row;
 }
 async function manager(tx: PostTx, id: unknown, ownerId: string) {
@@ -153,6 +177,7 @@ export async function exchangeHandoffCommand(
               })
             : await owned(tx, input.id, session.userId);
         if (!row) throw unavailable();
+        await requireReceiverSession(tx, [row], session.userId);
         listingId = row.listingId;
         await settleExchangeInquiry(tx, row);
       }
@@ -548,6 +573,7 @@ export async function exchangeHandoffCommand(
           row.recoveryRequired
         )
           throw unavailable();
+        await requireReceiverSession(tx, [row], ownerId);
       }
     }
   );
@@ -752,6 +778,7 @@ export function readExchangeHandoffs(
       take: EXCHANGE_INQUIRY_PAGE + 1
     });
     const page = rows.slice(0, EXCHANGE_INQUIRY_PAGE);
+    await requireReceiverSession(tx, page, ownerId);
     const { sourceFor, people } = await exchangeInquiryReadSources(tx, page);
     const inquiries = [];
     for (const row of page) {
