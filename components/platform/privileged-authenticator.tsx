@@ -35,7 +35,8 @@ export function PrivilegedAuthenticator({ data, purpose }: { data: PrivilegedAut
     }
   }, [data.ownerId, data.viewKey]);
   useEffect(() => {
-    const hide = () => { generation.current++; setVisible(false); };
+    const invalidate = () => { generation.current++; };
+    const hide = () => { invalidate(); setVisible(false); };
     const resume = () => { if (document.visibilityState !== "hidden") void refresh(); };
     const visibility = () => document.visibilityState === "hidden" ? hide() : resume();
     resume();
@@ -44,7 +45,7 @@ export function PrivilegedAuthenticator({ data, purpose }: { data: PrivilegedAut
     window.addEventListener("pageshow", resume); window.addEventListener("admin-access-changed", resume);
     document.addEventListener("visibilitychange", visibility);
     return () => {
-      generation.current++;
+      invalidate();
       window.removeEventListener("blur", hide); window.removeEventListener("offline", hide);
       window.removeEventListener("focus", resume); window.removeEventListener("online", resume);
       window.removeEventListener("pageshow", resume); window.removeEventListener("admin-access-changed", resume);
