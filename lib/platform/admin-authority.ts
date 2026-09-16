@@ -11,6 +11,7 @@ import type { AdminNavigation } from "./admin-types";
 import { createHmac } from "node:crypto";
 import { accountConfig } from "./account-config";
 import { requirePrivilegedAuthentication } from "./privileged-auth-policy";
+import { exchangeAuthority } from "./exchange-policy";
 
 export type AdminTx = Prisma.TransactionClient;
 export const adminDenied = () =>
@@ -59,6 +60,7 @@ export async function adminAuthority(tx: AdminTx, userId: string) {
     candidate.church || candidate.topic ? await postContext(tx, userId) : null;
   const reports = {
     churches: [...(context?.moderators ?? [])],
+    exchangeChurches: context ? (await exchangeAuthority(tx, context)).moderators : [],
     topics: [...(context?.topicModerators ?? [])],
     global: capabilities.has("REVIEW_COMMUNITY_REPORTS")
   };
@@ -87,7 +89,7 @@ export async function adminAuthority(tx: AdminTx, userId: string) {
     (g) => g.capability === "MANAGE_CHURCH_ACCESS"
   );
   const reportReviewer =
-    reports.global || !!reports.churches.length || !!reports.topics.length;
+    reports.global || !!reports.churches.length || !!reports.topics.length || !!reports.exchangeChurches.length;
   const respond = support.find((g) => g.capability === "RESPOND") ?? null;
   const assign = support.find((g) => g.capability === "ASSIGN") ?? null;
   const canClaims =
@@ -155,7 +157,7 @@ export async function adminAuthority(tx: AdminTx, userId: string) {
       href: "/platform/admin/audit"
     });
   const churchIds = [
-    ...new Set([...claimChurches.map((g) => g.churchId), ...reports.churches])
+    ...new Set([...claimChurches.map((g) => g.churchId), ...reports.churches, ...reports.exchangeChurches])
   ];
   const navigation: AdminNavigation = {
     viewer: actor,

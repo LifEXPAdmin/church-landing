@@ -1,4 +1,5 @@
 export const communityReportTargets = [
+  "EXCHANGE_LISTING",
   "TOPIC",
   "POST",
   "COMMENT",
@@ -11,6 +12,7 @@ export const communityReportTargets = [
 ] as const;
 export type CommunityReportTarget = (typeof communityReportTargets)[number];
 export const communityReportTargetLabels = {
+  EXCHANGE_LISTING: "Exchange listing",
   TOPIC: "topic community",
   POST: "post",
   COMMENT: "comment",

@@ -154,6 +154,14 @@ export async function downloadAccountExport(
         linkSourceUrl: true
       }
     });
+    const exchangeListings = await tx.exchangeListing.findMany({
+      where: { ownerId: userId, ownerChurchId: null }, orderBy: { id: "asc" }, take: MAX_ROWS + 1,
+      select: { id: true, createdAt: true, updatedAt: true, version: true, state: true,
+        moderationState: true, intent: true, title: true, description: true, category: true,
+        condition: true, currency: true, priceMinor: true, country: true, placeId: true,
+        placeLabel: true, audience: true, audienceChurchId: true, publishedAt: true,
+        confirmedAt: true, itemPolicy: true, recoveryRequired: true }
+    });
     const photoAlbums = await tx.photoAlbum.findMany({
       where: { ownerId: userId },
       orderBy: { id: "asc" },
@@ -191,7 +199,8 @@ export async function downloadAccountExport(
         where: {
           OR: [
             { profileUserId: userId },
-            { post: { authorId: userId, authorChurchId: null } }
+            { post: { authorId: userId, authorChurchId: null } },
+            { exchangeListing: { ownerId: userId, ownerChurchId: null } }
           ]
         },
         orderBy: { id: "asc" },
@@ -200,6 +209,7 @@ export async function downloadAccountExport(
           id: true,
           purpose: true,
           postId: true,
+          exchangeListingId: true,
           createdAt: true,
           updatedAt: true,
           status: true,
@@ -225,6 +235,7 @@ export async function downloadAccountExport(
       id: image.id,
       purpose: image.purpose,
       postId: image.postId,
+      exchangeListingId: image.exchangeListingId,
       createdAt: image.createdAt,
       updatedAt: image.updatedAt,
       status: image.status,
@@ -654,6 +665,7 @@ export async function downloadAccountExport(
       churchClaims,
       churchListings,
       posts,
+      exchangeListings,
       images,
       photoReferences,
       photoAlbums,

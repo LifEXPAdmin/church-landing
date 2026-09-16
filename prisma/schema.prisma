@@ -14,6 +14,7 @@ enum MediaPurpose {
   CHURCH_LOGO
   CHURCH_COVER
   POST_PHOTO
+  EXCHANGE_PHOTO
   PROFILE_PHOTO
   SUPPORT_ATTACHMENT
 }
@@ -35,6 +36,7 @@ model MediaAsset {
   profileUserId String?
   churchId String?
   postId String?
+  exchangeListingId String?
   feedbackOwnerId String?
   feedbackCaseId String?
   isCurrent Boolean @default(true)
@@ -55,12 +57,14 @@ model MediaAsset {
   profileUser PlatformUser? @relation("ProfileImage", fields: [profileUserId], references: [id], onDelete: Restrict)
   church Church? @relation(fields: [churchId], references: [id], onDelete: Restrict)
   post PlatformPost? @relation(fields: [postId], references: [id], onDelete: Restrict)
+  exchangeListing ExchangeListing? @relation(fields: [exchangeListingId], references: [id], onDelete: Restrict)
   feedbackOwner PlatformUser? @relation("FeedbackImageOwner", fields: [feedbackOwnerId], references: [id], onDelete: Restrict)
   feedbackCase FeedbackSubmission? @relation(fields: [feedbackCaseId], references: [caseId], onDelete: Restrict)
   @@unique([uploaderId, requestKey])
   @@index([profileUserId, purpose, status])
   @@index([churchId, purpose, status])
   @@index([postId, status, position])
+  @@index([exchangeListingId, status, position])
   @@index([status, leaseUntil])
   @@index([feedbackOwnerId, feedbackCaseId, status])
   @@index([feedbackCaseId, status, position])
@@ -209,6 +213,8 @@ enum PlatformPostType {
 }
 
 model PlatformUser {
+  exchangeListings ExchangeListing[] @relation("ExchangePersonalOwner")
+  createdExchangeListings ExchangeListing[] @relation("ExchangeCreator")
   metricCreationMethod String @default("UNKNOWN")
   metricExcluded Boolean @default(false)
   measurementChoice PlatformMeasurementChoice?
@@ -551,6 +557,9 @@ enum ChurchCapability {
   PUBLISH_CHURCH_POSTS
   MODERATE_CHURCH_POSTS
   MANAGE_CHURCH_VOLUNTEERS
+  PUBLISH_EXCHANGE_LISTINGS
+  MANAGE_EXCHANGE_LISTINGS
+  MODERATE_EXCHANGE_LISTINGS
 }
 
 enum OperatorCapability {
@@ -571,6 +580,7 @@ enum OperatorCapability {
 }
 
 enum CommunityReportTarget {
+  EXCHANGE_LISTING
   TOPIC
   POST
   COMMENT
@@ -747,6 +757,8 @@ enum DirectoryAudience {
 }
 
 model Church {
+  ownedExchangeListings ExchangeListing[] @relation("ExchangeChurchOwner")
+  sharedExchangeListings ExchangeListing[] @relation("ExchangeChurchAudience")
   welcomePostId String?
   welcomeVersion Int @default(0)
   welcomePost PlatformPost? @relation("ChurchWelcomePost", fields: [welcomePostId], references: [id], onDelete: SetNull)
@@ -839,6 +851,7 @@ model ChurchListingDecision {
 }
 
 model ChurchConnection {
+  personalExchangeAudiences ExchangeListing[]
   requestedAt DateTime?
   approvedSince DateTime?
   id String @id @default(cuid())
@@ -1588,6 +1601,74 @@ enum ContentModerationState {
   VISIBLE
   HIDDEN
   REMOVED
+}
+
+enum ExchangeListingState {
+  DRAFT
+  ACTIVE
+  RESERVED
+  CLOSED
+  ARCHIVED
+}
+
+enum ExchangeListingIntent {
+  FREE
+  SALE
+}
+
+model ExchangeListing {
+  id String @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  version Int @default(1)
+  visibilityVersion Int @default(1)
+  recoveryRequired Boolean @default(false)
+  ownerId String?
+  ownerChurchId String?
+  creatorId String?
+  state ExchangeListingState @default(DRAFT)
+  moderationState ContentModerationState @default(VISIBLE)
+  moderationVersion Int @default(0)
+  intent ExchangeListingIntent @default(FREE)
+  title String @default("")
+  description String @default("")
+  category String?
+  condition String?
+  currency String?
+  priceMinor Int?
+  country String?
+  placeId Int?
+  placeLabel String?
+  audience PostAudience @default(PUBLIC)
+  audienceChurchId String?
+  itemPolicy String?
+  confirmedAt DateTime?
+  publishedAt DateTime?
+  erasedAt DateTime?
+  owner PlatformUser? @relation("ExchangePersonalOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  ownerChurch Church? @relation("ExchangeChurchOwner", fields: [ownerChurchId], references: [id], onDelete: Restrict)
+  creator PlatformUser? @relation("ExchangeCreator", fields: [creatorId], references: [id], onDelete: SetNull)
+  audienceChurch Church? @relation("ExchangeChurchAudience", fields: [audienceChurchId], references: [id], onDelete: Restrict)
+  personalAudienceConnection ChurchConnection? @relation(fields: [ownerId, audienceChurchId], references: [userId, churchId], onDelete: NoAction, onUpdate: NoAction)
+  images MediaAsset[]
+  audit ExchangeListingAudit[]
+  @@index([ownerId, updatedAt(sort: Desc), id(sort: Desc)])
+  @@index([ownerChurchId, updatedAt(sort: Desc), id(sort: Desc)])
+  @@index([state, moderationState, publishedAt(sort: Desc), id(sort: Desc)])
+  @@index([audienceChurchId, state, publishedAt(sort: Desc)])
+  @@index([country, placeId, state, publishedAt(sort: Desc)])
+}
+
+// No listing text, contact details or old audience bodies are duplicated here.
+model ExchangeListingAudit {
+  id String @id @default(cuid())
+  listingId String
+  actorId String?
+  action String
+  version Int
+  createdAt DateTime @default(now())
+  listing ExchangeListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  @@index([listingId, createdAt])
 }
 
 model PlatformPost {

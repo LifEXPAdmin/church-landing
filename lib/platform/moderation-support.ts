@@ -13,6 +13,7 @@ import { postField, postId } from "./post-input";
 import { retentionDate } from "./messaging-retention";
 import { recordReportControl } from "./retention-controls";
 import { recordReportActivity } from "./report-activity";
+import { exchangeAuthority } from "./exchange-policy";
 
 export const CONTENT_RECONSIDERATION_NOTICE = "content-reconsideration-v1";
 export type SupportActor = { id: string; eligible: boolean; adult: boolean };
@@ -50,7 +51,10 @@ export async function supportVisibilityScope(
   const ordinary = assigned
     ? ordinaryOwner
     : Prisma.sql`s."requesterId" = ${actor.id} OR (${ordinaryOwner}) OR (${actor.eligible && assured} AND EXISTS (SELECT 1 FROM "SupportCoordinatorShare" share JOIN "ChurchContactAssignment" a ON a.id=share."appointmentId" WHERE share."caseId"=s.id AND share."revokedAt" IS NULL AND a."userId"=${actor.id}))`;
-  const author = Prisma.sql`d."authorId" = ${actor.id} AND d."authorChurchId" IS NULL OR ${context?.publishers.size ? Prisma.sql`d."authorChurchId" IN (${Prisma.join([...context.publishers])})` : Prisma.sql`FALSE`}`;
+  const exchangeManagers = context ? (await exchangeAuthority(tx, context)).managers : [];
+  const author = Prisma.sql`d."authorId" = ${actor.id} AND d."authorChurchId" IS NULL
+    OR ${context?.publishers.size ? Prisma.sql`(r."targetType" <> 'EXCHANGE_LISTING' AND d."authorChurchId" IN (${Prisma.join([...context.publishers])}))` : Prisma.sql`FALSE`}
+    OR ${exchangeManagers.length ? Prisma.sql`(r."targetType" = 'EXCHANGE_LISTING' AND d."authorChurchId" IN (${Prisma.join(exchangeManagers)}))` : Prisma.sql`FALSE`}`;
   const reviewer = Prisma.sql`${actor.eligible} AND d."actorId"=${actor.id} AND (${reviewReportScope(authority)})`;
   const appeal = assigned
     ? reviewer
@@ -116,7 +120,7 @@ export async function contentAppealOffer(
 ) {
   const context = await postContext(tx, actorId);
   const decision = await tx.communityReportDecision.findFirst({
-    where: { AND: [{ id: postId(decisionId) }, authorDecisionWhere(context)] },
+    where: { AND: [{ id: postId(decisionId) }, await authorDecisionWhere(tx, context)] },
     select: decisionFields
   });
   if (
@@ -204,7 +208,7 @@ export async function contentSupportAccess(
   const requester =
     row.requesterId === actorId &&
     !!(await tx.communityReportDecision.findFirst({
-      where: { AND: [{ id: decision.id }, authorDecisionWhere(context)] },
+      where: { AND: [{ id: decision.id }, await authorDecisionWhere(tx, context)] },
       select: { id: true }
     }));
   const reviewer = await activeContentReviewer(tx, decision);

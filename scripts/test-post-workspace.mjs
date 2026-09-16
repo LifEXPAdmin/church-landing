@@ -121,7 +121,9 @@ try {
   console.log(
     `PASS: ${migrations.length} migrations and populated upgrade preservation`
   );
-  const files = process.argv.includes("--discovery")
+  const files = process.argv.includes("--exchange")
+    ? ["tests/exchange-input.test.ts", "tests/exchange-listings.test.ts"]
+    : process.argv.includes("--discovery")
     ? [
         "tests/discovery-options.test.ts",
         "tests/discovery-feeds.test.ts",
@@ -201,6 +203,7 @@ try {
     dump
   ]);
   const socialTables = [
+    ...(process.argv.includes("--exchange") ? ["ExchangeListing", "ExchangeListingAudit", "MediaAsset", "MediaGarbage"] : []),
     "TopicCommunity",
     "TopicMembership",
     "TopicAudit",

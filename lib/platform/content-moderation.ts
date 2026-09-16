@@ -6,6 +6,7 @@ import type {
 import type { PostContext, PostTx } from "./post-access";
 import { expected, PortalError } from "./portal-policy";
 import { postField, postId } from "./post-input";
+import { exchangeAuthority, exchangeManagementWhere } from "./exchange-policy";
 import {
   contentDecisionReasons,
   contentReviewActions,
@@ -17,6 +18,14 @@ import {
 // Call only after the shared pinned/current report-scope authorization succeeds.
 // No author/audience changes, source copies, or arbitrary source IDs are accepted.
 export async function contentReviewSource(tx: PostTx, report: CommunityReport) {
+  if (report.targetType === "EXCHANGE_LISTING") {
+    const listing = await tx.exchangeListing.findUnique({ where: { id: report.targetId },
+      select: { id: true, ownerId: true, ownerChurchId: true, version: true,
+        moderationState: true, state: true, erasedAt: true, recoveryRequired: true } });
+    return listing && { id: listing.id, authorId: listing.ownerId, authorChurchId: listing.ownerChurchId,
+      version: listing.version, moderationState: listing.moderationState, type: "EXCHANGE_LISTING" as const,
+      contextVersion: 0, authorWithdrawn: listing.state === "ARCHIVED" || listing.state === "DRAFT" || !!listing.erasedAt || listing.recoveryRequired };
+  }
   if (report.targetType === "TOPIC") {
     const topic = await tx.topicCommunity.findUnique({
       where: { id: report.targetId },
@@ -165,6 +174,8 @@ export async function moderateReportedContent(
       await tx.platformPost.update({ where: { id: source.id }, data });
     else if (source.type === "TOPIC")
       await tx.topicCommunity.update({ where: { id: source.id }, data });
+    else if (source.type === "EXCHANGE_LISTING")
+      await tx.exchangeListing.update({ where: { id: source.id }, data: { ...data, moderationVersion: source.version + 1 } });
     else
       await tx.platformPostComment.update({ where: { id: source.id }, data });
   }
@@ -184,14 +195,16 @@ export async function moderateReportedContent(
   };
 }
 
-export function authorDecisionWhere(
-  context: PostContext
-): Prisma.CommunityReportDecisionWhereInput {
+export async function authorDecisionWhere(
+  tx: PostTx, context: PostContext
+): Promise<Prisma.CommunityReportDecisionWhereInput> {
+  const exchange = await exchangeAuthority(tx, context);
   return {
     action: { not: null },
     OR: [
       { authorId: context.actorId ?? "", authorChurchId: null },
-      { authorChurchId: { in: [...context.publishers] } }
+      { authorChurchId: { in: [...context.publishers] }, report: { targetType: { not: "EXCHANGE_LISTING" } } },
+      { authorChurchId: { in: exchange.managers }, report: { targetType: "EXCHANGE_LISTING" } }
     ]
   };
 }
@@ -200,7 +213,7 @@ export async function readContentNotices(
   context: PostContext,
   query: Record<string, unknown>
 ) {
-  const where = authorDecisionWhere(context);
+  const where = await authorDecisionWhere(tx, context);
   const select = {
     id: true,
     action: true,
@@ -257,7 +270,14 @@ export async function readContentNotices(
         { authorChurchId: { in: [...context.publishers] } }
       ]
     };
-    if (report.targetType === "POST") {
+    if (report.targetType === "EXCHANGE_LISTING") {
+      const source = await tx.exchangeListing.findFirst({
+        where: { AND: [{ id: report.targetId }, exchangeManagementWhere(context, await exchangeAuthority(tx, context))] },
+        select: { id: true, title: true, description: true, state: true, version: true }
+      });
+      if (source) ownSource = { href: `/platform/exchange/${source.id}/edit`,
+        content: source.state === "ARCHIVED" ? "" : `${source.title}\n\n${source.description}`, version: source.version };
+    } else if (report.targetType === "POST") {
       const source = await tx.platformPost.findFirst({
         where: { id: report.targetId, ...author },
         select: {

@@ -1,4 +1,6 @@
 import { garbage, retireImage } from "./media-lifecycle";
+import { recordExchangeImageChange } from "./exchange-media";
+import { EXCHANGE_PHOTO_LIMIT } from "./exchange-options";
 export { retireImage } from "./media-lifecycle";
 import { FEEDBACK_ATTACHMENT_LIMIT, FEEDBACK_UPLOAD_LIFETIME } from "./feedback-image-access";
 import { createHash, randomUUID } from "node:crypto";
@@ -49,6 +51,7 @@ const targetOf = (a: ImageTarget) => ({
   profileUserId: a.profileUserId,
   churchId: a.churchId,
   postId: a.postId,
+  exchangeListingId: a.exchangeListingId ?? null,
   feedbackOwnerId: a.feedbackOwnerId ?? null,
   feedbackCaseId: a.feedbackCaseId ?? null
 });
@@ -96,7 +99,7 @@ export async function listImagesIn(
   await readableImageTarget(tx, context, target);
   const native = await tx.mediaAsset.findMany({
     where: {
-      AND: [target, readableAssetWhere(context)],
+      AND: [target, target.exchangeListingId ? { status: "READY" } : readableAssetWhere(context)],
       ...(profilePicture(target.purpose) ? { isCurrent: true } : {})
     },
     orderBy: [{ position: "asc" }, { id: "asc" }],
@@ -155,13 +158,13 @@ export async function uploadImage(
   else if (input.audience !== undefined || input.audienceChurchId !== undefined)
     throw new PortalError(
       400,
-      "This image inherits its original profile, church or post audience."
+      "This image inherits its original profile, church, post or listing audience."
     );
   const privacy = direct
     ? directPhotoAudience(input.audience, input.audienceChurchId)
     : undefined;
   const attachment = target.purpose === "SUPPORT_ATTACHMENT";
-  const single = !target.postId && !direct && !attachment;
+  const single = !target.postId && !target.exchangeListingId && !direct && !attachment;
   const currentTarget = {
     ...target,
     ...(profilePicture(target.purpose) ? { isCurrent: true } : {})
@@ -262,11 +265,11 @@ export async function uploadImage(
       : 0;
     if (
       occupied + references >=
-      (direct ? 1000 : attachment ? FEEDBACK_ATTACHMENT_LIMIT : target.postId ? 10 : 1) + (old ? 1 : 0)
+      (direct ? 1000 : attachment ? FEEDBACK_ATTACHMENT_LIMIT : target.exchangeListingId ? EXCHANGE_PHOTO_LIMIT : target.postId ? 10 : 1) + (old ? 1 : 0)
     )
       throw new PortalError(
         409,
-        target.postId
+        target.exchangeListingId ? "A listing holds up to eight photos, including active uploads." : target.postId
           ? "A post holds up to ten photos, including active uploads."
           : "Another image is processing here. Wait and refresh."
       );
@@ -322,7 +325,9 @@ export async function uploadImage(
                       })
                     ).map((row) => row.position)
                   ) + 1
-                : occupied)
+                : target.exchangeListingId ? ((await tx.mediaAsset.aggregate({
+                  where: { exchangeListingId: target.exchangeListingId, status: { not: "RETIRED" } }, _max: { position: true }
+                }))._max.position ?? -1) + 1 : occupied)
           }
         });
     return { asset, ready: false };
@@ -393,6 +398,9 @@ export async function uploadImage(
           10
       )
         throw new PortalError(409, "This post already has ten photos.");
+      if (target.exchangeListingId && !old && await tx.mediaAsset.count({
+        where: { exchangeListingId: target.exchangeListingId, status: "READY" }
+      }) >= EXCHANGE_PHOTO_LIMIT) throw new PortalError(409, "This listing already has eight photos.");
       if (old) {
         if (profilePicture(old.purpose) && photoLibraryEnabled()) {
           await associatePersonalPhoto(tx, old);
@@ -418,6 +426,7 @@ export async function uploadImage(
           where: { id: target.postId },
           data: { version: { increment: 1 }, editedAt: new Date() }
         });
+      if (target.exchangeListingId) await recordExchangeImageChange(tx, target.exchangeListingId, actorId);
       return projectImage(ready);
     });
   } catch (error) {
@@ -503,6 +512,7 @@ export function removeImage(
         where: { id: asset.postId },
         data: { version: { increment: 1 }, editedAt: new Date() }
       });
+    if (asset.exchangeListingId) await recordExchangeImageChange(tx, asset.exchangeListingId, actorId);
     return { removed: true };
   });
 }
@@ -521,8 +531,15 @@ export async function readImage(
       const asset = await tx.mediaAsset.findFirst({
         where: { AND: [{ id: assetId }, readableAssetWhere(context)] }
       });
-      if (!asset) throw new PortalError(404, "Image unavailable.");
-      return asset;
+      if (asset) return asset;
+      // A private listing draft or restricted management view is available only
+      // through its actual current owner or explicitly assigned church duty.
+      const ownedListingImage = await tx.mediaAsset.findFirst({
+        where: { id: assetId, purpose: "EXCHANGE_PHOTO", status: "READY" }
+      });
+      if (!ownedListingImage) throw new PortalError(404, "Image unavailable.");
+      await readableImageTarget(tx, context, targetOf(ownedListingImage));
+      return ownedListingImage;
     });
   return readCheckedImage(check, variant, store, signal);
 }

@@ -9,6 +9,7 @@ import { listImages, readImage, removeImage, uploadImage } from "./media";
 import { IMAGE_INPUT_BYTES } from "./media-processing";
 import { boundedBytes, imageStorage, type ImageStorage } from "./media-storage";
 import { readAvatar } from "./avatar";
+import { privilegedErrorFields } from "./privileged-auth-policy";
 
 export const imageHeaders = {
   "Cache-Control": "private, no-store, max-age=0",
@@ -29,6 +30,7 @@ function failure(error: unknown) {
         : 503;
   return Response.json(
     {
+      ...privilegedErrorFields(error),
       message:
         error instanceof PortalError
           ? error.message
@@ -108,6 +110,8 @@ export async function handleImageRequest(
           "Check the image removal details and try again."
         );
       }
+      if (!expectedAccount && await db.mediaAsset.count({ where: { id: typeof body.id === "string" ? body.id : "", purpose: "EXCHANGE_PHOTO" } }))
+        throw new PortalError(400, "Reload your listing before changing its photos.");
       return Response.json(
         await removeImage(db, token, body.id, body.expectedVersion),
         { headers: imageHeaders }
@@ -142,8 +146,8 @@ export async function handleImageRequest(
     } catch {
       throw new PortalError(400, "Check the image details and try again.");
     }
-    if (input.purpose === "SUPPORT_ATTACHMENT" && !expectedAccount)
-      throw new PortalError(400, "Reload your feedback before uploading a private attachment.");
+    if ((input.purpose === "SUPPORT_ATTACHMENT" || input.purpose === "EXCHANGE_PHOTO") && !expectedAccount)
+      throw new PortalError(400, "Reload the current editor before uploading this image.");
     const length = request.headers.get("content-length");
     if (
       length !== null &&

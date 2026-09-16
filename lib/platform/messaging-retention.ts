@@ -157,6 +157,15 @@ export async function purgeMessagingCandidate(
     // selected report expires. Active accounts and shared church content retain
     // their normal lifecycle; messages use their participant-retention check.
     if (source && !(await tx.communityReport.count({ where: source }))) {
+      if (source.targetType === "EXCHANGE_LISTING")
+        await tx.exchangeListing.updateMany({
+          where: { id: source.targetId, ownerChurchId: null, OR: [
+            { erasedAt: { not: null } }, { owner: { deletionRequestedAt: { not: null } } }
+          ] },
+          data: { title: "", description: "", category: null, condition: null, currency: null,
+            priceMinor: null, country: null, placeId: null, placeLabel: null, audience: "PUBLIC",
+            audienceChurchId: null, itemPolicy: null, confirmedAt: null }
+        });
       if (source.targetType === "POST")
         await tx.platformPost.updateMany({
           where: {

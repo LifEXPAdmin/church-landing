@@ -68,7 +68,7 @@ async function erasePrivateCollections(tx: Tx, userId: string) {
 
 async function erasePersonalMedia(tx: Tx, userId: string) {
   const where = {
-    OR: [{ profileUserId: userId }, { post: personalPost(userId) }],
+    OR: [{ profileUserId: userId }, { post: personalPost(userId) }, { exchangeListing: { ownerId: userId, ownerChurchId: null } }],
     status: { not: "RETIRED" as const }
   };
   // The account stays pending while more batches or provider deletion remain.
@@ -80,7 +80,7 @@ async function erasePersonalMedia(tx: Tx, userId: string) {
   });
   for (const asset of assets) await retireImage(tx, asset);
   await tx.mediaAsset.updateMany({
-    where: { OR: [{ profileUserId: userId }, { post: personalPost(userId) }] },
+    where: { OR: [{ profileUserId: userId }, { post: personalPost(userId) }, { exchangeListing: { ownerId: userId, ownerChurchId: null } }] },
     data: { caption: "", alt: "", crop: Prisma.DbNull }
   });
   return tx.mediaAsset.count({ where });
@@ -164,6 +164,15 @@ async function eraseSocialData(tx: Tx, userId: string, now: Date) {
     where: { ownerId: userId, revokedAt: { not: null } }
   });
   await tx.postAudit.deleteMany({ where: { actorId: userId } });
+  await tx.exchangeListingAudit.updateMany({ where: { actorId: userId }, data: { actorId: null } });
+  await tx.exchangeListing.updateMany({ where: { creatorId: userId }, data: { creatorId: null } });
+  await tx.exchangeListing.updateMany({ where: { ownerId: userId, ownerChurchId: null },
+    data: { state: "ARCHIVED", erasedAt: now, recoveryRequired: true, version: { increment: 1 }, visibilityVersion: { increment: 1 } } });
+  await tx.$executeRaw`UPDATE "ExchangeListing" e SET title='', description='', category=NULL,
+    condition=NULL, currency=NULL, "priceMinor"=NULL, country=NULL, "placeId"=NULL, "placeLabel"=NULL,
+    "audienceChurchId"=NULL, audience='PUBLIC', "itemPolicy"=NULL, "confirmedAt"=NULL
+    WHERE e."ownerId"=${userId} AND e."ownerChurchId" IS NULL AND NOT EXISTS
+      (SELECT 1 FROM "CommunityReport" r WHERE r."targetType"='EXCHANGE_LISTING' AND r."targetId"=e.id)`;
   await tx.commentPin.deleteMany({ where: { comment: { authorId: userId } } });
   await tx.platformPost.updateMany({
     where: personalPost(userId),

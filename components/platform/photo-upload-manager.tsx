@@ -56,7 +56,7 @@ export function PhotoUploadManager({
 }: {
   ownerId: string;
   targetId: string;
-  purpose: "POST_PHOTO" | "PROFILE_PHOTO" | "SUPPORT_ATTACHMENT";
+  purpose: "POST_PHOTO" | "PROFILE_PHOTO" | "SUPPORT_ATTACHMENT" | "EXCHANGE_PHOTO";
   available: boolean;
   remaining: number;
   details?: Record<string, string | null>;

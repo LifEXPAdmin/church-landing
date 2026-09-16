@@ -12,6 +12,7 @@ import {
 } from "./post-access";
 import { postId } from "./post-input";
 import { socialUserWhere } from "./social-policy";
+import { exchangeReadableWhere } from "./exchange-policy";
 
 export const PHOTO_LIBRARY_LIMIT = 1000;
 export const PHOTO_PAGE_SIZE = 24;
@@ -101,7 +102,8 @@ export function readableAssetWhere(
           OR: [{ communityListed: true }, { id: { in: context.churches } }]
         }
       },
-      { purpose: "POST_PHOTO", post: postReadableWhere(context) }
+      { purpose: "POST_PHOTO", post: postReadableWhere(context) },
+      { purpose: "EXCHANGE_PHOTO", exchangeListing: exchangeReadableWhere(context) }
     ]
   };
 }

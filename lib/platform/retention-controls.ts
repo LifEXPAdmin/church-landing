@@ -32,8 +32,10 @@ export type RetentionControlEntry = {
     | "MODERATION_POST"
     | "MODERATION_COMMENT"
     | "MODERATION_TOPIC"
+    | "MODERATION_EXCHANGE"
     | "TOPIC_ACCESS"
     | "POST_DISCOVERY"
+    | "EXCHANGE_VISIBILITY"
     | "DISCOVERY_PREFERENCES"
     | "PROFILE_LOCATION"
     | "NOTIFICATION_PREFERENCES"
@@ -95,6 +97,7 @@ function validate(value: unknown): RetentionControlEntry {
     !([
       "TOPIC_ACCESS",
       "POST_DISCOVERY",
+      "EXCHANGE_VISIBILITY",
       "DISCOVERY_PREFERENCES",
       "PROFILE_LOCATION",
       "NOTIFICATION_PREFERENCES",
@@ -139,7 +142,8 @@ function validate(value: unknown): RetentionControlEntry {
                   )
                 : r.kind === "MODERATION_POST" ||
                     r.kind === "MODERATION_COMMENT" ||
-                    r.kind === "MODERATION_TOPIC"
+                    r.kind === "MODERATION_TOPIC" ||
+                    r.kind === "MODERATION_EXCHANGE"
                   ? r.target === "REPORT" &&
                     ["VISIBLE", "HIDDEN", "REMOVED"].includes(r.outcome)
                   : r.kind === "AUTHOR_WITHDRAW_POST" ||
@@ -398,6 +402,7 @@ export async function recordDiscoveryControl(
   tx: Tx,
   kind:
     | "POST_DISCOVERY"
+    | "EXCHANGE_VISIBILITY"
     | "DISCOVERY_PREFERENCES"
     | "PROFILE_LOCATION"
     | "NOTIFICATION_PREFERENCES"
@@ -457,7 +462,9 @@ export function recordContentControl(
   return record(tx, {
     id: randomUUID(),
     kind:
-      report.targetType === "POST"
+      report.targetType === "EXCHANGE_LISTING"
+        ? "MODERATION_EXCHANGE"
+        : report.targetType === "POST"
         ? "MODERATION_POST"
         : report.targetType === "TOPIC"
           ? "MODERATION_TOPIC"
@@ -1104,6 +1111,21 @@ export async function replayRetentionControls(
           });
           continue;
         }
+        if (entry.kind === "EXCHANGE_VISIBILITY") {
+          // Privacy versions are independent of moderation and image versions.
+          // A newer opaque listing receipt cannot reconstruct the intended
+          // audience, so restore privately until its owner reviews and publishes.
+          await tx.exchangeListing.updateMany({
+            where: { id: entry.sourceId, visibilityVersion: { lt: entry.version }, erasedAt: null },
+            data: { state: "DRAFT", recoveryRequired: true, visibilityVersion: entry.version,
+              version: { increment: 1 } }
+          });
+          await record(tx, entry);
+          await tx.retentionControl.updateMany({
+            where: { id: entry.id, journaledAt: null }, data: { journaledAt: new Date() }
+          });
+          continue;
+        }
         if (entry.kind === "TOPIC_ACCESS") {
           await tx.$executeRaw`UPDATE "TopicCommunity" SET "recoveryRequired"=true,
             "securityVersion"=${entry.version} WHERE id=${entry.sourceId} AND "securityVersion" < ${entry.version}`;
@@ -1158,6 +1180,19 @@ export async function replayRetentionControls(
           await tx.retentionControl.updateMany({
             where: { id: entry.id, journaledAt: null },
             data: { journaledAt: new Date() }
+          });
+          continue;
+        }
+        if (entry.kind === "MODERATION_EXCHANGE") {
+          const visibility = entry.outcome === "VISIBLE" ? "HIDDEN" : entry.outcome as "HIDDEN" | "REMOVED";
+          await tx.$executeRaw`UPDATE "ExchangeListing" SET
+            "moderationState"=${visibility}::"ContentModerationState",
+            "moderationVersion"=${entry.version}, version=greatest(version,${entry.version})
+            WHERE id=${entry.sourceId} AND ("moderationVersion" < ${entry.version}
+              OR ("moderationVersion"=${entry.version} AND ${entry.outcome !== "VISIBLE"}))`;
+          await record(tx, entry);
+          await tx.retentionControl.updateMany({
+            where: { id: entry.id, journaledAt: null }, data: { journaledAt: new Date() }
           });
           continue;
         }
@@ -1278,14 +1313,16 @@ export async function inspectRestoredHolds(db: PrismaClient) {
 }
 export async function inspectRestoredModeration(db: PrismaClient) {
   const [row] = await db.$queryRaw<Array<{ count: bigint }>>(Prisma.sql`
-    WITH latest AS (SELECT DISTINCT ON (kind, "sourceId") kind, "sourceId", version, payload FROM "RetentionControl" WHERE kind IN ('MODERATION_POST','MODERATION_COMMENT','MODERATION_TOPIC') ORDER BY kind, "sourceId", version DESC)
+    WITH latest AS (SELECT DISTINCT ON (kind, "sourceId") kind, "sourceId", version, payload FROM "RetentionControl" WHERE kind IN ('MODERATION_POST','MODERATION_COMMENT','MODERATION_TOPIC','MODERATION_EXCHANGE') ORDER BY kind, "sourceId", version DESC)
     SELECT count(*)::bigint AS count FROM latest r
     LEFT JOIN "PlatformPost" p ON r.kind='MODERATION_POST' AND p.id=r."sourceId"
     LEFT JOIN "PlatformPostComment" c ON r.kind='MODERATION_COMMENT' AND c.id=r."sourceId"
     LEFT JOIN "TopicCommunity" t ON r.kind='MODERATION_TOPIC' AND t.id=r."sourceId"
+    LEFT JOIN "ExchangeListing" e ON r.kind='MODERATION_EXCHANGE' AND e.id=r."sourceId"
     WHERE r.payload->>'outcome'='VISIBLE' AND
       (p.version <= r.version AND p."moderationState" <> 'VISIBLE' OR c.version <= r.version AND c."moderationState" <> 'VISIBLE'
-       OR t.version <= r.version AND t."moderationState" <> 'VISIBLE')`);
+       OR t.version <= r.version AND t."moderationState" <> 'VISIBLE'
+       OR e."moderationVersion" <= r.version AND e."moderationState" <> 'VISIBLE')`);
   return Number(row.count);
 }
 export async function inspectRestoredAppeals(db: PrismaClient) {

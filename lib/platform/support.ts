@@ -385,6 +385,7 @@ export async function readSupport(
     const reportReviewer =
       reportAuthority.global ||
       !!reportAuthority.churches.length ||
+      !!reportAuthority.exchangeChurches.length ||
       !!reportAuthority.topics.length;
     const recipientGrant =
       view === "new" && adult(actor)

@@ -133,7 +133,7 @@ export async function notificationSources(
         where: {
           AND: [
             { id: { in: decisions.map((e) => e.decisionId!) } },
-            authorDecisionWhere(context)
+            await authorDecisionWhere(tx, context)
           ]
         },
         select: { id: true, actorId: true, reportId: true },

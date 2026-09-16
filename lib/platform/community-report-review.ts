@@ -3,12 +3,14 @@ import type { CommunityReport } from "@prisma/client";
 import type { PostContext, PostTx } from "./post-access";
 import { eligibleWhere } from "./portal-policy";
 import { privilegedProjectionAvailable } from "./privileged-auth-policy";
+import { exchangeAuthority } from "./exchange-policy";
 
 export async function reportReviewAuthority(tx: PostTx, context: PostContext) {
   if (context.actorId && !(await privilegedProjectionAvailable(tx, context.actorId)))
-    return { churches: [], topics: [], global: false };
+    return { churches: [], exchangeChurches: [], topics: [], global: false };
   return {
     churches: [...context.moderators],
+    exchangeChurches: (await exchangeAuthority(tx, context)).moderators,
     topics: [...(context.topicModerators ?? [])],
     global: !!(
       context.actorId &&
@@ -47,21 +49,26 @@ export const reviewReportJoins = Prisma.sql`
     LEFT JOIN "PlatformPost" p ON p.id = CASE
       WHEN r."targetType" = 'POST' THEN r."targetId"
       WHEN r."targetType" = 'COMMENT' THEN c."postId" END
+    LEFT JOIN "ExchangeListing" e ON r."targetType" = 'EXCHANGE_LISTING' AND e.id = r."targetId"
 `;
 export function reviewReportScope(authority: ReportReviewAuthority) {
   const original = Prisma.sql`(
     (${authority.global} AND r."scopeChurchId" IS NULL) OR
     ${
       authority.churches.length
-        ? Prisma.sql`r."scopeChurchId" IN (${Prisma.join(authority.churches)})`
+        ? Prisma.sql`(r."targetType" <> 'EXCHANGE_LISTING' AND r."scopeChurchId" IN (${Prisma.join(authority.churches)}))`
         : Prisma.sql`FALSE`
+    } OR ${authority.exchangeChurches.length
+      ? Prisma.sql`(r."targetType" = 'EXCHANGE_LISTING' AND r."scopeChurchId" IN (${Prisma.join(authority.exchangeChurches)}))`
+      : Prisma.sql`FALSE`
     } OR ${
       authority.topics.length
         ? Prisma.sql`(r."scopeTopicId" IN (${Prisma.join(authority.topics)}) AND r."targetType" IN ('POST','COMMENT') AND r."scopeChurchId" IS NULL)`
         : Prisma.sql`FALSE`
     })`;
-  const currentScope = Prisma.sql`coalesce(p."authorChurchId",
-    CASE WHEN p.audience = 'CHURCH' THEN p."audienceChurchId" END)`;
+  const currentScope = Prisma.sql`coalesce(e."ownerChurchId",
+    CASE WHEN e.audience = 'CHURCH' THEN e."audienceChurchId" END,
+    p."authorChurchId", CASE WHEN p.audience = 'CHURCH' THEN p."audienceChurchId" END)`;
   const currentTopic = Prisma.sql`CASE WHEN r."targetType" = 'TOPIC' THEN r."targetId" ELSE p."topicCommunityId" END`;
   return Prisma.sql`${original}
       AND (${authority.global} OR ${currentTopic} IS NULL OR ${
@@ -72,8 +79,11 @@ export function reviewReportScope(authority: ReportReviewAuthority) {
       AND NOT EXISTS (SELECT 1 FROM "RetentionPurge" purge WHERE purge.target = 'REPORT' AND purge."targetId" = r.id)
       AND (${currentScope} IS NULL OR ${
         authority.churches.length
-          ? Prisma.sql`${currentScope} IN (${Prisma.join(authority.churches)})`
+          ? Prisma.sql`(r."targetType" <> 'EXCHANGE_LISTING' AND ${currentScope} IN (${Prisma.join(authority.churches)}))`
           : Prisma.sql`FALSE`
+      } OR ${authority.exchangeChurches.length
+        ? Prisma.sql`(r."targetType" = 'EXCHANGE_LISTING' AND ${currentScope} IN (${Prisma.join(authority.exchangeChurches)}))`
+        : Prisma.sql`FALSE`
       })`;
 }
 

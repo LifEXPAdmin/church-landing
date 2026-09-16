@@ -3,6 +3,8 @@ import type {
   CommunityReportDecision,
   Prisma
 } from "@prisma/client";
+import type { ChurchCapability } from "@prisma/client";
+import { authorDecisionWhere } from "./content-moderation";
 import { eligibleWhere } from "./portal-policy";
 import { activeRoleGrantWhere } from "./church-permissions";
 import {
@@ -14,7 +16,7 @@ import { enqueueNotification } from "./notification-outbox";
 async function churchRecipients(
   tx: Prisma.TransactionClient,
   churchId: string,
-  capability: "MODERATE_CHURCH_POSTS" | "PUBLISH_CHURCH_POSTS"
+  capability: ChurchCapability
 ) {
   const direct = await tx.churchCapabilityGrant.findMany({
     where: {
@@ -66,7 +68,7 @@ export async function recordReportActivity(
     recipients = await churchRecipients(
       tx,
       report.scopeChurchId,
-      "MODERATE_CHURCH_POSTS"
+      report.targetType === "EXCHANGE_LISTING" ? "MODERATE_EXCHANGE_LISTINGS" : "MODERATE_CHURCH_POSTS"
     );
   if (report.scopeTopicId && report.targetType !== "TOPIC") {
     const topic = await tx.topicCommunity.findUnique({
@@ -122,11 +124,12 @@ export async function recordContentDecisionActivity(
   tx: Prisma.TransactionClient,
   decision: CommunityReportDecision
 ) {
+  const report = await tx.communityReport.findUniqueOrThrow({ where: { id: decision.reportId }, select: { targetType: true } });
   const recipients = decision.authorChurchId
     ? await churchRecipients(
         tx,
         decision.authorChurchId,
-        "PUBLISH_CHURCH_POSTS"
+        report.targetType === "EXCHANGE_LISTING" ? "MANAGE_EXCHANGE_LISTINGS" : "PUBLISH_CHURCH_POSTS"
       )
     : decision.authorId
       ? [decision.authorId]
@@ -140,9 +143,9 @@ export async function recordContentDecisionActivity(
       continue;
     if (
       decision.authorChurchId &&
-      !(await postContext(tx, recipientId)).publishers.has(
-        decision.authorChurchId
-      )
+      !(await tx.communityReportDecision.count({ where: { AND: [
+        { id: decision.id }, await authorDecisionWhere(tx, await postContext(tx, recipientId))
+      ] } }))
     )
       continue;
     const event = await tx.socialEvent.create({

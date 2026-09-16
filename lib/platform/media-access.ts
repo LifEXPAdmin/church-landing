@@ -10,11 +10,13 @@ import { hasChurchCapability } from "./portal";
 import { PortalError } from "./portal-policy";
 import { socialUserWhere } from "./social-policy";
 import { writableFeedbackImage } from "./feedback-image-access";
+import { exchangeAuthority, exchangeManagementWhere, exchangeReadableWhere, requireExchangeActor } from "./exchange-policy";
+import { requirePrivilegedAuthentication } from "./privileged-auth-policy";
 
 export type ImageTarget = Pick<
   MediaAsset,
   "purpose" | "profileUserId" | "churchId" | "postId"
-> & Partial<Pick<MediaAsset, "feedbackOwnerId" | "feedbackCaseId">>;
+> & Partial<Pick<MediaAsset, "feedbackOwnerId" | "feedbackCaseId" | "exchangeListingId">>;
 export function imageTarget(purpose: unknown, targetId: unknown): ImageTarget {
   if (!Object.values(MediaPurpose).includes(purpose as MediaPurpose))
     throw new PortalError(400, "Choose a supported image destination.");
@@ -25,6 +27,7 @@ export function imageTarget(purpose: unknown, targetId: unknown): ImageTarget {
     profileUserId: p.startsWith("PROFILE_") ? id : null,
     churchId: p.startsWith("CHURCH_") ? id : null,
     postId: p === "POST_PHOTO" ? id : null,
+    exchangeListingId: p === "EXCHANGE_PHOTO" ? id : null,
     feedbackOwnerId: p === "SUPPORT_ATTACHMENT" ? id : null,
     feedbackCaseId: null
   };
@@ -35,7 +38,12 @@ export async function readableImageTarget(
   target: ImageTarget
 ) {
   let allowed = false;
-  if (target.profileUserId)
+  if (target.exchangeListingId) {
+    allowed = !!(await tx.exchangeListing.findFirst({
+      where: { id: target.exchangeListingId, OR: [exchangeReadableWhere(context),
+        exchangeManagementWhere(context, await exchangeAuthority(tx, context))] }, select: { id: true }
+    }));
+  } else if (target.profileUserId)
     allowed =
       !!context.actorId &&
       !!(await tx.platformUser.findFirst({
@@ -65,6 +73,17 @@ export async function writableImageTarget(
   target: ImageTarget
 ) {
   if (!context.actorId) throw new PortalError(401, "Sign in to manage images.");
+  if (target.exchangeListingId) {
+    requireExchangeActor(context);
+    const listing = await tx.exchangeListing.findFirst({
+      where: { AND: [{ id: target.exchangeListingId, state: { not: "ARCHIVED" } },
+        exchangeManagementWhere(context, await exchangeAuthority(tx, context))] },
+      select: { ownerChurchId: true }
+    });
+    if (!listing) throw new PortalError(404, "This listing is unavailable for photo changes.");
+    if (listing.ownerChurchId) await requirePrivilegedAuthentication(tx, context.actorId);
+    return;
+  }
   if (target.purpose === "SUPPORT_ATTACHMENT") {
     await writableFeedbackImage(tx, context.actorId, target.feedbackOwnerId, target.feedbackCaseId);
     return;
