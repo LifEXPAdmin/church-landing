@@ -1,6 +1,6 @@
 # Language and location settings boundaries
 
-## Optional device suggestions candidate — September 16, 2026
+## Optional device suggestions verified — September 16, 2026
 
 The device follow-through reuses private discovery preferences after the
 regional/privacy prerequisite. Its [device contract](DEVICE_LOCATION_CONTRACT.md)
@@ -9,7 +9,8 @@ conversion, transient catalog lookup, independent named-area choice and Save,
 manual recovery and discarded late results. It adds no coordinate storage or
 translation service. A disabled translation row explains that availability will
 not imply coverage of every media item. The original absence statements below
-are historical; publication requires the feature's exact acceptance receipt.
+are historical; release 2026.09.16.7 is verified in the
+[exact acceptance receipt](DEVICE_LOCATION_ACCEPTANCE.md).
 
 ## Regional formats and profile audience verified — September 16, 2026
 

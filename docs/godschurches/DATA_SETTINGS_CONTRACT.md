@@ -6,7 +6,8 @@ The optional [device suggestion flow](DEVICE_LOCATION_CONTRACT.md) is separate
 from this read-only browser-permission display. Only an explicit request in
 owned discovery settings can invoke it. Permission status checks still request
 no position, retain no coordinates and grant no sharing or account authority.
-This update describes the candidate; use its acceptance receipt for live status.
+Release 2026.09.16.7 is verified in the
+[device acceptance receipt](DEVICE_LOCATION_ACCEPTANCE.md).
 
 September 12, 2026. The Data folder consumes the existing account confirmation,
 export and reversible deactivation services. It adds no storage or permission

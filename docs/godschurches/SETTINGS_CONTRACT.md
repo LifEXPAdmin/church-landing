@@ -6,7 +6,7 @@ searchable settings implementation; it does not activate every proposed setting.
 
 ## Related settings — September 14, 2026
 
-The September 16 regional/privacy and optional device candidates extend the
+The September 16 regional/privacy and optional device releases extend the
 initial location row below through their existing account and discovery owners.
 See [regional preferences](REGIONAL_PREFERENCES_CONTRACT.md) and
 [device-area suggestions](DEVICE_LOCATION_CONTRACT.md). No default requests
