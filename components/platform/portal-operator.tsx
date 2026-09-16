@@ -1,4 +1,5 @@
 "use client";
+import { RegionalTime } from "./regional-presentation";
 
 import { useId, useState } from "react";
 import { AccountRestrictionForm } from "./account-restriction-form";
@@ -392,10 +393,7 @@ function AccountStatus({
               <p className="text-gc-muted">
                 By {entry.actorName ?? entry.actorId} ·{" "}
                 <time dateTime={entry.createdAt}>
-                  {new Date(entry.createdAt)
-                    .toISOString()
-                    .replace("T", " ")
-                    .replace(/\.\d+Z$/, " UTC")}
+                  <RegionalTime value={entry.createdAt} defaultText={new Date(entry.createdAt).toISOString().replace("T", " ").replace(/\.\d+Z$/, "")} options={{year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: "UTC"}} /> UTC
                 </time>
               </p>
               <p className="text-gc-muted">

@@ -1,5 +1,5 @@
 "use client";
-import { RegionalEventTime } from "./regional-presentation";
+import { RegionalEventTime, RegionalWallTime } from "./regional-presentation";
 import {
   useEffect,
   useId,
@@ -488,7 +488,7 @@ export function PostParticipationControls({
           <p className="text-sm text-gc-muted">
             {poll.closed
               ? "Voting closed"
-              : `Closes ${poll.closesLocal.replace("T", " ")} · ${poll.timeZone}`}{" "}
+              : <>Closes <RegionalWallTime value={poll.closesLocal} /> · {poll.timeZone}</>}{" "}
             · {poll.total} ballot{poll.total === 1 ? "" : "s"}.{" "}
             {poll.multiple
               ? "Multiple choices per ballot."

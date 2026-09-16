@@ -244,6 +244,8 @@ test("profile edits use session ownership, reject extra IDs/unsafe URLs, and sta
     where: { id: owner.id }
   });
   assert.equal(saved.bio, edit.bio);
+  assert.equal(saved.location, edit.location);
+  assert.equal(saved.locationAudience, "ONLY_ME");
   assert.deepEqual(saved.interests, ["Prayer", "Gardening"]);
   assert.equal(saved.passwordHash, owner.passwordHash);
   assert.equal(saved.email, owner.email);

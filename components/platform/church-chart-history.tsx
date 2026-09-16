@@ -1,4 +1,5 @@
 "use client";
+import { RegionalTime } from "./regional-presentation";
 
 import Link from "next/link";
 import { useState } from "react";
@@ -65,9 +66,7 @@ export function ChurchChartHistory({
                 <p className="text-sm text-gc-muted">
                   Saved by {entry.actor} ·{" "}
                   <time dateTime={entry.savedAt}>
-                    {entry.savedAt
-                      .replace("T", " ")
-                      .replace(/\.\d{3}Z$/, " UTC")}
+                    <RegionalTime value={entry.savedAt} defaultText={entry.savedAt.replace("T", " ").replace(/\.\d{3}Z$/, "")} options={{year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: "UTC"}} /> UTC
                   </time>
                 </p>
                 {entry.changesUnavailable ? (

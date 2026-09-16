@@ -1,4 +1,5 @@
 "use client";
+import { RegionalWallTime, RegionalTime } from "./regional-presentation";
 import { useEffect, useId, useState } from "react";
 import type { PostEditorView } from "@/lib/platform/post-editor";
 import { CommentMentions } from "./comment-mentions";
@@ -159,7 +160,7 @@ function SchedulePost({
       <h3 className="text-xl">Publication plan</h3>
       <p className="break-words">
         {post.status === "SCHEDULED"
-          ? `Scheduled for ${post.scheduleLocal.replace("T", " ")} in ${post.scheduleZone}.`
+          ? <>Scheduled for <RegionalWallTime value={post.scheduleLocal} /> in {post.scheduleZone}.</>
           : "This post is a draft. Review its content and permissions before scheduling publication."}
       </p>
       <PostActionForm
@@ -390,7 +391,7 @@ export function PostControls({
                     <p>
                       {decision.actor} ·{" "}
                       <time dateTime={decision.createdAt}>
-                        {decision.createdAt.slice(0, 16).replace("T", " ")} UTC
+                        <RegionalTime value={decision.createdAt} defaultText={decision.createdAt.slice(0, 16).replace("T", " ")} options={{year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", timeZone: "UTC"}} /> UTC
                       </time>
                     </p>
                     <p>

@@ -5,6 +5,7 @@ import {
   defaultRegionalPreferences,
   formatRegionalCalendarDate,
   formatRegionalTimestamp,
+  formatRegionalWallTime,
   regionalPresentation
 } from "../lib/platform/regional-format";
 
@@ -136,4 +137,31 @@ test("all-day event ranges keep their calendar days in every viewer zone", () =>
     eventWhen({ ...event, endLocal: "2028-02-30" }, "UTC"),
     "Date unavailable"
   );
+});
+
+test("source wall-time labels preserve their date and zone boundary without resolving DST again", () => {
+  const prefs = { dateFormat: "DMY", timeFormat: "H12" } as const;
+  assert.equal(
+    formatRegionalWallTime("2026-11-01T01:30", prefs),
+    "01/11/2026 1:30 AM"
+  );
+  assert.equal(
+    formatRegionalWallTime("2026-10-25T13:05", prefs),
+    "25/10/2026 1:05 PM"
+  );
+  assert.equal(formatRegionalWallTime("2028-02-29", prefs), "29/02/2028");
+  assert.equal(
+    formatRegionalWallTime(
+      "2026-11-01T01:30",
+      defaultRegionalPreferences,
+      " · "
+    ),
+    "2026-11-01 · 01:30"
+  );
+  for (const value of [
+    "2026-02-30T13:05",
+    "2026-11-01T25:30",
+    "2026-11-01T01:30Z"
+  ])
+    assert.equal(formatRegionalWallTime(value, prefs), "Date unavailable");
 });

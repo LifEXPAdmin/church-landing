@@ -122,3 +122,28 @@ export function formatRegionalCalendarDate(
     timeZone: "UTC"
   });
 }
+
+/** A saved wall time already belongs to its labeled source zone. Never convert it. */
+export function formatRegionalWallTime(
+  value: string,
+  preferences: RegionalPreferences,
+  separator = " "
+) {
+  const match = /^(\d{4}-\d{2}-\d{2})(?:T([01]\d|2[0-3]):([0-5]\d))?$/.exec(
+    value
+  );
+  if (!match) return "Date unavailable";
+  const day = formatRegionalCalendarDate(match[1], preferences);
+  if (day === "Date unavailable" || !match[2]) return day;
+  const time = regionalPresentation(preferences).timeFormat;
+  const clock =
+    time === "DEFAULT"
+      ? `${match[2]}:${match[3]}`
+      : new Intl.DateTimeFormat("en-US", {
+          timeZone: "UTC",
+          hour: time === "H12" ? "numeric" : "2-digit",
+          minute: "2-digit",
+          hourCycle: time === "H12" ? "h12" : "h23"
+        }).format(new Date(value + ":00Z"));
+  return day + separator + clock;
+}

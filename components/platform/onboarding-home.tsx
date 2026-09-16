@@ -1,4 +1,5 @@
 "use client";
+import { RegionalWallTime } from "./regional-presentation";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { OnboardingView } from "@/lib/platform/onboarding";
@@ -282,11 +283,8 @@ export function OnboardingHome({
                           {e.title}
                         </Link>
                         <p className="text-sm">
-                          {e.allDay
-                            ? e.startLocal.slice(0, 10) + " · All day"
-                            : e.startLocal.replace("T", " ") +
-                              " · " +
-                              e.timeZone}
+                          <RegionalWallTime value={e.allDay ? e.startLocal.slice(0, 10) : e.startLocal} />
+                          {e.allDay ? " · All day" : " · " + e.timeZone}
                           {e.response
                             ? " · Your RSVP: " + e.response.toLowerCase()
                             : ""}

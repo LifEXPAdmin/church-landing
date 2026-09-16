@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import {
   defaultRegionalPreferences,
   formatRegionalTimestamp,
+  formatRegionalWallTime,
   regionalPresentation,
   type RegionalPreferences
 } from "@/lib/platform/regional-format";
@@ -37,6 +38,17 @@ export function RegionalProvider({
 export function useRegionalPreferences() {
   return useContext(RegionalContext);
 }
+export function RegionalWallTime({
+  value,
+  separator
+}: {
+  value: string;
+  separator?: string;
+}) {
+  return (
+    <>{formatRegionalWallTime(value, useRegionalPreferences(), separator)}</>
+  );
+}
 export function RegionalEventTime({
   event,
   timeZone
@@ -50,15 +62,23 @@ export function RegionalTime({
   value,
   options,
   locale = "en-US",
-  dateOnly = false
+  dateOnly = false,
+  defaultText
 }: {
   value: string | number | Date;
   options?: Intl.DateTimeFormatOptions;
   locale?: string;
   dateOnly?: boolean;
+  defaultText?: string;
 }) {
   const preferences = useRegionalPreferences();
   const zone = useContext(DeviceZoneContext);
+  if (
+    defaultText !== undefined &&
+    preferences.dateFormat === "DEFAULT" &&
+    preferences.timeFormat === "DEFAULT"
+  )
+    return <>{defaultText}</>;
   const formatting =
     options ??
     ({

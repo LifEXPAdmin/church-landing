@@ -1,4 +1,5 @@
 "use client";
+import { RegionalWallTime, RegionalTime } from "./regional-presentation";
 import {
   useEffect,
   useCallback,
@@ -305,12 +306,12 @@ export function PostActionForm({
             {latest.allowReposts ? "Allowed for public sources" : "Not allowed"}
             .
           </p>
-          <p>Pinned until: {latest.pinUntil ?? "Not pinned"}</p>
+          <p>Pinned until: {latest.pinUntil ? <RegionalTime value={latest.pinUntil} defaultText={latest.pinUntil} options={{year: "numeric", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "UTC", timeZoneName: "short"}} /> : "Not pinned"}</p>
           {latest.churchAuthor && (
             <p className="break-words">
               Publication:{" "}
               {latest.status === "SCHEDULED"
-                ? `${latest.scheduleLocal.replace("T", " ")} in ${latest.scheduleZone}`
+                ? <><RegionalWallTime value={latest.scheduleLocal} /> in {latest.scheduleZone}</>
                 : latest.status === "DRAFT"
                   ? "Draft; no active plan"
                   : "Published"}

@@ -42,7 +42,9 @@ and generic-member-preview payloads, not merely hidden by CSS.
 Use the existing versioned profile edit, account pinning and read boundaries.
 Changing visibility does not change the value, discovery choices, relationships
 or church membership. A restricted/inactive account cannot publish a broader
-audience through an alternate endpoint. Export remains owner-only. Permanent
+audience through an alternate endpoint. A legacy editor without an audience
+control can still save an ineligible owner's new location as Only me. Explicit
+member sharing requires verified adult eligibility. Export remains owner-only. Permanent
 deletion erases the text and preference. Record opaque privacy versions through
 the existing protected control journal; never replicate the location text.
 Replaying a newer privacy change into an older backup must conceal or clear the

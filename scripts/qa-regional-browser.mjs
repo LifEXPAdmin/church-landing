@@ -125,10 +125,14 @@ try {
   await go(settings);
   await page.getByLabel("Date format", { exact: true }).waitFor();
   await page.getByLabel("Date format", { exact: true }).focus();
-  await page.keyboard.press("ArrowDown");
   assert.equal(
-    await page.getByLabel("Date format", { exact: true }).inputValue(),
-    "MDY"
+    await page.evaluate(() => document.activeElement?.id),
+    "regional-date-format"
+  );
+  await page.keyboard.press("Tab");
+  assert.equal(
+    await page.evaluate(() => document.activeElement?.id),
+    "regional-time-format"
   );
   await page.getByLabel("Date format", { exact: true }).selectOption("DMY");
   await page.getByLabel("Time format", { exact: true }).selectOption("H24");
@@ -176,7 +180,7 @@ try {
     "H24"
   );
   ok(
-    "Keyboard and 320/390/1440 layouts at doubled text, accurate preview, saved account formats and new-session persistence"
+    "Keyboard navigation and 320/390/1440 layouts at doubled text, accurate preview, saved account formats and new-session persistence"
   );
 
   phase = "uncertain format save";
@@ -277,7 +281,7 @@ try {
       startLocal: allDay ? "2028-02-29" : "2026-10-25T13:05",
       endLocal: allDay ? "2028-03-02" : "2026-10-25T14:05",
       timeZone: "America/Chicago",
-      weeklyUntil: null
+      weeklyUntil: allDay ? null : "2026-11-01"
     });
     events.push(
       await db.calendarOccurrence.findFirstOrThrow({
@@ -292,6 +296,18 @@ try {
   await go(`/platform/events/${events[0].id}?timeZone=America%2FChicago`);
   await page
     .getByText(/25\/10\/2026, 13:05 CDT to 25\/10\/2026, 14:05 CDT/)
+    .waitFor();
+  await page
+    .getByText("Occurrences in this series (2)", { exact: true })
+    .click();
+  await page
+    .getByRole("link", { name: "25/10/2026 · 13:05", exact: true })
+    .waitFor();
+  await page
+    .getByText(
+      "Series dates use the event's source time zone: America/Chicago.",
+      { exact: true }
+    )
     .waitFor();
   await go(`/platform/events/${events[0].id}?timeZone=Asia%2FTokyo`);
   await page.getByText(/26\/10\/2026, 03:05 GMT\+9/).waitFor();
@@ -358,7 +374,7 @@ try {
   await page.waitForURL("**/platform/profile/" + a.username);
   await signIn(b);
   await go("/platform/profile/" + a.username);
-  await page.getByText(location, { exact: true }).waitFor();
+  await page.getByText("Location: " + location, { exact: true }).waitFor();
   await signIn(a);
   await go("/platform/profile/me");
   await page

@@ -1,4 +1,4 @@
-import { RegionalEventTime } from "./regional-presentation";
+import { RegionalEventTime, RegionalWallTime } from "./regional-presentation";
 import { PublicShareControls } from "./public-share-controls";
 import Link from "next/link";
 import { readPost } from "@/lib/platform/post-session";
@@ -161,6 +161,7 @@ export async function CalendarEventPage({
               <summary className="min-h-11 cursor-pointer py-2 font-semibold">
                 Occurrences in this series ({privateData.occurrences.length})
               </summary>
+              <p className="mb-3 text-sm text-gc-muted">Series dates use the event&apos;s source time zone: {event.timeZone}.</p>
               <ul className="grid gap-2 sm:grid-cols-2">
                 {privateData.occurrences.map((row) => (
                   <li key={row.id}>
@@ -169,7 +170,7 @@ export async function CalendarEventPage({
                       href={eventPath(row.id)}
                       aria-current={row.id === id ? "page" : undefined}
                     >
-                      {row.startLocal.replace("T", " · ")}
+                      <RegionalWallTime value={row.startLocal} separator=" · " />
                       {row.canceled ? " · Canceled" : ""}
                     </Link>
                   </li>
@@ -269,9 +270,9 @@ export async function CalendarEventPage({
                   <div className="mt-4 space-y-4">
                     <p>
                       Current saved series: {privateData.series.title},{" "}
-                      {privateData.series.startLocal.replace("T", " ")} to{" "}
-                      {privateData.series.endLocal.replace("T", " ")}, weekly
-                      through {privateData.series.weeklyUntil} (
+                      <RegionalWallTime value={privateData.series.startLocal} /> to{" "}
+                      <RegionalWallTime value={privateData.series.endLocal} />, weekly
+                      through {privateData.series.weeklyUntil && <RegionalWallTime value={privateData.series.weeklyUntil} />} (
                       {privateData.series.timeZone}). Review this saved version
                       before applying your entries to the series.
                     </p>

@@ -361,9 +361,15 @@ export async function updateAccountProfile(
         adultPolicyVersion: true
       }
     });
+    // Legacy clients have no audience control. Preserve their ability to save
+    // optional text, but never infer member disclosure for an ineligible owner.
     const locationAudience =
       input.locationAudience === undefined
-        ? locationState.locationAudience
+        ? !isEligible(locationState) &&
+          location &&
+          location !== locationState.location
+          ? "ONLY_ME"
+          : locationState.locationAudience
         : String(input.locationAudience);
     if (
       input.expectedLocationVersion !== undefined &&

@@ -114,13 +114,19 @@ test("restricted, stale and inactive accounts cannot broaden location through th
     const a = await createPortalActor(db, "locrestrict", options);
     assert.equal((await getProfileEditor(db, a.token)).canShareLocation, false);
     await assert.rejects(save(a, "MEMBERS"), /profile-disclosure/);
-    await assert.rejects(
-      updateAccountProfile(db, a.token, {
-        name: a.name,
-        location: "Legacy public location"
-      }),
-      /profile-disclosure/
+    await updateAccountProfile(db, a.token, {
+      name: a.name,
+      location: "Legacy private location"
+    });
+    assert.equal(
+      (await getProfileEditor(db, a.token)).locationAudience,
+      "ONLY_ME"
     );
+    assert.equal(
+      (await getProfileEditor(db, a.token)).location,
+      "Legacy private location"
+    );
+    await assert.rejects(save(a, "MEMBERS"), /profile-disclosure/);
     await save(a, "ONLY_ME");
     await assert.rejects(save(a, "PUBLIC"), /profile/);
     await db.platformUser.update({

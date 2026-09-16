@@ -38,3 +38,21 @@ production browser flows and layout inspection, protected production-copy upgrad
 runtime/bundle checks, exact READY and canonical release, live read-only behavior,
 postflight data comparison and migration registry installation, then task-system
 readback. No actual members' preferences have been changed for verification.
+
+The first six production-browser groups passed on `7a8e089`, with zero browser
+errors: doubled-text phone/desktop layouts, account persistence, exact retry after
+accepted response loss, conflict retention, cross-zone event/all-day display,
+member/preview HTML disclosure, restricted sharing, restored-location review and
+account/read failures. The selector-label repair preceded these checks. Browser
+test corrections address native select keyboard assumptions and the existing
+"Location:" text prefix; their initial failures remain in the private evidence.
+
+The complete gate found a legacy unverified-profile regression: old clients have
+no audience field and could not save their optional location text. The service
+now saves that new text as Only me, retaining the existing profile-edit flow
+without inferring disclosure. The original HTTP regression remains and adds an
+explicit private-audience assertion. Nine focused formatter/privacy tests pass
+after this correction. A subsequent timestamp audit also integrates source wall
+times in event-series, upcoming-event, poll and scheduling labels without zone
+conversion. These finishing changes still require the final browser/build and
+complete-gate receipt below before publication.

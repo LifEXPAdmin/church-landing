@@ -1,4 +1,5 @@
 "use client";
+import { RegionalWallTime } from "./regional-presentation";
 import { CommentMentions } from "./comment-mentions";
 import { useEffect, useId, useRef, useState } from "react";
 import type {
@@ -103,7 +104,7 @@ function EventChoice({
                 value={event.id}
                 disabled={event.hasDiscussion}
               >
-                {event.title} · {event.startLocal.replace("T", " ")}{" "}
+                {event.title} · <RegionalWallTime value={event.startLocal} />{" "}
                 {event.timeZone}
                 {event.hasDiscussion ? " · already has a discussion" : ""}
               </option>
