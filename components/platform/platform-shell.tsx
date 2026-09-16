@@ -80,7 +80,14 @@ export async function PlatformShell({
       initial={initial}
       release={publicReleaseId(process.env.VERCEL_GIT_COMMIT_SHA)}
     >
-      <RegionalProvider key={user?.id ?? "guest"} value={user}>
+      <RegionalProvider
+        key={user?.id ?? "guest"}
+        value={
+          user
+            ? { dateFormat: user.dateFormat, timeFormat: user.timeFormat }
+            : null
+        }
+      >
         <PrayerWorkspaceProvider
           key={user?.id ?? "guest"}
           owner={user?.id ?? null}

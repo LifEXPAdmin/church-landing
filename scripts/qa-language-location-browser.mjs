@@ -154,9 +154,9 @@ try {
   assert.match(await choices.innerText(), /Filtering does not translate/);
   assert.match(
     await choices.innerText(),
-    /separate audience selector.*not available/s
+    /Only me or permitted signed-in members/s
   );
-  assert.equal(await choices.locator("select").count(), 0);
+  assert.equal(await choices.locator("select").count(), 2);
   for (const width of [320, 390, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     await page.evaluate(
