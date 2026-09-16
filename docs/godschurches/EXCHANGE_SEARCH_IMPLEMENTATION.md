@@ -111,3 +111,22 @@ JavaScript files, excluding private fixtures, environment files and the Prisma
 configuration loader. Compared with the earlier isolated listing build, listed
 browse/detail chunks increase by 4,850/4,848 gzip bytes. Those are local compressed
 artifact measurements, not a network latency or hosting-capacity claim.
+
+## Settings follow-through and remaining gate
+
+Runtime `e2c1c93` adds the newly available Settings, Exchange folder in this
+same feature cycle. It reuses current listing, saved-choice, contact and alert
+destinations. The capability map keeps private pickup defaults and financial
+controls behind their owning prerequisites. Twelve targeted Settings/navigation/
+release checks, types, lint and copy checks pass. The rebuilt preview passes
+59 public/access checks and eight integrated search/saved/Settings browser groups;
+its 200 runtime traces and exact hydration artifact pass. The earlier 16 listing
+browser groups remain applicable to unchanged listing services and components.
+
+The final-source full gate then exposed one additional old category expectation
+in the comment-notification suite. Its mismatch is the added Exchange in-app
+category, with the other 14 comment-notification checks passing. This explicit
+expectation is updated, all other category assertions are audited, and this
+suite joins the focused Exchange regression set. The full gate is rerun with
+the Settings finishing integration included. Production remains on .10 until
+the complete gate and exact release/live acceptance pass.

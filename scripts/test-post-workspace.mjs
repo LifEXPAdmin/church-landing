@@ -154,6 +154,7 @@ try {
         "tests/notification-integration.test.ts",
         "tests/notification-outbox.test.ts",
         "tests/notification-source-batch.test.ts",
+        "tests/comment-notifications.test.ts",
         ...(process.argv.includes("--exchange-cost")
           ? ["tests/exchange-query-cost.ts"]
           : [])

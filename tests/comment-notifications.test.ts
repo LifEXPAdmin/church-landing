@@ -702,7 +702,8 @@ test("reply and mention opt-ins are independent, legacy preference bodies preser
     church: true,
     commitments: true,
     feedback: true,
-    photos: true
+    photos: true,
+    exchange: true
   });
   assert.equal(
     (
