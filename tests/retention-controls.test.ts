@@ -188,7 +188,7 @@ test("failed protection retains a recoverable decision and prevents a report pur
       now,
       journal
     ),
-    { reports: 1, messages: 0 }
+    { reports: 1, messages: 0, inquiries: 0 }
   );
 });
 test("newer hold release and case clocks replay in any page order without reviving a hold or restarting final closure", async () => {

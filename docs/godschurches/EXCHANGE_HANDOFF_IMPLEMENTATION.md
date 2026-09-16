@@ -45,23 +45,43 @@ This is local service evidence, not hosted latency. A dedicated current-source
 regression compares bounded summaries with private detail after contact narrowing,
 church-connection epoch changes and blocks.
 
-The interface is implemented locally using existing private snapshot, unsaved-work
-and uncertain-save controls. Eight isolated browser groups pass, including lost
-responses, stale plan confirmation, participant-local clear, account-switch and
-block concealment, enlarged mobile/dark views and browser Back protection. The
-latest finishing changes add a bounded status history, hide premature missed-pickup
-choices, explain data handling in Privacy and Terms, and count/fairly schedule
-inquiry cleanup alongside existing message/report retention. Browser acceptance
-will rerun on those final changes. Private operational health now reports stalled
-handoff ages/dispatch errors without identities. An expired church authenticator
-proof requires confirmation without revoking the pair’s consent; actual enrollment
-and session challenge tests pass. Uncertain browser requests preserve their plan
-through that challenge. The final public acceptance caught and repaired an
-individual handoff link missing from the account-return allowlist. It preserves
-only the known read destination and strips action parameters and private text;
-focused account-entry and Settings regressions pass. Required next work: complete browser
-acceptance (including lost responses, account changes, mobile/enlarged/dark views),
-measure affected query/bundle costs, repair any failures, run the frozen complete
-gate, protect the upgrade, publish through the established release process, verify
-exact READY/canonical/live behavior, update installed recovery and reconcile the
-private feature/settings/shared adapter tasks. Do not close this feature yet.
+The interface uses existing private snapshot, unsaved-work and uncertain-save
+controls. Eight isolated handoff browser groups pass, including lost responses,
+authenticator challenges, stale plan confirmation, participant-local clear,
+account switches, block concealment and browser Back protection. Sixteen existing
+listing groups and eight search/Settings groups pass. The latest mobile and
+enlarged dark handoff screenshots were visually reviewed. Status history is
+bounded; premature missed-pickup choices are hidden. Privacy and Terms explain
+private inquiries/defaults and retention. Inquiry cleanup is counted and fairly
+scheduled alongside existing message/report retention.
+
+Private operational health reports stalled handoff ages/dispatch errors without
+identities. An expired church authenticator proof requires confirmation without
+revoking the pair's consent; actual enrollment and challenge tests pass. Uncertain
+browser requests preserve their plan through that challenge. Public acceptance
+caught and repaired an individual handoff link missing from the account-return
+allowlist. It preserves the known read destination and strips action parameters
+and private text. All 68 public preview/access groups and focused account-entry
+and Settings regressions pass on that repair.
+
+Four additional isolated abuse groups verify inquiry/listing activity limits,
+exact retries without another activity hit, HTTP retry intervals and shared block
+revocation across alternate entry paths. These satisfy the initial Exchange
+abuse-adapter acceptance without adding another service. Current private briefs
+place later module adapters with their own feature releases.
+
+The complete gate stopped after finding a stale cleanup-result assertion in the
+listing suite: it omitted the new zero inquiry count. Auditing every caller also
+found the same old expectation in retention-control tests. Both expectations are
+updated; this is a test-only repair. All four affected cleanup suites now pass
+47 checks in a fresh isolated database, followed by a successful dump/restore.
+Rerun the frozen complete gate before publication. Earlier passing scoped suites
+and the failed full-gate receipt remain distinct evidence.
+
+Local bundle estimates add 5,203 gzip bytes to browse/new-listing routes and 5,193
+to listing detail, with no new dependency. A fresh protected production-copy
+upgrade from 94 to 95 migrations preserves all 128 original tables with restrictive
+replay. Required next work: finish the complete gate, publish through the
+established process, verify exact READY/canonical/live behavior, fingerprints,
+migration registry and installed recovery, then reconcile the feature and newly
+unlocked Settings/shared safety tasks. Do not close this feature yet.

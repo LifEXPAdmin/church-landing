@@ -731,7 +731,7 @@ test("reported personal listing text remains only until its final selected repor
         { async record() {}, async complete() {} },
         now
       ),
-      { messages: 0, reports: 1 }
+      { messages: 0, reports: 1, inquiries: 0 }
     );
     const retained = await db.exchangeListing.findUniqueOrThrow({
       where: { id: row.id }
