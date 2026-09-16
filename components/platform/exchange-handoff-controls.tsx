@@ -36,7 +36,7 @@ export function ExchangeInquiryForm({
     },
     [router]
   );
-  const action = useExchangeAction(owner, !!purpose, saved);
+  const action = useExchangeAction(owner, !!purpose, saved, true);
   if (target.activeId)
     return (
       <Link
@@ -119,7 +119,7 @@ export function ExchangeContactChoice({
 }) {
   const [confirmed, setConfirmed] = useState(false);
   const saved = useCallback(() => setConfirmed(false), []);
-  const action = useExchangeAction(owner, confirmed, saved);
+  const action = useExchangeAction(owner, confirmed, saved, true);
   return (
     <section
       className="space-y-3 rounded-xl border border-gc-divider p-4"
@@ -269,7 +269,7 @@ export function ExchangeHandoffActions({
     agree ||
     !!note ||
     reason !== "CHANGED_PLANS";
-  const action = useExchangeAction(owner, dirty);
+  const action = useExchangeAction(owner, dirty, undefined, true);
   const canPlan =
     inquiry.available &&
     inquiry.side === "incoming" &&

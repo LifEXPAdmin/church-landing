@@ -24,6 +24,7 @@ import {
   activeExchangeInquiry,
   heldExchangeInquiry,
   currentExchangeInquiry,
+  exchangeInquiryReadSources,
   exchangeInquirySource,
   exchangeReceiverKey,
   exchangeInquiryParticipant,
@@ -729,11 +730,39 @@ export function readExchangeHandoffs(
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       take: EXCHANGE_INQUIRY_PAGE + 1
     });
+    const page = rows.slice(0, EXCHANGE_INQUIRY_PAGE);
+    const { sourceFor, people } = await exchangeInquiryReadSources(tx, page);
     const inquiries = [];
-    for (const row of rows.slice(0, EXCHANGE_INQUIRY_PAGE)) {
-      const { id, version, state, side, listing, person, createdAt } =
-        await projection(tx, row, ownerId, now);
-      inquiries.push({ id, version, state, side, listing, person, createdAt });
+    for (const row of page) {
+      const source = await currentExchangeInquiry(tx, row, now, sourceFor);
+      const state =
+        activeExchangeInquiry(row.state) && row.expiresAt <= now
+          ? "EXPIRED"
+          : !source && activeExchangeInquiry(row.state)
+            ? "REVOKED"
+            : row.state;
+      const person =
+        source && !row.bodyPurgedAt
+          ? people.get(
+              (row.requesterId === ownerId ? row.receiverId : row.requesterId)!
+            )
+          : null;
+      inquiries.push({
+        id: row.id,
+        version: row.version,
+        state,
+        side:
+          row.requesterId === ownerId
+            ? ("outgoing" as const)
+            : ("incoming" as const),
+        listing: source
+          ? { id: source.listing.id, title: source.listing.title }
+          : null,
+        person: person
+          ? { name: person.name, username: person.username }
+          : null,
+        createdAt: row.createdAt.toISOString()
+      });
     }
     return {
       ownerId,

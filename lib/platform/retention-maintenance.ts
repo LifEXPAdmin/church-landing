@@ -224,6 +224,7 @@ export async function runRetentionOperations(
     accountsCompleted = 0,
     messages = 0,
     reports = 0,
+    inquiries = 0,
     failed = protectedControls.failed + measurementFailure;
   for (const account of inspected.accounts) {
     if (signal.aborted) break;
@@ -257,6 +258,7 @@ export async function runRetentionOperations(
       );
       messages += result.messages;
       reports += result.reports;
+      inquiries += result.inquiries;
     } catch {
       failed++;
     }
@@ -290,6 +292,7 @@ export async function runRetentionOperations(
     accountsCompleted,
     messages,
     reports,
+    inquiries,
     expired,
     failed,
     bounded: signal.aborted,

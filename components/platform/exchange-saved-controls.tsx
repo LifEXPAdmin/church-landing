@@ -1,5 +1,7 @@
 "use client";
 import Link from "next/link";
+import { flushSync } from "react-dom";
+import { settlePhotoNavigation } from "./use-photo-back-guard";
 import { useRouter } from "next/navigation";
 import { useCallback, useId, useRef, useState } from "react";
 import { socialRequest, SocialClientError } from "@/lib/platform/social-client";
@@ -23,7 +25,8 @@ const endpoint = "/api/platform/exchange";
 export function useExchangeAction(
   owner: string,
   dirty = false,
-  onSaved?: (receipt: { id: string; version: number; message: string }) => void
+  onSaved?: (receipt: { id: string; version: number; message: string }) => void,
+  protectBack = false
 ) {
   const router = useRouter(),
     visible = useReadVisibility(),
@@ -31,7 +34,8 @@ export function useExchangeAction(
   const [pending, setPending] = useState<string | null>(null),
     [busy, setBusy] = useState(false),
     [conflict, setConflict] = useState(false),
-    [message, setMessage] = useState("");
+    [message, setMessage] = useState(""),
+    [saved, setSaved] = useState(false);
   const flight = useRef(false);
   const send = useCallback(
     async (body: string) => {
@@ -55,9 +59,14 @@ export function useExchangeAction(
             503,
             "The response could not be confirmed. Confirm the original save before another change."
           );
-        setPending(null);
-        setConflict(false);
-        setMessage(data.message);
+        flushSync(() => {
+          setPending(null);
+          setBusy(false);
+          setConflict(false);
+          if (protectBack) setSaved(true);
+          setMessage(data.message);
+        });
+        if (protectBack) await settlePhotoNavigation();
         onSaved?.(data);
         router.refresh();
         return true;
@@ -82,19 +91,22 @@ export function useExchangeAction(
         setBusy(false);
       }
     },
-    [owner, router, onSaved]
+    [owner, router, onSaved, protectBack]
   );
   const retry = useCallback(() => {
     if (pending) void send(pending);
   }, [pending, send]);
   usePrivateRecovery("exchange-saved-" + id, !!pending, busy, retry);
-  useUnsavedSocialWork({ dirty, saving: busy || !!pending, conflict }, () =>
-    setMessage("Save or resolve your private choice before leaving.")
+  useUnsavedSocialWork(
+    { dirty: dirty && !saved, saving: busy || !!pending, conflict },
+    () => setMessage("Save or resolve your private choice before leaving."),
+    protectBack
   );
   return {
-    blocked: !visible || busy || !!pending || conflict,
+    blocked: !visible || busy || !!pending || conflict || saved,
     async command(value: Record<string, unknown>) {
-      if (!visible || flight.current || pending || conflict) return false;
+      if (!visible || flight.current || pending || conflict || saved)
+        return false;
       return send(
         JSON.stringify({ ...value, mutationId: crypto.randomUUID() })
       );

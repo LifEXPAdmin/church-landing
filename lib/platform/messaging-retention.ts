@@ -353,7 +353,8 @@ export async function runMessagingRetention(
     { maxWait: 5000, timeout: 25000 }
   );
   let messages = 0,
-    reports = 0;
+    reports = 0,
+    inquiries = 0;
   for (const seal of sealed) {
     if (seal.target !== "REPORT" && seal.target !== "MESSAGE" && seal.target !== "EXCHANGE_INQUIRY")
       throw Error("This retention target requires its dedicated owner");
@@ -390,6 +391,7 @@ export async function runMessagingRetention(
     if (result.deleted) {
       if (seal.target === "REPORT") reports++;
       else if (seal.target === "MESSAGE") messages++;
+      else inquiries++;
     }
     await journal.complete(record, result.completedAt.toISOString());
     await db.retentionPurge.updateMany({
@@ -397,5 +399,5 @@ export async function runMessagingRetention(
       data: { journaledAt: new Date() }
     });
   }
-  return { messages, reports };
+  return { messages, reports, inquiries };
 }

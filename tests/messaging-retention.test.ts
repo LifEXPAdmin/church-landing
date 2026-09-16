@@ -138,7 +138,7 @@ test("clear is participant-local; the second clear starts retention and exact re
   const records: PurgeRecord[] = [];
   assert.deepEqual(await purge([m.id], new Date(), records), {
     messages: 1,
-    reports: 0
+    reports: 0, inquiries: 0
   });
   assert.equal(await db.adultMessage.findUnique({ where: { id: m.id } }), null);
   assert.equal(await db.socialEvent.count({ where: { messageId: m.id } }), 0);
@@ -163,7 +163,7 @@ test("archive and temporary deactivation do not make participant-retained messag
     where: { id: other.id },
     data: { deactivatedAt: new Date() }
   });
-  assert.deepEqual(await purge([m.id]), { messages: 0, reports: 0 });
+  assert.deepEqual(await purge([m.id]), { messages: 0, reports: 0, inquiries: 0 });
   assert.equal(
     (await db.adultMessage.findUniqueOrThrow({ where: { id: m.id } }))
       .unretainedAt,
@@ -175,7 +175,7 @@ test("selected report preserves its message through both clears; only selected e
   const r = await report(m, other);
   await clear(c, m, a);
   await clear(c, m, other);
-  assert.deepEqual(await purge([m.id]), { messages: 0, reports: 0 });
+  assert.deepEqual(await purge([m.id]), { messages: 0, reports: 0, inquiries: 0 });
   const selected = await readCommunityReports(db, reviewer.token, {
     view: "review",
     id: r.id
@@ -201,7 +201,7 @@ test("selected report preserves its message through both clears; only selected e
   const future = new Date(row.closedAt!.getTime() + 178 * DAY);
   assert.deepEqual(await purge([r.id], new Date(future.getTime() - 1)), {
     messages: 0,
-    reports: 0
+    reports: 0, inquiries: 0
   });
   await communityReportCommand(
     db,
@@ -219,8 +219,8 @@ test("selected report preserves its message through both clears; only selected e
     ).closedAt!.getTime(),
     row.closedAt!.getTime()
   );
-  assert.deepEqual(await purge([r.id], future), { messages: 0, reports: 1 });
-  assert.deepEqual(await purge([m.id], future), { messages: 1, reports: 0 });
+  assert.deepEqual(await purge([r.id], future), { messages: 0, reports: 1, inquiries: 0 });
+  assert.deepEqual(await purge([m.id], future), { messages: 1, reports: 0, inquiries: 0 });
   assert.equal(
     await db.communityReportDecision.count({ where: { reportId: r.id } }),
     0
@@ -266,7 +266,7 @@ test("a reopened report invalidates the inspected plan and gets a new final-clos
       },
       future
     ),
-    { messages: 0, reports: 0 }
+    { messages: 0, reports: 0, inquiries: 0 }
   );
   assert.equal(writes, 0);
   const open = await db.communityReport.findUniqueOrThrow({
@@ -342,7 +342,7 @@ test("scoped holds survive overdue reviews, require current authority and releas
     await db.retentionHoldEvent.count({ where: { holdId: h.id } }),
     2
   );
-  assert.deepEqual(await purge([r.id], future), { messages: 0, reports: 1 });
+  assert.deepEqual(await purge([r.id], future), { messages: 0, reports: 1, inquiries: 0 });
 });
 test("journal failure aborts deletion; inspection omits bodies and an empty approved plan cannot purge unrelated records", async () => {
   const { c, m, other } = await conversation();
@@ -378,7 +378,7 @@ test("journal failure aborts deletion; inspection omits bodies and an empty appr
       },
       now
     ),
-    { messages: 0, reports: 0 }
+    { messages: 0, reports: 0, inquiries: 0 }
   );
   assert.ok(
     plan.every((x) => Object.keys(x).sort().join() === "id,target,version")
@@ -542,6 +542,6 @@ test("a sealed purge cannot acquire a late hold or reopen after external journal
   const { journal } = journalFixture();
   assert.deepEqual(await runMessagingRetention(db, plan, journal, future), {
     messages: 0,
-    reports: 1
+    reports: 1, inquiries: 0
   });
 });

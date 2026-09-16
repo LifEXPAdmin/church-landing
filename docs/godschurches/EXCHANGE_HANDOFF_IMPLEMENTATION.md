@@ -29,7 +29,7 @@ provider is introduced. Private personal defaults seed a new personal draft only
 by deliberate action; pickup text is copied separately into an unconfirmed plan.
 
 Local acceptance so far: 95 migrations, populated upgrade preservation and
-isolated dump/restore; 20 focused input, database, service, HTTP and queue consumer tests pass.
+isolated dump/restore; 21 focused input, database, service, HTTP and queue consumer tests pass.
 The related Exchange suite reports 106 passes, zero failures and zero skips. These cover concurrent selection, stale/exact retry,
 block/unblock, expiry settlement, database constraints, case evidence/purge,
 missing/older-row recovery, church receiver replacement, exports/deletion,
@@ -37,6 +37,13 @@ queue failure/duplicate reminder, independent phone consent and HTTP account/ori
 boundaries. TypeScript passes. The resource registry’s two tests pass. Website
 copy passes. Lint has zero errors and 35 existing fixture-script warnings.
 All fixtures are fictional; production application writes and recipient sends: zero.
+
+A full 20-inquiry personal incoming page initially required 285 SELECTs. Batched
+participant and pair inputs with the same canonical listing/receiver checks reduce
+that to 31; five isolated samples improve from about 104 to 109 ms to 24 to 37 ms.
+This is local service evidence, not hosted latency. A dedicated current-source
+regression compares bounded summaries with private detail after contact narrowing,
+church-connection epoch changes and blocks.
 
 The interface is implemented locally using existing private snapshot, unsaved-work
 and uncertain-save controls. Required next work: complete browser

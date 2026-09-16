@@ -20,7 +20,7 @@ export function ExchangeDefaultsForm({
   const id = useId(),
     [fields, setFields] = useState(initial.fields);
   const dirty = JSON.stringify(fields) !== JSON.stringify(initial.fields),
-    action = useExchangeAction(initial.ownerId, dirty);
+    action = useExchangeAction(initial.ownerId, dirty, undefined, true);
   return (
     <form
       className="space-y-5"

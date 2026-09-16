@@ -367,9 +367,25 @@ test("block then unblock irreversibly ends a confirmed handoff and removes opera
       planVersion: 1
     })
   );
-  const muted = await relationshipCommand(db, requester.token, input("mute", { kind: "person", targetId: owner.id, expectedVersion: 0, desired: true }));
-  assert.equal((await read(db, requester.token, { view: "detail", id: receipt.id })).inquiry?.state, "RESERVED");
-  assert.ok((await read(db, requester.token, { view: "detail", id: receipt.id })).inquiry?.pickupDetails);
+  const muted = await relationshipCommand(
+    db,
+    requester.token,
+    input("mute", {
+      kind: "person",
+      targetId: owner.id,
+      expectedVersion: 0,
+      desired: true
+    })
+  );
+  assert.equal(
+    (await read(db, requester.token, { view: "detail", id: receipt.id }))
+      .inquiry?.state,
+    "RESERVED"
+  );
+  assert.ok(
+    (await read(db, requester.token, { view: "detail", id: receipt.id }))
+      .inquiry?.pickupDetails
+  );
   const blocked = await relationshipCommand(
     db,
     requester.token,
@@ -688,7 +704,10 @@ test("only deliberately selected agreed evidence survives cancellation; cleared 
   assert.equal(candidates.length, 1);
   assert.equal(candidates[0].target, "EXCHANGE_INQUIRY");
   const journal = { async record() {}, async complete() {} };
-  await runMessagingRetention(db, candidates, journal, future);
+  assert.deepEqual(
+    await runMessagingRetention(db, candidates, journal, future),
+    { messages: 0, reports: 0, inquiries: 1 }
+  );
   const purged = await db.exchangeInquiry.findUniqueOrThrow({
     where: { id: receipt.id }
   });
@@ -1205,4 +1224,99 @@ test("handoff HTTP boundary rejects cross-site writes, switched accounts and gue
       .state,
     "INQUIRED"
   );
+});
+
+test("bounded summaries preserve current source, contact, audience epoch and participant-only projection", async () => {
+  const { owner, requester, listing } = await setup();
+  await enable(owner, listing.id);
+  const second = await createPortalActor(db, "handsummarysecond");
+  const first = (await inquire(requester, listing.id)).receipt;
+  await inquire(second, listing.id);
+  async function check(actor: PortalActor, view: "incoming" | "outgoing") {
+    const result = await read(db, actor.token, { view });
+    for (const summary of result.inquiries ?? []) {
+      const detail = (
+        await read(db, actor.token, { view: "detail", id: summary.id })
+      ).inquiry!;
+      assert.deepEqual(summary, {
+        id: detail.id,
+        version: detail.version,
+        state: detail.state,
+        side: detail.side,
+        listing: detail.listing,
+        person: detail.person,
+        createdAt: detail.createdAt
+      });
+      assert.equal("purpose" in summary, false);
+      assert.equal("pickupDetails" in summary, false);
+    }
+    return result;
+  }
+  assert.equal((await check(owner, "incoming")).inquiries?.length, 2);
+  await check(requester, "outgoing");
+  await db.socialPreferences.update({
+    where: { ownerId: owner.id },
+    data: { contactRequests: "FOLLOWED" }
+  });
+  await db.platformFollow.create({
+    data: { followerId: owner.id, followingId: requester.id }
+  });
+  const narrowed = (await check(owner, "incoming")).inquiries!;
+  assert.equal(narrowed.find((r) => r.id === first.id)?.state, "INQUIRED");
+  assert.equal(narrowed.filter((r) => r.state === "REVOKED").length, 1);
+  const church = await db.church.create({
+    data: {
+      slug: "handsummary-" + randomUUID(),
+      name: "Fictional private handoff audience",
+      summary: "Isolated fixture"
+    }
+  });
+  await db.churchConnection.createMany({
+    data: [owner, requester].map((actor) => ({
+      userId: actor.id,
+      churchId: church.id,
+      state: "APPROVED"
+    }))
+  });
+  const privateListing = await db.exchangeListing.create({
+    data: {
+      ownerId: owner.id,
+      creatorId: owner.id,
+      state: "ACTIVE",
+      title: "Fictional private audience listing",
+      description: "Isolated fixture",
+      category: "FURNITURE",
+      condition: "GOOD",
+      audience: "CHURCH",
+      audienceChurchId: church.id,
+      country: "US",
+      placeId: 4887398,
+      placeLabel: "Chicago",
+      itemPolicy: EXCHANGE_ITEM_POLICY,
+      confirmedAt: new Date(),
+      publishedAt: new Date()
+    }
+  });
+  await enable(owner, privateListing.id);
+  const privateInquiry = (await inquire(requester, privateListing.id)).receipt;
+  assert.equal(
+    (await check(requester, "outgoing")).inquiries?.find(
+      (r) => r.id === privateInquiry.id
+    )?.state,
+    "INQUIRED"
+  );
+  await db.churchConnection.update({
+    where: { userId_churchId: { userId: requester.id, churchId: church.id } },
+    data: { version: { increment: 1 } }
+  });
+  assert.equal(
+    (await check(requester, "outgoing")).inquiries?.find(
+      (r) => r.id === privateInquiry.id
+    )?.listing,
+    null
+  );
+  await db.socialRelationship.create({
+    data: { ownerId: second.id, targetUserId: owner.id, blocked: true }
+  });
+  assert.equal((await check(second, "outgoing")).inquiries?.[0].person, null);
 });

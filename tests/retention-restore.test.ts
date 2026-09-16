@@ -475,7 +475,7 @@ test("an actual isolated database snapshot replays newer deletion and hold relea
         new Date(),
         journals.controls
       ),
-      { messages: 1, reports: 0 }
+      { messages: 1, reports: 0, inquiries: 0 }
     );
     Object.assign(process.env, {
       RETENTION_RESTORE_ISOLATED: "true",
