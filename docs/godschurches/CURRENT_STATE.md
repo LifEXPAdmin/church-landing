@@ -3379,3 +3379,19 @@ lint, production compilation, fresh migrations, synthetic upgrade and synthetic
 backup/restore. Account pages received a limited desktop/mobile visual spot-check;
 complete device/accessibility testing and external email remain unverified.
 See QA_REPORT.md for exact scope and RELEASE_READINESS.md before any release.
+## Exchange integrated; release gate in progress — September 16, 2026 UTC
+
+Unpublished checkpoint **8dd0820** integrates Free, For sale, Wanted, Service
+and authorized Church need, plus existing media, report, privacy and recovery
+owners. Type navigation, literal search, category chips and owned status filters
+complete the entry brief. See [the current receipt](EXCHANGE_IMPLEMENTATION.md).
+
+Twenty-seven focused checks, 38 related input/navigation/release checks, 15 built
+feature-browser groups and 44 public/access groups pass. A fresh encrypted copy
+upgrades production's 91 migrations to 93 in isolation with all 123 original-table
+fingerprints unchanged and restrictive replay complete. The full application
+gate is running in a clean checkout after the long-lived checkout exhausted its
+Node build heap. Candidate public notes are **2026.09.16.10**; canonical production
+remains **2026.09.16.9 / 4b834fb**. No Exchange deployment or live completion is
+claimed. Continue through the full gate, exact canonical release and live checks,
+reconcile the existing tasks, then continue eligible priorities. Final review is last.

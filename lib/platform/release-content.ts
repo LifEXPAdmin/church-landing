@@ -20,7 +20,7 @@ export const features: Feature[] = [
     description:
       "Offer ordinary items, request items or describe lawful skilled help with a clear area and audience.",
     steps:
-      "Open Exchange from Menu. Create a private draft, choose Free, For sale, Wanted or Service, add an optional photo and review the details before publishing. Return to My listings to edit, close, archive or duplicate a listing privately.",
+      "Open Exchange from Menu. Browse by type, search or category. Create a private draft, choose its type, add an optional photo and review the details before publishing. Use My listings and its status filter to edit, close, archive or duplicate a listing privately.",
     href: "/platform/exchange",
     eligibility:
       "Creating and managing listings requires a verified adult account. Publication requires current report coverage. Church-owned listings and Church need require assigned Exchange duties; a church audience requires current approved access. Service qualifications are self-stated. Prices do not create payments, reservations or fulfillment agreements. Existing contact consent applies.",

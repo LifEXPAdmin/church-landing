@@ -13,7 +13,7 @@ export default function TermsPage() {
         <h1 className="mb-6 text-5xl">Terms of Service</h1>
         <p className="mb-8 text-sm">
           Original terms: February 21, 2026. Service information updated
-          September 9, 2026.
+          September 16, 2026.
         </p>
 
         <div className="space-y-8 text-base leading-relaxed">
@@ -39,6 +39,22 @@ export default function TermsPage() {
               You agree to provide accurate information and not submit unlawful,
               abusive, or misleading content. We may remove or ignore
               submissions that violate these terms.
+            </p>
+          </section>
+          <section>
+            <h2 className="mb-2 text-3xl">Community Exchange</h2>
+            <p>
+              Exchange listings describe permitted ordinary items, item requests
+              or lawful skilled help. Follow the listing guidance and describe
+              items and qualifications accurately. Service qualifications are
+              stated by the person offering help; Godschurches does not verify
+              professional licenses, training, insurance or suitability. A
+              displayed price, needed-by date or reserved status does not create
+              a payment, booking, employment or fulfillment agreement.
+              Godschurches does not take payments or deposits or provide escrow.
+              Account verification does not guarantee another person&apos;s
+              safety. Existing contact preferences, consent and reporting
+              controls apply.
             </p>
           </section>
           <section>

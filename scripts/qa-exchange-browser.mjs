@@ -675,7 +675,13 @@ try {
     exact: true
   });
   await filters.getByLabel("Search listings", { exact: true }).fill(requested);
-  await filters.getByRole("radio", { name: "Books", exact: true }).check();
+  await filters.getByText("Books", { exact: true }).click();
+  assert.equal(
+    await filters
+      .getByRole("radio", { name: "Books", exact: true })
+      .isChecked(),
+    true
+  );
   await filters
     .getByRole("button", { name: "Show listings", exact: true })
     .click();

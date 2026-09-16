@@ -102,8 +102,14 @@ also adds type navigation, literal bounded search, category chips, owned status
 filters and a persistent save action. The focused gate now passes **27 checks**
 (seven input and 20 service groups), including filter privacy and literal SQL
 wildcard characters. The needed-by date uses the existing viewer date-format
-presentation without timezone conversion. These latest interface additions await
-the next built browser run.
+presentation without timezone conversion. The rebuilt filter/date interface
+passes all **15 browser groups**, including actual category-chip activation,
+literal search, empty owned-status results and the reader's saved date format.
+The expanded public candidate check passes **44 groups** with zero page errors
+or writes, across 320/390/1280-pixel public, entry, release and access screens.
+Thirty-eight input/navigation/registry/release/regional checks also pass.
+The feature guide and factual Exchange privacy/service information are updated
+in the same cycle. The latest authored-copy changes await built rendering.
 
 Read-cost review reduces a 20-card synthetic long-field response from 184,173 to
 13,813 bytes for guests and 184,196 to 13,836 bytes for owners. Both retain one

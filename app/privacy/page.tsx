@@ -49,8 +49,8 @@ export default function PrivacyPage() {
               suggest towns in their selected country. The position is rounded
               on your device before an approximate area is sent to this website
               for that lookup. We do not save device coordinates. Your browser
-              or operating system may use its own location service under its
-              own permission controls.
+              or operating system may use its own location service under its own
+              permission controls.
             </p>
             <p className="mt-3">
               Choose a named area and save separately; requesting suggestions
@@ -65,9 +65,41 @@ export default function PrivacyPage() {
           </section>
           <section>
             <h2 className="mb-2 text-3xl">Optional Platform Measurement</h2>
-            <p>Settings → Privacy and interactions → Optional platform measurement lets you choose limited first-party measurement. It is off by default. When enabled, trusted foreground navigation on Home, Menu and discovery pages records your account and reporting day, and the service measures getting-started choices and successful ordinary follows, posts, replies, event responses and volunteering from current records. This is limited measured use, not reading time or proof of attention. It excludes private messages, prayer content and prayer acknowledgments, page addresses, advertising identifiers and faith scores.</p>
-            <p className="mt-3">You can separately choose a declared referral category and coarse device/browser family. Full user-agent strings, arbitrary referrer addresses and precise locations are not stored for this measurement. Optional raw use and session facts are retained for up to 90 days. Turning measurement off removes them and optional dimensions; re-enabling starts new coverage. Your account export includes your current choice and retained facts. Deactivation, suspension and deletion remove optional use records. Restoring a backup disables restored choices before traffic can resume.</p>
-            <p className="mt-3">Restricted administrators receive aggregate reports and need a separate permission for aggregate exports. Small complementary breakdowns are suppressed. Operational account creation method, current account states, church sources and unique support cases remain available from service records independently of optional use measurement. Anonymous daily lifecycle totals contain no account or content identifiers and remain as historical counts; personal-source reports can change after withdrawal or deletion. Metrics never grant access to an individual’s private case or content.</p>
+            <p>
+              Settings → Privacy and interactions → Optional platform
+              measurement lets you choose limited first-party measurement. It is
+              off by default. When enabled, trusted foreground navigation on
+              Home, Menu and discovery pages records your account and reporting
+              day, and the service measures getting-started choices and
+              successful ordinary follows, posts, replies, event responses and
+              volunteering from current records. This is limited measured use,
+              not reading time or proof of attention. It excludes private
+              messages, prayer content and prayer acknowledgments, page
+              addresses, advertising identifiers and faith scores.
+            </p>
+            <p className="mt-3">
+              You can separately choose a declared referral category and coarse
+              device/browser family. Full user-agent strings, arbitrary referrer
+              addresses and precise locations are not stored for this
+              measurement. Optional raw use and session facts are retained for
+              up to 90 days. Turning measurement off removes them and optional
+              dimensions; re-enabling starts new coverage. Your account export
+              includes your current choice and retained facts. Deactivation,
+              suspension and deletion remove optional use records. Restoring a
+              backup disables restored choices before traffic can resume.
+            </p>
+            <p className="mt-3">
+              Restricted administrators receive aggregate reports and need a
+              separate permission for aggregate exports. Small complementary
+              breakdowns are suppressed. Operational account creation method,
+              current account states, church sources and unique support cases
+              remain available from service records independently of optional
+              use measurement. Anonymous daily lifecycle totals contain no
+              account or content identifiers and remain as historical counts;
+              personal-source reports can change after withdrawal or deletion.
+              Metrics never grant access to an individual’s private case or
+              content.
+            </p>
           </section>
           <section>
             <h2 className="mb-2 text-3xl">Calendars, Events and Responses</h2>
@@ -166,6 +198,29 @@ export default function PrivacyPage() {
             </p>
           </section>
           <section>
+            <h2 className="mb-2 text-3xl">Community Exchange</h2>
+            <p>
+              Exchange stores the listing details you enter, its owner,
+              audience, status and optional photos. Drafts stay private to the
+              personal owner or currently authorized church delegates.
+              Publishing shares the listing with the chosen public or approved
+              church audience. Public listings can be read without signing in.
+              Your private profile location and account email are not copied
+              into a listing. Keep exact addresses, private contact details and
+              identity documents out of descriptions and photos.
+            </p>
+            <p className="mt-3">
+              Opening a listing does not contact its owner or change your
+              contact consent. Account export includes your personal listings.
+              Permanent deletion removes unreported personal listing text and
+              retires its photos through the existing cleanup process. Necessary
+              text selected for a report follows restricted review and report
+              retention. Church-owned listings remain owned by the church when a
+              delegate leaves. Archive removes public discovery and access while
+              retaining authorized management and necessary review records.
+            </p>
+          </section>
+          <section>
             <h2 className="mb-2 text-3xl">Private Messages and Reports</h2>
             <p>
               Adult private messaging uses current account eligibility, contact
@@ -185,12 +240,12 @@ export default function PrivacyPage() {
             </p>
             <p className="mt-3">
               Authors can receive a private explanation of a decision about
-              their post or comment without the reporter&apos;s identity or
-              private review notes. If you request reconsideration, your
-              explanation and later replies are shared with the named assigned
-              reviewer through a linked help case. The reviewer may be the
-              original decision maker. This does not provide independent review
-              or automatically restore restricted content.
+              their post, comment or listing without the reporter&apos;s
+              identity or private review notes. If you request reconsideration,
+              your explanation and later replies are shared with the named
+              assigned reviewer through a linked help case. The reviewer may be
+              the original decision maker. This does not provide independent
+              review or automatically restore restricted content.
             </p>
           </section>
           <section>
