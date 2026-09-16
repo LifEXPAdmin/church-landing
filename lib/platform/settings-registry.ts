@@ -329,7 +329,7 @@ export const settingsRegistry: readonly SettingRegistration[] = Object.freeze([
     }
   ),
   entry(
-    "privacy.photo-tags",
+    "privacy.photos",
     "privacy",
     "Photo tags and approvals",
     "Choose who may ask to tag you, review requests and remove approved tags without deleting a photo.",
