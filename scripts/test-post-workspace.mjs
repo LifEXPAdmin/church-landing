@@ -145,7 +145,9 @@ try {
   console.log(
     `PASS: ${migrations.length} migrations and populated upgrade preservation`
   );
-  const files = process.argv.includes("--exchange-handoffs")
+  const files = process.argv.includes("--following-lists")
+    ? ["tests/following-lists.test.ts", "tests/discovery-feeds.test.ts", "tests/four-feeds.test.ts"]
+    : process.argv.includes("--exchange-handoffs")
     ? ["tests/exchange-handoff-input.test.ts", "tests/exchange-handoffs.test.ts", "tests/notification-consumer.test.ts"]
     : process.argv.includes("--exchange")
     ? [

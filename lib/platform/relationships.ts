@@ -1,5 +1,6 @@
 import { recordDiscoveryControl } from "./retention-controls";
 import { protectDiscoveryRecovery } from "./discovery-recovery";
+import { pruneFollowingLists } from "./following-list-revocation";
 import {
   removeFriendConnection,
   hasFriendConnection
@@ -176,6 +177,13 @@ export async function relationshipCommand(
             });
         } else data.followingChurch = on;
         if (!on) {
+          await pruneFollowingLists(tx, [
+            {
+              ownerId,
+              kind: keys.targetUserId ? "person" : "church",
+              targetId: keys.targetUserId ?? keys.churchId!
+            }
+          ]);
           data.favorite = false;
           if (keys.targetUserId) {
             await removeFriendConnection(tx, ownerId, keys.targetUserId);
@@ -212,6 +220,10 @@ export async function relationshipCommand(
           throw new PortalError(400, "Use church mute for church content.");
         data.blocked = desired(input.desired);
         if (data.blocked) {
+          await pruneFollowingLists(tx, [
+            { ownerId, kind: "person", targetId: keys.targetUserId },
+            { ownerId: keys.targetUserId, kind: "person", targetId: ownerId }
+          ]);
           await revokeBlockedContact(tx, ownerId, keys.targetUserId);
           await removeFriendConnection(tx, ownerId, keys.targetUserId);
           await tx.platformFollow.deleteMany({
@@ -296,13 +308,25 @@ export async function relationshipCommand(
     }
   );
   if (
-    ["author-bell", "block"].includes(String(input.operation)) &&
+    (["author-bell", "block"].includes(String(input.operation)) ||
+      (input.operation === "follow" && input.desired === false)) &&
     actingOwner &&
     !(await protectDiscoveryRecovery(db, actingOwner))
   )
     throw new PortalError(
       503,
       "Your relationship choice is saved; its protected recovery receipt needs confirmation. Retry the same change."
+    );
+  if (
+    input.kind === "person" &&
+    typeof input.targetId === "string" &&
+    ((input.operation === "block" && input.desired === true) ||
+      (input.operation === "follow" && input.desired === false)) &&
+    !(await protectDiscoveryRecovery(db, input.targetId))
+  )
+    throw new PortalError(
+      503,
+      "Your relationship change is saved; protected list recovery needs confirmation. Retry the same change."
     );
   return result;
 }

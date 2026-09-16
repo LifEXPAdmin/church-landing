@@ -20,6 +20,8 @@ export function safeAccountReturn(value: unknown): string {
   // action, draft payload, cursor or an automatic publication request.
   if (url.origin === "https://return.invalid" && /^\/platform\/exchange(?:\/(?:new|mine|handoffs\/[a-zA-Z0-9_-]{1,100}|[a-zA-Z0-9_-]{1,100}(?:\/edit)?))?\/?$/.test(url.pathname))
     return url.pathname.replace(/\/$/, "");
+  if (url.origin === "https://return.invalid" && url.pathname.replace(/\/$/, "") === "/platform/relationships/lists")
+    return "/platform/relationships/lists";
   if (url.origin === "https://return.invalid" && url.pathname === "/platform/account/authenticator")
     return "/platform/account/authenticator";
   if (

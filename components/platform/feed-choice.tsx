@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
+import Link from "next/link";
+import { useFeedbackSnapshot } from "./use-feedback-snapshot";
 import { FeedBreakReminder } from "./feed-break-reminder";
 const DiscoverySettings = dynamic(
   () => import("./discovery-settings").then((m) => m.DiscoverySettings),
@@ -25,6 +27,11 @@ export type FeedChoiceState = {
   preferenceVersion: number;
   pageCursor: string;
   requestedCursor?: string;
+  followingLists?: {
+    selectedId: string | null;
+    lists: Array<{ id: string; name: string }>;
+    version: number;
+  } | null;
 };
 export function FeedChoice({
   value,
@@ -65,7 +72,11 @@ export function FeedChoice({
     url.searchParams.set("feedScope", value.scope);
     return url.pathname + url.search;
   }
-  async function choose(mode: FeedMode, retry = false) {
+  async function choose(
+    mode: FeedMode,
+    retry = false,
+    followingListId?: string | null
+  ) {
     if (busy || (!retry && !canChange())) return;
     setBusy(true);
     setMessage("");
@@ -76,6 +87,12 @@ export function FeedChoice({
           mode,
           body: JSON.stringify({
             mode,
+            ...(followingListId !== undefined
+              ? {
+                  followingListId,
+                  expectedListsVersion: value.followingLists?.version ?? 0
+                }
+              : {}),
             expectedVersion: value.preferenceVersion,
             mutationId: crypto.randomUUID()
           })
@@ -137,6 +154,14 @@ export function FeedChoice({
       <p className="text-sm text-gc-muted">
         {feedChoices[value.mode].description}
       </p>
+      {value.ownerId && value.mode === "following" && value.followingLists && (
+        <PrivateFollowingChoice
+          owner={value.ownerId}
+          value={value.followingLists}
+          disabled={!ready || busy || !!pending.current}
+          onChoose={(id) => void choose("following", false, id)}
+        />
+      )}
       <div className="flex flex-wrap gap-2">
         <button
           type="button"
@@ -212,6 +237,71 @@ export function FeedChoice({
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+function PrivateFollowingChoice({
+  owner,
+  value,
+  disabled,
+  onChoose
+}: {
+  owner: string;
+  value: NonNullable<FeedChoiceState["followingLists"]>;
+  disabled: boolean;
+  onChoose: (id: string | null) => void;
+}) {
+  const snapshot = useFeedbackSnapshot<typeof value & { ownerId: string }>(
+    owner,
+    "/api/platform/following-lists?view=feed",
+    (next) => {
+      if (next.ownerId !== owner) return false;
+      if (
+        next.version !== value.version ||
+        next.selectedId !== value.selectedId ||
+        JSON.stringify(next.lists) !== JSON.stringify(value.lists)
+      )
+        throw Error(
+          "Your private lists changed. Reload current feed settings before choosing a list."
+        );
+      return true;
+    },
+    "private feed choices"
+  );
+  return (
+    <div className="space-y-2">
+      <div hidden={!snapshot.visible}>
+        <label className="flex flex-wrap items-center gap-3 font-semibold">
+          Private list
+          <select
+            aria-label="Choose private following list"
+            className="min-h-11 max-w-full rounded-lg border border-gc-border bg-gc-surface px-3 py-2"
+            value={value.selectedId ?? ""}
+            disabled={disabled || !snapshot.visible}
+            onChange={(event) => onChoose(event.target.value || null)}
+          >
+            <option value="">All following</option>
+            {value.lists.map((list) => (
+              <option key={list.id} value={list.id}>
+                {list.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      {!snapshot.visible && (
+        <p role="status">
+          {snapshot.notice || "Checking your private list choices…"}
+        </p>
+      )}
+      <Link
+        prefetch={false}
+        className="inline-flex min-h-11 items-center underline"
+        href="/platform/relationships/lists"
+      >
+        Manage private following lists
+      </Link>
     </div>
   );
 }

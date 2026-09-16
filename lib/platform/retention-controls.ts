@@ -42,6 +42,7 @@ export type RetentionControlEntry = {
     | "EXCHANGE_CONTACT"
     | "EXCHANGE_DEFAULTS"
     | "DISCOVERY_PREFERENCES"
+    | "FOLLOWING_LISTS"
     | "PROFILE_LOCATION"
     | "NOTIFICATION_PREFERENCES"
     | "AUTHOR_BELL"
@@ -95,7 +96,7 @@ function validate(value: unknown): RetentionControlEntry {
     !Number.isSafeInteger(r.version) ||
     r.version < 1 ||
     r.policy !== policy ||
-    (r.kind === "PROFILE_LOCATION" &&
+    (["PROFILE_LOCATION", "FOLLOWING_LISTS"].includes(r.kind) &&
       (r.sourceId !== r.targetId || r.operatorId !== r.targetId)) ||
     ![r.recordedAt, r.startedAt, r.reviewDueAt].every(date) ||
     (r.endedAt !== null && !date(r.endedAt)) ||
@@ -109,6 +110,7 @@ function validate(value: unknown): RetentionControlEntry {
       "EXCHANGE_CONTACT",
       "EXCHANGE_DEFAULTS",
       "DISCOVERY_PREFERENCES",
+      "FOLLOWING_LISTS",
       "PROFILE_LOCATION",
       "NOTIFICATION_PREFERENCES",
       "AUTHOR_BELL",
@@ -419,6 +421,7 @@ export async function recordDiscoveryControl(
     | "EXCHANGE_CONTACT"
     | "EXCHANGE_DEFAULTS"
     | "DISCOVERY_PREFERENCES"
+    | "FOLLOWING_LISTS"
     | "PROFILE_LOCATION"
     | "NOTIFICATION_PREFERENCES"
     | "AUTHOR_BELL"
@@ -1042,6 +1045,40 @@ export async function replayRetentionControls(
                 }
               });
             }
+          }
+          await record(tx, entry);
+          await tx.retentionControl.updateMany({
+            where: { id: entry.id, journaledAt: null },
+            data: { journaledAt: new Date() }
+          });
+          continue;
+        }
+        if (entry.kind === "FOLLOWING_LISTS") {
+          const owner = await tx.platformUser.findUnique({
+            where: { id: entry.sourceId },
+            select: { id: true, erasedAt: true }
+          });
+          if (owner && !owner.erasedAt) {
+            await tx.socialPreferences.upsert({
+              where: { ownerId: owner.id },
+              create: {
+                ownerId: owner.id,
+                followingListsVersion: entry.version,
+                followingListsRecoveryRequired: true
+              },
+              update: {}
+            });
+            await tx.socialPreferences.updateMany({
+              where: {
+                ownerId: owner.id,
+                followingListsVersion: { lt: entry.version }
+              },
+              data: {
+                followingLists: Prisma.DbNull,
+                followingListsVersion: entry.version,
+                followingListsRecoveryRequired: true
+              }
+            });
           }
           await record(tx, entry);
           await tx.retentionControl.updateMany({

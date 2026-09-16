@@ -434,6 +434,18 @@ export const settingsRegistry: readonly SettingRegistration[] = Object.freeze([
     linked("friend-invitations.ts", "friend-invitations.ts")
   ),
   entry(
+    "feed.following-lists",
+    "feed",
+    "Private following lists",
+    "Organize current follows into private lists and use them in Following.",
+    ["people", "churches", "private lists", "following", "named lists"],
+    { href: "/platform/relationships/lists" },
+    linked(
+      "following-lists.ts readFollowingLists",
+      "following-lists.ts followingListCommand"
+    )
+  ),
+  entry(
     "feed.default",
     "feed",
     "Default feed",

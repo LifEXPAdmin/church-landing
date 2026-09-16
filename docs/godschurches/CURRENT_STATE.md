@@ -1,3 +1,14 @@
+## Private following lists in isolated acceptance, September 16, 2026 UTC
+
+Candidate **2026.09.16.13** adds owner-only named following lists, current-follow
+membership, explicit Following selection, safe deletion, private editing and
+restrictive recovery. Existing follows, discovery presets and audience controls
+remain authoritative. See [the implementation checkpoint](FOLLOWING_LISTS_IMPLEMENTATION.md)
+and [contract](FOLLOWING_LISTS_CONTRACT.md). Production remains the verified
+Exchange release below. Finish built-browser checks, measured costs, the complete
+gate, protected upgrade, exact canonical release/live acceptance and private task
+reconciliation before continuing eligible church Needs. Final review stays last.
+
 ## Private Exchange handoffs verified live, September 16, 2026 UTC
 
 **2026.09.16.12 / eebbe643b6f526bcbb5ca5fbaa7bc203e0d11d3e** is READY in

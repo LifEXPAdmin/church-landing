@@ -124,6 +124,13 @@ export function RelationshipLibrary({
         membership and church access.
       </p>
       <nav aria-label="Relationship views" className="flex flex-wrap gap-2">
+        <Link
+          prefetch={false}
+          className="gc-button gc-button-quiet"
+          href="/platform/relationships/lists"
+        >
+          Private lists
+        </Link>
         {relationshipViews.map((tab) => (
           <Link
             key={tab}

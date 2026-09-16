@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { recordDomainActivity } from "./domain-activity";
+import { pruneFollowingLists } from "./following-list-revocation";
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { accountConfig } from "./account-config";
 import { withOwnedSession } from "./account-sessions";
@@ -94,6 +95,10 @@ export async function removeFriendConnection(tx: Tx, a: string, b: string) {
     data: { state: "REMOVED" }
   });
   if (!records.count) return;
+  await pruneFollowingLists(tx, [
+    { ownerId: a, kind: "person", targetId: b },
+    { ownerId: b, kind: "person", targetId: a }
+  ]);
   await tx.platformFollow.deleteMany({ where: edges(a, b) });
   await tx.socialRelationship.updateMany({
     where: {
@@ -126,6 +131,13 @@ export async function revokeAccountFriendInvitations(tx: Tx, userId: string) {
     data: { state: "REMOVED" }
   });
   if (others.length) {
+    await pruneFollowingLists(
+      tx,
+      others.flatMap((other) => [
+        { ownerId: userId, kind: "person" as const, targetId: other },
+        { ownerId: other, kind: "person" as const, targetId: userId }
+      ])
+    );
     await tx.platformFollow.deleteMany({
       where: {
         OR: [

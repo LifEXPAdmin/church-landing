@@ -74,6 +74,14 @@ export default async function HomeFeedPage({
           {!currentUser && (
             <DiscoverySettings owner={null} initialMode={mode} />
           )}
+          {currentUser && (
+            <Link
+              className="gc-button gc-button-quiet"
+              href="/platform/relationships/lists"
+            >
+              Private following lists
+            </Link>
+          )}
         </section>
       </PlatformShell>
     );
@@ -190,7 +198,8 @@ export default async function HomeFeedPage({
                 ownerId: result.ownerId,
                 preferenceVersion: result.preferenceVersion,
                 pageCursor: result.pageCursor,
-                requestedCursor: params.feedCursor
+                requestedCursor: params.feedCursor,
+                followingLists: result.followingLists
               }}
               items={posts.map((post) => ({
                 id: post.id,

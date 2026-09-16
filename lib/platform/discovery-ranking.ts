@@ -190,12 +190,14 @@ export async function readDiscoveryCandidates(
   prefs: DiscoveryPreferences,
   place: DiscoveryPlace | null,
   at: Date,
-  ids?: string[]
+  ids?: string[],
+  followingWhere: Prisma.PlatformPostWhereInput = {}
 ) {
   const rows = await tx.platformPost.findMany({
     where: {
       AND: [
         discoveryReadableWhere(context, mode, prefs, at, place),
+        followingWhere,
         ...(ids ? [{ id: { in: ids } }] : [])
       ]
     },
@@ -232,7 +234,8 @@ export async function rankDiscoveryIds(
   prefs: DiscoveryPreferences,
   place: DiscoveryPlace | null,
   at: Date,
-  providedSignals?: DiscoverySignals
+  providedSignals?: DiscoverySignals,
+  followingWhere: Prisma.PlatformPostWhereInput = {}
 ) {
   const rows = await readDiscoveryCandidates(
       tx,
@@ -240,7 +243,9 @@ export async function rankDiscoveryIds(
       mode,
       prefs,
       place,
-      at
+      at,
+      undefined,
+      followingWhere
     ),
     sort = effectiveDiscoverySort(mode, prefs.filters);
   const signals =

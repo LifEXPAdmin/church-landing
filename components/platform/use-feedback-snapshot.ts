@@ -5,13 +5,14 @@ import { socialRequest } from "@/lib/platform/social-client";
 export function useFeedbackSnapshot<T>(
   owner: string | null,
   url: string,
-  verify: (value: T) => boolean
+  verify: (value: T) => boolean,
+  label = "feedback"
 ) {
   const verifyCurrent = useRef(verify);
   verifyCurrent.current = verify;
   const [data, setData] = useState<T | null>(null),
     [visible, setVisible] = useState(false),
-    [notice, setNotice] = useState("Checking your current feedback access…"),
+    [notice, setNotice] = useState(`Checking your current ${label} access…`),
     [busy, setBusy] = useState(false);
   const generation = useRef(0),
     active = useRef(true),
@@ -41,7 +42,7 @@ export function useFeedbackSnapshot<T>(
         setNotice(
           error instanceof Error
             ? error.message
-            : "Feedback could not be loaded. Your retained entries are concealed."
+            : `Your ${label} could not be loaded. Your retained entries are concealed.`
         );
     } finally {
       reading.current = false;
@@ -51,7 +52,7 @@ export function useFeedbackSnapshot<T>(
         void latest.current();
       }
     }
-  }, [owner, url]);
+  }, [owner, url, label]);
   latest.current = load;
   useEffect(() => {
     const hide = () => {

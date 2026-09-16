@@ -19,6 +19,7 @@ import { hydratePostPage } from "./post-reads";
 import { feedMode, type FeedMode } from "./feed-options";
 import { feedReadableWhere } from "./feed-policy";
 import { PortalError } from "./portal-policy";
+import { followingListsSelect } from "./following-list-policy";
 
 const PAGE = 30,
   HOUR = 3600000;
@@ -251,7 +252,8 @@ export function readFeed(
               feedVersion: true,
               discovery: true,
               discoveryVersion: true,
-              discoveryRecoveryRequired: true
+              discoveryRecoveryRequired: true,
+              followingListsVersion: true
             }
           })
         : null;
@@ -265,7 +267,18 @@ export function readFeed(
         feedMode(context.actorId ? preference?.feedMode : input.guestMode) ??
         "latest";
       const advanced = discoveryMode(mode);
-      if (advanced)
+      if (advanced) {
+        // Large private list documents belong only to Following. Existing
+        // accounts with no lists retain the original feed query count.
+        const followingPreference =
+          advanced === "following" &&
+          context.actorId &&
+          preference?.followingListsVersion
+            ? await tx.socialPreferences.findUnique({
+                where: { ownerId: context.actorId },
+                select: followingListsSelect
+              })
+            : null;
         return {
           mode,
           scope,
@@ -275,11 +288,12 @@ export function readFeed(
             tx,
             context,
             advanced,
-            preference,
+            preference ? { ...preference, ...followingPreference } : null,
             { ...input, cursor: sameOwner ? input.cursor : undefined },
             now
           ))
         };
+      }
       if (preference?.discoveryRecoveryRequired)
         throw new PortalError(
           409,
@@ -534,6 +548,7 @@ export function readFeed(
       }
       return {
         discovery: null,
+        followingLists: null,
         feedKey,
         mode,
         scope,

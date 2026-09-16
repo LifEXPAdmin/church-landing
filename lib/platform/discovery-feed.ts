@@ -6,6 +6,11 @@ import { expireFeedSnapshots } from "./feed-snapshot-retention";
 import { hydratePostPage } from "./post-reads";
 import { PortalError } from "./portal-policy";
 import {
+  followingFeedSelection,
+  followingListsSelect,
+  type FollowingListsPreference
+} from "./following-list-policy";
+import {
   guestDiscoveryPreferences,
   effectiveDiscoverySort,
   type DiscoveryMode,
@@ -35,16 +40,19 @@ type Cursor = {
   filterKey: string;
   page?: string[];
 };
-export type DiscoveryFeedPreference = {
-  discovery: unknown;
-  discoveryVersion: number;
-  discoveryRecoveryRequired: boolean;
-} | null;
+export type DiscoveryFeedPreference =
+  | ({
+      discovery: unknown;
+      discoveryVersion: number;
+      discoveryRecoveryRequired: boolean;
+    } & Partial<NonNullable<FollowingListsPreference>>)
+  | null;
 export function discoverySelectionKeys(
   ownerId: string | null,
   mode: DiscoveryMode,
   prefs: DiscoveryPreferences,
-  signals?: DiscoverySignals
+  signals?: DiscoverySignals,
+  followingKey?: unknown
 ) {
   const hash = (value: unknown) =>
     createHmac("sha256", accountConfig().rateSecret)
@@ -61,7 +69,8 @@ export function discoverySelectionKeys(
   const filterKey = hash({
     filters: prefs.filters,
     hiddenWords: prefs.hiddenWords,
-    hiddenTopics: prefs.hiddenTopics
+    hiddenTopics: prefs.hiddenTopics,
+    ...(followingKey ? { followingKey } : {})
   });
   return {
     filterKey,
@@ -167,6 +176,13 @@ export async function readDiscoveryFeedIn(
   const prefs = context.actorId
     ? storedDiscoveryPreferences(preference?.discovery)
     : guestDiscoveryPreferences(input.guestDiscovery);
+  const following =
+    mode === "following"
+      ? followingFeedSelection(
+          context.actorId,
+          preference as FollowingListsPreference
+        )
+      : null;
   const place = await getDiscoveryPlace(
     prefs.filters.country,
     prefs.filters.placeId
@@ -175,7 +191,13 @@ export async function readDiscoveryFeedIn(
     effectiveDiscoverySort(mode, prefs.filters) === "relevant"
       ? await discoverySignals(tx, context, prefs)
       : undefined;
-  const keys = discoverySelectionKeys(context.actorId, mode, prefs, signals),
+  const keys = discoverySelectionKeys(
+      context.actorId,
+      mode,
+      prefs,
+      signals,
+      following?.key
+    ),
     cursors = codec(context.actorId, mode);
   let cursor = cursors.decode(input.cursor, now, keys.filterKey),
     at = cursor ? new Date(cursor.at) : now;
@@ -234,7 +256,8 @@ export async function readDiscoveryFeedIn(
         prefs,
         place,
         at,
-        signals
+        signals,
+        following?.where
       );
       await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(730221, 31)`;
       await expireFeedSnapshots(tx, now);
@@ -293,7 +316,8 @@ export async function readDiscoveryFeedIn(
     prefs,
     place,
     at,
-    references
+    references,
+    following?.where
   );
   const available = new Map(rows.map((row) => [row.post.id, row]));
   const remaining = references.filter((id) => available.has(id)),
@@ -378,6 +402,13 @@ export async function readDiscoveryFeedIn(
       })
     : [];
   return {
+    followingLists: following
+      ? {
+          selectedId: following.selectedId,
+          lists: following.lists,
+          version: following.version
+        }
+      : null,
     feedKey: keys.filterKey,
     posts: await hydratePostPage(tx, context, ids, now, {
       commentPreviews: false
@@ -414,17 +445,37 @@ export async function currentDiscoveryIds(
   const row = context.actorId
     ? await tx.socialPreferences.findUnique({
         where: { ownerId: context.actorId },
-        select: { discovery: true, discoveryRecoveryRequired: true }
+        select: {
+          discovery: true,
+          discoveryRecoveryRequired: true,
+          ...(mode === "following" ? followingListsSelect : {})
+        }
       })
     : null;
   if (row?.discoveryRecoveryRequired) return [];
+  let following;
+  try {
+    following =
+      mode === "following"
+        ? followingFeedSelection(context.actorId, row)
+        : null;
+  } catch (error) {
+    if (error instanceof PortalError) return [];
+    throw error;
+  }
   const prefs = context.actorId
     ? storedDiscoveryPreferences(row?.discovery)
     : guestDiscoveryPreferences(input.guestDiscovery);
   if (
     input.filterKey &&
     input.filterKey !==
-      discoverySelectionKeys(context.actorId, mode, prefs).filterKey
+      discoverySelectionKeys(
+        context.actorId,
+        mode,
+        prefs,
+        undefined,
+        following?.key
+      ).filterKey
   )
     return [];
   const place = await getDiscoveryPlace(
@@ -432,6 +483,15 @@ export async function currentDiscoveryIds(
     prefs.filters.placeId
   );
   return (
-    await readDiscoveryCandidates(tx, context, mode, prefs, place, now, ids)
+    await readDiscoveryCandidates(
+      tx,
+      context,
+      mode,
+      prefs,
+      place,
+      now,
+      ids,
+      following?.where
+    )
   ).map((row) => row.post.id);
 }

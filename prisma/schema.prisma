@@ -2607,6 +2607,9 @@ model SocialPreferences {
   discovery Json?
   discoveryVersion Int @default(0)
   discoveryRecoveryRequired Boolean @default(false)
+  followingLists Json?
+  followingListsVersion Int @default(0)
+  followingListsRecoveryRequired Boolean @default(false)
   feedMode String?
   feedVersion Int @default(0)
   profilePinPostId String?

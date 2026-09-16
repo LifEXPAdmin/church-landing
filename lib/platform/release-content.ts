@@ -14,6 +14,19 @@ export type Feature = {
 };
 export const features: Feature[] = [
   {
+    id: "private-following-lists",
+    category: "Privacy and account",
+    name: "Private following lists",
+    description:
+      "Organize people and churches you follow into named private lists, then choose a list for Following.",
+    steps:
+      "Open Connections, Private lists, or find Private following lists in Feed Settings. Create a list, add from your current follows and save. Choose Use this list in Following, or use the private list selector in the Following feed.",
+    href: "/platform/relationships/lists",
+    eligibility:
+      "Available to signed-in accounts. Only you can read the names and membership. Lists grant no church access or public endorsement. Deleting a list leaves follows intact. Existing post permissions, muted accounts and discovery filters still apply.",
+    availability: "available"
+  },
+  {
     id: "exchange-private-handoffs", category: "Churches and community", name: "Private Exchange inquiries and handoffs",
     description: "Send a private inquiry, agree to one pickup plan and keep personal listing defaults without publishing precise instructions.",
     steps: "On a published listing, its owner or current church Exchange manager can volunteer to receive inquiries. The receiving adult selects an inquirer and proposes a window. The inquirer confirms the exact plan before seeing private instructions. Open My inquiries and handoffs to complete, cancel, clear or report your own record. Settings, Exchange links to personal defaults that you can apply deliberately to a new personal draft.",
@@ -840,6 +853,24 @@ export const features: Feature[] = [
   }
 ];
 export const releases: ReleaseEntry[] = [
+  {
+    id: "private-following-lists",
+    version: "2026.09.16.13",
+    date: "2026-09-16",
+    summary: "Organize your follows into private reading lists.",
+    added: [
+      "Create, rename and delete up to 20 private lists with up to 100 followed people or churches each.",
+      "Choose a saved list in Following and search your current follows while editing its membership."
+    ],
+    improved: [
+      "List names and membership stay private to your account, including export and recovery. Deleting a list keeps every follow intact.",
+      "Unfollowing or blocking removes a list entry. Refollowing does not add it back, and current audience, mute and source checks still control every post."
+    ],
+    fixed: [
+      "A deleted selected list or missing newer recovery choices require deliberate review before Following reopens. Uncertain saves confirm the same request."
+    ],
+    featureIds: ["private-following-lists"]
+  },
   {
     id: "exchange-private-handoffs", version: "2026.09.16.12", date: "2026-09-16",
     summary: "Agree to private Exchange handoffs with clear consent, pickup windows and personal defaults.",
