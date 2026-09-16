@@ -14,58 +14,108 @@ export type Feature = {
 };
 export const features: Feature[] = [
   {
-    id: "account-authenticator", category: "Privacy and account", name: "Authenticator for assigned duties",
-    description: "Set up a private authenticator and recovery codes for church, topic, Support and platform duties.",
-    steps: "Open Settings → Security → Your authenticator. Confirm your current sign-in, add the private key to your authenticator, confirm a code and save your recovery codes separately.",
-    href: "/platform/account/authenticator",
-    eligibility: "Available to eligible verified adults when enrollment is enabled. Setup gives no permissions. Broader enforcement is activated separately after operator enrollment. Protected actions then require a current code; personal account access remains available. Email recovery alone cannot replace a lost factor.",
+    id: "exchange-listings",
+    category: "Churches and community",
+    name: "Exchange listings",
+    description:
+      "Offer ordinary items, request items or describe lawful skilled help with a clear area and audience.",
+    steps:
+      "Open Exchange from Menu. Create a private draft, choose Free, For sale, Wanted or Service, add an optional photo and review the details before publishing. Return to My listings to edit, close, archive or duplicate a listing privately.",
+    href: "/platform/exchange",
+    eligibility:
+      "Creating and managing listings requires a verified adult account. Publication requires current report coverage. Church-owned listings and Church need require assigned Exchange duties; a church audience requires current approved access. Service qualifications are self-stated. Prices do not create payments, reservations or fulfillment agreements. Existing contact consent applies.",
     availability: "conditional"
   },
   {
-    id: "language-location-preferences", category: "Privacy and account", name: "Date formats and location choices",
-    description: "Save your preferred date and time formats, choose a private discovery area, and decide who can see your optional profile location.",
-    steps: "Open Settings → Language and location. Preview date and time formats, choose a discovery town and radius manually or from optional device suggestions, or edit your profile location and its audience. Save each choice separately.",
+    id: "account-authenticator",
+    category: "Privacy and account",
+    name: "Authenticator for assigned duties",
+    description:
+      "Set up a private authenticator and recovery codes for church, topic, Support and platform duties.",
+    steps:
+      "Open Settings → Security → Your authenticator. Confirm your current sign-in, add the private key to your authenticator, confirm a code and save your recovery codes separately.",
+    href: "/platform/account/authenticator",
+    eligibility:
+      "Available to eligible verified adults when enrollment is enabled. Setup gives no permissions. Broader enforcement is activated separately after operator enrollment. Protected actions then require a current code; personal account access remains available. Email recovery alone cannot replace a lost factor.",
+    availability: "conditional"
+  },
+  {
+    id: "language-location-preferences",
+    category: "Privacy and account",
+    name: "Date formats and location choices",
+    description:
+      "Save your preferred date and time formats, choose a private discovery area, and decide who can see your optional profile location.",
+    steps:
+      "Open Settings → Language and location. Preview date and time formats, choose a discovery town and radius manually or from optional device suggestions, or edit your profile location and its audience. Save each choice separately.",
     href: "/platform/settings/language/interface",
-    eligibility: "Formats are saved to your signed-in account. The interface is in English; translation is unavailable. Device suggestions and member location sharing require verified adult eligibility. Device coordinates are not saved. Only me stays private, and discovery choices do not change profile disclosure or event times.",
+    eligibility:
+      "Formats are saved to your signed-in account. The interface is in English; translation is unavailable. Device suggestions and member location sharing require verified adult eligibility. Device coordinates are not saved. Only me stays private, and discovery choices do not change profile disclosure or event times.",
     availability: "available"
   },
   {
-    id: "private-feedback", category: "Help and feedback", name: "Feedback and private receipts",
-    description: "Share an optional website rating, report a problem or suggest an improvement through a private help case.",
-    steps: "Open Feedback from Menu or Help. Review any optional context and selected screenshot, choose whether staff may follow up, and revisit the saved receipt in My feedback. Optional prompts can be dismissed or permanently turned off.",
+    id: "private-feedback",
+    category: "Help and feedback",
+    name: "Feedback and private receipts",
+    description:
+      "Share an optional website rating, report a problem or suggest an improvement through a private help case.",
+    steps:
+      "Open Feedback from Menu or Help. Review any optional context and selected screenshot, choose whether staff may follow up, and revisit the saved receipt in My feedback. Optional prompts can be dismissed or permanently turned off.",
     href: "/platform/feedback",
-    eligibility: "Intake requires available authorized support and the current notice. Signed-in adults may submit when available. Automatic prompts additionally require eligible opted-in use. Feedback stays confidential; no rating causes an email or public post.",
+    eligibility:
+      "Intake requires available authorized support and the current notice. Signed-in adults may submit when available. Automatic prompts additionally require eligible opted-in use. Feedback stays confidential; no rating causes an email or public post.",
     availability: "conditional"
   },
   {
-    id: "reviewed-ideas", category: "Help and feedback", name: "Reviewed ideas and chosen updates",
-    description: "Browse separately reviewed public ideas, add or remove your vote, and choose whether to receive updates.",
-    steps: "Open Ideas from Feedback. A signed-in adult can vote or choose channels. Manage an idea subscription on its page, case contact choices on your receipt, and available delivery channels in Notification settings.",
+    id: "reviewed-ideas",
+    category: "Help and feedback",
+    name: "Reviewed ideas and chosen updates",
+    description:
+      "Browse separately reviewed public ideas, add or remove your vote, and choose whether to receive updates.",
+    steps:
+      "Open Ideas from Feedback. A signed-in adult can vote or choose channels. Manage an idea subscription on its page, case contact choices on your receipt, and available delivery channels in Notification settings.",
     href: "/platform/feedback/ideas",
-    eligibility: "The board requires activation. Public copies need contributor consent and authorized human review; private cases and screenshots stay private. Votes do not promise delivery. Optional email and phone alerts require their available channel and your choices.",
+    eligibility:
+      "The board requires activation. Public copies need contributor consent and authorized human review; private cases and screenshots stay private. Votes do not promise delivery. Optional email and phone alerts require their available channel and your choices.",
     availability: "conditional"
   },
   {
-    id: "feedback-review", category: "Help and feedback", name: "Weekly feedback review",
-    description: "Authorized product reviewers can inspect source-linked themes and keep private weekly learning notes.",
-    steps: "Open Admin → Feedback → Weekly feedback review. Choose a completed week, inspect authorized cases and manual themes, and record what to learn, try and check next with one canonical work link.",
+    id: "feedback-review",
+    category: "Help and feedback",
+    name: "Weekly feedback review",
+    description:
+      "Authorized product reviewers can inspect source-linked themes and keep private weekly learning notes.",
+    steps:
+      "Open Admin → Feedback → Weekly feedback review. Choose a completed week, inspect authorized cases and manual themes, and record what to learn, try and check next with one canonical work link.",
     href: "/platform/admin/feedback/weekly",
-    eligibility: "Current product-review permission is required. Each case still requires its own native permission. Platform growth and ratings require separate metric access; small detailed groups are suppressed. Review notes remain private to their author.",
+    eligibility:
+      "Current product-review permission is required. Each case still requires its own native permission. Platform growth and ratings require separate metric access; small detailed groups are suppressed. Review notes remain private to their author.",
     availability: "conditional"
   },
   {
-    id:"platform-growth",category:"Privacy and account",name:"Platform growth reports",
-    description:"Explicitly authorized operators can review aggregate registrations, lifecycle, measured use and request outcomes.",
-    steps:"Open Admin → Growth. Choose dates, inspect definitions and measured coverage, and compare the preceding period. CSV export requires its own permission and records an audit receipt.",
-    href:"/platform/admin/growth",
-    eligibility:"Current explicit metric permission is required. Reports do not grant private account or case access. Optional collection, immature cohorts, small breakdowns and missing prompt evidence are labeled separately.",availability:"conditional"
+    id: "platform-growth",
+    category: "Privacy and account",
+    name: "Platform growth reports",
+    description:
+      "Explicitly authorized operators can review aggregate registrations, lifecycle, measured use and request outcomes.",
+    steps:
+      "Open Admin → Growth. Choose dates, inspect definitions and measured coverage, and compare the preceding period. CSV export requires its own permission and records an audit receipt.",
+    href: "/platform/admin/growth",
+    eligibility:
+      "Current explicit metric permission is required. Reports do not grant private account or case access. Optional collection, immature cohorts, small breakdowns and missing prompt evidence are labeled separately.",
+    availability: "conditional"
   },
   {
-    id:"optional-platform-measurement",category:"Privacy and account",name:"Your optional measurement choice",
-    description:"Choose limited platform-use measurement, with separate optional referral and device sharing.",
-    steps:"Open Settings → Privacy and interactions → Optional platform measurement. Review the disclosure and save your choice. It starts off; turning it off removes optional use and session facts.",
-    href:"/platform/settings/privacy/measurement",
-    eligibility:"Available to eligible verified adult accounts when configured. It excludes operational accounts, private messages, prayer content, page addresses and reading time. Raw use facts last up to 90 days. You can use the website with measurement off.",availability:"conditional"
+    id: "optional-platform-measurement",
+    category: "Privacy and account",
+    name: "Your optional measurement choice",
+    description:
+      "Choose limited platform-use measurement, with separate optional referral and device sharing.",
+    steps:
+      "Open Settings → Privacy and interactions → Optional platform measurement. Review the disclosure and save your choice. It starts off; turning it off removes optional use and session facts.",
+    href: "/platform/settings/privacy/measurement",
+    eligibility:
+      "Available to eligible verified adult accounts when configured. It excludes operational accounts, private messages, prayer content, page addresses and reading time. Raw use facts last up to 90 days. You can use the website with measurement off.",
+    availability: "conditional"
   },
   {
     id: "admin-requests",
@@ -454,11 +504,16 @@ export const features: Feature[] = [
     availability: "available"
   },
   {
-    id: "adult-photo-tags", category: "Profiles", name: "Adult photo tags and approvals",
-    description: "Review a photo tag before it becomes an approved association.",
-    steps: "Open Photo tags and approvals from a readable photo, or Review photo tags in Notifications. Approve, decline or remove a request. Find approved photos from a profile’s Photos tab and choose who may ask to tag you in Privacy settings.",
+    id: "adult-photo-tags",
+    category: "Profiles",
+    name: "Adult photo tags and approvals",
+    description:
+      "Review a photo tag before it becomes an approved association.",
+    steps:
+      "Open Photo tags and approvals from a readable photo, or Review photo tags in Notifications. Approve, decline or remove a request. Find approved photos from a profile’s Photos tab and choose who may ask to tag you in Privacy settings.",
     href: "/platform/photo-tags",
-    eligibility: "Verified adult accounts with current photo access. Pending requests stay private, and approved tags keep the original photo audience. Removing a tag does not delete someone else’s photo. Family and child tagging remain unavailable; phone alerts are a separate choice.",
+    eligibility:
+      "Verified adult accounts with current photo access. Pending requests stay private, and approved tags keep the original photo audience. Removing a tag does not delete someone else’s photo. Family and child tagging remain unavailable; phone alerts are a separate choice.",
     availability: "available"
   },
   {
@@ -765,56 +820,133 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
-    id: "account-authenticator-enrollment", version: "2026.09.16.9", date: "2026-09-16",
-    summary: "Prepare an authenticator and private recovery codes for your assigned duties.",
-    added: ["Eligible adults can enroll from Account security when setup is enabled, with current sign-in confirmation and private recovery codes."],
-    improved: ["Replacement retires the old factor, recovery codes and other sign-ins. Essential security notices show whether the email provider accepted them.", "Protected-action confirmation can open in another tab while your original form stays available. Broader enforcement remains a separate activation step."],
-    fixed: ["Protected database recovery cannot reactivate an old authenticator or its confirmed sessions.", "Phone navigation labels wrap within their own buttons at larger text sizes."],
+    id: "exchange-items-requests-services",
+    version: "2026.09.16.10",
+    date: "2026-09-16",
+    summary:
+      "Create and manage Exchange listings with private drafts, clear audiences and optional photos.",
+    added: [
+      "Exchange supports Free, For sale, Wanted and Service listings, plus Church need for authorized church-owned listings.",
+      "Wanted listings include requested items and an optional needed-by date. Services state an area, availability, self-stated qualifications and free help or an exact paid rate."
+    ],
+    improved: [
+      "My listings preserves saved drafts, offers explicit publication and supports closing, archiving and private duplication. Uncertain saves can retry the same request.",
+      "Listing photos, reports, account export and deletion use the existing privacy and safety controls."
+    ],
+    fixed: [
+      "Changing listing type clears incompatible fields before saving, and changed account or church access is checked again before private content is shown."
+    ],
+    featureIds: ["exchange-listings"]
+  },
+  {
+    id: "account-authenticator-enrollment",
+    version: "2026.09.16.9",
+    date: "2026-09-16",
+    summary:
+      "Prepare an authenticator and private recovery codes for your assigned duties.",
+    added: [
+      "Eligible adults can enroll from Account security when setup is enabled, with current sign-in confirmation and private recovery codes."
+    ],
+    improved: [
+      "Replacement retires the old factor, recovery codes and other sign-ins. Essential security notices show whether the email provider accepted them.",
+      "Protected-action confirmation can open in another tab while your original form stays available. Broader enforcement remains a separate activation step."
+    ],
+    fixed: [
+      "Protected database recovery cannot reactivate an old authenticator or its confirmed sessions.",
+      "Phone navigation labels wrap within their own buttons at larger text sizes."
+    ],
     featureIds: ["account-authenticator", "admin-requests"]
   },
   {
-    id: "feed-rendering-efficiency", version: "2026.09.16.8", date: "2026-09-16",
-    summary: "Feed pages do less repeated work while keeping current conversations and your chosen date formats.",
+    id: "feed-rendering-efficiency",
+    version: "2026.09.16.8",
+    date: "2026-09-16",
+    summary:
+      "Feed pages do less repeated work while keeping current conversations and your chosen date formats.",
     added: [],
-    improved: ["Feed cards load current discussions when opened and retain current visible comment counts.", "Repeated date labels reuse formatting rules while preserving your date order, time format and the source time zone."],
+    improved: [
+      "Feed cards load current discussions when opened and retain current visible comment counts.",
+      "Repeated date labels reuse formatting rules while preserving your date order, time format and the source time zone."
+    ],
     fixed: [],
     featureIds: ["discovery-feeds", "language-location-preferences"]
   },
   {
-    id: "optional-device-area-suggestions", version: "2026.09.16.7", date: "2026-09-16",
-    summary: "Optionally use this device once to suggest a private discovery area.",
-    added: ["Eligible adults can request approximate town suggestions, choose an area and save it separately."],
-    improved: ["Manual town selection stays available after denied permission, cancellation, timeout or unavailable device location.", "The interface clearly marks automatic translation as unavailable; language filters do not translate posts or other media."],
-    fixed: ["Keyboard skip links stay hidden until focused even at larger text sizes."],
+    id: "optional-device-area-suggestions",
+    version: "2026.09.16.7",
+    date: "2026-09-16",
+    summary:
+      "Optionally use this device once to suggest a private discovery area.",
+    added: [
+      "Eligible adults can request approximate town suggestions, choose an area and save it separately."
+    ],
+    improved: [
+      "Manual town selection stays available after denied permission, cancellation, timeout or unavailable device location.",
+      "The interface clearly marks automatic translation as unavailable; language filters do not translate posts or other media."
+    ],
+    fixed: [
+      "Keyboard skip links stay hidden until focused even at larger text sizes."
+    ],
     featureIds: ["language-location-preferences"]
   },
   {
-    id: "regional-formats-and-private-location", version: "2026.09.16.6", date: "2026-09-16",
-    summary: "Save date and time formats and choose who can see your profile location.",
-    added: ["Preview and save date order and 12-hour or 24-hour time for your account.", "Choose Only me or permitted signed-in members for your optional profile location."],
-    improved: ["Calendars, messages, activity and account views use your formats while preserving event time zones and all-day dates.", "Private discovery areas remain separate from profile location and its audience."],
-    fixed: ["A restored older profile cannot disclose a location hidden or removed by a newer privacy choice."],
+    id: "regional-formats-and-private-location",
+    version: "2026.09.16.6",
+    date: "2026-09-16",
+    summary:
+      "Save date and time formats and choose who can see your profile location.",
+    added: [
+      "Preview and save date order and 12-hour or 24-hour time for your account.",
+      "Choose Only me or permitted signed-in members for your optional profile location."
+    ],
+    improved: [
+      "Calendars, messages, activity and account views use your formats while preserving event time zones and all-day dates.",
+      "Private discovery areas remain separate from profile location and its audience."
+    ],
+    fixed: [
+      "A restored older profile cannot disclose a location hidden or removed by a newer privacy choice."
+    ],
     featureIds: ["language-location-preferences"]
   },
   {
-    id: "language-and-private-discovery", version: "2026.09.16.5", date: "2026-09-16",
-    summary: "Find language guidance and private discovery location together in Settings.",
-    added: ["Language and location settings link to your existing town, radius, reading-language, profile and calendar controls."],
-    improved: ["Guidance explains the English interface, content-language filters and separate profile location.", "Manual town selection works without device location permission and does not change your shared profile."],
+    id: "language-and-private-discovery",
+    version: "2026.09.16.5",
+    date: "2026-09-16",
+    summary:
+      "Find language guidance and private discovery location together in Settings.",
+    added: [
+      "Language and location settings link to your existing town, radius, reading-language, profile and calendar controls."
+    ],
+    improved: [
+      "Guidance explains the English interface, content-language filters and separate profile location.",
+      "Manual town selection works without device location permission and does not change your shared profile."
+    ],
     fixed: [],
     featureIds: []
   },
   {
-    id: "help-and-product-progress", version: "2026.09.16.4", date: "2026-09-16",
-    summary: "Find feedback, private receipts and product progress from Help and Settings.",
-    added: ["Help and Settings link directly to feedback, your private receipts and reviewed ideas."],
-    improved: ["Product guidance distinguishes plans from released changes and explains optional contributor credit."],
-    fixed: ["Help now describes the existing permanent-deletion flow and all browser reading-reset choices."],
+    id: "help-and-product-progress",
+    version: "2026.09.16.4",
+    date: "2026-09-16",
+    summary:
+      "Find feedback, private receipts and product progress from Help and Settings.",
+    added: [
+      "Help and Settings link directly to feedback, your private receipts and reviewed ideas."
+    ],
+    improved: [
+      "Product guidance distinguishes plans from released changes and explains optional contributor credit."
+    ],
+    fixed: [
+      "Help now describes the existing permanent-deletion flow and all browser reading-reset choices."
+    ],
     featureIds: ["private-feedback", "reviewed-ideas"]
   },
   {
-    id: "clear-website-writing", version: "2026.09.16.3", date: "2026-09-16",
-    summary: "Read clearer guidance, date ranges and status labels across the website.",
+    id: "clear-website-writing",
+    version: "2026.09.16.3",
+    date: "2026-09-16",
+    summary:
+      "Read clearer guidance, date ranges and status labels across the website.",
     added: [],
     improved: [
       "Forms, notifications, help, welcome text and sharing descriptions use clearer sentence punctuation.",
@@ -826,8 +958,11 @@ export const releases: ReleaseEntry[] = [
     featureIds: ["personal-activity", "private-messages", "public-search-pages"]
   },
   {
-    id: "notifications-and-photo-tag-approval", version: "2026.09.16.2", date: "2026-09-16",
-    summary: "Find your notifications immediately and approve photo tags before they appear.",
+    id: "notifications-and-photo-tag-approval",
+    version: "2026.09.16.2",
+    date: "2026-09-16",
+    summary:
+      "Find your notifications immediately and approve photo tags before they appear.",
     added: [
       "A labeled Notifications bell and unread count stay available in the signed-in header on phones and larger screens.",
       "Choose people to mention in a post; private drafts keep the selection and publication checks current consent and access.",
@@ -842,11 +977,19 @@ export const releases: ReleaseEntry[] = [
       "New arrivals remain unread after an earlier mark-all boundary, and retries do not overwrite later read choices.",
       "Photo tags never widen an audience, revive a removed association after protected recovery or delete someone else’s photo."
     ],
-    featureIds: ["personal-activity", "adult-photo-tags", "private-messages", "photo-library"]
+    featureIds: [
+      "personal-activity",
+      "adult-photo-tags",
+      "private-messages",
+      "photo-library"
+    ]
   },
   {
-    id: "feedback-and-product-review", version: "2026.09.16.1", date: "2026-09-16",
-    summary: "Keep feedback private, choose follow-up and review product outcomes with traceable sources.",
+    id: "feedback-and-product-review",
+    version: "2026.09.16.1",
+    date: "2026-09-16",
+    summary:
+      "Keep feedback private, choose follow-up and review product outcomes with traceable sources.",
     added: [
       "Feedback forms and private receipts support optional ratings, bug details, suggestions and deliberately selected private screenshots when staffed intake is available.",
       "An optional, dismissible prompt respects measurement consent, quiet moments, cross-device cooldowns and the permanent Don't ask again choice.",
@@ -862,15 +1005,37 @@ export const releases: ReleaseEntry[] = [
       "A staff reply that directly resolves a request now counts as the first substantive human response.",
       "Withdrawn or expired prompt evidence never becomes a fabricated voluntary response or historical exposure."
     ],
-    featureIds: ["private-feedback", "reviewed-ideas", "feedback-review", "platform-growth", "admin-requests"]
+    featureIds: [
+      "private-feedback",
+      "reviewed-ideas",
+      "feedback-review",
+      "platform-growth",
+      "admin-requests"
+    ]
   },
   {
-    id:"platform-growth-measurement",version:"2026.09.15.7",date:"2026-09-15",
-    summary:"Review platform outcomes with clear coverage and an optional measurement choice.",
-    added:["Private aggregate Growth reports with date controls, lifecycle reconciliation, mature return cohorts and separately permitted CSV exports.","Default-off platform measurement with optional referral and coarse device choices in Privacy settings."],
-    improved:["Reports distinguish current service records, observed use, unknown history and suppressed small breakdowns.","Getting started can be deliberately finished while every profile, photo and church step remains optional."],
-    fixed:["Report boundaries preserve the reporting calendar independently of the database timezone.","Withdrawal, account lifecycle and protected backup restoration clear optional measurements before they can be reused."],
-    featureIds:["platform-growth","optional-platform-measurement","getting-started"]
+    id: "platform-growth-measurement",
+    version: "2026.09.15.7",
+    date: "2026-09-15",
+    summary:
+      "Review platform outcomes with clear coverage and an optional measurement choice.",
+    added: [
+      "Private aggregate Growth reports with date controls, lifecycle reconciliation, mature return cohorts and separately permitted CSV exports.",
+      "Default-off platform measurement with optional referral and coarse device choices in Privacy settings."
+    ],
+    improved: [
+      "Reports distinguish current service records, observed use, unknown history and suppressed small breakdowns.",
+      "Getting started can be deliberately finished while every profile, photo and church step remains optional."
+    ],
+    fixed: [
+      "Report boundaries preserve the reporting calendar independently of the database timezone.",
+      "Withdrawal, account lifecycle and protected backup restoration clear optional measurements before they can be reused."
+    ],
+    featureIds: [
+      "platform-growth",
+      "optional-platform-measurement",
+      "getting-started"
+    ]
   },
   {
     id: "admin-request-operations",

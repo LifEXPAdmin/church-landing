@@ -16,14 +16,10 @@ import {
 import {
   exchangeIntentLabels,
   exchangeStateLabels,
-  exchangePriceText,
-  type ExchangeCurrency
+  exchangeDisplayPrice
 } from "@/lib/platform/exchange-options";
-import {
-  discoveryCountry,
-  discoveryCountryLabel,
-  discoveryPlaceId
-} from "@/lib/platform/discovery-options";
+import { discoveryCountryLabel } from "@/lib/platform/discovery-options";
+import { parseExchangeListQuery } from "@/lib/platform/exchange-input";
 
 export const exchangeChecksum = (value: unknown) =>
   createHash("sha256").update(JSON.stringify(value)).digest("hex");
@@ -110,27 +106,18 @@ export function ExchangeUnavailable({
 export function ExchangePrice({
   listing
 }: {
-  listing: {
-    intent: string;
-    currency: string | null;
-    priceMinor: number | null;
-  };
+  listing: Parameters<typeof exchangeDisplayPrice>[0];
 }) {
-  return (
-    <>
-      {listing.intent === "FREE"
-        ? "Free"
-        : listing.currency && listing.priceMinor !== null
-          ? `${listing.currency} ${exchangePriceText(listing.priceMinor, listing.currency as ExchangeCurrency)}`
-          : "Price not entered"}
-    </>
-  );
+  return <>{exchangeDisplayPrice(listing)}</>;
 }
 export type ExchangeQuery = {
   intent?: string | string[];
   country?: string | string[];
   placeId?: string | string[];
   after?: string | string[];
+  q?: string | string[];
+  category?: string | string[];
+  state?: string | string[];
 };
 export async function ExchangeList({
   query: params,
@@ -145,37 +132,22 @@ export async function ExchangeList({
   if (mine && !user) content = <ExchangeAccountLinks next={path} />;
   else
     try {
-      if (Object.values(params).some((v) => Array.isArray(v)))
-        throw new PortalError(400, "Choose each listing filter once.");
-      const rawIntent = params.intent || undefined;
-      if (rawIntent && rawIntent !== "FREE" && rawIntent !== "SALE")
-        throw new PortalError(400, "Choose a supported listing type.");
-      const intent =
-        rawIntent === "FREE" || rawIntent === "SALE" ? rawIntent : undefined;
-      const country = discoveryCountry(params.country || null) ?? undefined;
-      if (
-        params.placeId &&
-        (typeof params.placeId !== "string" ||
-          !/^[1-9]\d{0,8}$/.test(params.placeId))
-      )
-        throw new PortalError(400, "Choose a supported town.");
-      const placeId =
-        discoveryPlaceId(params.placeId ? Number(params.placeId) : null) ??
-        undefined;
-      if (placeId && !country)
-        throw new PortalError(400, "Choose the country for this town.");
-      const after =
-        typeof params.after === "string" && params.after
-          ? params.after
-          : undefined;
+      const { intent, country, placeId, after, q, category, state } =
+        parseExchangeListQuery(params, mine);
       const result = await exchangeListPage({
         mine,
         intent,
         country,
         placeId,
-        after
+        after,
+        q,
+        category,
+        state
       });
       const filters = new URLSearchParams({
+        ...(q ? { q } : {}),
+        ...(category ? { category } : {}),
+        ...(state ? { state } : {}),
         ...(intent ? { intent } : {}),
         ...(country ? { country } : {}),
         ...(placeId ? { placeId: String(placeId) } : {})
@@ -190,6 +162,10 @@ export async function ExchangeList({
             intent={intent}
             country={country}
             placeId={placeId}
+            mine={mine}
+            q={q}
+            category={category}
+            state={state}
           />
           {after && (
             <a href={first} className="gc-button gc-button-quiet">
@@ -229,15 +205,13 @@ export async function ExchangeList({
                   <ExchangePrice listing={listing} />
                 </p>
                 <p className="whitespace-pre-wrap break-words">
-                  {listing.description.length > 220
-                    ? listing.description.slice(0, 220) + "…"
-                    : listing.description}
+                  {listing.description}
                 </p>
                 <p className="text-sm text-gc-muted">
                   {listing.placeLabel ||
                     (listing.country
                       ? discoveryCountryLabel(listing.country)
-                      : "Pickup area not entered")}{" "}
+                      : "Area not entered")}{" "}
                   ·{" "}
                   {listing.ownerChurch?.name ??
                     listing.owner?.name ??
@@ -266,8 +240,8 @@ export async function ExchangeList({
           {rows}
         </PrivateSnapshotGuard>
       ) : (
-          <TopicReadBoundary
-            owner={null}
+        <TopicReadBoundary
+          owner={null}
           url={readUrl}
           checksum={exchangeChecksum(result)}
           label="listing"
@@ -286,7 +260,7 @@ export async function ExchangeList({
           <p>
             {mine
               ? "Manage personal listings and church listings covered by your current Exchange duties. Drafts and archived listings stay here."
-              : "Find ordinary items offered free or for sale. Check the condition and pickup area, then use the owner’s existing contact choices."}
+              : "Find items, requests and skilled help. Review each listing’s details and area, then use the owner’s existing contact choices."}
           </p>
         </header>
         <ExchangeNavigation />

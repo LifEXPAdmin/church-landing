@@ -3,7 +3,12 @@ import { useId } from "react";
 import {
   EXCHANGE_CONTACT_NOTICE,
   EXCHANGE_ITEM_NOTICE,
-  exchangeCategoryLabels,
+  EXCHANGE_SERVICE_NOTICE,
+  changeExchangeIntent,
+  exchangeItemCategoryLabels,
+  exchangeServiceCategoryLabels,
+  exchangeServicePricingLabels,
+  exchangeServiceUnitLabels,
   exchangeConditionLabels,
   exchangeCurrencies,
   exchangeIntentLabels,
@@ -16,14 +21,18 @@ export function ExchangeEditorFields({
   value,
   onChange,
   churches,
+  churchOwned,
   disabled
 }: {
   value: Fields;
   onChange: (fields: Fields) => void;
   churches: { id: string; name: string }[];
+  churchOwned: boolean;
   disabled: boolean;
 }) {
   const id = useId();
+  const service = value.intent === "SERVICE";
+  const request = value.intent === "WANTED" || value.intent === "CHURCH_NEED";
   const change = <K extends keyof Fields>(key: K, field: Fields[K]) =>
     onChange({ ...value, [key]: field });
   const unavailableChurch =
@@ -31,7 +40,7 @@ export function ExchangeEditorFields({
     !churches.some((c) => c.id === value.audienceChurchId);
   return (
     <fieldset disabled={disabled} className="min-w-0 space-y-6">
-      <legend className="mb-3 text-2xl font-semibold">Item details</legend>
+      <legend className="mb-3 text-2xl font-semibold">Listing details</legend>
       <p className="text-gc-muted">
         Save an incomplete draft privately. The marked details are required
         before publication.
@@ -43,24 +52,41 @@ export function ExchangeEditorFields({
           aria-labelledby={`${id}-intent-label`}
           className={portalInputClass}
           value={value.intent}
-          onChange={(e) =>
-            onChange({
-              ...value,
-              intent: e.target.value as Fields["intent"],
-              ...(e.target.value === "FREE" ? { price: "", currency: "" } : {})
-            })
-          }
+          onChange={(e) => {
+            const next = changeExchangeIntent(
+              value,
+              e.target.value as Fields["intent"]
+            );
+            const clearsEnteredFields = Object.keys(next).some(
+              (key) =>
+                next[key as keyof Fields] !== value[key as keyof Fields] &&
+                key !== "intent" &&
+                !!value[key as keyof Fields]
+            );
+            if (
+              !clearsEnteredFields ||
+              window.confirm(
+                "Change listing type and clear its category, condition, price, requested items and service details? Your title, description, area and audience will remain."
+              )
+            )
+              onChange(next);
+          }}
         >
           {Object.entries(exchangeIntentLabels).map(([key, label]) => (
-            <option key={key} value={key}>
+            <option
+              key={key}
+              value={key}
+              disabled={key === "CHURCH_NEED" && !churchOwned}
+            >
               {label}
             </option>
           ))}
         </select>
       </label>
       <p className="text-sm text-gc-muted">
-        Choosing Free clears the price and currency. A displayed sale price does
-        not create a payment or reservation.
+        Changing type clears the previous type’s fields. A displayed price does
+        not create a payment or reservation. Church need is available only for a
+        church-owned listing with an assigned Exchange duty.
       </p>
       <label className="block space-y-2" htmlFor={`${id}-title`}>
         <span id={`${id}-title-label`}> Title (required to publish) </span>
@@ -108,41 +134,178 @@ export function ExchangeEditorFields({
             }
           >
             <option value="">Choose a category</option>
-            {Object.entries(exchangeCategoryLabels).map(([key, label]) => (
+            {Object.entries(
+              service
+                ? exchangeServiceCategoryLabels
+                : exchangeItemCategoryLabels
+            ).map(([key, label]) => (
               <option key={key} value={key}>
                 {label}
               </option>
             ))}
           </select>
         </label>
-        <label className="block min-w-0 space-y-2" htmlFor={`${id}-condition`}>
-          <span id={`${id}-condition-label`}>
-            {" "}
-            Condition (required to publish){" "}
-          </span>
-          <select
-            id={`${id}-condition`}
-            aria-labelledby={`${id}-condition-label`}
-            className={portalInputClass}
-            value={value.condition}
-            onChange={(e) =>
-              change("condition", e.target.value as Fields["condition"])
-            }
+        {!service && (
+          <label
+            className="block min-w-0 space-y-2"
+            htmlFor={`${id}-condition`}
           >
-            <option value="">Choose the condition</option>
-            {Object.entries(exchangeConditionLabels).map(([key, label]) => (
-              <option key={key} value={key}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </label>
+            <span id={`${id}-condition-label`}>
+              {" "}
+              Condition{" "}
+              {request ? "(optional preference)" : "(required to publish)"}{" "}
+            </span>
+            <select
+              id={`${id}-condition`}
+              aria-labelledby={`${id}-condition-label`}
+              className={portalInputClass}
+              value={value.condition}
+              onChange={(e) =>
+                change("condition", e.target.value as Fields["condition"])
+              }
+            >
+              <option value="">Choose the condition</option>
+              {Object.entries(exchangeConditionLabels).map(([key, label]) => (
+                <option key={key} value={key}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
       </div>
-      {value.intent === "SALE" && (
+      {request && (
+        <fieldset className="min-w-0 space-y-3 rounded-xl border border-gc-divider p-4">
+          <legend className="px-1 font-semibold">Item request</legend>
+          <label className="block space-y-2" htmlFor={`${id}-requestedItems`}>
+            <span id={`${id}-requestedItems-label`}>
+              Requested items (required to publish)
+            </span>
+            <textarea
+              id={`${id}-requestedItems`}
+              aria-labelledby={`${id}-requestedItems-label`}
+              className={portalInputClass}
+              rows={4}
+              maxLength={2000}
+              value={value.requestedItems}
+              onChange={(e) => change("requestedItems", e.target.value)}
+            />
+          </label>
+          <label className="block space-y-2" htmlFor={`${id}-neededBy`}>
+            <span id={`${id}-neededBy-label`}>Needed by (optional)</span>
+            <input
+              id={`${id}-neededBy`}
+              aria-labelledby={`${id}-neededBy-label`}
+              type="date"
+              min="2000-01-01"
+              max="2099-12-31"
+              className={portalInputClass}
+              value={value.neededBy}
+              onChange={(e) => change("neededBy", e.target.value)}
+            />
+          </label>
+          <p className="text-sm text-gc-muted">
+            This calendar date describes your request. It does not create a
+            booking or automatically close the listing. Keep personal and
+            recipient details private.
+          </p>
+        </fieldset>
+      )}
+      {service && (
+        <fieldset className="min-w-0 space-y-3 rounded-xl border border-gc-divider p-4">
+          <legend className="px-1 font-semibold">Service details</legend>
+          {(
+            [
+              ["serviceArea", "Service area (required to publish)", 500, 3],
+              ["availability", "Availability (required to publish)", 1000, 3],
+              [
+                "qualifications",
+                "Self-stated qualifications (required to publish)",
+                2000,
+                4
+              ]
+            ] as const
+          ).map(([key, label, limit, rows]) => (
+            <label
+              key={key}
+              className="block space-y-2"
+              htmlFor={`${id}-${key}`}
+            >
+              <span id={`${id}-${key}-label`}>{label}</span>
+              <textarea
+                id={`${id}-${key}`}
+                aria-labelledby={`${id}-${key}-label`}
+                className={portalInputClass}
+                rows={rows}
+                maxLength={limit}
+                value={value[key]}
+                onChange={(e) => change(key, e.target.value)}
+              />
+            </label>
+          ))}
+          <p className="text-sm text-gc-muted">{EXCHANGE_SERVICE_NOTICE}</p>
+          <label className="block space-y-2" htmlFor={`${id}-servicePricing`}>
+            <span id={`${id}-servicePricing-label`}>
+              Service pricing (required to publish)
+            </span>
+            <select
+              id={`${id}-servicePricing`}
+              aria-labelledby={`${id}-servicePricing-label`}
+              className={portalInputClass}
+              value={value.servicePricing}
+              onChange={(e) =>
+                onChange({
+                  ...value,
+                  servicePricing: e.target.value as Fields["servicePricing"],
+                  ...(e.target.value !== "FIXED"
+                    ? { currency: "", price: "", serviceUnit: "" }
+                    : {})
+                })
+              }
+            >
+              <option value="">Choose free help or a paid rate</option>
+              {Object.entries(exchangeServicePricingLabels).map(
+                ([key, label]) => (
+                  <option key={key} value={key}>
+                    {label}
+                  </option>
+                )
+              )}
+            </select>
+          </label>
+        </fieldset>
+      )}
+      {(value.intent === "SALE" ||
+        (service && value.servicePricing === "FIXED")) && (
         <fieldset className="min-w-0 space-y-3 rounded-xl border border-gc-divider p-4">
           <legend className="px-1 font-semibold">
-            Sale price (required to publish)
+            {service ? "Service rate" : "Sale price"} (required to publish)
           </legend>
+          {service && (
+            <label className="block space-y-2" htmlFor={`${id}-serviceUnit`}>
+              <span id={`${id}-serviceUnit-label`}>
+                Price unit (required to publish)
+              </span>
+              <select
+                id={`${id}-serviceUnit`}
+                aria-labelledby={`${id}-serviceUnit-label`}
+                className={portalInputClass}
+                value={value.serviceUnit}
+                onChange={(e) =>
+                  change("serviceUnit", e.target.value as Fields["serviceUnit"])
+                }
+              >
+                <option value="">Choose what this rate covers</option>
+                {Object.entries(exchangeServiceUnitLabels).map(
+                  ([key, label]) => (
+                    <option key={key} value={key}>
+                      {label}
+                    </option>
+                  )
+                )}
+              </select>
+            </label>
+          )}
           <label className="block space-y-2" htmlFor={`${id}-currency`}>
             <span id={`${id}-currency-label`}> Currency </span>
             <select
@@ -186,7 +349,7 @@ export function ExchangeEditorFields({
       )}
       <fieldset className="min-w-0 space-y-3 rounded-xl border border-gc-divider p-4">
         <legend className="px-1 font-semibold">
-          Coarse pickup area (required to publish)
+          Coarse area (required to publish)
         </legend>
         <p className="text-sm">
           Choose a town or area. This choice appears with the listing. Your

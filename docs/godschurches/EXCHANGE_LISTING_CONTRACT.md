@@ -8,9 +8,10 @@ unpublished service and interface. This contract is not a publication receipt.
 
 The current focused listing brief retains the original blueprint's steps 075 to
 082: distinct intents, scoped ownership/audience, local discovery, fulfillment
-separation and practical safety. Its first usable version is adult-owned free
-and for-sale listings. Wanted, services, church needs, delegated organizations,
-quantity commitments and real-world pilot acceptance keep their own prerequisites.
+separation and practical safety. The same feature cycle includes adult-owned
+Free, For sale, Wanted and Service listings, plus authorized church-owned listings
+and Church need. Business delegation, quantity commitments and real-world pilot
+acceptance retain their actual prerequisites.
 The original exclusions remain: no checkout, investment listings, securities,
 loans, medical-transport claims, child-location search or guaranteed seller safety.
 Later commerce/storefront architecture is not activated by a displayed price.
@@ -38,20 +39,30 @@ no production grants may be invented for acceptance.
 
 Keep one canonical listing with an immutable opaque ID, immutable logical owner,
 creating actor, independent positive version and server timestamps. Personal
-ownership names the adult account. Future church ownership names the church and
+ownership names the adult account. Church ownership names the church and
 keeps the acting delegate separate. Do not transfer ownership through edit input.
 Business/family/child scopes have no current authority service and remain rejected.
 
 Published fields are deliberately entered for this listing:
 
-- Intent: `FREE` or `SALE` in the first working version. Display Free and For sale.
-  Free is the blueprint's Blessing intent. Unsupported intent payloads are rejected,
-  including fields belonging only to Wanted, Services or Church Need.
+- Intent: `FREE`, `SALE`, `WANTED`, `SERVICE` or `CHURCH_NEED`. Free is the
+  blueprint's Blessing intent. Church need requires immutable church ownership
+  and current Exchange authority. Unsupported intent payloads are rejected.
 - Title: trimmed plain text, 3 to 120 characters. Description: plain text, 1 to
   5,000 characters for publication. No embedded HTML or automatic remote link fetch.
 - Item category and condition come from small server-owned enumerations. Initial
   categories cover household items, furniture, clothing, books, electronics,
   ordinary tools and hobby/sports equipment. No arbitrary category creation.
+- Wanted and Church need require requested items (up to 2,000 characters), with
+  an optional condition preference and valid calendar needed-by date from 2000
+  through 2099. The date is informational; it does not expire or book a listing.
+- Service requires its own category (home/garden, technology, creative, learning
+  or other skilled help), coarse service area (500 characters), availability
+  (1,000) and self-stated qualifications (2,000). Qualifications do not claim
+  platform verification. It has no item condition or requested-items fields.
+  Explicit pricing selects Free help or a stated paid rate; a paid rate requires
+  currency, exact amount and per-hour or per-described-task unit. Free help clears
+  currency, amount and unit. No medical-care or medical-transport claims.
 - Free has no price or currency. Sale requires an explicitly selected supported
   ISO currency and a positive integer amount in that currency's minor unit.
   Validate the typed decimal string exactly against the supported currency's
@@ -75,20 +86,29 @@ Published fields are deliberately entered for this listing:
 Drafts may be incomplete but must be structurally valid, bounded and owned. A
 draft does not become public because it has an image, price or public-audience
 selection. Publishing validates the complete current record and every source.
-Changing intent clears incompatible fields through one explicit validated save;
+Editor schema 2 requires the complete current field set. Changing intent clears
+category, condition, money, request and service fields after deliberate confirmation;
+title, description, coarse location and audience remain. One validated save applies it;
 an old full-snapshot request cannot reintroduce fields from the previous intent.
+
+Browse offers type navigation, category choices, a 2 to 120 character literal
+search and optional country/town filters. My listings adds owned status filters.
+All filters run inside the same current audience/management predicate before
+the bounded 20-row page; public status filters cannot reveal drafts or archives.
+Cards return only their displayed projection and a 220-character description
+excerpt. Full authorized detail/editor fields remain complete.
 
 ## Initial permitted-item boundary
 
-This first release is for ordinary physical items in the listed categories.
+This release is for ordinary physical items and lawful skilled help in the listed categories.
 It excludes unlawful/stolen/counterfeit/recalled items; weapons or ammunition;
 alcohol, tobacco, drugs and medicines; explicit adult material; live animals;
 personal data, accounts or identity documents; and financial products, loans or
-investments. Services, transport, housing, fundraising and employment are not
-ordinary-item categories and remain unavailable until their own contracts.
+investments. Transport, housing, fundraising and employment agreements are not
+provided by a listing. No separate booking, checkout or fulfillment flow is implied.
 
 The editor explains these limits and requires the publishing adult to confirm
-that they are allowed to offer the item and have described its condition honestly.
+that they may publish the listing and have described it honestly.
 An allowlisted category or account-email verification is not a safety guarantee.
 Free-text evasion remains reportable; do not claim an automated category check
 certifies legality, authenticity, ownership or seller trustworthiness.

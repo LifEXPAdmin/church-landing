@@ -1,16 +1,19 @@
 // Shared display and validation values. No database, account or provider state.
-export const EXCHANGE_EDITOR_SCHEMA = 1;
-export const EXCHANGE_ITEM_POLICY = "ordinary-items-v1";
+export const EXCHANGE_EDITOR_SCHEMA = 2;
+export const EXCHANGE_ITEM_POLICY = "exchange-listings-v2";
 export const EXCHANGE_MAX_PRICE_MINOR = 99_999_999;
 export const EXCHANGE_PHOTO_LIMIT = 8;
 
 export const exchangeIntentLabels = {
   FREE: "Free",
-  SALE: "For sale"
+  SALE: "For sale",
+  WANTED: "Wanted",
+  SERVICE: "Service",
+  CHURCH_NEED: "Church need"
 } as const;
 export type ExchangeIntent = keyof typeof exchangeIntentLabels;
 
-export const exchangeCategoryLabels = {
+export const exchangeItemCategoryLabels = {
   HOUSEHOLD: "Household items",
   FURNITURE: "Furniture",
   CLOTHING: "Clothing",
@@ -19,7 +22,26 @@ export const exchangeCategoryLabels = {
   TOOLS: "Ordinary tools",
   HOBBIES: "Hobby and sports equipment"
 } as const;
+export const exchangeServiceCategoryLabels = {
+  HOME_GARDEN: "Home and garden help",
+  TECHNOLOGY_HELP: "Technology help",
+  CREATIVE_SKILLS: "Creative skills",
+  LEARNING_HELP: "Learning and practical skills",
+  OTHER_SKILL: "Other skilled help"
+} as const;
+export const exchangeCategoryLabels = {
+  ...exchangeItemCategoryLabels,
+  ...exchangeServiceCategoryLabels
+};
 export type ExchangeCategory = keyof typeof exchangeCategoryLabels;
+export const exchangeServicePricingLabels = {
+  FREE: "Free help",
+  FIXED: "A stated paid rate"
+} as const;
+export const exchangeServiceUnitLabels = {
+  HOUR: "Per hour",
+  TASK: "Per described task"
+} as const;
 
 export const exchangeConditionLabels = {
   NEW: "New",
@@ -73,19 +95,96 @@ export type ExchangeEditorFields = {
   placeId: number | null;
   audience: ExchangeAudience;
   audienceChurchId: string;
+  requestedItems: string;
+  neededBy: string;
+  serviceArea: string;
+  availability: string;
+  qualifications: string;
+  servicePricing: keyof typeof exchangeServicePricingLabels | "";
+  serviceUnit: keyof typeof exchangeServiceUnitLabels | "";
 };
 
 export function emptyExchangeFields(): ExchangeEditorFields {
-  return { intent: "FREE", title: "", description: "", category: "",
-    condition: "", currency: "", price: "", country: "", placeId: null,
-    audience: "PUBLIC", audienceChurchId: "" };
+  return {
+    intent: "FREE",
+    title: "",
+    description: "",
+    category: "",
+    condition: "",
+    currency: "",
+    price: "",
+    country: "",
+    placeId: null,
+    audience: "PUBLIC",
+    audienceChurchId: "",
+    requestedItems: "",
+    neededBy: "",
+    serviceArea: "",
+    availability: "",
+    qualifications: "",
+    servicePricing: "",
+    serviceUnit: ""
+  };
+}
+
+/** Type changes are deliberate and clear the complete incompatible field set. */
+export function changeExchangeIntent(
+  value: ExchangeEditorFields,
+  intent: ExchangeIntent
+): ExchangeEditorFields {
+  if (intent === value.intent) return value;
+  return {
+    ...value,
+    intent,
+    category: "",
+    condition: "",
+    currency: "",
+    price: "",
+    requestedItems: "",
+    neededBy: "",
+    serviceArea: "",
+    availability: "",
+    qualifications: "",
+    servicePricing: "",
+    serviceUnit: ""
+  };
 }
 
 export function exchangePriceText(minor: number, currency: ExchangeCurrency) {
   const digits = exchangeCurrencies[currency].digits;
   const scale = 10 ** digits;
-  return digits ? `${Math.floor(minor / scale)}.${String(minor % scale).padStart(digits, "0")}` : String(minor);
+  return digits
+    ? `${Math.floor(minor / scale)}.${String(minor % scale).padStart(digits, "0")}`
+    : String(minor);
 }
 
-export const EXCHANGE_ITEM_NOTICE = "Offer only ordinary physical items you are allowed to give away or sell. Describe their condition honestly. Do not list stolen, counterfeit, recalled or unlawful items, weapons, ammunition, alcohol, tobacco, drugs, medicines, explicit adult material, live animals, personal data, accounts or financial products. Services and transport are not available in this item editor.";
-export const EXCHANGE_CONTACT_NOTICE = "Keep your phone number, email, exact pickup address and access codes out of the listing and photos. Account verification is not a guarantee of seller safety. Godschurches does not take payments, deposits or provide escrow.";
+export function exchangeDisplayPrice(listing: {
+  intent: string;
+  currency: string | null;
+  priceMinor: number | null;
+  servicePricing: string | null;
+  serviceUnit: string | null;
+}) {
+  if (listing.intent === "WANTED") return "Items wanted";
+  if (listing.intent === "CHURCH_NEED") return "Church item request";
+  if (
+    listing.intent === "FREE" ||
+    (listing.intent === "SERVICE" && listing.servicePricing === "FREE")
+  )
+    return "Free";
+  if (listing.intent === "SERVICE" && !listing.servicePricing)
+    return "Service pricing not selected";
+  if (!listing.currency || listing.priceMinor === null)
+    return "Price not entered";
+  const price = `${listing.currency} ${exchangePriceText(listing.priceMinor, listing.currency as ExchangeCurrency)}`;
+  return listing.intent === "SERVICE"
+    ? `${price}${listing.serviceUnit === "HOUR" ? " per hour" : listing.serviceUnit === "TASK" ? " per described task" : " (price unit not selected)"}`
+    : price;
+}
+
+export const EXCHANGE_ITEM_NOTICE =
+  "List only ordinary items or lawful skilled help you are allowed to offer or request. Describe items and qualifications honestly. Do not list stolen, counterfeit, recalled or unlawful items, weapons, ammunition, alcohol, tobacco, drugs, medicines, explicit adult material, live animals, personal data, accounts, financial products or loans. Medical care and medical transport claims are not available. This listing does not create an employment, transport, payment or fulfillment agreement.";
+export const EXCHANGE_SERVICE_NOTICE =
+  "Qualifications are stated by the person offering help. Godschurches has not verified licenses, training, insurance or suitability. Describe relevant experience accurately without including identity documents, private contact details or client information.";
+export const EXCHANGE_CONTACT_NOTICE =
+  "Keep your phone number, email, exact pickup address and access codes out of the listing and photos. Account verification is not a guarantee of seller safety. Godschurches does not take payments, deposits or provide escrow.";

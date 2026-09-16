@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -12,6 +12,11 @@ import {
   EXCHANGE_EDITOR_SCHEMA,
   EXCHANGE_ITEM_POLICY,
   exchangeStateLabels,
+  exchangeIntentLabels,
+  exchangeCategoryLabels,
+  exchangeConditionLabels,
+  exchangeServicePricingLabels,
+  exchangeServiceUnitLabels,
   type ExchangeEditorFields as Fields,
   type ExchangeState
 } from "@/lib/platform/exchange-options";
@@ -30,6 +35,15 @@ import { portalInputClass } from "./portal-action-form";
 type Context = Awaited<ReturnType<typeof exchangeEditorContext>>;
 type Snapshot = Awaited<ReturnType<typeof readExchangeListing>>;
 type Pending = { body: string; path: string; method: "POST" | "DELETE" };
+const fieldChoiceLabels: Partial<Record<keyof Fields, Record<string, string>>> =
+  {
+    intent: exchangeIntentLabels,
+    category: exchangeCategoryLabels,
+    condition: exchangeConditionLabels,
+    servicePricing: exchangeServicePricingLabels,
+    serviceUnit: exchangeServiceUnitLabels,
+    audience: { PUBLIC: "Public", CHURCH: "Approved church" }
+  };
 const sameFields = (a: Fields, b: Fields) =>
   (Object.keys(a) as (keyof Fields)[]).every((key) => a[key] === b[key]);
 const nextStates: Record<ExchangeState, readonly ExchangeState[]> = {
@@ -55,6 +69,7 @@ export function ExchangeEditor({
   access: Context;
   initial?: Snapshot | null;
 }) {
+  const fieldId = useId();
   const router = useRouter(),
     owner = access.ownerId;
   const [context, setContext] = useState(access),
@@ -433,9 +448,11 @@ export function ExchangeEditor({
             </div>
           )}
           {!record && (
-            <label className="block space-y-2">
-              <span>Listing owner</span>
+            <label className="block space-y-2" htmlFor={`${fieldId}-owner`}>
+              <span id={`${fieldId}-owner-label`}>Listing owner</span>
               <select
+                id={`${fieldId}-owner`}
+                aria-labelledby={`${fieldId}-owner-label`}
                 className={portalInputClass}
                 disabled={disabled || photoWork}
                 value={ownerChurchId}
@@ -494,7 +511,14 @@ export function ExchangeEditor({
                                 country: "Country",
                                 placeId: "Selected town",
                                 audience: "Audience",
-                                audienceChurchId: "Church audience"
+                                audienceChurchId: "Church audience",
+                                requestedItems: "Requested items",
+                                neededBy: "Needed by",
+                                serviceArea: "Service area",
+                                availability: "Availability",
+                                qualifications: "Self-stated qualifications",
+                                servicePricing: "Service pricing",
+                                serviceUnit: "Price unit"
                               } as Record<string, string>
                             )[key]
                           }
@@ -508,7 +532,10 @@ export function ExchangeEditor({
                                 (value
                                   ? "Previous church choice unavailable"
                                   : "Not selected"))
-                              : String(value ?? "Not selected") ||
+                              : fieldChoiceLabels[key as keyof Fields]?.[
+                                  String(value)
+                                ] ||
+                                String(value ?? "Not selected") ||
                                 "Not entered"}
                         </dd>
                       </div>
@@ -574,6 +601,7 @@ export function ExchangeEditor({
                 setConfirmed(false);
               }}
               churches={audienceChurches}
+              churchOwned={!!(record?.listing.ownerChurch?.id || ownerChurchId)}
               disabled={disabled || photoWork || state === "ARCHIVED"}
             />
             <label className="flex items-start gap-3">
@@ -585,28 +613,30 @@ export function ExchangeEditor({
                 onChange={(e) => setConfirmed(e.target.checked)}
               />
               <span>
-                I may offer this item, have described it honestly, and have
-                checked the permitted-item and privacy guidance. Required for
+                I may publish this listing, have described it honestly, and have
+                checked the listing and privacy guidance. Required for
                 publication and changes to a published listing.
               </span>
             </label>
-            <button
-              type="submit"
-              className="gc-button"
-              disabled={
-                disabled ||
-                photoWork ||
-                state === "ARCHIVED" ||
-                (!!record && !dirty) ||
-                (!!state && state !== "DRAFT" && !confirmed)
-              }
-            >
-              {record
-                ? state === "DRAFT"
-                  ? "Save private draft"
-                  : "Save listing changes"
-                : "Save a private draft"}
-            </button>
+            <div className="sticky bottom-24 z-10 w-fit max-w-full rounded-xl border border-gc-divider bg-gc-surface p-2 sm:bottom-4">
+              <button
+                type="submit"
+                className="gc-button"
+                disabled={
+                  disabled ||
+                  photoWork ||
+                  state === "ARCHIVED" ||
+                  (!!record && !dirty) ||
+                  (!!state && state !== "DRAFT" && !confirmed)
+                }
+              >
+                {record
+                  ? state === "DRAFT"
+                    ? "Save private draft"
+                    : "Save listing changes"
+                  : "Save a private draft"}
+              </button>
+            </div>
             <p className="text-sm">
               Drafts may be incomplete. Saving a new draft does not publish it.
               Unsaved entries stay in this tab only.
@@ -671,8 +701,8 @@ export function ExchangeEditor({
                 </p>
               )}
               <p className="text-sm">
-                A duplicate keeps the saved audience and item entries. Photos,
-                history and review records are not copied.
+                A duplicate keeps the saved audience and listing entries.
+                Photos, history and review records are not copied.
               </p>
             </section>
           )}

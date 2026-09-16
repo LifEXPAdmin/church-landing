@@ -47,7 +47,10 @@ import { readableFeedbackImage } from "./feedback-image-access";
 import { projectImage } from "./media";
 import { requirePublicIdea } from "./feedback-idea-access";
 import { exchangeReadableWhere, exchangeReportScope } from "./exchange-policy";
-import { exchangePriceText, type ExchangeCurrency } from "./exchange-options";
+import {
+  exchangeEvidenceSelect,
+  exchangeEvidenceText
+} from "./exchange-summary";
 
 type Target = {
   type: CommunityReportTarget;
@@ -99,11 +102,27 @@ async function targetIn(
   if (type === "EXCHANGE_LISTING") {
     const row = await tx.exchangeListing.findFirst({
       where: { AND: [{ id }, exchangeReadableWhere(context)] },
-      select: { id: true, version: true, ownerChurchId: true, audience: true, audienceChurchId: true }
+      select: {
+        id: true,
+        version: true,
+        ownerChurchId: true,
+        audience: true,
+        audienceChurchId: true
+      }
     });
-    return row && { type, id, version: row.version, contextVersion: 0,
-      scopeChurchId: exchangeReportScope(row),
-      source: { label: "Selected Exchange listing", href: `/platform/exchange/${id}` } };
+    return (
+      row && {
+        type,
+        id,
+        version: row.version,
+        contextVersion: 0,
+        scopeChurchId: exchangeReportScope(row),
+        source: {
+          label: "Selected Exchange listing",
+          href: `/platform/exchange/${id}`
+        }
+      }
+    );
   }
   if (type === "FEEDBACK_IDEA") {
     if (process.env.FEEDBACK_IDEAS_ENABLED !== "true") return null;
@@ -399,7 +418,10 @@ export async function communityReportIntakeAvailable(
       select: { id: true }
     }));
   const churchId = scopeChurchId;
-  const capability = targetType === "EXCHANGE_LISTING" ? "MODERATE_EXCHANGE_LISTINGS" : "MODERATE_CHURCH_POSTS";
+  const capability =
+    targetType === "EXCHANGE_LISTING"
+      ? "MODERATE_EXCHANGE_LISTINGS"
+      : "MODERATE_CHURCH_POSTS";
   const direct = await tx.churchCapabilityGrant.findMany({
     where: {
       churchId,
@@ -613,14 +635,15 @@ export function readCommunityReports(
       if (report.targetType === "EXCHANGE_LISTING") {
         const listing = await tx.exchangeListing.findUnique({
           where: { id: report.targetId },
-          select: { title: true, description: true, intent: true, currency: true, priceMinor: true,
-            category: true, condition: true, placeLabel: true, state: true, version: true, createdAt: true }
+          select: exchangeEvidenceSelect
         });
-        if (listing) selectedListing = { type: "EXCHANGE_LISTING" as const,
-          content: [listing.title, listing.description, listing.intent === "FREE" ? "Free" :
-            listing.priceMinor !== null && listing.currency ? `${listing.currency} ${exchangePriceText(listing.priceMinor, listing.currency as ExchangeCurrency)}` : "For sale",
-          listing.category, listing.condition, listing.placeLabel, listing.state].filter(Boolean).join("\n\n"),
-          version: listing.version, createdAt: listing.createdAt };
+        if (listing)
+          selectedListing = {
+            type: "EXCHANGE_LISTING" as const,
+            content: exchangeEvidenceText(listing),
+            version: listing.version,
+            createdAt: listing.createdAt
+          };
       }
       if (
         report.targetType === "FEEDBACK_IDEA" &&

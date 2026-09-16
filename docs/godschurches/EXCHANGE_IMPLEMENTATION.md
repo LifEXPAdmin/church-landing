@@ -77,13 +77,53 @@ removed a stale initial access-check notice. Harness fixes distinguish completed
 requests from buttons that appear while a request is still running, and route
 the fictional hostname's simulated lost response through the local TLS proxy.
 
+### Distinct intent integration
+
+Wanted, Service and Church need now have explicit canonical fields, editor and
+detail presentation, listing filters, report evidence, export and erasure. Type
+changes clear incompatible fields deliberately and the server rejects stale
+schemas or hidden values. Free and paid services have distinct validated pricing;
+paid rates use the same exact minor-unit parser and a stated hour/task unit.
+Church need requires actual church ownership and current Exchange duties.
+
+The expanded isolated gate passes **25 checks** (six input and 19 service groups).
+All **93 migrations** apply. The populated upgrade preserves existing account,
+post and old-policy Free/For sale fields, including a KWD three-decimal amount;
+new fields start empty. Dump/restore equality includes listings, audit and media.
+Tests cover type changes through current public/editor/report projections,
+church-owned need permissions, exact rates, export, unreported erasure and
+retention until the final selected report expires. Types, scoped lint and source
+copy validation pass.
+
+The complete intent interface passes **15 browser groups** with zero page errors,
+including real church-manager creation/publication, approved church reading,
+guest denial and concealment after delegate revocation. The brief reconciliation
+also adds type navigation, literal bounded search, category chips, owned status
+filters and a persistent save action. The focused gate now passes **27 checks**
+(seven input and 20 service groups), including filter privacy and literal SQL
+wildcard characters. The needed-by date uses the existing viewer date-format
+presentation without timezone conversion. These latest interface additions await
+the next built browser run.
+
+Read-cost review reduces a 20-card synthetic long-field response from 184,173 to
+13,813 bytes for guests and 184,196 to 13,836 bytes for owners. Both retain one
+listing SELECT and the same 20 records. Full detail stays 18,232 bytes. Ten warmed
+local samples put guest-list p95 at 3.18 ms and owned-list p95 at 5.34 ms; these
+small local diagnostics are not hosted latency or capacity acceptance.
+
+A fresh encrypted production copy upgrades from **91 to 93 migrations**, retains
+all **123 original-table column fingerprints**, and passes protected restrictive
+replay. Production is unmodified. The broad gate's initial account/church/media
+checks passed before the long-lived checkout exhausted the build's Node heap.
+The same gate is being rerun in a clean isolated checkout; production preview
+builds already pass with 199 verified traces and the pinned hydration renderer.
+
 ## Work remaining in this feature cycle
 
-Complete the newly eligible Wanted and Service fields in this same listing
-feature cycle, including type-change privacy and the original distinct-intent
-requirements. Church delegation has an implementation and isolated acceptance;
+Verify the integrated intent forms in the built browser and complete release
+acceptance in this same feature cycle. Church delegation has isolated acceptance;
 business delegation still lacks its canonical organization authority service.
-Review the new read costs, run the complete established gate, rehearse protected
-production migration/recovery and release through exact canonical live checks.
+Finish the complete established gate and integrated browser checks, retain the
+fresh protected migration rehearsal, and release through exact canonical live checks.
 Reconcile the existing private task and feature checklist at completion. Keep
 the broader final review last and continue eligible children in the same run.

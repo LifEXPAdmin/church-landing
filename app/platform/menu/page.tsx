@@ -113,7 +113,7 @@ export default async function PlatformMenuPage() {
               <MenuLink
                 href="/platform/exchange"
                 title="Exchange"
-                description="Find items offered free or for sale, or manage your own listings."
+                description="Find items, requests and skilled help, or manage your own listings."
                 icon={HandHeart}
               />
               <MenuLink

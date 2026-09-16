@@ -14,7 +14,8 @@ import {
 } from "../lib/platform/exchange-listings";
 import {
   emptyExchangeFields,
-  EXCHANGE_ITEM_POLICY
+  EXCHANGE_ITEM_POLICY,
+  EXCHANGE_EDITOR_SCHEMA
 } from "../lib/platform/exchange-options";
 import { searchDiscoveryPlaces } from "../lib/platform/discovery-places";
 import { uploadImage } from "../lib/platform/media";
@@ -72,7 +73,7 @@ test("production HTTPS listing API, HTML/RSC and all photo variants share curren
     placeId: (await searchDiscoveryPlaces("US", "Chicago")).places[0].id
   };
   const body = input("create", {
-    schema: 1,
+    schema: EXCHANGE_EDITOR_SCHEMA,
     fields,
     ownerChurchId: null,
     expectedVersion: 0

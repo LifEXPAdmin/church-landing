@@ -1614,6 +1614,9 @@ enum ExchangeListingState {
 enum ExchangeListingIntent {
   FREE
   SALE
+  WANTED
+  SERVICE
+  CHURCH_NEED
 }
 
 model ExchangeListing {
@@ -1636,6 +1639,13 @@ model ExchangeListing {
   condition String?
   currency String?
   priceMinor Int?
+  requestedItems String @default("")
+  neededBy String?
+  serviceArea String @default("")
+  availability String @default("")
+  qualifications String @default("")
+  servicePricing String?
+  serviceUnit String?
   country String?
   placeId Int?
   placeLabel String?

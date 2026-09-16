@@ -36,7 +36,7 @@ const { createPortalActor, assertPortalTestDatabase, seedOperatorGrants } =
   await import("../tests/seed-portal.ts");
 const { exchangeListingCommand, readExchangeListing } =
   await import("../lib/platform/exchange-listings.ts");
-const { EXCHANGE_ITEM_POLICY } =
+const { EXCHANGE_ITEM_POLICY, EXCHANGE_EDITOR_SCHEMA } =
   await import("../lib/platform/exchange-options.ts");
 const db = new PrismaClient();
 await assertPortalTestDatabase(db);
@@ -150,7 +150,7 @@ const fetchIn = (path, body, owner, headers = {}) =>
     { path, body, owner, headers }
   );
 const confirmItem = () =>
-  page.getByRole("checkbox", { name: /I may offer this item/ }).check();
+  page.getByRole("checkbox", { name: /I may publish this listing/ }).check();
 try {
   const owner = await createPortalActor(db, "exbrowser"),
     other = await createPortalActor(db, "exother"),
@@ -326,13 +326,11 @@ try {
   })
     .png()
     .toBuffer();
-  await page
-    .getByLabel("Choose photos", { exact: true })
-    .setInputFiles({
-      name: "fictional-item.png",
-      mimeType: "image/png",
-      buffer: bytes
-    });
+  await page.getByLabel("Choose photos", { exact: true }).setInputFiles({
+    name: "fictional-item.png",
+    mimeType: "image/png",
+    buffer: bytes
+  });
   await page.getByRole("button", { name: "Save photo", exact: true }).click();
   await page
     .getByRole("button", { name: "Edit photo 1 description", exact: true })
@@ -445,7 +443,7 @@ try {
     listingId: id,
     expectedVersion: before.listing.version,
     mutationId: randomUUID(),
-    schema: 1,
+    schema: EXCHANGE_EDITOR_SCHEMA,
     fields: { ...before.fields, title: "Another saved title" },
     itemPolicy: EXCHANGE_ITEM_POLICY,
     itemConfirmed: true
@@ -591,6 +589,427 @@ try {
   });
   ok(
     "Editor and My listings fit phone widths; 320px enlarged text and dark appearance have no horizontal page overflow"
+  );
+
+  await go(`/platform/exchange/${duplicateId}/edit`);
+  assert.equal(
+    await editor
+      .locator('option[value="CHURCH_NEED"]')
+      .evaluate((node) => node.disabled),
+    true
+  );
+  await editor
+    .getByLabel("Listing type", { exact: true })
+    .selectOption("WANTED");
+  await editor
+    .getByLabel("Category (required to publish)", { exact: true })
+    .selectOption("BOOKS");
+  const requested = "Fictional requested books " + randomUUID();
+  await editor
+    .getByLabel("Requested items (required to publish)", { exact: true })
+    .fill(requested);
+  await editor
+    .getByLabel("Needed by (optional)", { exact: true })
+    .fill("2028-02-29");
+  assert.equal(await editor.getByLabel("Amount", { exact: true }).count(), 0);
+  assert.equal(
+    await editor.getByLabel("Audience", { exact: true }).inputValue(),
+    "PUBLIC"
+  );
+  await editor
+    .getByRole("button", { name: "Save private draft", exact: true })
+    .click();
+  await waitUntil(
+    async () =>
+      (
+        await db.exchangeListing.findUniqueOrThrow({
+          where: { id: duplicateId }
+        })
+      ).requestedItems === requested
+  );
+  await go(`/platform/exchange/${duplicateId}/edit`);
+  assert.equal(
+    await editor
+      .getByLabel("Needed by (optional)", { exact: true })
+      .inputValue(),
+    "2028-02-29"
+  );
+  await confirmItem();
+  await page
+    .getByRole("button", { name: "Publish as active", exact: true })
+    .click();
+  await waitUntil(
+    async () =>
+      (
+        await db.exchangeListing.findUniqueOrThrow({
+          where: { id: duplicateId }
+        })
+      ).state === "ACTIVE"
+  );
+  await signIn(null);
+  await go(`/platform/exchange/${duplicateId}`);
+  await page.getByText(requested, { exact: true }).waitFor();
+  assert.equal(await page.locator('time[datetime="2028-02-29"]').count(), 1);
+  await db.platformUser.update({
+    where: { id: owner.id },
+    data: { dateFormat: "DMY", regionalVersion: { increment: 1 } }
+  });
+  await signIn(owner);
+  await go(`/platform/exchange/${duplicateId}`);
+  assert.equal(
+    await page.locator('time[datetime="2028-02-29"]').innerText(),
+    "29/02/2028"
+  );
+  await signIn(null);
+  await go("/platform/exchange?intent=WANTED");
+  await page.locator(`a[href="/platform/exchange/${duplicateId}"]`).waitFor();
+  assert.equal(
+    await page
+      .getByRole("navigation", { name: "Listing types", exact: true })
+      .getByRole("link", { name: "Wanted", exact: true })
+      .getAttribute("aria-current"),
+    "page"
+  );
+  const filters = page.getByRole("form", {
+    name: "Filter Exchange listings",
+    exact: true
+  });
+  await filters.getByLabel("Search listings", { exact: true }).fill(requested);
+  await filters.getByRole("radio", { name: "Books", exact: true }).check();
+  await filters
+    .getByRole("button", { name: "Show listings", exact: true })
+    .click();
+  await page.waitForURL(
+    (url) =>
+      url.searchParams.get("q") === requested &&
+      url.searchParams.get("category") === "BOOKS"
+  );
+  await page.locator(`a[href="/platform/exchange/${duplicateId}"]`).waitFor();
+  assert.equal(
+    (
+      await fetchIn(
+        `/api/platform/exchange?intent=WANTED&q=${encodeURIComponent(requested)}&category=BOOKS`
+      )
+    ).body.listings.length,
+    1
+  );
+  await bounded();
+  await page.screenshot({
+    path: output + "/wanted-search-mobile.png",
+    fullPage: true
+  });
+  await signIn(owner);
+  await go("/platform/exchange/mine");
+  await filters
+    .getByLabel("Listing status", { exact: true })
+    .selectOption("ACTIVE");
+  await filters.getByLabel("Search listings", { exact: true }).fill(title);
+  await filters
+    .getByRole("button", { name: "Show listings", exact: true })
+    .click();
+  await page.waitForURL((url) => url.searchParams.get("state") === "ACTIVE");
+  await page
+    .locator(`a[href="/platform/exchange/${duplicateId}/edit"]`)
+    .waitFor();
+  await filters
+    .getByLabel("Listing status", { exact: true })
+    .selectOption("ARCHIVED");
+  await filters
+    .getByRole("button", { name: "Show listings", exact: true })
+    .click();
+  await page.waitForURL((url) => url.searchParams.get("state") === "ARCHIVED");
+  await page
+    .getByText(
+      "No saved listings match these choices. Create a private draft to begin.",
+      { exact: true }
+    )
+    .waitFor();
+  ok(
+    "Wanted fields and calendar dates persist, including the reader's date format; type navigation, literal search, category chips and owned status filters use current authorized rows"
+  );
+
+  await signIn(owner);
+  await go(`/platform/exchange/${duplicateId}/edit`);
+  await editor
+    .getByLabel("Listing type", { exact: true })
+    .selectOption("SERVICE");
+  await editor
+    .getByLabel("Category (required to publish)", { exact: true })
+    .selectOption("HOME_GARDEN");
+  assert.equal(
+    await editor
+      .getByLabel("Condition (required to publish)", { exact: true })
+      .count(),
+    0
+  );
+  assert.equal(
+    await editor
+      .getByLabel("Requested items (required to publish)", { exact: true })
+      .count(),
+    0
+  );
+  const qualifications = "Fictional amateur experience " + randomUUID();
+  await editor
+    .getByLabel("Service area (required to publish)", { exact: true })
+    .fill("Fictional Chicago area");
+  await editor
+    .getByLabel("Availability (required to publish)", { exact: true })
+    .fill("Fictional Saturday afternoons by agreement");
+  await editor
+    .getByLabel("Self-stated qualifications (required to publish)", {
+      exact: true
+    })
+    .fill(qualifications);
+  await editor
+    .getByLabel("Service pricing (required to publish)", { exact: true })
+    .selectOption("FIXED");
+  await editor
+    .getByLabel("Price unit (required to publish)", { exact: true })
+    .selectOption("HOUR");
+  await editor.getByLabel("Currency", { exact: true }).selectOption("KWD");
+  await editor.getByLabel("Amount", { exact: true }).fill("1.001");
+  await confirmItem();
+  await editor
+    .getByRole("button", { name: "Save listing changes", exact: true })
+    .click();
+  await waitUntil(
+    async () =>
+      (
+        await db.exchangeListing.findUniqueOrThrow({
+          where: { id: duplicateId }
+        })
+      ).qualifications === qualifications
+  );
+  let typed = await db.exchangeListing.findUniqueOrThrow({
+    where: { id: duplicateId }
+  });
+  assert.equal(typed.priceMinor, 1001);
+  assert.equal(typed.requestedItems, "");
+  assert.equal(typed.neededBy, null);
+  await signIn(null);
+  const serviceHtml = await go(`/platform/exchange/${duplicateId}`);
+  await page.getByText("KWD 1.001 per hour", { exact: true }).waitFor();
+  await page.getByText(qualifications, { exact: true }).waitFor();
+  assert.ok(!(await serviceHtml.text()).includes(requested));
+  assert.ok(
+    !String(
+      (
+        await fetchIn(
+          `/platform/exchange/${duplicateId}`,
+          undefined,
+          undefined,
+          { RSC: "1" }
+        )
+      ).body
+    ).includes(requested)
+  );
+  await page.getByText(/Godschurches has not verified licenses/).waitFor();
+  await bounded();
+  await page.screenshot({
+    path: output + "/service-detail-mobile.png",
+    fullPage: true
+  });
+  ok(
+    "Changing Wanted to Service clears the old request in the database, HTML and RSC; paid help displays an exact rate and self-stated qualification notice"
+  );
+
+  await signIn(owner);
+  await go(`/platform/exchange/${duplicateId}/edit`);
+  await editor
+    .getByLabel("Service pricing (required to publish)", { exact: true })
+    .selectOption("FREE");
+  assert.equal(await editor.getByLabel("Amount", { exact: true }).count(), 0);
+  await confirmItem();
+  await editor
+    .getByRole("button", { name: "Save listing changes", exact: true })
+    .click();
+  await waitUntil(
+    async () =>
+      (
+        await db.exchangeListing.findUniqueOrThrow({
+          where: { id: duplicateId }
+        })
+      ).servicePricing === "FREE"
+  );
+  typed = await db.exchangeListing.findUniqueOrThrow({
+    where: { id: duplicateId }
+  });
+  for (const key of ["priceMinor", "currency", "serviceUnit"])
+    assert.equal(typed[key], null);
+  await go(`/platform/exchange/${duplicateId}/edit`);
+  assert.equal(
+    await editor
+      .getByLabel("Service pricing (required to publish)", { exact: true })
+      .inputValue(),
+    "FREE"
+  );
+  const typedCurrent = await readExchangeListing(
+    db,
+    owner.token,
+    duplicateId,
+    true
+  );
+  for (const delta of [
+    { schema: 1 },
+    { fields: { ...typedCurrent.fields, requestedItems: requested } }
+  ]) {
+    const denied = await fetchIn(
+      "/api/platform/exchange",
+      {
+        operation: "save",
+        mutationId: randomUUID(),
+        listingId: duplicateId,
+        expectedVersion: typedCurrent.listing.version,
+        schema: EXCHANGE_EDITOR_SCHEMA,
+        fields: typedCurrent.fields,
+        itemPolicy: EXCHANGE_ITEM_POLICY,
+        itemConfirmed: true,
+        ...delta
+      },
+      owner.id
+    );
+    assert.equal(denied.status, 400);
+  }
+  assert.equal(
+    (await db.exchangeListing.findUniqueOrThrow({ where: { id: duplicateId } }))
+      .version,
+    typedCurrent.listing.version
+  );
+  await page.setViewportSize({ width: 320, height: 780 });
+  await page.evaluate(() => {
+    document.documentElement.style.fontSize = "200%";
+    document.documentElement.classList.add("dark");
+  });
+  await bounded();
+  await page.screenshot({
+    path: output + "/service-editor-320-large-dark.png",
+    fullPage: true
+  });
+  ok(
+    "Switching paid help to free clears all rate fields; reload preserves that choice, stale schemas and hidden request fields fail without a write, and the service editor fits enlarged mobile text"
+  );
+  await page.evaluate(() => {
+    document.documentElement.style.fontSize = "";
+    document.documentElement.classList.remove("dark");
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  const church = await db.church.create({
+    data: {
+      name: "Fictional browser Exchange church",
+      slug: "fixture-ex-browser-" + randomUUID(),
+      summary: "Isolated church listing fixture",
+      communityListed: true
+    }
+  });
+  await db.churchConnection.createMany({
+    data: [owner, reviewer].map((actor) => ({
+      userId: actor.id,
+      churchId: church.id,
+      state: "APPROVED"
+    }))
+  });
+  await db.churchCapabilityGrant.createMany({
+    data: [
+      {
+        userId: owner.id,
+        churchId: church.id,
+        capability: "MANAGE_EXCHANGE_LISTINGS"
+      },
+      {
+        userId: reviewer.id,
+        churchId: church.id,
+        capability: "MODERATE_EXCHANGE_LISTINGS"
+      }
+    ]
+  });
+  await go("/platform/exchange/new");
+  await page
+    .getByLabel("Listing owner", { exact: true })
+    .selectOption(church.id);
+  await editor
+    .getByLabel("Listing type", { exact: true })
+    .selectOption("CHURCH_NEED");
+  const needTitle = "Fictional church books " + randomUUID();
+  await editor
+    .getByLabel("Title (required to publish)", { exact: true })
+    .fill(needTitle);
+  await editor
+    .getByLabel("Description (required to publish)", { exact: true })
+    .fill("Fictional shared church-owned request");
+  await editor
+    .getByLabel("Category (required to publish)", { exact: true })
+    .selectOption("BOOKS");
+  await editor
+    .getByLabel("Requested items (required to publish)", { exact: true })
+    .fill("Fictional church library books");
+  await editor.getByLabel("Country", { exact: true }).selectOption("US");
+  await editor
+    .getByLabel("Find a town or area", { exact: true })
+    .fill("Chicago");
+  await editor.getByRole("button", { name: "Find area", exact: true }).click();
+  await editor
+    .getByRole("button", { name: /^Chicago,/ })
+    .first()
+    .click();
+  await editor.getByLabel("Audience", { exact: true }).selectOption("CHURCH");
+  await editor
+    .getByLabel("Church (required to publish)", { exact: true })
+    .selectOption(church.id);
+  await editor
+    .getByRole("button", { name: "Save a private draft", exact: true })
+    .click();
+  await page.waitForURL(/\/platform\/exchange\/[^/]+\/edit$/);
+  const needId = new URL(page.url()).pathname.split("/")[3];
+  await confirmItem();
+  await page
+    .getByRole("button", { name: "Publish as active", exact: true })
+    .click();
+  await waitUntil(
+    async () =>
+      (await db.exchangeListing.findUniqueOrThrow({ where: { id: needId } }))
+        .state === "ACTIVE"
+  );
+  assert.equal(
+    (await db.exchangeListing.findUniqueOrThrow({ where: { id: needId } }))
+      .ownerChurchId,
+    church.id
+  );
+  await signIn(reviewer);
+  await go(`/platform/exchange/${needId}`);
+  await page.getByRole("heading", { name: needTitle, exact: true }).waitFor();
+  await page
+    .getByText("Fictional church library books", { exact: true })
+    .waitFor();
+  await signIn(null);
+  const privateNeed = await go(`/platform/exchange/${needId}`);
+  assert.ok(!(await privateNeed.text()).includes(needTitle));
+  await signIn(owner);
+  await go(`/platform/exchange/${needId}/edit`);
+  await editor
+    .getByLabel("Requested items (required to publish)", { exact: true })
+    .waitFor();
+  await db.churchCapabilityGrant.updateMany({
+    where: {
+      userId: owner.id,
+      churchId: church.id,
+      capability: "MANAGE_EXCHANGE_LISTINGS"
+    },
+    data: { revokedAt: new Date(), version: { increment: 1 } }
+  });
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await waitUntil(async () => !(await editor.isVisible()));
+  assert.equal(
+    (
+      await fetchIn(
+        `/api/platform/exchange?view=editor&id=${needId}`,
+        undefined,
+        owner.id
+      )
+    ).status,
+    404
+  );
+  ok(
+    "A current church manager creates and publishes Church need through the real form; approved readers see it, guests cannot, and revoked management conceals the editor"
   );
   assert.deepEqual(errors, []);
   ok("No browser page errors in the exercised listing flows");

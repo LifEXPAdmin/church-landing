@@ -155,12 +155,40 @@ export async function downloadAccountExport(
       }
     });
     const exchangeListings = await tx.exchangeListing.findMany({
-      where: { ownerId: userId, ownerChurchId: null }, orderBy: { id: "asc" }, take: MAX_ROWS + 1,
-      select: { id: true, createdAt: true, updatedAt: true, version: true, state: true,
-        moderationState: true, intent: true, title: true, description: true, category: true,
-        condition: true, currency: true, priceMinor: true, country: true, placeId: true,
-        placeLabel: true, audience: true, audienceChurchId: true, publishedAt: true,
-        confirmedAt: true, itemPolicy: true, recoveryRequired: true }
+      where: { ownerId: userId, ownerChurchId: null },
+      orderBy: { id: "asc" },
+      take: MAX_ROWS + 1,
+      select: {
+        id: true,
+        createdAt: true,
+        updatedAt: true,
+        version: true,
+        state: true,
+        moderationState: true,
+        intent: true,
+        title: true,
+        description: true,
+        category: true,
+        condition: true,
+        currency: true,
+        priceMinor: true,
+        country: true,
+        placeId: true,
+        requestedItems: true,
+        neededBy: true,
+        serviceArea: true,
+        availability: true,
+        qualifications: true,
+        servicePricing: true,
+        serviceUnit: true,
+        placeLabel: true,
+        audience: true,
+        audienceChurchId: true,
+        publishedAt: true,
+        confirmedAt: true,
+        itemPolicy: true,
+        recoveryRequired: true
+      }
     });
     const photoAlbums = await tx.photoAlbum.findMany({
       where: { ownerId: userId },

@@ -5,6 +5,7 @@ import { TopicReadBoundary } from "@/components/platform/topic-read-boundary";
 import { PrivateSnapshotGuard } from "@/components/platform/private-snapshot-guard";
 import { RelationshipControls } from "@/components/platform/relationship-controls";
 import { ExchangePhotos } from "@/components/platform/exchange-photos";
+import { RegionalWallTime } from "@/components/platform/regional-presentation";
 import {
   ExchangeNavigation,
   ExchangePrice,
@@ -15,6 +16,8 @@ import { getCurrentPlatformUser } from "@/lib/platform/session";
 import { exchangeListingPage } from "@/lib/platform/exchange-session";
 import {
   EXCHANGE_CONTACT_NOTICE,
+  EXCHANGE_SERVICE_NOTICE,
+  exchangeIntentLabels,
   exchangeCategoryLabels,
   exchangeConditionLabels,
   exchangeStateLabels,
@@ -48,6 +51,7 @@ export default async function Page({
       <article className="space-y-5 break-words">
         <header className="space-y-3">
           <p className="gc-eyebrow">
+            {exchangeIntentLabels[listing.intent]} ·{" "}
             {exchangeStateLabels[listing.state]} ·{" "}
             {listing.audience === "CHURCH"
               ? "Church audience"
@@ -60,13 +64,14 @@ export default async function Page({
         </header>
         {listing.state === "CLOSED" && (
           <p>
-            This listing is closed. It is no longer shown among available items.
+            This listing is closed. It is no longer shown among available
+            listings.
           </p>
         )}
         {listing.state === "RESERVED" && (
           <p>
-            The owner has marked this item reserved. This status does not create
-            a payment or a reservation agreement.
+            The owner has marked this listing reserved. This status does not
+            create a payment or a reservation agreement.
           </p>
         )}
         <p className="whitespace-pre-wrap">{listing.description}</p>
@@ -77,14 +82,20 @@ export default async function Page({
               {exchangeCategoryLabels[listing.category as ExchangeCategory]}
             </dd>
           </div>
+          {listing.condition && (
+            <div>
+              <dt className="font-semibold">Condition</dt>
+              <dd>
+                {
+                  exchangeConditionLabels[
+                    listing.condition as ExchangeCondition
+                  ]
+                }
+              </dd>
+            </div>
+          )}
           <div>
-            <dt className="font-semibold">Condition</dt>
-            <dd>
-              {exchangeConditionLabels[listing.condition as ExchangeCondition]}
-            </dd>
-          </div>
-          <div>
-            <dt className="font-semibold">Coarse pickup area</dt>
+            <dt className="font-semibold">Coarse area</dt>
             <dd>{listing.placeLabel}</dd>
           </div>
           <div>
@@ -92,6 +103,43 @@ export default async function Page({
             <dd>{owner?.name}</dd>
           </div>
         </dl>
+        {(listing.intent === "WANTED" || listing.intent === "CHURCH_NEED") && (
+          <section className="space-y-3" aria-label="Item request">
+            <h2 className="text-2xl">Requested items</h2>
+            <p className="whitespace-pre-wrap">{listing.requestedItems}</p>
+            {listing.neededBy && (
+              <p>
+                Needed by{" "}
+                <time dateTime={listing.neededBy}>
+                  <RegionalWallTime value={listing.neededBy} />
+                </time>
+                . This date does not automatically close the listing or create a
+                booking.
+              </p>
+            )}
+          </section>
+        )}
+        {listing.intent === "SERVICE" && (
+          <section className="space-y-3" aria-label="Service details">
+            <dl className="space-y-3">
+              {(
+                [
+                  ["Service area", listing.serviceArea],
+                  ["Availability", listing.availability],
+                  ["Self-stated qualifications", listing.qualifications]
+                ] as const
+              ).map(([label, value]) => (
+                <div key={label}>
+                  <dt className="font-semibold">{label}</dt>
+                  <dd className="whitespace-pre-wrap">{value}</dd>
+                </div>
+              ))}
+            </dl>
+            <p className="rounded-xl border border-gc-divider p-4 text-sm">
+              {EXCHANGE_SERVICE_NOTICE}
+            </p>
+          </section>
+        )}
         <ExchangePhotos
           listingId={listing.id}
           accountId={user?.id ?? null}
@@ -114,8 +162,8 @@ export default async function Page({
           )}
           <p className="text-sm">
             Opening the owner’s page does not send a message, reveal contact
-            details, request a connection or reserve the item. Existing contact
-            preferences and consent still apply.
+            details, request a connection or reserve the listing. Existing
+            contact preferences and consent still apply.
           </p>
           {owner && (
             <RelationshipControls
