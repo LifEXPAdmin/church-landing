@@ -211,7 +211,7 @@ try {
   );
 
   await go("/platform/settings/help");
-  await page.getByRole("link", { name: "What we're building", exact: true }).click();
+  await page.getByRole("link", { name: /^What we're building Browse reviewed ideas/ }).click();
   await page.waitForURL("**/platform/feedback/ideas");
   await page.getByRole("heading", { name: "Reviewed ideas", exact: true }).waitFor();
   await page.getByText(/Considering, Planned, Building and Testing are work in progress/).waitFor();
