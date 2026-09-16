@@ -1,9 +1,60 @@
 # Weekly feedback review and shared reports
 
-September 16, 2026 UTC. This is an **unreleased feature-31 checkpoint**, following
-[selected follow-up](FEEDBACK_FOLLOWUP_ACCEPTANCE.md). The staged feature gate and
-protected upgrade pass; deployment and exact canonical live checks remain ahead.
-Actual operator, notice, provider and physical-device prerequisites still apply.
+September 16, 2026 UTC. Product **2026.09.16.1**, application
+**799549dcfd2b74709c0ebd8e07f8304f97a34a20**, is **READY** in
+**dpl_9wyYfbSuGveYmYHtG4DzDPYdPhDG** at **01:41:07 UTC**. The independent
+`godschurches.com` alias and actual serving endpoint match. This release includes
+[selected follow-up](FEEDBACK_FOLLOWUP_ACCEPTANCE.md), forms, private images,
+durable prompts, reviewed ideas, weekly review and shared Growth reports.
+Actual operator, notice, provider and physical-device prerequisites still apply;
+publication does not activate intake or outbound feedback delivery.
+
+## Verified canonical release
+
+The staged gate covers all 163 files, with 997 passing checks and two expected
+disabled-delivery skips. All 35 final production-preview browser groups pass.
+Subsequent candidate changes are tests and documentation only. Original failed
+attempts remain preserved and are not counted as successful stages.
+
+Live acceptance passes 40 public/private-denial checks, four health checks and
+six read-only observations in the existing authenticated Chrome account. Intake
+is honestly unavailable, owned receipts are empty, prompt choices are unchanged,
+weekly review is denied without its grant, and selected-feedback email is disabled.
+Menu retains Feedback, QR, Messages and Activity. Public automated browser errors
+are zero; authenticated observations used accessibility state rather than console
+collection. Scoped provider error/fatal queries return zero rows from READY through
+01:47:41 UTC, with a limit of 100 per level.
+
+All 84 migration checksums match, with none pending. The protected 69-to-84
+production-copy upgrade preserves 111 original-table fingerprints and completes
+current-control replay. Actual before/after production fingerprints across those
+111 tables also match. The installed registry preserves all 69 prior checksums.
+Both ordinary and installed daily 84-to-84 encrypted restores pass with 119 tables
+and plaintext removed; those ordinary restores do not claim protected replay.
+Nightly validation finds 53 encrypted sets, zero issues and zero removals. The
+scheduled local recovery host must still be awake.
+
+The exact deployed Activity and scheduled-publication consumers each complete a
+content-free nonexistent-source probe with HTTP 200 and zero application writes.
+No requester notification or provider delivery is inferred from these probes.
+Production test-data writes and outbound sends are zero. Actual support, product
+review, metric view/export and account-manager grants and enabled support settings
+are zero; all new feedback tables are empty. Feedback intake, ideas and follow-up
+flags remain absent/default-off, and ordinary support intake remains false.
+
+Actual provider output passes 187 traces, 59,092 entries and 474 server JavaScript
+files. Its canonical renderer is 173,096 bytes, SHA256
+`2b7c5f99a8710e52520e7d0dc25c9fb65fd7c06e0a1d6cfee97276e0a452a3b7`.
+There are 385 lambda route entries and twelve distinct packages totaling
+168,465,078 bytes, including one middleware package. Application functions use
+Node24/2048 MB in iad1; middleware is deployed to eight regions. This is package
+accounting, not billing, peak memory, user transfer size, latency or capacity.
+
+The engineering contracts and interfaces are delivered. Actual first-operator
+setup/notice activation, provider access and physical/assistive-technology/pilot
+acceptance remain with their existing actions. Continue the updated P1 visible
+Notifications center and adult photo-tag dependencies in the same unified run;
+keep the final batch review last.
 
 ## Complete-feature verification checkpoint
 
@@ -126,7 +177,6 @@ commands and 12,400 bytes; without metrics 3.276/4.039 ms, 14 commands and
 These fictional local measurements are not production latency or capacity.
 No production test data or outbound messages were created.
 
-Continue full feature acceptance, source comparison, protected upgrade and
-authorized release. Recheck actual serving identity and flags before declaring
-anything live. Actual first-operator, provider and physical/pilot evidence remains
+The dated candidate checkpoints above are superseded by the verified release at
+the top. Actual first-operator, provider and physical/pilot evidence remains
 separate from isolated engineering acceptance.

@@ -1,5 +1,19 @@
 # Platform growth measurement core
 
+## Shared feedback integration — September 16, 2026 UTC
+
+The actual feedback ratings, displayed-exposure coverage, source categories and
+weekly context now ship in **2026.09.16.1 / 799549d**, exact READY/canonical
+deployment **dpl_9wyYfbSuGveYmYHtG4DzDPYdPhDG**. Growth and its separately permitted
+CSV share the same current-source math, suppression, withdrawal and coverage rules.
+The staged 163-file gate, 35 browser groups and live/recovery checks pass; see
+[complete feedback acceptance](FEEDBACK_WEEKLY_ACCEPTANCE.md). The former source
+integration dependency is cleared. Actual privileged production report access,
+operator setup and physical/pilot acceptance remain unverified. No measurement
+consent, QA access grant or production fixture was created.
+
+## Original core release receipt
+
 September 15, 2026 UTC. Product **2026.09.15.7**, application commit
 **944d382d12742deec0aa36071dc30ffc444399d8**, is **READY** in
 **dpl_4ppv8oT9ZRKMBA4xeDiicHhQ1TcF** as of **19:50:59 UTC**. The independent

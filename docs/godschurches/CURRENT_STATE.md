@@ -1,3 +1,32 @@
+## Feedback and shared reports verified live — September 16, 2026 UTC
+
+**2026.09.16.1 / 799549dcfd2b74709c0ebd8e07f8304f97a34a20** is READY in
+**dpl_9wyYfbSuGveYmYHtG4DzDPYdPhDG**, independently canonical at
+`godschurches.com`, with the exact serving SHA verified. Forms/private images,
+durable optional prompts, reviewed ideas/votes, chosen follow-up, weekly notes
+and actual shared feedback reports are released together.
+
+[Complete evidence](FEEDBACK_WEEKLY_ACCEPTANCE.md): staged 163-file gate,
+997 passes/two expected skips; 35 final browser groups; 40 public/private live
+checks, four health checks and six actual signed-in read-only observations.
+Both native queue probes execute on this deployment with zero application writes.
+All 84 migration/recovery checksums match; protected upgrade preserves 111 original
+tables, and actual production fingerprints remain unchanged. Installed daily
+restore and 53-set nightly validation pass. No production test-data writes or
+outbound sends occurred; scoped live runtime error/fatal rows are zero.
+
+Engineering dependencies in shared admin/metrics/feedback acceptance are supplied.
+Intake, ideas and selected feedback delivery remain default-off: actual support,
+product-review/metric/account-manager grants and support readiness settings are
+absent. Preserve existing operator/authenticator, provider, physical-phone,
+assistive-technology and pilot acceptance; no QA authority was created.
+
+Next eligible priority is the later P1 visible Notifications center and adult
+photo/person-tag request/review integration. Preserve the earlier Activity and
+notification releases, inspect current prerequisite contracts and keep family
+extensions behind their separate gate. Continue Extra High and ordinary subtasks;
+the final batch review stays last.
+
 ## Feedback candidate ready for release — September 16, 2026 UTC
 
 Candidate `a1520e4` completes staged regression coverage of all 163 discovered

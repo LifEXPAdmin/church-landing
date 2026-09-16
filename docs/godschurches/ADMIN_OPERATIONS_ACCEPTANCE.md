@@ -1,5 +1,19 @@
 # Scoped admin requests and access
 
+## Shared feedback integration — September 16, 2026 UTC
+
+**2026.09.16.1 / 799549d** is exact READY/canonical in
+**dpl_9wyYfbSuGveYmYHtG4DzDPYdPhDG**. The admin Feedback queue, source-permitted
+weekly review and separately authorized actual Growth reports now integrate the
+native feedback owner. Private working notes, grouped themes and source links
+retain current scope checks. Isolated A1/A2/A3 engineering, the staged 163-file gate
+and 35 browser groups pass; [the release receipt](FEEDBACK_WEEKLY_ACCEPTANCE.md)
+records canonical/live/recovery evidence and its limits. Shared source contracts
+are supplied. Actual first-operator/authenticator setup and physical/assistive-
+technology acceptance remain open; no production authority was manufactured.
+
+## Original core release receipt
+
 September 15, 2026 UTC. Product **2026.09.15.6**, application commit
 **7384afdbce5a1b0cafbb56f99c41345d298b6b4f**, is **READY** in
 **dpl_HVdiV3cpLz4L98FvhVNiDbhsJobg** as of **17:00:20 UTC**. An independent
