@@ -1,13 +1,30 @@
-## Private following lists in isolated acceptance, September 16, 2026 UTC
+## Private following lists verified live, September 16, 2026 UTC
 
-Candidate **2026.09.16.13** adds owner-only named following lists, current-follow
-membership, explicit Following selection, safe deletion, private editing and
-restrictive recovery. Existing follows, discovery presets and audience controls
-remain authoritative. See [the implementation checkpoint](FOLLOWING_LISTS_IMPLEMENTATION.md)
-and [contract](FOLLOWING_LISTS_CONTRACT.md). Production remains the verified
-Exchange release below. Finish built-browser checks, measured costs, the complete
-gate, protected upgrade, exact canonical release/live acceptance and private task
-reconciliation before continuing eligible church Needs. Final review stays last.
+**2026.09.16.13 / d10ac20a6004b92c1a601ee5cbb49ddfc5e7c045** is READY in
+**dpl_8HNSiCsRye4KdzS5dHoNjybMcakF** at **23:53:03.543 UTC**, independently
+canonical and confirmed by the serving release/build. Owner-only named lists,
+current-follow membership, explicit Following selection, atomic private editing,
+safe deletion, account recovery, Settings and guidance ship together. See
+[the exact release receipt](FOLLOWING_LISTS_IMPLEMENTATION.md) and
+[contract](FOLLOWING_LISTS_CONTRACT.md).
+
+The complete 181-file gate reports **1,126 passes, zero failures and two expected
+skips** across 1,128 reported tests. Nine final list/Settings and eight existing
+Exchange handoff browser groups pass. Live: **72 public/access, six health and
+six signed-in groups**. All 96 production/recovery migration checksums match;
+all 130 non-cache table fingerprints are unchanged through 23:59:38.001 UTC.
+Verification creates one temporary Following reading set, removes none and makes
+zero account/content/preference/relationship writes or sends. Intervening
+predeployment weekly-cache activity is recorded separately. Scoped runtime
+error/fatal rows are zero through 23:59:03.926 UTC. Recovery restores 131 tables;
+68-set nightly validation passes with zero issues/removals.
+
+Complete named-list scope and reconcile its private records. Optional contact
+lookup and broader actual-phone relationship acceptance retain their explicit
+policy/device requirements. Continue eligible church Needs and its unlocked
+smaller steps through a complete feature cycle. Extra High throughout; final
+review stays last. The recorded main-queue propagation gap remains distinct from
+focused-page and task synchronization.
 
 ## Private Exchange handoffs verified live, September 16, 2026 UTC
 

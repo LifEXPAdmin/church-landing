@@ -1,6 +1,7 @@
 # Private following lists
 
-Contract, 16 September 2026. Implementation and release acceptance are pending.
+Contract, 16 September 2026. Implemented and verified live in 2026.09.16.13.
+See [the exact implementation and release receipt](FOLLOWING_LISTS_IMPLEMENTATION.md).
 
 Members can create, rename and delete up to 20 private lists, each containing up
 to 100 currently followed people or churches. List names and membership are
