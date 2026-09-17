@@ -1,3 +1,19 @@
+## Church Needs contract preparation, September 17, 2026 UTC
+
+The next eligible feature extends existing Church need listings with structured
+Donate, Sell to us, Transport and Volunteer actions. Its
+[contract in progress](EXCHANGE_NEEDS_CONTRACT.md) retains canonical Exchange
+ownership/current permissions, separate committed and received counts, explicit
+private coordinator consent, loan returns and existing event volunteer capacity.
+Repeat structures and partial closing are included in the same feature cycle.
+
+The current Exchange and private-list prerequisites are verified below. Actual
+fulfillment pilots, appointments and physical-phone observations retain their
+separate requirements. Application and schema implementation have not begun;
+production remains **2026.09.16.13 / d10ac20**. Complete implementation, isolated
+acceptance, exact release and live reconciliation before the next feature.
+Extra High throughout; final review stays last.
+
 ## Private following lists verified live, September 16, 2026 UTC
 
 **2026.09.16.13 / d10ac20a6004b92c1a601ee5cbb49ddfc5e7c045** is READY in
