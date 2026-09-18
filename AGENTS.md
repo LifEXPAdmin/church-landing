@@ -15,16 +15,30 @@ Step 001–132 are separate identifiers. Read original step details relevant to 
 active task; a mapping is not completion evidence. Record partial or superseded
 requirements in the existing private task rather than duplicating its backlog.
 
-Before selecting a feature, follow the [unified feature workflow](docs/godschurches/WORKFLOW_GUIDE.md#unified-feature-workflow).
+Before selecting a feature, follow the [two-chat feature workflow](docs/godschurches/WORKFLOW_GUIDE.md#unified-feature-workflow)
+and [shared coordination procedure](docs/godschurches/WORKER_COORDINATION.md).
 Read the selected private brief and prerequisite receipt; preserve completed work
-and real dependency gates. The owner's current instruction keeps Extra High for
-the entire run and supersedes per-task reasoning routes and separate sessions.
-Use ordinary feature tasks with subtasks; historical M/XH IDs remain references.
+and real dependency gates. The owner uses two independent chats, A1 and A2,
+with the model/reasoning setting the owner selected. Actual A1/A2 task labels
+govern ownership; do not take the other worker's tasks or personal owner actions.
+Use only the assigned worktree, branch and isolated test environment. Reserve
+identity and affected files/contracts atomically before editing. Maintain only
+your own private checkpoint under the resolved Git common directory. Never steal
+an active or unexamined lock. A2 may prepare its own environment while shared
+setup finishes; missing acknowledgment alone is not a blocker.
+
 Finish every required UI, integration, configuration, regression, release-note
-and deployment step in the same feature cycle, through exact canonical release
-and live verification. Complete newly unlocked children immediately. Continue
-to the next eligible priority until ready work is exhausted, a genuine blocker
-prevents independent progress, or the owner stops the run. Keep final review last.
+and deployment step in the same feature cycle. A2 hands tested committed work
+to A1 as ready to merge, then continues its next eligible assignment. A1 alone
+integrates main, applies production migrations and deploys under the shared
+atomic release lock. A1 checks ready-to-merge work at safe task checkpoints and
+before stopping; verify the combined release and live behavior before closure.
+Complete newly unlocked children immediately. Recheck all four project lists
+between features and continue through your eligible P1, P2, P3 and P4 tasks.
+Stop only when asked, no eligible assigned work remains, or an actual access,
+runtime or usage limitation prevents progress. Preserve exact blockers and keep
+final review last. Occasional bounded subagents may investigate, review or handle
+an exclusively scoped piece; do not delegate the queue or keep a permanent pool.
 Follow the guide's lean-runtime review:
 reuse existing owners, avoid unnecessary code/dependencies and measure relevant
 costs before claiming performance improvements.

@@ -1,6 +1,6 @@
 # Godschurches workflow guide
 
-Version 2.1 · Updated 16 September 2026 UTC
+Version 3.0 · Updated 18 September 2026 UTC
 
 This is the repository entry point for work that continues between ChatGPT, Codex,
 the private second brain, and the development workstation. Keep this file's path
@@ -72,28 +72,56 @@ implementation delta. Avoid rereading the full catalog or historical receipts
 unless a conflict requires them. User decisions define intended behavior; the
 actual checkout and dated application/test receipts establish implementation.
 
-The owner's 14 September instruction replaces all earlier Medium/High/Extra High
-routing and separate-session requirements. Extra High stays selected for the
-entire run, including simple work. Metadata does not change the active model.
-Use ordinary feature tasks with subtasks ordered by current priority and actual
-dependencies. Retire reasoning labels and title prefixes; preserve historical
-M/XH identifiers and completion receipts as references, not execution gates.
+The owner's 18 September instruction uses two independent Remote chats, A1 and
+A2. This supersedes unrestricted one-queue selection and permanent delegation.
+The actual A1/A2 task label is authoritative. Read all four projects or the saved
+worker view, including pagination and subtasks, and take your highest-priority
+eligible P1, P2, P3 or P4 task in the current manual order. Keep parent and children
+with one owner. Personal owner actions are separate. Preserve stable identifiers,
+completed evidence and real dependencies. Labels do not alter the model or
+reasoning setting chosen by the owner.
 
-Checkpoint current work before changing priorities. Inspect actual implementation
-and prerequisite evidence instead of trusting historical ready counts. Finish
-one feature through all necessary interface, integration, configuration,
-migration, regression repair, release-note, meaningful test and deployment steps.
-Verify the exact READY release, independent canonical assignment and actual live
-behavior before closing its scope. Complete smaller children unlocked by that
-feature immediately; do not defer required finishing work into a standalone task
-because it is easy or formerly assigned a lower reasoning level.
+A1 owns its building queue and integration/releases. A2 independently builds its
+assigned queue. Each uses only its own worktree, feature branch, development port
+and isolated fictional test database. Follow the [coordination procedure](WORKER_COORDINATION.md)
+for atomic identity and file/contract claims, one-writer private checkpoints and
+A1-only release locking. Check the actual other worker's reservations before
+editing. When a shared file/contract overlaps, record the exact dependency and
+choose another ready assignment. Batch shared schema, registry and configuration
+changes for serial integration; A1 settles migration ordering.
 
-Continue automatically through the next eligible priorities until ready work is
-exhausted, genuine blockers prevent further independent progress, or the owner
-stops the run. A checkpoint is not a stopping requirement. Real account, provider,
-purchase and physical-device prerequisites remain explicit; reuse settled owner
-decisions and continue independent authorized work. Run capacity experiments in
-an isolated environment. Keep the batch's final review last.
+A2 may inspect and prepare its own environment while shared setup finishes,
+including locked dependencies and a separate local test database without
+production credentials. Before feature edits, verify its actual safe base,
+exclusive checkout, required test isolation and current shared reservation state.
+The setup receipt is evidence of those facts, not an extra permission phrase.
+Reuse existing coordination and preserve both sessions' work.
+
+Finish each coherent feature's necessary UI, service, integration, configuration,
+regression repair, documentation and meaningful verification. Use gc_in_progress
+for the claimed task while retaining its other labels. A2 commits tested work,
+records exact checks and migration/configuration needs, replaces gc_in_progress
+with gc_ready_to_merge and continues its next eligible task. Ready to merge is
+not complete or live. A2 may publish its feature branch, but never main, production
+migrations or deployments.
+
+At safe checkpoints between tasks and before stopping, A1 checks gc_ready_to_merge,
+integrates tested changes without dropping either worker's work, verifies the
+combined result and releases under the atomic release lock and existing project
+permissions. Complete exact READY, canonical-domain, serving-identity and live
+checks before closing promised acceptance. Required smaller finishing steps stay
+within the feature; parent, owner, device, provider and pilot gates remain open
+where their evidence is missing. Return a precise correction to the same A2 task
+when needed rather than taking over its queue.
+
+Recheck priorities after each feature and continue automatically. Stop only on
+owner request, no eligible assigned work, or an actual access/runtime/usage limit;
+save a clear checkpoint first. A missing acknowledgment or stale blocked label
+alone is not a blocker. Clear only specifically satisfied dependencies and record
+why. Keep final review last. Use occasional bounded helpers for a separable
+investigation, review or exclusive change, collect the result and stop them.
+Do not delegate the whole queue, maintain a permanent pool or recursively
+subdivide routine work. Avoid repeated full suites without a concrete reason.
 
 Before dependent interface work, identify existing service/component paths,
 input/output types, authorized actions, pagination and error/conflict states.
@@ -217,7 +245,9 @@ Next Build Plan and Andrew Notification** page maintains the detailed procedure.
 Use this compact outline in the appropriate private session record and relevant
 engineering report. Include only public engineering facts in this repository.
 
-- Date, objective, and contributor.
+- Date, objective, contributor, A1/A2 identity and current private checkpoint.
+- Assigned worktree/branch, safe base, isolated database/ports and current file/contract reservations.
+- Implemented, tested, ready to merge, merged and verified-live states; A1 release lock and integration handoff where applicable.
 - Selected feature and subtasks, focused brief title, owning requirement
   identifiers, prerequisite receipt and current user-authorized priority.
 - Reused paths/contracts and the behavior or contract delta, including no change.
@@ -264,6 +294,8 @@ test evidence in their appropriate private systems. The exact page titles above
 allow an authorized assistant to locate the context without publishing it.
 
 ## Change log
+
+- **3.0, 18 September 2026 UTC:** Adopted owner-approved independent A1/A2 task routing, separate environments, atomic identity/resource claims, one-writer checkpoints and A1-only integration/release locking. Preserved complete-feature acceptance and website copy rules. Added bounded temporary delegation and explicit startup preparation while shared setup completes. Actual setup and later fresh-session loading are distinct evidence.
 
 - **2.1, 16 September 2026 UTC:** Propagated the owner's 15 September website
   writing rule into this guide and the root instructions. The focused build check
