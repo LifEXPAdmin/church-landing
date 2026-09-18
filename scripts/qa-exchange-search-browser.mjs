@@ -8,7 +8,7 @@ assert.ok(fixtureDir, "Pass the existing isolated Exchange preview directory");
 const config = JSON.parse(
   readFileSync(fixtureDir + "/browser-env.json", "utf8")
 );
-assert.match(config.origin, /^https:\/\/exchange-fixture\.example\.test:\d+$/);
+assert.match(config.origin, /^https:\/\/(?:exchange-fixture\.example\.test|127\.0\.0\.1):\d+$/);
 assert.match(config.localOrigin, /^https:\/\/127\.0\.0\.1:\d+$/);
 assert.equal(new URL(config.database).hostname, "127.0.0.1");
 Object.assign(process.env, {
@@ -70,7 +70,7 @@ const context = await browser.newContext({
   hasTouch: true
 });
 await context.route("**/*", (route) =>
-  new URL(route.request().url()).hostname === "exchange-fixture.example.test"
+  new URL(route.request().url()).origin === config.origin
     ? route.continue()
     : route.abort()
 );

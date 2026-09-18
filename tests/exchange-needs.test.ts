@@ -51,6 +51,8 @@ import {
 import { handleExchangeRequest } from "../lib/platform/exchange-boundary";
 import { SESSION_COOKIE } from "../lib/platform/account-boundary";
 import { accountConfig } from "../lib/platform/account-config";
+import { currentNeedContribution } from "../lib/platform/exchange-need-policy";
+import { needContributionReadSources } from "../lib/platform/exchange-need-read-access";
 import { seedParticipation } from "./seed-post-participation";
 
 async function volunteerNeed() {
@@ -175,7 +177,11 @@ const slotFields = (action = "DONATE", loan = false) => ({
     : "",
   volunteerSlotId: null
 });
-async function setup(action = "DONATE", loan = false) {
+async function setup(
+  action = "DONATE",
+  loan = false,
+  audience: "PUBLIC" | "CHURCH" = "PUBLIC"
+) {
   const manager = await createPortalActor(db, "needmgr"),
     a = await createPortalActor(db, "needa"),
     b = await createPortalActor(db, "needb");
@@ -217,6 +223,8 @@ async function setup(action = "DONATE", loan = false) {
       creatorId: manager.id,
       intent: "CHURCH_NEED",
       category: "HOUSEHOLD",
+      audience,
+      audienceChurchId: audience === "CHURCH" ? church.id : null,
       title: "Fictional food need",
       description: "Isolated contribution acceptance",
       requestedItems: "Ten fictional parcels",
@@ -1144,4 +1152,94 @@ test("account export isolates private contributions and erasure preserves only o
     0
   );
   assert.equal((await view(f)).slots[0].received, 5);
+});
+
+test("bounded read access matches canonical permissions for quotes, contacts, blocks, visibility and church epochs", async () => {
+  async function check(
+    f: Awaited<ReturnType<typeof setup>>,
+    expectedCount: number
+  ) {
+    await db.$transaction(async (tx) => {
+      await tx.$executeRaw`SET TRANSACTION READ ONLY`;
+      const rows = await tx.exchangeNeedContribution.findMany({
+        where: { needId: f.needId },
+        orderBy: { id: "asc" }
+      });
+      const current = await needContributionReadSources(tx, rows);
+      const canonical = [];
+      for (const row of rows)
+        if (await currentNeedContribution(tx, row)) canonical.push(row.id);
+      assert.deepEqual([...current.keys()], canonical);
+      assert.equal(current.size, expectedCount);
+    });
+  }
+  const f = await setup("SELL");
+  const a = await claim(f, f.a, 3, { price: "3.00", currency: "USD" });
+  await claim(f, f.b, 3, { price: "4.00", currency: "USD" });
+  await command(
+    db,
+    f.manager.token,
+    input("accept", { id: a.receipt.id, expectedVersion: a.receipt.version })
+  );
+  await check(f, 2);
+  await db.socialPreferences.update({
+    where: { ownerId: f.manager.id },
+    data: { contactRequests: "NOBODY" }
+  });
+  await check(f, 1);
+  await db.socialPreferences.update({
+    where: { ownerId: f.manager.id },
+    data: { contactRequests: "FOLLOWED" }
+  });
+  await db.platformFollow.create({
+    data: { followerId: f.manager.id, followingId: f.b.id }
+  });
+  await check(f, 2);
+  await relationshipCommand(
+    db,
+    f.b.token,
+    input("block", {
+      kind: "person",
+      targetId: f.manager.id,
+      expectedVersion: 0,
+      desired: true
+    })
+  );
+  await check(f, 1);
+  await db.exchangeListing.update({
+    where: { id: f.listing.id },
+    data: { moderationState: "HIDDEN" }
+  });
+  await check(f, 0);
+  await db.exchangeListing.update({
+    where: { id: f.listing.id },
+    data: { moderationState: "VISIBLE" }
+  });
+  await check(f, 1);
+  await db.churchCapabilityGrant.update({
+    where: { id: f.grant.id },
+    data: { revokedAt: new Date(), version: { increment: 1 } }
+  });
+  await check(f, 0);
+  await db.churchCapabilityGrant.update({
+    where: { id: f.grant.id },
+    data: { revokedAt: null, version: { increment: 1 } }
+  });
+  await check(f, 0);
+  const church = await setup("DONATE", false, "CHURCH");
+  await claim(church, church.a, 2);
+  await claim(church, church.b, 2);
+  await check(church, 2);
+  await db.churchConnection.update({
+    where: {
+      userId_churchId: { userId: church.a.id, churchId: church.church.id }
+    },
+    data: { version: { increment: 1 } }
+  });
+  await check(church, 1);
+  await db.platformUser.update({
+    where: { id: church.b.id },
+    data: { suspendedAt: new Date() }
+  });
+  await check(church, 0);
 });

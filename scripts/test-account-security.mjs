@@ -394,11 +394,11 @@ try {
     ["SocialRelationship", ["followingSince"]],
     ["TopicMembership", ["followingSince"]],
     ["CalendarResponse", ["goingSince"]],
-    ["PostVolunteerSignup", ["activeSince"]],
+    ["PostVolunteerSignup", ["activeSince", "completedAt"]],
     ["ChurchConnection", ["requestedAt", "approvedSince"]],
+    ["PlatformPost", ["exchangeNeedId"]],
     ...[
       "PlatformFollow",
-      "PlatformPost",
       "PlatformPostComment",
       "Church",
       "TopicCommunity",
@@ -876,6 +876,21 @@ try {
       if (psql(["-Atc", `SELECT count(*) FROM "PlatformUser" WHERE "dateFormat"<>'DEFAULT' OR "timeFormat"<>'DEFAULT' OR "regionalVersion"<>0 OR "locationAudience"<>'MEMBERS' OR "locationVersion"<>0 OR "locationRecoveryRequired"`]).trim() !== "0")
         throw Error("Regional migration changed existing presentation or location disclosure");
       console.log("Regional upgrade preserved every original account field and existing location audience.");
+    } else if (name === "20260917002500_exchange_needs") {
+      const originals = () => [
+        ...["PlatformPost", "PostVolunteerSignup"].map((table) => psql([
+          "-Atc", `SELECT md5(coalesce(jsonb_agg(to_jsonb(t) - ARRAY['exchangeNeedId','completedAt'] ORDER BY id)::text,'[]')) FROM "${table}" t`
+        ])),
+        ...["PlatformUser", "ExchangeListing", "PostVolunteerSlot", "ChurchCapabilityGrant", "CommunityReport", "SocialEvent", "NotificationFanoutJob", "RetentionControl"].map((table) => fingerprint(table, "id")),
+        fingerprint("SocialPreferences", "ownerId")
+      ];
+      const before = originals();
+      psql(["-f", `prisma/migrations/${name}/migration.sql`]);
+      if (JSON.stringify(before) !== JSON.stringify(originals()))
+        throw Error("Needs migration changed original content, capacity, authority, consent or recovery fields");
+      if (psql(["-Atc", `SELECT (SELECT count(*) FROM "ExchangeNeed") + (SELECT count(*) FROM "ExchangeNeedSlot") + (SELECT count(*) FROM "ExchangeNeedContribution") + (SELECT count(*) FROM "ExchangeNeedEvent") + (SELECT count(*) FROM "PlatformPost" WHERE "exchangeNeedId" IS NOT NULL) + (SELECT count(*) FROM "PostVolunteerSignup" WHERE "completedAt" IS NOT NULL)`]).trim() !== "0")
+        throw Error("Needs migration inferred a need, contribution, receipt, completion or post link");
+      console.log("Needs upgrade preserves every original field and leaves new structures, post links and completion receipts empty.");
     } else psql(["-f", `prisma/migrations/${name}/migration.sql`]);
   }
   if (beforeMetrics) {

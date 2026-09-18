@@ -73,6 +73,7 @@ await context.route("**/*", (route) =>
     ? route.continue()
     : route.abort()
 );
+context.setDefaultTimeout(15000);
 const page = await context.newPage(),
   errors = [],
   results = [],
@@ -178,6 +179,18 @@ try {
     }
   });
   const path = `/platform/exchange/${listing.id}/needs`;
+  writeFileSync(
+    fixtureDir + "/latest-needs-actors.json",
+    JSON.stringify({
+      manager,
+      a,
+      b,
+      listingId: listing.id,
+      churchId: f.churchA.id,
+      roleId: role.id
+    }),
+    { mode: 0o600 }
+  );
   const currentNeed = () =>
     db.exchangeNeed.findUniqueOrThrow({ where: { listingId: listing.id } });
   const slotRow = (label) =>
@@ -227,14 +240,14 @@ try {
       exact: true
     });
     await form
-      .getByLabel("Help requested", { exact: true })
+      .getByRole("combobox", { name: "Help requested", exact: true })
       .selectOption(action);
     await form
       .getByLabel("Item or help description", { exact: true })
       .fill(label);
     if (action === "VOLUNTEER")
       await form
-        .getByLabel("Current event role", { exact: true })
+        .getByRole("combobox", { name: "Current event role", exact: true })
         .selectOption(role.id);
     else {
       await form
@@ -287,11 +300,105 @@ try {
     await db.exchangeNeedSlot.count({ where: { needId: listing.id } }),
     5
   );
+  const { postCommand } = await import("../lib/platform/post-commands.ts");
+  const postExcerpt = "Fictional eligible Need post " + randomUUID();
+  const needPost = await postCommand(db, manager.token, {
+    operation: "create",
+    requestKey: randomUUID(),
+    authorChurchId: f.churchA.id,
+    type: "NEED",
+    content: postExcerpt,
+    audience: "CHURCH"
+  });
+  const wake = () =>
+    page.evaluate(() => {
+      window.dispatchEvent(new Event("blur"));
+      window.dispatchEvent(new Event("focus"));
+    });
+  await go(path);
+  await page
+    .getByRole("region", { name: "Church Need post links", exact: true })
+    .getByText(postExcerpt, { exact: true })
+    .waitFor();
+  await db.churchCapabilityGrant.updateMany({
+    where: {
+      churchId: f.churchA.id,
+      userId: manager.id,
+      capability: "PUBLISH_CHURCH_POSTS"
+    },
+    data: { revokedAt: new Date(), version: { increment: 1 } }
+  });
+  await wake();
+  await page
+    .getByText(/This eligible church Need posts or its access changed/)
+    .waitFor();
+  assert.equal(
+    await page
+      .getByRole("region", { name: "Church Need post links", exact: true })
+      .isVisible(),
+    false
+  );
+  assert.equal(
+    await page.getByRole("heading", { name: marker, exact: true }).isVisible(),
+    true
+  );
+  await db.churchCapabilityGrant.updateMany({
+    where: {
+      churchId: f.churchA.id,
+      userId: manager.id,
+      capability: "PUBLISH_CHURCH_POSTS"
+    },
+    data: { revokedAt: null, version: { increment: 1 } }
+  });
+  await go(path);
+  await page
+    .getByRole("region", { name: "Manage need action slots", exact: true })
+    .waitFor();
+  await db.churchCapabilityGrant.updateMany({
+    where: {
+      churchId: f.churchA.id,
+      userId: manager.id,
+      capability: "MANAGE_CHURCH_VOLUNTEERS"
+    },
+    data: { revokedAt: new Date(), version: { increment: 1 } }
+  });
+  await wake();
+  await page
+    .getByText(/This available event roles or its access changed/)
+    .waitFor();
+  assert.equal(
+    await page
+      .getByRole("region", { name: "Manage need action slots", exact: true })
+      .isVisible(),
+    false
+  );
+  assert.equal(
+    await page.getByRole("heading", { name: marker, exact: true }).isVisible(),
+    true
+  );
+  await db.churchCapabilityGrant.updateMany({
+    where: {
+      churchId: f.churchA.id,
+      userId: manager.id,
+      capability: "MANAGE_CHURCH_VOLUNTEERS"
+    },
+    data: { revokedAt: null, version: { increment: 1 } }
+  });
+  await go(path);
+  await exact("Link this post to this need").click();
+  await waitUntil(
+    async () =>
+      (await db.platformPost.findUniqueOrThrow({ where: { id: needPost.id } }))
+        .exchangeNeedId === listing.id
+  );
+  ok(
+    "Independent publisher and volunteer duty revocation conceal retained picker content; restored current authority links the existing Need post to canonical slots"
+  );
   await go(`/platform/exchange/${listing.id}/edit`);
   await page
     .getByRole("checkbox", { name: /I may publish this listing/ })
     .check();
-  await exact("Publish listing").click();
+  await exact("Publish as active").click();
   await waitUntil(
     async () =>
       (
@@ -706,6 +813,11 @@ try {
   assert.deepEqual(errors, []);
   ok("No browser runtime errors in the complete Needs journey");
 } catch (error) {
+  writeFileSync(output + "/failure.html", await page.content());
+  writeFileSync(
+    output + "/failure-aria.txt",
+    await page.locator("main").ariaSnapshot()
+  );
   await page
     .screenshot({ path: output + "/failure.png", fullPage: true })
     .catch(() => {});

@@ -6,7 +6,6 @@ import {
   exchangeReadableWhere
 } from "./exchange-policy";
 import {
-  currentNeedContribution,
   managedNeedListing,
   needCoordinatorCurrent,
   needPair,
@@ -26,13 +25,16 @@ import {
 import { privilegedProjectionAvailable } from "./privileged-auth-policy";
 import { socialUserWhere } from "./social-policy";
 import { PortalError } from "./portal-policy";
+import {
+  needContributionReadSources,
+  type NeedContributionReadSource
+} from "./exchange-need-read-access";
 
-async function contributionView(
-  tx: PostTx,
+function contributionView(
   row: ExchangeNeedContribution,
-  ownerId: string
+  ownerId: string,
+  source?: NeedContributionReadSource
 ) {
-  const source = await currentNeedContribution(tx, row);
   const current = !!source;
   const own = row.contributorId === ownerId;
   if (!own && !current) return null;
@@ -61,12 +63,19 @@ async function contributionView(
     loanResponsibility: current ? row.loanResponsibility : "",
     contributor:
       !own && current && row.contributorId
-        ? await tx.platformUser.findUnique({
-            where: { id: row.contributorId },
-            select: { name: true }
-          })
+        ? { name: source!.contributorName }
         : null
   };
+}
+async function contributionViews(
+  tx: PostTx,
+  rows: ExchangeNeedContribution[],
+  ownerId: string
+) {
+  const sources = await needContributionReadSources(tx, rows);
+  return rows
+    .map((row) => contributionView(row, ownerId, sources.get(row.id)))
+    .filter((row) => row !== null);
 }
 export async function readExchangeNeeds(
   db: PrismaClient,
@@ -117,21 +126,19 @@ export async function readExchangeNeeds(
         ownerId,
         volunteerNeedId: slot.needId,
         volunteerRole: slot.volunteerSlot.role,
-        volunteers: rows
-          .slice(0, NEED_PAGE)
-          .map((r) => ({
-            id: r.id,
-            version: r.version,
-            state: r.state,
-            completedAt: r.completedAt?.toISOString() ?? null,
-            name:
-              r.user.erasedAt ||
-              r.user.suspendedAt ||
-              r.user.deactivatedAt ||
-              context.blockedIds?.includes(r.user.id)
-                ? "Unavailable account"
-                : r.user.name
-          })),
+        volunteers: rows.slice(0, NEED_PAGE).map((r) => ({
+          id: r.id,
+          version: r.version,
+          state: r.state,
+          completedAt: r.completedAt?.toISOString() ?? null,
+          name:
+            r.user.erasedAt ||
+            r.user.suspendedAt ||
+            r.user.deactivatedAt ||
+            context.blockedIds?.includes(r.user.id)
+              ? "Unavailable account"
+              : r.user.name
+        })),
         next: rows.length > NEED_PAGE ? rows[NEED_PAGE - 1].id : null
       };
     }
@@ -183,16 +190,14 @@ export async function readExchangeNeeds(
         });
         return {
           ownerId,
-          roles: rows
-            .slice(0, NEED_PAGE)
-            .map((r) => ({
-              id: r.id,
-              role: r.role,
-              capacity: r.capacity,
-              postId: r.postId,
-              eventTitle: r.post.eventOccurrence!.title,
-              startAt: r.post.eventOccurrence!.startAt.toISOString()
-            })),
+          roles: rows.slice(0, NEED_PAGE).map((r) => ({
+            id: r.id,
+            role: r.role,
+            capacity: r.capacity,
+            postId: r.postId,
+            eventTitle: r.post.eventOccurrence!.title,
+            startAt: r.post.eventOccurrence!.startAt.toISOString()
+          })),
           next: rows.length > NEED_PAGE ? rows[NEED_PAGE - 1].id : null
         };
       }
@@ -221,14 +226,12 @@ export async function readExchangeNeeds(
       });
       return {
         ownerId,
-        posts: rows
-          .slice(0, NEED_PAGE)
-          .map((p) => ({
-            id: p.id,
-            version: p.version,
-            excerpt: p.content.slice(0, 180),
-            linked: !!p.exchangeNeedId
-          })),
+        posts: rows.slice(0, NEED_PAGE).map((p) => ({
+          id: p.id,
+          version: p.version,
+          excerpt: p.content.slice(0, 180),
+          linked: !!p.exchangeNeedId
+        })),
         next: rows.length > NEED_PAGE ? rows[NEED_PAGE - 1].id : null
       };
     }
@@ -251,8 +254,10 @@ export async function readExchangeNeeds(
         throw unavailableNeed();
       return {
         ownerId,
-        contributions: await Promise.all(
-          rows.slice(0, NEED_PAGE).map((r) => contributionView(tx, r, ownerId))
+        contributions: await contributionViews(
+          tx,
+          rows.slice(0, NEED_PAGE),
+          ownerId
         ),
         next: rows.length > NEED_PAGE ? rows[NEED_PAGE - 1].id : null
       };
@@ -271,13 +276,11 @@ export async function readExchangeNeeds(
       });
       return {
         ownerId,
-        contributions: (
-          await Promise.all(
-            rows
-              .slice(0, NEED_PAGE)
-              .map((r) => contributionView(tx, r, ownerId))
-          )
-        ).filter((r) => r !== null),
+        contributions: await contributionViews(
+          tx,
+          rows.slice(0, NEED_PAGE),
+          ownerId
+        ),
         next: rows.length > NEED_PAGE ? rows[NEED_PAGE - 1].id : null
       };
     }
@@ -397,18 +400,15 @@ export async function readExchangeNeeds(
           authorityKey: { not: null },
           contributor: socialUserWhere(context)
         },
-        select: { id: true },
         orderBy: { id: "asc" },
         take: NEED_PAGE
       });
       const names = [];
+      const namedSources = await needContributionReadSources(tx, publicPeople);
       for (const person of publicPeople) {
-        const row = await tx.exchangeNeedContribution.findUniqueOrThrow({
-          where: { id: person.id },
-          include: { contributor: { select: { name: true } } }
-        });
-        if (await currentNeedContribution(tx, row))
-          names.push({ name: row.contributor!.name, slotId: row.slotId });
+        const source = namedSources.get(person.id);
+        if (source)
+          names.push({ name: source.contributorName, slotId: person.slotId });
       }
       const pair =
         ownerId && coordinatorCurrent && ownerId !== need!.coordinatorId
@@ -542,24 +542,16 @@ export async function readExchangeNeeds(
           };
         }),
         contributions: ownerId
-          ? (
-              await Promise.all(
-                mine
-                  .slice(0, NEED_PAGE)
-                  .map((r) => contributionView(tx, r, ownerId))
-              )
-            ).filter((r) => r !== null)
+          ? await contributionViews(tx, mine.slice(0, NEED_PAGE), ownerId)
           : [],
         moreContributions: mine.length > NEED_PAGE,
         names,
-        updates: updates
-          .slice(0, NEED_PAGE)
-          .map((u) => ({
-            id: u.id,
-            action: u.action,
-            text: u.text,
-            createdAt: u.createdAt.toISOString()
-          })),
+        updates: updates.slice(0, NEED_PAGE).map((u) => ({
+          id: u.id,
+          action: u.action,
+          text: u.text,
+          createdAt: u.createdAt.toISOString()
+        })),
         nextUpdates:
           updates.length > NEED_PAGE ? updates[NEED_PAGE - 1].id : null
       };
