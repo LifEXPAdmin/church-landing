@@ -180,6 +180,8 @@ export async function purgeMessagingCandidate(
     // selected report expires. Active accounts and shared church content retain
     // their normal lifecycle; messages use their participant-retention check.
     if (source && !(await tx.communityReport.count({ where: source }))) {
+      if (source.targetType === "PANTRY_REQUEST")
+        await tx.pantryRequest.updateMany({ where: { id: source.targetId, OR: [{ requesterId: null }, { requesterClearedAt: { not: null } }] }, data: { note: "", items: [] } });
       if (source.targetType === "NEED_CONTRIBUTION")
         await tx.exchangeNeedContribution.updateMany({
           where: { id: source.targetId, contributorId: null },

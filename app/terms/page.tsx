@@ -13,10 +13,11 @@ export default function TermsPage() {
         <h1 className="mb-6 text-5xl">Terms of Service</h1>
         <p className="mb-8 text-sm">
           Original terms: February 21, 2026. Service information updated
-          September 16, 2026.
+          September 18, 2026.
         </p>
 
         <div className="space-y-8 text-base leading-relaxed">
+          <section><h2 className="mb-2 text-3xl">Church Pantry and Assistance</h2><p>Church pantry and support hubs display operator-provided hours, access and eligibility guidance. Availability counts, requests and offered appointments do not guarantee supplies, eligibility or actual fulfillment. Request for yourself, review the named coordinator and confirm an offered pickup separately. Keep income, identity documents, health details and other people’s information out of practical notes. This feature does not process payments, offer regulated services or share requests with outside partners.</p></section>
           <section>
             <h2 className="mb-2 text-3xl">Acceptance</h2>
             <p>

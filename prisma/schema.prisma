@@ -283,6 +283,9 @@ model PlatformUser {
   socialRelations SocialRelationship[] @relation("SocialOwner")
   socialTargets SocialRelationship[] @relation("SocialTarget")
   socialOperations SocialOperation[]
+  coordinatedPantries PantryHub[]
+  pantryRequests PantryRequest[] @relation("PantryRequester")
+  receivedPantryRequests PantryRequest[] @relation("PantryCoordinator")
   coordinatedNeeds ExchangeNeed[]
   needContributions ExchangeNeedContribution[] @relation("NeedContributor")
   receivedNeedContributions ExchangeNeedContribution[] @relation("NeedCoordinator")
@@ -571,6 +574,7 @@ enum ChurchCapability {
   PUBLISH_EXCHANGE_LISTINGS
   MANAGE_EXCHANGE_LISTINGS
   MODERATE_EXCHANGE_LISTINGS
+  MANAGE_CHURCH_ASSISTANCE
 }
 
 enum OperatorCapability {
@@ -591,6 +595,7 @@ enum OperatorCapability {
 }
 
 enum CommunityReportTarget {
+  PANTRY_REQUEST
   NEED_CONTRIBUTION
   EXCHANGE_INQUIRY
   EXCHANGE_HANDOFF
@@ -772,6 +777,7 @@ enum DirectoryAudience {
 }
 
 model Church {
+  pantryHub PantryHub?
   ownedExchangeListings ExchangeListing[] @relation("ExchangeChurchOwner")
   sharedExchangeListings ExchangeListing[] @relation("ExchangeChurchAudience")
   welcomePostId String?
@@ -3062,4 +3068,118 @@ model NotificationFanoutJob {
   @@index([completedAt, dispatchedAt, createdAt])
   @@index([actorId])
   @@index([sourceId])
+}
+
+// Church assistance owns multi-place pickups. Public projections never include
+// request relations. Nullable ownership permits protected recovery tombstones.
+model PantryHub {
+  id String @id
+  churchId String? @unique
+  version Int @default(1)
+  audience String @default("CHURCH")
+  title String @default("")
+  description String @default("")
+  hours String @default("")
+  accessInfo String @default("")
+  eligibility String @default("")
+  published Boolean @default(false)
+  intakeEnabled Boolean @default(false)
+  coordinatorId String?
+  coordinatorKey String?
+  consentVersion Int @default(1)
+  accessVersion Int @default(1)
+  recoveryRequired Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  church Church? @relation(fields: [churchId], references: [id], onDelete: Restrict)
+  coordinator PlatformUser? @relation(fields: [coordinatorId], references: [id], onDelete: SetNull)
+  categories PantryCategory[]
+  sessions PantrySession[]
+  requests PantryRequest[]
+  events PantryEvent[]
+  @@index([published, audience, id])
+}
+
+model PantryCategory {
+  id String @id
+  hubId String
+  version Int @default(1)
+  label String
+  unit String
+  availability String @default("APPROXIMATE")
+  quantity Int?
+  description String @default("")
+  active Boolean @default(true)
+  replenishmentNeedId String?
+  updatedAt DateTime @updatedAt
+  hub PantryHub @relation(fields: [hubId], references: [id], onDelete: Restrict)
+  @@unique([id, hubId])
+  @@index([hubId, active, id])
+}
+
+model PantrySession {
+  id String @id
+  hubId String
+  version Int @default(1)
+  startLocal String
+  endLocal String
+  timeZone String
+  startsAt DateTime
+  endsAt DateTime
+  capacity Int
+  pickupDetails String
+  active Boolean @default(true)
+  createdAt DateTime @default(now())
+  hub PantryHub @relation(fields: [hubId], references: [id], onDelete: Restrict)
+  requests PantryRequest[]
+  @@unique([id, hubId])
+  @@index([hubId, startsAt, id])
+}
+
+model PantryRequest {
+  id String @id
+  hubId String
+  requesterId String?
+  coordinatorId String?
+  authorityKey String?
+  consentVersion Int
+  version Int @default(1)
+  state String @default("REQUESTED")
+  items Json
+  note String @default("")
+  pickupContact String @default("")
+  coordinatorNote String @default("")
+  sessionId String?
+  sessionVersion Int?
+  confirmedAt DateTime?
+  requesterClearedAt DateTime?
+  coordinatorClearedAt DateTime?
+  createdAt DateTime @default(now())
+  endedAt DateTime?
+  hub PantryHub @relation(fields: [hubId], references: [id], onDelete: Restrict)
+  session PantrySession? @relation(fields: [sessionId, hubId], references: [id, hubId], onDelete: Restrict)
+  requester PlatformUser? @relation("PantryRequester", fields: [requesterId], references: [id], onDelete: SetNull)
+  coordinator PlatformUser? @relation("PantryCoordinator", fields: [coordinatorId], references: [id], onDelete: SetNull)
+  @@index([hubId, state, id])
+  @@index([requesterId, id])
+  @@index([coordinatorId, id])
+  @@index([sessionId, state])
+}
+
+// Stock provenance and private outcome corrections are separate projections.
+// No request body, contact, note or recipient name is copied into audit text.
+model PantryEvent {
+  id String @id @default(cuid())
+  hubId String
+  version Int
+  actorId String?
+  action String
+  targetId String?
+  reason String @default("")
+  previousQuantity Int?
+  quantity Int?
+  createdAt DateTime @default(now())
+  hub PantryHub @relation(fields: [hubId], references: [id], onDelete: Restrict)
+  @@unique([hubId, version])
+  @@index([hubId, createdAt, id])
 }

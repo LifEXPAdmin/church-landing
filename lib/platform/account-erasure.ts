@@ -133,6 +133,12 @@ async function erasePersonalCalendars(tx: Tx, userId: string, now: Date) {
 
 async function eraseSocialData(tx: Tx, userId: string, now: Date) {
   await revokeAccountContact(tx, userId);
+  await tx.$executeRaw`UPDATE "PantryEvent" e SET reason='' WHERE EXISTS (SELECT 1 FROM "PantryRequest" r WHERE r.id=e."targetId" AND r."requesterId"=${userId})`;
+  await tx.$executeRaw`UPDATE "PantryRequest" r SET note='', items='[]'::jsonb WHERE r."requesterId"=${userId} AND NOT EXISTS (SELECT 1 FROM "CommunityReport" p WHERE p."targetType"='PANTRY_REQUEST' AND p."targetId"=r.id)`;
+  await tx.pantryRequest.updateMany({ where: { requesterId: userId }, data: { requesterId: null, pickupContact: "", coordinatorNote: "", authorityKey: null, requesterClearedAt: now } });
+  await tx.pantryRequest.updateMany({ where: { coordinatorId: userId }, data: { coordinatorId: null, coordinatorNote: "", authorityKey: null } });
+  await tx.pantryHub.updateMany({ where: { coordinatorId: userId }, data: { coordinatorId: null, coordinatorKey: null, intakeEnabled: false } });
+  await tx.pantryEvent.updateMany({ where: { actorId: userId }, data: { actorId: null, reason: "" } });
   // Preserve opaque fulfillment totals and outstanding return quantities. Only
   // deliberately reported evidence retains private text through account erasure.
   await tx.$executeRaw`UPDATE "ExchangeNeedContribution" c SET note='', "disputeNote"='', "loanResponsibility"=''

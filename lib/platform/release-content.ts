@@ -13,6 +13,7 @@ export type Feature = {
   availability: "available" | "conditional";
 };
 export const features: Feature[] = [
+  { id: "church-pantry", category: "Churches and community", name: "Church pantry and support hubs", description: "Find public supply guidance and coordinate a private assistance request with a named church coordinator.", steps: "Open Church pantry and support hubs from Exchange or Settings, My church. Review hours, eligibility and categories. An eligible adult selects their own supplies and consents to the named coordinator. Follow My requests to confirm an offered pickup, cancel or clear ended details. An explicitly assigned assistance coordinator manages stock, sessions and private outcomes, with separate Church Needs duties for replenishment.", href: "/platform/pantry", eligibility: "Available when a church publishes a hub, a current coordinator accepts responsibility and report coverage is available. Requests and appointments do not guarantee supplies. Other members and managers do not inherit private histories. No payments, partner referrals or regulated services are offered. Phone alerts require a separate assistance choice and device.", availability: "conditional" },
   {
     id: "church-needs",
     category: "Churches and community",
@@ -863,6 +864,7 @@ export const features: Feature[] = [
   }
 ];
 export const releases: ReleaseEntry[] = [
+  { id: "church-pantry-and-private-pickups", version: "2026.09.18.3", date: "2026-09-18", summary: "Church pantry guidance, private assistance requests and deliberate pickup offers.", added: ["Churches can publish hours, access guidance and up to twelve supply categories with clear counted or approximate availability.", "Adults can send a minimal private request to a named coordinator, review and confirm a pickup offer, cancel and clear ended details.", "Explicit assistance duties govern private queues, pickup capacity, collection and missed-pickup corrections. Stock adjustments record reasons separately.", "Prepare a Church Need from a public category and deliberately link the reviewed active need without copying recipient histories."], improved: ["Settings, Exchange and Help connect assistance records to their existing privacy, export, report and recovery controls.", "Generic assistance updates use a separate phone notification choice and current access checks."], fixed: [], featureIds: ["church-pantry", "church-needs"] },
   {
     id: "church-needs-and-receipts",
     version: "2026.09.18.2",

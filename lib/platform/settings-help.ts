@@ -1,5 +1,6 @@
 /** Presentation of existing capabilities; each destination retains its authority. */
 export const settingsHelpTopics = [
+  { id: "pantry-assistance", title: "Who can see my assistance request?", keywords: "pantry assistance food stock pickup coordinator consent private collected missed", body: "Only you and the named current coordinator can read your selected supplies, practical note and chosen pickup contact. The coordinator's separate note is restricted. Church membership or other management duties do not grant recipient history. Review the named coordinator before sending, then separately confirm any pickup offer. Requests and appointments do not guarantee supplies. Counts are availability only. Cancel an outstanding request to release its pickup place, and clear your own ended details from My requests. Assignment changes, blocks and account closure can end access. No information is shared with partners. Assistance phone alerts need their own choice and device.", href: "/platform/pantry/mine", action: "Open my assistance requests" },
   {
     id: "church-needs",
     title: "When does a Church Needs promise count as received?",

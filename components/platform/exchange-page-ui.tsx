@@ -1,3 +1,4 @@
+import { pantryPage } from "@/lib/platform/pantry-session";
 import { PrivilegedAuthenticationError } from "@/lib/platform/privileged-auth-policy";
 import { privilegedChallengeHref } from "@/lib/platform/privileged-auth-navigation";
 import { ExchangeContactRegion } from "./exchange-handoff-page";
@@ -48,6 +49,7 @@ export function ExchangeNavigation() {
         ["/platform/exchange/new", "Create a listing"],
         ["/platform/exchange/handoffs", "My inquiries and handoffs"],
         ["/platform/exchange/needs", "My Needs contributions"],
+        ["/platform/pantry", "Church pantry and support hubs"],
         ["/platform/exchange/defaults", "Personal defaults"]
       ].map(([href, label]) => (
         <Link
@@ -298,13 +300,15 @@ export async function ExchangeList({
 }
 export async function ExchangeEditorPage({
   id,
-  returnTo
+  returnTo,
+  pantryCategory
 }: {
   id?: string;
   returnTo?: unknown;
+  pantryCategory?: string;
 }) {
   const user = await getCurrentPlatformUser(),
-    path = id ? `/platform/exchange/${id}/edit` : "/platform/exchange/new";
+    path = id ? `/platform/exchange/${id}/edit` : `/platform/exchange/new${pantryCategory ? `?pantryCategory=${encodeURIComponent(pantryCategory)}` : ""}`;
   let content;
   if (!user) content = <ExchangeAccountLinks next={path} />;
   else
@@ -313,12 +317,15 @@ export async function ExchangeEditorPage({
         exchangeContextPage(),
         id ? exchangeListingPage(id, true) : Promise.resolve(null)
       ]);
+      const seed = !id && pantryCategory ? (await pantryPage({ view: "replenish", id: pantryCategory })).replenishmentSeed : undefined;
       content = (
         <>
+          {seed && <p>Review a new Church Need using only this category’s public name and unit. Choose quantities and details yourself. After publication, return to the hub and deliberately link the active Need. Recipient histories and pickup details are never copied.</p>}
           <ExchangeEditor
             key={`${user.id}:${id ?? "new"}`}
             access={access}
             initial={initial}
+            replenishmentSeed={seed}
           />
           {id && initial?.listing.intent === "CHURCH_NEED" && (
             <Link

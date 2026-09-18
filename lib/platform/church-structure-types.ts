@@ -12,6 +12,7 @@ export const structureCapabilities = {
   MANAGE_CHURCH_VOLUNTEERS: "Manage church volunteer roles and rosters",
   PUBLISH_EXCHANGE_LISTINGS: "Create church Exchange listings and manage your church drafts",
   MANAGE_EXCHANGE_LISTINGS: "Publish and manage church Exchange listings",
+  MANAGE_CHURCH_ASSISTANCE: "Manage church assistance and accept private coordinator duties",
   MODERATE_EXCHANGE_LISTINGS: "Review reports about church Exchange listings",
   MANAGE_CHURCH_PROFILE: "Manage the public church profile",
   MANAGE_CHURCH_ACCESS: "Manage church access and review requests",

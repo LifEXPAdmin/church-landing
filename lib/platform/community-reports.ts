@@ -1,3 +1,5 @@
+import { pantryRequestEvidence } from "./pantry-evidence";
+import { currentPantryRequest, requirePantryCoordinator } from "./pantry-policy";
 import { needContributionEvidence } from "./exchange-need-evidence";
 import {
   currentNeedContribution,
@@ -111,6 +113,17 @@ async function targetIn(
 ): Promise<Target | null> {
   const type = targetType(kind),
     id = postId(value);
+  if (type === "PANTRY_REQUEST") {
+    const row = await tx.pantryRequest.findUnique({ where: { id }, include: { hub: true } });
+    if (!row || !context.actorId || row.hub.recoveryRequired || ![row.requesterId, row.coordinatorId].includes(context.actorId)) return null;
+    if (row.requesterId === context.actorId && row.requesterClearedAt) return null;
+    if (row.coordinatorId === context.actorId) {
+      if (row.coordinatorClearedAt || !(await currentPantryRequest(tx, row, row.hub))) return null;
+      await requirePantryCoordinator(tx, row.hub, context.actorId);
+    }
+    return { type, id, version: row.version, contextVersion: 0, scopeChurchId: null,
+      source: { label: "Selected private assistance request", href: "/platform/pantry/mine" }, evidencePreview: pantryRequestEvidence(row) };
+  }
   if (type === "NEED_CONTRIBUTION") {
     const row = await tx.exchangeNeedContribution.findUnique({
       where: { id },
@@ -712,6 +725,10 @@ export function readCommunityReports(
       let selectedIdea;
       let selectedListing;
       let selectedHandoff;
+      if (report.targetType === "PANTRY_REQUEST") {
+        const row = await tx.pantryRequest.findUnique({ where: { id: report.targetId }, include: { hub: true } });
+        if (row && !row.hub.recoveryRequired) selectedHandoff = { type: report.targetType, content: pantryRequestEvidence(row), version: row.version, createdAt: row.createdAt };
+      }
       if (report.targetType === "NEED_CONTRIBUTION") {
         const row = await tx.exchangeNeedContribution.findUnique({
           where: { id: report.targetId },

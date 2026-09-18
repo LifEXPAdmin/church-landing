@@ -39,6 +39,7 @@ export type RetentionControlEntry = {
     | "EXCHANGE_FAVORITE"
     | "EXCHANGE_SAVED_SEARCH"
     | "EXCHANGE_NEED"
+    | "PANTRY_HUB"
     | "EXCHANGE_INQUIRY"
     | "EXCHANGE_CONTACT"
     | "EXCHANGE_DEFAULTS"
@@ -108,6 +109,7 @@ function validate(value: unknown): RetentionControlEntry {
       "EXCHANGE_FAVORITE",
       "EXCHANGE_SAVED_SEARCH",
       "EXCHANGE_NEED",
+      "PANTRY_HUB",
       "EXCHANGE_INQUIRY",
       "EXCHANGE_CONTACT",
       "EXCHANGE_DEFAULTS",
@@ -422,6 +424,7 @@ export async function recordDiscoveryControl(
     | "EXCHANGE_FAVORITE"
     | "EXCHANGE_SAVED_SEARCH"
     | "EXCHANGE_NEED"
+    | "PANTRY_HUB"
     | "EXCHANGE_INQUIRY"
     | "EXCHANGE_CONTACT"
     | "EXCHANGE_DEFAULTS"
@@ -1166,6 +1169,18 @@ export async function replayRetentionControls(
             where: { id: entry.id, journaledAt: null },
             data: { journaledAt: new Date() }
           });
+          continue;
+        }
+        if (entry.kind === "PANTRY_HUB") {
+          const prior = await tx.pantryHub.findUnique({ where: { id: entry.sourceId } });
+          const data = { version: entry.version, recoveryRequired: true, published: false, intakeEnabled: false, coordinatorKey: null };
+          if (!prior) await tx.pantryHub.create({ data: { id: entry.sourceId, ...data } });
+          else if (prior.version < entry.version) {
+            await tx.pantryHub.update({ where: { id: prior.id }, data });
+            await tx.pantryRequest.updateMany({ where: { hubId: prior.id }, data: { authorityKey: null, note: "", pickupContact: "", coordinatorNote: "" } });
+          }
+          await record(tx, entry);
+          await tx.retentionControl.updateMany({ where: { id: entry.id, journaledAt: null }, data: { journaledAt: new Date() } });
           continue;
         }
         if (entry.kind === "EXCHANGE_NEED") {

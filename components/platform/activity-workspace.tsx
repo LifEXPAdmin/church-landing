@@ -28,6 +28,7 @@ const labels: Record<ActivityCategory, string> = {
   photos: "Photo tags",
   exchange: "Exchange",
   handoffs: "Exchange handoffs",
+  assistance: "Private assistance",
   needs: "Church Needs",
   commitments: "Commitments"
 };

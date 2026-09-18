@@ -5,6 +5,7 @@ export const metadata: Metadata = {
   title: "Create a listing",
   robots: { index: false, follow: false }
 };
-export default function Page() {
-  return <ExchangeEditorPage />;
+export default async function Page({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const query = await searchParams;
+  return <ExchangeEditorPage pantryCategory={typeof query.pantryCategory === "string" ? query.pantryCategory : undefined} />;
 }

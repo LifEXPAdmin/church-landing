@@ -605,6 +605,11 @@ export async function downloadAccountExport(
     }
     const collections = {
       exchangeInquiries,
+      assistanceRequests: await tx.pantryRequest.findMany({
+        where: { requesterId: userId, hub: { recoveryRequired: false } },
+        select: { id: true, version: true, state: true, items: true, note: true, pickupContact: true, confirmedAt: true, requesterClearedAt: true, createdAt: true, endedAt: true },
+        orderBy: { id: "asc" }, take: MAX_ROWS + 1
+      }).then(rows => rows.map(row => row.requesterClearedAt ? { ...row, note: "", items: [], pickupContact: "" } : row)),
       needContributions: await tx.exchangeNeedContribution.findMany({
         where: { contributorId: userId, need: { recoveryRequired: false } },
         select: {

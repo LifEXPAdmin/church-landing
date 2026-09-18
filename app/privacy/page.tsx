@@ -13,10 +13,11 @@ export default function PrivacyPage() {
         <h1 className="mb-6 text-5xl">Privacy Policy</h1>
         <p className="mb-8 text-sm">
           Original policy: February 21, 2026. Service information updated
-          September 16, 2026.
+          September 18, 2026.
         </p>
 
         <div className="space-y-8 text-base leading-relaxed">
+          <section><h2 className="mb-2 text-3xl">Church Pantry and Assistance</h2><p>Public hub information is separate from assistance requests. A request shares your selected items, optional practical note and chosen pickup contact only with the named current coordinator. We do not copy your sign-in email. Coordinator notes and outcome reasons have separate restricted access. Your own ended entries can be cleared; account deletion removes personal text under the existing deletion, selected-report and backup rules. Other church managers do not inherit recipient histories. Partner referrals are unavailable, and no assistance request authorizes another organization to receive your information.</p></section>
           <section>
             <h2 className="mb-2 text-3xl">What We Collect</h2>
             <p>

@@ -1,4 +1,5 @@
 "use client";
+import type { PantrySnapshot } from "@/lib/platform/pantry-reads";
 import type { readExchangeDefaults } from "@/lib/platform/exchange-defaults";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { flushSync } from "react-dom";
@@ -65,10 +66,12 @@ const actionLabel = (state: ExchangeState) =>
 
 export function ExchangeEditor({
   access,
-  initial = null
+  initial = null,
+  replenishmentSeed
 }: {
   access: Context;
   initial?: Snapshot | null;
+  replenishmentSeed?: PantrySnapshot["replenishmentSeed"];
 }) {
   const fieldId = useId();
   const router = useRouter(),
@@ -76,9 +79,9 @@ export function ExchangeEditor({
   const [context, setContext] = useState(access),
     [record, setRecord] = useState(initial);
   const [fields, setFields] = useState(
-    initial?.fields ?? emptyExchangeFields()
+    initial?.fields ?? { ...emptyExchangeFields(), ...(replenishmentSeed ? { intent: "CHURCH_NEED" as const, title: replenishmentSeed.title, requestedItems: replenishmentSeed.requestedItems, audience: replenishmentSeed.audience, audienceChurchId: replenishmentSeed.audience === "CHURCH" ? replenishmentSeed.churchId : "" } : {}) }
   );
-  const [ownerChurchId, setOwnerChurchId] = useState("");
+  const [ownerChurchId, setOwnerChurchId] = useState(replenishmentSeed?.churchId ?? "");
   const defaultSeed = useRef<Fields | null>(null);
   const [visible, setVisible] = useState(false),
     [changedAccount, setChangedAccount] = useState(false);
@@ -149,6 +152,10 @@ export function ExchangeEditor({
             )
           : Promise.resolve(null)
       ]);
+      if (!current && replenishmentSeed) {
+        const source = await socialRequest<PantrySnapshot>(`/api/platform/pantry?view=replenish&id=${encodeURIComponent(replenishmentSeed.categoryId)}`, undefined, owner);
+        if (JSON.stringify(source.data.replenishmentSeed) !== JSON.stringify(replenishmentSeed)) throw new Error("This stock category or your duties changed. Reload to review a current replenishment draft.");
+      }
       if (seq !== generation.current) return;
       setContext(ctx.data);
       setVisible(true);
@@ -179,7 +186,7 @@ export function ExchangeEditor({
           clearAccount();
       }
     }
-  }, [owner, clearAccount]);
+  }, [owner, clearAccount, replenishmentSeed]);
   useEffect(() => {
     const hide = () => {
       generation.current++;
