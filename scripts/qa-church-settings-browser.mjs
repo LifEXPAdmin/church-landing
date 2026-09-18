@@ -177,6 +177,32 @@ try {
   await page.getByText("Withdrawn", { exact: true }).first().waitFor();
   await overview();
   await page.getByText("Request withdrawn", { exact: true }).waitFor();
+  for (let repeat = 0; repeat < 3; repeat++) {
+    await go("/platform/churches/" + churchId);
+    await page
+      .getByRole("button", { name: "Request connection again", exact: true })
+      .click();
+    await page.getByText("Awaiting review", { exact: true }).first().waitFor();
+    await overview();
+    await page
+      .getByRole("link", {
+        name: "Review or change my church connection",
+        exact: true
+      })
+      .click();
+    await page
+      .getByLabel("I want to withdraw this connection request.", {
+        exact: true
+      })
+      .check();
+    await page
+      .getByRole("button", { name: "Withdraw request", exact: true })
+      .click();
+    await page.getByText("Withdrawn", { exact: true }).first().waitFor();
+  }
+  ok(
+    "Four consecutive confirmed withdrawals refresh the actual My church state without leaving a pending transition"
+  );
   await go("/platform/churches/" + churchId);
   await page
     .getByRole("button", { name: "Request connection again", exact: true })

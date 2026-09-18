@@ -56,6 +56,17 @@ canonical transition side effects. Those remain subject to existing portal
 service and actual browser-form acceptance. No physical device or real church
 pilot has been exercised by these local checks.
 
+## Membership refresh repair in progress
+
+The actual browser request succeeded, but withdrawing on My church returned a
+confirmed success while the page remained on Awaiting review with Please wait.
+It reproduced twice, including a 45-second wait; the fictional database was
+WITHDRAWN/version 2 and no browser exception occurred. The extra My church
+loading boundary is removed, following the same narrow repair verified earlier
+for Groups. A fresh build and repeated real form acceptance are required; this
+is not a claim that the repair passed yet. The running full service/HTTPS gate
+covers the preceding runtime; the final client delta will be verified separately.
+
 ## Explicit remaining scope
 
 Optional individual role-display preferences do not exist in the current
