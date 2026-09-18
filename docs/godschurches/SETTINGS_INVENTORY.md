@@ -1,5 +1,14 @@
 # Settings inventory and reuse map
 
+## Media preference capability audit, September 18, 2026
+
+The [media preference contract](MEDIA_PREFERENCES_CONTRACT.md) maps current
+browser data saver and still-image processing to their existing owners. Photo
+captions are not timed media captions. Audio/video autoplay, audio, caption and
+quality adapters, selectable upload quality and universal downloads remain
+unimplemented. The contract defines their eventual behavior and browser limits;
+it enables no controls and makes no reliable cellular-detection claim.
+
 ## Calendar capability audit, September 18, 2026
 
 The [calendar settings contract](CALENDAR_SETTINGS_CONTRACT.md) distinguishes
@@ -247,10 +256,10 @@ Owner: `reading-preferences.ts / media.ts; future audio/video playback owner`.
 | --- | --- |
 | Autoplay | Missing — no active setting adapter; owning feature remains gated |
 | Muted playback | Missing — no active setting adapter; owning feature remains gated |
-| Captions | Partial — related capability only; preserve its current limits |
+| Captions | Missing for timed audio/video; existing photo captions and alt text remain separate |
 | Playback quality | Missing — no active setting adapter; owning feature remains gated |
 | Data saver | Existing — reuse the canonical service/control |
-| Upload defaults | Partial — related capability only; preserve its current limits |
+| Upload defaults | Fixed safe still-image processing exists; no selectable upload-quality preference |
 | Downloads | Missing — no active setting adapter; owning feature remains gated |
 | Per-format overrides | Missing — no active setting adapter; owning feature remains gated |
 
