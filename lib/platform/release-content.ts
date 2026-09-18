@@ -915,6 +915,16 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "menu-groups-and-clear-security-guidance",
+    version: "2026.09.18.8",
+    date: "2026-09-18",
+    summary: "Find existing features in clearer Menu groups and review essential security notice guidance.",
+    added: ["Menu organizes destinations into Community, Discover, My activity and Account, while preserving the five primary links."],
+    improved: ["Security explains required authenticator notices and links to separate optional notification choices.", "The authorized Growth dictionary explains community outcome definitions and clearly identifies outcomes that are not measured."],
+    fixed: [],
+    featureIds: ["settings", "account-authenticator"]
+  },
+  {
     id: "separate-likes-and-reply-email-choices",
     version: "2026.09.18.7",
     date: "2026-09-18",
