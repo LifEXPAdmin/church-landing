@@ -44,7 +44,10 @@ function stop() {
   // A promise resolved inside one native popstate listener can resume before
   // later listeners run. Let Next finish its restore dispatch before a waiting
   // refresh/navigation; that restore would otherwise discard the new action.
-  if (done) setTimeout(done, 0);
+  // Next restores its cached tree in a React transition after popstate. A timer
+  // can run before that tree commits and its restore can discard a fresh RSC
+  // response. Cross a paint boundary before starting the confirmed refresh.
+  if (done) requestAnimationFrame(() => requestAnimationFrame(done));
 }
 function release() {
   if (!guard || pending.size) return;
