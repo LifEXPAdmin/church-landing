@@ -4,7 +4,8 @@ import type { PostView } from "@/lib/platform/post-reads";
 import { groupPage } from "@/lib/platform/group-session";
 import { PrivateSnapshotGuard } from "./private-snapshot-guard";
 import { PrivateEditScope } from "./private-edit-scope";
-import { GroupAction, GroupAnswerForm, groupReasonField } from "./group-forms";
+import { groupReasonField } from "@/lib/platform/group-form-fields";
+import { GroupAction, GroupAnswerForm } from "./group-forms";
 
 export async function GroupQuestion({
   post,

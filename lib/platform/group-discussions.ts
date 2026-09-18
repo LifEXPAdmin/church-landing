@@ -194,15 +194,14 @@ export function readGroupDiscussions(
           postId: { in: page.map((p) => p.id) }
         }
       });
-    const threads = [];
-    for (const post of page) {
-      const preference = preferences.find((p) => p.postId === post.id),
-        current =
-          preference?.readScope ===
-          groupReadScope(context, {
-            version: post.version,
-            groupId: post.group?.id ?? null
-          });
+    const positions = page.map((post) => {
+      const preference = preferences.find((p) => p.postId === post.id);
+      const current =
+        preference?.readScope ===
+        groupReadScope(context, {
+          version: post.version,
+          groupId: post.group?.id ?? null
+        });
       const position =
         current && preference?.readCommentAt && preference.readCommentId
           ? {
@@ -210,19 +209,42 @@ export function readGroupDiscussions(
               createdAt: preference.readCommentAt
             }
           : null;
-      const unreadReplies = await tx.platformPostComment.count({
-        where: {
-          AND: [
-            {
-              postId: post.id,
-              id: { notIn: current ? (preference?.readCommentIds ?? []) : [] }
-            },
-            commentVisibleWhere(context),
-            afterGroupPosition(position)
-          ]
-        }
-      });
-      threads.push({
+      return { post, preference, current, position };
+    });
+    const counts = positions.length
+      ? await tx.platformPostComment.groupBy({
+          by: ["postId"],
+          where: {
+            AND: [
+              commentVisibleWhere(context),
+              {
+                OR: positions.map(
+                  ({ post, current, preference, position }) => ({
+                    AND: [
+                      {
+                        postId: post.id,
+                        id: {
+                          notIn: current
+                            ? (preference?.readCommentIds ?? [])
+                            : []
+                        }
+                      },
+                      afterGroupPosition(position)
+                    ]
+                  })
+                )
+              }
+            ]
+          },
+          _count: { _all: true }
+        })
+      : [];
+    const countByPost = new Map(
+      counts.map((row) => [row.postId, row._count._all])
+    );
+    const threads = positions.map(({ post, current, preference }) => {
+      const unreadReplies = countByPost.get(post.id) ?? 0;
+      return {
         post,
         unread:
           !current ||
@@ -230,8 +252,8 @@ export function readGroupDiscussions(
           unreadReplies > 0,
         unreadReplies,
         following: preference?.mode === "FOLLOW"
-      });
-    }
+      };
+    });
     const pins = await listPostsIn(tx, context, {
       groupId,
       groupPinned: true,

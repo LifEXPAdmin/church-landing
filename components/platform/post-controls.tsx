@@ -379,7 +379,7 @@ export function PostControls({
               className={portalInputClass}
             >
               <option value="VIEWERS">
-                {post.topicCommunityId
+                {post.groupId ? "Current group members who accept the current rules" : post.topicCommunityId
                   ? "Joined topic members who accept the current rules"
                   : "Eligible viewers with an account"}
               </option>

@@ -93,10 +93,17 @@ export async function requireGroupChurchAuthority(
   await requirePrivilegedAuthentication(tx, actorId);
   return key;
 }
+// Optional lookups are created inside one bounded read transaction only. Commands
+// omit them so each authorization checks current rows again before a write/replay.
+export type GroupReadAuthority = {
+  eligible: (actorId: string) => Promise<boolean>;
+  church: (churchId: string, actorId: string) => Promise<string | null>;
+};
 export async function groupSourceAvailable(
   tx: PostTx,
   group: GatherGroup,
-  context: Pick<PostContext, "blockedIds">
+  context: Pick<PostContext, "blockedIds">,
+  reads?: GroupReadAuthority
 ) {
   if (
     group.recoveryRequired ||
@@ -106,16 +113,20 @@ export async function groupSourceAvailable(
   )
     return false;
   if (
-    !(await tx.platformUser.findFirst({
-      where: { id: group.ownerId, ...groupAdultWhere },
-      select: { id: true }
-    }))
+    !(reads
+      ? await reads.eligible(group.ownerId)
+      : await tx.platformUser.findFirst({
+          where: { id: group.ownerId, ...groupAdultWhere },
+          select: { id: true }
+        }))
   )
     return false;
   return (
     !group.churchId ||
     (!!group.ownerAuthorityKey &&
-      (await groupChurchAuthority(tx, group.churchId, group.ownerId)) ===
+      (reads
+        ? await reads.church(group.churchId, group.ownerId)
+        : await groupChurchAuthority(tx, group.churchId, group.ownerId)) ===
         group.ownerAuthorityKey)
   );
 }
@@ -124,7 +135,8 @@ export async function groupLeaderCurrent(
   group: GatherGroup,
   member: GatherGroupMembership | null,
   actorId: string,
-  requireActive = true
+  requireActive = true,
+  reads?: GroupReadAuthority
 ) {
   if (
     !member ||
@@ -139,7 +151,7 @@ export async function groupLeaderCurrent(
   )
     return false;
   if (
-    !(await tx.platformUser.findFirst({
+    !(reads ? await reads.eligible(actorId) : await tx.platformUser.findFirst({
       where: { id: actorId, ...groupAdultWhere },
       select: { id: true }
     }))
@@ -152,7 +164,10 @@ export async function groupLeaderCurrent(
         : member.leaderAuthorityKey;
     if (
       !key ||
-      key !== (await groupChurchAuthority(tx, group.churchId, actorId))
+      key !==
+        (reads
+          ? await reads.church(group.churchId, actorId)
+          : await groupChurchAuthority(tx, group.churchId, actorId))
     )
       return false;
   }

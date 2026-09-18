@@ -9,12 +9,9 @@ import {
   GroupAction,
   GroupIdentityForm,
   GroupInviteForm,
-  GroupEventForm,
-  groupAcceptFields,
-  groupConfirmField,
-  groupLeaderField,
-  groupReasonField
+  GroupEventForm
 } from "./group-forms";
+import { groupAcceptFields, groupConfirmField, groupLeaderField, groupReasonField } from "@/lib/platform/group-form-fields";
 import { PostComposer } from "./post-composer";
 import { PostCard } from "./post-card";
 import { RegionalTime } from "./regional-presentation";
@@ -56,7 +53,7 @@ function GroupNav({
   member?: boolean;
   leader?: boolean;
 }) {
-  const links = [
+  const links = slug ? [] : [
     ["/platform/groups", "Browse groups"],
     ["/platform/groups/mine", "My choices"],
     ["/platform/groups/invitations", "Invitations"],

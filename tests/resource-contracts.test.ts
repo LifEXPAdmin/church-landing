@@ -9,7 +9,6 @@ import {
 
 test("reserved and unknown resource kinds cannot select a working service", () => {
   for (const kind of [
-    "gatherGroup",
     "mediaCatalogItem",
     "volunteerOpportunity",
     "fundraisingCampaign",
@@ -43,10 +42,7 @@ test("reserved and unknown resource kinds cannot select a working service", () =
       }),
     TypeError
   );
-  assert.throws(
-    () => requireImplementedResource("gatherGroup"),
-    ResourceUnavailableError
-  );
+
 });
 
 test("implemented resources point to their existing authority without granting access", () => {
@@ -59,7 +55,9 @@ test("implemented resources point to their existing authority without granting a
     "photoAlbum",
     "setting",
     "exchangeListing",
-    "exchangeInquiry"
+    "exchangeInquiry",
+    "pantryHub",
+    "gatherGroup"
   ] as const) {
     const contract = requireImplementedResource(kind);
     assert.equal(contract.state, "implemented");

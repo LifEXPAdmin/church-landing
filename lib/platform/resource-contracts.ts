@@ -19,7 +19,7 @@ export const resourceContracts = Object.freeze({
   ),
   pantryHub: implemented("pantry-policy/pantry-commands/pantry-boundary"),
   exchangeInquiry: implemented("exchange-handoff-policy/exchange-handoffs/exchange-handoff-lifecycle"),
-  gatherGroup: reserved("group membership, leadership and audience"),
+  gatherGroup: implemented("group-policy/group-commands/group-boundary"),
   mediaCatalogItem: reserved("catalog source, rights, audience and provider"),
   volunteerOpportunity: reserved(
     "independent application, coordinator and capacity"

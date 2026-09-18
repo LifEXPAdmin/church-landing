@@ -11,6 +11,8 @@ import {
   currentGroupInvitation,
   groupAdultWhere,
   groupLeaderCurrent,
+  groupChurchAuthority,
+  type GroupReadAuthority,
   groupPublicWhere,
   groupSourceAvailable,
   unavailableGroup
@@ -51,20 +53,27 @@ async function visibleLeaders(
 async function publicGroup(
   tx: PostTx,
   group: GatherGroup,
-  context: PostContext
+  context: PostContext,
+  details?: {
+    owner: { id: string; name: string; username: string } | null;
+    leaders: { id: string; name: string; username: string }[];
+    church: { id: string; slug: string; name: string } | null;
+  }
 ) {
-  const owner = group.ownerId
-    ? await tx.platformUser.findFirst({
-        where: {
-          AND: [
-            { id: group.ownerId },
-            groupAdultWhere,
-            socialUserWhere(context)
-          ]
-        },
-        select: { id: true, name: true, username: true }
-      })
-    : null;
+  const owner = details
+    ? details.owner
+    : group.ownerId
+      ? await tx.platformUser.findFirst({
+          where: {
+            AND: [
+              { id: group.ownerId },
+              groupAdultWhere,
+              socialUserWhere(context)
+            ]
+          },
+          select: { id: true, name: true, username: true }
+        })
+      : null;
   return {
     id: group.id,
     slug: group.slug,
@@ -81,13 +90,17 @@ async function publicGroup(
     topic: group.topic,
     lifecycle: group.lifecycle,
     owner,
-    leaders: await visibleLeaders(tx, group, context),
-    church: group.churchId
-      ? await tx.church.findUnique({
-          where: { id: group.churchId },
-          select: { id: true, slug: true, name: true }
-        })
-      : null
+    leaders: details
+      ? details.leaders
+      : await visibleLeaders(tx, group, context),
+    church: details
+      ? details.church
+      : group.churchId
+        ? await tx.church.findUnique({
+            where: { id: group.churchId },
+            select: { id: true, slug: true, name: true }
+          })
+        : null
   };
 }
 async function currentSource(
@@ -190,22 +203,85 @@ export function listGroups(
       const rows = await tx.gatherGroup.findMany({
         where: { AND: [where, ...(cursor ? [{ id: { gt: cursor } }] : [])] },
         orderBy: { id: "asc" },
-        take: 20
+        take: 20,
+        include: {
+          owner: { select: { id: true, name: true, username: true } },
+          church: { select: { id: true, slug: true, name: true } },
+          members: {
+            where: {
+              state: "ACTIVE",
+              leader: true,
+              user: { ...groupAdultWhere, ...socialUserWhere(context) }
+            },
+            include: {
+              user: { select: { id: true, name: true, username: true } }
+            },
+            take: 21
+          }
+        }
       });
       if (!rows.length) {
         exhausted = true;
         break;
       }
+      const eligibleOwners = await tx.platformUser.findMany({
+        where: {
+          ...groupAdultWhere,
+          id: { in: rows.flatMap((g) => (g.ownerId ? [g.ownerId] : [])) }
+        },
+        select: { id: true }
+      });
+      const eligibleIds = new Set([
+        ...eligibleOwners.map((u) => u.id),
+        ...rows.flatMap((g) => g.members.map((m) => m.userId))
+      ]);
+      const churchKeys = new Map<string, string | null>();
+      const reads: GroupReadAuthority = {
+        eligible: async (id) => eligibleIds.has(id),
+        church: async (churchId, actorId) => {
+          const key = churchId + ":" + actorId;
+          if (!churchKeys.has(key))
+            churchKeys.set(
+              key,
+              await groupChurchAuthority(tx, churchId, actorId)
+            );
+          return churchKeys.get(key)!;
+        }
+      };
       for (const group of rows) {
         cursor = group.id;
-        if (!(await groupSourceAvailable(tx, group, context))) continue;
+        if (!(await groupSourceAvailable(tx, group, context, reads))) continue;
         if (query.invitations) {
           const member = await tx.gatherGroupMembership.findUnique({
             where: groupMemberKey(group.id, context.actorId!)
           });
           if (!(await currentGroupInvitation(tx, group, member))) continue;
         }
-        groups.push(await publicGroup(tx, group, context));
+        if (group.members.length > 20)
+          throw new PortalError(
+            503,
+            "This group's leadership needs a size review."
+          );
+        const leaders = [];
+        for (const member of group.members)
+          if (
+            await groupLeaderCurrent(
+              tx,
+              group,
+              member,
+              member.userId,
+              false,
+              reads
+            )
+          )
+            leaders.push(member.user);
+        groups.push(
+          await publicGroup(tx, group, context, {
+            owner: group.owner,
+            leaders,
+            church: group.church
+          })
+        );
         if (groups.length === pageSize) break;
       }
       if (rows.length < 20 && groups.length < pageSize) {
