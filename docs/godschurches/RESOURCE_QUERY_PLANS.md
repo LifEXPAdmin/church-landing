@@ -2,9 +2,10 @@
 
 September 18, 2026. Local investigation on the fictional fixture described in
 [resource budgets](RESOURCE_BUDGETS.md), using the unchanged 2026.09.18.8 runtime.
-The evidence below proposes one listing index. The migration, combined release
-gates and production publication remain pending the shared schema integration
-window. No production performance improvement is claimed.
+The evidence below supports one listing index. After the shared schema slot
+opened, `20260918195500_exchange_price_order` added exactly the measured ascending
+candidate. Combined release gates and production publication remain pending.
+No production performance improvement is claimed.
 
 ## Reproduced planning behavior
 

@@ -915,6 +915,16 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "exchange-price-browsing",
+    version: "2026.09.18.9",
+    date: "2026-09-18",
+    summary: "Improved price-sorted Exchange browsing for larger catalogs.",
+    added: [],
+    improved: ["Price sorting keeps the same current-access checks and stable page order."],
+    fixed: [],
+    featureIds: ["exchange-listings"]
+  },
+  {
     id: "menu-groups-and-clear-security-guidance",
     version: "2026.09.18.8",
     date: "2026-09-18",

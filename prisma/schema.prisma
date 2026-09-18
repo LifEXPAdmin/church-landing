@@ -1808,6 +1808,7 @@ model ExchangeListing {
   @@index([state, moderationState, publishedAt(sort: Desc), id(sort: Desc)])
   @@index([audienceChurchId, state, publishedAt(sort: Desc)])
   @@index([country, placeId, state, publishedAt(sort: Desc)])
+  @@index([currency, intent, state, priceMinor, publishedAt(sort: Desc), id(sort: Desc)], map: "ExchangeListing_price_order_idx")
 }
 
 enum ExchangeInquiryState {
