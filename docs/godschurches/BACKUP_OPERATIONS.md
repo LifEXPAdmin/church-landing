@@ -1,5 +1,12 @@
 # Encrypted recovery copies and expiry
 
+The [September 18 expanded-resource rehearsal](RESOURCE_RESTORE.md) verifies all
+144 current application tables, 100 migrations, 273 foreign keys and 1,100 stored
+fictional image variants. A separate read-only provider rehearsal restores all
+16 current production variants. These are dated recovery checks. The existing
+daily job below remains database-only; manual asset recovery does not establish
+scheduled media coverage.
+
 13 September 2026. The approved retention policy limits database recovery copies
 to 30 days. The existing encrypted PostgreSQL backup workflow now has a daily
 operator job and a tested expiry command. No application request imports this

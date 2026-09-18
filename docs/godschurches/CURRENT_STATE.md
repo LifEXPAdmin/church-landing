@@ -1,3 +1,15 @@
+## Expanded resource restoration verified, September 18, 2026 UTC
+
+The [expanded restore receipt](RESOURCE_RESTORE.md) matches all 144 application
+tables plus migration history, all 100 migration checksums and 273 foreign keys.
+All 1,100 stored image variants restore byte for byte, with zero missing or orphaned
+files after repairing the fictional clone's omitted source files. Newer Need and
+Pantry withdrawals quarantine the older snapshot; 112 old sessions and 15 elevated
+grants are retired. The complete local rehearsal takes 20.045 seconds. Separate
+read-only provider verification restores all 16 current production variants with
+zero writes. The existing daily backup remains database-only. This operator/test
+checkpoint changes no application runtime or production state.
+
 ## Resource query investigation, September 18, 2026 UTC
 
 The [query-plan receipt](RESOURCE_QUERY_PLANS.md) reproduces automatic generic-plan
