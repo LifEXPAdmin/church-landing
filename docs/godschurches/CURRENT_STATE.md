@@ -1,3 +1,16 @@
+## Navigation integration passes the complete gate, September 18, 2026
+
+The [combined navigation candidate](NAVIGATION_JOURNEY_REPORT.md#combined-integration-acceptance-18-september-2026)
+on `ba29d29` passes 191 discovered test files: 1,224 passing checks, two
+expected production-stage skips and zero failures. Both skipped cases pass in
+development. Twenty built HTTPS browser groups, the independent build, TypeScript
+and scoped lint also pass. Unsaved calendar entries and their original versions
+survive recovery; revoked cached content stays concealed.
+
+Product .10 is ready for publication under the release lock. The canonical site
+still serves verified .9, and no new migration is needed. Menu shortcuts and
+profile sections remain separate unmerged candidates.
+
 ## Listing index publication verified, September 18, 2026, 21:21 UTC
 
 Release 2026.09.18.9 is verified on the canonical domain at main `5dc7f77`,

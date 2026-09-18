@@ -113,3 +113,23 @@ main. No production migration is required by this change. Production writes,
 recipient sends, deployments and main pushes from A2 are zero. A1 must integrate,
 verify the combined candidate and perform the normal release/live checks. Local
 Chrome acceptance does not establish physical-device acceptance.
+
+## Combined integration acceptance, 18 September 2026
+
+A1 integrates the final navigation correction with the live price-order index on
+`ba29d29`. The complete gate now includes the final definitive-rejection refresh:
+191 discovered files, 205 execution groups, 1,224 passes, two expected
+production-stage skips and zero failures or cancellations. Both skipped cases
+pass in the earlier development stage. The process exits successfully; populated
+upgrades, restore, fresh migrations, production HTTPS privacy and restart pass.
+
+The independent frozen build, TypeScript and scoped lint pass. All 20 built HTTPS
+groups pass without page errors: eleven linked navigation/recovery cases, five
+Menu navigation cases and four membership-revocation cases. The measured shared
+calendar transition remains four calendar GETs and 16 identity GETs. The build
+verifies 223 runtime traces, 74,044 entries and 556 server JavaScript files.
+
+Product candidate 2026.09.18.10 has no new migration, dependency, provider or
+environment change. Production still serves the accepted .9 release at this
+checkpoint. Publication and exact live acceptance remain open. The later Menu
+shortcut and profile-section candidates are not included.
