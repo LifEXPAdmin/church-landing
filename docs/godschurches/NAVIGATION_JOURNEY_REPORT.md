@@ -133,3 +133,28 @@ Product candidate 2026.09.18.10 has no new migration, dependency, provider or
 environment change. Production still serves the accepted .9 release at this
 checkpoint. Publication and exact live acceptance remain open. The later Menu
 shortcut and profile-section candidates are not included.
+
+## Verified publication, 18 September 2026
+
+Product 2026.09.18.10 is verified on the canonical domain at application
+`bea3ba370bcc4a430b4adb7aed0d0db4b7a487a7`, deployment
+`dpl_J7cCb5cUKScPwL7sRgxyCeXPFQV5`. The deployment became READY at
+22:19:27 UTC; alias and serving identity match at 22:23:52 UTC. Only the two
+acceptance reports differ from the tested runtime revision above.
+
+All 23 live public/browser/privacy groups pass with no page errors or mutating
+browser requests, including guest calendar and commitments denials with valid
+date ranges. Six health checks pass. The single reserved nonexistent-source
+activity probe is accepted and its consumer completes with zero application
+writes. Scoped provider logs contain no error or fatal rows from READY through
+22:24:55 UTC. These checks do not establish physical-device or recipient delivery.
+
+All 144 original production table fingerprints remain unchanged through
+22:24:57 UTC. The 101 migration checksums match the installed recovery registry;
+no schema change is needed. The 21:03 encrypted backup restores 144 application
+tables, temporary plaintext is removed, and 79 retention sets have no inspection
+issues. Release verification performs zero application writes and recipient sends.
+The actual provider build verifies 223 traces, 73,951 entries and 555 server
+JavaScript files, plus the expected hydration renderer hash. Local and provider
+trace totals describe their respective artifacts; neither substitutes for the
+other's build verification.

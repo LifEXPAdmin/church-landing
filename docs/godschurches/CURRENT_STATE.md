@@ -1,3 +1,19 @@
+## Navigation and calendar recovery verified live, September 18, 2026, 22:25 UTC
+
+Release 2026.09.18.10 serves on the canonical domain from main `bea3ba3`,
+READY deployment `dpl_J7cCb5cUKScPwL7sRgxyCeXPFQV5`. Twenty-three live
+public/browser/privacy groups and six health checks pass. The reserved
+nonexistent-source queue probe is accepted and consumed; scoped runtime logs
+from READY through 22:24:55 UTC contain no error or fatal rows.
+
+All 144 original production row fingerprints are unchanged at 22:24:57 UTC.
+The existing 101 migration checksums and installed recovery registry match;
+no migration was added. The 21:03 backup restores 144 tables with plaintext
+removed, and 79 retention sets pass inspection. Verification performs zero
+application-row writes and zero recipient sends. Provider build evidence confirms
+the expected hydration renderer and 223 runtime traces. Physical-device evidence
+remains separate. Menu shortcuts and profile sections are still unmerged.
+
 ## Navigation integration passes the complete gate, September 18, 2026
 
 The [combined navigation candidate](NAVIGATION_JOURNEY_REPORT.md#combined-integration-acceptance-18-september-2026)
