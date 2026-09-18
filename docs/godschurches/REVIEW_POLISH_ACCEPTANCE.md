@@ -32,6 +32,12 @@ templates use God’s Churches. URLs, code identifiers, stored member content an
 historical release notes remain unchanged. The current feature guide and release
 notes describe only this bounded change.
 
+The final copy audit also normalizes the authenticator security-email display
+name, subject and text. Its payload passes an injected local delivery stub with
+no network or database writes. Existing authenticator issuer identifiers retain
+their stable spelling. This three-string copy delta follows the full-gate source;
+the gate's application behavior is unchanged and the final build is rechecked.
+
 ## Isolated acceptance
 
 Types, website copy and the final production build pass. Full lint reports zero
