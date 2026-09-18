@@ -13,6 +13,26 @@ export type Feature = {
   availability: "available" | "conditional";
 };
 export const features: Feature[] = [
+  {
+    id: "gather-groups",
+    category: "Churches and community",
+    name: "Adult Gather groups",
+    description: "Find a group, read its rules and deliberately join a private community.",
+    steps: "Open Gather groups from Menu. Review a listed group's About page, then join, request approval or accept your named invitation. My choices holds your membership and roster preferences. Owners manage rules, membership, named leadership and archival. A leadership or ownership offer requires the recipient's explicit acceptance.",
+    href: "/platform/groups",
+    eligibility: "Verified adults can create and join eligible groups. Private cohorts and unlisted groups require named invitations. A church-linked group requires separately assigned church authority; church membership alone grants no group access. Member names start private except accepted leaders. Youth groups are unavailable.",
+    availability: "conditional"
+  },
+  {
+    id: "private-group-discussions",
+    category: "Posts and conversations",
+    name: "Private group discussions",
+    description: "Organize member-only conversations, questions, polls and selected answers within a group.",
+    steps: "Open a current group's Discussions tab and choose a category or start a private discussion. Reply, vote or explicitly follow a thread. A question author or permitted leader can select a helpful answer. Group leaders can pin threads, lock replies and review scoped reports. Events links open the original event only when its own calendar access permits.",
+    href: "/platform/groups/mine",
+    eligibility: "Current membership, accepted rules and group access are required. A group draft stays private to its original destination. Reading updates only visible read progress and does not follow a thread or enable phone alerts. Selected answers are member choices, not theological authority. Archived groups retain permitted history and stop new participation.",
+    availability: "conditional"
+  },
   { id: "church-pantry", category: "Churches and community", name: "Church pantry and support hubs", description: "Find public supply guidance and coordinate a private assistance request with a named church coordinator.", steps: "Open Church pantry and support hubs from Exchange or Settings, My church. Review hours, eligibility and categories. An eligible adult selects their own supplies and consents to the named coordinator. Follow My requests to confirm an offered pickup, cancel or clear ended details. An explicitly assigned assistance coordinator manages stock, sessions and private outcomes, with separate Church Needs duties for replenishment.", href: "/platform/pantry", eligibility: "Available when a church publishes a hub, a current coordinator accepts responsibility and report coverage is available. Requests and appointments do not guarantee supplies. Other members and managers do not inherit private histories. No payments, partner referrals or regulated services are offered. Phone alerts require a separate assistance choice and device.", availability: "conditional" },
   {
     id: "church-needs",
@@ -864,6 +884,21 @@ export const features: Feature[] = [
   }
 ];
 export const releases: ReleaseEntry[] = [
+  {
+    id: "gather-groups-and-private-discussions",
+    version: "2026.09.18.4",
+    date: "2026-09-18",
+    summary: "Adult Gather groups with deliberate membership, named leadership and private discussions.",
+    added: [
+      "Create listed adult groups or private invitation-only cohorts, set rules and review membership choices.",
+      "Choose whether your name appears on the member roster. Accept leadership or ownership explicitly and retain permitted history when a group is archived.",
+      "Publish private discussions and questions with categories, polls, selected answers, leader pins, locked replies and scoped report review.",
+      "Read progress covers visible replies. Following a thread and enabling phone alerts remain separate choices. Group event links retain the original calendar permissions."
+    ],
+    improved: ["Menu, My church, Settings and Help connect group discovery, membership, privacy and notification choices."],
+    fixed: ["Confirmed group choices refresh their current state. Unconfirmed requests stay available through unrelated page updates.", "Start a separate group draft while preserving an existing saved draft and its original audience."],
+    featureIds: ["gather-groups", "private-group-discussions"]
+  },
   { id: "church-pantry-and-private-pickups", version: "2026.09.18.3", date: "2026-09-18", summary: "Church pantry guidance, private assistance requests and deliberate pickup offers.", added: ["Churches can publish hours, access guidance and up to twelve supply categories with clear counted or approximate availability.", "Adults can send a minimal private request to a named coordinator, review and confirm a pickup offer, cancel and clear ended details.", "Explicit assistance duties govern private queues, pickup capacity, collection and missed-pickup corrections. Stock adjustments record reasons separately.", "Prepare a Church Need from a public category and deliberately link the reviewed active need without copying recipient histories."], improved: ["Settings, Exchange and Help connect assistance records to their existing privacy, export, report and recovery controls.", "Generic assistance updates use a separate phone notification choice and current access checks."], fixed: [], featureIds: ["church-pantry", "church-needs"] },
   {
     id: "church-needs-and-receipts",

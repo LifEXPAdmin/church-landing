@@ -4,6 +4,7 @@ import {
   createContext,
   useContext,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type ReactNode
@@ -22,7 +23,7 @@ export function usePrivateRecovery(
   retry: () => void
 ) {
   const register = useContext(RecoveryContext);
-  useEffect(() => {
+  useLayoutEffect(() => {
     register?.(id, pending ? { retry, busy } : null);
     return () => register?.(id, null);
   }, [register, id, pending, busy, retry]);
@@ -51,12 +52,16 @@ export function PrivateSnapshotGuard({
     {}
   );
   const [confirmedChecksum, setConfirmedChecksum] = useState(checksum);
+  const [confirmedChildren, setConfirmedChildren] = useState(children);
   // A sibling reader can refresh the server tree after a write whose response
   // was lost. Keep the original management snapshot until its owner confirms
   // that exact request; refreshing props cannot confirm it on the owner's behalf.
   useEffect(() => {
-    if (Object.keys(recoveries).length === 0) setConfirmedChecksum(checksum);
-  }, [checksum, recoveries]);
+    if (Object.keys(recoveries).length === 0) {
+      setConfirmedChecksum(checksum);
+      setConfirmedChildren(children);
+    }
+  }, [checksum, children, recoveries]);
   const register = useCallback(
     (id: string, recovery: PendingRecovery | null) => {
       setRecoveries((current) => {
@@ -199,7 +204,7 @@ export function PrivateSnapshotGuard({
       )}
       <ReadVisibility.Provider value={visible && parentVisible}>
         <div hidden={!visible} inert={!visible}>
-          {children}
+          {Object.keys(recoveries).length ? confirmedChildren : children}
         </div>
       </ReadVisibility.Provider>
     </RecoveryContext.Provider>

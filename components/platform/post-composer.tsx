@@ -340,6 +340,7 @@ function ComposerDraft({
               state.conflict ||
               state.retry ||
               !!state.postId ||
+              (!!initialGroup && draft.groupId !== initialGroup) ||
               draft.replyAudience === null ||
               (!!draft.quoteSourceId && !quoteAvailable)
             }
@@ -379,10 +380,39 @@ function ComposerDraft({
         >
           <PostDraftFields draft={draft} change={setDraft} />
           {initialGroup && draft.groupId !== initialGroup && (
-            <p role="status">
-              Your current draft belongs elsewhere. Save or discard it before
-              starting a discussion in this group.
-            </p>
+            <div className="space-y-3">
+              <p role="status">
+                Your current draft belongs elsewhere. Start a separate group
+                draft to keep this draft and its original audience. Saved work
+                remains in Your drafts.
+              </p>
+              <button
+                type="button"
+                className={portalButtonClass}
+                disabled={
+                  state.hidden ||
+                  state.saving ||
+                  state.publishing ||
+                  state.retry ||
+                  state.conflict ||
+                  !!state.postId ||
+                  !options.groups.some((group) => group.id === initialGroup)
+                }
+                onClick={() => {
+                  void (async () => {
+                    if (state.dirty && !(await controller.save())) return;
+                    if (!controller.startSeparateGroupDraft(initialGroup))
+                      setProblem(
+                        "Finish or resolve the current draft and its selected files before starting a separate group draft."
+                      );
+                  })();
+                }}
+              >
+                {state.dirty
+                  ? "Save current draft and start a group draft"
+                  : "Start a separate group draft"}
+              </button>
+            </div>
           )}
           {!draft.groupId &&
             !draft.topicCommunityId &&
@@ -1025,7 +1055,7 @@ function OpenPostComposer({
           className={portalButtonClass}
           onClick={() => {
             setFinished(false);
-            controller.newDraft();
+            controller.newDraft(initialGroup);
             setDraftNumber((v) => v + 1);
           }}
         >

@@ -691,6 +691,7 @@ try {
     }),
     0
   );
+  await page.waitForFunction(() => !history.state?.gcPhotoWork);
   await signIn(manager);
   await go(path + "?volunteers=" + (await slotRow("Event helpers")).id);
   await exact("Confirm help actually completed").click();

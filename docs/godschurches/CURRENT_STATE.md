@@ -1,3 +1,20 @@
+## Gather groups in local acceptance, September 18, 2026 UTC
+
+Adult groups and private canonical discussions are implemented. Nineteen browser
+scenarios, actual password-login return, separate private draft creation and
+existing Pantry/Needs browser journeys pass. Repeated lost-response reproduction
+identified a stale refresh; removing the Groups loading boundary passes twelve
+repeated exact retries. Encrypted 98-to-99 migration and protected restoration
+preserve all original columns in 140 tables without modifying production.
+The broad baseline regression and final client delta acceptance are ongoing.
+See [the current Gather receipt](GATHER_GROUPS_IMPLEMENTATION.md).
+
+Production remains Pantry 2026.09.18.3 with 98 migrations. Gather release notes
+are staged locally. Full acceptance, exact canonical release/live verification,
+installed recovery and task completion are still required. Continue this feature
+cycle before selecting the next eligible task. Physical devices and actual pilots
+remain separate, and final batch review stays last.
+
 ## Church pantry verified live, September 18, 2026 UTC
 
 **2026.09.18.3 / a251f236ab3449ab7e8149c1f214bc382ed90ee5** is READY in

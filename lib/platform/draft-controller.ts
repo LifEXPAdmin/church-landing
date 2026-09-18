@@ -612,10 +612,31 @@ export class DraftController {
     });
     return true;
   };
-  newDraft = () => {
+  /** Start another destination only after every local change is acknowledged. */
+  startSeparateGroupDraft = (groupId: string) => {
+    if (
+      !groupId ||
+      !this.state.ownerId ||
+      this.busy ||
+      this.pending ||
+      this.state.hidden ||
+      this.state.dirty ||
+      this.state.conflict ||
+      this.state.postId ||
+      this.state.resumeId ||
+      this.state.externalWork.dirty ||
+      this.state.externalWork.saving ||
+      this.state.externalWork.conflict
+    )
+      return false;
+    this.clear(this.state.ownerId, true);
+    this.start(null, undefined, groupId);
+    return true;
+  };
+  newDraft = (groupId?: string) => {
     if (this.busy || !this.state.postId) return;
     const owner = this.state.ownerId;
     this.clear(owner, true);
-    this.start();
+    this.start(null, undefined, groupId);
   };
 }

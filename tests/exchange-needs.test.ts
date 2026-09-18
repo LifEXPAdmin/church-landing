@@ -731,9 +731,9 @@ test("Needs alerts require dated phone consent and older settings forms preserve
   );
   const old = projectNotificationPreferences(raw);
   const inApp = Object.fromEntries(
-    // The pre-Needs form predates the later pantry assistance category too.
+    // The pre-Needs form also predates pantry assistance and Gather groups.
     Object.entries(old.inApp).filter(
-      ([k]) => k !== "needs" && k !== "assistance"
+      ([k]) => k !== "needs" && k !== "assistance" && k !== "groups"
     )
   );
   await notificationPreferenceCommand(

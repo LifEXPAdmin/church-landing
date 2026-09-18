@@ -550,3 +550,44 @@ test("a new group draft keeps its private destination through autosave and canno
     c.dispose();
   }
 });
+
+test("a separate group draft preserves the saved original and cannot discard dirty, uncertain or concealed work", async () => {
+  const f = fixture(),
+    c = f.controller;
+  try {
+    await c.verify();
+    c.start();
+    c.change({ ...c.getSnapshot().fields, content: "Original public draft" });
+    const originalId = c.getSnapshot().id;
+    assert.equal(c.startSeparateGroupDraft("group-a"), false);
+    f.lose();
+    await c.save();
+    assert.equal(c.startSeparateGroupDraft("group-a"), false);
+    assert.equal(c.getSnapshot().id, originalId);
+    await c.retry();
+    assert.equal(f.bodies[0], f.bodies[1]);
+    c.setExternalWork("photo", { dirty: true, saving: false, conflict: false });
+    assert.equal(c.startSeparateGroupDraft("group-a"), false);
+    c.setExternalWork("photo", null);
+    c.conceal();
+    assert.equal(c.startSeparateGroupDraft("group-a"), false);
+    await c.verify();
+    assert.equal(c.startSeparateGroupDraft("group-a"), true);
+    assert.notEqual(c.getSnapshot().id, originalId);
+    assert.equal(c.getSnapshot().fields.content, "");
+    assert.equal(c.getSnapshot().fields.groupId, "group-a");
+    assert.equal(c.getSnapshot().fields.audience, "GROUP");
+    assert.equal(c.getSnapshot().version, 0);
+    assert.equal(f.bodies.length, 2);
+    const original = JSON.parse(f.bodies[0]);
+    assert.equal(original.payload.content, "Original public draft");
+    assert.equal(original.payload.audience, "PUBLIC");
+    c.change({ ...c.getSnapshot().fields, content: "Private group draft" });
+    await c.publish();
+    c.newDraft("group-a");
+    assert.equal(c.getSnapshot().fields.groupId, "group-a");
+    assert.equal(c.getSnapshot().fields.audience, "GROUP");
+  } finally {
+    c.dispose();
+  }
+});

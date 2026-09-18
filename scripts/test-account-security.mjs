@@ -293,7 +293,7 @@ try {
         : beforeChurch && table === "PlatformPostLike"
           ? "to_jsonb(t) - 'active' - 'version' - 'firstLikedAt'"
           : beforeChurch && table === "PlatformPostComment"
-            ? `to_jsonb(t) - ARRAY['parentId','rootId','version','editedAt','deletedAt','authorChurchId','moderationState','topicCommunityId']`
+            ? `to_jsonb(t) - ARRAY['parentId','rootId','version','editedAt','deletedAt','authorChurchId','moderationState','topicCommunityId','groupId']`
             : beforeChurch && table === "PlatformPost"
               ? `jsonb_build_object('id',t.id,'createdAt',t."createdAt",'updatedAt',t."updatedAt",'authorId',t."authorId",'type',t.type,'content',t.content,'scripture',t.scripture)`
               : "to_jsonb(t)";
@@ -390,16 +390,38 @@ try {
     fingerprint(table, key, database, true)
   );
   const metricSources = [
-    ["PlatformUser", ["metricCreationMethod", "metricExcluded", "dateFormat", "timeFormat", "regionalVersion", "locationAudience", "locationVersion", "locationRecoveryRequired"]],
+    [
+      "PlatformUser",
+      [
+        "metricCreationMethod",
+        "metricExcluded",
+        "dateFormat",
+        "timeFormat",
+        "regionalVersion",
+        "locationAudience",
+        "locationVersion",
+        "locationRecoveryRequired"
+      ]
+    ],
     ["SocialRelationship", ["followingSince"]],
     ["TopicMembership", ["followingSince"]],
     ["CalendarResponse", ["goingSince"]],
     ["PostVolunteerSignup", ["activeSince", "completedAt"]],
     ["ChurchConnection", ["requestedAt", "approvedSince"]],
-    ["PlatformPost", ["exchangeNeedId"]],
+    [
+      "PlatformPost",
+      [
+        "exchangeNeedId",
+        "groupId",
+        "groupCategory",
+        "groupThreadKind",
+        "groupPinnedAt",
+        "selectedAnswerId"
+      ]
+    ],
+    ["PlatformPostComment", ["groupId"]],
     ...[
       "PlatformFollow",
-      "PlatformPostComment",
       "Church",
       "TopicCommunity",
       "SupportCase",
@@ -868,29 +890,107 @@ try {
       console.log(
         "Notification upgrade preserves all original fields and creates no author consent or delivery work."
       );
-    } else if (name === "20260916020000_regional_preferences_and_profile_location") {
+    } else if (
+      name === "20260916020000_regional_preferences_and_profile_location"
+    ) {
       const before = fingerprint("PlatformUser", "id");
       psql(["-f", `prisma/migrations/${name}/migration.sql`]);
-      const after = psql(["-Atc", `SELECT md5(COALESCE(jsonb_agg(to_jsonb(t) - ARRAY['dateFormat','timeFormat','regionalVersion','locationAudience','locationVersion','locationRecoveryRequired'] ORDER BY t.id, to_jsonb(t)::text)::text, '[]')) FROM "PlatformUser" t`]);
-      if (before !== after) throw Error("Regional migration changed an original account field");
-      if (psql(["-Atc", `SELECT count(*) FROM "PlatformUser" WHERE "dateFormat"<>'DEFAULT' OR "timeFormat"<>'DEFAULT' OR "regionalVersion"<>0 OR "locationAudience"<>'MEMBERS' OR "locationVersion"<>0 OR "locationRecoveryRequired"`]).trim() !== "0")
-        throw Error("Regional migration changed existing presentation or location disclosure");
-      console.log("Regional upgrade preserved every original account field and existing location audience.");
+      const after = psql([
+        "-Atc",
+        `SELECT md5(COALESCE(jsonb_agg(to_jsonb(t) - ARRAY['dateFormat','timeFormat','regionalVersion','locationAudience','locationVersion','locationRecoveryRequired'] ORDER BY t.id, to_jsonb(t)::text)::text, '[]')) FROM "PlatformUser" t`
+      ]);
+      if (before !== after)
+        throw Error("Regional migration changed an original account field");
+      if (
+        psql([
+          "-Atc",
+          `SELECT count(*) FROM "PlatformUser" WHERE "dateFormat"<>'DEFAULT' OR "timeFormat"<>'DEFAULT' OR "regionalVersion"<>0 OR "locationAudience"<>'MEMBERS' OR "locationVersion"<>0 OR "locationRecoveryRequired"`
+        ]).trim() !== "0"
+      )
+        throw Error(
+          "Regional migration changed existing presentation or location disclosure"
+        );
+      console.log(
+        "Regional upgrade preserved every original account field and existing location audience."
+      );
     } else if (name === "20260917002500_exchange_needs") {
       const originals = () => [
-        ...["PlatformPost", "PostVolunteerSignup"].map((table) => psql([
-          "-Atc", `SELECT md5(coalesce(jsonb_agg(to_jsonb(t) - ARRAY['exchangeNeedId','completedAt'] ORDER BY id)::text,'[]')) FROM "${table}" t`
-        ])),
-        ...["PlatformUser", "ExchangeListing", "PostVolunteerSlot", "ChurchCapabilityGrant", "CommunityReport", "SocialEvent", "NotificationFanoutJob", "RetentionControl"].map((table) => fingerprint(table, "id")),
+        ...["PlatformPost", "PostVolunteerSignup"].map((table) =>
+          psql([
+            "-Atc",
+            `SELECT md5(coalesce(jsonb_agg(to_jsonb(t) - ARRAY['exchangeNeedId','completedAt'] ORDER BY id)::text,'[]')) FROM "${table}" t`
+          ])
+        ),
+        ...[
+          "PlatformUser",
+          "ExchangeListing",
+          "PostVolunteerSlot",
+          "ChurchCapabilityGrant",
+          "CommunityReport",
+          "SocialEvent",
+          "NotificationFanoutJob",
+          "RetentionControl"
+        ].map((table) => fingerprint(table, "id")),
         fingerprint("SocialPreferences", "ownerId")
       ];
       const before = originals();
       psql(["-f", `prisma/migrations/${name}/migration.sql`]);
       if (JSON.stringify(before) !== JSON.stringify(originals()))
-        throw Error("Needs migration changed original content, capacity, authority, consent or recovery fields");
-      if (psql(["-Atc", `SELECT (SELECT count(*) FROM "ExchangeNeed") + (SELECT count(*) FROM "ExchangeNeedSlot") + (SELECT count(*) FROM "ExchangeNeedContribution") + (SELECT count(*) FROM "ExchangeNeedEvent") + (SELECT count(*) FROM "PlatformPost" WHERE "exchangeNeedId" IS NOT NULL) + (SELECT count(*) FROM "PostVolunteerSignup" WHERE "completedAt" IS NOT NULL)`]).trim() !== "0")
-        throw Error("Needs migration inferred a need, contribution, receipt, completion or post link");
-      console.log("Needs upgrade preserves every original field and leaves new structures, post links and completion receipts empty.");
+        throw Error(
+          "Needs migration changed original content, capacity, authority, consent or recovery fields"
+        );
+      if (
+        psql([
+          "-Atc",
+          `SELECT (SELECT count(*) FROM "ExchangeNeed") + (SELECT count(*) FROM "ExchangeNeedSlot") + (SELECT count(*) FROM "ExchangeNeedContribution") + (SELECT count(*) FROM "ExchangeNeedEvent") + (SELECT count(*) FROM "PlatformPost" WHERE "exchangeNeedId" IS NOT NULL) + (SELECT count(*) FROM "PostVolunteerSignup" WHERE "completedAt" IS NOT NULL)`
+        ]).trim() !== "0"
+      )
+        throw Error(
+          "Needs migration inferred a need, contribution, receipt, completion or post link"
+        );
+      console.log(
+        "Needs upgrade preserves every original field and leaves new structures, post links and completion receipts empty."
+      );
+    } else if (name === "20260918020000_gather_groups") {
+      // Select the exact prior columns in every original table. New destination
+      // columns are additive; their null/default values are checked separately.
+      const originals = JSON.parse(
+        psql([
+          "-Atc",
+          `SELECT jsonb_agg(jsonb_build_object('table',t.table_name,'columns',t.columns) ORDER BY t.table_name) FROM (SELECT c.table_name,jsonb_agg(c.column_name ORDER BY c.ordinal_position) AS columns FROM information_schema.columns c JOIN information_schema.tables b ON b.table_schema=c.table_schema AND b.table_name=c.table_name AND b.table_type='BASE TABLE' WHERE c.table_schema='public' GROUP BY c.table_name) t`
+        ])
+      );
+      const quote = (value) => '"' + value.replaceAll('"', '""') + '"';
+      const snapshot = () =>
+        originals.map((row) => [
+          row.table,
+          psql([
+            "-Atc",
+            `SELECT md5(coalesce(jsonb_agg(to_jsonb(r) ORDER BY to_jsonb(r)::text)::text,'[]')) FROM (SELECT ${row.columns.map(quote).join(",")} FROM ${quote(row.table)}) r`
+          ]).trim()
+        ]);
+      const before = snapshot();
+      psql(["-f", `prisma/migrations/${name}/migration.sql`]);
+      const after = snapshot();
+      const changed = before
+        .filter((row, i) => row[1] !== after[i][1])
+        .map((row) => row[0]);
+      if (changed.length)
+        throw Error(
+          "Gather migration changed original columns in: " + changed.join(", ")
+        );
+      if (
+        psql([
+          "-Atc",
+          `SELECT (SELECT count(*) FROM "GatherGroup")+(SELECT count(*) FROM "GatherGroupMembership")+(SELECT count(*) FROM "GatherGroupAudit")+(SELECT count(*) FROM "GatherGroupEventLink")+(SELECT count(*) FROM "PlatformPost" WHERE "groupId" IS NOT NULL OR "groupCategory" IS NOT NULL OR "groupThreadKind" IS NOT NULL OR "groupPinnedAt" IS NOT NULL OR "selectedAnswerId" IS NOT NULL)+(SELECT count(*) FROM "PlatformPostComment" WHERE "groupId" IS NOT NULL)+(SELECT count(*) FROM "PrivatePostDraft" WHERE "groupId" IS NOT NULL)+(SELECT count(*) FROM "CommunityReport" WHERE "scopeGroupId" IS NOT NULL)+(SELECT count(*) FROM "ConversationPreference" WHERE "readCommentAt" IS NOT NULL OR "readCommentId" IS NOT NULL OR "readPostVersion"<>0 OR "readVersion"<>0 OR "readScope" IS NOT NULL OR cardinality("readCommentIds")<>0)+(SELECT count(*) FROM "ChurchCapabilityGrant" WHERE capability='MANAGE_CHURCH_GROUPS')`
+        ]).trim() !== "0"
+      )
+        throw Error(
+          "Gather migration inferred membership, authority, a private destination or reading history"
+        );
+      console.log(
+        `Gather upgrade preserves all original columns in ${originals.length} tables and creates no group, consent, authority, destination or read history.`
+      );
     } else psql(["-f", `prisma/migrations/${name}/migration.sql`]);
   }
   if (beforeMetrics) {

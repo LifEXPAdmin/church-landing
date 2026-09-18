@@ -1,4 +1,6 @@
 "use client";
+import { flushSync } from "react-dom";
+import { settlePhotoNavigation } from "./use-photo-back-guard";
 import { RegionalEventTime, RegionalWallTime } from "./regional-presentation";
 import {
   useEffect,
@@ -46,7 +48,7 @@ function ParticipationForm({
     if (result) resultRef.current?.focus();
   }, [result]);
   useUnsavedSocialWork(
-    { dirty, saving: pending || refreshing, conflict: false },
+    { dirty, saving: pending, conflict: false },
     () =>
       setResult({
         message:
@@ -58,6 +60,7 @@ function ParticipationForm({
   return (
     <form
       className="space-y-3"
+      aria-label={label}
       aria-busy={pending || refreshing}
       data-reader-dirty={dirty}
       onChangeCapture={() => setDirty(true)}
@@ -86,9 +89,13 @@ function ParticipationForm({
             failed: !response.ok
           });
           if (response.ok) {
-            setDirty(false);
-            if (payload.operation === "configure-slot" && !payload.slotId)
-              setCreated(true);
+            flushSync(() => {
+              setDirty(false);
+              setPending(false);
+              if (payload.operation === "configure-slot" && !payload.slotId)
+                setCreated(true);
+            });
+            await settlePhotoNavigation();
             refresh(() => router.refresh());
           } else if (
             response.status === 409 &&
@@ -486,9 +493,14 @@ export function PostParticipationControls({
         <section className="space-y-3" aria-label="Poll">
           <h3 className="font-semibold">{poll.question}</h3>
           <p className="text-sm text-gc-muted">
-            {poll.closed
-              ? "Voting closed"
-              : <>Closes <RegionalWallTime value={poll.closesLocal} /> · {poll.timeZone}</>}{" "}
+            {poll.closed ? (
+              "Voting closed"
+            ) : (
+              <>
+                Closes <RegionalWallTime value={poll.closesLocal} /> ·{" "}
+                {poll.timeZone}
+              </>
+            )}{" "}
             · {poll.total} ballot{poll.total === 1 ? "" : "s"}.{" "}
             {poll.multiple
               ? "Multiple choices per ballot."

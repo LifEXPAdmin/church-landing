@@ -11,7 +11,12 @@ import {
   GroupInviteForm,
   GroupEventForm
 } from "./group-forms";
-import { groupAcceptFields, groupConfirmField, groupLeaderField, groupReasonField } from "@/lib/platform/group-form-fields";
+import {
+  groupAcceptFields,
+  groupConfirmField,
+  groupLeaderField,
+  groupReasonField
+} from "@/lib/platform/group-form-fields";
 import { PostComposer } from "./post-composer";
 import { PostCard } from "./post-card";
 import { RegionalTime } from "./regional-presentation";
@@ -53,12 +58,14 @@ function GroupNav({
   member?: boolean;
   leader?: boolean;
 }) {
-  const links = slug ? [] : [
-    ["/platform/groups", "Browse groups"],
-    ["/platform/groups/mine", "My choices"],
-    ["/platform/groups/invitations", "Invitations"],
-    ["/platform/groups/new", "Create group"]
-  ];
+  const links = slug
+    ? []
+    : [
+        ["/platform/groups", "Browse groups"],
+        ["/platform/groups/mine", "My choices"],
+        ["/platform/groups/invitations", "Invitations"],
+        ["/platform/groups/new", "Create group"]
+      ];
   if (slug) {
     links.push([`/platform/groups/${slug}`, "About"]);
     if (member)
@@ -507,6 +514,12 @@ export async function GroupPage({
                   initialGroup={g.id}
                   label="Start a private group discussion"
                 />
+              )}
+              {!v.canPost && g.lifecycle === "ACTIVE" && (
+                <p>
+                  New discussions are unavailable under the current group access
+                  and rules. Review your membership on About.
+                </p>
               )}
               <nav
                 aria-label="Discussion categories"
@@ -968,6 +981,16 @@ export async function GroupPage({
             {detail && (
               <>
                 <h2 className="text-3xl">{detail.group.name}</h2>
+                {detail.group.lifecycle === "ARCHIVED" && (
+                  <p
+                    role="status"
+                    className="rounded-xl border border-gc-divider p-4"
+                  >
+                    This group is archived. Current permitted members can read
+                    its history. New membership and discussion activity are
+                    closed until the owner explicitly reopens the group.
+                  </p>
+                )}
                 <GroupNav
                   slug={detail.group.slug}
                   member={detail.viewer.member}

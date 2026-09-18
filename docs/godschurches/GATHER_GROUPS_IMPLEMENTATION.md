@@ -1,15 +1,67 @@
 # Gather groups implementation checkpoint
 
-18 September 2026. Local work in progress; no group migration or runtime is deployed.
+18 September 2026. Local acceptance is in progress. No Gather migration or runtime
+is deployed; the live application remains the verified pantry release.
 
-The adult group contract is saved in `GATHER_GROUPS_CONTRACT.md`. The current foundation adds private group destinations to canonical posts, comments, drafts, polls, reports and appeals. It includes explicit current membership and church authority, named invitation and leadership consent, private roster choices, archived history, protected access restoration, pinned threads, selected answers and signed read progress. Read acknowledgements cover only displayed positions from signed returned pages, preserve unseen pagination gaps, and do not change following. Visibility changes invalidate old progress.
+The adult group contract is saved in `GATHER_GROUPS_CONTRACT.md`. Groups reuse
+canonical posts, comments, private drafts, polls, reports, appeals and event links.
+Current adult membership, church authority, named invitation and leadership
+consent govern access. Roster visibility starts private. Group drafts have an
+immutable destination. Archiving stops participation while retaining permitted
+history. Pins, selected answers, reply locks and scoped moderation share existing
+records. Signed read acknowledgements cover visible positions only, preserve
+unseen reply-page gaps and do not change following. Account closure, export,
+erasure, generic notifications and protected access restoration are integrated.
 
-The isolated database applies all 99 migrations. Twenty-two focused group service and HTTP checks plus seventeen draft-controller checks pass, including current-access rejection on exact retries, removal, bans, stale church authority, invitation blocking, older protected restore, draft destination immutability, report scope, private ballots, moderation, pins, locks and deep-linked read progress. TypeScript, website copy and changed-file lint pass. Earlier failures were retained in private evidence and repaired; one unused import and trailing whitespace were removed after those checks.
+The isolated database applies all 99 migrations. Twenty-two focused group service
+and HTTP tests pass. Eighteen draft-controller tests pass after repairing separate
+group-draft creation, including preservation of dirty, uncertain, concealed and
+saved work. Current-access rejection on exact retries, bans, revoked church
+authority, invitation blocking, older protected restore, report scope, private
+ballots, moderation and event permission intersections are covered.
 
-Account closure/export/erasure, canonical event links, generic current-source notifications and HTTP boundaries are implemented and covered by the focused checks. Member interfaces, private composer integration, navigation and help are implemented but not yet browser-verified. TypeScript, website copy and changed-file lint pass.
+Nineteen production-mode browser scenarios pass: guest entry, group creation,
+public About privacy, membership request/approval, roster consent, private
+questions and polls, canonical selected answers, pins, actual visible read
+progress, independent event access, outsider denial, retained-page revocation,
+named invitations, leadership acceptance/revocation, owner transfer and archived
+history/reopening. An unconfirmed answer save survives a sibling poll refresh
+until its exact retry is confirmed. Separate browser acceptance verifies actual
+password sign-in return and a saved public draft remaining intact when a new
+private group draft starts. Pantry and Needs browser regressions pass.
 
-This is a saved implementation checkpoint, not feature completion. Production-mode browser acceptance, full regression, measured runtime costs, upgrade/restore, release notes, canonical deployment and live verification remain open. No real groups, appointments, members, content or notifications were created in production.
+A real server/client form-constant import fault was repaired. Repeated lost-reply
+acceptance reproduced stale membership after a successful save. Removing the
+additional Groups loading boundary passes twelve repeated exact-retry cycles;
+the speculative shared navigation-timing change was reverted. Pending requests
+stay mounted through sibling refreshes. Test label, certificate, fixture field
+and premature automated navigation failures remain separately recorded. Final
+repeat acceptance includes ordinary Back behavior and the latest archived-state
+explanation, release copy and draft changes.
 
-Browser checkpoint: nine isolated production-mode scenarios pass on the interface repair, covering guest return, adult creation, public About privacy, membership requests/approval, sibling edit protection, private questions, canonical replies/selected answers, leader pinning and outsider denial. A real server/client form-definition import fault was reproduced and repaired. Test label, local certificate and field-name errors are preserved separately. One earlier post-save refresh timeout remains under repeat/lost-response verification. Extended invitations/events/read-progress/retained-page checks and full release acceptance remain open.
+The staged full regression uses service baseline `90bd80d`. Synthetic upgrade,
+fresh migrations, full restore, development/production builds, server restart and
+explicit HTTP suites passed. Historical fingerprint comparisons were corrected
+to compare original columns; migration 99 separately checks every original column
+of all 140 tables and asserts no inferred group, consent or destination data.
+Old activity and notification category expectations were repaired for Groups;
+the historical pre-Needs form omits all later categories. Remaining discovered
+tests are continuing on the unchanged baseline build. A final delta gate covers
+the client draft/controller changes separately. Full acceptance is not yet claimed.
 
-Bounded read work measures identical projections on a synthetic 20-group and 20-thread fixture: guest listing 102 to 6 SELECTs, member listing 113 to 17 and discussion listing 44 to 25. Median local times are approximately 43.4 to 3.45 ms, 47.2 to 8.0 ms and 38.8 to 29.4 ms, respectively. These are isolated measurements, not production latency claims. Commands retain fresh authorization reads; reused authority lookups exist only within one bounded read transaction.
+Encrypted production-copy upgrade and protected recovery passed 98 to 99
+migrations with all 140 original table/column fingerprints unchanged. Production
+was not modified. Installed production recovery still covers the live 98
+migrations and must be updated after an accepted release.
+
+Bounded reads preserve identical projections on isolated fixtures: twenty group
+cards use 6 SELECTs instead of 102 for guests and 17 instead of 113 for members.
+Twenty discussion rows use 25 instead of 44. Median local times are approximately
+43.4 to 3.45 ms, 47.2 to 8.0 ms and 38.8 to 29.4 ms. These are isolated
+measurements, not production latency claims. Commands keep fresh authorization;
+reused authority lookups exist only within one bounded read transaction.
+
+The candidate includes release notes and feature instructions. Exact final build,
+remaining regression, canonical deployment, live privacy/runtime verification,
+installed recovery and private task reconciliation remain open. Real ministry
+pilots, physical phones and youth/family readiness are separate evidence.
