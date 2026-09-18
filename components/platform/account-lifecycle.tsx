@@ -41,7 +41,7 @@ export function AccountLifecycle({
         ) : (
           <>
             <p>
-              Take a break from Godschurches. Your profile, posts, comments,
+              Take a break from God’s Churches. Your profile, posts, comments,
               likes and follows will be hidden on future page loads. All devices
               will be signed out, and directory details and support coordinator
               sharing will be removed.

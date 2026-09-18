@@ -90,7 +90,7 @@ export function SupportViews({
             <p className="text-sm text-gc-muted">
               This is not an emergency, pastoral care or independent complaints
               service. If a concern involves your church representative, use the
-              direct Godschurches contact rather than sharing it with that
+              direct God’s Churches contact rather than sharing it with that
               representative. Our published contact is Andrew; it is not an
               independent route for a complaint about Andrew.
             </p>
@@ -123,7 +123,7 @@ export function SupportViews({
             {s.intake.available && s.intake.recipient ? (
               <>
                 <p className="rounded-xl border border-gc-action p-4 text-gc-text">
-                  Recipient: {s.intake.recipient.name}, your Godschurches
+                  Recipient: {s.intake.recipient.name}, your God’s Churches
                   support owner. Only you and this assigned owner can read the
                   request at first. A church representative is not automatically
                   included.
@@ -174,7 +174,7 @@ export function SupportViews({
                     {
                       name: "consent",
                       label:
-                        "I have read the notice and agree to share this request with the named Godschurches support owner.",
+                        "I have read the notice and agree to share this request with the named God’s Churches support owner.",
                       type: "checkbox"
                     }
                   ]}

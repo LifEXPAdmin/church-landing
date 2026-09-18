@@ -3,7 +3,7 @@ import { publicMetadata } from "@/lib/site-metadata";
 
 export const metadata = publicMetadata(
   "Help",
-  "Get started, sign in, and understand public content and church access on Godschurches.",
+  "Get started, sign in, and understand public content and church access on God’s Churches.",
   "/help"
 );
 

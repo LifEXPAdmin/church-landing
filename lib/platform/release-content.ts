@@ -516,7 +516,7 @@ export const features: Feature[] = [
     category: "People and churches",
     name: "Personal friend invitations",
     description:
-      "Invite someone to join Godschurches and become friends with you.",
+      "Invite someone to join God’s Churches and become friends with you.",
     steps:
       "Open Menu, then My QR code. Enable your invitation, then copy, share or download it. A signed-out guest sees the signup form first and chooses whether to connect. Verification and adult eligibility still come before connection. Existing members sign in to review; existing friends see their current friendship. Either person can remove the friendship in profile relationship controls.",
     href: "/platform/invitations",
@@ -670,7 +670,7 @@ export const features: Feature[] = [
     description:
       "Choose a community or discovery feed, then read in List or Pages.",
     steps:
-      "Choose a feed in Home or My feed. Your account remembers that choice. Latest shows public posts; Friends shows accepted mutual friends; Top This Week counts Likes received in the last seven days; Trending gives more weight to recent Likes. Refresh posts updates the reading set. List, Pages and display settings stay separate.",
+      "Choose Latest, Friends, Top This Week or Trending in Home or My feed. Open More feeds for the other reading choices. Your account remembers that choice. Latest shows public posts; Friends shows accepted mutual friends; Top This Week counts Likes received in the last seven days; Trending gives more weight to recent Likes. Refresh posts updates the reading set. List, Pages and display settings stay separate.",
     href: "/platform/feed",
     eligibility:
       "Public posts are available to guests; private posts require access.",
@@ -794,7 +794,7 @@ export const features: Feature[] = [
     description:
       "Share the website or an eligible public post, church or event with a branded preview.",
     steps:
-      "Open Menu and tap Share Godschurches near the top to see the website QR immediately. Copy, share or download its PNG. Use Share on posts and Share publicly on church or event pages.",
+      "Open Menu and tap Share God’s Churches near the top to see the website QR immediately. Copy, share or download its PNG. Use Share on posts and Share publicly on church or event pages.",
     href: "/platform/share?qr=1",
     eligibility:
       "Only eligible public pages have public share links. Restricted or unavailable pages use generic branding. Other apps control their own preview caches and crops. A QR code grants no account or church permissions.",
@@ -819,7 +819,7 @@ export const features: Feature[] = [
     name: "Safe updates",
     description: "Check for a new release while protecting unsent work.",
     steps:
-      "Choose Check for updates. Read What's new, finish saving and refresh only when ready.",
+      "Choose Check for updates in the footer. Available updates and connection problems appear above the page. Read What's new, finish saving and refresh only when ready.",
     href: "/platform/releases",
     eligibility:
       "A connection is required to check. Reading notes does not update the loaded tab.",
@@ -853,6 +853,22 @@ export const features: Feature[] = [
   }
 ];
 export const releases: ReleaseEntry[] = [
+  {
+    id: "clearer-search-and-home",
+    version: "2026.09.18.1",
+    date: "2026-09-18",
+    summary: "Clearer search states, simpler Home controls and consistent God’s Churches branding.",
+    added: [],
+    improved: [
+      "Choose Latest, Friends, Top This Week or Trending directly. More feeds keeps the other approved choices available, with one Refresh posts action and the same List, Pages and full-screen reader.",
+      "Routine update checks are in the footer. Updates and connection problems still appear prominently, and unsent work continues to block refresh.",
+      "More compact Home spacing brings posts closer to the mission and signup invitation. Website labels and installation text consistently use God’s Churches."
+    ],
+    fixed: [
+      "Search shows a loading or access-check state while returning to results, with a manual resume action when results have been concealed. Existing matching, filtering and audience rules are unchanged."
+    ],
+    featureIds: ["search", "reader", "updates", "installation"]
+  },
   {
     id: "private-following-lists",
     version: "2026.09.16.13",

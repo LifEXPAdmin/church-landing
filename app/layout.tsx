@@ -29,7 +29,7 @@ export const metadata: Metadata = {
     template: "%s | God’s Churches"
   },
   description:
-    "Faith, fellowship, and everyday life. Read public posts and connect with people on Godschurches.",
+    "Faith, fellowship, and everyday life. Read public posts and connect with people on God’s Churches.",
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "16x16 32x32 48x48", type: "image/x-icon" },

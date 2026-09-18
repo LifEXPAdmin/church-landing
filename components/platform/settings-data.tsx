@@ -133,7 +133,7 @@ export function SettingsData() {
           Check permissions again
         </button>
         <p className="text-sm text-gc-muted">
-          Photo uploads use the file picker. Godschurches currently has no live
+          Photo uploads use the file picker. God’s Churches currently has no live
           camera, microphone recording or automatic location feature. An allowed
           status does not mean these are running. Device settings may also limit
           access. If a status is not reported, review it in your browser; it

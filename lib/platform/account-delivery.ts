@@ -54,10 +54,10 @@ export function accountGrantDelivery(
       throw new Error("Account delivery unavailable");
     const reset = purpose === "RESET_PASSWORD";
     const subject = reset
-      ? "Reset your Godschurches password"
+      ? "Reset your God’s Churches password"
       : change
-        ? "Confirm your new Godschurches sign-in email"
-        : "Verify your Godschurches email";
+        ? "Confirm your new God’s Churches sign-in email"
+        : "Verify your God’s Churches email";
     const paragraphs = [
       subject,
       "",
@@ -85,9 +85,9 @@ export function accountGrantDelivery(
         ? "Confirm new email"
         : "Verify email";
     const href = escapeHtml(url.toString());
-    const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${escapeHtml(subject)}</title></head><body style="margin:0;padding:24px;background:#f5f5f2;color:#202723;font-family:Arial,sans-serif;font-size:16px;line-height:1.6"><main style="max-width:560px;margin:0 auto;padding:24px;background:#fff;border-radius:12px"><p>Godschurches</p><h1 style="font-size:24px">${escapeHtml(subject)}</h1><p>${escapeHtml(paragraphs[2])}</p><p><a href="${href}" style="display:inline-block;background:#245b47;color:#fff;padding:14px 24px;border-radius:8px;text-decoration:none;font-weight:bold">${action}</a></p><p>${escapeHtml(paragraphs[5])}</p><p>${escapeHtml(paragraphs[6])}</p><p>If the button does not open, copy this complete link into your regular browser:</p><p style="word-break:break-all"><a href="${href}">${href}</a></p><p>${escapeHtml(paragraphs[7])}</p><p style="font-size:14px">If you found this message in Spam, mark it as not spam so future account emails are easier to find.</p></main></body></html>`;
+    const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${escapeHtml(subject)}</title></head><body style="margin:0;padding:24px;background:#f5f5f2;color:#202723;font-family:Arial,sans-serif;font-size:16px;line-height:1.6"><main style="max-width:560px;margin:0 auto;padding:24px;background:#fff;border-radius:12px"><p>God’s Churches</p><h1 style="font-size:24px">${escapeHtml(subject)}</h1><p>${escapeHtml(paragraphs[2])}</p><p><a href="${href}" style="display:inline-block;background:#245b47;color:#fff;padding:14px 24px;border-radius:8px;text-decoration:none;font-weight:bold">${action}</a></p><p>${escapeHtml(paragraphs[5])}</p><p>${escapeHtml(paragraphs[6])}</p><p>If the button does not open, copy this complete link into your regular browser:</p><p style="word-break:break-all"><a href="${href}">${href}</a></p><p>${escapeHtml(paragraphs[7])}</p><p style="font-size:14px">If you found this message in Spam, mark it as not spam so future account emails are easier to find.</p></main></body></html>`;
     const body = JSON.stringify({
-      from: `Godschurches <${config.resend.from}>`,
+      from: `God’s Churches <${config.resend.from}>`,
       to: [email],
       subject,
       text,

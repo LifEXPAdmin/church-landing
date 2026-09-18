@@ -2,7 +2,7 @@ import { publicMetadata } from "@/lib/site-metadata";
 
 export const metadata = publicMetadata(
   "Privacy Policy",
-  "Privacy information for Godschurches accounts, public content, and historical waitlist records.",
+  "Privacy information for God’s Churches accounts, public content, and historical waitlist records.",
   "/privacy"
 );
 
@@ -159,7 +159,7 @@ export default function PrivacyPage() {
               Representative requests store private role and contact
               information, requested permissions, public profile drafts and
               optional preparation notes. Submitted requests are available to
-              independently authorized Godschurches reviewers or appropriately
+              independently authorized God’s Churches reviewers or appropriately
               authorized managers of that church. Reviewers can see the
               claimant’s account name, username and verified sign-in email for
               the review. Independent review references and staff notes stay in

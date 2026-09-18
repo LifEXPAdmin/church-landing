@@ -41,7 +41,8 @@ export function CommunitySearchResults({
   const router = useRouter(),
     seq = useRef(0);
   const [data, setData] = useState<Page | null>(null),
-    [busy, setBusy] = useState(false),
+    [busy, setBusy] = useState(true),
+    [paused, setPaused] = useState(false),
     [error, setError] = useState("");
   const path =
     "/api/platform/search" + searchHref(query).slice("/platform/search".length);
@@ -49,6 +50,7 @@ export function CommunitySearchResults({
     const current = ++seq.current;
     setData(null);
     setBusy(true);
+    setPaused(false);
     setError("");
     try {
       const r = await socialRequest<Page>(path, undefined, owner);
@@ -71,20 +73,27 @@ export function CommunitySearchResults({
       seq.current++;
       setData(null);
       setBusy(false);
+      setPaused(true);
+      setError("");
     };
     const restore = () => {
       if (document.visibilityState !== "hidden") void load();
     };
     const visibility = () =>
       document.visibilityState === "hidden" ? conceal() : restore();
+    const pageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) restore();
+    };
     window.addEventListener("blur", conceal);
     window.addEventListener("focus", restore);
+    window.addEventListener("pageshow", pageShow);
     window.addEventListener("social-relationships-changed", restore);
     document.addEventListener("visibilitychange", visibility);
     return () => {
       conceal();
       window.removeEventListener("blur", conceal);
       window.removeEventListener("focus", restore);
+      window.removeEventListener("pageshow", pageShow);
       window.removeEventListener("social-relationships-changed", restore);
       document.removeEventListener("visibilitychange", visibility);
     };
@@ -93,6 +102,20 @@ export function CommunitySearchResults({
     <section aria-label="Search results" className="space-y-4" aria-busy={busy}>
       <h2 className="text-3xl capitalize">{query.kind}</h2>
       {busy && <p role="status">Searching permitted {query.kind}…</p>}
+      {paused && (
+        <div className="space-y-2">
+          <p role="status">
+            Results are hidden until this tab checks your current access.
+          </p>
+          <button
+            type="button"
+            className="gc-button gc-button-quiet"
+            onClick={() => void load()}
+          >
+            Resume search
+          </button>
+        </div>
+      )}
       {error && (
         <div role="alert">
           <p>{error}</p>
@@ -168,11 +191,14 @@ export function CommunitySearchResults({
           {query.kind === "events" && item.startAt && item.timeZone && (
             <p>
               <time dateTime={item.startAt}>
-                <RegionalTime value={item.startAt} options={{
-                  dateStyle: "medium",
-                  timeStyle: "short",
-                  timeZone: item.timeZone
-                }} />
+                <RegionalTime
+                  value={item.startAt}
+                  options={{
+                    dateStyle: "medium",
+                    timeStyle: "short",
+                    timeZone: item.timeZone
+                  }}
+                />
               </time>{" "}
               · {item.timeZone}
             </p>

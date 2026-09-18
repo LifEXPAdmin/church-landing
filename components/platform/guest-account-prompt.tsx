@@ -29,7 +29,7 @@ export function GuestAccountPrompt({
             className="gc-button"
             href={accountEntryHref("signup", next, reason)}
           >
-            Join Godschurches
+            Join God’s Churches
           </Link>
           <Link
             className="gc-button gc-button-quiet"

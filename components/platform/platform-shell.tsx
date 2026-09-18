@@ -1,5 +1,6 @@
 import { PushSessionBoundary } from "./push-session-boundary";
 import { LoadedVersion } from "./loaded-release";
+import { UpdateCheck } from "./update-notice";
 import { MissionSignature } from "@/components/layout/site-footer";
 import Link from "next/link";
 import { publicReleaseId } from "@/lib/platform/install-policy";
@@ -161,6 +162,7 @@ export async function PlatformShell({
             <footer className="gc-platform-footer">
               <AppearanceSelect />
               <LoadedVersion />
+              <UpdateCheck />
               <Link href="/platform/features">Explore features</Link>
               <Link href="/platform/releases">What’s new</Link>
               <MissionSignature />

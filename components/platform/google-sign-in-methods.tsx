@@ -37,7 +37,7 @@ export function GoogleSignInMethods() {
           </p>
           <p className="text-gc-muted">
             Your Google identity signs into this same account. Changing your
-            Google email does not change your Godschurches sign-in email.
+            Google email does not change your God’s Churches sign-in email.
           </p>
           {!methods.password && (
             <p>

@@ -171,7 +171,7 @@ export function FriendInvitations({
         setMessage("Invitation link copied.");
       } else if (navigator.share) {
         await navigator.share({
-          title: `Connect with ${r.data.name} on Godschurches`,
+          title: `Connect with ${r.data.name} on God’s Churches`,
           url: r.data.url
         });
         setMessage("Share dialog completed.");

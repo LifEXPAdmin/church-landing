@@ -65,7 +65,7 @@ export default async function Page({
           <>
             <p>
               The code may have expired, been replaced or been revoked. You can
-              still join Godschurches normally.
+              still join God’s Churches normally.
             </p>
             <Link className="gc-button" href="/platform/signup">
               Create account

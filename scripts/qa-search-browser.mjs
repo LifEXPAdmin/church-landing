@@ -165,6 +165,44 @@ try {
   await search(literal);
   await page.getByRole("link", { name: literal, exact: true }).waitFor();
   assert.equal(await rows().count(), 1);
+  await page.evaluate(() => window.dispatchEvent(new Event("blur")));
+  await page
+    .getByRole("button", { name: "Resume search", exact: true })
+    .waitFor();
+  assert.equal(
+    await rows().count(),
+    0,
+    "Focus loss conceals results but leaves a recovery state"
+  );
+  let releaseSearch;
+  const heldSearch = new Promise((resolve) => {
+    releaseSearch = resolve;
+  });
+  await page.route("**/api/platform/search?*", async (route) => {
+    await heldSearch;
+    await route.continue();
+  });
+  await page
+    .getByRole("button", { name: "Resume search", exact: true })
+    .click();
+  await page
+    .getByRole("status")
+    .filter({ hasText: "Searching permitted posts" })
+    .waitFor();
+  assert.equal(await rows().count(), 0);
+  releaseSearch();
+  await page.getByRole("link", { name: literal, exact: true }).waitFor();
+  await page.unroute("**/api/platform/search?*");
+  await page.evaluate(() => {
+    window.dispatchEvent(new Event("blur"));
+    window.dispatchEvent(
+      new PageTransitionEvent("pageshow", { persisted: true })
+    );
+  });
+  await page.getByRole("link", { name: literal, exact: true }).waitFor();
+  ok(
+    "Concealed, pending and restored search have accessible states; explicit resume and history restoration recheck current results"
+  );
   await db.platformUser.update({
     where: { id: f.pending.id },
     data: { bio: "PRIVATE SEARCH BIO" }

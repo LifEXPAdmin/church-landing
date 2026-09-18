@@ -3,7 +3,7 @@ import { publicMetadata } from "@/lib/site-metadata";
 
 export const metadata = publicMetadata(
   "For creators and preachers",
-  "Share written teaching, testimony, and encouragement on Godschurches.",
+  "Share written teaching, testimony, and encouragement on God’s Churches.",
   "/for-creators"
 );
 

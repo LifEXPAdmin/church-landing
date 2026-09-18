@@ -147,7 +147,7 @@ export async function operator(
   )
     throw new PortalError(
       403,
-      "This action requires an explicitly assigned Godschurches capability."
+      "This action requires an explicitly assigned God’s Churches capability."
     );
   await requirePrivilegedAuthentication(tx, actor.id);
 }
@@ -213,7 +213,7 @@ export async function portal<T>(
       if (actor.suspendedAt || actor.deactivatedAt)
         throw new PortalError(
           403,
-          "This account cannot access the private church journey. Contact Godschurches for help."
+          "This account cannot access the private church journey. Contact God’s Churches for help."
         );
       const result = await work(tx, actor);
       await reconcileSupportAccess(tx);
@@ -496,7 +496,7 @@ export async function portalCommand(
       if (!(await hasChurchReviewer(tx, churchId, actor.id)))
         throw new PortalError(
           503,
-          "Church connection setup is not ready. An eligible, assigned reviewer other than you is needed. No request was created. Contact Godschurches for help."
+          "Church connection setup is not ready. An eligible, assigned reviewer other than you is needed. No request was created. Contact God’s Churches for help."
         );
       const connection = prior
         ? await tx.churchConnection.update({

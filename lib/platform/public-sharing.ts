@@ -136,7 +136,7 @@ export async function publicSharePreview(
           ),
           description:
             source.type === "PRAYER" && !source.safeExcerpt
-              ? "Read this public conversation on Godschurches."
+              ? "Read this public conversation on God’s Churches."
               : short(postPreviewText(source), 160),
           author: {
             name: short(source.author.name, 100),
@@ -175,7 +175,7 @@ export async function publicSharePreview(
         description:
           query.kind === "comment" ||
           (row.type === "PRAYER" && !row.safeExcerpt)
-            ? "Read this public conversation on Godschurches."
+            ? "Read this public conversation on God’s Churches."
             : short(postPreviewText(row), 160),
         author: { name: short(name, 100), kind }
       };

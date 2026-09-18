@@ -105,7 +105,7 @@ try {
     );
     assert.equal(
       await page
-        .getByRole("link", { name: "Join Godschurches", exact: true })
+        .getByRole("link", { name: "Join God’s Churches", exact: true })
         .count(),
       1
     );
@@ -172,7 +172,7 @@ try {
   ok("New member without posts/churches has honest empty Home at 320/390");
   await page.setViewportSize({ width: 320, height: 844 });
   await go("/platform/profile/me");
-  assert.equal(await page.title(), "Edit your Godschurches profile");
+  assert.equal(await page.title(), "Edit your God’s Churches profile");
   await page
     .getByLabel("Bio (optional)", { exact: true })
     .fill("Fictional unsaved medium review");

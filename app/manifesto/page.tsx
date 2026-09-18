@@ -3,7 +3,7 @@ import { publicMetadata } from "@/lib/site-metadata";
 
 export const metadata = publicMetadata(
   "Manifesto",
-  "The convictions and long-term vision behind Godschurches and The Revival.",
+  "The convictions and long-term vision behind God’s Churches and The Revival.",
   "/manifesto"
 );
 
@@ -11,7 +11,7 @@ export default function ManifestoPage() {
   return (
     <section className="container-shell py-16 sm:py-20">
       <article className="gc-info-article">
-        <h1 className="mb-8 text-5xl">The Godschurches Manifesto</h1>
+        <h1 className="mb-8 text-5xl">The God’s Churches Manifesto</h1>
         <p className="gc-info-intro">
           A worldwide Church. A shared mission. Every believer has a part.
         </p>
@@ -71,7 +71,7 @@ export default function ManifestoPage() {
               We want every church, small or large, rural or urban, to thrive.
             </p>
             <p>
-              Our vision is for Godschurches to help local churches be
+              Our vision is for God’s Churches to help local churches be
               discovered, share messages and events, connect with believers, and
               find practical support. Calendar and event tools are available
               with current permissions; funding tools remain planned.

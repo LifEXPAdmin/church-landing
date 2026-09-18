@@ -135,7 +135,7 @@ try {
     "/platform/scheduled-posts/fictional-plan"
   ]) {
     await go(path);
-    for (const name of ["Join Godschurches", "Sign in"]) {
+    for (const name of ["Join God’s Churches", "Sign in"]) {
       const href = await page
         .locator("main")
         .getByRole("link", { name, exact: true })

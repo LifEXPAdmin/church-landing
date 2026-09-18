@@ -90,6 +90,33 @@ const { randomUUID } = await import("node:crypto");
 const { loginAccount } = await import("../lib/platform/accounts.ts");
 const selector = () =>
   page.getByRole("combobox", { name: "Choose feed", exact: true });
+const mainLabels = {
+  latest: "Latest",
+  friends: "Friends",
+  weekly: "Top This Week",
+  trending: "Trending"
+};
+const selectFeed = (mode, target = page) =>
+  mainLabels[mode]
+    ? target
+        .getByRole("group", { name: "Main feeds", exact: true })
+        .getByRole("button", { name: mainLabels[mode], exact: true })
+        .click()
+    : target
+        .getByRole("combobox", { name: "Choose feed", exact: true })
+        .selectOption(mode);
+const selectedFeed = async (target = page) => {
+  const selected = target
+    .getByRole("group", { name: "Main feeds", exact: true })
+    .locator('[aria-pressed="true"]');
+  if (await selected.count()) {
+    const selectedText = await selected.innerText();
+    return Object.keys(mainLabels).find((k) => mainLabels[k] === selectedText);
+  }
+  return target
+    .getByRole("combobox", { name: "Choose feed", exact: true })
+    .inputValue();
+};
 const getIds = () =>
   page
     .locator(".gc-feed [data-post]")
@@ -112,10 +139,10 @@ const choose = async (mode) => {
   await page.waitForFunction(
     () => !!new URL(location.href).searchParams.get("feedCursor")
   );
-  await selector().selectOption(mode);
+  await selectFeed(mode);
   await page.waitForURL((url) => url.searchParams.get("feed") === mode);
   await selector().waitFor();
-  assert.equal(await selector().inputValue(), mode);
+  assert.equal(await selectedFeed(), mode);
   await page.waitForFunction(
     () => !!new URL(location.href).searchParams.get("feedCursor")
   );
@@ -190,20 +217,29 @@ try {
       }
     });
   await go("/platform?mode=list");
-  assert.equal(await selector().inputValue(), "latest");
-  assert.deepEqual(await selector().locator("option").allTextContents(), [
-    "Latest",
-    "Friends",
-    "Top This Week",
-    "Trending",
-    "For You",
-    "Following",
-    "Your Church",
-    "Churches",
-    "Local",
-    "Public",
-    "Favorites"
-  ]);
+  assert.equal(await selectedFeed(), "latest");
+  assert.deepEqual(
+    [
+      ...(await page
+        .getByRole("group", { name: "Main feeds", exact: true })
+        .getByRole("button")
+        .allTextContents()),
+      ...(await selector().locator("option").allTextContents()).slice(1)
+    ],
+    [
+      "Latest",
+      "Friends",
+      "Top This Week",
+      "Trending",
+      "For You",
+      "Following",
+      "Your Church",
+      "Churches",
+      "Local",
+      "Public",
+      "Favorites"
+    ]
+  );
   await choose("friends");
   await page
     .getByRole("heading", {
@@ -217,7 +253,7 @@ try {
     .last()
     .waitFor();
   await go("/platform");
-  assert.equal(await selector().inputValue(), "friends");
+  assert.equal(await selectedFeed(), "friends");
   ok(
     "Guest Friends has no stranger filler and the guest choice survives reload"
   );
@@ -225,12 +261,12 @@ try {
   await signIn(a);
   await page.reload();
   await selector().waitFor();
-  assert.equal(await selector().inputValue(), "latest");
+  assert.equal(await selectedFeed(), "latest");
   assert.ok((await getIds()).includes(mine.id));
   await choose("friends");
   assert.deepEqual(await getIds(), order.slice(0, 30));
   await go("/platform");
-  assert.equal(await selector().inputValue(), "friends");
+  assert.equal(await selectedFeed(), "friends");
   const token = await loginAccount(
     db,
     a.email,
@@ -252,10 +288,7 @@ try {
   ]);
   const freshPage = await freshContext.newPage();
   await freshPage.goto(config.origin + "/platform");
-  assert.equal(
-    await freshPage.getByRole("combobox", { name: "Choose feed" }).inputValue(),
-    "friends"
-  );
+  assert.equal(await selectedFeed(freshPage), "friends");
   await freshContext.close();
   ok(
     "Signed-in accounts ignore the guest choice, include own Latest posts and restore their saved Friends choice in a new session"
@@ -281,7 +314,7 @@ try {
   await go("/platform/settings?q=trending");
   await page.getByRole("link", { name: /^Default feed/ }).click();
   await page.waitForURL((url) => url.pathname === "/platform");
-  assert.equal(await selector().inputValue(), "friends");
+  assert.equal(await selectedFeed(), "friends");
   assert.equal(
     (await db.socialPreferences.findUniqueOrThrow({ where: { ownerId: a.id } }))
       .feedVersion,
@@ -295,7 +328,7 @@ try {
   const before = await getIds();
   await page.getByRole("button", { name: "Open My feed", exact: true }).click();
   await page.waitForURL((url) => url.pathname === "/platform/feed");
-  assert.equal(await selector().inputValue(), "friends");
+  assert.equal(await selectedFeed(), "friends");
   assert.deepEqual(await getIds(), before);
   for (const width of [320, 390, 1280]) {
     await page.setViewportSize({ width, height: 844 });
@@ -374,11 +407,11 @@ try {
       await route.abort("failed");
     } else await route.continue();
   });
-  await selector().selectOption("trending");
+  await selectFeed("trending");
   await page
     .getByRole("button", { name: "Retry the same feed choice", exact: true })
     .waitFor();
-  assert.equal(await selector().inputValue(), "weekly");
+  assert.equal(await selectedFeed(), "weekly");
   assert.equal(await selector().isDisabled(), true);
   const version = (
     await db.socialPreferences.findUniqueOrThrow({ where: { ownerId: a.id } })
@@ -446,7 +479,7 @@ try {
   await signIn(c);
   await page.reload();
   await selector().waitFor();
-  assert.equal(await selector().inputValue(), "latest");
+  assert.equal(await selectedFeed(), "latest");
   await page.waitForFunction(
     (scope) => new URL(location.href).searchParams.get("feedScope") !== scope,
     oldScope
@@ -591,14 +624,14 @@ try {
     await coldPage.waitForFunction(
       () => !document.querySelector('[aria-label="Choose feed"]')?.disabled
     );
-    await coldSelector.selectOption("friends");
+    await selectFeed("friends", coldPage);
     await coldPage
       .getByRole("heading", {
         name: "No posts from your friends yet",
         exact: true
       })
       .waitFor();
-    assert.equal(await coldSelector.inputValue(), "friends");
+    assert.equal(await selectedFeed(coldPage), "friends");
     ok(
       "Cold loading keeps native feed choices unavailable until handlers mount, then accepts the first deliberate choice"
     );

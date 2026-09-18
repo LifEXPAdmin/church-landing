@@ -1,5 +1,5 @@
 "use client";
-import { LoadedVersion, useLoadedRelease } from "./loaded-release";
+import { useLoadedRelease } from "./loaded-release";
 import dynamic from "next/dynamic";
 const ReleaseDetails = dynamic(
   () => import("./release-details").then((module) => module.ReleaseDetails),
@@ -11,14 +11,36 @@ import {
   parseReleaseNotes,
   type ReleaseEntry
 } from "@/lib/platform/release-notes";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode
+} from "react";
 import {
   installationUpdateDecision,
   publicReleaseId
 } from "@/lib/platform/install-policy";
 import { useDraftWorkspace } from "./draft-workspace-provider";
 
-export function UpdateNotice({ release }: { release: string | null }) {
+const UpdateControls = createContext<ReactNode>(null);
+
+// The persistent layout owns detection and unsaved-work protection. The footer
+// presents its routine controls without creating a second detector or request.
+export function UpdateCheck() {
+  return useContext(UpdateControls);
+}
+
+export function UpdateNotice({
+  release,
+  children
+}: {
+  release: string | null;
+  children: ReactNode;
+}) {
   // The server-rendered identity belongs to this loaded layout, even if a new
   // deployment appears before our first request or during client navigation.
   const [loaded] = useState(release);
@@ -135,94 +157,125 @@ export function UpdateNotice({ release }: { release: string | null }) {
         : decision === "current"
           ? "This tab is up to date."
           : "Update status is unknown. You can keep using this tab.";
-  return (
-    <aside
-      aria-label="Updates and connection"
-      data-update-decision={decision}
-      className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-gc-divider bg-gc-surface px-4 py-2 text-sm"
+  const actionable =
+    connectionNeeded ||
+    decision === "keep-work" ||
+    decision === "offer-refresh";
+  const controls = (
+    <div
+      className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm"
+      aria-label="App update controls"
     >
-      <LoadedVersion />
-      {available && (
-        <p className="text-xs text-gc-muted">
-          Loaded: {loadedProduct.version ?? "unknown"} · Available:{" "}
-          {notes?.version ?? "unknown"}
-        </p>
-      )}
-      {available && available !== loaded && (
-        <>
-          <button
-            ref={notesButton}
-            className="gc-button gc-button-quiet"
-            onClick={() => {
-              setNotesOpen(true);
-              if (notes) {
-                document.cookie = `gc_release_viewed=${notes.id}; Path=/platform; Max-Age=31536000; SameSite=Lax; Secure`;
-                setViewed(true);
-              }
-            }}
-          >
-            {viewed ? "Read what’s new again" : "See what’s new"}
-          </button>
-          <dialog
-            ref={notesDialog}
-            aria-label="What’s new in the available release"
-            className="max-h-[85dvh] w-[min(92vw,42rem)] overflow-auto rounded-xl border border-gc-divider bg-gc-surface p-5 text-gc-text backdrop:bg-black/50"
-            onClose={() => {
-              setNotesOpen(false);
-              notesButton.current?.focus();
-            }}
-          >
-            <p className="mb-4">
-              This tab is still running{" "}
-              {loadedProduct.version ?? "an unknown version"}. Reading these
-              notes does not refresh it.
-            </p>
-            {notes && notesOpen ? (
-              <ReleaseDetails entry={notes} />
-            ) : (
-              <p>
-                Release notes are unavailable for this build. Your current work
-                is unchanged. Reconnect and check again.
-              </p>
-            )}
-            <button
-              className="gc-button mt-5"
-              onClick={() => notesDialog.current?.close()}
-            >
-              Close notes
-            </button>
-          </dialog>
-        </>
-      )}
-      {(checked || checking) && (
-        <p role="status">{checking ? "Checking for updates…" : message}</p>
-      )}
       <button
         type="button"
-        className="gc-button gc-button-quiet"
+        className="inline-flex min-h-11 items-center underline"
         disabled={checking}
         onClick={() => {
           void check(true);
           if (connectionNeeded || state.hidden) void controller.verify();
         }}
       >
-        {connectionNeeded ? "Retry connection" : "Check for updates"}
+        Check for updates
       </button>
-      {decision === "offer-refresh" && !checking && (
-        <button
-          type="button"
-          className="gc-button gc-button-quiet"
-          onClick={() => {
-            if (
-              installationUpdateDecision(loaded, available, work()) ===
-              "offer-refresh"
-            )
-              window.location.reload();
-          }}
-        >
-          Refresh now
-        </button>
+      {available && available !== loaded && (
+        <p className="text-xs text-gc-muted">
+          Loaded: {loadedProduct.version ?? "unknown"} · Available:{" "}
+          {notes?.version ?? "unknown"}
+        </p>
       )}
-    </aside>
+      {!actionable && (checked || checking) && (
+        <p role="status">{checking ? "Checking for updates…" : message}</p>
+      )}
+    </div>
+  );
+  return (
+    <UpdateControls.Provider value={controls}>
+      {actionable && (
+        <aside
+          aria-label="Updates and connection"
+          data-update-decision={decision}
+          className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-gc-divider bg-gc-surface px-4 py-2 text-sm"
+        >
+          {available && available !== loaded && (
+            <>
+              <button
+                ref={notesButton}
+                className="gc-button gc-button-quiet"
+                onClick={() => {
+                  setNotesOpen(true);
+                  if (notes) {
+                    document.cookie = `gc_release_viewed=${notes.id}; Path=/platform; Max-Age=31536000; SameSite=Lax; Secure`;
+                    setViewed(true);
+                  }
+                }}
+              >
+                {viewed ? "Read what’s new again" : "See what’s new"}
+              </button>
+              <dialog
+                ref={notesDialog}
+                aria-label="What’s new in the available release"
+                className="max-h-[85dvh] w-[min(92vw,42rem)] overflow-auto rounded-xl border border-gc-divider bg-gc-surface p-5 text-gc-text backdrop:bg-black/50"
+                onClose={() => {
+                  setNotesOpen(false);
+                  notesButton.current?.focus();
+                }}
+              >
+                <p className="mb-4">
+                  This tab is still running{" "}
+                  {loadedProduct.version ?? "an unknown version"}. Reading these
+                  notes does not refresh it.
+                </p>
+                {notes && notesOpen ? (
+                  <ReleaseDetails entry={notes} />
+                ) : (
+                  <p>
+                    Release notes are unavailable for this build. Your current
+                    work is unchanged. Reconnect and check again.
+                  </p>
+                )}
+                <button
+                  className="gc-button mt-5"
+                  onClick={() => notesDialog.current?.close()}
+                >
+                  Close notes
+                </button>
+              </dialog>
+            </>
+          )}
+          {(checked || checking) && (
+            <p role="status">{checking ? "Checking for updates…" : message}</p>
+          )}
+          {connectionNeeded && (
+            <button
+              type="button"
+              className="gc-button gc-button-quiet"
+              disabled={checking}
+              onClick={() => {
+                void check(true);
+                if (connectionNeeded || state.hidden) void controller.verify();
+              }}
+            >
+              Retry connection
+            </button>
+          )}
+          {decision === "offer-refresh" && !checking && (
+            <button
+              type="button"
+              className="gc-button gc-button-quiet"
+              onClick={() => {
+                if (
+                  installationUpdateDecision(loaded, available, work()) ===
+                  "offer-refresh"
+                )
+                  window.location.reload();
+              }}
+            >
+              Refresh now
+            </button>
+          )}
+        </aside>
+      )}
+      {children}
+    </UpdateControls.Provider>
   );
 }

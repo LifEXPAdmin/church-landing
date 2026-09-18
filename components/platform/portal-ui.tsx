@@ -73,7 +73,7 @@ export function PortalStatus({ state }: { state: string }) {
 
 export function PortalHelpContact() {
   return (
-    <PortalCard title="Contact Godschurches directly">
+    <PortalCard title="Contact God’s Churches directly">
       <p className="leading-relaxed text-gc-muted">
         You can use the website&apos;s published contact email independently of
         church approval or a coordinator assignment.

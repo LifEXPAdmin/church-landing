@@ -245,7 +245,7 @@ try {
         .getByRole("link");
       assert.match(
         await link.innerText(),
-        signedIn ? /My QR code/ : /Share Godschurches/
+        signedIn ? /My QR code/ : /Share God’s Churches/
       );
       const rect = await link.boundingBox();
       assert.ok(rect.y + rect.height < 844);

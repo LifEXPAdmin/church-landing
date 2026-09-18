@@ -131,26 +131,60 @@ export function FeedChoice({
     <div
       id="feed-choice"
       tabIndex={-1}
-      className="mb-4 space-y-2"
+      className="mb-2 space-y-2"
       data-reader-busy={!ready || busy}
       data-reader-dirty={!!pending.current}
     >
-      <label className="flex flex-wrap items-center gap-3 font-semibold">
-        Feed
-        <select
-          aria-label="Choose feed"
-          className="min-h-11 max-w-full rounded-lg border border-gc-border bg-gc-surface px-3 py-2"
-          value={value.mode}
-          disabled={!ready || busy || !!pending.current}
-          onChange={(event) => void choose(event.target.value as FeedMode)}
-        >
-          {FEED_MODES.map((mode) => (
-            <option key={mode} value={mode}>
-              {feedChoices[mode].label}
+      <div
+        role="group"
+        aria-label="Main feeds"
+        className="flex flex-wrap gap-1"
+      >
+        {FEED_MODES.slice(0, 4).map((mode) => (
+          <button
+            key={mode}
+            type="button"
+            className="gc-feed-choice"
+            aria-pressed={value.mode === mode}
+            disabled={!ready || busy || !!pending.current}
+            onClick={() => void choose(mode)}
+          >
+            {feedChoices[mode].label}
+          </button>
+        ))}
+      </div>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <label className="flex flex-wrap items-center gap-2 text-sm">
+          More feeds
+          <select
+            aria-label="Choose feed"
+            className="min-h-11 max-w-full rounded-lg border border-gc-border bg-gc-surface px-3 py-2"
+            value={FEED_MODES.slice(4).includes(value.mode) ? value.mode : ""}
+            disabled={!ready || busy || !!pending.current}
+            onChange={(event) => void choose(event.target.value as FeedMode)}
+          >
+            <option value="" disabled>
+              Choose another feed
             </option>
-          ))}
-        </select>
-      </label>
+            {FEED_MODES.slice(4).map((mode) => (
+              <option key={mode} value={mode}>
+                {feedChoices[mode].label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button
+          type="button"
+          className="inline-flex min-h-11 items-center text-sm underline"
+          disabled={!ready || busy || !!pending.current}
+          aria-expanded={settingsOpen}
+          onClick={() => {
+            if (canChange()) setSettingsOpen(!settingsOpen);
+          }}
+        >
+          Feed Settings
+        </button>
+      </div>
       <p className="text-sm text-gc-muted">
         {feedChoices[value.mode].description}
       </p>
@@ -162,33 +196,6 @@ export function FeedChoice({
           onChoose={(id) => void choose("following", false, id)}
         />
       )}
-      <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          className="gc-button gc-button-quiet"
-          disabled={!ready || busy || !!pending.current}
-          aria-expanded={settingsOpen}
-          onClick={() => {
-            if (canChange()) setSettingsOpen(!settingsOpen);
-          }}
-        >
-          Feed Settings
-        </button>
-        <button
-          type="button"
-          className="gc-button gc-button-quiet"
-          disabled={!ready || busy || !!pending.current}
-          onClick={() => {
-            if (canChange()) {
-              const url = new URL(destination(value.mode), location.origin);
-              url.searchParams.set("refreshFeed", "1");
-              onNavigate(url.pathname + url.search);
-            }
-          }}
-        >
-          Refresh for new posts
-        </button>
-      </div>
       {settingsOpen && (
         <DiscoverySettings
           key={value.ownerId ?? "guest"}
@@ -200,7 +207,7 @@ export function FeedChoice({
           }}
         />
       )}
-      <FeedBreakReminder />
+      <FeedBreakReminder showSettings={settingsOpen} />
       {empty && value.mode !== "latest" && (
         <button
           type="button"

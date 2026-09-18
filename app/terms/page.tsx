@@ -2,7 +2,7 @@ import { publicMetadata } from "@/lib/site-metadata";
 
 export const metadata = publicMetadata(
   "Terms of Service",
-  "Terms for using Godschurches.",
+  "Terms for using God’s Churches.",
   "/terms"
 );
 
@@ -27,7 +27,7 @@ export default function TermsPage() {
           <section>
             <h2 className="mb-2 text-3xl">Purpose of Site</h2>
             <p>
-              Godschurches provides public conversations, personal accounts, and
+              God’s Churches provides public conversations, personal accounts, and
               church tools with separate access requirements. Features may
               change, pause, or be removed without notice while development
               continues.
@@ -47,11 +47,11 @@ export default function TermsPage() {
               Exchange listings describe permitted ordinary items, item requests
               or lawful skilled help. Follow the listing guidance and describe
               items and qualifications accurately. Service qualifications are
-              stated by the person offering help; Godschurches does not verify
+              stated by the person offering help; God’s Churches does not verify
               professional licenses, training, insurance or suitability. A
               displayed price, needed-by date or reserved status does not create
               a payment, booking, employment or fulfillment agreement by itself.
-              Godschurches does not take payments or deposits or provide escrow.
+              God’s Churches does not take payments or deposits or provide escrow.
               Account verification does not guarantee another person&apos;s
               safety. Existing contact preferences, consent and reporting
               controls apply.
@@ -79,7 +79,7 @@ export default function TermsPage() {
           <section>
             <h2 className="mb-2 text-3xl">Intellectual Property</h2>
             <p>
-              Site content, branding, and design are owned by Godschurches or
+              Site content, branding, and design are owned by God’s Churches or
               its licensors unless noted otherwise. You may not copy or
               republish site content for commercial use without permission.
             </p>
@@ -102,7 +102,7 @@ export default function TermsPage() {
           <section>
             <h2 className="mb-2 text-3xl">Limitation of Liability</h2>
             <p>
-              To the maximum extent permitted by law, Godschurches is not liable
+              To the maximum extent permitted by law, God’s Churches is not liable
               for indirect, incidental, special, or consequential damages
               arising from site use.
             </p>

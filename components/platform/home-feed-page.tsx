@@ -114,7 +114,7 @@ export default async function HomeFeedPage({
               <span>You have a part to play.</span>
             </h1>
             <p className="gc-mission-description">
-              We’re building Godschurches to equip everyday believers to share
+              We’re building God’s Churches to equip everyday believers to share
               the gospel, serve their neighbors, and make disciples together.
             </p>
             <p>
@@ -137,22 +137,12 @@ export default async function HomeFeedPage({
             </div>
           </section>
         )}
-        <div className="gc-screen-heading">
+        <div className="gc-screen-heading gc-home-heading">
           <div>
-            <p className="gc-eyebrow">Life together</p>
             {currentUser ? <h1>Home</h1> : <h2 className="text-3xl">Home</h2>}
-            <p className="text-gc-muted">
-              Choose what to read, then explore at your own pace.
-            </p>
           </div>
           {currentUser && <ComposePostButton />}
         </div>
-        <Link
-          className="mb-4 inline-flex min-h-11 items-center underline"
-          href="/platform/topics"
-        >
-          Explore topic communities
-        </Link>
         {currentUser &&
           !currentUser.emailVerifiedAt &&
           accountDeliveryAvailable() && (
@@ -285,6 +275,7 @@ export default async function HomeFeedPage({
             />
           </div>
           <aside className="gc-context">
+            <Link href="/platform/topics">Explore topic communities</Link>
             <section>
               <p className="gc-eyebrow mb-3">Rooted in real life</p>
               <h2>Your local church matters.</h2>

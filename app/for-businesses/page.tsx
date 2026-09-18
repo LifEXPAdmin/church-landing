@@ -3,7 +3,7 @@ import { publicMetadata } from "@/lib/site-metadata";
 
 export const metadata = publicMetadata(
   "For businesses",
-  "The Godschurches vision for practical service and community relationships.",
+  "The God’s Churches vision for practical service and community relationships.",
   "/for-businesses"
 );
 
@@ -18,7 +18,7 @@ export default function ForBusinessesPage() {
         "Use shared profile information thoughtfully; avoid posting private contact details.",
         "Read the manifesto to understand the convictions behind the project."
       ]}
-      note="Sponsorship, payments, investments, and business partnership services are not available through Godschurches. A profile category creates no financial agreement or church authority."
+      note="Sponsorship, payments, investments, and business partnership services are not available through God’s Churches. A profile category creates no financial agreement or church authority."
     />
   );
 }

@@ -403,7 +403,7 @@ try {
     .getByRole("button", { name: "Install the app", exact: true })
     .click();
   const install = page.getByRole("dialog", {
-    name: "Install Godschurches",
+    name: "Install God’s Churches",
     exact: true
   });
   await install.waitFor();

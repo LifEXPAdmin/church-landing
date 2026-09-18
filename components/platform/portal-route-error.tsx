@@ -22,7 +22,7 @@ export function PortalRouteError() {
           tabIndex={-1}
           className="text-4xl text-gc-text focus:outline-none"
         >
-          Godschurches could not load this page
+          God’s Churches could not load this page
         </h1>
         <p role="alert" className="text-gc-muted">
           Please try again. No private information has been displayed.

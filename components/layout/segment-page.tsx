@@ -29,7 +29,7 @@ export function SegmentPage({ title, intro, bullets, note }: SegmentPageProps) {
           </Link>
         </div>
         <p>
-          <Link href="/about">About Godschurches</Link> ·{" "}
+          <Link href="/about">About God’s Churches</Link> ·{" "}
           <Link href="/help">Account and church help</Link>
         </p>
       </article>

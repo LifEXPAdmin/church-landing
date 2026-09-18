@@ -39,7 +39,7 @@ export function GoogleOnboarding() {
       <h1 className="text-4xl text-gc-text">
         {kind === "reactivate"
           ? "Reactivate your account"
-          : "Finish joining Godschurches"}
+          : "Finish joining God’s Churches"}
       </h1>
       {loading ? (
         <p role="status">Checking your Google sign-in…</p>
@@ -132,7 +132,7 @@ export function GoogleOnboarding() {
           ) : (
             <>
               <p>
-                Your Google account is linked to a deactivated Godschurches
+                Your Google account is linked to a deactivated God’s Churches
                 account. Reactivation makes your profile, posts, comments and
                 community connections visible again.
               </p>

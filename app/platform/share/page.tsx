@@ -22,7 +22,7 @@ export default async function SharePage({
     <PlatformShell user={user}>
       <section className="container-shell mx-auto max-w-2xl space-y-5 py-10">
         <p className="gc-eyebrow">Welcome to the community</p>
-        <h1 className="text-4xl">Share Godschurches</h1>
+        <h1 className="text-4xl">Share God’s Churches</h1>
         <p>
           Scan the QR to read public conversations, create an account and find
           your church. Joining a church follows its normal approval process.

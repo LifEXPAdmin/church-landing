@@ -126,7 +126,7 @@ function FeedbackViews({
             </p>
             <p className="text-sm text-gc-muted">
               Feedback is confidential and linked to your account. Only
-              authorized Godschurches staff can see this feedback unless you
+              authorized God’s Churches staff can see this feedback unless you
               choose to share an idea.
             </p>
             <p className="text-sm text-gc-muted">
@@ -150,7 +150,7 @@ function FeedbackViews({
             </p>
             {s.intake.available && s.intake.recipient ? (
               <p className="rounded-xl border border-gc-action p-4">
-                Recipient: {s.intake.recipient.name}, your assigned Godschurches
+                Recipient: {s.intake.recipient.name}, your assigned God’s Churches
                 support owner. Your original feedback is private to you and the
                 currently authorized assigned owner. Church representatives and
                 ordinary members are not included.

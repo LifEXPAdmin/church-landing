@@ -33,8 +33,7 @@ export default function PlatformLayout({
               version: releaseMetadata(release)?.version ?? null
             }}
           >
-            <UpdateNotice release={release} />
-            {children}
+            <UpdateNotice release={release}>{children}</UpdateNotice>
           </LoadedReleaseProvider>
         </DraftWorkspaceProvider>
       </InstallationProvider>

@@ -197,7 +197,14 @@ try {
   phase = "guest-settings";
   await go("/platform?feed=latest");
   await ready();
-  assert.equal(await selector().locator("option").count(), 11);
+  assert.equal(await selector().locator("option").count(), 8);
+  assert.equal(
+    await page
+      .getByRole("group", { name: "Main feeds" })
+      .getByRole("button")
+      .count(),
+    4
+  );
   await settings();
   await form().getByLabel("Saved feed", { exact: true }).selectOption("public");
   await form()
@@ -547,7 +554,7 @@ try {
     beforePage
   );
   await page
-    .getByRole("button", { name: "Refresh for new posts", exact: true })
+    .getByRole("button", { name: "Refresh posts", exact: true })
     .click();
   await page.waitForFunction(
     (id) =>
@@ -664,6 +671,9 @@ try {
     "The standalone Settings destination saves and reloads the same private choices and remains usable with larger text at 320 pixels"
   );
   phase = "break-reminder";
+  await page
+    .getByRole("button", { name: "Feed Settings", exact: true })
+    .click();
   const reminder = page
     .locator("details")
     .filter({
@@ -676,6 +686,9 @@ try {
   await page.clock.install();
   await reminder.getByRole("combobox").selectOption("15");
   await reminder.locator(":scope > summary").click();
+  await page
+    .getByRole("button", { name: "Feed Settings", exact: true })
+    .click();
   await page.clock.fastForward(15 * 60 * 1000 + 100);
   await page
     .getByText("You’ve reached your chosen reading interval.", { exact: false })

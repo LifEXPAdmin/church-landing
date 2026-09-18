@@ -280,7 +280,7 @@ export function PublicShareControls({
           className="rounded border border-gc-divider p-2"
         >
           <summary className="min-h-11 cursor-pointer py-2 font-semibold">
-            {kind === "site" ? "Share Godschurches" : "Share publicly"}
+            {kind === "site" ? "Share God’s Churches" : "Share publicly"}
           </summary>
           {choices}
         </details>

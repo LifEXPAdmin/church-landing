@@ -374,7 +374,7 @@ try {
   );
   await ip.goto(config.origin + "/platform/menu");
   await ip
-    .getByText("Add Godschurches to your Home Screen", { exact: true })
+    .getByText("Add God’s Churches to your Home Screen", { exact: true })
     .waitFor();
   for (const width of [320, 390]) {
     await ip.setViewportSize({ width, height: 844 });

@@ -1,8 +1,8 @@
 // Shared installation contract. Importable by the future manifest and help UI.
 export const INSTALL_POLICY = {
   id: "/",
-  name: "Godschurches",
-  short_name: "Godschurches",
+  name: "God’s Churches",
+  short_name: "God’s Churches",
   start_url: "/platform",
   scope: "/",
   display: "standalone",

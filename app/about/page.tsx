@@ -3,7 +3,7 @@ import { publicMetadata } from "@/lib/site-metadata";
 
 export const metadata = publicMetadata(
   "About",
-  "Why Godschurches exists, what you can use today, and how to get started.",
+  "Why God’s Churches exists, what you can use today, and how to get started.",
   "/about"
 );
 
@@ -21,7 +21,7 @@ export default function AboutPage() {
           disciples, baptizing them and teaching them to obey His commands.
         </p>
         <p>
-          Godschurches exists to help believers put that calling into practice.
+          God’s Churches exists to help believers put that calling into practice.
           We’re building connections and tools that strengthen local churches,
           support service, and help people share their faith and grow together.
         </p>
@@ -55,7 +55,7 @@ export default function AboutPage() {
         <section>
           <h2>Your local church matters</h2>
           <p>
-            Godschurches exists to support fellowship, not replace gathering
+            God’s Churches exists to support fellowship, not replace gathering
             with a local church. Church tools have separate account, membership,
             and permission requirements. Creating a personal account does not
             make you a church representative.
@@ -92,7 +92,7 @@ export default function AboutPage() {
           </ul>
           <p>
             <Link href="/manifesto">Read the manifesto</Link> for the
-            convictions behind Godschurches.
+            convictions behind God’s Churches.
           </p>
         </section>
         <section>
