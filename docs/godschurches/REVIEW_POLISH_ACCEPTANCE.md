@@ -1,6 +1,6 @@
 # Search, Home and display copy review
 
-## Candidate, 18 September 2026 UTC
+## Released, 18 September 2026 UTC
 
 The review starts from the published private-following-list application. The
 unfinished Church Needs feature is checkpointed separately and is not part of
@@ -78,5 +78,39 @@ restores 131 tables and the same 96 migrations; plaintext restore files are
 removed. The scheduled backup validation reports 69 encrypted sets and no issues.
 These operations do not modify production data. This release has no migration.
 
-The clean full regression gate remains in progress. Exact READY/canonical
-identity, live acceptance and private-record reconciliation remain required.
+The clean full regression gate passes at application source 6fd461d: 181 unique
+files, 195 staged file runs, 1,128 tests, 1,126 passing, two expected skips and no
+failures or cancellations. Subsequent browser-script and documentation edits do
+not alter application behavior. The final three security-email display strings
+are checked separately with a local provider stub, lint, copy check and the exact
+release build.
+
+## Published and live verified
+
+Application e81abc4ca50dd48d190dc91e24925fb8ae8bfbc2 is published as version
+2026.09.18.1. Deployment dpl_EqcZQrJEo7aCFwbMx1TTyVRLW32h reached READY at
+03:57:39 UTC. The independent godschurches.com alias and canonical release endpoint
+both identify that deployment and source. Provider build inspection verifies 205
+traces, 67,539 entries and 515 server JavaScript files, with no private files.
+The live renderer matches the provider-verified hydration artifact.
+
+Eighteen read-only live browser checks pass with no browser errors or attempted
+mutating requests. They cover the three Home widths, all feed controls, quiet
+header and footer check, signup/login/church/Menu/release branding, installation
+identity, prayer results, concealed-result resume, category and Back navigation,
+a browser-local interrupted request with successful Retry, and guest denial of
+private lists and drafts. An existing signed-in Mac Chrome session also verifies
+search loading/results, footer status, remembered weekly Home mode and Pages,
+and Menu display labels. This does not close physical-device or new-person
+acceptance tasks.
+
+Six live health checks pass with no alerts, due work or attention flags. All 96
+migration checksums remain installed with no pending migration. Scoped provider
+logs from READY through 04:03 UTC contain no error or fatal rows. These are bounded
+observations, not an uptime or recipient-delivery claim. No provider messages were
+sent and no production test content was created.
+
+Production data reconciliation passes after live navigation at 04:03 UTC.
+The authenticated Home read creates one ordinary weekly reading-set cache and
+removes one expired cache; no existing cache is modified. All 130 non-cache table
+fingerprints match, with no content, preference or relationship writes.
