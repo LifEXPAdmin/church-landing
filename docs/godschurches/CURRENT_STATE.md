@@ -1,3 +1,12 @@
+## Church engineering acceptance reconciled, September 18, 2026 UTC
+
+The older integrated church editor is already published and included in current
+main. Its scoped acceptance is reconciled against the dated O1/O2/O3 release
+receipt and 57 fresh isolated tests in eight files. A fixture-only recovery path
+was corrected; application code and production remain unchanged. See
+[the evidence and explicit remaining gates](CHURCH_STRUCTURE_REPORT.md).
+Real reviewer operations, physical-device and actual pilot acceptance stay open.
+
 ## Communities settings live and independent workers ready, September 18, 2026 UTC
 
 **2026.09.18.5 / 25eb4a1ffba75e5875a23938cd3a4f428e7e2f27** is READY in

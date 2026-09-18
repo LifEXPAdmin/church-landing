@@ -1,5 +1,33 @@
 # Church positions, responsibilities and access
 
+## Acceptance reconciliation, September 18, 2026
+
+The integrated application `c7067ae8d0d1dd14b1da7bb3ab3537cb65fe3c5c` and its
+published receipt below are ancestors of current main and the verified live
+application `25eb4a1ffba75e5875a23938cd3a4f428e7e2f27`. The older unpublished
+statements below are historical checkpoints. The scoped integrated engineering
+acceptance is complete; it does not reopen the editor implementation.
+
+Fresh isolated checks on the current application pass **57 tests in eight
+files**: chart model, draft and layout; role templates; chart saves; assignment
+permissions; structure; and church claims. These include current role-source
+revocation, church isolation, concurrent graph saves, consent-safe history and
+newly supported duty boundaries. The original O1/O2/O3 browser and integrated
+release evidence below remains dated to its actual execution. This reconciliation
+does not claim a new visual or physical-device run.
+
+The first run passed five files but two assignment checks correctly rejected a
+local recovery-journal path outside the fixture guard. Only the private test
+configuration was corrected to the worktree's ignored `.account-test` directory.
+The affected assignment suite and two remaining suites then passed all 28 tests;
+the first five files contribute 29 passes. The failed attempt is retained in
+private evidence. No application code or production configuration changed.
+
+Real church policy/reviewer activation, physical Samsung and spoken screen-reader
+acceptance, the actual pilot and wider batch review remain explicitly open.
+Current production remains the independently verified Communities release above;
+this report-only checkpoint is not a new deployment.
+
 September 10, 2026 · Integrated church editor, role library and Privileges interface published
 
 ## Published integrated application
