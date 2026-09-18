@@ -353,6 +353,17 @@ try {
   });
   await bounded();
   await menuLink("/platform/settings").scrollIntoViewIfNeeded();
+  const readableTextColumn = await menu()
+    .locator(".gc-menu-link > span")
+    .first()
+    .evaluate((text) => ({
+      width: text.getBoundingClientRect().width,
+      font: parseFloat(getComputedStyle(text).fontSize)
+    }));
+  assert.ok(
+    readableTextColumn.width >= readableTextColumn.font * 5,
+    "Enlarged Menu text retains a readable column instead of narrow word fragments"
+  );
   await page.screenshot({
     path: output + "/member-320-large-text.png",
     fullPage: true
