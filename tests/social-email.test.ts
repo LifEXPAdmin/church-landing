@@ -7,6 +7,7 @@ import { PrismaClient } from "@prisma/client";
 import {
   assertPortalTestDatabase,
   createPortalActor,
+  seedPortal,
   type PortalActor
 } from "./seed-portal";
 import {
@@ -16,6 +17,9 @@ import {
 } from "../lib/platform/notification-preferences";
 import { commentCommand } from "../lib/platform/comment-commands";
 import { postLikeCommand } from "../lib/platform/post-likes";
+import { postCommand } from "../lib/platform/post-commands";
+import { portalCommand } from "../lib/platform/portal";
+import { groupCommand } from "../lib/platform/group-commands";
 import {
   deliverNotification,
   enqueueNotification,
@@ -443,6 +447,157 @@ test("current undo, mute, read state, account changes and removed source stop qu
       );
     process.env.SOCIAL_EMAIL_ENABLED = "true";
   }
+});
+
+async function pendingMemberEmail(
+  recipient: PortalActor,
+  author: PortalActor,
+  postId: string
+) {
+  await preferences(recipient, ["replies", "reactions"]);
+  const parent = await commentCommand(db, recipient.token, {
+    operation: "create",
+    mutationId: randomUUID(),
+    postId,
+    content: "PRIVATE member comment on another member's post"
+  });
+  const reply = await commentCommand(db, author.token, {
+    operation: "create",
+    mutationId: randomUUID(),
+    postId,
+    replyToId: parent.id,
+    content: "PRIVATE direct reply to the member"
+  });
+  await commentCommand(db, author.token, {
+    operation: "like",
+    mutationId: randomUUID(),
+    postId,
+    commentId: parent.id,
+    expectedVersion: 0,
+    desired: true
+  });
+  const deliveries = await db.notificationDelivery.findMany({
+    where: {
+      ownerId: recipient.id,
+      channel: "EMAIL",
+      event: { postId, commentId: { in: [parent.id, reply.id] } }
+    },
+    include: { event: true }
+  });
+  assert.equal(deliveries.length, 2);
+  assert.deepEqual(
+    deliveries.map((row) => row.event.notificationCategory).sort(),
+    ["reactions", "replies"]
+  );
+  for (const row of deliveries) {
+    assert.equal(row.state, "QUEUED");
+    assert.equal(
+      (await openNotification(db, recipient.token, row.id, false)).href,
+      `/platform/posts/${postId}?comment=${row.event.commentId}`
+    );
+  }
+  return deliveries;
+}
+async function assertRevokedMemberEmail(
+  recipient: PortalActor,
+  deliveries: Awaited<ReturnType<typeof pendingMemberEmail>>
+) {
+  let sends = 0;
+  for (const row of deliveries) {
+    await assert.rejects(
+      openNotification(db, recipient.token, row.id, false),
+      denied(404)
+    );
+    const result = await send(row.id, async () => {
+      sends++;
+      return 200;
+    });
+    assert.ok(
+      result.done && ["cancelled", "finished"].includes(result.outcome)
+    );
+    const final = await db.notificationDelivery.findUniqueOrThrow({
+      where: { id: row.id }
+    });
+    assert.equal(final.state, "FINISHED");
+    assert.equal(final.outcome, "CANCELLED");
+  }
+  assert.equal(sends, 0);
+}
+
+test("church membership removal cancels pending reply and Like email and denies the old authenticated links", async () => {
+  const f = await seedPortal(db);
+  const post = await db.platformPost.create({
+    data: {
+      authorId: f.contact.id,
+      audience: "CHURCH",
+      audienceChurchId: f.churchA.id,
+      content: "PRIVATE church post owned by another member"
+    }
+  });
+  const deliveries = await pendingMemberEmail(f.memberA, f.contact, post.id);
+  const connection = await db.churchConnection.findUniqueOrThrow({
+    where: { userId_churchId: { userId: f.memberA.id, churchId: f.churchA.id } }
+  });
+  await portalCommand(db, f.reviewerA.token, {
+    operation: "transition",
+    action: "REMOVE",
+    churchId: f.churchA.id,
+    connectionId: connection.id,
+    expectedVersion: connection.version
+  });
+  await assertRevokedMemberEmail(f.memberA, deliveries);
+});
+
+test("leaving a group cancels pending reply and Like email and denies the old authenticated links", async () => {
+  const author = await createPortalActor(db, "mailgroupowner"),
+    recipient = await createPortalActor(db, "mailgroupmember");
+  const group = await groupCommand(db, author.token, {
+    operation: "create",
+    mutationId: randomUUID(),
+    schema: 1,
+    slug: `email-group-${randomUUID()}`,
+    fields: {
+      name: "Fictional email group",
+      purpose: "Verify private notification access",
+      rules: "Respect each member's privacy.",
+      kind: "INTEREST",
+      discovery: "LISTED",
+      joinPolicy: "OPEN",
+      format: "LOCAL",
+      area: "Fictional town",
+      topic: "Music",
+      churchId: null
+    },
+    acceptedRules: true,
+    leaderDisclosure: true
+  });
+  const joined = await groupCommand(db, recipient.token, {
+    operation: "join",
+    mutationId: randomUUID(),
+    groupId: group.id,
+    expectedVersion: 0,
+    rulesVersion: 1,
+    acceptedRules: true,
+    rosterVisible: false
+  });
+  const post = await postCommand(db, author.token, {
+    operation: "create",
+    requestKey: randomUUID(),
+    groupId: group.id,
+    audience: "GROUP",
+    groupThreadKind: "DISCUSSION",
+    groupCategory: "GENERAL",
+    content: "PRIVATE group post owned by another member"
+  });
+  const deliveries = await pendingMemberEmail(recipient, author, post.id);
+  await groupCommand(db, recipient.token, {
+    operation: "leave",
+    mutationId: randomUUID(),
+    groupId: group.id,
+    expectedVersion: joined.version,
+    confirmed: true
+  });
+  await assertRevokedMemberEmail(recipient, deliveries);
 });
 
 test("quiet hours defer optional email; expiry and credential boundaries prevent late or changed-recipient retries", async () => {
