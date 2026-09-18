@@ -1,5 +1,16 @@
 # Pilot capacity, costs and recovery limits
 
+## Enabled-module budget refresh, September 18, 2026 UTC
+
+[The current resource-budget receipt](RESOURCE_BUDGETS.md) measures the existing
+application with dense fictional social data, 12,000 listings, 1,000 groups,
+5,001 events and 100 normalized images. All 920 bounded local HTTPS reads pass
+at 1, 5 and 25 clients; 220 serial service calls and separate initial feed reads
+record query, response-byte and store-operation costs. The 25-client image p95
+is about one second, and price sorting exposes a prepared-plan cost difference.
+These initial regression review budgets do not establish hosted capacity or
+change the prior cloud allowance, production compute or pilot acceptance.
+
 ## Resource and local-cost refresh — September 16, 2026 UTC
 
 Fresh authenticated hosting measurements and the current dense-fixture feed

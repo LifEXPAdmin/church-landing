@@ -1,4 +1,13 @@
-## Expanded membership boundaries accepted, September 18, 2026 UTC
+## Enabled-module resource budgets, September 18, 2026 UTC
+
+The [resource-budget receipt](RESOURCE_BUDGETS.md) records 220 service observations,
+50 initial feed reads and 920 successful local HTTPS requests at 1, 5 and 25 clients.
+Current source permission and pagination checks remain enabled. The dedicated
+fictional clone includes 12,000 listings and 1,000 groups alongside the dense
+social fixture. No application runtime, schema, provider or production data changed.
+A price-sorted query has a reproducible custom/generic-plan cost difference; the
+next query investigation must preserve permissions and compare the actual plans.
+The hosted 100-client target and all real device/operator gates remain open.
 
 ## Screen-pattern publication verified, September 18, 2026, 18:47 UTC
 
@@ -28,6 +37,8 @@ configuration or dependencies changed, so this documentation integration needs
 no new application deployment. Production remains the independently verified
 2026.09.18.8 release; no new runtime or physical-device acceptance is claimed.
 The profile-module candidate remains separate pending a validation correction.
+
+## Expanded membership boundaries accepted, September 18, 2026 UTC
 
 The existing .8 implementation passes three fresh cross-module canonical
 LEAVE/REMOVE/group-authority tests and four built HTTPS browser groups. Search,
