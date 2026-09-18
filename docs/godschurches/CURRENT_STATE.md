@@ -1,3 +1,30 @@
+## Church Needs verified live, September 18, 2026 UTC
+
+**2026.09.18.2 / 20da546620bccb1dc815ee19db9df74e50a69a46** is READY in
+**dpl_4Bqny5N8v5aSVwzBxCHjiVpbwFwZ** at **05:39:14.731 UTC**, independently
+canonical and verified against the serving build at **05:39:46.210 UTC**.
+Structured church Needs now include private commitments and quotes, shared
+volunteer capacity, partial receipts, equipment returns, current coordinator
+consent, contributor updates, repeat drafts and honest partial closing.
+See [the exact acceptance receipt](EXCHANGE_NEEDS_IMPLEMENTATION.md).
+
+The staged 182-file gate has 1,144 passes, two expected skips and zero failures
+across 1,146 accepted tests. Ten final Needs browser groups and existing browser
+regressions pass. Live acceptance includes 31 public/privacy checks, six health
+checks and four signed-in Mac groups. All 97 migration/recovery checksums match.
+Fresh encrypted recovery restores 135 tables; nightly validation checks 71 sets
+with no issues. All 131 original table/column fingerprints are unchanged through
+05:47 UTC, with zero reading-cache changes, new Needs records, application writes
+or recipient sends. The native queue consumer is observed; scoped error/fatal
+rows are zero. Actual fulfillment and physical-phone evidence remain separate.
+
+Next eligible work is the church pantry/support hub and its newly unlocked
+smaller steps. Its named foundation contracts are delivered. Partner referrals
+retain their separate reviewed-identity and consent requirement. Remaining P1
+owner, operator, provider/capacity and physical-device gates remain explicit.
+Main private index propagation is still pending after connector errors; focused
+feature and task reconciliation is recorded separately. Final review stays last.
+
 ## Search and Home review verified live, September 18, 2026 UTC
 
 **2026.09.18.1 / e81abc4ca50dd48d190dc91e24925fb8ae8bfbc2** is READY in

@@ -1,8 +1,9 @@
 # Church needs and contribution commitments
 
-Contract and local implementation verified, 18 September 2026 UTC. Exact live
-release remains pending. The implementation report records complete staged
-regression, production-build browser and protected migration evidence. This
+Contract and implementation verified live, 18 September 2026 UTC, in
+2026.09.18.2 / 20da546620bccb1dc815ee19db9df74e50a69a46. The implementation
+report records exact canonical release, complete staged regression,
+production-build browser, protected migration and live privacy evidence. This
 feature includes its newly unlocked interface, repeat-structure, partial-closing
 and operational integration work.
 

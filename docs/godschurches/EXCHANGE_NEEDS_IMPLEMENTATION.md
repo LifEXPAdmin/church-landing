@@ -1,9 +1,10 @@
 # Church Needs implementation and verification
 
-18 September 2026 UTC. Local verification is complete. Production still serves
-2026.09.18.1; the pending Needs migration and release are not deployed.
+18 September 2026 UTC. Verified live as **2026.09.18.2**, application
+**20da546620bccb1dc815ee19db9df74e50a69a46**. The application files match
+the tested runtime `a3efbf7`; later changes are tests, QA tooling and reports.
 
-## Delivered behavior awaiting release
+## Delivered behavior
 
 Existing church-owned Exchange listings provide typed Donate, Sell to us,
 Transport and Volunteer slots. Coordinator consent and current church duties
@@ -96,14 +97,41 @@ beyond the existing listing total 25,991 raw and about 6,816 gzip bytes. These
 numbers exclude shared layouts, styles, images and response headers; no bundle
 size improvement is claimed. Test tooling stays outside application bundles.
 
-## Release gates still open
+## Exact production acceptance
 
-The full staged regression, production build and Needs browser checks have passed.
-Follow the established production migration, installed
-recovery registry, immutable deployment, canonical assignment, serving identity,
-live privacy/health, queue-consumer and data-fingerprint checks. Record precise
-write counts and reconcile private task records only after applicable acceptance.
+The source was pushed to main at 05:33 UTC. Deployment
+**dpl_4Bqny5N8v5aSVwzBxCHjiVpbwFwZ** reached READY at **05:39:14.731 UTC**.
+Independent `godschurches.com` assignment and exact serving build were verified
+at **05:39:46.210 UTC**. Provider output contains 207 traces, 68,472 entries
+and 520 server JavaScript files. Its served hydration renderer matches the
+provider artifact hash.
+
+Migration `20260917002500_exchange_needs` is applied. All **97** repository,
+production and installed recovery-registry checksums match, with no pending
+migration. The existing registry had 96 correct entries while its metadata
+summary still listed 91; the installation preserved prior checksums and updated
+both to 97. A fresh installed encrypted copy restores **135 tables** at 97
+migrations, removes temporary plaintext and does not modify production.
+Nightly validation checks **71 sets**, with zero issues or removals. The earlier
+protected 96-to-97 upgrade separately verifies all original column fingerprints.
+
+All **31 live browser/privacy checks**, **six health checks** and **four actual
+signed-in Mac checks** pass. These include narrow Home and Needs entry pages,
+search recovery, private API/cache denials, Settings, separate Needs notification
+choices and current guidance. Automated live browser errors and attempted
+mutating requests are zero. Native activity probe consumption is observed on
+this exact deployment with HTTP 200 and zero application writes. Scoped provider
+error and fatal rows remain zero through **05:47:11.721 UTC**.
+
+All **131 original table/column fingerprints** remain identical through
+**05:47:12.134 UTC**. Reading-set cache creates, removals and modifications are
+all zero. All four new Needs tables, linked Need posts and completed-volunteer
+receipts have zero rows. Verification makes **zero application, preference or
+relationship writes and zero recipient sends**. One additive migration and one
+reserved nonexistent-source queue probe are recorded separately.
+
 Actual church fulfillment and physical-phone acceptance remain separate evidence.
+No live private contributor, quote, appointment or delivery was fabricated.
 
 Any application rollback must retain the additive schema and recorded Needs data.
 Do not drop commitments or treat restoration of an older backup as an ordinary
