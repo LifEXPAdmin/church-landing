@@ -1,4 +1,6 @@
 import { ProfilePhotos } from "@/components/platform/profile-photos";
+import { ProfileModuleContent } from "@/components/platform/profile-modules";
+import { profileModuleSections } from "@/lib/platform/profile-modules";
 import { createHash } from "node:crypto";
 import { profileSnapshot } from "@/lib/platform/profile-snapshot";
 import { PrivateSnapshotGuard } from "@/components/platform/private-snapshot-guard";
@@ -108,8 +110,8 @@ export default async function MemberProfilePage({
             </p>
             <p className="gc-profile-prose">
               Opening your profile prompts them to join or sign in. Your bio,
-              introduction, interests, location, website, avatar and cover are
-              available to signed-in members.
+              introduction, optional sections, interests, location, website,
+              avatar and cover are available to signed-in members.
             </p>
           </section>
         </section>
@@ -178,7 +180,8 @@ export default async function MemberProfilePage({
     profile.bio ||
     profile.location ||
     profile.website ||
-    profile.interests.length
+    profile.interests.length ||
+    profileModuleSections(profile.presentation.modules).length
   );
   const about = hasAbout ? (
     <section
@@ -213,6 +216,7 @@ export default async function MemberProfilePage({
           </ul>
         </div>
       )}
+      <ProfileModuleContent modules={profile.presentation.modules} />
     </section>
   ) : null;
   const postSection = (

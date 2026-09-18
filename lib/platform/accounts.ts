@@ -1,5 +1,8 @@
 import { newFounderWelcomeAt } from "./founder-config";
-import { bindPrivilegedSession, clearPrivilegedSession } from "./privileged-session";
+import {
+  bindPrivilegedSession,
+  clearPrivilegedSession
+} from "./privileged-session";
 import { AccountError } from "./account-error";
 export { AccountError } from "./account-error";
 import {
@@ -14,6 +17,7 @@ import {
 } from "@prisma/client";
 import { activePublicAccount } from "./public-profile";
 import { defaultProfileStyle, validProfileStyle } from "./profile-style";
+import { validateProfileModules, type ProfileModules } from "./profile-modules";
 import { isEligible } from "./portal-policy";
 import { recordDiscoveryControl } from "./retention-controls";
 import {
@@ -279,10 +283,21 @@ export async function updateAccountProfile(
     "palette",
     "background",
     "sectionOrder",
-    "introduction"
+    "introduction",
+    "profileModules"
   ];
   if (Object.keys(input).some((key) => !allowed.includes(key)))
     throw new AccountError("profile");
+  let modules: ProfileModules | undefined;
+  if (input.profileModules !== undefined) {
+    if (!Number.isSafeInteger(input.expectedVersion))
+      throw new AccountError("profile");
+    try {
+      modules = validateProfileModules(input.profileModules);
+    } catch {
+      throw new AccountError("profile");
+    }
+  }
   if (
     input.locationAudience !== undefined &&
     (!["ONLY_ME", "MEMBERS"].includes(String(input.locationAudience)) ||
@@ -426,9 +441,27 @@ export async function updateAccountProfile(
         };
     await tx.profilePresentation.upsert({
       where: { userId: current.id },
-      create: { userId: current.id, ...style },
-      update: { ...style, version: { increment: 1 } }
+      create: {
+        userId: current.id,
+        ...style,
+        ...(modules ? { modules, modulesVersion: 1 } : {})
+      },
+      update: {
+        ...style,
+        version: { increment: 1 },
+        ...(modules
+          ? { modules, modulesVersion: (presentation?.version ?? 0) + 1 }
+          : {})
+      }
     });
+    if (modules)
+      await recordDiscoveryControl(
+        tx,
+        "PROFILE_MODULES",
+        current.id,
+        current.id,
+        (presentation?.version ?? 0) + 1
+      );
     if (locationChanged || locationState.locationRecoveryRequired) {
       await recordDiscoveryControl(
         tx,

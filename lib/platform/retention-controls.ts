@@ -48,6 +48,7 @@ export type RetentionControlEntry = {
     | "DISCOVERY_PREFERENCES"
     | "FOLLOWING_LISTS"
     | "PROFILE_LOCATION"
+    | "PROFILE_MODULES"
     | "NOTIFICATION_PREFERENCES"
     | "AUTHOR_BELL"
     | "PHOTO_TAG"
@@ -100,7 +101,9 @@ function validate(value: unknown): RetentionControlEntry {
     !Number.isSafeInteger(r.version) ||
     r.version < 1 ||
     r.policy !== policy ||
-    (["PROFILE_LOCATION", "FOLLOWING_LISTS"].includes(r.kind) &&
+    (["PROFILE_LOCATION", "PROFILE_MODULES", "FOLLOWING_LISTS"].includes(
+      r.kind
+    ) &&
       (r.sourceId !== r.targetId || r.operatorId !== r.targetId)) ||
     ![r.recordedAt, r.startedAt, r.reviewDueAt].every(date) ||
     (r.endedAt !== null && !date(r.endedAt)) ||
@@ -119,6 +122,7 @@ function validate(value: unknown): RetentionControlEntry {
       "DISCOVERY_PREFERENCES",
       "FOLLOWING_LISTS",
       "PROFILE_LOCATION",
+      "PROFILE_MODULES",
       "NOTIFICATION_PREFERENCES",
       "AUTHOR_BELL",
       "PHOTO_TAG",
@@ -462,6 +466,7 @@ export async function recordDiscoveryControl(
     | "DISCOVERY_PREFERENCES"
     | "FOLLOWING_LISTS"
     | "PROFILE_LOCATION"
+    | "PROFILE_MODULES"
     | "NOTIFICATION_PREFERENCES"
     | "AUTHOR_BELL"
     | "PHOTO_TAG"
@@ -1121,6 +1126,35 @@ export async function replayRetentionControls(
                 followingListsRecoveryRequired: true
               }
             });
+          }
+          await record(tx, entry);
+          await tx.retentionControl.updateMany({
+            where: { id: entry.id, journaledAt: null },
+            data: { journaledAt: new Date() }
+          });
+          continue;
+        }
+        if (entry.kind === "PROFILE_MODULES") {
+          // A newer optional-section edit or removal is opaque in the journal.
+          // Clear stale restored content rather than republishing an older value.
+          const owner = await tx.platformUser.findFirst({
+            where: { id: entry.sourceId, erasedAt: null },
+            select: { id: true }
+          });
+          if (owner) {
+            await tx.profilePresentation.upsert({
+              where: { userId: owner.id },
+              create: {
+                userId: owner.id,
+                modules: {},
+                modulesVersion: entry.version,
+                version: entry.version + 1
+              },
+              update: {}
+            });
+            await tx.$executeRaw`UPDATE "ProfilePresentation" SET modules='{}'::jsonb,
+              "modulesVersion"=${entry.version}, version=GREATEST(version+1, ${entry.version + 1})
+              WHERE "userId"=${owner.id} AND "modulesVersion" < ${entry.version}`;
           }
           await record(tx, entry);
           await tx.retentionControl.updateMany({

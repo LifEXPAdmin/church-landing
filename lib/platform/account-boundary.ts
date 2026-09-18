@@ -102,7 +102,8 @@ function reply(
 }
 export async function readBody(
   request: Request,
-  maximumBytes = 8192
+  maximumBytes = 8192,
+  bodyMaximum?: (body: Record<string, unknown>) => number
 ): Promise<Record<string, unknown>> {
   if (
     !request.headers.get("content-type")?.startsWith("application/json") ||
@@ -124,6 +125,8 @@ export async function readBody(
   }
   const parsed: unknown = JSON.parse(Buffer.concat(chunks).toString("utf8"));
   if (!parsed || typeof parsed !== "object" || Array.isArray(parsed))
+    throw new AccountError("invalid");
+  if (bodyMaximum && length > bodyMaximum(parsed as Record<string, unknown>))
     throw new AccountError("invalid");
   return parsed as Record<string, unknown>;
 }
@@ -205,7 +208,9 @@ async function processAccountRequest(
   }
   let body;
   try {
-    body = await readBody(request);
+    body = await readBody(request, 32768, (input) =>
+      input.operation === "update-profile" ? 32768 : 8192
+    );
   } catch {
     return reply("Check the fields and try again.", 400);
   }
@@ -575,7 +580,10 @@ async function processAccountRequest(
       const owner = await readAccountSession(db, token);
       if (!owner) throw new AccountError("session");
       if (!(await protectDiscoveryRecovery(db, owner.id, request.signal)))
-        return reply("Your profile is saved. Protected recovery is pending and will be retried automatically. Review your saved profile before making another change.", 202);
+        return reply(
+          "Your profile is saved. Protected recovery is pending and will be retried automatically. Review your saved profile before making another change.",
+          202
+        );
       return reply(
         "Profile saved.",
         200,
@@ -645,7 +653,8 @@ async function processAccountRequest(
       );
     if (error instanceof AccountError) {
       const messages = {
-        "profile-disclosure": "Choose Only me for your location. Sharing with members requires a verified email and confirmed adult eligibility.",
+        "profile-disclosure":
+          "Choose Only me for your location. Sharing with members requires a verified email and confirmed adult eligibility.",
         "profile-conflict":
           "Your profile changed in another tab. Your edits are still here. Review the saved profile before trying again.",
         "handle-invalid":
@@ -653,7 +662,7 @@ async function processAccountRequest(
         "handle-taken":
           "That public username is already taken. Choose another, or sign in if you already have an account.",
         profile:
-          "Check your profile: name 2 to 100 characters, bio up to 500, location up to 80, a full http:// or https:// website up to 120, and at most 8 interests of 40 characters each. Choose an available appearance preset and keep your introduction within 1,000 characters.",
+          "Check your profile: name 2 to 100 characters, bio up to 500, location up to 80, a full http:// or https:// website up to 120, and at most 8 interests of 40 characters each. Choose an available appearance preset and keep your introduction within 1,000 characters. Optional sections allow a testimony of 2,000 characters, 10 distinct skills of 60 characters each, and 3 http or https links with labels up to 80 characters and addresses up to 500 characters. Each link needs both a label and address.",
         invalid:
           "Check every field. Passwords must match and contain 8 to 128 characters.",
         credentials:

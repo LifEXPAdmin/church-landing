@@ -80,6 +80,21 @@ export function ProfileForm({
         setConflict(false);
         setLatest(null);
         const fields = Object.fromEntries(new FormData(event.currentTarget));
+        const profileModules = {
+          testimony: String(fields.moduleTestimony ?? ""),
+          skills: String(fields.moduleSkills ?? "")
+            .split("\n")
+            .map((value) => value.trim())
+            .filter(Boolean),
+          links: [0, 1, 2]
+            .map((index) => ({
+              label: String(fields[`moduleLinkLabel${index}`] ?? "").trim(),
+              url: String(fields[`moduleLinkUrl${index}`] ?? "").trim()
+            }))
+            .filter((link) => link.label || link.url)
+        };
+        for (const key of Object.keys(fields))
+          if (key.startsWith("module")) delete fields[key];
         try {
           const response = await fetch("/api/platform/account", {
             method: "POST",
@@ -89,6 +104,7 @@ export function ProfileForm({
             },
             body: JSON.stringify({
               ...fields,
+              profileModules,
               expectedVersion: version,
               expectedLocationVersion: locationVersion,
               operation: "update-profile"
@@ -155,6 +171,79 @@ export function ProfileForm({
               className={accountInputClass}
             />
           </div>
+        </fieldset>
+        <fieldset className="min-w-0 space-y-4">
+          <legend className="text-2xl">Optional profile sections</legend>
+          <p className="text-sm text-gc-muted">
+            Filled sections appear in About for permitted signed-in members.
+            Leave a section empty to remove it. These fields do not copy your
+            private account or church-directory contact details.
+          </p>
+          <label className="block" htmlFor="profile-testimony">
+            My testimony (optional)
+          </label>
+          <textarea
+            id="profile-testimony"
+            name="moduleTestimony"
+            rows={6}
+            maxLength={2000}
+            className={accountInputClass}
+            defaultValue={profile.presentation.modules.testimony}
+            aria-describedby="profile-testimony-help"
+          />
+          <p id="profile-testimony-help" className="text-sm text-gc-muted">
+            Your story in plain text, up to 2,000 characters.
+          </p>
+          <label className="block" htmlFor="profile-skills">
+            Skills (optional)
+          </label>
+          <textarea
+            id="profile-skills"
+            name="moduleSkills"
+            rows={4}
+            maxLength={609}
+            className={accountInputClass}
+            defaultValue={profile.presentation.modules.skills.join("\n")}
+            aria-describedby="profile-skills-help"
+          />
+          <p id="profile-skills-help" className="text-sm text-gc-muted">
+            One skill per line, up to 10 skills of 60 characters each. A skill
+            does not grant a church role or permission.
+          </p>
+          {[0, 1, 2].map((index) => (
+            <fieldset key={index} className="min-w-0 space-y-3">
+              <legend className="text-lg">Link {index + 1} (optional)</legend>
+              <label className="block" htmlFor={`profile-link-label-${index}`}>
+                Link {index + 1} label
+                <input
+                  id={`profile-link-label-${index}`}
+                  name={`moduleLinkLabel${index}`}
+                  maxLength={80}
+                  className={accountInputClass}
+                  defaultValue={
+                    profile.presentation.modules.links[index]?.label ?? ""
+                  }
+                />
+              </label>
+              <label className="block" htmlFor={`profile-link-url-${index}`}>
+                Link {index + 1} address
+                <input
+                  id={`profile-link-url-${index}`}
+                  name={`moduleLinkUrl${index}`}
+                  type="url"
+                  maxLength={500}
+                  className={accountInputClass}
+                  defaultValue={
+                    profile.presentation.modules.links[index]?.url ?? ""
+                  }
+                />
+              </label>
+            </fieldset>
+          ))}
+          <p className="text-sm text-gc-muted">
+            Use a readable label and an http or https address for each link.
+            Links are not embedded or loaded in your profile.
+          </p>
         </fieldset>
         <fieldset className="min-w-0 space-y-4">
           <legend className="text-2xl">Introduction and about you</legend>
@@ -424,6 +513,30 @@ export function ProfileForm({
               <div>
                 <dt>Introduction</dt>
                 <dd>{latest.presentation.introduction || "Empty"}</dd>
+              </div>
+              <div>
+                <dt>Testimony</dt>
+                <dd className="whitespace-pre-wrap">
+                  {latest.presentation.modules.testimony || "Empty"}
+                </dd>
+              </div>
+              <div>
+                <dt>Skills</dt>
+                <dd>
+                  {latest.presentation.modules.skills.join(", ") || "Empty"}
+                </dd>
+              </div>
+              <div>
+                <dt>Links</dt>
+                <dd>
+                  {latest.presentation.modules.links.length
+                    ? latest.presentation.modules.links.map((link) => (
+                        <p key={link.url}>
+                          {link.label}: {link.url}
+                        </p>
+                      ))
+                    : "Empty"}
+                </dd>
               </div>
             </dl>
             <button

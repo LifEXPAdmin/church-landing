@@ -110,7 +110,8 @@ export async function downloadAccountExport(
             palette: true,
             background: true,
             sectionOrder: true,
-            introduction: true
+            introduction: true,
+            modules: true
           }
         },
         adultAcknowledgedAt: true,

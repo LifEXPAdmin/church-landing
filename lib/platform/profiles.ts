@@ -8,13 +8,15 @@ import { hydratePostPage, listPostsIn } from "./post-reads";
 import { postReadableWhere, withPostRead } from "./post-access";
 import { PortalError } from "./portal-policy";
 import { imagesAvailable } from "./media-storage";
+import { readProfileModules } from "./profile-modules";
 
 export const profilePresentationSelect = {
   version: true,
   palette: true,
   background: true,
   sectionOrder: true,
-  introduction: true
+  introduction: true,
+  modules: true
 } as const;
 export function getVisitorProfilePreview(
   db: PrismaClient,
@@ -148,7 +150,10 @@ export function getMemberProfile(
       _count: relationshipsVisible
         ? profile._count
         : { followers: null, following: null },
-      presentation: profile.presentation ?? defaultProfileStyle,
+      presentation: {
+        ...(profile.presentation ?? defaultProfileStyle),
+        modules: readProfileModules(profile.presentation?.modules)
+      },
       avatar,
       cover,
       posts,
@@ -178,7 +183,10 @@ export function getProfileEditor(db: PrismaClient, token: unknown) {
     return {
       ...profile,
       canShareLocation: !!context.eligible,
-      presentation: profile.presentation ?? defaultProfileStyle,
+      presentation: {
+        ...(profile.presentation ?? defaultProfileStyle),
+        modules: readProfileModules(profile.presentation?.modules)
+      },
       imagesAvailable: imagesAvailable(),
       photoLibraryEnabled: photoLibraryEnabled(),
       avatar:

@@ -420,6 +420,8 @@ model ProfilePresentation {
   background String @default("plain")
   sectionOrder String @default("about-first")
   introduction String @default("")
+  modules Json @default("{}")
+  modulesVersion Int @default(0)
   user PlatformUser @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
