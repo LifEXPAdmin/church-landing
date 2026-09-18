@@ -123,3 +123,11 @@ acceptance must not be inferred from browser automation.
 Choose up to six Menu shortcuts, arrange them in your preferred order and keep
 that order when you sign in on another device. Reset your shortcuts at any time.
 Only destinations currently available to your account can appear.
+
+## Combined migration ordering, 18 September 2026
+
+For integration after the applied price-order index, the unpublished candidate
+migration `20260918184000_menu_shortcuts` becomes
+`20260918223600_menu_shortcuts`. SQL contents and checksum are unchanged.
+The original A2 fixture history remains preserved in its isolated environment.
+Combined verification and production application remain open at this checkpoint.

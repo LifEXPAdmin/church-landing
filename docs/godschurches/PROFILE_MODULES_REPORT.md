@@ -92,3 +92,11 @@ existing presentation query; payload and form sizes are bounded. Module writes
 add one existing opaque journal receipt and its bounded protection attempt. No
 measured performance gain is claimed. New module ordering, featured collections
 and physical-device acceptance remain separate.
+
+## Combined migration ordering, 18 September 2026
+
+For integration after the applied price-order index, the unpublished candidate
+migration `20260918173000_profile_modules` becomes
+`20260918223500_profile_modules`. SQL contents and checksum are unchanged.
+The original A2 fixture history remains preserved in its isolated environment.
+Combined verification and production application remain open at this checkpoint.

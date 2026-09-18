@@ -14,6 +14,26 @@ export type Feature = {
 };
 export const features: Feature[] = [
   {
+    id: "menu-shortcuts",
+    category: "Privacy and account",
+    name: "Your ordered Menu shortcuts",
+    description: "Choose up to six available destinations and save their order to your account.",
+    steps: "Open Menu, then Edit Menu shortcuts. Select destinations, move them up or down and save. Discard local edits or reset saved shortcuts with confirmation.",
+    href: "/platform/menu",
+    eligibility: "Requires sign-in. Other signed-in sessions use the saved order. Shortcuts never grant access, and destinations that are no longer permitted stay unavailable.",
+    availability: "available"
+  },
+  {
+    id: "optional-profile-sections",
+    category: "Privacy and account",
+    name: "Optional testimony, skills and profile links",
+    description: "Add your own plain-text testimony, skills and labeled links to the About section of your profile.",
+    steps: "Open Settings, Edit member profile. Fill the optional sections and save. Leave a section empty to remove it. Review newer saved values if another session changed your profile.",
+    href: "/platform/profile/me",
+    eligibility: "Only you edit your profile. Filled sections are visible to permitted signed-in members. Private account and church-directory contact details are not copied into these fields. Calendar and featured-media sections are not available here.",
+    availability: "available"
+  },
+  {
     id: "optional-social-email",
     category: "Privacy and account",
     name: "Separate Likes and direct reply email choices",
@@ -914,6 +934,24 @@ export const features: Feature[] = [
   }
 ];
 export const releases: ReleaseEntry[] = [
+  {
+    id: "menu-shortcuts-and-profile-sections",
+    version: "2026.09.18.11",
+    date: "2026-09-18",
+    summary: "Keep your preferred Menu destinations close and add optional profile sections.",
+    added: [
+      "Choose up to six available Menu shortcuts, arrange their order and save them to your account for other signed-in sessions.",
+      "Add an optional testimony, up to ten skills and three labeled links to your profile's About section. Empty fields remove their sections."
+    ],
+    improved: [
+      "Unsaved shortcut choices and profile entries retain their existing confirmation and conflict-review paths. Resetting shortcuts leaves other preferences unchanged.",
+      "Profile sections use current member access and protected recovery. Private account contacts are not imported, and linked sites are not embedded."
+    ],
+    fixed: [
+      "An unavailable shortcut can be removed and saved after access changes. Invalid profile text is rejected while editable entries remain available."
+    ],
+    featureIds: ["menu-shortcuts", "optional-profile-sections"]
+  },
   {
     id: "navigation-and-calendar-recovery",
     version: "2026.09.18.10",

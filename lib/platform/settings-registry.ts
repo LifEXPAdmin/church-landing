@@ -355,8 +355,8 @@ export const settingsRegistry: readonly SettingRegistration[] = Object.freeze([
     "profile.information",
     "profile",
     "Edit member profile",
-    "Edit your name, introduction, profile photo, cover and safe appearance choices.",
-    ["name", "bio", "about me", "photo", "cover", "theme", "section order"],
+    "Edit your name, introduction, optional testimony, skills and links, profile photo, cover and safe appearance choices.",
+    ["name", "bio", "about me", "testimony", "skills", "links", "photo", "cover", "theme", "section order"],
     { href: "/platform/profile/me" },
     linked(
       "profiles.ts getProfileEditor",
