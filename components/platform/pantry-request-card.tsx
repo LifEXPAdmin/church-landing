@@ -10,6 +10,7 @@ import { reportEntryHref } from "@/lib/platform/community-report-types";
 import { usePrivateChoiceAction } from "./use-private-choice-action";
 import { portalInputClass } from "./portal-action-form";
 import { RegionalTime } from "./regional-presentation";
+import { usePantryEdit } from "./pantry-edit-scope";
 export function PantryRequestCard({
   owner,
   row,
@@ -24,6 +25,17 @@ export function PantryRequestCard({
     [note, setNote] = useState(
       "coordinatorNote" in row ? (row.coordinatorNote ?? "") : ""
     );
+  const edit = usePantryEdit("this private assistance request");
+  const draftKind =
+    note !== (row.coordinatorNote ?? "")
+      ? "note"
+      : sessionId
+        ? "assign"
+        : reason
+          ? "outcome"
+          : null;
+  const differentDraft = (operation: string) =>
+    !!draftKind && draftKind !== operation;
   const action = usePrivateChoiceAction(
     "/api/platform/pantry",
     owner,
@@ -31,13 +43,15 @@ export function PantryRequestCard({
     undefined,
     true
   );
-  const command = (operation: string, extra: Record<string, unknown> = {}) =>
+  const command = (operation: string, extra: Record<string, unknown> = {}) => {
+    if (action.blocked || differentDraft(operation) || !edit.claim()) return;
     void action.command({
       operation,
       id: row.id,
       expectedVersion: row.version,
       ...extra
     });
+  };
   const active = ["REQUESTED", "ASSIGNED"].includes(row.state);
   return (
     <article
@@ -94,7 +108,16 @@ export function PantryRequestCard({
           <p>An appointment does not guarantee the requested stock.</p>
         </div>
       )}
-      <fieldset disabled={action.blocked} className="min-w-0 space-y-3">
+      {edit.notice}
+      {draftKind && (
+        <p>
+          Save or discard this edit before changing another part of the request.
+        </p>
+      )}
+      <fieldset
+        disabled={action.blocked || edit.blocked}
+        className="min-w-0 space-y-3"
+      >
         {row.own && row.canWithdraw && (
           <button
             type="button"
@@ -126,6 +149,7 @@ export function PantryRequestCard({
           )}
         {row.canClear && !row.cleared && (
           <button
+            disabled={!!draftKind}
             type="button"
             className="gc-button gc-button-quiet"
             onClick={() => {
@@ -151,7 +175,12 @@ export function PantryRequestCard({
                   <select
                     className={portalInputClass}
                     value={sessionId}
-                    onChange={(e) => setSessionId(e.target.value)}
+                    disabled={differentDraft("assign")}
+                    onChange={(e) => {
+                      if (!edit.claim()) return;
+                      setSessionId(e.target.value);
+                      if (!e.target.value) edit.release();
+                    }}
                   >
                     <option value="">Choose a current session</option>
                     {sessions
@@ -169,7 +198,7 @@ export function PantryRequestCard({
                 <button
                   type="button"
                   className="gc-button"
-                  disabled={!sessionId}
+                  disabled={!sessionId || differentDraft("assign")}
                   onClick={() => {
                     const session = sessions.find((s) => s.id === sessionId);
                     if (session)
@@ -184,6 +213,7 @@ export function PantryRequestCard({
                 <button
                   type="button"
                   className="gc-button gc-button-quiet"
+                  disabled={!!draftKind}
                   onClick={() => {
                     if (
                       confirm(
@@ -206,14 +236,21 @@ export function PantryRequestCard({
                       className={portalInputClass}
                       maxLength={300}
                       value={reason}
-                      onChange={(e) => setReason(e.target.value)}
+                      disabled={differentDraft("outcome")}
+                      onChange={(e) => {
+                        if (!edit.claim()) return;
+                        setReason(e.target.value);
+                        if (!e.target.value) edit.release();
+                      }}
                     />
                   </label>
                   <div className="flex flex-wrap gap-3">
                     <button
                       type="button"
                       className="gc-button"
-                      disabled={reason.trim().length < 3}
+                      disabled={
+                        reason.trim().length < 3 || differentDraft("outcome")
+                      }
                       onClick={() =>
                         command("outcome", { state: "COLLECTED", reason })
                       }
@@ -223,7 +260,9 @@ export function PantryRequestCard({
                     <button
                       type="button"
                       className="gc-button gc-button-quiet"
-                      disabled={reason.trim().length < 3}
+                      disabled={
+                        reason.trim().length < 3 || differentDraft("outcome")
+                      }
                       onClick={() =>
                         command("outcome", { state: "MISSED", reason })
                       }
@@ -239,7 +278,13 @@ export function PantryRequestCard({
                 className={portalInputClass}
                 maxLength={1000}
                 value={note}
-                onChange={(e) => setNote(e.target.value)}
+                disabled={differentDraft("note")}
+                onChange={(e) => {
+                  if (!edit.claim()) return;
+                  setNote(e.target.value);
+                  if (e.target.value === (row.coordinatorNote ?? ""))
+                    edit.release();
+                }}
               />
             </label>
             <p className="text-sm text-gc-muted">
@@ -249,11 +294,26 @@ export function PantryRequestCard({
             <button
               type="button"
               className="gc-button gc-button-quiet"
+              disabled={differentDraft("note")}
               onClick={() => command("note", { note })}
             >
               Save private note
             </button>
           </>
+        )}
+        {edit.editing && (
+          <button
+            type="button"
+            className="gc-button gc-button-quiet"
+            onClick={() => {
+              setSessionId("");
+              setReason("");
+              setNote(row.coordinatorNote ?? "");
+              edit.release();
+            }}
+          >
+            Discard local edits
+          </button>
         )}
       </fieldset>
       {!row.cleared && (

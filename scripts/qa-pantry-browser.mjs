@@ -209,6 +209,31 @@ try {
     "An explicitly assigned coordinator publishes hub guidance and separately accepts private intake"
   );
   const stock = form("Add supply category");
+  await hub.getByLabel("Hub title").fill("Unsent independent hub edit");
+  assert.equal(await stock.getByLabel("Category name").isDisabled(), true);
+  await page.goBack();
+  assert.equal(new URL(page.url()).pathname, base + "/manage");
+  assert.equal(
+    await hub.getByLabel("Hub title").inputValue(),
+    "Unsent independent hub edit"
+  );
+  assert.equal(
+    (await db.pantryHub.findUniqueOrThrow({ where: { id: church.id } })).title,
+    marker
+  );
+  await hub
+    .getByRole("button", { name: "Discard local edits", exact: true })
+    .click();
+  await waitUntil(() => stock.getByLabel("Category name").isEnabled());
+  await stock.getByLabel("Category name").fill("Unsent category");
+  assert.equal(await hub.getByLabel("Hub title").isDisabled(), true);
+  await stock
+    .getByRole("button", { name: "Discard local edits", exact: true })
+    .click();
+  await waitUntil(() => hub.getByLabel("Hub title").isEnabled());
+  ok(
+    "One section edits at a time, unsent Back and explicit discard prevent sibling saves from losing local work"
+  );
   await stock.getByLabel("Category name").fill("Food parcels");
   await stock.getByLabel("Unit name").fill("parcels");
   await stock.getByLabel("Availability type").selectOption("EXACT");
@@ -356,6 +381,26 @@ try {
   );
   await signIn(manager);
   await go(`/platform/pantry/requests/${row.id}`);
+  await page.getByLabel("Coordinator-only note").fill("Unsent note");
+  assert.equal(
+    await page.getByLabel("Offer a pickup session").isDisabled(),
+    true
+  );
+  assert.equal(
+    await page
+      .getByRole("button", { name: "Decline request", exact: true })
+      .isDisabled(),
+    true
+  );
+  await click("Discard local edits");
+  assert.equal(await page.getByLabel("Coordinator-only note").inputValue(), "");
+  assert.equal(
+    await page.getByLabel("Offer a pickup session").isEnabled(),
+    true
+  );
+  ok(
+    "Private note edits cannot be discarded by a different pickup action and have explicit local discard"
+  );
   await page
     .getByLabel("Coordinator-only note")
     .fill("Fictional restricted coordinator note");

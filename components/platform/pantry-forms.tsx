@@ -12,6 +12,7 @@ import {
 } from "@/lib/platform/pantry-options";
 import { usePrivateChoiceAction } from "./use-private-choice-action";
 import { portalInputClass } from "./portal-action-form";
+import { usePantryEdit } from "./pantry-edit-scope";
 
 const endpoint = "/api/platform/pantry";
 type Values = Record<string, string | boolean>;
@@ -126,6 +127,7 @@ function PantryForm({
   const [values, setValues] = useState(initial),
     id = useRef<string | null>(null),
     router = useRouter();
+  const edit = usePantryEdit(title);
   const action = usePrivateChoiceAction(
     endpoint,
     owner,
@@ -145,17 +147,44 @@ function PantryForm({
       className="space-y-4 rounded-xl border border-gc-divider p-4"
       onSubmit={(event) => {
         event.preventDefault();
+        if (action.blocked || !edit.claim()) return;
         id.current ??= crypto.randomUUID();
         void action.command(body(values, id.current));
       }}
     >
       <h3 className="text-xl">{title}</h3>
       {children}
-      <fieldset disabled={action.blocked} className="min-w-0 space-y-4">
-        <Fields fields={fields} values={values} setValues={setValues} />
+      {edit.notice}
+      <fieldset
+        disabled={action.blocked || edit.blocked}
+        className="min-w-0 space-y-4"
+      >
+        <Fields
+          fields={fields}
+          values={values}
+          setValues={(next) => {
+            if (!edit.claim()) return;
+            setValues(next);
+            if (JSON.stringify(next) === JSON.stringify(initial))
+              edit.release();
+          }}
+        />
         <button type="submit" className="gc-button">
           {title}
         </button>
+        {edit.editing && (
+          <button
+            type="button"
+            className="gc-button gc-button-quiet"
+            onClick={() => {
+              setValues(initial);
+              id.current = null;
+              edit.release();
+            }}
+          >
+            Discard local edits
+          </button>
+        )}
       </fieldset>
       {action.status}
     </form>

@@ -12,6 +12,7 @@ import {
   PantryStockForm
 } from "./pantry-forms";
 import { PantryRequestCard } from "./pantry-request-card";
+import { PantryEditScope } from "./pantry-edit-scope";
 import { RegionalTime } from "./regional-presentation";
 import { getCurrentPlatformUser } from "@/lib/platform/session";
 import { pantryPage } from "@/lib/platform/pantry-session";
@@ -491,14 +492,16 @@ export async function PantryPage({
         );
       else throw new Error("Assistance projection unavailable");
       const wrapped = (
-        <div className="space-y-4">
-          {body}
-          {result.nextCursor && (
-            <NextPage
-              href={`${path}?${new URLSearchParams({ after: result.nextCursor })}`}
-            />
-          )}
-        </div>
+        <PantryEditScope key={`${user?.id ?? "guest"}-${path}`}>
+          <div className="space-y-4">
+            {body}
+            {result.nextCursor && (
+              <NextPage
+                href={`${path}?${new URLSearchParams({ after: result.nextCursor })}`}
+              />
+            )}
+          </div>
+        </PantryEditScope>
       );
       content =
         privateView && user ? (
