@@ -704,7 +704,8 @@ test("reply and mention opt-ins are independent, legacy preference bodies preser
     feedback: true,
     photos: true,
     exchange: true,
-    handoffs: true
+    handoffs: true,
+    needs: true
   });
   assert.equal(
     (
