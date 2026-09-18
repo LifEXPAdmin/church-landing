@@ -25,6 +25,7 @@ import {
   responseLabels
 } from "./calendar-presentation";
 import { CalendarDevelopment, CalendarUnavailable } from "./calendar-page";
+import { CalendarSnapshot, calendarReadUrl } from "./calendar-snapshot";
 
 export async function CalendarEventPage({
   id,
@@ -86,274 +87,304 @@ export async function CalendarEventPage({
     };
     return (
       <PlatformShell user={user}>
-        <section
-          key={id}
-          className="container-shell min-w-0 space-y-6 py-8 [overflow-wrap:anywhere]"
+        <CalendarSnapshot
+          owner={privateData ? user?.id : undefined}
+          url={calendarReadUrl("event", { occurrenceId: id })}
+          snapshot={privateData}
+          label="calendar event"
         >
-          <PortalHeading title={event.title} description={event.source.label} />
-          <CalendarNavigation churchId={event.source.churchId} />
-          <PublicShareControls kind="event" id={event.id} />
-          {privateData && (
-            <Link
-              className={portalLinkClass}
-              href={calendarPath(event.calendarId)}
-            >
-              View this calendar and its sharing
-            </Link>
-          )}
-          <PortalCard title="Event details">
-            <p>{<RegionalEventTime event={event} timeZone={zone} />}</p>
-            {!event.allDay && (
-              <p className="text-sm text-gc-muted">
-                Viewing in {zone}. Event time zone: {event.timeZone}.
-              </p>
+          <section
+            key={id}
+            className="container-shell min-w-0 space-y-6 py-8 [overflow-wrap:anywhere]"
+          >
+            <PortalHeading
+              title={event.title}
+              description={event.source.label}
+            />
+            <CalendarNavigation churchId={event.source.churchId} />
+            <PublicShareControls kind="event" id={event.id} />
+            {privateData && (
+              <Link
+                className={portalLinkClass}
+                href={calendarPath(event.calendarId)}
+              >
+                View this calendar and its sharing
+              </Link>
             )}
-            {event.canceled && (
-              <p className="font-semibold text-gc-error">
-                Canceled · this occurrence is no longer accepting RSVPs.
-              </p>
-            )}
-            {event.access === "BUSY" ? (
-              <p>
-                Only this busy period is shared with you. Its title, notes,
-                location and organizer are private.
-              </p>
-            ) : (
-              <>
-                <p className="whitespace-pre-wrap">
-                  {event.description || "No description has been added."}
-                </p>
-                {event.location && <p>Location: {event.location}</p>}
-                {event.onlineUrl && (
-                  <a
-                    href={event.onlineUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={portalLinkClass}
-                  >
-                    Open online event
-                  </a>
-                )}
-                {event.organizer && <p>Organizer: {event.organizer}</p>}
+            <PortalCard title="Event details">
+              <p>{<RegionalEventTime event={event} timeZone={zone} />}</p>
+              {!event.allDay && (
                 <p className="text-sm text-gc-muted">
-                  {event.visibility === "PUBLIC"
-                    ? "Visible to everyone"
-                    : event.visibility === "CHURCH"
-                      ? "Visible to approved church members"
-                      : event.source.kind === "CHURCH"
-                        ? "Private draft · calendar editors and publishers"
-                        : "Personal event · shared only through its chosen calendar or event audience"}
-                  {event.recurring ? " · Weekly series" : ""}
-                  {event.isException
-                    ? " · This occurrence has individual edits"
-                    : ""}
+                  Viewing in {zone}. Event time zone: {event.timeZone}.
                 </p>
-              </>
-            )}
-          </PortalCard>
-          {discussion && (
-            <PortalCard title="Event discussion">
-              <CommentThread postId={discussion.id} />
-            </PortalCard>
-          )}
-          {privateData && privateData.occurrences.length > 1 && (
-            <details className="rounded-xl border border-gc-divider p-5">
-              <summary className="min-h-11 cursor-pointer py-2 font-semibold">
-                Occurrences in this series ({privateData.occurrences.length})
-              </summary>
-              <p className="mb-3 text-sm text-gc-muted">Series dates use the event&apos;s source time zone: {event.timeZone}.</p>
-              <ul className="grid gap-2 sm:grid-cols-2">
-                {privateData.occurrences.map((row) => (
-                  <li key={row.id}>
-                    <Link
-                      className={portalLinkClass}
-                      href={eventPath(row.id)}
-                      aria-current={row.id === id ? "page" : undefined}
-                    >
-                      <RegionalWallTime value={row.startLocal} separator=" · " />
-                      {row.canceled ? " · Canceled" : ""}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </details>
-          )}
-          {!event.canceled && event.version && (
-            <PortalCard title="Your response">
-              {privateData ? (
+              )}
+              {event.canceled && (
+                <p className="font-semibold text-gc-error">
+                  Canceled · this occurrence is no longer accepting RSVPs.
+                </p>
+              )}
+              {event.access === "BUSY" ? (
+                <p>
+                  Only this busy period is shared with you. Its title, notes,
+                  location and organizer are private.
+                </p>
+              ) : (
                 <>
-                  <p>
-                    {event.response
-                      ? `Current response: ${responseLabels[event.response.state] ?? event.response.state}`
-                      : "You have not responded to this occurrence."}
+                  <p className="whitespace-pre-wrap">
+                    {event.description || "No description has been added."}
                   </p>
+                  {event.location && <p>Location: {event.location}</p>}
+                  {event.onlineUrl && (
+                    <a
+                      href={event.onlineUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={portalLinkClass}
+                    >
+                      Open online event
+                    </a>
+                  )}
+                  {event.organizer && <p>Organizer: {event.organizer}</p>}
+                  <p className="text-sm text-gc-muted">
+                    {event.visibility === "PUBLIC"
+                      ? "Visible to everyone"
+                      : event.visibility === "CHURCH"
+                        ? "Visible to approved church members"
+                        : event.source.kind === "CHURCH"
+                          ? "Private draft · calendar editors and publishers"
+                          : "Personal event · shared only through its chosen calendar or event audience"}
+                    {event.recurring ? " · Weekly series" : ""}
+                    {event.isException
+                      ? " · This occurrence has individual edits"
+                      : ""}
+                  </p>
+                </>
+              )}
+            </PortalCard>
+            {discussion && (
+              <PortalCard title="Event discussion">
+                <CommentThread postId={discussion.id} />
+              </PortalCard>
+            )}
+            {privateData && privateData.occurrences.length > 1 && (
+              <details className="rounded-xl border border-gc-divider p-5">
+                <summary className="min-h-11 cursor-pointer py-2 font-semibold">
+                  Occurrences in this series ({privateData.occurrences.length})
+                </summary>
+                <p className="mb-3 text-sm text-gc-muted">
+                  Series dates use the event&apos;s source time zone:{" "}
+                  {event.timeZone}.
+                </p>
+                <ul className="grid gap-2 sm:grid-cols-2">
+                  {privateData.occurrences.map((row) => (
+                    <li key={row.id}>
+                      <Link
+                        className={portalLinkClass}
+                        href={eventPath(row.id)}
+                        aria-current={row.id === id ? "page" : undefined}
+                      >
+                        <RegionalWallTime
+                          value={row.startLocal}
+                          separator=" · "
+                        />
+                        {row.canceled ? " · Canceled" : ""}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            )}
+            {!event.canceled && event.version && (
+              <PortalCard title="Your response">
+                {privateData ? (
+                  <>
+                    <p>
+                      {event.response
+                        ? `Current response: ${responseLabels[event.response.state] ?? event.response.state}`
+                        : "You have not responded to this occurrence."}
+                    </p>
+                    <CalendarForm
+                      operation="rsvp"
+                      payload={{
+                        eventId: event.eventId,
+                        occurrenceId: event.id,
+                        occurrenceVersion: event.version,
+                        expectedVersion: event.response?.version ?? 0
+                      }}
+                      label="Save my RSVP"
+                      fields={[
+                        {
+                          name: "state",
+                          label: "RSVP for this occurrence",
+                          type: "select",
+                          value: event.response?.state ?? "MAYBE",
+                          options: [
+                            { value: "GOING", label: "Going" },
+                            { value: "MAYBE", label: "Maybe" },
+                            { value: "DECLINED", label: "Not going" }
+                          ]
+                        }
+                      ]}
+                    />
+                  </>
+                ) : (
+                  <>
+                    <p>
+                      {user
+                        ? "Verify your email and confirm adult eligibility before responding."
+                        : "You can read public events freely. Join or sign in to respond."}
+                    </p>
+                    <div className="flex flex-wrap gap-x-5 gap-y-2">
+                      <Link
+                        className={portalLinkClass}
+                        href={
+                          user
+                            ? "/platform/my-church"
+                            : accountEntryHref(
+                                "signup",
+                                eventPath(id),
+                                "calendar"
+                              )
+                        }
+                      >
+                        {user
+                          ? "Review account eligibility"
+                          : "Join to respond"}
+                      </Link>
+                      {!user && (
+                        <Link
+                          className={portalLinkClass}
+                          href={accountEntryHref(
+                            "login",
+                            eventPath(id),
+                            "calendar"
+                          )}
+                        >
+                          Sign in
+                        </Link>
+                      )}
+                    </div>
+                  </>
+                )}
+              </PortalCard>
+            )}
+            {privateData && event.canEdit && draft && !event.canceled && (
+              <div className="max-w-3xl space-y-6">
+                <PortalCard title="Edit this occurrence">
+                  <p>
+                    This changes only the occurrence shown above. Its existing
+                    RSVPs remain attached.
+                  </p>
+                  <CalendarEventForm
+                    payload={{ ...editing, scope: "OCCURRENCE" }}
+                    draft={draft}
+                  />
+                </PortalCard>
+                {privateData.series && event.recurring && (
+                  <details className="rounded-xl border border-gc-divider p-5">
+                    <summary className="min-h-11 cursor-pointer py-2 font-semibold">
+                      Edit the whole series
+                    </summary>
+                    <div className="mt-4 space-y-4">
+                      <p>
+                        Current saved series: {privateData.series.title},{" "}
+                        <RegionalWallTime
+                          value={privateData.series.startLocal}
+                        />{" "}
+                        to{" "}
+                        <RegionalWallTime value={privateData.series.endLocal} />
+                        , weekly through{" "}
+                        {privateData.series.weeklyUntil && (
+                          <RegionalWallTime
+                            value={privateData.series.weeklyUntil}
+                          />
+                        )}{" "}
+                        ({privateData.series.timeZone}). Review this saved
+                        version before applying your entries to the series.
+                      </p>
+                      <CalendarEventForm
+                        series
+                        payload={{ ...editing, scope: "SERIES" }}
+                        draft={privateData.series}
+                      />
+                    </div>
+                  </details>
+                )}
+                <PortalCard title="Cancel an event">
                   <CalendarForm
-                    operation="rsvp"
-                    payload={{
-                      eventId: event.eventId,
-                      occurrenceId: event.id,
-                      occurrenceVersion: event.version,
-                      expectedVersion: event.response?.version ?? 0
-                    }}
-                    label="Save my RSVP"
+                    operation="cancel-event"
+                    payload={editing}
+                    label="Cancel selected event scope"
                     fields={[
                       {
-                        name: "state",
-                        label: "RSVP for this occurrence",
+                        name: "scope",
+                        label: "What should be canceled?",
                         type: "select",
-                        value: event.response?.state ?? "MAYBE",
+                        value: "OCCURRENCE",
                         options: [
-                          { value: "GOING", label: "Going" },
-                          { value: "MAYBE", label: "Maybe" },
-                          { value: "DECLINED", label: "Not going" }
+                          {
+                            value: "OCCURRENCE",
+                            label: "Only this occurrence"
+                          },
+                          {
+                            value: "SERIES",
+                            label: "Every occurrence in this series"
+                          }
                         ]
                       }
                     ]}
+                    confirmation="Cancel the selected occurrence or series. Existing responses will show the cancellation."
                   />
-                </>
-              ) : (
-                <>
-                  <p>
-                    {user
-                      ? "Verify your email and confirm adult eligibility before responding."
-                      : "You can read public events freely. Join or sign in to respond."}
-                  </p>
-                  <div className="flex flex-wrap gap-x-5 gap-y-2">
-                    <Link
-                      className={portalLinkClass}
-                      href={
-                        user
-                          ? "/platform/my-church"
-                          : accountEntryHref(
-                              "signup",
-                              eventPath(id),
-                              "calendar"
-                            )
-                      }
-                    >
-                      {user ? "Review account eligibility" : "Join to respond"}
-                    </Link>
-                    {!user && (
-                      <Link
-                        className={portalLinkClass}
-                        href={accountEntryHref(
-                          "login",
-                          eventPath(id),
-                          "calendar"
-                        )}
-                      >
-                        Sign in
-                      </Link>
-                    )}
-                  </div>
-                </>
-              )}
-            </PortalCard>
-          )}
-          {privateData && event.canEdit && draft && !event.canceled && (
-            <div className="max-w-3xl space-y-6">
-              <PortalCard title="Edit this occurrence">
+                </PortalCard>
+              </div>
+            )}
+            {privateData && event.canPublish && !event.canceled && (
+              <PortalCard title="Church publication">
                 <p>
-                  This changes only the occurrence shown above. Its existing
-                  RSVPs remain attached.
+                  Choose who can read the entire event series. Publishing
+                  permission is separate from permission to edit its details.
                 </p>
-                <CalendarEventForm
-                  payload={{ ...editing, scope: "OCCURRENCE" }}
-                  draft={draft}
-                />
-              </PortalCard>
-              {privateData.series && event.recurring && (
-                <details className="rounded-xl border border-gc-divider p-5">
-                  <summary className="min-h-11 cursor-pointer py-2 font-semibold">
-                    Edit the whole series
-                  </summary>
-                  <div className="mt-4 space-y-4">
-                    <p>
-                      Current saved series: {privateData.series.title},{" "}
-                      <RegionalWallTime value={privateData.series.startLocal} /> to{" "}
-                      <RegionalWallTime value={privateData.series.endLocal} />, weekly
-                      through {privateData.series.weeklyUntil && <RegionalWallTime value={privateData.series.weeklyUntil} />} (
-                      {privateData.series.timeZone}). Review this saved version
-                      before applying your entries to the series.
-                    </p>
-                    <CalendarEventForm
-                      series
-                      payload={{ ...editing, scope: "SERIES" }}
-                      draft={privateData.series}
-                    />
-                  </div>
-                </details>
-              )}
-              <PortalCard title="Cancel an event">
                 <CalendarForm
-                  operation="cancel-event"
-                  payload={editing}
-                  label="Cancel selected event scope"
+                  operation="set-visibility"
+                  payload={{
+                    eventId: event.eventId,
+                    expectedVersion: event.eventVersion
+                  }}
+                  label="Save event audience"
                   fields={[
                     {
-                      name: "scope",
-                      label: "What should be canceled?",
+                      name: "visibility",
+                      label: "Event series audience",
                       type: "select",
-                      value: "OCCURRENCE",
+                      value: event.visibility,
                       options: [
-                        { value: "OCCURRENCE", label: "Only this occurrence" },
                         {
-                          value: "SERIES",
-                          label: "Every occurrence in this series"
-                        }
+                          value: "PRIVATE",
+                          label:
+                            "Private draft · calendar editors and publishers"
+                        },
+                        { value: "CHURCH", label: "Approved church members" },
+                        { value: "PUBLIC", label: "Everyone, including guests" }
                       ]
                     }
                   ]}
-                  confirmation="Cancel the selected occurrence or series. Existing responses will show the cancellation."
+                  confirmation="Apply this audience to the entire event series."
                 />
               </PortalCard>
-            </div>
-          )}
-          {privateData && event.canPublish && !event.canceled && (
-            <PortalCard title="Church publication">
-              <p>
-                Choose who can read the entire event series. Publishing
-                permission is separate from permission to edit its details.
-              </p>
-              <CalendarForm
-                operation="set-visibility"
-                payload={{
-                  eventId: event.eventId,
-                  expectedVersion: event.eventVersion
-                }}
-                label="Save event audience"
-                fields={[
-                  {
-                    name: "visibility",
-                    label: "Event series audience",
-                    type: "select",
-                    value: event.visibility,
-                    options: [
-                      {
-                        value: "PRIVATE",
-                        label: "Private draft · calendar editors and publishers"
-                      },
-                      { value: "CHURCH", label: "Approved church members" },
-                      { value: "PUBLIC", label: "Everyone, including guests" }
-                    ]
-                  }
-                ]}
-                confirmation="Apply this audience to the entire event series."
-              />
-            </PortalCard>
-          )}
-          {privateData?.shares && (
-            <PortalCard title="Share this event">
-              <CalendarSharing
-                kind="event"
-                id={event.eventId}
-                shares={privateData.shares}
-                calendarShares={privateData.calendarShares}
-                churches={privateData.churches}
-              />
-            </PortalCard>
-          )}
-        </section>
+            )}
+            {privateData?.shares && (
+              <PortalCard title="Share this event">
+                <CalendarSharing
+                  kind="event"
+                  id={event.eventId}
+                  shares={privateData.shares}
+                  calendarShares={privateData.calendarShares}
+                  churches={privateData.churches}
+                />
+              </PortalCard>
+            )}
+          </section>
+        </CalendarSnapshot>
       </PlatformShell>
     );
   } catch (error) {

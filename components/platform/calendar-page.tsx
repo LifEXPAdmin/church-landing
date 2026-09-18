@@ -18,6 +18,7 @@ import { GuestAccountPrompt } from "./guest-account-prompt";
 import { PortalCard, PortalHeading, portalLinkClass } from "./portal-ui";
 import { CalendarForm, CalendarEventForm } from "./calendar-form";
 import { VolunteerCommitments } from "./post-participation-form";
+import { CalendarSnapshot, calendarReadUrl } from "./calendar-snapshot";
 import {
   CalendarNavigation,
   CalendarRange,
@@ -95,6 +96,11 @@ export async function CalendarPage({
       query.month,
       calendarZone(query.timeZone ?? "UTC")
     );
+    const rangeQuery = {
+      from: range.from,
+      until: range.until,
+      timeZone: range.timeZone
+    };
     if (view === "commitments") {
       const result = await readCalendarCommitments({
         ...range,
@@ -102,145 +108,176 @@ export async function CalendarPage({
       });
       return (
         <PlatformShell user={user}>
-          <section
-            key={path}
-            className="container-shell min-w-0 space-y-6 py-8"
+          <CalendarSnapshot
+            owner={user?.id}
+            url={calendarReadUrl("commitments", {
+              ...rangeQuery,
+              signup: query.signup
+            })}
+            snapshot={result}
+            label="commitments"
           >
-            <PortalHeading
-              title="My commitments"
-              description="Your event responses and volunteer reservations, with private conflict hints visible only to you. Canceled events stay clearly marked."
-            />
-            <CalendarNavigation />
-            {query.signup ? (
-              <a href="/platform/commitments" className="underline">
-                All my commitments
-              </a>
-            ) : (
-              <CalendarRange range={range} path={path} query={query} />
-            )}
-            {!query.signup && (
-              <CalendarAgenda
-                events={result.commitments}
-                timeZone={range.timeZone}
-                commitments
+            <section
+              key={path}
+              className="container-shell min-w-0 space-y-6 py-8"
+            >
+              <PortalHeading
+                title="My commitments"
+                description="Your event responses and volunteer reservations, with private conflict hints visible only to you. Canceled events stay clearly marked."
               />
-            )}
-            <VolunteerCommitments
-              rows={result.volunteerCommitments}
-              timeZone={range.timeZone}
-            />
-          </section>
+              <CalendarNavigation />
+              {query.signup ? (
+                <a href="/platform/commitments" className="underline">
+                  All my commitments
+                </a>
+              ) : (
+                <CalendarRange range={range} path={path} query={query} />
+              )}
+              {!query.signup && (
+                <CalendarAgenda
+                  events={result.commitments}
+                  timeZone={range.timeZone}
+                  commitments
+                />
+              )}
+              <VolunteerCommitments
+                rows={result.volunteerCommitments}
+                timeZone={range.timeZone}
+              />
+            </section>
+          </CalendarSnapshot>
         </PlatformShell>
       );
     }
     if (view === "calendar") {
-      const { calendar, churches } = await readCalendar(id ?? "");
+      const result = await readCalendar(id ?? "");
+      const { calendar, churches } = result;
       const agenda = await readCalendarAgenda({
         ...range,
         calendarIds: [calendar.id]
       });
       return (
         <PlatformShell user={user}>
-          <section
-            key={path}
-            className="container-shell min-w-0 space-y-6 py-8 [overflow-wrap:anywhere]"
+          <CalendarSnapshot
+            owner={user?.id}
+            url={calendarReadUrl("calendar", { calendarId: calendar.id })}
+            snapshot={result}
+            label="calendar"
           >
-            <PortalHeading
-              title={calendar.name}
-              description={`${calendar.source.label} · ${calendar.own ? "Your personal calendar. Choose explicitly what to share." : "Events are shown according to your current access."}`}
-            />
-            <CalendarNavigation churchId={calendar.source.churchId} />
-            <CalendarRange range={range} path={path} query={query} />
-            <CalendarAgenda events={agenda.events} timeZone={range.timeZone} />
-            {calendar.canEdit && (
-              <div className="max-w-3xl space-y-6">
-                <PortalCard title="Create an event">
-                  <p>
-                    {calendar.own
-                      ? "This event starts private and follows any whole-calendar sharing you have enabled."
-                      : "Events start as private drafts. A church publisher can make them visible to approved members or everyone."}
-                  </p>
-                  <CalendarEventForm
-                    create
-                    canPublish={calendar.canPublish}
-                    payload={{
-                      calendarId: calendar.id,
-                      expectedVersion: calendar.version,
-                      requestKey: randomUUID()
-                    }}
-                    draft={{
-                      title: "",
-                      description: "",
-                      location: "",
-                      onlineUrl: "",
-                      organizer: "",
-                      allDay: false,
-                      timeZone: calendar.timeZone ?? range.timeZone,
-                      startLocal: range.from + "T09:00",
-                      endLocal: range.from + "T10:00",
-                      weeklyUntil: null
-                    }}
-                  />
-                </PortalCard>
-                <PortalCard title="Calendar settings">
-                  <CalendarForm
-                    operation="rename-calendar"
-                    payload={{
-                      calendarId: calendar.id,
-                      expectedVersion: calendar.version
-                    }}
-                    label="Save calendar settings"
-                    fields={[
-                      {
-                        name: "name",
-                        label: "Calendar name",
-                        value: calendar.name,
-                        maxLength: 100,
-                        required: true
-                      },
-                      {
-                        name: "timeZone",
-                        label: "Default time zone for new events",
-                        value: calendar.timeZone,
-                        maxLength: 100,
-                        required: true,
-                        hint: "Existing events keep their saved time zones and times."
-                      }
-                    ]}
-                  />
-                </PortalCard>
-                {calendar.own && (
-                  <PortalCard title="Share this calendar">
-                    <CalendarSharing
-                      kind="calendar"
-                      id={calendar.id}
-                      shares={calendar.shares ?? []}
-                      churches={churches}
+            <section
+              key={path}
+              className="container-shell min-w-0 space-y-6 py-8 [overflow-wrap:anywhere]"
+            >
+              <PortalHeading
+                title={calendar.name}
+                description={`${calendar.source.label} · ${calendar.own ? "Your personal calendar. Choose explicitly what to share." : "Events are shown according to your current access."}`}
+              />
+              <CalendarNavigation churchId={calendar.source.churchId} />
+              <CalendarRange range={range} path={path} query={query} />
+              <CalendarSnapshot
+                owner={user?.id}
+                url={calendarReadUrl("agenda", {
+                  ...rangeQuery,
+                  calendarId: [calendar.id]
+                })}
+                snapshot={agenda}
+                label="calendar agenda"
+              >
+                <CalendarAgenda
+                  events={agenda.events}
+                  timeZone={range.timeZone}
+                />
+              </CalendarSnapshot>
+              {calendar.canEdit && (
+                <div className="max-w-3xl space-y-6">
+                  <PortalCard title="Create an event">
+                    <p>
+                      {calendar.own
+                        ? "This event starts private and follows any whole-calendar sharing you have enabled."
+                        : "Events start as private drafts. A church publisher can make them visible to approved members or everyone."}
+                    </p>
+                    <CalendarEventForm
+                      create
+                      canPublish={calendar.canPublish}
+                      payload={{
+                        calendarId: calendar.id,
+                        expectedVersion: calendar.version,
+                        requestKey: randomUUID()
+                      }}
+                      draft={{
+                        title: "",
+                        description: "",
+                        location: "",
+                        onlineUrl: "",
+                        organizer: "",
+                        allDay: false,
+                        timeZone: calendar.timeZone ?? range.timeZone,
+                        startLocal: range.from + "T09:00",
+                        endLocal: range.from + "T10:00",
+                        weeklyUntil: null
+                      }}
                     />
                   </PortalCard>
-                )}
-                <details className="rounded-xl border border-gc-divider p-5">
-                  <summary className="min-h-11 cursor-pointer py-2 font-semibold">
-                    Archive calendar
-                  </summary>
-                  <p className="my-4 text-sm text-gc-muted">
-                    First cancel every active event series. Archived calendars
-                    disappear from normal views.
-                  </p>
-                  <CalendarForm
-                    operation="archive-calendar"
-                    payload={{
-                      calendarId: calendar.id,
-                      expectedVersion: calendar.version
-                    }}
-                    label="Archive calendar"
-                    destination="/platform/calendars"
-                    confirmation="Archive this calendar after its events have been canceled."
-                  />
-                </details>
-              </div>
-            )}
-          </section>
+                  <PortalCard title="Calendar settings">
+                    <CalendarForm
+                      operation="rename-calendar"
+                      payload={{
+                        calendarId: calendar.id,
+                        expectedVersion: calendar.version
+                      }}
+                      label="Save calendar settings"
+                      fields={[
+                        {
+                          name: "name",
+                          label: "Calendar name",
+                          value: calendar.name,
+                          maxLength: 100,
+                          required: true
+                        },
+                        {
+                          name: "timeZone",
+                          label: "Default time zone for new events",
+                          value: calendar.timeZone,
+                          maxLength: 100,
+                          required: true,
+                          hint: "Existing events keep their saved time zones and times."
+                        }
+                      ]}
+                    />
+                  </PortalCard>
+                  {calendar.own && (
+                    <PortalCard title="Share this calendar">
+                      <CalendarSharing
+                        kind="calendar"
+                        id={calendar.id}
+                        shares={calendar.shares ?? []}
+                        churches={churches}
+                      />
+                    </PortalCard>
+                  )}
+                  <details className="rounded-xl border border-gc-divider p-5">
+                    <summary className="min-h-11 cursor-pointer py-2 font-semibold">
+                      Archive calendar
+                    </summary>
+                    <p className="my-4 text-sm text-gc-muted">
+                      First cancel every active event series. Archived calendars
+                      disappear from normal views.
+                    </p>
+                    <CalendarForm
+                      operation="archive-calendar"
+                      payload={{
+                        calendarId: calendar.id,
+                        expectedVersion: calendar.version
+                      }}
+                      label="Archive calendar"
+                      destination="/platform/calendars"
+                      confirmation="Archive this calendar after its events have been canceled."
+                    />
+                  </details>
+                </div>
+              )}
+            </section>
+          </CalendarSnapshot>
         </PlatformShell>
       );
     }
@@ -275,124 +312,145 @@ export async function CalendarPage({
         : (listing?.calendars.map((c) => c.id) ?? []);
     // A supplied stale/foreign layer must fail through the authoritative reader;
     // silently ignoring it would hide a revoked-access state from the viewer.
-    const events = listing
-      ? (await readCalendarAgenda({ ...range, calendarIds: selected })).events
-      : publicAgenda!.events;
+    const agenda = listing
+      ? await readCalendarAgenda({ ...range, calendarIds: selected })
+      : undefined;
+    const events = agenda?.events ?? publicAgenda!.events;
     const title = publicAgenda
       ? `${publicAgenda.church.name} calendar`
       : "My calendars";
     return (
       <PlatformShell user={user}>
-        <section
-          key={path}
-          className="container-shell min-w-0 space-y-6 py-8 [overflow-wrap:anywhere]"
+        <CalendarSnapshot
+          owner={listing ? user?.id : undefined}
+          url={calendarReadUrl("calendars", {
+            churchId: view === "church" ? id : undefined,
+            cursor: query.cursor
+          })}
+          snapshot={listing}
+          label="calendar layers"
         >
-          <PortalHeading
-            title={title}
-            description={
-              listing
-                ? "Choose personal, church and shared calendars for your agenda. Busy-only layers reveal availability without private event details."
-                : "Public church events are open to everyone. Join or sign in when you want to respond or see calendars shared with your approved church."
-            }
-          />
-          <CalendarNavigation churchId={publicAgenda?.church.id} />
-          <CalendarRange
-            range={range}
-            path={path}
-            query={query}
-            calendars={listing?.calendars}
-            selected={selected}
-          />
-          <CalendarAgenda events={events} timeZone={range.timeZone} />
-          {listing && (
-            <>
-              <PortalCard title="Available calendars">
-                <ul className="space-y-3">
-                  {listing.calendars.map((c) => (
-                    <li key={c.id}>
-                      <Link
-                        className={portalLinkClass}
-                        href={calendarPath(c.id)}
-                      >
-                        {c.name}
-                      </Link>
-                      <p className="text-sm text-gc-muted">
-                        {c.source.label} ·{" "}
-                        {c.canEdit ? "Can edit" : "View access"}
-                        {c.canPublish ? " · Can publish" : ""}
+          <section
+            key={path}
+            className="container-shell min-w-0 space-y-6 py-8 [overflow-wrap:anywhere]"
+          >
+            <PortalHeading
+              title={title}
+              description={
+                listing
+                  ? "Choose personal, church and shared calendars for your agenda. Busy-only layers reveal availability without private event details."
+                  : "Public church events are open to everyone. Join or sign in when you want to respond or see calendars shared with your approved church."
+              }
+            />
+            <CalendarNavigation churchId={publicAgenda?.church.id} />
+            <CalendarRange
+              range={range}
+              path={path}
+              query={query}
+              calendars={listing?.calendars}
+              selected={selected}
+            />
+            <CalendarSnapshot
+              owner={agenda ? user?.id : undefined}
+              url={calendarReadUrl("agenda", {
+                ...rangeQuery,
+                calendarId: selected
+              })}
+              snapshot={agenda}
+              label="calendar agenda"
+            >
+              <CalendarAgenda events={events} timeZone={range.timeZone} />
+            </CalendarSnapshot>
+            {listing && (
+              <>
+                <PortalCard title="Available calendars">
+                  <ul className="space-y-3">
+                    {listing.calendars.map((c) => (
+                      <li key={c.id}>
+                        <Link
+                          className={portalLinkClass}
+                          href={calendarPath(c.id)}
+                        >
+                          {c.name}
+                        </Link>
+                        <p className="text-sm text-gc-muted">
+                          {c.source.label} ·{" "}
+                          {c.canEdit ? "Can edit" : "View access"}
+                          {c.canPublish ? " · Can publish" : ""}
+                        </p>
+                      </li>
+                    ))}
+                  </ul>
+                  {listing.cursor && (
+                    <a
+                      href={`${path}?${new URLSearchParams({ cursor: listing.cursor, month: range.month, timeZone: range.timeZone })}`}
+                      className={portalLinkClass}
+                    >
+                      More calendar layers
+                    </a>
+                  )}
+                  {query.cursor && (
+                    <a
+                      href={`${path}?${new URLSearchParams({ month: range.month, timeZone: range.timeZone })}`}
+                      className={portalLinkClass}
+                    >
+                      First calendar layers
+                    </a>
+                  )}
+                </PortalCard>
+                {(view === "calendars" ||
+                  listing.churches.some((c) => c.id === id && c.canCreate)) && (
+                  <div className="max-w-2xl">
+                    <PortalCard title="Create a calendar">
+                      <p className="text-gc-muted">
+                        Personal calendars are private until you choose to
+                        share. Church calendars use separate editing and
+                        publication permissions.
                       </p>
-                    </li>
-                  ))}
-                </ul>
-                {listing.cursor && (
-                  <a
-                    href={`${path}?${new URLSearchParams({ cursor: listing.cursor, month: range.month, timeZone: range.timeZone })}`}
-                    className={portalLinkClass}
-                  >
-                    More calendar layers
-                  </a>
+                      <CalendarForm
+                        operation="create-calendar"
+                        payload={{ requestKey: randomUUID() }}
+                        label="Create calendar"
+                        destination="calendar"
+                        fields={[
+                          {
+                            name: "name",
+                            label: "Calendar name",
+                            required: true,
+                            maxLength: 100
+                          },
+                          {
+                            name: "churchId",
+                            label: "Calendar owner",
+                            type: "select",
+                            value: view === "church" ? id : "",
+                            options: [
+                              { value: "", label: "Me · personal calendar" },
+                              ...listing.churches
+                                .filter((c) => c.canCreate)
+                                .map((c) => ({
+                                  value: c.id,
+                                  label: c.name + " · church calendar"
+                                }))
+                            ]
+                          },
+                          {
+                            name: "timeZone",
+                            label: "Default event time zone",
+                            value: range.timeZone,
+                            required: true,
+                            maxLength: 100,
+                            hint: "For example America/Chicago, Europe/London or Pacific/Auckland."
+                          }
+                        ]}
+                      />
+                    </PortalCard>
+                  </div>
                 )}
-                {query.cursor && (
-                  <a
-                    href={`${path}?${new URLSearchParams({ month: range.month, timeZone: range.timeZone })}`}
-                    className={portalLinkClass}
-                  >
-                    First calendar layers
-                  </a>
-                )}
-              </PortalCard>
-              {(view === "calendars" ||
-                listing.churches.some((c) => c.id === id && c.canCreate)) && (
-                <div className="max-w-2xl">
-                  <PortalCard title="Create a calendar">
-                    <p className="text-gc-muted">
-                      Personal calendars are private until you choose to share.
-                      Church calendars use separate editing and publication
-                      permissions.
-                    </p>
-                    <CalendarForm
-                      operation="create-calendar"
-                      payload={{ requestKey: randomUUID() }}
-                      label="Create calendar"
-                      destination="calendar"
-                      fields={[
-                        {
-                          name: "name",
-                          label: "Calendar name",
-                          required: true,
-                          maxLength: 100
-                        },
-                        {
-                          name: "churchId",
-                          label: "Calendar owner",
-                          type: "select",
-                          value: view === "church" ? id : "",
-                          options: [
-                            { value: "", label: "Me · personal calendar" },
-                            ...listing.churches
-                              .filter((c) => c.canCreate)
-                              .map((c) => ({
-                                value: c.id,
-                                label: c.name + " · church calendar"
-                              }))
-                          ]
-                        },
-                        {
-                          name: "timeZone",
-                          label: "Default event time zone",
-                          value: range.timeZone,
-                          required: true,
-                          maxLength: 100,
-                          hint: "For example America/Chicago, Europe/London or Pacific/Auckland."
-                        }
-                      ]}
-                    />
-                  </PortalCard>
-                </div>
-              )}
-            </>
-          )}
-        </section>
+              </>
+            )}
+          </section>
+        </CalendarSnapshot>
       </PlatformShell>
     );
   } catch (error) {

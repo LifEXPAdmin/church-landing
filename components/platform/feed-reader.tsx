@@ -47,6 +47,7 @@ function isBusy(root: HTMLElement | null) {
 // Native reading-position writes must not replace the URL being loaded by the
 // router, including a Back/Forward entry whose server payload is still pending.
 function isCurrentReadingPage(choice?: FeedChoiceState) {
+  if (!["/platform", "/platform/feed"].includes(location.pathname)) return false;
   if (!choice) return true;
   const cursor = new URL(location.href).searchParams.get("feedCursor");
   return (

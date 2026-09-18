@@ -1,8 +1,35 @@
 "use client";
-import { announcePrivilegedChallenge } from "@/lib/platform/privileged-auth-navigation";
-import { useId, useRef, useState, useTransition } from "react";
+import {
+  createContext,
+  useContext,
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  useTransition,
+  type ReactNode
+} from "react";
+import { flushSync } from "react-dom";
+import { socialRequest, SocialClientError } from "@/lib/platform/social-client";
+import { usePrivateRecovery } from "./private-snapshot-guard";
+import { useUnsavedSocialWork } from "./use-unsaved-social-work";
+import { settlePhotoNavigation } from "./use-photo-back-guard";
 import { useRouter } from "next/navigation";
 import { portalInputClass, portalButtonClass } from "./portal-action-form";
+
+const CalendarOwner = createContext<string | null>(null);
+export function CalendarFormOwner({
+  owner,
+  children
+}: {
+  owner: string;
+  children: ReactNode;
+}) {
+  return (
+    <CalendarOwner.Provider value={owner}>{children}</CalendarOwner.Provider>
+  );
+}
 
 export type CalendarField = {
   name: string;
@@ -112,6 +139,13 @@ export function CalendarForm({
   confirmation?: string;
 }) {
   const router = useRouter();
+  const owner = useContext(CalendarOwner),
+    id = useId(),
+    formRef = useRef<HTMLFormElement>(null);
+  const [dirty, setDirty] = useState(false),
+    [retryBody, setRetryBody] = useState<string | null>(null);
+  const base = useRef(payload);
+  const [reviewing, setReviewing] = useState(false);
   const requestKey = useRef(payload.requestKey);
   const locked = useRef(false);
   const [pending, setPending] = useState(false);
@@ -120,18 +154,42 @@ export function CalendarForm({
   const [message, setMessage] = useState("");
   const status = useRef<HTMLParagraphElement>(null);
   const busy = pending || refreshing;
+  // A sibling form can refresh the server tree while these entries stay dirty.
+  // Adopt its newer versions only after this form explicitly requests review.
+  useEffect(() => {
+    if (reviewing && !refreshing) {
+      base.current = payload;
+      setReviewing(false);
+      setConflict(false);
+    }
+  }, [reviewing, refreshing, payload]);
   const tell = (text: string) => {
     setMessage(text);
     requestAnimationFrame(() => status.current?.focus());
   };
+  const retry = useCallback(() => formRef.current?.requestSubmit(), []);
+  usePrivateRecovery(id, !!retryBody, busy, retry);
+  useUnsavedSocialWork(
+    { dirty, saving: busy || !!retryBody, conflict },
+    () =>
+      tell(
+        "Your calendar entries are still here. Finish, retry or discard them before leaving."
+      ),
+    true
+  );
   return (
     <form
+      ref={formRef}
+      onChange={() => {
+        if (!dirty && !retryBody && !busy && !conflict) base.current = payload;
+        setDirty(true);
+      }}
       aria-label={label}
       aria-busy={busy}
       className="space-y-4"
       onSubmit={async (e) => {
         e.preventDefault();
-        if (locked.current || busy || conflict) return;
+        if (locked.current || busy || conflict || !owner) return;
         const form = e.currentTarget,
           data = new FormData(form);
         const values: Record<string, unknown> = Object.fromEntries(
@@ -145,61 +203,70 @@ export function CalendarForm({
           values[name] = data.has(name);
         if ("weeklyUntil" in values && !values.weeklyUntil)
           values.weeklyUntil = null;
+        const request =
+          retryBody ??
+          JSON.stringify({
+            ...values,
+            ...(dirty ? base.current : payload),
+            ...(requestKey.current ? { requestKey: requestKey.current } : {}),
+            operation
+          });
         locked.current = true;
         setPending(true);
+        setRetryBody(request);
         setMessage("");
         try {
-          const response = await fetch("/api/platform/calendars", {
-            method: "POST",
-            credentials: "same-origin",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              ...values,
-              ...payload,
-              ...(requestKey.current ? { requestKey: requestKey.current } : {}),
-              operation
-            })
-          });
-          const body: unknown = await response.json().catch(() => null);
-          const needsAuthenticator = response.status === 403 && announcePrivilegedChallenge(body);
-          const result =
-            body && typeof body === "object"
-              ? (body as Record<string, unknown>)
-              : {};
-          const text =
-            typeof result.message === "string"
-              ? result.message
-              : "The save could not be confirmed. Your entries are still here. Try again.";
-          tell(text);
-          if (response.ok) {
-            let next: string | undefined;
-            if (destination === "calendar" && typeof result.id === "string")
-              next = `/platform/calendars/${encodeURIComponent(result.id)}`;
-            else if (
-              destination === "event" &&
-              typeof result.occurrenceId === "string"
-            )
-              next = `/platform/events/${encodeURIComponent(result.occurrenceId)}`;
-            else if (destination?.startsWith("/platform/")) next = destination;
-            if (next) {
-              // Load the saved destination without racing navigation against a
-              // refresh of the form's former route.
-              window.location.assign(next);
-              return;
-            }
-            startRefresh(() => router.refresh());
-          } else if (response.status === 409) {
-            setConflict(true);
-            tell(
-              `${text} Your entries are still here. Load the latest saved version, review it, then save again.`
+          const { data: result } = await socialRequest<Record<string, unknown>>(
+            "/api/platform/calendars",
+            request,
+            owner
+          );
+          if (!result || typeof result.message !== "string")
+            throw new SocialClientError(
+              503,
+              "The save could not be confirmed. Retry the same calendar request."
             );
-          } else if (!needsAuthenticator && [401, 403, 404].includes(response.status)) {
-            // Replace private content promptly when this session or its access ends.
-            startRefresh(() => router.refresh());
+          flushSync(() => {
+            setRetryBody(null);
+            setDirty(false);
+            setPending(false);
+            setConflict(false);
+            tell(result.message as string);
+          });
+          await settlePhotoNavigation();
+          let next: string | undefined;
+          if (destination === "calendar" && typeof result.id === "string")
+            next = `/platform/calendars/${encodeURIComponent(result.id)}`;
+          else if (
+            destination === "event" &&
+            typeof result.occurrenceId === "string"
+          )
+            next = `/platform/events/${encodeURIComponent(result.occurrenceId)}`;
+          else if (destination?.startsWith("/platform/")) next = destination;
+          if (next) {
+            window.location.assign(next);
+            return;
           }
-        } catch {
+          startRefresh(() => router.refresh());
+        } catch (error) {
+          if (
+            error instanceof SocialClientError &&
+            !error.needsAuthenticator &&
+            [400, 401, 403, 404, 409, 429].includes(error.status)
+          ) {
+            setRetryBody(null);
+            if ([401, 403, 404, 409].includes(error.status)) setConflict(true);
+            // A definite rejection can end a hidden uncertain request. Bring
+            // back current details without adopting their version for the draft.
+            if ([400, 409, 429].includes(error.status))
+              startRefresh(() => router.refresh());
+            if ([401, 403, 404].includes(error.status))
+              window.dispatchEvent(new Event("social-relationships-changed"));
+          }
           tell(
-            "The save could not be confirmed. Your entries are still here. Check your connection and try again."
+            error instanceof Error
+              ? error.message
+              : "The save could not be confirmed. Your entries are still here. Retry the same calendar request."
           );
         } finally {
           locked.current = false;
@@ -207,7 +274,10 @@ export function CalendarForm({
         }
       }}
     >
-      <fieldset disabled={busy} className="min-w-0 space-y-4">
+      <fieldset
+        disabled={busy || !!retryBody || !owner}
+        className="min-w-0 space-y-4"
+      >
         <CalendarFields fields={fields} />
         {children}
         {confirmation && (
@@ -222,10 +292,18 @@ export function CalendarForm({
             ]}
           />
         )}
-        <button type="submit" disabled={conflict} className={portalButtonClass}>
-          {busy ? "Saving…" : label}
-        </button>
       </fieldset>
+      <button
+        type="submit"
+        disabled={busy || conflict || !owner}
+        className={portalButtonClass}
+      >
+        {busy
+          ? "Saving…"
+          : retryBody
+            ? "Retry the same calendar request"
+            : label}
+      </button>
       <p
         ref={status}
         role="status"
@@ -235,16 +313,33 @@ export function CalendarForm({
       >
         {message}
       </p>
+      {(dirty || conflict) && !retryBody && !busy && (
+        <button
+          type="button"
+          className={portalButtonClass}
+          onClick={async () => {
+            flushSync(() => {
+              setDirty(false);
+              setConflict(false);
+              formRef.current?.reset();
+            });
+            await settlePhotoNavigation();
+            window.location.reload();
+          }}
+        >
+          Discard local calendar entries and reload
+        </button>
+      )}
       {conflict && (
         <button
           type="button"
           disabled={busy}
           className={portalButtonClass}
           onClick={() => {
+            setReviewing(true);
             startRefresh(() => {
               router.refresh();
             });
-            setConflict(false);
             tell(
               "Reloading the latest saved information. Your form entries are preserved. Review the saved details and your entries before submitting again."
             );

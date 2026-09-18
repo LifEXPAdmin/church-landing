@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useReadVisibility } from "./read-visibility";
 
 /** History holds only a scroll number, route and account boundary, never rows. */
@@ -12,11 +12,17 @@ export function ExchangeSearchPosition({
 }) {
   const visible = useReadVisibility(),
     restored = useRef(false);
+  // Capture before the async access check. A router server patch can replace
+  // custom history state while the guarded results are still concealed.
+  const [incoming] = useState(() =>
+    typeof window === "undefined"
+      ? null
+      : window.history.state?.gcExchangePosition
+  );
   useEffect(() => {
     if (!visible) return;
     if (!restored.current) {
-      restored.current = true;
-      const position = window.history.state?.gcExchangePosition;
+      const position = incoming ?? window.history.state?.gcExchangePosition;
       if (
         position?.owner === owner &&
         position.path === path &&
@@ -24,13 +30,14 @@ export function ExchangeSearchPosition({
         position.y >= 0 &&
         position.y <= 100000
       ) {
-        const frame = requestAnimationFrame(() =>
-          window.scrollTo({ top: position.y, behavior: "instant" })
-        );
+        const frame = requestAnimationFrame(() => {
+          window.scrollTo({ top: position.y, behavior: "instant" });
+          restored.current = true;
+        });
         return () => cancelAnimationFrame(frame);
       }
     }
-  }, [visible, owner, path]);
+  }, [visible, owner, path, incoming]);
   useEffect(() => {
     if (!visible) return;
     const address = window.location.pathname + window.location.search;
