@@ -1,3 +1,14 @@
+## Expanded membership boundaries accepted, September 18, 2026 UTC
+
+The existing .8 implementation passes three fresh cross-module canonical
+LEAVE/REMOVE/group-authority tests and four built HTTPS browser groups. Search,
+saved content, signed feed cursors, image derivatives, listing requests and
+official group duties recheck current authority. Personal authored work and
+independent group membership follow their distinct retention/consent rules.
+Open views conceal revoked private text, including after reload and Back.
+No application or production change is introduced; the new regression coverage
+is a local engineering checkpoint. See [the scoped acceptance](MEMBERSHIP_REVOCATION_ACCEPTANCE.md).
+
 ## Navigation and security guidance verified live, September 18, 2026 UTC
 
 Nine tested independent-worker handoffs are integrated and released at `28f6909`
