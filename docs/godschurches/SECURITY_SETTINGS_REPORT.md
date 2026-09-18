@@ -1,5 +1,47 @@
 # Security settings and confirmation returns
 
+## Essential notices and optional choices, September 18, 2026
+
+The Security overview now explains the existing essential authenticator notices
+and links to the canonical Notifications folder for optional Activity, phone and
+supported email choices. Confirmation, replacement and recovery use the separate
+`privileged-auth-notices.ts` owner. Optional preferences and quiet hours cannot
+disable those notices. The existing authenticator link exposes pending versus
+provider-accepted status; neither this explanation nor provider acceptance proves
+inbox receipt. No new-sign-in/password-change alert or disable-security switch is
+offered. Current authenticator availability is determined on its own screen.
+
+The existing account verification, password reset and email-change deliveries
+remain required parts of their requested actions. No new event classification,
+notification preference, permission, provider setting, schema or migration is
+introduced. This consumes the already implemented
+[authenticator service](PRIVILEGED_AUTHENTICATION_IMPLEMENTATION.md), superseding
+the historical absent-MFA/security-notice statements below for that capability.
+Passkeys, additional security-event categories and real adult enforcement
+acceptance retain their separate boundaries.
+
+Sixteen focused service/settings checks pass across four files, including the new
+real-service regression for optional choices, active quiet hours, exact retries,
+essential notice delivery, deduplication and account isolation. The new test's
+first run omitted the required account ID and correctly failed closed; its
+corrected rerun passes. Five new built HTTPS browser groups and seven existing
+Security browser regressions pass with zero page errors. The new browser coverage
+checks guest denial, keyboard navigation, persisted optional choices, preserved
+essential records, truthful delivery status, another-account isolation and
+320/390/1440px layouts with doubled text. Browser notice rows are fictional
+projection fixtures; actual notice creation and dispatch are covered by the
+service regression. No real account was enrolled or email sent.
+
+Types, scoped lint, authored-copy and production build checks pass. Runtime
+tracing checks 223 traces and excludes private fixtures and environment files.
+This adds static explanation and links without extra overview queries, polling,
+dependencies or duplicated settings state. No performance improvement is claimed.
+The complete unchanged service suite was not repeated for this presentation
+change. The committed candidate awaits integration and combined release checks;
+it does not establish production publication or physical-device acceptance.
+
+## Earlier Security milestone, September 12, 2026
+
 ## Existing authority and current increment
 
 Security uses the account service's existing usable-password and linked-Google
@@ -9,11 +51,11 @@ excluded. Provider configuration is a separate availability gate. Missing method
 metadata is a failed read, never evidence that a password exists or recovery
 completed. The underlying credential service remains authoritative for every action.
 
-| Current account state | Settings behavior |
-| --- | --- |
-| Usable password | Existing current-password confirmation and supported account actions. A linked, available Google method can be chosen under its existing contract. |
-| Google only, provider available | Existing Google confirmation for the specific action; adding a password does not ask for a nonexistent current password. |
-| Google only, provider unavailable | Read-only status and session review remain available. Sensitive controls give existing email-recovery guidance and cannot submit a password form. |
+| Current account state                | Settings behavior                                                                                                                                    |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Usable password                      | Existing current-password confirmation and supported account actions. A linked, available Google method can be chosen under its existing contract.   |
+| Google only, provider available      | Existing Google confirmation for the specific action; adding a password does not ask for a nonexistent current password.                             |
+| Google only, provider unavailable    | Read-only status and session review remain available. Sensitive controls give existing email-recovery guidance and cannot submit a password form.    |
 | Legacy account with no usable method | Read-only account/session controls and truthful recovery availability. No client-created password, verification, account claim or privileged bypass. |
 
 Security shows actual password, Google, email verification and recovery

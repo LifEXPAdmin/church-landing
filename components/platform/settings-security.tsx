@@ -71,12 +71,43 @@ export function SettingsSecurity({ data }: { data: SettingsContext }) {
       </p>
       <p className="text-sm text-gc-muted">
         Authenticator protection for assigned duties has its own setup and
-        recovery screen. Passkeys and configurable security alerts are not
-        available here.
+        recovery screen. Passkeys are not available here.
       </p>
+      <section
+        className="space-y-3 rounded-xl border border-gc-divider p-4"
+        aria-label="Security notices and optional alerts"
+      >
+        <h2 className="text-lg font-semibold">Security notices</h2>
+        <p>
+          Confirming or replacing an authenticator creates an essential security
+          email for your verified account address. These notices cannot be
+          turned off with optional notification choices or quiet hours.
+        </p>
+        <p>
+          Review authenticator protection below to check notice delivery status.
+          Provider acceptance does not confirm that an email reached your inbox.
+          Separate new-sign-in and password-change alerts are not available.
+        </p>
+        <p>
+          Choose your optional Activity, phone and supported email alerts in
+          Notifications. Saving those choices does not change authenticator
+          protection or essential security notices.
+        </p>
+        <Link
+          className="gc-button gc-button-quiet"
+          href="/platform/settings/notifications"
+        >
+          Review optional notifications
+        </Link>
+      </section>
       {!canConfirmSettings(data) && <SettingsCredentialHelp data={data} />}
       <div className="flex flex-wrap gap-3">
-        <Link className="gc-button gc-button-quiet" href="/platform/account/authenticator">Review authenticator protection</Link>
+        <Link
+          className="gc-button gc-button-quiet"
+          href="/platform/account/authenticator"
+        >
+          Review authenticator protection
+        </Link>
         <Link
           className="gc-button gc-button-quiet"
           href="/platform/settings/account/sessions"
