@@ -322,7 +322,7 @@ try {
     [
       "MANAGE_EXCHANGE_LISTINGS",
       "Church Exchange listings",
-      `/platform/exchange/mine?churchId=${churchId}`
+      `/platform/exchange/mine?scope=church&churchId=${churchId}`
     ],
     [
       "MODERATE_CHURCH_POSTS",
@@ -362,6 +362,7 @@ try {
     await page.waitForURL(config.origin + path);
     await page.getByRole("heading", { level: 1 }).waitFor();
     assert.equal(await page.getByText("404", { exact: true }).count(), 0);
+    assert.doesNotMatch(await page.locator("main").innerText(), /Choose one of your current churches for church-only results|Use each supported listing filter once/);
   }
   ok(
     "Single-capability administrators reach existing Groups, Pantry, Exchange, review, coordinator and volunteer tools"

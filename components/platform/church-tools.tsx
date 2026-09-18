@@ -233,7 +233,7 @@ export function ChurchTools({
                   caps.includes("MANAGE_EXCHANGE_LISTINGS")) && (
                   <Link
                     className={link}
-                    href={`/platform/exchange/mine?churchId=${encodeURIComponent(churchId)}`}
+                    href={`/platform/exchange/mine?scope=church&churchId=${encodeURIComponent(churchId)}`}
                   >
                     Church Exchange listings
                   </Link>
