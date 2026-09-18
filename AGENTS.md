@@ -6,7 +6,7 @@
 2. Read [the workflow guide](docs/godschurches/WORKFLOW_GUIDE.md).
 3. Read the newest applicable sections of [current state](docs/godschurches/CURRENT_STATE.md), then the relevant decision, implementation, QA, or deployment report. Reports preserve historical checkpoints; an older preview-only or local-only statement may be superseded.
 4. Inspect the actual checkout, branch, working-tree changes, and any more specific instructions before editing. Preserve unfinished work.
-5. If connected to the private Notion workspace, find **Workflow Guide for ChatGPT and Codex**, then **Church Second Brain**, **Current State and Next Three Outcomes**, and the latest relevant handoff. Read the linked task and sources needed for this session. If access is missing, state the gap and continue independent work using available evidence.
+5. If connected to the private Notion workspace, find **Workflow Guide for ChatGPT and Codex**, then **Church Second Brain**, **Current State and Next Three Outcomes**, and the latest relevant handoff. Read **Company Knowledge and Work History Protocol**, the **Session Log** task ledger and applicable accepted decisions. Follow current contracts and replacement links; load only the focused history needed for this task. If access is missing, state the gap and continue independent work using available evidence.
 
 For source reconciliation, read **Team Packets — Start Here and Current Workflow**
 and **Legacy Blueprint Coverage — 132 Steps and Current Tasks** alongside the
@@ -65,6 +65,16 @@ costs before claiming performance improvements.
 Keep the final review last in each agreed batch. Review implemented work against current specifications, tasks, code and actual runtime evidence; fix or triage reproducible defects. Read future ideas and feedback, prepare the next coherent prioritized batch with dependencies and acceptance, and reconcile the private knowledge and task systems. Preserve the completed receipt and place the next review last. Notify the verified project owner through the requested channel with accurate coded, tested and published status; record the provider result without claiming delivery or readership it cannot prove. This convention does not configure a scheduler.
 
 ## Finish the session
+
+Maintain one private Session Log record per exact Todoist task ID, searching before
+creating it. Preserve the original worker and append dated start, pause, tested
+handoff and acceptance events. A1 adds integration evidence to A2's existing row.
+Record outcomes, reasons, reused contracts, failures and fixes, exact source/test
+evidence, decisions replaced, proposals and next actions. Follow the guide's
+[company knowledge routine](docs/godschurches/WORKFLOW_GUIDE.md#company-knowledge-and-task-history)
+and existing handoff outline. Record only observed timing and usage; unknown
+starts, durations and token totals remain blank. Keep implemented, tested, merged
+and verified-live evidence distinct. Required release gates remain unchanged.
 
 Record the outcome, changed files and branch/commit or PR, decisions, checks actually run, limitations, blockers, and next action. Update the affected repository report when engineering state changed. With authorized connector access, update the matching Notion context/handoff and Todoist task. Otherwise provide a compact pending handoff with its intended private destination; never claim the write succeeded.
 

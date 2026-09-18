@@ -1,6 +1,6 @@
 # Godschurches workflow guide
 
-Version 3.0 · Updated 18 September 2026 UTC
+Version 3.1 · Updated 18 September 2026 UTC
 
 This is the repository entry point for work that continues between ChatGPT, Codex,
 the private second brain, and the development workstation. Keep this file's path
@@ -22,7 +22,11 @@ the shared workflow register and links.
    **Workflow Guide for ChatGPT and Codex**. Use its directory to choose
    **Church Second Brain**. Read **Current State and Next Three Outcomes**,
    **Shared Context Brief for ChatGPT and Codex**, relevant decisions, and the
-   latest applicable session handoff.
+   latest applicable session handoff. Read **Company Knowledge and Work History
+   Protocol** and the **Session Log** views **Task completion ledger** and
+   **In progress and integration**. Follow the selected task's accepted decision,
+   current implementation contract, applicable revision and replacement links.
+   Load focused records; keep the full archive searchable without reading it all.
 5. Read the linked Todoist action when available. Establish the outcome, sources,
    done criteria, and dependencies. State any material access or evidence gap,
    then continue the authorized work.
@@ -36,7 +40,7 @@ leave the intended updates as a handoff rather than claiming synchronization.
 
 | System | Record |
 | --- | --- |
-| Notion | Project purpose, scope, goals and horizons, ideas, decisions, sources, workflow definitions, session handoffs |
+| Notion | Project purpose, scope, goals and horizons, ideas, decisions, sources, workflow definitions, task history and measured timing, session handoffs |
 | Todoist | Concrete next action, priority/due date, done criteria, dependency, link to context |
 | Git | Code, repository instructions, versioned engineering reports, reviewable changes |
 | Current chat | Discussion and work in progress; transfer durable outcomes before ending |
@@ -193,6 +197,78 @@ tested commit, deployment, and limits. They do not prove the current checkout,
 currently serving release, or a new test result. Read original evidence dates;
 import dates do not change approval or verification history.
 
+## Company knowledge and task history
+
+The private **Company Knowledge and Work History Protocol** governs durable
+company knowledge. Latest explicit user decisions, actual code and dated checks
+determine current truth. Use accepted current contracts for new work and consult
+superseded attempts when relevant. Captured ideas remain proposals until accepted;
+recording them does not authorize implementation or expand task ownership.
+
+Use the exact Todoist task ID as the canonical key in the private **Session Log**.
+Search that key before creating a row. Reuse the same row through implementation,
+handoff, integration and acceptance, with dated events inside its page. Preserve
+the original worker; A1 adds acceptance to A2's record without replacing A2's
+narrative. Coordinate edits rather than concurrently overwrite that history.
+Link the existing focused feature page, implementation report and **Decision Log**
+instead of maintaining competing copies.
+
+The compact index holds task name/ID/link, worker, stage, started/ready/completed
+timestamps, timing quality, elapsed/active/test/wait minutes, summary, evidence
+level and next action. Its page records:
+
+- Exact outcome and acceptance scope, including remaining limitations.
+- Component and contract names, related tasks, reused services, cross-feature
+  dependencies, compatibility constraints and supported extension points.
+- Approach and rationale, rejected alternatives and tradeoffs, changed files,
+  source revision, configuration/migration requirements and release identity.
+- Problems with actual symptoms, reproduction, established cause, attempted
+  fixes and results, final resolution and recurrence checks.
+- Checks with command/suite, tested revision, environment, observed start/end
+  and exit status, concise result and controlled evidence location. Distinguish
+  fresh observations from historical reports; retain large raw logs separately.
+- Decisions replaced, remaining issues, proposed improvements or future
+  integrations linked to existing backlog, next owner/action and pending writes.
+
+Update at actual task start, meaningful pause or blocker, tested handoff and
+acceptance. Started at means work began, not task creation. Ready at means a
+tested handoff was submitted. Completed at means scoped acceptance; record the
+verified-live time separately in product history. Definition acceptance does not
+mean the future feature shipped. A resumed segment can have observed timestamps
+without fabricating the original task start.
+
+Use ISO 8601 with explicit timezone, preferably UTC; present owner summaries in
+America/Chicago. Elapsed minutes is completion minus an observed actual start,
+including interruptions. Record observed active intervals and deployment,
+integration or blocked waits separately. Test runtime can overlap other work and
+is not token cost. Do not sum overlapping worker durations as project wall time.
+Leave unobserved numeric fields blank and mark timing Unknown or Partial. Never
+infer precise starts from commits/comments or token usage, model settings or
+cost from passing tests. Use actual usage telemetry only when available, with
+its source. Avoid per-minute logging and unchanged status polling.
+
+Important decisions retain a stable identifier, component/scope, status, owner,
+date, applicable revision, rationale, alternatives, evidence, consequences and
+review trigger. Link prior and replacement decisions in both directions. Mark
+older guidance Superseded while retaining its original reasoning, conditions
+and observations. Explain why the replacement applies, its effective revision,
+migration/compatibility effects and features still using the old method. A
+contextual failed attempt is not a universal prohibition. Distinguish Proposed,
+Accepted, Implemented, Verified and Superseded facts with appropriate evidence.
+
+Maintain concise searchable summaries alongside detailed controlled evidence.
+Append corrections to dated history and update the current area summary in
+place. Keep credentials, unnecessary personal content and production database
+copies out of this library. On interruption or connector failure, preserve the
+local checkpoint and intended pending writes, reconcile when access works and
+verify readback. Missing synchronization does not erase observed work.
+
+Related edits may form one coherent change followed by focused checks. Reuse
+valid A2 evidence while checking the combined result. Run required release gates;
+repeat a broad suite when a concrete source, environment, integration or failure
+risk invalidates its evidence. Documentation changes receive proportionate checks.
+This recording routine does not lower existing product acceptance requirements.
+
 ## Owner actions
 
 When active work requires the project owner to choose or create an account,
@@ -246,6 +322,11 @@ Use this compact outline in the appropriate private session record and relevant
 engineering report. Include only public engineering facts in this repository.
 
 - Date, objective, contributor, A1/A2 identity and current private checkpoint.
+- Exact private task ID and existing Session Log row; original worker and dated
+  segment events, current stage and evidence level.
+- Observed started/ready/completed timestamps, verified-live time when applicable,
+  elapsed/active/test/wait minutes and timing quality. Leave unknown numeric
+  values blank; identify actual usage telemetry or state that it is unavailable.
 - Assigned worktree/branch, safe base, isolated database/ports and current file/contract reservations.
 - Implemented, tested, ready to merge, merged and verified-live states; A1 release lock and integration handoff where applicable.
 - Selected feature and subtasks, focused brief title, owning requirement
@@ -255,7 +336,10 @@ engineering report. Include only public engineering facts in this repository.
   exact external blockers and next independent eligible work.
 - Relevant runtime-cost review, measurements actually made, and unresolved limits.
 - Actual changes and affected files/pages.
-- Decisions and their source.
+- Approach, reasons and rejected alternatives; decisions and their source,
+  applicable revision, prior/replacement links and compatibility consequences.
+- Failures with reproduction, attempted fixes, established cause, resolution and
+  recurrence check. Proposed improvements remain separate from accepted work.
 - Branch/commit, PR, or deployment when applicable.
 - Checks actually performed and their results.
 - Limits, unverified claims, and remaining blockers.
@@ -294,6 +378,13 @@ test evidence in their appropriate private systems. The exact page titles above
 allow an authorized assistant to locate the context without publishing it.
 
 ## Change log
+
+- **3.1, 18 September 2026 UTC:** Adopted the owner's company-knowledge and
+  work-history addition in root instructions, this guide and the existing handoff
+  outline. Added exact private task keys, original-worker attribution, dated
+  engineering/decision history, superseded-method links and observed timing/usage
+  rules. Preserved private-source boundaries and all product gates. Local adoption,
+  publication and future fresh-session discovery require separate actual evidence.
 
 - **3.0, 18 September 2026 UTC:** Adopted owner-approved independent A1/A2 task routing, separate environments, atomic identity/resource claims, one-writer checkpoints and A1-only integration/release locking. Preserved complete-feature acceptance and website copy rules. Added bounded temporary delegation and explicit startup preparation while shared setup completes. Actual setup and later fresh-session loading are distinct evidence.
 
