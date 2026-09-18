@@ -1,3 +1,13 @@
+## Resource query investigation, September 18, 2026 UTC
+
+The [query-plan receipt](RESOURCE_QUERY_PLANS.md) reproduces automatic generic-plan
+selection on the dense listing fixture. One measured price-order index improves
+fresh-connection price pages; a second index adds no useful gain. All 900 service
+comparison observations preserve identical projections. Three full traversals
+return all 12,000 listings once and in order; group traversal returns all 1,000
+groups once. The candidate is not yet a migration or a live change. Shared schema
+integration, combined recovery/regression and release gates remain open.
+
 ## Enabled-module resource budgets, September 18, 2026 UTC
 
 The [resource-budget receipt](RESOURCE_BUDGETS.md) records 220 service observations,
