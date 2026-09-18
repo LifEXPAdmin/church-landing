@@ -27,7 +27,13 @@ function object(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === "object" && !Array.isArray(value);
 }
 function text(value: unknown, maximum: number) {
-  if (typeof value !== "string" || value.length > maximum)
+  if (
+    typeof value !== "string" ||
+    value.length > maximum ||
+    // Preserve ordinary line breaks/tabs and complete Unicode code points.
+    // Other C0 controls expand in JSON; NUL and lone surrogates cannot be JSONB.
+    /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f\ud800-\udfff]/u.test(value)
+  )
     throw Error("Invalid profile module");
   return value.trim();
 }

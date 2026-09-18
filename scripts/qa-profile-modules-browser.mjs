@@ -67,7 +67,7 @@ const page = await context.newPage(),
   results = [];
 page.setDefaultTimeout(20000);
 page.on("pageerror", (error) => errors.push(error.message));
-const output = fixtureDir + "/profile-modules-browser";
+const output = fixtureDir + "/profile-modules-browser-" + Date.now();
 mkdirSync(output, { recursive: true });
 const ok = (message) => {
   results.push(message);
@@ -238,6 +238,29 @@ try {
   await page
     .getByLabel("Link 1 address", { exact: true })
     .fill("https://example.test/updated");
+  const invalidText = "Keep my draft\u0001until corrected";
+  await page.getByLabel("My testimony (optional)", { exact: true }).fill(invalidText);
+  const receiptsBefore = await db.retentionControl.count({
+    where: { sourceId: owner.id, kind: "PROFILE_MODULES" }
+  });
+  const [invalidResponse] = await Promise.all([
+    page.waitForResponse((response) =>
+      new URL(response.url()).pathname === "/api/platform/account" &&
+      response.request().method() === "POST"
+    ),
+    submit()
+  ]);
+  assert.equal(invalidResponse.status(), 400, await invalidResponse.text());
+  await page.getByRole("alert").filter({ hasText: "Optional sections allow" }).waitFor();
+  assert.equal(
+    await page.getByLabel("My testimony (optional)", { exact: true }).inputValue(),
+    invalidText
+  );
+  assert.deepEqual(await row(owner), beforeInvalid);
+  assert.equal(await db.retentionControl.count({
+    where: { sourceId: owner.id, kind: "PROFILE_MODULES" }
+  }), receiptsBefore);
+  ok("Unsupported control text returns HTTP400 through the real form, retains the draft and writes no profile or recovery receipt");
   await page
     .getByLabel("My testimony (optional)", { exact: true })
     .fill("Retained story after uncertain save");

@@ -29,6 +29,10 @@ This change does not create media or calendar copies in profile JSON.
 The versioned account profile endpoint accepts `profileModules` with exactly
 `testimony`, `skills` and `links`. Strings and arrays have strict bounds; unknown
 fields, duplicate skills, malformed links and unsupported modules are rejected.
+Text rejects unsupported C0 controls, DEL and lone UTF-16 surrogates before any
+profile write. Ordinary tabs, line breaks and valid multilingual or emoji text
+remain supported. These rules keep bounded normalized content compatible with
+PostgreSQL JSONB and its storage limit; malformed stored content still fails closed.
 Each link needs a label of at most 80 characters and an address of at most 500
 characters before and after URL normalization. Only HTTP/HTTPS without embedded
 credentials or whitespace/control characters is supported. Links are ordinary

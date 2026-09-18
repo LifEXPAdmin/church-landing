@@ -25,7 +25,7 @@ and handles a missing old presentation row. Newer reviewed modules survive old
 receipts; erased accounts remain erased. Existing exports include owned modules,
 and existing permanent erasure removes the presentation.
 
-## Verification
+## Original candidate verification
 
 - Twenty-one focused profile/module/location/pin checks pass after correcting the
   initial migration's missing journal constraints. The first run had 17 passes
@@ -62,6 +62,25 @@ browser services were stopped before the broad gate. Test fixture bootstrap need
 a shorter local socket path; the corrected isolated cluster is the final fixture.
 An earlier preliminary migration fixture is preserved separately and excluded
 from final acceptance. No production migration or deployment has occurred.
+
+## Returned validation correction, 18 September 2026
+
+The account boundary reproduced a server-unavailable response for an 18,596-byte
+module document made from control characters, despite the body fitting the HTTP
+limit. The shared text decoder now rejects unsupported C0 controls, DEL and lone
+UTF-16 surrogates before a write. It preserves tab, LF, CR, multilingual text and
+valid emoji pairs. The same decoder keeps malformed stored values out of member
+projections. No schema, migration, dependency or configuration changed.
+
+Eight focused module and protected-recovery checks pass. They cover every rejected
+character across all four text fields, seven invalid HTTP bodies returning 400
+without account, presentation or recovery changes, and a maximum-length multilingual
+module save within the actual PostgreSQL byte bound. The final production build,
+types, copy, hydration, runtime traces and scoped lint pass. Six final built HTTPS
+module browser groups and five existing profile-settings browser groups pass
+with zero page errors. The real form returns HTTP 400 for unsupported control
+text, retains the editable draft and leaves profile and recovery records unchanged. The complete 188-file gate above belongs to the original
+candidate; it is not claimed rerun for this bounded validator correction.
 
 ## Release requirements
 

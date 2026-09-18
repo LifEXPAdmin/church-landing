@@ -147,6 +147,102 @@ test("HTTP accepts bounded multilingual profile sections and rejects oversized p
   assert.deepEqual(await getProfileEditor(db, actor.token), before);
 });
 
+test("module text rejects unsupported controls and lone surrogates while preserving ordinary Unicode and whitespace", () => {
+  const characters = [
+    ...Array.from({ length: 32 }, (_, index) => String.fromCharCode(index))
+      .filter((character) => !["\t", "\n", "\r"].includes(character)),
+    "\u007f", "\ud800", "\udfff"
+  ];
+  for (const character of characters) {
+    for (const value of [
+      { ...modules, testimony: "Before" + character + "after" },
+      { ...modules, skills: ["Skill" + character] },
+      { ...modules, links: [{ label: "Label" + character, url: "https://example.test" }] },
+      { ...modules, links: [{ label: "Link", url: "https://example.test/" + character }] }
+    ]) {
+      assert.throws(() => validateProfileModules(value));
+      assert.deepEqual(readProfileModules(value), emptyProfileModules());
+    }
+  }
+  const allowed = {
+    testimony: "中文 🙂\nSecond line\r\n\tالعربية",
+    skills: ["日本語 🙂", "Музыка"],
+    links: [{ label: "作品 🙂", url: "https://example.test/作品" }]
+  };
+  const decoded = validateProfileModules(allowed);
+  assert.equal(decoded.testimony, allowed.testimony);
+  assert.deepEqual(decoded.skills, allowed.skills);
+  assert.equal(decoded.links[0].label, allowed.links[0].label);
+  assert.equal(decoded.links[0].url, new URL(allowed.links[0].url).href);
+});
+
+test("HTTP rejects PostgreSQL-incompatible module text without profile or recovery writes and accepts bounded multilingual modules", async () => {
+  const actor = await createPortalActor(db, "modulecontrol");
+  await save(actor, modules);
+  const origin = process.env.ACCOUNT_ORIGIN!;
+  const state = async () => ({
+    account: await db.platformUser.findUniqueOrThrow({ where: { id: actor.id } }),
+    presentation: await db.profilePresentation.findUniqueOrThrow({ where: { userId: actor.id } }),
+    recovery: await db.retentionControl.findMany({
+      where: { sourceId: actor.id }, orderBy: { id: "asc" }
+    })
+  });
+  const before = await state();
+  const request = (value: unknown) => {
+    const body = JSON.stringify({
+      operation: "update-profile", name: actor.name,
+      expectedVersion: before.presentation.version, profileModules: value
+    });
+    assert.ok(Buffer.byteLength(body) < 32768);
+    return new Request(origin + "/api/platform/account", {
+      method: "POST", headers: {
+        origin, "content-type": "application/json",
+        cookie: "church_platform_session=" + actor.token,
+        "x-expected-account": actor.id
+      }, body
+    });
+  };
+  const oversizedEscapes = {
+    testimony: "\u0001".repeat(2000),
+    skills: Array.from({ length: 10 }, (_, index) => index + "\u0001".repeat(59)),
+    links: Array.from({ length: 3 }, () => ({
+      label: "\u0001".repeat(80), url: "https://example.test/" + "x".repeat(470)
+    }))
+  };
+  assert.equal(Buffer.byteLength(JSON.stringify(oversizedEscapes)), 18596);
+  for (const value of [
+    oversizedEscapes,
+    { ...modules, testimony: "Embedded\u0000NUL" },
+    { ...modules, testimony: "Lone\ud800surrogate" },
+    { ...modules, testimony: "Lone\udfffsurrogate" },
+    { ...modules, skills: ["Unsupported\u000bcontrol"] },
+    { ...modules, links: [{ label: "Unsupported\u007fcontrol", url: "https://example.test" }] },
+    { ...modules, links: [{ label: "Link", url: "https://example.test/\ud800" }] }
+  ]) {
+    const response = await handleAccountRequest(db, request(value));
+    assert.equal(response.status, 400, await response.text());
+    assert.deepEqual(await state(), before);
+  }
+  const allowed = {
+    testimony: "文\t\n\r\"\\🙂".repeat(250),
+    skills: Array.from({ length: 10 }, (_, index) => index + "能".repeat(59)),
+    links: Array.from({ length: 3 }, () => ({
+      label: "标签🙂".repeat(20), url: "https://example.test/" + "x".repeat(470)
+    }))
+  };
+  assert.equal(allowed.testimony.length, 2000);
+  const response = await handleAccountRequest(db, request(allowed));
+  assert.equal(response.status, 200, await response.text());
+  const after = await state();
+  assert.deepEqual(after.presentation.modules, allowed);
+  assert.equal(after.presentation.version, before.presentation.version + 1);
+  assert.equal(after.recovery.length, before.recovery.length + 1);
+  const [stored] = await db.$queryRaw<Array<{ bytes: number }>>`
+    SELECT octet_length("modules"::text) AS bytes FROM "ProfilePresentation"
+    WHERE "userId" = ${actor.id}`;
+  assert.ok(stored.bytes <= 16000);
+});
+
 test("owner-only versioned modules preserve older fields and legacy edits, reject stale writes and remove empty sections", async () => {
   const a = await createPortalActor(db, "moduleowner"),
     b = await createPortalActor(db, "moduleother");
