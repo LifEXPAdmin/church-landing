@@ -151,3 +151,25 @@ then finish application/browser, health, queue-consumption and runtime checks.
 Preserve the existing queued deployment; do not submit duplicate attempts.
 No source permission, cursor format, service query or dependency changed, and
 the release verification performs no application-row writes or recipient sends.
+
+## Verified application publication
+
+The existing queued deployment becomes READY at 21:08:31 UTC and is verified on
+`godschurches.com` at 21:19:50 UTC: release 2026.09.18.9, exact application
+`5dc7f770d1c781754f27a04b0e72528f5985a004`, deployment
+`dpl_2cEBAFg4XJyP3PyJzs6ih5V4xjse`. The provider build verifies the same hydration
+renderer and 223 runtime traces. No second deployment is submitted.
+
+Twenty live public/browser/privacy checks and six health checks pass. A single
+reserved nonexistent-source native queue probe is accepted and consumed with no
+application writes or recipient sends. Exact-deployment runtime logs from READY
+through 21:20:55 UTC contain zero error or fatal rows. All 101 production and
+recovery checksums match, the index is valid/ready, the 21:03 encrypted backup
+restores 144 tables, and 79 retained sets have no inspection issues. All 144
+original table fingerprints remain unchanged through 21:20:56 UTC.
+
+Live newest, price-low and price-high reads remain bounded and available. There
+are currently no public sale listings; the latency improvements above remain
+local dense-fixture measurements rather than a production performance claim.
+The application release is accepted. Hosted load, physical-device evidence and
+other tasks' operator gates remain separate.

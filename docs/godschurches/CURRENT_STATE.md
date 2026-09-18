@@ -1,3 +1,26 @@
+## Listing index publication verified, September 18, 2026, 21:21 UTC
+
+Release 2026.09.18.9 is verified on the canonical domain at main `5dc7f77`,
+READY deployment `dpl_2cEBAFg4XJyP3PyJzs6ih5V4xjse`. The queued deployment
+became ready at 21:08:31 UTC; no duplicate deployment was submitted. Twenty
+public/browser/privacy checks and six health checks pass. The one reserved
+nonexistent-source queue probe is accepted and its consumer completes with no
+application writes. Scoped provider logs contain zero error or fatal rows from
+READY through 21:20:55 UTC. This is a bounded observation, not an uptime claim.
+
+All 101 migration checksums match the installed recovery registry; the new index
+is valid and ready. The 21:03 encrypted backup restores 144 application tables,
+temporary plaintext is removed, and 79 retention sets pass inspection. All 144
+original production row fingerprints remain unchanged through 21:20:56 UTC.
+Release verification makes zero application-row writes and zero recipient sends.
+The provider build verifies the hydration renderer and 223 runtime traces.
+
+The local dense-fixture query improvements are documented in
+[the query-plan report](RESOURCE_QUERY_PLANS.md). Live public Exchange currently
+has no sale listings, so this release does not claim a measured production
+latency improvement. The separate A2 navigation correction is ready for the next
+integration cycle; it is not part of this release.
+
 ## Listing index applied; provider release queued, September 18, 2026, 21:09 UTC
 
 The [index migration](RESOURCE_QUERY_PLANS.md#applied-migration-and-pending-application-publication)
