@@ -1,6 +1,6 @@
 # Church settings ownership and acceptance
 
-September 18, 2026 UTC. Local implementation and acceptance in progress.
+September 18, 2026 UTC. Local browser acceptance passes; full regression in progress.
 Production remains Communities Settings 2026.09.18.5. No release is claimed here.
 
 ## Canonical ownership
@@ -47,25 +47,37 @@ A standalone portal-service attempt in the reused worker fixture passed sixteen
 checks but failed two fixture-dependent checks: missing staged-upgrade seed and
 an accumulated-account pagination expectation. The original failure is retained
 privately. The clean standard full gate is required before release; this attempt
-is not reported as a passing gate. Browser acceptance is prepared for real
-fictional request/withdraw/leave forms, scoped links, revoked open selections,
-failed reads, account changes, keyboard/reflow and guest return.
+is not reported as a passing gate. Twelve final built HTTPS browser groups pass
+for real fictional request/withdraw/leave forms, scoped links, revoked open
+selections, failed reads, account changes, keyboard/reflow and guest return.
+Six existing Settings and eight Communities browser groups also pass on that
+same final build. The Communities fixture now supplies its own required fictional
+report reviewer; the unavailable-intake safeguard was not relaxed. Earlier failed
+attempts and corrected automation assertions remain in the private evidence.
 
 The projection tests directly update fictional states; they do not establish
-canonical transition side effects. Those remain subject to existing portal
-service and actual browser-form acceptance. No physical device or real church
-pilot has been exercised by these local checks.
+canonical transition side effects. Actual browser forms additionally verify
+withdrawal, fresh approval, leaving and changing the single active church, while
+the clean standard portal regression remains part of the full release gate.
+No physical device or real church pilot has been exercised by these local checks.
 
-## Membership refresh repair in progress
+## Membership refresh repair verified locally
 
 The actual browser request succeeded, but withdrawing on My church returned a
 confirmed success while the page remained on Awaiting review with Please wait.
 It reproduced twice, including a 45-second wait; the fictional database was
 WITHDRAWN/version 2 and no browser exception occurred. The extra My church
 loading boundary is removed, following the same narrow repair verified earlier
-for Groups. A fresh build and repeated real form acceptance are required; this
-is not a claim that the repair passed yet. The running full service/HTTPS gate
-covers the preceding runtime; the final client delta will be verified separately.
+for Groups. A fresh production build passes four consecutive actual withdrawal
+cycles, re-request and fresh approval, leaving, and the replacement-church flow.
+The running full service/HTTPS gate covers the preceding runtime; this final
+client delta is verified separately. The visible administration scope now uses
+a named semantic region.
+
+The production build passes copy, lint, types, hydration-output and runtime-trace
+checks. The same four root/Settings route inputs measure 638,559 to 643,207 raw
+JavaScript bytes and 194,342 to 196,517 independently gzipped bytes, an increase
+of 4,648 and 2,175 respectively. This is a bundle measurement, not a latency claim.
 
 ## Explicit remaining scope
 

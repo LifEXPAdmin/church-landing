@@ -1,3 +1,17 @@
+## Church Settings local acceptance, September 18, 2026 UTC
+
+Church Settings now projects current connection states and links the existing
+request, directory and responsibility owners. Organization selection requires
+current approved access and effective duties; opening tools rechecks the account
+and permissions. A reproduced stale withdrawal confirmation is repaired by removing
+the extra My church loading boundary. Fifteen focused service tests, twelve new
+built browser groups, six Settings and eight Communities regressions pass.
+The final production build and runtime checks pass; the clean full service/HTTPS
+gate is still running. These changes are local and unreleased. See
+[the scoped acceptance and remaining gates](CHURCH_SETTINGS_IMPLEMENTATION.md).
+Production remains the Communities release below. Role-display preferences and
+future personal serving-interest capabilities remain open.
+
 ## Church engineering acceptance reconciled, September 18, 2026 UTC
 
 The older integrated church editor is already published and included in current
