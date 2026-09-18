@@ -1,3 +1,23 @@
+## Optional social email integration deployed, September 18, 2026 UTC
+
+The tested independent-worker email change is integrated with Church Settings
+and verified on **2026.09.18.7 / 7bc1cb2**, READY deployment
+**dpl_Eu5jPyqoqdUa2eh5B1eTztjpXAMV** at **16:56:49.811 UTC**. Canonical-domain
+assignment and serving identity match at **16:57:37.470 UTC**. The combined
+186-file gate has 1,209 passes, two expected skips and zero failures across 200
+executions. Twenty-three built browser groups pass, including existing Settings
+and Church Settings; canonical church/group revocation cancels pending email
+and denies old links. See [the complete receipt](SOCIAL_EMAIL_ACCEPTANCE.md).
+
+Fifteen public/privacy checks, six health checks and two signed-in Mac views
+pass. All 100 migration/recovery checksums match; installed restoration verifies
+144 tables and 77 retained backup sets have no issues. All original production
+fingerprints remain unchanged. The native queue probe is consumed and scoped
+runtime errors are zero. Verification writes and recipient sends are zero.
+Likes and direct reply email remain off and unavailable pending real provider
+and consenting-recipient acceptance. Continue the remaining tested worker
+handoffs and eligible A1 queue while preserving those gates and owner actions.
+
 ## Church Settings verified live, September 18, 2026 UTC
 
 Church Settings now projects current connection states and links the existing

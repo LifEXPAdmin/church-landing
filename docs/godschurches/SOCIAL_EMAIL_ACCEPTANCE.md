@@ -1,5 +1,35 @@
 # Optional Likes and direct reply email
 
+## Verified deployment, September 18, 2026 UTC
+
+**2026.09.18.7 / 7bc1cb2edd14f19dbadcbbe3748f78bf8cd44523** is READY in
+**dpl_Eu5jPyqoqdUa2eh5B1eTztjpXAMV** at **16:56:49.811 UTC**. Canonical
+`godschurches.com` assignment and serving identity match at **16:57:37.470 UTC**.
+The deployment includes the combined acceptance below, preserving Church
+Settings, Communities and Gather groups. Fifteen public/privacy checks, six
+health checks and two signed-in Mac page observations pass. Likes and reply
+email are separately off and unavailable; the overview describes their scope.
+No live preference, permission or recipient delivery action was performed.
+
+All 100 production migration and installed recovery checksums match. The fresh
+installed encrypted restore completed at **16:55:15.619 UTC**, verified 144
+tables and removed its plaintext. Nightly validation reports 77 retained sets
+and no issues. The pre-release protected 99-to-100 upgrade preserved every
+original column. All 144 production fingerprints remain unchanged through
+**16:59:53.062 UTC**. The new column has no opt-ins and there are no social-email
+deliveries. Verification application writes and recipient sends are zero.
+
+The native nonexistent-source queue probe is consumed with HTTP 200. Scoped
+runtime error and fatal rows are zero through **16:58:43.766 UTC**. The actual
+provider build passes hydration and runtime-trace checks. These are bounded
+observations, not a continuous uptime or recipient-delivery claim.
+
+Implementation, integration and the default-off deployment are verified. Real
+provider acceptance, a consenting recipient's inbox/link/withdrawal journey and
+activation remain open. The existing email provider configuration is preserved;
+dashboard access and plan/usage verification are separate unresolved operational
+evidence. Do not infer a sender outage from the dashboard access failure.
+
 ## Combined integration checkpoint, September 18, 2026 UTC
 
 The tested candidate `3967483` is merged with the verified Church Settings
