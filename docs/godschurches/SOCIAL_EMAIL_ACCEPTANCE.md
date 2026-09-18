@@ -1,5 +1,40 @@
 # Optional Likes and direct reply email
 
+## Combined integration checkpoint, September 18, 2026 UTC
+
+The tested candidate `3967483` is merged with the verified Church Settings
+release. Combined runtime `8468e9f` adds conditional public guidance and product
+version `2026.09.18.7`; test-only `9ac185a` adds canonical church removal and
+group departure coverage. Eleven focused email tests pass. The two new cases
+cancel pending direct-reply and comment-Like email without provider calls and
+deny old authenticated links after membership ends. Recipients own comments on
+someone else's post, so author access cannot hide a revocation failure.
+
+The combined production build passes copy, types, lint, hydration and runtime
+trace checks. Five email browser groups, six existing Settings groups and twelve
+Church Settings groups pass against that built application. The 320-pixel email
+controls and explanation were visually inspected. An initial local attempt used
+a stale generated Prisma client; regeneration resolved the export/type failure.
+The first browser attempt had fictional phone delivery disabled; configuring its
+fictional keypair allowed the existing permission-denial scenario to run. These
+environment failures are retained separately from the passing acceptance.
+
+The encrypted production-copy rehearsal upgrades 99 to 100 migrations, preserves
+all original column fingerprints across 144 tables and completes protected
+restoration with outbound delivery disabled. This does not change production.
+The complete combined regression gate, production migration, installed recovery
+registry, exact release and live verification remain open at this checkpoint.
+
+Actual production configuration has no social-email enable flag; the default is
+false. Keep real provider acceptance, a consenting recipient's inbox, authorized
+link opening and withdrawal acceptance open before activation. Publishing the
+controls does not establish delivery or physical-device acceptance.
+
+The lazily loaded notification component changes from 14,036 to 14,809 raw bytes
+and 4,880 to 5,040 independently compressed bytes. The same four Settings/root
+route inputs change by 81 raw and 20 compressed bytes. These measured client
+costs are separate and do not establish production latency improvement.
+
 ## Scope and release boundary
 
 This branch adds separate, initially-off email choices for Likes on personal posts
