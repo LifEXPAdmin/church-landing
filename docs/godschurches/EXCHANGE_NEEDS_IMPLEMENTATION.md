@@ -44,9 +44,11 @@ No browser runtime errors occur. Screenshots were inspected locally.
 Existing production-build browser regressions also pass: sixteen listing,
 eight saved-search/Settings, eight private handoff, five event-participation and
 three participation-choice groups. These precede the final Needs read-only
-batch optimization; the final build and Needs browser rerun remain pending.
+batch optimization. The final production build and all ten Needs browser groups
+subsequently pass on application source `a3efbf7`. Eight additional guest API
+denial and private-cache checks pass against that built application.
 
-The initial clean build passes type, lint, copy, hydration and runtime-file
+The initial and final clean builds pass type, lint, copy, hydration and runtime-file
 checks: 207 traces, 68,565 entries and 521 server JavaScript files. The earlier
 build memory failure came from tracing historical local fixtures before final
 output exclusion. A clean checkout resolves it without increasing heap limits,
@@ -74,10 +76,16 @@ quotes, contact restrictions, bilateral blocks, moderation, membership versions,
 revoked/regranted duties and suspended contributors. No cross-request permission
 cache, dependency, worker or duplicate volunteer ledger is introduced.
 
+Route-manifest accounting finds twelve Needs detail/history chunks totaling
+625,371 uncompressed bytes and about 184,235 gzip bytes. Two additional chunks
+beyond the existing listing total 25,991 raw and about 6,816 gzip bytes. These
+numbers exclude shared layouts, styles, images and response headers; no bundle
+size improvement is claimed. Test tooling stays outside application bundles.
+
 ## Release gates still open
 
-Finish the exact-source full regression, final production build and final Needs
-browser checks. Then follow the established production migration, installed
+Finish the exact-source full regression on `a3efbf7`, which is in progress.
+The final production build and Needs browser checks have passed. Then follow the established production migration, installed
 recovery registry, immutable deployment, canonical assignment, serving identity,
 live privacy/health, queue-consumer and data-fingerprint checks. Record precise
 write counts and reconcile private task records only after applicable acceptance.
