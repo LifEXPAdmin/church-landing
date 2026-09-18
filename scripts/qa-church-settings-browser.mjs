@@ -108,7 +108,7 @@ try {
     member = await createPortalActor(db, "settingsmember"),
     other = await createPortalActor(db, "settingsother");
   const managed = await seedManagedChurch(db, manager);
-  const churchId = managed.church.id;
+  let churchId = managed.church.id;
   await db.church.update({
     where: { id: churchId },
     data: { name: "Fictional Settings Church" }
@@ -362,10 +362,94 @@ try {
     await page.waitForURL(config.origin + path);
     await page.getByRole("heading", { level: 1 }).waitFor();
     assert.equal(await page.getByText("404", { exact: true }).count(), 0);
-    assert.doesNotMatch(await page.locator("main").innerText(), /Choose one of your current churches for church-only results|Use each supported listing filter once/);
+    assert.doesNotMatch(
+      await page.locator("main").innerText(),
+      /Choose one of your current churches for church-only results|Use each supported listing filter once/
+    );
   }
   ok(
     "Single-capability administrators reach existing Groups, Pantry, Exchange, review, coordinator and volunteer tools"
+  );
+
+  const previousChurch = churchId;
+  const nextChurch = await seedManagedChurch(db, other);
+  await db.church.update({
+    where: { id: nextChurch.church.id },
+    data: { name: "Fictional Next Church" }
+  });
+  await db.churchCapabilityGrant.create({
+    data: {
+      userId: other.id,
+      churchId: nextChurch.church.id,
+      capability: "REVIEW_CONNECTIONS"
+    }
+  });
+  await go("/platform/my-church");
+  await page
+    .getByLabel(
+      "I understand that leaving ends my approved connection and church-only access.",
+      { exact: true }
+    )
+    .check();
+  await page
+    .getByRole("button", { name: "Leave this church", exact: true })
+    .click();
+  await page.getByText("Left church", { exact: true }).first().waitFor();
+  churchId = nextChurch.church.id;
+  await go("/platform/churches/" + churchId);
+  await page
+    .getByRole("button", { name: "Request church connection", exact: true })
+    .click();
+  await page.getByText("Awaiting review", { exact: true }).first().waitFor();
+  const replacement = await db.churchConnection.findUniqueOrThrow({
+    where: { userId_churchId: { userId: manager.id, churchId } }
+  });
+  await portalCommand(db, other.token, {
+    operation: "transition",
+    action: "APPROVE",
+    churchId,
+    connectionId: replacement.id,
+    expectedVersion: replacement.version
+  });
+  await db.churchCapabilityGrant.create({
+    data: {
+      userId: manager.id,
+      churchId,
+      dependencyConnectionId: replacement.id,
+      capability: "MANAGE_CHURCH_GROUPS"
+    }
+  });
+  await organization();
+  assert.equal(
+    await page
+      .getByLabel("Church", { exact: true })
+      .locator(`option[value="${previousChurch}"]`)
+      .count(),
+    0
+  );
+  await page.getByLabel("Church", { exact: true }).selectOption(churchId);
+  await page
+    .getByRole("region", { name: "Current organization scope", exact: true })
+    .waitFor();
+  assert.match(
+    await page
+      .getByRole("region", { name: "Current organization scope", exact: true })
+      .innerText(),
+    /Fictional Next Church/
+  );
+  assert.equal(
+    await page
+      .getByRole("navigation", { name: "Manage church", exact: true })
+      .getByRole("link", { name: "Events and volunteer roles", exact: true })
+      .count(),
+    0
+  );
+  await page
+    .getByRole("navigation", { name: "Manage church", exact: true })
+    .getByRole("link", { name: "Church Gather groups", exact: true })
+    .waitFor();
+  ok(
+    "Canonical leave, request and approval switch the only active church; its new scope and permissions replace the old organization"
   );
 
   await organization();
@@ -390,11 +474,15 @@ try {
     .getByText("Fictional church settings read failure", { exact: true })
     .waitFor();
   assert.equal(
-    await page.getByText("Fictional Settings Church", { exact: true }).count(),
+    await page
+      .getByText(/Fictional (Settings|Next) Church/, { exact: true })
+      .count(),
     0
   );
   await page.unroute("**/api/platform/settings?scope=church");
-  await page.getByRole("button", { name: "Retry settings", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Retry settings", exact: true })
+    .click();
   await page.getByLabel("Church", { exact: true }).waitFor();
   ok(
     "Failed current-access reads conceal church details and recover through Retry"
