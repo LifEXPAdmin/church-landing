@@ -109,9 +109,24 @@ overwrites one. Each later run records a separate attempt with explicit success
 or failure status. A deliberate fixture-guard failure verifies that failed
 attempts preserve all three accepted receipts unchanged.
 
-Remaining: integrate the one measured index after the other worker's schema
-reservation clears, then verify migration/restore compatibility, combined
-regression/build and applicable browser/live release gates. Keep this task open
-until those steps have actual evidence. No source permission, cursor format,
-service query, dependency, provider setting or production row changed in the
-investigation.
+## Local release acceptance
+
+The measured ascending index is now implemented by
+`20260918195500_exchange_price_order`. The candidate passes the complete local
+gate: 190 discovered test files, 1,222 passing tests, two expected production-stage
+skips and no failures. Both skipped development-delivery cases pass in their
+earlier development stage. The process exits successfully on source `517aec1`.
+
+The production build passes with 223 runtime traces, 74,044 entries and 556 server
+JavaScript files. Five built HTTPS browser groups pass without errors, including
+price-high filters, exact result order and Back/scroll restoration. A protected
+copy of the actual production database upgrades from 100 to 101 migrations while
+preserving all 144 original application table/column fingerprints. Protected
+replay completes and temporary plaintext is removed. These are local release
+checks; the live database still has 100 migrations and no price-order index.
+
+Remaining: review the navigation correction's tested handoff, verify the combined
+candidate and complete production migration, deployment identity and live checks.
+Keep acceptance open until those steps have actual evidence. No source permission,
+cursor format, service query, dependency, provider setting or production row has
+changed in this investigation and local verification.

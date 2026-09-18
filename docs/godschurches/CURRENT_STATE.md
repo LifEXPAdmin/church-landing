@@ -1,3 +1,15 @@
+## Measured listing index passes local release gates, September 18, 2026 UTC
+
+The [index candidate](RESOURCE_QUERY_PLANS.md#local-release-acceptance) on
+`517aec1` passes 190 discovered test files: 1,222 passing tests, two expected
+production-stage skips and zero failures. Both skipped cases pass in the earlier
+development stage. The build and five built HTTPS browser groups also pass.
+A protected production-copy rehearsal applies migration
+`20260918195500_exchange_price_order`, preserves all 144 original application
+table/column fingerprints and completes protected replay. Production is unchanged
+at 100 migrations and release 2026.09.18.8. Navigation integration, combined
+verification and live publication remain open.
+
 ## Expanded resource restoration verified, September 18, 2026 UTC
 
 The [expanded restore receipt](RESOURCE_RESTORE.md) matches all 144 application
@@ -17,8 +29,8 @@ selection on the dense listing fixture. One measured price-order index improves
 fresh-connection price pages; a second index adds no useful gain. All 900 service
 comparison observations preserve identical projections. Three full traversals
 return all 12,000 listings once and in order; group traversal returns all 1,000
-groups once. The candidate is not yet a migration or a live change. Shared schema
-integration, combined recovery/regression and release gates remain open.
+groups once. The index migration now passes the local release checks above.
+Combined navigation integration and live publication remain open.
 
 ## Enabled-module resource budgets, September 18, 2026 UTC
 
