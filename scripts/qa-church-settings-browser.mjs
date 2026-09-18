@@ -143,7 +143,7 @@ try {
   await page
     .getByRole("button", { name: "Request church connection", exact: true })
     .click();
-  await page.getByText("Pending", { exact: true }).first().waitFor();
+  await page.getByText("Awaiting review", { exact: true }).first().waitFor();
   await overview();
   await page.getByText("Awaiting review", { exact: true }).waitFor();
   assert.equal(
@@ -181,7 +181,7 @@ try {
   await page
     .getByRole("button", { name: "Request connection again", exact: true })
     .click();
-  await page.getByText("Pending", { exact: true }).first().waitFor();
+  await page.getByText("Awaiting review", { exact: true }).first().waitFor();
   const connection = await db.churchConnection.findUniqueOrThrow({
     where: { userId_churchId: { userId: member.id, churchId } }
   });
@@ -227,7 +227,7 @@ try {
   await page
     .getByRole("button", { name: "Leave this church", exact: true })
     .click();
-  await page.getByText("Left", { exact: true }).first().waitFor();
+  await page.getByText("Left church", { exact: true }).first().waitFor();
   await overview();
   await page.getByText("Connection ended", { exact: true }).waitFor();
   assert.equal(
@@ -393,7 +393,7 @@ try {
     0
   );
   await page.unroute("**/api/platform/settings?scope=church");
-  await page.getByRole("button", { name: "Retry", exact: true }).click();
+  await page.getByRole("button", { name: "Retry settings", exact: true }).click();
   await page.getByLabel("Church", { exact: true }).waitFor();
   ok(
     "Failed current-access reads conceal church details and recover through Retry"
