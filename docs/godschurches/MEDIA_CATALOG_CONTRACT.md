@@ -8,6 +8,12 @@ The inspected integrated baseline is `9e66724`. `resource-contracts.ts` reserves
 
 Reuse `ResourceReference<"mediaCatalogItem">` for a canonical address, the current session/lifecycle and exact-retry boundary, `effectiveChurchGrants` for scoped church authority, and the existing discovery language IDs. No generic resource reference, church attribution, post permission or image ownership activates media publishing. The separate publishing-permission contract must bind allowed operations to current authority before writes are enabled.
 
+The [publishing and source policy](MEDIA_PUBLISHING_CONTRACT.md) now defines the
+proposed scoped editor/manager operations, bounded external source allowlist,
+pre-save audience warning, rights review and playback/failure requirements.
+This remains a definition: accepting it does not activate the reserved resource
+or satisfy the later catalog service, interface, provider and release checks.
+
 ## One identity and explicit ownership
 
 Every media item has one server-generated opaque `id`, regardless of editorial format or audio/video presentation. Its canonical address is `{ kind: "mediaCatalogItem", id }`. Save, share, search, report, playlist and future playback references point to that identity. A change to title, source URL, format or metadata increments `version` without allocating another item or losing references. A service recording and an extracted sermon are distinct items only when they are deliberately published as distinct editorial works; they may later carry a source relationship, never an inferred shared ID.
