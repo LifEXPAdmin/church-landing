@@ -499,9 +499,23 @@ try {
   await page
     .getByText("Fictional church settings read failure", { exact: true })
     .waitFor();
+  for (const label of await page
+    .getByText(/Fictional (Settings|Next) Church/, { exact: true })
+    .all()) {
+    assert.equal(await label.isVisible(), false);
+    assert.ok(
+      await label.evaluate(
+        (node) => !!node.closest('[inert][aria-hidden="true"]')
+      )
+    );
+  }
+  assert.equal(
+    await page.getByRole("combobox", { name: "Church", exact: true }).count(),
+    0
+  );
   assert.equal(
     await page
-      .getByText(/Fictional (Settings|Next) Church/, { exact: true })
+      .getByRole("navigation", { name: "Manage church", exact: true })
       .count(),
     0
   );
