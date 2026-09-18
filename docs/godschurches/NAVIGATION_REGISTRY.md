@@ -26,4 +26,4 @@ The complete isolated `test:support` gate passed: 186 discovered test files, 1,2
 
 Menu now organizes existing destinations into Community, Discover, My activity and Account. The five primary navigation links stay familiar, and available features share one destination registry.
 
-Pinned shortcuts and reusable screen-layout patterns remain separate work. This registry does not activate unfinished modules or assert their acceptance.
+[Shared screen patterns](SCREEN_PATTERNS.md) define list, detail, form, confirmation, recovery and unavailable states using current source owners. Persisted Menu shortcuts and broader cross-feature Back verification remain separate work. This registry does not activate unfinished modules or assert their acceptance.
