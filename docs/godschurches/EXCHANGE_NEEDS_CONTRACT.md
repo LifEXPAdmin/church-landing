@@ -1,9 +1,10 @@
 # Church needs and contribution commitments
 
-Contract in progress, 17 September 2026 UTC. Implementation, isolated acceptance
-and exact live release remain pending. Production is the verified private-list
-release recorded in CURRENT_STATE.md. This feature includes its newly unlocked
-interface, repeat-structure, partial-closing and operational integration work.
+Contract and local implementation verified, 18 September 2026 UTC. Exact live
+release remains pending. The implementation report records complete staged
+regression, production-build browser and protected migration evidence. This
+feature includes its newly unlocked interface, repeat-structure, partial-closing
+and operational integration work.
 
 ## Existing owners and scope
 

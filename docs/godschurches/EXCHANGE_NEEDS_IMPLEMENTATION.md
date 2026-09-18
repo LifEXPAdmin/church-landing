@@ -1,6 +1,6 @@
 # Church Needs implementation and verification
 
-18 September 2026 UTC. Local verification is in progress. Production still serves
+18 September 2026 UTC. Local verification is complete. Production still serves
 2026.09.18.1; the pending Needs migration and release are not deployed.
 
 ## Delivered behavior awaiting release
@@ -62,6 +62,20 @@ accepts both prior listing-policy receipts and explicit equipment-loan terms.
 Synthetic upgrade checks also reject invented Needs, post links or completion
 receipts and compare existing content, authority, consent and recovery fields.
 
+The complete staged gate covers all 182 discovered files and 196 accepted file
+executions: 1,146 reported tests, 1,144 passes, two expected disabled-delivery
+skips, zero failures and zero cancellations. The original run and first
+continuation each exposed an exact category expectation that omitted the new
+Needs category. Both test expectations were corrected, their full files rerun,
+and all remaining files completed. The failed attempts remain recorded separately;
+they are excluded from the accepted totals rather than counted twice.
+
+An archive audit confirms every application file matches `a3efbf7`. Subsequent
+changes are the two test expectations, browser-test acknowledgment/timing cleanup
+and this report. Upgrade, restore, development/production HTML and RSC, restart,
+final build and fixture setup all complete using isolated data and disabled
+external delivery. No production writes or external sends occur in these checks.
+
 ## Runtime review
 
 The maximum twelve-slot public projection uses nineteen SELECTs. A bounded
@@ -84,9 +98,13 @@ size improvement is claimed. Test tooling stays outside application bundles.
 
 ## Release gates still open
 
-Finish the exact-source full regression on `a3efbf7`, which is in progress.
-The final production build and Needs browser checks have passed. Then follow the established production migration, installed
+The full staged regression, production build and Needs browser checks have passed.
+Follow the established production migration, installed
 recovery registry, immutable deployment, canonical assignment, serving identity,
 live privacy/health, queue-consumer and data-fingerprint checks. Record precise
 write counts and reconcile private task records only after applicable acceptance.
 Actual church fulfillment and physical-phone acceptance remain separate evidence.
+
+Any application rollback must retain the additive schema and recorded Needs data.
+Do not drop commitments or treat restoration of an older backup as an ordinary
+code rollback. Data recovery uses the existing protected restoration procedure.
