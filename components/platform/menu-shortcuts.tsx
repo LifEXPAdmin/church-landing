@@ -9,7 +9,10 @@ export function MenuShortcutsEditor({
 }: {
   initial: MenuShortcutsState;
 }) {
-  const [ids, setIds] = useState<NavigationId[]>(initial.ids);
+  // The owner/version key resets this baseline after a save. An authority-only
+  // refresh may filter initial.ids while the original choices remain mounted.
+  const [savedIds] = useState<NavigationId[]>(initial.ids);
+  const [ids, setIds] = useState<NavigationId[]>(savedIds);
   const [dirty, setDirty] = useState(false);
   const action = usePrivateChoiceAction(
     "/api/platform/menu-shortcuts",
@@ -23,7 +26,7 @@ export function MenuShortcutsEditor({
   );
   function change(next: NavigationId[]) {
     setIds(next);
-    setDirty(JSON.stringify(next) !== JSON.stringify(initial.ids));
+    setDirty(JSON.stringify(next) !== JSON.stringify(savedIds));
   }
   function move(index: number, direction: -1 | 1) {
     const next = [...ids];
@@ -152,7 +155,7 @@ export function MenuShortcutsEditor({
             disabled={action.blocked}
             onClick={() => {
               if (confirm("Discard these unsaved shortcut choices?"))
-                change(initial.ids);
+                change(savedIds);
             }}
           >
             Discard local shortcut edits

@@ -403,6 +403,55 @@ try {
   await editor()
     .getByRole("button", { name: "Remove unavailable shortcut", exact: true })
     .click();
+  assert.equal(
+    await editor().getByRole("button", { name: "Save Menu shortcuts", exact: true }).isEnabled(),
+    true
+  );
+  assert.deepEqual((await row(owner)).menuShortcutIds, ["admin", "settings"]);
+  page.once("dialog", (d) => d.accept());
+  await editor()
+    .getByRole("button", { name: "Discard local shortcut edits", exact: true })
+    .click();
+  await editor()
+    .getByRole("button", { name: "Remove unavailable shortcut", exact: true })
+    .waitFor();
+  assert.equal(
+    await editor().getByRole("button", { name: "Save Menu shortcuts", exact: true }).isDisabled(),
+    true
+  );
+  assert.deepEqual((await row(owner)).menuShortcutIds, ["admin", "settings"]);
+  await editor()
+    .getByRole("button", { name: "Remove unavailable shortcut", exact: true })
+    .click();
+  await editor()
+    .getByRole("button", { name: "Save Menu shortcuts", exact: true })
+    .click();
+  await waitUntil(async () => (await row(owner)).menuShortcutIds.join() === "settings");
+  // Restore this fixture's revoked authority. Explicit removal must stay saved.
+  await db.platformOperatorGrant.updateMany({
+    where: { userId: owner.id, capability: "VIEW_PLATFORM_METRICS" },
+    data: { revokedAt: null }
+  });
+  await go("/platform/menu");
+  await openEditor();
+  assert.equal(
+    await editor().getByRole("checkbox", { name: "Admin", exact: true }).isChecked(),
+    false
+  );
+  assert.equal(await savedLinks().locator('a[href="/platform/admin"]').count(), 0);
+  assert.deepEqual((await row(owner)).menuShortcutIds, ["settings"]);
+  ok(
+    "Removing an unavailable shortcut enables Save, discard restores the mounted baseline without a write, and saved removal survives authority returning"
+  );
+  await saveMenuShortcuts(db, owner.token, {
+    ids: ["admin", "settings"],
+    expectedVersion: (await row(owner)).menuShortcutsVersion,
+    mutationId: randomUUID()
+  });
+  await db.platformOperatorGrant.updateMany({
+    where: { userId: owner.id, revokedAt: null },
+    data: { revokedAt: new Date() }
+  });
   assert.deepEqual(errors, []);
   await go("/platform/menu");
   await openEditor();

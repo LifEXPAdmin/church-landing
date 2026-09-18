@@ -27,7 +27,11 @@ guard conceals stale state during account changes and access rechecks.
 
 A same-version server refresh can remove a formerly available choice while the
 editor remains mounted. The editor then shows a generic unavailable row, allows
-its removal and blocks saving until all selected choices are available. Reset
+its removal and blocks saving until all selected choices are available. The
+mounted owner/version baseline records whether removal changes the saved choices,
+even when newer authority-filtered props omit that choice. Explicit discard
+returns to that baseline without writing; saving removal persists it even if
+the original authority later returns. Reset
 remains available even if every stored choice has become hidden. No former
 destination label, URL or capability metadata is supplied by the new read.
 
@@ -55,7 +59,7 @@ that read for its optional Admin entry instead of repeating the former Admin
 navigation lookup. These observations are a local cost inventory, not a latency
 or production capacity claim.
 
-## Local verification, 18 September 2026
+## Original candidate verification, 18 September 2026
 
 - Five service tests cover another session's saved order, six-choice bounds,
   unrelated preferences, current authority, exact receipt replay, competing
@@ -86,6 +90,24 @@ Focused review identified the removed-choice null dereference before handoff.
 The implementation now handles that state, and the mounted-editor browser case
 verifies the repair. All test accounts and database writes are fictional local
 fixtures. No production changes or external messages were sent.
+
+## Returned correction, 18 September 2026
+
+Integration review found that removing an unavailable choice could compare equal
+to newly filtered server props and incorrectly disable Save. The editor now keeps
+its baseline for the lifetime of the existing owner/version key and uses it for
+both dirty comparison and explicit discard. New versions still remount it through
+the existing key. This correction adds no service, schema, migration, dependency,
+configuration or request cost.
+
+The expanded browser case checks enabled Save after removal, discard without a
+write, persistence of only the remaining choice, absence of the removed shortcut
+after authority returns and reset of hidden stored IDs. Five focused service tests
+and scoped lint pass. The final production build, TypeScript, copy, hydration
+and runtime-trace checks pass. All eight shortcut browser groups and all five
+existing navigation browser groups pass with zero page errors.
+The full 189-file gate above belongs to the original candidate and is not claimed
+rerun for this editor-only correction.
 
 ## Integration acceptance
 
