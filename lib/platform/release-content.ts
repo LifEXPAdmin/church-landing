@@ -14,6 +14,16 @@ export type Feature = {
 };
 export const features: Feature[] = [
   {
+    id: "church-needs",
+    category: "Churches and community",
+    name: "Church Needs and contribution progress",
+    description: "Coordinate donated items, paid quotes, transport and event volunteers with separate promised and received counts.",
+    steps: "A current church Exchange manager opens Need actions from a Church need listing, chooses an exact deadline, accepts coordinator responsibility and adds named action slots. Review the displayed counts and publish from the listing editor. Contributors choose their quantity or event role. Use My Needs contributions for private entries, and the need’s incoming contributions for organizer receipts, corrections and equipment returns. Close individual slots or repeat the structure as a new private draft with fresh dates and consent.",
+    href: "/platform/exchange/needs",
+    eligibility: "Current verified adult accounts, listing access, coordinator contact choices and report coverage are required for private contributions. Names start private. Paid quotes reserve nothing until explicitly accepted; waitlists never reserve or promote automatically. Timed volunteers share the existing event capacity and separate organizer duty. This feature does not take payments, issue tax receipts or prove actual fulfillment. Needs phone alerts require a separate choice and device.",
+    availability: "conditional"
+  },
+  {
     id: "private-following-lists",
     category: "Privacy and account",
     name: "Private following lists",
@@ -853,6 +863,24 @@ export const features: Feature[] = [
   }
 ];
 export const releases: ReleaseEntry[] = [
+  {
+    id: "church-needs-and-receipts",
+    version: "2026.09.18.2",
+    date: "2026-09-18",
+    summary: "Coordinate Church Needs with clear promises, actual receipts and private contributor choices.",
+    added: [
+      "Add Donate, Sell to us, Transport and Volunteer action slots to a church-owned need with an exact deadline and responsible coordinator.",
+      "Reserve available quantities, deliberately join a full-slot waitlist or submit a private paid quote. Promises, accepted quotes and confirmed receipts remain distinct.",
+      "Record partial receipts, correct mistakes with a reason and track equipment returns. Timed volunteers use the existing event role and capacity.",
+      "Publish organizer updates, close individual slots and repeat a need’s structure as a fresh private draft without copying contributors or their information."
+    ],
+    improved: [
+      "Exchange and Settings link to your private Needs contributions. Help explains counts, returns and the separate Needs notification choice.",
+      "Current audience, account, church duty, block and coordinator checks apply to private records, retained pages and delivery."
+    ],
+    fixed: [],
+    featureIds: ["church-needs", "exchange-listings"]
+  },
   {
     id: "clearer-search-and-home",
     version: "2026.09.18.1",

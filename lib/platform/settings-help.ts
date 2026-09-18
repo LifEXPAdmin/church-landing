@@ -1,6 +1,14 @@
 /** Presentation of existing capabilities; each destination retains its authority. */
 export const settingsHelpTopics = [
   {
+    id: "church-needs",
+    title: "When does a Church Needs promise count as received?",
+    keywords: "exchange church needs donate sell transport volunteer quantity quote receipt return waitlist deadline coordinator",
+    body: "A commitment is promised help. Only the current responsible organizer can confirm an actual receipt. Paid quotes reserve nothing until the coordinator accepts them, and the website does not collect payments. A full slot offers a separate waitlist that never reserves or automatically promotes you. Equipment loans keep their return obligations after receipt or closing. Notes and quotes stay with you and the current coordinator; displaying your name is optional. Open My Needs contributions to review or withdraw your remaining promise. Timed volunteers use the linked event role and its existing signup. Needs phone alerts require their own notification choice and device.",
+    href: "/platform/exchange/needs",
+    action: "Open My Needs contributions"
+  },
+  {
     id: "language-location",
     title: "Does choosing a discovery city share my location?",
     keywords: "language English translation city town region location radius device permission private profile",

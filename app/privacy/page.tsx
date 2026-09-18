@@ -230,6 +230,20 @@ export default function PrivacyPage() {
               previews exclude the inquiry body and pickup instructions.
             </p>
             <p className="mt-3">
+              Church Needs stores action slots, quantities, private quotes and
+              notes, commitments, confirmed receipts and equipment returns.
+              Current permitted readers see aggregate progress. Contributor name
+              sharing starts off and requires a separate choice. Private entries
+              are limited to the contributor and current responsible coordinator;
+              church membership or another management duty does not grant access.
+              Changes and corrections retain a history. Your account export
+              includes your own contributions. Account deletion removes private
+              text and attribution except evidence protected by existing report
+              retention or a hold; aggregate fulfillment history remains separate.
+              Older backups cannot restore withdrawn consent. Needs notifications
+              exclude private notes, and phone delivery requires its own choice.
+            </p>
+            <p className="mt-3">
               Ending a handoff removes its ordinary pickup instructions. Details
               deliberately selected for a report remain under restricted review
               and report retention. Clearing an ended inquiry removes it from

@@ -21,6 +21,18 @@ import {
 import { EXCHANGE_ITEM_POLICY } from "../lib/platform/exchange-options";
 import { exchangeListingCommand } from "../lib/platform/exchange-listings";
 import { processNotificationFanoutBatch } from "../lib/platform/notification-fanout";
+import { consumeNotificationWork } from "../lib/platform/notification-consumer";
+import {
+  NOTIFICATION_WORK_TOPIC,
+  notificationFanoutMessage
+} from "../lib/platform/notification-work-message";
+import {
+  prepareAccountExport,
+  downloadAccountExport
+} from "../lib/platform/account-export";
+import { requestPermanentAccountDeletion } from "../lib/platform/account-deletion";
+import { eraseRequestedAccountData } from "../lib/platform/account-erasure";
+import { createSessionToken } from "../lib/platform/auth";
 import { notificationSources } from "../lib/platform/notification-source";
 import {
   notificationPushAllowed,
@@ -39,6 +51,90 @@ import {
 import { handleExchangeRequest } from "../lib/platform/exchange-boundary";
 import { SESSION_COOKIE } from "../lib/platform/account-boundary";
 import { accountConfig } from "../lib/platform/account-config";
+import { seedParticipation } from "./seed-post-participation";
+
+async function volunteerNeed() {
+  const f = await seedParticipation(db);
+  await db.churchCapabilityGrant.create({
+    data: {
+      churchId: f.churchA.id,
+      userId: f.val.id,
+      capability: "MODERATE_EXCHANGE_LISTINGS"
+    }
+  });
+  await db.socialPreferences.upsert({
+    where: { ownerId: f.ada.id },
+    create: { ownerId: f.ada.id, contactRequests: "EVERYONE" },
+    update: { contactRequests: "EVERYONE" }
+  });
+  await db.churchCapabilityGrant.create({
+    data: {
+      churchId: f.churchA.id,
+      userId: f.ada.id,
+      capability: "MANAGE_EXCHANGE_LISTINGS"
+    }
+  });
+  const listing = await db.exchangeListing.create({
+    data: {
+      ownerChurchId: f.churchA.id,
+      creatorId: f.ada.id,
+      intent: "CHURCH_NEED",
+      category: "HOUSEHOLD",
+      title: "Fictional event help",
+      description: "Isolated shared volunteer capacity",
+      requestedItems: "One helper",
+      audience: "CHURCH",
+      audienceChurchId: f.churchA.id,
+      country: "US",
+      placeId: 4887398,
+      placeLabel: "Chicago"
+    }
+  });
+  const need = await command(
+    db,
+    f.ada.token,
+    input("configure", {
+      listingId: listing.id,
+      listingVersion: listing.version,
+      expectedVersion: 0,
+      deadlineLocal: deadline(),
+      timeZone: "UTC",
+      acceptCoordinator: true
+    })
+  );
+  const role = await f.slot();
+  const slot = await command(
+    db,
+    f.ada.token,
+    input("slot", {
+      needId: need.id,
+      slotId: randomUUID(),
+      expectedVersion: 0,
+      schema: NEED_SCHEMA,
+      fields: {
+        ...slotFields("VOLUNTEER"),
+        unit: "places",
+        target: 1,
+        volunteerSlotId: role.id
+      }
+    })
+  );
+  const ready = await db.exchangeListing.findUniqueOrThrow({
+    where: { id: listing.id }
+  });
+  await exchangeListingCommand(
+    db,
+    f.ada.token,
+    input("status", {
+      listingId: listing.id,
+      expectedVersion: ready.version,
+      state: "ACTIVE",
+      itemPolicy: EXCHANGE_ITEM_POLICY,
+      itemConfirmed: true
+    })
+  );
+  return { ...f, listing, need, role, needSlot: slot };
+}
 
 const db = new PrismaClient();
 let reviewer: PortalActor;
@@ -108,6 +204,13 @@ async function setup(action = "DONATE", loan = false) {
       capability: "MANAGE_EXCHANGE_LISTINGS"
     }
   });
+  await db.churchCapabilityGrant.create({
+    data: {
+      churchId: church.id,
+      userId: manager.id,
+      capability: "MODERATE_EXCHANGE_LISTINGS"
+    }
+  });
   const listing = await db.exchangeListing.create({
     data: {
       ownerChurchId: church.id,
@@ -146,10 +249,20 @@ async function setup(action = "DONATE", loan = false) {
       fields: slotFields(action, loan)
     })
   );
-  await db.exchangeListing.update({
-    where: { id: listing.id },
-    data: { state: "ACTIVE", publishedAt: new Date(), confirmedAt: new Date() }
+  const ready = await db.exchangeListing.findUniqueOrThrow({
+    where: { id: listing.id }
   });
+  await exchangeListingCommand(
+    db,
+    manager.token,
+    input("status", {
+      listingId: listing.id,
+      expectedVersion: ready.version,
+      state: "ACTIVE",
+      itemPolicy: EXCHANGE_ITEM_POLICY,
+      itemConfirmed: true
+    })
+  );
   return {
     manager,
     a,
@@ -558,7 +671,12 @@ test("current contributions receive durable deduplicated updates; late contribut
   const job = await db.notificationFanoutJob.findFirstOrThrow({
     where: { kind: "NEED_UPDATE", sourceId: update.id }
   });
-  for (let i = 0; i < 3; i++) await processNotificationFanoutBatch(db, job.id);
+  for (let i = 0; i < 3; i++)
+    await consumeNotificationWork(
+      db,
+      NOTIFICATION_WORK_TOPIC,
+      notificationFanoutMessage(job.id)
+    );
   const events = await db.socialEvent.findMany({
     where: { kind: "NEED_UPDATE", sourceId: update.id }
   });
@@ -780,4 +898,250 @@ test("HTTP commands require the exact current account pin and same-origin reques
     }),
     1
   );
+});
+
+test("Needs and the canonical event role race for one capacity pool; receipts require both current duties", async () => {
+  const f = await volunteerNeed();
+  const need = await db.exchangeNeed.findUniqueOrThrow({
+    where: { id: f.need.id }
+  });
+  const throughNeed = input("volunteer", {
+    needId: need.id,
+    slotId: f.needSlot.id,
+    slotVersion: f.needSlot.version,
+    expectedVersion: need.consentVersion,
+    signupVersion: 0
+  });
+  const results = await Promise.allSettled([
+    command(db, f.val.token, throughNeed),
+    f.command(f.morgan, {
+      operation: "volunteer",
+      slotId: f.role.id,
+      slotVersion: 1,
+      expectedVersion: 0
+    })
+  ]);
+  assert.equal(results.filter((r) => r.status === "fulfilled").length, 1);
+  assert.equal(
+    results.filter((r) => r.status === "rejected" && r.reason.status === 409)
+      .length,
+    1
+  );
+  assert.equal(
+    await db.exchangeNeedContribution.count({ where: { needId: need.id } }),
+    0,
+    "No mirrored volunteer promises"
+  );
+  const signup = await db.postVolunteerSignup.findFirstOrThrow({
+    where: { slotId: f.role.id, state: "ACTIVE" }
+  });
+  const before = await read(db, f.val.token, {
+    view: "need",
+    listingId: f.listing.id
+  });
+  assert.ok("need" in before && before.need);
+  assert.equal(before.need.slots[0].committed, 1);
+  assert.equal(before.need.slots[0].received, 0);
+  const receipt = input("complete-volunteer", {
+    needId: need.id,
+    signupId: signup.id,
+    expectedVersion: signup.version,
+    completed: true,
+    reason: ""
+  });
+  await denied(command(db, f.val.token, receipt), 404);
+  await db.churchCapabilityGrant.update({
+    where: {
+      userId_churchId_capability: {
+        churchId: f.churchA.id,
+        userId: f.ada.id,
+        capability: "MANAGE_CHURCH_VOLUNTEERS"
+      }
+    },
+    data: { revokedAt: new Date(), version: { increment: 1 } }
+  });
+  await denied(command(db, f.ada.token, receipt), 403);
+  await db.churchCapabilityGrant.update({
+    where: {
+      userId_churchId_capability: {
+        churchId: f.churchA.id,
+        userId: f.ada.id,
+        capability: "MANAGE_CHURCH_VOLUNTEERS"
+      }
+    },
+    data: { revokedAt: null, version: { increment: 1 } }
+  });
+  const saved = await command(db, f.ada.token, receipt);
+  assert.deepEqual(await command(db, f.ada.token, receipt), saved);
+  const finished = await read(db, f.val.token, {
+    view: "need",
+    listingId: f.listing.id
+  });
+  assert.ok("need" in finished && finished.need);
+  assert.equal(finished.need.slots[0].received, 1);
+  const winner = signup.userId === f.val.id ? f.val : f.morgan;
+  await denied(
+    f.command(winner, {
+      operation: "cancel-volunteer",
+      signupId: signup.id,
+      expectedVersion: saved.version
+    }),
+    409
+  );
+  await denied(
+    command(
+      db,
+      f.ada.token,
+      input("complete-volunteer", {
+        needId: need.id,
+        signupId: signup.id,
+        expectedVersion: saved.version,
+        completed: false,
+        reason: ""
+      })
+    ),
+    400
+  );
+  await command(
+    db,
+    f.ada.token,
+    input("complete-volunteer", {
+      needId: need.id,
+      signupId: signup.id,
+      expectedVersion: saved.version,
+      completed: false,
+      reason: "Fictional correction: work has not finished."
+    })
+  );
+  const corrected = await db.postVolunteerSignup.findUniqueOrThrow({
+    where: { id: signup.id }
+  });
+  await f.command(winner, {
+    operation: "cancel-volunteer",
+    signupId: signup.id,
+    expectedVersion: corrected.version
+  });
+  assert.equal(
+    await db.postVolunteerSignup.count({
+      where: { slotId: f.role.id, state: "ACTIVE" }
+    }),
+    0
+  );
+});
+
+test("Need event projections follow rescheduling and cancellation, and unavailable roles cannot accept through either entry", async () => {
+  const f = await volunteerNeed();
+  const later = new Date(Date.now() + 9 * 86400000);
+  await db.calendarOccurrence.update({
+    where: { id: f.occurrence.id },
+    data: { startAt: later, endAt: new Date(later.getTime() + 3600000) }
+  });
+  const changed = await read(db, f.val.token, {
+    view: "need",
+    listingId: f.listing.id
+  });
+  assert.ok("need" in changed && changed.need);
+  assert.equal(
+    changed.need.slots[0].volunteer?.event?.startAt,
+    later.toISOString()
+  );
+  await db.calendarOccurrence.update({
+    where: { id: f.occurrence.id },
+    data: { canceledAt: new Date() }
+  });
+  const canceled = await read(db, f.val.token, {
+    view: "need",
+    listingId: f.listing.id
+  });
+  assert.ok("need" in canceled && canceled.need);
+  assert.equal(canceled.need.slots[0].volunteer?.event?.canceled, true);
+  assert.equal(canceled.need.slots[0].volunteer?.open, false);
+  await denied(
+    f.command(f.val, {
+      operation: "volunteer",
+      slotId: f.role.id,
+      slotVersion: 1,
+      expectedVersion: 0
+    }),
+    409
+  );
+  await denied(
+    command(
+      db,
+      f.val.token,
+      input("volunteer", {
+        needId: f.need.id,
+        slotId: f.needSlot.id,
+        slotVersion: 1,
+        expectedVersion: canceled.need.consentVersion,
+        signupVersion: 0
+      })
+    ),
+    409
+  );
+  await denied(
+    read(db, f.blake.token, { view: "need", listingId: f.listing.id }),
+    404
+  );
+});
+
+test("account export isolates private contributions and erasure preserves only opaque fulfillment history", async () => {
+  const f = await setup("DONATE", true);
+  const mine = await claim(f, f.a, 6, {
+    note: "Only Alice exports this fictional note",
+    shareName: true
+  });
+  await claim(f, f.b, 4, {
+    note: "Only Bob exports this other fictional note"
+  });
+  await command(
+    db,
+    f.manager.token,
+    input("receive", {
+      id: mine.receipt.id,
+      expectedVersion: mine.receipt.version,
+      quantity: 5,
+      reason: ""
+    })
+  );
+  const secret = process.env.AUTH_RATE_LIMIT_SECRET!;
+  const auth = await prepareAccountExport(db, f.a.token, f.a.password, secret);
+  const exported = JSON.stringify(
+    await downloadAccountExport(db, f.a.token, auth.authorization, secret)
+  );
+  assert.ok(exported.includes("Only Alice exports this fictional note"));
+  assert.equal(
+    exported.includes("Only Bob exports this other fictional note"),
+    false
+  );
+  const journal = { async recordAccount() {}, async completeAccount() {} };
+  await requestPermanentAccountDeletion(
+    db,
+    f.a.token,
+    f.a.password,
+    true,
+    createSessionToken(),
+    journal
+  );
+  const deletion = await db.accountDeletion.findUniqueOrThrow({
+    where: { userId: f.a.id }
+  });
+  await eraseRequestedAccountData(db, deletion.id, journal);
+  const row = await db.exchangeNeedContribution.findUniqueOrThrow({
+    where: { id: mine.receipt.id }
+  });
+  assert.equal(row.contributorId, null);
+  assert.equal(row.shareName, false);
+  assert.equal(row.note, "");
+  assert.equal(row.disputeNote, "");
+  assert.equal(row.loanResponsibility, "");
+  assert.equal(row.authorityKey, null);
+  assert.equal(row.received, 5);
+  assert.equal(row.returned, 0);
+  assert.ok(row.loanReturnAt);
+  assert.equal(
+    await db.exchangeNeedEvent.count({ where: { actorId: f.a.id } }),
+    0
+  );
+  assert.equal((await view(f)).slots[0].received, 5);
 });

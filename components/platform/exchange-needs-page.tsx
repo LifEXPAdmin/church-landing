@@ -121,6 +121,8 @@ export async function ExchangeNeedsPage({
       const need = result.need;
       let roles: NeedRoleChoice[] = [],
         rolesNext: string | null = null;
+      let rolesAccess: { url: string; checksum: string } | null = null,
+        postsAccess: { url: string; checksum: string } | null = null;
       let posts: {
           id: string;
           version: number;
@@ -144,10 +146,18 @@ export async function ExchangeNeedsPage({
         if ("roles" in roleView) {
           roles = roleView.roles ?? [];
           rolesNext = roleView.next;
+          rolesAccess = {
+            url: `/api/platform/exchange?${new URLSearchParams({ view: "need-roles", listingId, ...(query.rolesAfter ? { after: postId(query.rolesAfter) } : {}) })}`,
+            checksum: exchangeChecksum(roleView)
+          };
         }
         if ("posts" in postView) {
           posts = postView.posts ?? [];
           postsNext = postView.next;
+          postsAccess = {
+            url: `/api/platform/exchange?${new URLSearchParams({ view: "need-posts", listingId, ...(query.postsAfter ? { after: postId(query.postsAfter) } : {}) })}`,
+            checksum: exchangeChecksum(postView)
+          };
         }
       }
       const article = (
@@ -282,15 +292,6 @@ export async function ExchangeNeedsPage({
                     )}
                     {user && result.canCoordinate && (
                       <>
-                        {!need.closed && (
-                          <NeedSlotForm
-                            key={`edit:${slot.id}:${slot.version}:${need.version}`}
-                            owner={user.id}
-                            need={need}
-                            slot={slot}
-                            roles={roles}
-                          />
-                        )}
                         <NeedOrganizerActions
                           key={`close:${slot.id}:${slot.version}:${need.version}`}
                           owner={user.id}
@@ -340,22 +341,43 @@ export async function ExchangeNeedsPage({
               )}
               {user && result.canCoordinate && (
                 <>
-                  {!need.closed && (
-                    <NeedSlotForm
-                      key={`new:${need.version}`}
+                  {!need.closed && rolesAccess && (
+                    <PrivateSnapshotGuard
                       owner={user.id}
-                      need={need}
-                      roles={roles}
-                    />
-                  )}
-                  {rolesNext && (
-                    <Link
-                      prefetch={false}
-                      className="gc-button gc-button-quiet"
-                      href={`${path}?rolesAfter=${encodeURIComponent(rolesNext)}`}
+                      {...rolesAccess}
+                      label="available event roles"
                     >
-                      More current event roles
-                    </Link>
+                      <section
+                        className="space-y-4"
+                        aria-label="Manage need action slots"
+                      >
+                        <h2 className="text-2xl">Manage action slots</h2>
+                        {need.slots.map((slot) => (
+                          <NeedSlotForm
+                            key={`edit:${slot.id}:${slot.version}:${need.version}`}
+                            owner={user.id}
+                            need={need}
+                            slot={slot}
+                            roles={roles}
+                          />
+                        ))}
+                        <NeedSlotForm
+                          key={`new:${need.version}`}
+                          owner={user.id}
+                          need={need}
+                          roles={roles}
+                        />
+                        {rolesNext && (
+                          <Link
+                            prefetch={false}
+                            className="gc-button gc-button-quiet"
+                            href={`${path}?rolesAfter=${encodeURIComponent(rolesNext)}`}
+                          >
+                            More current event roles
+                          </Link>
+                        )}
+                      </section>
+                    </PrivateSnapshotGuard>
                   )}
                   <Link
                     prefetch={false}
@@ -369,22 +391,28 @@ export async function ExchangeNeedsPage({
                     owner={user.id}
                     need={need}
                   />
-                  {!need.closed && (
-                    <NeedPostLinks
-                      key={`posts:${need.version}`}
+                  {!need.closed && postsAccess && (
+                    <PrivateSnapshotGuard
                       owner={user.id}
-                      need={need}
-                      posts={posts}
-                    />
-                  )}
-                  {postsNext && (
-                    <Link
-                      prefetch={false}
-                      className="gc-button gc-button-quiet"
-                      href={`${path}?postsAfter=${encodeURIComponent(postsNext)}`}
+                      {...postsAccess}
+                      label="eligible church Need posts"
                     >
-                      More eligible church Need posts
-                    </Link>
+                      <NeedPostLinks
+                        key={`posts:${need.version}`}
+                        owner={user.id}
+                        need={need}
+                        posts={posts}
+                      />
+                      {postsNext && (
+                        <Link
+                          prefetch={false}
+                          className="gc-button gc-button-quiet"
+                          href={`${path}?postsAfter=${encodeURIComponent(postsNext)}`}
+                        >
+                          More eligible church Need posts
+                        </Link>
+                      )}
+                    </PrivateSnapshotGuard>
                   )}
                 </>
               )}

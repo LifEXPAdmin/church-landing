@@ -1,3 +1,27 @@
+## Search and Home review verified live, September 18, 2026 UTC
+
+**2026.09.18.1 / e81abc4ca50dd48d190dc91e24925fb8ae8bfbc2** is READY in
+**dpl_EqcZQrJEo7aCFwbMx1TTyVRLW32h**, independently canonical and verified
+against the serving build. Search has explicit loading and concealed-result
+recovery, routine update controls use the footer, Home has four primary feeds
+and one refresh, and platform display copy consistently uses God’s Churches.
+See [the acceptance and release receipt](REVIEW_POLISH_ACCEPTANCE.md).
+
+The full behavior gate passes 1,126 tests with two expected skips and no failures.
+Forty-four isolated browser groups, eighteen live checks and signed-in Mac checks
+pass. The final small security-email display delta is separately verified with
+stub, lint, copy and exact build checks. All 96 migration checksums match, with
+no migration; all 130 non-cache table fingerprints remain unchanged. Live Home
+creates one weekly reading cache and removes one expired cache. No content,
+preference or relationship writes and no recipient sends occur. Scoped provider
+error/fatal rows are zero through 04:03 UTC. Physical-phone acceptance is separate.
+
+The four review tasks and focused private handoff are reconciled with readbacks.
+Main private index propagation still fails at the connector and remains pending.
+The saved Church Needs work is integrated with this release and continues below;
+its schema and behavior are not deployed. Complete that feature and its unlocked
+smaller steps through verified release before selecting the next eligible work.
+
 ## Church Needs contract preparation, September 17, 2026 UTC
 
 The next eligible feature extends existing Church need listings with structured

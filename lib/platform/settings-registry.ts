@@ -203,6 +203,13 @@ export const settingsRegistry: readonly SettingRegistration[] = Object.freeze([
     { persistenceOwner: "ExchangeDefaults", read: "exchange-defaults.ts readExchangeDefaults", write: "exchangeDefaultsCommand" }
   ),
   entry(
+    "exchange.needs", "exchange", "My Needs contributions",
+    "Review your promises, private quotes, received help and outstanding equipment returns.",
+    ["church needs", "donate", "transport", "volunteer", "quantity", "loan", "receipt"],
+    { href: "/platform/exchange/needs" },
+    { persistenceOwner: "ExchangeNeedContribution and PostVolunteerSignup", read: "exchange-need-reads.ts readExchangeNeeds", write: "exchangeNeedCommand" }
+  ),
+  entry(
     "exchange.handoffs", "exchange", "Private inquiries and pickup agreements",
     "Review your incoming and outgoing inquiries, agreed pickup windows, completion, cancellation and expiry.",
     ["marketplace", "reservations", "handoff", "no show", "pickup agreement"],

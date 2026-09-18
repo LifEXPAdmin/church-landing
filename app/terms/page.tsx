@@ -65,6 +65,15 @@ export default function TermsPage() {
               closed for owner review. Reminders do not guarantee delivery,
               exact timing or attendance.
             </p>
+            <p className="mt-3">
+              Church Needs separates promises, paid quotes and organizer-confirmed
+              receipts. Accepting a quote does not take payment, and recording a
+              receipt does not provide independent evidence or a tax receipt.
+              Ordinary equipment loans require explicit return terms; receipt,
+              cancellation and closing do not erase an outstanding return.
+              Financial loans and medical transport are unavailable. Organizers
+              and contributors remain responsible for arranging appropriate help.
+            </p>
           </section>
           <section>
             <h2 className="mb-2 text-3xl">Communications</h2>
