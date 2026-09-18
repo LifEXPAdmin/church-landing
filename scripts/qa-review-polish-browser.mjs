@@ -237,18 +237,6 @@ try {
   await page
     .getByRole("button", { name: "Refresh now", exact: true })
     .waitFor();
-  await page.locator("#compose-post > summary").click();
-  const field = page
-    .getByRole("form", { name: "Publish post", exact: true })
-    .getByLabel("Post content", { exact: true });
-  await field.fill("Fictional unsent work stays here");
-  await page.locator('[data-update-decision="keep-work"]').waitFor();
-  assert.equal(
-    await page
-      .getByRole("button", { name: "Refresh now", exact: true })
-      .count(),
-    0
-  );
   await page
     .getByRole("button", { name: "See what’s new", exact: true })
     .click();
@@ -256,11 +244,28 @@ try {
     .getByRole("dialog", { name: "What’s new in the available release" })
     .waitFor();
   await page.getByRole("button", { name: "Close notes", exact: true }).click();
-  assert.equal(await field.inputValue(), "Fictional unsent work stays here");
+  await page.locator("#compose-post").click();
+  const form = page.getByRole("form", { name: "Publish post", exact: true });
+  const field = form.getByLabel("Post content", { exact: true });
+  await field.fill("Fictional unsent work stays here");
+  await page.locator('[data-update-decision="keep-work"]').waitFor();
+  assert.equal(
+    await page
+      .locator('[aria-label="Updates and connection"]')
+      .getByRole("button", {
+        name: "Refresh now",
+        exact: true,
+        includeHidden: true
+      })
+      .count(),
+    0
+  );
+  const pageUrl = page.url();
   await context.setOffline(true);
   await page.evaluate(() => window.dispatchEvent(new Event("offline")));
   await page
-    .getByRole("button", { name: "Retry connection", exact: true })
+    .locator('[aria-label="Updates and connection"]')
+    .getByText("A connection is needed.", { exact: false })
     .waitFor();
   assert.equal(await field.inputValue(), "Fictional unsent work stays here");
   await page.screenshot({
@@ -268,10 +273,24 @@ try {
     fullPage: false
   });
   await context.setOffline(false);
+  await form
+    .getByRole("button", { name: "Close composer", exact: true })
+    .click();
+  await form
+    .getByRole("button", { name: "Save and close", exact: true })
+    .click();
+  await form.waitFor({ state: "hidden" });
   await page
     .getByRole("button", { name: "Retry connection", exact: true })
     .click();
-  await page.locator('[data-update-decision="keep-work"]').waitFor();
+  await page.waitForFunction(
+    () =>
+      !document
+        .querySelector('[aria-label="Updates and connection"]')
+        ?.textContent.includes("A connection is needed.")
+  );
+  assert.equal(page.url(), pageUrl);
+  await page.locator("#compose-post").click();
   assert.equal(await field.inputValue(), "Fictional unsent work stays here");
   ok(
     "Footer checks and current status stay quiet; update, offline and unsent-work notices retain explicit safe recovery and unchanged draft text"

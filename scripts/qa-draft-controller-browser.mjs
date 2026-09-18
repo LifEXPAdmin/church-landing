@@ -442,14 +442,14 @@ try {
     });
   });
   const checkUpdate = async () => {
-    await page
-      .getByRole("contentinfo")
+    await notice()
       .getByRole("button", { name: "Check for updates", exact: true })
       .click();
     await page.waitForFunction(
       () =>
-        !document.querySelector('[aria-label="App update controls"] button')
-          ?.disabled
+        !document
+          .querySelector('[aria-label="Updates and connection"]')
+          ?.textContent.includes("Checking for updates")
     );
   };
   await checkUpdate();
@@ -471,20 +471,10 @@ try {
   assert.equal(checks, countBefore);
   available = loaded;
   await checkUpdate();
-  assert.equal(await notice().count(), 0);
-  await page
-    .getByRole("contentinfo")
-    .getByText("This tab is up to date.", { exact: true })
-    .waitFor();
+  assert.equal(await notice().getAttribute("data-update-decision"), "current");
   available = null;
   await checkUpdate();
-  assert.equal(await notice().count(), 0);
-  await page
-    .getByRole("contentinfo")
-    .getByText("Update status is unknown. You can keep using this tab.", {
-      exact: true
-    })
-    .waitFor();
+  assert.equal(await notice().getAttribute("data-update-decision"), "unknown");
   available = "2".repeat(40);
   await checkUpdate();
   const navigation = page.waitForEvent("domcontentloaded");

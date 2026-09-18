@@ -32,11 +32,45 @@ templates use God’s Churches. URLs, code identifiers, stored member content an
 historical release notes remain unchanged. The current feature guide and release
 notes describe only this bounded change.
 
-## Verification in progress
+## Isolated acceptance
 
-Types, website copy, focused release/update checks and the initial production
-build pass. Existing search and four-feed browser suites pass on the initial
-candidate. Desktop and 390/320px copy/layout checks pass; the first desktop post
-starts within the 1348 by 926 viewport. These are isolated browser observations,
-not actual-phone acceptance. Full regression, final built acceptance, canonical
-release, live reads and private-record reconciliation are still required.
+Types, website copy and the final production build pass. Full lint reports zero
+errors and 35 existing fixture warnings. The build verifies 205 runtime traces,
+67,632 entries and 516 server JavaScript files with no private fixture or
+environment files. The existing hydration repair is retained and verified.
+
+The final built candidate passes eight search groups, eleven discovery groups,
+seven current-composer groups and seven focused review groups. The earlier
+four-feed candidate also passes eleven groups; its later reminder-visibility
+change is covered by the final discovery suite. These checks include restored
+query/filter/history, concealed-result resume, loading and retry, account changes,
+exact preference requests, finite pagination, unsaved work, publication conflicts,
+revoked permissions and keyboard focus. The reading reminder still appears when
+both its disclosure and Feed Settings are closed.
+
+The focused review checks 1348, 390 and 320 pixel layouts, all eleven feed choices,
+one refresh action, the quiet header, footer update checks, prominent actionable
+update/offline notices, preserved draft text and installation identity. Desktop
+and narrow screenshots were inspected; the first desktop post starts at 768
+pixels in a 1348 by 926 viewport. These are isolated browser observations,
+not physical-phone acceptance. The old draft-controller browser script uses an
+obsolete composer selector; the current composer suite and focused update test
+provide the applicable acceptance. The discovery script's old eleven-option
+selector assertion was updated for the requested four buttons and seven
+secondary choices before its complete passing run.
+
+Unique route-plus-layout JavaScript, gzip level six per file, totals 222,604 bytes
+for Home, 154,326 for search and 150,644 for Menu. These are local bundle sizes,
+not latency or comparative speed claims. No dependency, polling loop or database
+query was added. Search retains its existing foreground/current-authority read
+and adds a read only when restoring a persisted history page or explicitly
+resuming concealed results. The footer uses the existing detector and request.
+
+The pre-release read verifies all 96 production migration checksums and the
+installed recovery registry, with no pending migration. A fresh encrypted copy
+restores 131 tables and the same 96 migrations; plaintext restore files are
+removed. The scheduled backup validation reports 69 encrypted sets and no issues.
+These operations do not modify production data. This release has no migration.
+
+The clean full regression gate remains in progress. Exact READY/canonical
+identity, live acceptance and private-record reconciliation remain required.
