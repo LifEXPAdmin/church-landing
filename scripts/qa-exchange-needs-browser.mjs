@@ -34,8 +34,6 @@ Object.assign(process.env, {
 const { PrismaClient } = await import("@prisma/client");
 const { createPortalActor, assertPortalTestDatabase, seedOperatorGrants } =
   await import("../tests/seed-portal.ts");
-const { EXCHANGE_ITEM_POLICY } =
-  await import("../lib/platform/exchange-options.ts");
 const db = new PrismaClient();
 await assertPortalTestDatabase(db);
 const { chromium } = createRequire(
@@ -121,17 +119,8 @@ const waitUntil = async (work) => {
   throw Error("Expected saved state was not observed");
 };
 try {
-  const { exchangeNeedCommand: command } =
-    await import("../lib/platform/exchange-need-commands.ts");
-  const { exchangeListingCommand } =
-    await import("../lib/platform/exchange-listings.ts");
   const { seedParticipation } =
     await import("../tests/seed-post-participation.ts");
-  const input = (operation, fields) => ({
-    operation,
-    mutationId: randomUUID(),
-    ...fields
-  });
   const date = (days) =>
     new Date(Date.now() + days * 86400000).toISOString().slice(0, 16);
   const exact = (name) => page.getByRole("button", { name, exact: true });
@@ -554,7 +543,7 @@ try {
     .filter({ hasText: "Fictional paid sourcing" })
     .waitFor();
   const paid = await slotRow("Paid parcel sourcing");
-  let quoteRow = await db.exchangeNeedContribution.findFirstOrThrow({
+  const quoteRow = await db.exchangeNeedContribution.findFirstOrThrow({
     where: { slotId: paid.id, contributorId: b.id }
   });
   assert.equal(quoteRow.state, "QUOTED");
@@ -744,6 +733,12 @@ try {
     })
     .click();
   await waitUntil(async () => !!(await currentNeed()).canceledAt);
+  await page
+    .getByText(
+      "Repeat this need from the listing editor to prepare a new private draft with fresh dates and consent.",
+      { exact: true }
+    )
+    .waitFor();
   assert.equal(
     (
       await db.exchangeNeedContribution.findUniqueOrThrow({
@@ -776,7 +771,8 @@ try {
   const unsent = page.getByRole("form", {
     name: "Need deadline and coordinator"
   });
-  await unsent.getByLabel("Exact need deadline").fill(date(4));
+  const unsentDeadline = date(4);
+  await unsent.getByLabel("Exact need deadline").fill(unsentDeadline);
   await page.goBack();
   await page
     .getByText("Save or resolve your private choice before leaving.", {
@@ -785,7 +781,7 @@ try {
     .waitFor();
   assert.equal(
     await unsent.getByLabel("Exact need deadline").inputValue(),
-    date(4)
+    unsentDeadline
   );
   await signIn(a);
   await page.evaluate(() => {
