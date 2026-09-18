@@ -1,3 +1,33 @@
+## Church pantry verified live, September 18, 2026 UTC
+
+**2026.09.18.3 / a251f236ab3449ab7e8149c1f214bc382ed90ee5** is READY in
+**dpl_AHy8AE8PsJz8jJBoTHgXh7153gae** at **08:08:31.717 UTC**, independently
+canonical and confirmed by the serving build at **08:09:45.448 UTC**. Church-owned
+hubs, explicit assistance duties and coordinator consent, private requests/pickups,
+stock history, outcomes, retained-data controls and reviewed Need replenishment ship
+as one feature. See [the full acceptance receipt](PANTRY_SUPPORT_IMPLEMENTATION.md).
+
+Staged regression covers 183 files and 197 accepted executions: 1,167 passes, two
+expected skips and zero remaining failures. Final acceptance adds thirteen browser
+groups, actual isolated password-login return, 42 navigation checks and six guest
+integration checks on the exact final build. The earlier service/schema baseline
+and separately verified interface/account-return delta are recorded explicitly.
+
+Live: 43 public/privacy checks, six health checks and five signed-in Mac groups.
+All 98 migration/recovery checksums match. Fresh encrypted recovery restores 140
+tables and removes plaintext; nightly validation checks 73 sets with no issues.
+All 135 original table/column fingerprints remain unchanged through 08:13:05 UTC.
+Cache changes, pantry records, automatic assistance grants, verification application
+writes and recipient sends are zero. The native queue probe is consumed; scoped
+error/fatal rows are zero through 08:13:03 UTC. Real fulfillment and physical phones
+remain separate. Partner referral stays gated on actual identity and consent review.
+
+Continue the fresh priority queue after focused task reconciliation. Remaining P1
+owner/operator/provider/device gates and main private index connector errors remain
+explicit. The next prepared candidate is adult Gather groups and membership; its
+current prerequisites are read back, but implementation has not begun. Final batch
+review stays last.
+
 ## Church pantry local acceptance, September 18, 2026 UTC
 
 The pantry/support hub feature and its stock/replenishment finishing steps are

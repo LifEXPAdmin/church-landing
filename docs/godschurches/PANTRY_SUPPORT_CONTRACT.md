@@ -1,9 +1,9 @@
 # Church pantry and support hub
 
-Implementation contract, 18 September 2026 UTC. Not deployed. The current
-production release is Church Needs, 2026.09.18.2. Complete this feature through
-its required interfaces, stock/replenishment and operational integrations before
-the next feature. Consented partner referral retains its separate activation gate.
+Implementation contract, 18 September 2026 UTC. Verified live in 2026.09.18.3.
+See [the exact release and acceptance receipt](PANTRY_SUPPORT_IMPLEMENTATION.md).
+Required interfaces, stock, replenishment and operational integrations ship together.
+Consented partner referral remains disabled under its separate activation gate.
 
 ## Owners and authority
 
