@@ -1,5 +1,21 @@
 ## Expanded membership boundaries accepted, September 18, 2026 UTC
 
+## Screen-pattern contract integration, September 18, 2026, 18:41 UTC
+
+A1 integrated the documentation-only screen contract from `08c8531` with the
+verified navigation release and membership-revocation acceptance. All 14 current
+resource kinds map to the shared compositions, with distinct destructive-action
+consequences, exact retry/conflict rules and current-access checks. Six existing
+navigation/resource checks pass on the combined branch; the three contract links
+and navigation cross-link resolve. Copy, private-reference and diff checks pass.
+
+The changes since release `28f6909` are reports, the screen contract and the
+previously verified membership test/browser helper. No application code, schema,
+configuration or dependencies changed, so this documentation integration needs
+no new application deployment. Production remains the independently verified
+2026.09.18.8 release; no new runtime or physical-device acceptance is claimed.
+The profile-module candidate remains separate pending a validation correction.
+
 The existing .8 implementation passes three fresh cross-module canonical
 LEAVE/REMOVE/group-authority tests and four built HTTPS browser groups. Search,
 saved content, signed feed cursors, image derivatives, listing requests and
