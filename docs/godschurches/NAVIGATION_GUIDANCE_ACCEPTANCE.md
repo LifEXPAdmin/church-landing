@@ -52,12 +52,21 @@ not transfer or latency measurements. Navigation keeps the full catalog on the
 server and sends five minimal primary links. No new query, polling or dependency
 is introduced.
 
-The complete isolated service/upgrade/restore/HTTPS gate is still running. It
-began at `a6c9cbb`; subsequent changes add narrow-screen CSS, authenticator
-acknowledgment presentation and release copy. Service, schema and migration code
-remain unchanged. Its final production-build and HTTPS phases must run on the
-final combined candidate before acceptance. Canonical deployment and read-only
-live checks are still open.
+The complete standard isolated `test:support` gate exits successfully: 188
+discovered files, 202 executions, 1,214 passes, two expected production-phase
+skips and zero failures. Populated upgrades, encrypted/restricted recovery tests,
+full restore, fresh migrations, both builds, development HTTP, production HTTPS
+privacy and process restart checks pass. The run began at `a6c9cbb`; later changes
+were narrow-screen CSS, authenticator presentation and release copy. Service,
+schema and migration code remained unchanged; both production-build phases and
+final browser runs used the final combined implementation. The 14 changed runtime
+and test files match the browser archive and commit `f36d02c` exactly.
+
+Production preflight at 17:56 UTC confirms all 100 installed migration and recovery
+checksums, no pending migration, the 16:55 UTC encrypted restore of 144 tables,
+plaintext removal and 77 retained backup sets without issues. Optional social
+email still has zero opt-ins and deliveries. Canonical deployment and live checks
+remain open; no live behavior is inferred from local acceptance.
 
 Two private test-setup issues were corrected and their failed logs retained: URL
 path decoding for the relocated Growth helper, and the fictional production-mode

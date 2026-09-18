@@ -9,7 +9,8 @@ media, reminders or broader messaging. A reproduced enlarged-text Menu column is
 repaired and verified at 320 pixels.
 
 Thirty-six combined built browser groups, the final build, types, copy and focused
-lint pass. The full isolated upgrade/service/restore/HTTPS gate is ongoing.
+lint pass. The full isolated upgrade/service/restore/HTTPS gate passes 188 discovered files,
+1,214 checks with two expected skips and zero failures across 202 executions.
 Production remains .7; release/live verification and task completion remain open.
 See [the current integration receipt](NAVIGATION_GUIDANCE_ACCEPTANCE.md).
 
