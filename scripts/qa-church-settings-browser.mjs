@@ -528,6 +528,7 @@ try {
     "Failed current-access reads conceal church details and recover through Retry"
   );
 
+  await page.getByLabel("Church", { exact: true }).selectOption("");
   await signIn(other);
   await page.getByLabel("Church", { exact: true }).selectOption(churchId);
   await page
