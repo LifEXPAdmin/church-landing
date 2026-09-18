@@ -15,6 +15,7 @@ import type { PlatformUser } from "@prisma/client";
 import { Church, LogOut, Settings } from "lucide-react";
 import { logoutPlatformAccount } from "@/app/platform/actions";
 import { PortalNavigation } from "@/components/platform/portal-navigation";
+import { primaryNavigation } from "@/lib/platform/navigation-registry";
 import { accountConfig } from "@/lib/platform/account-config";
 import {
   confirmedSignup,
@@ -147,7 +148,7 @@ export async function PlatformShell({
             <div className="gc-workspace">
               <PortalNavigation
                 owner={user?.id}
-                username={user?.username}
+                links={primaryNavigation(user?.username)}
                 reviewerNavigation={reviewerNavigation}
               />
               <main id="platform-content" tabIndex={-1} className="gc-main">

@@ -19,35 +19,56 @@ import {
   QrCode,
   Settings,
   Shield,
-  UserRound
+  UserRound,
+  Home,
+  Search,
+  MessageCircle,
+  Menu
 } from "lucide-react";
 import { PlatformShell } from "@/components/platform/platform-shell";
 import { getCurrentPlatformUser } from "@/lib/platform/session";
 import { accountEntryHref } from "@/lib/platform/account-entry";
 import { readAdminPageNavigation } from "@/lib/platform/admin-session";
+import {
+  navigationRegistry,
+  navigationItem,
+  menuNavigation,
+  administrationNavigation,
+  aboutNavigation,
+  type NavigationIcon,
+  type NavigationItem
+} from "@/lib/platform/navigation-registry";
 
 export const metadata: Metadata = { title: "Menu" };
+const icons: Record<NavigationIcon, typeof Church> = {
+  home: Home,
+  church: Church,
+  search: Search,
+  messages: MessageCircle,
+  menu: Menu,
+  book: BookOpen,
+  bell: Bell,
+  calendar: CalendarDays,
+  calendarCheck: CalendarCheck,
+  circleHelp: CircleHelp,
+  file: FileText,
+  help: LifeBuoy,
+  handHeart: HandHeart,
+  qr: QrCode,
+  settings: Settings,
+  shield: Shield,
+  person: UserRound
+};
 
-function MenuLink({
-  href,
-  title,
-  description,
-  icon: Icon,
-  prefetch
-}: {
-  href: string;
-  title: string;
-  description: string;
-  icon: typeof Church;
-  prefetch?: false;
-}) {
+function MenuLink({ item }: { item: NavigationItem }) {
+  const Icon = icons[item.icon];
   return (
     <li>
-      <Link href={href} prefetch={prefetch} className="gc-menu-link">
+      <Link href={item.href} prefetch={item.prefetch} className="gc-menu-link">
         <Icon aria-hidden="true" />
         <span>
-          <span className="gc-menu-link-title">{title}</span>
-          <span className="gc-menu-link-description">{description}</span>
+          <span className="gc-menu-link-title">{item.title}</span>
+          <span className="gc-menu-link-description">{item.description}</span>
         </span>
         <ArrowRight aria-hidden="true" />
       </Link>
@@ -65,6 +86,9 @@ export default async function PlatformMenuPage() {
       /* Optional entry fails closed; the rest of Menu remains usable. */
     }
   }
+  const context = { username: user?.username, adminAvailable };
+  const groups = menuNavigation(context);
+  const administration = administrationNavigation(context);
   return (
     <PlatformShell user={user}>
       <section className="container-shell">
@@ -79,264 +103,69 @@ export default async function PlatformMenuPage() {
             </p>
           </header>
           <ul className="gc-menu-links" aria-label="Quick sharing">
-            <MenuLink
-              href={user ? "/platform/invitations" : "/platform/share?qr=1"}
-              title={user ? "My QR code" : "Share God’s Churches"}
-              description={
-                user
-                  ? "Invite someone to connect with you."
-                  : "Open the website QR code. Copy, share or save it."
-              }
-              icon={QrCode}
-            />
+            <MenuLink item={navigationItem("qr", context)} />
           </ul>
           <InstallationBanner />
           {!user && (
             <div className="flex flex-wrap gap-3">
               <Link
-                href={accountEntryHref("signup", "/platform/menu", "account")}
+                href={accountEntryHref(
+                  "signup",
+                  navigationRegistry.menu.href,
+                  "account"
+                )}
                 className="gc-button"
               >
                 Join God’s Churches
               </Link>
               <Link
-                href={accountEntryHref("login", "/platform/menu", "account")}
+                href={accountEntryHref(
+                  "login",
+                  navigationRegistry.menu.href,
+                  "account"
+                )}
                 className="gc-button gc-button-quiet"
               >
                 Sign in
               </Link>
             </div>
           )}
-          <section aria-labelledby="menu-reading">
-            <h2 id="menu-reading">Read and explore</h2>
-            <ul className="gc-menu-links">
-              <MenuLink
-                href="/platform/exchange"
-                title="Exchange"
-                description="Find items, requests and skilled help, or manage your own listings."
-                icon={HandHeart}
-              />
-              <MenuLink
-                href="/platform/groups"
-                title="Gather groups"
-                description="Find an adult group, read its rules and join private discussions."
-                icon={HandHeart}
-                prefetch={false}
-              />
-              <MenuLink
-                href="/platform/topics"
-                title="Topic communities"
-                description="Read public discussions, join a topic or start your own."
-                icon={BookOpen}
-              />
-              {user && (
-                <MenuLink
-                  href="/platform/topics/following"
-                  title="Topics I follow"
-                  description="Read the latest posts from topics you follow."
-                  icon={BookOpen}
-                />
-              )}
-              <MenuLink
-                href="/platform/features"
-                title="Explore features"
-                description="A guide to current capabilities and how to use them."
-                icon={BookOpen}
-              />
-              <MenuLink
-                href="/platform/releases"
-                title="What’s new"
-                description="Read release notes and app changes."
-                icon={FileText}
-              />
-              <MenuLink
-                href="/platform/feed"
-                title="My feed"
-                description="Open a full-screen reader. Swipe left or right between posts."
-                icon={BookOpen}
-              />
-            </ul>
-          </section>
-          <section aria-labelledby="menu-account">
-            <h2 id="menu-account">Your account</h2>
-            <ul className="gc-menu-links">
-              <MenuLink
-                href={
-                  user
-                    ? `/platform/profile/${user.username}`
-                    : "/platform/profile/me"
-                }
-                title="Your profile"
-                description="The profile you share with other members."
-                icon={UserRound}
-              />
-              {user && (
-                <MenuLink
-                  href="/platform/profile/me"
-                  title="Edit your profile"
-                  description="Choose your name, bio and profile details."
-                  icon={UserRound}
-                />
-              )}
-              {user && (
-                <>
-                  <MenuLink
-                    href="/platform/activity"
-                    title="Notifications"
-                    description="See grouped updates and manage what is unread."
-                    icon={Bell}
-                    prefetch={false}
-                  />
-                  <MenuLink
-                    href="/platform/saved"
-                    title="Bookmarks"
-                    description="Organize posts into private collections."
-                    icon={BookOpen}
-                  />
-                  <MenuLink
-                    href="/platform/drafts"
-                    title="Your drafts"
-                    description="Review and discard your private saved drafts."
-                    icon={FileText}
-                  />
-                  <MenuLink
-                    href="/platform/prayers"
-                    title="My private prayer list"
-                    description="Return to saved prayers and choose author updates."
-                    icon={HandHeart}
-                    prefetch={false}
-                  />
-                </>
-              )}
-              <MenuLink
-                href="/platform/calendars"
-                title="My calendars"
-                description="Your personal, church and shared calendars."
-                icon={CalendarDays}
-              />
-              <MenuLink
-                href="/platform/commitments"
-                title="My commitments"
-                description="Your event responses and private conflict hints."
-                icon={CalendarCheck}
-              />
-              <MenuLink
-                href="/platform/settings"
-                title="Account settings"
-                description="Reading, privacy, sign-in methods and account controls."
-                icon={Settings}
-              />
-            </ul>
-          </section>
-          <section aria-labelledby="menu-connect">
-            <h2 id="menu-connect">Church and support</h2>
-            <ul className="gc-menu-links">
-              <MenuLink
-                href="/platform/churches"
-                title="Find a church"
-                description="Explore public church pages."
-                icon={Church}
-              />
-              {user && (
-                <>
-                  <MenuLink
-                    href="/platform/my-church"
-                    title="My church"
-                    description="Your church connection and available church tools."
-                    icon={Church}
-                  />
-                  <MenuLink
-                    href="/platform/my-church/sharing"
-                    title="Directory sharing"
-                    description="Choose what to share with your approved church."
-                    icon={Shield}
-                  />
-                  <MenuLink
-                    href="/platform/help/requests"
-                    title="Your help requests"
-                    description="Revisit your private requests and replies."
-                    icon={LifeBuoy}
-                  />
-                  <MenuLink
-                    href="/platform/feedback"
-                    prefetch={false}
-                    title="Feedback"
-                    description="Share your website experience and revisit My feedback."
-                    icon={LifeBuoy}
-                  />
-                  <MenuLink
-                    href="/platform/reports"
-                    prefetch={false}
-                    title="Your reports"
-                    description="Private receipts for concerns you have submitted."
-                    icon={Shield}
-                  />
-                  <MenuLink
-                    href="/platform/messages/requests"
-                    prefetch={false}
-                    title="Contact requests"
-                    description="Review private requests to start an adult conversation."
-                    icon={UserRound}
-                  />
-                  <MenuLink
-                    href="/platform/messages"
-                    prefetch={false}
-                    title="Messages"
-                    description="Resume your accepted private conversations."
-                    icon={UserRound}
-                  />
-                </>
-              )}
-              <MenuLink
-                href="/platform/help"
-                title="Help and contacts"
-                description="Find the right place to ask for help."
-                icon={CircleHelp}
-              />
-            </ul>
-          </section>
+          {groups.map((group) => (
+            <section key={group.id} aria-labelledby={"menu-" + group.id}>
+              <h2 id={"menu-" + group.id}>{group.title}</h2>
+              <ul className="gc-menu-links">
+                {group.items.map((item) => (
+                  <MenuLink key={item.id} item={item} />
+                ))}
+              </ul>
+            </section>
+          ))}
           <section aria-label="Installation">
             <InstallationHelp />
             <InstallationHelp bookmark />
           </section>
-          {adminAvailable && (
+          {administration.length > 0 && (
             <section aria-labelledby="menu-admin">
-              <h2 id="menu-admin">Platform operations</h2>
+              <h2 id="menu-admin">Admin</h2>
               <ul className="gc-menu-links">
-                <MenuLink
-                  href="/platform/admin"
-                  title="Admin"
-                  description="Open your currently permitted requests and operations."
-                  icon={Shield}
-                  prefetch={false}
-                />
+                {administration.map((item) => (
+                  <MenuLink key={item.id} item={item} />
+                ))}
               </ul>
             </section>
           )}
           <section aria-labelledby="menu-about">
             <h2 id="menu-about">About God’s Churches</h2>
             <ul className="gc-menu-links">
-              <MenuLink
-                href="/about#our-mission"
-                title="Our mission"
-                description="Christ’s authority. Our shared calling. Your part to play."
-                icon={Church}
-              />
-              <MenuLink
-                href="/privacy"
-                title="Privacy"
-                description="How information is used and shared."
-                icon={Shield}
-              />
-              <MenuLink
-                href="/terms"
-                title="Terms"
-                description="The terms for using God’s Churches."
-                icon={FileText}
-              />
+              {aboutNavigation.map((item) => (
+                <MenuLink key={item.id} item={item} />
+              ))}
             </ul>
           </section>
-          <Link href="/platform" className="gc-button gc-button-quiet">
+          <Link
+            href={navigationRegistry.home.href}
+            className="gc-button gc-button-quiet"
+          >
             Back to Home
           </Link>
         </div>
