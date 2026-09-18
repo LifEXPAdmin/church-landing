@@ -48,6 +48,11 @@ export const settingsFolders = [
     description: "Your connection, directory choices and church tools."
   },
   {
+    id: "communities",
+    label: "Communities and interests",
+    description: "Your group invitations, membership and event participation."
+  },
+  {
     id: "calendar",
     label: "Calendar",
     description: "Your calendars and deliberate schedule sharing."
@@ -82,6 +87,7 @@ export const relatedSettingIds: Partial<
   profile: ["privacy.relationships", "calendar.sharing"],
   privacy: ["profile.information", "calendar.sharing"],
   church: ["privacy.directory", "calendar.sharing"],
+  communities: ["privacy.messages", "calendar.commitments", "calendar.sharing", "notifications.availability"],
   calendar: ["profile.information", "privacy.directory"],
   exchange: ["privacy.messages", "notifications.availability"],
   notifications: ["privacy.relationships", "safety.muted"],
@@ -177,6 +183,20 @@ const help = {
 };
 
 export const settingsRegistry: readonly SettingRegistration[] = Object.freeze([
+  entry(
+    "communities.groups", "communities", "My group choices",
+    "Review your membership and separate group roster choices. Membership does not make your name public.",
+    ["gather", "groups", "roster", "leave group", "community preferences"],
+    { href: "/platform/groups/mine" },
+    { persistenceOwner: "GatherGroupMembership", read: "group-reads.ts readGroupChoices", write: "groupCommand" }
+  ),
+  entry(
+    "communities.invitations", "communities", "My group invitations",
+    "Review current named invitations. Joining requires your acceptance of the group's current rules.",
+    ["gather", "invite", "invitation", "join group", "community preferences"],
+    { href: "/platform/groups/invitations" },
+    { persistenceOwner: "GatherGroupMembership", read: "group-reads.ts listGroups invitations=true", write: "groupCommand" }
+  ),
   entry("church.groups", "church", "Gather groups", "Find adult groups and manage church groups under your explicit group duty.", ["gather", "groups", "ministry", "discussion"], { href: "/platform/groups" }, { persistenceOwner: "GatherGroup", read: "group-reads.ts listGroups", write: "groupCommand" }),
   entry("privacy.groups", "privacy", "My group choices", "Review your membership, invitations and separate group roster choices.", ["gather", "groups", "roster", "invitations"], { href: "/platform/groups/mine" }, { persistenceOwner: "GatherGroupMembership", read: "group-reads.ts readGroupChoices", write: "groupCommand" }),
   entry("church.assistance", "church", "Church pantry and support hubs", "Browse current hub information or manage a hub under your explicit assistance duty.", ["pantry", "food", "stock", "assistance", "coordinator"], { href: "/platform/pantry" }, { persistenceOwner: "PantryHub", read: "pantry-reads.ts readPantry", write: "pantryCommand" }),
@@ -848,8 +868,8 @@ export const settingsRegistry: readonly SettingRegistration[] = Object.freeze([
     "privacy.messages",
     "privacy",
     "Contact requests",
-    "Choose who can request an adult conversation. Acceptance and blocks still apply.",
-    ["messages", "requests", "contact", "who can message", "conversation"],
+    "Choose who can request an adult conversation or invite you to a group. Acceptance and blocks still apply.",
+    ["messages", "requests", "contact", "who can message", "conversation", "group invitation audience"],
     { control: "contact" },
     {
       persistenceOwner: "SocialPreferences.contactRequests",

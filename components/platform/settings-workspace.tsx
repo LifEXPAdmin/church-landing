@@ -369,6 +369,26 @@ export function SettingsWorkspace({
               {folder === "safety" && !active && <SettingsSafety />}
               {folder === "data" && !active && <SettingsData />}
               {folder === "help" && !active && <SettingsHelp />}
+              {folder === "communities" && !active && (
+                <section className="gc-settings space-y-3" aria-label="Your participation and privacy">
+                  <h2 className="text-2xl">Your participation and privacy</h2>
+                  <p>
+                    Contact requests controls who may send you a group invitation.
+                    An invitation never joins a group for you. Adult eligibility,
+                    blocks and the group’s current rules still apply.
+                  </p>
+                  <p>
+                    Choose your response on each event. Your calendar responses
+                    are private to you. Sharing a calendar or linking an event
+                    to a group does not publish your private group membership.
+                  </p>
+                  <p>
+                    Group and event phone alerts have separate choices in
+                    Notification preferences. Church administration stays under
+                    My church and requires your current assigned duties.
+                  </p>
+                </section>
+              )}
               {folder &&
                 !active &&
                 rows(

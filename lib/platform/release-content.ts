@@ -14,6 +14,16 @@ export type Feature = {
 };
 export const features: Feature[] = [
   {
+    id: "community-preferences",
+    category: "Privacy and account",
+    name: "Communities and interests settings",
+    description: "Find your group invitations, membership and event choices together in Settings.",
+    steps: "Open Settings, Communities and interests. Review My group choices or My group invitations, then use the related links for Contact requests, Your commitments, Calendars and schedule sharing, and Notification preferences.",
+    href: "/platform/settings/communities",
+    eligibility: "Requires sign-in. Each destination keeps its current adult eligibility, permissions and private choices. An invitation never joins a group for you. Group and event phone alerts remain separate choices. Church administration stays under My church and requires current assigned duties.",
+    availability: "available"
+  },
+  {
     id: "gather-groups",
     category: "Churches and community",
     name: "Adult Gather groups",
@@ -884,6 +894,16 @@ export const features: Feature[] = [
   }
 ];
 export const releases: ReleaseEntry[] = [
+  {
+    id: "communities-and-interests-settings",
+    version: "2026.09.18.5",
+    date: "2026-09-18",
+    summary: "Find your personal group and event choices together in Settings.",
+    added: ["Communities and interests connects group invitations and membership with existing contact, calendar, commitment and notification choices."],
+    improved: ["Settings search and Help explain invitation consent, private membership, separate phone alerts and church administration."],
+    fixed: [],
+    featureIds: ["community-preferences"]
+  },
   {
     id: "gather-groups-and-private-discussions",
     version: "2026.09.18.4",

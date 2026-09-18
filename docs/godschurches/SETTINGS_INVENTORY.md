@@ -1,5 +1,14 @@
 # Settings inventory and reuse map
 
+## Communities integration, September 18, 2026
+
+The Communities and interests folder links existing Gather membership and named
+invitations, contact audience, commitments, calendar sharing and notification
+choices. See the [current ownership and readiness map](COMMUNITY_SETTINGS_CONTRACT.md).
+The initial integration creates no stored defaults. Persistent RSVP disclosure,
+artist/music, storefront and online Foundry preference adapters retain their
+unimplemented canonical prerequisites; navigation alone does not complete them.
+
 ## Exchange integration, September 16, 2026
 
 The current search/saved-choice feature adds Settings, Exchange through the

@@ -371,9 +371,9 @@ export function ContactWorkspace({
                   </aside>
                 )}
                 <p className="text-sm text-gc-muted">
-                  Child contact is unavailable; family restrictions remain
-                  managed by the parent. Presence, read receipts and group
-                  invitations are unavailable here.
+                  This choice also controls who may send you a group invitation.
+                  Joining still requires your separate acceptance. Child contact,
+                  presence and read receipts are unavailable here.
                 </p>
               </form>
             )}
