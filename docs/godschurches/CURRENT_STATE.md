@@ -1,6 +1,9 @@
-## Navigation and security guidance in combined acceptance, September 18, 2026 UTC
+## Navigation and security guidance verified live, September 18, 2026 UTC
 
-Nine tested independent-worker handoffs are integrated locally at `f36d02c`.
+Nine tested independent-worker handoffs are integrated and released at `28f6909`
+(tested runtime `f36d02c`). **2026.09.18.8** is READY in
+**dpl_2RX9ayRDbAeXWFFGYPJMmop1DH22** at **18:08:03.236 UTC**, with canonical
+assignment and serving identity verified at **18:08:26.603 UTC**.
 Existing Menu destinations share a registry; Security distinguishes essential
 notices and optional choices; authenticator acknowledgment clears private codes
 with a focusable confirmation. Authorized Growth definitions remain explicitly
@@ -11,7 +14,15 @@ repaired and verified at 320 pixels.
 Thirty-six combined built browser groups, the final build, types, copy and focused
 lint pass. The full isolated upgrade/service/restore/HTTPS gate passes 188 discovered files,
 1,214 checks with two expected skips and zero failures across 202 executions.
-Production remains .7; release/live verification and task completion remain open.
+Seventeen public/privacy checks, six health checks and three signed-in Mac views
+pass. All 100 migration/recovery checksums match; all 144 production fingerprints
+remain unchanged through 18:09:58 UTC. The recent encrypted restore verifies 144
+tables and 77 retained backup sets have no issues. The native queue probe is
+consumed and scoped runtime error/fatal rows are zero. Verification application
+writes and recipient sends are zero. Nine task scopes and eight focused private
+pages are reconciled and read back. Definition completion does not activate
+future products; all real provider, device, family and broader messaging gates
+remain open. Continue the next eligible A1 feature and incoming tested handoffs.
 See [the current integration receipt](NAVIGATION_GUIDANCE_ACCEPTANCE.md).
 
 ## Optional social email integration deployed, September 18, 2026 UTC

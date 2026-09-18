@@ -1,6 +1,34 @@
 # Navigation and security guidance integration
 
-## Candidate scope, September 18, 2026
+## Verified release, September 18, 2026
+
+**2026.09.18.8 / 28f69097d295f1a9f96f6dc6522c01632c832feb** is live in
+**dpl_2RX9ayRDbAeXWFFGYPJMmop1DH22**, READY at **18:08:03.236 UTC**.
+Canonical-domain assignment and the exact serving identity match at
+**18:08:26.603 UTC**. The released commit differs from the tested runtime
+`f36d02c` only in engineering reports.
+
+Seventeen public/privacy checks, six health checks and three read-only signed-in
+Mac observations pass. Menu groups and permitted links, Security notice guidance
+and the authenticator entry are observed live. Private Growth access remains
+denied to guests; its authorized dictionary/export flows were verified using
+fictional isolated operators. No real account enrollment or new grant was made.
+
+All 100 migration and recovery checksums match. The installed encrypted restore
+at 16:55 UTC verifies 144 tables and removes plaintext; 77 retained backup sets
+have no issues. All 144 original table/column fingerprints remain unchanged
+through **18:09:58.619 UTC**. The one-shot nonexistent-source queue probe was
+consumed; scoped runtime error and fatal rows are zero from READY through
+**18:09:40.970 UTC**. Verification application writes and recipient sends are
+zero. No migration or production configuration changed for this release.
+
+The nine bounded task scopes and eight focused private pages were reconciled and
+read back. Definition tasks are complete as definitions, not activated products.
+Real operator/provider/device acceptance, family review and broader messaging
+implementation remain separate gates. The two private main indexes are readable
+but their writes still return internal errors; their update is not claimed.
+
+## Integrated scope
 
 The combined candidate preserves the released optional social-email work and
 integrates nine independently tested handoffs. Four affect the running app:
@@ -65,8 +93,8 @@ and test files match the browser archive and commit `f36d02c` exactly.
 Production preflight at 17:56 UTC confirms all 100 installed migration and recovery
 checksums, no pending migration, the 16:55 UTC encrypted restore of 144 tables,
 plaintext removal and 77 retained backup sets without issues. Optional social
-email still has zero opt-ins and deliveries. Canonical deployment and live checks
-remain open; no live behavior is inferred from local acceptance.
+email still has zero opt-ins and deliveries. The separate canonical and live
+evidence is recorded above; no live behavior is inferred from local acceptance.
 
 Two private test-setup issues were corrected and their failed logs retained: URL
 path decoding for the relocated Growth helper, and the fictional production-mode
@@ -74,6 +102,6 @@ MFA sender/origin pair. Neither correction changed application security checks.
 The separate compiled browser runs then passed.
 
 No schema, migration, production configuration or dependency change is included.
-Production remains verified `2026.09.18.7` until the remaining gates pass. No
+Production is verified `2026.09.18.8` under the exact release receipt above. No
 real account enrollment, provider delivery, physical-device acceptance, child
 activation or future module implementation is inferred from these checks.
