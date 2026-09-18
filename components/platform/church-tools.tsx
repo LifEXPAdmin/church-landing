@@ -95,7 +95,7 @@ export function ChurchTools({
       aria-label="Your church tools"
     >
       {administration && data && (
-        <div className="space-y-2" aria-label="Current organization scope">
+        <section className="space-y-2" aria-label="Current organization scope">
           <p className="font-semibold">
             Church administration: {administration.name}
           </p>
@@ -103,7 +103,7 @@ export function ChurchTools({
             Your current assigned permissions determine the tools below.
             Personal preferences stay separate.
           </p>
-        </div>
+        </section>
       )}
       {welcome && data && <ChurchWelcome church={welcome} data={data} />}
       {data?.approvedWelcome && (
