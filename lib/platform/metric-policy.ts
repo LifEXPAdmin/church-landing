@@ -74,5 +74,17 @@ export const metricDefinitions = {
   breakdowns:
     "Optional declared referral and coarse shared device/browser categories only. No free-form referrer, URL, contact list, exact location, faith, prayer or health category is collected. Small categories and their complementary breakdown are suppressed.",
   coverage:
-    "Optional collection begins only after a disclosed, versioned choice and enabled configuration. Raw foreground/session facts last at most ninety days. Opting out removes them and starts no new collection; turning it back on begins a new coverage interval. Historical use is never backfilled."
+    "Optional collection begins only after a disclosed, versioned choice and enabled configuration. Raw foreground/session facts last at most ninety days. Opting out removes them and starts no new collection; turning it back on begins a new coverage interval. Historical use is never backfilled.",
+  fulfilledNeeds:
+    "Not measured in this report. A fulfilled need requires recorded receipt or organizer-recorded volunteer completion for every required slot against its current target. Count a need once, with corrections able to restate it. Quotes, promises, reservations, closure and an elapsed deadline are not fulfillment. Received quantities keep their original units; loan receipt and return are separate.",
+  eventAttendance:
+    "Not measured in this report. An RSVP records intention, not attendance. Attendance needs its own authorized, purpose-limited confirmation for a person and occurrence, with a correction rule and permitted aggregate scope. Going responses, event end times, page views and volunteer signups cannot establish attendance; a missing attendance source is unavailable, not zero.",
+  completedService:
+    "Not measured in this report. A current organizer-recorded completion on a canonical volunteer signup can support a count of recorded completed commitments, once per signup. A signup or reserved place alone cannot. A participant-marked Exchange handoff is a different self-reported outcome, not verified delivery, service quality, hours worked or payment. Independent service outcomes need their own source contract.",
+  savedHelpfulResources:
+    "Not measured in this report. A retained private save can establish that an eligible account saved a currently permitted resource, once per account and canonical resource. It does not establish that the resource was read or helpful. Helpfulness needs a separate voluntary statement and purpose. Private bookmarks, prayer lists, reading choices and playlists are not added to measurement by this definition.",
+  successfulIntroductions:
+    "Not measured in this report. An explicitly accepted invitation that produced the intended current mutual connection can establish an accepted introduction, once per pair and invitation purpose. Sharing a link, scanning a code, sending an invitation, following or registering alone cannot. Acceptance does not prove a lasting relationship, church membership, conversion or spiritual growth.",
+  outcomePrivacy:
+    "These definitions add no collection or outcome counts. Future aggregates need an implemented source, a named counting unit and time boundary, covered consent where required, current eligibility and source access, correction and withdrawal handling, and authorized scope. Private activity stays out of public dashboards. Suppress groups below five eligible people and complementary breakdowns that could reveal them. No account or activity measure is a count of saved souls or a score of faith."
 } as const;
