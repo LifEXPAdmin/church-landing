@@ -14,6 +14,16 @@ export type Feature = {
 };
 export const features: Feature[] = [
   {
+    id: "optional-social-email",
+    category: "Privacy and account",
+    name: "Separate Likes and direct reply email choices",
+    description: "Choose optional email for Likes and direct replies separately from Activity and phone alerts when delivery is available.",
+    steps: "Open Settings, Notifications, Notification preferences. Each supported category has its own email choice. Both start off and apply to new activity after you choose them. Quiet hours also pause optional email. You can withdraw a choice even while delivery is unavailable.",
+    href: "/platform/settings/notifications/availability",
+    eligibility: "Email delivery is not currently activated. Availability requires the configured provider and verified delivery checks. A verified eligible account and explicit category consent are required. Mentions, followed conversations and other categories do not gain email here. Email contains a generic notice and a sign-in link that rechecks your current access.",
+    availability: "conditional"
+  },
+  {
     id: "church-settings",
     category: "Privacy and account",
     name: "Personal church settings and administration",
@@ -904,6 +914,16 @@ export const features: Feature[] = [
   }
 ];
 export const releases: ReleaseEntry[] = [
+  {
+    id: "separate-likes-and-reply-email-choices",
+    version: "2026.09.18.7",
+    date: "2026-09-18",
+    summary: "Separate email choices for Likes and direct replies, with clear delivery availability.",
+    added: ["Likes and direct replies each have an initially-off email choice, separate from Activity, phone alerts and required account emails."],
+    improved: ["Unavailable email delivery and denied browser permission are explained separately. Turning off one category preserves other choices, and older activity is not sent when email is enabled."],
+    fixed: [],
+    featureIds: ["optional-social-email", "phone-notifications"]
+  },
   {
     id: "church-settings-and-current-administration",
     version: "2026.09.18.6",
