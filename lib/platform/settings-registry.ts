@@ -177,6 +177,8 @@ const help = {
 };
 
 export const settingsRegistry: readonly SettingRegistration[] = Object.freeze([
+  entry("church.groups", "church", "Gather groups", "Find adult groups and manage church groups under your explicit group duty.", ["gather", "groups", "ministry", "discussion"], { href: "/platform/groups" }, { persistenceOwner: "GatherGroup", read: "group-reads.ts listGroups", write: "groupCommand" }),
+  entry("privacy.groups", "privacy", "My group choices", "Review your membership, invitations and separate group roster choices.", ["gather", "groups", "roster", "invitations"], { href: "/platform/groups/mine" }, { persistenceOwner: "GatherGroupMembership", read: "group-reads.ts readGroupChoices", write: "groupCommand" }),
   entry("church.assistance", "church", "Church pantry and support hubs", "Browse current hub information or manage a hub under your explicit assistance duty.", ["pantry", "food", "stock", "assistance", "coordinator"], { href: "/platform/pantry" }, { persistenceOwner: "PantryHub", read: "pantry-reads.ts readPantry", write: "pantryCommand" }),
   entry("exchange.assistance", "exchange", "My private assistance requests", "Review requested items, pickup offers and your own assistance history.", ["pantry", "pickup", "food", "assistance"], { href: "/platform/pantry/mine" }, { persistenceOwner: "PantryRequest", read: "pantry-reads.ts readPantry", write: "pantryCommand" }),
   entry(

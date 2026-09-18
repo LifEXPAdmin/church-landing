@@ -25,6 +25,14 @@ export function safeAccountReturn(value: unknown): string {
     )
   )
     return url.pathname.replace(/\/$/, "");
+  // Private group return paths carry no invitation, cursor or unsent action.
+  if (
+    url.origin === "https://return.invalid" &&
+    /^\/platform\/groups(?:\/(?:mine|invitations|new|[a-z0-9-]{3,60}(?:\/(?:discussion|events|members|manage|history))?))?\/?$/.test(
+      url.pathname
+    )
+  )
+    return url.pathname.replace(/\/$/, "");
   // Assistance returns to a known page only. Private cursor, contact, action and
   // unsent request values never survive account entry or replay automatically.
   if (

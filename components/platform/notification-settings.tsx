@@ -37,6 +37,7 @@ const labels: Record<NotificationCategory, string> = {
   photos: "Photo tag requests and approvals",
   exchange: "New listings matching searches you chose to follow",
   handoffs: "Private Exchange inquiries, handoff changes and pickup reminders",
+  groups: "Group membership and leadership",
   assistance: "Private assistance requests and pickup changes",
   needs: "Church Needs contributions, organizer updates and deadlines",
   commitments: "Event changes, new church volunteer requests and commitments"

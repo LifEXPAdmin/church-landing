@@ -105,6 +105,7 @@ async function currentBoundary(tx: Tx, ownerId: string) {
   );
 }
 const categorySql = Prisma.sql`CASE
+  WHEN e.kind IN ('GROUP_MEMBERSHIP','GROUP_REVIEW') THEN 'groups'
   WHEN e.kind = 'ADULT_MESSAGE_CREATED' AND m.kind = 'FOUNDER_ANNOUNCEMENT' THEN 'founder'
   WHEN e.kind = 'ADULT_MESSAGE_CREATED' THEN 'messages'
   WHEN e.kind IN ('ADULT_REQUEST_CREATED','ADULT_REQUEST_ACCEPTED','FRIEND_CONNECTED') THEN 'requests'
@@ -122,6 +123,7 @@ const categorySql = Prisma.sql`CASE
   WHEN e.kind IN ('EVENT_CHANGED','RSVP_CHANGED','VOLUNTEER_CHANGED','VOLUNTEER_REQUEST','VOLUNTEER_CONFIRMATION') THEN 'commitments'
   WHEN e.kind = 'COMMENT_ACTIVITY' THEN 'comments' ELSE 'reports' END`;
 const groupSql = Prisma.sql`CASE
+  WHEN e.kind IN ('GROUP_MEMBERSHIP','GROUP_REVIEW') THEN e.kind || ':' || coalesce(e."sourceId",e.id)
   WHEN e.kind IN ('EXCHANGE_INQUIRY','EXCHANGE_HANDOFF','EXCHANGE_REMINDER') THEN 'exchange-handoff:' || coalesce(e."sourceId",e.id)
   WHEN e.kind = 'EXCHANGE_MATCH' THEN 'exchange-listing:' || coalesce(e."sourceId",e.id)
   WHEN e.kind = 'FRIEND_CONNECTED' THEN 'friend:' || coalesce(e."sourceId",e.id)
@@ -161,7 +163,7 @@ async function activityRows(tx: Tx, ownerId: string, through: bigint) {
       AND NOT (coalesce(e."notificationCategory", CASE WHEN e.kind='COMMENT_ACTIVITY' THEN 'replies' ELSE '' END) = ANY(${preferences?.mutedNotificationCategories ?? []}::text[]))
       AND (e.kind NOT IN ('ADULT_REQUEST_CREATED','ADULT_REQUEST_ACCEPTED','FRIEND_CONNECTED') OR ${preferences?.requestAlerts ?? true})
       AND (e.kind NOT IN ('REPORT_RECEIVED','REPORT_RECONSIDERATION','CONTENT_DECISION') OR ${preferences?.reportAlerts ?? true})
-      AND (e.kind NOT IN ('FRIEND_CONNECTED','PHOTO_TAG_REQUEST','PHOTO_TAG_APPROVED') OR ${context.mutedIds?.length ? Prisma.sql`e."actorId" NOT IN (${Prisma.join(context.mutedIds)})` : Prisma.sql`TRUE`})
+      AND (e.kind NOT IN ('GROUP_MEMBERSHIP','GROUP_REVIEW','FRIEND_CONNECTED','PHOTO_TAG_REQUEST','PHOTO_TAG_APPROVED') OR ${context.mutedIds?.length ? Prisma.sql`e."actorId" NOT IN (${Prisma.join(context.mutedIds)})` : Prisma.sql`TRUE`})
       AND (e.kind NOT IN ('AUTHOR_POST','POST_MENTION','VOLUNTEER_REQUEST','POST_REACTION','COMMENT_REACTION','PRAYER_ACK') OR (
         (p.id IS NULL OR ${notMuted(Prisma.sql`p."authorId"`, Prisma.sql`p."authorChurchId"`, context)})
         AND (e.kind = 'AUTHOR_POST' OR ${context.mutedIds?.length ? Prisma.sql`e."actorId" NOT IN (${Prisma.join(context.mutedIds)})` : Prisma.sql`TRUE`})))

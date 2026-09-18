@@ -63,6 +63,13 @@ export function composerPayload(f: ComposerFields): PrivateDraftPayload {
     type: f.type,
     topics: [...f.topics],
     audience: f.audience,
+    ...(f.groupId
+      ? {
+          groupId: f.groupId,
+          groupThreadKind: f.groupThreadKind,
+          groupCategory: f.groupCategory
+        }
+      : {}),
     replyAudience: f.replyAudience,
     authorChurchId: f.authorChurchId,
     audienceChurchId: f.audienceChurchId,
@@ -231,10 +238,25 @@ export class DraftController {
       return false;
     }
   };
-  start = (churchId: string | null = null, topicCommunityId?: string) => {
+  start = (
+    churchId: string | null = null,
+    topicCommunityId?: string,
+    groupId?: string
+  ) => {
     if (!this.state.ownerId || this.state.id) return;
     const fields = emptyComposer(churchId);
     if (topicCommunityId) fields.topicCommunityId = topicCommunityId;
+    if (groupId)
+      Object.assign(fields, {
+        groupId,
+        groupThreadKind: "DISCUSSION",
+        groupCategory: "GENERAL",
+        audience: "GROUP",
+        topicCommunityId: null,
+        authorChurchId: null,
+        audienceChurchId: null,
+        eventOccurrenceId: null
+      });
     this.acknowledged = JSON.stringify(composerPayload(fields));
     this.set({ id: this.uuid(), fields });
   };

@@ -1,4 +1,4 @@
-import { groupReadProof } from "./group-read-progress";
+import { groupReadProof, groupReadScope } from "./group-read-progress";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import type { Prisma, PrismaClient, PlatformPost } from "@prisma/client";
 import { accountConfig } from "./account-config";
@@ -319,6 +319,7 @@ export function readComments(db: PrismaClient, token: unknown, query: Query) {
       : null;
     return {
       kind: "thread" as const,
+      readScope: post.groupId ? groupReadScope(context, post) : null,
       readProof: groupReadProof(context, post, [
         ...rows
           .slice(0, PAGE)

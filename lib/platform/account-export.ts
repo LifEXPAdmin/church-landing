@@ -128,6 +128,9 @@ export async function downloadAccountExport(
         id: true,
         audience: true,
         audienceChurchId: true,
+        groupId: true,
+        groupThreadKind: true,
+        groupCategory: true,
         status: true,
         version: true,
         editedAt: true,
@@ -605,11 +608,31 @@ export async function downloadAccountExport(
     }
     const collections = {
       exchangeInquiries,
-      assistanceRequests: await tx.pantryRequest.findMany({
-        where: { requesterId: userId, hub: { recoveryRequired: false } },
-        select: { id: true, version: true, state: true, items: true, note: true, pickupContact: true, confirmedAt: true, requesterClearedAt: true, createdAt: true, endedAt: true },
-        orderBy: { id: "asc" }, take: MAX_ROWS + 1
-      }).then(rows => rows.map(row => row.requesterClearedAt ? { ...row, note: "", items: [], pickupContact: "" } : row)),
+      assistanceRequests: await tx.pantryRequest
+        .findMany({
+          where: { requesterId: userId, hub: { recoveryRequired: false } },
+          select: {
+            id: true,
+            version: true,
+            state: true,
+            items: true,
+            note: true,
+            pickupContact: true,
+            confirmedAt: true,
+            requesterClearedAt: true,
+            createdAt: true,
+            endedAt: true
+          },
+          orderBy: { id: "asc" },
+          take: MAX_ROWS + 1
+        })
+        .then((rows) =>
+          rows.map((row) =>
+            row.requesterClearedAt
+              ? { ...row, note: "", items: [], pickupContact: "" }
+              : row
+          )
+        ),
       needContributions: await tx.exchangeNeedContribution.findMany({
         where: { contributorId: userId, need: { recoveryRequired: false } },
         select: {
@@ -1017,6 +1040,50 @@ export async function downloadAccountExport(
         orderBy: { id: "asc" },
         take: MAX_ROWS + 1
       }),
+      groupChoices: await tx.gatherGroupMembership.findMany({
+        where: { userId },
+        select: {
+          groupId: true,
+          state: true,
+          version: true,
+          rulesVersion: true,
+          rosterVisible: true,
+          joinedAt: true,
+          leader: true,
+          pendingRole: true,
+          invitationExpiresAt: true,
+          offerExpiresAt: true,
+          createdAt: true,
+          updatedAt: true
+        },
+        orderBy: { id: "asc" },
+        take: MAX_ROWS + 1
+      }),
+      ownedGroups: await tx.gatherGroup.findMany({
+        where: { ownerId: userId },
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          purpose: true,
+          rules: true,
+          rulesVersion: true,
+          kind: true,
+          discovery: true,
+          joinPolicy: true,
+          format: true,
+          area: true,
+          topic: true,
+          churchId: true,
+          lifecycle: true,
+          moderationState: true,
+          version: true,
+          createdAt: true,
+          updatedAt: true
+        },
+        orderBy: { id: "asc" },
+        take: MAX_ROWS + 1
+      }),
       ownedTopics: await tx.topicCommunity.findMany({
         where: { ownerId: userId },
         select: {
@@ -1070,7 +1137,12 @@ export async function downloadAccountExport(
           mode: true,
           version: true,
           updatedAt: true,
-          followedAt: true
+          followedAt: true,
+          readPostVersion: true,
+          readCommentAt: true,
+          readCommentId: true,
+          readCommentIds: true,
+          readVersion: true
         },
         orderBy: { id: "asc" },
         take: MAX_ROWS + 1
@@ -1200,7 +1272,7 @@ export async function downloadAccountExport(
         version: 1,
         generatedAt: new Date().toISOString(),
         scope:
-          "Your account profile, presentation preferences and linked Google identity, authored community content, your personal Exchange listings and their image metadata, your private Exchange favorites, saved-search choices and personal defaults, retained inquiry receipts and currently agreed pickup plans (other people’s listing content excluded), personal image metadata and photo albums, personal polls and your own ballots and volunteer signups, likes/following, your own topic memberships and private following choices and named personal following lists, owned topic details, private social, conversation and prayer choices and your own prayer update labels (source content excluded), and friend invitation records, private comment drafts and comment Likes, private post drafts and saved collection organization (source posts excluded), church directory choices, your own church representative setup and listing drafts/submissions, personal calendars/events and their sharing choices, your event responses, your own sent contact requests and currently authorized accepted conversation messages, your own community reports and your own support submissions, current optional measurement choices and retained foreground-use facts. Other people's content outside your accepted conversations, staff/church operations, credentials, session data and security audit records and private report-review notes are excluded. Cleared message history is excluded from your view; this does not erase the other participant's history. Image binaries are not embedded; image references still require current access. Reading preferences saved only on this browser are not in this account file.",
+          "Your account profile, presentation preferences and linked Google identity, authored community content, your personal Exchange listings and their image metadata, your private Exchange favorites, saved-search choices and personal defaults, retained inquiry receipts and currently agreed pickup plans (other people’s listing content excluded), personal image metadata and photo albums, personal polls and your own ballots and volunteer signups, likes/following, your own topic memberships and private following choices and named personal following lists, owned topic and Gather group details, your own Gather membership and private read progress, private social, conversation and prayer choices and your own prayer update labels (source content excluded), and friend invitation records, private comment drafts and comment Likes, private post drafts and saved collection organization (source posts excluded), church directory choices, your own church representative setup and listing drafts/submissions, personal calendars/events and their sharing choices, your event responses, your own sent contact requests and currently authorized accepted conversation messages, your own community reports and your own support submissions, current optional measurement choices and retained foreground-use facts. Other people's content outside your accepted conversations, staff/church operations, credentials, session data and security audit records and private report-review notes are excluded. Cleared message history is excluded from your view; this does not erase the other participant's history. Image binaries are not embedded; image references still require current access. Reading preferences saved only on this browser are not in this account file.",
         account,
         ...collections
       },

@@ -523,3 +523,30 @@ test("quote source survives controller lost-response retry, conflict, resume and
     c.dispose();
   }
 });
+
+test("a new group draft keeps its private destination through autosave and cannot be silently reassigned by navigation", async () => {
+  const f = fixture(),
+    c = f.controller;
+  try {
+    await c.verify();
+    c.start(null, undefined, "group-a");
+    c.change({
+      ...c.getSnapshot().fields,
+      content: "Private group draft",
+      groupThreadKind: "QUESTION",
+      groupCategory: "PLANNING"
+    });
+    c.start(null, undefined, "group-b");
+    const payload = composerPayload(c.getSnapshot().fields);
+    assert.equal(payload.groupId, "group-a");
+    assert.equal(payload.audience, "GROUP");
+    assert.equal(payload.groupThreadKind, "QUESTION");
+    assert.equal(payload.groupCategory, "PLANNING");
+    assert.equal(payload.authorChurchId, null);
+    assert.equal(payload.topicCommunityId, null);
+    await c.save();
+    assert.equal(JSON.parse(f.bodies.at(-1)!).payload.groupId, "group-a");
+  } finally {
+    c.dispose();
+  }
+});

@@ -626,7 +626,7 @@ async function processAccountRequest(
     if (error instanceof AccountLifecycleError)
       return reply(
         error.code === "handoff"
-          ? "Hand off your church, contact, operator or support duties before deactivating. An administrator must remove your assignments and transfer any case or intake ownership first. Your account is unchanged."
+          ? "Transfer or archive your active topics and Gather groups, and hand off church, contact, operator or support duties before deactivating. An administrator must remove your assignments and transfer any case or intake ownership first. Your account is unchanged."
           : "Confirm that you understand the account change before continuing.",
         error.code === "handoff" ? 409 : 400,
         {

@@ -48,6 +48,7 @@ const date = (v: string) => <RegionalTime value={v} />;
 const duties: Record<string, string> = {
   churchAssignments: "Church positions",
   topicOwnership: "Active topic community ownership",
+  groupOwnership: "Active Gather group ownership",
   churchCapabilities: "Church permissions",
   operatorCapabilities: "Platform reviewer or operator permissions",
   contactAppointments: "Church contact appointments",

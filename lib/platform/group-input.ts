@@ -2,29 +2,19 @@ import { postField, postId } from "./post-input";
 import { PortalError } from "./portal-policy";
 import { socialInput } from "./social-operations";
 
-export const GROUP_SCHEMA = 1;
-export const groupKinds = {
-  INTEREST: "Interest community",
-  CHURCH_LIFE: "Church life group",
-  MINISTRY_TEAM: "Ministry team",
-  PRIVATE_COHORT: "Private cohort"
-} as const;
-export const groupFormats = {
-  LOCAL: "Local",
-  ONLINE: "Online",
-  HYBRID: "Local and online"
-} as const;
-export const groupJoinPolicies = {
-  OPEN: "Join after accepting the rules",
-  APPROVAL: "Ask a leader to approve",
-  INVITE_ONLY: "Named invitation only"
-} as const;
-export const groupCategories = {
-  GENERAL: "General",
-  PRAYER: "Prayer",
-  PLANNING: "Planning",
-  RESOURCES: "Resources"
-} as const;
+import {
+  GROUP_SCHEMA,
+  groupKinds,
+  groupFormats,
+  groupJoinPolicies
+} from "./group-options";
+export {
+  GROUP_SCHEMA,
+  groupKinds,
+  groupFormats,
+  groupJoinPolicies,
+  groupCategories
+} from "./group-options";
 export function groupChoice<T extends string>(
   value: unknown,
   values: Record<T, unknown>
@@ -94,6 +84,8 @@ export function groupIdentity(schema: unknown, value: unknown) {
       400,
       "Church life groups and ministry teams require an explicitly permitted church. Other groups do not appoint church duties."
     );
+  if (discovery === "UNLISTED" && joinPolicy !== "INVITE_ONLY")
+    throw new PortalError(400, "Unlisted groups require named invitations.");
   if (
     kind === "PRIVATE_COHORT" &&
     (discovery !== "UNLISTED" || joinPolicy !== "INVITE_ONLY")

@@ -1,5 +1,6 @@
 import { revokeAccountFriendInvitations } from "./friend-invitations";
 import { revokeAccountContact } from "./adult-contact-policy";
+import { closeGroupAccountAccess } from "./group-lifecycle";
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { normalizeEmail } from "./accounts";
 import { AccountError } from "./account-error";
@@ -64,6 +65,9 @@ export async function deactivateAccount(
       // Role grants, appointments and case/intake ownership cannot be abandoned.
       // Check under the same transaction gate used to assign those duties.
       const duties = await Promise.all([
+        tx.gatherGroup.count({
+          where: { ownerId: userId, lifecycle: "ACTIVE" }
+        }),
         tx.topicCommunity.count({
           where: { ownerId: userId, lifecycle: "ACTIVE" }
         }),
@@ -138,6 +142,7 @@ export async function closeVerifiedAccountAccess(
 ) {
   await revokeAccountFriendInvitations(tx, userId);
   await revokeAccountContact(tx, userId);
+  await closeGroupAccountAccess(tx, userId, permanent);
   await tx.calendarShare.updateMany({
     where: { calendar: { ownerId: userId }, revokedAt: null },
     data: { revokedAt: now, version: { increment: 1 } }

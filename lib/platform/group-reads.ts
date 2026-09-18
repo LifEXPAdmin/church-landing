@@ -408,6 +408,55 @@ export function groupEligibility(db: PrismaClient, token: unknown) {
     };
   });
 }
+export function readGroupChoices(
+  db: PrismaClient,
+  token: unknown,
+  after?: string
+) {
+  return withPostRead(db, token, async (tx, context) => {
+    if (!context.actorId)
+      throw new PortalError(401, "Sign in to see your own group choices.");
+    const rows = await tx.gatherGroupMembership.findMany({
+      where: {
+        userId: context.actorId,
+        ...(after ? { id: { gt: postId(after) } } : {})
+      },
+      include: { group: true },
+      orderBy: { id: "asc" },
+      take: pageSize + 1
+    });
+    const choices = [];
+    for (const row of rows.slice(0, pageSize)) {
+      const current = await groupSourceAvailable(tx, row.group, context);
+      const available =
+        current &&
+        (context.groupReaders?.has(row.groupId) ||
+          (row.group.discovery === "LISTED" &&
+            row.group.lifecycle === "ACTIVE") ||
+          (await currentGroupInvitation(tx, row.group, row)));
+      choices.push({
+        id: row.id,
+        state: row.state,
+        version: row.version,
+        rosterVisible: row.rosterVisible,
+        leader: current && row.leader,
+        updatedAt: row.updatedAt.toISOString(),
+        group: available
+          ? {
+              name: row.group.name,
+              slug: row.group.slug,
+              lifecycle: row.group.lifecycle
+            }
+          : null
+      });
+    }
+    return {
+      choices,
+      nextCursor: rows.length > pageSize ? rows[pageSize - 1].id : null,
+      viewerId: context.actorId
+    };
+  });
+}
 export function readGroupInviteChoice(
   db: PrismaClient,
   token: unknown,

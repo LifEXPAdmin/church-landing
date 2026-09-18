@@ -20,6 +20,7 @@ import { useUnsavedSocialWork } from "./use-unsaved-social-work";
 import { useReadVisibility } from "./read-visibility";
 import { PrayerControl } from "./prayer-workspace";
 import { prayerUpdateLabels } from "@/lib/platform/prayer-types";
+import { GroupReadProgress, groupReadPage, type GroupReadPage } from "./group-read-progress";
 
 export function CommentThread({
   postId,
@@ -33,6 +34,7 @@ export function CommentThread({
   const sourceVisible = useReadVisibility();
   const [sort, setSort] = useState<"oldest" | "newest">("oldest");
   const [data, setData] = useState<CommentThreadPage | null>(null);
+  const [readPages,setReadPages] = useState<GroupReadPage[]>([]);
   const [replies, setReplies] = useState<
     Record<string, { items: CommentItem[]; nextCursor: string | null }>
   >({});
@@ -68,6 +70,7 @@ export function CommentThread({
         setData(null);
         setReplies({});
         setContext(null);
+        setReadPages([]);
       }
       try {
         const q = new URLSearchParams({
@@ -89,6 +92,8 @@ export function CommentThread({
           setMutation(null);
         }
         setOwner(result.owner);
+        const readPage = groupReadPage(result.data);
+        if (readPage) setReadPages(previous => [...previous.slice(-24),readPage]);
         if (rootId)
           setReplies((previous) => ({
             ...previous,
@@ -117,6 +122,8 @@ export function CommentThread({
             );
             if (seq !== sequence.current) return;
             setContext(linked.data);
+            const linkedPage = groupReadPage(linked.data);
+            if (linkedPage) setReadPages(previous => [...previous.slice(-24),linkedPage]);
             if (linked.data.root)
               setReplies((previous) => ({
                 ...previous,
@@ -373,7 +380,7 @@ export function CommentThread({
                 {prayerUpdateLabels[row.prayerUpdateKind]}
               </p>
             )}
-            <p className="whitespace-pre-wrap break-words text-[length:var(--gc-reader-size)] leading-relaxed">
+            <p data-group-comment-content={row.id} className="whitespace-pre-wrap break-words text-[length:var(--gc-reader-size)] leading-relaxed">
               {row.content}
             </p>
             <Link
@@ -457,11 +464,13 @@ export function CommentThread({
       aria-label="Full discussion"
       className="space-y-4"
       data-comment-thread
+      data-post-id={postId}
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-2xl">
+        <h2 className="text-2xl" data-group-read-heading>
           Discussion{data && !hidden ? ` · ${data.visibleCount}` : ""}
         </h2>
+        <GroupReadProgress postId={postId} owner={owner} pages={readPages} visible={sourceVisible && !hidden}/>
         <label>
           Comment order{" "}
           <select

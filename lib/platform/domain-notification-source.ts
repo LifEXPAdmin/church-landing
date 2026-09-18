@@ -1,4 +1,5 @@
 import { pantryNotificationSources } from "./pantry-notifications";
+import { groupNotificationSources } from "./group-notifications";
 import { needNotificationSources } from "./exchange-need-notifications";
 import { exchangeHandoffNotificationSources } from "./exchange-handoff-notifications";
 import { exchangeNotificationSources } from "./exchange-notification-source";
@@ -19,6 +20,8 @@ import type { NotificationSource } from "./notification-source";
 
 type Tx = Prisma.TransactionClient;
 export const domainNotificationKinds = [
+  "GROUP_MEMBERSHIP",
+  "GROUP_REVIEW",
   "PANTRY_REQUEST",
   "NEED_UPDATE",
   "NEED_CONTRIBUTION",
@@ -82,7 +85,21 @@ export async function domainNotificationSources(
   };
   const context = suppliedContext ?? (await postContext(tx, ownerId));
   if (context.actorId !== ownerId || !context.eligible) return result;
-  const assistance = await pantryNotificationSources(tx, events.filter(e => e.kind === "PANTRY_REQUEST"), context, feedbackChannel);
+  const groups = await groupNotificationSources(
+    tx,
+    events.filter(
+      (e) => e.kind === "GROUP_MEMBERSHIP" || e.kind === "GROUP_REVIEW"
+    ),
+    context,
+    feedbackChannel
+  );
+  for (const [id, source] of groups) result.set(id, source);
+  const assistance = await pantryNotificationSources(
+    tx,
+    events.filter((e) => e.kind === "PANTRY_REQUEST"),
+    context,
+    feedbackChannel
+  );
   for (const [id, source] of assistance) result.set(id, source);
   const needs = await needNotificationSources(
     tx,

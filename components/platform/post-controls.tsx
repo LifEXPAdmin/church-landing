@@ -13,6 +13,7 @@ import {
 } from "./post-draft-fields";
 import { portalInputClass } from "./portal-action-form";
 import { discussionModerationReasons } from "@/lib/platform/post-discussion-options";
+import { groupCategories } from "@/lib/platform/group-options";
 import { WelcomePostLabel } from "./welcome-post-label";
 
 function EditPost({ post, owner }: { post: PostEditorView; owner: string }) {
@@ -37,6 +38,8 @@ function EditPost({ post, owner }: { post: PostEditorView; owner: string }) {
           }
         : null
     });
+  const [groupThreadKind, setGroupThreadKind] = useState(post.groupThreadKind),
+    [groupCategory, setGroupCategory] = useState(post.groupCategory);
   const [baseAudience, setBaseAudience] = useState(post.audience),
     [confirmation, setConfirmation] = useState(false),
     [allowReposts, setAllowReposts] = useState(post.allowReposts);
@@ -56,6 +59,7 @@ function EditPost({ post, owner }: { post: PostEditorView; owner: string }) {
       label="Save post changes"
       fields={() => ({
         ...draft,
+        ...(post.groupId ? { groupId: post.groupId, groupThreadKind, groupCategory } : {}),
         allowReposts,
         confirmAudienceChange: confirmation
       })}
@@ -73,6 +77,43 @@ function EditPost({ post, owner }: { post: PostEditorView; owner: string }) {
         Speaking as <strong>{post.authorName}</strong>.{" "}
         {post.churchName && `Shared on ${post.churchName}'s page.`}
       </p>
+      {post.groupId && (
+        <>
+          <label className="block font-semibold">
+            Thread type
+            <select
+              className={portalInputClass}
+              value={groupThreadKind ?? "DISCUSSION"}
+              onChange={(e) =>
+                setGroupThreadKind(e.target.value as "DISCUSSION" | "QUESTION")
+              }
+            >
+              <option value="DISCUSSION">Discussion</option>
+              <option value="QUESTION">Question with a selected answer</option>
+            </select>
+          </label>
+          <label className="block font-semibold">
+            Group category
+            <select
+              className={portalInputClass}
+              value={groupCategory ?? "GENERAL"}
+              onChange={(e) =>
+                setGroupCategory(e.target.value as keyof typeof groupCategories)
+              }
+            >
+              {Object.entries(groupCategories).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <p className="text-sm text-gc-muted">
+            This thread stays in its private group. Clear a selected answer
+            before changing a question into a discussion.
+          </p>
+        </>
+      )}
       <PostDraftFields draft={draft} change={setDraft} />
       <CommentMentions
         resolveSelections
@@ -80,7 +121,7 @@ function EditPost({ post, owner }: { post: PostEditorView; owner: string }) {
         ids={draft.mentionIds ?? []}
         onChange={(mentionIds) => setDraft({ ...draft, mentionIds })}
       />
-      {!post.repostKind && (
+      {!post.repostKind && !post.groupId && (
         <label className="flex min-h-11 items-start gap-2">
           <input
             type="checkbox"
@@ -104,6 +145,7 @@ function EditPost({ post, owner }: { post: PostEditorView; owner: string }) {
         id={id}
         className={portalInputClass}
         value={draft.audience}
+        disabled={!!post.groupId}
         onChange={(e) => {
           setDraft({
             ...draft,
@@ -112,7 +154,11 @@ function EditPost({ post, owner }: { post: PostEditorView; owner: string }) {
           setConfirmation(false);
         }}
       >
-        <option value="PUBLIC">Public · everyone, including guests</option>
+        {post.groupId ? (
+          <option value="GROUP">Private current group members</option>
+        ) : (
+          <option value="PUBLIC">Public · everyone, including guests</option>
+        )}
         {post.churchId && (
           <option value="CHURCH">Approved members of {post.churchName}</option>
         )}
@@ -159,9 +205,14 @@ function SchedulePost({
     <section aria-label="Publication plan" className="space-y-4">
       <h3 className="text-xl">Publication plan</h3>
       <p className="break-words">
-        {post.status === "SCHEDULED"
-          ? <>Scheduled for <RegionalWallTime value={post.scheduleLocal} /> in {post.scheduleZone}.</>
-          : "This post is a draft. Review its content and permissions before scheduling publication."}
+        {post.status === "SCHEDULED" ? (
+          <>
+            Scheduled for <RegionalWallTime value={post.scheduleLocal} /> in{" "}
+            {post.scheduleZone}.
+          </>
+        ) : (
+          "This post is a draft. Review its content and permissions before scheduling publication."
+        )}
       </p>
       <PostActionForm
         owner={owner}
@@ -391,7 +442,21 @@ export function PostControls({
                     <p>
                       {decision.actor} ·{" "}
                       <time dateTime={decision.createdAt}>
-                        <RegionalTime value={decision.createdAt} defaultText={decision.createdAt.slice(0, 16).replace("T", " ")} options={{year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", timeZone: "UTC"}} /> UTC
+                        <RegionalTime
+                          value={decision.createdAt}
+                          defaultText={decision.createdAt
+                            .slice(0, 16)
+                            .replace("T", " ")}
+                          options={{
+                            year: "numeric",
+                            month: "2-digit",
+                            day: "2-digit",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            timeZone: "UTC"
+                          }}
+                        />{" "}
+                        UTC
                       </time>
                     </p>
                     <p>

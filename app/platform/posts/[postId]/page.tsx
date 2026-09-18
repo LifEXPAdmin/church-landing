@@ -11,6 +11,7 @@ import { PlatformShell } from "@/components/platform/platform-shell";
 import { readPost, readPostEditor } from "@/lib/platform/post-session";
 import { PostControls } from "@/components/platform/post-controls";
 import { getCurrentPlatformUser } from "@/lib/platform/session";
+import { GroupQuestion } from "@/components/platform/group-question";
 
 export const dynamic = "force-dynamic";
 export async function generateMetadata({
@@ -114,6 +115,7 @@ export default async function PostPage({
               <PostControls post={editor} ownerId={user.id} />
             </PrivateSnapshotGuard>
           )}
+          {post.group && user && <GroupQuestion post={post} owner={user.id}/>}
         </div>
       </section>
     </PlatformShell>

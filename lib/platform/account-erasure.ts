@@ -1,4 +1,9 @@
 import { revokeAccountContact } from "./adult-contact-policy";
+import {
+  closeGroupAccountAccess,
+  clearGroupOffer,
+  endGroupMembership
+} from "./group-lifecycle";
 import { Prisma, type PrismaClient } from "@prisma/client";
 import { emptyPostDiscovery } from "./post-options";
 import { retireImage } from "./media";
@@ -17,6 +22,38 @@ const personalPost = (userId: string) => ({
 });
 
 async function erasePrivateCollections(tx: Tx, userId: string) {
+  await closeGroupAccountAccess(tx, userId, true);
+  await tx.gatherGroupMembership.updateMany({
+    where: { invitedById: userId },
+    data: {
+      ...endGroupMembership,
+      state: "DECLINED",
+      version: { increment: 1 }
+    }
+  });
+  await tx.gatherGroupMembership.updateMany({
+    where: { offeredById: userId },
+    data: { ...clearGroupOffer, version: { increment: 1 } }
+  });
+  await tx.gatherGroup.updateMany({
+    where: { creatorId: userId },
+    data: { creatorId: null }
+  });
+  // Retain only opaque membership/security references needed by shared sources.
+  // Active ownership remains an explicit handoff exception, as for topics.
+  await tx.gatherGroup.updateMany({
+    where: { ownerId: userId, lifecycle: "ARCHIVED" },
+    data: {
+      ownerId: null,
+      ownerAuthorityKey: null,
+      recoveryRequired: true,
+      version: { increment: 1 }
+    }
+  });
+  await tx.gatherGroupAudit.updateMany({
+    where: { OR: [{ actorId: userId }, { targetId: userId }] },
+    data: { reason: null, fromState: null, toState: null }
+  });
   await tx.privilegedSessionProof.deleteMany({
     where: { session: { userId } }
   });
@@ -123,6 +160,9 @@ async function erasePersonalCalendars(tx: Tx, userId: string, now: Date) {
       version: { increment: 1 }
     }
   });
+  await tx.gatherGroupEventLink.deleteMany({
+    where: { occurrence: occurrences }
+  });
   await tx.calendarOccurrence.deleteMany({ where: occurrences });
   await tx.calendarEvent.deleteMany({ where: personal });
   await tx.calendarAudit.deleteMany({
@@ -135,10 +175,28 @@ async function eraseSocialData(tx: Tx, userId: string, now: Date) {
   await revokeAccountContact(tx, userId);
   await tx.$executeRaw`UPDATE "PantryEvent" e SET reason='' WHERE EXISTS (SELECT 1 FROM "PantryRequest" r WHERE r.id=e."targetId" AND r."requesterId"=${userId})`;
   await tx.$executeRaw`UPDATE "PantryRequest" r SET note='', items='[]'::jsonb WHERE r."requesterId"=${userId} AND NOT EXISTS (SELECT 1 FROM "CommunityReport" p WHERE p."targetType"='PANTRY_REQUEST' AND p."targetId"=r.id)`;
-  await tx.pantryRequest.updateMany({ where: { requesterId: userId }, data: { requesterId: null, pickupContact: "", coordinatorNote: "", authorityKey: null, requesterClearedAt: now } });
-  await tx.pantryRequest.updateMany({ where: { coordinatorId: userId }, data: { coordinatorId: null, coordinatorNote: "", authorityKey: null } });
-  await tx.pantryHub.updateMany({ where: { coordinatorId: userId }, data: { coordinatorId: null, coordinatorKey: null, intakeEnabled: false } });
-  await tx.pantryEvent.updateMany({ where: { actorId: userId }, data: { actorId: null, reason: "" } });
+  await tx.pantryRequest.updateMany({
+    where: { requesterId: userId },
+    data: {
+      requesterId: null,
+      pickupContact: "",
+      coordinatorNote: "",
+      authorityKey: null,
+      requesterClearedAt: now
+    }
+  });
+  await tx.pantryRequest.updateMany({
+    where: { coordinatorId: userId },
+    data: { coordinatorId: null, coordinatorNote: "", authorityKey: null }
+  });
+  await tx.pantryHub.updateMany({
+    where: { coordinatorId: userId },
+    data: { coordinatorId: null, coordinatorKey: null, intakeEnabled: false }
+  });
+  await tx.pantryEvent.updateMany({
+    where: { actorId: userId },
+    data: { actorId: null, reason: "" }
+  });
   // Preserve opaque fulfillment totals and outstanding return quantities. Only
   // deliberately reported evidence retains private text through account erasure.
   await tx.$executeRaw`UPDATE "ExchangeNeedContribution" c SET note='', "disputeNote"='', "loanResponsibility"=''

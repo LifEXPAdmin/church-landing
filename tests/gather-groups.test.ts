@@ -1,3 +1,28 @@
+import { handleGroupRequest } from "../lib/platform/group-boundary";
+import { safeAccountReturn } from "../lib/platform/account-entry";
+import { notificationSource } from "../lib/platform/notification-source";
+import {
+  notificationCategories,
+  notificationPushAllowed,
+  notificationPreferenceCommand
+} from "../lib/platform/notification-preferences";
+import { readActivity } from "../lib/platform/activity";
+import {
+  groupEventCommand,
+  readGroupEvents
+} from "../lib/platform/group-events";
+import { calendarCommand } from "../lib/platform/calendar-commands";
+import {
+  deactivateAccount,
+  AccountLifecycleError
+} from "../lib/platform/account-lifecycle";
+import {
+  prepareAccountExport,
+  downloadAccountExport
+} from "../lib/platform/account-export";
+import { requestPermanentAccountDeletion } from "../lib/platform/account-deletion";
+import { eraseRequestedAccountData } from "../lib/platform/account-erasure";
+import { createSessionToken } from "../lib/platform/auth";
 import {
   groupDiscussionCommand,
   readGroupDiscussions,
@@ -1151,6 +1176,29 @@ test("signed group read progress marks returned positions without skipping unsee
   assert.ok("readProof" in deep && deep.readProof);
   await denied(ack(deep.readProof, stranger), 409);
   await denied(ack(deep.readProof + "x"), 409);
+  await denied(
+    groupDiscussionCommand(db, member.token, {
+      operation: "read-progress",
+      postId: post.id,
+      proof: deep.readProof,
+      shownIds: [first.id]
+    }),
+    409
+  );
+  await groupDiscussionCommand(db, member.token, {
+    operation: "read-progress",
+    postId: post.id,
+    proof: deep.readProof,
+    shownIds: []
+  });
+  assert.equal((await progress()).unreadReplies, 28);
+  await groupDiscussionCommand(db, member.token, {
+    operation: "read-progress",
+    postId: post.id,
+    proof: deep.readProof,
+    shownIds: [ids[25]]
+  });
+  assert.equal((await progress()).unreadReplies, 27);
   const saved = await ack(deep.readProof);
   assert.equal((await progress()).unreadReplies, 6);
   assert.equal((await progress()).following, false);
@@ -1176,4 +1224,466 @@ test("signed group read progress marks returned positions without skipping unsee
   await denied(ack(next.readProof), 409);
   await decide(owner, member, group, "REMOVED");
   await denied(ack(next.readProof), 404);
+});
+
+async function personalEvent(actor: PortalActor) {
+  const calendar = await calendarCommand(db, actor.token, {
+    operation: "create-calendar",
+    requestKey: randomUUID(),
+    name: "Isolated private group planning",
+    timeZone: "UTC"
+  });
+  const event = await calendarCommand(db, actor.token, {
+    operation: "create-event",
+    calendarId: calendar.id,
+    requestKey: randomUUID(),
+    expectedVersion: 1,
+    title: "Original canonical event",
+    allDay: false,
+    startLocal: "2026-11-20T10:00",
+    endLocal: "2026-11-20T11:00",
+    timeZone: "UTC",
+    weeklyUntil: null
+  });
+  const row = await db.calendarEvent.findUniqueOrThrow({
+    where: { id: event.id },
+    include: { occurrences: true }
+  });
+  return { calendar, event: row, occurrence: row.occurrences[0] };
+}
+const linkEvent = (
+  actor: PortalActor,
+  groupId: string,
+  event: Awaited<ReturnType<typeof personalEvent>>
+) =>
+  groupEventCommand(
+    db,
+    actor.token,
+    body("link-event", {
+      groupId,
+      occurrenceId: event.occurrence.id,
+      expectedVersion: 0,
+      occurrenceVersion: event.occurrence.version,
+      eventVersion: event.event.version,
+      confirmed: true
+    })
+  );
+
+test("group event references preserve canonical audience and never create another event or attendance owner", async () => {
+  const { owner, member, stranger, group } = await fixture({
+    joinPolicy: "OPEN"
+  });
+  await join(member, group);
+  const event = await personalEvent(owner);
+  const linked = await linkEvent(owner, group.id, event);
+  assert.equal(
+    (await readGroupEvents(db, owner.token, group.id)).events[0].event.id,
+    event.occurrence.id
+  );
+  assert.equal(
+    (await readGroupEvents(db, member.token, group.id)).events.length,
+    0
+  );
+  await denied(readGroupEvents(db, stranger.token, group.id), 404);
+  await denied(linkEvent(member, group.id, event), 404);
+  const church = await db.church.create({
+    data: {
+      slug: `group-event-${randomUUID()}`,
+      name: "Fictional event sharing church",
+      summary: "Isolated"
+    }
+  });
+  for (const actor of [owner, member])
+    await db.churchConnection.create({
+      data: {
+        userId: actor.id,
+        churchId: church.id,
+        state: "APPROVED",
+        approvedSince: new Date()
+      }
+    });
+  await calendarCommand(db, owner.token, {
+    operation: "share-calendar",
+    calendarId: event.calendar.id,
+    churchId: church.id,
+    expectedVersion: 0,
+    level: "BUSY",
+    confirmed: true
+  });
+  assert.equal(
+    (await readGroupEvents(db, member.token, group.id)).events.length,
+    0
+  );
+  await calendarCommand(db, owner.token, {
+    operation: "share-calendar",
+    calendarId: event.calendar.id,
+    churchId: church.id,
+    expectedVersion: 1,
+    level: "DETAILS",
+    confirmed: true
+  });
+  assert.equal(
+    (await readGroupEvents(db, member.token, group.id)).events[0].event.title,
+    "Original canonical event"
+  );
+  await calendarCommand(db, owner.token, {
+    operation: "revoke-calendar-share",
+    calendarId: event.calendar.id,
+    churchId: church.id,
+    expectedVersion: 2
+  });
+  assert.equal(
+    (await readGroupEvents(db, member.token, group.id)).events.length,
+    0
+  );
+  await groupEventCommand(
+    db,
+    owner.token,
+    body("unlink-event", {
+      groupId: group.id,
+      occurrenceId: event.occurrence.id,
+      expectedVersion: linked.version
+    })
+  );
+  assert.equal(
+    (await readGroupEvents(db, owner.token, group.id)).events.length,
+    0
+  );
+  assert.equal(
+    await db.calendarOccurrence.count({ where: { eventId: event.event.id } }),
+    1
+  );
+  assert.equal(
+    await db.calendarResponse.count({
+      where: { occurrenceId: event.occurrence.id }
+    }),
+    0
+  );
+});
+
+test("group ownership, private export and permanent erasure use existing account lifecycle boundaries", async () => {
+  const { owner, member, group } = await fixture({ joinPolicy: "OPEN" });
+  await join(member, group, true);
+  await assert.rejects(
+    deactivateAccount(db, owner.token, owner.password, true),
+    (e) => e instanceof AccountLifecycleError && e.code === "handoff"
+  );
+  assert.equal(
+    (await db.platformUser.findUniqueOrThrow({ where: { id: owner.id } }))
+      .deactivatedAt,
+    null
+  );
+  const post = await publish(member, group.id, {
+    content: "My own private export content"
+  });
+  await commentCommand(
+    db,
+    owner.token,
+    body("create", {
+      postId: post.id,
+      content: "Another member private reply excluded from export"
+    })
+  );
+  await db.gatherGroupAudit.create({
+    data: {
+      groupId: group.id,
+      actorId: owner.id,
+      targetId: member.id,
+      action: "FIXTURE_REVIEW",
+      reason: "Private moderator notes excluded",
+      version: 1
+    }
+  });
+  const secret = process.env.AUTH_RATE_LIMIT_SECRET!;
+  const proof = await prepareAccountExport(
+    db,
+    member.token,
+    member.password,
+    secret
+  );
+  const exported = await downloadAccountExport(
+    db,
+    member.token,
+    proof.authorization,
+    secret
+  );
+  const data = JSON.parse(exported);
+  assert.ok(exported.includes("My own private export content"));
+  assert.ok(!exported.includes("Another member private reply excluded"));
+  assert.ok(!exported.includes("Private moderator notes excluded"));
+  assert.equal(data.groupChoices[0].groupId, group.id);
+  assert.equal(data.groupChoices[0].rosterVisible, true);
+  assert.equal(data.ownedGroups.length, 0);
+  const journal = { async recordAccount() {}, async completeAccount() {} };
+  await requestPermanentAccountDeletion(
+    db,
+    member.token,
+    member.password,
+    true,
+    createSessionToken(),
+    journal
+  );
+  assert.equal((await own(member, group.id)).state, "LEFT");
+  const deletion = await db.accountDeletion.findUniqueOrThrow({
+    where: { userId: member.id }
+  });
+  await eraseRequestedAccountData(db, deletion.id, journal);
+  assert.equal((await own(member, group.id)).rosterVisible, false);
+  assert.equal(
+    (await db.platformPost.findUniqueOrThrow({ where: { id: post.id } }))
+      .content,
+    ""
+  );
+  assert.equal(
+    (
+      await db.gatherGroupAudit.findFirstOrThrow({
+        where: { groupId: group.id, action: "FIXTURE_REVIEW" }
+      })
+    ).reason,
+    null
+  );
+  assert.equal(await getPost(db, owner.token, post.id), null);
+});
+
+test("group notices contain generic current-source metadata and require a separate dated phone choice", async () => {
+  const { owner, member, group } = await fixture();
+  await join(member, group);
+  const review = await db.socialEvent.findFirstOrThrow({
+    where: {
+      kind: "GROUP_REVIEW",
+      recipientId: owner.id,
+      sourceId: (await own(member, group.id)).id
+    }
+  });
+  const reviewSource = await db.$transaction((tx) =>
+    notificationSource(tx, review, false)
+  );
+  assert.ok(reviewSource?.href.endsWith("/manage"));
+  await decide(owner, member, group);
+  assert.equal(
+    await db.$transaction((tx) => notificationSource(tx, review, true)),
+    null
+  );
+  const event = await db.socialEvent.findFirstOrThrow({
+    where: {
+      kind: "GROUP_MEMBERSHIP",
+      recipientId: member.id,
+      sourceId: (await own(member, group.id)).id
+    },
+    orderBy: { createdAt: "desc" }
+  });
+  const source = await db.$transaction((tx) =>
+    notificationSource(tx, event, false)
+  );
+  assert.equal(source?.category, "groups");
+  assert.ok(!JSON.stringify(source).includes(group.fields.name));
+  assert.ok(
+    !JSON.stringify(event, (_key, value) =>
+      typeof value === "bigint" ? value.toString() : value
+    ).includes(group.fields.rules)
+  );
+  assert.equal(
+    await db.$transaction((tx) => notificationSource(tx, event, "EMAIL")),
+    null
+  );
+  assert.equal(notificationPushAllowed(null, "groups", event.createdAt), false);
+  const preferences = await db.socialPreferences.upsert({
+    where: { ownerId: member.id },
+    create: { ownerId: member.id, pushCategories: ["groups"] },
+    update: { pushCategories: ["groups"], notificationPushSince: {} }
+  });
+  assert.equal(
+    notificationPushAllowed(preferences, "groups", event.createdAt),
+    false
+  );
+  const since = new Date(event.createdAt.getTime() - 1000).toISOString();
+  const dated = await db.socialPreferences.update({
+    where: { ownerId: member.id },
+    data: { notificationPushSince: { groups: since } }
+  });
+  assert.equal(notificationPushAllowed(dated, "groups", event.createdAt), true);
+  await notificationPreferenceCommand(
+    db,
+    member.token,
+    body("preferences", {
+      ownerId: member.id,
+      expectedVersion: dated.version,
+      inApp: Object.fromEntries(
+        notificationCategories
+          .filter((c) => c !== "groups")
+          .map((c) => [c, true])
+      ),
+      pushCategories: [],
+      quietHours: null
+    })
+  );
+  const retained = await db.socialPreferences.findUniqueOrThrow({
+    where: { ownerId: member.id }
+  });
+  assert.ok(retained.pushCategories.includes("groups"));
+  assert.equal(
+    (retained.notificationPushSince as Record<string, string>).groups,
+    since
+  );
+  const activity = await readActivity(db, member.token, { category: "groups" });
+  assert.equal(activity.items.length, 1);
+  assert.equal(activity.items[0].available, true);
+  assert.ok(!JSON.stringify(activity).includes(group.fields.name));
+  assert.equal(
+    await db.notificationDelivery.count({ where: { eventId: event.id } }),
+    0
+  );
+  await relationshipCommand(db, member.token, {
+    operation: "block",
+    kind: "person",
+    targetId: owner.id,
+    expectedVersion: 0,
+    desired: true,
+    mutationId: randomUUID()
+  });
+  assert.equal(
+    await db.$transaction((tx) => notificationSource(tx, event, true)),
+    null
+  );
+});
+
+test("group HTTP boundaries pin the account, reject foreign actions and retain private no-store responses", async () => {
+  const { owner, member, stranger, group } = await fixture({
+    joinPolicy: "OPEN"
+  });
+  const origin = process.env.ACCOUNT_ORIGIN!;
+  const read = await readGroup(db, member.token, group.slug);
+  const input = body("join", {
+    groupId: group.id,
+    expectedVersion: 0,
+    rulesVersion: read.group.rulesVersion,
+    acceptedRules: true,
+    rosterVisible: false
+  });
+  const send = (
+    headers: Record<string, string>,
+    payload: Record<string, unknown> = input
+  ) =>
+    handleGroupRequest(
+      db,
+      new Request(origin + "/api/platform/groups", {
+        method: "POST",
+        headers: {
+          cookie: "church_platform_session=" + member.token,
+          "content-type": "application/json",
+          ...headers
+        },
+        body: JSON.stringify(payload)
+      })
+    );
+  assert.equal(
+    (await send({ origin, "x-expected-account": stranger.id })).status,
+    401
+  );
+  assert.equal(
+    (
+      await send({
+        origin: "https://foreign.invalid",
+        "x-expected-account": member.id
+      })
+    ).status,
+    403
+  );
+  assert.equal((await send({ origin })).status, 401);
+  assert.equal(
+    (
+      await send(
+        { origin, "x-expected-account": member.id },
+        { ...input, unknown: true }
+      )
+    ).status,
+    400
+  );
+  const saved = await send({ origin, "x-expected-account": member.id });
+  assert.ok([200, 202].includes(saved.status));
+  const savedData = await saved.json();
+  const replay = await send({ origin, "x-expected-account": member.id });
+  assert.equal((await replay.json()).id, savedData.id);
+  assert.equal(
+    await db.gatherGroupMembership.count({
+      where: { groupId: group.id, userId: member.id }
+    }),
+    1
+  );
+  for (const key of [
+    "cache-control",
+    "cdn-cache-control",
+    "vercel-cdn-cache-control"
+  ])
+    assert.match(saved.headers.get(key) ?? "", /no-store/);
+  assert.match(saved.headers.get("vary") ?? "", /X-Expected-Account/);
+  const guest = await handleGroupRequest(
+    db,
+    new Request(origin + "/api/platform/groups?view=about&slug=" + group.slug)
+  );
+  assert.equal(guest.status, 200);
+  assert.ok(!JSON.stringify(await guest.json()).includes(member.username));
+  assert.equal(
+    (
+      await handleGroupRequest(
+        db,
+        new Request(
+          origin + "/api/platform/groups?view=members&slug=" + group.slug
+        )
+      )
+    ).status,
+    404
+  );
+  assert.equal(
+    (
+      await handleGroupRequest(
+        db,
+        new Request(origin + "/api/platform/groups?view=list&view=mine")
+      )
+    ).status,
+    400
+  );
+  await decide(owner, member, group, "REMOVED");
+  assert.equal(
+    (await send({ origin, "x-expected-account": member.id })).status,
+    404
+  );
+  const privateGroup = await create(stranger, {
+    discovery: "UNLISTED",
+    joinPolicy: "INVITE_ONLY"
+  });
+  assert.equal(
+    (
+      await handleGroupRequest(
+        db,
+        new Request(
+          origin + "/api/platform/groups?view=about&slug=" + privateGroup.slug
+        )
+      )
+    ).status,
+    404
+  );
+});
+
+test("group account returns preserve a destination without carrying cursors or actions", () => {
+  for (const path of [
+    "/platform/groups",
+    "/platform/groups/new",
+    "/platform/groups/mine",
+    "/platform/groups/invitations",
+    "/platform/groups/adult-study/discussion",
+    "/platform/groups/adult-study/manage"
+  ])
+    assert.equal(
+      safeAccountReturn(path + "?invitation=private&operation=join#confirm"),
+      path
+    );
+  assert.equal(
+    safeAccountReturn("https://foreign.invalid/platform/groups"),
+    "/platform"
+  );
+  assert.equal(
+    safeAccountReturn("/platform/groups/adult-study/erase"),
+    "/platform"
+  );
 });

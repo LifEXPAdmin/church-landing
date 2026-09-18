@@ -116,6 +116,7 @@ function ChurchConnection({
       >
         Church calendar and public events
       </Link>
+      <Link prefetch={false} href={`/platform/groups?churchId=${church.id}`} className={portalLinkClass}>Church Gather groups</Link>
       <Link prefetch={false} href={`/platform/pantry/${church.id}`} className={portalLinkClass}>Church pantry and support hub</Link>
       {connection && <PortalStatus state={connection.state} />}
       {connection?.state === "PENDING" && (

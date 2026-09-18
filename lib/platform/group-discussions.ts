@@ -36,7 +36,7 @@ export function groupDiscussionCommand(
       ? ["desired", "reason"]
       : op === "select-answer"
         ? ["commentId"]
-        : ["proof"])
+        : ["proof", "shownIds"])
   ]);
   const authorize = async (
     tx: Parameters<typeof readableConversation>[0],
@@ -67,7 +67,8 @@ export function groupDiscussionCommand(
           tx,
           context,
           post,
-          input.proof
+          input.proof,
+          input.shownIds
         );
         return {
           id: post.id,

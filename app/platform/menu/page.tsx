@@ -117,6 +117,13 @@ export default async function PlatformMenuPage() {
                 icon={HandHeart}
               />
               <MenuLink
+                href="/platform/groups"
+                title="Gather groups"
+                description="Find an adult group, read its rules and join private discussions."
+                icon={HandHeart}
+                prefetch={false}
+              />
+              <MenuLink
                 href="/platform/topics"
                 title="Topic communities"
                 description="Read public discussions, join a topic or start your own."

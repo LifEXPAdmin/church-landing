@@ -220,7 +220,11 @@ function PostCardContent({
                 </time>
                 <span>
                   <Globe aria-hidden="true" />
-                  {post.audience === "PUBLIC" ? "Public" : "Church members"}
+                  {post.audience === "GROUP"
+                    ? "Private group members"
+                    : post.audience === "PUBLIC"
+                      ? "Public"
+                      : "Church members"}
                 </span>
                 <span className="gc-post-type">
                   {postTypeLabels[post.type]}

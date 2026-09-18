@@ -2,6 +2,7 @@ import type { Prisma } from "@prisma/client";
 import type { PostTx } from "./post-access";
 import { recordGroupAccessControl } from "./retention-controls";
 import { PortalError } from "./portal-policy";
+import { recordGroupActivity } from "./group-activity";
 
 export const clearGroupOffer = {
   pendingRole: null,
@@ -44,6 +45,7 @@ export async function recordGroupChange(
     data: { groupId, actorId, action, version, ...extra }
   });
   await recordGroupAccessControl(tx, groupId, actorId);
+  await recordGroupActivity(tx, groupId, actorId, action, extra.targetId);
 }
 export async function retireGroupOffers(
   tx: PostTx,
@@ -107,4 +109,31 @@ export async function revokeGroupContact(
     });
   for (const groupId of new Set(affected.map((r) => r.groupId)))
     await recordGroupAccessControl(tx, groupId, actorId);
+}
+
+export async function closeGroupAccountAccess(
+  tx: PostTx,
+  userId: string,
+  permanent: boolean
+) {
+  const rows = await tx.gatherGroupMembership.findMany({
+    where: { userId },
+    select: { id: true, groupId: true, state: true },
+    take: 1001
+  });
+  if (rows.length > 1000)
+    throw new PortalError(503, "These group choices need a size review.");
+  for (const row of rows) {
+    await tx.gatherGroupMembership.update({
+      where: { id: row.id },
+      data: {
+        ...endGroupMembership,
+        ...(permanent && !["REMOVED", "BANNED"].includes(row.state)
+          ? { state: "LEFT", rulesVersion: 0 }
+          : {}),
+        version: { increment: 1 }
+      }
+    });
+    await recordGroupAccessControl(tx, row.groupId, userId);
+  }
 }

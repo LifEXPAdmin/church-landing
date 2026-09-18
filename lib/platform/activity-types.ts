@@ -14,7 +14,8 @@ export const activityCategories = [
   "exchange",
   "handoffs",
   "needs",
-  "assistance"
+  "assistance",
+  "groups"
 ] as const;
 export type ActivityCategory = (typeof activityCategories)[number];
 export type ActivityPage = {

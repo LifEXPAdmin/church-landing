@@ -107,6 +107,8 @@ export type CommentItem = {
   href: string;
 };
 export type CommentThreadPage = {
+  readProof?: string | null;
+  readScope?: string | null;
   kind: "thread";
   postId: string;
   sort: "oldest" | "newest";

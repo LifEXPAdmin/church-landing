@@ -1,6 +1,7 @@
 "use client";
 import { RegionalWallTime } from "./regional-presentation";
 import { CommentMentions } from "./comment-mentions";
+import { groupCategories } from "@/lib/platform/group-options";
 import { useEffect, useId, useRef, useState } from "react";
 import type {
   PostComposerOptions,
@@ -143,6 +144,7 @@ function ComposerDraft({
   options,
   initialChurch = "",
   initialTopic,
+  initialGroup,
   onSaved,
   onClose,
   closeChoice,
@@ -152,6 +154,7 @@ function ComposerDraft({
   options: PostComposerOptions;
   initialChurch?: string;
   initialTopic?: string;
+  initialGroup?: string;
   onSaved: () => void;
   onClose: () => void;
   closeChoice: boolean;
@@ -188,15 +191,21 @@ function ComposerDraft({
     });
   };
   useEffect(() => {
+    if (
+      initialGroup &&
+      !options.groups.some((group) => group.id === initialGroup)
+    )
+      return;
     controller.start(
       options.churches.some((c) => c.id === initialChurch)
         ? initialChurch
         : null,
       options.topics.some((topic) => topic.id === initialTopic)
         ? initialTopic
-        : undefined
+        : undefined,
+      initialGroup
     );
-  }, [controller, options, initialChurch, initialTopic]);
+  }, [controller, options, initialChurch, initialTopic, initialGroup]);
   useEffect(() => {
     if (state.postId) onSaved();
   }, [state.postId, onSaved]);
@@ -253,6 +262,21 @@ function ComposerDraft({
       className="min-h-0 flex-1"
       onSubmit={(e) => {
         e.preventDefault();
+        if (initialGroup && draft.groupId !== initialGroup) {
+          setProblem(
+            "This draft has another destination. Save or discard it, then start a new discussion from the group."
+          );
+          return;
+        }
+        if (
+          draft.groupId &&
+          !options.groups.some((group) => group.id === draft.groupId)
+        ) {
+          setProblem(
+            "Current group membership and rules acceptance are required. Keep your unsent entries."
+          );
+          return;
+        }
         const problem = draftProblem(draft);
         if (
           (draft.scheduleLocal || draft.scheduleZone) &&
@@ -354,6 +378,106 @@ function ComposerDraft({
           disabled={state.publishing || !!state.postId}
         >
           <PostDraftFields draft={draft} change={setDraft} />
+          {initialGroup && draft.groupId !== initialGroup && (
+            <p role="status">
+              Your current draft belongs elsewhere. Save or discard it before
+              starting a discussion in this group.
+            </p>
+          )}
+          {!draft.groupId &&
+            !draft.topicCommunityId &&
+            !draft.quoteSourceId &&
+            state.version === 0 &&
+            options.groups.length > 0 && (
+              <label className="block space-y-2">
+                <span>Private group destination</span>
+                <select
+                  className={portalInputClass}
+                  value=""
+                  onChange={(event) => {
+                    if (event.target.value)
+                      controller.change({
+                        ...draft,
+                        groupId: event.target.value,
+                        groupThreadKind: "DISCUSSION",
+                        groupCategory: "GENERAL",
+                        audience: "GROUP",
+                        authorChurchId: null,
+                        audienceChurchId: null,
+                        eventOccurrenceId: null,
+                        topicCommunityId: null,
+                        replyAudience: "VIEWERS",
+                        scheduleLocal: "",
+                        scheduleZone: ""
+                      });
+                  }}
+                >
+                  <option value="">Keep the current destination</option>
+                  {options.groups.map((group) => (
+                    <option key={group.id} value={group.id}>
+                      {group.name}
+                    </option>
+                  ))}
+                </select>
+                <span className="block text-sm text-gc-muted">
+                  Choose before saving. A group draft keeps its private
+                  destination.
+                </span>
+              </label>
+            )}
+          {draft.groupId && (
+            <section
+              className="space-y-3 rounded-xl border border-gc-divider p-3"
+              aria-label="Private group destination"
+            >
+              <p>
+                Private discussion in{" "}
+                {options.groups.find((group) => group.id === draft.groupId)
+                  ?.name ?? "a group whose access needs review"}
+                . Only current permitted members can read it. This destination
+                stays fixed.
+              </p>
+              <label className="block space-y-2">
+                <span>Thread type</span>
+                <select
+                  className={portalInputClass}
+                  value={draft.groupThreadKind ?? "DISCUSSION"}
+                  onChange={(event) =>
+                    controller.change({
+                      ...draft,
+                      groupThreadKind: event.target.value as
+                        | "DISCUSSION"
+                        | "QUESTION"
+                    })
+                  }
+                >
+                  <option value="DISCUSSION">Discussion</option>
+                  <option value="QUESTION">
+                    Question with a selected answer
+                  </option>
+                </select>
+              </label>
+              <label className="block space-y-2">
+                <span>Group category</span>
+                <select
+                  className={portalInputClass}
+                  value={draft.groupCategory ?? "GENERAL"}
+                  onChange={(event) =>
+                    controller.change({
+                      ...draft,
+                      groupCategory: event.target.value
+                    })
+                  }
+                >
+                  {Object.entries(groupCategories).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </section>
+          )}
           {state.ownerId && (
             <details className="space-y-3">
               <summary className="cursor-pointer py-2 font-semibold">
@@ -409,71 +533,72 @@ function ComposerDraft({
               )}
             </section>
           )}
-          {(options.topics.length > 0 || draft.topicCommunityId) && (
-            <div className="space-y-2">
-              <label className="block font-semibold" htmlFor={`${id}-topic`}>
-                Topic community
-              </label>
-              <select
-                id={`${id}-topic`}
-                className={portalInputClass}
-                value={draft.topicCommunityId ?? ""}
-                disabled={!!draft.quoteSourceId}
-                onChange={(event) => {
-                  setPublicTopicConfirmed(false);
-                  const topicCommunityId = event.target.value || null;
-                  controller.change({
-                    ...draft,
-                    topicCommunityId,
-                    ...(topicCommunityId
-                      ? {
-                          authorChurchId: null,
-                          audienceChurchId: null,
-                          eventOccurrenceId: null,
-                          audience: "PUBLIC",
-                          replyAudience: "VIEWERS"
-                        }
-                      : {})
-                  });
-                }}
-              >
-                <option value="">No topic community</option>
-                {draft.topicCommunityId &&
-                  !options.topics.some(
-                    (topic) => topic.id === draft.topicCommunityId
-                  ) && (
-                    <option value={draft.topicCommunityId}>
-                      Saved topic · access needs review
-                    </option>
-                  )}
-                {options.topics.map((topic) => (
-                  <option key={topic.id} value={topic.id}>
-                    {topic.name}
-                  </option>
-                ))}
-              </select>
-              <p className="text-sm text-gc-muted">
-                Join a topic and accept its current rules to publish there. A
-                published post keeps its destination.
-              </p>
-              {draft.topicCommunityId && (
-                <label className="flex min-h-11 items-start gap-2">
-                  <input
-                    type="checkbox"
-                    checked={publicTopicConfirmed}
-                    required
-                    onChange={(event) =>
-                      setPublicTopicConfirmed(event.target.checked)
-                    }
-                  />
-                  <span>
-                    I understand this topic post is public, including for
-                    guests. I am posting as myself.
-                  </span>
+          {!draft.groupId &&
+            (options.topics.length > 0 || draft.topicCommunityId) && (
+              <div className="space-y-2">
+                <label className="block font-semibold" htmlFor={`${id}-topic`}>
+                  Topic community
                 </label>
-              )}
-            </div>
-          )}
+                <select
+                  id={`${id}-topic`}
+                  className={portalInputClass}
+                  value={draft.topicCommunityId ?? ""}
+                  disabled={!!draft.quoteSourceId}
+                  onChange={(event) => {
+                    setPublicTopicConfirmed(false);
+                    const topicCommunityId = event.target.value || null;
+                    controller.change({
+                      ...draft,
+                      topicCommunityId,
+                      ...(topicCommunityId
+                        ? {
+                            authorChurchId: null,
+                            audienceChurchId: null,
+                            eventOccurrenceId: null,
+                            audience: "PUBLIC",
+                            replyAudience: "VIEWERS"
+                          }
+                        : {})
+                    });
+                  }}
+                >
+                  <option value="">No topic community</option>
+                  {draft.topicCommunityId &&
+                    !options.topics.some(
+                      (topic) => topic.id === draft.topicCommunityId
+                    ) && (
+                      <option value={draft.topicCommunityId}>
+                        Saved topic · access needs review
+                      </option>
+                    )}
+                  {options.topics.map((topic) => (
+                    <option key={topic.id} value={topic.id}>
+                      {topic.name}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-sm text-gc-muted">
+                  Join a topic and accept its current rules to publish there. A
+                  published post keeps its destination.
+                </p>
+                {draft.topicCommunityId && (
+                  <label className="flex min-h-11 items-start gap-2">
+                    <input
+                      type="checkbox"
+                      checked={publicTopicConfirmed}
+                      required
+                      onChange={(event) =>
+                        setPublicTopicConfirmed(event.target.checked)
+                      }
+                    />
+                    <span>
+                      I understand this topic post is public, including for
+                      guests. I am posting as myself.
+                    </span>
+                  </label>
+                )}
+              </div>
+            )}
           {draft.quoteSourceId && state.ownerId && (
             <QuoteDraftPreview
               key={draft.quoteSourceId}
@@ -484,14 +609,22 @@ function ComposerDraft({
           )}
           <p className="text-sm text-gc-muted">
             {authorChurchId ? "Church identity" : "My personal profile"} ·{" "}
-            {draft.audience === "CHURCH" ? "Church members" : "Public"} ·{" "}
+            {draft.audience === "GROUP"
+              ? "Private group members"
+              : draft.audience === "CHURCH"
+                ? "Church members"
+                : "Public"}{" "}
+            ·{" "}
             {draft.replyAudience === null
               ? "Reply choice required"
               : draft.replyAudience === "CHURCH_MEMBERS"
                 ? "Church members may reply"
                 : "Eligible viewers may reply"}
           </p>
-          <details className="space-y-3" hidden={!!draft.topicCommunityId}>
+          <details
+            className="space-y-3"
+            hidden={!!draft.topicCommunityId || !!draft.groupId}
+          >
             <summary className="cursor-pointer py-2 font-semibold">
               Author, audience and replies
             </summary>
@@ -776,11 +909,13 @@ function ComposerDraft({
 function OpenPostComposer({
   initialChurch,
   initialTopic,
+  initialGroup,
   resumeId,
   dismiss
 }: {
   initialChurch?: string;
   initialTopic?: string;
+  initialGroup?: string;
   resumeId?: string;
   dismiss: () => void;
 }) {
@@ -915,6 +1050,7 @@ function OpenPostComposer({
             options={options}
             initialChurch={initialChurch}
             initialTopic={initialTopic}
+            initialGroup={initialGroup}
             onSaved={() => setFinished(true)}
             onClose={close}
             closeChoice={closeChoice}
@@ -950,12 +1086,14 @@ function OpenPostComposer({
 export function PostComposer({
   initialChurch,
   initialTopic,
+  initialGroup,
   resumeId,
   id,
   label = "Share what's on your heart"
 }: {
   initialChurch?: string;
   initialTopic?: string;
+  initialGroup?: string;
   resumeId?: string;
   id?: string;
   label?: string;
@@ -975,6 +1113,7 @@ export function PostComposer({
         <OpenPostComposer
           initialChurch={initialChurch}
           initialTopic={initialTopic}
+          initialGroup={initialGroup}
           resumeId={resumeId}
           dismiss={() => setOpen(false)}
         />

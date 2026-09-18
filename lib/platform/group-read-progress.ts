@@ -108,9 +108,22 @@ export async function saveGroupReadProgress(
   tx: PostTx,
   context: PostContext,
   post: { id: string; version: number; groupId: string | null },
-  value: unknown
+  value: unknown,
+  shownIds?: unknown
 ) {
   const proof = decodeProof(value, context, post);
+  if (shownIds !== undefined) {
+    if (
+      !Array.isArray(shownIds) ||
+      shownIds.length > 50 ||
+      shownIds.some((id) => typeof id !== "string" || !proof.ids.includes(id))
+    )
+      throw new PortalError(
+        409,
+        "Reload the visible discussion before recording its read progress."
+      );
+    proof.ids = [...new Set(shownIds as string[])];
+  }
   if (proof.postVersion !== post.version)
     throw new PortalError(
       409,

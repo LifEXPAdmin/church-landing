@@ -30,7 +30,8 @@ export const notificationCategories = [
   "exchange",
   "handoffs",
   "needs",
-  "assistance"
+  "assistance",
+  "groups"
 ] as const;
 export type NotificationCategory = (typeof notificationCategories)[number];
 export type QuietHours = {
@@ -149,7 +150,8 @@ export function notificationPushAllowed(
     "exchange",
     "handoffs",
     "needs",
-  "assistance"
+    "assistance",
+    "groups"
   ].includes(category);
 }
 export function notificationEmailAllowed(
@@ -253,14 +255,21 @@ export async function notificationPreferenceCommand(
           [...legacyInAppCategories].sort().join(),
           notificationCategories
             .filter(
-              (c) => c !== "assistance" && c !== "needs" && c !== "exchange" && c !== "handoffs"
+              (c) =>
+                c !== "groups" &&
+                c !== "assistance" &&
+                c !== "needs" &&
+                c !== "exchange" &&
+                c !== "handoffs"
             )
             .sort()
             .join(),
           notificationCategories
             .filter(
               (c) =>
-                c !== "assistance" && c !== "needs" &&
+                c !== "groups" &&
+                c !== "assistance" &&
+                c !== "needs" &&
                 c !== "exchange" &&
                 c !== "feedback" &&
                 c !== "handoffs"
@@ -269,19 +278,39 @@ export async function notificationPreferenceCommand(
             .join(),
           notificationCategories
             .filter(
-              (c) => c !== "assistance" && c !== "needs" && c !== "feedback" && c !== "handoffs"
+              (c) =>
+                c !== "groups" &&
+                c !== "assistance" &&
+                c !== "needs" &&
+                c !== "feedback" &&
+                c !== "handoffs"
             )
             .sort()
             .join(),
           notificationCategories
-            .filter((c) => c !== "assistance" && c !== "needs" && c !== "handoffs")
+            .filter(
+              (c) =>
+                c !== "groups" &&
+                c !== "assistance" &&
+                c !== "needs" &&
+                c !== "handoffs"
+            )
             .sort()
             .join(),
           notificationCategories
-            .filter((c) => c !== "assistance" && c !== "needs")
+            .filter(
+              (c) => c !== "groups" && c !== "assistance" && c !== "needs"
+            )
             .sort()
             .join(),
-          notificationCategories.filter((c) => c !== "assistance").sort().join(),
+          notificationCategories
+            .filter((c) => c !== "groups" && c !== "assistance")
+            .sort()
+            .join(),
+          notificationCategories
+            .filter((c) => c !== "groups")
+            .sort()
+            .join(),
           [...notificationCategories].sort().join()
         ].includes(Object.keys(choices).sort().join()) ||
         Object.values(choices).some((v) => typeof v !== "boolean") ||
@@ -376,7 +405,9 @@ export async function notificationPreferenceCommand(
                   ? (prior?.prayerPushSince?.toISOString() ?? now.toISOString())
                   : category === "exchange" ||
                       category === "handoffs" ||
-                      category === "needs" || category === "assistance"
+                      category === "needs" ||
+                      category === "assistance" ||
+                      category === "groups"
                     ? now.toISOString()
                     : new Date(0).toISOString()
         ])
