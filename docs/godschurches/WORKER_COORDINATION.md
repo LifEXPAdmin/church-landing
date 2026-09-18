@@ -87,3 +87,10 @@ A2 provides tested commits and explicit migration/configuration needs. A1 record
 merged and verified-live status separately. The initial setup does not prove a
 later session automatically loaded instructions, a physical device worked, or a
 feature passed acceptance. Leave those existing gates open until observed.
+
+After integrating a schema change, regenerate the receiving worktree's Prisma
+client with `npm run prisma:generate` before running its checks. A successful
+migration does not refresh an already installed client. Stop that worktree's
+checks before regeneration; preserve a failed stale-client attempt and rerun the
+affected checks against the merged schema. Do not modify the other worker's
+dependencies or database.
