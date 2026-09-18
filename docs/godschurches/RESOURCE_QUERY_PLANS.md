@@ -125,8 +125,9 @@ preserving all 144 original application table/column fingerprints. Protected
 replay completes and temporary plaintext is removed. These are local release
 checks; the live database still has 100 migrations and no price-order index.
 
-Remaining: review the navigation correction's tested handoff, verify the combined
-candidate and complete production migration, deployment identity and live checks.
+Remaining: complete production migration, deployment identity and live checks
+for this independently verified index candidate. The separate navigation correction
+has no ready handoff yet and remains excluded from this release.
 Keep acceptance open until those steps have actual evidence. No source permission,
 cursor format, service query, dependency, provider setting or production row has
 changed in this investigation and local verification.

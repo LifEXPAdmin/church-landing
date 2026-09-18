@@ -7,8 +7,8 @@ development stage. The build and five built HTTPS browser groups also pass.
 A protected production-copy rehearsal applies migration
 `20260918195500_exchange_price_order`, preserves all 144 original application
 table/column fingerprints and completes protected replay. Production is unchanged
-at 100 migrations and release 2026.09.18.8. Navigation integration, combined
-verification and live publication remain open.
+at 100 migrations and release 2026.09.18.8. Live publication remains open. The
+separate navigation correction has no ready handoff and is excluded.
 
 ## Expanded resource restoration verified, September 18, 2026 UTC
 
@@ -30,7 +30,7 @@ fresh-connection price pages; a second index adds no useful gain. All 900 servic
 comparison observations preserve identical projections. Three full traversals
 return all 12,000 listings once and in order; group traversal returns all 1,000
 groups once. The index migration now passes the local release checks above.
-Combined navigation integration and live publication remain open.
+Live publication remains open; the unready navigation correction remains separate.
 
 ## Enabled-module resource budgets, September 18, 2026 UTC
 
