@@ -1,7 +1,51 @@
-# Gather groups implementation checkpoint
+# Gather groups and private discussions
 
-18 September 2026. Local acceptance is in progress. No Gather migration or runtime
-is deployed; the live application remains the verified pantry release.
+## Verified live, 18 September 2026 UTC
+
+Product **2026.09.18.4**, application
+**5087b2c78faadb2dbfcc183b83aaa7d6cf02d9f6**, is READY in
+**dpl_Xgury4FWE46XFuih7WmALEphRL9M** at **11:36:53.516 UTC**. Independent
+canonical assignment and the serving build match at **11:37:13.439 UTC**.
+
+The staged regression covers 184 distinct files and 198 accepted executions:
+1,190 passes, two expected skips and zero remaining failures. Service/schema
+baseline `90bd80d` and the final shared-client changes are accounted separately.
+The final delta adds 25 passing checks, including eighteen draft-controller tests.
+The exact final build passes nineteen Groups browser scenarios. Additional
+acceptance covers twelve repeated Back/lost-response retries, two actual password
+return and separate-draft journeys, four church/filter/authority checks, five
+scoped moderation/appeal checks, thirteen Pantry and nine Needs regressions.
+
+Live acceptance passes 62 public/privacy checks, six private-health checks and
+five read-only observations in the existing signed-in Mac Chrome account. Group
+choices and invitations are empty. Creation presents deliberate adult and leader
+consent, with no church duty inferred. The first live browser attempt stopped on
+transient duplicate streamed main markup; waiting for the settled document passes
+the complete rerun. This was a harness timing correction, not a live code change.
+
+All 99 migration and installed recovery checksums match, with none pending.
+Encrypted protected 98-to-99 upgrade preserves all original columns in 140 tables.
+Installed ordinary recovery completes at 11:38:04.142 UTC with 99 migrations, 144
+tables and plaintext removed. Nightly validation checks 75 encrypted sets with
+zero issues or removals. All 140 pre-release table/column fingerprints remain
+unchanged through 11:39:10.831 UTC, including the reading cache. Verification
+application writes and recipient sends are zero. The content-free native queue
+probe is consumed with HTTP 200; exact-deployment error/fatal rows are zero through
+11:39:05.779 UTC. These observations do not establish physical-phone delivery,
+actual group participation or ministry pilot acceptance. Existing operator, family
+and provider gates remain explicit.
+
+The provider build verifies 223 traces, 73,951 entries and 555 server JavaScript
+files, excluding private fixtures and environment files. The final local Groups
+route plus shared layouts total 763,642 bytes, or 225,896 compressed bytes; its
+additional chunks relative to the canonical post route total 30,347 bytes, or
+9,047 compressed bytes. No dependencies were added. The measured isolated query
+reductions below preserve identical projected data and are not production latency
+claims.
+
+## Implementation and acceptance history
+
+The following describes the preserved local acceptance stages before publication.
 
 The adult group contract is saved in `GATHER_GROUPS_CONTRACT.md`. Groups reuse
 canonical posts, comments, private drafts, polls, reports, appeals and event links.
@@ -56,14 +100,15 @@ of all 140 tables and asserts no inferred group, consent or destination data.
 Old activity and notification category expectations were repaired for Groups;
 the historical pre-Needs form omits all later categories. The Gather report
 fixture explicitly enables its local intake flag and restores it afterward.
-Remaining discovered
-tests are continuing on the unchanged baseline build. A final delta gate covers
-the client draft/controller changes separately. Full acceptance is not yet claimed.
+Remaining discovered tests completed on the unchanged baseline build. The final
+delta gate covers the client draft/controller changes separately. Original
+failures and corrected executions remain recorded without counting failed
+executions as passes.
 
 Encrypted production-copy upgrade and protected recovery passed 98 to 99
 migrations with all 140 original table/column fingerprints unchanged. Production
-was not modified. Installed production recovery still covers the live 98
-migrations and must be updated after an accepted release.
+was not modified. The installed production recovery registry was subsequently updated to 99
+migrations and its fresh ordinary restore is verified above.
 
 Bounded reads preserve identical projections on isolated fixtures: twenty group
 cards use 6 SELECTs instead of 102 for guests and 17 instead of 113 for members.
@@ -72,7 +117,7 @@ Twenty discussion rows use 25 instead of 44. Median local times are approximatel
 measurements, not production latency claims. Commands keep fresh authorization;
 reused authority lookups exist only within one bounded read transaction.
 
-The candidate includes release notes and feature instructions. Exact final build,
-remaining regression, canonical deployment, live privacy/runtime verification,
-installed recovery and private task reconciliation remain open. Real ministry
-pilots, physical phones and youth/family readiness are separate evidence.
+The release includes feature instructions, canonical deployment, live privacy and
+runtime verification, and installed recovery. Private task reconciliation records
+the scoped engineering completion separately from actual ministry pilots,
+physical phones and youth/family readiness.

@@ -1,3 +1,28 @@
+## Gather groups verified live, September 18, 2026 UTC
+
+**2026.09.18.4 / 5087b2c78faadb2dbfcc183b83aaa7d6cf02d9f6** is READY in
+**dpl_Xgury4FWE46XFuih7WmALEphRL9M** at **11:36:53.516 UTC**. Independent
+canonical assignment and serving identity match at 11:37:13.439 UTC. Adult
+membership, named leadership, private canonical discussions, questions/polls,
+roster consent, visible read progress, scoped moderation and event references
+ship together. See [the exact receipt](GATHER_GROUPS_IMPLEMENTATION.md).
+
+The staged 184-file gate passes 1,190 tests with two expected skips and zero
+remaining failures across 198 accepted executions. Final client checks and the
+exact nineteen-scenario browser run pass. Live: 62 public/privacy checks, six
+health checks and five existing signed-in Mac observations. All 99 migration and
+recovery checksums match; installed encrypted restoration verifies 144 tables
+and removes plaintext. Nightly checks 75 sets with no issues or removals. All
+140 original table/column fingerprints are unchanged through 11:39 UTC. No
+verification application writes or recipient sends occurred. The native queue
+probe is consumed and scoped runtime error/fatal rows are zero.
+
+Keep actual physical-device, ministry-pilot, operator and family activation
+requirements separate. Reconcile the focused feature tasks and newly unlocked
+settings integration, then continue eligible work across the four project lists.
+The fourteen remaining P1 tasks have actual owner/device/operator/provider gates.
+The main private index connector errors remain explicit. Final review stays last.
+
 ## Gather groups in local acceptance, September 18, 2026 UTC
 
 Adult groups and private canonical discussions are implemented. Nineteen browser

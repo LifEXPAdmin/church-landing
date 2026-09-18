@@ -1,9 +1,9 @@
 # Adult Gather groups and private discussions
 
 Implementation contract, 18 September 2026 UTC. The adult group and discussion
-implementation is in local acceptance. Production remains the verified pantry
-release 2026.09.18.3. See `GATHER_GROUPS_IMPLEMENTATION.md` for actual evidence and
-the remaining exact release, live verification and recovery gates.
+implementation is released as 2026.09.18.4. See
+`GATHER_GROUPS_IMPLEMENTATION.md` for exact source, deployment, verification and
+recovery evidence. Physical devices and actual ministry pilots remain separate.
 
 ## Source boundaries and canonical owners
 
