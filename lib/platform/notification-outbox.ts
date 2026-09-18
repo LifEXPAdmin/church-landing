@@ -1,4 +1,10 @@
 import {
+  socialEmailAvailable,
+  socialEmailCategory,
+  sendSocialEmail,
+  type SocialEmailTransport
+} from "./social-email";
+import {
   feedbackEmailAvailable,
   sendFeedbackEmail,
   type FeedbackEmailTransport
@@ -43,20 +49,33 @@ export async function enqueueNotification(
   sourceCreatedAt?: Date
 ) {
   if (!event.recipientId) return;
+  const emailCategory =
+    socialEmailCategory(event) ??
+    (["FEEDBACK_CASE", "FEEDBACK_IDEA"].includes(event.kind)
+      ? "feedback"
+      : null);
   if (
     !onlyDeviceId &&
-    feedbackEmailAvailable() &&
-    ["FEEDBACK_CASE", "FEEDBACK_IDEA"].includes(event.kind)
+    emailCategory &&
+    (emailCategory === "feedback"
+      ? feedbackEmailAvailable()
+      : socialEmailAvailable())
   ) {
     const at = new Date();
-    const source = await notificationSource(tx, event, "EMAIL", at);
-    const settings = source
-      ? await tx.socialPreferences.findUnique({
-          where: { ownerId: event.recipientId }
-        })
+    const settings = await tx.socialPreferences.findUnique({
+      where: { ownerId: event.recipientId }
+    });
+    // Most recipients have not opted in. Check their dated choice before the
+    // canonical source reads; opted-in deliveries still need all authority checks.
+    const source = notificationEmailAllowed(
+      settings,
+      sourceCreatedAt ?? event.createdAt,
+      emailCategory
+    )
+      ? await notificationSource(tx, event, "EMAIL", at)
       : null;
     const owner =
-      source && notificationEmailAllowed(settings, event.createdAt)
+      source && source.category === emailCategory
         ? await tx.platformUser.findUnique({
             where: { id: event.recipientId },
             select: { credentialVersion: true }
@@ -160,7 +179,8 @@ export async function deliverNotification(
   id: string,
   transport: PushTransport,
   now = new Date(),
-  emailTransport: FeedbackEmailTransport = sendFeedbackEmail
+  emailTransport: FeedbackEmailTransport = sendFeedbackEmail,
+  socialTransport: SocialEmailTransport = sendSocialEmail
 ): Promise<PushWorkResult> {
   const claim = await notificationWrite(db, async (tx) => {
     const row = await tx.notificationDelivery.findUnique({
@@ -180,6 +200,11 @@ export async function deliverNotification(
       return { done: true, outcome: "finished" } as const;
     const sub = row.subscription;
     const email = row.channel === "EMAIL";
+    const emailCategory =
+      socialEmailCategory(row.event) ??
+      (["FEEDBACK_CASE", "FEEDBACK_IDEA"].includes(row.event.kind)
+        ? "feedback"
+        : null);
     if (sub && sub.expiresAt <= now && !sub.revokedAt)
       await revokePushSubscriptions(tx, { id: sub.id }, now);
     const finish = async (outcome: "CANCELLED" | "FAILED") => {
@@ -195,9 +220,11 @@ export async function deliverNotification(
     if (
       row.expiresAt <= now ||
       (email
-        ? !feedbackEmailAvailable() ||
-          row.emailCredentialVersion !== row.owner.credentialVersion ||
-          !["FEEDBACK_CASE", "FEEDBACK_IDEA"].includes(row.event.kind)
+        ? !emailCategory ||
+          !(emailCategory === "feedback"
+            ? feedbackEmailAvailable()
+            : socialEmailAvailable()) ||
+          row.emailCredentialVersion !== row.owner.credentialVersion
         : !pushAvailable() ||
           !sub ||
           sub.revokedAt ||
@@ -232,8 +259,12 @@ export async function deliverNotification(
     const preferences = projectNotificationPreferences(settings);
     if (
       email
-        ? source.category !== "feedback" ||
-          !notificationEmailAllowed(settings, row.event.createdAt)
+        ? source.category !== emailCategory ||
+          !notificationEmailAllowed(
+            settings,
+            row.event.createdAt,
+            source.category
+          )
         : source.category !== "test" &&
           ((source.category === "founder" && !preferences.inApp.founder) ||
             !notificationPushAllowed(
@@ -279,14 +310,19 @@ export async function deliverNotification(
       data: { deliveryId: id, attempt, outcome: "ATTEMPTED", createdAt: now }
     });
     return {
-      emailIntent: email
-        ? {
-            deliveryId: id,
-            email: row.owner.email,
-            kind: row.event.kind as "FEEDBACK_CASE" | "FEEDBACK_IDEA",
-            sourceId: row.event.sourceId!
-          }
-        : null,
+      socialIntent:
+        email && emailCategory !== "feedback"
+          ? { deliveryId: id, email: row.owner.email }
+          : null,
+      emailIntent:
+        email && emailCategory === "feedback"
+          ? {
+              deliveryId: id,
+              email: row.owner.email,
+              kind: row.event.kind as "FEEDBACK_CASE" | "FEEDBACK_IDEA",
+              sourceId: row.event.sourceId!
+            }
+          : null,
       subscription:
         sub && sub.endpoint && sub.p256dh && sub.auth
           ? {
@@ -313,11 +349,13 @@ export async function deliverNotification(
   if (claim.done !== undefined) return claim;
   let status = 0;
   try {
-    status = claim.emailIntent
-      ? await emailTransport(claim.emailIntent)
-      : claim.subscription
-        ? await transport(claim.subscription, claim.payload, claim.ttl)
-        : 400;
+    status = claim.socialIntent
+      ? await socialTransport(claim.socialIntent)
+      : claim.emailIntent
+        ? await emailTransport(claim.emailIntent)
+        : claim.subscription
+          ? await transport(claim.subscription, claim.payload, claim.ttl)
+          : 400;
   } catch {
     /* Diagnostics must not retain a provider exception with endpoint/key material. */
   }
@@ -328,7 +366,10 @@ export async function deliverNotification(
     });
     if (!row) return { done: true, outcome: "cancelled" };
     const accepted = status >= 200 && status < 300,
-      expired = !claim.emailIntent && (status === 404 || status === 410);
+      expired =
+        !claim.socialIntent &&
+        !claim.emailIntent &&
+        (status === 404 || status === 410);
     const retry =
       !accepted &&
       !expired &&

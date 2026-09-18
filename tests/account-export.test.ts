@@ -79,6 +79,7 @@ test("export includes only the owner's explicit fields, directory choices and ow
     notificationVersion: 2,
     notificationRecoveryRequired: false,
     mutedNotificationCategories: ["reactions", "church"],
+    notificationEmailSince: { replies: "2026-09-18T00:00:00.000Z" },
     notificationPushSince: { posts: "2026-09-15T00:00:00.000Z" },
     reportAlerts: false,
     founderAnnouncements: false,

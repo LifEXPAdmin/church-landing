@@ -64,6 +64,10 @@ const env = {
   ...process.env,
   NODE_ENV: "test",
   VERCEL: "",
+  // Legacy authenticator cases run before the suite that explicitly exercises
+  // enroll/enforce. Do not inherit a preview or operator mode into this baseline.
+  PRIVILEGED_MFA_MODE: "off",
+  SOCIAL_EMAIL_ENABLED: "false",
   DATABASE_URL: database,
   DIRECT_URL: database,
   ACCOUNT_ORIGIN: `http://127.0.0.1:${appPort}`,
@@ -991,6 +995,17 @@ try {
       console.log(
         `Gather upgrade preserves all original columns in ${originals.length} tables and creates no group, consent, authority, destination or read history.`
       );
+    } else if (name === "20260918123000_social_notification_email") {
+      const snapshot = () => [
+        psql(["-Atc", `SELECT md5(coalesce(jsonb_agg(to_jsonb(t) - 'notificationEmailSince' ORDER BY "ownerId")::text,'[]')) FROM "SocialPreferences" t`]).trim(),
+        psql(["-Atc", `SELECT md5(coalesce(jsonb_agg(to_jsonb(t) ORDER BY id)::text,'[]')) FROM "NotificationDelivery" t`]).trim(),
+        psql(["-Atc", `SELECT md5(coalesce(jsonb_agg(to_jsonb(t) ORDER BY id)::text,'[]')) FROM "SocialEvent" t`]).trim()
+      ].join(":");
+      const before = snapshot();
+      psql(["-f", `prisma/migrations/${name}/migration.sql`]);
+      if (snapshot() !== before || psql(["-Atc", `SELECT count(*) FROM "SocialPreferences" WHERE "notificationEmailSince" IS NOT NULL`]).trim() !== "0")
+        throw Error("Optional social email migration changed existing choices or backfilled consent/delivery");
+      console.log("Optional social email migration preserves all previous choices and events; no opt-in or historical delivery is inferred.");
     } else psql(["-f", `prisma/migrations/${name}/migration.sql`]);
   }
   if (beforeMetrics) {

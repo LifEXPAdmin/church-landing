@@ -1,3 +1,4 @@
+import { socialEmailAvailable } from "./social-email";
 import { feedbackEmailAvailable } from "./feedback-email";
 import type { PrismaClient } from "@prisma/client";
 import { pushAvailable } from "./push-config";
@@ -14,7 +15,7 @@ export const publishPush: QueuePublish = async (
 ) => {
   if (
     process.env.VERCEL !== "1" ||
-    (!pushAvailable() && !feedbackEmailAvailable())
+    (!pushAvailable() && !feedbackEmailAvailable() && !socialEmailAvailable())
   )
     throw Error("Notification queue is not configured on this deployment.");
   const { send } = await import("@vercel/queue");
@@ -30,7 +31,7 @@ export async function dispatchNotifications(
   publish: QueuePublish = publishPush,
   actorId?: string
 ) {
-  if (!pushAvailable() && !feedbackEmailAvailable())
+  if (!pushAvailable() && !feedbackEmailAvailable() && !socialEmailAvailable())
     return { queued: 0, failed: 0 };
   const now = new Date();
   const rows = await db.notificationDelivery.findMany({
@@ -39,7 +40,9 @@ export async function dispatchNotifications(
       channel: {
         in: [
           ...(pushAvailable() ? ["PUSH"] : []),
-          ...(feedbackEmailAvailable() ? ["EMAIL"] : [])
+          ...(feedbackEmailAvailable() || socialEmailAvailable()
+            ? ["EMAIL"]
+            : [])
         ]
       },
       expiresAt: { gt: now },

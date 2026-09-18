@@ -301,6 +301,7 @@ export function NotificationSettings({ owner }: { owner: string }) {
                   inApp: fields.inApp,
                   pushCategories: fields.pushCategories,
                   quietHours: fields.quietHours,
+                  emailCategories: fields.emailCategories,
                   feedbackEmail: fields.feedbackEmail
                 })
               );
@@ -378,6 +379,37 @@ export function NotificationSettings({ owner }: { owner: string }) {
                     Phone alerts
                     {!view.channels.push && " (currently unavailable)"}
                   </label>
+                  {(category === "replies" || category === "reactions") && (
+                    <label className="flex min-h-11 items-center gap-3">
+                      <input
+                        type="checkbox"
+                        checked={fields.emailCategories.includes(category)}
+                        disabled={
+                          !view.channels.socialEmail &&
+                          !fields.emailCategories.includes(category)
+                        }
+                        onChange={(event) =>
+                          change({
+                            ...fields,
+                            emailCategories: event.target.checked
+                              ? [...fields.emailCategories, category]
+                              : fields.emailCategories.filter(
+                                  (c) => c !== category
+                                )
+                          })
+                        }
+                      />
+                      Email updates
+                      {!view.channels.socialEmail && " (currently unavailable)"}
+                    </label>
+                  )}
+                  {category === "replies" && (
+                    <p className="text-sm text-gc-muted">
+                      A reply that mentions you uses Mentions instead. Mentions
+                      and followed-conversation updates do not have email
+                      alerts.
+                    </p>
+                  )}
                   {category === "feedback" && (
                     <>
                       <label className="flex min-h-11 items-center gap-3">
@@ -419,10 +451,11 @@ export function NotificationSettings({ owner }: { owner: string }) {
                 </fieldset>
               ))}
               <p>
-                Feedback email uses your verified sign-in address when
-                available. SMS alerts are unavailable. Account verification and
-                recovery emails stay separate. Following someone does not enable
-                phone alerts.
+                Optional email uses your verified sign-in address when
+                available. Likes and direct replies have separate choices,
+                initially off. Turning email on allows future activity only. SMS
+                alerts are unavailable. Account verification and recovery emails
+                stay separate. Following someone does not enable phone alerts.
               </p>
               <fieldset className="space-y-3">
                 <legend className="text-xl">Quiet hours</legend>
@@ -444,7 +477,7 @@ export function NotificationSettings({ owner }: { owner: string }) {
                       })
                     }
                   />
-                  Pause phone and feedback email alerts during quiet hours
+                  Pause phone and optional email alerts during quiet hours
                 </label>
                 {fields.quietHours && (
                   <>
