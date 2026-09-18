@@ -915,6 +915,16 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "navigation-and-calendar-recovery",
+    version: "2026.09.18.10",
+    date: "2026-09-18",
+    summary: "Return to your place and recover unsaved calendar edits safely.",
+    added: [],
+    improved: ["Back preserves permitted Exchange filters and reading position across linked pages.", "Calendar edits keep unsaved entries and offer an explicit review when saved information changes."],
+    fixed: ["Calendar pages conceal cached private details when access changes.", "Retrying an uncertain calendar save keeps its original request and avoids duplicate changes."],
+    featureIds: ["exchange-listings", "calendar"]
+  },
+  {
     id: "exchange-price-browsing",
     version: "2026.09.18.9",
     date: "2026-09-18",
