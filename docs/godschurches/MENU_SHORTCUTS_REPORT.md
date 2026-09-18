@@ -158,3 +158,34 @@ claim. A fresh encrypted production-copy rehearsal upgrades 101 migrations to
 replay and removes temporary plaintext. Production is unchanged at this local
 checkpoint. Publication, installed recovery-registry propagation and exact
 canonical-domain live acceptance remain required.
+
+## Verified live publication, 18 September 2026, 23:35 UTC
+
+Release 2026.09.18.11 serves on the canonical domain from main `1fbcf9f`,
+READY deployment `dpl_JBEbCMsNCRn7tSARFPFvhcbTakCL`. The deployment became
+ready at 23:33:52 UTC; independent alias and exact serving identity matched at
+23:34:56 UTC. Only final reports and two reviewed media-definition documents
+differ from tested runtime `6a2a0e4`.
+
+Twenty-seven live public/browser/privacy groups and six health checks pass,
+with zero browser errors and mutating requests. The reserved nonexistent-source
+queue probe is accepted and consumed. Scoped deployment logs from READY through
+23:35:36 UTC contain zero error or fatal rows. This is a bounded observation,
+not an uptime or recipient-delivery claim. All 144 original production table and
+column fingerprints remain unchanged through 23:35:44 UTC. Verification makes
+zero application-row writes and zero recipient sends.
+
+Migrations `20260918223500_profile_modules` and
+`20260918223600_menu_shortcuts` are applied. All 103 source, production and
+installed recovery checksums match. The fresh installed encrypted backup restores
+144 tables at 23:28:24 UTC with temporary plaintext removed, and 81 retention sets
+have no inspection issues. The separate protected upgrade rehearsal completed
+current-control replay; the installed daily backup remains database-only.
+
+The provider build confirms the expected hydration renderer, 224 runtime traces,
+74,369 entries and 557 server JavaScript files. Automated independent-session
+behavior and local restore evidence are recorded above. Physical-device checks
+and later calendar/featured-media source adapters retain their separate gates.
+No media player, catalog or native upload is activated by the accompanying
+published media contract. Workflow guide 3.1 is published; future fresh-session
+instruction discovery is still a separately observed requirement.
