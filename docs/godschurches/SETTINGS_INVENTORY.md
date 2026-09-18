@@ -1,5 +1,16 @@
 # Settings inventory and reuse map
 
+## Calendar capability audit, September 18, 2026
+
+The [calendar settings contract](CALENDAR_SETTINGS_CONTRACT.md) distinguishes
+saved regional date/time formats from URL-only month, viewing zone and layer
+choices. Current explicit BUSY/DETAILS shares and church publication remain
+separate canonical operations. Saved week-start/default-view/device-following
+preferences, profile-calendar disclosure, default timed reminders, protected
+subscriptions and external sync are unimplemented capabilities, not completed
+features inferred from an existing calendar link. No registration or permission
+changes are made by this inventory audit.
+
 ## Communities integration, September 18, 2026
 
 The Communities and interests folder links existing Gather membership and named
