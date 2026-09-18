@@ -1,5 +1,16 @@
 # Platform growth and optional measurement
 
+## Community outcome definitions: September 18, 2026 candidate
+
+The shared dictionary defines fulfilled needs, attendance, completed service,
+saved helpful resources and accepted introductions, with explicit evidence,
+privacy and coverage limits. The existing authorized Growth dictionary and CSV
+receive these definitions. Each is marked not measured in the current report;
+there is no new collection, numeric query, schema or consent change.
+See [community outcome definitions](COMMUNITY_OUTCOME_METRICS.md) for current
+source ownership, unavailable evidence, counting units and later adapter gates.
+This definition candidate does not establish integration or verified release.
+
 ## Feedback integration candidate — September 16, 2026 UTC
 
 The **unreleased** feedback candidate now connects current and preceding rating
