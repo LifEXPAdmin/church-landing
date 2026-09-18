@@ -1,3 +1,30 @@
+## Communities settings live and independent workers ready, September 18, 2026 UTC
+
+**2026.09.18.5 / 25eb4a1ffba75e5875a23938cd3a4f428e7e2f27** is READY in
+**dpl_D5oMRMA3Zek6seqPCvFoYQuCWGkb** at **12:09:55.440 UTC**. Canonical assignment
+and serving identity match at 12:10:50.887 UTC. Communities and interests links
+existing group choices, invitations, contact preferences, commitments, calendar
+sharing and notifications without adding preference storage or permissions.
+See [the acceptance receipt](COMMUNITY_SETTINGS_IMPLEMENTATION.md).
+
+Fifteen focused tests, eight new browser scenarios and six existing Settings
+browser regressions pass on the final build. Live checks pass 65 public/privacy
+and six health checks; signed-in Mac observations verify the current navigation
+and saved contact value without mutations. All 99 migration/recovery checksums
+match, the current encrypted restore verifies 144 tables, and all 144 production
+fingerprints remain unchanged. No application writes or recipient sends occurred.
+The broader RSVP-default integration remains open for its canonical capability.
+
+The owner-approved A1/A2 workflow is implemented in the existing instructions and
+[coordination procedure](WORKER_COORDINATION.md). Separate worktrees, branches,
+fictional database clusters and application ports are verified. Both independent
+chats adopted the guidance and reserved their own identities; four coordination
+tests and focused lint pass. Actual paths, configuration and worker checkpoints
+remain private under the resolved Git common directory. A1 alone integrates and
+releases; A2 hands tested commits back and continues its assigned queue. A later
+fresh-session automatic-loading check remains open. Recheck the current worker
+queue and ready-to-merge work at safe checkpoints; retain real acceptance gates.
+
 ## Gather groups verified live, September 18, 2026 UTC
 
 **2026.09.18.4 / 5087b2c78faadb2dbfcc183b83aaa7d6cf02d9f6** is READY in
