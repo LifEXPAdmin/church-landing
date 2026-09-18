@@ -22,8 +22,13 @@ environment failures are retained separately from the passing acceptance.
 The encrypted production-copy rehearsal upgrades 99 to 100 migrations, preserves
 all original column fingerprints across 144 tables and completes protected
 restoration with outbound delivery disabled. This does not change production.
-The complete combined regression gate, production migration, installed recovery
-registry, exact release and live verification remain open at this checkpoint.
+The complete combined regression gate exits successfully: 186 discovered files,
+200 executions, 1,209 passes, two expected production-phase skips and zero
+failures. Both new membership-loss cases are included. Populated upgrade,
+no-backfill checks, fresh migration, restoration, development and production
+builds, restart persistence and production HTTPS privacy checks pass. Production
+migration, installed recovery registry, exact release and live verification
+remain open at this checkpoint.
 
 Actual production configuration has no social-email enable flag; the default is
 false. Keep real provider acceptance, a consenting recipient's inbox, authorized
