@@ -122,6 +122,8 @@ function project<T extends { publishedAt: Date | null; updatedAt: Date }>(
 function fieldsOf(
   row: Pick<ExchangeListing, keyof ExchangeListingFields>
 ): ExchangeListingFields {
+  if (row.audience !== "PUBLIC" && row.audience !== "CHURCH")
+    throw new PortalError(503, "This listing's audience needs review before publication.");
   // Stored values were validated at the write boundary. Revalidate publication
   // from the complete current snapshot rather than trusting an old saved form.
   return {

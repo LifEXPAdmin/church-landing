@@ -1,3 +1,5 @@
+import { groupPostDestination } from "./group-post-policy";
+import { requireGroupParticipation } from "./group-policy";
 import { personMentionIds } from "./person-mentions";
 import { postInteractionIdIn } from "./post-reads";
 import { parsePostDiscovery, type PostDiscoveryInput } from "./post-discovery";
@@ -32,7 +34,10 @@ export type PrivateDraftPayload = {
   scripture: string;
   type: PlatformPostType;
   topics: string[];
-  audience: "PUBLIC" | "CHURCH";
+  audience: "PUBLIC" | "CHURCH" | "GROUP";
+  groupId?: string | null;
+  groupThreadKind?: string | null;
+  groupCategory?: string | null;
   replyAudience: "VIEWERS" | "CHURCH_MEMBERS" | null;
   authorChurchId: string | null;
   audienceChurchId: string | null;
@@ -43,6 +48,9 @@ export type PrivateDraftPayload = {
   topicCommunityId?: string | null;
 };
 const draftFields = [
+  "groupId",
+  "groupThreadKind",
+  "groupCategory",
   "mentionIds",
   "scheduleLocal",
   "scheduleZone",
@@ -101,7 +109,7 @@ export function privateDraftPayload(value: unknown): PrivateDraftPayload {
   )
     throw new PortalError(400, "Choose up to five different supported topics.");
   const audience = p.audience ?? "PUBLIC";
-  if (audience !== "PUBLIC" && audience !== "CHURCH")
+  if (audience !== "PUBLIC" && audience !== "CHURCH" && audience !== "GROUP")
     throw new PortalError(400, "Choose Public or Church.");
   // Old snapshots never recorded this choice. Keep it unresolved, not public.
   const replyAudience = p.replyAudience ?? null;
@@ -111,6 +119,7 @@ export function privateDraftPayload(value: unknown): PrivateDraftPayload {
     replyAudience !== "CHURCH_MEMBERS"
   )
     throw new PortalError(400, "Choose a supported reply permission.");
+  const group = groupPostDestination({ ...p, audience });
   const reference = (v: unknown) => (v == null || v === "" ? null : postId(v));
   return {
     ...(p.mentionIds !== undefined
@@ -125,6 +134,7 @@ export function privateDraftPayload(value: unknown): PrivateDraftPayload {
     ...(p.discovery !== undefined
       ? { discovery: parsePostDiscovery(p.discovery, false) }
       : {}),
+    ...(group.groupId ? group : {}),
     content: text(p.content ?? "", 20000),
     ...(p.contentNote !== undefined
       ? { contentNote: text(p.contentNote, 1000) }
@@ -221,6 +231,13 @@ export function readPostWorkspace(
     token,
     async (tx, session) => {
       const ownerId = session.userId;
+      const draftContext = await postContext(tx, ownerId);
+      const permittedDraft: Prisma.PrivatePostDraftWhereInput = {
+        OR: [
+          { groupId: null },
+          { groupId: { in: [...(draftContext.groupReaders ?? [])] } }
+        ]
+      };
       const after = query.after ? key(query.after) : undefined;
       const page = <T extends { id: string }>(rows: T[]) => ({
         items: rows.slice(0, WORKSPACE_PAGE_SIZE),
@@ -235,7 +252,12 @@ export function readPostWorkspace(
       };
       if (query.view === "draft") {
         const draft = await tx.privatePostDraft.findFirst({
-          where: { ownerId, id: key(query.id), deletedAt: null },
+          where: {
+            ownerId,
+            id: key(query.id),
+            deletedAt: null,
+            AND: [permittedDraft]
+          },
           select: draftSelect
         });
         return {
@@ -251,6 +273,7 @@ export function readPostWorkspace(
               where: {
                 ownerId,
                 deletedAt: null,
+                AND: [permittedDraft],
                 ...(after ? { id: { gt: after } } : {})
               },
               select: draftSelect,
@@ -421,11 +444,31 @@ export async function postWorkspaceCommand(
     ownerId: string,
     result: Receipt
   ) => {
+    if (op === "save-draft") {
+      const payload = privateDraftPayload(input.payload);
+      requireGroupParticipation(
+        await postContext(tx, ownerId),
+        payload.groupId
+      );
+    }
+    if (op === "save-item") {
+      const source = await tx.platformPost.findUnique({
+        where: { id: postId(input.postId) },
+        select: { groupId: true }
+      });
+      if (source?.groupId)
+        requireGroupParticipation(
+          await postContext(tx, ownerId),
+          source.groupId
+        );
+    }
     if (op === "publish-draft" && result.postId) {
       const post = await tx.platformPost.findUnique({
         where: { id: result.postId },
-        select: { topicCommunityId: true }
+        select: { topicCommunityId: true, groupId: true }
       });
+      if (post?.groupId)
+        requireGroupParticipation(await postContext(tx, ownerId), post.groupId);
       if (post?.topicCommunityId)
         requireTopicParticipation(
           await postContext(tx, ownerId),
@@ -465,6 +508,10 @@ export async function postWorkspaceCommand(
       });
       if (!row) throw new PortalError(404, "Draft unavailable.");
       expected(input.expectedVersion, row.version);
+      requireGroupParticipation(
+        await postContext(tx, session.userId),
+        row.groupId
+      );
       return {
         ownerId: session.userId,
         payload: publicationPayload(row.payload)
@@ -527,6 +574,15 @@ export async function postWorkspaceCommand(
         if (op === "save-draft") {
           const payload = privateDraftPayload(input.payload);
           const previous = row ? privateDraftPayload(row.payload) : null;
+          if (row && (row.groupId ?? null) !== (payload.groupId ?? null))
+            throw new PortalError(
+              400,
+              "A saved draft retains its original group destination. Start a separate draft for another audience."
+            );
+          requireGroupParticipation(
+            await postContext(tx, ownerId),
+            payload.groupId
+          );
           if (
             previous?.mentionIds?.length &&
             !Object.hasOwn(payload, "mentionIds")
@@ -573,7 +629,7 @@ export async function postWorkspaceCommand(
                 data: { payload, version: { increment: 1 } }
               })
             : await tx.privatePostDraft.create({
-                data: { id, ownerId, payload }
+                data: { id, ownerId, payload, groupId: payload.groupId ?? null }
               });
           result = {
             id,

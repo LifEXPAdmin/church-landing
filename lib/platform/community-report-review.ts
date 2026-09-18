@@ -6,12 +6,22 @@ import { privilegedProjectionAvailable } from "./privileged-auth-policy";
 import { exchangeAuthority } from "./exchange-policy";
 
 export async function reportReviewAuthority(tx: PostTx, context: PostContext) {
-  if (context.actorId && !(await privilegedProjectionAvailable(tx, context.actorId)))
-    return { churches: [], exchangeChurches: [], topics: [], global: false };
+  if (
+    context.actorId &&
+    !(await privilegedProjectionAvailable(tx, context.actorId))
+  )
+    return {
+      churches: [],
+      exchangeChurches: [],
+      topics: [],
+      groups: [],
+      global: false
+    };
   return {
     churches: [...context.moderators],
     exchangeChurches: (await exchangeAuthority(tx, context)).moderators,
     topics: [...(context.topicModerators ?? [])],
+    groups: [...(context.groupModerators ?? [])],
     global: !!(
       context.actorId &&
       (await tx.platformOperatorGrant.findFirst({
@@ -40,6 +50,7 @@ export type ReviewRow = Pick<
   | "updatedAt"
   | "scopeChurchId"
   | "scopeTopicId"
+  | "scopeGroupId"
 >;
 
 // SQL aliases r (report), c (comment), p (post) are shared by the review
@@ -58,19 +69,26 @@ export function reviewReportScope(authority: ReportReviewAuthority) {
       authority.churches.length
         ? Prisma.sql`(r."targetType" <> 'EXCHANGE_LISTING' AND r."scopeChurchId" IN (${Prisma.join(authority.churches)}))`
         : Prisma.sql`FALSE`
-    } OR ${authority.exchangeChurches.length
-      ? Prisma.sql`(r."targetType" = 'EXCHANGE_LISTING' AND r."scopeChurchId" IN (${Prisma.join(authority.exchangeChurches)}))`
-      : Prisma.sql`FALSE`
+    } OR ${
+      authority.exchangeChurches.length
+        ? Prisma.sql`(r."targetType" = 'EXCHANGE_LISTING' AND r."scopeChurchId" IN (${Prisma.join(authority.exchangeChurches)}))`
+        : Prisma.sql`FALSE`
     } OR ${
       authority.topics.length
         ? Prisma.sql`(r."scopeTopicId" IN (${Prisma.join(authority.topics)}) AND r."targetType" IN ('POST','COMMENT') AND r."scopeChurchId" IS NULL)`
+        : Prisma.sql`FALSE`
+    } OR ${
+      authority.groups.length
+        ? Prisma.sql`(r."scopeGroupId" IN (${Prisma.join(authority.groups)}) AND r."targetType" IN ('POST','COMMENT') AND r."scopeChurchId" IS NULL)`
         : Prisma.sql`FALSE`
     })`;
   const currentScope = Prisma.sql`coalesce(e."ownerChurchId",
     CASE WHEN e.audience = 'CHURCH' THEN e."audienceChurchId" END,
     p."authorChurchId", CASE WHEN p.audience = 'CHURCH' THEN p."audienceChurchId" END)`;
   const currentTopic = Prisma.sql`CASE WHEN r."targetType" = 'TOPIC' THEN r."targetId" ELSE p."topicCommunityId" END`;
+  const currentGroup = Prisma.sql`CASE WHEN r."targetType" = 'GROUP' THEN r."targetId" ELSE p."groupId" END`;
   return Prisma.sql`${original}
+      AND (${authority.global} OR ${currentGroup} IS NULL OR ${authority.groups.length ? Prisma.sql`${currentGroup} IN (${Prisma.join(authority.groups)})` : Prisma.sql`FALSE`})
       AND (${authority.global} OR ${currentTopic} IS NULL OR ${
         authority.topics.length
           ? Prisma.sql`${currentTopic} IN (${Prisma.join(authority.topics)})`
@@ -81,9 +99,10 @@ export function reviewReportScope(authority: ReportReviewAuthority) {
         authority.churches.length
           ? Prisma.sql`(r."targetType" <> 'EXCHANGE_LISTING' AND ${currentScope} IN (${Prisma.join(authority.churches)}))`
           : Prisma.sql`FALSE`
-      } OR ${authority.exchangeChurches.length
-        ? Prisma.sql`(r."targetType" = 'EXCHANGE_LISTING' AND ${currentScope} IN (${Prisma.join(authority.exchangeChurches)}))`
-        : Prisma.sql`FALSE`
+      } OR ${
+        authority.exchangeChurches.length
+          ? Prisma.sql`(r."targetType" = 'EXCHANGE_LISTING' AND ${currentScope} IN (${Prisma.join(authority.exchangeChurches)}))`
+          : Prisma.sql`FALSE`
       })`;
 }
 
@@ -104,7 +123,7 @@ export function reviewReportRows(
 ) {
   return tx.$queryRaw<ReviewRow[]>(Prisma.sql`
     SELECT r.id, r."targetType", r.reason, r.status, r.version,
-      r."createdAt", r."updatedAt", r."scopeChurchId", r."scopeTopicId"
+      r."createdAt", r."updatedAt", r."scopeChurchId", r."scopeTopicId", r."scopeGroupId"
     FROM "CommunityReport" r
     ${reviewReportJoins}
     WHERE ${reviewReportScope(authority)}

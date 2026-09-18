@@ -21,7 +21,7 @@ export type PostDraft = {
   scripture: string;
   type: PlatformPostType;
   topics: string[];
-  audience: "PUBLIC" | "CHURCH";
+  audience: "PUBLIC" | "CHURCH" | "GROUP";
   linkUrl?: string;
   linkReceipt?: string;
   keepLinkPreview?: boolean;

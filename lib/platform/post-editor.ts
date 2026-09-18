@@ -28,6 +28,12 @@ export function getPostComposer(db: PrismaClient, token: unknown) {
       orderBy: [{ name: "asc" }, { id: "asc" }]
     });
     return {
+      groups: await tx.gatherGroup.findMany({
+        where: { id: { in: [...(context.groupParticipants ?? [])] } },
+        select: { id: true, name: true, slug: true },
+        orderBy: [{ nameKey: "asc" }, { id: "asc" }],
+        take: 200
+      }),
       topics: await tx.topicCommunity.findMany({
         where: { id: { in: [...(context.topicParticipants ?? [])] } },
         select: { id: true, name: true, slug: true },
@@ -190,6 +196,9 @@ export function getPostEditor(db: PrismaClient, token: unknown, id: string) {
       scheduleZone: post.scheduleZone ?? "",
       discovery: postDiscoveryInput(post),
       topicCommunityId: post.topicCommunityId,
+      groupId: post.groupId,
+      groupThreadKind: post.groupThreadKind,
+      groupCategory: post.groupCategory,
       version: post.version,
       mentionIds: canEdit
         ? (

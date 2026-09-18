@@ -146,6 +146,10 @@ function project(
       : {}),
     id: post.id,
     topicCommunity: post.topicCommunity,
+    group: post.group,
+    groupThreadKind: post.groupThreadKind,
+    groupCategory: post.groupCategory,
+    groupPinned: !!post.groupPinnedAt,
     createdAt: post.publishedAt ?? post.createdAt,
     updatedAt: post.updatedAt,
     type: post.type,
@@ -328,6 +332,9 @@ export async function hydratePostPage(
   return ids.flatMap((id) => (byId.has(id) ? [byId.get(id)!] : []));
 }
 export type PostQuery = {
+  groupId?: string;
+  groupCategory?: string;
+  groupPinned?: boolean;
   topicCommunityId?: string;
   followedTopics?: boolean;
   excludePostId?: string;
@@ -351,6 +358,9 @@ export async function listPostsIn(
   const filters: Prisma.PlatformPostWhereInput[] = [
     postReadableWhere(context, now)
   ];
+  if (query.groupId) filters.push({ groupId: postId(query.groupId) });
+  if (query.groupCategory) filters.push({ groupCategory: query.groupCategory });
+  if (query.groupPinned) filters.push({ groupPinnedAt: { not: null } });
   if (query.topicCommunityId)
     filters.push({ topicCommunityId: postId(query.topicCommunityId) });
   if (query.followedTopics) {

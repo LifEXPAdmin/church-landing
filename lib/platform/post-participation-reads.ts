@@ -42,6 +42,14 @@ export function getPostParticipation(
       pollId: poll?.id ?? "",
       user: {
         ...eligibleWhere,
+        ...(post.groupId
+          ? {
+              id: { notIn: context.blockedIds ?? [] },
+              gatherMemberships: {
+                some: { groupId: post.groupId, state: "ACTIVE" }
+              }
+            }
+          : {}),
         ...(post.audienceChurchId
           ? {
               connections: {

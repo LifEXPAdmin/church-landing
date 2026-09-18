@@ -1,5 +1,14 @@
+import {
+  currentGroupInvitation,
+  groupLeaderCurrent,
+  groupSourceAvailable
+} from "./group-policy";
+import { groupMemberKey } from "./group-input";
 import { pantryRequestEvidence } from "./pantry-evidence";
-import { currentPantryRequest, requirePantryCoordinator } from "./pantry-policy";
+import {
+  currentPantryRequest,
+  requirePantryCoordinator
+} from "./pantry-policy";
 import { needContributionEvidence } from "./exchange-need-evidence";
 import {
   currentNeedContribution,
@@ -72,6 +81,7 @@ type Target = {
   contextVersion: number;
   scopeChurchId: string | null;
   scopeTopicId?: string | null;
+  scopeGroupId?: string | null;
   source: { label: string; href: string };
   evidencePreview?: string;
 };
@@ -114,15 +124,39 @@ async function targetIn(
   const type = targetType(kind),
     id = postId(value);
   if (type === "PANTRY_REQUEST") {
-    const row = await tx.pantryRequest.findUnique({ where: { id }, include: { hub: true } });
-    if (!row || !context.actorId || row.hub.recoveryRequired || ![row.requesterId, row.coordinatorId].includes(context.actorId)) return null;
-    if (row.requesterId === context.actorId && row.requesterClearedAt) return null;
+    const row = await tx.pantryRequest.findUnique({
+      where: { id },
+      include: { hub: true }
+    });
+    if (
+      !row ||
+      !context.actorId ||
+      row.hub.recoveryRequired ||
+      ![row.requesterId, row.coordinatorId].includes(context.actorId)
+    )
+      return null;
+    if (row.requesterId === context.actorId && row.requesterClearedAt)
+      return null;
     if (row.coordinatorId === context.actorId) {
-      if (row.coordinatorClearedAt || !(await currentPantryRequest(tx, row, row.hub))) return null;
+      if (
+        row.coordinatorClearedAt ||
+        !(await currentPantryRequest(tx, row, row.hub))
+      )
+        return null;
       await requirePantryCoordinator(tx, row.hub, context.actorId);
     }
-    return { type, id, version: row.version, contextVersion: 0, scopeChurchId: null,
-      source: { label: "Selected private assistance request", href: "/platform/pantry/mine" }, evidencePreview: pantryRequestEvidence(row) };
+    return {
+      type,
+      id,
+      version: row.version,
+      contextVersion: 0,
+      scopeChurchId: null,
+      source: {
+        label: "Selected private assistance request",
+        href: "/platform/pantry/mine"
+      },
+      evidencePreview: pantryRequestEvidence(row)
+    };
   }
   if (type === "NEED_CONTRIBUTION") {
     const row = await tx.exchangeNeedContribution.findUnique({
@@ -328,6 +362,33 @@ async function targetIn(
       }
     );
   }
+  if (type === "GROUP") {
+    const row = await tx.gatherGroup.findUnique({ where: { id } });
+    if (!row || !(await groupSourceAvailable(tx, row, context))) return null;
+    const own = context.actorId
+      ? await tx.gatherGroupMembership.findUnique({
+          where: groupMemberKey(id, context.actorId)
+        })
+      : null;
+    const readable =
+      context.groupReaders?.has(id) ||
+      (row.discovery === "LISTED" && row.lifecycle === "ACTIVE") ||
+      (await currentGroupInvitation(tx, row, own));
+    return readable
+      ? {
+          type,
+          id,
+          version: row.version,
+          contextVersion: 0,
+          scopeChurchId: null,
+          scopeGroupId: id,
+          source: {
+            label: "Selected group",
+            href: `/platform/groups/${row.slug}`
+          }
+        }
+      : null;
+  }
   if (type === "TOPIC") {
     const row = await tx.topicCommunity.findFirst({
       where: { id, ...topicPublicWhere },
@@ -354,7 +415,8 @@ async function targetIn(
         authorChurchId: true,
         audience: true,
         audienceChurchId: true,
-        topicCommunityId: true
+        topicCommunityId: true,
+        groupId: true
       }
     });
     return (
@@ -365,7 +427,8 @@ async function targetIn(
         contextVersion: 0,
         source: { label: "Selected post", href: `/platform/posts/${id}` },
         scopeChurchId: churchScope(row),
-        scopeTopicId: row.topicCommunityId
+        scopeTopicId: row.topicCommunityId,
+        scopeGroupId: row.groupId
       }
     );
   }
@@ -388,7 +451,8 @@ async function targetIn(
             authorChurchId: true,
             audience: true,
             audienceChurchId: true,
-            topicCommunityId: true
+            topicCommunityId: true,
+            groupId: true
           }
         }
       }
@@ -404,7 +468,8 @@ async function targetIn(
           href: `/platform/posts/${row.post.id}?comment=${id}`
         },
         scopeChurchId: churchScope(row.post),
-        scopeTopicId: row.post.topicCommunityId
+        scopeTopicId: row.post.topicCommunityId,
+        scopeGroupId: row.post.groupId
       }
     );
   }
@@ -473,13 +538,28 @@ export async function communityReportIntakeAvailable(
   tx: PostTx,
   scopeChurchId: string | null,
   scopeTopicId?: string | null,
-  targetType?: string
+  targetType?: string,
+  scopeGroupId?: string | null
 ) {
   if (
     process.env.COMMUNITY_REPORTS_ENABLED !== "true" ||
     reportLimit() === null
   )
     return false;
+  if (scopeGroupId && targetType !== "GROUP") {
+    const group = await tx.gatherGroup.findUnique({
+      where: { id: scopeGroupId }
+    });
+    if (group) {
+      const leaders = await tx.gatherGroupMembership.findMany({
+        where: { groupId: group.id, state: "ACTIVE", leader: true },
+        take: 21
+      });
+      for (const leader of leaders)
+        if (await groupLeaderCurrent(tx, group, leader, leader.userId))
+          return true;
+    }
+  }
   if (scopeTopicId && targetType !== "TOPIC") {
     const community = await tx.topicCommunity.findFirst({
       where: { id: scopeTopicId, ...topicPublicWhere },
@@ -632,7 +712,8 @@ export function readCommunityReports(
           tx,
           target.scopeChurchId,
           target.scopeTopicId,
-          target.type
+          target.type,
+          target.scopeGroupId
         )
       };
     }
@@ -643,7 +724,8 @@ export function readCommunityReports(
         !authority.global &&
         !authority.churches.length &&
         !authority.exchangeChurches.length &&
-        !authority.topics.length
+        !authority.topics.length &&
+        !authority.groups.length
       )
         throw new PortalError(
           403,
@@ -682,6 +764,7 @@ export function readCommunityReports(
           version: row.version,
           churchScoped: !!row.scopeChurchId,
           topicScoped: !!row.scopeTopicId,
+          groupScoped: !!row.scopeGroupId,
           createdAt: row.createdAt.toISOString(),
           updatedAt: row.updatedAt.toISOString()
         })),
@@ -726,8 +809,17 @@ export function readCommunityReports(
       let selectedListing;
       let selectedHandoff;
       if (report.targetType === "PANTRY_REQUEST") {
-        const row = await tx.pantryRequest.findUnique({ where: { id: report.targetId }, include: { hub: true } });
-        if (row && !row.hub.recoveryRequired) selectedHandoff = { type: report.targetType, content: pantryRequestEvidence(row), version: row.version, createdAt: row.createdAt };
+        const row = await tx.pantryRequest.findUnique({
+          where: { id: report.targetId },
+          include: { hub: true }
+        });
+        if (row && !row.hub.recoveryRequired)
+          selectedHandoff = {
+            type: report.targetType,
+            content: pantryRequestEvidence(row),
+            version: row.version,
+            createdAt: row.createdAt
+          };
       }
       if (report.targetType === "NEED_CONTRIBUTION") {
         const row = await tx.exchangeNeedContribution.findUnique({
@@ -851,44 +943,65 @@ export function readCommunityReports(
             })
           : undefined;
       const selectedText =
-        report.targetType === "POST"
-          ? await tx.platformPost.findUnique({
-              where: { id: report.targetId },
-              select: {
-                content: true,
-                contentNote: true,
-                safeExcerpt: true,
-                version: true,
-                createdAt: true
-              }
-            })
-          : report.targetType === "COMMENT"
-            ? await tx.platformPostComment.findUnique({
+        report.targetType === "GROUP"
+          ? await tx.gatherGroup
+              .findUnique({
                 where: { id: report.targetId },
-                select: { content: true, version: true, createdAt: true }
+                select: {
+                  name: true,
+                  purpose: true,
+                  rules: true,
+                  version: true,
+                  createdAt: true
+                }
               })
-            : report.targetType === "TOPIC"
-              ? await tx.topicCommunity
-                  .findUnique({
-                    where: { id: report.targetId },
-                    select: {
-                      name: true,
-                      description: true,
-                      rules: true,
-                      version: true,
-                      createdAt: true
+              .then((row) =>
+                row
+                  ? {
+                      content: `${row.name}\n\n${row.purpose}\n\n${row.rules}`,
+                      version: row.version,
+                      createdAt: row.createdAt
                     }
-                  })
-                  .then((row) =>
-                    row
-                      ? {
-                          content: `${row.name}\n\n${row.description}\n\n${row.rules}`,
-                          version: row.version,
-                          createdAt: row.createdAt
-                        }
-                      : null
-                  )
-              : undefined;
+                  : null
+              )
+          : report.targetType === "POST"
+            ? await tx.platformPost.findUnique({
+                where: { id: report.targetId },
+                select: {
+                  content: true,
+                  contentNote: true,
+                  safeExcerpt: true,
+                  version: true,
+                  createdAt: true
+                }
+              })
+            : report.targetType === "COMMENT"
+              ? await tx.platformPostComment.findUnique({
+                  where: { id: report.targetId },
+                  select: { content: true, version: true, createdAt: true }
+                })
+              : report.targetType === "TOPIC"
+                ? await tx.topicCommunity
+                    .findUnique({
+                      where: { id: report.targetId },
+                      select: {
+                        name: true,
+                        description: true,
+                        rules: true,
+                        version: true,
+                        createdAt: true
+                      }
+                    })
+                    .then((row) =>
+                      row
+                        ? {
+                            content: `${row.name}\n\n${row.description}\n\n${row.rules}`,
+                            version: row.version,
+                            createdAt: row.createdAt
+                          }
+                        : null
+                    )
+                : undefined;
       const source = await contentReviewSource(tx, report);
       const reconsiderationCases = await tx.supportCase.findMany({
         where: {
@@ -917,9 +1030,13 @@ export function readCommunityReports(
               : selectedText
                 ? {
                     type:
-                      report.targetType === "POST"
-                        ? ("POST" as const)
-                        : ("COMMENT" as const),
+                      report.targetType === "GROUP"
+                        ? ("GROUP" as const)
+                        : report.targetType === "TOPIC"
+                          ? ("TOPIC" as const)
+                          : report.targetType === "POST"
+                            ? ("POST" as const)
+                            : ("COMMENT" as const),
                     ...selectedText
                   }
                 : undefined),
@@ -959,6 +1076,7 @@ export function readCommunityReports(
       after: rows.length > 30 ? rows[29].id : null,
       canReview:
         context.moderators.size > 0 ||
+        (context.groupModerators?.size ?? 0) > 0 ||
         (await reportReviewAuthority(tx, context)).global
     };
   });
@@ -1257,7 +1375,8 @@ export function communityReportCommand(
           tx,
           target.scopeChurchId,
           target.scopeTopicId,
-          target.type
+          target.type,
+          target.scopeGroupId
         ))
       )
         throw new PortalError(
@@ -1293,6 +1412,7 @@ export function communityReportCommand(
           contextVersion: target.contextVersion,
           scopeChurchId: target.scopeChurchId,
           scopeTopicId: target.scopeTopicId,
+          scopeGroupId: target.scopeGroupId,
           reason,
           details,
           reviewDueAt: retentionDate(new Date(), 30)

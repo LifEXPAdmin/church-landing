@@ -32,7 +32,9 @@ export type RetentionControlEntry = {
     | "MODERATION_POST"
     | "MODERATION_COMMENT"
     | "MODERATION_TOPIC"
+    | "MODERATION_GROUP"
     | "MODERATION_EXCHANGE"
+    | "GROUP_ACCESS"
     | "TOPIC_ACCESS"
     | "POST_DISCOVERY"
     | "EXCHANGE_VISIBILITY"
@@ -103,6 +105,7 @@ function validate(value: unknown): RetentionControlEntry {
     ![r.recordedAt, r.startedAt, r.reviewDueAt].every(date) ||
     (r.endedAt !== null && !date(r.endedAt)) ||
     !([
+      "GROUP_ACCESS",
       "TOPIC_ACCESS",
       "POST_DISCOVERY",
       "EXCHANGE_VISIBILITY",
@@ -159,6 +162,7 @@ function validate(value: unknown): RetentionControlEntry {
                 : r.kind === "MODERATION_POST" ||
                     r.kind === "MODERATION_COMMENT" ||
                     r.kind === "MODERATION_TOPIC" ||
+                    r.kind === "MODERATION_GROUP" ||
                     r.kind === "MODERATION_EXCHANGE"
                   ? r.target === "REPORT" &&
                     ["VISIBLE", "HIDDEN", "REMOVED"].includes(r.outcome)
@@ -416,6 +420,33 @@ export async function recordTopicAccessControl(
     endedAt: null
   });
 }
+export async function recordGroupAccessControl(
+  tx: Tx,
+  groupId: string,
+  actorId: string
+) {
+  const row = await tx.gatherGroup.update({
+    where: { id: groupId },
+    data: { securityVersion: { increment: 1 } },
+    select: { securityVersion: true }
+  });
+  const now = new Date();
+  await record(tx, {
+    id: randomUUID(),
+    kind: "GROUP_ACCESS",
+    target: "ACCOUNT",
+    targetId: actorId,
+    sourceId: groupId,
+    version: row.securityVersion,
+    policy,
+    outcome: "QUARANTINED",
+    operatorId: actorId,
+    recordedAt: now.toISOString(),
+    startedAt: now.toISOString(),
+    reviewDueAt: retentionDate(now, 90).toISOString(),
+    endedAt: null
+  });
+}
 export async function recordDiscoveryControl(
   tx: Tx,
   kind:
@@ -492,9 +523,11 @@ export function recordContentControl(
         ? "MODERATION_EXCHANGE"
         : report.targetType === "POST"
           ? "MODERATION_POST"
-          : report.targetType === "TOPIC"
-            ? "MODERATION_TOPIC"
-            : "MODERATION_COMMENT",
+          : report.targetType === "GROUP"
+            ? "MODERATION_GROUP"
+            : report.targetType === "TOPIC"
+              ? "MODERATION_TOPIC"
+              : "MODERATION_COMMENT",
     target: "REPORT",
     targetId: report.id,
     sourceId: report.targetId,
@@ -1172,15 +1205,37 @@ export async function replayRetentionControls(
           continue;
         }
         if (entry.kind === "PANTRY_HUB") {
-          const prior = await tx.pantryHub.findUnique({ where: { id: entry.sourceId } });
-          const data = { version: entry.version, recoveryRequired: true, published: false, intakeEnabled: false, coordinatorKey: null };
-          if (!prior) await tx.pantryHub.create({ data: { id: entry.sourceId, ...data } });
+          const prior = await tx.pantryHub.findUnique({
+            where: { id: entry.sourceId }
+          });
+          const data = {
+            version: entry.version,
+            recoveryRequired: true,
+            published: false,
+            intakeEnabled: false,
+            coordinatorKey: null
+          };
+          if (!prior)
+            await tx.pantryHub.create({
+              data: { id: entry.sourceId, ...data }
+            });
           else if (prior.version < entry.version) {
             await tx.pantryHub.update({ where: { id: prior.id }, data });
-            await tx.pantryRequest.updateMany({ where: { hubId: prior.id }, data: { authorityKey: null, note: "", pickupContact: "", coordinatorNote: "" } });
+            await tx.pantryRequest.updateMany({
+              where: { hubId: prior.id },
+              data: {
+                authorityKey: null,
+                note: "",
+                pickupContact: "",
+                coordinatorNote: ""
+              }
+            });
           }
           await record(tx, entry);
-          await tx.retentionControl.updateMany({ where: { id: entry.id, journaledAt: null }, data: { journaledAt: new Date() } });
+          await tx.retentionControl.updateMany({
+            where: { id: entry.id, journaledAt: null },
+            data: { journaledAt: new Date() }
+          });
           continue;
         }
         if (entry.kind === "EXCHANGE_NEED") {
@@ -1399,6 +1454,40 @@ export async function replayRetentionControls(
           });
           continue;
         }
+        if (entry.kind === "GROUP_ACCESS") {
+          const changed = await tx.gatherGroup.updateMany({
+            where: {
+              id: entry.sourceId,
+              securityVersion: { lt: entry.version }
+            },
+            data: {
+              recoveryRequired: true,
+              ownerAuthorityKey: null,
+              securityVersion: entry.version,
+              version: { increment: 1 }
+            }
+          });
+          if (changed.count)
+            await tx.gatherGroupMembership.updateMany({
+              where: { groupId: entry.sourceId },
+              data: {
+                pendingRole: null,
+                offeredById: null,
+                offerExpiresAt: null,
+                offerGroupVersion: null,
+                leaderAuthorityKey: null,
+                version: { increment: 1 }
+              }
+            });
+          // Quarantine prevents every old invite/read/role from authorizing an
+          // action. No membership or successor is guessed from opaque history.
+          await record(tx, entry);
+          await tx.retentionControl.updateMany({
+            where: { id: entry.id, journaledAt: null },
+            data: { journaledAt: new Date() }
+          });
+          continue;
+        }
         if (entry.kind === "TOPIC_ACCESS") {
           await tx.$executeRaw`UPDATE "TopicCommunity" SET "recoveryRequired"=true,
             "securityVersion"=${entry.version} WHERE id=${entry.sourceId} AND "securityVersion" < ${entry.version}`;
@@ -1476,7 +1565,8 @@ export async function replayRetentionControls(
         if (
           entry.kind === "MODERATION_POST" ||
           entry.kind === "MODERATION_COMMENT" ||
-          entry.kind === "MODERATION_TOPIC"
+          entry.kind === "MODERATION_TOPIC" ||
+          entry.kind === "MODERATION_GROUP"
         ) {
           // An old backup cannot prove the text, audience and attachments that
           // were approved when a restriction was lifted. Keep that source hidden
@@ -1488,9 +1578,11 @@ export async function replayRetentionControls(
           const table =
             entry.kind === "MODERATION_POST"
               ? Prisma.sql`"PlatformPost"`
-              : entry.kind === "MODERATION_TOPIC"
-                ? Prisma.sql`"TopicCommunity"`
-                : Prisma.sql`"PlatformPostComment"`;
+              : entry.kind === "MODERATION_GROUP"
+                ? Prisma.sql`"GatherGroup"`
+                : entry.kind === "MODERATION_TOPIC"
+                  ? Prisma.sql`"TopicCommunity"`
+                  : Prisma.sql`"PlatformPostComment"`;
           await tx.$executeRaw(Prisma.sql`UPDATE ${table} SET "moderationState"=${visibility}::"ContentModerationState", version=${entry.version}
             WHERE id=${entry.sourceId} AND (version < ${entry.version} OR (version=${entry.version} AND ${entry.outcome !== "VISIBLE"}))`);
           await record(tx, entry);
@@ -1596,15 +1688,17 @@ export async function inspectRestoredHolds(db: PrismaClient) {
 }
 export async function inspectRestoredModeration(db: PrismaClient) {
   const [row] = await db.$queryRaw<Array<{ count: bigint }>>(Prisma.sql`
-    WITH latest AS (SELECT DISTINCT ON (kind, "sourceId") kind, "sourceId", version, payload FROM "RetentionControl" WHERE kind IN ('MODERATION_POST','MODERATION_COMMENT','MODERATION_TOPIC','MODERATION_EXCHANGE') ORDER BY kind, "sourceId", version DESC)
+    WITH latest AS (SELECT DISTINCT ON (kind, "sourceId") kind, "sourceId", version, payload FROM "RetentionControl" WHERE kind IN ('MODERATION_POST','MODERATION_COMMENT','MODERATION_TOPIC','MODERATION_GROUP','MODERATION_EXCHANGE') ORDER BY kind, "sourceId", version DESC)
     SELECT count(*)::bigint AS count FROM latest r
     LEFT JOIN "PlatformPost" p ON r.kind='MODERATION_POST' AND p.id=r."sourceId"
     LEFT JOIN "PlatformPostComment" c ON r.kind='MODERATION_COMMENT' AND c.id=r."sourceId"
     LEFT JOIN "TopicCommunity" t ON r.kind='MODERATION_TOPIC' AND t.id=r."sourceId"
+    LEFT JOIN "GatherGroup" g ON r.kind='MODERATION_GROUP' AND g.id=r."sourceId"
     LEFT JOIN "ExchangeListing" e ON r.kind='MODERATION_EXCHANGE' AND e.id=r."sourceId"
     WHERE r.payload->>'outcome'='VISIBLE' AND
       (p.version <= r.version AND p."moderationState" <> 'VISIBLE' OR c.version <= r.version AND c."moderationState" <> 'VISIBLE'
        OR t.version <= r.version AND t."moderationState" <> 'VISIBLE'
+       OR g.version <= r.version AND g."moderationState" <> 'VISIBLE'
        OR e."moderationVersion" <= r.version AND e."moderationState" <> 'VISIBLE')`);
   return Number(row.count);
 }

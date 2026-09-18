@@ -1,3 +1,4 @@
+import { groupReadProof } from "./group-read-progress";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import type { Prisma, PrismaClient, PlatformPost } from "@prisma/client";
 import { accountConfig } from "./account-config";
@@ -6,6 +7,8 @@ import { PortalError } from "./portal-policy";
 import { communityAuthorSelect } from "./public-profile";
 import {
   postCanReply,
+  postContext,
+  postReadableWhere,
   withPostRead,
   type PostContext,
   type PostTx
@@ -72,6 +75,7 @@ function cursorCodec(scope: string) {
 function include(context: PostContext) {
   return {
     prayerUpdate: { select: { kind: true } },
+    groupAuthor: { select: { state: true } },
     author: {
       select: {
         ...communityAuthorSelect,
@@ -102,6 +106,7 @@ type Row = Prisma.PlatformPostCommentGetPayload<{
 }>;
 const visible = (r: Row, c: PostContext) =>
   !r.deletedAt &&
+  (!r.groupId || r.groupAuthor?.state !== "BANNED") &&
   r.moderationState === "VISIBLE" &&
   (!!r.authorChurch ||
     (!r.author.suspendedAt &&
@@ -314,6 +319,14 @@ export function readComments(db: PrismaClient, token: unknown, query: Query) {
       : null;
     return {
       kind: "thread" as const,
+      readProof: groupReadProof(context, post, [
+        ...rows
+          .slice(0, PAGE)
+          .filter((r) => visible(r, context))
+          .map((r) => r.id),
+        ...(root && visible(root, context) ? [root.id] : []),
+        ...(targetRow && visible(targetRow, context) ? [targetRow.id] : [])
+      ]),
       postId: post.id,
       sort: sort === "asc" ? "oldest" : "newest",
       items: await project(tx, rows.slice(0, PAGE), context, post),
@@ -350,10 +363,15 @@ export function readCommentDrafts(
     db,
     token,
     async (tx, session) => {
+      const context = await postContext(tx, session.userId);
       const rows = await tx.privateCommentDraft.findMany({
         where: {
           ownerId: session.userId,
           deletedAt: null,
+          OR: [
+            { post: { groupId: null } },
+            { post: postReadableWhere(context) }
+          ],
           ...(query.id ? { id: postId(query.id) } : {}),
           ...(query.postId
             ? {

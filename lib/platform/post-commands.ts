@@ -1,3 +1,5 @@
+import { groupPostDestination } from "./group-post-policy";
+import { requireGroupParticipation } from "./group-policy";
 import { setPostMentions } from "./person-mentions";
 import { recordPostMentions, recordPostPublication } from "./domain-activity";
 import { createHash } from "node:crypto";
@@ -76,7 +78,19 @@ function details(input: Record<string, unknown>) {
     type
   };
 }
-function audience(value: unknown, churchId: string | null): PostAudience {
+function audience(
+  value: unknown,
+  churchId: string | null,
+  groupId: string | null = null
+): PostAudience {
+  if (groupId) {
+    if (value !== "GROUP" || churchId)
+      throw new PortalError(
+        400,
+        "A group post keeps its private group audience."
+      );
+    return "GROUP";
+  }
   if (value !== "PUBLIC" && value !== "CHURCH")
     throw new PortalError(400, "Choose Public or Church visibility.");
   if (value === "CHURCH" && !churchId)
@@ -195,6 +209,8 @@ export async function postCommandIn(
       "Use the publishing form to add or change a link."
     );
   if (op === "create") {
+    const groupDestination = groupPostDestination(input);
+    requireGroupParticipation(context, groupDestination.groupId);
     const topicCommunityId = input.topicCommunityId
       ? postId(input.topicCommunityId)
       : null;
@@ -290,13 +306,15 @@ export async function postCommandIn(
           : {}),
         ...preparedLink,
         authorId: actorId,
+        ...groupDestination,
         topicCommunityId,
         authorChurchId,
         audienceChurchId,
         requestKey,
         audience: audience(
           input.audience ?? (audienceChurchId ? "CHURCH" : "PUBLIC"),
-          audienceChurchId
+          audienceChurchId,
+          groupDestination.groupId
         ),
         replyAudience: replies(
           input.replyAudience ?? "VIEWERS",
@@ -336,6 +354,19 @@ export async function postCommandIn(
     where: { id: postId(input.postId) }
   });
   if (!post) throw new PortalError(404, "Post unavailable.");
+  if (input.groupId !== undefined && input.groupId !== post.groupId)
+    throw new PortalError(400, "A published post keeps its group destination.");
+  if (post.groupId)
+    groupPostDestination({ ...post, ...input, groupId: post.groupId });
+  else if (
+    input.groupThreadKind ||
+    input.groupCategory ||
+    input.audience === "GROUP"
+  )
+    throw new PortalError(
+      400,
+      "A published post cannot become a group discussion."
+    );
   if (
     input.topicCommunityId !== undefined &&
     input.topicCommunityId !== post.topicCommunityId
@@ -371,6 +402,15 @@ export async function postCommandIn(
 
   if (op === "edit") {
     if (
+      post.selectedAnswerId &&
+      input.groupThreadKind !== undefined &&
+      input.groupThreadKind !== "QUESTION"
+    )
+      throw new PortalError(
+        409,
+        "Clear the selected answer before changing this question to a discussion."
+      );
+    if (
       input.quoteSourceId !== undefined &&
       input.quoteSourceId !== post.repostSourceId
     )
@@ -397,7 +437,8 @@ export async function postCommandIn(
       );
     const nextAudience = audience(
       input.audience ?? post.audience,
-      post.audienceChurchId
+      post.audienceChurchId,
+      post.groupId
     );
     if (nextAudience !== post.audience && input.confirmAudienceChange !== true)
       throw new PortalError(400, "Confirm the audience change before saving.");
@@ -431,6 +472,9 @@ export async function postCommandIn(
       where: { id: post.id },
       data: {
         ...details({ ...post, ...input }),
+        ...(post.groupId
+          ? groupPostDestination({ ...post, ...input, groupId: post.groupId })
+          : {}),
         ...(input.discovery !== undefined
           ? {
               ...(await postDiscoveryData(input.discovery)),
@@ -555,6 +599,19 @@ export async function postCommandIn(
           toState: discussionSettingsState(updated)
         }
       );
+    else if (asModerator && post.groupId)
+      await tx.gatherGroupAudit.create({
+        data: {
+          groupId: post.groupId,
+          actorId,
+          targetId: post.id,
+          action: "DISCUSSION_MODERATED",
+          reason: input.moderationReason as string,
+          fromState: discussionSettingsState(post),
+          toState: discussionSettingsState(updated),
+          version: updated.version
+        }
+      });
     else if (asModerator)
       await tx.churchAuditEvent.create({
         data: {
@@ -732,6 +789,11 @@ async function receiptedPostCreation(
   const requestKey = postId(input.requestKey);
   const mutationId = createHash("sha256").update(requestKey).digest("hex");
   const current = async (tx: PostTx, ownerId: string) => {
+    if (input.groupId)
+      requireGroupParticipation(
+        await postContext(tx, ownerId),
+        postId(input.groupId)
+      );
     const prior = await tx.platformPost.findUnique({
       where: { authorId_requestKey: { authorId: ownerId, requestKey } }
     });

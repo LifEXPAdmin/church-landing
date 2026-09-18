@@ -1,3 +1,4 @@
+import { requireGroupParticipation } from "./group-policy";
 import { recordDomainActivity } from "./domain-activity";
 import type { PrismaClient } from "@prisma/client";
 import { requireSocialActivity } from "./social-activity-limits";
@@ -109,8 +110,11 @@ export async function createCommentIn(
   const authorChurchId = input.authorChurchId
     ? postId(input.authorChurchId)
     : null;
-  if (post.topicCommunityId && authorChurchId)
-    throw new PortalError(400, "Topic discussions use your personal identity.");
+  if ((post.topicCommunityId || post.groupId) && authorChurchId)
+    throw new PortalError(
+      400,
+      "Topic and group discussions use your personal identity."
+    );
   if (
     authorChurchId &&
     (!context.publishers.has(authorChurchId) ||
@@ -125,6 +129,7 @@ export async function createCommentIn(
     data: {
       postId: post.id,
       topicCommunityId: post.topicCommunityId,
+      groupId: post.groupId,
       authorId: context.actorId!,
       authorChurchId,
       content: postField(input.content, 1500, 2),
@@ -222,6 +227,9 @@ export async function commentCommand(
         return { id, version: row.version, message: "Draft discarded." };
       }
       const post = await readableConversation(tx, context, input.postId);
+      requireGroupParticipation(context, post.groupId);
+      if (post.groupId && input.authorChurchId)
+        throw new PortalError(400, "Group replies use your personal identity.");
       const reply = input.replyToId
         ? await readableComment(tx, context, post.id, input.replyToId)
         : null;
@@ -287,6 +295,13 @@ export async function commentCommand(
       return { id, version: row.version, message: "Private draft saved." };
     }
     const post = await readableConversation(tx, context, input.postId);
+    if (
+      !["delete", "conversation"].includes(String(op)) &&
+      !(op === "like" && input.desired === false)
+    )
+      requireGroupParticipation(context, post.groupId);
+    if (op === "conversation" && input.mode === "FOLLOW")
+      requireGroupParticipation(context, post.groupId);
     if (op === "create") {
       let draft;
       if (input.draftId) {
@@ -464,6 +479,21 @@ export async function commentCommand(
       const post = await tx.platformPost.findUnique({
         where: { id: postId(input.postId) }
       });
+      if (post?.groupId && input.operation !== "draft-delete") {
+        await readableConversation(tx, context, post.id);
+        if (
+          !["delete", "conversation"].includes(String(input.operation)) &&
+          !(input.operation === "like" && input.desired === false)
+        )
+          requireGroupParticipation(context, post.groupId);
+        if (input.operation === "conversation" && input.mode === "FOLLOW")
+          requireGroupParticipation(context, post.groupId);
+        if (input.operation === "pin" && !canPinComment(context, post))
+          throw new PortalError(
+            403,
+            "Current post or group management access is required."
+          );
+      }
       if (!post?.topicCommunityId) return;
       if (["create", "edit"].includes(String(input.operation))) {
         await readableConversation(tx, context, post.id);

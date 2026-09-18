@@ -26,6 +26,15 @@ export function commentVisibleWhere(
     AND: [
       {
         OR: [
+          { groupId: null },
+          {
+            groupId: { in: [...(context.groupReaders ?? [])] },
+            groupAuthor: { state: { not: "BANNED" } }
+          }
+        ]
+      },
+      {
+        OR: [
           { topicCommunityId: null },
           { topicAuthor: { restrictedAt: null } }
         ]
@@ -68,6 +77,10 @@ export async function commentPreviewIds(
           SELECT 1 FROM "TopicMembership" tm WHERE tm."communityId"=c."topicCommunityId"
             AND tm."userId"=c."authorId" AND tm."restrictedAt" IS NULL
         ))
+        AND (c."groupId" IS NULL OR EXISTS (
+          SELECT 1 FROM "GatherGroupMembership" gm WHERE gm."groupId"=c."groupId"
+            AND gm."userId"=c."authorId" AND gm.state<>'BANNED'
+        ))
         AND c."moderationState"='VISIBLE'
         AND (c."authorChurchId" IS NOT NULL OR EXISTS (
           SELECT 1 FROM "PlatformUser" a WHERE a.id=c."authorId"
@@ -109,7 +122,7 @@ export function requireReply(context: PostContext, post: PlatformPost) {
   if (!postCanReply(context, post))
     throw new PortalError(
       403,
-      "Replies are closed or limited to approved church or topic members. Check the current topic rules and your access."
+      "Replies are closed or limited to current church, topic or group members. Check the current rules and your access."
     );
 }
 export function canPinComment(context: PostContext, post: PlatformPost) {
@@ -141,6 +154,10 @@ export async function deleteCommentIn(
   await tx.commentPin.updateMany({
     where: { commentId: comment.id },
     data: { commentId: null, version: { increment: 1 } }
+  });
+  await tx.platformPost.updateMany({
+    where: { selectedAnswerId: comment.id },
+    data: { selectedAnswerId: null, version: { increment: 1 } }
   });
   const reported = await selectedSourceReport(tx, "COMMENT", comment.id),
     now = new Date();

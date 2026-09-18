@@ -1,3 +1,5 @@
+import { recordGroupAccessControl } from "./retention-controls";
+import { retireGroupInvitations, retireGroupOffers } from "./group-lifecycle";
 import { disableNeedCoordinator } from "./exchange-need-lifecycle";
 import { revokeExchangeInquiries } from "./exchange-handoff-lifecycle";
 import { recordDiscoveryControl } from "./retention-controls";
@@ -72,6 +74,32 @@ export async function contentReviewSource(tx: PostTx, report: CommunityReport) {
         version: topic.version,
         moderationState: topic.moderationState,
         type: "TOPIC" as const,
+        contextVersion: 0,
+        authorWithdrawn:
+          topic.lifecycle === "ARCHIVED" || topic.recoveryRequired
+      }
+    );
+  }
+  if (report.targetType === "GROUP") {
+    const topic = await tx.gatherGroup.findUnique({
+      where: { id: report.targetId },
+      select: {
+        id: true,
+        ownerId: true,
+        version: true,
+        moderationState: true,
+        lifecycle: true,
+        recoveryRequired: true
+      }
+    });
+    return (
+      topic && {
+        id: topic.id,
+        authorId: topic.ownerId,
+        authorChurchId: null,
+        version: topic.version,
+        moderationState: topic.moderationState,
+        type: "GROUP" as const,
         contextVersion: 0,
         authorWithdrawn:
           topic.lifecycle === "ARCHIVED" || topic.recoveryRequired
@@ -199,7 +227,12 @@ export async function moderateReportedContent(
   if (changed) {
     if (source.type === "POST")
       await tx.platformPost.update({ where: { id: source.id }, data });
-    else if (source.type === "TOPIC")
+    else if (source.type === "GROUP") {
+      await tx.gatherGroup.update({ where: { id: source.id }, data });
+      await retireGroupOffers(tx, source.id);
+      await retireGroupInvitations(tx, source.id);
+      await recordGroupAccessControl(tx, source.id, actorId);
+    } else if (source.type === "TOPIC")
       await tx.topicCommunity.update({ where: { id: source.id }, data });
     else if (source.type === "EXCHANGE_LISTING") {
       const need = await tx.exchangeNeed.findUnique({
@@ -224,8 +257,19 @@ export async function moderateReportedContent(
         source.id,
         listing.inquiryContactVersion
       );
-    } else
-      await tx.platformPostComment.update({ where: { id: source.id }, data });
+    } else {
+      const comment = await tx.platformPostComment.update({
+        where: { id: source.id },
+        data
+      });
+      // Restoring an older private reply must invalidate read cursors that were
+      // compacted while that reply was hidden.
+      if (comment.groupId)
+        await tx.platformPost.update({
+          where: { id: comment.postId },
+          data: { version: { increment: 1 } }
+        });
+    }
   }
   return {
     action,
@@ -390,6 +434,23 @@ export async function readContentNotices(
         ownSource = {
           href: `/platform/topics/${topic.slug}/manage`,
           content: `${topic.name}\n\n${topic.description}\n\n${topic.rules}`,
+          version: topic.version
+        };
+    } else if (report.targetType === "GROUP") {
+      const topic = await tx.gatherGroup.findFirst({
+        where: { id: report.targetId, ownerId: context.actorId ?? "" },
+        select: {
+          slug: true,
+          name: true,
+          purpose: true,
+          rules: true,
+          version: true
+        }
+      });
+      if (topic)
+        ownSource = {
+          href: `/platform/groups/${topic.slug}/manage`,
+          content: `${topic.name}\n\n${topic.purpose}\n\n${topic.rules}`,
           version: topic.version
         };
     } else if (report.targetType === "COMMENT") {

@@ -10,6 +10,7 @@ import { communityAuthorSelect } from "./public-profile";
 import { isEligible, PortalError } from "./portal-policy";
 import { withAccountRead } from "./account-read";
 import { topicContext, topicPublicWhere } from "./topic-policy";
+import { groupContext } from "./group-policy";
 import { privilegedProjectionAvailable } from "./privileged-auth-policy";
 
 export type PostTx = Prisma.TransactionClient;
@@ -19,6 +20,10 @@ export type PostContext = SocialPolicy & {
   publishers: Set<string>;
   moderators: Set<string>;
   volunteers: Set<string>;
+  groupReaders?: Set<string>;
+  groupParticipants?: Set<string>;
+  groupModerators?: Set<string>;
+  groupReadEpochs?: Map<string, number>;
   topicParticipants?: Set<string>;
   topicModerators?: Set<string>;
   topicFollowing?: Set<string>;
@@ -56,6 +61,7 @@ export async function postContext(
   };
   Object.assign(context, { eligible: isEligible(actor) });
   Object.assign(context, await topicContext(tx, context));
+  Object.assign(context, await groupContext(tx, context));
   if (!isEligible(actor)) return context;
   const connections = await tx.churchConnection.findMany({
     where: { userId, state: "APPROVED" },
@@ -93,6 +99,7 @@ export async function postContext(
     context.moderators.clear();
     context.volunteers.clear();
     context.topicModerators?.clear();
+    context.groupModerators?.clear();
   }
   return context;
 }
@@ -105,6 +112,21 @@ export function postReadableWhere(
 ): Prisma.PlatformPostWhereInput {
   return {
     AND: [
+      {
+        OR: [
+          { groupId: null, audience: { in: ["PUBLIC", "CHURCH"] } },
+          {
+            groupId: { in: [...(context.groupReaders ?? [])] },
+            audience: "GROUP",
+            groupAuthor: { state: { not: "BANNED" } },
+            group: { recoveryRequired: false, moderationState: "VISIBLE" },
+            authorChurchId: null,
+            audienceChurchId: null,
+            topicCommunityId: null,
+            eventOccurrenceId: null
+          }
+        ]
+      },
       {
         OR: [
           { topicCommunityId: null },
@@ -133,7 +155,11 @@ export function postReadableWhere(
       {
         OR: [
           { audience: "PUBLIC" },
-          { audience: "CHURCH", audienceChurchId: { in: context.churches } }
+          { audience: "CHURCH", audienceChurchId: { in: context.churches } },
+          {
+            audience: "GROUP",
+            groupId: { in: [...(context.groupReaders ?? [])] }
+          }
         ]
       },
       {
@@ -163,6 +189,7 @@ export function postCanEdit(
   post: Pick<
     PlatformPost,
     | "topicCommunityId"
+    | "groupId"
     | "repostKind"
     | "audienceChurchId"
     | "status"
@@ -171,6 +198,7 @@ export function postCanEdit(
   >
 ) {
   return (
+    (!post.groupId || !!context.groupParticipants?.has(post.groupId)) &&
     (!post.topicCommunityId ||
       !!context.topicParticipants?.has(post.topicCommunityId)) &&
     post.repostKind !== "PLAIN" &&
@@ -184,6 +212,7 @@ export function postCanEdit(
   );
 }
 export function postCanModerate(context: PostContext, post: PlatformPost) {
+  if (post.groupId) return !!context.groupModerators?.has(post.groupId);
   if (post.topicCommunityId)
     return !!context.topicModerators?.has(post.topicCommunityId);
   const churchId =
@@ -194,7 +223,12 @@ export function postCanModerate(context: PostContext, post: PlatformPost) {
 export function postCanWithdraw(context: PostContext, post: PlatformPost) {
   return (
     postCanEdit(context, post) ||
-    (!post.topicCommunityId && postCanModerate(context, post)) ||
+    (!post.topicCommunityId &&
+      !post.groupId &&
+      postCanModerate(context, post)) ||
+    (!!post.groupId &&
+      !!context.groupReaders?.has(post.groupId) &&
+      context.actorId === post.authorId) ||
     (!!post.topicCommunityId &&
       context.actorId === post.authorId &&
       !post.authorChurchId) ||
@@ -206,6 +240,7 @@ export function postCanWithdraw(context: PostContext, post: PlatformPost) {
 export function postCanReply(context: PostContext, post: PlatformPost) {
   return (
     !!context.actorId &&
+    (!post.groupId || !!context.groupParticipants?.has(post.groupId)) &&
     (!post.topicCommunityId ||
       !!context.topicParticipants?.has(post.topicCommunityId)) &&
     post.repostKind !== "PLAIN" &&
@@ -216,6 +251,7 @@ export function postCanReply(context: PostContext, post: PlatformPost) {
   );
 }
 export const postInclude = {
+  group: { select: { id: true, slug: true, name: true } },
   topicCommunity: { select: { id: true, slug: true, name: true } },
   poll: { select: { id: true } },
   volunteerSlots: { select: { id: true }, take: 1 },

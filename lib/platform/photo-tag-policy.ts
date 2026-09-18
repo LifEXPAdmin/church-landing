@@ -33,6 +33,7 @@ export const tagAssetInclude = {
     select: {
       id: true,
       topicCommunityId: true,
+      groupId: true,
       repostKind: true,
       audience: true,
       audienceChurchId: true,

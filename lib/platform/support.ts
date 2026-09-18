@@ -386,7 +386,8 @@ export async function readSupport(
       reportAuthority.global ||
       !!reportAuthority.churches.length ||
       !!reportAuthority.exchangeChurches.length ||
-      !!reportAuthority.topics.length;
+      !!reportAuthority.topics.length ||
+      !!reportAuthority.groups.length;
     const recipientGrant =
       view === "new" && adult(actor)
         ? await intake(

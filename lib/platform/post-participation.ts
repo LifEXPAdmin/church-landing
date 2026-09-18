@@ -52,6 +52,7 @@ export async function canParticipate(
 ) {
   if (
     !context.actorId ||
+    (post.groupId && !context.groupParticipants?.has(post.groupId)) ||
     (post.topicCommunityId &&
       !context.topicParticipants?.has(post.topicCommunityId)) ||
     (post.audienceChurchId && !context.churches.includes(post.audienceChurchId))

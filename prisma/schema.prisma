@@ -213,6 +213,9 @@ enum PlatformPostType {
 }
 
 model PlatformUser {
+  createdGatherGroups GatherGroup[] @relation("GatherGroupCreator")
+  ownedGatherGroups GatherGroup[] @relation("GatherGroupOwner")
+  gatherMemberships GatherGroupMembership[]
   exchangeDefaults ExchangeDefaults?
   receivedExchangeListings ExchangeListing[] @relation("ExchangeInquiryReceiver")
   sentExchangeInquiries ExchangeInquiry[] @relation("ExchangeInquirer")
@@ -575,6 +578,7 @@ enum ChurchCapability {
   MANAGE_EXCHANGE_LISTINGS
   MODERATE_EXCHANGE_LISTINGS
   MANAGE_CHURCH_ASSISTANCE
+  MANAGE_CHURCH_GROUPS
 }
 
 enum OperatorCapability {
@@ -595,6 +599,7 @@ enum OperatorCapability {
 }
 
 enum CommunityReportTarget {
+  GROUP
   PANTRY_REQUEST
   NEED_CONTRIBUTION
   EXCHANGE_INQUIRY
@@ -644,6 +649,8 @@ model CommunityReport {
   targetVersion Int
   contextVersion Int @default(0)
   scopeChurchId String?
+  scopeGroupId String?
+  scopeGroup GatherGroup? @relation(fields: [scopeGroupId], references: [id], onDelete: Restrict)
   scopeTopicId String?
   scopeTopic TopicCommunity? @relation(fields: [scopeTopicId], references: [id], onDelete: Restrict)
   reason CommunityReportReason
@@ -665,6 +672,7 @@ model CommunityReport {
   @@index([reporterId, createdAt, id])
   @@index([scopeChurchId, status, createdAt])
   @@index([scopeTopicId, status, createdAt])
+  @@index([scopeGroupId, status, createdAt])
   @@index([targetType, targetId])
   @@index([closedAt])
   @@index([reviewDueAt])
@@ -777,6 +785,7 @@ enum DirectoryAudience {
 }
 
 model Church {
+  gatherGroups GatherGroup[]
   pantryHub PantryHub?
   ownedExchangeListings ExchangeListing[] @relation("ExchangeChurchOwner")
   sharedExchangeListings ExchangeListing[] @relation("ExchangeChurchAudience")
@@ -1043,6 +1052,7 @@ model CalendarEvent {
 }
 
 model CalendarOccurrence {
+  groupLinks GatherGroupEventLink[]
   id String @id @default(cuid())
   eventId String
   ordinal Int
@@ -1522,6 +1532,7 @@ model ChurchAuditEvent {
 enum PostAudience {
   PUBLIC
   CHURCH
+  GROUP
 }
 
 enum PostStatus {
@@ -1549,6 +1560,105 @@ enum TopicLifecycle {
 enum TopicOfferedRole {
   MODERATOR
   OWNER
+}
+
+// Adult private groups own membership; canonical posts/comments/polls own content.
+model GatherGroup {
+  id String @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  slug String @unique
+  name String
+  nameKey String @unique
+  purpose String
+  rules String
+  rulesVersion Int @default(1)
+  version Int @default(1)
+  securityVersion Int @default(1)
+  recoveryRequired Boolean @default(false)
+  kind String @default("INTEREST")
+  discovery String @default("LISTED")
+  joinPolicy String @default("APPROVAL")
+  format String @default("LOCAL")
+  area String @default("")
+  topic String @default("")
+  lifecycle TopicLifecycle @default(ACTIVE)
+  moderationState ContentModerationState @default(VISIBLE)
+  creatorId String?
+  ownerId String?
+  churchId String?
+  ownerAuthorityKey String?
+  creator PlatformUser? @relation("GatherGroupCreator", fields: [creatorId], references: [id], onDelete: Restrict)
+  owner PlatformUser? @relation("GatherGroupOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  church Church? @relation(fields: [churchId], references: [id], onDelete: Restrict)
+  members GatherGroupMembership[]
+  events GatherGroupEventLink[]
+  drafts PrivatePostDraft[]
+  posts PlatformPost[]
+  reports CommunityReport[]
+  audit GatherGroupAudit[]
+  @@index([discovery, lifecycle, moderationState, nameKey, id])
+  @@index([ownerId, lifecycle])
+  @@index([churchId, lifecycle])
+}
+
+model GatherGroupMembership {
+  id String @id @default(cuid())
+  groupId String
+  userId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  state String @default("PENDING")
+  version Int @default(1)
+  rulesVersion Int @default(0)
+  rosterVisible Boolean @default(false)
+  joinedAt DateTime?
+  leader Boolean @default(false)
+  leaderAuthorityKey String?
+  invitedById String?
+  invitationExpiresAt DateTime?
+  invitationContactVersion Int?
+  invitationAuthorityVersion Int?
+  pendingRole String?
+  offeredById String?
+  offerExpiresAt DateTime?
+  offerGroupVersion Int?
+  group GatherGroup @relation(fields: [groupId], references: [id], onDelete: Restrict)
+  user PlatformUser @relation(fields: [userId], references: [id], onDelete: Restrict)
+  posts PlatformPost[] @relation("GatherPostAuthor")
+  comments PlatformPostComment[] @relation("GatherCommentAuthor")
+  @@unique([groupId, userId])
+  @@index([userId, state, groupId])
+  @@index([groupId, state, createdAt, id])
+}
+
+model GatherGroupAudit {
+  id String @id @default(cuid())
+  groupId String
+  actorId String
+  targetId String?
+  action String
+  reason String?
+  fromState String?
+  toState String?
+  version Int
+  createdAt DateTime @default(now())
+  group GatherGroup @relation(fields: [groupId], references: [id], onDelete: Restrict)
+  @@index([groupId, createdAt, id])
+}
+
+model GatherGroupEventLink {
+  id String @id @default(cuid())
+  groupId String
+  occurrenceId String
+  addedById String
+  version Int @default(1)
+  active Boolean @default(true)
+  createdAt DateTime @default(now())
+  group GatherGroup @relation(fields: [groupId], references: [id], onDelete: Restrict)
+  occurrence CalendarOccurrence @relation(fields: [occurrenceId], references: [id], onDelete: Restrict)
+  @@unique([groupId, occurrenceId])
+  @@index([groupId, active, createdAt, id])
 }
 
 model TopicCommunity {
@@ -1968,6 +2078,15 @@ model ExchangeListingAudit {
 }
 
 model PlatformPost {
+  groupId String?
+  group GatherGroup? @relation(fields: [groupId], references: [id], onDelete: Restrict)
+  groupAuthor GatherGroupMembership? @relation("GatherPostAuthor", fields: [groupId, authorId], references: [groupId, userId], onDelete: NoAction, onUpdate: NoAction)
+  groupThreadKind String?
+  groupCategory String?
+  groupPinnedAt DateTime?
+  selectedAnswerId String? @unique
+  selectedAnswer PlatformPostComment? @relation("GroupSelectedAnswer", fields: [selectedAnswerId, id], references: [id, postId], onDelete: NoAction, onUpdate: NoAction)
+
   exchangeNeedId String?
   exchangeNeed ExchangeNeed? @relation(fields: [exchangeNeedId], references: [id], onDelete: SetNull)
   welcomeFor Church[] @relation("ChurchWelcomePost")
@@ -2048,6 +2167,8 @@ model PlatformPost {
   @@unique([authorId, requestKey])
   @@index([authorId])
   @@index([topicCommunityId, status, publishedAt(sort: Desc), id(sort: Desc)])
+  @@index([groupId, status, publishedAt(sort: Desc), id(sort: Desc)])
+  @@unique([selectedAnswerId, id])
   @@index([type])
   @@index([discoveryCountry, status, publishedAt(sort: Desc)])
   @@index([discoveryDenomination, status, publishedAt(sort: Desc)])
@@ -2173,6 +2294,9 @@ model PlatformPostLike {
 }
 
 model PlatformPostComment {
+  groupId String?
+  groupAuthor GatherGroupMembership? @relation("GatherCommentAuthor", fields: [groupId, authorId], references: [groupId, userId], onDelete: NoAction, onUpdate: NoAction)
+  selectedFor PlatformPost? @relation("GroupSelectedAnswer")
   topicCommunityId String?
   topicAuthor TopicMembership? @relation("TopicCommentAuthor", fields: [topicCommunityId, authorId], references: [communityId, userId], onDelete: NoAction, onUpdate: NoAction)
   id        String   @id @default(cuid())
@@ -2277,6 +2401,12 @@ model CommentPin {
 }
 
 model ConversationPreference {
+  readCommentIds String[] @default([])
+  readScope String?
+  readPostVersion Int @default(0)
+  readCommentAt DateTime?
+  readCommentId String?
+  readVersion Int @default(0)
   id String @id @default(cuid())
   ownerId String
   postId String
@@ -2661,6 +2791,8 @@ model ChurchChartSave {
 // Author-private unfinished composer input, separate from published post status.
 // Tombstones prevent a delayed autosave from recreating discarded/published work.
 model PrivatePostDraft {
+  groupId String?
+  group GatherGroup? @relation(fields: [groupId], references: [id], onDelete: Restrict)
   publicationKey String @default(cuid())
   id String
   ownerId String

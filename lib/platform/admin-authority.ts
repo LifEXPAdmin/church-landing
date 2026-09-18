@@ -22,7 +22,13 @@ export const adminDenied = () =>
 export async function adminAuthority(tx: AdminTx, userId: string) {
   const actor = await tx.platformUser.findFirst({
     where: { id: userId, ...eligibleWhere },
-    select: { id: true, name: true, username: true, dateFormat: true, timeFormat: true }
+    select: {
+      id: true,
+      name: true,
+      username: true,
+      dateFormat: true,
+      timeFormat: true
+    }
   });
   if (!actor) throw adminDenied();
   const grants = await tx.platformOperatorGrant.findMany({
@@ -37,19 +43,21 @@ export async function adminAuthority(tx: AdminTx, userId: string) {
   // Most members have no operational role. Check indexed candidate references
   // before loading the much larger social context; this is never an access grant.
   const [candidate] = await tx.$queryRaw<
-    { church: boolean; topic: boolean }[]
+    { church: boolean; topic: boolean; group: boolean }[]
   >(Prisma.sql`SELECT
     (EXISTS (SELECT 1 FROM "ChurchCapabilityGrant" WHERE "userId"=${userId} AND "revokedAt" IS NULL)
       OR EXISTS (SELECT 1 FROM "ChurchRoleGrant" g JOIN "ChurchConnection" c ON c.id=g."connectionId" WHERE c."userId"=${userId} AND g."revokedAt" IS NULL)) AS church,
     (EXISTS (SELECT 1 FROM "TopicCommunity" WHERE "ownerId"=${userId})
-      OR EXISTS (SELECT 1 FROM "TopicMembership" WHERE "userId"=${userId} AND moderator)) AS topic`);
+      OR EXISTS (SELECT 1 FROM "TopicMembership" WHERE "userId"=${userId} AND moderator)) AS topic,
+    EXISTS (SELECT 1 FROM "GatherGroupMembership" WHERE "userId"=${userId} AND state='ACTIVE' AND leader) AS "group"`);
   if (
     !grants.length &&
     !support.some(
       (g) => g.capability === "RESPOND" || g.capability === "ASSIGN"
     ) &&
     !candidate.church &&
-    !candidate.topic
+    !candidate.topic &&
+    !candidate.group
   )
     throw adminDenied();
   const churches = candidate.church
@@ -57,11 +65,16 @@ export async function adminAuthority(tx: AdminTx, userId: string) {
     : [];
   await requirePrivilegedAuthentication(tx, userId);
   const context =
-    candidate.church || candidate.topic ? await postContext(tx, userId) : null;
+    candidate.church || candidate.topic || candidate.group
+      ? await postContext(tx, userId)
+      : null;
   const reports = {
     churches: [...(context?.moderators ?? [])],
-    exchangeChurches: context ? (await exchangeAuthority(tx, context)).moderators : [],
+    exchangeChurches: context
+      ? (await exchangeAuthority(tx, context)).moderators
+      : [],
     topics: [...(context?.topicModerators ?? [])],
+    groups: [...(context?.groupModerators ?? [])],
     global: capabilities.has("REVIEW_COMMUNITY_REPORTS")
   };
   const topicVersions = candidate.topic
@@ -72,7 +85,20 @@ export async function adminAuthority(tx: AdminTx, userId: string) {
         take: 201
       })
     : [];
+  const groupVersions = candidate.group
+    ? await tx.gatherGroupMembership.findMany({
+        where: { userId, state: "ACTIVE", leader: true },
+        select: {
+          id: true,
+          version: true,
+          group: { select: { version: true } }
+        },
+        orderBy: { id: "asc" },
+        take: 201
+      })
+    : [];
   const proofRows = [
+    ...groupVersions.map((g) => ["group", g.id, g.version, g.group.version]),
     ...grants.map((g) => ["operator", g.id, g.version]),
     ...churches.map((g) => ["church", g.id, g.version]),
     ...topicVersions.map((g) => ["topic", g.id, g.version])
@@ -89,7 +115,11 @@ export async function adminAuthority(tx: AdminTx, userId: string) {
     (g) => g.capability === "MANAGE_CHURCH_ACCESS"
   );
   const reportReviewer =
-    reports.global || !!reports.churches.length || !!reports.topics.length || !!reports.exchangeChurches.length;
+    reports.global ||
+    !!reports.churches.length ||
+    !!reports.topics.length ||
+    !!reports.groups.length ||
+    !!reports.exchangeChurches.length;
   const respond = support.find((g) => g.capability === "RESPOND") ?? null;
   const assign = support.find((g) => g.capability === "ASSIGN") ?? null;
   const canClaims =
@@ -157,7 +187,11 @@ export async function adminAuthority(tx: AdminTx, userId: string) {
       href: "/platform/admin/audit"
     });
   const churchIds = [
-    ...new Set([...claimChurches.map((g) => g.churchId), ...reports.churches, ...reports.exchangeChurches])
+    ...new Set([
+      ...claimChurches.map((g) => g.churchId),
+      ...reports.churches,
+      ...reports.exchangeChurches
+    ])
   ];
   const navigation: AdminNavigation = {
     viewer: actor,

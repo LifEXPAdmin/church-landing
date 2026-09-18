@@ -1,4 +1,5 @@
 export const communityReportTargets = [
+  "GROUP",
   "PANTRY_REQUEST",
   "NEED_CONTRIBUTION",
   "EXCHANGE_LISTING",
@@ -16,6 +17,7 @@ export const communityReportTargets = [
 ] as const;
 export type CommunityReportTarget = (typeof communityReportTargets)[number];
 export const communityReportTargetLabels = {
+  GROUP: "Gather group",
   PANTRY_REQUEST: "private assistance request",
   NEED_CONTRIBUTION: "private Church Needs contribution",
   EXCHANGE_LISTING: "Exchange listing",
@@ -70,6 +72,7 @@ export type CommunityReviewPage = {
     version: number;
     churchScoped: boolean;
     topicScoped?: boolean;
+    groupScoped?: boolean;
     createdAt: string;
     updatedAt: string;
   }[];

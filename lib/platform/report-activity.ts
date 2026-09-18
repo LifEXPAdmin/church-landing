@@ -68,7 +68,9 @@ export async function recordReportActivity(
     recipients = await churchRecipients(
       tx,
       report.scopeChurchId,
-      report.targetType === "EXCHANGE_LISTING" ? "MODERATE_EXCHANGE_LISTINGS" : "MODERATE_CHURCH_POSTS"
+      report.targetType === "EXCHANGE_LISTING"
+        ? "MODERATE_EXCHANGE_LISTINGS"
+        : "MODERATE_CHURCH_POSTS"
     );
   if (report.scopeTopicId && report.targetType !== "TOPIC") {
     const topic = await tx.topicCommunity.findUnique({
@@ -87,6 +89,14 @@ export async function recordReportActivity(
       take: 21
     });
     recipients.push(...managers.map((row) => row.userId));
+  }
+  if (report.scopeGroupId && report.targetType !== "GROUP") {
+    const leaders = await tx.gatherGroupMembership.findMany({
+      where: { groupId: report.scopeGroupId, state: "ACTIVE", leader: true },
+      select: { userId: true },
+      take: 21
+    });
+    recipients.push(...leaders.map((row) => row.userId));
   }
   for (const recipientId of new Set(recipients)) {
     if (assignedReviewerId && assignedReviewerId !== recipientId) continue;
@@ -124,12 +134,17 @@ export async function recordContentDecisionActivity(
   tx: Prisma.TransactionClient,
   decision: CommunityReportDecision
 ) {
-  const report = await tx.communityReport.findUniqueOrThrow({ where: { id: decision.reportId }, select: { targetType: true } });
+  const report = await tx.communityReport.findUniqueOrThrow({
+    where: { id: decision.reportId },
+    select: { targetType: true }
+  });
   const recipients = decision.authorChurchId
     ? await churchRecipients(
         tx,
         decision.authorChurchId,
-        report.targetType === "EXCHANGE_LISTING" ? "MANAGE_EXCHANGE_LISTINGS" : "PUBLISH_CHURCH_POSTS"
+        report.targetType === "EXCHANGE_LISTING"
+          ? "MANAGE_EXCHANGE_LISTINGS"
+          : "PUBLISH_CHURCH_POSTS"
       )
     : decision.authorId
       ? [decision.authorId]
@@ -143,9 +158,14 @@ export async function recordContentDecisionActivity(
       continue;
     if (
       decision.authorChurchId &&
-      !(await tx.communityReportDecision.count({ where: { AND: [
-        { id: decision.id }, await authorDecisionWhere(tx, await postContext(tx, recipientId))
-      ] } }))
+      !(await tx.communityReportDecision.count({
+        where: {
+          AND: [
+            { id: decision.id },
+            await authorDecisionWhere(tx, await postContext(tx, recipientId))
+          ]
+        }
+      }))
     )
       continue;
     const event = await tx.socialEvent.create({

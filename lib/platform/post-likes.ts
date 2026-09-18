@@ -1,3 +1,4 @@
+import { requireGroupPostParticipation } from "./group-post-policy";
 import { recordDomainActivity } from "./domain-activity";
 import type { PrismaClient } from "@prisma/client";
 import { expected, PortalError } from "./portal-policy";
@@ -58,7 +59,10 @@ export function postLikeCommand(
         context,
         parsePostId(input.postId)
       );
-      if (desired) await requireUnrestrictedTopicPost(tx, context, id);
+      if (desired) {
+        await requireUnrestrictedTopicPost(tx, context, id);
+        await requireGroupPostParticipation(tx, context, id);
+      }
       const where = { postId_userId: { postId: id, userId: ownerId } };
       const old = await tx.platformPostLike.findUnique({ where });
       expected(input.expectedVersion, old?.version ?? 0);
@@ -104,6 +108,19 @@ export function postLikeCommand(
       };
     },
     async (tx, ownerId) => {
+      const source = await tx.platformPost.findUnique({
+        where: { id: parsePostId(input.postId) },
+        select: { groupId: true }
+      });
+      if (source?.groupId) {
+        const context = await postContext(tx, ownerId);
+        const id = await postInteractionIdIn(
+          tx,
+          context,
+          parsePostId(input.postId)
+        );
+        if (desired) await requireGroupPostParticipation(tx, context, id);
+      }
       if (
         desired &&
         (await topicPostReference(tx, parsePostId(input.postId)))
