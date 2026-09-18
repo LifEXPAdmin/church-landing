@@ -119,7 +119,7 @@ test("provider payload delivers only the requested purpose and fragment link; tr
   assert.ok(calls[0].signal instanceof AbortSignal);
   const body = JSON.parse(String(calls[0].body));
   assert.deepEqual(body.to, ["owner@example.test"]);
-  assert.equal(body.from, `Godschurches <${senderEnv.ACCOUNT_EMAIL_FROM}>`);
+  assert.equal(body.from, `God’s Churches <${senderEnv.ACCOUNT_EMAIL_FROM}>`);
   assert.match(body.html, /<a href="https:\/\/[^\"]+#token=[A-Za-z0-9_-]{43}"/);
   assert.match(body.html, />Reset password<\/a>/);
   assert.ok(!body.html.includes("<img"));

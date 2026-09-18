@@ -91,11 +91,11 @@ try {
   });
   await page.getByRole("link", { name: "Menu", exact: true }).first().click();
   const trigger = page.getByRole("button", {
-    name: "Install Godschurches Add an app shortcut, or keep using your browser."
+    name: "Install God’s Churches Add an app shortcut, or keep using your browser."
   });
   await trigger.click();
   const sheet = page.getByRole("dialog", {
-    name: "Install Godschurches",
+    name: "Install God’s Churches",
     exact: true
   });
   await sheet.waitFor();
@@ -190,7 +190,7 @@ try {
   const second = await standalone.newPage();
   await second.goto(config.origin + "/platform/menu");
   await second
-    .getByRole("button", { name: /Install Godschurches Add an app/ })
+    .getByRole("button", { name: /Install God’s Churches Add an app/ })
     .click();
   await second
     .getByRole("dialog")
@@ -225,7 +225,7 @@ try {
     .getByRole("button", { name: "Show installation steps", exact: true })
     .click();
   const help = phone.getByRole("dialog", {
-    name: "Install Godschurches",
+    name: "Install God’s Churches",
     exact: true
   });
   await help.getByText(/turn on Open as Web App/).waitFor();
@@ -274,7 +274,7 @@ try {
   await phone.reload();
   assert.equal(await banner.count(), 0);
   await phone
-    .getByRole("button", { name: /Install Godschurches Add an app/ })
+    .getByRole("button", { name: /Install God’s Churches Add an app/ })
     .click();
   await help.waitFor();
   await iphone.close();

@@ -319,7 +319,7 @@ export function PortalPublicDiscover({
             ? (visible[0]?.name ?? "Church unavailable")
             : "Find your church"
         }
-        description="Explore churches on Godschurches. Sign in to request a connection and manage your sharing."
+        description="Explore churches on God’s Churches. Sign in to request a connection and manage your sharing."
       />
       {!churchId && (
         <>
@@ -708,7 +708,7 @@ export function PortalHelp({ snapshot }: { snapshot: PortalSnapshot }) {
     <>
       <PortalHeading
         title="Help and contacts"
-        description="Reach your church's appointed contacts or contact Godschurches directly."
+        description="Reach your church's appointed contacts or contact God’s Churches directly."
       />
       <Link
         className={`${portalLinkClass} mb-4`}
@@ -738,7 +738,7 @@ export function PortalHelp({ snapshot }: { snapshot: PortalSnapshot }) {
           {!approved ? (
             <PortalEmpty>
               Church contact details are available after your connection is
-              approved. You can still use the direct Godschurches contact below.
+              approved. You can still use the direct God’s Churches contact below.
             </PortalEmpty>
           ) : (
             slots.map((slot) => {

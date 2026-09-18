@@ -113,7 +113,7 @@ function PublicHelp() {
     <>
       <PortalHeading
         title="Help and contacts"
-        description="Contact Godschurches directly. Church-only contacts are available to approved members after sign-in."
+        description="Contact God’s Churches directly. Church-only contacts are available to approved members after sign-in."
       />
       <Link className={`${portalLinkClass} mb-4`} href="/platform/getting-started">Getting started and saved next steps</Link>
       <Link className={`${portalLinkClass} mb-4 ml-5`} href="/platform/feedback">Sign in to share website feedback</Link>

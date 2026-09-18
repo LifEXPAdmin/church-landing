@@ -21,7 +21,7 @@ export default async function ReactivatePage({
     <PlatformShell user={user}>
       <section className="container-shell py-8 sm:py-10">
         <div className="mx-auto max-w-2xl space-y-5">
-          <h1 className="text-4xl text-gc-text">Return to Godschurches</h1>
+          <h1 className="text-4xl text-gc-text">Return to God’s Churches</h1>
           {notice === "deactivated" && (
             <p role="status" className="text-gc-accent">
               Your account is deactivated and all devices are signed out. You

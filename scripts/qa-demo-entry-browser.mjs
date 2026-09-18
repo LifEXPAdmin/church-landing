@@ -161,8 +161,8 @@ try {
   assert.equal((await db.churchConnection.findFirstOrThrow({ where: { userId: user.id, churchId: fixture.churchA.id } })).state, "PENDING");
   assert.equal(await page.getByRole("link", { name: "Member directory", exact: true }).count(), 0);
   await page.getByRole("link", { name: "Menu", exact: true }).first().click();
-  await page.getByRole("button", { name: "Install Godschurches Add an app shortcut, or keep using your browser." }).click();
-  await page.getByRole("dialog", { name: "Install Godschurches", exact: true }).waitFor();
+  await page.getByRole("button", { name: "Install God’s Churches Add an app shortcut, or keep using your browser." }).click();
+  await page.getByRole("dialog", { name: "Install God’s Churches", exact: true }).waitFor();
   await bounded();
   ok(
     "Actual signup, isolated verification link consumption and sign-in preserve the church destination; an explicit eligible request stays pending without directory access"

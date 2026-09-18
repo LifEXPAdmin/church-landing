@@ -156,7 +156,7 @@ const { saveMeasurementChoice } =
   await import("../lib/platform/platform-measurement.ts");
 const prompt = (page) =>
   page.getByRole("dialog", {
-    name: "How is Godschurches working for you?",
+    name: "How is God’s Churches working for you?",
     exact: true
   });
 const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));

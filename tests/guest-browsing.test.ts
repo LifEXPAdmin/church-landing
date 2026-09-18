@@ -200,7 +200,7 @@ test("anonymous HTML and RSC expose public reading and minimal author labels but
   assert.equal(next.pathname, "/platform/join");
   assert.equal(next.searchParams.get("next"), "/platform/settings");
   const prompt = await (await get(next.pathname + next.search)).text();
-  assert.match(prompt, /Join Godschurches/);
+  assert.match(prompt, /Join God’s Churches/);
   assert.match(prompt, /Keep browsing posts/);
   assert.match(
     prompt,

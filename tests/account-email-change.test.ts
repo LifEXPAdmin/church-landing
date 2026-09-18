@@ -480,7 +480,7 @@ test("production-config boundary defers recipient checks and emits a purpose-spe
     await callbacks[0]();
   }
   assert.equal(calls.length, 1);
-  assert.match(calls[0].subject, /new Godschurches sign-in email/);
+  assert.match(calls[0].subject, /new God’s Churches sign-in email/);
   assert.match(calls[0].text, /current password/);
   const link = new URL(
     calls[0].text.split("\n").find((line) => line.startsWith("https://"))!

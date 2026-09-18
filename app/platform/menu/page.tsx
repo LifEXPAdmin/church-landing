@@ -81,7 +81,7 @@ export default async function PlatformMenuPage() {
           <ul className="gc-menu-links" aria-label="Quick sharing">
             <MenuLink
               href={user ? "/platform/invitations" : "/platform/share?qr=1"}
-              title={user ? "My QR code" : "Share Godschurches"}
+              title={user ? "My QR code" : "Share God’s Churches"}
               description={
                 user
                   ? "Invite someone to connect with you."
@@ -97,7 +97,7 @@ export default async function PlatformMenuPage() {
                 href={accountEntryHref("signup", "/platform/menu", "account")}
                 className="gc-button"
               >
-                Join Godschurches
+                Join God’s Churches
               </Link>
               <Link
                 href={accountEntryHref("login", "/platform/menu", "account")}
@@ -307,7 +307,7 @@ export default async function PlatformMenuPage() {
             </section>
           )}
           <section aria-labelledby="menu-about">
-            <h2 id="menu-about">About Godschurches</h2>
+            <h2 id="menu-about">About God’s Churches</h2>
             <ul className="gc-menu-links">
               <MenuLink
                 href="/about#our-mission"
@@ -324,7 +324,7 @@ export default async function PlatformMenuPage() {
               <MenuLink
                 href="/terms"
                 title="Terms"
-                description="The terms for using Godschurches."
+                description="The terms for using God’s Churches."
                 icon={FileText}
               />
             </ul>

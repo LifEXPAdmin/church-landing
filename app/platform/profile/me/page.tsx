@@ -19,8 +19,8 @@ export async function generateMetadata(): Promise<Metadata> {
         : accountReasons.profile
     },
     description: user
-      ? "Choose what to share with other Godschurches members."
-      : "Sign in to view and edit your Godschurches profile.",
+      ? "Choose what to share with other God’s Churches members."
+      : "Sign in to view and edit your God’s Churches profile.",
     robots: { index: false, follow: false }
   };
 }

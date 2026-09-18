@@ -326,7 +326,7 @@ try {
   );
   if (!process.argv.includes("--core")) {
     await go("/platform/share");
-    await page.getByText("Share Godschurches", { exact: true }).last().click();
+    await page.getByText("Share God’s Churches", { exact: true }).last().click();
     await page.getByRole("button", { name: "Show QR code" }).click();
     const downloadPromise = page.waitForEvent("download");
     await page.getByRole("button", { name: "Download QR PNG" }).click();
@@ -374,7 +374,7 @@ try {
         );
         assert.match(
           await shortcut.innerText(),
-          actor ? /My QR code/ : /Share Godschurches/
+          actor ? /My QR code/ : /Share God’s Churches/
         );
         await shortcut.focus();
         assert.ok(
@@ -599,7 +599,7 @@ try {
       "/platform/profile/" + f.memberA.username
     ]) {
       const r = await metadata(path);
-      assert.match(r.tags["og:title"], /^Godschurches(?: \| The Revival)?$/);
+      assert.match(r.tags["og:title"], /^God’s Churches(?: \| The Revival)?$/);
       assert.equal(r.tags["og:image"], config.origin + "/brand/share-card.png");
       assert.ok(!JSON.stringify(r.tags).includes("PRIVATE SHARE SECRET"));
       assert.ok(!JSON.stringify(r.tags).includes(f.memberA.email));
@@ -610,7 +610,7 @@ try {
     });
     assert.match(
       (await metadata("/platform/posts/" + post.id)).tags["og:title"],
-      /^Godschurches(?: \| The Revival)?$/
+      /^God’s Churches(?: \| The Revival)?$/
     );
     await db.calendarEvent.update({
       where: { id: event.id },
@@ -620,7 +620,7 @@ try {
       (await metadata("/platform/events/" + event.occurrences[0].id)).tags[
         "og:title"
       ],
-      "Godschurches"
+      "God’s Churches"
     );
     const png = await context.request.get(
       config.origin + "/brand/share-card.png"
@@ -635,7 +635,7 @@ try {
     await context.clearCookies();
     assert.match(
       (await metadata("/platform/posts/" + privatePost.id)).tags["og:title"],
-      /^Godschurches(?: \| The Revival)?$/
+      /^God’s Churches(?: \| The Revival)?$/
     );
   }
   assert.deepEqual(errors, []);

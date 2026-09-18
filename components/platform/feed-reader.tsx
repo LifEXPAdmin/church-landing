@@ -418,22 +418,6 @@ export function FeedReader({
   });
   return (
     <div ref={root} className="gc-feed" data-mode={mode} aria-busy={loading}>
-      <div className="gc-feed-entry" hidden={focused}>
-        <div>
-          <h2>Your feed</h2>
-          <p>Read here, or open one post at a time.</p>
-        </div>
-        <button
-          ref={openButton}
-          type="button"
-          className="gc-button"
-          onClick={openFocused}
-          disabled={loading}
-          aria-haspopup="dialog"
-        >
-          <Maximize2 aria-hidden="true" /> Open My feed
-        </button>
-      </div>
       <FocusedFeed
         active={focused}
         index={index}
@@ -485,6 +469,17 @@ export function FeedReader({
           </p>
         )}
         <div className="gc-feed-toolbar">
+          <button
+            ref={openButton}
+            type="button"
+            className="gc-refresh"
+            onClick={openFocused}
+            disabled={loading}
+            hidden={focused}
+            aria-haspopup="dialog"
+          >
+            <Maximize2 aria-hidden="true" /> Open My feed
+          </button>
           <div
             role="group"
             aria-label="Feed view"

@@ -581,7 +581,7 @@ export async function ChurchClaimPage({
                           ? [
                               confirm(
                                 "dispute",
-                                "This is an authority dispute or recovery request that requires Godschurches review.",
+                                "This is an authority dispute or recovery request that requires God’s Churches review.",
                                 false
                               )
                             ]

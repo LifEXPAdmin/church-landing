@@ -8,7 +8,7 @@ export function SiteFooter() {
   return (
     <footer className="gc-platform-footer">
       <MissionSignature />
-      <span>© {new Date().getFullYear()} Godschurches.</span>
+      <span>© {new Date().getFullYear()} God’s Churches.</span>
       <Link href="/about#our-mission">Our mission</Link>
       <Link href="/help">Help</Link>
       <Link href="/manifesto">Manifesto</Link>

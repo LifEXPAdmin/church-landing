@@ -70,7 +70,7 @@ export const demoFixture = freezeFixture({
   church: {
     name: "Example Grove Church",
     summary:
-      "A fictional church created only to illustrate the Godschurches portal."
+      "A fictional church created only to illustrate the God’s Churches portal."
   },
   member: {
     name: "Avery Example",

@@ -912,7 +912,7 @@ try {
       ).body
     ).includes(requested)
   );
-  await page.getByText(/Godschurches has not verified licenses/).waitFor();
+  await page.getByText(/God’s Churches has not verified licenses/).waitFor();
   await bounded();
   await page.screenshot({
     path: output + "/service-detail-mobile.png",

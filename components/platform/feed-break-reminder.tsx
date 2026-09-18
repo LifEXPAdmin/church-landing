@@ -1,7 +1,11 @@
 "use client";
 import { useEffect, useState } from "react";
 const KEY = "gc-reading-break-minutes";
-export function FeedBreakReminder() {
+export function FeedBreakReminder({
+  showSettings = true
+}: {
+  showSettings?: boolean;
+}) {
   const [minutes, setMinutes] = useState(0),
     [due, setDue] = useState(false),
     [message, setMessage] = useState("");
@@ -44,7 +48,7 @@ export function FeedBreakReminder() {
   }, [minutes, due]);
   return (
     <>
-      <details className="text-sm">
+      <details className="text-sm" hidden={!showSettings}>
         <summary className="min-h-11 cursor-pointer py-3">
           Optional reading break reminder
         </summary>

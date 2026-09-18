@@ -50,7 +50,7 @@ export function AccountAccess({
             : "You have a place in this mission."
           : invitation
             ? `${invitation.name} invited you`
-            : "Your Godschurches account"}
+            : "Your God’s Churches account"}
       </h1>
       <p className="my-5 text-gc-muted">
         {invitation && !registered
@@ -124,7 +124,7 @@ export function AccountAccess({
       {googleNotice && (
         <p role="status" className="mb-5 text-gc-muted">
           {googleNotice === "link-required"
-            ? "Sign in to your existing Godschurches account first, then connect Google in Account settings. Google has not been linked to that account."
+            ? "Sign in to your existing God’s Churches account first, then connect Google in Account settings. Google has not been linked to that account."
             : googleNotice === "unavailable"
               ? "Google sign-in is not available yet. You can use email sign-in or keep browsing."
               : "Google sign-in was canceled or could not be completed. Try again, or use email sign-in. If an app browser blocks Google, open this page in your regular browser."}

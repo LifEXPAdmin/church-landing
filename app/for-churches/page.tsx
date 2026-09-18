@@ -11,7 +11,7 @@ export default function ForChurchesPage() {
   return (
     <SegmentPage
       title="For churches and pastors"
-      intro="Godschurches supports life with your local church. Personal accounts and church authority are separate."
+      intro="God’s Churches supports life with your local church. Personal accounts and church authority are separate."
       bullets={[
         "Use a personal account to share public encouragement and updates.",
         "Open My church to see your connection and available church tools.",

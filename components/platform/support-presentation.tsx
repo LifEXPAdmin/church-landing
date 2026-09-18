@@ -107,7 +107,7 @@ export function SupportConversation({
         <p className="text-sm text-gc-muted">
           Who can read and reply: {c.requester.name} (requester),{" "}
           {c.owner
-            ? `${c.owner.name} (${c.reconsideration ? "assigned report reviewer" : "Godschurches support owner"})`
+            ? `${c.owner.name} (${c.reconsideration ? "assigned report reviewer" : "God’s Churches support owner"})`
             : c.reconsideration
               ? "the assigned report reviewer is not currently authorized"
               : "no assigned support owner"}

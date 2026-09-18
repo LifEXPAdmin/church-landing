@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     template: "%s | God’s Churches demo"
   },
   description:
-    "Demo: fictional church and member information. A read-only tour of the Godschurches portal; no account required.",
+    "Demo: fictional church and member information. A read-only tour of the God’s Churches portal; no account required.",
   robots: {
     index: false,
     follow: false,

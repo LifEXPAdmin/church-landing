@@ -267,6 +267,6 @@ export function exchangeDisplayPrice(listing: {
 export const EXCHANGE_ITEM_NOTICE =
   "List only ordinary items or lawful skilled help you are allowed to offer or request. Describe items and qualifications honestly. Do not list stolen, counterfeit, recalled or unlawful items, weapons, ammunition, alcohol, tobacco, drugs, medicines, explicit adult material, live animals, personal data, accounts, financial products or loans. Medical care and medical transport claims are not available. This listing does not create an employment, transport, payment or fulfillment agreement.";
 export const EXCHANGE_SERVICE_NOTICE =
-  "Qualifications are stated by the person offering help. Godschurches has not verified licenses, training, insurance or suitability. Describe relevant experience accurately without including identity documents, private contact details or client information.";
+  "Qualifications are stated by the person offering help. God’s Churches has not verified licenses, training, insurance or suitability. Describe relevant experience accurately without including identity documents, private contact details or client information.";
 export const EXCHANGE_CONTACT_NOTICE =
-  "Keep your phone number, email, exact pickup address and access codes out of the listing and photos. Account verification is not a guarantee of seller safety. Godschurches does not take payments, deposits or provide escrow.";
+  "Keep your phone number, email, exact pickup address and access codes out of the listing and photos. Account verification is not a guarantee of seller safety. God’s Churches does not take payments, deposits or provide escrow.";

@@ -439,7 +439,7 @@ export function FeedbackForm({
         />
         <span>
           I have read the privacy notice and agree to share this feedback with
-          the named Godschurches support owner.
+          the named God’s Churches support owner.
         </span>
       </label>
     </SupportForm>

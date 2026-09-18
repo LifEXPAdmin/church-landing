@@ -18,7 +18,7 @@ export async function generateMetadata({
   return {
     ...publicMetadata(
       "Home",
-      "Grow in faith, connect with your community, and share everyday life on Godschurches.",
+      "Grow in faith, connect with your community, and share everyday life on God’s Churches.",
       "/platform"
     ),
     robots: {

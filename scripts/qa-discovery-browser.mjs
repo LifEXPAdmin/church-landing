@@ -547,7 +547,7 @@ try {
     beforePage
   );
   await page
-    .getByRole("button", { name: "Refresh for new posts", exact: true })
+    .getByRole("button", { name: "Refresh posts", exact: true })
     .click();
   await page.waitForFunction(
     (id) =>
@@ -664,6 +664,9 @@ try {
     "The standalone Settings destination saves and reloads the same private choices and remains usable with larger text at 320 pixels"
   );
   phase = "break-reminder";
+  await page
+    .getByRole("button", { name: "Feed Settings", exact: true })
+    .click();
   const reminder = page
     .locator("details")
     .filter({

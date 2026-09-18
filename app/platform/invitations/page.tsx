@@ -36,7 +36,7 @@ export default async function Page() {
               className="gc-button gc-button-quiet"
               href="/platform/share?qr=1"
             >
-              Share Godschurches
+              Share God’s Churches
             </Link>
           </>
         )}

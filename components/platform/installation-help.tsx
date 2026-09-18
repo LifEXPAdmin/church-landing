@@ -70,7 +70,7 @@ export function InstallationProvider({
       prompt.current = null;
       setAvailable(false);
       setInstalled(true);
-      setMessage("Your browser reports Godschurches is installed.");
+      setMessage("Your browser reports God’s Churches is installed.");
     };
     detect();
     display.addEventListener("change", detect);
@@ -102,7 +102,7 @@ export function InstallationProvider({
       const choice = await event.userChoice;
       setMessage(
         choice.outcome === "accepted"
-          ? "Installation requested. Follow your browser’s instructions and look for Godschurches in your apps."
+          ? "Installation requested. Follow your browser’s instructions and look for God’s Churches in your apps."
           : "Installation dismissed. You can keep using this browser."
       );
     } catch {
@@ -145,7 +145,7 @@ export function InstallationBanner() {
       aria-label="Home Screen installation"
       className="space-y-3 rounded-xl border border-gc-divider bg-gc-surface p-4"
     >
-      <h2 className="text-xl">Add Godschurches to your Home Screen</h2>
+      <h2 className="text-xl">Add God’s Churches to your Home Screen</h2>
       <p>
         {state.apple
           ? "On iPhone or iPad, use Safari’s Share menu. We’ll show you the steps."
@@ -353,7 +353,7 @@ export function InstallationHelp({
         ) : (
           <span>
             <span className="gc-menu-link-title">
-              {bookmark ? "Bookmark God’s Churches" : "Install Godschurches"}
+              {bookmark ? "Bookmark God’s Churches" : "Install God’s Churches"}
             </span>
             <span className="gc-menu-link-description">
               {bookmark
@@ -372,7 +372,7 @@ export function InstallationHelp({
         <div className="space-y-4 p-2">
           <div className="flex items-start justify-between gap-3">
             <h2 id={titleId} className="min-w-0 flex-1 text-2xl">
-              {bookmark ? "Bookmark God’s Churches" : "Install Godschurches"}
+              {bookmark ? "Bookmark God’s Churches" : "Install God’s Churches"}
             </h2>
             <button
               type="button"
@@ -430,7 +430,7 @@ export function InstallationHelp({
             <>
               <p role="status">
                 {state.installed
-                  ? "Godschurches is open as an installed app, or your browser has reported installation."
+                  ? "God’s Churches is open as an installed app, or your browser has reported installation."
                   : state.message ||
                     (state.available
                       ? "Your browser offers installation. Open its prompt when you are ready."
@@ -456,7 +456,7 @@ export function InstallationHelp({
                       Android · Chrome
                     </summary>
                     <p className="mt-2">
-                      Open Godschurches in Chrome. Open More beside the address
+                      Open God’s Churches in Chrome. Open More beside the address
                       bar, choose Install and create shortcut, then Install.
                       Follow the browser’s steps; wording can vary by version.
                     </p>
@@ -474,7 +474,7 @@ export function InstallationHelp({
                       iPhone · Safari
                     </summary>
                     <p className="mt-2">
-                      Open Godschurches in Safari. Tap More, then Share (or the
+                      Open God’s Churches in Safari. Tap More, then Share (or the
                       Share button). Choose Add to Home Screen, turn on Open as
                       Web App when shown, then Add. If the option is missing,
                       check Edit Actions.
@@ -520,7 +520,7 @@ export function InstallationHelp({
                   </details>
                   <p>
                     On another browser, check its app or home-screen menu. If
-                    installation is unavailable, bookmark Godschurches and use
+                    installation is unavailable, bookmark God’s Churches and use
                     it here.
                   </p>
                 </div>

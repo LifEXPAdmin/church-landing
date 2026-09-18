@@ -272,7 +272,7 @@ test("search, saved items, public metadata and current repost sources use the se
   assert.equal(
     (await publicSharePreview(db, { kind: "post", id: publicPrayer.id }))
       .description,
-    "Read this public conversation on Godschurches."
+    "Read this public conversation on God’s Churches."
   );
   await relationshipCommand(
     db,

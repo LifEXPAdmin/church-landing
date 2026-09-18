@@ -34,7 +34,7 @@ export function browserPushSupport() {
     return {
       available: false,
       reason:
-        "On iPhone or iPad, add Godschurches to your Home Screen in Safari, then open that app. Phone notifications require iOS or iPadOS 16.4 or later."
+        "On iPhone or iPad, add God’s Churches to your Home Screen in Safari, then open that app. Phone notifications require iOS or iPadOS 16.4 or later."
     };
   if (
     !window.isSecureContext ||

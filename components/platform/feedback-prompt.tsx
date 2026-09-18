@@ -281,7 +281,7 @@ export function FeedbackPrompt({ owner }: { owner: string | null }) {
             </button>
           </div>
           <h2 id="feedback-prompt-title" className="font-serif text-xl">
-            How is Godschurches working for you?
+            How is God’s Churches working for you?
           </h2>
           <p className="my-4 text-sm">
             Optional feedback about the website. Share a rating, describe a
