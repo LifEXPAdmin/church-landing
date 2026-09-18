@@ -463,7 +463,7 @@ try {
   });
   await page
     .getByText(
-      "You have no approved church connection to select. A follow or contributed listing does not appoint you to manage a church.",
+      "No church administration is available in your current session. An approved connection, follow or role title alone does not give management permissions.",
       { exact: true }
     )
     .waitFor();
