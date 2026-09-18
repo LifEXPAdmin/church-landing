@@ -1,3 +1,18 @@
+## Navigation and security guidance in combined acceptance, September 18, 2026 UTC
+
+Nine tested independent-worker handoffs are integrated locally at `f36d02c`.
+Existing Menu destinations share a registry; Security distinguishes essential
+notices and optional choices; authenticator acknowledgment clears private codes
+with a focusable confirmation. Authorized Growth definitions remain explicitly
+unmeasured. Five contracts define future work without activating child access,
+media, reminders or broader messaging. A reproduced enlarged-text Menu column is
+repaired and verified at 320 pixels.
+
+Thirty-six combined built browser groups, the final build, types, copy and focused
+lint pass. The full isolated upgrade/service/restore/HTTPS gate is ongoing.
+Production remains .7; release/live verification and task completion remain open.
+See [the current integration receipt](NAVIGATION_GUIDANCE_ACCEPTANCE.md).
+
 ## Optional social email integration deployed, September 18, 2026 UTC
 
 The tested independent-worker email change is integrated with Church Settings
