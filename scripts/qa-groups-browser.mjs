@@ -158,6 +158,9 @@ const go = async (path) => {
   return response;
 };
 const signIn = async (actor) => {
+  // Replacing the fixture cookie is not a user navigation. Let an acknowledged
+  // form finish removing its temporary Back entry before switching identities.
+  await page.waitForFunction(() => !history.state?.gcPhotoWork);
   await context.clearCookies();
   if (actor)
     await context.addCookies([

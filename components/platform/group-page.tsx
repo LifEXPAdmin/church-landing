@@ -167,7 +167,7 @@ export async function GroupPage({
                 aria-label="Find adult groups"
               >
                 <label className="space-y-2">
-                  <span>Search group names and purposes</span>
+                  <span>Search group names, purposes and topics</span>
                   <input
                     className={portalInputClass}
                     name="q"
@@ -205,6 +205,15 @@ export async function GroupPage({
                     ))}
                   </select>
                 </label>
+                {q.churchId && (
+                  <div className="space-y-2 sm:col-span-2">
+                    <input type="hidden" name="churchId" value={q.churchId} />
+                    <p>Showing groups linked to the selected church.</p>
+                    <Link className="underline" prefetch={false} href={path}>
+                      Clear church filter
+                    </Link>
+                  </div>
+                )}
                 <button className="gc-button self-end">Search groups</button>
               </form>
             )}
@@ -228,7 +237,29 @@ export async function GroupPage({
                   {groupFormats[g.format as keyof typeof groupFormats]}
                   {g.area ? ` · ${g.area}` : ""}
                 </p>
-                {g.church && <p>Church: {g.church.name}</p>}
+                {g.topic && (
+                  <p>
+                    Topic:{" "}
+                    <Link
+                      className="underline"
+                      prefetch={false}
+                      href={`/platform/groups?${new URLSearchParams({ q: g.topic, ...(q.churchId ? { churchId: q.churchId } : {}) })}`}
+                    >
+                      {g.topic}
+                    </Link>
+                  </p>
+                )}
+                {g.church && (
+                  <p>
+                    <Link
+                      className="underline"
+                      prefetch={false}
+                      href={`/platform/groups?${new URLSearchParams({ churchId: g.church.id })}`}
+                    >
+                      Groups from {g.church.name}
+                    </Link>
+                  </p>
+                )}
                 <p>
                   {
                     groupJoinPolicies[
@@ -323,6 +354,7 @@ export async function GroupPage({
                 {g.area ? ` · ${g.area}` : ""} · {label(g.lifecycle)}
               </p>
               <p className="whitespace-pre-wrap break-words">{g.purpose}</p>
+              {g.topic && <p>Topic: {g.topic}</p>}
               <h2 className="text-2xl">Current rules</h2>
               <p className="whitespace-pre-wrap break-words">{g.rules}</p>
               <p>
