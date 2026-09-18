@@ -1,3 +1,19 @@
+## Listing index applied; provider release queued, September 18, 2026, 21:09 UTC
+
+The [index migration](RESOURCE_QUERY_PLANS.md#applied-migration-and-pending-application-publication)
+is applied and valid in production. Main is `5dc7f77`; all 101 migration/recovery
+checksums match, a fresh encrypted backup restores 144 application tables, and
+79 backup sets pass retention inspection. All 144 original row fingerprints are
+unchanged. Public Exchange reads remain available on the previous application.
+
+Deployment `dpl_2cEBAFg4XJyP3PyJzs6ih5V4xjse` is accepted for that exact commit
+but waits in the provider's system build queue during a reported deployment
+incident. The canonical site still serves 2026.09.18.8 / `0ced807`. Application
+publication and live acceptance remain open. Preserve the queued deployment and
+finish its exact identity, browser, health, queue and runtime checks when ready.
+Independent local work can continue; no later production release should overtake
+this unfinished verification.
+
 ## Measured listing index passes local release gates, September 18, 2026 UTC
 
 The [index candidate](RESOURCE_QUERY_PLANS.md#local-release-acceptance) on

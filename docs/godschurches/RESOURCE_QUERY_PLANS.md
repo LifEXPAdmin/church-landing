@@ -4,7 +4,8 @@ September 18, 2026. Local investigation on the fictional fixture described in
 [resource budgets](RESOURCE_BUDGETS.md), using the unchanged 2026.09.18.8 runtime.
 The evidence below supports one listing index. After the shared schema slot
 opened, `20260918195500_exchange_price_order` added exactly the measured ascending
-candidate. Combined release gates and production publication remain pending.
+candidate. The migration is applied; application publication is waiting for the
+provider's deployment queue, as recorded below.
 No production performance improvement is claimed.
 
 ## Reproduced planning behavior
@@ -123,11 +124,30 @@ price-high filters, exact result order and Back/scroll restoration. A protected
 copy of the actual production database upgrades from 100 to 101 migrations while
 preserving all 144 original application table/column fingerprints. Protected
 replay completes and temporary plaintext is removed. These are local release
-checks; the live database still has 100 migrations and no price-order index.
+checks. At that local checkpoint the live database still had 100 migrations.
 
-Remaining: complete production migration, deployment identity and live checks
-for this independently verified index candidate. The separate navigation correction
-has no ready handoff yet and remains excluded from this release.
-Keep acceptance open until those steps have actual evidence. No source permission,
-cursor format, service query, dependency, provider setting or production row has
-changed in this investigation and local verification.
+## Applied migration and pending application publication
+
+The production wrapper applies the one index migration successfully at
+20:53:12 UTC. Main advances normally to `5dc7f77`; its runtime is identical to the
+fully tested `517aec1`, with only the two acceptance reports added afterward.
+All 101 live migration checksums match the installed recovery registry. A fresh
+encrypted backup restores all 144 application tables at 21:03:03 UTC, temporary
+plaintext is removed, and the 79-set retention inspection reports no issues.
+The exact index is valid and ready. All 144 original production row fingerprints
+remain unchanged through 21:09:39 UTC. Three bounded public Exchange reads also
+pass with the previous application version and the newly applied index.
+
+The automatic Git trigger creates no observed deployment record. An explicit
+deployment of the same immutable Git commit is accepted as
+`dpl_2cEBAFg4XJyP3PyJzs6ih5V4xjse`, but waits in Vercel's system build queue.
+Vercel reports an active deployment-trigger/build incident starting at
+20:32:36 UTC. The canonical application remains release 2026.09.18.8 at this
+checkpoint. This is an applied database change and a published Git commit, not a
+verified application release. The separate navigation correction remains excluded.
+
+Remaining: observe READY, confirm the canonical alias and exact serving SHA,
+then finish application/browser, health, queue-consumption and runtime checks.
+Preserve the existing queued deployment; do not submit duplicate attempts.
+No source permission, cursor format, service query or dependency changed, and
+the release verification performs no application-row writes or recipient sends.
