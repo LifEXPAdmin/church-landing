@@ -1,5 +1,18 @@
 ## Expanded membership boundaries accepted, September 18, 2026 UTC
 
+## Screen-pattern publication verified, September 18, 2026, 18:47 UTC
+
+The normal main push automatically deployed `0ced807` with unchanged application
+code and product version 2026.09.18.8. Deployment
+`dpl_AXpw5kcv8W2EJ46zqUq3Z4gRuwz5` is READY and independently matched to the
+canonical domain and serving SHA. Fresh checks pass 17 public/privacy groups,
+six health checks and the native queue probe. All 100 migration/recovery checksums
+and 144 production fingerprints match, with no application writes or recipient
+sends. Scoped runtime errors/fatals are zero. See the
+[screen-pattern receipt](SCREEN_PATTERNS.md#integrated-publication-acceptance).
+The contract and prior membership acceptance are now published; the separate
+profile candidate still requires its input-validation correction and release.
+
 ## Screen-pattern contract integration, September 18, 2026, 18:41 UTC
 
 A1 integrated the documentation-only screen contract from `08c8531` with the

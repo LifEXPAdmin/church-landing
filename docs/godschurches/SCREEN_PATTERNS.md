@@ -244,3 +244,28 @@ Website copy, private-reference inspection and diff checks pass. No runtime file
 changed, so no new build or browser acceptance is claimed. No query, JavaScript, dependency, migration,
 provider configuration or runtime behavior is added. A1 integrates this contract;
 future implementation acceptance still requires actual journey evidence.
+
+
+## Integrated publication acceptance
+
+A1 published this contract on main in `0ced807adaa33be0a6cb0dda7ef29fc4e77bcfef`.
+The automatic production deployment `dpl_AXpw5kcv8W2EJ46zqUq3Z4gRuwz5` became
+READY on September 18 at 18:44:32 UTC; the canonical domain and serving identity
+matched at 18:45:14 UTC. Product version remains 2026.09.18.8 because application
+code is identical to the already-verified `28f6909` runtime. The intervening
+changes contain only engineering documents and membership acceptance helpers.
+
+Six navigation/resource tests pass on the merged source. The provider build
+passes all 223 runtime traces with no pending migrations. Fresh live checks pass
+17 public/privacy groups and six health checks with zero browser errors. The
+one-shot native queue probe completes; scoped runtime error/fatal rows are zero
+from READY through 18:45:55 UTC. All 100 migration and installed recovery checksums
+match; the recent encrypted restore covers 144 tables. All 144 production table
+fingerprints remain unchanged through 18:46:30 UTC. Verification application
+writes and recipient sends are zero.
+
+This completes the published screen-pattern definition. It does not activate a
+reserved resource or certify future screens, new Menu shortcuts, the separate
+cross-feature Back journey, or physical-device acceptance. The prior full runtime
+and signed-in acceptance remains applicable evidence; it was not rerun merely
+for documentation.
