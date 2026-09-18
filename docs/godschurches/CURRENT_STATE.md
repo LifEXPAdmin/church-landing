@@ -1,3 +1,15 @@
+## Church pantry local acceptance, September 18, 2026 UTC
+
+The pantry/support hub feature and its stock/replenishment finishing steps are
+implemented with explicit assistance duties and current named coordinator consent.
+Twenty-two isolated service checks and eleven pantry browser groups pass; the
+existing Needs browser journey passes ten groups. The new route loading boundary
+was removed after reproducing stale save views, and the shared timing experiment
+was reverted. Fresh encrypted production-copy upgrade passes 97 to 98 migrations
+with all 135 original table/column fingerprints unchanged. Production remains
+2026.09.18.2. Full regression and exact release/live/recovery acceptance continue.
+See [the current pantry evidence](PANTRY_SUPPORT_IMPLEMENTATION.md).
+
 ## Church Needs verified live, September 18, 2026 UTC
 
 **2026.09.18.2 / 20da546620bccb1dc815ee19db9df74e50a69a46** is READY in

@@ -1,3 +1,6 @@
+import { exchangeNeedCommand } from "../lib/platform/exchange-need-commands";
+import { exchangeListingCommand } from "../lib/platform/exchange-listings";
+import { EXCHANGE_ITEM_POLICY } from "../lib/platform/exchange-options";
 import { pantryRequestReadSources } from "../lib/platform/pantry-read-access";
 import { purgeMessagingCandidate } from "../lib/platform/messaging-retention";
 import {
@@ -982,4 +985,191 @@ test("bounded private projections match canonical access after source, duty, acc
   });
   await check(0);
   assert.notEqual(a.id, b.id);
+});
+
+test("pantry HTTP writes require same-origin and the exact current account pin", async () => {
+  const f = await setup(),
+    request = f.request(),
+    origin = process.env.ACCOUNT_ORIGIN!;
+  const send = (headers: Record<string, string>) =>
+    handlePantryRequest(
+      db,
+      new Request(origin + "/api/platform/pantry", {
+        method: "POST",
+        headers: {
+          cookie: "church_platform_session=" + f.a.token,
+          "content-type": "application/json",
+          ...headers
+        },
+        body: JSON.stringify(request.body)
+      })
+    );
+  assert.equal(
+    (await send({ origin, "x-expected-account": f.b.id })).status,
+    401
+  );
+  assert.equal(
+    (
+      await send({
+        origin: "https://invalid.example.test",
+        "x-expected-account": f.a.id
+      })
+    ).status,
+    403
+  );
+  assert.equal((await send({ origin })).status, 401);
+  const saved = await send({ origin, "x-expected-account": f.a.id });
+  assert.equal(saved.status, 200);
+  const first = await saved.json();
+  const retry = await send({ origin, "x-expected-account": f.a.id });
+  assert.deepEqual(await retry.json(), first);
+  assert.equal(
+    await db.pantryRequest.count({
+      where: { hubId: f.hub.id, requesterId: f.a.id }
+    }),
+    1
+  );
+});
+test("database constraints reject negative stock and a pickup from another church", async () => {
+  const f = await setup(),
+    g = await setup(),
+    row = await f.request().run();
+  await assert.rejects(
+    db.pantryCategory.update({
+      where: { id: f.category.id },
+      data: { quantity: -1 }
+    })
+  );
+  await assert.rejects(
+    db.pantryRequest.update({
+      where: { id: row.id },
+      data: { sessionId: g.session.id, sessionVersion: 1, state: "ASSIGNED" }
+    })
+  );
+  assert.equal(
+    (await db.pantryRequest.findUniqueOrThrow({ where: { id: row.id } }))
+      .sessionId,
+    null
+  );
+  assert.equal(
+    (
+      await db.pantryCategory.findUniqueOrThrow({
+        where: { id: f.category.id }
+      })
+    ).quantity,
+    10
+  );
+});
+
+test("replenishment links require current same-church management and disappear when the Need closes", async () => {
+  const f = await setup();
+  const exchangeGrant = await db.churchCapabilityGrant.create({
+    data: {
+      churchId: f.church.id,
+      userId: f.coordinator.id,
+      capability: "MANAGE_EXCHANGE_LISTINGS"
+    }
+  });
+  await db.churchCapabilityGrant.create({
+    data: {
+      churchId: f.church.id,
+      userId: f.coordinator.id,
+      capability: "MODERATE_EXCHANGE_LISTINGS"
+    }
+  });
+  const listing = await db.exchangeListing.create({
+    data: {
+      ownerChurchId: f.church.id,
+      creatorId: f.coordinator.id,
+      intent: "CHURCH_NEED",
+      category: "HOUSEHOLD",
+      audience: "PUBLIC",
+      title: "Fictional replenishment",
+      description: "Public category restock",
+      requestedItems: "Ten food parcels",
+      country: "US",
+      placeId: 4887398,
+      placeLabel: "Chicago",
+      itemPolicy: EXCHANGE_ITEM_POLICY
+    }
+  });
+  const need = await exchangeNeedCommand(
+    db,
+    f.coordinator.token,
+    input("configure", {
+      listingId: listing.id,
+      listingVersion: listing.version,
+      expectedVersion: 0,
+      deadlineLocal: future(72),
+      timeZone: "UTC",
+      acceptCoordinator: true
+    })
+  );
+  await exchangeNeedCommand(
+    db,
+    f.coordinator.token,
+    input("slot", {
+      needId: need.id,
+      slotId: randomUUID(),
+      expectedVersion: 0,
+      schema: 1,
+      fields: {
+        action: "DONATE",
+        label: "Food parcels",
+        unit: "parcels",
+        target: 10,
+        loan: false,
+        returnLocal: null,
+        returnTimeZone: null,
+        returnResponsibility: "",
+        volunteerSlotId: null
+      }
+    })
+  );
+  const link = (version = f.category.version) =>
+    command(
+      db,
+      f.coordinator.token,
+      input("replenish", {
+        hubId: f.hub.id,
+        id: f.category.id,
+        expectedVersion: version,
+        needId: need.id
+      })
+    );
+  await assert.rejects(link(), status(404));
+  const ready = await db.exchangeListing.findUniqueOrThrow({
+    where: { id: listing.id }
+  });
+  await exchangeListingCommand(
+    db,
+    f.coordinator.token,
+    input("status", {
+      listingId: listing.id,
+      expectedVersion: ready.version,
+      state: "ACTIVE",
+      itemPolicy: EXCHANGE_ITEM_POLICY,
+      itemConfirmed: true
+    })
+  );
+  const linked = await link();
+  assert.deepEqual(
+    (await read(db, undefined, { view: "hub", id: f.hub.id })).categories?.[0]
+      .replenishment,
+    { id: need.id, title: "Fictional replenishment" }
+  );
+  await db.churchCapabilityGrant.update({
+    where: { id: exchangeGrant.id },
+    data: { revokedAt: new Date(), version: { increment: 1 } }
+  });
+  await assert.rejects(link(linked.version), status(404));
+  await db.exchangeNeed.update({
+    where: { id: need.id },
+    data: { closedAt: new Date() }
+  });
+  assert.equal(
+    (await read(db, undefined, { view: "hub", id: f.hub.id })).categories?.[0]
+      .replenishment,
+    null
+  );
 });
