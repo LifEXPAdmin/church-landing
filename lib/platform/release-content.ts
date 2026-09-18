@@ -921,7 +921,7 @@ export const releases: ReleaseEntry[] = [
     summary: "Find existing features in clearer Menu groups and review essential security notice guidance.",
     added: ["Menu organizes destinations into Community, Discover, My activity and Account, while preserving the five primary links."],
     improved: ["Security explains required authenticator notices and links to separate optional notification choices.", "The authorized Growth dictionary explains community outcome definitions and clearly identifies outcomes that are not measured."],
-    fixed: ["Menu cards leave more room for enlarged text on narrow screens."],
+    fixed: ["Menu cards leave more room for enlarged text on narrow screens.", "Hiding recovery codes moves keyboard focus to a clear confirmation, without claiming that an external copy was saved."],
     featureIds: ["settings", "account-authenticator"]
   },
   {
