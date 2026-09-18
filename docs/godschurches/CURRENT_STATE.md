@@ -1,3 +1,24 @@
+## Menu shortcuts and profile sections pass combined gates, September 18, 2026
+
+The combined runtime `6a2a0e4` passes 194 discovered regression files with
+1,237 passing executions, two expected production-stage skips and zero failures.
+Both skipped cases pass in development. The independent build, TypeScript,
+scoped lint and 35 built HTTPS browser groups also pass. See the
+[Menu acceptance](MENU_SHORTCUTS_REPORT.md#combined-integration-acceptance-18-september-2026)
+and [profile acceptance](PROFILE_MODULES_REPORT.md#combined-integration-acceptance-18-september-2026).
+
+The protected production-copy rehearsal applies the two additive migrations,
+preserves all 144 original table/column fingerprints and completes protected
+replay. The unapplied integration names are `20260918223500_profile_modules`
+and `20260918223600_menu_shortcuts`; original candidate SQL checksums are
+unchanged. Production still has 101 migrations and serves verified release .10.
+Product .11 publication and live acceptance are next under the release lock.
+
+This batch also publishes workflow guide 3.1 and the reviewed
+[media publishing definition](MEDIA_PUBLISHING_CONTRACT.md). The latter is a
+contract only; it does not activate a media catalog, player or native uploads.
+Future fresh-session workflow discovery remains a separately observed gate.
+
 ## Navigation and calendar recovery verified live, September 18, 2026, 22:25 UTC
 
 Release 2026.09.18.10 serves on the canonical domain from main `bea3ba3`,

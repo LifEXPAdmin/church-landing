@@ -100,3 +100,30 @@ migration `20260918173000_profile_modules` becomes
 `20260918223500_profile_modules`. SQL contents and checksum are unchanged.
 The original A2 fixture history remains preserved in its isolated environment.
 Combined verification and production application remain open at this checkpoint.
+
+## Combined integration acceptance, 18 September 2026
+
+The combined runtime candidate `6a2a0e4` passes the complete isolated support
+gate: 194 discovered test files, 208 execution groups, 1,237 passing
+executions, two expected production-stage skips and zero failures or
+cancellations. Both skipped email cases pass in the earlier development stage.
+The actual command exits successfully after 49.80 minutes of machine runtime.
+Fresh migrations, populated upgrade and restore, process restart, development
+HTTP and built production HTTPS HTML/RSC privacy checks pass.
+
+The independent production build, TypeScript and scoped lint pass. Thirty-five
+built HTTPS browser groups pass with zero page errors: eight Menu shortcut, six
+profile module, five existing profile settings, five Menu navigation and eleven
+navigation/calendar journey groups. Narrow layouts and enlarged text were
+inspected. One attempted browser runner filename did not exist and ran no tests;
+the corrected existing runner completed successfully. The final source review
+found no integration blocker. These are automated local checks, not physical
+device observations.
+
+The combined build contains 224 runtime traces, 74,462 trace entries and 558
+server JavaScript files. This is a cost inventory, not a performance improvement
+claim. A fresh encrypted production-copy rehearsal upgrades 101 migrations to
+103, preserves all 144 original table/column fingerprints, completes protected
+replay and removes temporary plaintext. Production is unchanged at this local
+checkpoint. Publication, installed recovery-registry propagation and exact
+canonical-domain live acceptance remain required.
