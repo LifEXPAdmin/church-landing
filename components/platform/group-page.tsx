@@ -731,6 +731,25 @@ export async function GroupPage({
                 </GroupAction>
               ) : (
                 <>
+                  <nav
+                    aria-label="Group review"
+                    className="flex flex-wrap gap-4"
+                  >
+                    <Link
+                      prefetch={false}
+                      className="underline"
+                      href={`/platform/groups/${g.slug}/history`}
+                    >
+                      Review group history
+                    </Link>
+                    <Link
+                      prefetch={false}
+                      className="underline"
+                      href="/platform/reports/review"
+                    >
+                      Review content reports
+                    </Link>
+                  </nav>
                   {v.owner && g.lifecycle === "ACTIVE" && (
                     <GroupIdentityForm owner={owner} current={detail} />
                   )}
@@ -746,15 +765,6 @@ export async function GroupPage({
                         slug={g.slug}
                         groupId={g.id}
                       />
-                      <p>
-                        <Link
-                          prefetch={false}
-                          className="underline"
-                          href={`/platform/groups/${g.slug}/history`}
-                        >
-                          Review group history
-                        </Link>
-                      </p>
                       <form
                         action={path}
                         className="flex flex-wrap items-end gap-3"

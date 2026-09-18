@@ -4,6 +4,7 @@ import { createRequire } from "node:module";
 import { execFileSync } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
 const dir = process.argv[2];
+const groupMode = process.argv.includes("--groups");
 assert.ok(dir, "Pass the existing isolated HTTPS fixture directory");
 const config = JSON.parse(readFileSync(dir + "/browser-env.json", "utf8"));
 assert.match(config.origin, /^https:\/\/127\.0\.0\.1:\d+$/);
@@ -23,12 +24,76 @@ Object.assign(process.env, {
   COMMUNITY_REPORTS_ENABLED: "true"
 });
 const { PrismaClient } = await import("@prisma/client");
-const { seedPortal, assertPortalTestDatabase, seedOperatorGrants } =
-  await import("../tests/seed-portal.ts");
+const {
+  seedPortal,
+  assertPortalTestDatabase,
+  seedOperatorGrants,
+  createPortalActor
+} = await import("../tests/seed-portal.ts");
 const db = new PrismaClient();
 await assertPortalTestDatabase(db);
 const f = await seedPortal(db);
-await seedOperatorGrants(db, f.operator, ["REVIEW_COMMUNITY_REPORTS"]);
+let gather, groupOwner;
+const { groupCommand } = await import("../lib/platform/group-commands.ts");
+if (groupMode) {
+  f.operator = await createPortalActor(db, "groupmoderatorui");
+  groupOwner = await createPortalActor(db, "groupownerui");
+  gather = await groupCommand(db, groupOwner.token, {
+    operation: "create",
+    mutationId: randomUUID(),
+    schema: 1,
+    slug: "moderation-" + randomUUID(),
+    acceptedRules: true,
+    leaderDisclosure: true,
+    fields: {
+      name: "Fictional moderation group " + randomUUID(),
+      purpose: "Isolated group review and reconsideration",
+      rules: "Keep private group discussion within the group.",
+      kind: "INTEREST",
+      discovery: "LISTED",
+      joinPolicy: "OPEN",
+      format: "ONLINE",
+      area: "",
+      topic: "Fictional review",
+      churchId: null
+    }
+  });
+  for (const actor of [f.operator, f.memberA, f.contact])
+    await groupCommand(db, actor.token, {
+      operation: "join",
+      mutationId: randomUUID(),
+      groupId: gather.id,
+      expectedVersion: 0,
+      rulesVersion: 1,
+      acceptedRules: true,
+      rosterVisible: false
+    });
+  let member = await db.gatherGroupMembership.findUniqueOrThrow({
+    where: { groupId_userId: { groupId: gather.id, userId: f.operator.id } }
+  });
+  await groupCommand(db, groupOwner.token, {
+    operation: "offer-role",
+    mutationId: randomUUID(),
+    groupId: gather.id,
+    targetId: f.operator.id,
+    expectedVersion: member.version,
+    role: "LEADER",
+    reason: "Fictional scoped review responsibility"
+  });
+  member = await db.gatherGroupMembership.findUniqueOrThrow({
+    where: { groupId_userId: { groupId: gather.id, userId: f.operator.id } }
+  });
+  await groupCommand(db, f.operator.token, {
+    operation: "accept-role",
+    mutationId: randomUUID(),
+    groupId: gather.id,
+    expectedVersion: member.version,
+    role: "LEADER",
+    rulesVersion: 1,
+    acceptedRules: true,
+    leaderDisclosure: true
+  });
+} else await seedOperatorGrants(db, f.operator, ["REVIEW_COMMUNITY_REPORTS"]);
 await db.churchCapabilityGrant.create({
   data: {
     userId: f.coordinator.id,
@@ -73,7 +138,11 @@ page.on("request", (req) => {
     if (req.method() === "POST") bodies.push(req.postData());
   }
 });
-const out = dir + "/content-moderation-browser";
+const out =
+  dir +
+  (groupMode
+    ? "/group-content-moderation-browser"
+    : "/content-moderation-browser");
 mkdirSync(out, { recursive: true });
 const groups = [];
 groups.push = (...items) => {
@@ -99,8 +168,16 @@ const source = await db.platformPost.create({
   data: {
     authorId: f.memberA.id,
     content: "Fictional selected source " + randomUUID(),
-    audienceChurchId: f.churchA.id,
-    replyAudience: "CHURCH_MEMBERS",
+    ...(groupMode
+      ? {
+          audience: "GROUP",
+          groupId: gather.id,
+          groupThreadKind: "DISCUSSION",
+          groupCategory: "GENERAL",
+          allowReposts: false
+        }
+      : { audienceChurchId: f.churchA.id }),
+    replyAudience: groupMode ? "VIEWERS" : "CHURCH_MEMBERS",
     discussionClosed: true
   }
 });
@@ -110,7 +187,8 @@ const report = await db.communityReport.create({
     targetType: "POST",
     targetId: source.id,
     targetVersion: 1,
-    reason: "PRIVACY",
+    ...(groupMode ? { scopeGroupId: gather.id } : {}),
+    reason: groupMode ? "SPAM" : "PRIVACY",
     details: "Private reporter context " + randomUUID()
   }
 });
@@ -184,7 +262,7 @@ try {
     where: { id: source.id }
   });
   assert.equal(hidden.moderationState, "HIDDEN");
-  assert.equal(hidden.replyAudience, "CHURCH_MEMBERS");
+  assert.equal(hidden.replyAudience, groupMode ? "VIEWERS" : "CHURCH_MEMBERS");
   assert.equal(hidden.discussionClosed, true);
   groups.push(
     "previewed source action and lost-response retry create one decision, preserving reply permissions and closure"
@@ -307,15 +385,28 @@ try {
   const currentVersion = (
     await db.supportCase.findUniqueOrThrow({ where: { id: help.id } })
   ).version;
-  await db.platformOperatorGrant.update({
-    where: {
-      userId_capability: {
-        userId: f.operator.id,
-        capability: "REVIEW_COMMUNITY_REPORTS"
-      }
-    },
-    data: { revokedAt: new Date() }
-  });
+  if (groupMode) {
+    const member = await db.gatherGroupMembership.findUniqueOrThrow({
+      where: { groupId_userId: { groupId: gather.id, userId: f.operator.id } }
+    });
+    await groupCommand(db, groupOwner.token, {
+      operation: "revoke-role",
+      mutationId: randomUUID(),
+      groupId: gather.id,
+      targetId: f.operator.id,
+      expectedVersion: member.version,
+      reason: "Fictional review responsibility ended"
+    });
+  } else
+    await db.platformOperatorGrant.update({
+      where: {
+        userId_capability: {
+          userId: f.operator.id,
+          capability: "REVIEW_COMMUNITY_REPORTS"
+        }
+      },
+      data: { revokedAt: new Date() }
+    });
   await focusAgain();
   await page
     .getByText(explanation, { exact: true })

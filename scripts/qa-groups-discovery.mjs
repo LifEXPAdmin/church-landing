@@ -258,7 +258,7 @@ try {
     .getByLabel("Search group names, purposes and topics", { exact: true })
     .fill(topic);
   await search
-    .getByLabel("Meeting format", { exact: true })
+    .getByLabel(/^Meeting format/)
     .selectOption("ONLINE");
   await search
     .getByRole("button", { name: "Search groups", exact: true })

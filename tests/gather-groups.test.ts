@@ -72,10 +72,15 @@ import {
   type RetentionControlEntry
 } from "../lib/platform/retention-controls";
 const db = new PrismaClient();
+const priorReportIntake = process.env.COMMUNITY_REPORTS_ENABLED;
 before(async () => {
   await assertPortalTestDatabase(db);
+  process.env.COMMUNITY_REPORTS_ENABLED = "true";
 });
 after(async () => {
+  if (priorReportIntake === undefined)
+    delete process.env.COMMUNITY_REPORTS_ENABLED;
+  else process.env.COMMUNITY_REPORTS_ENABLED = priorReportIntake;
   await db.$disconnect();
 });
 const body = (operation: string, fields: Record<string, unknown> = {}) => ({

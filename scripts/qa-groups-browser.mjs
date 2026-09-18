@@ -395,11 +395,9 @@ try {
     "A member publishes a question into its immutable private group with a category and a phone-width discussion view"
   );
   await page.getByText("Add a poll", { exact: true }).click();
-  const pollForm = page
-    .locator("form")
-    .filter({
-      has: page.getByRole("button", { name: "Save poll", exact: true })
-    });
+  const pollForm = page.locator("form").filter({
+    has: page.getByRole("button", { name: "Save poll", exact: true })
+  });
   await pollForm
     .getByLabel("Poll question", { exact: true })
     .fill("Which fictional rehearsal day?");
@@ -419,11 +417,9 @@ try {
   await page
     .getByRole("button", { name: "Submit vote", exact: true })
     .waitFor();
-  const vote = page
-    .locator("form")
-    .filter({
-      has: page.getByRole("button", { name: "Submit vote", exact: true })
-    });
+  const vote = page.locator("form").filter({
+    has: page.getByRole("button", { name: "Submit vote", exact: true })
+  });
   await vote.getByLabel(/^Monday/).check();
   await vote.getByRole("button", { name: "Submit vote", exact: true }).click();
   await waitUntil(
@@ -495,11 +491,9 @@ try {
   await page
     .getByRole("button", { name: "Confirm original save", exact: true })
     .waitFor();
-  const changeVote = page
-    .locator("form")
-    .filter({
-      has: page.getByRole("button", { name: "Save changed vote", exact: true })
-    });
+  const changeVote = page.locator("form").filter({
+    has: page.getByRole("button", { name: "Save changed vote", exact: true })
+  });
   await changeVote.getByLabel(/^Tuesday/).check();
   await changeVote
     .getByRole("button", { name: "Save changed vote", exact: true })
@@ -999,6 +993,19 @@ try {
   await page
     .getByRole("button", { name: "Reopen group", exact: true })
     .waitFor();
+  await page
+    .getByRole("link", { name: "Review group history", exact: true })
+    .click();
+  await page
+    .getByRole("heading", { name: "Group history", exact: true })
+    .waitFor();
+  await go(privateBase + "/manage");
+  assert.equal(
+    await page
+      .getByRole("link", { name: "Review content reports", exact: true })
+      .getAttribute("href"),
+    "/platform/reports/review"
+  );
   await go(privateBase + "/discussion");
   await page
     .getByText("Fictional retained cohort history after archiving.", {

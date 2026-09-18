@@ -30,6 +30,15 @@ until its exact retry is confirmed. Separate browser acceptance verifies actual
 password sign-in return and a saved public draft remaining intact when a new
 private group draft starts. Pantry and Needs browser regressions pass.
 
+Four additional browser checks cover explicit church group authority, topic
+links, church filters preserved through searches, separate church and group
+membership, and revoked church management at 320 pixels with enlarged text.
+Five moderation browser checks use an accepted group leader without platform
+operator powers. They exercise a single decision after a lost response, private
+author notices, a consented appeal with exact retry, scoped reviewer replies,
+role revocation and concealed retained pages after an account switch. Archived
+management keeps its history and content-report navigation reachable.
+
 A real server/client form-constant import fault was repaired. Repeated lost-reply
 acceptance reproduced stale membership after a successful save. Removing the
 additional Groups loading boundary passes twelve repeated exact-retry cycles;
@@ -45,7 +54,9 @@ explicit HTTP suites passed. Historical fingerprint comparisons were corrected
 to compare original columns; migration 99 separately checks every original column
 of all 140 tables and asserts no inferred group, consent or destination data.
 Old activity and notification category expectations were repaired for Groups;
-the historical pre-Needs form omits all later categories. Remaining discovered
+the historical pre-Needs form omits all later categories. The Gather report
+fixture explicitly enables its local intake flag and restores it afterward.
+Remaining discovered
 tests are continuing on the unchanged baseline build. A final delta gate covers
 the client draft/controller changes separately. Full acceptance is not yet claimed.
 
