@@ -10,12 +10,14 @@ import { isEligible, PortalError } from "./portal-policy";
 import { accountSignInMethods } from "./google-accounts";
 import { socialPrivacyIn } from "./social-privacy";
 import { regionalSelect, regionalState } from "./regional-preferences";
+import { settingsChurchIn } from "./settings-church";
 
 /** Private settings summaries; mutations remain in their owning services. */
 export function readSettingsContext(
   db: PrismaClient,
   token: unknown,
-  expectedAccount?: string | null
+  expectedAccount?: string | null,
+  includeChurch = false
 ) {
   return withOwnedSession(
     db,
@@ -43,9 +45,15 @@ export function readSettingsContext(
       });
       const connections = isEligible(user)
         ? await tx.churchConnection.findMany({
-            where: { userId: user.id, state: "APPROVED" },
-            select: { church: { select: { id: true, name: true } } },
-            orderBy: { id: "asc" },
+            where: {
+              userId: user.id,
+              ...(includeChurch ? {} : { state: "APPROVED" as const })
+            },
+            select: {
+              state: true,
+              church: { select: { id: true, name: true } }
+            },
+            orderBy: [{ updatedAt: "desc" }, { id: "asc" }],
             take: 201
           })
         : [];
@@ -53,7 +61,10 @@ export function readSettingsContext(
         connections.length > 200
           ? "Your church connections need a size review. Personal settings remain available."
           : null;
-      const churches = churchError ? [] : connections.map((c) => c.church);
+      const safeConnections = churchError ? [] : connections;
+      const churches = safeConnections
+        .filter((c) => c.state === "APPROVED")
+        .map((c) => c.church);
       const at = user.email.lastIndexOf("@");
       return {
         ownerId: user.id,
@@ -72,7 +83,15 @@ export function readSettingsContext(
         privacy: await socialPrivacyIn(tx, user.id),
         photosAvailable: photoLibraryEnabled(),
         churches,
-        churchError
+        churchError,
+        church: includeChurch
+          ? await settingsChurchIn(
+              tx,
+              user.id,
+              isEligible(user),
+              safeConnections
+            )
+          : null
       };
     },
     true

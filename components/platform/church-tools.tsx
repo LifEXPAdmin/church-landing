@@ -8,21 +8,38 @@ import type { ChurchSummary } from "@/lib/platform/portal-types";
 import { ChurchWelcome } from "./church-welcome";
 export function ChurchTools({
   churchId,
-  welcome
+  welcome,
+  administration
 }: {
   churchId: string;
   welcome?: ChurchSummary;
+  administration?: { ownerId: string; name: string };
 }) {
   const [data, setData] = useState<ChurchToolsView | null>(null),
     [message, setMessage] = useState("");
   const generation = useRef(0);
+  const administrationOwner = administration?.ownerId;
   const load = useCallback(async () => {
     const turn = ++generation.current;
     try {
       const result = await socialRequest<ChurchToolsView>(
-        `/api/platform/church-tools?churchId=${encodeURIComponent(churchId)}`
+        `/api/platform/church-tools?churchId=${encodeURIComponent(churchId)}`,
+        undefined,
+        administrationOwner
       );
       if (turn !== generation.current) return;
+      if (
+        administrationOwner &&
+        (result.data.ownerId !== administrationOwner ||
+          !result.data.member ||
+          !result.data.capabilities.length)
+      ) {
+        setData(null);
+        setMessage(
+          "Church administration is no longer available in your current session. Review your access in My church."
+        );
+        return;
+      }
       setData(result.data);
       setMessage("");
     } catch {
@@ -32,7 +49,7 @@ export function ChurchTools({
         "Your church tools could not be checked. Reconnect and try again."
       );
     }
-  }, [churchId]);
+  }, [churchId, administrationOwner]);
   const invalidate = useCallback(() => {
     generation.current++;
   }, []);
@@ -61,7 +78,10 @@ export function ChurchTools({
       document.removeEventListener("visibilitychange", visibility);
     };
   }, [load, invalidate]);
-  if (!data?.ownerId && !message && !(data && welcome)) return null;
+  if (!data?.ownerId && !message && !(data && welcome))
+    return administration ? (
+      <p role="status">Checking current church administration access…</p>
+    ) : null;
   const root = `/platform/churches/${encodeURIComponent(churchId)}`,
     caps = data?.capabilities ?? [];
   const structure = caps.includes("MANAGE_STRUCTURE"),
@@ -74,6 +94,17 @@ export function ChurchTools({
       className={`gc-church-tools space-y-3 ${welcome ? "" : "rounded-xl border border-gc-divider p-4"}`}
       aria-label="Your church tools"
     >
+      {administration && data && (
+        <div className="space-y-2" aria-label="Current organization scope">
+          <p className="font-semibold">
+            Church administration: {administration.name}
+          </p>
+          <p>
+            Your current assigned permissions determine the tools below.
+            Personal preferences stay separate.
+          </p>
+        </div>
+      )}
       {welcome && data && <ChurchWelcome church={welcome} data={data} />}
       {data?.approvedWelcome && (
         <div className="space-y-2">
@@ -175,6 +206,47 @@ export function ChurchTools({
                   caps.includes("PUBLISH_CHURCH_EVENTS")) && (
                   <Link className={link} href={`${root}/calendar`}>
                     Calendar and events
+                  </Link>
+                )}
+                {caps.includes("MANAGE_CHURCH_GROUPS") && (
+                  <Link
+                    className={link}
+                    href={`/platform/groups?churchId=${encodeURIComponent(churchId)}`}
+                  >
+                    Church Gather groups
+                  </Link>
+                )}
+                {caps.includes("MANAGE_CHURCH_ASSISTANCE") && (
+                  <Link
+                    className={link}
+                    href={`/platform/pantry/${encodeURIComponent(churchId)}`}
+                  >
+                    Church pantry and support hub
+                  </Link>
+                )}
+                {caps.includes("APPOINT_COORDINATORS") && (
+                  <Link className={link} href="/platform/operator/churches">
+                    Appoint help coordinators
+                  </Link>
+                )}
+                {(caps.includes("PUBLISH_EXCHANGE_LISTINGS") ||
+                  caps.includes("MANAGE_EXCHANGE_LISTINGS")) && (
+                  <Link
+                    className={link}
+                    href={`/platform/exchange/mine?churchId=${encodeURIComponent(churchId)}`}
+                  >
+                    Church Exchange listings
+                  </Link>
+                )}
+                {(caps.includes("MODERATE_CHURCH_POSTS") ||
+                  caps.includes("MODERATE_EXCHANGE_LISTINGS")) && (
+                  <Link className={link} href="/platform/reports/review">
+                    Your assigned report reviews
+                  </Link>
+                )}
+                {caps.includes("MANAGE_CHURCH_VOLUNTEERS") && (
+                  <Link className={link} href={`${root}/calendar`}>
+                    Events and volunteer roles
                   </Link>
                 )}
               </nav>

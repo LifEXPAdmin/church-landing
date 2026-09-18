@@ -10,7 +10,8 @@ export async function GET(request: Request) {
       await readSettingsContext(
         prisma,
         requestSessionToken(request),
-        request.headers.get("x-expected-account")
+        request.headers.get("x-expected-account"),
+        new URL(request.url).searchParams.get("scope") === "church"
       ),
       { headers: socialHeaders }
     );

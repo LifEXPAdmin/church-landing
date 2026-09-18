@@ -20,6 +20,7 @@ import { SettingsPrivacy } from "./settings-privacy";
 import { SettingsSafety } from "./settings-safety";
 import { SettingsData } from "./settings-data";
 import { SettingsHelp } from "./settings-help";
+import { SettingsChurch } from "./settings-church";
 
 const positions = new Map<string, { y: number; focus: string }>();
 let positionOwner: string | null = null;
@@ -53,7 +54,7 @@ export function SettingsWorkspace({
     setError("");
     try {
       const r = await socialRequest<SettingsContext>(
-        "/api/platform/settings",
+        "/api/platform/settings" + (folder === "church" ? "?scope=church" : ""),
         undefined,
         owner
       );
@@ -99,7 +100,7 @@ export function SettingsWorkspace({
     } finally {
       if (seq === generation.current) setBusy(false);
     }
-  }, [owner, router]);
+  }, [owner, router, folder]);
   useEffect(() => {
     if (positionOwner !== owner) {
       positions.clear();
@@ -370,12 +371,16 @@ export function SettingsWorkspace({
               {folder === "data" && !active && <SettingsData />}
               {folder === "help" && !active && <SettingsHelp />}
               {folder === "communities" && !active && (
-                <section className="gc-settings space-y-3" aria-label="Your participation and privacy">
+                <section
+                  className="gc-settings space-y-3"
+                  aria-label="Your participation and privacy"
+                >
                   <h2 className="text-2xl">Your participation and privacy</h2>
                   <p>
-                    Contact requests controls who may send you a group invitation.
-                    An invitation never joins a group for you. Adult eligibility,
-                    blocks and the group’s current rules still apply.
+                    Contact requests controls who may send you a group
+                    invitation. An invitation never joins a group for you. Adult
+                    eligibility, blocks and the group’s current rules still
+                    apply.
                   </p>
                   <p>
                     Choose your response on each event. Your calendar responses
@@ -389,6 +394,7 @@ export function SettingsWorkspace({
                   </p>
                 </section>
               )}
+              {folder === "church" && !active && <SettingsChurch data={data} />}
               {folder &&
                 !active &&
                 rows(

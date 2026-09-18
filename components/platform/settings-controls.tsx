@@ -33,7 +33,9 @@ const DiscoverySettings = dynamic(() =>
 const SettingsLanguage = dynamic(() =>
   import("./settings-language").then((m) => m.SettingsLanguage)
 );
-const MeasurementSettings=dynamic(()=>import("./measurement-settings").then(m=>m.MeasurementSettings));
+const MeasurementSettings = dynamic(() =>
+  import("./measurement-settings").then((m) => m.MeasurementSettings)
+);
 
 export function SettingsControls({
   control,
@@ -47,7 +49,7 @@ export function SettingsControls({
     case "language":
       return <SettingsLanguage key={data.ownerId} initial={data.regional} />;
     case "measurement":
-      return <MeasurementSettings owner={data.ownerId}/>;
+      return <MeasurementSettings owner={data.ownerId} />;
     case "discovery":
       return <DiscoverySettings owner={data.ownerId} />;
     case "reading":
@@ -206,15 +208,16 @@ export function AccountIdentitySummary({ data }: { data: SettingsContext }) {
 }
 function OrganizationSettings({ data }: { data: SettingsContext }) {
   const [selected, setSelected] = useState("");
-  const church = data.churches.find((c) => c.id === selected);
+  const organizations = data.church?.organizations ?? [];
+  const church = organizations.find((c) => c.id === selected);
   return (
     <div className="gc-settings">
       {data.churchError && <p role="status">{data.churchError}</p>}
       <p>
-        Choose a church to review your current tools. Your personal preferences
-        stay separate.
+        Choose a church where you have current assigned duties. This changes the
+        administration view, not your church connection or personal preferences.
       </p>
-      {data.churches.length ? (
+      {organizations.length ? (
         <>
           <label htmlFor="settings-church">Church</label>
           <select
@@ -223,25 +226,31 @@ function OrganizationSettings({ data }: { data: SettingsContext }) {
             onChange={(e) => setSelected(e.target.value)}
           >
             <option value="">Choose a church</option>
-            {data.churches.map((c) => (
+            {organizations.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}
               </option>
             ))}
           </select>
           {church && (
-            <section key={church.id} aria-label={"Settings for " + church.name}>
-              <h2>{church.name}</h2>
-              <p>Available tools depend on your current church role.</p>
-              <ChurchTools churchId={church.id} />
-            </section>
+            <ChurchTools
+              key={church.id}
+              churchId={church.id}
+              administration={{ ownerId: data.ownerId, name: church.name }}
+            />
           )}
         </>
       ) : (
         <p>
           {data.churchError
             ? "Review My church for the next access step."
-            : "You have no approved church connection to select. A follow or contributed listing does not appoint you to manage a church."}
+            : "No church administration is available in your current session. An approved connection, follow or role title alone does not give management permissions."}
+        </p>
+      )}
+      {selected && !church && (
+        <p role="status">
+          The selected church is no longer available for administration. Review
+          your current access before continuing.
         </p>
       )}
       <Link className="underline" href="/platform/my-church">

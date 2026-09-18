@@ -14,6 +14,16 @@ export type Feature = {
 };
 export const features: Feature[] = [
   {
+    id: "church-settings",
+    category: "Privacy and account",
+    name: "Personal church settings and administration",
+    description: "Review your church connection and keep personal choices separate from assigned church duties.",
+    steps: "Open Settings, My church and ministries. Review the current connection state, then use My church for request, withdrawal or leave confirmation. Directory and contact choices use the existing sharing form. Organization settings lists churches with current assigned permissions and checks access again when opened.",
+    href: "/platform/settings/church",
+    eligibility: "Sign-in is required. Pending requests do not give church access. An approved connection or role title alone does not grant administration. The existing single active connection rule remains. Personal settings never appoint roles or change church policy.",
+    availability: "available"
+  },
+  {
     id: "community-preferences",
     category: "Privacy and account",
     name: "Communities and interests settings",
@@ -894,6 +904,16 @@ export const features: Feature[] = [
   }
 ];
 export const releases: ReleaseEntry[] = [
+  {
+    id: "church-settings-and-current-administration",
+    version: "2026.09.18.6",
+    date: "2026-09-18",
+    summary: "Review your church connection and current administration access together in Settings.",
+    added: ["My church settings distinguishes pending, approved and ended connections and links the existing membership, directory and personal notification choices."],
+    improved: ["Church administration shows its current scope and connects existing Groups, Pantry, Exchange, volunteer, coordinator and review tools to assigned permissions."],
+    fixed: ["Ordinary membership and role titles no longer appear as administration choices. Opening a church rechecks current access and conceals unavailable tools."],
+    featureIds: ["church-settings", "church-management"]
+  },
   {
     id: "communities-and-interests-settings",
     version: "2026.09.18.5",
