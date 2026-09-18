@@ -82,12 +82,16 @@ async function candidatesIn(tx: Tx, now: Date) {
   // Each daily slice must keep making progress on the established owners as
   // well as inquiries; a busy new category must not starve message cleanup.
   const groups = [
-    inquiries.map(i => ({ target: "EXCHANGE_INQUIRY" as const, ...i })),
-    reports.map(r => ({ target: "REPORT" as const, ...r })),
-    messages.map(m => ({ target: "MESSAGE" as const, ...m }))
+    inquiries.map((i) => ({ target: "EXCHANGE_INQUIRY" as const, ...i })),
+    reports.map((r) => ({ target: "REPORT" as const, ...r })),
+    messages.map((m) => ({ target: "MESSAGE" as const, ...m }))
   ];
   const batch: MessagingPurgeCandidate[] = [];
-  for (let index = 0; index < Math.max(...groups.map(group => group.length)); index++) {
+  for (
+    let index = 0;
+    index < Math.max(...groups.map((group) => group.length));
+    index++
+  ) {
     for (const group of groups) if (group[index]) batch.push(group[index]);
   }
   return batch;
@@ -113,7 +117,11 @@ export async function inspectMessagingRetention(
       policy: MESSAGING_RETENTION_POLICY,
       candidates: [
         ...pending.map((p): MessagingPurgeCandidate => {
-          if (p.target !== "REPORT" && p.target !== "MESSAGE" && p.target !== "EXCHANGE_INQUIRY")
+          if (
+            p.target !== "REPORT" &&
+            p.target !== "MESSAGE" &&
+            p.target !== "EXCHANGE_INQUIRY"
+          )
             throw Error("This retention target requires its dedicated owner");
           return { target: p.target, id: p.targetId, version: p.version };
         }),
@@ -172,9 +180,29 @@ export async function purgeMessagingCandidate(
     // selected report expires. Active accounts and shared church content retain
     // their normal lifecycle; messages use their participant-retention check.
     if (source && !(await tx.communityReport.count({ where: source }))) {
+      if (source.targetType === "NEED_CONTRIBUTION")
+        await tx.exchangeNeedContribution.updateMany({
+          where: { id: source.targetId, contributorId: null },
+          data: { note: "", disputeNote: "", loanResponsibility: "" }
+        });
       if (source.targetType === "EXCHANGE_HANDOFF") {
-        if (!(await tx.retentionHold.findFirst({ where: { target: "EXCHANGE_INQUIRY", targetId: source.targetId, releasedAt: null }, select: { id: true } })))
-          await tx.exchangeInquiry.updateMany({ where: { id: source.targetId, state: { notIn: ["INQUIRED", "SELECTED", "RESERVED"] } }, data: { pickupDetails: "" } });
+        if (
+          !(await tx.retentionHold.findFirst({
+            where: {
+              target: "EXCHANGE_INQUIRY",
+              targetId: source.targetId,
+              releasedAt: null
+            },
+            select: { id: true }
+          }))
+        )
+          await tx.exchangeInquiry.updateMany({
+            where: {
+              id: source.targetId,
+              state: { notIn: ["INQUIRED", "SELECTED", "RESERVED"] }
+            },
+            data: { pickupDetails: "" }
+          });
       }
       if (source.targetType === "EXCHANGE_LISTING")
         await tx.exchangeListing.updateMany({
@@ -256,15 +284,41 @@ export async function purgeMessagingCandidate(
         });
     }
   } else if (candidate.target === "EXCHANGE_INQUIRY") {
-    await tx.socialEvent.deleteMany({ where: { sourceId: candidate.id, kind: { in: ["EXCHANGE_INQUIRY", "EXCHANGE_HANDOFF", "EXCHANGE_REMINDER"] } } });
+    await tx.socialEvent.deleteMany({
+      where: {
+        sourceId: candidate.id,
+        kind: {
+          in: ["EXCHANGE_INQUIRY", "EXCHANGE_HANDOFF", "EXCHANGE_REMINDER"]
+        }
+      }
+    });
     // Preserve only the immutable reference, preventing late original writes
     // and protected restoration from recreating the deleted body.
     const at = new Date();
-    const data = { state: "REVOKED" as const, recoveryRequired: true, purpose: "", pickupDetails: "", cancelNote: "", cancelReason: null,
-      windowStart: null, windowEnd: null, timeZone: null, wakeAt: null, endedAt: at, bodyPurgedAt: at };
-    await tx.exchangeInquiry.upsert({ where: { id: candidate.id },
-      create: { id: candidate.id, version: candidate.version, expiresAt: at, ...data },
-      update: data });
+    const data = {
+      state: "REVOKED" as const,
+      recoveryRequired: true,
+      purpose: "",
+      pickupDetails: "",
+      cancelNote: "",
+      cancelReason: null,
+      windowStart: null,
+      windowEnd: null,
+      timeZone: null,
+      wakeAt: null,
+      endedAt: at,
+      bodyPurgedAt: at
+    };
+    await tx.exchangeInquiry.upsert({
+      where: { id: candidate.id },
+      create: {
+        id: candidate.id,
+        version: candidate.version,
+        expiresAt: at,
+        ...data
+      },
+      update: data
+    });
   } else {
     await tx.socialEvent.deleteMany({ where: { messageId: candidate.id } });
     await tx.adultMessage.deleteMany({ where: { id: candidate.id } });
@@ -363,7 +417,11 @@ export async function runMessagingRetention(
     reports = 0,
     inquiries = 0;
   for (const seal of sealed) {
-    if (seal.target !== "REPORT" && seal.target !== "MESSAGE" && seal.target !== "EXCHANGE_INQUIRY")
+    if (
+      seal.target !== "REPORT" &&
+      seal.target !== "MESSAGE" &&
+      seal.target !== "EXCHANGE_INQUIRY"
+    )
       throw Error("This retention target requires its dedicated owner");
     await db.retentionPurge.update({
       where: {

@@ -85,7 +85,7 @@ export async function exchangeInquirySource(
   const listing = await tx.exchangeListing.findFirst({
     where: {
       AND: [
-        { id: listingId, inquiriesEnabled: true },
+        { id: listingId, inquiriesEnabled: true, need: null },
         exchangeReadableWhere(context)
       ]
     }
@@ -276,7 +276,7 @@ export async function exchangeInquiryReadSources(
     const listing = await tx.exchangeListing.findFirst({
       where: {
         AND: [
-          { id: listingId, inquiriesEnabled: true },
+          { id: listingId, inquiriesEnabled: true, need: null },
           exchangeReadableWhere(context)
         ]
       }

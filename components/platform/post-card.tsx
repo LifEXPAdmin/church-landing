@@ -105,7 +105,16 @@ function PostCardContent({
             </Link>{" "}
             reposted ·{" "}
             <time dateTime={post.createdAt.toISOString()}>
-              <RegionalTime value={post.createdAt} locale="en" options={{month: "short", day: "numeric", hour: "numeric", minute: "2-digit"}} />
+              <RegionalTime
+                value={post.createdAt}
+                locale="en"
+                options={{
+                  month: "short",
+                  day: "numeric",
+                  hour: "numeric",
+                  minute: "2-digit"
+                }}
+              />
             </time>
             {post.audience === "CHURCH" ? " · Church members" : ""}
           </span>
@@ -198,7 +207,16 @@ function PostCardContent({
             <>
               <div className="gc-post-meta">
                 <time dateTime={post.createdAt.toISOString()}>
-                  <RegionalTime value={post.createdAt} locale="en" options={{month: "short", day: "numeric", hour: "numeric", minute: "2-digit"}} />
+                  <RegionalTime
+                    value={post.createdAt}
+                    locale="en"
+                    options={{
+                      month: "short",
+                      day: "numeric",
+                      hour: "numeric",
+                      minute: "2-digit"
+                    }}
+                  />
                 </time>
                 <span>
                   <Globe aria-hidden="true" />
@@ -244,6 +262,15 @@ function PostCardContent({
                     access.
                   </p>
                 )}
+              {post.need && (
+                <Link
+                  prefetch={false}
+                  className="inline-flex min-h-11 items-center underline"
+                  href={`/platform/exchange/${post.need.listingId}/needs`}
+                >
+                  Open need actions and current progress
+                </Link>
+              )}
               {post.eventOccurrenceId && (
                 <Link
                   className="inline-flex min-h-11 items-center text-gc-accent underline"

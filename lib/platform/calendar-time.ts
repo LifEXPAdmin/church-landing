@@ -51,6 +51,27 @@ function local(value: unknown, allDay: boolean) {
     throw new PortalError(400, "Enter a valid local date and time.");
   }
 }
+// One exact wall time for deadlines. Share the same strict date and DST rules
+// as event schedules, without inventing a second artificial window endpoint.
+export function calendarInstant(value: unknown, zone: unknown) {
+  const timeZone = calendarZone(zone),
+    date = local(value, false);
+  try {
+    return {
+      local: date.toString({ smallestUnit: "minute" }),
+      timeZone,
+      at: new Date(
+        date.toZonedDateTime(timeZone, { disambiguation: "reject" })
+          .epochMilliseconds
+      )
+    };
+  } catch {
+    throw new PortalError(
+      400,
+      "This local time is skipped or repeated in the selected time zone. Choose an unambiguous time."
+    );
+  }
+}
 export function expandCalendarSchedule(input: Record<string, unknown>): {
   schedule: CalendarSchedule;
   occurrences: OccurrenceTime[];

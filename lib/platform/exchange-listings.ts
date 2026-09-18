@@ -1,3 +1,8 @@
+import {
+  validateNeedPublication,
+  repeatNeedStructure,
+  withdrawNeedListing
+} from "./exchange-need-listing";
 import { revokeExchangeInquiries } from "./exchange-handoff-lifecycle";
 import type { ExchangeListing, Prisma, PrismaClient } from "@prisma/client";
 import { exchangeFavoriteId } from "./exchange-saved";
@@ -195,11 +200,12 @@ async function publication(
   tx: PostTx,
   context: PostContext,
   authority: ExchangeAuthority,
-  row: Pick<ExchangeListing, "ownerChurchId" | "moderationState">,
+  row: Pick<ExchangeListing, "id" | "ownerChurchId" | "moderationState">,
   fields: ExchangeListingFields,
   input: Record<string, unknown>,
   editing = false
 ) {
+  if (!editing) await validateNeedPublication(tx, row);
   if (!editing && row.moderationState !== "VISIBLE")
     throw new PortalError(
       409,
@@ -412,6 +418,7 @@ export function exchangeListingCommand(
             creatorId: actorId
           }
         });
+        await repeatNeedStructure(tx, row.id, copy.id, actorId);
         await audit(tx, copy, actorId, "DUPLICATE");
         return {
           id: copy.id,
@@ -420,9 +427,32 @@ export function exchangeListingCommand(
             "A new private draft is saved. Review its audience and select any photos deliberately before publishing."
         };
       }
-      const held = await tx.exchangeInquiry.findFirst({ where: { listingId: row.id, state: { in: ["SELECTED", "RESERVED"] } }, select: { id: true } });
-      if (held && (op === "save" || (op === "status" && input.state !== "ARCHIVED")))
-        throw new PortalError(409, "This listing has an active handoff. Complete or cancel it before changing its terms or availability. You may archive the listing to withdraw it and end the handoff.");
+      const need = await tx.exchangeNeed.findUnique({
+        where: { listingId: row.id }
+      });
+      if (
+        need &&
+        op === "status" &&
+        ["RESERVED", "CLOSED"].includes(String(input.state))
+      )
+        throw new PortalError(
+          409,
+          "Use the need's partial closing or cancellation controls. A whole-listing hold cannot represent its separate quantities."
+        );
+      if (need && op === "status" && input.state === "ARCHIVED")
+        await withdrawNeedListing(tx, row.id, actorId);
+      const held = await tx.exchangeInquiry.findFirst({
+        where: { listingId: row.id, state: { in: ["SELECTED", "RESERVED"] } },
+        select: { id: true }
+      });
+      if (
+        held &&
+        (op === "save" || (op === "status" && input.state !== "ARCHIVED"))
+      )
+        throw new PortalError(
+          409,
+          "This listing has an active handoff. Complete or cancel it before changing its terms or availability. You may archive the listing to withdraw it and end the handoff."
+        );
       if (op === "save" || op === "status") {
         await revokeExchangeInquiries(tx, { listingId: row.id }, actorId);
       }
@@ -514,6 +544,21 @@ export function exchangeListingCommand(
           input.fields,
           published
         );
+        if (
+          need &&
+          (fields.intent !== "CHURCH_NEED" ||
+            fields.neededBy !== (need.deadlineLocal?.slice(0, 10) ?? null))
+        )
+          throw new PortalError(
+            409,
+            "Structured needs retain their type and exact deadline. Change the deadline in Need actions and reload this listing editor."
+          );
+        if (
+          need &&
+          (fields.audience !== row.audience ||
+            fields.audienceChurchId !== row.audienceChurchId)
+        )
+          await withdrawNeedListing(tx, row.id, actorId);
         audience(context, fields, row.ownerChurchId);
         if (published)
           await publication(tx, context, authority, row, fields, input, true);
@@ -569,12 +614,24 @@ export function exchangeListingCommand(
         where: { id: row.id },
         data: {
           ...data,
-          ...(op === "save" || op === "status" ? { inquiriesEnabled: false, inquiryContactVersion: { increment: 1 } } : {}),
+          ...(op === "save" || op === "status"
+            ? {
+                inquiriesEnabled: false,
+                inquiryContactVersion: { increment: 1 }
+              }
+            : {}),
           version: { increment: 1 },
           visibilityVersion: { increment: 1 }
         }
       });
-      if (op === "save" || op === "status") await recordDiscoveryControl(tx, "EXCHANGE_CONTACT", actorId, saved.id, saved.inquiryContactVersion);
+      if (op === "save" || op === "status")
+        await recordDiscoveryControl(
+          tx,
+          "EXCHANGE_CONTACT",
+          actorId,
+          saved.id,
+          saved.inquiryContactVersion
+        );
       if (
         op === "status" &&
         saved.state === "ACTIVE" &&
@@ -647,6 +704,7 @@ export function readExchangeListing(
       where: { AND: [{ id: postId(id) }, where] },
       select: {
         ...publicSelect,
+        need: { select: { id: true } },
         ownerId: true,
         ownerChurchId: true,
         creatorId: true,
@@ -681,6 +739,7 @@ export function readExchangeListing(
         : null;
     return {
       listing: project(visible),
+      structuredNeed: !!row.need,
       favorite: favorite
         ? {
             id: favorite.id,

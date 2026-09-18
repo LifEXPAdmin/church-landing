@@ -45,7 +45,52 @@ export function processNotificationFanoutBatch(
         orderBy: { id: "asc" as const },
         take: NOTIFICATION_FANOUT_BATCH
       };
-      if (valid && job.kind === "EXCHANGE_LISTING") {
+      if (valid && job.kind === "NEED_UPDATE") {
+        const update = await tx.exchangeNeedEvent.findUnique({
+          where: { id: job.sourceId },
+          include: { need: true }
+        });
+        valid =
+          !!update &&
+          update.version === job.sourceVersion &&
+          update.actorId === job.actorId &&
+          update.createdAt.getTime() === job.createdAt.getTime() &&
+          !update.need.recoveryRequired;
+        if (valid && update) {
+          const cutoff =
+            update.action === "CANCELED_NEED"
+              ? (update.need.canceledAt ?? update.createdAt)
+              : update.createdAt;
+          recipients =
+            job.phase === "PRIMARY"
+              ? (
+                  await tx.exchangeNeedContribution.findMany({
+                    where: {
+                      needId: update.needId,
+                      contributorId: { not: null },
+                      authorityKey: { not: null },
+                      createdAt: { lt: cutoff },
+                      OR: [{ endedAt: null }, { endedAt: { gte: cutoff } }],
+                      ...after
+                    },
+                    select: { id: true, contributorId: true },
+                    ...page
+                  })
+                ).map((r) => ({ id: r.id, ownerId: r.contributorId! }))
+              : (
+                  await tx.postVolunteerSignup.findMany({
+                    where: {
+                      slot: { exchangeNeedSlot: { needId: update.needId } },
+                      state: "ACTIVE",
+                      activeSince: { lt: cutoff },
+                      ...after
+                    },
+                    select: { id: true, userId: true },
+                    ...page
+                  })
+                ).map((r) => ({ id: r.id, ownerId: r.userId }));
+        }
+      } else if (valid && job.kind === "EXCHANGE_LISTING") {
         valid = !!(await tx.exchangeListing.findFirst({
           where: {
             id: job.sourceId,
@@ -289,19 +334,21 @@ export function processNotificationFanoutBatch(
           postId,
           createdAt: job.createdAt,
           category:
-            job.kind === "FEEDBACK_IDEA"
-              ? "feedback"
-              : job.kind === "AUTHOR_POST"
-                ? "posts"
-                : job.kind === "CHURCH_REVIEW"
-                  ? "church"
-                  : "commitments"
+            job.kind === "NEED_UPDATE"
+              ? "needs"
+              : job.kind === "FEEDBACK_IDEA"
+                ? "feedback"
+                : job.kind === "AUTHOR_POST"
+                  ? "posts"
+                  : job.kind === "CHURCH_REVIEW"
+                    ? "church"
+                    : "commitments"
         });
       }
       const nextPhase =
         valid &&
         job.phase === "PRIMARY" &&
-        ["EVENT_CHANGED", "CHURCH_REVIEW"].includes(job.kind) &&
+        ["EVENT_CHANGED", "CHURCH_REVIEW", "NEED_UPDATE"].includes(job.kind) &&
         recipients.length < NOTIFICATION_FANOUT_BATCH;
       const done = recipients.length < NOTIFICATION_FANOUT_BATCH && !nextPhase;
       await tx.notificationFanoutJob.update({

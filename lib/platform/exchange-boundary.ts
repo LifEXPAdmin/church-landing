@@ -1,5 +1,13 @@
-import { exchangeHandoffCommand, readExchangeHandoffs } from "./exchange-handoffs";
-import { exchangeDefaultsCommand, readExchangeDefaults } from "./exchange-defaults";
+import { exchangeNeedCommand } from "./exchange-need-commands";
+import { readExchangeNeeds } from "./exchange-need-reads";
+import {
+  exchangeHandoffCommand,
+  readExchangeHandoffs
+} from "./exchange-handoffs";
+import {
+  exchangeDefaultsCommand,
+  readExchangeDefaults
+} from "./exchange-defaults";
 import { scheduleExchangeHandoffs } from "./exchange-handoff-queue";
 import { scheduleDomainActivity } from "./notification-fanout";
 import { exchangeSavedCommand, readExchangeSaved } from "./exchange-saved";
@@ -50,22 +58,27 @@ export async function handleExchangeRequest(
       );
     if (request.method === "GET") {
       const view = q.get("view") ?? "list";
-      const allowed = view.startsWith("handoff-") ? ["view", "id", "listingId", "after"] : view === "defaults" ? ["view"] :
-        view === "list" || view === "mine"
-          ? [
-              "view",
-              ...exchangeSearchKeys,
-              view === "mine" ? "state" : "availability"
-            ]
-          : view === "favorites" || view === "searches"
-            ? ["view", "after"]
-            : view === "search"
-              ? ["view", "searchId"]
-              : view === "favorite"
-                ? ["view", "listingId"]
-                : view === "context"
-                  ? ["view"]
-                  : ["view", "id"];
+      const allowed = view.startsWith("need-")
+        ? ["view", "id", "listingId", "after"]
+        : view.startsWith("handoff-")
+          ? ["view", "id", "listingId", "after"]
+          : view === "defaults"
+            ? ["view"]
+            : view === "list" || view === "mine"
+              ? [
+                  "view",
+                  ...exchangeSearchKeys,
+                  view === "mine" ? "state" : "availability"
+                ]
+              : view === "favorites" || view === "searches"
+                ? ["view", "after"]
+                : view === "search"
+                  ? ["view", "searchId"]
+                  : view === "favorite"
+                    ? ["view", "listingId"]
+                    : view === "context"
+                      ? ["view"]
+                      : ["view", "id"];
       if (
         [...q.keys()].some(
           (key) => !allowed.includes(key) || q.getAll(key).length !== 1
@@ -73,9 +86,18 @@ export async function handleExchangeRequest(
       )
         throw new PortalError(400, "Use only the supported listing filters.");
       let result;
-      if (view.startsWith("handoff-")) {
-        result = await readExchangeHandoffs(db, token, { ...Object.fromEntries(q), view: view.slice(8) });
-      } else if (view === "defaults") result = await readExchangeDefaults(db, token);
+      if (view.startsWith("need-"))
+        result = await readExchangeNeeds(db, token, {
+          ...Object.fromEntries(q),
+          view: view.slice(5)
+        });
+      else if (view.startsWith("handoff-")) {
+        result = await readExchangeHandoffs(db, token, {
+          ...Object.fromEntries(q),
+          view: view.slice(8)
+        });
+      } else if (view === "defaults")
+        result = await readExchangeDefaults(db, token);
       else if (view === "list" || view === "mine") {
         result = await listExchangeListings(db, token, {
           mine: view === "mine",
@@ -152,16 +174,30 @@ export async function handleExchangeRequest(
         "Check the listing entries. Nothing has been shortened."
       );
     }
-    const handoff = typeof input.operation === "string" && input.operation.startsWith("handoff-");
-    const result = handoff ? await exchangeHandoffCommand(db, token, { ...input, operation: String(input.operation).slice(8) })
-      : input.operation === "defaults-save" ? await exchangeDefaultsCommand(db, token, input) : [
-      "favorite-add",
-      "favorite-remove",
-      "search-save",
-      "search-delete"
-    ].includes(String(input.operation))
-      ? await exchangeSavedCommand(db, token, input)
-      : await exchangeListingCommand(db, token, input);
+    const handoff =
+      typeof input.operation === "string" &&
+      input.operation.startsWith("handoff-");
+    const result =
+      typeof input.operation === "string" && input.operation.startsWith("need-")
+        ? await exchangeNeedCommand(db, token, {
+            ...input,
+            operation: input.operation.slice(5)
+          })
+        : handoff
+          ? await exchangeHandoffCommand(db, token, {
+              ...input,
+              operation: String(input.operation).slice(8)
+            })
+          : input.operation === "defaults-save"
+            ? await exchangeDefaultsCommand(db, token, input)
+            : [
+                  "favorite-add",
+                  "favorite-remove",
+                  "search-save",
+                  "search-delete"
+                ].includes(String(input.operation))
+              ? await exchangeSavedCommand(db, token, input)
+              : await exchangeListingCommand(db, token, input);
     scheduleDomainActivity(db, actor.id, afterResponse);
     if (handoff) scheduleExchangeHandoffs(db, result.id, afterResponse);
     let protectedRecovery = false;

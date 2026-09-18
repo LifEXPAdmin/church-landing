@@ -1,4 +1,5 @@
 export const communityReportTargets = [
+  "NEED_CONTRIBUTION",
   "EXCHANGE_LISTING",
   "EXCHANGE_INQUIRY",
   "EXCHANGE_HANDOFF",
@@ -14,6 +15,7 @@ export const communityReportTargets = [
 ] as const;
 export type CommunityReportTarget = (typeof communityReportTargets)[number];
 export const communityReportTargetLabels = {
+  NEED_CONTRIBUTION: "private Church Needs contribution",
   EXCHANGE_LISTING: "Exchange listing",
   EXCHANGE_INQUIRY: "private Exchange inquiry",
   EXCHANGE_HANDOFF: "agreed private pickup plan",

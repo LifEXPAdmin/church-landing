@@ -28,6 +28,7 @@ const labels: Record<ActivityCategory, string> = {
   photos: "Photo tags",
   exchange: "Exchange",
   handoffs: "Exchange handoffs",
+  needs: "Church Needs",
   commitments: "Commitments"
 };
 const endpoint = "/api/platform/activity";

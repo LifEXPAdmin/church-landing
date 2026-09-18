@@ -111,6 +111,16 @@ async function manager(tx: PostTx, id: unknown, ownerId: string) {
       404,
       "This listing is unavailable to your current account or church duties."
     );
+  if (
+    await tx.exchangeNeed.findUnique({
+      where: { listingId: listing.id },
+      select: { id: true }
+    })
+  )
+    throw new PortalError(
+      409,
+      "Use this structured need's contribution controls. A whole-listing inquiry cannot reserve its action slots."
+    );
   if (listing.ownerChurchId) await requirePrivilegedAuthentication(tx, ownerId);
   return listing;
 }

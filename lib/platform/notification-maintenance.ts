@@ -1,4 +1,9 @@
-import { dispatchExchangeHandoffs, recoverExchangeHandoffs, exchangeHandoffMessage } from "./exchange-handoff-queue";
+import { advanceNeedDeadlines } from "./exchange-need-maintenance";
+import {
+  dispatchExchangeHandoffs,
+  recoverExchangeHandoffs,
+  exchangeHandoffMessage
+} from "./exchange-handoff-queue";
 import { NOTIFICATION_WORK_TOPIC } from "./notification-work-message";
 import {
   dispatchNotificationFanout,
@@ -67,7 +72,8 @@ export async function handleNotificationMaintenance(
       mode === "probe" ||
       mode === "probe-followers" ||
       mode === "probe-activity" ||
-      mode === "probe-scheduled" || mode === "probe-handoffs"
+      mode === "probe-scheduled" ||
+      mode === "probe-handoffs"
     ) {
       // A single reserved, nonexistent delivery verifies the deployed private
       // consumer. It cannot create an app message, subscription or phone alert.
@@ -82,25 +88,30 @@ export async function handleNotificationMaintenance(
         throw Error("Probe collision");
       if (await db.platformPost.findUnique({ where: { id } }))
         throw Error("Probe collision");
-      if (await db.exchangeInquiry.findUnique({ where: { id } })) throw Error("Probe collision");
+      if (await db.exchangeInquiry.findUnique({ where: { id } }))
+        throw Error("Probe collision");
       const key = `${mode}-queue-probe:${Math.floor(Date.now() / 3600000)}`;
       const result = publish
         ? await publish(id, 0, key)
         : await (
             await import("@vercel/queue")
           ).send(
-            mode === "probe-handoffs" ? NOTIFICATION_WORK_TOPIC : mode === "probe-scheduled"
-              ? SCHEDULED_PUBLICATION_TOPIC
-              : mode === "probe-activity"
-                ? NOTIFICATION_FANOUT_TOPIC
-                : mode === "probe-followers"
-                  ? COMMENT_FOLLOWER_TOPIC
-                  : PUSH_TOPIC,
-            mode === "probe-handoffs" ? exchangeHandoffMessage({ id, version: 1 }) : mode === "probe-scheduled"
-              ? scheduledPublicationMessage({ id, version: 1 })
-              : mode === "probe-activity"
-                ? notificationFanoutMessage(id)
-                : { id },
+            mode === "probe-handoffs"
+              ? NOTIFICATION_WORK_TOPIC
+              : mode === "probe-scheduled"
+                ? SCHEDULED_PUBLICATION_TOPIC
+                : mode === "probe-activity"
+                  ? NOTIFICATION_FANOUT_TOPIC
+                  : mode === "probe-followers"
+                    ? COMMENT_FOLLOWER_TOPIC
+                    : PUSH_TOPIC,
+            mode === "probe-handoffs"
+              ? exchangeHandoffMessage({ id, version: 1 })
+              : mode === "probe-scheduled"
+                ? scheduledPublicationMessage({ id, version: 1 })
+                : mode === "probe-activity"
+                  ? notificationFanoutMessage(id)
+                  : { id },
             {
               retentionSeconds: 60,
               idempotencyKey: key
@@ -138,7 +149,9 @@ export async function handleNotificationMaintenance(
         db.commentFollowerJob.count({ where: { completedAt: null } }),
         db.notificationFanoutJob.count({ where: { completedAt: null } }),
         db.platformPost.count({ where: { status: "SCHEDULED" } }),
-        db.exchangeInquiry.count({ where: { state: { in: ["INQUIRED", "SELECTED", "RESERVED"] } } })
+        db.exchangeInquiry.count({
+          where: { state: { in: ["INQUIRED", "SELECTED", "RESERVED"] } }
+        })
       ]);
       return Response.json(
         {
@@ -181,8 +194,15 @@ export async function handleNotificationMaintenance(
       failed += result.failed;
       if (result.failed || result.queued < 100) break;
     }
-    const handoffRecovery = signal.aborted ? { checked: 0, failed: 1 } : await recoverExchangeHandoffs(db);
-    const handoffs = signal.aborted ? { queued: 0, failed: 1 } : await dispatchExchangeHandoffs(db);
+    const needDeadlines = signal.aborted
+      ? { checked: 0, recorded: 0 }
+      : await advanceNeedDeadlines(db);
+    const handoffRecovery = signal.aborted
+      ? { checked: 0, failed: 1 }
+      : await recoverExchangeHandoffs(db);
+    const handoffs = signal.aborted
+      ? { queued: 0, failed: 1 }
+      : await dispatchExchangeHandoffs(db);
     failed += handoffRecovery.failed + handoffs.failed;
     const welcomes = signal.aborted
       ? { queued: 0, failed: 1 }
@@ -201,13 +221,17 @@ export async function handleNotificationMaintenance(
       announcements.failed +
       followers.failed +
       activity.failed;
-    const security = signal.aborted ? { delivered: 0, pending: 1 } : await dispatchPrivilegedNotices(db);
+    const security = signal.aborted
+      ? { delivered: 0, pending: 1 }
+      : await dispatchPrivilegedNotices(db);
     failed += security.pending;
     const result = {
       ok: failed === 0,
       ...cleanup,
       queued,
       scheduledQueued,
+      needDeadlinesChecked: needDeadlines.checked,
+      needDeadlineNotices: needDeadlines.recorded,
       handoffQueued: handoffs.queued,
       handoffRecoveryChecked: handoffRecovery.checked,
       failed,

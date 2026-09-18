@@ -1,3 +1,7 @@
+import {
+  revokeNeedContributions,
+  disableNeedCoordinator
+} from "./exchange-need-lifecycle";
 import { recordDiscoveryControl } from "./retention-controls";
 import { revokeExchangeInquiries } from "./exchange-handoff-lifecycle";
 import type { Prisma } from "@prisma/client";
@@ -97,7 +101,26 @@ export async function contactPolicy(
 // Called by the canonical relationship writer inside its permission transaction.
 // Unblocking or following again never revives revoked acceptance.
 export async function revokeBlockedContact(tx: Tx, a: string, b: string) {
-  await revokeExchangeInquiries(tx, { OR: [{ requesterId: a, receiverId: b }, { requesterId: b, receiverId: a }] }, a);
+  await revokeNeedContributions(
+    tx,
+    {
+      OR: [
+        { contributorId: a, coordinatorId: b },
+        { contributorId: b, coordinatorId: a }
+      ]
+    },
+    a
+  );
+  await revokeExchangeInquiries(
+    tx,
+    {
+      OR: [
+        { requesterId: a, receiverId: b },
+        { requesterId: b, receiverId: a }
+      ]
+    },
+    a
+  );
   await tx.founderWelcome.updateMany({
     where: {
       revokedAt: null,
@@ -122,8 +145,27 @@ export async function revokeUnfollowedRequests(
   recipientId: string,
   senderId: string
 ) {
-  if (await tx.socialPreferences.findFirst({ where: { ownerId: recipientId, contactRequests: "FOLLOWED" }, select: { ownerId: true } }))
-    await revokeExchangeInquiries(tx, { requesterId: senderId, receiverId: recipientId, state: "INQUIRED" }, recipientId);
+  if (
+    await tx.socialPreferences.findFirst({
+      where: { ownerId: recipientId, contactRequests: "FOLLOWED" },
+      select: { ownerId: true }
+    })
+  ) {
+    await revokeNeedContributions(
+      tx,
+      {
+        contributorId: senderId,
+        coordinatorId: recipientId,
+        state: { in: ["QUOTED", "WAITLISTED"] }
+      },
+      recipientId
+    );
+    await revokeExchangeInquiries(
+      tx,
+      { requesterId: senderId, receiverId: recipientId, state: "INQUIRED" },
+      recipientId
+    );
+  }
   await tx.adultContactRequest.updateMany({
     where: {
       senderId,
@@ -138,13 +180,43 @@ export async function revokeUnfollowedRequests(
   });
 }
 export async function revokeAccountContact(tx: Tx, userId: string) {
-  await revokeExchangeInquiries(tx, { OR: [{ requesterId: userId }, { receiverId: userId }] }, userId);
+  await revokeNeedContributions(
+    tx,
+    { OR: [{ contributorId: userId }, { coordinatorId: userId }] },
+    userId
+  );
+  const needs = await tx.exchangeNeed.findMany({
+    where: { coordinatorId: userId, coordinatorKey: { not: null } },
+    select: { id: true }
+  });
+  for (const need of needs) await disableNeedCoordinator(tx, need.id, userId);
+  await revokeExchangeInquiries(
+    tx,
+    { OR: [{ requesterId: userId }, { receiverId: userId }] },
+    userId
+  );
   // Disabling listings prevents restoration or a new account session from
   // reviving the earlier named receiver's consent.
-  const listings = await tx.exchangeListing.findMany({ where: { inquiryReceiverId: userId, inquiriesEnabled: true }, select: { id: true } });
+  const listings = await tx.exchangeListing.findMany({
+    where: { inquiryReceiverId: userId, inquiriesEnabled: true },
+    select: { id: true }
+  });
   for (const listing of listings) {
-    const saved = await tx.exchangeListing.update({ where: { id: listing.id }, data: { inquiriesEnabled: false, inquiryContactVersion: { increment: 1 }, version: { increment: 1 } } });
-    await recordDiscoveryControl(tx, "EXCHANGE_CONTACT", userId, saved.id, saved.inquiryContactVersion);
+    const saved = await tx.exchangeListing.update({
+      where: { id: listing.id },
+      data: {
+        inquiriesEnabled: false,
+        inquiryContactVersion: { increment: 1 },
+        version: { increment: 1 }
+      }
+    });
+    await recordDiscoveryControl(
+      tx,
+      "EXCHANGE_CONTACT",
+      userId,
+      saved.id,
+      saved.inquiryContactVersion
+    );
   }
   await tx.adultContactRequest.updateMany({
     where: {

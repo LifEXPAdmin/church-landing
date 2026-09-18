@@ -1,3 +1,4 @@
+import { disableNeedCoordinator } from "./exchange-need-lifecycle";
 import { revokeExchangeInquiries } from "./exchange-handoff-lifecycle";
 import { recordDiscoveryControl } from "./retention-controls";
 import type {
@@ -201,14 +202,29 @@ export async function moderateReportedContent(
     else if (source.type === "TOPIC")
       await tx.topicCommunity.update({ where: { id: source.id }, data });
     else if (source.type === "EXCHANGE_LISTING") {
+      const need = await tx.exchangeNeed.findUnique({
+        where: { listingId: source.id },
+        select: { id: true }
+      });
+      if (need) await disableNeedCoordinator(tx, need.id, actorId);
       await revokeExchangeInquiries(tx, { listingId: source.id }, actorId);
       const listing = await tx.exchangeListing.update({
         where: { id: source.id },
-        data: { ...data, moderationVersion: source.version + 1, inquiriesEnabled: false, inquiryContactVersion: { increment: 1 } }
+        data: {
+          ...data,
+          moderationVersion: source.version + 1,
+          inquiriesEnabled: false,
+          inquiryContactVersion: { increment: 1 }
+        }
       });
-      await recordDiscoveryControl(tx, "EXCHANGE_CONTACT", actorId, source.id, listing.inquiryContactVersion);
-    }
-    else
+      await recordDiscoveryControl(
+        tx,
+        "EXCHANGE_CONTACT",
+        actorId,
+        source.id,
+        listing.inquiryContactVersion
+      );
+    } else
       await tx.platformPostComment.update({ where: { id: source.id }, data });
   }
   return {

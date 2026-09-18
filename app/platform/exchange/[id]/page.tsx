@@ -120,8 +120,9 @@ export default async function Page({
                 <time dateTime={listing.neededBy}>
                   <RegionalWallTime value={listing.neededBy} />
                 </time>
-                . This date does not automatically close the listing or create a
-                booking.
+                {result.structuredNeed
+                  ? ". Open Need actions for the exact deadline and remaining quantities."
+                  : ". This date does not automatically close the listing or create a booking."}
               </p>
             )}
           </section>
@@ -152,7 +153,14 @@ export default async function Page({
           accountId={user?.id ?? null}
           version={listing.version}
         />
-        {user && <ExchangeInquiryEntry owner={user.id} listingId={id} />}
+        {listing.intent === "CHURCH_NEED" && (
+          <Link prefetch={false} className="gc-button" href={`${path}/needs`}>
+            Open need actions and progress
+          </Link>
+        )}
+        {user && !result.structuredNeed && (
+          <ExchangeInquiryEntry owner={user.id} listingId={id} />
+        )}
         <section
           className="space-y-3 rounded-xl border border-gc-divider p-4"
           aria-label="Owner and listing safety"

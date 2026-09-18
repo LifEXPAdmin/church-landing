@@ -1,3 +1,4 @@
+import { readExchangeNeeds } from "./exchange-need-reads";
 import { readExchangeHandoffs } from "./exchange-handoffs";
 import { readExchangeDefaults } from "./exchange-defaults";
 import { readExchangeSaved } from "./exchange-saved";
@@ -32,9 +33,17 @@ export async function exchangeSavedPage(
   return readExchangeSaved(prisma, await token(), query);
 }
 
-export async function exchangeHandoffPage(query: Parameters<typeof readExchangeHandoffs>[2]) {
+export async function exchangeHandoffPage(
+  query: Parameters<typeof readExchangeHandoffs>[2]
+) {
   return readExchangeHandoffs(prisma, await token(), query);
 }
 export async function exchangeDefaultsPage() {
   return readExchangeDefaults(prisma, await token());
+}
+
+export async function exchangeNeedPage(
+  query: Parameters<typeof readExchangeNeeds>[2]
+) {
+  return readExchangeNeeds(prisma, await token(), query);
 }

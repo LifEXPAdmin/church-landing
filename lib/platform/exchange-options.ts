@@ -1,7 +1,7 @@
 // Shared display and validation values. No database, account or provider state.
 export const EXCHANGE_EDITOR_SCHEMA = 2;
 export const EXCHANGE_SAVED_SCHEMA = 1;
-export const EXCHANGE_ITEM_POLICY = "exchange-listings-v2";
+export const EXCHANGE_ITEM_POLICY = "exchange-listings-v3";
 export const EXCHANGE_MAX_PRICE_MINOR = 99_999_999;
 export const EXCHANGE_PHOTO_LIMIT = 8;
 
@@ -265,7 +265,7 @@ export function exchangeDisplayPrice(listing: {
 }
 
 export const EXCHANGE_ITEM_NOTICE =
-  "List only ordinary items or lawful skilled help you are allowed to offer or request. Describe items and qualifications honestly. Do not list stolen, counterfeit, recalled or unlawful items, weapons, ammunition, alcohol, tobacco, drugs, medicines, explicit adult material, live animals, personal data, accounts, financial products or loans. Medical care and medical transport claims are not available. This listing does not create an employment, transport, payment or fulfillment agreement.";
+  "List only ordinary items or lawful skilled help you are allowed to offer or request. Describe items and qualifications honestly. Do not list stolen, counterfeit, recalled or unlawful items, weapons, ammunition, alcohol, tobacco, drugs, medicines, explicit adult material, live animals, personal data, accounts, financial products or money loans. Church Needs may coordinate ordinary physical equipment loans with explicit return terms. Medical care and medical transport claims are not available. This listing does not create an employment, transport, payment or fulfillment agreement.";
 export const EXCHANGE_SERVICE_NOTICE =
   "Qualifications are stated by the person offering help. Godschurches has not verified licenses, training, insurance or suitability. Describe relevant experience accurately without including identity documents, private contact details or client information.";
 export const EXCHANGE_CONTACT_NOTICE =

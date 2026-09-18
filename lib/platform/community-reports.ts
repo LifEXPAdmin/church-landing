@@ -1,4 +1,13 @@
-import { currentExchangeInquiry, exchangeInquiryCleared, exchangeInquiryParticipant } from "./exchange-handoff-policy";
+import { needContributionEvidence } from "./exchange-need-evidence";
+import {
+  currentNeedContribution,
+  requireNeedCoordinator
+} from "./exchange-need-policy";
+import {
+  currentExchangeInquiry,
+  exchangeInquiryCleared,
+  exchangeInquiryParticipant
+} from "./exchange-handoff-policy";
 import { exchangeHandoffEvidence } from "./exchange-handoff-evidence";
 import type { CommunityReport, PrismaClient } from "@prisma/client";
 import { accountConfig } from "./account-config";
@@ -102,15 +111,72 @@ async function targetIn(
 ): Promise<Target | null> {
   const type = targetType(kind),
     id = postId(value);
+  if (type === "NEED_CONTRIBUTION") {
+    const row = await tx.exchangeNeedContribution.findUnique({
+      where: { id },
+      include: { need: true }
+    });
+    if (
+      !row ||
+      !context.actorId ||
+      row.need.recoveryRequired ||
+      ![row.contributorId, row.coordinatorId].includes(context.actorId)
+    )
+      return null;
+    if (context.actorId === row.coordinatorId) {
+      if (!(await currentNeedContribution(tx, row))) return null;
+      await requireNeedCoordinator(tx, row.need, context.actorId);
+    }
+    return {
+      type,
+      id,
+      version: row.version,
+      contextVersion: 0,
+      scopeChurchId: null,
+      source: {
+        label: "Selected private Church Needs contribution",
+        href: "/platform/exchange/needs"
+      },
+      evidencePreview: needContributionEvidence(row)
+    };
+  }
   if (type === "EXCHANGE_INQUIRY" || type === "EXCHANGE_HANDOFF") {
     const row = await tx.exchangeInquiry.findUnique({ where: { id } });
-    if (!row || !context.actorId || !exchangeInquiryParticipant(row, context.actorId) ||
-      exchangeInquiryCleared(row, context.actorId) || row.recoveryRequired || row.bodyPurgedAt) return null;
-    if (type === "EXCHANGE_HANDOFF" && (row.state !== "RESERVED" || !(await currentExchangeInquiry(tx, row)))) return null;
-    if (await tx.retentionPurge.findUnique({ where: { target_targetId: { target: "EXCHANGE_INQUIRY", targetId: id } } })) return null;
-    return { type, id, version: row.version, contextVersion: type === "EXCHANGE_HANDOFF" ? row.planVersion : 0,
-      scopeChurchId: null, source: { label: type === "EXCHANGE_HANDOFF" ? "Selected agreed pickup plan" : "Selected private inquiry",
-        href: `/platform/exchange/handoffs/${id}` }, evidencePreview: exchangeHandoffEvidence(row, type === "EXCHANGE_HANDOFF") };
+    if (
+      !row ||
+      !context.actorId ||
+      !exchangeInquiryParticipant(row, context.actorId) ||
+      exchangeInquiryCleared(row, context.actorId) ||
+      row.recoveryRequired ||
+      row.bodyPurgedAt
+    )
+      return null;
+    if (
+      type === "EXCHANGE_HANDOFF" &&
+      (row.state !== "RESERVED" || !(await currentExchangeInquiry(tx, row)))
+    )
+      return null;
+    if (
+      await tx.retentionPurge.findUnique({
+        where: { target_targetId: { target: "EXCHANGE_INQUIRY", targetId: id } }
+      })
+    )
+      return null;
+    return {
+      type,
+      id,
+      version: row.version,
+      contextVersion: type === "EXCHANGE_HANDOFF" ? row.planVersion : 0,
+      scopeChurchId: null,
+      source: {
+        label:
+          type === "EXCHANGE_HANDOFF"
+            ? "Selected agreed pickup plan"
+            : "Selected private inquiry",
+        href: `/platform/exchange/handoffs/${id}`
+      },
+      evidencePreview: exchangeHandoffEvidence(row, type === "EXCHANGE_HANDOFF")
+    };
   }
   if (type === "EXCHANGE_LISTING") {
     const row = await tx.exchangeListing.findFirst({
@@ -646,12 +712,42 @@ export function readCommunityReports(
       let selectedIdea;
       let selectedListing;
       let selectedHandoff;
-      if (report.targetType === "EXCHANGE_INQUIRY" || report.targetType === "EXCHANGE_HANDOFF") {
-        const row = await tx.exchangeInquiry.findUnique({ where: { id: report.targetId } });
-        if (row && !row.recoveryRequired && !row.bodyPurgedAt &&
-          (report.targetType !== "EXCHANGE_HANDOFF" || (row.confirmedAt && row.planVersion === report.contextVersion)))
-          selectedHandoff = { type: report.targetType, content: exchangeHandoffEvidence(row, report.targetType === "EXCHANGE_HANDOFF"),
-            version: row.version, createdAt: row.createdAt };
+      if (report.targetType === "NEED_CONTRIBUTION") {
+        const row = await tx.exchangeNeedContribution.findUnique({
+          where: { id: report.targetId },
+          include: { need: true }
+        });
+        if (row && !row.need.recoveryRequired)
+          selectedHandoff = {
+            type: report.targetType,
+            content: needContributionEvidence(row),
+            version: row.version,
+            createdAt: row.createdAt
+          };
+      }
+      if (
+        report.targetType === "EXCHANGE_INQUIRY" ||
+        report.targetType === "EXCHANGE_HANDOFF"
+      ) {
+        const row = await tx.exchangeInquiry.findUnique({
+          where: { id: report.targetId }
+        });
+        if (
+          row &&
+          !row.recoveryRequired &&
+          !row.bodyPurgedAt &&
+          (report.targetType !== "EXCHANGE_HANDOFF" ||
+            (row.confirmedAt && row.planVersion === report.contextVersion))
+        )
+          selectedHandoff = {
+            type: report.targetType,
+            content: exchangeHandoffEvidence(
+              row,
+              report.targetType === "EXCHANGE_HANDOFF"
+            ),
+            version: row.version,
+            createdAt: row.createdAt
+          };
       }
       if (report.targetType === "EXCHANGE_LISTING") {
         const listing = await tx.exchangeListing.findUnique({

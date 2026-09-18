@@ -1,3 +1,4 @@
+import { needNotificationSources } from "./exchange-need-notifications";
 import { exchangeHandoffNotificationSources } from "./exchange-handoff-notifications";
 import { exchangeNotificationSources } from "./exchange-notification-source";
 import { photoTagNotificationSources } from "./photo-tag-notification-source";
@@ -17,6 +18,8 @@ import type { NotificationSource } from "./notification-source";
 
 type Tx = Prisma.TransactionClient;
 export const domainNotificationKinds = [
+  "NEED_UPDATE",
+  "NEED_CONTRIBUTION",
   "EXCHANGE_MATCH",
   "EXCHANGE_INQUIRY",
   "EXCHANGE_HANDOFF",
@@ -77,8 +80,26 @@ export async function domainNotificationSources(
   };
   const context = suppliedContext ?? (await postContext(tx, ownerId));
   if (context.actorId !== ownerId || !context.eligible) return result;
-  const handoffs = await exchangeHandoffNotificationSources(tx,
-    events.filter(e => ["EXCHANGE_INQUIRY", "EXCHANGE_HANDOFF", "EXCHANGE_REMINDER"].includes(e.kind)), context, feedbackChannel, now);
+  const needs = await needNotificationSources(
+    tx,
+    events.filter(
+      (e) => e.kind === "NEED_UPDATE" || e.kind === "NEED_CONTRIBUTION"
+    ),
+    context,
+    feedbackChannel
+  );
+  for (const [id, source] of needs) result.set(id, source);
+  const handoffs = await exchangeHandoffNotificationSources(
+    tx,
+    events.filter((e) =>
+      ["EXCHANGE_INQUIRY", "EXCHANGE_HANDOFF", "EXCHANGE_REMINDER"].includes(
+        e.kind
+      )
+    ),
+    context,
+    feedbackChannel,
+    now
+  );
   for (const [id, source] of handoffs) result.set(id, source);
   const exchange = await exchangeNotificationSources(
     tx,

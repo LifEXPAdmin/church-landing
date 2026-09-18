@@ -283,6 +283,9 @@ model PlatformUser {
   socialRelations SocialRelationship[] @relation("SocialOwner")
   socialTargets SocialRelationship[] @relation("SocialTarget")
   socialOperations SocialOperation[]
+  coordinatedNeeds ExchangeNeed[]
+  needContributions ExchangeNeedContribution[] @relation("NeedContributor")
+  receivedNeedContributions ExchangeNeedContribution[] @relation("NeedCoordinator")
   communityReports CommunityReport[]
   communityReportDecisions CommunityReportDecision[]
   sentContactRequests AdultContactRequest[] @relation("ContactSender")
@@ -588,6 +591,7 @@ enum OperatorCapability {
 }
 
 enum CommunityReportTarget {
+  NEED_CONTRIBUTION
   EXCHANGE_INQUIRY
   EXCHANGE_HANDOFF
   EXCHANGE_LISTING
@@ -1681,6 +1685,7 @@ model ExchangeListing {
   favorites ExchangeFavorite[]
   searchMatches ExchangeSearchMatch[]
   inquiries ExchangeInquiry[]
+  need ExchangeNeed?
   @@index([inquiryReceiverId, inquiriesEnabled])
   @@index([ownerId, updatedAt(sort: Desc), id(sort: Desc)])
   @@index([ownerChurchId, updatedAt(sort: Desc), id(sort: Desc)])
@@ -1699,6 +1704,111 @@ enum ExchangeInquiryState {
   WITHDRAWN
   EXPIRED
   REVOKED
+}
+
+// Structured organization needs extend the canonical listing, never its owner
+// or audience. Every child mutation advances this parent's recovery version.
+model ExchangeNeed {
+  id String @id
+  listingId String? @unique
+  coordinatorId String?
+  coordinatorKey String?
+  consentVersion Int @default(0)
+  version Int @default(1)
+  recoveryRequired Boolean @default(false)
+  deadlineLocal String?
+  timeZone String?
+  deadlineAt DateTime?
+  deadlineNoticeAt DateTime?
+  closedAt DateTime?
+  canceledAt DateTime?
+  closeReason String @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  listing ExchangeListing? @relation(fields: [listingId], references: [id], onDelete: SetNull)
+  coordinator PlatformUser? @relation(fields: [coordinatorId], references: [id], onDelete: SetNull)
+  slots ExchangeNeedSlot[]
+  contributions ExchangeNeedContribution[]
+  events ExchangeNeedEvent[]
+  posts PlatformPost[]
+  @@index([coordinatorId, updatedAt, id])
+  @@index([deadlineAt, closedAt, id])
+}
+
+model ExchangeNeedSlot {
+  id String @id
+  needId String
+  action String
+  label String
+  unit String
+  target Int
+  version Int @default(1)
+  closedAt DateTime?
+  closeReason String @default("")
+  loan Boolean @default(false)
+  returnLocal String?
+  returnTimeZone String?
+  returnAt DateTime?
+  returnResponsibility String @default("")
+  volunteerSlotId String? @unique
+  createdAt DateTime @default(now())
+  need ExchangeNeed @relation(fields: [needId], references: [id], onDelete: Restrict)
+  volunteerSlot PostVolunteerSlot? @relation(fields: [volunteerSlotId], references: [id], onDelete: Restrict)
+  contributions ExchangeNeedContribution[]
+  @@index([needId, createdAt, id])
+}
+
+// Volunteer quantities remain exclusively on PostVolunteerSignup. This table
+// stores item/transport promises and paid proposals, with immutable loan terms.
+model ExchangeNeedContribution {
+  id String @id
+  needId String
+  slotId String
+  contributorId String?
+  coordinatorId String?
+  authorityKey String?
+  consentVersion Int
+  state String
+  quantity Int
+  received Int @default(0)
+  returned Int @default(0)
+  version Int @default(1)
+  note String @default("")
+  quoteMinor Int?
+  quoteCurrency String?
+  shareName Boolean @default(false)
+  loanReturnAt DateTime?
+  loanResponsibility String @default("")
+  disputedAt DateTime?
+  disputeNote String @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  endedAt DateTime?
+  need ExchangeNeed @relation(fields: [needId], references: [id], onDelete: Restrict)
+  slot ExchangeNeedSlot @relation(fields: [slotId], references: [id], onDelete: Restrict)
+  contributor PlatformUser? @relation("NeedContributor", fields: [contributorId], references: [id], onDelete: SetNull)
+  coordinator PlatformUser? @relation("NeedCoordinator", fields: [coordinatorId], references: [id], onDelete: SetNull)
+  @@index([needId, createdAt(sort: Desc), id(sort: Desc)])
+  @@index([slotId, state, id])
+  @@index([contributorId, createdAt(sort: Desc), id(sort: Desc)])
+}
+
+// A content-free change trail, apart from deliberately public organizer updates
+// and a correction/closure reason. Never copy private contributor/quote notes.
+model ExchangeNeedEvent {
+  id String @id @default(cuid())
+  needId String
+  version Int
+  action String
+  actorId String?
+  targetId String?
+  text String @default("")
+  previousQuantity Int?
+  quantity Int?
+  createdAt DateTime @default(now())
+  need ExchangeNeed @relation(fields: [needId], references: [id], onDelete: Restrict)
+  @@unique([needId, version])
+  @@index([needId, createdAt(sort: Desc), id(sort: Desc)])
 }
 
 // The listing and two original adults define the scope. Nullable references allow
@@ -1852,6 +1962,8 @@ model ExchangeListingAudit {
 }
 
 model PlatformPost {
+  exchangeNeedId String?
+  exchangeNeed ExchangeNeed? @relation(fields: [exchangeNeedId], references: [id], onDelete: SetNull)
   welcomeFor Church[] @relation("ChurchWelcomePost")
   welcomeThread ChurchWelcomeThread?
   discoveryVersion Int @default(0)
@@ -2002,6 +2114,7 @@ model PostPollBallot {
 }
 
 model PostVolunteerSlot {
+  exchangeNeedSlot ExchangeNeedSlot?
   id String @id @default(cuid())
   postId String
   requestKey String
@@ -2020,6 +2133,7 @@ enum VolunteerSignupState {
 }
 
 model PostVolunteerSignup {
+  completedAt DateTime?
   activeSince DateTime?
   id String @id @default(cuid())
   slotId String

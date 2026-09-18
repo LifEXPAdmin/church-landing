@@ -38,6 +38,7 @@ export type RetentionControlEntry = {
     | "EXCHANGE_VISIBILITY"
     | "EXCHANGE_FAVORITE"
     | "EXCHANGE_SAVED_SEARCH"
+    | "EXCHANGE_NEED"
     | "EXCHANGE_INQUIRY"
     | "EXCHANGE_CONTACT"
     | "EXCHANGE_DEFAULTS"
@@ -106,6 +107,7 @@ function validate(value: unknown): RetentionControlEntry {
       "EXCHANGE_VISIBILITY",
       "EXCHANGE_FAVORITE",
       "EXCHANGE_SAVED_SEARCH",
+      "EXCHANGE_NEED",
       "EXCHANGE_INQUIRY",
       "EXCHANGE_CONTACT",
       "EXCHANGE_DEFAULTS",
@@ -173,7 +175,9 @@ function validate(value: unknown): RetentionControlEntry {
                           "CLOSED"
                         ].includes(r.outcome)
                       : r.kind === "HOLD" &&
-                        ["REPORT", "MESSAGE", "EXCHANGE_INQUIRY"].includes(r.target) &&
+                        ["REPORT", "MESSAGE", "EXCHANGE_INQUIRY"].includes(
+                          r.target
+                        ) &&
                         ["PRESERVE", "REVIEW", "RELEASE"].includes(
                           r.outcome
                         )) ||
@@ -417,6 +421,7 @@ export async function recordDiscoveryControl(
     | "EXCHANGE_VISIBILITY"
     | "EXCHANGE_FAVORITE"
     | "EXCHANGE_SAVED_SEARCH"
+    | "EXCHANGE_NEED"
     | "EXCHANGE_INQUIRY"
     | "EXCHANGE_CONTACT"
     | "EXCHANGE_DEFAULTS"
@@ -483,10 +488,10 @@ export function recordContentControl(
       report.targetType === "EXCHANGE_LISTING"
         ? "MODERATION_EXCHANGE"
         : report.targetType === "POST"
-        ? "MODERATION_POST"
-        : report.targetType === "TOPIC"
-          ? "MODERATION_TOPIC"
-          : "MODERATION_COMMENT",
+          ? "MODERATION_POST"
+          : report.targetType === "TOPIC"
+            ? "MODERATION_TOPIC"
+            : "MODERATION_COMMENT",
     target: "REPORT",
     targetId: report.id,
     sourceId: report.targetId,
@@ -1163,59 +1168,196 @@ export async function replayRetentionControls(
           });
           continue;
         }
-        if (entry.kind === "EXCHANGE_INQUIRY" || entry.kind === "EXCHANGE_CONTACT" || entry.kind === "EXCHANGE_DEFAULTS") {
+        if (entry.kind === "EXCHANGE_NEED") {
+          const prior = await tx.exchangeNeed.findUnique({
+            where: { id: entry.sourceId }
+          });
+          const data = {
+            version: entry.version,
+            recoveryRequired: true,
+            coordinatorKey: null,
+            closedAt: new Date(entry.recordedAt),
+            closeReason: "Protected recovery requires review."
+          };
+          if (!prior)
+            await tx.exchangeNeed.create({
+              data: { id: entry.sourceId, ...data }
+            });
+          else if (prior.version < entry.version) {
+            await tx.exchangeNeed.update({ where: { id: prior.id }, data });
+            if (prior.listingId)
+              await tx.exchangeListing.updateMany({
+                where: { id: prior.listingId, erasedAt: null },
+                data: {
+                  state: "DRAFT",
+                  recoveryRequired: true,
+                  version: { increment: 1 }
+                }
+              });
+          }
+          await record(tx, entry);
+          await tx.retentionControl.updateMany({
+            where: { id: entry.id, journaledAt: null },
+            data: { journaledAt: new Date() }
+          });
+          continue;
+        }
+        if (
+          entry.kind === "EXCHANGE_INQUIRY" ||
+          entry.kind === "EXCHANGE_CONTACT" ||
+          entry.kind === "EXCHANGE_DEFAULTS"
+        ) {
           const at = new Date(entry.recordedAt);
           if (entry.kind === "EXCHANGE_INQUIRY") {
-            const prior = await tx.exchangeInquiry.findUnique({ where: { id: entry.sourceId } });
-            const data = { version: entry.version, state: "REVOKED" as const, recoveryRequired: true,
-              purpose: "", pickupDetails: "", cancelNote: "", endedAt: at, wakeAt: null,
-              dispatchedAt: null, dispatchClaimedAt: null };
+            const prior = await tx.exchangeInquiry.findUnique({
+              where: { id: entry.sourceId }
+            });
+            const data = {
+              version: entry.version,
+              state: "REVOKED" as const,
+              recoveryRequired: true,
+              purpose: "",
+              pickupDetails: "",
+              cancelNote: "",
+              endedAt: at,
+              wakeAt: null,
+              dispatchedAt: null,
+              dispatchClaimedAt: null
+            };
             // A missing row becomes a body-free tombstone. Never reconstruct
             // the pair or its original pickup plan from an opaque receipt.
-            if (!prior) await tx.exchangeInquiry.create({ data: { id: entry.sourceId, ...data, expiresAt: at } });
-            else if (prior.version < entry.version) {
-              await tx.exchangeInquiry.update({ where: { id: prior.id }, data });
-              if (prior.listingId) await tx.exchangeListing.updateMany({
-                where: { id: prior.listingId, erasedAt: null },
-                data: { state: "DRAFT", inquiriesEnabled: false, recoveryRequired: true, version: { increment: 1 } }
+            if (!prior)
+              await tx.exchangeInquiry.create({
+                data: { id: entry.sourceId, ...data, expiresAt: at }
               });
+            else if (prior.version < entry.version) {
+              await tx.exchangeInquiry.update({
+                where: { id: prior.id },
+                data
+              });
+              if (prior.listingId)
+                await tx.exchangeListing.updateMany({
+                  where: { id: prior.listingId, erasedAt: null },
+                  data: {
+                    state: "DRAFT",
+                    inquiriesEnabled: false,
+                    recoveryRequired: true,
+                    version: { increment: 1 }
+                  }
+                });
             }
           } else if (entry.kind === "EXCHANGE_CONTACT") {
-            await tx.exchangeListing.updateMany({ where: { id: entry.sourceId, inquiryContactVersion: { lt: entry.version } },
-              data: { inquiriesEnabled: false, inquiryContactVersion: entry.version, inquiryReceiverId: null,
-                inquiryAuthorityKey: null, state: "DRAFT", recoveryRequired: true, version: { increment: 1 } } });
+            await tx.exchangeListing.updateMany({
+              where: {
+                id: entry.sourceId,
+                inquiryContactVersion: { lt: entry.version }
+              },
+              data: {
+                inquiriesEnabled: false,
+                inquiryContactVersion: entry.version,
+                inquiryReceiverId: null,
+                inquiryAuthorityKey: null,
+                state: "DRAFT",
+                recoveryRequired: true,
+                version: { increment: 1 }
+              }
+            });
             // Every inquiry will also receive its own newer quarantine receipt.
             // The source switch itself is sufficient to conceal old plan reads.
           } else {
-            const owner = await tx.platformUser.findFirst({ where: { id: entry.targetId, erasedAt: null }, select: { id: true } });
+            const owner = await tx.platformUser.findFirst({
+              where: { id: entry.targetId, erasedAt: null },
+              select: { id: true }
+            });
             if (owner) {
-              const data = { version: entry.version, pickupDetails: "", recoveryRequired: true };
-              await tx.exchangeDefaults.upsert({ where: { ownerId: owner.id }, create: { ownerId: owner.id, ...data }, update: {} });
-              await tx.exchangeDefaults.updateMany({ where: { ownerId: owner.id, version: { lt: entry.version } },
-                data: { ...data, intent: "FREE", audience: "PUBLIC", audienceChurchId: null, country: null, placeId: null } });
+              const data = {
+                version: entry.version,
+                pickupDetails: "",
+                recoveryRequired: true
+              };
+              await tx.exchangeDefaults.upsert({
+                where: { ownerId: owner.id },
+                create: { ownerId: owner.id, ...data },
+                update: {}
+              });
+              await tx.exchangeDefaults.updateMany({
+                where: { ownerId: owner.id, version: { lt: entry.version } },
+                data: {
+                  ...data,
+                  intent: "FREE",
+                  audience: "PUBLIC",
+                  audienceChurchId: null,
+                  country: null,
+                  placeId: null
+                }
+              });
             }
           }
           await record(tx, entry);
-          await tx.retentionControl.updateMany({ where: { id: entry.id, journaledAt: null }, data: { journaledAt: new Date() } });
+          await tx.retentionControl.updateMany({
+            where: { id: entry.id, journaledAt: null },
+            data: { journaledAt: new Date() }
+          });
           continue;
         }
-        if (entry.kind === "EXCHANGE_FAVORITE" || entry.kind === "EXCHANGE_SAVED_SEARCH") {
-          const owner = await tx.platformUser.findFirst({ where: { id: entry.targetId, erasedAt: null }, select: { id: true } });
+        if (
+          entry.kind === "EXCHANGE_FAVORITE" ||
+          entry.kind === "EXCHANGE_SAVED_SEARCH"
+        ) {
+          const owner = await tx.platformUser.findFirst({
+            where: { id: entry.targetId, erasedAt: null },
+            select: { id: true }
+          });
           if (owner) {
             const deletedAt = new Date(entry.recordedAt);
             if (entry.kind === "EXCHANGE_FAVORITE") {
-              await tx.exchangeFavorite.upsert({ where: { id: entry.sourceId },
-                create: { id: entry.sourceId, ownerId: owner.id, version: entry.version, deletedAt }, update: {} });
-              await tx.exchangeFavorite.updateMany({ where: { id: entry.sourceId, ownerId: owner.id, version: { lt: entry.version } },
-                data: { deletedAt, version: entry.version } });
+              await tx.exchangeFavorite.upsert({
+                where: { id: entry.sourceId },
+                create: {
+                  id: entry.sourceId,
+                  ownerId: owner.id,
+                  version: entry.version,
+                  deletedAt
+                },
+                update: {}
+              });
+              await tx.exchangeFavorite.updateMany({
+                where: {
+                  id: entry.sourceId,
+                  ownerId: owner.id,
+                  version: { lt: entry.version }
+                },
+                data: { deletedAt, version: entry.version }
+              });
             } else {
-              const data = { name: "", criteria: {}, alertsSince: null, deletedAt, recoveryRequired: true, version: entry.version };
-              await tx.exchangeSavedSearch.upsert({ where: { id: entry.sourceId }, create: { id: entry.sourceId, ownerId: owner.id, ...data }, update: {} });
-              await tx.exchangeSavedSearch.updateMany({ where: { id: entry.sourceId, ownerId: owner.id, version: { lt: entry.version } }, data });
+              const data = {
+                name: "",
+                criteria: {},
+                alertsSince: null,
+                deletedAt,
+                recoveryRequired: true,
+                version: entry.version
+              };
+              await tx.exchangeSavedSearch.upsert({
+                where: { id: entry.sourceId },
+                create: { id: entry.sourceId, ownerId: owner.id, ...data },
+                update: {}
+              });
+              await tx.exchangeSavedSearch.updateMany({
+                where: {
+                  id: entry.sourceId,
+                  ownerId: owner.id,
+                  version: { lt: entry.version }
+                },
+                data
+              });
             }
           }
           await record(tx, entry);
-          await tx.retentionControl.updateMany({ where: { id: entry.id, journaledAt: null }, data: { journaledAt: new Date() } });
+          await tx.retentionControl.updateMany({
+            where: { id: entry.id, journaledAt: null },
+            data: { journaledAt: new Date() }
+          });
           continue;
         }
         if (entry.kind === "EXCHANGE_VISIBILITY") {
@@ -1223,13 +1365,22 @@ export async function replayRetentionControls(
           // A newer opaque listing receipt cannot reconstruct the intended
           // audience, so restore privately until its owner reviews and publishes.
           await tx.exchangeListing.updateMany({
-            where: { id: entry.sourceId, visibilityVersion: { lt: entry.version }, erasedAt: null },
-            data: { state: "DRAFT", recoveryRequired: true, visibilityVersion: entry.version,
-              version: { increment: 1 } }
+            where: {
+              id: entry.sourceId,
+              visibilityVersion: { lt: entry.version },
+              erasedAt: null
+            },
+            data: {
+              state: "DRAFT",
+              recoveryRequired: true,
+              visibilityVersion: entry.version,
+              version: { increment: 1 }
+            }
           });
           await record(tx, entry);
           await tx.retentionControl.updateMany({
-            where: { id: entry.id, journaledAt: null }, data: { journaledAt: new Date() }
+            where: { id: entry.id, journaledAt: null },
+            data: { journaledAt: new Date() }
           });
           continue;
         }
@@ -1291,7 +1442,10 @@ export async function replayRetentionControls(
           continue;
         }
         if (entry.kind === "MODERATION_EXCHANGE") {
-          const visibility = entry.outcome === "VISIBLE" ? "HIDDEN" : entry.outcome as "HIDDEN" | "REMOVED";
+          const visibility =
+            entry.outcome === "VISIBLE"
+              ? "HIDDEN"
+              : (entry.outcome as "HIDDEN" | "REMOVED");
           await tx.$executeRaw`UPDATE "ExchangeListing" SET
             "moderationState"=${visibility}::"ContentModerationState",
             "moderationVersion"=${entry.version}, version=greatest(version,${entry.version})
@@ -1299,7 +1453,8 @@ export async function replayRetentionControls(
               OR ("moderationVersion"=${entry.version} AND ${entry.outcome !== "VISIBLE"}))`;
           await record(tx, entry);
           await tx.retentionControl.updateMany({
-            where: { id: entry.id, journaledAt: null }, data: { journaledAt: new Date() }
+            where: { id: entry.id, journaledAt: null },
+            data: { journaledAt: new Date() }
           });
           continue;
         }
@@ -1360,8 +1515,13 @@ export async function replayRetentionControls(
               ? await tx.communityReport.count({
                   where: { id: entry.targetId }
                 })
-              : entry.target === "EXCHANGE_INQUIRY" ? await tx.exchangeInquiry.count({ where: { id: entry.targetId } })
-              : await tx.adultMessage.count({ where: { id: entry.targetId } });
+              : entry.target === "EXCHANGE_INQUIRY"
+                ? await tx.exchangeInquiry.count({
+                    where: { id: entry.targetId }
+                  })
+                : await tx.adultMessage.count({
+                    where: { id: entry.targetId }
+                  });
           if (!targetExists) {
             if (entry.target === "REPORT") missingReports.add(entry.targetId);
             continue;

@@ -251,8 +251,8 @@ export function CommunityReportForm({
             Private evidence included with this report
           </h3>
           <p>
-            Only this selected inquiry or agreed plan goes to authorized
-            platform reviewers. Other handoffs and conversations are excluded.
+            This selected private record goes to authorized platform reviewers.
+            Other contributions, handoffs and conversations are excluded.
           </p>
           <p className="whitespace-pre-wrap break-words">
             {target.evidencePreview}

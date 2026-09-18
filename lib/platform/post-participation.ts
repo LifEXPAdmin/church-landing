@@ -1,4 +1,6 @@
 import { recordDomainActivity, recordFanout } from "./domain-activity";
+import { recordNeedChange } from "./exchange-need-lifecycle";
+import { needSource, requireNeedOpen } from "./exchange-need-policy";
 import type { PrismaClient, PlatformPost } from "@prisma/client";
 import { withOwnedSession } from "./account-sessions";
 import { postSchedule } from "./post-commands";
@@ -66,11 +68,30 @@ async function audit(
   actorId: string,
   action: string,
   targetId: string,
-  version: number
+  version: number,
+  reason?: string
 ) {
   await tx.postAudit.create({
     data: { postId, actorId, action, targetId, version }
   });
+  if (action.startsWith("volunteer-")) {
+    const signup =
+      action === "volunteer-role-saved"
+        ? null
+        : await tx.postVolunteerSignup.findUnique({
+            where: { id: targetId },
+            select: { slotId: true }
+          });
+    const linked = await tx.exchangeNeedSlot.findUnique({
+      where: { volunteerSlotId: signup?.slotId ?? targetId },
+      select: { needId: true }
+    });
+    if (linked)
+      await recordNeedChange(tx, linked.needId, actorId, action.toUpperCase(), {
+        targetId,
+        ...(reason ? { text: reason } : {})
+      });
+  }
 }
 function pollDetails(input: Record<string, unknown>) {
   if (typeof input.multiple !== "boolean")
@@ -125,6 +146,11 @@ export async function participationCommandIn(
       include: { slot: { select: { postId: true } } }
     });
     if (!row) throw new PortalError(404, "Your signup is unavailable.");
+    if (row.completedAt)
+      throw new PortalError(
+        409,
+        "This help is already recorded as completed. Ask the organizer to correct an inaccurate receipt before withdrawing."
+      );
     if (row.state === "CANCELED")
       return {
         id: row.id,
@@ -159,6 +185,59 @@ export async function participationCommandIn(
     };
   }
   const post = await participationPost(tx, context, input.postId);
+  if (operation === "complete-volunteer") {
+    if (!canOrganize(context, post))
+      throw new PortalError(
+        403,
+        "A current volunteer organizer must confirm completed help."
+      );
+    const signup = await tx.postVolunteerSignup.findFirst({
+      where: { id: postId(input.signupId), slot: { postId: post.id } }
+    });
+    if (!signup)
+      throw new PortalError(404, "This volunteer signup is unavailable.");
+    expected(input.expectedVersion, signup.version);
+    if (typeof input.completed !== "boolean")
+      throw new PortalError(
+        400,
+        "Choose whether the help was actually completed."
+      );
+    const reason = postField(
+      input.reason,
+      500,
+      signup.completedAt && !input.completed ? 3 : 0
+    );
+    if (input.completed && signup.state !== "ACTIVE")
+      throw new PortalError(
+        409,
+        "Canceled signups cannot be marked completed."
+      );
+    const saved = await tx.postVolunteerSignup.update({
+      where: { id: signup.id },
+      data: {
+        completedAt: input.completed ? new Date() : null,
+        version: { increment: 1 }
+      }
+    });
+    await audit(
+      tx,
+      post.id,
+      actorId,
+      input.completed
+        ? "volunteer-completed"
+        : "volunteer-completion-corrected",
+      saved.id,
+      saved.version,
+      reason
+    );
+    return {
+      id: saved.id,
+      version: saved.version,
+      message: input.completed
+        ? "Completed volunteer help recorded."
+        : "Volunteer completion corrected with your reason."
+    };
+  }
   if (operation === "configure-poll") {
     if (!postCanEdit(context, post))
       throw new PortalError(
@@ -329,7 +408,10 @@ export async function participationCommandIn(
       );
     if (prior) {
       const active = await tx.postVolunteerSignup.count({
-        where: { slotId: prior.id, state: "ACTIVE" }
+        where: {
+          slotId: prior.id,
+          OR: [{ state: "ACTIVE" }, { completedAt: { not: null } }]
+        }
       });
       if (places < active)
         throw new PortalError(
@@ -412,10 +494,27 @@ export async function participationCommandIn(
     });
     if (!slot || slot.closedAt)
       throw new PortalError(409, "This role is closed to new signups.");
+    const needSlot = await tx.exchangeNeedSlot.findUnique({
+      where: { volunteerSlotId: slot.id }
+    });
+    if (needSlot) {
+      const source = await needSource(tx, needSlot.needId, context);
+      if (!source || needSlot.closedAt)
+        throw new PortalError(
+          409,
+          "The linked need is unavailable or closed to new volunteer places."
+        );
+      requireNeedOpen(source);
+    }
     expected(input.slotVersion, slot.version);
     const prior = await tx.postVolunteerSignup.findUnique({
       where: { slotId_userId: { slotId: slot.id, userId: actorId } }
     });
+    if (prior?.completedAt)
+      throw new PortalError(
+        409,
+        "Your help in this role is already recorded as completed."
+      );
     if (prior?.state === "ACTIVE")
       return {
         id: prior.id,
@@ -425,7 +524,10 @@ export async function participationCommandIn(
     expected(input.expectedVersion, prior?.version ?? 0);
     if (
       (await tx.postVolunteerSignup.count({
-        where: { slotId: slot.id, state: "ACTIVE" }
+        where: {
+          slotId: slot.id,
+          OR: [{ state: "ACTIVE" }, { completedAt: { not: null } }]
+        }
       })) >= slot.capacity
     )
       throw new PortalError(409, "This role is full. No place was reserved.");
@@ -472,6 +574,11 @@ export function participationCommand(
   token: unknown,
   input: Record<string, unknown>
 ) {
+  if (input.operation === "complete-volunteer")
+    throw new PortalError(
+      400,
+      "Use the current need receipt form to confirm completed volunteer help."
+    );
   return withOwnedSession(
     db,
     token,

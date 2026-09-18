@@ -771,34 +771,40 @@ export function ExchangeEditor({
                 saved record remains in My listings.
               </p>
               <div className="flex flex-wrap gap-3">
-                {nextStates[record.listing.state].map((next) => (
-                  <button
-                    key={next}
-                    type="button"
-                    className="gc-button gc-button-quiet"
-                    disabled={
-                      disabled ||
-                      dirty ||
-                      photoWork ||
-                      (next === "ACTIVE" && (!confirmed || !canPublish))
-                    }
-                    onClick={() => {
-                      if (
-                        next !== "ARCHIVED" ||
-                        confirm(
-                          "Archive this listing and hide its photos from ordinary reading? Your saved listing will remain in My listings."
+                {nextStates[record.listing.state]
+                  .filter(
+                    (next) =>
+                      !record.structuredNeed ||
+                      !["RESERVED", "CLOSED"].includes(next)
+                  )
+                  .map((next) => (
+                    <button
+                      key={next}
+                      type="button"
+                      className="gc-button gc-button-quiet"
+                      disabled={
+                        disabled ||
+                        dirty ||
+                        photoWork ||
+                        (next === "ACTIVE" && (!confirmed || !canPublish))
+                      }
+                      onClick={() => {
+                        if (
+                          next !== "ARCHIVED" ||
+                          confirm(
+                            "Archive this listing and hide its photos from ordinary reading? Your saved listing will remain in My listings."
+                          )
                         )
-                      )
-                        void command({
-                          operation: "status",
-                          state: next,
-                          ...policy
-                        });
-                    }}
-                  >
-                    {actionLabel(next)}
-                  </button>
-                ))}
+                          void command({
+                            operation: "status",
+                            state: next,
+                            ...policy
+                          });
+                      }}
+                    >
+                      {actionLabel(next)}
+                    </button>
+                  ))}
                 <button
                   type="button"
                   className="gc-button gc-button-quiet"

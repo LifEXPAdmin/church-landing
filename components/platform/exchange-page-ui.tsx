@@ -47,6 +47,7 @@ export function ExchangeNavigation() {
         ["/platform/exchange/saved", "Saved listings and searches"],
         ["/platform/exchange/new", "Create a listing"],
         ["/platform/exchange/handoffs", "My inquiries and handoffs"],
+        ["/platform/exchange/needs", "My Needs contributions"],
         ["/platform/exchange/defaults", "Personal defaults"]
       ].map(([href, label]) => (
         <Link
@@ -319,7 +320,18 @@ export async function ExchangeEditorPage({
             access={access}
             initial={initial}
           />
-          {id && <ExchangeContactRegion owner={user.id} listingId={id} />}
+          {id && initial?.listing.intent === "CHURCH_NEED" && (
+            <Link
+              prefetch={false}
+              className="gc-button"
+              href={`/platform/exchange/${id}/needs`}
+            >
+              Configure need actions and commitments
+            </Link>
+          )}
+          {id && !initial?.structuredNeed && (
+            <ExchangeContactRegion owner={user.id} listingId={id} />
+          )}
         </>
       );
     } catch (error) {

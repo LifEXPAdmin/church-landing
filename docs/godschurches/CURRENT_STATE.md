@@ -9,8 +9,11 @@ Repeat structures and partial closing are included in the same feature cycle.
 
 The current Exchange and private-list prerequisites are verified below. Actual
 fulfillment pilots, appointments and physical-phone observations retain their
-separate requirements. Application and schema implementation have not begun;
-production remains **2026.09.16.13 / d10ac20**. Complete implementation, isolated
+separate requirements. Local application and additive schema implementation is in progress. Fourteen
+isolated service groups pass, including concurrency, partial receipt/returns,
+private reports, notifications, exact retries and restore quarantine. Guarded
+forms and page integration compile locally; volunteer, account, browser, runtime
+cost, full regression and release acceptance remain pending. Production remains **2026.09.16.13 / d10ac20**. Complete implementation, isolated
 acceptance, exact release and live reconciliation before the next feature.
 Extra High throughout; final review stays last.
 

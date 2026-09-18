@@ -567,23 +567,81 @@ export async function downloadAccountExport(
       select: { occurrenceId: true, state: true, updatedAt: true }
     });
     const measurementCutoff = new Date(Date.now() - METRIC_RAW_DAYS * 86400000);
-    const inquiryRows = await tx.exchangeInquiry.findMany({ where: { recoveryRequired: false, bodyPurgedAt: null,
-      OR: [{ requesterId: userId, requesterClearedAt: null }, { receiverId: userId, receiverClearedAt: null }] },
-      orderBy: { id: "asc" }, take: MAX_ROWS + 1 });
+    const inquiryRows = await tx.exchangeInquiry.findMany({
+      where: {
+        recoveryRequired: false,
+        bodyPurgedAt: null,
+        OR: [
+          { requesterId: userId, requesterClearedAt: null },
+          { receiverId: userId, receiverClearedAt: null }
+        ]
+      },
+      orderBy: { id: "asc" },
+      take: MAX_ROWS + 1
+    });
     if (inquiryRows.length > MAX_ROWS) throw new AccountExportError("size");
     const exchangeInquiries = [];
     for (const row of inquiryRows) {
       // The account's own inquiry text belongs to its export; another adult's
       // purpose and private pickup text require the current accepted plan.
-      const accepted = row.state === "RESERVED" && await currentExchangeInquiry(tx, row);
-      exchangeInquiries.push({ id: row.id, version: row.version, state: row.state, createdAt: row.createdAt, endedAt: row.endedAt,
+      const accepted =
+        row.state === "RESERVED" && (await currentExchangeInquiry(tx, row));
+      exchangeInquiries.push({
+        id: row.id,
+        version: row.version,
+        state: row.state,
+        createdAt: row.createdAt,
+        endedAt: row.endedAt,
         purpose: row.requesterId === userId || accepted ? row.purpose : "",
-        ...(accepted ? { windowStart: row.windowStart, windowEnd: row.windowEnd, timeZone: row.timeZone, pickupDetails: row.pickupDetails } : {}) });
+        ...(accepted
+          ? {
+              windowStart: row.windowStart,
+              windowEnd: row.windowEnd,
+              timeZone: row.timeZone,
+              pickupDetails: row.pickupDetails
+            }
+          : {})
+      });
     }
     const collections = {
       exchangeInquiries,
-      exchangeDefaults: await tx.exchangeDefaults.findMany({ where: { ownerId: userId, recoveryRequired: false },
-        select: { version: true, schema: true, intent: true, audience: true, audienceChurchId: true, country: true, placeId: true, pickupDetails: true, updatedAt: true } }),
+      needContributions: await tx.exchangeNeedContribution.findMany({
+        where: { contributorId: userId, need: { recoveryRequired: false } },
+        select: {
+          id: true,
+          version: true,
+          state: true,
+          quantity: true,
+          received: true,
+          returned: true,
+          quoteMinor: true,
+          quoteCurrency: true,
+          note: true,
+          shareName: true,
+          loanReturnAt: true,
+          loanResponsibility: true,
+          disputedAt: true,
+          disputeNote: true,
+          createdAt: true,
+          endedAt: true
+        },
+        orderBy: { id: "asc" },
+        take: MAX_ROWS + 1
+      }),
+      exchangeDefaults: await tx.exchangeDefaults.findMany({
+        where: { ownerId: userId, recoveryRequired: false },
+        select: {
+          version: true,
+          schema: true,
+          intent: true,
+          audience: true,
+          audienceChurchId: true,
+          country: true,
+          placeId: true,
+          pickupDetails: true,
+          updatedAt: true
+        }
+      }),
       exchangeFavorites: await tx.exchangeFavorite.findMany({
         where: { ownerId: userId, deletedAt: null },
         orderBy: { id: "asc" },
@@ -716,6 +774,7 @@ export async function downloadAccountExport(
           id: true,
           slotId: true,
           state: true,
+          completedAt: true,
           version: true,
           eventVersion: true,
           occurrenceVersion: true,

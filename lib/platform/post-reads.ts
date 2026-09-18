@@ -1,3 +1,4 @@
+import { exchangeReadableWhere } from "./exchange-policy";
 import { feedMode } from "./feed-options";
 import { discoveryMode, guestDiscoveryPreferences } from "./discovery-options";
 import { currentDiscoveryIds } from "./discovery-feed";
@@ -49,6 +50,13 @@ function include(
 ) {
   return {
     ...postInclude,
+    exchangeNeed: {
+      where: {
+        recoveryRequired: false,
+        listing: exchangeReadableWhere(context)
+      },
+      select: { listingId: true, listing: { select: { ownerChurchId: true } } }
+    },
     mentions: {
       where: { active: true, recipient: socialUserWhere(context) },
       select: { recipient: { select: communityAuthorSelect } },
@@ -168,6 +176,11 @@ function project(
         }
       : { ...post.author, churchId: null },
     eventOccurrenceId: post.eventOccurrenceId,
+    ...(post.type === "NEED" &&
+    post.exchangeNeed?.listingId &&
+    post.authorChurchId === post.exchangeNeed.listing?.ownerChurchId
+      ? { need: { listingId: post.exchangeNeed.listingId } }
+      : {}),
     discussionClosed: post.discussionClosed,
     replyAudience: post.replyAudience,
     allowReposts: post.allowReposts,

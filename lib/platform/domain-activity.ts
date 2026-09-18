@@ -66,6 +66,7 @@ export async function recordFanout(
   kind:
     | "AUTHOR_POST"
     | "EXCHANGE_LISTING"
+    | "NEED_UPDATE"
     | "CHURCH_REVIEW"
     | "EVENT_CHANGED"
     | "VOLUNTEER_CHANGED"

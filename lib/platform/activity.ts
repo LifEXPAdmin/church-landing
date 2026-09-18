@@ -112,6 +112,7 @@ const categorySql = Prisma.sql`CASE
   WHEN e.kind IN ('PHOTO_TAG_REQUEST','PHOTO_TAG_APPROVED') THEN 'photos'
   WHEN e.kind IN ('EXCHANGE_INQUIRY','EXCHANGE_HANDOFF','EXCHANGE_REMINDER') THEN 'handoffs'
   WHEN e.kind = 'EXCHANGE_MATCH' THEN 'exchange'
+  WHEN e.kind IN ('NEED_UPDATE','NEED_CONTRIBUTION') THEN 'needs'
   WHEN e.kind = 'POST_MENTION' THEN 'comments'
   WHEN e.kind = 'AUTHOR_POST' THEN 'posts'
   WHEN e.kind IN ('POST_REACTION','COMMENT_REACTION') THEN 'reactions'

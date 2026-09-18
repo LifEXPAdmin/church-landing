@@ -133,14 +133,50 @@ async function erasePersonalCalendars(tx: Tx, userId: string, now: Date) {
 
 async function eraseSocialData(tx: Tx, userId: string, now: Date) {
   await revokeAccountContact(tx, userId);
+  // Preserve opaque fulfillment totals and outstanding return quantities. Only
+  // deliberately reported evidence retains private text through account erasure.
+  await tx.$executeRaw`UPDATE "ExchangeNeedContribution" c SET note='', "disputeNote"='', "loanResponsibility"=''
+    WHERE c."contributorId"=${userId} AND NOT EXISTS (SELECT 1 FROM "CommunityReport" r
+      WHERE r."targetType"='NEED_CONTRIBUTION' AND r."targetId"=c.id)`;
+  await tx.exchangeNeedContribution.updateMany({
+    where: { contributorId: userId },
+    data: { contributorId: null, shareName: false, authorityKey: null }
+  });
+  await tx.exchangeNeedContribution.updateMany({
+    where: { coordinatorId: userId },
+    data: { coordinatorId: null, authorityKey: null }
+  });
+  await tx.exchangeNeedEvent.updateMany({
+    where: { actorId: userId },
+    data: { actorId: null }
+  });
+  await tx.exchangeNeed.updateMany({
+    where: { coordinatorId: userId },
+    data: { coordinatorId: null, coordinatorKey: null }
+  });
   await tx.exchangeDefaults.deleteMany({ where: { ownerId: userId } });
-  await tx.exchangeInquiryAudit.updateMany({ where: { actorId: userId }, data: { actorId: null } });
-  await tx.exchangeInquiry.updateMany({ where: { requesterId: userId }, data: { requesterClearedAt: now, requesterId: null } });
-  await tx.exchangeInquiry.updateMany({ where: { receiverId: userId }, data: { receiverClearedAt: now, receiverId: null } });
-  await tx.exchangeInquiry.updateMany({ where: { unretainedAt: null, AND: [
-    { OR: [{ requesterId: null }, { requesterClearedAt: { not: null } }] },
-    { OR: [{ receiverId: null }, { receiverClearedAt: { not: null } }] }
-  ] }, data: { unretainedAt: now } });
+  await tx.exchangeInquiryAudit.updateMany({
+    where: { actorId: userId },
+    data: { actorId: null }
+  });
+  await tx.exchangeInquiry.updateMany({
+    where: { requesterId: userId },
+    data: { requesterClearedAt: now, requesterId: null }
+  });
+  await tx.exchangeInquiry.updateMany({
+    where: { receiverId: userId },
+    data: { receiverClearedAt: now, receiverId: null }
+  });
+  await tx.exchangeInquiry.updateMany({
+    where: {
+      unretainedAt: null,
+      AND: [
+        { OR: [{ requesterId: null }, { requesterClearedAt: { not: null } }] },
+        { OR: [{ receiverId: null }, { receiverClearedAt: { not: null } }] }
+      ]
+    },
+    data: { unretainedAt: now }
+  });
 
   await tx.churchWelcomeThread.deleteMany({
     where: { post: personalPost(userId) }

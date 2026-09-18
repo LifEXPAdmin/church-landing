@@ -28,7 +28,8 @@ export const notificationCategories = [
   "feedback",
   "photos",
   "exchange",
-  "handoffs"
+  "handoffs",
+  "needs"
 ] as const;
 export type NotificationCategory = (typeof notificationCategories)[number];
 export type QuietHours = {
@@ -145,7 +146,8 @@ export function notificationPushAllowed(
     "commitments",
     "feedback",
     "exchange",
-    "handoffs"
+    "handoffs",
+    "needs"
   ].includes(category);
 }
 export function notificationEmailAllowed(
@@ -248,18 +250,35 @@ export async function notificationPreferenceCommand(
         ![
           [...legacyInAppCategories].sort().join(),
           notificationCategories
-            .filter((c) => c !== "exchange" && c !== "handoffs")
+            .filter(
+              (c) => c !== "needs" && c !== "exchange" && c !== "handoffs"
+            )
             .sort()
             .join(),
           notificationCategories
-            .filter((c) => c !== "exchange" && c !== "feedback" && c !== "handoffs")
+            .filter(
+              (c) =>
+                c !== "needs" &&
+                c !== "exchange" &&
+                c !== "feedback" &&
+                c !== "handoffs"
+            )
             .sort()
             .join(),
           notificationCategories
-            .filter((c) => c !== "feedback" && c !== "handoffs")
+            .filter(
+              (c) => c !== "needs" && c !== "feedback" && c !== "handoffs"
+            )
             .sort()
             .join(),
-          notificationCategories.filter(c => c !== "handoffs").sort().join(),
+          notificationCategories
+            .filter((c) => c !== "needs" && c !== "handoffs")
+            .sort()
+            .join(),
+          notificationCategories
+            .filter((c) => c !== "needs")
+            .sort()
+            .join(),
           [...notificationCategories].sort().join()
         ].includes(Object.keys(choices).sort().join()) ||
         Object.values(choices).some((v) => typeof v !== "boolean") ||
@@ -352,7 +371,9 @@ export async function notificationPreferenceCommand(
                   now.toISOString())
                 : category === "prayer"
                   ? (prior?.prayerPushSince?.toISOString() ?? now.toISOString())
-                  : (category === "exchange" || category === "handoffs")
+                  : category === "exchange" ||
+                      category === "handoffs" ||
+                      category === "needs"
                     ? now.toISOString()
                     : new Date(0).toISOString()
         ])
