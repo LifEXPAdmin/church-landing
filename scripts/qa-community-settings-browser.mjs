@@ -85,7 +85,8 @@ const bounded = async () =>
     "No horizontal page overflow"
   );
 
-const { createPortalActor } = await import("../tests/seed-portal.ts");
+const { createPortalActor, seedOperatorGrants } =
+  await import("../tests/seed-portal.ts");
 const signIn = async (actor) => {
   await context.clearCookies();
   await context.addCookies([
@@ -103,6 +104,8 @@ const signIn = async (actor) => {
 try {
   const a = await createPortalActor(db, "communitysettingsa");
   const b = await createPortalActor(db, "communitysettingsb");
+  const reviewer = await createPortalActor(db, "communitysettingsreview");
+  await seedOperatorGrants(db, reviewer, ["REVIEW_COMMUNITY_REPORTS"]);
   await signIn(a);
   const before = await db.socialPreferences.findUnique({
     where: { ownerId: a.id }
@@ -171,15 +174,17 @@ try {
   await page
     .getByLabel("Who can send you a request", { exact: true })
     .selectOption("FOLLOWED");
-  const saving = page.waitForResponse(
-    (r) =>
-      r.request().method() === "POST" &&
-      new URL(r.url()).pathname.includes("contact")
-  );
-  await page
-    .getByRole("button", { name: "Save contact preferences", exact: true })
-    .click();
-  assert.equal((await saving).status(), 200);
+  const [saved] = await Promise.all([
+    page.waitForResponse(
+      (r) =>
+        r.request().method() === "POST" &&
+        new URL(r.url()).pathname === "/api/platform/contact-requests"
+    ),
+    page
+      .getByRole("button", { name: "Save contact preferences", exact: true })
+      .click()
+  ]);
+  assert.equal(saved.status(), 200);
   await page.waitForFunction(
     () =>
       document.querySelector('[aria-label="Contact preferences"] button')
