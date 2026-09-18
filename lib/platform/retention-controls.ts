@@ -1080,6 +1080,7 @@ export async function replayRetentionControls(
                   pushCategories: [],
                   notificationPushSince: Prisma.DbNull,
                   feedbackEmailSince: null,
+                  notificationEmailSince: Prisma.DbNull,
                   conversationPushSince: null,
                   prayerPushSince: null,
                   version: { increment: 1 }

@@ -91,7 +91,7 @@ export const settingsHelpTopics = [
     title: "Can I set quiet hours for notifications?",
     keywords:
       "quiet hours notifications email push alerts conversations follow",
-    body: "In Notification preferences, choose available channels and categories, manage devices, and set quiet hours in your time zone. Quiet hours pause phone alerts and selected feedback email. Choose follow-up separately on each feedback case or reviewed idea. Account verification and recovery emails remain separate.",
+    body: "In Notification preferences, choose available channels and categories, manage devices, and set quiet hours in your time zone. Quiet hours pause phone alerts and optional email, including selected Likes, replies and feedback updates when available. Choose follow-up separately on each feedback case or reviewed idea. Account verification and recovery emails remain separate.",
     href: "/platform/settings/notifications/availability",
     action: "Review current notification controls"
   },

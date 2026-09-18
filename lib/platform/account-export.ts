@@ -869,6 +869,7 @@ export async function downloadAccountExport(
             notificationVersion: true,
             notificationRecoveryRequired: true,
             feedbackEmailSince: true,
+            notificationEmailSince: true,
             mutedNotificationCategories: true,
             notificationPushSince: true,
             conversationPushSince: true,

@@ -603,7 +603,7 @@ export const settingsRegistry: readonly SettingRegistration[] = Object.freeze([
     "notifications.availability",
     "notifications",
     "Notification preferences",
-    "Choose Activity and phone categories, and available email for feedback you selected. Manage devices, quiet hours and feedback follow-up preferences.",
+    "Choose Activity and phone categories, and available email for Likes, replies and feedback you selected. Manage devices, quiet hours and feedback follow-up preferences.",
     [
       "alerts",
       "notifications",

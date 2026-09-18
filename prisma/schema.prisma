@@ -2855,6 +2855,7 @@ model SocialPreferences {
   notificationRecoveryRequired Boolean @default(false)
   mutedNotificationCategories String[] @default([])
   notificationPushSince Json?
+  notificationEmailSince Json?
   feedbackEmailSince DateTime?
   discovery Json?
   discoveryVersion Int @default(0)

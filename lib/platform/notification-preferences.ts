@@ -1,3 +1,4 @@
+import { socialEmailAvailable, socialEmailCategories } from "./social-email";
 import { feedbackEmailAvailable } from "./feedback-email";
 import { recordDiscoveryControl } from "./retention-controls";
 import { protectDiscoveryRecovery } from "./discovery-recovery";
@@ -156,8 +157,24 @@ export function notificationPushAllowed(
 }
 export function notificationEmailAllowed(
   row: SocialPreferences | null,
-  sourceAt: Date
+  sourceAt: Date,
+  category: string = "feedback"
 ) {
+  if (category !== "feedback") {
+    const saved = row?.notificationEmailSince;
+    const at =
+      saved && typeof saved === "object" && !Array.isArray(saved)
+        ? saved[category]
+        : null;
+    return (
+      !!row &&
+      !row.notificationRecoveryRequired &&
+      socialEmailCategories.some((c) => c === category) &&
+      typeof at === "string" &&
+      Number.isFinite(Date.parse(at)) &&
+      Date.parse(at) < sourceAt.getTime()
+    );
+  }
   return (
     !!row &&
     !row.notificationRecoveryRequired &&
@@ -168,6 +185,9 @@ export function notificationEmailAllowed(
 export function projectNotificationPreferences(row: SocialPreferences | null) {
   return {
     version: row?.version ?? 0,
+    emailCategories: socialEmailCategories.filter((category) =>
+      notificationEmailAllowed(row, new Date(8640000000000000), category)
+    ),
     recoveryRequired: row?.notificationRecoveryRequired ?? false,
     feedbackEmail:
       !!row?.feedbackEmailSince && !row.notificationRecoveryRequired,
@@ -199,25 +219,27 @@ export async function notificationPreferencesIn(
   );
 }
 export function readNotificationPreferences(db: PrismaClient, token: unknown) {
-  return withOwnedSession(db, token, async (tx, session) => ({
-    ownerId: session.userId,
-    preferences: await notificationPreferencesIn(tx, session.userId),
-    channels: {
-      inApp: true,
-      push:
-        pushAvailable() &&
-        !!(await tx.platformUser.findFirst({
-          where: { id: session.userId, ...eligibleWhere },
-          select: { id: true }
-        })),
-      email:
-        feedbackEmailAvailable() &&
-        !!(await tx.platformUser.findFirst({
-          where: { id: session.userId, ...eligibleWhere },
-          select: { id: true }
-        }))
-    }
-  }));
+  return withOwnedSession(db, token, async (tx, session) => {
+    const push = pushAvailable(),
+      socialEmail = socialEmailAvailable(),
+      email = feedbackEmailAvailable();
+    const eligible =
+      (push || socialEmail || email) &&
+      !!(await tx.platformUser.findFirst({
+        where: { id: session.userId, ...eligibleWhere },
+        select: { id: true }
+      }));
+    return {
+      ownerId: session.userId,
+      preferences: await notificationPreferencesIn(tx, session.userId),
+      channels: {
+        inApp: true,
+        push: push && eligible,
+        socialEmail: socialEmail && eligible,
+        email: email && eligible
+      }
+    };
+  });
 }
 export async function notificationPreferenceCommand(
   db: PrismaClient,
@@ -232,6 +254,7 @@ export async function notificationPreferenceCommand(
     "inApp",
     "pushCategories",
     "quietHours",
+    "emailCategories",
     "feedbackEmail"
   ]);
   if (input.operation !== "preferences")
@@ -364,6 +387,29 @@ export async function notificationPreferenceCommand(
           503,
           "Feedback email is not available yet. You can still turn it off."
         );
+      const emailCategories =
+        input.emailCategories === undefined
+          ? old.emailCategories
+          : input.emailCategories;
+      if (
+        !Array.isArray(emailCategories) ||
+        emailCategories.length > socialEmailCategories.length ||
+        new Set(emailCategories).size !== emailCategories.length ||
+        emailCategories.some((c) => !socialEmailCategories.includes(c))
+      )
+        throw new PortalError(400, "Choose only supported email categories.");
+      if (
+        emailCategories.some((c) => !old.emailCategories.includes(c)) &&
+        (!socialEmailAvailable() ||
+          !(await tx.platformUser.findFirst({
+            where: { id: ownerId, ...eligibleWhere },
+            select: { id: true }
+          })))
+      )
+        throw new PortalError(
+          503,
+          "Likes and reply emails are not available yet. You can still turn them off."
+        );
       const quiet = parseQuietHours(input.quietHours);
       if (
         Object.keys(choices).length !== notificationCategories.length &&
@@ -412,7 +458,21 @@ export async function notificationPreferenceCommand(
                     : new Date(0).toISOString()
         ])
       );
+      const beforeEmail = prior?.notificationEmailSince;
+      const emailSince = Object.fromEntries(
+        emailCategories.map((category) => [
+          category,
+          old.emailCategories.includes(category) &&
+          beforeEmail &&
+          typeof beforeEmail === "object" &&
+          !Array.isArray(beforeEmail) &&
+          typeof beforeEmail[category] === "string"
+            ? beforeEmail[category]
+            : now.toISOString()
+        ])
+      );
       const data = {
+        notificationEmailSince: emailSince,
         feedbackEmailSince: email
           ? old.feedbackEmail
             ? prior!.feedbackEmailSince
