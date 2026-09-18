@@ -174,7 +174,10 @@ try {
     .getByRole("link", { name: "Sign in", exact: true })
     .waitFor();
   assert.ok(!(await page.locator("main").innerText()).includes(marker));
-  ok("Guest private entry is explicit and conceals assistance records");
+  await page.locator("main").getByRole("link", { name: "Sign in", exact: true }).click();
+  await page.waitForURL((url) => url.pathname === "/platform/login");
+  assert.equal(new URL(page.url()).searchParams.get("next"), "/platform/pantry/mine");
+  ok("Guest private entry conceals assistance records and sign-in retains the intended destination");
   await signIn(manager);
   await go(base + "/manage");
   const hub = form("Save hub and intake choices");

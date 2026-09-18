@@ -25,6 +25,15 @@ export function safeAccountReturn(value: unknown): string {
     )
   )
     return url.pathname.replace(/\/$/, "");
+  // Assistance returns to a known page only. Private cursor, contact, action and
+  // unsent request values never survive account entry or replay automatically.
+  if (
+    url.origin === "https://return.invalid" &&
+    /^\/platform\/pantry(?:\/(?:mine|requests\/[a-zA-Z0-9_-]{1,100}|[a-zA-Z0-9_-]{1,100}(?:\/(?:manage|queue|sessions|audit))?))?\/?$/.test(
+      url.pathname
+    )
+  )
+    return url.pathname.replace(/\/$/, "");
   if (
     url.origin === "https://return.invalid" &&
     url.pathname.replace(/\/$/, "") === "/platform/relationships/lists"
