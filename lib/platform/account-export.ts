@@ -843,6 +843,8 @@ export async function downloadAccountExport(
         await tx.socialPreferences.findMany({
           where: { ownerId: userId },
           select: {
+            menuShortcutIds: true,
+            menuShortcutsVersion: true,
             feedMode: true,
             feedVersion: true,
             discovery: true,

@@ -2850,6 +2850,8 @@ model PostWorkspaceOperation {
 
 
 model SocialPreferences {
+  menuShortcutIds String[] @default([])
+  menuShortcutsVersion Int @default(0)
   onboardingDismissed String[] @default([])
   onboardingVersion Int @default(0)
   notificationVersion Int @default(0)

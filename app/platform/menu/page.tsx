@@ -28,7 +28,16 @@ import {
 import { PlatformShell } from "@/components/platform/platform-shell";
 import { getCurrentPlatformUser } from "@/lib/platform/session";
 import { accountEntryHref } from "@/lib/platform/account-entry";
-import { readAdminPageNavigation } from "@/lib/platform/admin-session";
+import { createHash } from "node:crypto";
+import { prisma } from "@/lib/prisma";
+import { privateCookies } from "@/lib/platform/private-cookies";
+import { PLATFORM_SESSION_COOKIE } from "@/lib/platform/session";
+import {
+  readMenuShortcuts,
+  type MenuShortcutsState
+} from "@/lib/platform/menu-shortcuts";
+import { PrivateSnapshotGuard } from "@/components/platform/private-snapshot-guard";
+import { MenuShortcutsEditor } from "@/components/platform/menu-shortcuts";
 import {
   navigationRegistry,
   navigationItem,
@@ -78,15 +87,23 @@ function MenuLink({ item }: { item: NavigationItem }) {
 
 export default async function PlatformMenuPage() {
   const user = await getCurrentPlatformUser();
-  let adminAvailable = false;
+  let shortcuts: MenuShortcutsState | null = null;
   if (user && process.env.NODE_ENV === "production") {
     try {
-      adminAvailable = !!(await readAdminPageNavigation()).sections.length;
+      const cookies = await privateCookies();
+      const state = await readMenuShortcuts(
+        prisma,
+        cookies.get(PLATFORM_SESSION_COOKIE)?.value
+      );
+      if (state.ownerId === user.id) shortcuts = state;
     } catch {
-      /* Optional entry fails closed; the rest of Menu remains usable. */
+      /* Optional private choices fail closed; the rest of Menu remains usable. */
     }
   }
-  const context = { username: user?.username, adminAvailable };
+  const context = {
+    username: user?.username,
+    adminAvailable: !!shortcuts?.choices.some((item) => item.id === "admin")
+  };
   const groups = menuNavigation(context);
   const administration = administrationNavigation(context);
   return (
@@ -105,6 +122,50 @@ export default async function PlatformMenuPage() {
           <ul className="gc-menu-links" aria-label="Quick sharing">
             <MenuLink item={navigationItem("qr", context)} />
           </ul>
+          {user && (
+            <section aria-labelledby="menu-shortcuts-title">
+              <h2 id="menu-shortcuts-title">Your shortcuts</h2>
+              {shortcuts ? (
+                <PrivateSnapshotGuard
+                  owner={shortcuts.ownerId}
+                  url="/api/platform/menu-shortcuts"
+                  checksum={createHash("sha256")
+                    .update(JSON.stringify(shortcuts))
+                    .digest("hex")}
+                  label="Menu shortcuts"
+                >
+                  {shortcuts.ids.length ? (
+                    <ul
+                      className="gc-menu-links"
+                      aria-label="Saved Menu shortcuts"
+                    >
+                      {shortcuts.ids.map((id) => (
+                        <MenuLink
+                          key={id}
+                          item={
+                            shortcuts.choices.find((item) => item.id === id)!
+                          }
+                        />
+                      ))}
+                    </ul>
+                  ) : (
+                    <p>
+                      No shortcuts selected. Choose the places you use most.
+                    </p>
+                  )}
+                  <MenuShortcutsEditor
+                    key={`${shortcuts.ownerId}:${shortcuts.version}`}
+                    initial={shortcuts}
+                  />
+                </PrivateSnapshotGuard>
+              ) : (
+                <p role="status">
+                  Your shortcuts could not be loaded. Reconnect and reload Menu
+                  to try again.
+                </p>
+              )}
+            </section>
+          )}
           <InstallationBanner />
           {!user && (
             <div className="flex flex-wrap gap-3">
