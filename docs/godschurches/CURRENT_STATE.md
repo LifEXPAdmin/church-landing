@@ -1,4 +1,4 @@
-## Church Settings local acceptance, September 18, 2026 UTC
+## Church Settings verified live, September 18, 2026 UTC
 
 Church Settings now projects current connection states and links the existing
 request, directory and responsibility owners. Organization selection requires
@@ -8,10 +8,19 @@ the extra My church loading boundary. Fifteen focused service tests, twelve new
 built browser groups, six Settings and eight Communities regressions pass.
 The final production build and runtime checks pass. The clean full service/HTTPS
 gate passes 185 discovered files, with 1,198 passes, two expected skips and zero
-failures across 199 executions. These changes await release verification. See
+failures across 199 executions. **2026.09.18.6 / 9e66724** is READY in
+**dpl_6eHfGKYMfZDdcM8TjiHCFZeeMsaU** at **13:54:02.951 UTC**, with canonical
+assignment and serving identity confirmed at **13:55:05.321 UTC**. Thirteen
+public/privacy checks, six health checks and four signed-in Mac observations pass.
+All 99 migration/recovery checksums match; the recent encrypted restore verifies
+144 tables and 75 nightly sets have no issues. All 144 production fingerprints
+remain unchanged through 13:57 UTC. Verification has zero application writes or
+recipient sends; the native queue probe is consumed and scoped runtime errors are
+zero. See
 [the scoped acceptance and remaining gates](CHURCH_SETTINGS_IMPLEMENTATION.md).
-Production remains the Communities release below. Role-display preferences and
-future personal serving-interest capabilities remain open.
+Role-display preferences and future personal serving-interest capabilities remain
+open. Continue the assigned A1 queue and check A2 ready-to-merge handoffs at safe
+checkpoints; preserve all physical-device, operator, provider and pilot gates.
 
 ## Church engineering acceptance reconciled, September 18, 2026 UTC
 

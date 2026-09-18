@@ -1,7 +1,32 @@
 # Church settings ownership and acceptance
 
-September 18, 2026 UTC. Local acceptance passes; release verification pending.
-Production remains Communities Settings 2026.09.18.5. No release is claimed here.
+September 18, 2026 UTC. Verified live.
+
+## Published receipt
+
+**2026.09.18.6 / 9e66724fc2f1b66e60a9743cbb09c546fd02a1b4** is READY in
+**dpl_6eHfGKYMfZDdcM8TjiHCFZeeMsaU** at **13:54:02.951 UTC**. Canonical
+`godschurches.com` assignment and exact serving identity match at **13:55:05.321 UTC**.
+The provider verifies hydration output and 223 runtime traces without forbidden
+fixture, environment or configuration-loader inputs.
+
+Thirteen live public/privacy checks, six health checks and four signed-in Mac
+observations pass. The real account's no-church overview, readable absence of
+organization administration, canonical My church destination and personal Settings
+remain consistent. Live verification changes no connection, role or preference;
+write-flow acceptance uses isolated fictional accounts.
+
+All 99 production migration and installed recovery checksums match, with none
+pending. The recent encrypted restore verifies 144 tables and removes plaintext;
+75 nightly sets have no issues. All 144 production table/column fingerprints remain
+unchanged through **13:57:20.437 UTC**. No application writes or recipient sends
+occurred. The reserved nonexistent-source native queue probe is consumed with
+HTTP 200; scoped runtime error and fatal rows are zero through 13:56:00.538 UTC.
+
+This release also publishes the independent-worker workflow guidance, the
+reconciled church engineering receipt and the calendar Settings ownership contract.
+It preserves the existing Communities, Groups, Pantry and Church Needs releases.
+Physical-device and actual-pilot evidence remains separate.
 
 ## Canonical ownership
 
