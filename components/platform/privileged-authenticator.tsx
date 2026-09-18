@@ -62,11 +62,13 @@ export function PrivilegedAuthenticator({ data, purpose }: { data: PrivilegedAut
 }
 function AuthenticatorContent({ data, purpose, refresh }: { data: PrivilegedAuthenticationSnapshot; purpose?: string; refresh: () => Promise<void> }) {
   const [secret, setSecret] = useState(""), [codes, setCodes] = useState<string[]>([]), [qr, setQr] = useState("");
+  const [codesAcknowledged, setCodesAcknowledged] = useState(false);
+  const acknowledgment = useRef<HTMLParagraphElement>(null);
   const displayedVersion = useRef<number | null>(null);
   const factor = data.factor;
   useEffect(() => {
     if (displayedVersion.current !== null && displayedVersion.current !== factor?.version) {
-      setSecret(""); setCodes([]); setQr(""); displayedVersion.current = null;
+      setSecret(""); setCodes([]); setQr(""); setCodesAcknowledged(false); displayedVersion.current = null;
     }
   }, [factor?.version]);
   useEffect(() => {
@@ -84,12 +86,15 @@ function AuthenticatorContent({ data, purpose, refresh }: { data: PrivilegedAuth
     const timer = setTimeout(() => { setSecret(""); setCodes([]); setQr(""); }, 600000);
     return () => clearTimeout(timer);
   }, [secret, codes.length]);
+  useEffect(() => {
+    if (codesAcknowledged) acknowledgment.current?.focus();
+  }, [codesAcknowledged]);
   const receive = (result: Record<string, unknown>) => {
     displayedVersion.current = Number(result.version);
-    if (typeof result.secret === "string") { setSecret(result.secret); setCodes([]); }
+    if (typeof result.secret === "string") { setSecret(result.secret); setCodes([]); setCodesAcknowledged(false); }
     if (Array.isArray(result.recoveryCodes)) {
       setCodes(result.recoveryCodes.filter((v): v is string => typeof v === "string"));
-      setSecret(""); setQr("");
+      setSecret(""); setQr(""); setCodesAcknowledged(false);
     }
   };
   const common = { owner: data.ownerId, endpoint: "/api/platform/authenticator" as const,
@@ -121,9 +126,11 @@ function AuthenticatorContent({ data, purpose, refresh }: { data: PrivilegedAuth
             <h2 className="text-xl font-semibold">Save your recovery codes now</h2>
             <p>Store them somewhere private and separate from this device. Each code replaces a lost authenticator once. They clear from this page after ten minutes.</p>
             <ul className="grid gap-2 sm:grid-cols-2">{codes.map(value => <li key={value}><code className="select-all break-all">{value}</code></li>)}</ul>
-            <button className="gc-button gc-button-quiet" onClick={() => setCodes([])}>I saved my recovery codes; hide them</button>
+            <button className="gc-button gc-button-quiet" onClick={() => { setCodes([]); setCodesAcknowledged(true); }}>I saved my recovery codes; hide them</button>
           </section>}
+          {codesAcknowledged && <p ref={acknowledgment} role="status" tabIndex={-1} className="rounded-xl border border-gc-divider p-4 focus:outline focus:outline-2 focus:outline-gc-focus">Recovery codes hidden from this page. Keep your saved copy somewhere private and separate from your authenticator.</p>}
           {factor?.confirmed && <>
+            <p>Turning off authenticator protection is not supported. To change devices, replace your authenticator using a current code or one unused recovery code, together with your current sign-in confirmation.</p>
             <section className="space-y-4" aria-label="Confirm protected work">
               <h2 className="text-xl font-semibold">Confirm protected work</h2>
               <p>{data.confirmedForWork ? "This sign-in currently has a confirmed window for assigned duties." : "Enter an unused code to confirm this sign-in for ten minutes."} Sensitive actions need their own one-use confirmation within five minutes.</p>

@@ -35,6 +35,8 @@ const context = await browser.newContext({ viewport: { width: 390, height: 844 }
 await context.route("**/*", route => new URL(route.request().url()).hostname === "mfa-fixture.example.test" ? route.continue() : route.abort());
 const page = await context.newPage();
 const results = [], errors = [];
+const outbound = [];
+context.on("request", request => outbound.push({ url: request.url(), body: request.postData() ?? "" }));
 context.on("page", p => p.on("pageerror", e => errors.push(e.message)));
 page.on("pageerror", e => errors.push(e.message));
 const output = fixtureDir + "/authenticator-browser";
@@ -135,6 +137,18 @@ try {
   ok("Lost enrollment response retries the exact setup; locally rendered QR decodes to its actual factor");
 
   const confirm = page.getByRole("form", { name: "Confirm authenticator", exact: true });
+  const confirmationCounter = BigInt(Math.floor(Date.now() / 30000));
+  const activeCodes = new Set([-2, -1, 0, 1, 2].map(offset => authenticatorTotp(setupSecret, confirmationCounter + BigInt(offset))));
+  let rejectedCode = "000000";
+  while (activeCodes.has(rejectedCode)) rejectedCode = String(Number(rejectedCode) + 1).padStart(6, "0");
+  await confirm.getByLabel("Six-digit authenticator code", { exact: true }).fill(rejectedCode);
+  await confirm.getByRole("button", { name: "Confirm authenticator", exact: true }).click();
+  await confirm.getByRole("alert").waitFor();
+  assert.equal((await db.adminAuthenticator.findUniqueOrThrow({ where: { userId: actor.id } })).confirmedAt, null);
+  await page.getByText("No authenticator is confirmed yet.", { exact: true }).waitFor();
+  assert.equal(await page.getByRole("region", { name: "Private recovery codes", exact: true }).count(), 0);
+  assert.equal(await db.privilegedSecurityNotice.count({ where: { userId: actor.id } }), 0);
+  ok("Rejected enrollment code leaves the factor unconfirmed and creates no recovery-code display or confirmation notice");
   await confirm.getByLabel("Six-digit authenticator code", { exact: true }).fill(authenticatorTotp(setupSecret, BigInt(Math.floor(Date.now() / 30000)) - BigInt(1)));
   await confirm.getByRole("button", { name: "Confirm authenticator", exact: true }).click();
   const recovery = page.getByRole("region", { name: "Private recovery codes", exact: true });
@@ -148,6 +162,31 @@ try {
   assert.deepEqual(await recovery.locator("code").allTextContents(), codes);
   assert.equal((await fetchIn("/api/platform/admin?view=navigation")).status, 403);
   await recovery.getByRole("button", { name: "I saved my recovery codes; hide them", exact: true }).click();
+  const acknowledged = page.getByRole("status").filter({ hasText: "Recovery codes hidden from this page." });
+  await acknowledged.waitFor();
+  assert.equal(await acknowledged.evaluate(node => node === document.activeElement), true);
+  assert.equal(await recovery.count(), 0);
+  const assertPrivateNavigation = async () => {
+    const stored = await page.evaluate(() => JSON.stringify({ history: history.state, local: { ...localStorage }, session: { ...sessionStorage } }));
+    for (const value of [...codes, authenticatorBase32(setupSecret)]) {
+      assert.equal(stored.includes(value), false, "Private material must not enter browser storage or navigation state");
+      assert.equal(outbound.some(request => request.url.includes(value) || request.body.includes(value)), false,
+        "Setup key and recovery codes must not be sent in navigation or analytics requests");
+    }
+  };
+  await assertPrivateNavigation();
+  const factorBeforeLeaving = await db.adminAuthenticator.findUniqueOrThrow({ where: { userId: actor.id } });
+  await page.getByRole("link", { name: "Return to Account security", exact: true }).click();
+  await page.waitForURL("**/settings/security");
+  await page.goBack();
+  await page.getByRole("heading", { name: "Your authenticator", exact: true }).waitFor();
+  assert.equal(await recovery.count(), 0);
+  assert.equal(await setup.count(), 0);
+  await assertPrivateNavigation();
+  assert.deepEqual(await db.adminAuthenticator.findUniqueOrThrow({ where: { userId: actor.id } }), factorBeforeLeaving);
+  await page.getByText("Turning off authenticator protection is not supported.", { exact: false }).waitFor();
+  assert.equal(await page.getByRole("button", { name: /disable|turn off/i }).count(), 0);
+  ok("Acknowledgment moves focus to a readable receipt, clears private codes across Back, leaves the factor unchanged and explains unsupported disabling");
   await challenge(actor, "privileged-work");
   assert.equal((await fetchIn("/api/platform/admin?view=navigation")).status, 200);
   assert.equal(await db.platformOperatorGrant.count({ where: { userId: actor.id } }), 1);
