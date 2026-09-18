@@ -6,8 +6,9 @@ current approved access and effective duties; opening tools rechecks the account
 and permissions. A reproduced stale withdrawal confirmation is repaired by removing
 the extra My church loading boundary. Fifteen focused service tests, twelve new
 built browser groups, six Settings and eight Communities regressions pass.
-The final production build and runtime checks pass; the clean full service/HTTPS
-gate is still running. These changes are local and unreleased. See
+The final production build and runtime checks pass. The clean full service/HTTPS
+gate passes 185 discovered files, with 1,198 passes, two expected skips and zero
+failures across 199 executions. These changes await release verification. See
 [the scoped acceptance and remaining gates](CHURCH_SETTINGS_IMPLEMENTATION.md).
 Production remains the Communities release below. Role-display preferences and
 future personal serving-interest capabilities remain open.

@@ -1,6 +1,6 @@
 # Church settings ownership and acceptance
 
-September 18, 2026 UTC. Local browser acceptance passes; full regression in progress.
+September 18, 2026 UTC. Local acceptance passes; release verification pending.
 Production remains Communities Settings 2026.09.18.5. No release is claimed here.
 
 ## Canonical ownership
@@ -47,7 +47,11 @@ A standalone portal-service attempt in the reused worker fixture passed sixteen
 checks but failed two fixture-dependent checks: missing staged-upgrade seed and
 an accumulated-account pagination expectation. The original failure is retained
 privately. The clean standard full gate is required before release; this attempt
-is not reported as a passing gate. Twelve final built HTTPS browser groups pass
+is not reported as a passing gate. The subsequent clean standard full gate passes
+185 discovered files and 199 executions: 1,198 passes, two expected skips, zero
+failures. It includes staged upgrade, synthetic full restoration, fresh migrations,
+development/production builds, restart persistence and HTTPS privacy checks.
+Twelve final built HTTPS browser groups pass
 for real fictional request/withdraw/leave forms, scoped links, revoked open
 selections, failed reads, account changes, keyboard/reflow and guest return.
 Six existing Settings and eight Communities browser groups also pass on that
@@ -58,7 +62,7 @@ attempts and corrected automation assertions remain in the private evidence.
 The projection tests directly update fictional states; they do not establish
 canonical transition side effects. Actual browser forms additionally verify
 withdrawal, fresh approval, leaving and changing the single active church, while
-the clean standard portal regression remains part of the full release gate.
+the clean standard portal regression also passes in the full release gate.
 No physical device or real church pilot has been exercised by these local checks.
 
 ## Membership refresh repair verified locally
@@ -70,7 +74,7 @@ WITHDRAWN/version 2 and no browser exception occurred. The extra My church
 loading boundary is removed, following the same narrow repair verified earlier
 for Groups. A fresh production build passes four consecutive actual withdrawal
 cycles, re-request and fresh approval, leaving, and the replacement-church flow.
-The running full service/HTTPS gate covers the preceding runtime; this final
+The full service/HTTPS gate covers the preceding runtime; this final
 client delta is verified separately. The visible administration scope now uses
 a named semantic region.
 
