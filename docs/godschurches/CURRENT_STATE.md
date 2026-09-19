@@ -1,3 +1,29 @@
+## Canonical profile events verified live, 19 September 2026, 05:14 UTC
+
+Release `2026.09.18.14` serves on the canonical domain from main
+`cd5615ca5e822b889ef4633a35e7045559e2be5b`, READY deployment
+`dpl_EZ7jQSpAe6fYo11WHPacYhKa6Xqv`. The [event-link report](PROFILE_EVENT_LINKS_REPORT.md)
+records explicit profile selection/removal, current source permissions, copied
+calendar-link repair and canonical edits shared across church/group/profile.
+One original event and RSVP remain authoritative.
+
+The complete 197-file gate passes with 1,249 passes, zero failures and two
+expected production skips; all 1,795 source files remain unchanged. Twenty-eight
+focused checks, seven local built-browser groups, 35 live groups and six health
+checks pass. All 144 production table/column fingerprints remain unchanged
+after verification, and all 104 migration/recovery checksums match. No migration
+or provider configuration change; zero verification application writes or
+recipient sends. Runtime error/fatal rows are zero in the observed window.
+
+The compatible rollback rehearsal and preceding release reports are included.
+The worker-branch audit finds all completed A2 changes already integrated,
+including the five latest handoffs; no duplicate merge is required. Historical
+diagnostic worktrees remain preserved. A1's unused local fixtures are stopped.
+The owner-requested nightly closeout stops further feature work pending a new
+instruction. Physical/operator/provider gates and future source owners remain
+open. A rollback must preserve the new module decoder and reference-preserving
+writer with current permission and recovery controls.
+
 ## Canonical event release gate passed, 19 September 2026, 05:01 UTC
 
 Candidate `26ae2be` passes all 197 discovered test files: 1,249 passes, zero

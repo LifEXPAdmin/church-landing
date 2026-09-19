@@ -1,7 +1,7 @@
 # Profile event links
 
-September 19, 2026 UTC. Focused acceptance and the complete release gate pass.
-Main publication and live acceptance remain open at this checkpoint.
+September 19, 2026 UTC. Verified live acceptance completed at 05:14:59 UTC.
+Release `2026.09.18.14` serves from main `cd5615ca5e822b889ef4633a35e7045559e2be5b`.
 
 Church agendas and group event links already read canonical calendar occurrences.
 Personal profiles now add an explicit optional selection of one existing event.
@@ -111,3 +111,32 @@ with none pending. The installed encrypted restore verifies 144 tables with
 plaintext removed; 83 retained backup sets have no issues. A read-only snapshot
 of all 144 original production tables is saved for the post-verification
 comparison. No schema, migration, dependency or provider configuration changes.
+
+## Verified live acceptance, 05:14 UTC
+
+Deployment `dpl_EZ7jQSpAe6fYo11WHPacYhKa6Xqv` became READY at 05:12:42 UTC;
+the canonical domain served the exact commit/version at 05:12:56 UTC. The
+provider concurrency queue delayed the build behind another team project. No
+unrelated deployment was interrupted. Only the two engineering reports differ
+from the fully tested runtime `26ae2be`.
+
+All 35 live public/privacy/browser groups and six health checks pass, with no
+page errors or mutating browser requests. The 320-pixel release page was also
+visually reviewed. An in-app browser read confirms the .14 version and guest
+profile boundary. Authenticated saves remain isolated-fixture evidence; no
+physical-device or real-account production-write acceptance is claimed.
+
+All 144 original production table/column fingerprints are unchanged through
+05:14:51 UTC, after the exercised checks. All 104 migration and installed
+recovery checksums match, with no new migration. Runtime error/fatal rows are
+zero through 05:14:29 UTC. One reserved nonexistent-source queue probe was
+accepted and a matching consumer completion observed on this deployment in
+the same time window. The log does not expose a provider message ID, so this
+is not ID-correlated delivery evidence. Verification made zero application
+writes or recipient sends.
+
+The actual provider build verifies 224 traces, 74,369 entries and 557 server
+JavaScript files with no private fixture/environment path. Its hydration
+renderer is unchanged at 173,096 bytes. These are provider observations,
+separate from the local-export counts above. Broader capacity/roster, future
+artist/venture owners, provider and physical-device gates remain open.
