@@ -51,9 +51,12 @@ the saved module order before allowing retained edits to overwrite that version.
 Ordering shares the existing modules JSON, editor version and protected recovery
 receipt; no migration, new permission or visibility switch is introduced. It is
 included in own export and cleared together with obsolete restored module content.
-Deploy this compatible decoder with its editor. Rolling back to the earlier
-strict decoder hides modules containing `order` rather than exposing unknown data;
-it does not remove stored content.
+Deploy this compatible decoder with its editor and order-preserving writer.
+An older strict decoder projects modules containing `order` as empty. The read
+does not remove stored content, but its old editor can submit those empty fields
+on a subsequent ordinary save. Do not deploy that incompatible rollback; retain
+the compatible read/write owners or ship a forward fix. Do not restore an older
+database to reverse an interface change.
 Each link needs a label of at most 80 characters and an address of at most 500
 characters before and after URL normalization. Only HTTP/HTTPS without embedded
 credentials or whitespace/control characters is supported. Links are ordinary
