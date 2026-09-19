@@ -25,8 +25,14 @@ production recovery acceptance remains a later publication gate.
 The first combined gate stopped at a historical whole-row metrics fingerprint
 because the newly added empty Church columns changed the serialized row shape.
 The harness now compares the original columns and separately requires all five
-new visitor fields to remain empty. The complete corrected gate is running from
-00:10:29 UTC; no complete-gate pass is claimed yet. Initial browser harness
+new visitor fields to remain empty. That attempt ran from 00:10:29 to 00:23:19 UTC
+and stopped during its production build when Node exhausted its configured
+6 GiB heap. All test groups reached before the build reported zero failures;
+the complete gate did not pass. The earlier independent build passed in a clean
+source export. A full retry began at 00:27:54 UTC in a new isolated export with
+all 1,777 tracked files verified, independent dependencies and no initial build
+cache. The application is unchanged, and no complete-gate pass is claimed yet.
+Both failed attempts and their diagnostics are retained. Initial browser harness
 attempts needed response capture before hard navigation, required-label matching
 and scoping to the current accessible form rather than cached hidden markup.
 Those test-only fixes are committed separately; application code remains `9d6d00d`.
@@ -79,8 +85,8 @@ a valid 21,422-byte profile in a 64,720-byte request. The form now sends public
 profile fields once, private authority once and only boolean permission choices
 in its scopes object. Dispute state remains explicit. Profile-only saves omit
 unused authority and scope values. Independent source review measured a maximum
-valid canonical payload below 32 KiB; real browser transport remains a required
-acceptance check.
+valid canonical payload below 32 KiB; the later real-browser check above confirms
+the actual representative transport remains within that boundary.
 
 ## Checks and remaining gates
 
@@ -95,8 +101,8 @@ checks pass. A private pre-migration guard initially compared an INET string wit
 its CIDR suffix; using PostgreSQL's host projection fixed the guard before any
 migration ran.
 
-Built HTTPS owner/reviewer/guest and representative browser journeys, meaningful
-combined regression, protected upgrade and installed backup recovery, exact
-publication identity and live checks are still open. Implemented code is not yet
-a verified live release. Physical-device and real church operating evidence keep
-their separate acceptance gates.
+Built HTTPS owner/reviewer/guest and representative browser journeys and the
+protected upgrade now pass as recorded above. The complete regression gate,
+installed backup recovery after migration, exact publication identity and live
+checks remain open. Implemented code is not yet a verified live release.
+Physical-device and real church operating evidence keep their separate gates.
