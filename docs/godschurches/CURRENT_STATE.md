@@ -1,4 +1,4 @@
-## Visitor-information candidate, 18 September 2026
+## Visitor-information release candidate, 19 September 2026, 01:41 UTC
 
 The [visitor-information feature](CHURCH_VISITOR_INFORMATION_REPORT.md) adds five
 optional supplied facts to public church details and reuses existing private
@@ -6,11 +6,12 @@ correction and authorized representative workflows. Its five isolated service
 groups, types, scoped lint, copy, production build and eight built HTTPS browser
 groups pass. A protected production-copy upgrade preserves all 144 original
 table/column fingerprints from 103 to 104 migrations. The complete regression
-gate is running in a fresh source export with the standalone harness environment.
-Clean builds resolved the earlier heap failure; the wrapper's inherited push
-fixture was then removed to restore the expected disabled-push baseline. Six
-focused messaging HTTP checks pass. The application is unchanged; installed
-recovery and publication/live gates remain open.
+gate now passes all 195 discovered files, with 1,242 passing executions, zero
+failures and two expected production-stage skips whose cases passed in development.
+The uninterrupted run takes 45.74 minutes and all 1,777 frozen tracked files
+match afterward. Clean builds and the standalone harness environment resolved
+the earlier test-environment failures without changing the application.
+Installed recovery and publication/live gates remain open.
 Only isolated databases have migration `20260918234500_church_visitor_information`.
 Production remains verified release .11 with 103 migrations. Representative
 review operations retain their separate policy and reviewer activation gate.

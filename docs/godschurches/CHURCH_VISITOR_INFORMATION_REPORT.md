@@ -1,5 +1,20 @@
 # Supplied church visitor information
 
+## Complete gate passed, 19 September 2026, 01:41 UTC
+
+The uninterrupted isolated support gate exits successfully at 01:41:12 UTC after
+45.74 minutes. All 195 discovered test files pass: 1,242 passing executions,
+zero failures or cancellations and two expected production-stage skips for
+development-only email cases that passed in development. Both production builds,
+staged migrations, dump/restore, real process restart, production HTTPS HTML/RSC
+privacy and every discovered regression file complete successfully.
+
+All 1,777 tracked files in the frozen gate export match the recorded source after
+the run. The tested application remains `9d6d00d`; later differences are reviewed
+test-harness corrections and documentation. The eight built-browser groups and
+protected production-copy upgrade described below also pass. Publication,
+installed production recovery and verified live acceptance remain next.
+
 ## Local verification, 19 September 2026, 00:17 UTC
 
 Application candidate `9d6d00d` passes the production build and eight real-browser
