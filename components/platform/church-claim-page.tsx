@@ -125,6 +125,7 @@ export async function ChurchClaimPage({
         label: rule.label,
         value: row.profile[name as keyof typeof row.profile],
         maxLength: rule.max,
+        ...("hint" in rule ? { hint: rule.hint } : {}),
         type:
           name === "locationModel"
             ? "select"
@@ -132,7 +133,8 @@ export async function ChurchClaimPage({
               ? "email"
               : name === "publicPhone"
                 ? "tel"
-                : ["summary", "meetingInfo", "source"].includes(name)
+                : ("multiline" in rule && rule.multiline) ||
+                    ["summary", "meetingInfo", "source"].includes(name)
                   ? "textarea"
                   : "text",
         ...(name === "locationModel"

@@ -26,6 +26,11 @@ export type ChurchSummary = {
   publicEmail?: string;
   publicPhone?: string;
   meetingInfo?: string;
+  serviceTimes?: string;
+  accessibilityInfo?: string;
+  languages?: string;
+  childrenPrograms?: string;
+  contactPreferences?: string;
   denomination?: string;
   source?: string;
 };

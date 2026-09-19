@@ -133,6 +133,35 @@ export function PortalActionForm({
               : String(data.get(field.name) ?? "")
           ])
         );
+        // Profile fields appear once on the wire, within their canonical input.
+        const inputValues =
+          claimAction === "save" || claimAction === "profile-save"
+            ? {
+                profile: Object.fromEntries(
+                  Object.entries(values)
+                    .filter(([key]) => key.startsWith("profile_"))
+                    .map(([key, value]) => [key.slice(8), value])
+                ),
+                ...(claimAction === "save"
+                  ? {
+                      authority: Object.fromEntries(
+                        Object.entries(values)
+                          .filter(([key]) => key.startsWith("authority_"))
+                          .map(([key, value]) => [key.slice(10), value])
+                      ),
+                      scopes: Object.fromEntries(
+                        Object.entries(values).filter(
+                          ([key, value]) =>
+                            typeof value === "boolean" && key !== "dispute"
+                        )
+                      ),
+                      dispute: values.dispute === true
+                    }
+                  : {})
+              }
+            : listingAction === "save"
+              ? { data: values }
+              : values;
         inFlight.current = true;
         setPending(true);
         setResult(null);
@@ -150,22 +179,7 @@ export function PortalActionForm({
               credentials: "same-origin",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
-                ...(listingAction === "save" ? { data: values } : values),
-                ...(claimAction === "save" || claimAction === "profile-save"
-                  ? {
-                      profile: Object.fromEntries(
-                        Object.entries(values)
-                          .filter(([key]) => key.startsWith("profile_"))
-                          .map(([key, value]) => [key.slice(8), value])
-                      ),
-                      authority: Object.fromEntries(
-                        Object.entries(values)
-                          .filter(([key]) => key.startsWith("authority_"))
-                          .map(([key, value]) => [key.slice(10), value])
-                      ),
-                      scopes: values
-                    }
-                  : {}),
+                ...inputValues,
                 ...payload,
                 ...(listingAction === "create" ||
                 claimAction === "create" ||
@@ -178,7 +192,8 @@ export function PortalActionForm({
             }
           );
           const body: unknown = await response.json().catch(() => null);
-          const needsAuthenticator = response.status === 403 && announcePrivilegedChallenge(body);
+          const needsAuthenticator =
+            response.status === 403 && announcePrivilegedChallenge(body);
           const message =
             body &&
             typeof body === "object" &&

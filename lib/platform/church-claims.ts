@@ -13,7 +13,7 @@ import {
   PortalError,
   eligibleWhere,
   expected,
-  churchSelect
+  churchDetailSelect
 } from "./portal-policy";
 import { listingData, likelyChurchMatches } from "./church-listings";
 import { projectListingData } from "./church-listing-data";
@@ -41,7 +41,7 @@ function string(value: unknown, max = 100, min = 1) {
     typeof value !== "string" ||
     value.trim().length < min ||
     value.length > max ||
-    /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(value)
+    /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f\ud800-\udfff]/u.test(value)
   )
     throw new PortalError(400, "Check the required fields and their length.");
   return value.trim();
@@ -404,7 +404,7 @@ export async function getChurchClaims(
       canonical: selected?.churchId
         ? await tx.church.findUnique({
             where: { id: selected.churchId },
-            select: churchSelect
+            select: churchDetailSelect
           })
         : null,
       currentScopes: selected?.churchId

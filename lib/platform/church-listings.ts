@@ -4,6 +4,7 @@ import { normalizeEmail } from "./accounts";
 import { ADULT_POLICY, eligibility, operator, portal } from "./portal";
 import {
   churchSelect,
+  churchDetailSelect,
   eligibleWhere,
   expected,
   PortalError
@@ -33,7 +34,7 @@ function string(value: unknown, max: number, min = 1): string {
     typeof value !== "string" ||
     value.trim().length < min ||
     value.length > max ||
-    /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(value)
+    /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f\ud800-\udfff]/u.test(value)
   )
     throw new PortalError(400, "Check the required fields and their length.");
   return value.trim();
@@ -208,7 +209,7 @@ export async function getChurchListings(
     const canonical = selected?.churchId
       ? await tx.church.findUnique({
           where: { id: selected.churchId },
-          select: churchSelect
+          select: churchDetailSelect
         })
       : null;
     return {
@@ -317,7 +318,7 @@ export async function churchListingCommand(
       const church = churchId
         ? await tx.church.findUnique({
             where: { id: churchId },
-            select: churchSelect
+            select: churchDetailSelect
           })
         : null;
       if (churchId && !church)

@@ -3,6 +3,7 @@ import {
   PortalError,
   eligibleWhere,
   churchSelect,
+  churchDetailSelect,
   isEligible,
   eligibility,
   expected
@@ -871,11 +872,15 @@ export async function publicChurches(
   churchId?: string,
   cursor?: string,
   query = ""
-) {
+): Promise<Array<
+  Prisma.ChurchGetPayload<{ select: typeof churchSelect }> &
+  Partial<Prisma.ChurchGetPayload<{ select: typeof churchDetailSelect }>> &
+  { connectionsAvailable?: boolean; representativeVerified: boolean }
+>> {
   // Prisma's PostgreSQL contains filter uses LIKE; treat search punctuation literally.
   const search = churchSearchQuery(query).replace(/[\\%_]/g, "\\$&");
   const rows = await db.church.findMany({
-    select: churchSelect,
+    select: churchId ? churchDetailSelect : churchSelect,
     where: churchId
       ? { id: churchId }
       : search
@@ -893,7 +898,7 @@ export async function publicChurches(
         : {},
     ...(!churchId && cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
     orderBy: [{ name: "asc" }, { id: "asc" }],
-    take: 101
+    take: churchId ? 1 : 101
   });
   const managed = await verifiedChurchManagement(
     db,
@@ -1016,7 +1021,7 @@ export async function getPortalSnapshot(
     const church = churchId
       ? ((await tx.church.findUnique({
           where: { id: churchId },
-          select: churchSelect
+          select: churchDetailSelect
         })) ?? undefined)
       : active?.church;
     if (churchId && !church) throw new PortalError(404, "Church not found.");

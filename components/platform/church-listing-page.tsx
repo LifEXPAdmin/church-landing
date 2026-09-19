@@ -376,10 +376,14 @@ export async function ChurchListingPage({
                       label: field.label,
                       value: row.data[name as keyof typeof row.data],
                       maxLength: field.max,
+                      ...("hint" in field ? { hint: field.hint } : {}),
                       type:
                         name === "locationModel"
                           ? "select"
-                          : ["summary", "meetingInfo", "source"].includes(name)
+                          : ("multiline" in field && field.multiline) ||
+                              ["summary", "meetingInfo", "source"].includes(
+                                name
+                              )
                             ? "textarea"
                             : name === "publicEmail"
                               ? "email"

@@ -58,7 +58,7 @@ export async function handleChurchClaimRequest(
       );
     let input: Record<string, unknown>;
     try {
-      input = await readBody(request);
+      input = await readBody(request, 32768);
     } catch {
       throw new PortalError(400, "Check the setup fields.");
     }

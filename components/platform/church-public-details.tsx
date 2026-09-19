@@ -3,6 +3,7 @@ import { ChurchIdentity } from "./church-identity";
 import Link from "next/link";
 import type { ChurchSummary } from "@/lib/platform/portal-types";
 import { portalLinkClass, PortalContactDetails } from "./portal-ui";
+import { churchVisitorFields } from "@/lib/platform/church-listing-data";
 
 export function ChurchPublicDetails({
   church,
@@ -13,6 +14,12 @@ export function ChurchPublicDetails({
   detail?: boolean;
   preview?: boolean;
 }) {
+  const visitorDetails = Object.entries(churchVisitorFields).flatMap(
+    ([key, field]) => {
+      const value = church[key as keyof typeof churchVisitorFields];
+      return value ? [{ key, label: field.label, value }] : [];
+    }
+  );
   return (
     <div className="space-y-4 break-words">
       {detail && !preview && (
@@ -93,6 +100,30 @@ export function ChurchPublicDetails({
                 {church.meetingInfo}
               </p>
             </div>
+          )}
+          {visitorDetails.length > 0 && (
+            <section
+              aria-label="Supplied visitor information"
+              className="space-y-3"
+            >
+              <h3 className="font-semibold text-gc-text">
+                Supplied visitor information
+              </h3>
+              <p className="text-sm text-gc-muted">
+                These details were supplied for this listing. Confirm schedules
+                and arrangements directly with the church.
+              </p>
+              <dl className="space-y-3">
+                {visitorDetails.map(({ key, label, value }) => (
+                  <div key={key}>
+                    <dt className="font-semibold text-gc-text">{label}</dt>
+                    <dd className="whitespace-pre-wrap text-gc-muted">
+                      {value}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
           )}
           {church.denomination && (
             <p className="text-gc-muted">Tradition: {church.denomination}</p>

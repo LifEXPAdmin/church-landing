@@ -1,3 +1,14 @@
+## Visitor-information candidate, 18 September 2026
+
+The [visitor-information feature](CHURCH_VISITOR_INFORMATION_REPORT.md) adds five
+optional supplied facts to public church details and reuses existing private
+correction and authorized representative workflows. Its five isolated service
+groups, types, scoped lint and copy checks pass. Built browser, full regression,
+protected recovery and publication/live gates remain open. Only the fictional
+local database has migration `20260918234500_church_visitor_information`.
+Production remains verified release .11 with 103 migrations. Representative
+review operations retain their separate policy and reviewer activation gate.
+
 ## Verified live publication, 18 September 2026, 23:35 UTC
 
 Release 2026.09.18.11 serves on the canonical domain from main `1fbcf9f`,

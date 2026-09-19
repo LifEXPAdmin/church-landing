@@ -35,6 +35,15 @@ export const churchSelect = {
   denomination: true,
   source: true
 } as const;
+// Long visitor notes belong to a single public profile, not every search row.
+export const churchDetailSelect = {
+  ...churchSelect,
+  serviceTimes: true,
+  accessibilityInfo: true,
+  languages: true,
+  childrenPrograms: true,
+  contactPreferences: true
+} as const;
 export const isEligible = (
   user: Pick<
     PlatformUser,

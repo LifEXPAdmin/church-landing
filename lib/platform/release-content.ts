@@ -14,6 +14,16 @@ export type Feature = {
 };
 export const features: Feature[] = [
   {
+    id: "church-visitor-information",
+    category: "Churches and community",
+    name: "Supplied church visitor information",
+    description: "Read optional service times, accessibility information, languages, children's program notes and visitor contact preferences on a church's public page.",
+    steps: "Find a church and open its page. Confirm schedules and arrangements directly with the church. Use Suggest a correction to save a private draft and send it for independent review.",
+    href: "/platform/churches",
+    eligibility: "Anyone can read published details. Missing information stays blank. Corrections require an eligible signed-in account and independent listing review. Current authorized profile managers use their existing save, preview and publish controls. Supplied facts do not verify representative authority.",
+    availability: "available"
+  },
+  {
     id: "menu-shortcuts",
     category: "Privacy and account",
     name: "Your ordered Menu shortcuts",
@@ -934,6 +944,16 @@ export const features: Feature[] = [
   }
 ];
 export const releases: ReleaseEntry[] = [
+  {
+    id: "church-visitor-information",
+    version: "2026.09.18.12",
+    date: "2026-09-18",
+    summary: "Find supplied visitor information on public church pages.",
+    added: ["Church pages can include optional service times, accessibility information, languages, children's program notes and visitor contact preferences."],
+    improved: ["Visitor details are labeled as supplied information, with a reminder to confirm arrangements directly. Empty fields stay absent.", "Private correction drafts and authorized profile changes use the existing review and publication controls on the same church page."],
+    fixed: ["Long valid multilingual church drafts fit the bounded request limit. Representative forms send each profile field once, and unsupported text is rejected before saving."],
+    featureIds: ["church-visitor-information"]
+  },
   {
     id: "menu-shortcuts-and-profile-sections",
     version: "2026.09.18.11",
