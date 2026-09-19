@@ -1,5 +1,35 @@
 # Supplied church visitor information
 
+## Verified live, 19 September 2026, 01:49 UTC
+
+Release 2026.09.18.12 serves on the canonical domain from main `f096aa3`.
+Deployment `dpl_4mADW94BaaEfHVJ2xMxPpqLbQTVJ` became READY at 01:47:56 UTC;
+independent canonical assignment and exact serving identity matched at 01:48:29.
+Thirty-one live browser/public/privacy groups and six health checks pass, with
+zero browser errors and mutating requests. Actual church discovery omits long
+visitor notes; the public detail preserves its correction entry and does not
+invent absent visitor facts. Private listing and claim endpoints deny guests.
+
+The exact additive migration is applied. All 104 source, production and installed
+recovery checksums match. The fresh installed encrypted backup restores 144 tables
+at 01:43:26 UTC and removes temporary plaintext; 83 retention sets have no issues.
+The separately recorded protected upgrade rehearsal completes current-control
+replay. The installed daily backup remains database-only.
+
+All 144 original production table/column fingerprints remain unchanged through
+01:49:33 UTC. Verification performs zero application-row writes or recipient sends.
+The reserved nonexistent-source queue probe is accepted and consumed; scoped
+runtime logs from READY through 01:49:25 UTC contain zero error or fatal rows.
+This is a bounded observation, not an uptime or delivery guarantee. The provider
+build confirms the expected hydration renderer, 224 traces, 74,369 entries and
+557 server JavaScript files. Local build counts above or below are separate
+environment observations, not a measured performance change.
+
+The five accompanying definitions are published and accepted for their documented
+scope. They activate no media player, reading tracker, family permissions or
+playlist service. Physical-device evidence and the separate representative-review
+policy/reviewer gate remain open. The profile-ordering handoff remains separate.
+
 ## Complete gate passed, 19 September 2026, 01:41 UTC
 
 The uninterrupted isolated support gate exits successfully at 01:41:12 UTC after

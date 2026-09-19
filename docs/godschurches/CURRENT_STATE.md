@@ -1,3 +1,26 @@
+## Visitor information verified live, 19 September 2026, 01:49 UTC
+
+Release 2026.09.18.12 serves from main `f096aa3`, READY deployment
+`dpl_4mADW94BaaEfHVJ2xMxPpqLbQTVJ`, with exact canonical identity confirmed.
+The [visitor information report](CHURCH_VISITOR_INFORMATION_REPORT.md) records
+the 195-file complete gate, 1,242 passes, two expected production skips and zero
+failures; eight local browser groups, 31 live groups and six health checks pass.
+
+The migration and installed recovery registry match all 104 checksums. A fresh
+encrypted backup restores 144 tables with plaintext removed; 83 retention sets
+have no issues. All 144 original production table/column fingerprints remain
+unchanged through 01:49:33 UTC. The reserved queue probe is consumed and scoped
+runtime error/fatal rows are zero through 01:49:25 UTC. Verification makes zero
+application writes or recipient sends. Provider build evidence confirms the
+hydration renderer and 224 runtime traces.
+
+Five reviewed definitions are published: artist identity and credits, private
+reading records, healthy-use settings, family access threats and playlist/private
+progress. Their future runtime and provider gates remain open. No child access is
+activated. Representative-review policy, reviewer appointment and physical-device
+acceptance remain separate. A tested profile-ordering handoff awaits the next
+combined runtime integration.
+
 ## Visitor-information release candidate, 19 September 2026, 01:41 UTC
 
 The [visitor-information feature](CHURCH_VISITOR_INFORMATION_REPORT.md) adds five
