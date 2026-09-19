@@ -168,9 +168,11 @@ const approved = async (id) => {
   await signIn(reviewer);
   await go("/platform/operator/listings/" + id);
   await page
+    .getByRole("form", { name: "Save review decision", exact: true })
     .getByLabel("Decision (required)", { exact: true })
     .selectOption("APPROVE");
   await page
+    .getByRole("form", { name: "Save review decision", exact: true })
     .getByLabel("Reason or requested information")
     .fill("Independently confirmed fictional visitor details");
   await page
@@ -240,16 +242,28 @@ try {
   const id = created.value.id;
   await page.waitForURL("**/platform/church-listings/" + id);
   for (const [key, field] of Object.entries(churchVisitorFields)) {
-    const input = page.getByLabel(field.label, { exact: true });
+    const input = page
+      .getByRole("form", {
+        name: "Save private draft and preview",
+        exact: true
+      })
+      .getByLabel(field.label, { exact: true });
     assert.equal(await input.inputValue(), "");
     assert.equal(await input.getAttribute("maxlength"), String(field.max));
     assert.ok(await input.getAttribute("aria-describedby"));
     await input.fill(details[key]);
   }
-  await page.getByLabel("Service times", { exact: true }).focus();
+  await page
+    .getByRole("form", { name: "Save private draft and preview", exact: true })
+    .getByLabel("Service times", { exact: true })
+    .focus();
   await page.keyboard.press("Tab");
   assert.equal(
     await page
+      .getByRole("form", {
+        name: "Save private draft and preview",
+        exact: true
+      })
       .getByLabel("Accessibility information", { exact: true })
       .evaluate((node) => node === document.activeElement),
     true
@@ -285,9 +299,13 @@ try {
   await approved(id);
   await signIn(null);
   await go("/platform/churches/" + church.id);
+  const visibleVisitorSection = page.getByRole("region", {
+    name: "Supplied visitor information",
+    exact: true
+  });
   for (const value of Object.values(details))
-    await page.getByText(value, { exact: true }).waitFor();
-  await page
+    await visibleVisitorSection.getByText(value, { exact: true }).waitFor();
+  await visibleVisitorSection
     .getByText("Confirm schedules and arrangements directly with the church.", {
       exact: false
     })
@@ -324,10 +342,22 @@ try {
   await page.waitForURL("**/platform/church-listings/" + clear.value.id);
   for (const [key, field] of Object.entries(churchVisitorFields)) {
     assert.equal(
-      await page.getByLabel(field.label, { exact: true }).inputValue(),
+      await page
+        .getByRole("form", {
+          name: "Save private draft and preview",
+          exact: true
+        })
+        .getByLabel(field.label, { exact: true })
+        .inputValue(),
       details[key]
     );
-    await page.getByLabel(field.label, { exact: true }).fill("");
+    await page
+      .getByRole("form", {
+        name: "Save private draft and preview",
+        exact: true
+      })
+      .getByLabel(field.label, { exact: true })
+      .fill("");
   }
   await post("Save private draft and preview", "save");
   await page.waitForURL(
@@ -383,12 +413,22 @@ try {
   );
   maxAuthority.method = "OTHER";
   for (const [key, field] of Object.entries(listingFields)) {
-    const input = page.getByLabel(field.label, { exact: true });
+    const input = page
+      .getByRole("form", {
+        name: "Save private details and preview",
+        exact: true
+      })
+      .getByLabel(field.label, { exact: true });
     if (key === "locationModel") await input.selectOption(maximum[key]);
     else await input.fill(maximum[key]);
   }
   for (const [key, field] of Object.entries(authorityFields)) {
-    const input = page.getByLabel(field.label + " (private)", { exact: true });
+    const input = page
+      .getByRole("form", {
+        name: "Save private details and preview",
+        exact: true
+      })
+      .getByLabel(field.label + " (private)", { exact: true });
     if (key === "method") await input.selectOption("OTHER");
     else await input.fill(maxAuthority[key]);
   }
@@ -466,6 +506,10 @@ try {
   });
   await go("/platform/church-claims/" + claim.id);
   await page
+    .getByRole("form", {
+      name: "Save profile changes and preview",
+      exact: true
+    })
     .getByLabel("Service times", { exact: true })
     .fill(details.serviceTimes);
   const managed = await post(
