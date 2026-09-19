@@ -1,3 +1,18 @@
+## Compatible rollback rehearsed, 19 September 2026, 03:31 UTC
+
+The [compatible rollback rehearsal](COMPATIBLE_ROLLBACK_REPORT.md) passes six
+built HTTPS checks against fictional data. After a deliberate canary failure,
+a different recovery process preserves all 145 table fingerprints, later profile
+ordering, withdrawn sources and revoked church authority. The actual older form
+saves through the current compatible writer without deleting later ordering;
+stale edits return 409. Both previews stop cleanly before acceptance.
+
+This adds QA tooling and a report, with no runtime or production change. The
+existing 195-file complete gate supplies exclusivity, retry, revocation and
+provider-failure evidence. A full older application is not a safe rollback:
+retain current compatible readers/writers and privacy controls. Hosted load,
+device, provider and operator gates remain open. Production remains .13 below.
+
 ## Profile ordering and media Settings verified live, 19 September 2026, 03:05 UTC
 
 Release `2026.09.18.13` serves on the canonical domain from main `03e8397`,
