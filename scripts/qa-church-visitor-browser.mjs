@@ -548,6 +548,58 @@ try {
   ok(
     "Current representative manager saves privately, previews and explicitly publishes on the original church identity"
   );
+  const claimant = await createPortalActor(db, "visitorbrowserdispute");
+  const dispute = await churchClaimCommand(db, claimant.token, {
+    operation: "create",
+    requestKey: randomUUID(),
+    churchId: active.churchId
+  });
+  const unchanged = await db.church.findUniqueOrThrow({
+    where: { id: active.churchId }
+  });
+  await signIn(claimant);
+  await go("/platform/church-claims/" + dispute.id);
+  const disputeForm = page.getByRole("form", {
+    name: "Save private details and preview",
+    exact: true
+  });
+  await disputeForm
+    .getByRole("checkbox", {
+      name: "Manage the public church profile",
+      exact: true
+    })
+    .check();
+  const structureChoice = disputeForm.getByRole("checkbox", {
+    name: "Manage church positions and assignments",
+    exact: true
+  });
+  await structureChoice.check();
+  await structureChoice.uncheck();
+  await disputeForm
+    .getByRole("checkbox", {
+      name: "This is an authority dispute or recovery request",
+      exact: false
+    })
+    .check();
+  const disputed = await post(
+    "Save private details and preview",
+    "save",
+    "church-claims"
+  );
+  assert.equal(disputed.request.dispute, true);
+  assert.equal(disputed.request.scopes.MANAGE_STRUCTURE, false);
+  const privateDispute = (
+    await getChurchClaims(db, claimant.token, { id: dispute.id })
+  ).claims[0];
+  assert.equal(privateDispute.kind, "DISPUTE");
+  assert.deepEqual(privateDispute.scopes, ["MANAGE_CHURCH_PROFILE"]);
+  assert.deepEqual(
+    await db.church.findUniqueOrThrow({ where: { id: active.churchId } }),
+    unchanged
+  );
+  ok(
+    "Existing-church draft keeps explicit dispute and checked/unchecked scope choices without changing public facts or granting access"
+  );
   assert.deepEqual(errors, []);
   writeFileSync(
     output + "/result.json",
