@@ -6,6 +6,7 @@ import { requestSessionToken } from "@/lib/platform/account-boundary";
 import { PortalError } from "@/lib/platform/portal";
 import { withOwnedSession } from "@/lib/platform/account-sessions";
 import { AccountError } from "@/lib/platform/accounts";
+import { getProfileEventChoice } from "@/lib/platform/profile-events";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
@@ -31,6 +32,16 @@ export async function GET(request: Request) {
         }
       );
     const query = new URL(request.url).searchParams;
+    if (query.get("view") === "event-choice")
+      return Response.json(
+        await getProfileEventChoice(
+          prisma,
+          requestSessionToken(request),
+          query.get("occurrenceId"),
+          expectedOwner
+        ),
+        { headers }
+      );
     return Response.json(
       query.get("view") === "member-snapshot"
         ? profileSnapshot(

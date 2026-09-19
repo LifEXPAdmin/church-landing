@@ -1,10 +1,12 @@
 # Profile customization and Settings integration
 
-Integration note, September 19, 2026: the profile-section ordering candidate is
-now combined with this inventory in the integration branch. Its combined runtime
-and live gates remain open. The baseline inventory below retains its original
-source boundary; later Settings work must consume the compatible ordering owner
-once that release is accepted.
+Integration note, September 19, 2026: section ordering is accepted in release
+2026.09.18.13. The next profile-event candidate adds one explicit canonical
+occurrence selection, with current source projection and a preserving writer;
+its full gate and live acceptance remain open. See
+[profile event links](PROFILE_EVENT_LINKS_REPORT.md) for current evidence. The
+baseline inventory below retains its original source boundary; later Settings
+work must consume these compatible owners rather than copy their forms.
 
 ## Verified baseline and scope
 
@@ -41,12 +43,13 @@ skills list. Likewise, adding a Settings entry never enables a missing module.
 | Links                       | Typed modules array, at most 3 `{label,url}` values; label 80, URL 500 before/after normalization      | HTTP/HTTPS only, no credentials or whitespace/control characters; ordinary user-authored anchor, never an automatic embed/fetch.                            |
 | Profile avatar and cover    | Current canonical `PROFILE_AVATAR` / `PROFILE_COVER` media owner and approved photo library references | Existing ownership, purpose, crop, current audience, image processing, version and retry checks. Never arbitrary image paths/provider URLs in profile JSON. |
 | Pinned post                 | Existing personal profile-pin owner and canonical post reference                                       | Recheck current source and owner; no copied post body or independent section pin API.                                                                       |
-| Calendar and featured media | `PROFILE_MODULE_SLOTS` explicitly unavailable                                                          | No writable value, blank tab, misleading toggle or profile grant. A real adapter/selection/current audience projection must precede activation.             |
+| Selected event              | Current candidate: one canonical occurrence reference, explicit choice and profile save                | Each viewer needs source detail access; no copied event, calendar audience, RSVP or busy-only details.                                                      |
+| Featured media              | `PROFILE_MODULE_SLOTS` explicitly unavailable                                                          | No writable value, blank tab, misleading toggle or profile grant. A real adapter/selection/current audience projection must precede activation.             |
 
 The style's TypeScript object alone is not a trust boundary: the server validates
 enumerated palette/background/order values through `validProfileStyle` and
 rejects unknown profile fields. Current modules require exactly testimony,
-skills and links; they reject unknown slots, invalid URLs, unsupported controls
+skills and links, with optional order and selected-event reference; they reject unknown slots, invalid URLs, unsupported controls
 and lone surrogates. Malformed stored module JSON fails closed to empty sections.
 The editor never evaluates authored HTML, CSS or scripts.
 

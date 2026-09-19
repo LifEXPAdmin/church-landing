@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { accountInputClass } from "./account-form";
 import type { ProfileEditorView } from "@/lib/platform/profiles";
 import { ParticipationChoice } from "./participation-choice";
+import { ProfileEventPicker } from "./profile-events";
 import { roleLabels } from "@/lib/platform/format";
 import {
   PROFILE_MODULE_ORDER,
@@ -29,6 +30,10 @@ export function ProfileForm({
   onSaved: () => void;
 }) {
   const [message, setMessage] = useState("");
+  const [calendarOccurrenceId, setCalendarOccurrenceId] = useState(
+    profile.presentation.modules.calendarOccurrenceId
+  );
+  const [eventPending, setEventPending] = useState(false);
   const [moduleOrder, setModuleOrder] = useState<ProfileModuleKind[]>(() => [
     ...(profile.presentation.modules.order ?? PROFILE_MODULE_ORDER)
   ]);
@@ -100,7 +105,7 @@ export function ProfileForm({
       onChangeCapture={() => onDirty(true)}
       onSubmit={async (event) => {
         event.preventDefault();
-        if (busy.current || imagesPending) return;
+        if (busy.current || imagesPending || eventPending) return;
         busy.current = true;
         setPending(true);
         onBusy(true);
@@ -109,6 +114,9 @@ export function ProfileForm({
         setLatest(null);
         const fields = Object.fromEntries(new FormData(event.currentTarget));
         const profileModules = {
+          ...(calendarOccurrenceId !== undefined
+            ? { calendarOccurrenceId }
+            : {}),
           order: moduleOrder,
           testimony: String(fields.moduleTestimony ?? ""),
           skills: String(fields.moduleSkills ?? "")
@@ -324,6 +332,19 @@ export function ProfileForm({
             Links are not embedded or loaded in your profile.
           </p>
         </fieldset>
+        <ProfileEventPicker
+          owner={profile.id}
+          selected={calendarOccurrenceId}
+          disabled={pending || imagesPending}
+          onSelect={(id) => {
+            setCalendarOccurrenceId(id);
+            onDirty(true);
+          }}
+          onBusy={(value) => {
+            setEventPending(value);
+            onBusy(value);
+          }}
+        />
         <fieldset className="min-w-0 space-y-4">
           <legend className="text-2xl">Introduction and about you</legend>
           <p className="text-sm text-gc-muted">
@@ -608,6 +629,21 @@ export function ProfileForm({
                 </dd>
               </div>
               <div>
+                <dt>Selected event</dt>
+                <dd>
+                  {latest.presentation.modules.calendarOccurrenceId ? (
+                    <a
+                      className="gc-profile-text-button"
+                      href={`/platform/events/${encodeURIComponent(latest.presentation.modules.calendarOccurrenceId)}`}
+                    >
+                      Open saved event selection
+                    </a>
+                  ) : (
+                    "None"
+                  )}
+                </dd>
+              </div>
+              <div>
                 <dt>Skills</dt>
                 <dd>
                   {latest.presentation.modules.skills.join(", ") || "Empty"}
@@ -652,7 +688,7 @@ export function ProfileForm({
         )}
         <Button
           type="submit"
-          disabled={pending || imagesPending}
+          disabled={pending || imagesPending || eventPending}
           className="min-h-12 w-full rounded-full sm:w-auto"
         >
           {pending ? "Saving..." : "Save profile"}

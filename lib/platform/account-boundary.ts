@@ -653,6 +653,7 @@ async function processAccountRequest(
       );
     if (error instanceof AccountError) {
       const messages = {
+        "profile-event": "Your selected event is no longer available to add. Check its current access or remove the selection, then save again. Your other edits are still here.",
         "profile-disclosure":
           "Choose Only me for your location. Sharing with members requires a verified email and confirmed adult eligibility.",
         "profile-conflict":

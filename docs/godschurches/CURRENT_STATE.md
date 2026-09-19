@@ -1,3 +1,20 @@
+## Canonical profile event candidate tested, 19 September 2026, 04:13 UTC
+
+[Profile event links](PROFILE_EVENT_LINKS_REPORT.md) now reuse canonical calendar
+occurrences alongside existing church and group views. The owner deliberately
+checks, selects and saves one event. Current source access controls every reader;
+stored reference metadata is stripped from member DTOs. Existing profile versions,
+conflict review, export and opaque recovery protect changes and removals. No
+event, audience or RSVP is copied.
+
+Twenty-eight focused service, HTTP and release-content checks and seven built
+HTTPS browser groups pass. Copied time-zone links reproduce a group-picker gap
+before its repair. Clean builds, type/lint/copy, snapshot revocation and enlarged
+viewport checks pass. The original checkout's heap failure and corrected fixture
+assumptions remain recorded. The complete gate, main integration and live release
+remain open. Production remains .13 below. A rollback must retain the compatible
+calendar-reference decoder and preserving writer together.
+
 ## Compatible rollback rehearsed, 19 September 2026, 03:31 UTC
 
 The [compatible rollback rehearsal](COMPATIBLE_ROLLBACK_REPORT.md) passes six

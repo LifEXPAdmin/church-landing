@@ -12,6 +12,8 @@ export type ProfileModules = {
   links: ProfileLink[];
   // Omitted by older clients. Their content edits must preserve a saved order.
   order?: ProfileModuleKind[];
+  // A reference only. Member readers must resolve it through calendar policy.
+  calendarOccurrenceId?: string | null;
 };
 export type ProfileModuleSection =
   | { kind: "testimony"; text: string }
@@ -25,7 +27,7 @@ export const PROFILE_MODULE_SLOTS = [
   { kind: "links", available: true },
   { kind: "introduction", available: true },
   { kind: "pinned-post", available: true },
-  { kind: "calendar", available: false },
+  { kind: "calendar", available: true },
   { kind: "featured-media", available: false }
 ] as const;
 
@@ -49,12 +51,30 @@ function text(value: unknown, maximum: number) {
 export function validateProfileModules(value: unknown): ProfileModules {
   if (
     !object(value) ||
-    !["links,skills,testimony", "links,order,skills,testimony"].includes(
-      Object.keys(value).sort().join()
+    !["testimony", "skills", "links"].every((key) =>
+      Object.hasOwn(value, key)
+    ) ||
+    Object.keys(value).some(
+      (key) =>
+        ![
+          "testimony",
+          "skills",
+          "links",
+          "order",
+          "calendarOccurrenceId"
+        ].includes(key)
     )
   )
     throw Error("Invalid profile modules");
   const hasOrder = Object.hasOwn(value, "order");
+  const hasCalendar = Object.hasOwn(value, "calendarOccurrenceId");
+  if (
+    hasCalendar &&
+    value.calendarOccurrenceId !== null &&
+    (typeof value.calendarOccurrenceId !== "string" ||
+      !/^[A-Za-z0-9_-]{1,100}$/.test(value.calendarOccurrenceId))
+  )
+    throw Error("Invalid profile event reference");
   if (
     hasOrder &&
     (!Array.isArray(value.order) ||
@@ -98,7 +118,10 @@ export function validateProfileModules(value: unknown): ProfileModules {
     testimony,
     skills,
     links,
-    ...(hasOrder ? { order: [...(value.order as ProfileModuleKind[])] } : {})
+    ...(hasOrder ? { order: [...(value.order as ProfileModuleKind[])] } : {}),
+    ...(hasCalendar
+      ? { calendarOccurrenceId: value.calendarOccurrenceId as string | null }
+      : {})
   };
 }
 // Old or malformed JSON is never projected as arbitrary profile content.

@@ -7,7 +7,11 @@ import {
   groupJoinPolicies,
   groupKinds
 } from "@/lib/platform/group-options";
-import { groupAcceptFields, groupLeaderField, groupConfirmField } from "@/lib/platform/group-form-fields";
+import {
+  groupAcceptFields,
+  groupLeaderField,
+  groupConfirmField
+} from "@/lib/platform/group-form-fields";
 import type { readGroup, groupEligibility } from "@/lib/platform/group-reads";
 import { socialRequest } from "@/lib/platform/social-client";
 import { usePrivateChoiceAction } from "./use-private-choice-action";
@@ -512,11 +516,14 @@ export function GroupEventForm({
             if (
               url.origin !== location.origin ||
               !match ||
-              url.search ||
-              url.hash
+              [...url.searchParams.keys()].some((key) => key !== "timeZone") ||
+              url.searchParams.getAll("timeZone").length > 1 ||
+              url.hash ||
+              url.username ||
+              url.password
             )
               throw new Error(
-                "Paste the event page link from this website, without extra query or fragment values."
+                "Paste the event page link from this website, without extra options or fragment values."
               );
             const { data } = await socialRequest<NonNullable<typeof choice>>(
               `${endpoint}?${new URLSearchParams({ view: "event-choice", slug, occurrenceId: match[1] })}`,

@@ -14,6 +14,16 @@ export type Feature = {
 };
 export const features: Feature[] = [
   {
+    id: "profile-selected-event",
+    category: "Privacy and account",
+    name: "An existing event on your profile",
+    description: "Choose one existing event for About. Its original time, location, cancellation state and audience still apply.",
+    steps: "Open Edit member profile, paste an event page link, check the original event and choose Use this event. Save profile to apply it. Remove selected event and save to clear only the profile link.",
+    href: "/platform/profile/me",
+    eligibility: "A verified adult account and current event access are required to choose an event. Each profile viewer must also have current access to its details. Busy-only sharing reveals no event details. Selection does not publish a calendar or RSVP.",
+    availability: "available"
+  },
+  {
     id: "media-settings-layout",
     category: "Privacy and account",
     name: "Media availability and photo data use",
@@ -50,7 +60,7 @@ export const features: Feature[] = [
     description: "Add your own plain-text testimony, skills and labeled links to the About section of your profile.",
     steps: "Open Settings, Edit member profile. Fill the optional sections, move My testimony, Skills and Links up or down, then save. Leave a section empty to hide it. Its place in the order is retained. Review newer saved values if another session changed your profile.",
     href: "/platform/profile/me",
-    eligibility: "Only you edit your profile. Filled sections are visible to permitted signed-in members. Private account and church-directory contact details are not copied into these fields. Calendar and featured-media sections are not available here.",
+    eligibility: "Only you edit your profile. Filled sections are visible to permitted signed-in members. Private account and church-directory contact details are not copied into these fields. A selected event uses its own current audience. Featured-media sections are not available here.",
     availability: "available"
   },
   {
@@ -954,6 +964,16 @@ export const features: Feature[] = [
   }
 ];
 export const releases: ReleaseEntry[] = [
+  {
+    id: "canonical-profile-event-links",
+    version: "2026.09.18.14",
+    date: "2026-09-18",
+    summary: "Show an existing event on your profile while keeping its original audience and RSVP.",
+    added: ["Check an event page link, deliberately select it and save it to About. Remove the selection without changing the original event."],
+    improved: ["Church, group and profile event views reflect the same event edits and cancellation. Current source permissions determine which details each viewer can see.", "Profile conflict review includes the saved event choice. Older editors preserve it, and protected recovery prevents a removed selection from returning."],
+    fixed: ["Event links copied from calendar pages work in group and profile pickers with their display time zone."],
+    featureIds: ["profile-selected-event", "optional-profile-sections", "gather-groups"]
+  },
   {
     id: "profile-section-order-and-media-settings",
     version: "2026.09.18.13",

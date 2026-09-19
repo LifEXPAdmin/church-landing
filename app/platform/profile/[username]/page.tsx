@@ -1,5 +1,6 @@
 import { ProfilePhotos } from "@/components/platform/profile-photos";
 import { ProfileModuleContent } from "@/components/platform/profile-modules";
+import { LocalEventTime } from "@/components/platform/local-event-time";
 import { profileModuleSections } from "@/lib/platform/profile-modules";
 import { createHash } from "node:crypto";
 import { profileSnapshot } from "@/lib/platform/profile-snapshot";
@@ -181,6 +182,7 @@ export default async function MemberProfilePage({
     profile.location ||
     profile.website ||
     profile.interests.length ||
+    profile.selectedEvent ||
     profileModuleSections(profile.presentation.modules).length
   );
   const about = hasAbout ? (
@@ -217,6 +219,24 @@ export default async function MemberProfilePage({
         </div>
       )}
       <ProfileModuleContent modules={profile.presentation.modules} />
+      {profile.selectedEvent && (
+        <section aria-labelledby="profile-event-heading" className="space-y-3">
+          <h3 id="profile-event-heading" className="text-xl">
+            Selected event
+          </h3>
+          <p className="font-semibold">{profile.selectedEvent.title}</p>
+          <p className="text-sm text-gc-muted">
+            {profile.selectedEvent.source}
+          </p>
+          {profile.selectedEvent.canceled && (
+            <p className="font-semibold">Canceled</p>
+          )}
+          {profile.selectedEvent.location && (
+            <p>{profile.selectedEvent.location}</p>
+          )}
+          <LocalEventTime event={profile.selectedEvent} rsvp />
+        </section>
+      )}
     </section>
   ) : null;
   const postSection = (

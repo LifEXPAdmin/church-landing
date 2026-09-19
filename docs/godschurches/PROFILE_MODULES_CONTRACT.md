@@ -15,19 +15,19 @@ church appointment, management capability or new audience.
 | Skills         | Typed optional modules, up to 10 distinct entries of 60 characters                                                       |
 | Links          | Typed optional modules, up to 3 labeled HTTP/HTTPS links                                                                 |
 | Pinned post    | Existing personal profile pin service; recheck the canonical post and source audience on every read                      |
-| Calendar       | Reserved and unavailable until an explicit owner selection and current calendar/event audience projection are integrated |
+| Calendar       | One explicitly selected canonical event occurrence, resolved through current calendar audience and block checks          |
 | Featured media | Reserved and unavailable until a published media owner and current source projection exist                               |
 
 `PROFILE_MODULE_SLOTS` is the typed inventory. Unavailable slots are rejected as
-input and produce no placeholder, blank tab or enabled control. Calendar and
-featured collections remain separate consumers of this contract.
+input and produce no placeholder, blank tab or enabled control. Calendar references
+and featured collections remain separate consumers of this contract.
 Existing About/Posts ordering and the canonical pinned post remain working.
 This change does not create media or calendar copies in profile JSON.
 
 ## Input and display
 
 The versioned account profile endpoint accepts `profileModules` with required
-`testimony`, `skills` and `links`, plus optional `order`. Strings and arrays have strict bounds; unknown
+`testimony`, `skills` and `links`, plus optional `order` and `calendarOccurrenceId`. Strings and arrays have strict bounds; unknown
 fields, duplicate skills, malformed links and unsupported modules are rejected.
 Text rejects unsupported C0 controls, DEL and lone UTF-16 surrogates before any
 profile write. Ordinary tabs, line breaks and valid multilingual or emoji text
@@ -57,6 +57,37 @@ does not remove stored content, but its old editor can submit those empty fields
 on a subsequent ordinary save. Do not deploy that incompatible rollback; retain
 the compatible read/write owners or ship a forward fix. Do not restore an older
 database to reverse an interface change.
+
+The optional calendar reference is a bounded occurrence identity or explicit
+`null` for removal. Omission by an older editor preserves the existing reference.
+Checking a same-site event link is read-only; the owner separately chooses it and
+saves the profile. Links copied from calendar pages may include their display
+`timeZone`, which is discarded before lookup. Unknown query parameters, fragments,
+credentials and other origins are rejected. A changed selection requires a
+verified adult and current access to a noncanceled canonical event inside the
+same permission transaction as the versioned profile save. Ordinary edits may
+retain an unavailable existing reference; retaining it never restores access.
+
+Member profiles resolve that reference with the viewer's current calendar policy,
+including church membership, personal-calendar sharing and blocks. Busy-only
+access reveals no profile event. The reader removes the stored reference from
+module JSON before serializing it, then separately returns only current permitted
+event details. Generic member preview assumes no church membership or ownership;
+visitor preview remains identity-only. Source edits, cancellations and visibility
+changes participate in the existing private snapshot checksum. The event card
+links to the original RSVP page and creates no attendance, event or calendar copy.
+Removing a selection leaves the original event and its RSVP records intact.
+
+The calendar reference shares the existing module export and opaque recovery
+control. Replay clears an obsolete restored reference and advances its version;
+newer reviewed choices survive older receipts. Release the compatible decoder,
+reference-preserving writer and reader together. The previous strict decoder
+also treats modules containing `calendarOccurrenceId` as empty, so an unmodified
+older application is not a compatible rollback after this field is saved. Keep
+these current owners when rolling back an interface, or ship a forward fix.
+The three reorderable sections remain testimony, skills and links; the selected
+event has its own position in About rather than silently extending that order.
+
 Each link needs a label of at most 80 characters and an address of at most 500
 characters before and after URL normalization. Only HTTP/HTTPS without embedded
 credentials or whitespace/control characters is supported. Links are ordinary

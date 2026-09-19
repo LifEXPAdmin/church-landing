@@ -9,6 +9,7 @@ import { postReadableWhere, withPostRead } from "./post-access";
 import { PortalError } from "./portal-policy";
 import { imagesAvailable } from "./media-storage";
 import { readProfileModules } from "./profile-modules";
+import { profileEventIn } from "./profile-events";
 
 export const profilePresentationSelect = {
   version: true,
@@ -135,6 +136,14 @@ export function getMemberProfile(
     const relationshipsVisible =
       (profile.id === context.actorId && !memberPreview) ||
       socialPreferences?.showRelationships !== false;
+    const { calendarOccurrenceId, ...visibleModules } = readProfileModules(
+      profile.presentation?.modules
+    );
+    const selectedEvent = await profileEventIn(
+      tx,
+      reader,
+      calendarOccurrenceId
+    );
     return {
       ...visibleProfile,
       location:
@@ -152,8 +161,9 @@ export function getMemberProfile(
         : { followers: null, following: null },
       presentation: {
         ...(profile.presentation ?? defaultProfileStyle),
-        modules: readProfileModules(profile.presentation?.modules)
+        modules: visibleModules
       },
+      selectedEvent,
       avatar,
       cover,
       posts,

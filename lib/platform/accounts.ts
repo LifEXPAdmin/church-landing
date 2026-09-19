@@ -23,6 +23,8 @@ import {
   type ProfileModules
 } from "./profile-modules";
 import { isEligible } from "./portal-policy";
+import { profileEventIn } from "./profile-events";
+import { postContext } from "./post-access";
 import { recordDiscoveryControl } from "./retention-controls";
 import {
   isGoogleCredential,
@@ -430,9 +432,31 @@ export async function updateAccountProfile(
       throw new AccountError("profile-conflict");
     // Clients predating section ordering can still edit content without silently
     // resetting the owner's arrangement. The same profile version guards both.
-    const savedOrder = readProfileModules(presentation?.modules).order;
+    const savedModules = readProfileModules(presentation?.modules);
+    const savedOrder = savedModules.order;
     if (modules && !modules.order && savedOrder)
       modules = { ...modules, order: savedOrder };
+    if (
+      modules &&
+      !Object.hasOwn(modules, "calendarOccurrenceId") &&
+      Object.hasOwn(savedModules, "calendarOccurrenceId")
+    )
+      modules = {
+        ...modules,
+        calendarOccurrenceId: savedModules.calendarOccurrenceId
+      };
+    if (
+      modules?.calendarOccurrenceId &&
+      modules.calendarOccurrenceId !== savedModules.calendarOccurrenceId
+    ) {
+      if (!isEligible(locationState)) throw new AccountError("profile-event");
+      const event = await profileEventIn(
+        tx,
+        await postContext(tx, current.id),
+        modules.calendarOccurrenceId
+      );
+      if (!event || event.canceled) throw new AccountError("profile-event");
+    }
     const style = customized
       ? {
           palette: String(input.palette),
