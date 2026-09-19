@@ -1,5 +1,17 @@
 # Optional profile section ordering
 
+## Verified release, September 19, 2026, 03:05 UTC
+
+Release `2026.09.18.13`, main `03e8397`, is READY on the canonical domain through
+deployment `dpl_5G72qDXmCaLijBcQtb6kwASxyfZn`. Exact serving identity, 32 live
+public/privacy/browser groups and six health checks pass with zero browser
+errors or mutating browser requests. Authenticated order persistence, conflict,
+recovery and current-audience behavior passed the isolated combined checks below.
+All 144 original production table/column fingerprints are unchanged. No new
+migration, application write or recipient send occurred during verification.
+Physical-device checks and future calendar/media adapters remain separate.
+The older incompatible reader/writer must not be deployed as a rollback.
+
 ## Combined complete gate, September 19, 2026, 02:57 UTC
 
 The exact combined application `0900d3f` passes all 195 discovered regression

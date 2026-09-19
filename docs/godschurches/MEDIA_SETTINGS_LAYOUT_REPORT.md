@@ -1,5 +1,18 @@
 # Media and data use settings layout
 
+## Verified release, September 19, 2026, 03:05 UTC
+
+Release `2026.09.18.13`, main `03e8397`, is READY on the canonical domain through
+deployment `dpl_5G72qDXmCaLijBcQtb6kwASxyfZn`. Exact serving identity, published
+feature/release guidance and safe media Settings sign-in return pass within
+32 live public/privacy/browser groups. Six health checks pass, with zero
+browser errors, mutating browser requests, application writes or recipient sends.
+The authenticated layout, caption discovery and browser-local photo Data saver
+were verified in the isolated built-browser suite below. All 144 original
+production table/column fingerprints are unchanged; no migration was required.
+This accepts the layout only. Actual playback/captions/video-quality preferences,
+upload hosting and physical-device acceptance keep their separate gates.
+
 ## Combined complete gate, September 19, 2026, 02:57 UTC
 
 The combined application `0900d3f` passes all 195 discovered regression files,

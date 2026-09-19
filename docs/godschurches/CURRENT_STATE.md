@@ -1,3 +1,30 @@
+## Profile ordering and media Settings verified live, 19 September 2026, 03:05 UTC
+
+Release `2026.09.18.13` serves on the canonical domain from main `03e8397`,
+READY deployment `dpl_5G72qDXmCaLijBcQtb6kwASxyfZn`. The deployment became ready
+at 03:04:04 UTC; exact canonical identity matched at 03:04:17 UTC. Only engineering
+reports differ from the tested application `0900d3f`. Profile ordering and the
+media Settings layout pass their combined local acceptance, 32 live public and
+privacy groups and six health checks. There are zero browser errors or mutating
+browser requests. Authenticated edits were verified in isolated fictional
+environments; physical-device acceptance remains separate.
+
+All 144 original production table/column fingerprints remain unchanged through
+03:05:12 UTC. All 104 source, production and installed recovery checksums match,
+rechecked at 03:07:39 UTC after a transient read-only transport failure. There are
+no new migrations. The installed encrypted restore covers 144 tables and removes
+plaintext; 83 retention sets have no issues. The unique nonexistent-source queue
+probe is consumed and scoped runtime error/fatal rows are zero through 03:05:09
+UTC. Verification makes zero application writes or recipient sends. Provider
+build evidence confirms the expected hydration renderer and 224 runtime traces.
+
+Four definitions are published: finite clips, profile customization, native-media
+budget/retention and duplicate/campus resolution. Definition acceptance activates
+no media hosting, player, merge command or new authority. Their real-case,
+owner/provider and implementation gates remain open. The older strict profile
+decoder/editor is incompatible with ordered modules; retain the compatible
+reader and writer together in a rollback, or ship a forward fix.
+
 ## Combined profile and media release gate passed, 19 September 2026, 02:57 UTC
 
 Candidate `0900d3f` passes all 195 discovered regression files: 1,243 passing
