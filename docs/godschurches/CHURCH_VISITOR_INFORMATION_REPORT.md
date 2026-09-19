@@ -1,5 +1,36 @@
 # Supplied church visitor information
 
+## Local verification, 19 September 2026, 00:17 UTC
+
+Application candidate `9d6d00d` passes the production build and eight real-browser
+HTTPS groups. The correction owner saves privately, a separate reviewer approves,
+and guests see supplied information on the original church URL. Clearing remains
+private until review. The representative form saves the maximum multilingual
+profile and authority fields in one 29,435-byte request; current profile managers
+preview before publishing. An existing-church draft preserves its explicit
+dispute flag and checked/unchecked permission choices without granting access or
+changing public facts. There are zero browser errors or external sends.
+
+Public details fit 320, 390 and 1,440 pixel viewports and doubled text size without
+horizontal overflow. Keyboard focus and optional field labels/hints pass. The
+actual renderer repair remains verified; the local build has 224 traces, 74,462
+entries and 558 server JavaScript files. Long visitor fields remain absent from
+bulk church rows. No speed improvement is claimed from these checks.
+
+The fresh encrypted production-copy rehearsal upgrades 103 to 104 migrations,
+preserves all 144 original table/column fingerprints and completes protected
+replay. Temporary plaintext is removed and production is unchanged. Installed
+production recovery acceptance remains a later publication gate.
+
+The first combined gate stopped at a historical whole-row metrics fingerprint
+because the newly added empty Church columns changed the serialized row shape.
+The harness now compares the original columns and separately requires all five
+new visitor fields to remain empty. The complete corrected gate is running from
+00:10:29 UTC; no complete-gate pass is claimed yet. Initial browser harness
+attempts needed response capture before hard navigation, required-label matching
+and scoping to the current accessible form rather than cached hidden markup.
+Those test-only fixes are committed separately; application code remains `9d6d00d`.
+
 ## Candidate implementation, 18 September 2026
 
 Five optional public fields extend the canonical Church record: service times,

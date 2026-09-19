@@ -3,9 +3,11 @@
 The [visitor-information feature](CHURCH_VISITOR_INFORMATION_REPORT.md) adds five
 optional supplied facts to public church details and reuses existing private
 correction and authorized representative workflows. Its five isolated service
-groups, types, scoped lint and copy checks pass. Built browser, full regression,
-protected recovery and publication/live gates remain open. Only the fictional
-local database has migration `20260918234500_church_visitor_information`.
+groups, types, scoped lint, copy, production build and eight built HTTPS browser
+groups pass. A protected production-copy upgrade preserves all 144 original
+table/column fingerprints from 103 to 104 migrations. The complete regression
+gate is running; installed recovery and publication/live gates remain open.
+Only isolated databases have migration `20260918234500_church_visitor_information`.
 Production remains verified release .11 with 103 migrations. Representative
 review operations retain their separate policy and reviewer activation gate.
 
