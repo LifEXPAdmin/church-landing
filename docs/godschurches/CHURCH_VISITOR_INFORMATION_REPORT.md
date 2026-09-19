@@ -31,8 +31,16 @@ and stopped during its production build when Node exhausted its configured
 the complete gate did not pass. The earlier independent build passed in a clean
 source export. A full retry began at 00:27:54 UTC in a new isolated export with
 all 1,777 tracked files verified, independent dependencies and no initial build
-cache. The application is unchanged, and no complete-gate pass is claimed yet.
-Both failed attempts and their diagnostics are retained. Initial browser harness
+cache. Both production builds passed in that clean workspace with the same heap
+limit. That run stopped at 00:49:31 UTC because the private wrapper inherited an
+enabled push fixture while the messaging HTTP baseline expected push disabled.
+The product correctly reported the supplied configuration. The wrapper now uses
+the standalone harness environment and does not inherit application fixtures.
+All six messaging HTTP checks pass with the corrected baseline. The focused
+rerun also needed the matching source working directory for the protected local
+recovery store; that guard remained intact. A new complete run began at
+00:55:28 UTC. The application and assertions are unchanged; no complete-gate pass
+is claimed yet. Failed attempts and diagnostics are retained. Initial browser harness
 attempts needed response capture before hard navigation, required-label matching
 and scoping to the current accessible form rather than cached hidden markup.
 Those test-only fixes are committed separately; application code remains `9d6d00d`.

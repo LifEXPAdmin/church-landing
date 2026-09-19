@@ -6,9 +6,11 @@ correction and authorized representative workflows. Its five isolated service
 groups, types, scoped lint, copy, production build and eight built HTTPS browser
 groups pass. A protected production-copy upgrade preserves all 144 original
 table/column fingerprints from 103 to 104 migrations. The complete regression
-gate is running in a fresh source export after the previous attempt exhausted
-Node's heap during its build. The application is unchanged; installed recovery
-and publication/live gates remain open.
+gate is running in a fresh source export with the standalone harness environment.
+Clean builds resolved the earlier heap failure; the wrapper's inherited push
+fixture was then removed to restore the expected disabled-push baseline. Six
+focused messaging HTTP checks pass. The application is unchanged; installed
+recovery and publication/live gates remain open.
 Only isolated databases have migration `20260918234500_church_visitor_information`.
 Production remains verified release .11 with 103 migrations. Representative
 review operations retain their separate policy and reviewer activation gate.
