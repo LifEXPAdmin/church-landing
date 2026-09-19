@@ -1,3 +1,18 @@
+## Combined profile and media release gate passed, 19 September 2026, 02:57 UTC
+
+Candidate `0900d3f` passes all 195 discovered regression files: 1,243 passing
+executions, zero failures or cancellations, and two expected production-stage
+skips whose cases passed in development. The complete isolated run takes 45.17
+minutes and all 1,786 tracked source files match afterward. Thirty-nine focused
+checks and 25 built HTTPS browser groups also pass, with zero page errors.
+Types, scoped lint, copy and the independent production build pass.
+
+No schema, migration, dependency, provider or environment change is required.
+The installed encrypted recovery source and all 104 migration checksums match;
+the latest restore verifies 144 tables and removes temporary plaintext. Main
+publication and exact live acceptance remain open. Rollback must preserve both
+the compatible profile-module decoder and its order-preserving write owner.
+
 ## Profile ordering and media Settings integration, 19 September 2026
 
 The next candidate combines [profile section ordering](PROFILE_MODULE_ORDER_REPORT.md)

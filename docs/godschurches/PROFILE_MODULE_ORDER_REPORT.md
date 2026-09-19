@@ -1,5 +1,16 @@
 # Optional profile section ordering
 
+## Combined complete gate, September 19, 2026, 02:57 UTC
+
+The exact combined application `0900d3f` passes all 195 discovered regression
+files, with 1,243 passing executions, zero failures or cancellations and two
+expected production-stage skips whose cases passed in development. The run
+takes 45.17 minutes; all 1,786 frozen tracked source files remain unchanged.
+This includes the current ordering and protected replay checks. Together with
+the 39 focused checks and 25 built HTTPS browser groups below, local combined
+acceptance is complete. Main publication and verified live acceptance remain
+open. The compatibility requirement below still governs any rollback.
+
 ## Combined integration checkpoint, September 19, 2026
 
 Application candidate `0900d3f` combines ordering with the media Settings layout

@@ -1,5 +1,16 @@
 # Media and data use settings layout
 
+## Combined complete gate, September 19, 2026, 02:57 UTC
+
+The combined application `0900d3f` passes all 195 discovered regression files,
+with 1,243 passing executions, zero failures or cancellations and two expected
+production-stage skips whose cases passed in development. The uninterrupted
+run takes 45.17 minutes and leaves all 1,786 tracked source files unchanged.
+Combined local acceptance includes 39 focused checks and 25 built HTTPS browser
+groups, including all six media and six display groups. Main publication and
+exact live verification remain open. This layout activates no media provider
+or unavailable playback, caption or video-quality preference.
+
 ## Combined integration checkpoint, September 19, 2026
 
 Application candidate `0900d3f` combines this layout with profile-section
