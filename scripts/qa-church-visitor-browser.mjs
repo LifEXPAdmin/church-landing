@@ -126,25 +126,50 @@ const waitUntil = async (work) => {
 };
 
 const post = async (button, operation, endpoint = "church-listings") => {
-  const response = page.waitForResponse(
-    (r) =>
-      r.url().endsWith("/api/platform/" + endpoint) &&
-      r.request().method() === "POST" &&
-      r.request().postDataJSON().operation === operation
-  );
-  await page.getByRole("button", { name: button, exact: true }).click();
-  const result = await response;
-  assert.equal(result.status(), 200, await result.text());
-  return {
-    value: await result.json(),
-    request: result.request().postDataJSON(),
-    bytes: Buffer.byteLength(result.request().postData())
+  const url = "**/api/platform/" + endpoint;
+  let resolve, reject;
+  const observed = new Promise((yes, no) => {
+    resolve = yes;
+    reject = no;
+  });
+  const handler = async (route) => {
+    const request = route.request();
+    if (
+      request.method() !== "POST" ||
+      request.postDataJSON().operation !== operation
+    )
+      return route.continue();
+    try {
+      // Forward once and retain the real response before the form navigates.
+      const response = await route.fetch();
+      const body = await response.body();
+      assert.equal(response.status(), 200, body.toString());
+      const result = {
+        value: JSON.parse(body.toString()),
+        request: request.postDataJSON(),
+        bytes: Buffer.byteLength(request.postData())
+      };
+      await route.fulfill({ response, body });
+      resolve(result);
+    } catch (error) {
+      reject(error);
+      await route.abort();
+    }
   };
+  await page.route(url, handler);
+  try {
+    await page.getByRole("button", { name: button, exact: true }).click();
+    return await observed;
+  } finally {
+    await page.unroute(url, handler);
+  }
 };
 const approved = async (id) => {
   await signIn(reviewer);
   await go("/platform/operator/listings/" + id);
-  await page.getByLabel("Decision", { exact: true }).selectOption("APPROVE");
+  await page
+    .getByLabel("Decision (required)", { exact: true })
+    .selectOption("APPROVE");
   await page
     .getByLabel("Reason or requested information")
     .fill("Independently confirmed fictional visitor details");
@@ -467,7 +492,7 @@ try {
   await page
     .getByRole("checkbox", {
       name: "I confirm these details are intended to be public on the church page.",
-      exact: true
+      exact: false
     })
     .check();
   await post("Publish profile preview", "profile-publish", "church-claims");
@@ -498,6 +523,16 @@ try {
   );
   console.log("RESULT " + output);
 } catch (error) {
+  await page
+    .screenshot({ path: output + "/failure.png", fullPage: true })
+    .catch(() => {});
+  writeFileSync(
+    output + "/failure-page.txt",
+    await page
+      .locator("body")
+      .innerText()
+      .catch(() => "Unavailable")
+  );
   writeFileSync(
     output + "/failure.json",
     JSON.stringify({ message: String(error), results, errors }, null, 2)

@@ -424,9 +424,9 @@ try {
       ]
     ],
     ["PlatformPostComment", ["groupId"]],
+    ["Church", ["serviceTimes", "accessibilityInfo", "languages", "childrenPrograms", "contactPreferences"]],
     ...[
       "PlatformFollow",
-      "Church",
       "TopicCommunity",
       "SupportCase",
       "PlatformOperatorGrant",
@@ -1006,6 +1006,19 @@ try {
       if (snapshot() !== before || psql(["-Atc", `SELECT count(*) FROM "SocialPreferences" WHERE "notificationEmailSince" IS NOT NULL`]).trim() !== "0")
         throw Error("Optional social email migration changed existing choices or backfilled consent/delivery");
       console.log("Optional social email migration preserves all previous choices and events; no opt-in or historical delivery is inferred.");
+    } else if (name === "20260918234500_church_visitor_information") {
+      // Fingerprint original columns explicitly so additive defaults are not
+      // mistaken for changes to historical church facts by the metrics gate.
+      const originals = JSON.parse(psql(["-Atc", `SELECT json_agg(json_build_object('table',table_name,'columns',cols) ORDER BY table_name) FROM (SELECT table_name,json_agg(column_name ORDER BY ordinal_position) AS cols FROM information_schema.columns WHERE table_schema='public' AND table_name<>'_prisma_migrations' GROUP BY table_name) x`]));
+      const ident = value => '"' + value.replaceAll('"', '""') + '"';
+      const snapshot = () => originals.map(row => psql(["-Atc", `SELECT md5(coalesce(jsonb_agg(to_jsonb(t) ORDER BY to_jsonb(t)::text)::text,'[]')) FROM (SELECT ${row.columns.map(ident).join(',')} FROM ${ident(row.table)}) t`]).trim());
+      const before = snapshot();
+      psql(["-f", `prisma/migrations/${name}/migration.sql`]);
+      if (JSON.stringify(snapshot()) !== JSON.stringify(before))
+        throw Error("Visitor information migration changed an original column");
+      if (psql(["-Atc", `SELECT count(*) FROM "Church" WHERE "serviceTimes"<>'' OR "accessibilityInfo"<>'' OR "languages"<>'' OR "childrenPrograms"<>'' OR "contactPreferences"<>''`]).trim() !== "0")
+        throw Error("Visitor information migration inferred supplied facts");
+      console.log(`Visitor information upgrade preserves original columns in ${originals.length} tables and leaves all five supplied fields empty.`);
     } else psql(["-f", `prisma/migrations/${name}/migration.sql`]);
   }
   if (beforeMetrics) {
