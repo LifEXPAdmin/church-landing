@@ -1,3 +1,17 @@
+## Canonical event release gate passed, 19 September 2026, 05:01 UTC
+
+Candidate `26ae2be` passes all 197 discovered test files: 1,249 passes, zero
+failures/cancellations and two expected production skips. The complete isolated
+run takes 45.75 minutes; all 1,795 tracked source files remain unchanged. The
+[profile event report](PROFILE_EVENT_LINKS_REPORT.md) records 28 focused checks,
+seven built HTTPS browser groups, copied-link repair, privacy/recovery coverage
+and runtime cost. The combined candidate retains the prior Groups release and
+includes the compatible rollback rehearsal plus preceding release reports.
+
+No migration or provider configuration change is required. All 104 installed
+and production migration checksums match. Main publication and exact live
+acceptance remain open; production still serves .13 until those checks pass.
+
 ## Canonical profile event candidate tested, 19 September 2026, 04:13 UTC
 
 [Profile event links](PROFILE_EVENT_LINKS_REPORT.md) now reuse canonical calendar

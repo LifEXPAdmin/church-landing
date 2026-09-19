@@ -1,7 +1,7 @@
 # Profile event links
 
-September 19, 2026 UTC. Focused implementation acceptance passes. The complete
-release gate and live acceptance remain open; this is not yet a merged release.
+September 19, 2026 UTC. Focused acceptance and the complete release gate pass.
+Main publication and live acceptance remain open at this checkpoint.
 
 Church agendas and group event links already read canonical calendar occurrences.
 Personal profiles now add an explicit optional selection of one existing event.
@@ -89,4 +89,25 @@ This extends the existing church, group and personal-profile surfaces. Artist an
 venture runtime owners do not yet exist and are not created by this adapter.
 Their future surfaces must reuse these canonical records and current audience
 checks when their own prerequisites are met. No migration, new provider,
-dependency, background worker or production write is introduced by this feature.
+dependency or background worker is introduced. Saving or removing a selection
+uses the existing profile write owner; acceptance writes use fictional fixtures.
+
+## Complete release gate, 05:01 UTC
+
+Runtime candidate `26ae2be` passes all 197 discovered test files: 1,249 passes,
+zero failures or cancellations, and two expected production-stage skips whose
+cases passed in development. The isolated run completed from 04:15:54 to
+05:01:40 UTC in 45.75 minutes across 211 execution groups. All 1,795 tracked
+source files match the frozen commit after cleanup. Production HTML/RSC privacy,
+fresh migrations, synthetic backup/restore and the production build pass.
+
+The seven browser groups exercise the unchanged application implementation;
+only public release metadata, documentation and the QA script differ from that
+browser export. The full gate tests the final metadata and source. Live release
+notes, serving identity and privacy checks remain required before acceptance.
+
+At 04:58 UTC, all 104 production/source/installed migration checksums match,
+with none pending. The installed encrypted restore verifies 144 tables with
+plaintext removed; 83 retained backup sets have no issues. A read-only snapshot
+of all 144 original production tables is saved for the post-verification
+comparison. No schema, migration, dependency or provider configuration changes.
