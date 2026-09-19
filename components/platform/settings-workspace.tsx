@@ -21,6 +21,7 @@ import { SettingsSafety } from "./settings-safety";
 import { SettingsData } from "./settings-data";
 import { SettingsHelp } from "./settings-help";
 import { SettingsChurch } from "./settings-church";
+import { SettingsMedia } from "./settings-media";
 
 const positions = new Map<string, { y: number; focus: string }>();
 let positionOwner: string | null = null;
@@ -370,6 +371,7 @@ export function SettingsWorkspace({
               {folder === "safety" && !active && <SettingsSafety />}
               {folder === "data" && !active && <SettingsData />}
               {folder === "help" && !active && <SettingsHelp />}
+              {folder === "media" && !active && <SettingsMedia />}
               {folder === "communities" && !active && (
                 <section
                   className="gc-settings space-y-3"
@@ -396,6 +398,7 @@ export function SettingsWorkspace({
               )}
               {folder === "church" && !active && <SettingsChurch data={data} />}
               {folder &&
+                folder !== "media" &&
                 !active &&
                 rows(
                   entries.filter(

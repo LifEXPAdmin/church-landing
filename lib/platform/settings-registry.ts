@@ -28,6 +28,11 @@ export const settingsFolders = [
     description: "Comfortable text, motion and photo data use."
   },
   {
+    id: "media",
+    label: "Media and data use",
+    description: "Playback availability, captions and photo data use."
+  },
+  {
     id: "notifications",
     label: "Notifications",
     description: "Current conversation controls and alert availability."
@@ -183,6 +188,30 @@ const help = {
 };
 
 export const settingsRegistry: readonly SettingRegistration[] = Object.freeze([
+  entry(
+    "media.playback", "media", "Playback and audio",
+    "Video and audio playback settings are not available yet. Opening a link on another website uses that website’s playback controls.",
+    ["autoplay", "mute", "sound", "video", "music"],
+    { href: "/platform/settings/media" },
+    { persistenceOwner: "maintained media availability", read: "settings-media.tsx playback explanation", write: null },
+    { valueType: "information", state: "explanation" }
+  ),
+  entry(
+    "media.captions", "media", "Captions",
+    "Video captions and caption preferences are not available here yet. On another website, check its player for available captions. Photo descriptions are separate from video captions.",
+    ["subtitles", "closed captions", "accessibility"],
+    { href: "/platform/settings/media" },
+    { persistenceOwner: "maintained media availability", read: "settings-media.tsx captions explanation", write: null },
+    { valueType: "information", state: "explanation" }
+  ),
+  entry(
+    "media.quality", "media", "Quality and data use",
+    "Data saver loads smaller photos on supported pages until you choose to open them. It applies to this browser. Opening a larger photo can use more data. Video quality choices are not available yet.",
+    ["bandwidth", "data saver", "photo quality", "mobile data"],
+    { href: "/platform/settings/media" },
+    linked("reading-preferences.ts browser-local reduceData"),
+    { scope: "browser", valueType: "information", state: "explanation" }
+  ),
   entry(
     "communities.groups", "communities", "My group choices",
     "Review your membership and separate group roster choices. Membership does not make your name public.",
