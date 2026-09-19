@@ -22,11 +22,12 @@ preserves all 144 original table/column fingerprints and completes protected
 replay. Temporary plaintext is removed and production is unchanged. Installed
 production recovery acceptance remains a later publication gate.
 
-The first combined gate stopped at a historical whole-row metrics fingerprint
-because the newly added empty Church columns changed the serialized row shape.
-The harness now compares the original columns and separately requires all five
-new visitor fields to remain empty. That attempt ran from 00:10:29 to 00:23:19 UTC
-and stopped during its production build when Node exhausted its configured
+The first combined gate ran from 00:06:41 to 00:06:52 UTC and stopped at a
+historical whole-row metrics fingerprint because the newly added empty Church
+columns changed the serialized row shape. The harness now compares the original
+columns and separately requires all five new visitor fields to remain empty.
+The next attempt ran from 00:10:29 to 00:23:19 UTC and stopped during its
+production build when Node exhausted its configured
 6 GiB heap. All test groups reached before the build reported zero failures;
 the complete gate did not pass. The earlier independent build passed in a clean
 source export. A full retry began at 00:27:54 UTC in a new isolated export with
@@ -39,11 +40,23 @@ the standalone harness environment and does not inherit application fixtures.
 All six messaging HTTP checks pass with the corrected baseline. The focused
 rerun also needed the matching source working directory for the protected local
 recovery store; that guard remained intact. A new complete run began at
-00:55:28 UTC. The application and assertions are unchanged; no complete-gate pass
-is claimed yet. Failed attempts and diagnostics are retained. Initial browser harness
+00:55:28 UTC. A separate read-only review confirms that the wrapper excludes
+browser fixtures and the exported harness uses its own database, origins,
+secrets, sinks and certificate trust. The application and assertions are
+unchanged; no complete-gate pass is claimed yet. Failed attempts and diagnostics
+are retained. Initial browser harness
 attempts needed response capture before hard navigation, required-label matching
 and scoping to the current accessible form rather than cached hidden markup.
 Those test-only fixes are committed separately; application code remains `9d6d00d`.
+
+Five reviewed definitions accompany the publication candidate: [artist identity
+and release credits](ARTIST_RELEASE_CONTRACT.md), [private reading records](READING_RECORDS_CONTRACT.md),
+[healthy-use settings](HEALTHY_USE_SETTINGS_CONTRACT.md), [family access threats](FAMILY_ACCESS_THREAT_MODEL.md)
+and [playlist ownership and private progress](PLAYLIST_PROGRESS_CONTRACT.md).
+They change documentation only. Their application, provider, cleanup and family
+activation requirements remain open; they do not activate those capabilities.
+Optional profile-section ordering is a separately tested, reviewed runtime
+handoff and is excluded from this application candidate.
 
 ## Candidate implementation, 18 September 2026
 

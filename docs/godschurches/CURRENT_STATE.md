@@ -15,6 +15,12 @@ Only isolated databases have migration `20260918234500_church_visitor_informatio
 Production remains verified release .11 with 103 migrations. Representative
 review operations retain their separate policy and reviewer activation gate.
 
+The candidate also integrates five reviewed definitions: artist identity and
+credits, private reading records, healthy-use settings, family access threats
+and playlist/private-progress ownership. They activate no runtime or provider.
+The independently tested profile-section ordering handoff is reviewed and awaits
+the next combined runtime integration after this release checkpoint.
+
 ## Verified live publication, 18 September 2026, 23:35 UTC
 
 Release 2026.09.18.11 serves on the canonical domain from main `1fbcf9f`,
