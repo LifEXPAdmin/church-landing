@@ -1,5 +1,23 @@
 # Optional profile section ordering
 
+## Combined integration checkpoint, September 19, 2026
+
+Application candidate `0900d3f` combines ordering with the media Settings layout
+after release .12. All 39 focused checks pass, including module writes/replay and
+current church authority foundations. The independent production build, types,
+scoped lint and copy checks pass. Eight ordering, five existing profile-editor,
+six media and six display browser groups pass on the same built HTTPS source,
+with zero page errors. The existing profile-editor regression is now verified
+after the final movement-label correction. All 1,786 tracked source files match
+the frozen build export afterward. The complete regression gate is running;
+main publication and exact live acceptance remain open.
+
+A pure old/current decoder reproduction confirms that reverting to the old
+strict decoder yields an empty profile-module projection, which its old editor
+can submit as a valid empty save. The rollback rule below therefore requires
+the compatible reader and writer. This was not a production rollback or a
+database mutation. The current implementation remains unchanged.
+
 ## Behavior and compatibility
 
 Members can move testimony, skills and links within About using the existing
@@ -25,9 +43,12 @@ the latest stored order before explicitly applying the retained draft.
 No schema, migration, package or provider change is required. The existing opaque
 module recovery control protects the complete document, including ordering.
 Stale restored content is cleared, newer reviewed saves remain, and erased owners
-are not recreated. Own account export includes the order. A rollback to the older
-strict decoder hides documents containing the unrecognized order field, without
-erasing their contents; deploy the compatible decoder and editor together.
+are not recreated. Own account export includes the order. The older strict decoder
+projects documents containing the unrecognized order field as empty. That read
+alone does not erase stored content, but the old editor can submit those empty
+fields on its next ordinary save. Do not deploy an incompatible rollback. Retain
+the compatible decoder and order-preserving write owner together, or ship a
+forward fix. Restoring an older database is not a safe way to undo this interface.
 
 ## Verification checkpoint
 

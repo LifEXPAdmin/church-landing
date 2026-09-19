@@ -1,5 +1,17 @@
 # Media and data use settings layout
 
+## Combined integration checkpoint, September 19, 2026
+
+Application candidate `0900d3f` combines this layout with profile-section
+ordering after release .12. All 39 focused checks and 25 built HTTPS browser
+groups pass, including the six media and six display groups below and the
+existing profile image/conflict journeys. Types, scoped lint, copy and the
+independent production build pass. Its output has 224 runtime traces, 74,462
+entries and 558 server JavaScript files; the expected hydration renderer matches.
+No controlled performance improvement is claimed. The complete regression gate
+is running and publication/live acceptance remain open. No schema, migration,
+dependency, provider or environment change is required.
+
 ## Implemented candidate
 
 September 19, 2026 candidate based on integrated `1fbcf9f`. The single Settings

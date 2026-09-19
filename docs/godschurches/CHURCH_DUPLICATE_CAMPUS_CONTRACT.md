@@ -201,3 +201,15 @@ Definition acceptance does not mean a merge occurred, campus support shipped or
 the claim operating gate opened. The immediate result is an implementable review
 and preservation contract; real-case justification and runtime acceptance remain
 explicit prerequisites to building it.
+
+## Definition verification
+
+An independent read-only review checked actual Church/connection relations,
+stable ID routes, membership, listing review and claim activation against this
+design without a blocking finding. The existing single active affiliation limit
+is explicit in the campus section. Eight existing listing and eight claim-service
+groups pass within the combined candidate's 39 focused checks. They verify reused
+identity/authority foundations, not a merge implementation. Relative links,
+private-reference, formatting and diff checks pass. There is no new runtime,
+query, dependency, production write or measured performance result for this
+definition. Future runtime acceptance above remains open until implementation.
