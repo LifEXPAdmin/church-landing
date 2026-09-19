@@ -1,3 +1,19 @@
+## Profile ordering and media Settings integration, 19 September 2026
+
+The next candidate combines [profile section ordering](PROFILE_MODULE_ORDER_REPORT.md)
+and the [media Settings layout](MEDIA_SETTINGS_LAYOUT_REPORT.md). Their reviewed
+source commits integrate without conflict after verified release .12. No schema,
+migration, package, provider or environment change is required. Combined local,
+recovery and live acceptance remain open; production still serves `f096aa3`.
+
+The batch includes reviewed definitions for [finite clips](FINITE_CLIPS_CONTRACT.md),
+[profile customization](PROFILE_CUSTOMIZATION_CONTRACT.md),
+[native media budgets](NATIVE_MEDIA_BUDGET_CONTRACT.md) and
+[duplicate/campus resolution](CHURCH_DUPLICATE_CAMPUS_CONTRACT.md). These add no
+runtime feature or authority. Native hosting retains its owner/provider/cost
+gates. Church resolution requires a real case before implementation and preserves
+original private membership scopes even when public listings are consolidated.
+
 ## Visitor information verified live, 19 September 2026, 01:49 UTC
 
 Release 2026.09.18.12 serves from main `f096aa3`, READY deployment

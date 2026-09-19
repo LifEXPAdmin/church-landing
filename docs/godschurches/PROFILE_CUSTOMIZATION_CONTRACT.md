@@ -1,5 +1,11 @@
 # Profile customization and Settings integration
 
+Integration note, September 19, 2026: the profile-section ordering candidate is
+now combined with this inventory in the integration branch. Its combined runtime
+and live gates remain open. The baseline inventory below retains its original
+source boundary; later Settings work must consume the compatible ordering owner
+once that release is accepted.
+
 ## Verified baseline and scope
 
 September 19, 2026 inventory against integrated `1fbcf9f`. Profile appearance,

@@ -14,6 +14,16 @@ export type Feature = {
 };
 export const features: Feature[] = [
   {
+    id: "media-settings-layout",
+    category: "Privacy and account",
+    name: "Media availability and photo data use",
+    description: "Find playback, caption and video quality availability together in Settings, with a link to the existing photo Data saver choice.",
+    steps: "Open Settings, Media and data use. Choose Data saver in Appearance and reading to change Reduce photo data for this browser.",
+    href: "/platform/settings/media",
+    eligibility: "Requires sign-in. Video and audio playback, caption preferences and video quality controls are not available here yet. Other websites keep their own player controls.",
+    availability: "available"
+  },
+  {
     id: "church-visitor-information",
     category: "Churches and community",
     name: "Supplied church visitor information",
@@ -38,7 +48,7 @@ export const features: Feature[] = [
     category: "Privacy and account",
     name: "Optional testimony, skills and profile links",
     description: "Add your own plain-text testimony, skills and labeled links to the About section of your profile.",
-    steps: "Open Settings, Edit member profile. Fill the optional sections and save. Leave a section empty to remove it. Review newer saved values if another session changed your profile.",
+    steps: "Open Settings, Edit member profile. Fill the optional sections, move My testimony, Skills and Links up or down, then save. Leave a section empty to hide it. Its place in the order is retained. Review newer saved values if another session changed your profile.",
     href: "/platform/profile/me",
     eligibility: "Only you edit your profile. Filled sections are visible to permitted signed-in members. Private account and church-directory contact details are not copied into these fields. Calendar and featured-media sections are not available here.",
     availability: "available"
@@ -944,6 +954,16 @@ export const features: Feature[] = [
   }
 ];
 export const releases: ReleaseEntry[] = [
+  {
+    id: "profile-section-order-and-media-settings",
+    version: "2026.09.18.13",
+    date: "2026-09-18",
+    summary: "Arrange your profile sections and find media availability in Settings.",
+    added: ["Choose the order of My testimony, Skills and Links in Edit profile. Your saved order appears in About, and empty sections stay hidden.", "Media and data use brings playback, captions and quality availability together, with a working link to browser-local photo Data saver."],
+    improved: ["Keyboard movement keeps focus on the section you moved. Order-only edits use the existing unsaved-change and latest-saved review controls.", "Unavailable playback, caption and video quality capabilities are explained without presenting them as saved preferences."],
+    fixed: [],
+    featureIds: ["optional-profile-sections", "media-settings-layout"]
+  },
   {
     id: "church-visitor-information",
     version: "2026.09.18.12",
