@@ -90,6 +90,19 @@ the actual representative transport remains within that boundary.
 
 ## Checks and remaining gates
 
+### Release and rollback compatibility
+
+The migration is additive and keeps existing Church IDs, versions, memberships
+and claims. Apply it before serving the new detail selectors. Prefer a reviewed
+forward fix after publication. Any interface rollback must retain the new field
+projection and validation: the prior application does not include visitor fields
+when reading or replacing private listing/profile JSON, so it cannot safely
+round-trip drafts created with these fields. Retain the columns and recovery
+registry rather than dropping supplied facts or restoring a stale database to
+undo an interface change. No rollback has been performed by this verification.
+
+### Verification scope
+
 Five isolated service/boundary groups pass: blank/default/bounded Unicode;
 independent, self, revoked and stale correction review with deliberate clearing;
 private incomplete drafts and owner-only export; current representative profile
