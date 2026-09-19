@@ -18,7 +18,8 @@ test("opaque module replay clears old content, preserves newer choices and preve
     b = await createPortalActor(db, "moduleunrelated");
   const original = {
     ...emptyProfileModules(),
-    testimony: "Withdrawn testimony marker"
+    testimony: "Withdrawn testimony marker",
+    order: ["links", "skills", "testimony"]
   };
   await updateAccountProfile(db, a.token, {
     name: a.name,

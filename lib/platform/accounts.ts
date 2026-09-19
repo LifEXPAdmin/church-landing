@@ -17,7 +17,11 @@ import {
 } from "@prisma/client";
 import { activePublicAccount } from "./public-profile";
 import { defaultProfileStyle, validProfileStyle } from "./profile-style";
-import { validateProfileModules, type ProfileModules } from "./profile-modules";
+import {
+  readProfileModules,
+  validateProfileModules,
+  type ProfileModules
+} from "./profile-modules";
 import { isEligible } from "./portal-policy";
 import { recordDiscoveryControl } from "./retention-controls";
 import {
@@ -424,6 +428,11 @@ export async function updateAccountProfile(
       input.expectedVersion !== (presentation?.version ?? 0)
     )
       throw new AccountError("profile-conflict");
+    // Clients predating section ordering can still edit content without silently
+    // resetting the owner's arrangement. The same profile version guards both.
+    const savedOrder = readProfileModules(presentation?.modules).order;
+    if (modules && !modules.order && savedOrder)
+      modules = { ...modules, order: savedOrder };
     const style = customized
       ? {
           palette: String(input.palette),

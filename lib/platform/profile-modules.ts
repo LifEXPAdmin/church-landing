@@ -1,8 +1,17 @@
 export type ProfileLink = { label: string; url: string };
+export const PROFILE_MODULE_ORDER = ["testimony", "skills", "links"] as const;
+export type ProfileModuleKind = (typeof PROFILE_MODULE_ORDER)[number];
+export const profileModuleLabels: Record<ProfileModuleKind, string> = {
+  testimony: "My testimony",
+  skills: "Skills",
+  links: "Links"
+};
 export type ProfileModules = {
   testimony: string;
   skills: string[];
   links: ProfileLink[];
+  // Omitted by older clients. Their content edits must preserve a saved order.
+  order?: ProfileModuleKind[];
 };
 export type ProfileModuleSection =
   | { kind: "testimony"; text: string }
@@ -40,9 +49,20 @@ function text(value: unknown, maximum: number) {
 export function validateProfileModules(value: unknown): ProfileModules {
   if (
     !object(value) ||
-    Object.keys(value).sort().join() !== "links,skills,testimony"
+    !["links,skills,testimony", "links,order,skills,testimony"].includes(
+      Object.keys(value).sort().join()
+    )
   )
     throw Error("Invalid profile modules");
+  const hasOrder = Object.hasOwn(value, "order");
+  if (
+    hasOrder &&
+    (!Array.isArray(value.order) ||
+      value.order.length !== PROFILE_MODULE_ORDER.length ||
+      new Set(value.order).size !== PROFILE_MODULE_ORDER.length ||
+      value.order.some((kind) => !PROFILE_MODULE_ORDER.includes(kind)))
+  )
+    throw Error("Invalid profile module order");
   const testimony = text(value.testimony, 2000);
   if (
     !Array.isArray(value.skills) ||
@@ -74,7 +94,12 @@ export function validateProfileModules(value: unknown): ProfileModules {
       throw Error("Invalid profile link");
     return { label, url: parsed.href };
   });
-  return { testimony, skills, links };
+  return {
+    testimony,
+    skills,
+    links,
+    ...(hasOrder ? { order: [...(value.order as ProfileModuleKind[])] } : {})
+  };
 }
 // Old or malformed JSON is never projected as arbitrary profile content.
 export function readProfileModules(value: unknown): ProfileModules {
@@ -87,7 +112,7 @@ export function readProfileModules(value: unknown): ProfileModules {
 export function profileModuleSections(
   value: ProfileModules
 ): ProfileModuleSection[] {
-  return [
+  const sections: ProfileModuleSection[] = [
     ...(value.testimony
       ? [{ kind: "testimony" as const, text: value.testimony }]
       : []),
@@ -98,4 +123,6 @@ export function profileModuleSections(
       ? [{ kind: "links" as const, items: value.links }]
       : [])
   ];
+  const order = value.order ?? PROFILE_MODULE_ORDER;
+  return sections.sort((a, b) => order.indexOf(a.kind) - order.indexOf(b.kind));
 }

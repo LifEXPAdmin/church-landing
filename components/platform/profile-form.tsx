@@ -6,6 +6,11 @@ import type { ProfileEditorView } from "@/lib/platform/profiles";
 import { ParticipationChoice } from "./participation-choice";
 import { roleLabels } from "@/lib/platform/format";
 import {
+  PROFILE_MODULE_ORDER,
+  profileModuleLabels,
+  type ProfileModuleKind
+} from "@/lib/platform/profile-modules";
+import {
   PROFILE_BACKGROUNDS,
   PROFILE_ORDERS,
   PROFILE_PALETTES
@@ -24,6 +29,29 @@ export function ProfileForm({
   onSaved: () => void;
 }) {
   const [message, setMessage] = useState("");
+  const [moduleOrder, setModuleOrder] = useState<ProfileModuleKind[]>(() => [
+    ...(profile.presentation.modules.order ?? PROFILE_MODULE_ORDER)
+  ]);
+  const [orderMessage, setOrderMessage] = useState("");
+  function moveModule(
+    kind: ProfileModuleKind,
+    offset: number,
+    control: HTMLButtonElement
+  ) {
+    const from = moduleOrder.indexOf(kind),
+      to = from + offset;
+    if (to < 0 || to >= moduleOrder.length) return;
+    const next = [...moduleOrder];
+    [next[from], next[to]] = [next[to], next[from]];
+    setModuleOrder(next);
+    setOrderMessage(
+      `${profileModuleLabels[kind]} moved to position ${to + 1} of ${next.length}.`
+    );
+    onDirty(true);
+    // Keep keyboard focus on the same control after its keyed row moves.
+    // Boundary controls stay focusable with aria-disabled and guarded actions.
+    requestAnimationFrame(() => control.focus());
+  }
   const [pending, setPending] = useState(false);
   const busy = useRef(false);
   const feedback = useRef<HTMLParagraphElement>(null);
@@ -81,6 +109,7 @@ export function ProfileForm({
         setLatest(null);
         const fields = Object.fromEntries(new FormData(event.currentTarget));
         const profileModules = {
+          order: moduleOrder,
           testimony: String(fields.moduleTestimony ?? ""),
           skills: String(fields.moduleSkills ?? "")
             .split("\n")
@@ -179,6 +208,56 @@ export function ProfileForm({
             Leave a section empty to remove it. These fields do not copy your
             private account or church-directory contact details.
           </p>
+          <fieldset
+            className="min-w-0 space-y-3"
+            aria-describedby="profile-module-order-help"
+          >
+            <legend className="text-lg">Optional section order</legend>
+            <p id="profile-module-order-help" className="text-sm text-gc-muted">
+              Choose the order within About. Empty sections stay hidden and keep
+              their position for when you add content. Save your profile to
+              apply this order, then use Preview to check the saved view.
+            </p>
+            <ol className="space-y-3">
+              {moduleOrder.map((kind, index) => (
+                <li
+                  key={kind}
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-gc-divider p-3"
+                >
+                  <span>
+                    {index + 1}. {profileModuleLabels[kind]}
+                  </span>
+                  <span className="flex min-w-0 flex-wrap gap-2">
+                    <button
+                      type="button"
+                      className="gc-profile-text-button min-h-11 shrink-0 whitespace-nowrap px-2 aria-disabled:opacity-40"
+                      aria-disabled={index === 0}
+                      aria-label={`Move ${profileModuleLabels[kind]} up`}
+                      onClick={(event) =>
+                        moveModule(kind, -1, event.currentTarget)
+                      }
+                    >
+                      Up
+                    </button>
+                    <button
+                      type="button"
+                      className="gc-profile-text-button min-h-11 shrink-0 whitespace-nowrap px-2 aria-disabled:opacity-40"
+                      aria-disabled={index === moduleOrder.length - 1}
+                      aria-label={`Move ${profileModuleLabels[kind]} down`}
+                      onClick={(event) =>
+                        moveModule(kind, 1, event.currentTarget)
+                      }
+                    >
+                      Down
+                    </button>
+                  </span>
+                </li>
+              ))}
+            </ol>
+            <p className="sr-only" role="status">
+              {orderMessage}
+            </p>
+          </fieldset>
           <label className="block" htmlFor="profile-testimony">
             My testimony (optional)
           </label>
@@ -518,6 +597,14 @@ export function ProfileForm({
                 <dt>Testimony</dt>
                 <dd className="whitespace-pre-wrap">
                   {latest.presentation.modules.testimony || "Empty"}
+                </dd>
+              </div>
+              <div>
+                <dt>Optional section order</dt>
+                <dd>
+                  {(latest.presentation.modules.order ?? PROFILE_MODULE_ORDER)
+                    .map((kind) => profileModuleLabels[kind])
+                    .join(", ")}
                 </dd>
               </div>
               <div>

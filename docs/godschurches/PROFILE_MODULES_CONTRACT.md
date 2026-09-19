@@ -7,32 +7,53 @@ church appointment, management capability or new audience.
 
 ## Section inventory
 
-| Slot | Canonical owner and supported behavior |
-| --- | --- |
-| Biography | Existing `PlatformUser.bio`, 500 characters, plain text |
-| Introduction | Existing `ProfilePresentation.introduction`, 1,000 characters |
-| Testimony | Typed optional modules, 2,000 characters, plain text |
-| Skills | Typed optional modules, up to 10 distinct entries of 60 characters |
-| Links | Typed optional modules, up to 3 labeled HTTP/HTTPS links |
-| Pinned post | Existing personal profile pin service; recheck the canonical post and source audience on every read |
-| Calendar | Reserved and unavailable until an explicit owner selection and current calendar/event audience projection are integrated |
-| Featured media | Reserved and unavailable until a published media owner and current source projection exist |
+| Slot           | Canonical owner and supported behavior                                                                                   |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Biography      | Existing `PlatformUser.bio`, 500 characters, plain text                                                                  |
+| Introduction   | Existing `ProfilePresentation.introduction`, 1,000 characters                                                            |
+| Testimony      | Typed optional modules, 2,000 characters, plain text                                                                     |
+| Skills         | Typed optional modules, up to 10 distinct entries of 60 characters                                                       |
+| Links          | Typed optional modules, up to 3 labeled HTTP/HTTPS links                                                                 |
+| Pinned post    | Existing personal profile pin service; recheck the canonical post and source audience on every read                      |
+| Calendar       | Reserved and unavailable until an explicit owner selection and current calendar/event audience projection are integrated |
+| Featured media | Reserved and unavailable until a published media owner and current source projection exist                               |
 
 `PROFILE_MODULE_SLOTS` is the typed inventory. Unavailable slots are rejected as
-input and produce no placeholder, blank tab or enabled control. Calendar, featured
-collections and new section ordering are separate consumers of this contract.
+input and produce no placeholder, blank tab or enabled control. Calendar and
+featured collections remain separate consumers of this contract.
 Existing About/Posts ordering and the canonical pinned post remain working.
 This change does not create media or calendar copies in profile JSON.
 
 ## Input and display
 
-The versioned account profile endpoint accepts `profileModules` with exactly
-`testimony`, `skills` and `links`. Strings and arrays have strict bounds; unknown
+The versioned account profile endpoint accepts `profileModules` with required
+`testimony`, `skills` and `links`, plus optional `order`. Strings and arrays have strict bounds; unknown
 fields, duplicate skills, malformed links and unsupported modules are rejected.
 Text rejects unsupported C0 controls, DEL and lone UTF-16 surrogates before any
 profile write. Ordinary tabs, line breaks and valid multilingual or emoji text
 remain supported. These rules keep bounded normalized content compatible with
 PostgreSQL JSONB and its storage limit; malformed stored content still fails closed.
+
+Optional `order` must be an exact permutation of `testimony`, `skills` and
+`links`. New editors provide keyboard-accessible Up and Down controls within
+the existing form. Reordering marks unsaved changes and takes effect only after
+an explicit successful save. Empty sections remain hidden without losing their
+chosen position. Older records use testimony, skills, links in that order.
+Older clients that omit `order` preserve a valid saved order, even when editing
+module content. An explicit default permutation resets the arrangement. Unknown,
+duplicate, missing or unavailable identities are rejected without a write.
+
+This arrangement changes only enabled modules inside About. It leaves biography,
+introduction, About/Posts order, photos and pinned posts with their existing
+owners. Saved member preview and real member viewing use the same projection and
+renderer. Visitor preview remains identity-only. The conflict review displays
+the saved module order before allowing retained edits to overwrite that version.
+Ordering shares the existing modules JSON, editor version and protected recovery
+receipt; no migration, new permission or visibility switch is introduced. It is
+included in own export and cleared together with obsolete restored module content.
+Deploy this compatible decoder with its editor. Rolling back to the earlier
+strict decoder hides modules containing `order` rather than exposing unknown data;
+it does not remove stored content.
 Each link needs a label of at most 80 characters and an address of at most 500
 characters before and after URL normalization. Only HTTP/HTTPS without embedded
 credentials or whitespace/control characters is supported. Links are ordinary

@@ -94,6 +94,98 @@ test("typed modules bound text and links, reject unsupported slots and discard m
   );
 });
 
+test("module order persists through legacy content edits, preserves audiences and rejects unsupported or stale changes", async () => {
+  const a = await createPortalActor(db, "moduleorder"),
+    b = await createPortalActor(db, "orderreader");
+  const ordered = validateProfileModules({
+    ...modules,
+    order: ["links", "skills", "testimony"]
+  });
+  await save(a, ordered);
+  for (const view of [
+    await getProfileEditor(db, a.token),
+    await getMemberProfile(db, b.token, a.username),
+    await getMemberProfile(db, a.token, a.username, { preview: "member" })
+  ]) {
+    assert.deepEqual(view.presentation.modules, ordered);
+    assert.deepEqual(
+      profileModuleSections(view.presentation.modules).map((s) => s.kind),
+      ordered.order
+    );
+  }
+  assert.deepEqual(await getVisitorProfilePreview(db, a.token, a.username), {
+    name: a.name,
+    username: a.username
+  });
+  await save(a, { ...modules, testimony: "Older module editor" });
+  assert.deepEqual(
+    (await getProfileEditor(db, a.token)).presentation.modules.order,
+    ordered.order
+  );
+  const before = await db.profilePresentation.findUniqueOrThrow({
+    where: { userId: a.id }
+  });
+  const receipts = await db.retentionControl.count({
+    where: { kind: "PROFILE_MODULES", sourceId: a.id }
+  });
+  for (const order of [
+    null,
+    undefined,
+    "links",
+    [],
+    ["skills"],
+    ["skills", "skills", "links"],
+    ["links", "skills", "calendar"],
+    ["testimony", "skills", "links", "featured-media"],
+    [0, 1, 2]
+  ]) {
+    const invalid = { ...modules, order };
+    await assert.rejects(save(a, invalid), /profile/);
+    assert.deepEqual(readProfileModules(invalid), emptyProfileModules());
+  }
+  await assert.rejects(
+    save(a, ordered, { expectedVersion: before.version - 1 }),
+    /profile-conflict/
+  );
+  assert.deepEqual(
+    await db.profilePresentation.findUniqueOrThrow({ where: { userId: a.id } }),
+    before
+  );
+  assert.equal(
+    await db.retentionControl.count({
+      where: { kind: "PROFILE_MODULES", sourceId: a.id }
+    }),
+    receipts
+  );
+  await save(a, emptyProfileModules());
+  const empty = (await getProfileEditor(db, a.token)).presentation.modules;
+  assert.deepEqual(empty.order, ordered.order);
+  assert.deepEqual(profileModuleSections(empty), []);
+  await save(a, modules);
+  assert.deepEqual(
+    profileModuleSections(
+      (await getProfileEditor(db, a.token)).presentation.modules
+    ).map((s) => s.kind),
+    ordered.order
+  );
+  const proof = await prepareAccountExport(
+    db,
+    a.token,
+    a.password,
+    process.env.AUTH_RATE_LIMIT_SECRET!
+  );
+  const content = await downloadAccountExport(
+    db,
+    a.token,
+    proof.authorization,
+    process.env.AUTH_RATE_LIMIT_SECRET!
+  );
+  assert.deepEqual(
+    JSON.parse(content).account.presentation.modules.order,
+    ordered.order
+  );
+});
+
 test("HTTP accepts bounded multilingual profile sections and rejects oversized profile and ordinary account bodies", async () => {
   const actor = await createPortalActor(db, "moduleunicode");
   const origin = process.env.ACCOUNT_ORIGIN!;
@@ -149,22 +241,32 @@ test("HTTP accepts bounded multilingual profile sections and rejects oversized p
 
 test("module text rejects unsupported controls and lone surrogates while preserving ordinary Unicode and whitespace", () => {
   const characters = [
-    ...Array.from({ length: 32 }, (_, index) => String.fromCharCode(index))
-      .filter((character) => !["\t", "\n", "\r"].includes(character)),
-    "\u007f", "\ud800", "\udfff"
+    ...Array.from({ length: 32 }, (_, index) =>
+      String.fromCharCode(index)
+    ).filter((character) => !["\t", "\n", "\r"].includes(character)),
+    "\u007f",
+    "\ud800",
+    "\udfff"
   ];
   for (const character of characters) {
     for (const value of [
       { ...modules, testimony: "Before" + character + "after" },
       { ...modules, skills: ["Skill" + character] },
-      { ...modules, links: [{ label: "Label" + character, url: "https://example.test" }] },
-      { ...modules, links: [{ label: "Link", url: "https://example.test/" + character }] }
+      {
+        ...modules,
+        links: [{ label: "Label" + character, url: "https://example.test" }]
+      },
+      {
+        ...modules,
+        links: [{ label: "Link", url: "https://example.test/" + character }]
+      }
     ]) {
       assert.throws(() => validateProfileModules(value));
       assert.deepEqual(readProfileModules(value), emptyProfileModules());
     }
   }
   const allowed = {
+    order: ["links", "skills", "testimony"],
     testimony: "中文 🙂\nSecond line\r\n\tالعربية",
     skills: ["日本語 🙂", "Музыка"],
     links: [{ label: "作品 🙂", url: "https://example.test/作品" }]
@@ -181,32 +283,46 @@ test("HTTP rejects PostgreSQL-incompatible module text without profile or recove
   await save(actor, modules);
   const origin = process.env.ACCOUNT_ORIGIN!;
   const state = async () => ({
-    account: await db.platformUser.findUniqueOrThrow({ where: { id: actor.id } }),
-    presentation: await db.profilePresentation.findUniqueOrThrow({ where: { userId: actor.id } }),
+    account: await db.platformUser.findUniqueOrThrow({
+      where: { id: actor.id }
+    }),
+    presentation: await db.profilePresentation.findUniqueOrThrow({
+      where: { userId: actor.id }
+    }),
     recovery: await db.retentionControl.findMany({
-      where: { sourceId: actor.id }, orderBy: { id: "asc" }
+      where: { sourceId: actor.id },
+      orderBy: { id: "asc" }
     })
   });
   const before = await state();
   const request = (value: unknown) => {
     const body = JSON.stringify({
-      operation: "update-profile", name: actor.name,
-      expectedVersion: before.presentation.version, profileModules: value
+      operation: "update-profile",
+      name: actor.name,
+      expectedVersion: before.presentation.version,
+      profileModules: value
     });
     assert.ok(Buffer.byteLength(body) < 32768);
     return new Request(origin + "/api/platform/account", {
-      method: "POST", headers: {
-        origin, "content-type": "application/json",
+      method: "POST",
+      headers: {
+        origin,
+        "content-type": "application/json",
         cookie: "church_platform_session=" + actor.token,
         "x-expected-account": actor.id
-      }, body
+      },
+      body
     });
   };
   const oversizedEscapes = {
     testimony: "\u0001".repeat(2000),
-    skills: Array.from({ length: 10 }, (_, index) => index + "\u0001".repeat(59)),
+    skills: Array.from(
+      { length: 10 },
+      (_, index) => index + "\u0001".repeat(59)
+    ),
     links: Array.from({ length: 3 }, () => ({
-      label: "\u0001".repeat(80), url: "https://example.test/" + "x".repeat(470)
+      label: "\u0001".repeat(80),
+      url: "https://example.test/" + "x".repeat(470)
     }))
   };
   assert.equal(Buffer.byteLength(JSON.stringify(oversizedEscapes)), 18596);
@@ -216,18 +332,28 @@ test("HTTP rejects PostgreSQL-incompatible module text without profile or recove
     { ...modules, testimony: "Lone\ud800surrogate" },
     { ...modules, testimony: "Lone\udfffsurrogate" },
     { ...modules, skills: ["Unsupported\u000bcontrol"] },
-    { ...modules, links: [{ label: "Unsupported\u007fcontrol", url: "https://example.test" }] },
-    { ...modules, links: [{ label: "Link", url: "https://example.test/\ud800" }] }
+    {
+      ...modules,
+      links: [
+        { label: "Unsupported\u007fcontrol", url: "https://example.test" }
+      ]
+    },
+    {
+      ...modules,
+      links: [{ label: "Link", url: "https://example.test/\ud800" }]
+    }
   ]) {
     const response = await handleAccountRequest(db, request(value));
     assert.equal(response.status, 400, await response.text());
     assert.deepEqual(await state(), before);
   }
   const allowed = {
-    testimony: "文\t\n\r\"\\🙂".repeat(250),
+    order: ["links", "skills", "testimony"],
+    testimony: '文\t\n\r"\\🙂'.repeat(250),
     skills: Array.from({ length: 10 }, (_, index) => index + "能".repeat(59)),
     links: Array.from({ length: 3 }, () => ({
-      label: "标签🙂".repeat(20), url: "https://example.test/" + "x".repeat(470)
+      label: "标签🙂".repeat(20),
+      url: "https://example.test/" + "x".repeat(470)
     }))
   };
   assert.equal(allowed.testimony.length, 2000);

@@ -25,7 +25,9 @@ Object.assign(process.env, {
 const { PrismaClient } = await import("@prisma/client");
 const { createPortalActor, assertPortalTestDatabase } =
   await import("../tests/seed-portal.ts");
-const { updateAccountProfile } = await import("../lib/platform/accounts.ts");
+const { updateAccountProfile, loginAccount } =
+  await import("../lib/platform/accounts.ts");
+const { getProfileEditor } = await import("../lib/platform/profiles.ts");
 const db = new PrismaClient();
 await assertPortalTestDatabase(db);
 const { chromium } = createRequire(
@@ -133,6 +135,32 @@ try {
 
   await signIn(owner);
   await go("/platform/profile/me");
+  // No text edits: order alone must engage the existing navigation guard.
+  await page
+    .getByRole("button", { name: "Move Skills up", exact: true })
+    .click();
+  await page
+    .getByRole("link", { name: "Back to Profile settings", exact: true })
+    .click();
+  const leave = page.getByRole("dialog", {
+    name: "Keep your unsaved changes?",
+    exact: true
+  });
+  await leave.waitFor();
+  await leave
+    .getByRole("button", { name: "Keep editing", exact: true })
+    .click();
+  assert.equal((await row(owner)).modules.order, undefined);
+  await page
+    .getByRole("button", { name: "Move Skills down", exact: true })
+    .click();
+  await page.waitForFunction(
+    () =>
+      document.activeElement?.getAttribute("aria-label") === "Move Skills down"
+  );
+  ok(
+    "Order-only edits engage the navigation guard and retain keyboard focus after moving a row down"
+  );
   const testimony =
     "Fictional story <img src=x onerror=window.profileInjected=true>";
   await page
@@ -145,6 +173,81 @@ try {
   await page
     .getByLabel("Link 1 address", { exact: true })
     .fill("https://example.test/work");
+  const orderNames = ["Links", "Skills", "My testimony"];
+  const visibleOrder = () =>
+    page.locator('section[aria-labelledby^="profile-"] > h3').allTextContents();
+  await page
+    .getByRole("button", { name: "Move Skills up", exact: true })
+    .focus();
+  await page.keyboard.press("Enter");
+  await page.waitForFunction(
+    () =>
+      document.activeElement?.getAttribute("aria-label") === "Move Skills up"
+  );
+  assert.equal(
+    await page
+      .getByRole("button", { name: "Move Skills up", exact: true })
+      .getAttribute("aria-disabled"),
+    "true"
+  );
+  await page.keyboard.press("Enter");
+  await page
+    .getByRole("button", { name: "Move Links up", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Move Links up", exact: true })
+    .click();
+  await page.waitForFunction(
+    () => document.activeElement?.getAttribute("aria-label") === "Move Links up"
+  );
+  await page
+    .getByRole("button", { name: "Move Skills down", exact: true })
+    .focus();
+  await page.keyboard.press("Enter");
+  await page.waitForFunction(
+    () =>
+      document.activeElement?.getAttribute("aria-label") === "Move Skills down"
+  );
+  assert.equal(
+    await page
+      .getByRole("button", { name: "Move Skills down", exact: true })
+      .getAttribute("aria-disabled"),
+    "true"
+  );
+  await page.keyboard.press("Enter");
+  await page
+    .getByRole("button", { name: "Move Skills up", exact: true })
+    .click();
+  const orderList = page.getByRole("group", {
+    name: "Optional section order",
+    exact: true
+  });
+  for (const width of [320, 390, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.evaluate(() => {
+      document.documentElement.style.fontSize = "32px";
+    });
+    await orderList.scrollIntoViewIfNeeded();
+    assert.ok(
+      await orderList.getByRole("button").evaluateAll((buttons) =>
+        buttons.every((button) => {
+          const range = document.createRange();
+          range.selectNodeContents(button);
+          return range.getClientRects().length === 1;
+        })
+      ),
+      "Each movement label stays on one line at enlarged text"
+    );
+    assert.ok(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth + 1
+      )
+    );
+    await page.screenshot({ path: output + "/order-editor-" + width + ".png" });
+  }
+  await page.evaluate(() => {
+    document.documentElement.style.fontSize = "";
+  });
   await submit();
   await page.waitForURL("**" + path);
   await page
@@ -152,9 +255,13 @@ try {
     .waitFor();
   assert.deepEqual((await row(owner)).modules, {
     testimony,
+    order: ["links", "skills", "testimony"],
     skills: ["Listening", "Gardening"],
     links: [{ label: "Fictional work", url: "https://example.test/work" }]
   });
+  assert.deepEqual(await visibleOrder(), orderNames);
+  await page.reload();
+  assert.deepEqual(await visibleOrder(), orderNames);
   assert.equal(await page.getByText(testimony, { exact: true }).count(), 1);
   assert.equal(
     await page.evaluate(() => Boolean(window.profileInjected)),
@@ -184,6 +291,7 @@ try {
   await page
     .getByRole("heading", { name: "My testimony", exact: true })
     .waitFor();
+  assert.deepEqual(await visibleOrder(), orderNames);
   for (const marker of [owner.email, "Private location marker"])
     assert.equal((await page.content()).includes(marker), false);
   await signIn(other);
@@ -197,6 +305,7 @@ try {
   ])
     assert.equal(serialized.includes(marker), false);
   await page.getByRole("heading", { name: "Skills", exact: true }).waitFor();
+  assert.deepEqual(await visibleOrder(), orderNames);
   assert.equal(
     await page.getByRole("link", { name: "Edit profile", exact: true }).count(),
     0
@@ -238,29 +347,46 @@ try {
   await page
     .getByLabel("Link 1 address", { exact: true })
     .fill("https://example.test/updated");
+  await page
+    .getByRole("button", { name: "Move My testimony up", exact: true })
+    .click();
   const invalidText = "Keep my draft\u0001until corrected";
-  await page.getByLabel("My testimony (optional)", { exact: true }).fill(invalidText);
+  await page
+    .getByLabel("My testimony (optional)", { exact: true })
+    .fill(invalidText);
   const receiptsBefore = await db.retentionControl.count({
     where: { sourceId: owner.id, kind: "PROFILE_MODULES" }
   });
   const [invalidResponse] = await Promise.all([
-    page.waitForResponse((response) =>
-      new URL(response.url()).pathname === "/api/platform/account" &&
-      response.request().method() === "POST"
+    page.waitForResponse(
+      (response) =>
+        new URL(response.url()).pathname === "/api/platform/account" &&
+        response.request().method() === "POST"
     ),
     submit()
   ]);
   assert.equal(invalidResponse.status(), 400, await invalidResponse.text());
-  await page.getByRole("alert").filter({ hasText: "Optional sections allow" }).waitFor();
+  await page
+    .getByRole("alert")
+    .filter({ hasText: "Optional sections allow" })
+    .waitFor();
   assert.equal(
-    await page.getByLabel("My testimony (optional)", { exact: true }).inputValue(),
+    await page
+      .getByLabel("My testimony (optional)", { exact: true })
+      .inputValue(),
     invalidText
   );
   assert.deepEqual(await row(owner), beforeInvalid);
-  assert.equal(await db.retentionControl.count({
-    where: { sourceId: owner.id, kind: "PROFILE_MODULES" }
-  }), receiptsBefore);
-  ok("Unsupported control text returns HTTP400 through the real form, retains the draft and writes no profile or recovery receipt");
+  assert.match(await orderList.innerText(), /2\. My testimony/);
+  assert.equal(
+    await db.retentionControl.count({
+      where: { sourceId: owner.id, kind: "PROFILE_MODULES" }
+    }),
+    receiptsBefore
+  );
+  ok(
+    "Unsupported control text returns HTTP400 through the real form, retains the draft and writes no profile or recovery receipt"
+  );
   await page
     .getByLabel("My testimony (optional)", { exact: true })
     .fill("Retained story after uncertain save");
@@ -284,6 +410,11 @@ try {
     .getByRole("alert")
     .filter({ hasText: "We could not confirm the save" })
     .waitFor();
+  assert.deepEqual((await row(owner)).modules.order, [
+    "links",
+    "testimony",
+    "skills"
+  ]);
   assert.equal(
     (await row(owner)).modules.testimony,
     "Retained story after uncertain save"
@@ -324,6 +455,73 @@ try {
   );
 
   await go("/platform/profile/me");
+  await page
+    .getByRole("button", { name: "Move Links down", exact: true })
+    .click();
+  const secondToken = await loginAccount(
+    db,
+    owner.email,
+    owner.password,
+    "fictional-order-conflict"
+  );
+  const savedProfile = await getProfileEditor(db, secondToken);
+  await updateAccountProfile(
+    db,
+    secondToken,
+    {
+      name: savedProfile.name,
+      bio: savedProfile.bio ?? "",
+      location: savedProfile.location ?? "",
+      website: savedProfile.website ?? "",
+      interests: savedProfile.interests.join(","),
+      expectedVersion: savedProfile.presentation.version,
+      profileModules: {
+        ...savedProfile.presentation.modules,
+        order: ["skills", "links", "testimony"]
+      }
+    },
+    owner.id
+  );
+  await submit();
+  await page
+    .getByRole("button", { name: "Review latest saved profile", exact: true })
+    .click();
+  const latest = page.getByRole("region", {
+    name: "Latest saved version",
+    exact: true
+  });
+  await latest.waitFor();
+  assert.equal(
+    await latest
+      .getByText("Skills, Links, My testimony", { exact: true })
+      .count(),
+    1
+  );
+  assert.match(await orderList.innerText(), /1\. My testimony/);
+  assert.deepEqual((await row(owner)).modules.order, [
+    "skills",
+    "links",
+    "testimony"
+  ]);
+  await latest
+    .getByRole("button", {
+      name: "Keep my edits and use this version",
+      exact: true
+    })
+    .click();
+  await submit();
+  await page.waitForURL("**" + path);
+  assert.deepEqual((await row(owner)).modules.order, [
+    "testimony",
+    "links",
+    "skills"
+  ]);
+  assert.deepEqual(await visibleOrder(), ["My testimony", "Links", "Skills"]);
+  ok(
+    "A second session's conflicting order is shown for review while the local order stays intact until explicit save"
+  );
+
+  await go("/platform/profile/me");
   await page.getByLabel("My testimony (optional)", { exact: true }).fill("");
   await page.getByLabel("Skills (optional)", { exact: true }).fill("");
   await page.getByLabel("Link 1 label", { exact: true }).fill("");
@@ -333,7 +531,8 @@ try {
   assert.deepEqual((await row(owner)).modules, {
     testimony: "",
     skills: [],
-    links: []
+    links: [],
+    order: ["testimony", "links", "skills"]
   });
   assert.equal(
     await page
