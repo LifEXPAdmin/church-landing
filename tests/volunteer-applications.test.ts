@@ -1,7 +1,11 @@
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { PrismaClient } from "@prisma/client";
-import { assertPortalTestDatabase } from "./seed-portal";
+import {
+  assertPortalTestDatabase,
+  createPortalActor,
+  seedOperatorGrants
+} from "./seed-portal";
 import {
   seedVolunteerApplications,
   volunteerAction as action
@@ -34,8 +38,19 @@ import { EXCHANGE_ITEM_POLICY } from "../lib/platform/exchange-options";
 import { NEED_SCHEMA } from "../lib/platform/exchange-need-options";
 
 const db = new PrismaClient();
-before(() => assertPortalTestDatabase(db));
-after(() => db.$disconnect());
+const priorReportsEnabled = process.env.COMMUNITY_REPORTS_ENABLED;
+before(async () => {
+  await assertPortalTestDatabase(db);
+  process.env.COMMUNITY_REPORTS_ENABLED = "true";
+  const reviewer = await createPortalActor(db, "volunteerreview");
+  await seedOperatorGrants(db, reviewer, ["REVIEW_COMMUNITY_REPORTS"]);
+});
+after(async () => {
+  await db.$disconnect();
+  if (priorReportsEnabled === undefined)
+    delete process.env.COMMUNITY_REPORTS_ENABLED;
+  else process.env.COMMUNITY_REPORTS_ENABLED = priorReportsEnabled;
+});
 const denied = (p: Promise<unknown>, status: number) =>
   assert.rejects(p, (e) => e instanceof PortalError && e.status === status);
 const setup = (timed = true, capacity = 1) =>

@@ -7,8 +7,11 @@ Focused service, migration/recovery and candidate build checks have passed.
 A measured bounded-query improvement passed current-access regressions. Removing the additional volunteer loading boundary resolved the captured
 streamed-refresh failure: the full eight-group browser flow and five successive
 minimal recurrence checks passed. The combined production build passed. The
-full support gate is running in a separate clean export and fictional database;
-the eight-check compatible rollback passed with saved data and revoked authority
+full regression acceptance covers all 199 discovered files with 1,267 passing
+checks and two expected repeated email skips. Its preserved full-run prefix and
+corrected five-file continuation use unchanged application runtime. The report
+records the reproduced fixture failure and private harness correction. The
+eight-check compatible rollback passed with saved data and revoked authority
 preserved. Integration and verified-live release remain open. Production is unchanged at
 the independently verified documentation release below.
 

@@ -92,8 +92,23 @@ and stale acceptance stayed rejected. Browser errors and external requests were
 zero; both owned processes stopped cleanly. This validates that bounded
 compatible rollback, not an unrestricted downgrade or a production rollback.
 
-The full support gate is running against an immutable clean source export.
-Finish that gate and final release checks. Record the actual integrated commit,
+Regression acceptance now covers all 199 discovered files with 1,267 passing
+checks and two expected production-mode email skips, which passed in the
+development stage. The initial immutable full support run stopped on the new
+linked-needs test because its fixture inherited report-intake configuration.
+That failure was reproduced before editing. Test setup now explicitly enables
+intake and provisions its own reviewer, then restores the prior setting.
+All thirteen volunteer checks passed independently. The entire corrected file
+and four remaining files then passed against the original full-suite database.
+The preserved prefix includes upgrade, restore, development HTTP, production
+build, production HTTPS and process-restart checks. Application runtime did not
+change, so this is combined acceptance evidence, not a claim that the original
+failed command completed. An intermediate continuation also caught an invalid
+checkout-relative recovery folder; correcting that private harness configuration
+preserved the application's pending-recovery guard. Both failures remain in
+private evidence, and the resumed database stopped cleanly.
+
+Finish final release checks. Record the actual integrated commit,
 production migration, deployment, canonical assignment,
 serving product/build identity and live read-only checks before describing this
 feature as released. Screening credentials, role templates, voluntary public
