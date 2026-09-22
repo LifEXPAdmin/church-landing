@@ -14,6 +14,16 @@ export type Feature = {
 };
 export const features: Feature[] = [
   {
+    id: "calendar-settings",
+    category: "Events and calendars",
+    name: "Personal Calendar settings",
+    description: "Find date formats, viewing choices, event alerts and schedule sharing in separate Settings groups.",
+    steps: "Open Settings, Calendar. Save date and time formats in Language and location, review event notifications, or open your calendars to choose a view and deliberately manage sharing.",
+    href: "/platform/settings/calendar",
+    eligibility: "Requires sign-in. Busy-only availability and event-detail sharing remain separate choices on each calendar or event. Saved default views, timed reminders, calendar subscriptions and external connections are not available here yet. Personal viewing choices never publish events or grant church duties.",
+    availability: "available"
+  },
+  {
     id: "volunteer-applications",
     category: "Events and calendars",
     name: "Volunteer applications and independent shifts",
@@ -974,6 +984,16 @@ export const features: Feature[] = [
   }
 ];
 export const releases: ReleaseEntry[] = [
+  {
+    id: "calendar-settings-layout",
+    version: "2026.09.22.3",
+    date: "2026-09-22",
+    summary: "Review personal calendar display, event alerts and schedule sharing together in Settings.",
+    added: ["Calendar Settings separates display, reminders and alerts, calendars and subscriptions, and schedule sharing.", "Busy-only availability and event-detail sharing have distinct entries with an audience explanation before them."],
+    improved: ["Existing date formats, notification choices and calendar controls remain the place to save or review each choice. Current-view choices are distinguished from saved preferences.", "Unavailable reminder, subscription and calendar-default features are explained without inactive controls."],
+    fixed: [],
+    featureIds: ["calendar-settings"]
+  },
   {
     id: "profile-appearance-settings",
     version: "2026.09.22.2",

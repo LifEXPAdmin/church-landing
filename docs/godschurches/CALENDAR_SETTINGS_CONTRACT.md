@@ -1,5 +1,15 @@
 # Calendar settings ownership and readiness
 
+September 22 update: the grouped Calendar Settings folder now binds existing
+display, notification, calendar and sharing screens. It stores no preferences
+and adds no audience or delivery authority. The profile editor now supports one
+selected existing event with current source permission checks; this supersedes
+the earlier absence of any profile event binding below. It is not a public
+personal schedule. Saved calendar defaults, timed reminders, subscriptions and
+external connections remain separate missing capabilities. See the
+[folder implementation report](CALENDAR_SETTINGS_LAYOUT_REPORT.md) for current
+verification and release status.
+
 September 18, 2026. Audited against the integrated application `25eb4a1`.
 This contract maps existing owners and missing capabilities. It adds no controls,
 stored preference, permission, service, query or migration. The existing

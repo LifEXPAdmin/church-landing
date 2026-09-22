@@ -60,7 +60,7 @@ export const settingsFolders = [
   {
     id: "calendar",
     label: "Calendar",
-    description: "Your calendars and deliberate schedule sharing."
+    description: "Personal display, event alerts, calendars and deliberate schedule sharing."
   },
   {
     id: "exchange",
@@ -93,7 +93,7 @@ export const relatedSettingIds: Partial<
   privacy: ["profile.information", "calendar.sharing"],
   church: ["privacy.directory", "calendar.sharing"],
   communities: ["privacy.messages", "calendar.commitments", "calendar.sharing", "notifications.availability"],
-  calendar: ["profile.information", "privacy.directory"],
+  calendar: ["profile.sections", "privacy.directory"],
   exchange: ["privacy.messages", "notifications.availability"],
   notifications: ["privacy.relationships", "safety.muted"],
   feed: ["safety.muted"],
@@ -731,10 +731,38 @@ export const settingsRegistry: readonly SettingRegistration[] = Object.freeze([
     { scope: "church", capability: "church-tools" }
   ),
   entry(
+    "calendar.formats", "calendar", "Date and time formats",
+    "Save your personal date and time formats in Language and location. Existing event times stay unchanged.",
+    ["calendar display", "date format", "time format", "12 hour", "24 hour"],
+    { href: "/platform/settings/language/interface" },
+    linked("regional-preferences.ts", "regional-preferences.ts")
+  ),
+  entry(
+    "calendar.view", "calendar", "Viewing month and time zone",
+    "Open your calendars to choose a month and viewing time zone for the current view. These choices are not saved defaults.",
+    ["calendar display", "timezone", "device zone", "month", "week start", "default view"],
+    { href: "/platform/calendars" },
+    linked("calendar-view.ts; calendar-presentation.tsx")
+  ),
+  entry(
+    "calendar.alerts", "calendar", "Event notification preferences",
+    "Review your event Activity and phone choices. Timed calendar reminders are not available yet.",
+    ["calendar reminder", "event alerts", "reminders", "notifications"],
+    { href: "/platform/settings/notifications/availability" },
+    linked("notification-preferences.ts", "notification-preferences.ts")
+  ),
+  entry(
+    "calendar.layers", "calendar", "Calendars in your view",
+    "Choose permitted church calendars for the current view without changing membership, RSVP or volunteer commitments.",
+    ["calendar layers", "hide calendar", "subscribed calendars", "following calendars"],
+    { href: "/platform/calendars" },
+    linked("calendar-reads.ts; calendar-view.ts; calendar-presentation.tsx")
+  ),
+  entry(
     "calendar.sharing",
     "calendar",
-    "Calendars and schedule sharing",
-    "Manage calendar visibility and deliberate busy-only or detail sharing.",
+    "Busy-only availability",
+    "Choose your calendar or event, then review its church audience and Busy only sharing. Busy only reveals time and availability without event details.",
     [
       "calendar",
       "schedule",
@@ -743,6 +771,13 @@ export const settingsRegistry: readonly SettingRegistration[] = Object.freeze([
       "busy",
       "event privacy"
     ],
+    { href: "/platform/calendars" },
+    linked("calendar-reads.ts; calendar-access.ts", "calendar-commands.ts")
+  ),
+  entry(
+    "calendar.details", "calendar", "Event-detail sharing",
+    "Choose your calendar or event, then review Full event details sharing. This also reveals the title, notes, location, online link and organizer.",
+    ["event privacy", "schedule sharing", "calendar details", "availability"],
     { href: "/platform/calendars" },
     linked("calendar-reads.ts; calendar-access.ts", "calendar-commands.ts")
   ),

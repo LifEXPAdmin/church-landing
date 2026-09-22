@@ -64,10 +64,10 @@ export const settingsHelpTopics = [
   {
     id: "calendar",
     title: "What does calendar sharing reveal?",
-    keywords: "calendar event schedule busy details revoke",
+    keywords: "calendar event schedule busy details revoke display reminders subscriptions",
     body: "Personal calendars start private. Share with approved members of your church as busy-only availability or full details. Whole-calendar sharing includes current and future events. Calendar and event-series shares are separate: ending one does not end the other. Leaving a church ends its dependent sharing; rejoining does not restore it.",
-    href: "/platform/calendars",
-    action: "Open calendar"
+    href: "/platform/settings/calendar",
+    action: "Review Calendar settings"
   },
   {
     id: "appearance",
