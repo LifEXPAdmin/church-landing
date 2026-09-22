@@ -144,7 +144,8 @@ Forms retain non-sensitive entered values and expose safe conflict/retry choices
 
 Include new records in the existing export, deletion/retention, encrypted backup
 and protected restore contracts before release. Restoring older data must not
-resurrect a withdrawn application, canceled assignment, revoked organizer duty,+obsolete source visibility or old notification consent. Retain only the minimal
+resurrect a withdrawn application, canceled assignment, revoked organizer duty,
+obsolete source visibility or old notification consent. Retain only the minimal
 protected revocation/audit evidence required by accepted retention policy. A
 rollback must retain compatible readers and preserving writers for new records;
 do not replay old acceptance or broaden permissions to recover availability.
