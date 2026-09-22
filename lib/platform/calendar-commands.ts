@@ -1,3 +1,4 @@
+import { saveCalendarLayer } from "./calendar-layer-preferences";
 import { recordDomainActivity, recordFanout } from "./domain-activity";
 import type {
   PrismaClient,
@@ -107,6 +108,7 @@ export async function calendarCommand(
   return portal(db, token, async (tx, actor) => {
     const context = await calendarContext(tx, actor),
       op = input.operation;
+    if (op === "save-layer") return saveCalendarLayer(tx, context, input);
     if (op === "create-calendar") {
       const churchId = input.churchId ? id(input.churchId) : null;
       if (churchId) requireCalendarCapability(context, churchId, "EDIT_CHURCH_CALENDAR");

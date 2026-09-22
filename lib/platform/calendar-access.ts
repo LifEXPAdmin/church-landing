@@ -369,3 +369,27 @@ export function calendarId(value: unknown) {
     throw new PortalError(400, "Check the calendar or event link.");
   return id;
 }
+
+export async function calendarVisible(
+  tx: CalendarTx,
+  context: CalendarContext,
+  calendar: CalendarRow
+) {
+  if (calendar.archivedAt) return false;
+  if (
+    calendarOwn(context, calendar) ||
+    context.churches.some((c) => c.id === calendar.churchId)
+  )
+    return true;
+  if (sharedLevel(context, calendar, calendar.shares)) return true;
+  if (!calendar.ownerId) return false;
+  return !!(await tx.calendarEventShare.findFirst({
+    where: {
+      event: { calendarId: calendar.id, calendar: { owner: eligibleWhere } },
+      churchId: { in: context.churches.map((c) => c.id) },
+      revokedAt: null,
+      connection: { userId: calendar.ownerId, state: "APPROVED" }
+    },
+    select: { id: true }
+  }));
+}

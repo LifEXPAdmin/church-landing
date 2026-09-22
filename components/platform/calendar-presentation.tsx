@@ -1,3 +1,8 @@
+import { randomUUID } from "node:crypto";
+import {
+  CALENDAR_LAYER_COLORS,
+  calendarLayerColor
+} from "@/lib/platform/calendar-layer-options";
 import { RegionalEventTime } from "./regional-presentation";
 import Link from "next/link";
 import type {
@@ -66,6 +71,77 @@ export function CalendarChurchScope({
         My roles and permissions at {source.label}
       </Link>
     </section>
+  );
+}
+export function CalendarLayerChoices({
+  calendar,
+  destination
+}: {
+  calendar: CalendarSummary;
+  destination: string;
+}) {
+  const layer = calendar.layer,
+    color = calendarLayerColor(layer.color)!;
+  return (
+    <details className="my-3 min-w-0 rounded-xl border border-gc-divider p-4">
+      <summary className="cursor-pointer font-semibold">
+        My choices for {calendar.name}
+      </summary>
+      <div className="mt-4 min-w-0 space-y-4">
+        <p>
+          {layer.followed
+            ? layer.visible
+              ? "Following · shown in My calendars"
+              : "Following · hidden from My calendars"
+            : "Not following · removed from My calendars"}{" "}
+          · {color.label} color
+        </p>
+        <p className="text-sm text-gc-muted">
+          These choices are private to your account and carry across sign-ins.
+          Following does not join a church, expand access, change an RSVP or
+          send notifications. You can still open an available calendar directly.
+        </p>
+        {layer.recoveryRequired && (
+          <p role="status">
+            This layer was turned off during recovery. Review and save your
+            choices before showing it again.
+          </p>
+        )}
+        <CalendarForm
+          operation="save-layer"
+          payload={{
+            calendarId: calendar.id,
+            expectedVersion: layer.version,
+            requestKey: randomUUID()
+          }}
+          label={`Save my choices for ${calendar.name}`}
+          destination={destination}
+          fields={[
+            {
+              name: "followed",
+              type: "checkbox",
+              label: "Follow this calendar",
+              value: layer.followed,
+              hint: "Unfollow to remove this calendar from your saved overlay."
+            },
+            {
+              name: "visible",
+              type: "checkbox",
+              label: "Show in My calendars",
+              value: layer.visible,
+              hint: "Hide without unfollowing. This applies when following is on."
+            },
+            {
+              name: "color",
+              type: "select",
+              label: "My calendar color",
+              value: layer.color,
+              options: [...CALENDAR_LAYER_COLORS]
+            }
+          ]}
+        />
+      </div>
+    </details>
   );
 }
 export function CalendarNavigation({ churchId }: { churchId?: string }) {
@@ -179,6 +255,10 @@ export function CalendarRange({
         {calendars && (
           <fieldset className="space-y-2">
             <legend className="mb-2 font-semibold">Calendar layers</legend>
+            <p className="text-sm text-gc-muted">
+              This view is temporary. Save following, visibility and colors
+              under Available calendars to use them across sign-ins.
+            </p>
             <input type="hidden" name="layers" value="selected" />
             {calendars.length ? (
               calendars.map((c) => (
@@ -220,12 +300,14 @@ export function CalendarAgenda({
   events,
   timeZone,
   commitments = false,
-  deviceLocal = false
+  deviceLocal = false,
+  layerColors = {}
 }: {
   events: (CalendarEvent | Commitment)[];
   timeZone: string;
   commitments?: boolean;
   deviceLocal?: boolean;
+  layerColors?: Record<string, string>;
 }) {
   if (!events.length)
     return (
@@ -245,7 +327,23 @@ export function CalendarAgenda({
           key={event.id}
           className="min-w-0 space-y-2 rounded-xl border border-gc-divider bg-gc-surface p-5 [overflow-wrap:anywhere]"
         >
-          <p className="text-sm text-gc-muted">{event.source.label}</p>
+          <p className="text-sm text-gc-muted">
+            {event.source.label}
+            {calendarLayerColor(layerColors[event.calendarId]) && (
+              <span className="ml-2 inline-flex items-center gap-2">
+                <span
+                  aria-hidden="true"
+                  className="inline-block h-3 w-3 rounded-full"
+                  style={{
+                    backgroundColor: calendarLayerColor(
+                      layerColors[event.calendarId]
+                    )!.swatch
+                  }}
+                />
+                {calendarLayerColor(layerColors[event.calendarId])!.label} layer
+              </span>
+            )}
+          </p>
           <h3 className="text-2xl">
             <Link
               className="text-gc-accent underline underline-offset-4"

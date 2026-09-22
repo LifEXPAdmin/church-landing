@@ -54,14 +54,13 @@ export function SettingsCalendar({
           Calendars and subscriptions
         </h2>
         <p>
-          Choose which permitted church calendars appear in the current view.
-          Hiding a calendar from that view does not leave a church, cancel an
-          RSVP or remove a volunteer commitment.
+          Save which available calendars you follow, show and color in My calendars.
+          Hiding or unfollowing does not leave a church, cancel an RSVP or remove
+          a volunteer commitment.
         </p>
         {entries("calendar.layers", "calendar.commitments")}
         <p className="text-sm text-gc-muted">
-          Following calendars, private subscription links and connections to
-          external calendars are not available yet.
+          Private subscription links and connections to external calendars are not available yet.
         </p>
       </section>
       <section

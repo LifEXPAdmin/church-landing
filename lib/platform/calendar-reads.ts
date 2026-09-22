@@ -1,11 +1,13 @@
+import { projectCalendarLayer } from "./calendar-layer-preferences";
 import type { Prisma, PrismaClient, CalendarOccurrence } from "@prisma/client";
 import { portal } from "./portal";
-import { PortalError, eligibleWhere } from "./portal-policy";
+import { PortalError } from "./portal-policy";
 import { postContext } from "./post-access";
 import { volunteerCommitmentsIn } from "./post-participation-reads";
 import { calendarWindow, type CalendarSchedule } from "./calendar-time";
 import {
   calendarContext,
+  calendarVisible,
   calendarInclude,
   eventInclude,
   calendarOwn,
@@ -42,29 +44,6 @@ function timeWhere(range: Window): Prisma.CalendarOccurrenceWhereInput {
       }
     ]
   };
-}
-async function calendarVisible(
-  tx: CalendarTx,
-  context: CalendarContext,
-  calendar: CalendarRow
-) {
-  if (calendar.archivedAt) return false;
-  if (
-    calendarOwn(context, calendar) ||
-    context.churches.some((c) => c.id === calendar.churchId)
-  )
-    return true;
-  if (sharedLevel(context, calendar, calendar.shares)) return true;
-  if (!calendar.ownerId) return false;
-  return !!(await tx.calendarEventShare.findFirst({
-    where: {
-      event: { calendarId: calendar.id, calendar: { owner: eligibleWhere } },
-      churchId: { in: context.churches.map((c) => c.id) },
-      revokedAt: null,
-      connection: { userId: calendar.ownerId, state: "APPROVED" }
-    },
-    select: { id: true }
-  }));
 }
 function projectCalendar(context: CalendarContext, calendar: CalendarRow) {
   const level = sharedLevel(context, calendar, calendar.shares);
@@ -121,7 +100,16 @@ export async function getCalendarDetails(
       throw new PortalError(404, "This calendar is not available.");
     await loadCalendarSourceNames(tx, context, [calendar]);
     return {
-      calendar: projectCalendar(context, calendar),
+      calendar: {
+        ...projectCalendar(context, calendar),
+        layer: projectCalendarLayer(
+          await tx.calendarLayerPreference.findUnique({
+            where: {
+              ownerId_calendarId: { ownerId: actor.id, calendarId: calendar.id }
+            }
+          })
+        )
+      },
       churches: projectChurches(context)
     };
   });
@@ -171,11 +159,22 @@ export async function getCalendars(
       take: 21,
       include: calendarInclude
     });
+    const preferences = await tx.calendarLayerPreference.findMany({
+      where: {
+        ownerId: actor.id,
+        calendarId: { in: rows.slice(0, 20).map((row) => row.id) }
+      },
+      take: 20
+    });
+    const layers = new Map(preferences.map((row) => [row.calendarId, row]));
     const calendars = [];
     await loadCalendarSourceNames(tx, context, rows.slice(0, 20));
     for (const calendar of rows.slice(0, 20)) {
       if (!(await calendarVisible(tx, context, calendar))) continue;
-      calendars.push(projectCalendar(context, calendar));
+      calendars.push({
+        ...projectCalendar(context, calendar),
+        layer: projectCalendarLayer(layers.get(calendar.id))
+      });
     }
     return {
       calendars,
@@ -550,7 +549,12 @@ export async function getCalendarCommitments(
               r.state === "GOING" &&
               busy.some(
                 (other) =>
-                  other.id !== row.id && !(other.id.startsWith("volunteer:") && other.eventId === row.eventId) && overlaps(row, other, range.timeZone)
+                  other.id !== row.id &&
+                  !(
+                    other.id.startsWith("volunteer:") &&
+                    other.eventId === row.eventId
+                  ) &&
+                  overlaps(row, other, range.timeZone)
               )
                 ? "You have another commitment or busy period at this time."
                 : null

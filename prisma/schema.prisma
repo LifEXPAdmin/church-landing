@@ -335,6 +335,7 @@ model PlatformUser {
   churchListings ChurchListingSubmission[]
   contactAssignments ChurchContactAssignment[]
   calendars PlatformCalendar[] @relation("CalendarOwner")
+  calendarLayerPreferences CalendarLayerPreference[]
   createdCalendars PlatformCalendar[] @relation("CalendarCreator")
   eventResponses CalendarResponse[]
   pollBallots PostPollBallot[]
@@ -1028,9 +1029,28 @@ model PlatformCalendar {
   events CalendarEvent[]
   shares CalendarShare[]
   audit CalendarAudit[]
+  layerPreferences CalendarLayerPreference[]
   @@unique([creatorId, requestKey])
   @@index([ownerId, archivedAt])
   @@index([churchId, archivedAt])
+}
+
+model CalendarLayerPreference {
+  id String @id @default(cuid())
+  ownerId String
+  calendarId String
+  followed Boolean @default(true)
+  visible Boolean @default(true)
+  color String @default("DEFAULT")
+  version Int @default(1)
+  recoveryRequired Boolean @default(false)
+  requestKey String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  owner PlatformUser @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  calendar PlatformCalendar @relation(fields: [calendarId], references: [id], onDelete: Cascade)
+  @@unique([ownerId, calendarId])
+  @@index([calendarId])
 }
 
 model CalendarEvent {

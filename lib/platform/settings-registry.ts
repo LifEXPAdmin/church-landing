@@ -753,10 +753,10 @@ export const settingsRegistry: readonly SettingRegistration[] = Object.freeze([
   ),
   entry(
     "calendar.layers", "calendar", "Calendars in your view",
-    "Choose permitted church calendars for the current view without changing membership, RSVP or volunteer commitments.",
+    "Save your private follow, visibility and color choices for available calendars. Following never changes membership, current access, RSVP or volunteer commitments.",
     ["calendar layers", "hide calendar", "subscribed calendars", "following calendars"],
     { href: "/platform/calendars" },
-    linked("calendar-reads.ts; calendar-view.ts; calendar-presentation.tsx")
+    linked("calendar-reads.ts; calendar-view.ts; calendar-presentation.tsx", "calendar-layer-preferences.ts")
   ),
   entry(
     "calendar.sharing",

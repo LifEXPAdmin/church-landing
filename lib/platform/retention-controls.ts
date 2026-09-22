@@ -48,6 +48,7 @@ export type RetentionControlEntry = {
     | "EXCHANGE_CONTACT"
     | "EXCHANGE_DEFAULTS"
     | "DISCOVERY_PREFERENCES"
+    | "CALENDAR_LAYER"
     | "FOLLOWING_LISTS"
     | "PROFILE_LOCATION"
     | "PROFILE_MODULES"
@@ -124,6 +125,7 @@ function validate(value: unknown): RetentionControlEntry {
       "EXCHANGE_CONTACT",
       "EXCHANGE_DEFAULTS",
       "DISCOVERY_PREFERENCES",
+      "CALENDAR_LAYER",
       "FOLLOWING_LISTS",
       "PROFILE_LOCATION",
       "PROFILE_MODULES",
@@ -470,6 +472,7 @@ export async function recordDiscoveryControl(
     | "EXCHANGE_CONTACT"
     | "EXCHANGE_DEFAULTS"
     | "DISCOVERY_PREFERENCES"
+    | "CALENDAR_LAYER"
     | "FOLLOWING_LISTS"
     | "PROFILE_LOCATION"
     | "PROFILE_MODULES"
@@ -1169,6 +1172,53 @@ export async function replayRetentionControls(
           });
           continue;
         }
+        if (entry.kind === "CALENDAR_LAYER") {
+          const owner = await tx.platformUser.findFirst({
+            where: { id: entry.targetId, erasedAt: null },
+            select: { id: true }
+          });
+          const calendar = await tx.platformCalendar.findUnique({
+            where: { id: entry.sourceId },
+            select: { id: true }
+          });
+          if (owner && calendar) {
+            // A newer opaque receipt cannot reconstruct private choices. Keep
+            // the layer off until its owner explicitly reviews it; never reopen
+            // a hidden/unfollowed overlay from an older backup or a missing row.
+            const data = {
+              followed: false,
+              visible: false,
+              color: "DEFAULT",
+              recoveryRequired: true,
+              requestKey: null,
+              version: entry.version
+            };
+            await tx.calendarLayerPreference.upsert({
+              where: {
+                ownerId_calendarId: {
+                  ownerId: owner.id,
+                  calendarId: calendar.id
+                }
+              },
+              create: { ownerId: owner.id, calendarId: calendar.id, ...data },
+              update: {}
+            });
+            await tx.calendarLayerPreference.updateMany({
+              where: {
+                ownerId: owner.id,
+                calendarId: calendar.id,
+                version: { lt: entry.version }
+              },
+              data
+            });
+          }
+          await record(tx, entry);
+          await tx.retentionControl.updateMany({
+            where: { id: entry.id, journaledAt: null },
+            data: { journaledAt: new Date() }
+          });
+          continue;
+        }
         if (entry.kind === "PROFILE_LOCATION") {
           const changed = await tx.platformUser.updateMany({
             where: {
@@ -1280,38 +1330,82 @@ export async function replayRetentionControls(
           continue;
         }
         if (entry.kind === "VOLUNTEER_OPPORTUNITY") {
-          const prior = await tx.volunteerOpportunity.findUnique({ where: { id: entry.sourceId } });
+          const prior = await tx.volunteerOpportunity.findUnique({
+            where: { id: entry.sourceId }
+          });
           if (!prior) {
-            await tx.volunteerOpportunity.create({ data: {
-              id: entry.sourceId, version: entry.version, recoveryRequired: true,
-              closedAt: new Date(entry.recordedAt)
-            } });
+            await tx.volunteerOpportunity.create({
+              data: {
+                id: entry.sourceId,
+                version: entry.version,
+                recoveryRequired: true,
+                closedAt: new Date(entry.recordedAt)
+              }
+            });
           } else if (prior.version < entry.version) {
-            await tx.volunteerOpportunity.update({ where: { id: prior.id }, data: {
-              version: entry.version, recoveryRequired: true, closedAt: new Date(entry.recordedAt)
-            } });
-            if (prior.slotId) await tx.postVolunteerSlot.update({ where: { id: prior.slotId }, data: {
-              closedAt: new Date(entry.recordedAt), version: { increment: 1 }
-            } });
+            await tx.volunteerOpportunity.update({
+              where: { id: prior.id },
+              data: {
+                version: entry.version,
+                recoveryRequired: true,
+                closedAt: new Date(entry.recordedAt)
+              }
+            });
+            if (prior.slotId)
+              await tx.postVolunteerSlot.update({
+                where: { id: prior.slotId },
+                data: {
+                  closedAt: new Date(entry.recordedAt),
+                  version: { increment: 1 }
+                }
+              });
           }
           await record(tx, entry);
-          await tx.retentionControl.updateMany({ where: { id: entry.id, journaledAt: null }, data: { journaledAt: new Date() } });
+          await tx.retentionControl.updateMany({
+            where: { id: entry.id, journaledAt: null },
+            data: { journaledAt: new Date() }
+          });
           continue;
         }
         if (entry.kind === "VOLUNTEER_APPLICATION") {
-          const prior = await tx.volunteerApplication.findUnique({ where: { id: entry.sourceId } });
-          const data = { version: entry.version, recoveryRequired: true, state: "WITHDRAWN" as const, statement: "", decisionNote: "" };
-          if (!prior) await tx.volunteerApplication.create({ data: { id: entry.sourceId, ...data } });
-          else if (prior.version < entry.version) {
-            await tx.volunteerApplication.update({ where: { id: prior.id }, data });
-            await tx.volunteerApplicationEvent.updateMany({ where: { applicationId: prior.id }, data: { note: "" } });
-            if (prior.signupId) await tx.postVolunteerSignup.updateMany({
-              where: { id: prior.signupId, completedAt: null, state: "ACTIVE" },
-              data: { state: "CANCELED", version: { increment: 1 } }
+          const prior = await tx.volunteerApplication.findUnique({
+            where: { id: entry.sourceId }
+          });
+          const data = {
+            version: entry.version,
+            recoveryRequired: true,
+            state: "WITHDRAWN" as const,
+            statement: "",
+            decisionNote: ""
+          };
+          if (!prior)
+            await tx.volunteerApplication.create({
+              data: { id: entry.sourceId, ...data }
             });
+          else if (prior.version < entry.version) {
+            await tx.volunteerApplication.update({
+              where: { id: prior.id },
+              data
+            });
+            await tx.volunteerApplicationEvent.updateMany({
+              where: { applicationId: prior.id },
+              data: { note: "" }
+            });
+            if (prior.signupId)
+              await tx.postVolunteerSignup.updateMany({
+                where: {
+                  id: prior.signupId,
+                  completedAt: null,
+                  state: "ACTIVE"
+                },
+                data: { state: "CANCELED", version: { increment: 1 } }
+              });
           }
           await record(tx, entry);
-          await tx.retentionControl.updateMany({ where: { id: entry.id, journaledAt: null }, data: { journaledAt: new Date() } });
+          await tx.retentionControl.updateMany({
+            where: { id: entry.id, journaledAt: null },
+            data: { journaledAt: new Date() }
+          });
           continue;
         }
         if (entry.kind === "EXCHANGE_NEED") {

@@ -1,3 +1,13 @@
+## Saved calendar layers in local acceptance, 22 September 2026 UTC
+
+The [calendar layer checkpoint](CALENDAR_LAYER_PREFERENCES_REPORT.md) records
+private follow, visibility and color choices using existing current source access.
+Five new service checks and four built-browser groups pass, including exact retry,
+revocation, account switching and lifecycle recovery. The additive 105-to-106
+migration rehearsal preserves all 147 original production fingerprints in a local
+encrypted restore. Complete regression and release gates remain open. Production
+still serves the verified privacy navigation release below.
+
 ## Event privacy navigation verified live, 22 September 2026 UTC
 
 The [privacy navigation receipt](CALENDAR_PRIVACY_NAVIGATION_REPORT.md) records

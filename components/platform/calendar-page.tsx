@@ -24,6 +24,7 @@ import {
   CalendarRange,
   CalendarAgenda,
   CalendarSharing,
+  CalendarLayerChoices,
   CalendarChurchScope,
   calendarPath
 } from "./calendar-presentation";
@@ -179,6 +180,10 @@ export async function CalendarPage({
                 canEdit={calendar.canEdit}
                 canPublish={calendar.canPublish}
               />
+              <CalendarLayerChoices
+                calendar={calendar}
+                destination={`/platform/calendars?${new URLSearchParams({ month: range.month, timeZone: range.timeZone })}`}
+              />
               <CalendarRange range={range} path={path} query={query} />
               <CalendarSnapshot
                 owner={user?.id}
@@ -192,6 +197,7 @@ export async function CalendarPage({
                 <CalendarAgenda
                   events={agenda.events}
                   timeZone={range.timeZone}
+                  layerColors={{ [calendar.id]: calendar.layer.color }}
                 />
               </CalendarSnapshot>
               {calendar.canEdit && (
@@ -319,9 +325,18 @@ export async function CalendarPage({
           : query.layer
             ? [query.layer]
             : []
-        : (listing?.calendars.map((c) => c.id) ?? []);
+        : (listing?.calendars
+            .filter(
+              (c) =>
+                view !== "calendars" ||
+                (c.layer.followed &&
+                  c.layer.visible &&
+                  !c.layer.recoveryRequired)
+            )
+            .map((c) => c.id) ?? []);
     // A supplied stale/foreign layer must fail through the authoritative reader;
     // silently ignoring it would hide a revoked-access state from the viewer.
+    const savedViewPath = `/platform/calendars?${new URLSearchParams({ month: range.month, timeZone: range.timeZone, ...(view === "calendars" && query.cursor ? { cursor: query.cursor } : {}) })}`;
     const agenda = listing
       ? await readCalendarAgenda({ ...range, calendarIds: selected })
       : undefined;
@@ -353,6 +368,18 @@ export async function CalendarPage({
               }
             />
             <CalendarNavigation churchId={publicAgenda?.church.id} />
+            {listing && (
+              <p className="text-sm text-gc-muted">
+                {query.layers === "selected"
+                  ? "Showing a temporary selection."
+                  : view === "calendars"
+                    ? "Showing your saved choices for this page of available calendars."
+                    : "Showing the calendars currently available through this church."}{" "}
+                <a className={portalLinkClass} href={savedViewPath}>
+                  Use my saved calendar choices
+                </a>
+              </p>
+            )}
             <CalendarRange
               range={range}
               path={path}
@@ -369,14 +396,20 @@ export async function CalendarPage({
               snapshot={agenda}
               label="calendar agenda"
             >
-              <CalendarAgenda events={events} timeZone={range.timeZone} />
+              <CalendarAgenda
+                events={events}
+                timeZone={range.timeZone}
+                layerColors={Object.fromEntries(
+                  (listing?.calendars ?? []).map((c) => [c.id, c.layer.color])
+                )}
+              />
             </CalendarSnapshot>
             {listing && (
               <>
                 <PortalCard title="Available calendars">
                   <ul className="space-y-3">
                     {listing.calendars.map((c) => (
-                      <li key={c.id}>
+                      <li key={c.id} className="min-w-0">
                         <Link
                           className={portalLinkClass}
                           href={calendarPath(c.id)}
@@ -397,6 +430,10 @@ export async function CalendarPage({
                               Manage church calendar
                             </Link>
                           )}
+                        <CalendarLayerChoices
+                          calendar={c}
+                          destination={savedViewPath}
+                        />
                       </li>
                     ))}
                   </ul>

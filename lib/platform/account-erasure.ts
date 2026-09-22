@@ -141,6 +141,7 @@ async function erasePersonalMedia(tx: Tx, userId: string) {
 }
 
 async function erasePersonalCalendars(tx: Tx, userId: string, now: Date) {
+  await tx.calendarLayerPreference.deleteMany({ where: { ownerId: userId } });
   const personal = { calendar: { ownerId: userId } };
   const occurrences = { event: personal };
   await tx.calendarShare.deleteMany({

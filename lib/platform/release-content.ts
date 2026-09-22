@@ -14,6 +14,13 @@ export type Feature = {
 };
 export const features: Feature[] = [
   {
+    id: "calendar-following", category: "Events and calendars", name: "Saved calendar layers",
+    description: "Follow, hide and color available calendars with private choices saved to your account.",
+    steps: "Open My calendars, expand My choices for an available calendar and save. Unfollow to remove its saved overlay, or hide while keeping it followed. Return to your saved choices after trying a temporary view.",
+    href: "/platform/calendars",
+    eligibility: "Requires an eligible signed-in account and current calendar access. Following grants no membership, extra access, notifications or event response. Source names stay visible beside decorative colors. Recovery may turn a layer off until you review it.", availability: "available"
+  },
+  {
     id: "calendar-settings",
     category: "Events and calendars",
     name: "Personal Calendar settings",
@@ -984,6 +991,13 @@ export const features: Feature[] = [
   }
 ];
 export const releases: ReleaseEntry[] = [
+  {
+    id: "calendar-following", version: "2026.09.22.6", date: "2026-09-22",
+    summary: "Save private follow, visibility and color choices for your available calendars.",
+    added: ["Calendar layers keep your follow, show and color choices across sign-ins. Unfollowing removes the saved overlay, while hiding keeps the calendar followed."],
+    improved: ["My calendars distinguishes saved choices from a temporary selection and keeps each available source discoverable. Access is checked again when reading or saving.", "Calendar Settings, help and account export include your private layer choices. Recovery turns uncertain restored choices off until you review them."],
+    fixed: [], featureIds: ["calendar-following", "calendar-settings"]
+  },
   {
     id: "calendar-privacy-navigation",
     version: "2026.09.22.5",
