@@ -5,7 +5,9 @@ private follow, visibility and color choices using existing current source acces
 Five new service checks and four built-browser groups pass, including exact retry,
 revocation, account switching and lifecycle recovery. The additive 105-to-106
 migration rehearsal preserves all 147 original production fingerprints in a local
-encrypted restore. Complete regression and release gates remain open. Production
+encrypted restore. The uninterrupted complete gate now passes all 200 discovered
+files with 1,273 passing checks, two expected skips and no failures. Release
+gates remain open. Production
 still serves the verified privacy navigation release below.
 
 ## Event privacy navigation verified live, 22 September 2026 UTC

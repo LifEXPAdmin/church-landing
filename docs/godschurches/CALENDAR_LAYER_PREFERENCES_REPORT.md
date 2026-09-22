@@ -1,6 +1,6 @@
 # Private saved calendar layers
 
-Local implementation and acceptance checkpoint, 22 September 2026 UTC.
+Local implementation and complete-gate acceptance, 22 September 2026 UTC.
 Production remains the separately verified event privacy navigation release until
 the release receipt below is completed.
 
@@ -83,7 +83,7 @@ by 30 to 32 bytes on calendar/event routes and 572 bytes on Settings. No speed
 improvement is claimed. Existing pagination, source redaction and snapshot guards
 remain in place.
 
-## Acceptance still open
+## Complete acceptance and release gate
 
 The affected existing Settings, sharing and privacy browser suites pass twelve
 additional groups, and seven built HTTP checks pass. All sixteen changed runtime
@@ -96,9 +96,19 @@ remains enforced. Do not remove the new table during a rollback.
 The first complete gate stopped at the legacy media replacement assertion because
 the invocation inherited enabled photo-library retention from the feature fixture.
 The same unchanged single test reproduced failure with retention enabled and passed
-with the suite baseline disabled. The complete gate restarted with a minimal
-suite-owned environment, without an application change or weakened assertion.
-Its result remains pending. Exact merge,
+with the suite baseline disabled. A second invocation with a minimal suite-owned
+environment passed 317 checks and migration/restore stages, then exhausted the
+build's 6144 MB JavaScript heap in the accumulated checkout. Both attempts and
+their diagnostics are preserved. A clean copy of every tracked file was hashed
+against the same source, passed a build with the same heap limit, and started the
+entire gate with suite-owned settings. No application change or weakened assertion
+was used for either recovery. That uninterrupted invocation passed all 200
+discovered files: 1,275 executions, 1,273 passes, two expected skips and zero
+failures or cancellations, with process exit zero. Its final RESULT receipt
+confirms staged upgrades, full restore, fresh migrations, build, development HTTP
+and production HTTPS/restart acceptance. The tested source is
+`2d1ca4551445771f2d23c30b695e563c1cc0543d`; subsequent changes are reports only.
+Exact merge,
 production migration, installed recovery registry, READY deployment, independent
 canonical assignment, serving identity, live checks, data fingerprints and private
 task readback remain required. This checkpoint does not mark the feature released.

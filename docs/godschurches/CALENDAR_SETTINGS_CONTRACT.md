@@ -1,5 +1,16 @@
 # Calendar settings ownership and readiness
 
+September 22 saved-layer update: `CalendarLayerPreference` now owns private
+follow, visibility and color choices per person and source. Calendar Settings
+links to those canonical controls without storing another copy. Explicit URL
+layers remain temporary, direct source inspection retains current access, and
+hiding or unfollowing never changes membership, sharing, RSVP or commitments.
+The [saved-layer report](CALENDAR_LAYER_PREFERENCES_REPORT.md) records focused
+acceptance, the passing complete gate and remaining release checks. This supersedes the
+absence of a follow or saved-layer owner in the September 18 inventory below;
+default display, timed reminders, protected feeds and external sync retain their
+separate requirements.
+
 September 22 update: the grouped Calendar Settings folder now binds existing
 display, notification, calendar and sharing screens. It stores no preferences
 and adds no audience or delivery authority. The profile editor now supports one
