@@ -1,3 +1,20 @@
+## Regular workflow and recovery receipt published, 22 September 2026, 01:18 UTC
+
+Documentation and workflow main `f96702fc5932cc46114c1c58c63d7626c477ea0c`
+is READY in `dpl_GSnZXnNijhwNhoCiV8ZD7svmGA5n`, independently assigned to
+`godschurches.com` and confirmed by its serving identity. Product version remains
+`2026.09.18.14`; all runtime code is identical to the previously verified release.
+Three public route checks and six protected health checks pass. All 144 production
+table/column fingerprints remain unchanged; 104 migration checksums match the
+repository and installed recovery registry. No production writes or sends.
+
+The installed backup locale repair is separately verified through the actual
+local scheduler. Repository instructions now use the regular priority queue.
+The volunteer definition is integrated; application and shift implementation is
+still pending. Two private index updates and the separate future fresh-session
+instruction-loading observation retain precise open gates. Earlier worktrees,
+historical contributor attribution and completed releases are preserved.
+
 ## Scheduled backup recovery verified, 22 September 2026 UTC
 
 The [backup operations receipt](BACKUP_OPERATIONS.md) records the reproduced
