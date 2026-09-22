@@ -1,7 +1,6 @@
 # Calendar Settings folder
 
-September 22, 2026. Local implementation and acceptance are complete; production release is
-pending. The starting verified application is `ede1335ba73a79ed631303c502602e0d951dd97a`.
+September 22, 2026. Implementation, release and scoped live acceptance are complete. The starting verified application is `ede1335ba73a79ed631303c502602e0d951dd97a`.
 
 The folder groups personal display, reminders and alerts, calendars and
 subscriptions, and schedule sharing. Registry entries reuse existing date/time
@@ -53,3 +52,25 @@ pass, including lost-response exact retries, conflict review, unsaved-work and
 update protection, loading/retry recovery, church-duty refresh, account switch,
 keyboard search, enlarged text and guest entry. All ten built-browser groups
 pass; no application change was required for these harness corrections.
+
+## Production acceptance
+
+Main `aae3a4e988a020ac40d58f68c3f7996756e1edc7` is READY in deployment
+`dpl_6wPwy8rq65y9eK2Ptm2Umxpo31E4`. Independent canonical-domain lookup
+and the serving endpoint both match `godschurches.com`, product `2026.09.22.3`,
+verified from 05:40 to 05:42 UTC. The hosted build confirms no pending migration,
+231 runtime traces, 76,750 entries and 572 server JavaScript files.
+
+All 11 live anonymous route/API/browser checks and six protected health checks
+pass. Browser errors and blocked mutation attempts are zero. Successful exact
+deployment error and fatal queries from 05:40:41.768 to 05:42:03.907 UTC return
+zero rows. All 147 production table/column fingerprints remain unchanged. All
+105 migration checksums match repository, production and installed recovery
+registry; no migration or data rollback is required. Existing protected backup
+and installed restore evidence remains dated in the volunteer release receipt.
+
+Verification application writes, grants and provider sends are zero. There is
+no claim of physical-device testing or authenticated production-member editing.
+The selected folder task is complete; the parent retains saved defaults, timed
+reminders, subscriptions, profile-calendar and external-connection gates.
+Private task and knowledge records were reconciled with actual results.

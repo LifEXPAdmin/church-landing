@@ -1,3 +1,16 @@
+## Calendar Settings verified live, 22 September 2026 UTC
+
+The [Calendar Settings receipt](CALENDAR_SETTINGS_LAYOUT_REPORT.md) records four
+personal groups using existing formats, notification, calendar and sharing owners.
+Busy-only availability and event details have separate entries with the audience
+explanation first. All 45 affected checks and ten built-browser groups pass.
+Main `aae3a4e988a020ac40d58f68c3f7996756e1edc7` is READY in
+`dpl_6wPwy8rq65y9eK2Ptm2Umxpo31E4`, independently canonical and serving
+`2026.09.22.3`. Eleven live checks and six health checks pass, all 147 production
+fingerprints are unchanged and all 105 migration/recovery checksums match.
+Browser/runtime errors, verification writes and sends are zero. No schema,
+permission, provider or dependency change. Later source capabilities remain open.
+
 ## Profile appearance Settings verified live, 22 September 2026 UTC
 
 The [appearance Settings receipt](PROFILE_APPEARANCE_SETTINGS_REPORT.md) records
