@@ -74,7 +74,8 @@ modified by the rehearsal.
 ## Runtime review
 
 No dependency or extra browser request was added. Private listings use one bounded
-preference batch for at most 20 calendar IDs; a private detail read uses one unique
+preference batch for at most 20 calendar IDs; a warmed comparison measured 17
+to 18 total queries with unchanged original source projections and 20/1 pagination; a private detail read uses one unique
 owner/calendar lookup. Agenda color presentation uses already-authorized data.
 Compared with the prior built release, route client chunk counts remain 12 for
 calendars, 13 for events and 14 for Settings. Measured Node gzip output changes
@@ -84,8 +85,20 @@ remain in place.
 
 ## Acceptance still open
 
-The complete support regression gate and affected existing browser/HTTP suites
-are running. Final source review, compatible rollback evidence, exact merge,
+The affected existing Settings, sharing and privacy browser suites pass twelve
+additional groups, and seven built HTTP checks pass. All sixteen changed runtime
+files match the built candidate. Eight checks against the previous built runtime
+confirm the additive schema remains readable, other accounts and guests remain
+denied, and saved choices survive returning to the current runtime. The previous
+UI predates following and temporarily omits its display choices; source access
+remains enforced. Do not remove the new table during a rollback.
+
+The first complete gate stopped at the legacy media replacement assertion because
+the invocation inherited enabled photo-library retention from the feature fixture.
+The same unchanged single test reproduced failure with retention enabled and passed
+with the suite baseline disabled. The complete gate restarted with a minimal
+suite-owned environment, without an application change or weakened assertion.
+Its result remains pending. Exact merge,
 production migration, installed recovery registry, READY deployment, independent
 canonical assignment, serving identity, live checks, data fingerprints and private
 task readback remain required. This checkpoint does not mark the feature released.
