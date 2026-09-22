@@ -1,14 +1,19 @@
-## Saved calendar layers in local acceptance, 22 September 2026 UTC
+## Saved calendar layers verified live, 22 September 2026 UTC
 
-The [calendar layer checkpoint](CALENDAR_LAYER_PREFERENCES_REPORT.md) records
+The [calendar layer receipt](CALENDAR_LAYER_PREFERENCES_REPORT.md) records
 private follow, visibility and color choices using existing current source access.
 Five new service checks and four built-browser groups pass, including exact retry,
 revocation, account switching and lifecycle recovery. The additive 105-to-106
 migration rehearsal preserves all 147 original production fingerprints in a local
 encrypted restore. The uninterrupted complete gate now passes all 200 discovered
-files with 1,273 passing checks, two expected skips and no failures. Release
-gates remain open. Production
-still serves the verified privacy navigation release below.
+files with 1,273 passing checks, two expected skips and no failures. Main
+`b26c0b0e22a565aed2f4f19ca2d4440048417d56` is READY in
+`dpl_ATertJSkrAF9P1Yq2pu5upBaAexa`, independently canonical and serving
+`2026.09.22.6`. Twelve live checks and six health checks pass; 147 original
+production fingerprints are unchanged. All 106 migration/recovery checksums
+match. The fresh installed restore covers 148 tables, and the scheduled retention
+check verifies 91 encrypted sets with no issues or removals. Verification writes,
+sends, browser errors and scoped runtime error/fatal rows are zero.
 
 ## Event privacy navigation verified live, 22 September 2026 UTC
 

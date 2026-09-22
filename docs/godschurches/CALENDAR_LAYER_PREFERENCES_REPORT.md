@@ -1,8 +1,7 @@
 # Private saved calendar layers
 
-Local implementation and complete-gate acceptance, 22 September 2026 UTC.
-Production remains the separately verified event privacy navigation release until
-the release receipt below is completed.
+Verified live, 22 September 2026 UTC. The release receipt below separates
+isolated authenticated acceptance from read-only production verification.
 
 ## Behavior and ownership
 
@@ -108,9 +107,30 @@ failures or cancellations, with process exit zero. Its final RESULT receipt
 confirms staged upgrades, full restore, fresh migrations, build, development HTTP
 and production HTTPS/restart acceptance. The tested source is
 `2d1ca4551445771f2d23c30b695e563c1cc0543d`; subsequent changes are reports only.
-Exact merge,
-production migration, installed recovery registry, READY deployment, independent
-canonical assignment, serving identity, live checks, data fingerprints and private
-task readback remain required. This checkpoint does not mark the feature released.
+The production release and recovery checks below complete the engineering gate.
 Saved calendar default views, reminder delivery and private subscription links
 retain their separate source and acceptance work.
+
+## Verified production receipt
+
+Main `b26c0b0e22a565aed2f4f19ca2d4440048417d56` is READY in
+`dpl_ATertJSkrAF9P1Yq2pu5upBaAexa`. Independent canonical-domain lookup and
+the serving endpoint confirm `godschurches.com` and version `2026.09.22.6`
+at 08:25:29 UTC. The hosted build applies the one additive migration and passes
+copy, types, build and 231 runtime traces without private fixture material.
+
+Twelve live anonymous route/browser checks and six protected health checks pass.
+All 147 pre-existing table/column fingerprints are unchanged. The new preference
+table contains zero rows. All 106 source, production and installed recovery
+migration checksums match, with none pending and all added constraints valid.
+A fresh installed encrypted 106-to-106 restore covers 148 tables and removes
+plaintext. This ordinary restore is separate from the earlier protected upgrade
+rehearsal. The actual scheduled retention process exits zero, verifies 91 sets,
+and reports zero issues or removals under the existing policy.
+
+Live browser errors and mutation requests are zero. Successful scoped error and
+fatal log queries from 08:25:29 through 08:26:45 UTC return zero rows.
+Verification made no application writes or provider sends. Authenticated saves,
+new sessions, conflicts, revocation and account switching were verified in the
+isolated built environment; no physical-device or real-member mutation evidence
+is claimed. Private task reconciliation retains those boundaries.

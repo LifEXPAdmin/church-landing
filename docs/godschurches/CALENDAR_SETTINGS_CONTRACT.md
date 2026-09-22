@@ -6,7 +6,7 @@ links to those canonical controls without storing another copy. Explicit URL
 layers remain temporary, direct source inspection retains current access, and
 hiding or unfollowing never changes membership, sharing, RSVP or commitments.
 The [saved-layer report](CALENDAR_LAYER_PREFERENCES_REPORT.md) records focused
-acceptance, the passing complete gate and remaining release checks. This supersedes the
+acceptance, the passing complete gate and verified production release. This supersedes the
 absence of a follow or saved-layer owner in the September 18 inventory below;
 default display, timed reminders, protected feeds and external sync retain their
 separate requirements.
