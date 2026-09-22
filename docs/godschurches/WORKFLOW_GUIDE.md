@@ -1,6 +1,6 @@
 # Godschurches workflow guide
 
-Version 3.1 · Updated 18 September 2026 UTC
+Version 4.0 · Updated 21 September 2026 UTC
 
 This is the repository entry point for work that continues between ChatGPT, Codex,
 the private second brain, and the development workstation. Keep this file's path
@@ -76,56 +76,47 @@ implementation delta. Avoid rereading the full catalog or historical receipts
 unless a conflict requires them. User decisions define intended behavior; the
 actual checkout and dated application/test receipts establish implementation.
 
-The owner's 18 September instruction uses two independent Remote chats, A1 and
-A2. This supersedes unrestricted one-queue selection and permanent delegation.
-The actual A1/A2 task label is authoritative. Read all four projects or the saved
-worker view, including pagination and subtasks, and take your highest-priority
-eligible P1, P2, P3 or P4 task in the current manual order. Keep parent and children
-with one owner. Personal owner actions are separate. Preserve stable identifiers,
-completed evidence and real dependencies. Labels do not alter the model or
-reasoning setting chosen by the owner.
+The owner's 21 September instruction ends the parallel A1/A2 arrangement. Use
+one ordinary queue across all four projects or the saved regular task view,
+including pagination and subtasks. Select eligible P1, then P2, P3 and P4 work;
+within a priority honor prerequisites and existing manual order. Former worker
+labels and ownership do not restrict selection. Keep task IDs, parent/child
+relationships, priorities, acceptance criteria and completed evidence intact.
+Personal owner actions remain separate. Labels do not change model settings.
 
-A1 owns its building queue and integration/releases. A2 independently builds its
-assigned queue. Each uses only its own worktree, feature branch, development port
-and isolated fictional test database. Follow the [coordination procedure](WORKER_COORDINATION.md)
-for atomic identity and file/contract claims, one-writer private checkpoints and
-A1-only release locking. Check the actual other worker's reservations before
-editing. When a shared file/contract overlaps, record the exact dependency and
-choose another ready assignment. Batch shared schema, registry and configuration
-changes for serial integration; A1 settles migration ordering.
+Work directly on one coherent feature using an inspected worktree, feature
+branch and isolated fictional database/ports. Preserve existing worktrees,
+branches, jobs and release evidence. Follow the [coordination procedure](WORKER_COORDINATION.md)
+for the existing atomic identity, feature claim and release guard. Its legacy
+technical slot does not establish a parallel task queue. Do not start or wait
+for another worker. Inspect any existing reservation and saved work before
+recovering stale state; never steal an active or unexamined lock.
 
-A2 may inspect and prepare its own environment while shared setup finishes,
-including locked dependencies and a separate local test database without
-production credentials. Before feature edits, verify its actual safe base,
-exclusive checkout, required test isolation and current shared reservation state.
-The setup receipt is evidence of those facts, not an extra permission phrase.
-Reuse existing coordination and preserve both sessions' work.
-
-Finish each coherent feature's necessary UI, service, integration, configuration,
+Finish each feature's required UI, service, integration, configuration,
 regression repair, documentation and meaningful verification. Use gc_in_progress
-for the claimed task while retaining its other labels. A2 commits tested work,
-records exact checks and migration/configuration needs, replaces gc_in_progress
-with gc_ready_to_merge and continues its next eligible task. Ready to merge is
-not complete or live. A2 may publish its feature branch, but never main, production
-migrations or deployments.
+for the active task while retaining other applicable labels. Reproduce reported
+issues before changing code. Reuse current canonical implementations and valid
+prior test evidence where applicable. Necessary smaller finishing steps stay
+inside the feature instead of being deferred to another agent or later task.
 
-At safe checkpoints between tasks and before stopping, A1 checks gc_ready_to_merge,
-integrates tested changes without dropping either worker's work, verifies the
-combined result and releases under the atomic release lock and existing project
-permissions. Complete exact READY, canonical-domain, serving-identity and live
-checks before closing promised acceptance. Required smaller finishing steps stay
-within the feature; parent, owner, device, provider and pilot gates remain open
-where their evidence is missing. Return a precise correction to the same A2 task
-when needed rather than taking over its queue.
+The active runner handles integration, main updates, production migrations and
+deployment under existing permissions and the atomic release lock. At safe
+checkpoints, inspect any gc_ready_to_merge work left by previous sessions and
+compare its exact commits and evidence with current main before integrating.
+Preserve all existing changes, resolve conflicts and verify the combined result.
+Complete exact READY, canonical-domain, serving-identity and live checks before
+closing promised product acceptance. Keep implemented, tested, merged and
+verified-live states distinct. Ready to merge alone is not completion.
 
 Recheck priorities after each feature and continue automatically. Stop only on
-owner request, no eligible assigned work, or an actual access/runtime/usage limit;
-save a clear checkpoint first. A missing acknowledgment or stale blocked label
-alone is not a blocker. Clear only specifically satisfied dependencies and record
-why. Keep final review last. Use occasional bounded helpers for a separable
-investigation, review or exclusive change, collect the result and stop them.
-Do not delegate the whole queue, maintain a permanent pool or recursively
-subdivide routine work. Avoid repeated full suites without a concrete reason.
+owner request, no eligible work, or an actual access/runtime/usage limit; save a
+clear checkpoint first. Check the actual named dependency behind blocked labels
+and remove only specifically satisfied blockers with evidence. Retired worker
+reservations no longer restrict the queue. Parent, owner, device, provider,
+policy, pilot and source-contract gates remain open until their acceptance is
+observed. Keep final batch review last. Do not resume a two-agent arrangement,
+delegate the queue or maintain a permanent team. Avoid repeated full suites
+without a concrete source, environment, integration or failure concern.
 
 Before dependent interface work, identify existing service/component paths,
 input/output types, authorized actions, pagination and error/conflict states.
@@ -208,8 +199,9 @@ recording them does not authorize implementation or expand task ownership.
 Use the exact Todoist task ID as the canonical key in the private **Session Log**.
 Search that key before creating a row. Reuse the same row through implementation,
 handoff, integration and acceptance, with dated events inside its page. Preserve
-the original worker; A1 adds acceptance to A2's record without replacing A2's
-narrative. Coordinate edits rather than concurrently overwrite that history.
+the original contributor in historical receipts and append the current runner's
+dated acceptance without replacing earlier narrative. New work has no A1/A2
+ownership partition. Avoid concurrent edits to the same history.
 Link the existing focused feature page, implementation report and **Decision Log**
 instead of maintaining competing copies.
 
@@ -264,7 +256,7 @@ local checkpoint and intended pending writes, reconcile when access works and
 verify readback. Missing synchronization does not erase observed work.
 
 Related edits may form one coherent change followed by focused checks. Reuse
-valid A2 evidence while checking the combined result. Run required release gates;
+valid prior evidence while checking the combined result. Run required release gates;
 repeat a broad suite when a concrete source, environment, integration or failure
 risk invalidates its evidence. Documentation changes receive proportionate checks.
 This recording routine does not lower existing product acceptance requirements.
@@ -321,14 +313,14 @@ Next Build Plan and Andrew Notification** page maintains the detailed procedure.
 Use this compact outline in the appropriate private session record and relevant
 engineering report. Include only public engineering facts in this repository.
 
-- Date, objective, contributor, A1/A2 identity and current private checkpoint.
+- Date, objective, contributor, current session and private checkpoint.
 - Exact private task ID and existing Session Log row; original worker and dated
   segment events, current stage and evidence level.
 - Observed started/ready/completed timestamps, verified-live time when applicable,
   elapsed/active/test/wait minutes and timing quality. Leave unknown numeric
   values blank; identify actual usage telemetry or state that it is unavailable.
-- Assigned worktree/branch, safe base, isolated database/ports and current file/contract reservations.
-- Implemented, tested, ready to merge, merged and verified-live states; A1 release lock and integration handoff where applicable.
+- Active worktree/branch, safe base, isolated database/ports and current file/contract reservations.
+- Implemented, tested, ready to merge, merged and verified-live states; release lock and integration evidence where applicable.
 - Selected feature and subtasks, focused brief title, owning requirement
   identifiers, prerequisite receipt and current user-authorized priority.
 - Reused paths/contracts and the behavior or contract delta, including no change.
@@ -378,6 +370,13 @@ test evidence in their appropriate private systems. The exact page titles above
 allow an authorized assistant to locate the context without publishing it.
 
 ## Change log
+
+- **4.0, 21 September 2026 UTC:** Restored ordinary priority-based tasks across
+  all four projects at the owner's request. Retired the independent A1/A2 queue
+  partition and startup requirements. Preserved historical attribution, existing
+  worktrees, atomic release protection, complete-feature gates and company
+  history. The active runner builds, integrates and verifies releases; later
+  fresh-session instruction discovery remains a separate observed check.
 
 - **3.1, 18 September 2026 UTC:** Adopted the owner's company-knowledge and
   work-history addition in root instructions, this guide and the existing handoff

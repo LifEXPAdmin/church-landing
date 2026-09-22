@@ -1,4 +1,35 @@
-# Independent worker coordination
+# Single-runner coordination and preserved worker history
+
+Effective 21 September 2026: the owner ended independent A1/A2 task queues.
+Use the regular priority workflow. There is one active runner for building,
+integration and releases. No task belongs to a parallel agent, and no A2
+acknowledgment, environment preparation or handoff is required to select work.
+Keep real feature prerequisites, test isolation and release gates intact.
+
+Preserve all existing worktrees, branches, fictional databases and checkpoints.
+Inspect actual running jobs, repository state and saved claims before recovering
+stale ownership. Do not reset another checkout or remove an unexamined lock.
+
+The existing tested helper and private Git-common `gc-coordination` location
+remain the compatibility mechanism for atomic identity, feature reservations
+and release exclusion. Its `A1` key is the sole runner's technical slot, not a
+Todoist owner or a parallel queue. Use the registered worktree and exact session
+with `register`, `claim`, `checkpoint`, `release-acquire`, `release-release`,
+`finish` and `unregister`. Status remains read-only. Keep the slot's worktree
+path stable unless a separately verified migration updates the implementation.
+The retained `A2` identity/checkpoint is historical; do not activate it. Check
+actual reservations and saved work before treating any remaining state as stale.
+Record the current mode and preserved baseline in the private checkpoint.
+
+Run `node --test tests/worker-coordination.test.mjs` when verifying this existing
+guard. Tests use disposable repositories; never race against real claims. The
+helper is cooperative coordination, not an OS or provider permission boundary.
+
+The detailed two-worker operations below document the preserved implementation
+and historical setup only. Their task routing, A2 startup and separate-release
+ownership instructions are superseded by the single-runner procedure above.
+
+## Historical independent-worker procedure
 
 A1 and A2 are separate owner-controlled chats. Read the current shared workflow
 task in the private task system. Its actual task labels govern routing. This

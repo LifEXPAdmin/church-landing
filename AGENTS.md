@@ -15,30 +15,30 @@ Step 001–132 are separate identifiers. Read original step details relevant to 
 active task; a mapping is not completion evidence. Record partial or superseded
 requirements in the existing private task rather than duplicating its backlog.
 
-Before selecting a feature, follow the [two-chat feature workflow](docs/godschurches/WORKFLOW_GUIDE.md#unified-feature-workflow)
+Before selecting a feature, follow the [regular priority workflow](docs/godschurches/WORKFLOW_GUIDE.md#unified-feature-workflow)
 and [shared coordination procedure](docs/godschurches/WORKER_COORDINATION.md).
 Read the selected private brief and prerequisite receipt; preserve completed work
-and real dependency gates. The owner uses two independent chats, A1 and A2,
-with the model/reasoning setting the owner selected. Actual A1/A2 task labels
-govern ownership; do not take the other worker's tasks or personal owner actions.
-Use only the assigned worktree, branch and isolated test environment. Reserve
+and real dependency gates. The owner's 21 September instruction ends the A1/A2
+partition. Use one regular queue across all four projects, with the selected
+model/reasoning setting. Former worker labels do not restrict task selection.
+Keep personal owner actions separate. Use an inspected worktree, feature branch
+and isolated fictional test environment. Preserve all prior worktrees. Reserve
 identity and affected files/contracts atomically before editing. Maintain only
 your own private checkpoint under the resolved Git common directory. Never steal
-an active or unexamined lock. A2 may prepare its own environment while shared
-setup finishes; missing acknowledgment alone is not a blocker.
+an active or unexamined lock. Do not start or wait for a second worker.
 
 Finish every required UI, integration, configuration, regression, release-note
-and deployment step in the same feature cycle. A2 hands tested committed work
-to A1 as ready to merge, then continues its next eligible assignment. A1 alone
-integrates main, applies production migrations and deploys under the shared
-atomic release lock. A1 checks ready-to-merge work at safe task checkpoints and
-before stopping; verify the combined release and live behavior before closure.
+and deployment step in the same feature cycle. The active runner integrates
+main, applies production migrations and deploys under existing permissions and
+the atomic release lock. At safe checkpoints, reconcile any previously prepared
+commits against current main before integrating; preserve completed work and
+verify the combined release and live behavior before closure.
 Complete newly unlocked children immediately. Recheck all four project lists
 between features and continue through your eligible P1, P2, P3 and P4 tasks.
-Stop only when asked, no eligible assigned work remains, or an actual access,
+Stop only when asked, no eligible work remains, or an actual access,
 runtime or usage limitation prevents progress. Preserve exact blockers and keep
-final review last. Occasional bounded subagents may investigate, review or handle
-an exclusively scoped piece; do not delegate the queue or keep a permanent pool.
+final review last. Work directly. Do not resume parallel ownership or maintain
+a permanent delegated team.
 Follow the guide's lean-runtime review:
 reuse existing owners, avoid unnecessary code/dependencies and measure relevant
 costs before claiming performance improvements.
@@ -68,7 +68,8 @@ Keep the final review last in each agreed batch. Review implemented work against
 
 Maintain one private Session Log record per exact Todoist task ID, searching before
 creating it. Preserve the original worker and append dated start, pause, tested
-handoff and acceptance events. A1 adds integration evidence to A2's existing row.
+handoff and acceptance events. Append integration evidence to the same row;
+historical worker attribution does not assign future work.
 Record outcomes, reasons, reused contracts, failures and fixes, exact source/test
 evidence, decisions replaced, proposals and next actions. Follow the guide's
 [company knowledge routine](docs/godschurches/WORKFLOW_GUIDE.md#company-knowledge-and-task-history)

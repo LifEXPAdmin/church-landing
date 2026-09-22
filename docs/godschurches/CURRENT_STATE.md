@@ -1,3 +1,17 @@
+## Regular priority workflow restored, 21 September 2026
+
+The owner ended the parallel task partition. Workflow guide 4.0 and the root
+instructions use ordinary eligible P1, P2, P3 and P4 work across all four project
+lists. The active runner builds, integrates and releases; historical worker
+attribution remains in dated receipts. All existing worktrees and completed
+changes are preserved. The previous nightly stop is superseded by the new
+instruction to continue. Product and external acceptance gates remain intact.
+
+This is a workflow change with no product runtime, schema or provider change.
+The latest recorded product release remains the dated receipt below. Later
+fresh-session automatic instruction discovery is still unobserved; the current
+manual reading route does not satisfy that separate check.
+
 ## Canonical profile events verified live, 19 September 2026, 05:14 UTC
 
 Release `2026.09.18.14` serves on the canonical domain from main
