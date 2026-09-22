@@ -1,5 +1,15 @@
 # Regional presentation and independent location disclosure
 
+September 22 display extension, currently local: Calendar Settings uses the same
+account regional version and exact-command owner for week start (Sunday/Monday),
+default view (Agenda/Month) and fixed/device-following display zone. A date/time-only
+client leaves these values unchanged. Calendar views consume the saved defaults;
+explicit URL views remain temporary. Device following resolves the browser zone
+when a view opens and does not persist a detected zone. All-day dates and direct
+event source zones keep their original meaning. The same export/erasure and
+presentation-only restore policy applies. See the
+[display checkpoint](CALENDAR_DISPLAY_PREFERENCES_REPORT.md) for actual gates.
+
 September 16, 2026 UTC. Implementation contract for the next increment; it is
 not a claim that the controls below are deployed. The current published Language
 and location integration is documented in [its receipt](LANGUAGE_LOCATION_ACCEPTANCE.md).

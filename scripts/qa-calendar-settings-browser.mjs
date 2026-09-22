@@ -143,7 +143,7 @@ try {
     await main.innerText(),
     /an active full-detail share can still reveal event details/
   );
-  assert.match(await main.innerText(), /These choices are not saved defaults/);
+  assert.match(await main.innerText(), /Saved defaults apply when you open a calendar/);
   for (const width of [320, 390, 1280]) {
     await page.setViewportSize({ width, height: 900 });
     await page.evaluate(() => {
@@ -194,7 +194,11 @@ try {
     "Keyboard entry and Back focus use canonical date/time, notification and commitment screens"
   );
 
-  for (const id of ["view", "layers", "sharing", "details"]) {
+  await folder();
+  await page.locator("#setting-calendar-view").click();
+  await page.waitForURL("**/platform/settings/calendar/view");
+  await page.getByLabel("Week starts on", { exact: true }).waitFor();
+  for (const id of ["layers", "sharing", "details"]) {
     await folder();
     await page.locator("#setting-calendar-" + id).click();
     await page.waitForURL("**/platform/calendars");

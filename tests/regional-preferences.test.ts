@@ -61,7 +61,8 @@ test("formats belong to the account across sessions, match settings, and do not 
     ownerId: a.id,
     version: 0,
     dateFormat: "DEFAULT",
-    timeFormat: "DEFAULT"
+    timeFormat: "DEFAULT",
+    calendar: { weekStart: 0, defaultView: "AGENDA", timeZoneMode: "FIXED", timeZone: "UTC" }
   });
   const command = input();
   const receipt = await saveRegionalPreferences(db, a.token, command);
@@ -80,7 +81,8 @@ test("formats belong to the account across sessions, match settings, and do not 
     ownerId: a.id,
     version: 1,
     dateFormat: "DMY",
-    timeFormat: "H24"
+    timeFormat: "H24",
+    calendar: { weekStart: 0, defaultView: "AGENDA", timeZoneMode: "FIXED", timeZone: "UTC" }
   });
   assert.equal((await readAccountSession(db, fresh))?.timeFormat, "H24");
   assert.deepEqual(

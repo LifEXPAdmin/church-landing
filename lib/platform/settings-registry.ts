@@ -109,6 +109,7 @@ export type SettingsControl =
   | "reading"
   | "discovery"
   | "language"
+  | "calendar-display"
   | "privacy"
   | "measurement"
   | "contact"
@@ -738,11 +739,11 @@ export const settingsRegistry: readonly SettingRegistration[] = Object.freeze([
     linked("regional-preferences.ts", "regional-preferences.ts")
   ),
   entry(
-    "calendar.view", "calendar", "Viewing month and time zone",
-    "Open your calendars to choose a month and viewing time zone for the current view. These choices are not saved defaults.",
+    "calendar.view", "calendar", "Saved calendar display",
+    "Save your week start, Agenda or Month view, and a fixed or device-following viewing time zone. Event times stay unchanged.",
     ["calendar display", "timezone", "device zone", "month", "week start", "default view"],
-    { href: "/platform/calendars" },
-    linked("calendar-view.ts; calendar-presentation.tsx")
+    { control: "calendar-display" },
+    { persistenceOwner: "PlatformUser regional preferences", read: "settings-context.ts; regional-preferences.ts", write: "regional-preferences.ts saveRegionalPreferences" }
   ),
   entry(
     "calendar.alerts", "calendar", "Event notification preferences",

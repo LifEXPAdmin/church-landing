@@ -33,6 +33,9 @@ const DiscoverySettings = dynamic(() =>
 const SettingsLanguage = dynamic(() =>
   import("./settings-language").then((m) => m.SettingsLanguage)
 );
+const CalendarDisplaySettings = dynamic(() =>
+  import("./regional-settings").then((m) => m.RegionalSettings)
+);
 const MeasurementSettings = dynamic(() =>
   import("./measurement-settings").then((m) => m.MeasurementSettings)
 );
@@ -48,6 +51,14 @@ export function SettingsControls({
   switch (control) {
     case "language":
       return <SettingsLanguage key={data.ownerId} initial={data.regional} />;
+    case "calendar-display":
+      return (
+        <CalendarDisplaySettings
+          key={data.ownerId}
+          initial={data.regional}
+          calendar
+        />
+      );
     case "measurement":
       return <MeasurementSettings owner={data.ownerId} />;
     case "discovery":

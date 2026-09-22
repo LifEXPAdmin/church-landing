@@ -27,9 +27,9 @@ export function SettingsCalendar({
         </p>
         {entries("calendar.formats", "calendar.view")}
         <p className="text-sm text-gc-muted">
-          Week start, a saved default view and automatic device time zone are
-          not available yet. Use device time zone copies your device’s current
-          zone into the view when you choose it.
+          Saved defaults apply when you open a calendar. View controls can
+          temporarily choose another month, view or time zone. Following the
+          device and using a fixed time zone are separate saved choices.
         </p>
       </section>
       <section

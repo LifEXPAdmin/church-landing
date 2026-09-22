@@ -266,6 +266,10 @@ model PlatformUser {
   dateFormat String @default("DEFAULT")
   timeFormat String @default("DEFAULT")
   regionalVersion Int @default(0)
+  calendarWeekStart Int @default(0)
+  calendarDefaultView String @default("AGENDA")
+  calendarTimeZoneMode String @default("FIXED")
+  calendarDisplayTimeZone String @default("UTC")
   website      String?
   interests    String[]     @default([])
   uploadedImages MediaAsset[] @relation("ImageUploader")

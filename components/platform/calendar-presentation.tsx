@@ -189,7 +189,12 @@ export function CalendarRange({
   selected?: string[];
 }) {
   const href = (month: string) => {
-    const p = new URLSearchParams({ month, timeZone: range.timeZone });
+    const p = new URLSearchParams({
+      month,
+      timeZone: range.timeZone,
+      mode: query.mode ?? "AGENDA",
+      zoneMode: query.zoneMode ?? "FIXED"
+    });
     if (query.cursor) p.set("cursor", query.cursor);
     if (calendars) {
       p.set("layers", "selected");
@@ -237,6 +242,28 @@ export function CalendarRange({
               defaultValue={range.month}
               className={portalInputClass + " min-w-0 max-w-full"}
             />
+          </label>
+          <label className="min-w-0 font-semibold">
+            Calendar view
+            <select
+              name="mode"
+              defaultValue={query.mode ?? "AGENDA"}
+              className={portalInputClass}
+            >
+              <option value="AGENDA">Agenda</option>
+              <option value="MONTH">Month</option>
+            </select>
+          </label>
+          <label className="min-w-0 font-semibold">
+            Viewing time zone behavior
+            <select
+              name="zoneMode"
+              defaultValue={query.zoneMode ?? "FIXED"}
+              className={portalInputClass}
+            >
+              <option value="FIXED">Use a fixed time zone</option>
+              <option value="DEVICE">Follow this device’s time zone</option>
+            </select>
           </label>
           <div className="min-w-0">
             <label className="font-semibold">
@@ -290,8 +317,11 @@ export function CalendarRange({
         </button>
       </form>
       <p className="text-sm text-gc-muted">
-        Timed events use {range.timeZone}. All-day events keep their original
-        dates.
+        {query.zoneMode === "DEVICE"
+          ? "Following this device’s time zone"
+          : "Fixed viewing time zone"}
+        : {range.timeZone}. All-day events keep their original dates. These view
+        controls are temporary. Save defaults in Calendar Settings.
       </p>
     </section>
   );
@@ -325,6 +355,7 @@ export function CalendarAgenda({
       {events.map((event) => (
         <li
           key={event.id}
+          id={`calendar-event-${event.id}`}
           className="min-w-0 space-y-2 rounded-xl border border-gc-divider bg-gc-surface p-5 [overflow-wrap:anywhere]"
         >
           <p className="text-sm text-gc-muted">

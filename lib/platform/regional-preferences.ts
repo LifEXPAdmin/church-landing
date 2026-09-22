@@ -7,10 +7,18 @@ import {
   regionalTimeFormats,
   regionalPresentation
 } from "./regional-format";
+import {
+  calendarDisplayInput,
+  calendarDisplayPreferences
+} from "./calendar-display";
 
 export const regionalSelect = {
   dateFormat: true,
   timeFormat: true,
+  calendarWeekStart: true,
+  calendarDefaultView: true,
+  calendarTimeZoneMode: true,
+  calendarDisplayTimeZone: true,
   regionalVersion: true
 } as const;
 export function regionalState(user: {
@@ -18,10 +26,15 @@ export function regionalState(user: {
   dateFormat: string;
   timeFormat: string;
   regionalVersion: number;
+  calendarWeekStart?: number;
+  calendarDefaultView?: string;
+  calendarTimeZoneMode?: string;
+  calendarDisplayTimeZone?: string;
 }) {
   return {
     ownerId: user.id,
     ...regionalPresentation(user),
+    calendar: calendarDisplayPreferences(user),
     version: user.regionalVersion
   };
 }
@@ -54,13 +67,23 @@ export function saveRegionalPreferences(
     "mutationId",
     "expectedVersion",
     "dateFormat",
-    "timeFormat"
+    "timeFormat",
+    "calendar"
   ]);
   if (
     !regionalDateFormats.some((v) => v === input.dateFormat) ||
     !regionalTimeFormats.some((v) => v === input.timeFormat)
   )
     throw new PortalError(400, "Choose a supported date and time format.");
+  const calendar =
+    input.calendar === undefined
+      ? undefined
+      : calendarDisplayInput(input.calendar);
+  if (calendar === null)
+    throw new PortalError(
+      400,
+      "Choose a supported week start, calendar view and valid time zone."
+    );
   return socialCommand(
     db,
     token,
@@ -74,6 +97,14 @@ export function saveRegionalPreferences(
         data: {
           dateFormat: String(input.dateFormat),
           timeFormat: String(input.timeFormat),
+          ...(calendar
+            ? {
+                calendarWeekStart: calendar.weekStart,
+                calendarDefaultView: calendar.defaultView,
+                calendarTimeZoneMode: calendar.timeZoneMode,
+                calendarDisplayTimeZone: calendar.timeZone
+              }
+            : {}),
           regionalVersion: { increment: 1 }
         },
         select: { regionalVersion: true }
@@ -81,7 +112,9 @@ export function saveRegionalPreferences(
       return {
         id: ownerId,
         version: user.regionalVersion,
-        message: "Your date and time formats were saved."
+        message: calendar
+          ? "Your calendar display and formats were saved."
+          : "Your date and time formats were saved."
       };
     },
     undefined,

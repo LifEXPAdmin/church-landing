@@ -1,5 +1,14 @@
 # Calendar settings ownership and readiness
 
+September 22 saved-display implementation is local and under verification. The
+existing account regional owner now also stores week start, Agenda/Month and a
+fixed/device-following viewing zone. Calendar Settings binds the same writer;
+calendar pages consume those values while preserving temporary URL overrides,
+source permissions and event instants. No second preference store is created.
+The [display checkpoint](CALENDAR_DISPLAY_PREFERENCES_REPORT.md) supersedes the
+historical absence of this owner below only for implemented local code. Production
+acceptance and the original timed-reminder scope remain open.
+
 September 22 saved-layer update: `CalendarLayerPreference` now owns private
 follow, visibility and color choices per person and source. Calendar Settings
 links to those canonical controls without storing another copy. Explicit URL

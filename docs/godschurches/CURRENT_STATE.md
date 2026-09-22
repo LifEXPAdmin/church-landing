@@ -1,3 +1,15 @@
+## Saved calendar display local checkpoint, 22 September 2026 UTC
+
+The [display checkpoint](CALENDAR_DISPLAY_PREFERENCES_REPORT.md) adds saved
+Sunday/Monday, Agenda/Month and fixed/device-following viewing zones using the
+existing account regional owner. Thirty focused service checks, seven built HTTP
+checks and twenty-one built-browser groups pass. TypeScript, copy, lint and clean
+production builds pass. The isolated fixture has additive migration 107; no
+production migration or release has occurred. Original timed-reminder acceptance
+remains necessary implementation work. Continue it in the same feature cycle,
+then finish combined regression, recovery, rollback and release gates. Current
+production remains the verified saved-layer release below.
+
 ## Saved calendar layers verified live, 22 September 2026 UTC
 
 The [calendar layer receipt](CALENDAR_LAYER_PREFERENCES_REPORT.md) records
