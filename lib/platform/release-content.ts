@@ -985,6 +985,16 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "calendar-privacy-navigation",
+    version: "2026.09.22.5",
+    date: "2026-09-22",
+    summary: "Open an event’s privacy controls directly and review the selected church and your current calendar duties before making changes.",
+    added: ["Eligible event agendas link directly to existing event sharing or church publication controls.", "Church calendar and event administration show the selected church, current editing and publication duties, and a link to assigned roles and permissions."],
+    improved: ["Calendar Settings links to permitted church calendar administration and keeps it separate from personal viewing choices."],
+    fixed: [],
+    featureIds: ["calendar-settings"]
+  },
+  {
     id: "calendar-sharing-previews",
     version: "2026.09.22.4",
     date: "2026-09-22",

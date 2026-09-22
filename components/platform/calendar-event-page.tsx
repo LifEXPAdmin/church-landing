@@ -20,6 +20,7 @@ import {
 import {
   CalendarNavigation,
   CalendarSharing,
+  CalendarChurchScope,
   eventPath,
   calendarPath,
   responseLabels
@@ -102,6 +103,19 @@ export async function CalendarEventPage({
               description={event.source.label}
             />
             <CalendarNavigation churchId={event.source.churchId} />
+            {privateData && (
+              <CalendarChurchScope
+                source={event.source}
+                canEdit={event.canEdit}
+                canPublish={event.canPublish}
+              />
+            )}
+            {(privateData?.shares ||
+              (privateData && event.canPublish && !event.canceled)) && (
+              <a className={portalLinkClass} href="#event-privacy">
+                Manage event privacy
+              </a>
+            )}
             <PublicShareControls kind="event" id={event.id} />
             {privateData && (
               <Link
@@ -339,7 +353,7 @@ export async function CalendarEventPage({
               </div>
             )}
             {privateData && event.canPublish && !event.canceled && (
-              <PortalCard title="Church publication">
+              <PortalCard title="Church publication" id="event-privacy">
                 <p>
                   Choose who can read the entire event series. Publishing
                   permission is separate from permission to edit its details.
@@ -373,7 +387,7 @@ export async function CalendarEventPage({
               </PortalCard>
             )}
             {privateData?.shares && (
-              <PortalCard title="Share this event">
+              <PortalCard title="Share this event" id="event-privacy">
                 <CalendarSharing
                   kind="event"
                   id={event.eventId}

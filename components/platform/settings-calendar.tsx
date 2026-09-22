@@ -89,6 +89,7 @@ export function SettingsCalendar({
           publication requires current assigned duties in My church; personal
           settings never grant them.
         </p>
+        {entries("calendar.church")}
       </section>
     </div>
   );

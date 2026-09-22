@@ -24,6 +24,7 @@ import {
   CalendarRange,
   CalendarAgenda,
   CalendarSharing,
+  CalendarChurchScope,
   calendarPath
 } from "./calendar-presentation";
 
@@ -173,6 +174,11 @@ export async function CalendarPage({
                 description={`${calendar.source.label} · ${calendar.own ? "Your personal calendar. Choose explicitly what to share." : "Events are shown according to your current access."}`}
               />
               <CalendarNavigation churchId={calendar.source.churchId} />
+              <CalendarChurchScope
+                source={calendar.source}
+                canEdit={calendar.canEdit}
+                canPublish={calendar.canPublish}
+              />
               <CalendarRange range={range} path={path} query={query} />
               <CalendarSnapshot
                 owner={user?.id}
@@ -252,7 +258,9 @@ export async function CalendarPage({
                         id={calendar.id}
                         shares={calendar.shares ?? []}
                         churches={churches}
-                        previewEvent={agenda.events.find((event) => !event.canceled)}
+                        previewEvent={agenda.events.find(
+                          (event) => !event.canceled
+                        )}
                         timeZone={range.timeZone}
                       />
                     </PortalCard>
@@ -380,6 +388,15 @@ export async function CalendarPage({
                           {c.canEdit ? "Can edit" : "View access"}
                           {c.canPublish ? " · Can publish" : ""}
                         </p>
+                        {c.source.kind === "CHURCH" &&
+                          (c.canEdit || c.canPublish) && (
+                            <Link
+                              className={portalLinkClass}
+                              href={`${calendarPath(c.id)}#calendar-administration`}
+                            >
+                              Manage church calendar
+                            </Link>
+                          )}
                       </li>
                     ))}
                   </ul>

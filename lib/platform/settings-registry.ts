@@ -782,6 +782,13 @@ export const settingsRegistry: readonly SettingRegistration[] = Object.freeze([
     linked("calendar-reads.ts; calendar-access.ts", "calendar-commands.ts")
   ),
   entry(
+    "calendar.church", "calendar", "Church calendar administration",
+    "Choose a permitted church calendar, then review its selected church and your current editing or publication duties. These are separate from personal preferences.",
+    ["church event", "event privacy", "calendar permissions", "publish calendar"],
+    { href: "/platform/calendars" },
+    linked("calendar-reads.ts; calendar-access.ts", "calendar-commands.ts")
+  ),
+  entry(
     "calendar.commitments",
     "calendar",
     "Your commitments",

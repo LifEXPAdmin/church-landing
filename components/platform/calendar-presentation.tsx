@@ -32,6 +32,42 @@ export const eventPath = (id: string) =>
   `/platform/events/${encodeURIComponent(id)}`;
 export const calendarPath = (id: string) =>
   `/platform/calendars/${encodeURIComponent(id)}`;
+export function CalendarChurchScope({
+  source,
+  canEdit,
+  canPublish
+}: {
+  source: CalendarSummary["source"];
+  canEdit?: boolean;
+  canPublish?: boolean;
+}) {
+  if (source.kind !== "CHURCH" || (!canEdit && !canPublish)) return null;
+  return (
+    <section
+      id="calendar-administration"
+      aria-label="Church calendar administration"
+      className="space-y-3 rounded-xl border border-gc-divider p-5"
+    >
+      <h2 className="text-2xl">Church calendar administration</h2>
+      <p className="font-semibold">Selected church: {source.label}</p>
+      <p>Your current permissions for this calendar or event:</p>
+      <ul className="list-inside list-disc">
+        {canEdit && <li>Calendar editor: Edit details</li>}
+        {canPublish && <li>Event publisher: Publish event audiences</li>}
+      </ul>
+      <p>
+        Editing and publishing are separate duties. Personal calendar settings
+        cannot grant either duty or change an existing event’s audience.
+      </p>
+      <Link
+        className={portalLinkClass}
+        href={`/platform/churches/${encodeURIComponent(source.churchId)}/responsibilities`}
+      >
+        My roles and permissions at {source.label}
+      </Link>
+    </section>
+  );
+}
 export function CalendarNavigation({ churchId }: { churchId?: string }) {
   return (
     <nav
@@ -232,6 +268,16 @@ export function CalendarAgenda({
             </p>
           )}
           {event.location && <p>{event.location}</p>}
+          {!event.canceled &&
+            (event.canPublish ||
+              (event.source.kind === "PERSONAL" && event.canEdit)) && (
+              <Link
+                className={portalLinkClass}
+                href={`${eventPath(event.id)}?timeZone=${encodeURIComponent(timeZone)}#event-privacy`}
+              >
+                Manage event privacy
+              </Link>
+            )}
           {event.recurring && (
             <p className="text-sm text-gc-muted">
               Weekly event
