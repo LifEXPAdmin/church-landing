@@ -41,6 +41,8 @@ export type RetentionControlEntry = {
     | "EXCHANGE_FAVORITE"
     | "EXCHANGE_SAVED_SEARCH"
     | "EXCHANGE_NEED"
+    | "VOLUNTEER_OPPORTUNITY"
+    | "VOLUNTEER_APPLICATION"
     | "PANTRY_HUB"
     | "EXCHANGE_INQUIRY"
     | "EXCHANGE_CONTACT"
@@ -115,6 +117,8 @@ function validate(value: unknown): RetentionControlEntry {
       "EXCHANGE_FAVORITE",
       "EXCHANGE_SAVED_SEARCH",
       "EXCHANGE_NEED",
+      "VOLUNTEER_OPPORTUNITY",
+      "VOLUNTEER_APPLICATION",
       "PANTRY_HUB",
       "EXCHANGE_INQUIRY",
       "EXCHANGE_CONTACT",
@@ -459,6 +463,8 @@ export async function recordDiscoveryControl(
     | "EXCHANGE_FAVORITE"
     | "EXCHANGE_SAVED_SEARCH"
     | "EXCHANGE_NEED"
+    | "VOLUNTEER_OPPORTUNITY"
+    | "VOLUNTEER_APPLICATION"
     | "PANTRY_HUB"
     | "EXCHANGE_INQUIRY"
     | "EXCHANGE_CONTACT"
@@ -1271,6 +1277,41 @@ export async function replayRetentionControls(
             where: { id: entry.id, journaledAt: null },
             data: { journaledAt: new Date() }
           });
+          continue;
+        }
+        if (entry.kind === "VOLUNTEER_OPPORTUNITY") {
+          const prior = await tx.volunteerOpportunity.findUnique({ where: { id: entry.sourceId } });
+          if (!prior) {
+            await tx.volunteerOpportunity.create({ data: {
+              id: entry.sourceId, version: entry.version, recoveryRequired: true,
+              closedAt: new Date(entry.recordedAt)
+            } });
+          } else if (prior.version < entry.version) {
+            await tx.volunteerOpportunity.update({ where: { id: prior.id }, data: {
+              version: entry.version, recoveryRequired: true, closedAt: new Date(entry.recordedAt)
+            } });
+            if (prior.slotId) await tx.postVolunteerSlot.update({ where: { id: prior.slotId }, data: {
+              closedAt: new Date(entry.recordedAt), version: { increment: 1 }
+            } });
+          }
+          await record(tx, entry);
+          await tx.retentionControl.updateMany({ where: { id: entry.id, journaledAt: null }, data: { journaledAt: new Date() } });
+          continue;
+        }
+        if (entry.kind === "VOLUNTEER_APPLICATION") {
+          const prior = await tx.volunteerApplication.findUnique({ where: { id: entry.sourceId } });
+          const data = { version: entry.version, recoveryRequired: true, state: "WITHDRAWN" as const, statement: "", decisionNote: "" };
+          if (!prior) await tx.volunteerApplication.create({ data: { id: entry.sourceId, ...data } });
+          else if (prior.version < entry.version) {
+            await tx.volunteerApplication.update({ where: { id: prior.id }, data });
+            await tx.volunteerApplicationEvent.updateMany({ where: { applicationId: prior.id }, data: { note: "" } });
+            if (prior.signupId) await tx.postVolunteerSignup.updateMany({
+              where: { id: prior.signupId, completedAt: null, state: "ACTIVE" },
+              data: { state: "CANCELED", version: { increment: 1 } }
+            });
+          }
+          await record(tx, entry);
+          await tx.retentionControl.updateMany({ where: { id: entry.id, journaledAt: null }, data: { journaledAt: new Date() } });
           continue;
         }
         if (entry.kind === "EXCHANGE_NEED") {

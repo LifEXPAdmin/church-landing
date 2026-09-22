@@ -13,6 +13,8 @@ import {
   type PostTx
 } from "./post-access";
 import { postField, postId } from "./post-input";
+import { parseVolunteerShift, volunteerShift } from "./volunteer-shift";
+import { syncVolunteerCancellation } from "./volunteer-lifecycle";
 
 export const participationInclude = {
   eventOccurrence: { include: { event: { include: { calendar: true } } } }
@@ -129,7 +131,8 @@ function capacity(value: unknown) {
 export async function participationCommandIn(
   tx: PostTx,
   context: PostContext,
-  input: Record<string, unknown>
+  input: Record<string, unknown>,
+  trusted?: { opportunityId?: string; applicationId?: string; coordinatorId?: string }
 ) {
   const actorId = context.actorId;
   if (!actorId) throw new PortalError(401, "Sign in to continue.");
@@ -147,17 +150,25 @@ export async function participationCommandIn(
       include: { slot: { select: { postId: true } } }
     });
     if (!row) throw new PortalError(404, "Your signup is unavailable.");
+    if (trusted?.coordinatorId) {
+      const coordinator = await postContext(tx, trusted.coordinatorId);
+      const source = await participationPost(tx, coordinator, row.slot.postId);
+      if (!canOrganize(coordinator, source))
+        throw new PortalError(404, "This volunteer signup is unavailable.");
+    }
     if (row.completedAt)
       throw new PortalError(
         409,
         "This help is already recorded as completed. Ask the organizer to correct an inaccurate receipt before withdrawing."
       );
-    if (row.state === "CANCELED")
+    if (row.state === "CANCELED") {
+      await syncVolunteerCancellation(tx, row.id, trusted?.coordinatorId ?? actorId);
       return {
         id: row.id,
         version: row.version,
         message: "Your volunteer signup is canceled."
       };
+    }
     expected(input.expectedVersion, row.version);
     const saved = await tx.postVolunteerSignup.update({
       where: { id: row.id },
@@ -166,17 +177,18 @@ export async function participationCommandIn(
     await audit(
       tx,
       row.slot.postId,
-      actorId,
+      trusted?.coordinatorId ?? actorId,
       "volunteer-canceled",
       row.id,
       saved.version
     );
+    await syncVolunteerCancellation(tx, saved.id, trusted?.coordinatorId ?? actorId);
     await recordDomainActivity(tx, {
       kind: "VOLUNTEER_CONFIRMATION",
       category: "commitments",
       sourceId: saved.id,
       sourceVersion: saved.version,
-      actorId,
+      actorId: trusted?.coordinatorId ?? actorId,
       recipientId: actorId
     });
     return {
@@ -393,6 +405,11 @@ export async function participationCommandIn(
         });
     if (input.slotId && !prior)
       throw new PortalError(404, "Volunteer role unavailable.");
+    if (prior) {
+      const opportunity = await tx.volunteerOpportunity.findUnique({ where: { slotId: prior.id } });
+      if (opportunity && (opportunity.recoveryRequired || opportunity.id !== trusted?.opportunityId))
+        throw new PortalError(409, "Manage this role in its application opportunity so its requirements and approvals stay together.");
+    }
     if (!input.slotId && prior)
       return {
         id: prior.id,
@@ -434,7 +451,8 @@ export async function participationCommandIn(
     const data = {
       role,
       capacity: places,
-      closedAt: input.closed ? new Date() : null
+      closedAt: input.closed ? new Date() : null,
+      ...parseVolunteerShift(input, post.eventOccurrence!, prior ?? undefined)
     };
     const saved = prior
       ? await tx.postVolunteerSlot.update({
@@ -463,7 +481,9 @@ export async function participationCommandIn(
     if (
       prior &&
       (prior.capacity !== saved.capacity ||
-        !!prior.closedAt !== !!saved.closedAt)
+        !!prior.closedAt !== !!saved.closedAt ||
+        prior.shiftStartAt?.getTime() !== saved.shiftStartAt?.getTime() ||
+        prior.shiftEndAt?.getTime() !== saved.shiftEndAt?.getTime())
     )
       await recordFanout(
         tx,
@@ -495,6 +515,23 @@ export async function participationCommandIn(
     });
     if (!slot || slot.closedAt)
       throw new PortalError(409, "This role is closed to new signups.");
+    const opportunity = await tx.volunteerOpportunity.findUnique({ where: { slotId: slot.id } });
+    if (opportunity) {
+      if (!trusted?.applicationId || !trusted.coordinatorId || opportunity.closedAt || opportunity.recoveryRequired)
+        throw new PortalError(409, "This role requires an application and coordinator approval. No place was reserved.");
+      const application = await tx.volunteerApplication.findUnique({ where: { id: trusted.applicationId } });
+      const coordinator = await postContext(tx, trusted.coordinatorId);
+      await participationPost(tx, coordinator, post.id);
+      if (!application || application.opportunityId !== opportunity.id || application.userId !== actorId ||
+          application.state !== "SUBMITTED" || application.recoveryRequired ||
+          !canOrganize(coordinator, post) || coordinator.blockedIds?.includes(actorId))
+        throw new PortalError(404, "This application is unavailable for approval.");
+    } else if (trusted?.applicationId) {
+      throw new PortalError(404, "This application is unavailable for approval.");
+    }
+    const shift = volunteerShift(slot, event);
+    if (shift.conflict || shift.endAt <= new Date())
+      throw new PortalError(409, "This shift has ended or its times need the organizer to review the changed event.");
     const needSlot = await tx.exchangeNeedSlot.findUnique({
       where: { volunteerSlotId: slot.id }
     });
@@ -534,6 +571,7 @@ export async function participationCommandIn(
       throw new PortalError(409, "This role is full. No place was reserved.");
     const data = {
       state: "ACTIVE" as const,
+      slotVersion: slot.version,
       eventVersion: event.event.version,
       occurrenceVersion: event.version
     };
@@ -548,7 +586,7 @@ export async function participationCommandIn(
     await audit(
       tx,
       post.id,
-      actorId,
+      trusted?.coordinatorId ?? actorId,
       "volunteer-reserved",
       saved.id,
       saved.version
@@ -558,7 +596,7 @@ export async function participationCommandIn(
       category: "commitments",
       sourceId: saved.id,
       sourceVersion: saved.version,
-      actorId,
+      actorId: trusted?.coordinatorId ?? actorId,
       recipientId: actorId
     });
     return {

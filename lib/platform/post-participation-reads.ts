@@ -8,6 +8,8 @@ import {
   type PostTx
 } from "./post-access";
 import { postId } from "./post-input";
+import { volunteerShift } from "./volunteer-shift";
+import { canCoordinateOpportunity, reviewedVolunteerApplication } from "./volunteer-policy";
 import {
   canOrganize,
   canParticipate,
@@ -88,13 +90,15 @@ export function getPostParticipation(
       orderBy: { id: "asc" },
       take: 12,
       include: {
-        _count: { select: { signups: { where: { state: "ACTIVE" } } } },
+        opportunity: { select: { id: true, recoveryRequired: true } },
+        _count: { select: { signups: { where: { OR: [{ state: "ACTIVE" }, { completedAt: { not: null } }] } } } },
         signups: {
           where: { userId: context.actorId ?? "" },
           select: {
             id: true,
             state: true,
             version: true,
+            slotVersion: true,
             eventVersion: true,
             occurrenceVersion: true
           }
@@ -107,6 +111,7 @@ export function getPostParticipation(
       eligible,
       canEdit: postCanEdit(context, post),
       canOrganize: canOrganize(context, post),
+      canCreateOpportunity: postCanEdit(context, post) && canCoordinateOpportunity(context, post),
       active,
       signedIn: !!context.actorId,
       churchScoped: !!post.audienceChurchId,
@@ -128,6 +133,12 @@ export function getPostParticipation(
       slots: slots.map((slot) => ({
         id: slot.id,
         role: slot.role,
+        opportunityId: slot.opportunity && !slot.opportunity.recoveryRequired ? slot.opportunity.id : null,
+        approvalRequired: !!slot.opportunity,
+        shift: occurrence ? (() => {
+          const time = volunteerShift(slot, occurrence);
+          return { ...time, startAt: time.startAt.toISOString(), endAt: time.endAt.toISOString() };
+        })() : null,
         capacity: slot.capacity,
         filled: slot._count.signups,
         closed: !!slot.closedAt,
@@ -139,7 +150,8 @@ export function getPostParticipation(
               version: slot.signups[0].version,
               detailsChanged:
                 slot.signups[0].eventVersion !== occurrence?.event.version ||
-                slot.signups[0].occurrenceVersion !== occurrence?.version
+                slot.signups[0].occurrenceVersion !== occurrence?.version ||
+                slot.signups[0].slotVersion !== slot.version
             }
           : null
       }))
@@ -157,42 +169,48 @@ export function getVolunteerRoster(
 ) {
   return withPostRead(db, token, async (tx, context) => {
     const slot = await tx.postVolunteerSlot.findUnique({
-      where: { id: postId(slotId) }
+      where: { id: postId(slotId) }, include: { opportunity: true }
     });
-    if (!slot) throw new PortalError(404, "Volunteer role unavailable.");
+    if (!slot || slot.opportunity?.recoveryRequired) throw new PortalError(404, "Volunteer role unavailable.");
     const post = await participationPost(tx, context, slot.postId);
     if (!canOrganize(context, post))
       throw new PortalError(
         403,
         "An authorized church volunteer organizer may view this roster."
       );
+    const pageSize = slot.opportunity ? 25 : 100;
     const rows = await tx.postVolunteerSignup.findMany({
       where: {
         slotId: slot.id,
         state: "ACTIVE",
+        userId: { notIn: context.blockedIds ?? [] },
         ...(cursor ? { id: { gt: postId(cursor) } } : {})
       },
       select: {
         id: true,
+        application: { select: { id: true } },
         user: { select: { name: true, suspendedAt: true, deactivatedAt: true } }
       },
       orderBy: { id: "asc" },
-      take: 101
+      take: pageSize + 1
     });
+    const people = [];
+    for (const row of rows.slice(0, pageSize)) {
+      if (slot.opportunity) {
+        if (!row.application) continue;
+        try { await reviewedVolunteerApplication(tx, context, row.application.id); }
+        catch (error) { if (error instanceof PortalError && error.status === 404) continue; throw error; }
+      }
+      people.push({ id: row.id, name: row.user.suspendedAt || row.user.deactivatedAt ? "Unavailable account" : row.user.name });
+    }
     return {
       role: slot.role,
       capacity: slot.capacity,
       total: await tx.postVolunteerSignup.count({
         where: { slotId: slot.id, state: "ACTIVE" }
       }),
-      people: rows.slice(0, 100).map((r) => ({
-        id: r.id,
-        name:
-          r.user.suspendedAt || r.user.deactivatedAt
-            ? "Unavailable account"
-            : r.user.name
-      })),
-      nextCursor: rows.length > 100 ? rows[99].id : null
+      people,
+      nextCursor: rows.length > pageSize ? rows[pageSize - 1].id : null
     };
   });
 }
@@ -200,16 +218,20 @@ export async function volunteerCommitmentsIn(
   tx: PostTx,
   context: PostContext,
   where: Prisma.CalendarOccurrenceWhereInput,
-  signupId?: string
+  signupId?: string,
+  window?: { startAt: Date; endAt: Date }
 ) {
   const rows = await tx.postVolunteerSignup.findMany({
     where: {
       userId: context.actorId ?? "",
       ...(signupId
         ? { id: postId(signupId) }
-        : { state: "ACTIVE", slot: { post: { eventOccurrence: where } } })
+        : { state: "ACTIVE", slot: { OR: [
+            { shiftStartAt: null, post: { eventOccurrence: where } },
+            ...(window ? [{ shiftStartAt: { lt: window.endAt }, shiftEndAt: { gt: window.startAt } }] : [])
+          ] } })
     },
-    include: { slot: { include: { post: { include: participationInclude } } } },
+    include: { slot: { include: { opportunity: { select: { recoveryRequired: true } }, post: { include: participationInclude } } } },
     take: 1001,
     orderBy: { id: "asc" }
   });
@@ -226,8 +248,9 @@ export async function volunteerCommitmentsIn(
   });
   const visible = new Set(readable.map((p) => p.id));
   return rows.map((r) => {
-    const event = r.slot.post.eventOccurrence!;
-    const allowed = visible.has(r.slot.postId);
+    const event = r.slot.post.eventOccurrence;
+    const allowed = !!event && visible.has(r.slot.postId) && !r.slot.opportunity?.recoveryRequired;
+    const time = event ? volunteerShift(r.slot, event) : null;
     return {
       id: r.id,
       version: r.version,
@@ -239,21 +262,22 @@ export async function volunteerCommitmentsIn(
             id: event.id,
             title: event.title,
             organizer: event.organizer,
-            startAt: event.startAt.toISOString(),
-            endAt: event.endAt.toISOString(),
+            startAt: time!.startAt.toISOString(),
+            endAt: time!.endAt.toISOString(),
             timeZone: event.timeZone,
-            allDay: event.allDay,
-            startLocal: event.startLocal,
-            endLocal: event.endLocal,
-            canceled: !!event.canceledAt || !!event.event.canceledAt
+            allDay: time!.allDay,
+            startLocal: time!.startLocal,
+            endLocal: time!.endLocal,
+            shiftConflict: time!.conflict,
+            canceled: !!event.canceledAt || !!event.event.canceledAt || time!.conflict
           }
         : null,
       detailsChanged:
         allowed &&
         (r.eventVersion !== event.event.version ||
-          r.occurrenceVersion !== event.version),
+          r.occurrenceVersion !== event.version || r.slotVersion !== r.slot.version),
       // Internal only: caller uses this for private overlap hints, then omits it.
-      occurrence: allowed ? event : null
+      occurrence: allowed ? { ...event, ...time!, id: `volunteer:${r.id}` } : null
     };
   });
 }

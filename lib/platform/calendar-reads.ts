@@ -492,7 +492,8 @@ export async function getCalendarCommitments(
       tx,
       await postContext(tx, actor.id),
       timeWhere(range),
-      options.signup ? id(options.signup) : undefined
+      options.signup ? id(options.signup) : undefined,
+      range
     );
     if (options.signup && !volunteerRows.length)
       throw new PortalError(404, "This volunteer signup is unavailable.");
@@ -528,6 +529,7 @@ export async function getCalendarCommitments(
           busy.some(
             (other) =>
               other.id !== occurrence.id &&
+              other.id !== row.event?.id &&
               overlaps(occurrence, other, range.timeZone)
           )
             ? "You have another commitment or busy period at this time."
@@ -548,7 +550,7 @@ export async function getCalendarCommitments(
               r.state === "GOING" &&
               busy.some(
                 (other) =>
-                  other.id !== row.id && overlaps(row, other, range.timeZone)
+                  other.id !== row.id && !(other.id.startsWith("volunteer:") && other.eventId === row.eventId) && overlaps(row, other, range.timeZone)
               )
                 ? "You have another commitment or busy period at this time."
                 : null

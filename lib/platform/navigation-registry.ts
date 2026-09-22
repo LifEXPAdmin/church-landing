@@ -147,6 +147,13 @@ export const navigationRegistry = {
     description: "Your event responses and private conflict hints.",
     icon: "calendarCheck"
   },
+  volunteers: {
+    href: "/platform/serve",
+    title: "Volunteer opportunities",
+    description: "Explore church opportunities and your private applications.",
+    icon: "handHeart",
+    prefetch: false
+  },
   settings: {
     href: "/platform/settings",
     title: "Account settings",
@@ -296,6 +303,7 @@ const menuGroups = [
       { id: "prayers", signedIn: true },
       { id: "calendars" },
       { id: "commitments" },
+      { id: "volunteers" },
       { id: "helpRequests", signedIn: true },
       { id: "feedback", signedIn: true },
       { id: "reports", signedIn: true }

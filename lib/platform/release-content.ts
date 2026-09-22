@@ -14,6 +14,16 @@ export type Feature = {
 };
 export const features: Feature[] = [
   {
+    id: "volunteer-applications",
+    category: "Events and calendars",
+    name: "Volunteer applications and independent shifts",
+    description: "Explore church opportunities, apply privately and track a coordinator’s decision for a timed shift or ongoing role.",
+    steps: "Open Volunteer opportunities from Menu. Review the duties and commitment, then submit an application. My applications shows the saved status and withdrawal action. Authorized church publishers with volunteer duties create opportunities from their church posts; coordinators review applications and confirm available places. Accepted timed shifts appear in My commitments.",
+    href: "/platform/serve",
+    eligibility: "Applying requires a verified eligible adult account and current source access. Applications reserve no place until approved and never grant church authority or additional access. A shift can use its parent event time or fixed shorter times within that event. Ongoing roles use agreed arrangements without creating calendar events. Application notes and decisions stay private; screening documents, child information and background checks are not collected here.",
+    availability: "conditional"
+  },
+  {
     id: "profile-selected-event",
     category: "Privacy and account",
     name: "An existing event on your profile",
@@ -603,7 +613,7 @@ export const features: Feature[] = [
     name: "Volunteer roles",
     description: "See available places and offer to help at an existing event.",
     steps:
-      "Open an event’s volunteer post and choose I can help for an available role. Review or cancel your signup in My commitments. Event RSVP is a separate choice. Church and feed cards label times in your device’s time zone.",
+      "Open an event’s volunteer post and choose I can help for an instant-signup role, or open its opportunity to apply when approval is required. Review or cancel an accepted timed signup in My commitments. Event RSVP is a separate choice. Fixed shifts keep their own times when the parent event changes, and conflicts require coordinator review.",
     href: "/platform/commitments",
     eligibility:
       "Current eligible church members and authorized organizers. Full, closed or canceled roles cannot accept new signups. No waitlist or reminder delivery is implied.",
@@ -964,6 +974,16 @@ export const features: Feature[] = [
   }
 ];
 export const releases: ReleaseEntry[] = [
+  {
+    id: "volunteer-applications-and-shifts",
+    version: "2026.09.22.1",
+    date: "2026-09-22",
+    summary: "Apply privately for church opportunities and keep volunteer shifts distinct from their parent event.",
+    added: ["Create a timed opportunity or ongoing ministry role, submit a private application and review its decision in My applications.", "Authorized coordinators accept or decline applications. Acceptance confirms one available place; withdrawal releases only uncompleted help and keeps the decision history."],
+    improved: ["Shorter shifts use fixed times within their parent event. My commitments shows the shift interval, while changed parent times can pause new approvals for review.", "Church Needs, event posts and application review use the same timed reservation. Existing instant-signup roles keep their behavior."],
+    fixed: ["Application confirmation opens the saved application list after a recovered response. Current account and church access control private pages, exports and coordinator views."],
+    featureIds: ["volunteer-applications", "volunteering", "church-needs", "rsvp"]
+  },
   {
     id: "canonical-profile-event-links",
     version: "2026.09.18.14",

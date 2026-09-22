@@ -17,6 +17,7 @@ import { eligibleWhere } from "./portal-policy";
 import { effectiveChurchGrants } from "./church-permissions";
 import { calendarContext, eventAccess, eventInclude } from "./calendar-access";
 import type { NotificationSource } from "./notification-source";
+import { volunteerShift } from "./volunteer-shift";
 
 type Tx = Prisma.TransactionClient;
 export const domainNotificationKinds = [
@@ -632,12 +633,20 @@ export async function domainNotificationSources(
         id: true,
         postId: true,
         version: true,
+        shiftStartAt: true,
+        shiftEndAt: true,
+        opportunity: { select: { id: true, recoveryRequired: true, closedAt: true } },
         post: {
           select: {
             eventOccurrence: {
               select: {
                 canceledAt: true,
+                startAt: true,
                 endAt: true,
+                startLocal: true,
+                endLocal: true,
+                timeZone: true,
+                allDay: true,
                 event: { select: { canceledAt: true } }
               }
             }
@@ -661,6 +670,10 @@ export async function domainNotificationSources(
         context.churches.includes(p.authorChurchId) &&
         !mutedPost(p) &&
         event &&
+        !slot.opportunity?.recoveryRequired &&
+        !slot.opportunity?.closedAt &&
+        !volunteerShift(slot, event).conflict &&
+        volunteerShift(slot, event).endAt > now &&
         !event.canceledAt &&
         !event.event.canceledAt &&
         event.endAt > now &&
@@ -672,7 +685,7 @@ export async function domainNotificationSources(
         add(
           e,
           "commitments",
-          `/platform/posts/${p.id}#volunteer-${slot.id}`,
+          slot.opportunity ? `/platform/serve/${slot.opportunity.id}` : `/platform/posts/${p.id}#volunteer-${slot.id}`,
           `slot:${slot.id}`
         );
     }
@@ -762,6 +775,7 @@ export async function domainNotificationSources(
             id: true,
             postId: true,
             version: true,
+            opportunity: { select: { id: true, recoveryRequired: true } },
             post: { select: { eventOccurrenceId: true } }
           }
         }
@@ -849,13 +863,14 @@ export async function domainNotificationSources(
           );
         } else if (
           details(r.slot.post.eventOccurrenceId) &&
+          !r.slot.opportunity?.recoveryRequired &&
           posts.has(r.slot.postId) &&
           r.slot.version >= (e.sourceVersion ?? Infinity)
         )
           add(
             e,
             "commitments",
-            `/platform/posts/${r.slot.postId}#volunteer-${r.slot.id}`,
+            r.slot.opportunity ? `/platform/serve/${r.slot.opportunity.id}` : `/platform/posts/${r.slot.postId}#volunteer-${r.slot.id}`,
             `slot:${r.slot.id}`
           );
       }

@@ -10,6 +10,7 @@ import { validImageCrop } from "./image-crop";
 import { isEligible } from "./portal-policy";
 import { adultMemberWhere } from "./adult-message-policy";
 import { METRIC_RAW_DAYS } from "./metric-policy";
+import { exportVolunteerApplications } from "./volunteer-privacy";
 
 const EXPORT_SECONDS = 60;
 const MAX_ROWS = 2000;
@@ -810,6 +811,7 @@ export async function downloadAccountExport(
           updatedAt: true
         }
       }),
+      volunteerApplications: await exportVolunteerApplications(tx, userId, MAX_ROWS),
       personalCalendars,
       personalEvents,
       personalOccurrences,
@@ -1276,7 +1278,7 @@ export async function downloadAccountExport(
         version: 1,
         generatedAt: new Date().toISOString(),
         scope:
-          "Your account profile, presentation preferences and linked Google identity, authored community content, your personal Exchange listings and their image metadata, your private Exchange favorites, saved-search choices and personal defaults, retained inquiry receipts and currently agreed pickup plans (other people’s listing content excluded), personal image metadata and photo albums, personal polls and your own ballots and volunteer signups, likes/following, your own topic memberships and private following choices and named personal following lists, owned topic and Gather group details, your own Gather membership and private read progress, private social, conversation and prayer choices and your own prayer update labels (source content excluded), and friend invitation records, private comment drafts and comment Likes, private post drafts and saved collection organization (source posts excluded), church directory choices, your own church representative setup and listing drafts/submissions, personal calendars/events and their sharing choices, your event responses, your own sent contact requests and currently authorized accepted conversation messages, your own community reports and your own support submissions, current optional measurement choices and retained foreground-use facts. Other people's content outside your accepted conversations, staff/church operations, credentials, session data and security audit records and private report-review notes are excluded. Cleared message history is excluded from your view; this does not erase the other participant's history. Image binaries are not embedded; image references still require current access. Reading preferences saved only on this browser are not in this account file.",
+          "Your account profile, presentation preferences and linked Google identity, authored community content, your personal Exchange listings and their image metadata, your private Exchange favorites, saved-search choices and personal defaults, retained inquiry receipts and currently agreed pickup plans (other people’s listing content excluded), personal image metadata and photo albums, personal polls and your own ballots and volunteer signups, your own volunteer application receipts and current private answers and recent decision history, likes/following, your own topic memberships and private following choices and named personal following lists, owned topic and Gather group details, your own Gather membership and private read progress, private social, conversation and prayer choices and your own prayer update labels (source content excluded), and friend invitation records, private comment drafts and comment Likes, private post drafts and saved collection organization (source posts excluded), church directory choices, your own church representative setup and listing drafts/submissions, personal calendars/events and their sharing choices, your event responses, your own sent contact requests and currently authorized accepted conversation messages, your own community reports and your own support submissions, current optional measurement choices and retained foreground-use facts. Other people's content outside your accepted conversations, staff/church operations, credentials, session data and security audit records and private report-review notes are excluded. Cleared message history is excluded from your view; this does not erase the other participant's history. Image binaries are not embedded; image references still require current access. Reading preferences saved only on this browser are not in this account file.",
         account,
         ...collections
       },

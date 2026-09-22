@@ -14,6 +14,7 @@ import {
 } from "./account-deletion";
 import { markUnretainedMessages } from "./messaging-retention";
 import { eraseAdminPersonalData } from "./admin-privacy";
+import { eraseVolunteerApplications } from "./volunteer-privacy";
 
 type Tx = Prisma.TransactionClient;
 const personalPost = (userId: string) => ({
@@ -276,8 +277,12 @@ async function eraseSocialData(tx: Tx, userId: string, now: Date) {
     where: { poll: { post: personalPost(userId) } }
   });
   await tx.postPoll.deleteMany({ where: { post: personalPost(userId) } });
+  await eraseVolunteerApplications(tx, userId);
   await tx.postVolunteerSignup.deleteMany({
-    where: { OR: [{ userId }, { slot: { post: personalPost(userId) } }] }
+    where: { OR: [
+      { userId, NOT: { AND: [{ completedAt: { not: null } }, { application: { isNot: null } }] } },
+      { slot: { post: personalPost(userId) } }
+    ] }
   });
   await tx.postVolunteerSlot.deleteMany({
     where: { post: personalPost(userId) }

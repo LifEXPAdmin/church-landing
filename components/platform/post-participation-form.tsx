@@ -427,6 +427,7 @@ function ConfigureSlot({
   slot?: ParticipationView["slots"][number];
   requestKey: string;
 }) {
+  const [independent, setIndependent] = useState(slot?.shift?.independent ?? false);
   return (
     <details className="space-y-3">
       <summary className="cursor-pointer py-3 font-semibold">
@@ -444,7 +445,9 @@ function ConfigureSlot({
         fields={(form) => ({
           role: form.get("role"),
           capacity: Number(form.get("capacity")),
-          closed: form.get("closed") === "on"
+          closed: form.get("closed") === "on",
+          independentTime: independent,
+          ...(independent ? { shiftStartLocal: form.get("shiftStartLocal"), shiftEndLocal: form.get("shiftEndLocal") } : {})
         })}
       >
         <TextField
@@ -463,8 +466,15 @@ function ConfigureSlot({
           <input type="checkbox" name="closed" defaultChecked={slot?.closed} />
           Close this role to new signups
         </label>
+        {view.event && <>
+          <label className="flex min-h-11 items-center gap-3"><input type="checkbox" checked={independent} onChange={e => setIndependent(e.target.checked)} />Use an independent shift within this event</label>
+          {independent && <>
+            <TextField label={`Shift starts (${view.event.timeZone})`} name="shiftStartLocal" type="datetime-local" value={slot?.shift?.startLocal ?? view.event.startLocal} />
+            <TextField label={`Shift ends (${view.event.timeZone})`} name="shiftEndLocal" type="datetime-local" value={slot?.shift?.endLocal ?? view.event.endLocal} />
+          </>}
+        </>}
         <p className="text-sm text-gc-muted">
-          This role uses the current event time. Closing it preserves existing
+          This role inherits the event time unless you choose a fixed shift within it. Closing it preserves existing
           signups. Its name locks after participation; capacity cannot drop
           below reserved places.
         </p>
@@ -640,6 +650,11 @@ export function PostParticipationControls({
               aria-label={slot.role}
             >
               <h4 className="font-semibold">{slot.role}</h4>
+              {slot.shift && <>
+                <EventTime event={{ ...view.event!, ...slot.shift }} />
+                {slot.shift.conflict && <p role="status">This fixed shift needs review because the parent event changed.</p>}
+              </>}
+              {slot.opportunityId && <Link prefetch={false} className="gc-button gc-button-quiet" href={`/platform/serve/${slot.opportunityId}`}>View opportunity and application</Link>}
               <p>
                 {slot.filled} of {slot.capacity} places reserved ·{" "}
                 {slot.closed || !view.active
@@ -664,7 +679,7 @@ export function PostParticipationControls({
                     }}
                   />
                 </>
-              ) : view.eligible && view.active && !slot.closed ? (
+              ) : !slot.approvalRequired && view.eligible && view.active && !slot.closed && !slot.shift?.conflict ? (
                 <ParticipationForm
                   label={
                     slot.filled >= slot.capacity ? "Role full" : "I can help"
@@ -681,7 +696,7 @@ export function PostParticipationControls({
               ) : null}
               {manage && view.canOrganize && (
                 <>
-                  <ConfigureSlot view={view} slot={slot} requestKey={slot.id} />
+                  {!slot.approvalRequired && <ConfigureSlot view={view} slot={slot} requestKey={slot.id} />}
                   <Roster slotId={slot.id} />
                 </>
               )}
@@ -705,6 +720,7 @@ export function PostParticipationControls({
       {manage && view.canOrganize && view.active && view.slots.length < 12 && (
         <ConfigureSlot view={view} requestKey={requestKey} />
       )}
+      {manage && view.canCreateOpportunity && <Link prefetch={false} className="gc-button gc-button-quiet" href={`/platform/serve/new?postId=${encodeURIComponent(view.postId)}`}>Create approval-required volunteer opportunity</Link>}
     </section>
   );
 }
@@ -737,7 +753,7 @@ export function VolunteerCommitments({
                 {row.event.title}
               </Link>
               <EventTime event={row.event} timeZone={timeZone} />
-              {row.event.canceled && <p>This event is canceled.</p>}
+              {row.event.shiftConflict ? <p>This fixed shift no longer fits the parent event. Ask the coordinator to review its times.</p> : row.event.canceled && <p>This event is canceled.</p>}
             </>
           ) : (
             <p>

@@ -22,6 +22,7 @@ export type NeedRoleChoice = {
   eventTitle: string;
   startAt: string;
   postId: string;
+  approvalRequired: boolean;
 };
 export function NeedSetupForm({
   owner,
@@ -269,7 +270,7 @@ export function NeedSlotForm({
                   <option value="">Choose a role</option>
                   {roles.map((role) => (
                     <option key={role.id} value={role.id}>
-                      {role.eventTitle}: {role.role} ({role.capacity} places)
+                      {role.eventTitle}: {role.role} ({role.capacity} places){role.approvalRequired ? ", application required" : ""}
                     </option>
                   ))}
                 </select>
@@ -470,12 +471,13 @@ export function NeedClaimForm({
           <Link
             prefetch={false}
             className="gc-button gc-button-quiet"
-            href={`/platform/posts/${slot.volunteer.postId}`}
+            href={slot.volunteer.opportunityId ? `/platform/serve/${slot.volunteer.opportunityId}` : `/platform/posts/${slot.volunteer.postId}`}
           >
-            Open the event role and your signup
+            {slot.volunteer.approvalRequired ? "View opportunity and application" : "Open the event role and your signup"}
           </Link>
         )}
         {slot.volunteer?.open &&
+          !slot.volunteer.approvalRequired &&
           slot.volunteer.signup?.state !== "ACTIVE" &&
           !slot.volunteer.signup?.completedAt && (
             <button

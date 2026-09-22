@@ -25,6 +25,8 @@ import {
 import { privilegedProjectionAvailable } from "./privileged-auth-policy";
 import { socialUserWhere } from "./social-policy";
 import { PortalError } from "./portal-policy";
+import { volunteerShift } from "./volunteer-shift";
+import { reviewedVolunteerApplication } from "./volunteer-policy";
 import {
   needContributionReadSources,
   type NeedContributionReadSource
@@ -89,9 +91,10 @@ export async function readExchangeNeeds(
       if (!ownerId) throw unavailableNeed();
       const slot = await tx.exchangeNeedSlot.findUnique({
         where: { id: postId(query.id) },
-        include: { need: true, volunteerSlot: true }
+        include: { need: true, volunteerSlot: { include: { opportunity: true } } }
       });
-      if (!slot?.volunteerSlot) throw unavailableNeed();
+      if (!slot?.volunteerSlot || slot.volunteerSlot.opportunity?.recoveryRequired) throw unavailableNeed();
+      const approvalRequired = !!slot.volunteerSlot.opportunity;
       await requireNeedCoordinator(tx, slot.need, ownerId);
       const post = await participationPost(
         tx,
@@ -109,6 +112,7 @@ export async function readExchangeNeeds(
           version: true,
           state: true,
           completedAt: true,
+          application: { select: { id: true } },
           user: {
             select: {
               id: true,
@@ -122,6 +126,12 @@ export async function readExchangeNeeds(
         orderBy: { id: "asc" },
         take: NEED_PAGE + 1
       });
+      const currentApplicants = new Set<string>();
+      if (approvalRequired) for (const row of rows.slice(0, NEED_PAGE)) {
+        if (!row.application) continue;
+        try { await reviewedVolunteerApplication(tx, context, row.application.id); currentApplicants.add(row.id); }
+        catch (error) { if (!(error instanceof PortalError && error.status === 404)) throw error; }
+      }
       return {
         ownerId,
         volunteerNeedId: slot.needId,
@@ -132,6 +142,7 @@ export async function readExchangeNeeds(
           state: r.state,
           completedAt: r.completedAt?.toISOString() ?? null,
           name:
+            (approvalRequired && !currentApplicants.has(r.id)) ||
             r.user.erasedAt ||
             r.user.suspendedAt ||
             r.user.deactivatedAt ||
@@ -155,6 +166,7 @@ export async function readExchangeNeeds(
         const rows = await tx.postVolunteerSlot.findMany({
           where: {
             closedAt: null,
+            AND: [{ OR: [{ opportunity: null }, { opportunity: { recoveryRequired: false } }] }],
             OR: [
               { exchangeNeedSlot: null },
               { exchangeNeedSlot: { needId: listing.id } }
@@ -177,6 +189,8 @@ export async function readExchangeNeeds(
           select: {
             id: true,
             role: true,
+            opportunity: { select: { id: true } },
+            shiftStartAt: true,
             capacity: true,
             postId: true,
             post: {
@@ -193,10 +207,11 @@ export async function readExchangeNeeds(
           roles: rows.slice(0, NEED_PAGE).map((r) => ({
             id: r.id,
             role: r.role,
+            approvalRequired: !!r.opportunity,
             capacity: r.capacity,
             postId: r.postId,
             eventTitle: r.post.eventOccurrence!.title,
-            startAt: r.post.eventOccurrence!.startAt.toISOString()
+            startAt: (r.shiftStartAt ?? r.post.eventOccurrence!.startAt).toISOString()
           })),
           next: rows.length > NEED_PAGE ? rows[NEED_PAGE - 1].id : null
         };
@@ -348,6 +363,7 @@ export async function readExchangeNeeds(
           }
         },
         include: {
+          opportunity: { select: { id: true, recoveryRequired: true } },
           post: { include: participationInclude },
           _count: {
             select: {
@@ -468,7 +484,8 @@ export async function readExchangeNeeds(
             );
           const role = roles.find((r) => r.id === slot.volunteerSlotId);
           const visibleRole =
-            role && visiblePosts.has(role.postId) ? role : null;
+            role && !role.opportunity?.recoveryRequired && visiblePosts.has(role.postId) ? role : null;
+          const time = visibleRole?.post.eventOccurrence ? volunteerShift(visibleRole, visibleRole.post.eventOccurrence) : null;
           const committed =
             slot.action === "VOLUNTEER"
               ? (visibleRole?._count.signups ?? null)
@@ -511,8 +528,11 @@ export async function readExchangeNeeds(
                   id: visibleRole.id,
                   postId: visibleRole.postId,
                   role: visibleRole.role,
+                  opportunityId: visibleRole.opportunity?.id ?? null,
+                  approvalRequired: !!visibleRole.opportunity,
                   open:
                     !visibleRole.closedAt &&
+                    !time?.conflict && (!time || time.endAt > new Date()) &&
                     participationActive(visibleRole.post) &&
                     open &&
                     !slot.closedAt,
@@ -528,9 +548,9 @@ export async function readExchangeNeeds(
                     ? {
                         title: visibleRole.post.eventOccurrence.title,
                         startAt:
-                          visibleRole.post.eventOccurrence.startAt.toISOString(),
+                          time!.startAt.toISOString(),
                         endAt:
-                          visibleRole.post.eventOccurrence.endAt.toISOString(),
+                          time!.endAt.toISOString(),
                         timeZone: visibleRole.post.eventOccurrence.timeZone,
                         canceled:
                           !!visibleRole.post.eventOccurrence.canceledAt ||

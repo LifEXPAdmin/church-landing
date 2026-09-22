@@ -1,3 +1,15 @@
+## Volunteer application candidate, 22 September 2026 UTC
+
+The [volunteer implementation checkpoint](VOLUNTEER_OPPORTUNITIES_REPORT.md)
+records the editor, private application review, canonical timed assignments,
+ongoing roles, independent shifts, calendar, linked-needs and privacy integration.
+Focused service, migration/recovery and candidate build checks have passed.
+A measured bounded-query improvement passed current-access regressions. A browser
+refresh failure is being isolated against the established HTTPS test transport;
+full browser acceptance, final combined build/regression, preserving rollback,
+integration and verified-live release remain open. Production is unchanged at
+the independently verified documentation release below.
+
 ## Regular workflow and recovery receipt published, 22 September 2026, 01:18 UTC
 
 Documentation and workflow main `f96702fc5932cc46114c1c58c63d7626c477ea0c`
