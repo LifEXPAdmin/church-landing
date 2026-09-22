@@ -80,10 +80,21 @@ checks passed without forced reloads or buffered-response interception. This
 records the reproduced application-level correction, not a general diagnosis
 of the framework renderer.
 
+A compatible code rollback passed eight local checks. Both separately built
+exports matched all 1,819 current source files except the declared canary fault
+and the actual older participation form. The canary release check returned 503.
+A different recovery process started without restoring data or running a
+migration, preserving all 148 fictional table fingerprints, application history,
+independent shifts and revoked permissions. The older form attempted instant
+signup, but the current writer denied approval bypass with 409 and created no
+reservation. Current application withdrawal canceled the same assignment once,
+and stale acceptance stayed rejected. Browser errors and external requests were
+zero; both owned processes stopped cleanly. This validates that bounded
+compatible rollback, not an unrestricted downgrade or a production rollback.
+
 The full support gate is running against an immutable clean source export.
-Finish that gate, the compatible preserving-code rollback and final release
-checks. Record the actual
-integrated commit, production migration, deployment, canonical assignment,
+Finish that gate and final release checks. Record the actual integrated commit,
+production migration, deployment, canonical assignment,
 serving product/build identity and live read-only checks before describing this
 feature as released. Screening credentials, role templates, voluntary public
 service history and optional availability remain separate future features.

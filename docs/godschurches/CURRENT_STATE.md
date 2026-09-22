@@ -8,7 +8,8 @@ A measured bounded-query improvement passed current-access regressions. Removing
 streamed-refresh failure: the full eight-group browser flow and five successive
 minimal recurrence checks passed. The combined production build passed. The
 full support gate is running in a separate clean export and fictional database;
-preserving rollback, integration and verified-live release remain open. Production is unchanged at
+the eight-check compatible rollback passed with saved data and revoked authority
+preserved. Integration and verified-live release remain open. Production is unchanged at
 the independently verified documentation release below.
 
 ## Regular workflow and recovery receipt published, 22 September 2026, 01:18 UTC
