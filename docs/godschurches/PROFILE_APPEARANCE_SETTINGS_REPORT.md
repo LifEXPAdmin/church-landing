@@ -63,8 +63,33 @@ readers, module decoder, recovery controls, schema and lockfile match verified
 main. Returning to that main preserves exactly the same saved representation
 and canonical owners. No database rollback or production migration is needed.
 
-Production preflight has 105 matching applied migrations, no pending migration,
-matching installed recovery registry and a passed recent encrypted/protected
-restore. Before-release fingerprints cover all 147 application tables. Merge,
-deployment, canonical assignment and live acceptance remain pending. Product
-release notes for `2026.09.22.2` are prepared; this is not a live claim.
+## Published and verified live
+
+Main `ede1335ba73a79ed631303c502602e0d951dd97a` is READY in deployment
+`dpl_HZu1SHz5561BaEAzaXDmcynorsLB`, independently assigned to `godschurches.com`
+and serving `2026.09.22.2` at 05:07 UTC. The hosted build passes with 231 runtime
+traces, 76,750 entries and 572 server JavaScript files; the hydration repair hash
+is unchanged. No pending migration was applied.
+
+All 13 live anonymous route/API/browser checks and six protected health checks
+pass. Guest editor destinations preserve only the approved sign-in focus and
+expose no private form. Published release notes and the existing volunteer reader
+remain available. Two private live-harness text assertions were corrected to
+match the existing protected identity error and Version heading; application
+code was unchanged. Browser errors and blocked mutation attempts are zero.
+
+All 147 production table/column fingerprints are unchanged through 05:09 UTC.
+The 105 applied migration checksums match source and the installed recovery
+registry, with none pending. Existing encrypted/protected restore and installed
+backup evidence remain valid; no schema or recovery implementation changed.
+Successful exact-deployment error/fatal queries return zero rows from 05:07:17
+through 05:10:04 UTC. Verification application writes, new grants and sends are
+zero. No new migration, provider configuration or dependency was introduced.
+
+The four selected implementation/integration tasks are completed and read back
+in the private task system and their existing ledger records. Later resource
+modules, typed photo-section expansion and bounded transparency remain separate
+open work. Authenticated editing/recovery was verified on fictional built local
+environments; this receipt does not claim physical-device or production-member
+editing evidence. The feature's local HTTP server and PostgreSQL are stopped,
+with source and test evidence preserved.
