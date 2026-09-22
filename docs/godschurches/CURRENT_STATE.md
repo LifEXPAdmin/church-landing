@@ -1,3 +1,17 @@
+## Event privacy navigation verified live, 22 September 2026 UTC
+
+The [privacy navigation receipt](CALENDAR_PRIVACY_NAVIGATION_REPORT.md) records
+direct event sharing/publication links and selected-church editor/publisher
+context using existing permissions. Thirty-two affected service/HTTP checks and
+twelve built-browser groups pass. Main
+`94ea771a811dcdd9fc8c909bd6b2b16f70925fb6` is READY in
+`dpl_7qD3C9dsPxwfCuSMwWwUyU56GxDw`, independently canonical and serving
+`2026.09.22.5`. Eleven live checks and six health checks pass; all 147 production
+fingerprints are unchanged and 105 migration/recovery checksums match. Fresh
+protected restore passed at 06:23:43 UTC. No new schema, permission, query or
+dependency. Browser/runtime errors, verification writes and sends are zero.
+Saved calendar following and display capabilities remain the next source work.
+
 ## Calendar sharing previews verified live, 22 September 2026 UTC
 
 The [sharing preview receipt](CALENDAR_SHARING_PREVIEW_REPORT.md) records

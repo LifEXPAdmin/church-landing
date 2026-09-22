@@ -1,7 +1,9 @@
 # Event privacy navigation and church calendar scope
 
-September 22, 2026. Implementation is local. Verification and release gates are
-pending; production serves the verified sharing-preview release.
+September 22, 2026. Verified live as `2026.09.22.5`. Main application
+`94ea771a811dcdd9fc8c909bd6b2b16f70925fb6` is READY in
+`dpl_7qD3C9dsPxwfCuSMwWwUyU56GxDw`, independently canonical at
+`godschurches.com` with matching serving identity.
 
 Authorized agenda rows and event pages link directly to the existing personal
 sharing or church publication controls. Church calendar listing entries link to
@@ -35,4 +37,14 @@ improvement is claimed. Previous application rollback needs no data conversion.
 The fresh encrypted backup and protected restore at 06:23:43 UTC preserved all
 147 table/column fingerprints and verified all 105 migrations. Temporary plain
 restoration data was removed. No production mutation or provider send occurred.
-Actual deployment and live acceptance remain pending.
+Final release acceptance at 06:39 UTC passed eleven anonymous route/API/browser
+checks and six protected health checks. All 147 production fingerprints remain
+unchanged, all 105 source/production/recovery migration checksums match, and no
+new or pending migration exists. The hosted build passed 231 traces, 76,750
+entries and 572 server JavaScript files. Browser errors and successful scoped
+runtime error/fatal queries returned zero rows during 06:37:53.131 to
+06:39:12.297 UTC. Verification writes, grants and sends were zero. The exact
+private task was completed and its Session Log reconciled. Authenticated editing
+used fictional built fixtures; no physical-device or production-member editing
+acceptance is claimed. Saved following, display defaults and subscriptions
+remain separately owned work.
