@@ -2,8 +2,18 @@
 
 Release checkpoint, 22 September 2026 UTC. The accepted
 [opportunity contract](VOLUNTEER_OPPORTUNITIES_CONTRACT.md) is implemented and
-the initial application release is verified live. A final shared-resource
-registration correction is tested locally and awaits its deployment verification.
+the application and final shared-resource registration are verified live.
+The selected implementation and integration scope is complete.
+
+Final main `82b66d8810656eb68064dbcb25da48e377710210` is READY in
+`dpl_8gm8iYS1SnSRVTSyRRNRdevBQVET`, independently canonical on
+`godschurches.com` and serving product `2026.09.22.1` at 04:30 UTC.
+Twenty-one anonymous route/API/browser checks include actual Menu navigation at
+390 and 1440 pixels. Six protected health checks pass; browser errors and scoped
+runtime error/fatal rows are zero. All 144 original table/column fingerprints
+remain unchanged, and the 105 migration checksums and installed recovery registry
+match. Verification application writes and provider sends are zero. Physical
+device, real participant and hosted load acceptance are not claimed.
 
 ## Implemented behavior
 
@@ -131,6 +141,9 @@ Menu entry bypassed that descriptor. The correction registers the real policy,
 command and boundary owners and makes the Menu consume that resource entry.
 Eight focused resource/navigation/release checks, TypeScript and scoped lint
 pass. Service permissions, persistence and response behavior are unchanged.
-Verify the successor deployment and its actual Menu route before closing this
-remaining integration step. Screening credentials, role templates, voluntary public
+The successor production build passed hydration verification and all 231 runtime
+traces; exact canonical identity and the actual Menu route passed the final live
+checks above. The original broad regression evidence remains distinct from this
+small registration follow-through and its focused checks. Screening credentials,
+role templates, voluntary public
 service history and optional availability remain separate future features.

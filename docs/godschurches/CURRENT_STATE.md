@@ -1,4 +1,4 @@
-## Volunteer release and final registration, 22 September 2026 UTC
+## Volunteer applications and independent shifts verified live, 22 September 2026 UTC
 
 The [volunteer implementation checkpoint](VOLUNTEER_OPPORTUNITIES_REPORT.md)
 records the editor, private application review, canonical timed assignments,
@@ -19,9 +19,16 @@ fingerprints are unchanged, with no application writes or sends. The additive
 migration and installed recovery registry now contain 105 matching entries.
 A fresh encrypted restore and scheduled retention inspection pass.
 
-The final shared-resource descriptor and Menu binding correction passes eight
-focused checks, TypeScript and lint. Its successor deployment and live Menu
-check remain pending; the owning implementation tasks stay open until then.
+Final main `82b66d8810656eb68064dbcb25da48e377710210` is READY in
+`dpl_8gm8iYS1SnSRVTSyRRNRdevBQVET`, independently canonical and serving the
+same product version at 04:30 UTC. The shared-resource descriptor and Menu
+binding passed eight focused checks, TypeScript, lint and the hosted build's
+231 runtime traces. All 21 final anonymous route/API/browser checks, including
+the actual Menu entry at two widths, and six health checks pass. Browser and
+scoped runtime error/fatal rows are zero; original production fingerprints remain
+unchanged. The selected editor, private applications, approval/capacity, calendar
+and independent-shift implementation tasks are complete. Later availability,
+templates and voluntary public service history remain separate work.
 
 ## Regular workflow and recovery receipt published, 22 September 2026, 01:18 UTC
 
