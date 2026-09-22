@@ -1,5 +1,22 @@
 # Operational health and measured hosting resources
 
+## Backup startup recovery, 22 September 2026 UTC
+
+The latest [backup recovery receipt](BACKUP_OPERATIONS.md) repairs a reproduced
+failure in the installed scheduler environment. An explicit C locale allows
+PostgreSQL 17 to start its isolated restore cluster. The actual daily job now
+restores all 104 migrations and 144 tables. Two earlier encrypted archives also
+passed authenticated local restores; their original dates and failure records
+are preserved. Final nightly validation covers 86 sets with zero issues,
+expiry candidates or removals. Seven retention tests and the minimal-environment
+startup regression pass. No production database writes or recipient sends.
+
+The contemporaneous live application health check is HTTP 200 with no alerts
+or queue backlog. It cannot observe the workstation backup job; its healthy
+response did not establish successful recovery during the earlier failures.
+Hosted capacity, cumulative experiment budgets, actual provider access and
+operator/physical acceptance remain open. No new hosting load or purchase.
+
 ## Exchange recovery acceptance: September 16, 14:56 UTC
 
 The exact [Exchange release](EXCHANGE_IMPLEMENTATION.md) is live as

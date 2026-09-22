@@ -1,5 +1,34 @@
 # Encrypted recovery copies and expiry
 
+## Scheduled restore startup repaired, 22 September 2026 UTC
+
+The 20 and 21 September daily jobs encrypted their archives but failed during
+local PostgreSQL startup. A disposable empty PostgreSQL 17 cluster reproduced
+the failure with the scheduler's PATH-only environment, while an interactive
+shell passed. PostgreSQL reported that its postmaster became multithreaded during
+startup and requested a valid `LC_ALL`.
+
+The installed private recovery script now sets `LC_ALL=C` and `LANG=C` before
+constructing subprocess environments. The same empty-cluster check then passed
+startup, a database query and cleanup. Seven existing backup-retention tests also
+passed. Preserve this explicit locale when reinstalling the private operator
+script; `initdb --no-locale` alone did not prevent the server startup failure.
+The installed script checksum and original source are recorded privately.
+
+An actual invocation of the existing launchd job created and restored a new
+encrypted archive through all 104 current migrations and 144 application tables.
+Its first final exit correctly retained attention for the two older archives
+without restore attestations. Both unchanged archives were subsequently
+authenticated and restored locally, their migration checksums verified, and
+their plaintext and clusters removed. Their original creation times and archived
+failure evidence remain intact. Only the observed successful re-attestations
+were added. A final scheduler invocation validated all 86 sets with no issues,
+no expiry candidates and no removals. Production database writes were zero.
+
+This repairs local database backup execution. Scheduled asset coverage, managed
+provider history, physical restart recovery and continuous host availability
+retain their separate gates. No website runtime or schema changed.
+
 The [September 18 expanded-resource rehearsal](RESOURCE_RESTORE.md) verifies all
 144 current application tables, 100 migrations, 273 foreign keys and 1,100 stored
 fictional image variants. A separate read-only provider rehearsal restores all

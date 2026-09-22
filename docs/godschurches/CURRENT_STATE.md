@@ -1,3 +1,18 @@
+## Scheduled backup recovery verified, 22 September 2026 UTC
+
+The [backup operations receipt](BACKUP_OPERATIONS.md) records the reproduced
+minimal-environment PostgreSQL startup failure and the verified locale repair.
+The installed daily job restored 104 migrations and 144 tables. Both prior
+pending archives were separately authenticated and restored; all 86 backup sets
+now validate with no issues, expiry or removal. Seven retention tests pass.
+Production database writes and sends remain zero; no website runtime or schema
+change. Current deployment identity retains its separately dated receipt below.
+
+The [volunteer application and shift contract](VOLUNTEER_OPPORTUNITIES_CONTRACT.md)
+is defined against current participation and calendar owners. New application
+service, independent shift persistence and interface work remain unimplemented.
+The priority recovery repair interrupted that safely saved definition checkpoint.
+
 ## Regular priority workflow restored, 21 September 2026
 
 The owner ended the parallel task partition. Workflow guide 4.0 and the root
