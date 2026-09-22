@@ -380,6 +380,8 @@ export async function CalendarEventPage({
                   shares={privateData.shares}
                   calendarShares={privateData.calendarShares}
                   churches={privateData.churches}
+                  previewEvent={event}
+                  timeZone={zone}
                 />
               </PortalCard>
             )}

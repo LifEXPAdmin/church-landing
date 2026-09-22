@@ -762,7 +762,7 @@ export const settingsRegistry: readonly SettingRegistration[] = Object.freeze([
     "calendar.sharing",
     "calendar",
     "Busy-only availability",
-    "Choose your calendar or event, then review its church audience and Busy only sharing. Busy only reveals time and availability without event details.",
+    "Choose your calendar or event, compare the Busy-only preview, then review its church audience before sharing. Busy only reveals time and availability.",
     [
       "calendar",
       "schedule",
@@ -776,7 +776,7 @@ export const settingsRegistry: readonly SettingRegistration[] = Object.freeze([
   ),
   entry(
     "calendar.details", "calendar", "Event-detail sharing",
-    "Choose your calendar or event, then review Full event details sharing. This also reveals the title, notes, location, online link and organizer.",
+    "Choose your calendar or event and compare its Full-details preview before sharing. This also reveals the title, notes, location, online link and organizer.",
     ["event privacy", "schedule sharing", "calendar details", "availability"],
     { href: "/platform/calendars" },
     linked("calendar-reads.ts; calendar-access.ts", "calendar-commands.ts")

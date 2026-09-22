@@ -17,6 +17,7 @@ import {
 import { PortalEmpty, portalLinkClass } from "./portal-ui";
 import { portalInputClass, portalButtonClass } from "./portal-action-form";
 import { LocalEventTime } from "./local-event-time";
+import { CalendarSharingPreview } from "./calendar-sharing-preview";
 
 export type CalendarSummary = Awaited<
   ReturnType<typeof getCalendars>
@@ -112,8 +113,8 @@ export function CalendarRange({
         {query.cursor && (
           <input type="hidden" name="cursor" value={query.cursor} />
         )}
-        <div className="grid gap-4 sm:grid-cols-2">
-          <label className="font-semibold">
+        <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2">
+          <label className="min-w-0 font-semibold">
             Month
             <input
               name="month"
@@ -122,10 +123,10 @@ export function CalendarRange({
               min="2000-01"
               max="2099-12"
               defaultValue={range.month}
-              className={portalInputClass}
+              className={portalInputClass + " min-w-0 max-w-full"}
             />
           </label>
-          <div>
+          <div className="min-w-0">
             <label className="font-semibold">
               Viewing time zone
               <input
@@ -281,13 +282,17 @@ export function CalendarSharing({
   id,
   shares,
   churches,
-  calendarShares = []
+  calendarShares = [],
+  previewEvent,
+  timeZone = "UTC"
 }: {
   kind: "calendar" | "event";
   id: string;
   shares: ShareSummary[];
   churches: { id: string; name: string }[];
   calendarShares?: ShareSummary[];
+  previewEvent?: CalendarEvent;
+  timeZone?: string;
 }) {
   return (
     <div className="space-y-5">
@@ -312,6 +317,13 @@ export function CalendarSharing({
         <PortalEmpty>
           An approved church connection is needed before you can share.
         </PortalEmpty>
+      )}
+      {!!churches.length && (
+        <CalendarSharingPreview
+          event={previewEvent}
+          timeZone={timeZone}
+          wholeCalendar={kind === "calendar"}
+        />
       )}
       {churches.map((church) => {
         const prior = shares.find((s) => s.churchId === church.id);

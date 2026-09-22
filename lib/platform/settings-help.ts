@@ -65,7 +65,7 @@ export const settingsHelpTopics = [
     id: "calendar",
     title: "What does calendar sharing reveal?",
     keywords: "calendar event schedule busy details revoke display reminders subscriptions",
-    body: "Personal calendars start private. Share with approved members of your church as busy-only availability or full details. Whole-calendar sharing includes current and future events. Calendar and event-series shares are separate: ending one does not end the other. Leaving a church ends its dependent sharing; rejoining does not restore it.",
+    body: "Personal calendars start private. Compare busy-only and full-detail previews on your calendar or event, then deliberately choose an approved church audience and confirm saving. Previewing changes nothing. Whole-calendar sharing includes current and future events. Calendar and event-series shares are separate: ending one does not end the other, and either full-detail share can still reveal details. Leaving a church ends its dependent sharing; rejoining does not restore it. A selected profile event keeps its original audience and never publishes your schedule.",
     href: "/platform/settings/calendar",
     action: "Review Calendar settings"
   },

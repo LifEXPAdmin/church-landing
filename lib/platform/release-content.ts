@@ -985,6 +985,16 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "calendar-sharing-previews",
+    version: "2026.09.22.4",
+    date: "2026-09-22",
+    summary: "Compare busy-only availability and full event details before deliberately sharing a calendar or event.",
+    added: ["Existing calendar and event sharing screens show read-only previews using one current event. Busy only shows time and availability; full details also shows the event’s supplied information."],
+    improved: ["Calendar Settings links to the comparisons and explains that previewing saves nothing. Existing shares stay active until you change or end them.", "Whole-calendar examples are clearly limited to one active event in the viewed month, while sharing still includes current and future events. Event-series examples identify the current occurrence."],
+    fixed: [],
+    featureIds: ["calendar-settings", "profile-selected-event"]
+  },
+  {
     id: "calendar-settings-layout",
     version: "2026.09.22.3",
     date: "2026-09-22",

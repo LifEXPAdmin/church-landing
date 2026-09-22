@@ -252,6 +252,8 @@ export async function CalendarPage({
                         id={calendar.id}
                         shares={calendar.shares ?? []}
                         churches={churches}
+                        previewEvent={agenda.events.find((event) => !event.canceled)}
+                        timeZone={range.timeZone}
                       />
                     </PortalCard>
                   )}
