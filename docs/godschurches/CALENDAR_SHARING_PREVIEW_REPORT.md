@@ -1,8 +1,9 @@
 # Calendar sharing disclosure previews
 
-September 22, 2026. Local implementation, production build and affected service/HTTP checks
-pass. Live release acceptance remains pending; production still serves
-`2026.09.22.3`.
+September 22, 2026. Verified live as `2026.09.22.4`. Main application
+`ec0c09e0abccd00f38295890cedf0a028296e976` is READY in deployment
+`dpl_9V5g89rVHgNduTdPTggMEXVAUqLL`, independently canonical at
+`godschurches.com` with matching serving identity.
 
 The existing owner-only calendar and event sharing screens compare busy-only
 availability with full event details using an already authorized occurrence.
@@ -50,3 +51,16 @@ comparison adds no request, query, dependency or persisted value. Rolling back
 to the previous application needs no data or schema conversion. No speed
 improvement is claimed. Authenticated editing uses fictional isolated records;
 production-member editing and physical-device acceptance are not claimed.
+
+Final live acceptance at 06:14 UTC: eleven anonymous route/API/browser checks
+and six protected health checks passed. All 147 production table/column
+fingerprints remained unchanged. All 105 source, production and installed
+recovery migration checksums match, with zero new or pending migrations. The
+hosted build passed 231 traces, 76,750 entries and 572 server JavaScript files.
+Browser errors and successful scoped runtime error/fatal queries returned zero
+errors during 06:13:32.897 to 06:14:24.866 UTC. Verification writes, grants and
+provider sends were zero. The exact task and Session Log were reconciled privately.
+
+The next integration is direct event-privacy navigation and selected-church
+permission context. Saved week-start/view preferences, following, reminders,
+protected subscriptions and family variants retain their separate source gates.

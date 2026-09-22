@@ -1,3 +1,17 @@
+## Calendar sharing previews verified live, 22 September 2026 UTC
+
+The [sharing preview receipt](CALENDAR_SHARING_PREVIEW_REPORT.md) records
+read-only busy/full comparisons beside canonical sharing controls. Forty-four
+affected checks and eight built-browser groups pass; a reproduced enlarged-text
+calendar-range overflow is repaired. Main
+`ec0c09e0abccd00f38295890cedf0a028296e976` is READY in
+`dpl_9V5g89rVHgNduTdPTggMEXVAUqLL`, independently canonical and serving
+`2026.09.22.4`. Eleven live anonymous checks and six health checks pass. All 147
+production fingerprints are unchanged and all 105 migration/recovery checksums
+match. Browser/runtime errors, verification writes and sends are zero. No new
+schema, permission, provider or dependency. The accepted selected-event profile
+module was verified and reused; broader source capabilities stay open.
+
 ## Calendar Settings verified live, 22 September 2026 UTC
 
 The [Calendar Settings receipt](CALENDAR_SETTINGS_LAYOUT_REPORT.md) records four
