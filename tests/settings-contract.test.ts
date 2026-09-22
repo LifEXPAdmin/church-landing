@@ -192,3 +192,34 @@ test("settings sign-in returns accept only registered folders and controls", () 
   ])
     assert.equal(safeAccountReturn(path), "/platform");
 });
+
+test("profile Settings focus survives sign-in without replaying draft values or actions", () => {
+  for (const focus of ["appearance", "sections"]) {
+    const href = `/platform/profile/me?focus=${focus}`;
+    const setting = settingsRegistry.find((s) => s.id === `profile.${focus}`)!;
+    assert.deepEqual(setting.destination, { href });
+    assert.equal(
+      safeAccountReturn(
+        href +
+          "&palette=warm&operation=update-profile&next=https://evil.test#private"
+      ),
+      href
+    );
+    assert.equal(
+      safeAccountReturn(`/platform/profile/me/?focus=${focus}`),
+      href
+    );
+  }
+  assert.equal(
+    safeAccountReturn("/platform/profile/me?focus=unknown&bio=private"),
+    "/platform/profile/me"
+  );
+  assert.equal(
+    safeAccountReturn("/platform/profile/me?tab=photos&focus=appearance"),
+    "/platform/profile/me?tab=photos"
+  );
+  assert.equal(
+    safeAccountReturn("/platform/profile/member?focus=appearance"),
+    "/platform/profile/member"
+  );
+});

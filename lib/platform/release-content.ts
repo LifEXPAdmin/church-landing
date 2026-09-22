@@ -975,6 +975,16 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "profile-appearance-settings",
+    version: "2026.09.22.2",
+    date: "2026-09-22",
+    summary: "Find profile appearance and section controls together in Settings, with clear draft and saved states.",
+    added: ["Profile appearance and Profile sections open the existing editor at the requested group, including after sign-in.", "Restore appearance defaults changes only your draft palette and cover background. Use Save profile to apply the choices."],
+    improved: ["The appearance swatch labels unsaved changes and identifies the last confirmed saved preset. Member and visitor previews continue to show the saved profile.", "Text, section order, selected events and photo drafts remain intact when restoring appearance defaults. Existing photo, conflict and privacy checks still protect saving."],
+    fixed: ["Focused Settings entry waits for current account access before moving keyboard focus into the profile form."],
+    featureIds: ["optional-profile-sections", "account"]
+  },
+  {
     id: "volunteer-applications-and-shifts",
     version: "2026.09.22.1",
     date: "2026-09-22",

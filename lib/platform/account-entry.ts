@@ -88,6 +88,17 @@ export function safeAccountReturn(value: unknown): string {
   )
     return "/platform";
   const query = new URLSearchParams();
+  if (url.pathname.replace(/\/$/, "") === "/platform/profile/me") {
+    // Only a known editor destination survives sign-in, never draft values or
+    // an automatic save. Photos retain their existing navigation precedence.
+    if (url.searchParams.get("tab") === "photos") query.set("tab", "photos");
+    else {
+      const focus = url.searchParams.get("focus");
+      if (focus === "appearance" || focus === "sections")
+        query.set("focus", focus);
+    }
+    return "/platform/profile/me" + (query.size ? "?" + query : "");
+  }
   if (
     ["/platform", "/platform/feed"].includes(url.pathname.replace(/\/$/, ""))
   ) {

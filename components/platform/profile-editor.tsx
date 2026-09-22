@@ -5,8 +5,23 @@ import { usePhotoBackGuard } from "./use-photo-back-guard";
 import { ProfileForm } from "./profile-form";
 import { ProfileImageControl } from "./profile-image-control";
 import type { ProfileEditorView } from "@/lib/platform/profiles";
+import { useReadVisibility } from "./read-visibility";
 
-export function ProfileEditor({ profile }: { profile: ProfileEditorView }) {
+export function ProfileEditor({
+  profile,
+  focus
+}: {
+  profile: ProfileEditorView;
+  focus?: "appearance" | "sections";
+}) {
+  const visible = useReadVisibility();
+  const focusedGroup = useRef<string | null>(null);
+  useEffect(() => {
+    if (visible && focus && focusedGroup.current !== focus) {
+      document.getElementById(`profile-${focus}-heading`)?.focus();
+      focusedGroup.current = focus;
+    }
+  }, [focus, visible]);
   const [images, setImages] = useState({
     avatar: { busy: false, dirty: false },
     cover: { busy: false, dirty: false }

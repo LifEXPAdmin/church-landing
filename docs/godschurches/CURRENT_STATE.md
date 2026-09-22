@@ -1,3 +1,14 @@
+## Profile appearance Settings candidate, 22 September 2026 UTC
+
+The [appearance Settings receipt](PROFILE_APPEARANCE_SETTINGS_REPORT.md) records
+focused links into the shared editor, explicit draft/saved appearance, a narrowly
+scoped default reset and existing section controls. A privacy-guard focus timing
+failure was reproduced and repaired. Build, 35 affected service/HTTP checks and
+all 19 affected built-browser groups pass, including recovery and account
+switch acceptance. Publication and live verification remain open. No schema,
+provider, permission or dependency change. The verified volunteer release below
+remains production at this checkpoint.
+
 ## Volunteer applications and independent shifts verified live, 22 September 2026 UTC
 
 The [volunteer implementation checkpoint](VOLUNTEER_OPPORTUNITIES_REPORT.md)

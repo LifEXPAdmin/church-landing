@@ -1,5 +1,12 @@
 # Profile customization and Settings integration
 
+The 22 September Settings candidate now implements the focused entries, scoped
+draft reset and explicit saved/draft presentation described below. See the
+[implementation receipt](PROFILE_APPEARANCE_SETTINGS_REPORT.md) for actual checks
+and remaining release gates. Earlier baseline and candidate statements below
+retain their original dates; accepted section ordering and canonical profile
+events are already integrated in the current source.
+
 Integration note, September 19, 2026: section ordering is accepted in release
 2026.09.18.13. The next profile-event candidate adds one explicit canonical
 occurrence selection, with current source projection and a preserving writer;

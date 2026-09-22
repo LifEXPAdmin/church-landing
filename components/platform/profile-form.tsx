@@ -67,6 +67,11 @@ export function ProfileForm({
   );
   const [palette, setPalette] = useState(profile.presentation.palette),
     [background, setBackground] = useState(profile.presentation.background);
+  const [appearanceEdited, setAppearanceEdited] = useState(false);
+  const [confirmedPresentation, setConfirmedPresentation] = useState(
+    profile.presentation
+  );
+  const savedAppearance = `${PROFILE_PALETTES.find((p) => p.value === confirmedPresentation.palette)?.label}, ${PROFILE_BACKGROUNDS.find((p) => p.value === confirmedPresentation.background)?.label}`;
   const [conflict, setConflict] = useState(false),
     [latest, setLatest] = useState<ProfileEditorView | null>(null);
   async function reviewSaved() {
@@ -83,6 +88,7 @@ export function ProfileForm({
           result.message ?? "The saved profile could not be loaded."
         );
       setLatest(result);
+      setConfirmedPresentation(result.presentation);
       requestAnimationFrame(() => latestHeading.current?.focus());
     } catch (error) {
       setMessage(
@@ -210,11 +216,34 @@ export function ProfileForm({
           </div>
         </fieldset>
         <fieldset className="min-w-0 space-y-4">
-          <legend className="text-2xl">Optional profile sections</legend>
+          <legend
+            id="profile-sections-heading"
+            tabIndex={-1}
+            className="scroll-mt-24 text-2xl"
+          >
+            Optional profile sections
+          </legend>
           <p className="text-sm text-gc-muted">
             Filled sections appear in About for permitted signed-in members.
             Leave a section empty to remove it. These fields do not copy your
             private account or church-directory contact details.
+          </p>
+          <p className="text-sm text-gc-muted">
+            Last confirmed saved layout:{" "}
+            {
+              PROFILE_ORDERS.find(
+                (p) => p.value === confirmedPresentation.sectionOrder
+              )?.label
+            }
+            .
+            {confirmedPresentation.introduction
+              ? " An introduction appears above these sections."
+              : " No introduction is saved."}
+            {confirmedPresentation.modules.calendarOccurrenceId
+              ? " An event is selected; its details are shown only while each reader has access."
+              : " No event is selected."}{" "}
+            Removing an event selection leaves the original event and responses
+            intact.
           </p>
           <fieldset
             className="min-w-0 space-y-3"
@@ -482,8 +511,14 @@ export function ProfileForm({
         >
           {message}
         </p>
-        <fieldset className="space-y-4" disabled={pending}>
-          <legend className="text-2xl">Make it yours</legend>
+        <fieldset className="min-w-0 space-y-4" disabled={pending}>
+          <legend
+            id="profile-appearance-heading"
+            tabIndex={-1}
+            className="scroll-mt-24 text-2xl"
+          >
+            Make it yours
+          </legend>
           <p className="text-sm text-gc-muted">
             These presets keep text readable and respect each reader’s light or
             dark appearance.
@@ -496,7 +531,10 @@ export function ProfileForm({
                 name="palette"
                 className={accountInputClass}
                 value={palette}
-                onChange={(e) => setPalette(e.target.value)}
+                onChange={(e) => {
+                  setPalette(e.target.value);
+                  setAppearanceEdited(true);
+                }}
               >
                 {PROFILE_PALETTES.map((p) => (
                   <option key={p.value} value={p.value}>
@@ -512,7 +550,10 @@ export function ProfileForm({
                 name="background"
                 className={accountInputClass}
                 value={background}
-                onChange={(e) => setBackground(e.target.value)}
+                onChange={(e) => {
+                  setBackground(e.target.value);
+                  setAppearanceEdited(true);
+                }}
               >
                 {PROFILE_BACKGROUNDS.map((p) => (
                   <option key={p.value} value={p.value}>
@@ -522,13 +563,40 @@ export function ProfileForm({
               </select>
             </label>
           </div>
+          <p id="profile-appearance-status" role="status" className="text-sm">
+            {appearanceEdited
+              ? "Unsaved appearance preview. Save profile to apply these choices."
+              : "Preview of your last confirmed saved appearance."}
+          </p>
           <div
             className="gc-profile-style-swatch"
+            aria-describedby="profile-appearance-status"
             data-profile-background={background}
             data-profile-palette={palette}
           >
             A welcoming place for your story
           </div>
+          <p className="text-sm text-gc-muted">
+            Last confirmed saved appearance: {savedAppearance}. The member and
+            visitor previews show your saved profile, not these unsaved choices.
+          </p>
+          <button
+            type="button"
+            className="gc-profile-text-button min-h-11"
+            onClick={() => {
+              setPalette("sage");
+              setBackground("plain");
+              setAppearanceEdited(true);
+              onDirty(true);
+            }}
+          >
+            Restore appearance defaults
+          </button>
+          <p className="text-sm text-gc-muted">
+            Restore changes only the draft palette and cover background. Your
+            text, section order, selected event and photos stay as they are.
+            Save profile when you are ready to apply your edits.
+          </p>
           <label className="block" htmlFor="profile-order">
             Section order
             <select

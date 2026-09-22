@@ -393,6 +393,31 @@ export const settingsRegistry: readonly SettingRegistration[] = Object.freeze([
     )
   ),
   entry(
+    "profile.appearance",
+    "profile",
+    "Profile appearance",
+    "Preview safe palette and cover presets, or restore appearance defaults before saving your profile.",
+    ["theme", "palette", "background", "cover", "reset appearance"],
+    { href: "/platform/profile/me?focus=appearance" },
+    linked("profiles.ts getProfileEditor", "account-boundary.ts update-profile")
+  ),
+  entry(
+    "profile.sections",
+    "profile",
+    "Profile sections",
+    "Arrange your optional sections and review your introduction and selected event in the shared profile editor.",
+    [
+      "section order",
+      "testimony",
+      "skills",
+      "links",
+      "introduction",
+      "calendar"
+    ],
+    { href: "/platform/profile/me?focus=sections" },
+    linked("profiles.ts getProfileEditor", "account-boundary.ts update-profile")
+  ),
+  entry(
     "profile.contacts",
     "profile",
     "Optional church contact details",

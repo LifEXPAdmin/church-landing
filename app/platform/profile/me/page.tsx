@@ -27,10 +27,18 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function EditProfilePage({
   searchParams
 }: {
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; focus?: string }>;
 }) {
   const user = await getCurrentPlatformUser();
-  const photos = (await searchParams).tab === "photos" && photoLibraryEnabled();
+  const query = await searchParams;
+  const photos = query.tab === "photos" && photoLibraryEnabled();
+  const focus =
+    query.focus === "appearance" || query.focus === "sections"
+      ? query.focus
+      : undefined;
+  const next = photos
+    ? "/platform/profile/me?tab=photos"
+    : "/platform/profile/me" + (focus ? "?focus=" + focus : "");
   if (user && photos)
     redirect(
       `/platform/profile/${encodeURIComponent(user.username)}?tab=photos`
@@ -38,12 +46,7 @@ export default async function EditProfilePage({
   if (!user)
     return (
       <PlatformShell user={null}>
-        <GuestAccountPrompt
-          next={
-            photos ? "/platform/profile/me?tab=photos" : "/platform/profile/me"
-          }
-          reason="profile"
-        />
+        <GuestAccountPrompt next={next} reason="profile" />
       </PlatformShell>
     );
   let profile;
@@ -53,14 +56,7 @@ export default async function EditProfilePage({
     if (error instanceof PortalError && error.status === 401)
       return (
         <PlatformShell user={null}>
-          <GuestAccountPrompt
-            next={
-              photos
-                ? "/platform/profile/me?tab=photos"
-                : "/platform/profile/me"
-            }
-            reason="profile"
-          />
+          <GuestAccountPrompt next={next} reason="profile" />
         </PlatformShell>
       );
     throw error;
@@ -76,7 +72,7 @@ export default async function EditProfilePage({
             .digest("hex")}
           label="account"
         >
-          <ProfileEditor profile={profile} />
+          <ProfileEditor profile={profile} focus={focus} />
         </PrivateSnapshotGuard>
       </section>
     </PlatformShell>
