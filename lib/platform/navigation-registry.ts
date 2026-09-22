@@ -152,6 +152,7 @@ export const navigationRegistry = {
     title: "Volunteer opportunities",
     description: "Explore church opportunities and your private applications.",
     icon: "handHeart",
+    resource: "volunteerOpportunity",
     prefetch: false
   },
   settings: {

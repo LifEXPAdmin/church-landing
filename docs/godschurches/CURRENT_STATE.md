@@ -1,4 +1,4 @@
-## Volunteer application candidate, 22 September 2026 UTC
+## Volunteer release and final registration, 22 September 2026 UTC
 
 The [volunteer implementation checkpoint](VOLUNTEER_OPPORTUNITIES_REPORT.md)
 records the editor, private application review, canonical timed assignments,
@@ -12,8 +12,16 @@ checks and two expected repeated email skips. Its preserved full-run prefix and
 corrected five-file continuation use unchanged application runtime. The report
 records the reproduced fixture failure and private harness correction. The
 eight-check compatible rollback passed with saved data and revoked authority
-preserved. Integration and verified-live release remain open. Production is unchanged at
-the independently verified documentation release below.
+preserved. Initial main `c42c7573fae66f38e1e76afac75976cd6edabcce` is READY in
+`dpl_2zzCC7Wykj5zvvYY4PEe6na6JgQd`, canonical and live as `2026.09.22.1`.
+Nineteen anonymous checks and six health checks pass; all 144 original production
+fingerprints are unchanged, with no application writes or sends. The additive
+migration and installed recovery registry now contain 105 matching entries.
+A fresh encrypted restore and scheduled retention inspection pass.
+
+The final shared-resource descriptor and Menu binding correction passes eight
+focused checks, TypeScript and lint. Its successor deployment and live Menu
+check remain pending; the owning implementation tasks stay open until then.
 
 ## Regular workflow and recovery receipt published, 22 September 2026, 01:18 UTC
 

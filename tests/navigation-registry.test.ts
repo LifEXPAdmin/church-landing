@@ -52,7 +52,8 @@ test("Menu separates private entries from guest reading without inventing admini
     "profile",
     "settings",
     "calendars",
-    "commitments"
+    "commitments",
+    "volunteers"
   ])
     assert.ok(guestIds.includes(id as NavigationId), id);
   for (const id of [

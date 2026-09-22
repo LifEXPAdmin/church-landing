@@ -1,5 +1,16 @@
 # Shared resource contracts
 
+## Volunteer adapter follow-through, September 22, 2026
+
+The [volunteer application contract](VOLUNTEER_OPPORTUNITIES_CONTRACT.md) now
+has working policy, command, read and boundary owners. The shared descriptor
+names those services, and the Menu entry consumes the same implemented-resource
+check used by other optional modules. This registration grants no account or
+church authority; each operation still checks its current source, applicant,
+coordinator, capacity and recovery state. See the
+[implementation report](VOLUNTEER_OPPORTUNITIES_REPORT.md) for test and release
+evidence. Reserved catalog and campaign services remain unavailable.
+
 ## Exchange contract follow-through, September 16, 2026
 
 The [listing ownership and audience contract](EXCHANGE_LISTING_CONTRACT.md)

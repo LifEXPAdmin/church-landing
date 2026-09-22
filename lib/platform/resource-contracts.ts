@@ -21,8 +21,8 @@ export const resourceContracts = Object.freeze({
   exchangeInquiry: implemented("exchange-handoff-policy/exchange-handoffs/exchange-handoff-lifecycle"),
   gatherGroup: implemented("group-policy/group-commands/group-boundary"),
   mediaCatalogItem: reserved("catalog source, rights, audience and provider"),
-  volunteerOpportunity: reserved(
-    "independent application, coordinator and capacity"
+  volunteerOpportunity: implemented(
+    "volunteer-policy/volunteer-commands/volunteer-boundary"
   ),
   fundraisingCampaign: reserved(
     "organizer, beneficiary, external destination and review"

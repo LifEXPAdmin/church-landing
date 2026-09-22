@@ -1,9 +1,9 @@
 # Volunteer applications and independent shifts
 
-Implementation checkpoint, 22 September 2026 UTC. The accepted
-[opportunity contract](VOLUNTEER_OPPORTUNITIES_CONTRACT.md) is implemented in a
-local candidate. Production remains on the preceding release. Full acceptance,
-integration, production migration and verified-live evidence are still pending.
+Release checkpoint, 22 September 2026 UTC. The accepted
+[opportunity contract](VOLUNTEER_OPPORTUNITIES_CONTRACT.md) is implemented and
+the initial application release is verified live. A final shared-resource
+registration correction is tested locally and awaits its deployment verification.
 
 ## Implemented behavior
 
@@ -27,6 +27,23 @@ need receipts preserve their existing boundaries. Exact mutation retries cannot
 duplicate a reservation or revive an old acceptance.
 
 ## Verification recorded so far
+
+At 04:19 UTC, main `c42c7573fae66f38e1e76afac75976cd6edabcce` is READY in
+`dpl_2zzCC7Wykj5zvvYY4PEe6na6JgQd`, independently assigned to
+`godschurches.com` and confirmed by its serving identity and product
+`2026.09.22.1`. Nineteen anonymous route/API/browser checks and six protected
+health checks pass with zero browser errors, application writes or provider
+sends. All 144 original production table/column fingerprints are unchanged.
+Authenticated state transitions were tested in isolated fictional builds;
+no production application or recruitment was created for verification.
+
+The additive production migration completed. All 105 migration checksums match
+production and the installed recovery registry, with no pending migration and
+all seven new or extended constraints valid. A new encrypted archive restored
+all 105 migrations and 147 tables using the installed recovery script. The
+actual scheduled maintenance process then reported 88 verified archives, no
+retention issues and no removal. The separate earlier upgrade rehearsal supplies
+the protected-replay and original-column preservation evidence.
 
 - Fresh fictional replay of all 105 migrations passed. Existing migrations are
   unchanged; the additive migration extends the current retention constraints.
@@ -108,8 +125,12 @@ checkout-relative recovery folder; correcting that private harness configuration
 preserved the application's pending-recovery guard. Both failures remain in
 private evidence, and the resumed database stopped cleanly.
 
-Finish final release checks. Record the actual integrated commit,
-production migration, deployment, canonical assignment,
-serving product/build identity and live read-only checks before describing this
-feature as released. Screening credentials, role templates, voluntary public
+Final integration review reproduced a stale shared descriptor: selecting the
+implemented volunteer resource still returned unavailable, while its working
+Menu entry bypassed that descriptor. The correction registers the real policy,
+command and boundary owners and makes the Menu consume that resource entry.
+Eight focused resource/navigation/release checks, TypeScript and scoped lint
+pass. Service permissions, persistence and response behavior are unchanged.
+Verify the successor deployment and its actual Menu route before closing this
+remaining integration step. Screening credentials, role templates, voluntary public
 service history and optional availability remain separate future features.

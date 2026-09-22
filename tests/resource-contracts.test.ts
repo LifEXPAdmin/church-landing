@@ -10,7 +10,6 @@ import {
 test("reserved and unknown resource kinds cannot select a working service", () => {
   for (const kind of [
     "mediaCatalogItem",
-    "volunteerOpportunity",
     "fundraisingCampaign",
     "family",
     "__proto__",
@@ -57,7 +56,8 @@ test("implemented resources point to their existing authority without granting a
     "exchangeListing",
     "exchangeInquiry",
     "pantryHub",
-    "gatherGroup"
+    "gatherGroup",
+    "volunteerOpportunity"
   ] as const) {
     const contract = requireImplementedResource(kind);
     assert.equal(contract.state, "implemented");
