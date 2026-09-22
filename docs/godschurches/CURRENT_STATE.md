@@ -4,10 +4,11 @@ The [volunteer implementation checkpoint](VOLUNTEER_OPPORTUNITIES_REPORT.md)
 records the editor, private application review, canonical timed assignments,
 ongoing roles, independent shifts, calendar, linked-needs and privacy integration.
 Focused service, migration/recovery and candidate build checks have passed.
-A measured bounded-query improvement passed current-access regressions. A browser
-refresh failure is being isolated against the established HTTPS test transport;
-full browser acceptance, final combined build/regression, preserving rollback,
-integration and verified-live release remain open. Production is unchanged at
+A measured bounded-query improvement passed current-access regressions. Removing the additional volunteer loading boundary resolved the captured
+streamed-refresh failure: the full eight-group browser flow and five successive
+minimal recurrence checks passed. The combined production build passed. The
+full support gate is running in a separate clean export and fictional database;
+preserving rollback, integration and verified-live release remain open. Production is unchanged at
 the independently verified documentation release below.
 
 ## Regular workflow and recovery receipt published, 22 September 2026, 01:18 UTC

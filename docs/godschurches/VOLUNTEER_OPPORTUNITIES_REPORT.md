@@ -36,8 +36,8 @@ duplicate a reservation or revive an old acceptance.
   two independently timed shifts with owner-only overlap hints after an edit.
 - TypeScript, focused lint, release-content checks and the clean candidate build
   passed. Candidate builds passed hydration verification and all 231 runtime
-  traces. The final combined build after the query reduction is still pending.
-  No new dependency is introduced.
+  traces. The combined build after query reduction and the refresh correction
+  passed. No new dependency is introduced.
 - A fresh encrypted production backup was restored only into an isolated
   database, upgraded from 104 to 105 migrations and reconciled with protected
   controls. All 144 original table fingerprints were preserved, migration
@@ -47,8 +47,9 @@ duplicate a reservation or revive an old acceptance.
 - The built browser completed eight journey groups in one run, including the
   editor, lost-reply reconciliation, approval, narrow enlarged text, canonical
   commitments, account-switch concealment, coordinator revocation, minimal
-  cancellation and untimed assignment. Intermittent same-route refresh failures
-  were also reproduced, so these journeys are not yet accepted for release.
+  cancellation and untimed assignment. The corrected candidate passed all
+  eight groups through the normal streamed connection and then five successive
+  minimal approval-refresh recurrence checks.
 
 ## Measured runtime cost
 
@@ -70,12 +71,18 @@ fixture allowlist; the fixture path was corrected, and the HTTP retry passed.
 
 The browser refresh failure saves the application correctly but can leave its
 old screen visible even when the API and returned server component payload have
-the current state. Avoiding an unchanged reading-preference dispatch and delaying the confirmed
-refresh were both tested and did not resolve the failure; both experiments were
-reverted. The causal investigation and release acceptance remain open.
+the current state. Avoiding an unchanged reading-preference dispatch, delaying the confirmed
+refresh and changing the presentation boundary did not resolve the failure;
+those experiments were reverted. Removing the additional volunteer route
+loading boundary resolved the captured failure. The shared privacy and unknown
+outcome guards remain intact. The final browser run and five minimal recurrence
+checks passed without forced reloads or buffered-response interception. This
+records the reproduced application-level correction, not a general diagnosis
+of the framework renderer.
 
-Finish the browser regression, measured query/payload review, full support gate,
-compatible preserving-code rollback and final release checks. Record the actual
+The full support gate is running against an immutable clean source export.
+Finish that gate, the compatible preserving-code rollback and final release
+checks. Record the actual
 integrated commit, production migration, deployment, canonical assignment,
 serving product/build identity and live read-only checks before describing this
 feature as released. Screening credentials, role templates, voluntary public
