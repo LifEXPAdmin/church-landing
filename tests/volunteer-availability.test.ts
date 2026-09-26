@@ -665,6 +665,7 @@ test("compatible older lifecycle writers scrub availability while preserving sou
     data: {
       opportunityId: f.opportunity.id,
       userId: null,
+      recoveryRequired: true,
       availability: value,
       statement: "Fictional restored receipt"
     }
