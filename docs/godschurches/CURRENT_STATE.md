@@ -1,3 +1,22 @@
+## Original private report retry locally tested; release blocked, 26 September 2026 UTC
+
+Version **2026.09.26.24** (`a1de11c`, QA `dbf2022`) preserves a private report's original
+confirmation through rate limiting. Before editing, a real local 429 reproduced
+lost retry and an unwarned claim that an already received report was unsent.
+The original request now survives the wait and source withdrawal; stopping an
+uncertain retry retains the receipt warning. Current identity and definitive
+source-version correction remain enforced.
+All **14 browser groups**, **16 fresh service/HTTPS tests** and the
+**39.051-second** production build pass. Four actual-keyboard narrow/enlarged
+captures and two physical DOM absence checks pass. Full fixture counts,
+diagnostics and limits are in [retained reader privacy](RETAINED_READER_PRIVACY.md).
+This is **implemented and locally tested, not merged or live**. The recorded
+Vercel daily deployment cap remains. Prior live `.11/925536c` has the latest
+16:41:19 UTC READY/canonical/health verification; no new publication is claimed.
+No production write, send, migration, push or deployment retry occurred. Refresh
+expired installed restore evidence before a future release. Continue ordinary
+priority work; wider privacy, security and physical-device gates stay open.
+
 ## Original report review retry locally tested; release blocked, 26 September 2026 UTC
 
 Version **2026.09.26.23** (`cabd037`, QA `88de757`) preserves an uncertain

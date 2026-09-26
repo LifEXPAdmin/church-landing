@@ -1,5 +1,98 @@
 # Retained reader privacy
 
+## Original private report retry locally tested; release blocked, 26 September 2026 UTC
+
+Version **2026.09.26.24**, application `a1de11cb6d18a0a6517ed21144ac3cf7313723fa`,
+with QA-only `dbf2022`, retains the original private report request through rate limiting. Before any
+application edit, unchanged `.23/cabd037` reproduced an accepted create with a
+lost acknowledgment, followed by an actual endpoint 429 with Retry-After 900.
+Only that fictional reporter's transport limiter was set to 240 unexpired hits;
+the endpoint advanced it to 241. Retry disappeared, and Discard report declared
+“Unsent report details discarded” without warning despite one persisted report
+and one original SocialOperation. Both browser attempts had identical bodies.
+The owned limiter was restored to its original hit count and expiry. The raw
+receipt is preserved with a correction supplement for two copied metadata
+sentences: the 429 was real, and no reviewer grant was revoked or renewed.
+
+The client no longer clears pending confirmation on 429. Current identity,
+existing definitive 400/403/404/409 behavior, source-version correction, cooldowns
+and deliberate discard remain enforced. Server receipt replay already permits
+the original reporter to confirm an accepted submission after source withdrawal;
+no access or transaction rule changed. Same-version new-key submissions were
+already deduplicated as reports, so this fix does not claim a duplicate-case
+reproduction. No endpoint, schema, dependency, polling or backend change is added.
+
+All **six focused browser groups** pass. Four identical body/key/account attempts
+confirm exactly one original report after lost acknowledgment, real transport
+429, deliberate author withdrawal, account replacement, and a simulated 503.
+A separate two-attempt case confirms that cancelling the discard warning retains
+the retry during the real cooldown, while accepting it truthfully clears only
+local recovery. A real 409 creates no report, retains the draft and blocks a
+fresh send until the user explicitly checks the revised source. Its intentional
+new key creates one report for the newer version.
+
+The final focused run makes **eight browser POST attempts**, creates **three
+reports and three reporter SocialOperations**, and invokes one independent
+author withdrawal command. It uses four fictional actors, one unchanged review
+grant, three source posts and four local verification files. Final read-only
+effect checks confirm nine reviewer activity events, zero notification delivery
+rows and four retention controls: three reports and one author withdrawal. The
+author withdrawal receipt is separate from the three reporter receipts. Only the current
+reporter's limiter is saturated, advanced and restored. Actor setup records two
+existing isolated auth-limit rows cleared through four calls. Two physical DOM
+checks verify absent fields, private live values and attributes after blur and
+same-page account replacement. Two cooldown observations, one withdrawn-target
+read and one deliberate source revision are separate evidence, not additional
+DOM absence checks. Four inspected captures at 320px and normal or 200% root text
+use actual Tab/Shift+Tab, two-pixel focus outlines, center hit testing and fully
+reachable primary controls above fixed navigation. No horizontal overflow remains.
+
+The actual server Retry-After header and server clock remain unchanged. After
+proving disabled controls and no extra POST during the wait, only the owned
+limiter expiry and browser Date.now are advanced for the test to avoid a
+15-minute delay. Lost acknowledgments and the 503 are explicit transport
+simulations. Chromium lifecycle checks do not prove physical-device snapshots.
+The withdrawn-source access error's broader existing wording is unchanged; the
+original receipt path remains available and confirms its accepted report.
+
+A first focused attempt passed five groups and stopped on an assertion made
+before the 409 response's final identity check and client catch completed. It
+recorded seven POST attempts and two reports/receipts, with no effect for the
+conflict case. The test now waits for the actual 409 message and the enabled
+access-check control before the same assertions. No application change was made.
+Failed and successful receipts, captures and fixture records are preserved. No
+page exception, route failure or external request occurred; expected 429/404/409,
+simulated 503 and lost-response diagnostics remain recorded.
+
+All **eight existing reporting browser groups** pass, including More-menu entry,
+private receipts, exact retries, owner replacement, current church access,
+version conflict, protected navigation, quota expiry, guest denial and responsive
+layout. Its quota test now requires the same body and one report after retry.
+Total browser acceptance is **14 groups**. All **16 service/HTTPS tests** are
+freshly executed on a separate database: reporting 10, report HTTP 4 and release
+content 2. That runtime stopped with data preserved and 14 local verification
+files; final row inventory is separate from mutation-attempt totals.
+
+The **39.051-second** production build, ID `BXQtcoFGno_ay5Q6e24_O`, passes types,
+lint, copy, source/build security and runtime trace checks. All **1,912 tracked
+candidate files** stay unchanged and **115 migrations** are unchanged. The
+adapted existing QA runs outside the immutable candidate with all other root
+files proven identical; the focused runner's exact checksum is recorded.
+Compared with tested `.23`, the reports route adds one gzip byte, standalone
+review five and the ordinary platform four; CSS does not grow. No speed
+improvement or fresh whole-system baseline is claimed.
+
+This candidate is **implemented and locally tested, not merged or live**.
+Main remains `.12/951e57b`; publication is blocked by the recorded Vercel daily
+cap. The latest read-only live check at **16:41:19 UTC** confirms
+`.11/925536c` on READY deployment `dpl_BYb9LtWJw2kLfk2cFLKEZ9Pv8oqt`, assigned to
+`godschurches.com`, with public health OK. No production write, send, migration,
+push or deployment retry occurred. Refresh expired installed restore evidence
+before release. The unused `.22` local runtime was stopped and only its webpack
+cache removed after full source, compiled-output, fixture and stopped-database
+hash comparisons; evidence and other environments were preserved. Wider report
+lifecycle privacy and security gates stay open; continue the ordinary priority queue.
+
 ## Original report review retry locally tested; release blocked, 26 September 2026 UTC
 
 Version **2026.09.26.23**, application `cabd037e50b5c666b872d16a09d259bd53c55caf`
