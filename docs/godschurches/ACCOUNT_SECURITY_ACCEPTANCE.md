@@ -1,5 +1,23 @@
 # Account security acceptance
 
+## Requests and Feedback worklists locally tested; release blocked, 26 September 2026 UTC
+
+Version **2026.09.26.21** (`f980402`, QA `618ce6d`) removes concealed private
+rows, saved views and fields while preserving filters, sibling drafts and
+original command owners. Removed views and selected rows keep exact recovery;
+partial rate limits preserve the original batch. Missing selections cannot be
+silently dropped, and unfinished actions block native filter changes. Current
+source authority, versions and receipt rules remain unchanged.
+All **52 browser groups**, **29 fresh services** and the **38.662-second** build
+pass. Eighteen DOM observations and nine actual-keyboard narrow/enlarged captures
+pass; retries produce one original effect per child. Fixture and test diagnostics
+are preserved, including explicit fictional reassignment after grant renewal.
+Full counts, costs and limits are in [retained reader privacy](RETAINED_READER_PRIVACY.md).
+This is **not merged or live** under the provider daily deployment cap. No
+production write, send, migration, push or deployment retry occurred. Prior live
+`.11/925536c` retains its 12:58:03 UTC check. Wider security and release acceptance
+remain open; continue the ordinary priority queue.
+
 ## Private idea reviews locally tested; release blocked, 26 September 2026 UTC
 
 Version **2026.09.26.20** (`ceb9fac`, QA `1e4d57f`) removes concealed private

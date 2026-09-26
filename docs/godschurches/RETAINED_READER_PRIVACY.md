@@ -1,5 +1,93 @@
 # Retained reader privacy
 
+## Requests and Feedback worklist privacy locally tested; release blocked, 26 September 2026 UTC
+
+Version **2026.09.26.21**, application `f980402f7aa0b970b2577d7af8709b61ab349a9f`
+and QA-only `618ce6d`, preserves original worklist actions while removing private
+presentation during concealment. Before editing, unchanged `.20/ceb9fac`
+reproduced four gaps: retained private rows and fields, lost recovery after an
+accepted saved-view deletion, lost recovery when an accepted bulk update removed
+selected rows, and a mixed successful/rate-limited acknowledgment clearing the
+original batch key. Initial HTML/RSC already omitted the private data and the
+current-authority API already used no-store responses.
+
+The worklist now keeps controlled filters, expanded sections and original form
+owners independently of private presentation. Saved-view removal keeps only a
+pending identity after its current row disappears, with generic recovery text.
+Bulk selection retains its ordered identities and current or last-known versions;
+a fresh send cannot silently omit a missing request. Original uncertain requests
+retain their exact bytes and derived child keys, including per-row 429 results.
+Current-version adoption, deliberate selection clearing and warned local discard
+remain separate choices. Saved views use the applied filters, and native filter
+submission waits until all unfinished mutation owners settle. Requests, Feedback,
+paging and return-focus route contracts remain intact. Current source authority,
+transaction boundaries and receipt checks are unchanged.
+
+All **seven focused browser groups** pass, for **52 browser groups** total.
+The focused fixture verifies 25 plus 2 authorized rows, ten retained filter
+values, both expanded sections, independent save/bulk drafts and 18 observations
+of private DOM removal across concealment, failed/held reads, account replacement
+and actual responder revocation. Church and topic controls use their actual empty
+permitted values in this responder-only fixture. Grant renewal advances its
+generation and does not restore prior assignments: the fixture explicitly
+reassigns only its 27 own requests to the renewed version before later commands.
+This is deliberate fictional setup, not automatic restoration of authority.
+
+Saved-view creation and deletion, two-row tagging and two-row resolution each
+traverse four identical attempts through lost or partial acknowledgment, 429,
+503 and confirmation. Nineteen browser POST attempts total include a definitive
+409 followed by explicit version adoption and an accepted view followed by
+cancelable local discard. Eight Admin receipts and three responder Support
+receipts include the separately recorded setup/service effects; no original
+retry duplicates its effect. All-row and partial-row disappearance preserve the
+original batch and sibling work. Clean native filters, existing pagination,
+return focus and Feedback type preservation pass. Nine captures at 390px, 320px
+and 200% text use actual Tab and Shift+Tab, visible two-pixel focus outlines,
+unobstructed centers and primary controls fully above fixed navigation. No
+horizontal overflow, browser errors, route errors or external requests remain.
+
+The final focused fixture creates three actors, one response grant, 26 ordinary
+requests and one feedback submission, with 27 real requester receipts and three
+local verification files. Its 26 owner-scoped date changes support pagination
+without disabling the five-request daily limit. Two grant updates, 27 deliberate
+assignment updates and two temporary/restoration intake writes are counted
+separately. The intake's original values and actual restoration are recorded.
+Three earlier attempts are preserved: the real daily limit stopped initial
+setup, an invalid test tried to focus an intentionally disabled filter, and an
+unbounded test wait stalled on a canceled response. The last was stopped through
+its own browser child so cleanup could run. The final test verifies actual 503
+delivery and uses bounded completion checks. No application change was needed
+for these diagnostics; all failed fixture effects remain recorded privately.
+
+All **45 existing browser groups** pass on this application: Ideas 6, Admin retry
+3, Admin 5, Weekly privacy 5, Access privacy 5, People privacy 7, Growth privacy 7
+and Idea review privacy 7. All **29 targeted services** were freshly executed:
+Admin operations 10, Support service 17 and release content 2. The exact
+**38.662-second** build, ID `m8MyB4WCG0MF0z8lAV3sQ`, passes types, lint,
+copy, source/build security and runtime trace checks. All 1,909 tracked application
+snapshot files and 115 unchanged migrations are recorded. The separate service
+database was stopped with data preserved; its 49 local message files and final
+fictional row counts are fixture inventory, not mutation-attempt totals. The
+focused QA file was subsequently committed separately without rebuilding or
+changing the tested application.
+
+Compared with tested `.20`, Admin startup JavaScript adds **924 to 925 gzip
+bytes**, with no shared CSS growth. There is no new dependency, endpoint, schema,
+worker, polling or persistent browser storage. No speed improvement is claimed.
+The idle prior candidate's disposable webpack cache was removed only after
+ownership and inactivity checks; all 1,908 sources, 1,457 other runtime files,
+213 fixture files and 2,263 stopped database files retain their hashes.
+
+This candidate is **not merged or live** under the existing Vercel daily deployment
+cap. No push, deployment retry, production write, migration, external delivery or
+new production queue probe occurred. Prior live `.11/925536c` retains its last check at
+12:58:03 UTC; it was not freshly reverified here. Fresh release, installed restore,
+production-state and live checks remain required when capacity is available.
+These checks establish presentation and original-command behavior, not heap,
+browser-history, operating-system, screenshot or exported-file erasure. Broader
+private readers, security policy, real provider, operator and physical-device
+acceptance remain open. Continue eligible priority work.
+
 ## Private idea reviews locally tested; release blocked, 26 September 2026 UTC
 
 Version **2026.09.26.20**, application `ceb9faceffbad0e96564ca8c6e6057ff33cf03b3`
