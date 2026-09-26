@@ -44,6 +44,17 @@ pass for rendering/privacy, source operations, identity and origin defenses.
 The account-switch browser expectation checks deliberate concealment before
 reloading the new account. A test-side missing local recovery-journal
 configuration was corrected without changing the application consent boundary.
+Visual inspection then reproduced an unstyled month picker: the server component
+concatenated a style export across a client boundary, placing a function's text
+in the class attribute. Shared control constants now live in a neutral module;
+the server reads the actual strings and existing clients retain their exports.
+The built browser check asserts visible input dimensions, border and block layout.
+All 26 browser groups and five HTTP checks pass again on the final build. A
+browser timing correction waits for the account-change result rather than the
+earlier blur concealment before leaving the dirty form. Both failed attempts are
+preserved. The final change is limited to shared presentation constants and their
+calendar import; services, permissions, schema and recovery are unchanged.
+
 The complete regression initially exposed a historical fingerprint assertion
 that included the new display columns. The harness now compares original fields
 and separately checks the four new migrations' defaults and original-column
@@ -64,8 +75,8 @@ No destructive schema rollback was used.
 
 Deduplicated startup JavaScript includes ancestor layouts. Compared with the
 previous built production source, compressed calendar-list/detail code grows by
-660/659 bytes, event detail by 931 bytes and Settings by 249 bytes. Including its
-notification lazy chunk, Settings grows by 671 bytes. Associated CSS grows by
+660/659 bytes, event detail by 929 bytes and Settings by 736 bytes. Including its
+notification lazy chunk, Settings grows by 1,158 bytes. Associated CSS grows by
 38 bytes. No dependency was added.
 
 A local fictional sample records one preference SELECT for a default-Off wake,
