@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { MetricSnapshot } from "@/lib/platform/metric-report";
 import {
   metricActions,
@@ -8,9 +8,11 @@ import {
   metricDevices,
   metricReferrals
 } from "@/lib/platform/metric-policy";
-import { socialRequest } from "@/lib/platform/social-client";
+import { socialRequest, SocialClientError } from "@/lib/platform/social-client";
 import type { ReactNode } from "react";
 import { FeedbackMetrics } from "./feedback-metrics";
+import { useReadVisibility } from "./read-visibility";
+import { useUnsavedSocialWork } from "./use-unsaved-social-work";
 const box = "rounded-xl border border-gc-divider p-4";
 const labels: Record<string, string> = {
   ...metricActions,
@@ -101,10 +103,101 @@ function Table({
   );
 }
 export function AdminMetrics({ data }: { data: MetricSnapshot }) {
+  const visible = useReadVisibility();
   const r = data.report,
     [busy, setBusy] = useState(false),
     [message, setMessage] = useState("");
-  const requestKey = useRef<string | null>(null);
+  const [pending, setPending] = useState<{
+      body: string;
+      owner: string;
+    } | null>(null),
+    [failed, setFailed] = useState(false),
+    [retryAt, setRetryAt] = useState(0),
+    [dates, setDates] = useState({
+      from: r.window.from,
+      through: r.window.through
+    }),
+    [datesEdited, setDatesEdited] = useState(false);
+  const writing = useRef(false),
+    generation = useRef(0),
+    permitted = useRef(false),
+    downloadUrl = useRef<string | null>(null),
+    status = useRef<HTMLParagraphElement>(null);
+  const canExport = data.navigation.capabilities.includes(
+    "EXPORT_PLATFORM_METRICS"
+  );
+  const releaseDownload = () => {
+    if (downloadUrl.current) URL.revokeObjectURL(downloadUrl.current);
+    downloadUrl.current = null;
+  };
+  useLayoutEffect(() => {
+    permitted.current = visible && canExport;
+    if (!permitted.current) {
+      generation.current++;
+      releaseDownload();
+      setMessage("");
+    }
+  }, [visible, canExport]);
+  useEffect(() => {
+    const retire = () => {
+      permitted.current = false;
+      generation.current++;
+      releaseDownload();
+    };
+    const conceal = () => {
+      retire();
+      setMessage("");
+    };
+    const visibility = () => {
+      if (document.visibilityState === "hidden") conceal();
+    };
+    window.addEventListener("blur", conceal);
+    window.addEventListener("offline", conceal);
+    window.addEventListener("pagehide", conceal);
+    document.addEventListener("visibilitychange", visibility);
+    return () => {
+      retire();
+      window.removeEventListener("blur", conceal);
+      window.removeEventListener("offline", conceal);
+      window.removeEventListener("pagehide", conceal);
+      document.removeEventListener("visibilitychange", visibility);
+    };
+  }, []);
+  useLayoutEffect(() => {
+    if (!datesEdited)
+      setDates({ from: r.window.from, through: r.window.through });
+  }, [r.window.from, r.window.through, datesEdited]);
+  useEffect(() => {
+    if (message && !busy && visible && canExport) status.current?.focus();
+  }, [message, busy, visible, canExport]);
+  useEffect(() => {
+    if (!retryAt) return;
+    const timer = setTimeout(
+      () => setRetryAt(0),
+      Math.max(0, retryAt - Date.now())
+    );
+    return () => clearTimeout(timer);
+  }, [retryAt]);
+  useUnsavedSocialWork(
+    { dirty: false, saving: busy || !!pending, conflict: false },
+    () => setMessage("Retry or discard this local export before leaving."),
+    true
+  );
+  const discard = () => {
+    if (
+      writing.current ||
+      !pending ||
+      !confirm(
+        "This export may already be recorded. Discard only this browser’s pending retry?"
+      )
+    )
+      return;
+    setPending(null);
+    setRetryAt(0);
+    setFailed(false);
+    setMessage("Local export retry discarded. Saved audit records remain.");
+  };
+  if (!visible) return null;
   const todayParts = new Intl.DateTimeFormat("en-US", {
     timeZone: r.window.zone,
     year: "numeric",
@@ -121,43 +214,82 @@ export function AdminMetrics({ data }: { data: MetricSnapshot }) {
       timeStyle: "short"
     }).format(new Date(at));
   async function download() {
-    if (busy) return;
+    if (writing.current || !permitted.current || retryAt) return;
+    const command = pending ?? {
+      body: JSON.stringify({
+        operation: "metrics-export",
+        requestKey: crypto.randomUUID(),
+        from: r.window.from,
+        through: r.window.through
+      }),
+      owner: data.navigation.viewer.id
+    };
+    const sequence = generation.current;
+    writing.current = true;
     setBusy(true);
+    setPending(command);
     setMessage("");
-    requestKey.current ??= crypto.randomUUID();
     try {
       const { data: result } = await socialRequest<{
         csv: string;
         filename: string;
         receipt: string;
-      }>(
-        "/api/platform/admin",
-        JSON.stringify({
-          operation: "metrics-export",
-          requestKey: requestKey.current,
-          from: r.window.from,
-          through: r.window.through
-        }),
-        data.navigation.viewer.id
-      );
+      }>("/api/platform/admin", command.body, command.owner);
+      if (
+        typeof result.csv !== "string" ||
+        typeof result.filename !== "string" ||
+        typeof result.receipt !== "string"
+      )
+        throw new SocialClientError(
+          503,
+          "The export could not be confirmed. Retry the original export."
+        );
+      setPending(null);
+      setFailed(false);
+      // A recorded export never keeps a replayable CSV. A later response may
+      // settle its command, but must not download across a concealment/read.
+      if (
+        sequence !== generation.current ||
+        !permitted.current ||
+        document.visibilityState === "hidden"
+      ) {
+        setMessage(
+          "Export recorded, but the page changed before download. Generate a new current export when ready."
+        );
+        return;
+      }
+      releaseDownload();
       const url = URL.createObjectURL(
           new Blob([result.csv], { type: "text/csv;charset=utf-8" })
         ),
         a = document.createElement("a");
+      downloadUrl.current = url;
       a.href = url;
       a.download = result.filename;
       a.click();
-      window.setTimeout(() => URL.revokeObjectURL(url), 2000);
+      window.setTimeout(() => {
+        if (downloadUrl.current === url) releaseDownload();
+      }, 2000);
       setMessage(
         "Current aggregate export downloaded. Audit receipt: " + result.receipt
       );
-      requestKey.current = null;
-    } catch (e) {
+    } catch (error) {
+      const code = error instanceof SocialClientError ? error.status : 503;
+      // The service deliberately refuses to replay a recorded CSV (409).
+      // Other uncertain outcomes keep the original body, account and key.
+      if ([400, 409].includes(code)) setPending(null);
+      if (error instanceof SocialClientError && error.retryAfter)
+        setRetryAt(Date.now() + Math.min(86400, error.retryAfter) * 1000);
+      setFailed(true);
       setMessage(
-        e instanceof Error ? e.message : "The export could not be confirmed."
+        error instanceof Error
+          ? error.message
+          : "The export could not be confirmed. Retry the original export."
       );
-      requestKey.current = null;
+      if ([401, 403, 404].includes(code))
+        window.dispatchEvent(new Event("admin-access-changed"));
     } finally {
+      writing.current = false;
       setBusy(false);
     }
   }
@@ -226,18 +358,24 @@ export function AdminMetrics({ data }: { data: MetricSnapshot }) {
           ["30", "30 days"],
           ["90", "90 days"]
         ].map(([n, label]) => (
-          <Link
+          <a
             className="gc-button gc-button-quiet"
+            aria-disabled={busy || !!pending}
+            onClick={(event) => {
+              if (writing.current || pending) event.preventDefault();
+            }}
             key={n}
             href={"/platform/admin/growth?preset=" + n}
           >
             {label}
-          </Link>
+          </a>
         ))}
       </nav>
       <form
-        key={r.window.from + ":" + r.window.through}
         action="/platform/admin/growth"
+        onSubmit={(event) => {
+          if (!visible || writing.current || pending) event.preventDefault();
+        }}
         className="flex flex-wrap items-end gap-3"
       >
         <label>
@@ -247,7 +385,12 @@ export function AdminMetrics({ data }: { data: MetricSnapshot }) {
             type="date"
             name="from"
             required
-            defaultValue={r.window.from}
+            disabled={busy || !!pending}
+            value={dates.from}
+            onChange={(event) => {
+              setDatesEdited(true);
+              setDates((current) => ({ ...current, from: event.target.value }));
+            }}
           />
         </label>
         <label>
@@ -257,24 +400,59 @@ export function AdminMetrics({ data }: { data: MetricSnapshot }) {
             type="date"
             name="through"
             required
-            defaultValue={r.window.through}
+            disabled={busy || !!pending}
+            value={dates.through}
+            onChange={(event) => {
+              setDatesEdited(true);
+              setDates((current) => ({
+                ...current,
+                through: event.target.value
+              }));
+            }}
             max={reportingToday}
           />
         </label>
-        <button className="gc-button">Apply dates</button>
-      </form>
-      {data.navigation.capabilities.includes("EXPORT_PLATFORM_METRICS") && (
-        <button
-          className="gc-button gc-button-quiet"
-          disabled={busy}
-          onClick={() => void download()}
-        >
-          {busy
-            ? "Preparing current export…"
-            : "Export current aggregates as CSV"}
+        <button className="gc-button" disabled={busy || !!pending}>
+          Apply dates
         </button>
+      </form>
+      <div className="flex flex-wrap gap-3" aria-busy={busy}>
+        {canExport && (
+          <button
+            className="gc-button gc-button-quiet"
+            disabled={busy || !!retryAt}
+            onClick={() => void download()}
+          >
+            {busy
+              ? "Preparing current export…"
+              : pending
+                ? "Retry original export"
+                : "Export current aggregates as CSV"}
+          </button>
+        )}
+        {pending && (
+          <button
+            className="gc-button gc-button-quiet"
+            disabled={busy}
+            onClick={discard}
+          >
+            Discard pending export
+          </button>
+        )}
+      </div>
+      {!canExport && pending && (
+        <p>An unconfirmed export is retained in this browser.</p>
       )}
-      {message && <p role="status">{message}</p>}
+      {canExport && !!retryAt && (
+        <p role="status">
+          Wait for the export cooldown, then retry the original export.
+        </p>
+      )}
+      {canExport && message && (
+        <p ref={status} role={failed ? "alert" : "status"} tabIndex={-1}>
+          {message}
+        </p>
+      )}
       <section className="space-y-3" aria-labelledby="metric-accounts">
         <h2 id="metric-accounts" className="text-2xl">
           Registration and current population

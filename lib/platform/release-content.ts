@@ -1006,6 +1006,14 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "private-growth-reports", version: "2026.09.26.19", date: "2026-09-26",
+    summary: "Growth reports and exports follow current access without losing original retry details.",
+    added: [],
+    improved: ["Concealed reports remove their private page content while retaining your date choices and unfinished export."],
+    fixed: ["Delayed exports stop downloading when the page changes, and uncertain retries keep their original request before you deliberately create a new current file."],
+    featureIds: ["platform-growth"]
+  },
+  {
     id: "private-weekly-feedback", version: "2026.09.26.18", date: "2026-09-26",
     summary: "Weekly feedback reviews keep private notes tied to the week you opened.",
     added: [],
