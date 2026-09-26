@@ -1006,6 +1006,14 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "private-admin-access", version: "2026.09.26.17", date: "2026-09-26",
+    summary: "Admin duty changes preserve unfinished work while checking current access.",
+    added: [],
+    improved: ["Recipient details and unfinished grant entries leave the page during concealment and access checks."],
+    fixed: ["Original access changes retain their recipient, duty and requested action through refreshes and explicit retries."],
+    featureIds: ["admin-requests"]
+  },
+  {
     id: "private-account-lookups", version: "2026.09.26.16", date: "2026-09-26",
     summary: "Account lookups follow current permissions while preserving unfinished local work.",
     added: [],

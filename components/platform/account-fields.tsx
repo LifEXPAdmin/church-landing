@@ -6,12 +6,16 @@ export function PasswordField({
   id,
   name,
   label,
-  autocomplete
+  autocomplete,
+  value,
+  onChange
 }: {
   id: string;
   name: string;
   label: string;
   autocomplete: "new-password" | "current-password";
+  value?: string;
+  onChange?: (value: string) => void;
 }) {
   const [visible, setVisible] = useState(false);
   return (
@@ -23,6 +27,8 @@ export function PasswordField({
           name={name}
           type={visible ? "text" : "password"}
           autoComplete={autocomplete}
+          value={value}
+          onChange={onChange ? (event) => onChange(event.currentTarget.value) : undefined}
           minLength={8}
           maxLength={128}
           required

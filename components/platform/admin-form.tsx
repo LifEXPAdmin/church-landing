@@ -81,6 +81,7 @@ export function AdminForm({
     [failed, setFailed] = useState(false),
     [conflict, setConflict] = useState(false),
     [retryAt, setRetryAt] = useState(0),
+    [password, setPassword] = useState(""),
     [values, setValues] = useState<Record<string, string | boolean>>(() =>
       privacy ? initialFieldValues(fields) : {}
     );
@@ -142,6 +143,7 @@ export function AdminForm({
     setConflict(false);
     original.current = fixed;
     if (privacy) setValues(initialFieldValues(fields));
+    if (privacy) setPassword("");
     form.current?.reset();
     setNotice("Local entries discarded. Saved changes remain.");
   };
@@ -267,6 +269,7 @@ export function AdminForm({
           setConflict(!!incomplete && !uncertain);
           if (!incomplete) {
             if (privacy) setValues(initialFieldValues(fields));
+            if (privacy) setPassword("");
             form.current?.reset();
             if (confirmationPurpose) confirmation.finish();
           }
@@ -301,6 +304,7 @@ export function AdminForm({
             value={confirmation}
             id={`${id}-confirmation`}
             label="Confirm your current sign-in for this action"
+            password={privacy ? { value: password, onChange: setPassword } : undefined}
           />
         )}
         {fields.map((field) => (

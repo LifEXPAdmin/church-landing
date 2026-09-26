@@ -273,12 +273,14 @@ export function AccountConfirmation({
   value,
   id,
   label,
-  emailToken
+  emailToken,
+  password
 }: {
   value: ReturnType<typeof useAccountConfirmation>;
   id: string;
   label: string;
   emailToken?: string | null;
+  password?: { value: string; onChange: (value: string) => void };
 }) {
   if (!value.loaded)
     return (
@@ -319,6 +321,8 @@ export function AccountConfirmation({
           name="currentPassword"
           label={label}
           autocomplete="current-password"
+          value={password?.value}
+          onChange={password?.onChange}
         />
       ) : (
         <>
