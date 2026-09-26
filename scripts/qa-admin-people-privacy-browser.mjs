@@ -571,6 +571,16 @@ const run = async () => {
       );
     await fieldsAre(draft, "VERIFICATION");
     await noResult();
+    assert.equal(
+      await form
+        .getByText(
+          "Current operational account details loaded. No profile history, contacts or private conversations were read.",
+          { exact: true }
+        )
+        .count(),
+      0,
+      "Concealment must not restore a success notice for removed details"
+    );
     noNewWrite(1);
   }
   await failedRead(identity, draft);
@@ -666,6 +676,12 @@ const run = async () => {
     await submit.waitFor();
     await fieldsAre("", "SUPPORT");
     await noResult();
+    await form
+      .getByText(
+        "Lookup confirmed. Look up the account again to check its current details.",
+        { exact: true }
+      )
+      .waitFor();
     await oneKey(body);
     receipts.push({
       scenario: "accepted-before-hide",

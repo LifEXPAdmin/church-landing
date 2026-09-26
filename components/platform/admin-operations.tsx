@@ -62,7 +62,8 @@ export function AdminPeople({ navigation }: { navigation: AdminNavigation }) {
           // A navigation read rechecks authority, not the target account.
           // A command may settle after concealment without restoring its
           // old private result when the account returns to this document.
-          if (!canPresent || resultGeneration !== generation.current) return;
+          if (!canPresent || resultGeneration !== generation.current)
+            return "Lookup confirmed. Look up the account again to check its current details.";
           setPerson(result.person as AdminLookupResult["person"]);
           setChecked(new Date().toISOString());
         }}

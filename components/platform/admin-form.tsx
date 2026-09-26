@@ -61,7 +61,7 @@ export function AdminForm({
   onSaved: () => void;
   caution?: string;
   onDraftChange?: (dirty: boolean) => void;
-  onResult?: (result: Record<string, unknown>) => void;
+  onResult?: (result: Record<string, unknown>) => string | void;
   confirmationPurpose?: RecentAuthenticationPurpose;
   endpoint?: "/api/platform/admin" | "/api/platform/authenticator";
   available?: boolean;
@@ -86,6 +86,12 @@ export function AdminForm({
     );
   const status = useRef<HTMLParagraphElement>(null);
   const focusPending = useRef(false);
+  const concealed = !!privacy && !privacy.visible;
+  useEffect(() => {
+    // A confirmed result may have been removed by its presentation owner.
+    // Retain error/retry guidance, but do not restore an old success notice.
+    if (concealed && !busy && !pending && !failed) setNotice("");
+  }, [concealed, busy, pending, failed]);
   useUnsavedSocialWork(
     { dirty, saving: busy || !!pending, conflict },
     () =>
@@ -264,7 +270,8 @@ export function AdminForm({
             form.current?.reset();
             if (confirmationPurpose) confirmation.finish();
           }
-          onResult?.(result);
+          const resultNotice = onResult?.(result);
+          if (typeof resultNotice === "string") setNotice(resultNotice);
           onSaved();
         } catch (error) {
           const code = error instanceof SocialClientError ? error.status : 503;
