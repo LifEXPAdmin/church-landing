@@ -82,6 +82,7 @@ context.on("request", (request) => {
     browserWrites.push({ method: request.method(), path });
 });
 const page = await context.newPage();
+page.setDefaultTimeout(30000);
 page.on("pageerror", (error) =>
   errors.push({ path: new URL(page.url()).pathname, message: error.message })
 );
@@ -258,7 +259,7 @@ try {
         )
         .forEach((node) => node.remove())
     );
-    // Real Next links must replace the keyed reader rather than retain its digest.
+    // Private pagination starts a new document with a current-account read.
     const documentIdentity = randomUUID();
     await page.evaluate((id) => {
       window.supportIndexDocumentIdentity = id;
@@ -272,13 +273,16 @@ try {
     await waitRows(2);
     assert.equal(
       await page.evaluate(() => window.supportIndexDocumentIdentity),
-      documentIdentity,
-      "Pagination uses client navigation"
+      undefined,
+      "Pagination starts a fresh document"
     );
     assert.equal(
       await page.getByRole("link", { name: marker, exact: true }).count(),
       0
     );
+    await page.evaluate((id) => {
+      window.supportIndexDocumentIdentity = id;
+    }, documentIdentity);
     await page
       .getByRole("link", { name: "Previous page", exact: true })
       .click();
@@ -287,7 +291,8 @@ try {
     await page.getByRole("link", { name: marker, exact: true }).waitFor();
     assert.equal(
       await page.evaluate(() => window.supportIndexDocumentIdentity),
-      documentIdentity
+      undefined,
+      "Previous page also starts a fresh document"
     );
     ok(
       `${view}: private subjects stay out of initial serialization, current regional dates and enlarged phone layout fit, and actual 20-row Next/Previous navigation works`
@@ -490,6 +495,11 @@ try {
   await go("/platform/help/inbox");
   await waitRows(20);
   await page.getByRole("link", { name: newSubject, exact: true }).waitFor();
+  const assignedBeforeRevocation = await db.supportCase.findMany({
+    where: { requesterId: fixture.memberA.id },
+    select: { id: true, version: true, updatedAt: true }
+  });
+  assert.equal(assignedBeforeRevocation.length, 22);
   await db.supportCapabilityGrant.update({
     where: { id: fixture.ownerGrant.id },
     data: { revokedAt: new Date() }
@@ -505,17 +515,85 @@ try {
     { headers: { "x-expected-account": fixture.owner.id } }
   );
   assert.equal(denied.status(), 404);
-  await db.supportCapabilityGrant.update({
+  // A denied inbox transaction rolls back its reconciliation. Commit a
+  // successful requester read so retirement does not depend on other readers.
+  const { readSupport } = await import("../lib/platform/support.ts");
+  const requesterAfterRevocation = await readSupport(
+    db,
+    fixture.memberA.token,
+    "requests"
+  );
+  assert.equal(requesterAfterRevocation.rows.length, 20);
+  const retiredAssignments = await db.supportCase.findMany({
+    where: { requesterId: fixture.memberA.id },
+    select: {
+      id: true,
+      version: true,
+      ownerGrantId: true,
+      ownerGrantVersion: true
+    }
+  });
+  assert.equal(retiredAssignments.length, 22);
+  for (const row of retiredAssignments) {
+    assert.equal(row.ownerGrantId, null);
+    assert.equal(row.ownerGrantVersion, null);
+    assert.equal(
+      row.version,
+      assignedBeforeRevocation.find((previous) => previous.id === row.id)
+        .version + 1
+    );
+  }
+  const renewedGrant = await db.supportCapabilityGrant.update({
     where: { id: fixture.ownerGrant.id },
     data: { revokedAt: null }
   });
+  const renewedInbox = await context.request.get(
+    config.origin + "/api/platform/support?view=inbox",
+    { headers: { "x-expected-account": fixture.owner.id } }
+  );
+  assert.equal(renewedInbox.status(), 200);
+  assert.deepEqual((await renewedInbox.json()).rows, []);
   await page
     .getByRole("button", { name: "Recheck current access", exact: true })
     .click();
+  await page.getByText(changedNotice, { exact: true }).waitFor();
+  await absent();
+  await reload();
+  await page
+    .getByText(
+      "No requests to show here. New replies will appear with an Updated label.",
+      { exact: true }
+    )
+    .waitFor();
+  await absent();
+  // Renewing a grant never restores assignments. Deliberately reassign only
+  // these fixture cases, preserving their known order for the browser checks.
+  await db.$transaction(
+    assignedBeforeRevocation.map((row) =>
+      db.supportCase.update({
+        where: { id: row.id, requesterId: fixture.memberA.id },
+        data: {
+          ownerGrantId: fixture.ownerGrant.id,
+          ownerGrantVersion: renewedGrant.version,
+          version: { increment: 1 },
+          updatedAt: row.updatedAt
+        }
+      })
+    )
+  );
+  await event("focus");
+  await page.getByText(changedNotice, { exact: true }).waitFor();
+  await absent();
+  await page
+    .getByRole("button", { name: "Recheck current access", exact: true })
+    .click();
+  await page.getByText(changedNotice, { exact: true }).waitFor();
+  await absent();
+  await reload();
   await waitRows(20);
   await page.getByRole("link", { name: newSubject, exact: true }).waitFor();
   ok(
-    "Assignment removal excludes the case; revoked assigned-owner authority denies the inbox and current restoration revalidates access"
+    "Assignment removal excludes the case; grant revocation retires assignments, renewal leaves the inbox empty, and deliberate fixture reassignment requires explicit snapshot reload"
   );
 
   await context.clearCookies();
@@ -566,6 +644,7 @@ try {
         externalRequests,
         browserWrites,
         caseRequests,
+        url: page.url(),
         message: String(error),
         fixtureOnly: true
       },

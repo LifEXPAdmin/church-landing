@@ -59,6 +59,7 @@ export function SupportListRows({
         page={snapshot.page}
         more={snapshot.more}
         base={`/platform/help/${view}`}
+        freshPage
       />
     </>
   );
@@ -66,30 +67,34 @@ export function SupportListRows({
 export function SupportPagination({
   page,
   more,
-  base
+  base,
+  freshPage = false
 }: {
   page: number;
   more: boolean;
   base: string;
+  freshPage?: boolean;
 }) {
+  // A private list starts a new document and current-account read on each page.
+  const PageLink = freshPage ? "a" : Link;
   return (
     (page > 0 || more) && (
       <nav aria-label="Request pages" className="flex gap-6">
         {page > 0 && (
-          <Link
+          <PageLink
             className={portalLinkClass}
             href={`${base}${base.includes("?") ? "&" : "?"}page=${page - 1}`}
           >
             Previous page
-          </Link>
+          </PageLink>
         )}
         {more && page < 99 && (
-          <Link
+          <PageLink
             className={portalLinkClass}
             href={`${base}${base.includes("?") ? "&" : "?"}page=${page + 1}`}
           >
             Next page
-          </Link>
+          </PageLink>
         )}
       </nav>
     )

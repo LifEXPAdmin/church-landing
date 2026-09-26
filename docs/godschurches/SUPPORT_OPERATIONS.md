@@ -17,6 +17,13 @@ and exact uncertain-request owner. No backend, schema, retention, authority or
 intake activation changes. Production build/browser/release acceptance is pending;
 the accepted current .6 release remains separate.
 
+The two private lists use fresh-document Next/Previous links. Isolated browser
+verification found intermittent incomplete client transitions, including without
+the HTTPS proxy or request interception. A fresh document repeats the current
+account check and replaces the list reader. No framework patch or change to other
+Support navigation is included. The wider client-transition diagnosis remains
+open; the final browser gate must verify actual pagination and row counts.
+
 ## Incident coordination, 26 September 2026 UTC
 
 Use [the incident response runbook](INCIDENT_RESPONSE_RUNBOOK.md) for targeted
