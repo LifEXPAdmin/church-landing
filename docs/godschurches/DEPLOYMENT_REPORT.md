@@ -1,3 +1,23 @@
+## Content decision privacy locally tested; release blocked, 26 September 2026 UTC
+
+Version **2026.09.26.26** (`a996e88`, QA `80847e3`) loads private content
+decisions only after current account access is checked and removes their
+presentation when concealed. Original reconsideration drafts and requests remain
+mounted; a confirmed case waits for current access before opening.
+Authenticated HTML/RSC retention, concealed fields and premature navigation were
+reproduced before editing. All **30 browser groups**, **21 fresh service/HTTPS
+checks** and the **41.522-second** final production build pass. Thirty-five
+physical absence observations, four inspected actual-keyboard narrow/enlarged
+captures, church publishing revocation and actual 20+1 paging pass. Detailed
+effects, fixture failures and limits are in
+[retained reader privacy](RETAINED_READER_PRIVACY.md).
+This is **implemented and locally tested, not merged or live**. Main remains
+`.12/951e57b`; prior live `.11/925536c` was READY/canonical/healthy at the
+17:38:58 UTC read. The recorded daily deployment cap remains. No production write,
+send, migration, push or deployment retry occurred. Refresh expired installed
+restore evidence before release. Continue ordinary priority work; wider security
+and physical-device acceptance remain open.
+
 ## Private report lifecycle locally tested; release blocked, 26 September 2026 UTC
 
 Version **2026.09.26.25** (`2e8d932`, QA `817ec33`) physically clears private

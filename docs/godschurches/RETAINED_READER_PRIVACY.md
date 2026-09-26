@@ -1,5 +1,109 @@
 # Retained reader privacy
 
+## Content decision privacy locally tested; release blocked, 26 September 2026 UTC
+
+Version **2026.09.26.26**, application `a996e88d1a4260db76aea73f5490421c6d365229`,
+QA-only `80847e3`, moves the decision list/detail into a keyed client workspace.
+Before edits, unchanged `.25/2e8d932` reproduced authenticated initial HTML/RSC
+containing unique source, content-note, excerpt and reviewer markers. Five DOM
+observations confirmed retained source, draft and checked consent after blur,
+offline, pagehide, hidden visibility and a held accepted appeal. Releasing that
+actual accepted response opened its private case while still blurred.
+All three reproduction groups passed. Final raw receipt serialization then
+failed on a BigInt; the original files remain, with a read-only normalized
+effect/source supplement. No baseline mutation was replayed. One appeal POST
+and one real moderation service command produced one case, one SupportOperation,
+one support audit, one decision, one review operation, two events and four controls.
+
+The route now passes only owner and validated decision/cursor identifiers.
+Existing API reads check current identity and returned owner. Private source,
+notice, reviewer, links and form presentation physically disappear on concealment.
+The original SupportForm remains mounted with controlled entries, consent,
+versions and exact uncertain bytes, including when the current offer becomes an
+existing case or loses reviewer availability. Changed snapshots require the
+existing warned reload; there is no silent version or disclosure adoption.
+Generic original confirmation stays available only after current access succeeds.
+The same owner must regain current access before a saved case destination opens.
+No shared SupportForm, API, schema, dependency or authority change is included.
+
+Source review caught a relationship-change event that could reactivate a
+concealed page in the preliminary build. The final handler performs a read only
+while already active; focused browser checks cover it after blur/offline/pagehide
+and a second concealment during a held read. The preliminary 38.437-second build
+is retained as diagnostic evidence, not final acceptance. Review also avoided an
+onRefresh callback that would incorrectly advertise current-version adoption
+while fixed versions remained frozen.
+
+All **nine focused browser groups** pass in **6.533 seconds** on the final build.
+They include initial HTML/RSC absence, controlled draft/consent restoration,
+failed and late reads, account replacement, reviewer revocation/renewal and name
+changes, changed caseId/alreadyRequested, exact recovery, deferred successful
+navigation, definitive 409 and warned reload, actual church-publisher access loss
+and renewal, and actual 20+1 paging. Thirty-six DOM observations comprise **35
+physical absence checks and one authorized visible restoration**. Four captures
+at 320px and normal/200% root text use actual Tab/Shift+Tab, two-pixel focus,
+center hit testing and focused controls reachable above fixed navigation without
+horizontal overflow. All four were inspected.
+
+There are **five support POST attempts**: an accepted response deliberately lost,
+injected 429, injected 503, exact accepted replay, and a real definitive 409.
+The first four retain the same original account and bytes and create **one
+SupportCase, one SupportOperation and one SupportAuditEvent**. Three independent
+real HIDE service commands create three decisions and three review operations;
+the third exercises church publishing revocation without an appeal POST.
+Eighteen direct metadata-only decision rows create 21 distinct notices for paging.
+Those rows are not additional moderation commands or notifications.
+Four fictional actors, one church, two approved connections, an operator review
+grant and two church capability grants are recorded, with four local sink files.
+Only owned authority rows are revised and restored; current source, sharing and
+reply restrictions remain enforced.
+
+Readback records four events and eight retention controls: four are journaled
+through the accepted appeal HTTP path; four from the other two direct service
+fixtures remain unjournaled. This does not claim HTTP recovery protection for
+those service-only fixtures. Lifecycle events, response holding/loss and two 503s
+plus one 429 are explicit simulations. A version fixture produces the real 409;
+publisher revocation produces the real 404. No cooldown UI or physical-device
+snapshot acceptance is claimed. No page exception, route error or external
+request occurs; expected HTTP/lost-response diagnostics remain recorded.
+
+The first focused attempt passed seven groups before its new church fixture
+violated the existing church-author constraint. No church post or decision was
+inserted. Only the seed's audience church field changed; the same assertions
+then passed. That attempt's two real decisions, five support attempts, one
+accepted appeal, failure capture and owned fixture rows are preserved.
+
+All **21 existing browser groups** pass: report review 11, personal moderation
+five and group moderation five. The first personal run waited for the previous
+generic accessible name; two exact selectors now include reconsideration. Its
+two passed groups, three attempts and one actual case/receipt remain recorded.
+No application assertion or source was changed. Adapted regression code ran
+outside the immutable candidate with every other tracked imported file proven
+identical. Total browser acceptance is **30 groups**.
+
+All **21 fresh service/HTTPS tests** pass on a separate database: reconsideration
+eight, moderation seven, report HTTPS four and release two. The isolated runtime
+stopped with its data preserved, 133 local sink files and protected browser
+environments unchanged. Its final inventory is not a browser-attempt count.
+The **41.522-second** final production build, ID `I8iC9zyM8UmVmwfxhQdyg`, passes
+existing types, lint, copy, security and runtime gates. All **1,915 candidate
+files** stay unchanged, SHA-256
+`a70deb1bfe61eb34c3e29f619cc61047f0ffa4167574ec11f49ca35f6dbec774`;
+all **115 migrations** are unchanged. Decision-route startup adds 2,782 gzip
+bytes versus tested .25, standalone review 98 and platform four; CSS is unchanged.
+No speed improvement or fresh whole-system baseline is claimed.
+
+This is **implemented and locally tested, not merged or live**. Main/origin/main
+remain `.12/951e57b`. Prior live `.11/925536c` was confirmed at **17:38:58 UTC**
+on READY deployment `dpl_BYb9LtWJw2kLfk2cFLKEZ9Pv8oqt`, canonical
+`godschurches.com`, with health OK. No new live acceptance, production write,
+send, migration, push or deployment retry occurred. The daily deployment cap
+still blocks release. Refresh expired installed restore evidence before release.
+Unused .24 and preliminary .26 runtimes were stopped and only webpack caches
+removed after source, compiled-output, fixture and stopped-database hashes matched.
+All evidence and other environments were preserved. Continue the ordinary queue;
+broader privacy/security and physical-device gates remain open.
+
 ## Private report lifecycle locally tested; release blocked, 26 September 2026 UTC
 
 Version **2026.09.26.25**, application `2e8d932afd7648814b50ed706f808f71de676355`,
