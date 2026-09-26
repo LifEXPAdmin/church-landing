@@ -1,3 +1,70 @@
+## Feedback receipt privacy verified live, 26 September 2026 UTC
+
+Version **2026.09.26.11**, source `925536c07580f84795ce588032f9b5fae99cf628`, is READY in
+`dpl_BYb9LtWJw2kLfk2cFLKEZ9Pv8oqt`. Canonical-domain and serving identity checks passed at
+11:09:32 UTC; production data acceptance passed at 11:11:52 UTC.
+[Published notes](https://godschurches.com/platform/releases/private-feedback-receipts).
+
+The preceding build reproduced private subject, description and typed reply
+remaining in hidden DOM after blur, offline and account replacement; pagehide
+retained visible reply controls. Receipt detail now removes private presentation
+during concealment and current-access checks. Its mounted command owners retain
+account-bound drafts and exact uncertain bodies in memory. This does not claim
+heap, OS or browser-history erasure. Initial HTML and RSC omit private receipt data;
+the existing authorized API supplies it after hydration.
+
+Compatible current reads preserve explicit version adoption after saving contact
+choices with a drafted reply. A structural removal waits while work remains;
+an added unread action preserves existing owners, and an uncertain mark-read
+survives removal of that action from the current DTO. Controlled contact choices
+clear only on confirmation or discard. Viewer presentation is removed on
+concealment while its single Back owner survives, including the last attachment
+being removed. Closing restores the currently mounted opener when available.
+
+The exact production build (39.723 seconds) and
+[CI](https://github.com/LifEXPAdmin/church-landing/actions/runs/36237332516) pass. All 38 browser groups and 47 service/HTTP checks pass on this
+source. Nine new groups cover serialization, lifecycle and failed/held reads,
+account replacement, mutation denials, custom choice drafts, explicit adoption,
+real lost mark-read/reply/removal acknowledgments and viewer history/focus.
+Thirteen browser POST attempts and one separate authenticated API removal were
+limited to fictional fixtures. Lost reply retries preserve four identical bodies,
+keys, versions and account identity through injected 429/503 and a newer resolution,
+with one message and no second version change. Mark-read keeps one unchanged read
+row and creates no operation receipt, matching its existing idempotent contract.
+Existing Feedback, Support case and intake browser flows also pass.
+
+The first QA attempt matched a controlled textarea before the response's identity
+check and refreshed conversation settled; the corrected assertion waits for the
+actual message paragraph and empty idle field. The next run exposed a real lost
+opener-focus regression after concealment; current opener refs repair it. Both
+failed attempts and final passing evidence are retained. Actual 390px and
+320px/200% captures were reviewed with no horizontal overflow. Physical-device
+acceptance is not claimed. The unchanged backend retains its separately attributed
+210-file baseline: 1,339 passes, two expected skips and no failures.
+
+All 55 live guest/browser checks and six health checks pass. Guest Feedback
+routes reach ordinary sign-in with their safe return destination and reveal no
+private receipt controls. An initial live assertion expected Support's plain
+login path; inspecting the existing Feedback contract corrected that assertion
+without an application change. Feedback API checks separately prove missing-account400
+and guest expected-account401 denials. All 149
+production table fingerprints remain unchanged. All 115 source, production and
+installed migration checksums match, with no pending or applied migration. The
+unchanged schema/recovery source reuses the actual 10:23:35 UTC installed restore
+and scheduled job run 20; no new execution is claimed. Scoped runtime errors and
+fatals, production test writes, recipient sends and new queue probes are zero.
+No operator authority, provider setting, consent or recipient was changed.
+
+Measured startup JavaScript changes versus the verified preceding build are
+2140 gzip bytes for Feedback detail,
+2141 for intake,
+2141 for its list and
+827 for Support case detail. CSS is unchanged. This is a size
+measurement, not a speed claim. The existing authenticated read and lifecycle
+checks are reused; no polling, dependency, endpoint, schema or worker is added.
+Feedback intake/list privacy, other retained readers, policy coverage and actual
+owner/provider/OS/device acceptance remain open.
+
 ## Admin original retry verified live, 26 September 2026 UTC
 
 Version **2026.09.26.10**, source `1aea49d860a252b8a8c909f193b2c262cf38703f`, is READY in
