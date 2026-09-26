@@ -202,6 +202,33 @@ const bounded = async () =>
     ),
     "No horizontal page overflow"
   );
+const currentMainText = async () => {
+  const main = page.getByRole("main");
+  assert.equal(await main.count(), 1, "Exactly one accessible main landmark");
+  // React may retain a hidden streamed shell after a document reload. Its
+  // generic loading content must never contain another form or private data.
+  assert.equal(
+    await main.evaluate(
+      (current, markers) =>
+        [...document.querySelectorAll("main")]
+          .filter((node) => node !== current)
+          .every((node) => {
+            const rectangle = node.getBoundingClientRect();
+            return (
+              !!node.closest('div[hidden][id^="S:"]') &&
+              rectangle.width === 0 &&
+              rectangle.height === 0 &&
+              !node.querySelector("form, input, textarea, select") &&
+              markers.every((marker) => !node.outerHTML.includes(marker))
+            );
+          }),
+      privateMarkers
+    ),
+    true,
+    "Any extra main must be an empty-of-private-data hidden streaming shell"
+  );
+  return main.innerText();
+};
 const reloadChoice = async (accept) => {
   const dialogs = [];
   const answer = async (dialog) => {
@@ -335,8 +362,8 @@ try {
   }
   await go(path);
   await form().waitFor();
-  assert.ok((await page.locator("main").innerText()).includes(ownerName));
-  assert.ok((await page.locator("main").innerText()).includes(churchName));
+  assert.ok((await currentMainText()).includes(ownerName));
+  assert.ok((await currentMainText()).includes(churchName));
   assert.equal(
     await page.evaluate(
       (markers) =>
@@ -517,7 +544,7 @@ try {
   await reloadChoice(true);
   await reloaded;
   await empty();
-  assert.ok((await page.locator("main").innerText()).includes(backupName));
+  assert.ok((await currentMainText()).includes(backupName));
   assert.equal(await ownCases(), 0);
   ok(
     "A changed recipient never rebases or sends a dirty form; cancelling reload preserves it, and accepting the warning deliberately opens a fresh empty form"
