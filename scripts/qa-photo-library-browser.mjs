@@ -53,6 +53,38 @@ const context = await browser.newContext({
   viewport: { width: 390, height: 844 }
 });
 const page = await context.newPage();
+const outstandingRequests = new Map(), recentRequests = [];
+let nextRequestId = 0;
+const recordRequest = (event, entry) => {
+  recentRequests.push({ event, at: Date.now(), ...entry });
+  if (recentRequests.length > 200) recentRequests.shift();
+};
+page.on("request", (request) => {
+  const entry = {
+    id: ++nextRequestId,
+    path: new URL(request.url()).pathname,
+    method: request.method(),
+    resourceType: request.resourceType(),
+    navigation: request.isNavigationRequest(),
+    startedAt: Date.now()
+  };
+  outstandingRequests.set(request, entry);
+  recordRequest("request", entry);
+});
+page.on("response", (response) => {
+  const entry = outstandingRequests.get(response.request());
+  if (!entry) return;
+  entry.status = response.status();
+  entry.respondedAt = Date.now();
+  recordRequest("response", entry);
+});
+for (const event of ["requestfinished", "requestfailed"])
+  page.on(event, (request) => {
+    const entry = outstandingRequests.get(request);
+    if (!entry) return;
+    recordRequest(event, { ...entry, finishedAt: Date.now() });
+    outstandingRequests.delete(request);
+  });
 const errors = [];
 page.on("pageerror", (e) => {
   const issue = { path: new URL(page.url()).pathname, message: e.message };
@@ -68,7 +100,28 @@ const output = fixtureDir + "/photo-library-browser";
 mkdirSync(output, { recursive: true });
 const go = async (path) => {
   await page.goto(config.origin + path);
-  await page.waitForLoadState("networkidle");
+  try {
+    await page.waitForLoadState("networkidle");
+  } catch (error) {
+    if (error?.name === "TimeoutError") {
+      const at = Date.now();
+      writeFileSync(
+        output + `/networkidle-timeout-${at}.json`,
+        JSON.stringify({
+          at,
+          requestedPath: new URL(path, config.origin).pathname,
+          currentPath: new URL(page.url()).pathname,
+          outstanding: [...outstandingRequests.values()].map((entry) => ({
+            ...entry,
+            ageMs: at - entry.startedAt
+          })),
+          recent: recentRequests
+        }, null, 2),
+        { mode: 0o600 }
+      );
+    }
+    throw error;
+  }
 };
 const bounded = async () =>
   assert.ok(

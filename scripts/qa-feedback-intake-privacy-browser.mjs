@@ -443,6 +443,39 @@ const screenshot = async (name, width, enlarged = false) => {
     await target.scrollIntoViewIfNeeded();
     await page.screenshot({ path: output + "/" + name + "-" + part + ".png" });
   }
+  const uploadControl = button("Upload private attachment");
+  await uploadControl.evaluate((node) =>
+    node.scrollIntoView({ block: "center" })
+  );
+  const uploadBounds = await uploadControl.evaluate((node) => {
+    const rect = node.getBoundingClientRect();
+    const center = document.elementFromPoint(
+      rect.left + rect.width / 2,
+      rect.top + rect.height / 2
+    );
+    return {
+      left: rect.left,
+      right: rect.right,
+      width: rect.width,
+      height: rect.height,
+      viewportWidth: innerWidth,
+      centerUnobscured: center === node || node.contains(center)
+    };
+  });
+  assert.ok(uploadBounds.height >= 44, "Upload control retains its tap height");
+  assert.ok(
+    uploadBounds.left >= 0 && uploadBounds.right <= uploadBounds.viewportWidth,
+    "Upload control fits the viewport"
+  );
+  assert.equal(uploadBounds.centerUnobscured, true);
+  writeFileSync(
+    output + "/" + name + "-upload-control.json",
+    JSON.stringify(uploadBounds, null, 2),
+    { mode: 0o600 }
+  );
+  await page.screenshot({
+    path: output + "/" + name + "-attachment-actions.png"
+  });
   const overflow = await page.evaluate(() => {
     const viewport = {
       width: innerWidth,
