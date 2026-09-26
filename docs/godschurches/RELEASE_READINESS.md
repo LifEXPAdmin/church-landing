@@ -1,5 +1,32 @@
 # Godschurches release readiness
 
+## Account boundary repairs verified live, 26 September 2026 UTC
+
+Version **2026.09.26.3**, source `2c92f844d5996d3f87afab0bdbb63c45f41ddf2e`,
+is READY in `dpl_2FYJbVoLpokFY7hu4rwu961tX5Zw`. Independent canonical and
+serving checks passed at 04:59 UTC; live acceptance completed at 05:01 UTC.
+External page framing is denied, API/server rendering agree on canonical
+session cookies, and ambiguous Google callbacks cannot bypass account binding.
+The newly found development request-header diagnostic regression was reproduced
+and fixed before production publication. See the scoped
+[security acceptance](ACCOUNT_SECURITY_ACCEPTANCE.md) and
+[published notes](https://godschurches.com/platform/releases/safer-sign-in-boundaries).
+
+Acceptance includes 147 retained service checks, 33 final-source checks (eight
+session cases overlap), 18 development probes plus a permanent regression,
+28 browser/header groups, the final build and exact-source CI. Seventeen live
+checks and six health checks pass. All 149 table fingerprints are unchanged;
+110 source/production/installed migration checksums match. No migration,
+production test write, notification or queue probe occurred. Scoped runtime
+error/fatal rows are zero. Unchanged recovery code reuses the actual 03:33 restore
+and scheduled backup evidence without claiming another execution.
+
+The report distinguishes scoped verified controls from incomplete ASVS coverage,
+retained hidden DOM/recovery requirements, and actual MFA/provider/device/pilot
+acceptance. Those broader gates remain open. Next: integrate the ready volunteer
+availability/reminder feature and its five additive migrations under the existing
+combined verification and release gates.
+
 ## Public guidance and safeguards verified live, 26 September 2026 UTC
 
 Version **2026.09.26.2**, serving commit
