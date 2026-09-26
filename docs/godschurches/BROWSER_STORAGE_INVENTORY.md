@@ -1,5 +1,21 @@
 # Browser storage inventory
 
+## Private idea reviews locally tested; release blocked, 26 September 2026 UTC
+
+Version **2026.09.26.20** (`ceb9fac`, QA `1e4d57f`) removes concealed private
+source and review fields while preserving original publication, merge, reversal
+and withdrawal commands across current-state changes. Missing destination choices
+cannot silently change, and unfinished work blocks native destination search.
+A delayed denied response cannot reactivate the concealed Admin workspace.
+All **45 browser groups**, **23 fresh services** and the **38.318-second** build
+pass. Exact retries produce one original effect per action. Narrow/enlarged
+captures and actual keyboard focus are verified. Test timing and fixture access
+diagnostics remain recorded. Full counts, costs and limits are in
+[retained reader privacy](RETAINED_READER_PRIVACY.md). This is **not merged or
+live** under the provider daily deployment cap; no production write, send,
+migration, push or release retry occurred. Prior live `.11/925536c` keeps its
+12:58:03 UTC check. Wider security and release acceptance remain open.
+
 ## Growth reports locally tested; release blocked, 26 September 2026 UTC
 
 Version **2026.09.26.19** (`462ef53`, QA `3a0e11f`) removes concealed Growth

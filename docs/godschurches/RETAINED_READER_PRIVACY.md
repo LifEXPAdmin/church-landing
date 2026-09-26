@@ -1,5 +1,94 @@
 # Retained reader privacy
 
+## Private idea reviews locally tested; release blocked, 26 September 2026 UTC
+
+Version **2026.09.26.20**, application `ceb9faceffbad0e96564ca8c6e6057ff33cf03b3`
+and QA-only `1e4d57f`,
+reuses the existing current-access reader and four original Admin command owners.
+Before editing, unchanged `.19/462ef53` retained private source text and unsent
+publication, destination-search, merge and withdrawal fields in the DOM after
+concealment and account replacement. Actual accepted merges and withdrawals with
+lost acknowledgments lost their retry owners once a current read rendered the
+new state. A held denied response also initiated another private read and reopened
+the blurred page without a resume event. The initial transition diagnostic sampled
+before the refreshed state rendered; the corrected reproduction and all effects
+remain recorded separately.
+
+The four owners now stay mounted independently of current publication, merge or
+destination availability. Private source and form presentation leave the DOM
+while their unsent values and original uncertain bytes remain in memory. Current
+reader authority stays separate from operation availability, allowing a retained
+original command to confirm after its own state transition. Current identity,
+source and grant checks remain with the existing service. Controlled destination
+choices preserve an unavailable original option and require a deliberate current
+choice before a new save; pending retries retain their original body. Native
+destination search waits until all review work is settled. The shared Workspace
+denial event checks its existing active flag instead of resuming a concealed page.
+No backend, schema, persistent browser storage, dependency, polling or worker was
+added. Public-only idea moderation remains a separate existing interface.
+
+All **seven focused browser groups** pass, for **45 browser groups** total.
+Actual publication, merge and reversal each traverse lost acknowledgment, 429,
+503 and confirmation with four identical attempts. Withdrawal traverses the same
+state change plus held 401/403/404 and account replacement, retaining seven
+identical attempts. Each original action has one saved audit/event. The twenty
+browser POST attempts include a separately accepted republish followed by warned,
+cancelable local discard. There are five browser effects and three setup/service
+effects, totaling eight audits and eight idea events. Three fictional actors,
+one product grant, one Support response grant, two grant transitions and three
+local verification messages support this focused fixture; its temporary intake
+configuration is restored. None of these are production writes or deliveries.
+
+Private DOM removal, all six publication values, sibling drafts, original
+unavailable destination selection, blocked native search and clean navigation
+pass. A missing destination cannot silently become another choice. Actual
+product-grant revocation/restoration requires explicit adoption for unsent work;
+original-command retries retain their existing grant version because the server
+checks current grant version before reading the prior receipt. Twelve responsive
+captures at 390px, 320px and 200% text fit horizontally and place primary buttons
+fully above fixed navigation. There are no browser/runtime/route errors or
+external requests. The first focused run sampled a transient Saving label before
+the final request arrived; the corrected test waits for the exact final 200 and
+its refreshed read. All failed evidence is retained, and no app change was needed.
+
+Three supplemental 320px/200% captures use actual Tab and Shift+Tab and show a
+visible two-pixel focus outline, an unobstructed button center and the entire
+control above fixed navigation. They add no browser command, idea or audit
+change; a temporary original-reviewer session is created and deleted. A preliminary
+new reviewer correctly lacked private-source access despite product authority;
+that fixture adds one actor, one product grant and one local verification message.
+The denied attempt is diagnostic evidence, not an application failure. The final
+supplement reuses the authorized original reviewer without changing source grants
+or intake.
+
+All **38 existing browser groups** pass on this application: Ideas 6, Admin retry
+3, Admin 5, Weekly privacy 5, Access privacy 5, People privacy 7 and Growth privacy
+7. All **23 targeted services** were freshly executed on the same source: Ideas
+11, Admin operations 10 and release content 2. Its production build takes
+**38.318 seconds**, build ID `qksUwDyiHaPbCFq35jF6r`; lint, types, copy,
+source/build security and runtime traces pass. All 1,908 tracked source hashes
+and 115 unchanged migration sources are recorded. The separate service database
+was stopped with its evidence intact. Its 165 local message files and final
+fictional row counts describe that fixture, not total mutation attempts or any
+external delivery. This is targeted regression acceptance, not a new full backend
+suite or physical-device acceptance.
+
+Compared with tested `.19`, the affected Admin startup routes add 128 to 129 gzip
+bytes; the separately loaded idea-review component increases from 2,183 to 2,730
+bytes, an additional 547 bytes. Shared CSS is unchanged. These measured assets
+include the release content and client changes; no speed improvement is claimed.
+Concealment tests establish page presentation and retained-command behavior, not
+heap, browser-history, device, screenshot or exported-file erasure. Real provider,
+MFA/operator and physical-device gates remain separate.
+
+This candidate is **not merged or live**. Vercel's daily deployment capacity
+still blocks publication. No push, deployment retry, production write, migration,
+recipient send or production queue probe occurred. Prior live `.11/925536c` retains its
+last actual check at 12:58:03 UTC. Earlier recovery and table-fingerprint evidence
+keeps its original timestamps; refresh the required release gates when capacity
+returns. Wider security and other private-reader acceptance remains open.
+Continue eligible work in priority order with prior candidates preserved.
+
 ## Growth reports locally tested; release blocked, 26 September 2026 UTC
 
 Version **2026.09.26.19**, application `462ef533d7a3bd87772e79b730e10c948887bad1`
