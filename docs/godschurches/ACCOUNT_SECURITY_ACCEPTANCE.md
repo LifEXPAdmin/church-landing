@@ -1,5 +1,24 @@
 # Account security acceptance
 
+## Private report lifecycle locally tested; release blocked, 26 September 2026 UTC
+
+Version **2026.09.26.25** (`2e8d932`, QA `817ec33`) physically clears private
+report forms, target links and receipt details during page concealment. Controlled
+drafts and original pending requests survive; acknowledged reports return only
+after their own receipt is revalidated. Offline/pagehide retention and a late
+submission reopening a concealed form were reproduced before editing.
+All **21 browser groups**, **16 fresh service/HTTPS checks** and the
+**38.688-second** production build pass. Four actual-keyboard narrow/enlarged
+captures, 48 physical absence observations, two owner-only draft restorations
+and stable 30-row paging pass. Full effects and limits are in
+[retained reader privacy](RETAINED_READER_PRIVACY.md).
+This is **implemented and locally tested, not merged or live**. Main remains
+`.12/951e57b`. Prior live `.11/925536c` is READY on the canonical domain with
+health OK at **17:38:58 UTC**. Vercel's daily deployment cap still blocks release.
+No production write, send, migration, push or deployment retry occurred.
+Refresh expired installed restore evidence before release. Continue ordinary
+priority work; content-decision, reconsideration and wider security gates stay open.
+
 ## Original private report retry locally tested; release blocked, 26 September 2026 UTC
 
 Version **2026.09.26.24** (`a1de11c`, QA `dbf2022`) preserves a private report's original

@@ -1,5 +1,83 @@
 # Retained reader privacy
 
+## Private report lifecycle locally tested; release blocked, 26 September 2026 UTC
+
+Version **2026.09.26.25**, application `2e8d932afd7648814b50ed706f808f71de676355`,
+QA `817ec33`, fixes private report intake and own receipt presentation.
+Before application edits, unchanged `.24/a1de11c` reproduced five groups:
+draft details and source links, acknowledged receipt links, receipt list links,
+and receipt detail text remained after offline/pagehide; a held accepted POST
+followed by blur/focus/blur restarted a queued target read and reopened the
+private form while still concealed. Ten physical DOM observations and two
+actual POSTs recorded the baseline. All 1,912 baseline source files were unchanged.
+
+The existing controlled form retains its entered reason/details, original
+pending bytes and cooldown independently of presentation. Concealment removes
+private fields and target data, invalidates callbacks and clears queued reads.
+Active/read guards serialize reads with submission and prevent late completions
+from revealing data. An acknowledged report ID revalidates through its own
+receipt instead of requiring the source to remain available. If a target read
+fails, only the same currently verified owner's local entries may return;
+the target stays cleared and fresh submission stays disabled. Current identity,
+definitive version handling, warned discard and original receipt replay remain
+unchanged. Receipt readers clear their DTO and retain the selected paging cursor.
+No endpoint, schema, dependency, polling or authority change is included.
+
+All **seven focused browser groups** pass on the first execution in **6.735
+seconds**. Fifty-one observations comprise **48 physical absence checks**, two
+allowed owner-only draft restorations without source content, and one cooldown
+control check. Four late-response mutation observers pass. Actual Tab/Shift+Tab
+captures at 320px with normal and 200% root text show two-pixel focus outlines,
+reachable Retry same report and Stop retrying controls above fixed navigation,
+center hit testing and no horizontal overflow. All four captures were inspected.
+
+Three identical body/account POST attempts (200, injected 429, 200) produce
+**one submitted report and one reporter SocialOperation**. A real author
+withdrawal produces its own separate operation. Readback confirms three
+REPORT_RECEIVED events and two journaled controls, REPORT and AUTHOR_WITHDRAW_POST.
+Thirty direct metadata-only report fixtures exercise actual 30+1 paging across
+31 distinct rows; they are not additional user submissions, operations or
+notifications. Four fictional actors, one unchanged reviewer grant, three source
+posts and four local verification files are recorded. Actor setup clears two
+isolated auth-limit rows; the four recorded clear counts are 2/0/0/0.
+
+Held responses, three 503 responses, the 60-second 429 and browser lifecycle
+signals are explicit simulations. Browser Date.now advances 61,000ms solely to
+expire that injected cooldown; server time and limiter rows stay unchanged.
+The real 900-second endpoint limit is covered by the separately repeated
+original-intake regression. Expected console diagnostics are three injected
+503s, one injected 429 and one actual withdrawn-source 404. There are no page
+exceptions, route errors or external requests. This does not establish
+physical-device snapshots, private-evidence subtype coverage or reconsideration.
+
+The **14 existing browser groups** (eight reporting plus six original-intake
+retry) pass on the same candidate, for **21 total browser groups**.
+All **16 service/HTTPS tests** run freshly on a separate database: reporting
+10, report HTTP four and release content two. That isolated runtime stopped
+with data preserved and 14 local verification files; its final row inventory
+is not a count of browser mutation attempts. All **1,913 candidate files**
+remain unchanged, aggregate SHA-256
+`521aa05ee694849c4416ad3009998a58ac8da02a3844171c228862477a43f8a5`.
+The **38.688-second** production build, ID `JVe8AuZqjEcbTDD-gG42f`, passes
+the existing type, lint, copy, security and runtime checks. All **115 migrations**
+are unchanged. Independent source review confirms owner checks, serialized reads,
+original recovery, narrow callback ownership and no new polling. Compared with
+tested .24, reports startup adds 307 gzip bytes, standalone review decreases
+five and platform decreases two; CSS is unchanged. No speed claim is made.
+
+This is **implemented and locally tested, not merged or live**. Main and
+origin/main remain `.12/951e57b`. A fresh read-only check at **17:38:58 UTC**
+confirms prior live `.11/925536c`, READY deployment
+`dpl_BYb9LtWJw2kLfk2cFLKEZ9Pv8oqt`, canonical `godschurches.com` and health OK.
+No new live acceptance of .12 through .25 is claimed. Vercel's recorded daily
+deployment cap remains; no push or retry bypass was attempted. No production
+write, send or migration occurred. Refresh expired installed restore evidence
+before a future release. The unused .23 runtime was stopped and only its webpack
+cache removed after source, compiled-output, fixture and stopped-database hashes
+matched. All evidence and other environments were preserved. Continue ordinary
+priority work with a separate reproduction of content-decision/reconsideration
+privacy; broader security and release acceptance remain open.
+
 ## Original private report retry locally tested; release blocked, 26 September 2026 UTC
 
 Version **2026.09.26.24**, application `a1de11cb6d18a0a6517ed21144ac3cf7313723fa`,
