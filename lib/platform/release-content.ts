@@ -1006,6 +1006,14 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "admin-original-retry", version: "2026.09.26.10", date: "2026-09-26",
+    summary: "Keep an unconfirmed Admin action recoverable through a temporary rate limit.",
+    added: [],
+    improved: [],
+    fixed: ["Retry original action keeps the same request after a lost response and a short cooldown, so an already saved change can be confirmed safely."],
+    featureIds: []
+  },
+  {
     id: "private-help-conversations", version: "2026.09.26.9", date: "2026-09-26",
     summary: "Help conversations and assignment choices check current access before showing private details.",
     added: [],

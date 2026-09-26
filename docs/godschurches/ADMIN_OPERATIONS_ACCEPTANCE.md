@@ -1,5 +1,14 @@
 # Scoped admin requests and access
 
+## Original retry preservation candidate, 26 September 2026 UTC
+
+A rate limit can occur before an accepted action's receipt is read. Admin forms
+now preserve their exact pending command and frozen fields through that cooldown,
+matching their existing uncertain-response recovery. No backend, authority,
+version, schema or configuration change is made. The unchanged release reproduced
+the lost retry control after a saved note's response was lost and its retry was
+rate limited. Final browser and release acceptance remain pending.
+
 ## Shared feedback integration — September 16, 2026 UTC
 
 **2026.09.16.1 / 799549d** is exact READY/canonical in

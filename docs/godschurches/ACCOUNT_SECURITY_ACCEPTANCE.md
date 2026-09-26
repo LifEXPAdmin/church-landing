@@ -1,5 +1,15 @@
 # Account security acceptance
 
+## Admin original retry candidate, 26 September 2026 UTC
+
+An isolated browser on the unchanged preceding release reproduced a saved internal
+note whose response was lost, followed by a rate-limit response that erased the
+original pending command. The new form keeps that exact request through the
+existing cooldown. Validation and version conflicts retain their current recovery;
+server receipt and authority checks are unchanged. The focused browser verifies
+one private note and receipt across lost response, rate limit and temporary failure.
+Candidate build, integration and live acceptance remain pending.
+
 ## Support case privacy verified live, 26 September 2026 UTC
 
 Version **2026.09.26.9**, source `69d2df3a7bad8221e9f670ea86178b1ab8ce56bc`, is READY in

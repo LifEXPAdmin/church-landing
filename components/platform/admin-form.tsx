@@ -208,7 +208,9 @@ export function AdminForm({
           onSaved();
         } catch (error) {
           const code = error instanceof SocialClientError ? error.status : 503;
-          if ([400, 409, 429].includes(code)) setPending(null);
+          // Rate limiting can run before an already accepted request's receipt
+          // is read. Keep its original bytes and key through the cooldown.
+          if ([400, 409].includes(code)) setPending(null);
           if (code === 409) setConflict(true);
           if (error instanceof SocialClientError && error.retryAfter)
             setRetryAt(Date.now() + Math.min(86400, error.retryAfter) * 1000);
