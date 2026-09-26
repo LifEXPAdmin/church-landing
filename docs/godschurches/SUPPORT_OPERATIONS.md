@@ -1,15 +1,20 @@
 # Ordinary support operations
 
-## Get help form privacy candidate, 26 September 2026 UTC
+## Get help privacy verified live, 26 September 2026 UTC
 
-An isolated copy of the current live build reproduces private recipient details
-in initial HTML and recipient/typed input retention after blur, offline and
-account replacement. Pagehide also leaves the original form visible. The scoped
-repair fetches the new-request snapshot after hydration, removes private fields
-on concealment and keeps the original context, dirty values and exact uncertain
-command in its mounted owner. It introduces no browser persistence or new intake
-permission. Detail/routing remain separate. Candidate build, browser, release and
-live acceptance are pending; the verified list receipt follows.
+Version 2026.09.26.8 removes the intake's private recipient/context from initial
+HTML and removes private controls during concealment or failed current reads.
+The original account-bound form stays mounted in memory, preserving category,
+summary, description, consent and exact uncertain command. Unchanged same-owner
+reads restore them; changed recipient/context requires deliberate reload and
+never rebases a submission. Mutation identity denials also conceal the controls.
+
+A possibly saved create retains its original key through rate limits and temporary
+failures. Four observed browser attempts produced exactly one fictional case.
+The read-only list repair remains included; detail/routing privacy remains open.
+Existing shared Support, feedback and admin flows pass. No intake activation,
+operator authority, backend, schema or production configuration changed.
+See the [full release and source-attribution receipt](ACCOUNT_SECURITY_ACCEPTANCE.md).
 
 ## Read-only index privacy verified live, 26 September 2026 UTC
 

@@ -1,5 +1,16 @@
 # Retained reader privacy
 
+## Get help form cleanup verified live, 26 September 2026 UTC
+
+Version 2026.09.26.8 removes recipient/context and typed controls from private
+intake presentation on concealment. Its mounted owner retains the frozen source,
+dirty fields and exact uncertain command in memory. Same-account unchanged reads
+restore controls; changed context does not silently rebase. Failed mutations
+that detect changed identity also conceal. Rate limiting cannot erase the original
+retry key. See [Support operations](SUPPORT_OPERATIONS.md) and the
+[acceptance receipt](ACCOUNT_SECURITY_ACCEPTANCE.md). Detail/routing and other
+retained readers remain open. This is DOM cleanup, not heap, OS or history erasure.
+
 ## Support list cleanup verified live, 26 September 2026 UTC
 
 Version 2026.09.26.7 extends the scheduled read-only lifecycle to My requests and

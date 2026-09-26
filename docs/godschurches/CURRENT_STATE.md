@@ -1,3 +1,52 @@
+## Get help privacy and safe retries verified live, 26 September 2026 UTC
+
+Version **2026.09.26.8**, source `e086db1b20623aa24882d90a3d011b7de66bcc1f`, is READY in
+`dpl_9hajcZZqGEujgG3Ro5Xo4p12HNk6`. Canonical-domain and serving identity checks
+passed at 09:31 UTC; production data acceptance passed at 09:32 UTC.
+[Published notes](https://godschurches.com/platform/releases/private-help-form).
+
+Get help loads its recipient/context after hydration. Blur, hidden/pagehide,
+offline and denied identity checks remove private presentation and controls.
+The mounted account-bound owner retains unsent fields and the original context
+in memory, restoring them only after an unchanged current-access read. Changed
+context requires a warned reload. No browser persistence or new intake authority
+is added. Support detail and routing privacy remain separate open acceptance.
+
+An unconfirmed create keeps its exact body/key through concealment, cancelled
+reload, account replacement and 429/503 failures. A reproduced inherited 429
+recovery hazard is repaired: rate limiting precedes receipt lookup, so it cannot
+disprove an earlier save. Four browser attempts confirm exactly one fictional
+case without recipient rebasing. Concealed failures provide generic feedback;
+definitively rejected commands direct the user to review current information.
+
+The exact production build and [CI](https://github.com/LifEXPAdmin/church-landing/actions/runs/36232371465)
+pass. Browser/header acceptance covers 65 groups: 28 on this exact source and
+37 retained from `eb4fb38`; all 1,893 other tracked files are byte-identical,
+with only the corrected intake browser test changed. The same source-equivalence
+proof retains 25 service/HTTP checks. The unchanged backend retains its attributed
+210-file baseline: 1,339 passes, two expected skips, no failures. Actual 390px
+and 320px/200-percent screenshots were reviewed; no physical-device run is claimed.
+
+Measured startup JavaScript changes by +1,970 gzip bytes on new/requests/inbox,
++1,969 on case detail, +7 on Home, -3 on scheduled posts and -488 on Settings.
+CSS is unchanged. These are build measurements, not a speed claim. No dependency,
+endpoint, timer, worker, schema or production configuration is added.
+
+All 30 live checks and six health checks pass. All 149 production table fingerprints
+remain unchanged. All 115 source, production and installed migration checksums
+match, with no pending or applied migration. Unchanged recovery reuses the actual
+06:15 installed restore and nightly job. Scoped runtime errors and fatals,
+production test writes, recipient sends and new queue probes are zero.
+
+Earlier failed attempts remain recorded: an intercepted-response teardown race,
+a raw selector matching a content-free hidden streaming shell, and mismatched
+isolated feedback/authenticator settings. Corrected tests preserve document-wide
+privacy assertions and pass. Settings-help assertions now match its current topics.
+The automated preview was refused by the existing production-only migration guard;
+production acceptance is recorded above. Broader client-transition diagnosis,
+retained form privacy, CSP, cookie/session/password policy and real owner/provider/
+device gates remain open. This scoped release does not complete the wider security task.
+
 ## Support list privacy verified live, 26 September 2026 UTC
 
 Version **2026.09.26.7**, source `d480b1a8408a24b83e7e260525570804eaab90be`, is READY in
