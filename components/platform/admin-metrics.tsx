@@ -286,7 +286,11 @@ export function AdminMetrics({ data }: { data: MetricSnapshot }) {
           ? error.message
           : "The export could not be confirmed. Retry the original export."
       );
-      if ([401, 403, 404].includes(code))
+      if (
+        [401, 403, 404].includes(code) &&
+        sequence === generation.current &&
+        permitted.current
+      )
         window.dispatchEvent(new Event("admin-access-changed"));
     } finally {
       writing.current = false;
