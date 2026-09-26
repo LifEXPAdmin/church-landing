@@ -48,6 +48,12 @@ through four identical original attempts. Other Admin form DOM contracts remain
 open. All 25 browser groups and 26 services pass; this source is not merged or
 live. See [retained reader privacy](RETAINED_READER_PRIVACY.md).
 
+The local `.15/64ea8e2` pure Admin overview and health presenters also remove
+concealed summaries. Their stateful sibling owners remain mounted. Actual
+partial metrics revocation removes growth while preserving current request
+access. All 21 browser groups and 30 services pass; publication remains open.
+See [retained reader privacy](RETAINED_READER_PRIVACY.md).
+
 ## Cookies
 
 The account cookie writers use HttpOnly, SameSite=Lax and Path=/, with Secure when

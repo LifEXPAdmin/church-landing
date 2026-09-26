@@ -1,5 +1,17 @@
 # Account security acceptance
 
+## Admin summaries locally tested; release blocked, 26 September 2026 UTC
+
+Version **2026.09.26.15** (`64ea8e2`, QA-only `ed8b62e`) removes concealed Admin
+overview and health summaries. All 21 browser groups and 30 relevant services
+pass, plus the 39.733-second production build and reviewed 390px/320px/200%
+captures. Partial metrics revocation removes growth while preserving permitted
+request counts. It is **not merged or live**: remote CI and publication remain
+open under the provider daily quota. No production writes, sends, migrations or
+deployment retries occurred. Last live identity check remains `.11/925536c` at
+12:58:03 UTC. See [retained reader privacy](RETAINED_READER_PRIVACY.md) for scope,
+actual versus simulated health checks, costs and remaining acceptance.
+
 ## Admin audit locally tested; release blocked, 26 September 2026 UTC
 
 Version **2026.09.26.14** (`4064ce5`, QA-only `ca288fa`) removes concealed audit

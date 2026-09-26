@@ -1,5 +1,48 @@
 # Retained reader privacy
 
+## Admin summaries locally tested; release blocked, 26 September 2026 UTC
+
+Version **2026.09.26.15**, application `64ea8e20341fef256c13e321348bd6bb699c251b`,
+removes concealed Admin overview and health presentation using existing read
+visibility. Stateful forms, loading, permissions and transport are unchanged.
+Before editing, `.13/af119d1` retained real growth totals and health configuration,
+queue counts and alerts in hidden DOM; pagehide left both visibly rendered.
+
+All **21 browser groups** pass: six summary privacy, seven audit, three original
+Admin retry and five existing Admin checks. Actual owner-scoped Support work
+advances the overview count from zero to one. Revoking health access denies its
+actual API. Partial metrics revocation removes growth totals and destination
+while preserving currently permitted request counts and sections. Same-grant
+restoration, account replacement, failed/held identity and source reads, lifecycle
+concealment, and initial HTML/RSC omission pass. The focused reader makes no
+browser mutations, external requests or runtime errors. Its fictional setup
+creates one Support request and exercises four grant revoke/restore updates.
+
+Unavailable and healthy-empty health displays are explicitly simulated response
+shapes after real authorized reads; no browser-induced database outage is claimed.
+The service suite separately tests actual lock-timeout unavailability. Twenty-two
+captures cover 390px, 320px and 200% text without horizontal overflow; enlarged
+summary captures were visually reviewed. Synthetic lifecycle events do not prove
+physical-device, BFCache or OS snapshot behavior.
+
+All **30 services** pass across Admin operations/authentication, operational
+health, metric sources/reporting and release content. The 39.733-second production
+build `oDqjDLxCK3Iy6kLGHz3VY`, lint, types, copy, source/build security and runtime
+trace gates pass with unchanged hashes and 115 migration sources. QA-only
+`ed8b62e` adds the tested script without changing application bytes. Measured
+Admin startup JavaScript adds 12 to 13 gzip bytes versus `.14`; CSS is unchanged.
+No endpoint, dependency, polling, schema or worker was added. No speed claim or
+new full-backend-suite claim is made.
+
+This source is **not merged or live**. Remote CI and publication remain blocked
+by the provider daily deployment quota. No push, deployment retry, production
+write, migration, recipient send or new queue probe occurred. Canonical
+`.11/925536c` was last checked at 12:58:03 UTC; that earlier evidence does not
+publish `.12`, `.13`, `.14` or this feature. Refresh release prerequisites when
+capacity returns. Remaining People/Access/stateful presentation and wider
+security/device/provider acceptance stay open. The next scoped investigation is
+People lookup presentation and fresh navigation after partial capability loss.
+
 ## Admin audit locally tested; release blocked, 26 September 2026 UTC
 
 Version **2026.09.26.14**, application `4064ce5cbb56ca133fb43be8386f884e9c85af07`,
