@@ -12,6 +12,12 @@ verified in 2026.09.26.8; case detail, routing and attachment presentation clean
 are verified in 2026.09.26.9. Feedback receipt detail cleanup, compatible explicit
 version adoption, original-command recovery and viewer focus are verified in
 2026.09.26.11. See the [security receipt](ACCOUNT_SECURITY_ACCEPTANCE.md).
+
+The local My feedback list candidate removes concealed rows, paging and preference
+presentation while retaining the owner-bound preference command in component
+memory. Current visibility, mount and generation checks reject late preference
+reads. Shared feedback readers invalidate on pagehide. Browser and live acceptance
+are pending; this does not clear heap or browser-history storage.
 The remaining inventory records source findings without certifying every client.
 
 The scan covered `app/`, `components/`, `lib/` and `public/`, excluding test files

@@ -7,7 +7,7 @@ import { FeedbackForm } from "./feedback-form";
 import { PortalCard, PortalEmpty, portalLinkClass } from "./portal-ui";
 import { SupportRows } from "./regional-support-presentation";
 import { FeedbackReceiptWorkspace } from "./feedback-receipt-workspace";
-import { ReadVisibility } from "./read-visibility";
+import { ReadVisibility, useReadVisibility } from "./read-visibility";
 import { FeedbackPromptPreferences } from "./feedback-prompt-preferences";
 
 type FeedbackWorkspaceProps = {
@@ -98,6 +98,7 @@ function FeedbackViews({
   onRefresh: () => void;
   promptClaimId?: string;
 }) {
+  const visible = useReadVisibility();
   const everReady = useRef(false);
   if (s.intake.available) everReady.current = true;
   return (
@@ -165,10 +166,14 @@ function FeedbackViews({
           </PortalCard>
         </>
       )}
-      {view === "requests" && (
+      {view === "requests" && visible && (
         <>
           {s.rows.length ? (
-            <SupportRows rows={s.rows} detailBase="/platform/feedback/cases" />
+            <SupportRows
+              rows={s.rows}
+              detailBase="/platform/feedback/cases"
+              prefetch={false}
+            />
           ) : (
             <PortalEmpty>
               No feedback receipts yet. Sending optional feedback creates a
@@ -187,20 +192,20 @@ function FeedbackPagination({ page, more }: { page: number; more: boolean }) {
   return (
     <nav aria-label="Feedback pages" className="flex flex-wrap gap-5">
       {page > 0 && (
-        <Link
+        <a
           href={`/platform/feedback/requests?page=${page - 1}`}
           className={portalLinkClass}
         >
           Previous page
-        </Link>
+        </a>
       )}
       {more && page < 99 && (
-        <Link
+        <a
           href={`/platform/feedback/requests?page=${page + 1}`}
           className={portalLinkClass}
         >
           Next page
-        </Link>
+        </a>
       )}
     </nav>
   );

@@ -1006,6 +1006,14 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "private-feedback-list", version: "2026.09.26.12", date: "2026-09-26",
+    summary: "My feedback checks current access before showing your private receipt list.",
+    added: [],
+    improved: ["Receipt titles, links and prompt preferences clear when the page is concealed or access changes. Paging checks your current account before displaying the next receipts."],
+    fixed: ["An unconfirmed prompt preference keeps its original request for safe retry when the same account returns."],
+    featureIds: ["private-feedback"]
+  },
+  {
     id: "private-feedback-receipts", version: "2026.09.26.11", date: "2026-09-26",
     summary: "Private feedback receipts check current access before showing saved details and local entries.",
     added: [],

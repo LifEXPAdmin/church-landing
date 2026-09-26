@@ -1,5 +1,15 @@
 # Selected feedback follow-up acceptance
 
+## My feedback list privacy candidate, 26 September 2026 UTC
+
+List presentation and pagination now depend on the current read visibility;
+inline prompt preference presentation follows the same boundary while its
+pending serialized command stays mounted. A current visibility and generation
+check rejects late preference reads. Pagehide invalidates shared feedback reads.
+Verification must cover real lost preference acknowledgments, exact account/body
+replay, safe pagination, failed and held reads, and retained intake drafts.
+Implementation is local; testing, integration and live acceptance are pending.
+
 ## Feedback receipt privacy verified live, 26 September 2026 UTC
 
 Version **2026.09.26.11**, source `925536c07580f84795ce588032f9b5fae99cf628`, is READY in

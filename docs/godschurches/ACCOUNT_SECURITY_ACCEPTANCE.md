@@ -1,5 +1,17 @@
 # Account security acceptance
 
+## My feedback list privacy candidate, 26 September 2026 UTC
+
+The preceding live source `925536c` reproduced private list subjects and receipt
+links remaining in hidden DOM after blur, offline and account replacement;
+pagehide left them visible. Initial HTML correctly omitted private subjects.
+The candidate removes list rows, empty state and pagination while access is
+unconfirmed. It retains mounted preference command owners, removes their
+presentation, and rejects late reads after concealment or unmount. Shared feedback
+snapshot lifecycle now invalidates on pagehide. Paging uses fresh documents and
+receipt links do not prefetch. Exact-source browser, shared-hook regression and
+release gates remain pending. This does not claim heap or browser-history erasure.
+
 ## Feedback receipt privacy verified live, 26 September 2026 UTC
 
 Version **2026.09.26.11**, source `925536c07580f84795ce588032f9b5fae99cf628`, is READY in

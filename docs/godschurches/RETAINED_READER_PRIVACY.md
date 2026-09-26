@@ -1,5 +1,14 @@
 # Retained reader privacy
 
+## My feedback list privacy candidate, 26 September 2026 UTC
+
+The My feedback candidate removes concealed receipt rows, empty state, paging
+links and inline preference presentation without unmounting pending command
+owners. Shared feedback pagehide invalidation preserves retained data and form
+owners. Fresh-document pagination and disabled receipt prefetch preserve the
+current-access boundary. Exact-source browser and live checks remain pending;
+other feedback intake presentation is outside this slice.
+
 ## Feedback receipt privacy verified live, 26 September 2026 UTC
 
 Version **2026.09.26.11**, source `925536c07580f84795ce588032f9b5fae99cf628`, is READY in

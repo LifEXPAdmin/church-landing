@@ -7,40 +7,52 @@ import { useUnsavedSocialWork } from "./use-unsaved-social-work";
 const endpoint = "/api/platform/feedback/prompts";
 export function FeedbackPromptPreferences({ owner }: { owner: string }) {
   const visible = useReadVisibility();
+  const visibleNow = useRef(visible),
+    mounted = useRef(false);
+  visibleNow.current = visible;
   const [state, setState] = useState<FeedbackPromptState | null>(null),
     [busy, setBusy] = useState(false),
     [notice, setNotice] = useState("");
   const [pending, setPending] = useState<string | null>(null),
     generation = useRef(0);
   const load = useCallback(async () => {
+    if (!mounted.current) return;
     const seq = ++generation.current;
     setState(null);
-    if (!visible) return;
+    if (!visibleNow.current) return;
     try {
       const { data } = await socialRequest<FeedbackPromptState>(
         endpoint,
         undefined,
         owner
       );
-      if (seq === generation.current && data.ownerId === owner) setState(data);
+      if (
+        mounted.current &&
+        visibleNow.current &&
+        seq === generation.current &&
+        data.ownerId === owner
+      )
+        setState(data);
     } catch {
-      if (seq === generation.current)
+      if (mounted.current && visibleNow.current && seq === generation.current)
         setNotice(
           "Prompt preferences could not be checked. Retry when connected."
         );
     }
-  }, [visible, owner]);
+  }, [owner]);
   const invalidate = useCallback(() => {
     generation.current++;
   }, []);
   useEffect(() => {
+    mounted.current = true;
     void load();
     window.addEventListener("feedback-preferences-changed", load);
     return () => {
+      mounted.current = false;
       invalidate();
       window.removeEventListener("feedback-preferences-changed", load);
     };
-  }, [load, invalidate]);
+  }, [load, invalidate, visible]);
   useUnsavedSocialWork(
     { dirty: !!pending, saving: busy, conflict: false },
     () =>
@@ -49,7 +61,7 @@ export function FeedbackPromptPreferences({ owner }: { owner: string }) {
       )
   );
   const save = async () => {
-    if (busy || !visible) return;
+    if (busy || !visibleNow.current) return;
     const body =
       pending ??
       JSON.stringify({
@@ -84,6 +96,7 @@ export function FeedbackPromptPreferences({ owner }: { owner: string }) {
       setBusy(false);
     }
   };
+  if (!visible) return null;
   return (
     <details className="rounded-xl border border-gc-divider p-4">
       <summary className="cursor-pointer py-2 font-semibold">
