@@ -239,16 +239,22 @@ const holdRead = async () => {
   const gate = new Promise((resolve) => {
     release = resolve;
   });
+  const deliveries = [];
   releaseHeldRead = release;
-  await page.route(intakeRoute, async (route) => {
-    reads++;
-    const response = await route.fetch();
-    if (reads === 1) {
-      capture();
-      await gate;
-    }
-    await route.fulfill({ response });
-  });
+  const handler = async (route) => {
+    const index = ++reads;
+    const delivery = (async () => {
+      const response = await route.fetch();
+      if (index === 1) {
+        capture();
+        await gate;
+      }
+      await route.fulfill({ response });
+    })();
+    deliveries.push(delivery);
+    await delivery;
+  };
+  await page.route(intakeRoute, handler);
   await event("focus");
   let timeout;
   try {
@@ -264,7 +270,19 @@ const holdRead = async () => {
   } finally {
     clearTimeout(timeout);
   }
-  return { release, reads: () => reads };
+  return {
+    release: async () => {
+      release();
+      await deliveries[0];
+    },
+    reads: () => reads,
+    stop: async () => {
+      // networkidle or restored DOM can precede the routing callback's
+      // completion. Fulfill every owned response before removing this handler.
+      await Promise.all(deliveries);
+      await page.unroute(intakeRoute, handler);
+    }
+  };
 };
 let fixture;
 try {
@@ -390,15 +408,19 @@ try {
 
   for (const source of ["identity", "intake"]) {
     const pattern = source === "identity" ? identityRoute : intakeRoute;
-    await page.route(pattern, (route) =>
-      route.fulfill({
+    const failures = [];
+    const failRead = (route) => {
+      const handled = route.fulfill({
         status: 503,
         contentType: "application/json",
         body: JSON.stringify({
           message: "Fictional Support intake read outage"
         })
-      })
-    );
+      });
+      failures.push(handled);
+      return handled;
+    };
+    await page.route(pattern, failRead);
     await event("focus");
     await page
       .getByText(
@@ -409,7 +431,8 @@ try {
       )
       .waitFor();
     await absent();
-    await page.unroute(pattern);
+    await Promise.all(failures);
+    await page.unroute(pattern, failRead);
     await button("Recheck current access").click();
     await retained();
   }
@@ -420,11 +443,11 @@ try {
   let held = await holdRead();
   await absent();
   await event("pagehide");
-  held.release();
+  await held.release();
   await page.waitForLoadState("networkidle");
   await absent();
   assert.equal(held.reads(), 1);
-  await page.unroute(intakeRoute);
+  await held.stop();
   await event("focus");
   await retained();
   ok(
@@ -436,11 +459,11 @@ try {
   await event("focus");
   await absent();
   assert.equal(held.reads(), 1);
-  held.release();
+  await held.release();
   await retained();
   await page.waitForLoadState("networkidle");
   assert.equal(held.reads(), 2, "Focus queues one current intake read");
-  await page.unroute(intakeRoute);
+  await held.stop();
   ok(
     "Focus during a held read queues one fresh check before restoring the draft"
   );
@@ -449,7 +472,7 @@ try {
   await signIn(fixture.memberB);
   await event("blur");
   await event("focus");
-  held.release();
+  await held.release();
   await page
     .getByText("Your sign-in changed. Reload before continuing.", {
       exact: true
@@ -458,7 +481,7 @@ try {
   await page.waitForLoadState("networkidle");
   await absent();
   assert.equal(await button("Confirm original request").count(), 0);
-  await page.unroute(intakeRoute);
+  await held.stop();
   await button("Recheck current access").click();
   await page
     .getByText("Your sign-in changed. Reload before continuing.", {

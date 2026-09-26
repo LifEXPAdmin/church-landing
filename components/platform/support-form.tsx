@@ -223,8 +223,9 @@ export function SupportForm({
       <div className="space-y-3">
         {failed && (
           <p role="alert" className="text-sm text-gc-error">
-            We could not confirm the original request. Recheck access and retry
-            the same request.
+            {retryBody
+              ? "We could not confirm the original request. Recheck access and retry the same request."
+              : "This request could not be applied. Reload current information and review the form before sending again."}
           </p>
         )}
         {retryBody && (
