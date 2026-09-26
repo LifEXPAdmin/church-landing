@@ -1,6 +1,6 @@
 # Godschurches workflow guide
 
-Version 4.0 · Updated 21 September 2026 UTC
+Version 5.0 · Updated 26 September 2026 UTC
 
 This is the repository entry point for work that continues between ChatGPT, Codex,
 the private second brain, and the development workstation. Keep this file's path
@@ -76,31 +76,43 @@ implementation delta. Avoid rereading the full catalog or historical receipts
 unless a conflict requires them. User decisions define intended behavior; the
 actual checkout and dated application/test receipts establish implementation.
 
-The owner's 21 September instruction ends the parallel A1/A2 arrangement. Use
+The owner's 26 September instruction allows multiple concurrent chats. Use
 one ordinary queue across all four projects or the saved regular task view,
 including pagination and subtasks. Select eligible P1, then P2, P3 and P4 work;
 within a priority honor prerequisites and existing manual order. Former worker
-labels and ownership do not restrict selection. Keep task IDs, parent/child
+labels do not partition the queue. Current atomic claims do restrict selection:
+take a different unclaimed task and respect affected file/contract reservations.
+Keep task IDs, parent/child
 relationships, priorities, acceptance criteria and completed evidence intact.
 Personal owner actions remain separate. Labels do not change model settings.
 
 Work directly on one coherent feature using an inspected worktree, feature
 branch and isolated fictional database/ports. Preserve existing worktrees,
 branches, jobs and release evidence. Follow the [coordination procedure](WORKER_COORDINATION.md)
-for the existing atomic identity, feature claim and release guard. Its legacy
-technical slot does not establish a parallel task queue. Do not start or wait
-for another worker. Inspect any existing reservation and saved work before
+for atomic identity, feature claims and the release guard. Register a distinct
+worker slot bound to the current chat and worktree, with a readable chat label.
+Claim exact task IDs, including required children, before editing. Inspect any
+existing reservation and saved work before
 recovering stale state; never steal an active or unexamined lock.
 
 Finish each feature's required UI, service, integration, configuration,
 regression repair, documentation and meaningful verification. Use gc_in_progress
-for the active task while retaining other applicable labels. Reproduce reported
+for the active task while retaining other applicable labels. Add a private
+ownership header with chat title, exact session, worker, task IDs, status,
+worktree/branch and update time. Use the existing Session Log row for dated
+ownership events. Refresh the helper checkpoint and private status when work
+starts, pauses, changes stage or is handed over. The helper's status summary is
+a snapshot of recorded ownership, not proof that a chat is alive. A stale update
+never releases a reservation automatically. Reproduce reported
 issues before changing code. Reuse current canonical implementations and valid
 prior test evidence where applicable. Necessary smaller finishing steps stay
 inside the feature instead of being deferred to another agent or later task.
 
-The active runner handles integration, main updates, production migrations and
-deployment under existing permissions and the atomic release lock. At safe
+One designated release owner handles integration, main updates, production
+migrations and deployment under existing permissions and the atomic release
+lock. The existing A1 slot retains that role until an explicit safe handoff.
+Other chats submit tested commits as gc_ready_to_merge, clear their active task
+indicator after checkpointing, and continue independent eligible work. At safe
 checkpoints, inspect any gc_ready_to_merge work left by previous sessions and
 compare its exact commits and evidence with current main before integrating.
 Preserve all existing changes, resolve conflicts and verify the combined result.
@@ -114,8 +126,8 @@ clear checkpoint first. Check the actual named dependency behind blocked labels
 and remove only specifically satisfied blockers with evidence. Retired worker
 reservations no longer restrict the queue. Parent, owner, device, provider,
 policy, pilot and source-contract gates remain open until their acceptance is
-observed. Keep final batch review last. Do not resume a two-agent arrangement,
-delegate the queue or maintain a permanent team. Avoid repeated full suites
+observed. Keep final batch review last. Each chat owns one coherent feature;
+bounded helpers work within that claim. Avoid repeated full suites
 without a concrete source, environment, integration or failure concern.
 
 Before dependent interface work, identify existing service/component paths,
@@ -313,7 +325,8 @@ Next Build Plan and Andrew Notification** page maintains the detailed procedure.
 Use this compact outline in the appropriate private session record and relevant
 engineering report. Include only public engineering facts in this repository.
 
-- Date, objective, contributor, current session and private checkpoint.
+- Date, objective, contributor, human-readable chat title, exact session/worker
+  and private checkpoint. Current task ownership, status and last update time.
 - Exact private task ID and existing Session Log row; original worker and dated
   segment events, current stage and evidence level.
 - Observed started/ready/completed timestamps, verified-live time when applicable,
@@ -370,6 +383,12 @@ test evidence in their appropriate private systems. The exact page titles above
 allow an authorized assistant to locate the context without publishing it.
 
 ## Change log
+
+- **5.0, 26 September 2026 UTC:** The owner requested concurrent independent
+  chats and visible task ownership. Retained one priority queue; added exact
+  task-ID claims, readable chat ownership and private status checkpoints.
+  Separate worktrees and one release owner preserve active work and release
+  gates. Historical identities and the retired static queue split stay intact.
 
 - **4.0, 21 September 2026 UTC:** Restored ordinary priority-based tasks across
   all four projects at the owner's request. Retired the independent A1/A2 queue
