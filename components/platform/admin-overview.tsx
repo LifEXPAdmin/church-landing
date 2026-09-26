@@ -2,8 +2,11 @@
 import { RegionalTime } from "@/components/platform/regional-presentation";
 import Link from "next/link";
 import type { AdminOverviewSnapshot } from "@/lib/platform/admin-overview";
+import { useReadVisibility } from "./read-visibility";
 
 export function AdminOverview({ data }: { data: AdminOverviewSnapshot }) {
+  const visible = useReadVisibility();
+  if (!visible) return null;
   const cards = data.requests
     ? [
         { label: "Open requests", count: data.requests.open, query: "" },

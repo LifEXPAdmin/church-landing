@@ -1006,6 +1006,14 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "private-admin-summaries", version: "2026.09.26.15", date: "2026-09-26",
+    summary: "Admin summaries check current access before showing private counts and operational details.",
+    added: [],
+    improved: ["Overview and health details clear while the page is concealed or access is being checked."],
+    fixed: ["Returning to an Admin summary refreshes current permissions before showing its results."],
+    featureIds: ["admin-requests"]
+  },
+  {
     id: "private-admin-audit", version: "2026.09.26.14", date: "2026-09-26",
     summary: "Admin audit records check current access before showing private operational details.",
     added: [],

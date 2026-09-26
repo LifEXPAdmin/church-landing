@@ -17,7 +17,7 @@ import { AdminPeople, AdminChurches, AdminAudit } from "./admin-operations";
 import type { AdminAccessSnapshot } from "@/lib/platform/admin-access";
 import type { AdminAuditSnapshot } from "@/lib/platform/admin-operations";
 import { AdminOverview } from "./admin-overview";
-import { ReadVisibility } from "./read-visibility";
+import { ReadVisibility, useReadVisibility } from "./read-visibility";
 import type { AdminOverviewSnapshot } from "@/lib/platform/admin-overview";
 import type { MetricSnapshot } from "@/lib/platform/metric-report";
 import type { FeedbackWeeklySnapshot } from "@/lib/platform/feedback-weekly";
@@ -311,6 +311,8 @@ export function AdminWorkspace({
   );
 }
 function AdminHealth({ data }: { data: Health }) {
+  const visible = useReadVisibility();
+  if (!visible) return null;
   return (
     <div className="space-y-5">
       <h1 className="text-3xl font-semibold">Operational health</h1>
