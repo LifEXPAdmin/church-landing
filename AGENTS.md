@@ -18,27 +18,34 @@ requirements in the existing private task rather than duplicating its backlog.
 Before selecting a feature, follow the [regular priority workflow](docs/godschurches/WORKFLOW_GUIDE.md#unified-feature-workflow)
 and [shared coordination procedure](docs/godschurches/WORKER_COORDINATION.md).
 Read the selected private brief and prerequisite receipt; preserve completed work
-and real dependency gates. The owner's 21 September instruction ends the A1/A2
-partition. Use one regular queue across all four projects, with the selected
-model/reasoning setting. Former worker labels do not restrict task selection.
+and real dependency gates. The owner's 26 September instruction allows multiple
+chats to work concurrently from one priority queue across all four projects.
+The old fixed A1/A2 task partition remains retired. Use the selected model and
+reasoning setting. Inspect current chat ownership before choosing unclaimed work.
 Keep personal owner actions separate. Use an inspected worktree, feature branch
 and isolated fictional test environment. Preserve all prior worktrees. Reserve
-identity and affected files/contracts atomically before editing. Maintain only
-your own private checkpoint under the resolved Git common directory. Never steal
-an active or unexamined lock. Do not start or wait for a second worker.
+identity, exact task IDs and affected files/contracts atomically before editing.
+Use a distinct worker slot and human-readable chat label. Maintain only your own
+private checkpoint under the resolved Git common directory. Mirror the current
+owner, exact chat/session, task, status and update time in the private task and
+Session Log; retain other task labels when adding gc_in_progress. Refresh at
+meaningful checkpoints and handoffs. Never steal an active or unexamined lock.
+Coordinate overlaps with their owner and take other eligible work meanwhile.
 
 Finish every required UI, integration, configuration, regression, release-note
-and deployment step in the same feature cycle. The active runner integrates
-main, applies production migrations and deploys under existing permissions and
-the atomic release lock. At safe checkpoints, reconcile any previously prepared
+and deployment step in the same feature cycle. One designated release owner
+integrates main, applies production migrations and deploys under existing
+permissions and the atomic release lock. Other chats hand over tested commits
+with gc_ready_to_merge, preserving open release acceptance. At safe checkpoints,
+the release owner reconciles any previously prepared
 commits against current main before integrating; preserve completed work and
 verify the combined release and live behavior before closure.
 Complete newly unlocked children immediately. Recheck all four project lists
 between features and continue through your eligible P1, P2, P3 and P4 tasks.
 Stop only when asked, no eligible work remains, or an actual access,
 runtime or usage limitation prevents progress. Preserve exact blockers and keep
-final review last. Work directly. Do not resume parallel ownership or maintain
-a permanent delegated team.
+final review last. Each chat owns one coherent feature at a time. Use bounded
+helpers for independent investigations or review, preserving the parent claim.
 Follow the guide's lean-runtime review:
 reuse existing owners, avoid unnecessary code/dependencies and measure relevant
 costs before claiming performance improvements.
