@@ -1006,6 +1006,14 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "private-help-form", version: "2026.09.26.8", date: "2026-09-26",
+    summary: "Protect an open help request while keeping your unsent work and original submission recoverable.",
+    added: [],
+    improved: ["Get help checks current access before displaying its recipient and request fields. Leaving the window or losing connection removes those fields until access is confirmed again.", "Your unsent entries return after the same account and request context are confirmed. An uncertain submission keeps its original request for safe confirmation."],
+    fixed: ["Private recipient details no longer appear in the initial Get help page. Changed request context requires a deliberate reload, with a warning before local work is cleared."],
+    featureIds: []
+  },
+  {
     id: "private-support-lists", version: "2026.09.26.7", date: "2026-09-26",
     summary: "Keep private help subjects out of retained request lists when access needs to be checked again.",
     added: [],

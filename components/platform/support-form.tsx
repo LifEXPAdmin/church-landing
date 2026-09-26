@@ -20,6 +20,11 @@ export type SupportField = {
   options?: { value: string; label: string }[];
   optional?: boolean;
 };
+export type SupportFormPrivacy = {
+  visible: boolean;
+  currentAccess: boolean;
+  onAccessDenied: () => void;
+};
 export function SupportForm({
   owner,
   operation,
@@ -38,7 +43,8 @@ export function SupportForm({
   additionalWork,
   onConfirmed,
   receiptKey = "caseId",
-  requestKey = "requestKey"
+  requestKey = "requestKey",
+  privacy
 }: {
   owner: string;
   operation: string;
@@ -58,6 +64,7 @@ export function SupportForm({
   onConfirmed?: () => void;
   receiptKey?: "caseId" | "id";
   requestKey?: "requestKey" | "mutationId";
+  privacy?: SupportFormPrivacy;
 }) {
   const id = useId();
   const initialFixed = useRef(fixed);
@@ -69,10 +76,12 @@ export function SupportForm({
   const feedbackRef = useRef<HTMLParagraphElement>(null);
   const [retryBody, setRetryBody] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
+  const [values, setValues] = useState<Record<string, string | boolean>>({});
   const [sourceChanged, setSourceChanged] = useState(false);
   const [navigation, setNavigation] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
-  const retryOriginal = useCallback(() => formRef.current?.requestSubmit(), []);
+  const latestSubmit = useRef<() => void>(() => {});
+  const retryOriginal = useCallback(() => latestSubmit.current(), []);
   usePrivateRecovery(id, !!retryBody, busy, retryOriginal);
   useUnsavedSocialWork(
     {
@@ -94,19 +103,143 @@ export function SupportForm({
     )
       setSourceChanged(true);
   }, [fixed, dirty, retryBody, onRefresh]);
+  const navigationAllowed = privacy?.currentAccess ?? true;
   useEffect(() => {
     let active = true;
-    if (navigation)
+    if (navigation && navigationAllowed)
       void settlePhotoNavigation().then(() => {
         if (active) window.location.assign(navigation);
       });
     return () => {
       active = false;
     };
-  }, [navigation]);
+  }, [navigation, navigationAllowed]);
   useEffect(() => {
     if (feedback && !busy) feedbackRef.current?.focus();
   }, [feedback, busy]);
+  const submit = async (form?: HTMLFormElement) => {
+    if (
+      (privacy &&
+        (!privacy.currentAccess || (!privacy.visible && !retryBody))) ||
+      busy ||
+      inFlight.current ||
+      ((sourceChanged || !available) && !retryBody)
+    )
+      return;
+    if (!retryBody && !form) return;
+    const data = form ? new FormData(form) : new FormData();
+    const payload: Record<string, unknown> = {
+      ...initialFixed.current,
+      operation
+    };
+    fields.forEach((f) => {
+      payload[f.name] =
+        f.type === "checkbox" ? data.get(f.name) === "on" : data.get(f.name);
+    });
+    if (readFields && !retryBody) Object.assign(payload, readFields(data));
+    // Choice values carry both the opaque assignment and the disclosed current version.
+    for (const [choice, key, versionKey] of [
+      ["appointmentChoice", "appointmentId", "appointmentVersion"],
+      ["ownerChoice", "ownerGrantId", "ownerGrantVersion"]
+    ]) {
+      if (typeof payload[choice] === "string") {
+        const [value, version] = (payload[choice] as string).split(":");
+        payload[key] = value;
+        payload[versionKey] = Number(version);
+        delete payload[choice];
+      }
+    }
+    const serialized =
+      retryBody ??
+      JSON.stringify({ ...payload, [requestKey]: crypto.randomUUID() });
+    setRetryBody(serialized);
+    inFlight.current = true;
+    setBusy(true);
+    setFeedback("");
+    try {
+      const { data: result } = await socialRequest<{
+        caseId: string;
+        id?: string;
+        version: number;
+        message: string;
+      }>(endpoint, serialized, owner);
+      if (
+        typeof result[receiptKey] !== "string" ||
+        !Number.isSafeInteger(result.version) ||
+        result.version < 1
+      )
+        throw new SocialClientError(
+          503,
+          "The save result is unconfirmed. Retry the original request."
+        );
+      setFailed(false);
+      setFeedback(result.message);
+      setRetryBody(null);
+      setDirty(false);
+      onConfirmed?.();
+      setValues({});
+      form?.reset();
+      if (["create", "appeal", "feedback-create"].includes(operation))
+        setNavigation(
+          `${createdBase}/${encodeURIComponent(result.caseId)}?received=1`
+        );
+      else if (destination) setNavigation(destination);
+      else if (onRefresh) onRefresh();
+      // A fresh private document discards stale client route data after a write.
+      else setNavigation(window.location.href);
+    } catch (error) {
+      if (
+        error instanceof SocialClientError &&
+        [401, 403].includes(error.status)
+      )
+        privacy?.onAccessDenied();
+      if (
+        onRefresh &&
+        error instanceof SocialClientError &&
+        error.status === 409
+      )
+        setSourceChanged(true);
+      // Rate limiting precedes receipt lookup. A 429 cannot disprove an earlier
+      // accepted request whose response was lost, so retain its exact retry key.
+      if (
+        error instanceof SocialClientError &&
+        [400, 409].includes(error.status)
+      )
+        setRetryBody(null);
+      setFailed(true);
+      setFeedback(
+        error instanceof Error
+          ? error.message
+          : "We could not confirm that this saved. Retry the original request; it will not duplicate it."
+      );
+    } finally {
+      inFlight.current = false;
+      setBusy(false);
+    }
+  };
+  latestSubmit.current = () => void submit(formRef.current ?? undefined);
+  if (privacy && !privacy.visible) {
+    return privacy.currentAccess ? (
+      <div className="space-y-3">
+        {failed && (
+          <p role="alert" className="text-sm text-gc-error">
+            We could not confirm the original request. Recheck access and retry
+            the same request.
+          </p>
+        )}
+        {retryBody && (
+          <button
+            type="button"
+            className="gc-button"
+            disabled={busy}
+            onClick={retryOriginal}
+          >
+            {busy ? "Confirming original request…" : "Confirm original request"}
+          </button>
+        )}
+      </div>
+    ) : null;
+  }
   return (
     <form
       ref={formRef}
@@ -114,98 +247,9 @@ export function SupportForm({
       aria-label={button}
       aria-busy={busy}
       className="space-y-4"
-      onSubmit={async (e) => {
-        e.preventDefault();
-        if (
-          busy ||
-          inFlight.current ||
-          ((sourceChanged || !available) && !retryBody)
-        )
-          return;
-        const form = e.currentTarget;
-        const data = new FormData(form);
-        const payload: Record<string, unknown> = {
-          ...initialFixed.current,
-          operation
-        };
-        fields.forEach((f) => {
-          payload[f.name] =
-            f.type === "checkbox"
-              ? data.get(f.name) === "on"
-              : data.get(f.name);
-        });
-        if (readFields && !retryBody) Object.assign(payload, readFields(data));
-        // Choice values carry both the opaque assignment and the disclosed current version.
-        for (const [choice, key, versionKey] of [
-          ["appointmentChoice", "appointmentId", "appointmentVersion"],
-          ["ownerChoice", "ownerGrantId", "ownerGrantVersion"]
-        ]) {
-          if (typeof payload[choice] === "string") {
-            const [value, version] = (payload[choice] as string).split(":");
-            payload[key] = value;
-            payload[versionKey] = Number(version);
-            delete payload[choice];
-          }
-        }
-        const serialized =
-          retryBody ??
-          JSON.stringify({ ...payload, [requestKey]: crypto.randomUUID() });
-        setRetryBody(serialized);
-        inFlight.current = true;
-        setBusy(true);
-        setFeedback("");
-        try {
-          const { data: result } = await socialRequest<{
-            caseId: string;
-            id?: string;
-            version: number;
-            message: string;
-          }>(endpoint, serialized, owner);
-          if (
-            typeof result[receiptKey] !== "string" ||
-            !Number.isSafeInteger(result.version) ||
-            result.version < 1
-          )
-            throw new SocialClientError(
-              503,
-              "The save result is unconfirmed. Retry the original request."
-            );
-          setFailed(false);
-          setFeedback(result.message);
-          setRetryBody(null);
-          setDirty(false);
-          onConfirmed?.();
-          form.reset();
-          if (["create", "appeal", "feedback-create"].includes(operation))
-            setNavigation(
-              `${createdBase}/${encodeURIComponent(result.caseId)}?received=1`
-            );
-          else if (destination) setNavigation(destination);
-          else if (onRefresh) onRefresh();
-          // A fresh private document discards stale client route data after a write.
-          else setNavigation(window.location.href);
-        } catch (error) {
-          if (
-            onRefresh &&
-            error instanceof SocialClientError &&
-            error.status === 409
-          )
-            setSourceChanged(true);
-          if (
-            error instanceof SocialClientError &&
-            [400, 409, 429].includes(error.status)
-          )
-            setRetryBody(null);
-          setFailed(true);
-          setFeedback(
-            error instanceof Error
-              ? error.message
-              : "We could not confirm that this saved. Retry the original request; it will not duplicate it."
-          );
-        } finally {
-          inFlight.current = false;
-          setBusy(false);
-        }
+      onSubmit={(event) => {
+        event.preventDefault();
+        void submit(event.currentTarget);
       }}
     >
       <fieldset disabled={busy || !!retryBody} className="min-w-0 space-y-4">
@@ -224,11 +268,35 @@ export function SupportForm({
                 id={`${id}-${f.name}`}
                 name={f.name}
                 type="checkbox"
+                checked={privacy ? values[f.name] === true : undefined}
+                onChange={
+                  privacy
+                    ? (event) =>
+                        setValues((current) => ({
+                          ...current,
+                          [f.name]: event.target.checked
+                        }))
+                    : undefined
+                }
                 required={!f.optional}
                 className="h-6 w-6 accent-[#e6b56c] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#f4c98c]"
               />
             ) : f.type === "select" ? (
               <select
+                value={
+                  privacy
+                    ? String(values[f.name] ?? f.options?.[0]?.value ?? "")
+                    : undefined
+                }
+                onChange={
+                  privacy
+                    ? (event) =>
+                        setValues((current) => ({
+                          ...current,
+                          [f.name]: event.target.value
+                        }))
+                    : undefined
+                }
                 id={`${id}-${f.name}`}
                 name={f.name}
                 required={!f.optional}
@@ -242,6 +310,16 @@ export function SupportForm({
               </select>
             ) : f.type === "textarea" ? (
               <textarea
+                value={privacy ? String(values[f.name] ?? "") : undefined}
+                onChange={
+                  privacy
+                    ? (event) =>
+                        setValues((current) => ({
+                          ...current,
+                          [f.name]: event.target.value
+                        }))
+                    : undefined
+                }
                 id={`${id}-${f.name}`}
                 name={f.name}
                 required={!f.optional}
@@ -252,6 +330,16 @@ export function SupportForm({
               />
             ) : (
               <input
+                value={privacy ? String(values[f.name] ?? "") : undefined}
+                onChange={
+                  privacy
+                    ? (event) =>
+                        setValues((current) => ({
+                          ...current,
+                          [f.name]: event.target.value
+                        }))
+                    : undefined
+                }
                 id={`${id}-${f.name}`}
                 name={f.name}
                 required={!f.optional}
@@ -344,6 +432,7 @@ export function SupportForm({
             setDirty(false);
             setSourceChanged(false);
             initialFixed.current = fixed;
+            setValues({});
             formRef.current?.reset();
             onDiscard?.();
             setFeedback(

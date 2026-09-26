@@ -111,15 +111,47 @@ try {
     exact: true
   });
   await search.fill("  QUIET   hours ");
-  const quiet = help.locator("details");
+  await help
+    .getByRole("status")
+    .filter({ hasText: /^4 help topics\.$/ })
+    .waitFor();
+  assert.deepEqual(await help.locator("details summary").allTextContents(), [
+    "How do event reminders work?",
+    "How do I save my calendar display?",
+    "Does choosing a discovery city share my location?",
+    "Can I set quiet hours for notifications?"
+  ]);
+  const quiet = help.locator("details").filter({
+    has: page.getByText("Can I set quiet hours for notifications?", {
+      exact: true
+    })
+  });
   assert.equal(await quiet.count(), 1);
+  assert.equal(await quiet.evaluate((details) => details.open), false);
   await quiet.locator("summary").focus();
   await page.keyboard.press("Enter");
+  assert.equal(await quiet.evaluate((details) => details.open), true);
   assert.match(
     await quiet.innerText(),
-    /Quiet hours pause phone alerts and selected feedback email/
+    /Quiet hours pause phone alerts and optional email, including selected Likes, replies and feedback updates when available\./
   );
-  await quiet.getByRole("link").click();
+  assert.match(
+    await quiet.innerText(),
+    /Choose follow-up separately on each feedback case or reviewed idea\./
+  );
+  assert.match(
+    await quiet.innerText(),
+    /Account verification and recovery emails remain separate\./
+  );
+  const quietLink = quiet.getByRole("link", {
+    name: "Review current notification controls",
+    exact: true
+  });
+  assert.equal(
+    await quietLink.getAttribute("href"),
+    "/platform/settings/notifications/availability"
+  );
+  await quietLink.click();
   await page.waitForURL("**/settings/notifications/availability");
   await page.getByRole("group", { name: "Quiet hours", exact: true }).waitFor();
   await go("/platform/settings/help");

@@ -19,6 +19,7 @@ import { PortalRetry } from "./portal-retry";
 import { PrivateSnapshotGuard } from "./private-snapshot-guard";
 import { getCurrentPlatformUser } from "@/lib/platform/session";
 import { SupportIndex } from "./support-index";
+import { SupportIntake } from "./support-intake";
 export async function SupportPage({
   view,
   caseId,
@@ -48,7 +49,7 @@ export async function SupportPage({
         </section>
       </PlatformShell>
     );
-  if (view === "requests" || view === "inbox") {
+  if (view === "requests" || view === "inbox" || view === "new") {
     const user = await getCurrentPlatformUser();
     if (!user) redirect("/platform/login");
     const url = `/api/platform/support?${new URLSearchParams({ view, ...(churchId ? { churchId } : {}), ...(page ? { page } : {}) })}`;
@@ -56,19 +57,34 @@ export async function SupportPage({
       <PlatformShell user={user}>
         <section className="container-shell max-w-4xl py-8 sm:py-10">
           <PortalHeading
-            title={view === "inbox" ? "Assigned support inbox" : "My requests"}
+            title={
+              view === "inbox"
+                ? "Assigned support inbox"
+                : view === "new"
+                  ? "Get help"
+                  : "My requests"
+            }
             description={
               view === "inbox"
                 ? "Only conversations currently assigned to you appear here. Check the audience before replying."
                 : "Ordinary help, clear ownership and updates you can return to. Private to each request’s authorized participants."
             }
           />
-          <SupportIndex
-            key={`${user.id}:${url}`}
-            owner={user.id}
-            url={url}
-            view={view}
-          />
+          {view === "new" ? (
+            <SupportIntake
+              key={`${user.id}:${url}`}
+              owner={user.id}
+              url={url}
+              churchId={churchId}
+            />
+          ) : (
+            <SupportIndex
+              key={`${user.id}:${url}`}
+              owner={user.id}
+              url={url}
+              view={view}
+            />
+          )}
         </section>
       </PlatformShell>
     );
@@ -108,7 +124,6 @@ export async function SupportPage({
       </PlatformShell>
     );
   const titles = {
-    new: "Get help",
     routing: "Assign requests",
     detail: snapshot.detail?.subject ?? "Request"
   };
@@ -127,12 +142,7 @@ export async function SupportPage({
             title={titles[view]}
             description="Ordinary help, clear ownership and updates you can return to. Private to each request’s authorized participants."
           />
-          <SupportViews
-            snapshot={snapshot}
-            view={view}
-            churchId={churchId}
-            received={received}
-          />
+          <SupportViews snapshot={snapshot} view={view} received={received} />
         </PrivateSnapshotGuard>
       </section>
     </PlatformShell>

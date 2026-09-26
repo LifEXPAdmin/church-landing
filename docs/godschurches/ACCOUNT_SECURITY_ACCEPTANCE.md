@@ -1,5 +1,16 @@
 # Account security acceptance
 
+## Get help form privacy candidate, 26 September 2026 UTC
+
+An isolated copy of the current live build reproduces private recipient details
+in initial HTML and recipient/typed input retention after blur, offline and
+account replacement. Pagehide also leaves the original form visible. The scoped
+repair fetches the new-request snapshot after hydration, removes private fields
+on concealment and keeps the original context, dirty values and exact uncertain
+command in its mounted owner. It introduces no browser persistence or new intake
+permission. Detail/routing remain separate. Candidate build, browser, release and
+live acceptance are pending; the verified list receipt follows.
+
 ## Support list privacy verified live, 26 September 2026 UTC
 
 Version **2026.09.26.7**, source `d480b1a8408a24b83e7e260525570804eaab90be`, is READY in
