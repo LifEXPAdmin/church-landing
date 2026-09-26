@@ -1,7 +1,42 @@
-# Stage 2B dependency review
+# Dependency review
+
+## Current dependency disposition, 26 September 2026 UTC
+
+The current locked graph supersedes the September 8 exception below. Full and
+production-only npm audits report zero known vulnerabilities; registry signature
+and provenance verification reports no invalid or missing signatures. All 548
+non-root lock entries resolve from the npm registry with SHA-512 integrity, and
+installed versions and root dependency metadata match the version 3 lockfile.
+This is a dated advisory and integrity check, not proof against unknown defects.
+
+The existing scoped `@prisma/config` override installs `deepmerge-ts@8.0.2`,
+introduced by commit `2756651c61ee1f9e2a48143600eb4579c1f1a9da` on September 12.
+The [maintainer advisory](https://github.com/RebeccaStevens/deepmerge-ts/security/advisories/GHSA-ggr8-5vv4-36mx)
+affects versions below 8.0.0. The earlier three-high exception and statements
+that no override exists are historical. This audit did not introduce or newly
+certify that override's compatibility.
+
+Next remains exactly pinned at 15.5.25, Prisma and its client at 6.19.3, Sharp at
+0.35.4 and libvips at 8.18.6. Sharp is used at runtime and is not merely build
+tooling. The current Next version is outside the affected range of the September
+[next/og advisory](https://github.com/vercel/next.js/security/advisories/GHSA-vcvr-r3jv-pc5j);
+the application also has no `next/og` imports. The scoped Next PostCSS override
+and existing guarded hydration repair remain in place. No new dependency or
+blind major upgrade is required by this audit.
+
+Use `npm ci` for reproducible installation and keep advisory checks current.
+The source security workflow checks the lock, high/critical advisories, registry
+signatures and reachable-history secrets without production credentials. The
+designated release maintainer owns failures, scanner/action updates and any
+future exception. A future exception must name its advisory, reachability,
+responsible owner and review expiry; this checkpoint needs no advisory exception.
+
+See [source security acceptance](SOURCE_SECURITY_ACCEPTANCE.md) for scanner,
+build and provider boundaries. Older application SHAs, deployments, trace counts
+and package findings below remain dated evidence, not current release status.
 
 <!-- STAGE_2C_CURRENT_BEGIN -->
-## Stage 2C current status (September 8, 2026)
+## Historical Stage 2C status (September 8, 2026)
 
 **Published:** ordinary private support code and a fictional, read-only demonstration at the existing godschurches.com project.
 
