@@ -1,5 +1,17 @@
 # Retained reader privacy
 
+## Scheduled index cleanup candidate, 26 September 2026 UTC
+
+The scheduled index has no pending forms. Its new client-owned list loads private
+excerpts only through the existing identity-bound API after hydration, avoiding
+initial HTML and serialized server-child retention. Concealment clears list data;
+late responses are ignored. Only a digest survives to detect a changed snapshot,
+which requires deliberate reload. Shared form/recovery guards remain unchanged.
+Built-browser and live acceptance are pending. This scoped repair does not claim
+heap erasure, browser-history erasure or completion of every retained reader.
+
+## Previously verified reader boundary
+
 September 14, 2026 UTC · 2026.09.14.12 · verified live
 
 Application **48c478684c22459d3ce97d91a294cf0196d7811f** is READY in

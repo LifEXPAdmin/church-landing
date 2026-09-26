@@ -1,5 +1,31 @@
 # Account security acceptance
 
+## Browser privacy cleanup candidate, 26 September 2026 UTC
+
+The current candidate repairs two reproduced browser defects. The preceding
+runtime retained unpublished scheduled text in hidden DOM and serialized page
+data after account change, and retained malformed/expired deletion references.
+A future-dated reference was incorrectly accepted. Reproduction used an isolated
+fictional database with zero production writes or external sends.
+
+The read-only scheduled index now obtains its DTO through the existing authorized
+API after hydration. Blur, hidden/pagehide and offline events clear rendered data;
+stale responses cannot restore it. Same-owner access restores an unchanged list,
+while a changed digest requires deliberate reload. Shared form guards remain
+unchanged so pending requests retain their exact recovery owner. This is scoped
+DOM and serialized-page cleanup, not a claim of JavaScript heap or OS erasure.
+
+Deletion reference reads remove malformed, oversized, unexpected-field, expired
+and implausibly future-dated entries. Valid references survive sign-out and remain
+available to anonymous progress; another signed-in owner does not adopt them.
+Cleanup is on read, not a timer. The existing one-year browser bound and server
+expiry 90 days after completion are unchanged. See the
+[browser storage inventory](BROWSER_STORAGE_INVENTORY.md).
+
+Implementation is local pending built-browser, release and live acceptance.
+Broader retained forms, CSP, cookie prefix, idle/password policy, provider, device
+and ASVS acceptance stay open.
+
 ## Scope and evidence, 26 September 2026 UTC
 
 The demonstrated framing, session-selection and development-diagnostic defects

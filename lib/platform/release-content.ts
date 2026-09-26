@@ -1006,6 +1006,14 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "private-browser-cleanup", version: "2026.09.26.5", date: "2026-09-26",
+    summary: "Clear scheduled post previews while checking access and remove unusable deletion recovery references from this browser.",
+    added: [],
+    improved: ["Unpublished scheduled previews load after checking your current account and publishing access. Leaving the view or losing the connection clears their text until access is confirmed again.", "Changed scheduled posts require a deliberate reload before their current details appear."],
+    fixed: ["Malformed, expired and implausibly future-dated deletion progress references are removed when read. Valid references remain available for checking an already requested deletion."],
+    featureIds: []
+  },
+  {
     id: "volunteer-availability-reminders", version: "2026.09.26.4", date: "2026-09-26",
     summary: "Share optional availability with volunteer coordinators and choose reminders for accepted timed shifts.",
     added: ["Add, update or remove a private availability preference for an opportunity application.", "Volunteer reminders have their own default-Off choice, with 15-minute and 60-minute options separate from event RSVP reminders."],

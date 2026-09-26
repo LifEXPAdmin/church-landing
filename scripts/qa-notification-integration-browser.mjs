@@ -496,6 +496,94 @@ try {
   await page.setViewportSize({ width: 320, height: 568 });
   await bounded();
   await page.screenshot({ path: output + "/scheduled-library-320.png" });
+  assert.equal(
+    await page.evaluate(
+      (text) =>
+        Array.from(document.scripts).some((script) =>
+          script.textContent?.includes(text)
+        ),
+      marker + " edited"
+    ),
+    false,
+    "Unpublished excerpts must not be serialized into the page scripts"
+  );
+  const absentScheduledExcerpt = async () => {
+    await page.waitForFunction(
+      (text) => !document.body.textContent.includes(text),
+      marker + " edited"
+    );
+    assert.equal(
+      await page.getByText(marker + " edited", { exact: true }).count(),
+      0
+    );
+  };
+  await page.evaluate(() => window.dispatchEvent(new Event("blur")));
+  await absentScheduledExcerpt();
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await page.getByText(marker + " edited", { exact: true }).waitFor();
+  await page.route("**/api/platform/posts?*", (route) =>
+    new URL(route.request().url()).searchParams.get("view") === "scheduled"
+      ? route.abort("failed")
+      : route.continue()
+  );
+  const failedScheduledRead = page.waitForEvent("requestfailed", {
+    predicate: (request) => {
+      const url = new URL(request.url());
+      return (
+        url.pathname === "/api/platform/posts" &&
+        url.searchParams.get("view") === "scheduled"
+      );
+    }
+  });
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await failedScheduledRead;
+  await absentScheduledExcerpt();
+  await page.unroute("**/api/platform/posts?*");
+  await page
+    .getByRole("button", { name: "Recheck current access", exact: true })
+    .click();
+  await page.getByText(marker + " edited", { exact: true }).waitFor();
+  ok(
+    "Read-only scheduled excerpts leave the DOM on blur or failed access checks and return only after the same owner's fresh check"
+  );
+  const updateScheduledText = async (content) => {
+    const saved = await db.platformPost.findUniqueOrThrow({
+      where: { id: post.id }
+    });
+    await postCommand(db, f.memberA.token, {
+      operation: "edit",
+      postId: post.id,
+      expectedVersion: saved.version,
+      mutationId: randomUUID(),
+      content,
+      audience: saved.audience,
+      replyAudience: saved.replyAudience
+    });
+  };
+  await updateScheduledText(marker + " changed during recheck");
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await page
+    .getByText("Your scheduled posts or publishing access changed.", {
+      exact: false
+    })
+    .waitFor();
+  await absentScheduledExcerpt();
+  assert.equal(
+    await page
+      .getByText(marker + " changed during recheck", { exact: true })
+      .count(),
+    0
+  );
+  await go("/platform/scheduled-posts");
+  await page
+    .getByText(marker + " changed during recheck", { exact: true })
+    .waitFor();
+  await updateScheduledText(marker + " edited");
+  await go("/platform/scheduled-posts");
+  await page.getByText(marker + " edited", { exact: true }).waitFor();
+  ok(
+    "A changed scheduled snapshot stays out of the DOM until deliberate navigation loads the current version"
+  );
   await signIn(f.coordinator);
   const forbidden = await context.request.get(
     config.origin + `/platform/scheduled-posts/${post.id}`
@@ -509,7 +597,20 @@ try {
   await page
     .getByText(marker + " edited", { exact: true })
     .waitFor({ state: "hidden" });
+  await page
+    .getByText("Your sign-in changed. Reload before continuing.", {
+      exact: true
+    })
+    .waitFor();
+  await absentScheduledExcerpt();
   await signIn(f.memberA);
+  await page
+    .getByRole("button", { name: "Recheck current access", exact: true })
+    .click();
+  await page.getByText(marker + " edited", { exact: true }).waitFor();
+  ok(
+    "Account replacement removes the unpublished scheduled excerpt from textContent and same-owner restoration remains available"
+  );
   await go(`/platform/scheduled-posts/${post.id}`);
   await plan()
     .getByLabel("Publication date and time", { exact: true })

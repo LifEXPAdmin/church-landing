@@ -22,6 +22,19 @@ browser retains only that opaque reference; it is not placed in URLs. The server
 rejects it 90 days after completed deletion. Lost browser storage requires the
 normal secured operator help process, not guessed identity or a new account.
 
+## Browser recovery reference validation
+
+The browser stores only the owner ID, opaque progress proof and save timestamp.
+Validation retains the existing 365-day browser recovery bound and allows at most
+five minutes of future clock skew. On read, malformed, oversized, unexpected-field,
+expired or implausibly future-dated entries are removed. Storage denial leaves
+progress unavailable without submitting or exposing a proof. Valid references
+survive ordinary sign-out and a different owner's settings visit so an uncertain
+accepted request remains recoverable. Anonymous progress intentionally consumes
+that capability. This browser validation does not change the separate server
+expiry 90 days after completed deletion or promise continuous background cleanup.
+The current repair is pending built-browser and release acceptance.
+
 ## Dispositions in the current service
 
 | Resources | Disposition |

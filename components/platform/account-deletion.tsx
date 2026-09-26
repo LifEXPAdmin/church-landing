@@ -9,19 +9,32 @@ const RECEIPT = "gc.account-deletion.v1";
 type Receipt = { owner: string; proof: string; savedAt: number };
 function savedReceipt(): Receipt | null {
   try {
-    const r = JSON.parse(
-      localStorage.getItem(RECEIPT) ?? "null"
-    ) as Receipt | null;
+    const raw = localStorage.getItem(RECEIPT);
+    if (raw === null) return null;
+    let r: Receipt | null = null;
+    try {
+      if (raw.length <= 512) r = JSON.parse(raw) as Receipt | null;
+    } catch {
+      // An unreadable reference cannot confirm an uncertain deletion request.
+    }
+    const now = Date.now();
     if (
       r &&
       typeof r.owner === "string" &&
+      /^[A-Za-z0-9_-]{1,100}$/.test(r.owner) &&
+      typeof r.proof === "string" &&
       /^[A-Za-z0-9_-]{43}$/.test(r.proof) &&
-      typeof r.savedAt === "number" &&
-      Date.now() - r.savedAt < 365 * 86400000
+      Number.isSafeInteger(r.savedAt) &&
+      r.savedAt <= now + 300_000 &&
+      now - r.savedAt < 365 * 86400000 &&
+      Object.keys(r).every((key) => ["owner", "proof", "savedAt"].includes(key))
     )
       return r;
+    // Enforce the existing browser lifetime without discarding another owner's
+    // valid reference or an exact request whose response is still uncertain.
+    localStorage.removeItem(RECEIPT);
   } catch {
-    /* Storage is optional; a denied read cannot start a deletion. */
+    /* Storage is optional; denied access cannot start deletion or expose a proof. */
   }
   return null;
 }
@@ -131,9 +144,14 @@ export function AccountDeletion({
             <div>
               <dt>Completion</dt>
               <dd>
-                {result.completedAt
-                  ? <>Nonexempt active data deletion completed {date(result.completedAt)}.</>
-                  : "Not yet complete."}
+                {result.completedAt ? (
+                  <>
+                    Nonexempt active data deletion completed{" "}
+                    {date(result.completedAt)}.
+                  </>
+                ) : (
+                  "Not yet complete."
+                )}
               </dd>
             </div>
           </dl>

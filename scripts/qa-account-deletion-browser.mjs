@@ -53,7 +53,7 @@ const context = await browser.newContext({
   timezoneId: "America/Chicago",
   viewport: { width: 390, height: 844 }
 });
-const page = await context.newPage();
+let page = await context.newPage();
 const errors = [];
 page.on("pageerror", (e) => {
   const issue = { path: new URL(page.url()).pathname, message: e.message };
@@ -65,7 +65,7 @@ const ok = (s) => {
   results.push(s);
   console.log("PASS " + s);
 };
-const output = fixtureDir + "/account-deletion-browser";
+const output = fixtureDir + "/account-deletion-browser-" + Date.now();
 mkdirSync(output, { recursive: true });
 const go = async (path) => {
   await page.goto(config.origin + path);
@@ -96,6 +96,109 @@ const signIn = async (actor) => {
 };
 
 try {
+  const storageAccountRequests = [];
+  const recordStorageRequest = (request) => {
+    if (
+      new URL(request.url()).pathname === "/api/platform/account" &&
+      request.method() === "POST"
+    )
+      storageAccountRequests.push(request.postDataJSON()?.operation);
+  };
+  page.on("request", recordStorageRequest);
+  await go("/platform/account/deletion");
+  const receiptKey = "gc.account-deletion.v1";
+  const fictionalReceipt = {
+    owner: "fictional-storage-owner",
+    proof: "a".repeat(43),
+    savedAt: Date.now()
+  };
+  for (const value of [
+    JSON.stringify({
+      ...fictionalReceipt,
+      savedAt: Date.now() - 365 * 86400000
+    }),
+    JSON.stringify({
+      ...fictionalReceipt,
+      savedAt: Date.now() + 366 * 86400000
+    }),
+    JSON.stringify({ ...fictionalReceipt, savedAt: Date.now() + 10 * 60_000 }),
+    "{bad-json",
+    JSON.stringify({
+      ...fictionalReceipt,
+      privateText: "Fictional unrelated text"
+    })
+  ]) {
+    await page.evaluate(({ key, value }) => localStorage.setItem(key, value), {
+      key: receiptKey,
+      value
+    });
+    await go("/platform/account/deletion");
+    await page.waitForFunction(
+      (key) => localStorage.getItem(key) === null,
+      receiptKey
+    );
+    assert.equal(
+      await page
+        .getByRole("button", { name: "Check deletion progress", exact: true })
+        .count(),
+      0
+    );
+  }
+  ok(
+    "Expired, far-future, malformed and unexpected-field references are removed from browser storage without a deletion request"
+  );
+  for (const offset of [0, 60_000]) {
+    const value = JSON.stringify({
+      ...fictionalReceipt,
+      savedAt: Date.now() + offset
+    });
+    await page.evaluate(({ key, value }) => localStorage.setItem(key, value), {
+      key: receiptKey,
+      value
+    });
+    await go("/platform/account/deletion");
+    await page
+      .getByRole("button", { name: "Check deletion progress", exact: true })
+      .waitFor();
+    assert.equal(
+      await page.evaluate((key) => localStorage.getItem(key), receiptKey),
+      value
+    );
+  }
+  await page.evaluate((key) => localStorage.removeItem(key), receiptKey);
+  ok(
+    "Current progress references survive reload and bounded clock skew without changing their exact proof"
+  );
+  await page.addInitScript((key) => {
+    const get = Storage.prototype.getItem;
+    Storage.prototype.getItem = function (name) {
+      if (name === key)
+        throw new DOMException("Fictional storage denial", "SecurityError");
+      return get.call(this, name);
+    };
+  }, receiptKey);
+  await go("/platform/account/deletion");
+  await page
+    .getByText("No progress reference is saved in this browser.", {
+      exact: false
+    })
+    .waitFor();
+  assert.equal(
+    await page
+      .getByRole("button", { name: "Check deletion progress", exact: true })
+      .count(),
+    0
+  );
+  ok(
+    "Unavailable browser storage leaves the progress page usable without exposing or submitting a reference"
+  );
+  assert.deepEqual(storageAccountRequests, []);
+  // A fresh page drops this page's simulated storage-denial script.
+  await page.close();
+  page = await context.newPage();
+  page.on("pageerror", (e) =>
+    errors.push({ path: new URL(page.url()).pathname, message: e.message })
+  );
   const a = await createPortalActor(db, "deletebrowser");
   const b = await createPortalActor(db, "deleteother");
   const { readAccountSession } = await import("../lib/platform/accounts.ts");
@@ -177,6 +280,14 @@ try {
       .getByRole("button", { name: "Check deletion progress", exact: true })
       .count(),
     0
+  );
+  assert.equal(
+    await page.evaluate(
+      (key) => JSON.parse(localStorage.getItem(key)).proof,
+      receiptKey
+    ),
+    saved.proof,
+    "Account replacement must preserve the valid original-owner progress capability"
   );
   assert.equal(
     await page
