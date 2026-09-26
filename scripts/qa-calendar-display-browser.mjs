@@ -416,6 +416,11 @@ try {
     await page.getByLabel("Week starts on", { exact: true }).count(),
     0
   );
+  // Concealment happens immediately on blur. Wait for the account check to
+  // finish and release the former owner's dirty-navigation guard before leaving.
+  await page
+    .getByText("Your sign-in changed. Reload before continuing.", { exact: true })
+    .waitFor();
   assert.deepEqual(await currentUser(a.id), beforeSwitch);
   await go("/platform/calendars?month=2026-10&mode=MONTH");
   await month.waitFor();
