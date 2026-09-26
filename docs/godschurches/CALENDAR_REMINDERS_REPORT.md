@@ -35,15 +35,49 @@ suppressed a valid reminder, and an audit-based cutoff admitted a late reminder
 after editor audit erasure. Both now have passing canonical-source regressions.
 
 TypeScript, website copy, full lint and the built application pass. Lint retains
-36 existing unrelated warnings and has no errors. All five new built-browser groups pass with zero browser errors, external
-requests, provider sends or production writes. Existing calendar and regional
-browser regression is in progress. Its account-switch expectation now checks deliberate concealment
-before reloading the new account. A test-side missing local recovery-journal
-configuration was corrected; it did not change the application consent boundary.
+36 existing unrelated warnings and has no errors. All 26 built-browser groups
+pass, including five new reminder journeys and the existing display, Calendar
+Settings, saved layers and regional settings journeys. Browser errors, external
+requests, provider sends and production writes are zero. Five built HTTP checks
+pass for rendering/privacy, source operations, identity and origin defenses.
 
-The encrypted production restore rehearsal has passed a local 106-to-110
+The account-switch browser expectation checks deliberate concealment before
+reloading the new account. A test-side missing local recovery-journal
+configuration was corrected without changing the application consent boundary.
+The complete regression initially exposed a historical fingerprint assertion
+that included the new display columns. The harness now compares original fields
+and separately checks the four new migrations' defaults and original-column
+fingerprints. Its corrected uninterrupted complete run remains in progress.
+
+The final encrypted production restore rehearsal passes a local 106-to-110
 migration upgrade, preserving all 148 original table fingerprints over their
 original columns and replaying protected controls. Production was read only.
-The final trigger clock and full clean fixture are being verified before the
-complete regression, compatible rollback, runtime measurement and release gates.
-No task completion, production migration or live reminder delivery is claimed.
+Eight compatible-rollback checks pass against the previous built release: old
+pages and writers remain usable, foreign/guest access stays denied, new settings
+survive old preference writes, and the database timestamps old-runtime edits.
+Returning to the current runtime retains the saved choices and rejects overdue
+edited reminders after audit erasure. The old runtime cannot process the new
+queue kind; durable work resumes with the current consumer and current deadlines.
+No destructive schema rollback was used.
+
+## Measured runtime cost
+
+Deduplicated startup JavaScript includes ancestor layouts. Compared with the
+previous built production source, compressed calendar-list/detail code grows by
+660/659 bytes, event detail by 931 bytes and Settings by 249 bytes. Including its
+notification lazy chunk, Settings grows by 671 bytes. Associated CSS grows by
+38 bytes. No dependency was added.
+
+A local fictional sample records one preference SELECT for a default-Off wake,
+without creating a job. Current-source resolution uses twelve SELECTs for both
+one and ten reminders, plus transaction boundaries. Processing ten due reminders
+through the existing per-event canonical writer records 229 statements, including
+217 SELECTs and ten Activity inserts, in about 75 ms locally. The bounded batch
+preserves each writer's current authorization and notification checks. These are
+local measurements, not production latency or a performance improvement claim.
+Dispatch selects at most 100 plans with concurrency eight; missing-plan recovery
+handles at most twenty per invocation. The worker processes at most ten due
+responses and the read resolver accepts at most fifty sources for one owner.
+
+Full regression and exact deployment/live acceptance remain open. No task
+completion, production migration or live reminder delivery is claimed.

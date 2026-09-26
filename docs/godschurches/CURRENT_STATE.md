@@ -3,10 +3,11 @@
 The [reminder checkpoint](CALENDAR_REMINDERS_REPORT.md) extends the existing
 notification owner with default-Off timed reminders for Going/Maybe commitments.
 It completes the local implementation required alongside saved calendar display.
-Fifty-one focused checks, types, copy, lint and production build pass. A local
-encrypted 106-to-110 restore upgrade preserves original production fingerprints.
-Final browser, full regression, compatible rollback, cost and release gates are
-still in progress. Production remains the verified calendar-layer release below.
+Fifty-one focused checks, twenty-six browser groups, five HTTP checks, types,
+copy, lint and production build pass. Eight compatible rollback checks and a
+local encrypted 106-to-110 restore upgrade preserve settings and original
+production fingerprints. Runtime costs are measured. The full regression and
+release gates are still in progress. Production remains the verified calendar-layer release below.
 
 ## Saved calendar display local checkpoint, 22 September 2026 UTC
 
