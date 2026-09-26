@@ -147,7 +147,7 @@ try {
     if (path === "/platform/groups/invitations")
       await page
         .getByText(
-          "No groups on this page. Try another search or continue to the next page.",
+          "No current group invitations",
           { exact: true }
         )
         .waitFor();
@@ -157,6 +157,31 @@ try {
   }
   ok(
     "All six links and browser Back return to the same personal Settings folder"
+  );
+  await go("/platform/groups/invitations?q=NoMatchingInvitation");
+  await page
+    .getByRole("heading", {
+      name: "No group invitations match these filters",
+      exact: true
+    })
+    .waitFor();
+  const clearInvitations = page.getByRole("link", {
+    name: "Clear group filters",
+    exact: true
+  });
+  assert.equal(
+    await clearInvitations.getAttribute("href"),
+    "/platform/groups/invitations"
+  );
+  await clearInvitations.click();
+  await page.waitForURL(
+    (url) => url.pathname === "/platform/groups/invitations" && !url.search
+  );
+  await page
+    .getByRole("heading", { name: "No current group invitations", exact: true })
+    .waitFor();
+  ok(
+    "Filtered private invitation misses keep a working reset within the same private view"
   );
   await go("/platform/settings");
   const search = page.getByLabel("Search settings", { exact: true });

@@ -216,7 +216,12 @@ export async function VolunteerPage({
       });
       const api = `/api/platform/volunteers?${parameters}`;
       let body: ReactNode;
-      if (result.view === "list")
+      if (result.view === "list") {
+        const filters = new URLSearchParams({
+          ...(result.q ? { q: result.q } : {}),
+          ...(result.churchId ? { churchId: result.churchId } : {})
+        });
+        const firstHref = path + (filters.size ? `?${filters}` : "");
         body = (
           <div className="space-y-5">
             <p>
@@ -240,19 +245,78 @@ export async function VolunteerPage({
               <button type="submit" className="gc-button">
                 Search
               </button>
-              <Link
-                className={linkClass}
-                prefetch={false}
-                href="/platform/serve"
-              >
-                Clear filters
-              </Link>
+              {filters.size > 0 && result.items.length > 0 && (
+                <Link
+                  className={linkClass}
+                  prefetch={false}
+                  href="/platform/serve"
+                >
+                  Clear filters
+                </Link>
+              )}
             </form>
             {!result.items.length && (
-              <p>
-                No matching opportunities are available to this account. Try
-                another title or clear the filters.
-              </p>
+              <section className="space-y-3 rounded-xl border border-gc-divider p-5">
+                <h2 className="text-2xl">
+                  {values.after || result.nextCursor
+                    ? "No opportunities on this page"
+                    : filters.size
+                      ? "No opportunities match these filters"
+                      : "No volunteer opportunities to show yet"}
+                </h2>
+                <p>
+                  {result.nextCursor
+                    ? "Use Next opportunities to continue looking for available opportunities."
+                    : values.after
+                      ? "Return to the first page to check the opportunities currently available."
+                      : filters.size
+                        ? "Try another title or clear the filters to browse available opportunities."
+                        : "Opportunities will appear here as churches publish them. Explore church pages for other ways to connect and serve."}
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  {values.after && (
+                    <Link
+                      prefetch={false}
+                      className="gc-button gc-button-quiet"
+                      href={firstHref}
+                    >
+                      Back to first opportunities
+                    </Link>
+                  )}
+                  {filters.size > 0 && (
+                    <Link
+                      prefetch={false}
+                      className="gc-button gc-button-quiet"
+                      href="/platform/serve"
+                    >
+                      Clear filters
+                    </Link>
+                  )}
+                  <Link
+                    prefetch={false}
+                    className="gc-button gc-button-quiet"
+                    href="/platform/churches"
+                  >
+                    Explore churches
+                  </Link>
+                  <Link
+                    prefetch={false}
+                    className="gc-button gc-button-quiet"
+                    href={
+                      user
+                        ? "/platform/serve/applications"
+                        : accountEntryHref(
+                            "login",
+                            "/platform/serve/applications"
+                          )
+                    }
+                  >
+                    {user
+                      ? "Review my applications"
+                      : "Sign in to review my applications"}
+                  </Link>
+                </div>
+              </section>
             )}
             {result.items.map((row) => (
               <Opportunity key={row.id} row={row} />
@@ -272,7 +336,7 @@ export async function VolunteerPage({
             </p>
           </div>
         );
-      else if (result.view === "new")
+      } else if (result.view === "new")
         body = (
           <VolunteerOpportunityForm
             owner={result.ownerId}
