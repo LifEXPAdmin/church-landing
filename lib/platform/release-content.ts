@@ -1006,6 +1006,14 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "private-content-decisions", version: "2026.09.26.26", date: "2026-09-26",
+    summary: "Content decisions keep private details concealed while preserving reconsideration drafts and original requests.",
+    added: [],
+    improved: ["Your selected content and reviewer details appear only after current account access is checked and clear when the page is hidden or offline."],
+    fixed: ["Reconsideration keeps its original request when current details change. A confirmed case opens only after access is checked again."],
+    featureIds: ["private-reports"]
+  },
+  {
     id: "private-report-lifecycle", version: "2026.09.26.25", date: "2026-09-26",
     summary: "Private reports keep drafts and receipts recoverable when you leave the page.",
     added: [],
