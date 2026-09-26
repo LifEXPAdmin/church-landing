@@ -1,5 +1,38 @@
 # Godschurches release readiness
 
+## Calendar display and reminders verified live, 26 September 2026 UTC
+
+Version **2026.09.26.1**, serving commit
+`ff3152c7ca4fbc2ea850b9625ceb1970667b9823`, is READY in
+`dpl_7K7iGVYwts3FPeJhmjvEqMhAwF8a`. Independent canonical-domain and
+serving checks passed at 03:31 UTC. Release acceptance completed at 03:34 UTC.
+Saved week start, Agenda/Month, fixed/device display zone and private calendar
+layers reuse their existing owners. Optional timed Going/Maybe reminders are Off
+by default and use the existing notification consent, Activity and phone outbox.
+See [the published notes](https://godschurches.com/platform/releases/calendar-display-reminders).
+
+The complete exact-source gate passes all 202 discovered test files: 1,290 checks
+pass, two expected checks skip and none fail or cancel. Application source is
+`ab8b9c2`; the later serving commit changes reports only. Additional focused
+evidence includes 51 service checks, 28 built-browser groups, five built HTTP
+checks and eight compatible-rollback checks. Types, copy, build and runtime trace
+guards pass; lint has zero errors and 36 existing warnings. Earlier failures and
+their fixes remain recorded below and in the private evidence.
+
+All 110 source, production and installed migration checksums match. The four
+additive migrations preserve all 148 original table fingerprints over their
+original columns. Twelve live HTTP/browser checks and six health checks pass.
+One opaque nonexistent-owner native probe was accepted and its exact deployment
+consumer completed HTTP 200 with zero application writes. Scoped runtime error
+and fatal rows are zero. No recipient alert, preference, content or account write
+was made by verification. Physical-phone reminder receipt is not claimed.
+
+Protected pre-release 106-to-110 recovery preserves the original columns and
+replays controls. The installed encrypted 110-to-110 restore passes for 149
+tables and removes plaintext; this ordinary restore does not itself replay
+protected controls. The actual scheduled backup job advances from run 17 to 18,
+exits zero and verifies 98 retained sets with no issues or expiry removals.
+
 ## Official platform design, September 2026
 
 The owner approved the attached direction for the real platform, superseding the

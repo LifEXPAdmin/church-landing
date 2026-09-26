@@ -5,8 +5,9 @@
   "scripts": {
     "dev": "next dev",
     "postinstall": "node scripts/patch-next-hydration.mjs && prisma generate",
-    "build": "node scripts/verify-website-copy.mjs && node scripts/patch-next-hydration.mjs && NODE_OPTIONS=--max-old-space-size=6144 next build && node scripts/verify-hydration-output.mjs && node scripts/verify-runtime-traces.mjs",
+    "build": "node scripts/verify-website-copy.mjs && node scripts/patch-next-hydration.mjs && NODE_OPTIONS=--max-old-space-size=6144 next build && node scripts/verify-hydration-output.mjs && node scripts/verify-runtime-traces.mjs && node scripts/verify-source-security.mjs --build",
     "check:copy": "node scripts/verify-website-copy.mjs",
+    "check:security": "node scripts/verify-source-security.mjs",
     "start": "next start",
     "lint": "eslint .",
     "prisma:generate": "prisma generate",

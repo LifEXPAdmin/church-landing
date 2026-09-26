@@ -1006,6 +1006,14 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "clear-public-next-steps", version: "2026.09.26.2", date: "2026-09-26",
+    summary: "Find useful next steps when Home, Gather, Exchange or Serve has nothing to show.",
+    added: [],
+    improved: ["Empty pages distinguish available content, active filters, later pages and sign-in requirements. Suggested actions match the current visitor's access.", "Signing in from Serve returns you to the opportunity or your applications. Existing Home feed choices stay saved."],
+    fixed: ["Empty Gather pages no longer suggest a missing next page, and unfiltered Exchange pages no longer suggest clearing filters that are not set.", "Image upload and removal limits now return the retry delay with their rate-limit response."],
+    featureIds: ["gather-groups", "exchange-listings", "volunteer-applications"]
+  },
+  {
     id: "calendar-display-reminders", version: "2026.09.26.1", date: "2026-09-26",
     summary: "Save your calendar display and choose optional reminders for timed events in your commitments.",
     added: ["Saved week start, Agenda or Month view, and fixed or device-following viewing zones apply across sign-ins.", "Optional reminders start Off and can be set to 15 or 60 minutes before timed events marked Going or Maybe."],

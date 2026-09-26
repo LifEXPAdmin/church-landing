@@ -1,6 +1,39 @@
-# Personal calendar reminder implementation checkpoint
+# Personal calendar reminders
 
-26 September 2026 UTC. Local implementation, not a production receipt.
+## Calendar display and reminders verified live, 26 September 2026 UTC
+
+Version **2026.09.26.1**, serving commit
+`ff3152c7ca4fbc2ea850b9625ceb1970667b9823`, is READY in
+`dpl_7K7iGVYwts3FPeJhmjvEqMhAwF8a`. Independent canonical-domain and
+serving checks passed at 03:31 UTC. Release acceptance completed at 03:34 UTC.
+Saved week start, Agenda/Month, fixed/device display zone and private calendar
+layers reuse their existing owners. Optional timed Going/Maybe reminders are Off
+by default and use the existing notification consent, Activity and phone outbox.
+See [the published notes](https://godschurches.com/platform/releases/calendar-display-reminders).
+
+The complete exact-source gate passes all 202 discovered test files: 1,290 checks
+pass, two expected checks skip and none fail or cancel. Application source is
+`ab8b9c2`; the later serving commit changes reports only. Additional focused
+evidence includes 51 service checks, 28 built-browser groups, five built HTTP
+checks and eight compatible-rollback checks. Types, copy, build and runtime trace
+guards pass; lint has zero errors and 36 existing warnings. Earlier failures and
+their fixes remain recorded below and in the private evidence.
+
+All 110 source, production and installed migration checksums match. The four
+additive migrations preserve all 148 original table fingerprints over their
+original columns. Twelve live HTTP/browser checks and six health checks pass.
+One opaque nonexistent-owner native probe was accepted and its exact deployment
+consumer completed HTTP 200 with zero application writes. Scoped runtime error
+and fatal rows are zero. No recipient alert, preference, content or account write
+was made by verification. Physical-phone reminder receipt is not claimed.
+
+Protected pre-release 106-to-110 recovery preserves the original columns and
+replays controls. The installed encrypted 110-to-110 restore passes for 149
+tables and removes plaintext; this ordinary restore does not itself replay
+protected controls. The actual scheduled backup job advances from run 17 to 18,
+exits zero and verifies 98 retained sets with no issues or expiry removals.
+
+## Implementation and earlier local evidence
 
 The notification preference owner now supports Off, 15 minutes before or
 60 minutes before a person's timed Going or Maybe events. Calendar Settings
@@ -63,7 +96,7 @@ to an unregistered Settings route. It now links to the existing notification
 controls, without widening accepted sign-in destinations. All ten existing
 Settings and Help checks pass. A fresh build and two additional browser checks
 verify searching Help, opening those controls and reloading them with reminders
-still Off. The complete gate is running again over the exact corrected source,
+still Off. The complete gate then passed over the exact corrected source,
 including the shared style fix. Both earlier failures remain preserved.
 
 The final encrypted production restore rehearsal passes a local 106-to-110
@@ -96,5 +129,6 @@ Dispatch selects at most 100 plans with concurrency eight; missing-plan recovery
 handles at most twenty per invocation. The worker processes at most ten due
 responses and the read resolver accepts at most fifty sources for one owner.
 
-Full regression and exact deployment/live acceptance remain open. No task
-completion, production migration or live reminder delivery is claimed.
+The supported feature has completed its release gates. Actual physical-device
+receipt remains a separate owner acceptance task. External subscription feeds
+and broader volunteer notifications retain their own contracts and tasks.

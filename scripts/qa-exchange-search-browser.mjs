@@ -476,7 +476,7 @@ try {
   await go("/platform/exchange?q=NoMatchingFixture" + randomUUID());
   await page
     .getByText(
-      "No available listings match these choices. Clear the filters or check again later.",
+      "No listings match these filters",
       { exact: true }
     )
     .waitFor();

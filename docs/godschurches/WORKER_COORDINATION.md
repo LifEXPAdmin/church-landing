@@ -1,55 +1,59 @@
-# Single-runner coordination and preserved worker history
+# Concurrent chat ownership and release coordination
 
-Effective 21 September 2026: the owner ended independent A1/A2 task queues.
-Use the regular priority workflow. There is one active runner for building,
-integration and releases. No task belongs to a parallel agent, and no A2
-acknowledgment, environment preparation or handoff is required to select work.
-Keep real feature prerequisites, test isolation and release gates intact.
+Effective 26 September 2026 UTC: the owner requested simultaneous chats working
+on different website tasks, with visible current ownership. This supersedes the
+21 September single-runner restriction. Keep one priority queue across all four
+projects; the historical A1/A2 task partition remains retired.
 
-Preserve all existing worktrees, branches, fictional databases and checkpoints.
-Inspect actual running jobs, repository state and saved claims before recovering
-stale ownership. Do not reset another checkout or remove an unexamined lock.
+Each chat uses its own inspected worktree, feature branch and isolated fictional
+test environment. Preserve existing worktrees, branches, processes, databases
+and checkpoints. Before editing, inspect status and atomically register identity
+and reserve exact task IDs plus affected files/contracts. Use narrow claims for
+the actual feature; a directory claim deliberately excludes all descendants.
+Only its owner may narrow an active reservation. Never remove a live or
+unexamined lock or take another chat's checkpoint.
 
-The existing tested helper and private Git-common `gc-coordination` location
-remain the compatibility mechanism for atomic identity, feature reservations
-and release exclusion. Its `A1` key is the sole runner's technical slot, not a
-Todoist owner or a parallel queue. Use the registered worktree and exact session
-with `register`, `claim`, `checkpoint`, `release-acquire`, `release-release`,
-`finish` and `unregister`. Status remains read-only. Keep the slot's worktree
-path stable unless a separately verified migration updates the implementation.
-The retained `A2` identity/checkpoint is historical; do not activate it. Check
-actual reservations and saved work before treating any remaining state as stale.
-Record the current mode and preserved baseline in the private checkpoint.
+The existing A1 slot remains the single integration/release owner during this
+transition. Other chats build independent features and hand over tested commits.
+This is cooperative coordination, not an OS, Git-host or provider access control,
+and does not grant production authority beyond the current user scope.
 
-Run `node --test tests/worker-coordination.test.mjs` when verifying this existing
-guard. Tests use disposable repositories; never race against real claims. The
-helper is cooperative coordination, not an OS or provider permission boundary.
+## Visible task ownership
 
-The detailed two-worker operations below document the preserved implementation
-and historical setup only. Their task routing, A2 startup and separate-release
-ownership instructions are superseded by the single-runner procedure above.
+`status` returns the registry and a readable `summary` of registered chats,
+including human label, exact session, task IDs/title, last recorded update and
+matching checkpoint. The registry is authoritative for current reservations.
+Checkpoint branch, commit and status appear as current only when they belong to
+the same session and current claim. Old checkpoints remain historical evidence.
+A timestamp is a recorded update, not proof a chat is running. Nothing is
+reassigned automatically because a timestamp is old.
 
-## Historical independent-worker procedure
-
-A1 and A2 are separate owner-controlled chats. Read the current shared workflow
-task in the private task system. Its actual task labels govern routing. This
-procedure coordinates local work; it is not an OS, Git-host or provider access
-control and never grants production authority beyond the existing user scope.
+At task start, meaningful checkpoints, pause and handoff, update the private
+Todoist ownership header and existing Session Log row with chat title, worker,
+exact session/task IDs, status, branch and update time. Preserve other labels
+when adding `gc_in_progress`; remove that active indicator when work pauses or
+is handed over. Use `gc_ready_to_merge` only for tested committed handoffs and
+leave release acceptance open. App thread titles should identify the current
+feature when supported. A helper command does not itself synchronize Notion or
+Todoist or send a notification: perform the authorized writes and read them back.
 
 ## Shared location and first setup
 
 Resolve `git rev-parse --path-format=absolute --git-common-dir`. The private
 `gc-coordination` directory under it holds `registry.json`, worker-owned
-`workers/A1.json` and `workers/A2.json`, the setup receipt and fictional fixture
+`workers/<worker>.json` checkpoints, the setup receipt and fictional fixture
 configuration. These files are outside the tracked/public repository. Keep real
 session IDs, task IDs, paths and credentials there, never in public reports.
 
-A1 configures distinct existing worktrees from an inspected safe commit using
-`scripts/worker-coordination.mjs`. Both must resolve to the same Git common
-directory. Reuse A2's existing checkout and preparation. The setup receipt records
-the exact base, branches, private fixture/configuration paths, separate ports and
-actual checks. A2 can independently install the locked dependencies and prepare its
-own isolated environment. Production credentials never belong in test fixtures.
+The initial A1/A2 configuration is retained. New chats register a new uppercase
+worker key, such as `C3`, from their own separate worktree in the same Git common
+directory. Registration adds only that slot; it never reconfigures old identities
+or directories. Use a real feature branch, not main or a detached checkout.
+An existing slot may be resumed only by its registered session in its bound
+worktree. Historical A2 remains preserved until an inspected explicit handoff.
+Prepare independent dependencies, generated clients and fictional database/ports
+before runtime work. Record actual base, environment and isolation evidence.
+Production credentials never belong in test fixtures.
 
 Run the helper from your assigned worktree with one private JSON request file:
 
@@ -66,26 +70,35 @@ commit in your own branch after checking your existing changes.
 
 ## Operations
 
-Requests contain `operation`, `worker` (`A1` or `A2`) and the current chat's exact
+Mutation requests contain `operation`, a bounded uppercase `worker` key and the current chat's exact
 `session` identifier. `status` is read-only and needs only its operation. It
-returns the registry and whether the short `claim.lock` is held.
+returns the registry, readable ownership summary and whether the short `claim.lock` is held. It makes no writes.
 
 - `configure`: A1-only first setup, with `base` (full safe commit) and
   `worktrees: { A1: absolutePath, A2: absolutePath }`. Existing worker paths cannot
   be silently replaced. Never reconfigure after A2 has registered.
-- `register`: reserve the worker identity. The same session may resume; a
-  different session is rejected. A1 does not register A2 on its behalf.
-- `claim`: supply `task` and `resources`, for example `file:lib/platform/calendar-commands.ts`,
+- `register`: reserve your own identity from your own worktree. Supply a short
+  human-readable `label` identifying this chat. New keys are added atomically to
+  the existing configured registry. Duplicate sessions and worktree bindings are
+  rejected. The same owner may refresh its label; never register another chat.
+- `claim`: supply a readable `task`, exact private `taskIds` (including required
+  children), and `resources`, for example `file:lib/platform/calendar-commands.ts`,
   `file:prisma/migrations` and `contract:calendar`. Include shared owners/contracts
   affected indirectly. Directory claims cover descendants. Names are normalized
   conservatively for case-insensitive filesystems. Another worker's task or
-  overlapping resource cannot be claimed. Reserve only the current change.
+  overlapping resource cannot be claimed. Exact task IDs also reserve derived
+  `contract:task-<id>` resources, so differently worded titles cannot duplicate
+  work. Reserve only the current change. `taskIds` remains optional for legacy
+  compatibility, but all new chats must supply it. Active old-helper owners must
+  adopt the updated helper before relying on exact-ID exclusion; their existing
+  legacy claims and file/contract exclusions remain valid.
 - `checkpoint`: supply a short `status` and `handoff`. The helper atomically writes
   only your worker's file, recording session, task, actual branch/commit,
   reservations and timestamp. Include checks, remaining gates and transfer facts.
+  Successful owner operations also refresh the identity's recorded update time.
 - `finish`: clear your feature reservations after a committed checkpoint and
-  task handoff. It does not complete a task in Todoist. A2 can finish independent
-  work while A1 holds a release lock.
+  task handoff. It does not complete a task in Todoist. Other chats can finish
+  independent work while A1 holds a release lock.
 - `release-acquire` / `release-release`: A1-only atomic release ownership in the
   shared registry. A1 must have a current claim. Hold this through integration,
   main update, migration/deployment and exact live closeout; release only after a
@@ -113,8 +126,9 @@ Use disposable temporary repositories; never test contention against a live
 worker's claims. Actual startup additionally verifies both real worktrees,
 current states, separate database identities/ports and private configuration.
 
-At safe checkpoints A1 reads ready-to-merge task evidence and A2's checkpoint.
-A2 provides tested commits and explicit migration/configuration needs. A1 records
+At safe checkpoints A1 reads ready-to-merge task evidence and each submitting
+chat's checkpoint. Builders provide tested commits and explicit migration and
+configuration needs. A1 records
 merged and verified-live status separately. The initial setup does not prove a
 later session automatically loaded instructions, a physical device worked, or a
 feature passed acceptance. Leave those existing gates open until observed.

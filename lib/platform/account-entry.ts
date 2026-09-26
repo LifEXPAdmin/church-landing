@@ -33,6 +33,31 @@ export function safeAccountReturn(value: unknown): string {
     )
   )
     return url.pathname.replace(/\/$/, "");
+  // Serve returns to existing reading/form destinations. Only public list
+  // searches survive sign-in; private cursors and unsent actions never replay.
+  if (
+    url.origin === "https://return.invalid" &&
+    /^\/platform\/serve(?:\/(?:applications|new|[a-zA-Z0-9_-]{1,100}(?:\/(?:edit|applications))?))?\/?$/.test(
+      url.pathname
+    )
+  ) {
+    const path = url.pathname.replace(/\/$/, "");
+    if (path !== "/platform/serve") return path;
+    const query = new URLSearchParams();
+    const searches = url.searchParams.getAll("q");
+    const search = searches.length === 1 ? searches[0] : undefined;
+    if (
+      search &&
+      search.length <= 70 &&
+      search.trim() &&
+      !/[\u0000-\u001f\u007f]/.test(search)
+    )
+      query.set("q", search.trim());
+    const churches = url.searchParams.getAll("churchId");
+    const church = churches.length === 1 ? readerId(churches[0]) : undefined;
+    if (church) query.set("churchId", church);
+    return path + (query.size ? "?" + query : "");
+  }
   // Assistance returns to a known page only. Private cursor, contact, action and
   // unsent request values never survive account entry or replay automatically.
   if (

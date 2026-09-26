@@ -169,6 +169,21 @@ export async function ExchangeList({
       const pageFilters = exchangeSearchParams(query, true);
       if (savedSearch) pageFilters.set("savedSearch", savedSearch);
       const current = path + (pageFilters.size ? "?" + pageFilters : "");
+      const hasFilters = Boolean(
+        query.q ||
+        query.intent ||
+        query.category ||
+        query.condition ||
+        query.state ||
+        query.country ||
+        query.placeId ||
+        query.radiusKm ||
+        query.freeOnly ||
+        query.currency ||
+        query.basis ||
+        (query.scope && query.scope !== "all") ||
+        query.availability === "RESERVED"
+      );
       const rows = (
         <div className="space-y-4">
           <ExchangeSearchPosition owner={user?.id ?? null} path={current} />
@@ -192,11 +207,72 @@ export async function ExchangeList({
             </a>
           )}
           {!result.listings.length && (
-            <p>
-              {mine
-                ? "No saved listings match these choices. Create a private draft to begin."
-                : "No available listings match these choices. Clear the filters or check again later."}
-            </p>
+            <section className="space-y-3 rounded-xl border border-gc-divider p-5">
+              <h2 className="text-2xl">
+                {query.after || result.after
+                  ? "No listings on this page"
+                  : hasFilters
+                    ? mine
+                      ? "No saved listings match these filters"
+                      : "No listings match these filters"
+                    : mine
+                      ? "No saved listings to show yet"
+                      : "No listings to show yet"}
+              </h2>
+              <p>
+                {result.after
+                  ? "Use More listings to continue looking for available listings."
+                  : query.after
+                    ? "Return to the first page of this search to check current listings."
+                    : hasFilters
+                      ? "Try a broader search or clear the listing filters."
+                      : mine
+                        ? "Start a private draft when you are ready to offer an item, request or service."
+                        : "Published listings will appear here when available. Explore church pages or check again later."}
+              </p>
+              <div className="flex flex-wrap gap-3">
+                {query.after && (
+                  <a className="gc-button gc-button-quiet" href={first}>
+                    Back to first listings
+                  </a>
+                )}
+                {hasFilters && (
+                  <Link
+                    prefetch={false}
+                    className="gc-button gc-button-quiet"
+                    href={path}
+                  >
+                    Clear listing filters
+                  </Link>
+                )}
+                {result.canSave ? (
+                  <Link
+                    prefetch={false}
+                    className="gc-button gc-button-quiet"
+                    href="/platform/exchange/new"
+                  >
+                    Create a private draft
+                  </Link>
+                ) : !user ? (
+                  <Link
+                    prefetch={false}
+                    className="gc-button gc-button-quiet"
+                    href={accountEntryHref("login", "/platform/exchange/new")}
+                  >
+                    Sign in to create a listing
+                  </Link>
+                ) : null}
+                {!mine && (
+                  <Link
+                    prefetch={false}
+                    className="gc-button gc-button-quiet"
+                    href="/platform/churches"
+                  >
+                    Explore churches
+                  </Link>
+                )}
+              </div>
+            </section>
           )}
           <p className="text-sm text-gc-muted" role="status">
             Showing {result.listings.length} listings on this page
