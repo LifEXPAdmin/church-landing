@@ -1,14 +1,50 @@
 # Selected feedback follow-up acceptance
 
-## My feedback list privacy candidate, 26 September 2026 UTC
+## My feedback tested and merged; deployment quota blocked, 26 September 2026 UTC
 
-List presentation and pagination now depend on the current read visibility;
-inline prompt preference presentation follows the same boundary while its
-pending serialized command stays mounted. A current visibility and generation
-check rejects late preference reads. Pagehide invalidates shared feedback reads.
-Verification must cover real lost preference acknowledgments, exact account/body
-replay, safe pagination, failed and held reads, and retained intake drafts.
-Implementation is local; testing, integration and live acceptance are pending.
+Version **2026.09.26.12**, source `951e57b1fe2037138b8795e177c48d4ba502dd17`, is implemented,
+tested and merged to main. It is **not verified live**. At 11:50:21 UTC,
+canonical godschurches.com still served verified **2026.09.26.11 / 925536c** in
+`dpl_BYb9LtWJw2kLfk2cFLKEZ9Pv8oqt`.
+
+My feedback removes concealed receipt rows, empty state, pagination and inline
+prompt-preference presentation while retaining the original pending preference
+command. Pagehide invalidates shared feedback reads; fresh-document paging and
+disabled receipt prefetch preserve current-account checks. Initial HTML/RSC omit
+private rows. This does not claim heap, browser-history or OS erasure.
+
+All 33 browser groups and 36 service/HTTP checks pass on this exact source, plus
+the 40.242-second production build, [CI](https://github.com/LifEXPAdmin/church-landing/actions/runs/36239459404),
+source hashes and reviewed 390px/320px/200% captures. Real lost never-ask response
+recovery uses two identical account/body/key attempts with one saved effect and
+no second version. Existing feedback, prompts, reviewed ideas and Following lists
+pass. Test timing, disclosure, fixture-host/runtime-flag and supplemental capture
+setup errors were corrected and retained in private evidence. Relevant backend
+baseline remains separately attributed; no new full-suite execution is claimed.
+
+The feature-branch preview correctly refused the production-only migration gate.
+No new automatic production deployment appeared after the main push in the
+observed wait. The explicit production rebuild was rejected with HTTP402,
+`api-deployments-free-per-day`: more than100 deployments, retry in24hours.
+The provider's exact reset time was not independently verified. No guard, billing
+plan, project or production configuration was changed. No repeated deployment
+attempt should be made until provider capacity returns.
+
+All115 source/production/installed migration checksums match, with no migration
+added or applied. Unchanged recovery reuses the actual10:23:35UTC installed restore
+and nightlyrun20. All149 production table fingerprints remain unchanged at
+11:50:23UTC. Production test writes, recipient sends and new queue probes are0.
+New-release READY/canonical/live acceptance remains pending; prior .11 evidence
+stays separate. Retain this exact source and refresh release prerequisites before
+resuming deployment or combining additional tested work.
+
+SEC-01 and its parent remain open. Next independently reproduced on951e57b:
+Feedback intake still retains private recipient text and unsent fields in hidden
+DOM after blur, offline, pagehide and account replacement. Initial HTML omits the
+recipient; no browser mutation was sent. Repair must preserve all draft fields,
+selected/active/uncertain uploads, exact creation/removal commands, deliberate
+recipient adoption and pending sibling preferences. Continue eligible local work
+while the deployment gate is blocked.
 
 ## Feedback receipt privacy verified live, 26 September 2026 UTC
 
