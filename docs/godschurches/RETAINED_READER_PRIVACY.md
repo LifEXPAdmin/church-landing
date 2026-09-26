@@ -1,5 +1,122 @@
 # Retained reader privacy
 
+## Admin case privacy locally tested; release blocked, 26 September 2026 UTC
+
+Version **2026.09.26.22**, application `b4ebdb643ee8d1aebbfb02283d9f3c5bb3fc9a8b`
+and QA-only `c787a16`, preserves original case actions while removing private
+presentation during concealment. Before editing, unchanged `.21/f980402`
+reproduced four gaps: retained case content and five drafts; lost retry after an
+accepted internal-note redaction; lost retry after accepted ungrouping; and lost
+native status recovery after an accepted closure changed the current form tree.
+Initial HTML/RSC already omitted private content; authorized detail reads already
+used current authority and no-store responses.
+
+Admin case disclosure and command owners now remain mounted independently of
+private presentation. Notes, groups, histories, links and controlled input fields
+leave the DOM while access is being checked or the page is concealed. Redaction
+recovery retains its note identity with generic text when the current action is
+unavailable. Ungroup keeps a permanent command owner. Current case authority is
+required for original receipt confirmation; availability of a fresh action stays
+separate. Current backend authority, versions, receipt ordering and transaction
+boundaries are unchanged.
+
+The embedded Support presentation accepts fresh text and versions when existing
+commands survive. Changes to owners, permitted actions, choices or attachments
+retain the prior command structure with generic recovery, without presenting its
+old private content. Safe version adoption remains an explicit choice. A native
+handoff or deliberate reload cannot navigate away from another unfinished case
+form. Deliberate discard clears the selected controlled values and reports a
+local discard, not a save. A definitive no-field conflict remains registered and
+offers a visible discard path. Embedded REPORT review consumes the parent’s
+visibility and rechecks its own authority after resumption; late child responses
+cannot redisplay evidence under a concealed parent.
+
+All **nine focused case browser groups** pass. Five simultaneous drafts survive
+18 physical DOM observations across blur, offline, pagehide, hidden documents,
+held/failed identity and source reads, same-page account replacement, and real
+responder revocation/renewal. Current text/version adoption, original note,
+redaction, ungroup and CLOSED-transition recovery pass. Each uncertain action
+uses four identical body/key/account attempts through accepted-but-lost response,
+429, 503 and confirmation, producing one original effect. Warned uncertain
+local discard, real stale native reply discard, no-field ungroup conflict and
+native handoff with a dirty Admin sibling all pass. Nine captures at 390px,
+320px and 320px with 200% root text use actual Tab/Shift+Tab, visible two-pixel
+focus outlines, center hit testing and full primary targets above fixed
+navigation. No horizontal overflow or blocking visual finding remains.
+
+The final focused run makes **21 browser POST attempts**, with **12 Admin
+receipts** (four browser effects and eight receipts from six explicit service
+commands, including two derived related-case receipts), three responder Support
+receipts and three requester creates. It creates three fictional actors and two
+response grants. Two grant updates advance generation; three original case rows
+are deliberately reassigned after renewal and the handoff case is separately
+reassigned for draft recovery. These four setup writes do not imply automatic
+restoration of authority. Both temporary intake and actual restoration writes
+are recorded, with exact readback, plus three local verification files.
+
+The first focused attempt stopped before any browser POST because a raw route-ID
+assertion counted initial Next bootstrap scripts. Unique private markers, fields
+and source links were already absent. Diagnostic inspection established that the
+route IDs existed before authorized private detail loading. Only raw route-ID
+text checks exclude bootstrap scripts; all private-marker and field/attribute
+checks still inspect the entire body. The two focused attempts total six actors,
+three response grants, six requester creates, 15 Admin receipts, three responder
+Support receipts, four intake writes and six local files. The diagnostic used
+two temporary own sessions, both deleted with original-session readback. Failed
+and corrected evidence is preserved; the application did not change for this
+assertion correction.
+
+All **eight embedded REPORT browser groups** pass, including 17 observations
+of parent-held/failed reads, a real child 200 delivered after concealment,
+blur/offline/pagehide and same-document replacement cookies. The controlled
+reason and outcome return only after current reads. One actual FOLLOW_UP_REQUIRED
+decision survives loss of acknowledgment, concealment and account replacement;
+two identical POST attempts confirm exactly one decision and one SocialOperation.
+Its canonical source post remains unchanged. The isolated fixture creates three
+actors, one report-review grant, one post and one report, with three local
+verification files. Actor setup clears six existing isolated auth-limit rows
+through three recorded calls while no other browser writer is active. Expected
+503/aborted-response console messages are recorded; no application exception,
+route failure or external request occurs. This does not cover the separate
+report-command 429 recovery issue, church claim decisions, or physical-device
+operating-system snapshots.
+
+All **41 existing browser groups** pass on the same application: Admin 5,
+Admin retry 3, worklist privacy 7, Support case privacy 10, report review 11 and
+content moderation 5. Two old test waits matched controlled drafts before save
+or navigation completed. They now wait for persisted note/conversation elements;
+the original failures and successful reruns remain recorded. Total final browser
+acceptance is **58 groups**. All **53 targeted service/HTTPS tests** are freshly
+executed: Admin operations 10, Support service 17, Support HTTP 6, report review 7,
+content moderation 7, report HTTP 4 and release content 2. The separate service
+runtime and database stopped with data preserved and root fixture listeners
+unchanged. Its 175 local verification files and final fictional row inventory
+are recorded separately from mutation-attempt counts.
+
+The final **39.101-second** production build, ID `a3d35L76xTZYWpz4H701Z`, passes
+types, lint, copy, source/build security and runtime trace checks. All **1,910**
+tracked snapshot files and **115 unchanged migrations** are recorded. A first
+38.651-second build was superseded solely by clearing error styling after an
+accepted local discard; only the final application received the reported tests.
+The superseded database was stopped, and only its disposable build cache was
+removed after source, compiled-output, fixture and database hash comparisons.
+
+Compared with tested `.21`, Admin startup adds **1,151 to 1,152 gzip bytes**;
+the ordinary Support case adds 28 bytes and shared CSS does not grow. No endpoint,
+dependency, schema, worker or polling behavior was added. No speed improvement or
+fresh whole-system baseline is claimed.
+
+This candidate is **implemented and locally tested, not merged or live**.
+Main remains `951e57b` (.12); the recorded Vercel daily deployment cap blocks
+publication. A fresh read-only check at **16:41:19 UTC** confirms live
+`.11/925536c` on READY deployment `dpl_BYb9LtWJw2kLfk2cFLKEZ9Pv8oqt`, assigned to
+`godschurches.com`, with public health OK. No production write, send, migration,
+push or deployment retry occurred. The earlier installed restore evidence has
+exceeded its four-hour reuse window; refresh it before a future release. Wider
+security, provider, pilot and physical-device gates remain open. Continue the
+ordinary priority queue, beginning with a reproduction of the separate
+report-review rate-limit original-retry defect.
+
 ## Requests and Feedback worklist privacy locally tested; release blocked, 26 September 2026 UTC
 
 Version **2026.09.26.21**, application `f980402f7aa0b970b2577d7af8709b61ab349a9f`

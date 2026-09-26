@@ -1,3 +1,23 @@
+## Admin case privacy locally tested; release blocked, 26 September 2026 UTC
+
+Version **2026.09.26.22** (`b4ebdb6`, QA `c787a16`) removes concealed private
+case details and fields while retaining original notes, redactions, ungrouping
+and native Support actions. Current text/version refreshes preserve explicit
+adoption; changed native actions retain generic original recovery. Native saves
+and deliberate reload/discard protect sibling entries. A no-field definitive
+conflict stays visible until deliberately settled. Embedded report review follows
+its parent’s current access without losing its controlled reason or exact retry.
+All **58 browser groups**, **53 fresh service/HTTPS checks** and the
+**39.101-second** production build pass. Actual keyboard focus, nine narrow/enlarged
+captures, 18 case DOM observations and 17 embedded report observations pass.
+Detailed effects, diagnostics and limitations are in
+[retained reader privacy](RETAINED_READER_PRIVACY.md).
+This is **not merged or live** under the recorded provider daily deployment cap.
+Read-only verification at **16:41:19 UTC** confirms prior live `.11/925536c`,
+READY and assigned to the canonical domain, with public health OK. No production
+write, migration, send, push or deployment retry occurred. Wider acceptance stays
+open; next reproduce the separate report-review rate-limit recovery defect.
+
 ## Requests and Feedback worklists locally tested; release blocked, 26 September 2026 UTC
 
 Version **2026.09.26.21** (`f980402`, QA `618ce6d`) removes concealed private
