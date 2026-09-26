@@ -1006,6 +1006,14 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "private-feedback-receipts", version: "2026.09.26.11", date: "2026-09-26",
+    summary: "Private feedback receipts check current access before showing saved details and local entries.",
+    added: [],
+    improved: ["Receipt details, contact choices, replies and attachment presentation clear when the page is concealed or access changes."],
+    fixed: ["Unsent entries and original unconfirmed requests remain recoverable while access is checked. Saving contact choices still lets you deliberately adopt the current request version before sending an existing reply."],
+    featureIds: ["private-feedback"]
+  },
+  {
     id: "admin-original-retry", version: "2026.09.26.10", date: "2026-09-26",
     summary: "Keep an unconfirmed Admin action recoverable through a temporary rate limit.",
     added: [],

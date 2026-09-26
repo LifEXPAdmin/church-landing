@@ -1,5 +1,19 @@
 # Selected feedback follow-up acceptance
 
+## Receipt privacy repair in verification, 26 September 2026 UTC
+
+The current receipt repair uses the existing authenticated Feedback read and
+Support command contracts. Private receipt presentation is removed during access
+checks and concealment. Mounted reply, choices and attachment commands retain
+local drafts and exact uncertain requests. Compatible current versions can be
+adopted deliberately before submitting existing entries; structural changes wait
+until local work is resolved. Attachment viewer state remains mounted when the
+last attachment disappears, preserving its history cleanup.
+
+No follow-up consent, recipient, notification, schema or provider behavior changes.
+Focused built-browser and service acceptance and production verification are
+pending. The dated feature-31 checkpoint below remains historical evidence.
+
 September 15, 2026 UTC. This is an **unreleased feature-31 checkpoint**. Continue
 31.4 weekly product review and shared 29/30/31 acceptance before the complete
 protected upgrade and canonical production release. No production migrations,

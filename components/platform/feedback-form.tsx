@@ -12,7 +12,7 @@ import {
   type FeedbackKind
 } from "@/lib/platform/feedback-types";
 import { metricBrowsers, metricDevices } from "@/lib/platform/metric-policy";
-import { SupportForm } from "./support-form";
+import { SupportForm, type SupportFormPrivacy } from "./support-form";
 import type { ImageView } from "@/lib/platform/media";
 import { socialRequest } from "@/lib/platform/social-client";
 import { PhotoUploadManager } from "./photo-upload-manager";
@@ -21,6 +21,24 @@ import { FeedbackImagePreview } from "./feedback-attachment-images";
 export const feedbackInputClass =
   "block min-h-11 w-full min-w-0 rounded-xl border border-gc-divider bg-gc-canvas px-3 py-3 text-base text-gc-text focus:border-gc-action focus:outline-none focus:ring-2 focus:ring-gc-focus";
 type Choices = NonNullable<SupportDetail["feedback"]>;
+type ChoiceDraft = {
+  contactAllowed: boolean;
+  channels: string[];
+  allowIdea: boolean;
+  publicAttribution: boolean;
+};
+function savedChoices(initial?: Choices): ChoiceDraft {
+  return {
+    contactAllowed: initial?.contactAllowed ?? false,
+    channels: [
+      initial?.contactInApp ? "IN_APP" : "",
+      initial?.contactEmail ? "EMAIL" : "",
+      initial?.contactPush ? "PUSH" : ""
+    ].filter(Boolean),
+    allowIdea: initial?.allowIdea ?? false,
+    publicAttribution: initial?.publicAttribution ?? false
+  };
+}
 function readChoices(data: FormData, kind: string) {
   const contactAllowed = data.get("contactAllowed") === "on";
   return {
@@ -33,16 +51,29 @@ function readChoices(data: FormData, kind: string) {
 }
 function FeedbackChoicesFields({
   kind,
-  initial
+  initial,
+  value,
+  onChange
 }: {
   kind: string;
   initial?: Choices;
+  value?: ChoiceDraft;
+  onChange?: (value: ChoiceDraft) => void;
 }) {
+  const current = value ?? savedChoices(initial);
   return (
     <div className="space-y-5">
       <fieldset className="min-w-0 space-y-3 rounded-xl border border-gc-divider p-4">
         <legend className="px-1 font-semibold">May we follow up?</legend>
-        <Check name="contactAllowed" checked={initial?.contactAllowed}>
+        <Check
+          name="contactAllowed"
+          checked={current.contactAllowed}
+          onChange={
+            onChange
+              ? (checked) => onChange({ ...current, contactAllowed: checked })
+              : undefined
+          }
+        >
           Allow staff to ask about this feedback.
         </Check>
         <p className="text-sm text-gc-muted">
@@ -62,12 +93,19 @@ function FeedbackChoicesFields({
             key={value}
             name="channels"
             value={value}
-            checked={
-              value === "IN_APP"
-                ? initial?.contactInApp
-                : value === "EMAIL"
-                  ? initial?.contactEmail
-                  : initial?.contactPush
+            checked={current.channels.includes(value)}
+            onChange={
+              onChange
+                ? (checked) =>
+                    onChange({
+                      ...current,
+                      channels: checked
+                        ? [...new Set([...current.channels, value])]
+                        : current.channels.filter(
+                            (channel) => channel !== value
+                          )
+                    })
+                : undefined
             }
           >
             {label}
@@ -82,11 +120,28 @@ function FeedbackChoicesFields({
         <legend className="px-1 font-semibold">
           A separate choice about sharing the idea
         </legend>
-        <Check name="allowIdea" checked={initial?.allowIdea}>
+        <Check
+          name="allowIdea"
+          checked={current.allowIdea}
+          onChange={
+            onChange
+              ? (checked) => onChange({ ...current, allowIdea: checked })
+              : undefined
+          }
+        >
           Allow a reviewed summary of this suggestion to appear on the public
           ideas board.
         </Check>
-        <Check name="publicAttribution" checked={initial?.publicAttribution}>
+        <Check
+          name="publicAttribution"
+          checked={current.publicAttribution}
+          onChange={
+            onChange
+              ? (checked) =>
+                  onChange({ ...current, publicAttribution: checked })
+              : undefined
+          }
+        >
           Also allow my name to be shown with that reviewed summary.
         </Check>
         <p className="text-sm text-gc-muted">
@@ -103,11 +158,13 @@ function Check({
   name,
   value,
   checked,
+  onChange,
   children
 }: {
   name: string;
   value?: string;
   checked?: boolean;
+  onChange?: (checked: boolean) => void;
   children: React.ReactNode;
 }) {
   return (
@@ -116,7 +173,11 @@ function Check({
         type="checkbox"
         name={name}
         value={value}
-        defaultChecked={checked ?? false}
+        defaultChecked={onChange ? undefined : (checked ?? false)}
+        checked={onChange ? (checked ?? false) : undefined}
+        onChange={
+          onChange ? (event) => onChange(event.target.checked) : undefined
+        }
         className="mt-1 h-5 w-5 shrink-0 accent-[#e6b56c] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
       />
       <span>{children}</span>
@@ -473,15 +534,19 @@ function TextField({
 export function FeedbackChoices({
   owner,
   detail: c,
-  onRefresh
+  onRefresh,
+  privacy
 }: {
   owner: string;
   detail: SupportDetail;
   onRefresh: () => void;
+  privacy?: SupportFormPrivacy;
 }) {
+  const [draft, setDraft] = useState<ChoiceDraft | null>(null);
   if (!c.feedback || c.feedback.redactedAt || !c.access.requester) return null;
   return (
     <SupportForm
+      privacy={privacy}
       owner={owner}
       operation="feedback-choices"
       endpoint="/api/platform/feedback"
@@ -491,10 +556,17 @@ export function FeedbackChoices({
         feedbackVersion: c.feedback.version
       }}
       onRefresh={onRefresh}
+      onConfirmed={() => setDraft(null)}
+      onDiscard={() => setDraft(null)}
       readFields={(data) => readChoices(data, c.feedback!.kind)}
       button="Save contact and sharing choices"
     >
-      <FeedbackChoicesFields kind={c.feedback.kind} initial={c.feedback} />
+      <FeedbackChoicesFields
+        kind={c.feedback.kind}
+        initial={c.feedback}
+        value={privacy ? (draft ?? savedChoices(c.feedback)) : undefined}
+        onChange={privacy ? setDraft : undefined}
+      />
     </SupportForm>
   );
 }

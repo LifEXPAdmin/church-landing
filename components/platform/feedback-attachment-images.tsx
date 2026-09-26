@@ -90,69 +90,72 @@ export function FeedbackAttachmentImages({
 }) {
   const [selected, setSelected] = useState<string | null>(null);
   const visible = privacy?.visible ?? true;
-  if (!c.feedback?.attachments.length) return null;
   return (
-    <section
-      className="space-y-5"
-      aria-label={visible ? "Private feedback attachments" : undefined}
-    >
-      {visible && (
-        <>
-          <h3 className="text-xl font-semibold">Private attachments</h3>
-          <p className="text-sm text-gc-muted">
-            These images are available only to this receipt’s current authorized
-            participants.
-          </p>
-        </>
+    <>
+      {!!c.feedback?.attachments.length && (
+        <section
+          className="space-y-5"
+          aria-label={visible ? "Private feedback attachments" : undefined}
+        >
+          {visible && (
+            <>
+              <h3 className="text-xl font-semibold">Private attachments</h3>
+              <p className="text-sm text-gc-muted">
+                These images are available only to this receipt’s current
+                authorized participants.
+              </p>
+            </>
+          )}
+          <ul className="grid gap-5 sm:grid-cols-2">
+            {c.feedback.attachments.map((image, index) => (
+              <li
+                key={image.id}
+                className="min-w-0 space-y-3 rounded-xl border border-gc-divider p-4"
+              >
+                {visible && (
+                  <>
+                    <FeedbackImagePreview
+                      image={image}
+                      open={() => setSelected(image.id)}
+                    />
+                    <Link
+                      href={reportEntryHref("FEEDBACK_ATTACHMENT", image.id)}
+                      prefetch={false}
+                      className="inline-flex min-h-11 items-center text-sm text-gc-accent underline"
+                    >
+                      Report this attachment
+                    </Link>
+                  </>
+                )}
+                {c.access.requester && (
+                  <SupportForm
+                    privacy={
+                      privacy
+                        ? {
+                            ...privacy,
+                            recoveryLabel: `Remove attachment ${index + 1}`
+                          }
+                        : undefined
+                    }
+                    owner={owner}
+                    operation="feedback-remove-attachment"
+                    endpoint="/api/platform/feedback"
+                    fixed={{
+                      caseId: c.id,
+                      expectedVersion: c.version,
+                      assetId: image.id,
+                      assetVersion: image.version
+                    }}
+                    onRefresh={onRefresh}
+                    button="Remove this attachment"
+                    caution="Removes this image from the receipt. The written feedback stays saved."
+                  />
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
-      <ul className="grid gap-5 sm:grid-cols-2">
-        {c.feedback.attachments.map((image, index) => (
-          <li
-            key={image.id}
-            className="min-w-0 space-y-3 rounded-xl border border-gc-divider p-4"
-          >
-            {visible && (
-              <>
-                <FeedbackImagePreview
-                  image={image}
-                  open={() => setSelected(image.id)}
-                />
-                <Link
-                  href={reportEntryHref("FEEDBACK_ATTACHMENT", image.id)}
-                  prefetch={false}
-                  className="inline-flex min-h-11 items-center text-sm text-gc-accent underline"
-                >
-                  Report this attachment
-                </Link>
-              </>
-            )}
-            {c.access.requester && (
-              <SupportForm
-                privacy={
-                  privacy
-                    ? {
-                        ...privacy,
-                        recoveryLabel: `Remove attachment ${index + 1}`
-                      }
-                    : undefined
-                }
-                owner={owner}
-                operation="feedback-remove-attachment"
-                endpoint="/api/platform/feedback"
-                fixed={{
-                  caseId: c.id,
-                  expectedVersion: c.version,
-                  assetId: image.id,
-                  assetVersion: image.version
-                }}
-                onRefresh={onRefresh}
-                button="Remove this attachment"
-                caution="Removes this image from the receipt. The written feedback stays saved."
-              />
-            )}
-          </li>
-        ))}
-      </ul>
       {selected && (
         <PhotoViewer
           removeWhenHidden={!!privacy}
@@ -162,6 +165,6 @@ export function FeedbackAttachmentImages({
           onClose={() => setSelected(null)}
         />
       )}
-    </section>
+    </>
   );
 }

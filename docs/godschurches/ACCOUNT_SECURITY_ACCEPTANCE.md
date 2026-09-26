@@ -1,5 +1,17 @@
 # Account security acceptance
 
+## Feedback receipt privacy repair in verification, 26 September 2026 UTC
+
+Reproduction on the unchanged preceding application found private receipt subject,
+description and typed reply remaining in hidden DOM after blur, offline and
+account replacement; pagehide retained visible reply controls. The new receipt
+workspace removes private presentation during these boundaries and pending reads,
+while retaining original command controllers and exact uncertain requests.
+Contact-choice drafts live above removable controls. Compatible reads refresh
+versions for deliberate adoption; command-set changes remain concealed while
+local work is outstanding. The image viewer can settle its history after the last
+attachment is removed. Verification and release gates are still pending.
+
 ## Admin original retry verified live, 26 September 2026 UTC
 
 Version **2026.09.26.10**, source `1aea49d860a252b8a8c909f193b2c262cf38703f`, is READY in

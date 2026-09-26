@@ -2,7 +2,8 @@ import type { ComponentProps } from "react";
 import { FeedbackAttachmentImages } from "./feedback-attachment-images";
 import type {
   SupportSnapshot,
-  SupportView
+  SupportView,
+  SupportDetail
 } from "@/lib/platform/support-types";
 import {
   supportCategories,
@@ -48,6 +49,24 @@ const reason: SupportField = {
   min: 3,
   max: 1000
 };
+export function supportStatusOptions(c: SupportDetail) {
+  return Object.entries(supportStatuses)
+    .filter(
+      ([v]) =>
+        v !== c.status &&
+        !(
+          v === "WAITING_FOR_REQUESTER" &&
+          c.feedback &&
+          !c.feedback.contactAllowed
+        ) &&
+        (c.status === "RESOLVED"
+          ? v === "CLOSED"
+          : c.access.owner
+            ? v !== "RECEIVED"
+            : ["RESOLVED", "CLOSED"].includes(v))
+    )
+    .map(([value, label]) => ({ value, label }));
+}
 export function SupportViews({
   snapshot: s,
   view,
@@ -254,22 +273,7 @@ export function SupportViews({
                     name: "status",
                     label: "New status",
                     type: "select",
-                    options: Object.entries(supportStatuses)
-                      .filter(
-                        ([v]) =>
-                          v !== c.status &&
-                          !(
-                            v === "WAITING_FOR_REQUESTER" &&
-                            c.feedback &&
-                            !c.feedback.contactAllowed
-                          ) &&
-                          (c.status === "RESOLVED"
-                            ? v === "CLOSED"
-                            : c.access.owner
-                              ? v !== "RECEIVED"
-                              : ["RESOLVED", "CLOSED"].includes(v))
-                      )
-                      .map(([value, label]) => ({ value, label }))
+                    options: supportStatusOptions(c)
                   },
                   { ...reason, label: "What changed or resolved the issue?" }
                 ]}

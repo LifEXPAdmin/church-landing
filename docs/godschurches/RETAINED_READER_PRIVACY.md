@@ -1,5 +1,22 @@
 # Retained reader privacy
 
+## Feedback receipt repair in verification, 26 September 2026 UTC
+
+The built prior release retained private receipt text and local reply controls in
+hidden DOM after blur, offline and account replacement; pagehide retained visible
+reply controls. The focused repair physically removes receipt presentation while
+preserving mounted, account-bound command owners. A current read can refresh
+versions and messages without replacing those owners. Changes to the available
+commands or attachment set wait while local work remains. Uncertain original
+commands stay confirmable after current access is established; an explicit reload
+warns before discarding local entries.
+
+Contact and sharing choices retain their draft in component memory, clear only on
+confirmed save or discard, and preserve deliberate version adoption for another
+unsent reply. The selected attachment viewer survives removal of the last image
+so its single Back step can settle. Browser acceptance and release verification
+are pending; other readers and forms remain outside this repair.
+
 ## Support case cleanup verified live, 26 September 2026 UTC
 
 Version 2026.09.26.9 extends the frozen client snapshot to case detail and routing.

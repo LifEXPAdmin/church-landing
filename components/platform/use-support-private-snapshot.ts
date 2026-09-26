@@ -4,12 +4,23 @@ import type { SupportSnapshot } from "@/lib/platform/support-types";
 import { socialRequest, SocialClientError } from "@/lib/platform/social-client";
 
 // Keep the original account-bound context and mounted command owners.
-// A current read never replaces the snapshot under dirty or uncertain work.
+// By default, a current read never replaces dirty or uncertain context.
+// Feedback may accept a newer snapshot only while its command owners survive.
 export function useSupportPrivateSnapshot(
   owner: string,
   url: string,
-  label: string
+  label: string,
+  options?: {
+    verifySnapshot?: (snapshot: SupportSnapshot) => boolean;
+    canReplaceSnapshot?: (
+      before: SupportSnapshot,
+      next: SupportSnapshot
+    ) => boolean;
+  }
 ) {
+  const rules = useRef(options);
+  rules.current = options;
+  const accepted = useRef<SupportSnapshot | null>(null);
   const [snapshot, setSnapshot] = useState<SupportSnapshot | null>(null);
   const [visible, setVisible] = useState(false);
   const [currentAccess, setCurrentAccess] = useState(false);
@@ -39,6 +50,11 @@ export function useSupportPrivateSnapshot(
         undefined,
         owner
       );
+      if (
+        data.viewer.id !== owner ||
+        rules.current?.verifySnapshot?.(data) === false
+      )
+        throw Error("This view is not available to the current account.");
       const digest = Array.from(
         new Uint8Array(
           await crypto.subtle.digest(
@@ -50,13 +66,21 @@ export function useSupportPrivateSnapshot(
       ).join("");
       if (seq !== generation.current) return;
       setCurrentAccess(true);
-      if (checksum.current !== null && checksum.current !== digest) {
+      const changed = checksum.current !== null && checksum.current !== digest;
+      if (
+        changed &&
+        !(
+          accepted.current &&
+          rules.current?.canReplaceSnapshot?.(accepted.current, data)
+        )
+      ) {
         setNotice(
           `This ${label} or its access changed. Reload to inspect current details. Unsaved entries will be cleared; an unconfirmed request may already be saved.`
         );
       } else {
-        if (checksum.current === null) {
+        if (checksum.current === null || changed) {
           checksum.current = digest;
+          accepted.current = data;
           setSnapshot(data);
         }
         setVisible(true);
