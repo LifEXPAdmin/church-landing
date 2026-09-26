@@ -41,8 +41,10 @@ function avatarRequest(id: string, owner: string) {
           headers: { "X-Expected-Account": owner }
         }
       );
-      if (!response.ok || response.headers.get("content-type") !== "image/webp")
+      if (!response.ok || response.headers.get("content-type") !== "image/webp") {
+        await response.body?.cancel();
         throw new Error("Avatar unavailable");
+      }
       const bytes = await response.blob();
       if ((await currentSocialOwner()) !== owner)
         throw new Error("Your sign-in changed");

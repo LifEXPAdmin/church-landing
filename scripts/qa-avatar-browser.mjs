@@ -94,6 +94,9 @@ const context = await browser.newContext({
   checks = [],
   errors = [];
 page.on("pageerror", (e) => errors.push(e.message));
+const terminalRequests = new WeakSet();
+page.on("requestfinished", (request) => terminalRequests.add(request));
+page.on("requestfailed", (request) => terminalRequests.add(request));
 const cookie = async (actor) =>
   context.addCookies([
     {
@@ -294,10 +297,20 @@ try {
     window.dispatchEvent(new Event("social-relationships-changed"))
   );
   assert.equal(await page.locator(".gc-post-author .gc-avatar img").count(), 0);
-  await denied;
+  const deniedResponse = await denied;
+  const deniedRequest = deniedResponse.request();
+  const terminalDeadline = Date.now() + 5000;
+  while (!terminalRequests.has(deniedRequest) && Date.now() < terminalDeadline)
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  assert.equal(
+    terminalRequests.has(deniedRequest),
+    true,
+    "Rejected avatar response must release its unread browser body"
+  );
+  await page.waitForLoadState("networkidle");
   assert.equal(await page.locator(".gc-post-author .gc-avatar img").count(), 0);
   checks.push(
-    "A relationship change immediately conceals the visible avatar and the blocked request cannot restore it; enlarged mobile layout stays bounded"
+    "A relationship change immediately conceals the visible avatar; its blocked response releases the unread body and cannot restore an image. Enlarged mobile layout stays bounded"
   );
   assert.deepEqual(errors, []);
   writeFileSync(
