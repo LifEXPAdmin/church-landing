@@ -72,6 +72,7 @@ export function AdminWorkspace({
     active = useRef(true),
     reading = useRef(false),
     queued = useRef(false);
+  const weeklyQuery = useRef<{ input: string; resolved: string } | null>(null);
   const load = useCallback(async () => {
     if (!active.current || document.visibilityState === "hidden") return;
     if (reading.current) {
@@ -84,7 +85,8 @@ export function AdminWorkspace({
     const seq = ++generation.current;
     try {
       const { data: next } = await socialRequest<Payload>(
-        "/api/platform/admin?" + query,
+        "/api/platform/admin?" +
+          (weeklyQuery.current?.input === query ? weeklyQuery.current.resolved : query),
         undefined,
         navigation.viewer.id
       );
@@ -99,6 +101,14 @@ export function AdminWorkspace({
         throw Error(
           "This admin section is no longer available to this account."
         );
+      if ("weekly" in next) {
+        // A long-lived default-week view must not move retained notes to a
+        // different week when the reporting calendar advances. Explicitly
+        // changing the input query still selects a new reporting period.
+        const resolved = new URLSearchParams(query);
+        resolved.set("week", next.weekly.window.from);
+        weeklyQuery.current = { input: query, resolved: resolved.toString() };
+      }
       setData(next);
       setVisible(true);
       setNotice("");

@@ -56,7 +56,7 @@ export function AdminPeople({ navigation }: { navigation: AdminNavigation }) {
         ]}
         button="Look up account"
         available={canLookup}
-        privacy={{ visible, currentAccess: canPresent }}
+        privacy={{ visible, currentAccess: canPresent, clearSuccessOnConceal: true }}
         onSaved={() => {}}
         onResult={(result) => {
           // A navigation read rechecks authority, not the target account.

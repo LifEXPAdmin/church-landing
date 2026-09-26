@@ -1006,6 +1006,14 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "private-weekly-feedback", version: "2026.09.26.18", date: "2026-09-26",
+    summary: "Weekly feedback reviews keep private notes tied to the week you opened.",
+    added: [],
+    improved: ["Reports and note fields leave the page during concealment while unfinished reviews and original retries stay recoverable."],
+    fixed: ["Untouched note editors follow current saved details, and opening another week waits until local review work is settled."],
+    featureIds: ["admin-requests"]
+  },
+  {
     id: "private-admin-access", version: "2026.09.26.17", date: "2026-09-26",
     summary: "Admin duty changes preserve unfinished work while checking current access.",
     added: [],

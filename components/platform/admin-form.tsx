@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { socialRequest, SocialClientError } from "@/lib/platform/social-client";
 import { useUnsavedSocialWork } from "./use-unsaved-social-work";
 import { AccountConfirmation, useAccountConfirmation } from "./google-account";
@@ -65,7 +65,11 @@ export function AdminForm({
   confirmationPurpose?: RecentAuthenticationPurpose;
   endpoint?: "/api/platform/admin" | "/api/platform/authenticator";
   available?: boolean;
-  privacy?: { visible: boolean; currentAccess: boolean };
+  privacy?: {
+    visible: boolean;
+    currentAccess: boolean;
+    clearSuccessOnConceal?: boolean;
+  };
 }) {
   const confirmation = useAccountConfirmation(
     confirmationPurpose ?? "manage-admin-access"
@@ -87,7 +91,16 @@ export function AdminForm({
     );
   const status = useRef<HTMLParagraphElement>(null);
   const focusPending = useRef(false);
-  const concealed = !!privacy && !privacy.visible;
+  const defaults = privacy ? JSON.stringify(initialFieldValues(fields)) : null;
+  useLayoutEffect(() => {
+    // Fresh saved values can replace a clean editor, never a local draft or
+    // an unconfirmed command. Stable serialized defaults avoid render loops.
+    if (defaults !== null && !dirty && !pending && !busy)
+      setValues((current) =>
+        JSON.stringify(current) === defaults ? current : JSON.parse(defaults)
+      );
+  }, [defaults, dirty, pending, busy]);
+  const concealed = !!privacy?.clearSuccessOnConceal && !privacy.visible;
   useEffect(() => {
     // A confirmed result may have been removed by its presentation owner.
     // Retain error/retry guidance, but do not restore an old success notice.
@@ -146,6 +159,8 @@ export function AdminForm({
     if (privacy) setPassword("");
     form.current?.reset();
     setNotice("Local entries discarded. Saved changes remain.");
+    // An uncertain action may already have changed the saved defaults.
+    if (privacy) onSaved();
   };
   const discardButton = (dirty || pending) && (
     <button

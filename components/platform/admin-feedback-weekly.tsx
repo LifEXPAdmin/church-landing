@@ -1,8 +1,10 @@
 "use client";
 import Link from "next/link";
+import { useState } from "react";
 import type { FeedbackWeeklySnapshot } from "@/lib/platform/feedback-weekly";
 import { AdminForm, adminInputClass } from "./admin-form";
 import { FeedbackMetrics } from "./feedback-metrics";
+import { useReadVisibility } from "./read-visibility";
 
 type Weekly = FeedbackWeeklySnapshot["weekly"];
 function Cases({ rows }: { rows: Weekly["cases"]["highImpact"] }) {
@@ -78,152 +80,182 @@ export function AdminFeedbackWeekly({
   onRefresh: () => void;
 }) {
   const w = data.weekly;
+  const visible = useReadVisibility();
+  const canReview = data.navigation.capabilities.includes(
+    "MANAGE_PRODUCT_FEEDBACK"
+  );
+  const [week, setWeek] = useState(w.window.from),
+    [notesDirty, setNotesDirty] = useState(false);
   return (
     <div className="space-y-7">
-      <header className="space-y-3">
-        <h1 className="text-3xl font-semibold">Weekly feedback review</h1>
-        <p>
-          {w.window.from} through {w.window.through} · {w.window.zone}.
-          Refreshed {w.checkedAt}.
-        </p>
-        <form action="/platform/admin/feedback/weekly" className="space-y-2">
-          <label htmlFor="feedback-review-week">Week beginning Monday</label>
-          <input
-            className={adminInputClass}
-            id="feedback-review-week"
-            type="date"
-            name="week"
-            defaultValue={w.window.from}
-            required
-          />
-          <p>Choose a completed week within the last twelve weeks.</p>
-          <button className="gc-button" type="submit">
-            Open week
-          </button>
-        </form>
-        <p>
-          Case summaries use only feedback you can currently read. Tags and
-          duplicate groups are manual; overlapping themes must not be added
-          together. Source links recheck access when opened.
-        </p>
-        <Link className="underline" href="/platform/admin/feedback">
-          Open Feedback requests
-        </Link>
-      </header>
-      <section className="space-y-3">
-        <h2 className="text-2xl">New and returning accounts</h2>
-        {w.growth ? (
-          <>
+      {visible && (
+        <>
+          <header className="space-y-3">
+            <h1 className="text-3xl font-semibold">Weekly feedback review</h1>
             <p>
-              {w.growth.registrations} new registrations · {w.growth.active}{" "}
-              measured active accounts · {w.growth.returning} returning accounts
-              created before this week.
+              {w.window.from} through {w.window.through} · {w.window.zone}.
+              Refreshed {w.checkedAt}.
             </p>
-            <p>
-              Current opted-in population: {w.growth.measuredAccounts}.
-              Returning means retained foreground use in this week, not
-              exact-day D7/D30 retention.{" "}
-              {w.growth.coveragePartial
-                ? "Some requested dates precede available measurement coverage."
-                : "Optional measurement does not cover every account or guest."}
-            </p>
-            <Link
-              className="underline"
-              href={`/platform/admin/growth?from=${w.window.from}&through=${w.window.through}`}
+            <form
+              action="/platform/admin/feedback/weekly"
+              className="space-y-2"
+              onSubmit={(event) => {
+                if (notesDirty) event.preventDefault();
+              }}
             >
-              Open definitions, exact-day cohorts and permitted exports in
-              Growth
+              <label htmlFor="feedback-review-week">
+                Week beginning Monday
+              </label>
+              <input
+                className={adminInputClass}
+                id="feedback-review-week"
+                type="date"
+                name="week"
+                value={week}
+                onChange={(event) => setWeek(event.currentTarget.value)}
+                disabled={notesDirty}
+                required
+              />
+              <p>Choose a completed week within the last twelve weeks.</p>
+              <button className="gc-button" type="submit" disabled={notesDirty}>
+                Open week
+              </button>
+              {notesDirty && (
+                <p>
+                  Save, retry or discard your review notes before opening
+                  another week.
+                </p>
+              )}
+            </form>
+            <p>
+              Case summaries use only feedback you can currently read. Tags and
+              duplicate groups are manual; overlapping themes must not be added
+              together. Source links recheck access when opened.
+            </p>
+            <Link className="underline" href="/platform/admin/feedback">
+              Open Feedback requests
             </Link>
-          </>
-        ) : (
-          <p>
-            Platform-wide growth and rating reports require the separate
-            aggregate-metrics permission.
-          </p>
-        )}
-      </section>
-      {w.feedback && (
-        <section className="space-y-3">
-          <h2 className="text-2xl">Ratings and response coverage</h2>
-          <FeedbackMetrics feedback={w.feedback} />
-        </section>
+          </header>
+          <section className="space-y-3">
+            <h2 className="text-2xl">New and returning accounts</h2>
+            {w.growth ? (
+              <>
+                <p>
+                  {w.growth.registrations} new registrations · {w.growth.active}{" "}
+                  measured active accounts · {w.growth.returning} returning
+                  accounts created before this week.
+                </p>
+                <p>
+                  Current opted-in population: {w.growth.measuredAccounts}.
+                  Returning means retained foreground use in this week, not
+                  exact-day D7/D30 retention.{" "}
+                  {w.growth.coveragePartial
+                    ? "Some requested dates precede available measurement coverage."
+                    : "Optional measurement does not cover every account or guest."}
+                </p>
+                <Link
+                  className="underline"
+                  href={`/platform/admin/growth?from=${w.window.from}&through=${w.window.through}`}
+                >
+                  Open definitions, exact-day cohorts and permitted exports in
+                  Growth
+                </Link>
+              </>
+            ) : (
+              <p>
+                Platform-wide growth and rating reports require the separate
+                aggregate-metrics permission.
+              </p>
+            )}
+          </section>
+          {w.feedback && (
+            <section className="space-y-3">
+              <h2 className="text-2xl">Ratings and response coverage</h2>
+              <FeedbackMetrics feedback={w.feedback} />
+            </section>
+          )}
+          <section className="space-y-3">
+            <h2 className="text-2xl">Feedback received this week</h2>
+            <p>
+              {w.cases.cases} cases · {w.cases.messages} retained messages
+              across those cases · {w.cases.requesters} distinct requesters.
+              Message totals include the original submission and later replies
+              through this refresh.
+            </p>
+            <p>
+              {w.cases.untagged} cases have no manual tag or duplicate group.{" "}
+              {w.cases.themeCount} themes; at most twenty per list are shown,
+              ordered by distinct people and then cases.
+            </p>
+            <Themes rows={w.cases.themes} />
+          </section>
+          <section className="space-y-3">
+            <h2 className="text-2xl">Top reported problems</h2>
+            <p>
+              Manual themes containing at least one bug report; counts describe
+              the whole linked theme.
+            </p>
+            <Themes rows={w.cases.problems} />
+          </section>
+          <section className="space-y-3">
+            <h2 className="text-2xl">Repeated suggestions</h2>
+            <p>
+              Themes containing at least two suggestion cases; repeated messages
+              from one person remain one requester.
+            </p>
+            <Themes rows={w.cases.repeatedSuggestions} />
+          </section>
+          <section className="space-y-3">
+            <h2 className="text-2xl">Unresolved high-impact bugs</h2>
+            <p>
+              {w.cases.highImpactCount} currently open with high or urgent
+              manual priority, including cases received before this week.
+              Showing up to twenty.
+            </p>
+            <Cases rows={w.cases.highImpact} />
+          </section>
+          <section className="space-y-3">
+            <h2 className="text-2xl">Reopened after resolution</h2>
+            <p>
+              {w.cases.reopenedCount} cases reopened in this week after a
+              recorded resolution or closure. Showing up to twenty.
+            </p>
+            <Cases rows={w.cases.reopened} />
+          </section>
+          <section className="space-y-3">
+            <h2 className="text-2xl">Released changes during the week</h2>
+            <p>
+              Release notes provide context; a change in feedback does not
+              establish that a release caused it.
+            </p>
+            {w.releases.length ? (
+              <ul className="space-y-3">
+                {w.releases.map((r) => (
+                  <li key={r.id}>
+                    {r.date} · {r.version} · {r.summary}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p>No published release note falls in this week.</p>
+            )}
+            <Link className="underline" href="/platform/releases">
+              Read release notes
+            </Link>
+          </section>
+        </>
       )}
       <section className="space-y-3">
-        <h2 className="text-2xl">Feedback received this week</h2>
-        <p>
-          {w.cases.cases} cases · {w.cases.messages} retained messages across
-          those cases · {w.cases.requesters} distinct requesters. Message totals
-          include the original submission and later replies through this
-          refresh.
-        </p>
-        <p>
-          {w.cases.untagged} cases have no manual tag or duplicate group.{" "}
-          {w.cases.themeCount} themes; at most twenty per list are shown,
-          ordered by distinct people and then cases.
-        </p>
-        <Themes rows={w.cases.themes} />
-      </section>
-      <section className="space-y-3">
-        <h2 className="text-2xl">Top reported problems</h2>
-        <p>
-          Manual themes containing at least one bug report; counts describe the
-          whole linked theme.
-        </p>
-        <Themes rows={w.cases.problems} />
-      </section>
-      <section className="space-y-3">
-        <h2 className="text-2xl">Repeated suggestions</h2>
-        <p>
-          Themes containing at least two suggestion cases; repeated messages
-          from one person remain one requester.
-        </p>
-        <Themes rows={w.cases.repeatedSuggestions} />
-      </section>
-      <section className="space-y-3">
-        <h2 className="text-2xl">Unresolved high-impact bugs</h2>
-        <p>
-          {w.cases.highImpactCount} currently open with high or urgent manual
-          priority, including cases received before this week. Showing up to
-          twenty.
-        </p>
-        <Cases rows={w.cases.highImpact} />
-      </section>
-      <section className="space-y-3">
-        <h2 className="text-2xl">Reopened after resolution</h2>
-        <p>
-          {w.cases.reopenedCount} cases reopened in this week after a recorded
-          resolution or closure. Showing up to twenty.
-        </p>
-        <Cases rows={w.cases.reopened} />
-      </section>
-      <section className="space-y-3">
-        <h2 className="text-2xl">Released changes during the week</h2>
-        <p>
-          Release notes provide context; a change in feedback does not establish
-          that a release caused it.
-        </p>
-        {w.releases.length ? (
-          <ul className="space-y-3">
-            {w.releases.map((r) => (
-              <li key={r.id}>
-                {r.date} · {r.version} · {r.summary}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p>No published release note falls in this week.</p>
+        {visible && (
+          <>
+            <h2 className="text-2xl">Your private review notes</h2>
+            <p>
+              Only your current product-review account can open these notes.
+              Keep personal case details in the source case. Link accepted work
+              to one canonical task or specification.
+            </p>
+          </>
         )}
-        <Link className="underline" href="/platform/releases">
-          Read release notes
-        </Link>
-      </section>
-      <section className="space-y-3">
-        <h2 className="text-2xl">Your private review notes</h2>
-        <p>
-          Only your current product-review account can open these notes. Keep
-          personal case details in the source case. Link accepted work to one
-          canonical task or specification.
-        </p>
         <AdminForm
           owner={data.navigation.viewer.id}
           operation="feedback-review"
@@ -263,6 +295,9 @@ export function AdminFeedbackWeekly({
           ]}
           button="Save private review"
           onSaved={onRefresh}
+          onDraftChange={setNotesDirty}
+          available={canReview}
+          privacy={{ visible, currentAccess: canReview }}
         />
       </section>
     </div>
