@@ -532,6 +532,17 @@ try {
     false
   );
   await adopt.click();
+  const refreshedReply = page.waitForResponse(async (response) => {
+    const url = new URL(response.url());
+    return (
+      response.request().method() === "GET" &&
+      detailRoute(url) &&
+      url.searchParams.get("caseId") === first.caseId &&
+      response.status() === 200 &&
+      (await response.json()).detail?.version ===
+        choicesSaved.receipt.version + 1
+    );
+  });
   const replySaved = await send(
     replyForm().getByRole("button", { name: "Save reply", exact: true }),
     supportEndpoint
@@ -541,7 +552,24 @@ try {
     choicesSaved.receipt.version
   );
   assert.equal(replySaved.command.body, draftReply);
-  await page.getByRole("main").getByText(draftReply, { exact: true }).waitFor();
+  await refreshedReply;
+  // A controlled textarea also has textContent. Only the conversation's
+  // rendered message paragraph proves the accepted snapshot reached React.
+  const conversationReply = page
+    .getByRole("main")
+    .locator("ol li > p")
+    .filter({ hasText: draftReply });
+  await conversationReply.waitFor();
+  assert.equal(await conversationReply.textContent(), draftReply);
+  await page.waitForFunction(() => {
+    const reply = document.querySelector('form[aria-label="Save reply"]');
+    const field = reply?.querySelector('textarea[name="body"]');
+    return (
+      reply?.getAttribute("aria-busy") === "false" &&
+      field?.value === "" &&
+      !field.disabled
+    );
+  });
   assert.equal(
     await page.evaluate(() => window.feedbackReceiptDocument),
     nonce
@@ -588,6 +616,149 @@ try {
   );
   ok(
     "Saving contact/sharing choices keeps the sibling reply in the same document; only explicit version adoption enables its one accepted save."
+  );
+
+  const markForm = form("Mark these updates as seen");
+  await markForm.waitFor();
+  const beforeMark = {
+    version: replySaved.receipt.version,
+    messages: await db.supportMessage.count({
+      where: { caseId: first.caseId }
+    }),
+    operations: await db.supportOperation.count({
+      where: { caseId: first.caseId, actorId: fixture.memberA.id }
+    })
+  };
+  const markAttempts = [],
+    markDeliveries = [];
+  let markReceipt;
+  const markHandler = (route) => {
+    const request = route.request(),
+      body = request.postData(),
+      command = JSON.parse(body);
+    assert.equal(command.operation, "mark-read");
+    assert.equal(command.caseId, first.caseId);
+    markAttempts.push({ body, owner: request.headers()["x-expected-account"] });
+    const number = markAttempts.length;
+    const delivery = (async () => {
+      const response = await route.fetch();
+      assert.equal(response.status(), 200);
+      const saved = await response.json();
+      if (number === 1) {
+        markReceipt = saved;
+        await route.abort("failed");
+      } else {
+        assert.deepEqual(saved, markReceipt);
+        await route.fulfill({ response });
+      }
+    })();
+    markDeliveries.push(delivery);
+    return delivery;
+  };
+  await page.route(supportEndpoint, markHandler);
+  await markForm
+    .getByRole("button", { name: "Mark these updates as seen", exact: true })
+    .click();
+  await markForm
+    .getByRole("button", { name: "Retry original request", exact: true })
+    .waitFor();
+  const readOnce = await db.supportRead.findUniqueOrThrow({
+    where: {
+      caseId_userId: { caseId: first.caseId, userId: fixture.memberA.id }
+    }
+  });
+  assert.equal(readOnce.version, beforeMark.version);
+  assert.equal(
+    (
+      await readSupport(db, fixture.memberA.token, "detail", {
+        caseId: first.caseId,
+        feedbackOnly: true
+      })
+    ).detail.unread,
+    false
+  );
+  await event("blur");
+  await event("focus");
+  const confirmMark = page.getByRole("button", {
+    name: /^Confirm original request(?:: Mark these updates as seen)?$/
+  });
+  await confirmMark.waitFor();
+  await absent();
+  const markConfirmed = page.waitForResponse(
+    (response) =>
+      response.url() === supportEndpoint &&
+      response.request().method() === "POST" &&
+      response.status() === 200
+  );
+  await confirmMark.click();
+  await markConfirmed;
+  await ready(subject);
+  await until(
+    async () => (await markForm.count()) === 0,
+    "Confirmed mark-read owner leaves only after accepting unread=false"
+  );
+  assert.equal(markAttempts.length, 2);
+  assert.ok(
+    markAttempts.every(
+      (attempt) =>
+        attempt.body === markAttempts[0].body &&
+        attempt.owner === fixture.memberA.id
+    )
+  );
+  const markCommand = JSON.parse(markAttempts[0].body);
+  assert.equal(markCommand.expectedVersion, beforeMark.version);
+  assert.equal(markReceipt.version, beforeMark.version);
+  assert.deepEqual(
+    await db.supportRead.findUniqueOrThrow({
+      where: {
+        caseId_userId: { caseId: first.caseId, userId: fixture.memberA.id }
+      }
+    }),
+    readOnce
+  );
+  assert.equal(
+    await db.supportRead.count({
+      where: { caseId: first.caseId, userId: fixture.memberA.id }
+    }),
+    1
+  );
+  assert.equal(
+    (await db.supportCase.findUniqueOrThrow({ where: { id: first.caseId } }))
+      .version,
+    beforeMark.version
+  );
+  assert.equal(
+    await db.supportMessage.count({ where: { caseId: first.caseId } }),
+    beforeMark.messages
+  );
+  // Mark-read is an idempotent upsert and intentionally returns before creating
+  // a SupportOperation receipt. Do not claim a receipt that this API never writes.
+  assert.equal(
+    await db.supportOperation.count({
+      where: { caseId: first.caseId, actorId: fixture.memberA.id }
+    }),
+    beforeMark.operations
+  );
+  assert.equal(
+    await db.supportOperation.count({
+      where: { actorId: fixture.memberA.id, requestKey: markCommand.requestKey }
+    }),
+    0
+  );
+  assert.equal(
+    await page.evaluate(() => window.feedbackReceiptDocument),
+    nonce
+  );
+  await Promise.all(markDeliveries);
+  await page.unroute(supportEndpoint, markHandler);
+  retryEvidence.push({
+    scenario: "mark-read",
+    attempts: markAttempts.map(fingerprint),
+    readRows: 1,
+    operationReceipts: 0
+  });
+  ok(
+    "A real lost mark-read acknowledgment keeps its exact controller after unread becomes false; identical recovery leaves one read row and no new message, case version or operation receipt."
   );
 
   const uncertainTitle = marker("uncertain subject");
@@ -1060,8 +1231,8 @@ try {
   );
   assert.equal(
     browserWrites.length,
-    11,
-    "Three authority denials, choices/reply saves, four uncertain-reply attempts and two removal attempts"
+    13,
+    "Three authority denials, choices/reply saves, two mark-read attempts, four uncertain-reply attempts and two removal attempts"
   );
   writeFileSync(
     output + "/result.json",
