@@ -1,5 +1,22 @@
 # Ordinary support operations
 
+## Read-only index privacy candidate, 26 September 2026 UTC
+
+An isolated production browser reproduced private subjects in initial HTML and
+hidden DOM on My requests and Assigned inbox after blur, offline and account
+replacement. These two read-only views now fetch their current snapshot only
+after hydration, using the existing authorized Support API. No private rows are
+passed through server children. Concealment clears rows and late responses are
+rejected. Same-owner unchanged snapshots restore; changed data requires reload.
+Case links do not automatically preload private details.
+
+The existing scheduled-list lifecycle is shared by these read-only snapshots.
+Navigation, eligibility, regional times and bounded pagination reuse the same
+presentation. New, detail and routing forms retain their existing snapshot guard
+and exact uncertain-request owner. No backend, schema, retention, authority or
+intake activation changes. Production build/browser/release acceptance is pending;
+the accepted current .6 release remains separate.
+
 ## Incident coordination, 26 September 2026 UTC
 
 Use [the incident response runbook](INCIDENT_RESPONSE_RUNBOOK.md) for targeted

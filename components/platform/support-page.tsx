@@ -17,6 +17,8 @@ import {
 import { SupportViews } from "./support-views";
 import { PortalRetry } from "./portal-retry";
 import { PrivateSnapshotGuard } from "./private-snapshot-guard";
+import { getCurrentPlatformUser } from "@/lib/platform/session";
+import { SupportIndex } from "./support-index";
 export async function SupportPage({
   view,
   caseId,
@@ -46,6 +48,31 @@ export async function SupportPage({
         </section>
       </PlatformShell>
     );
+  if (view === "requests" || view === "inbox") {
+    const user = await getCurrentPlatformUser();
+    if (!user) redirect("/platform/login");
+    const url = `/api/platform/support?${new URLSearchParams({ view, ...(churchId ? { churchId } : {}), ...(page ? { page } : {}) })}`;
+    return (
+      <PlatformShell user={user}>
+        <section className="container-shell max-w-4xl py-8 sm:py-10">
+          <PortalHeading
+            title={view === "inbox" ? "Assigned support inbox" : "My requests"}
+            description={
+              view === "inbox"
+                ? "Only conversations currently assigned to you appear here. Check the audience before replying."
+                : "Ordinary help, clear ownership and updates you can return to. Private to each request’s authorized participants."
+            }
+          />
+          <SupportIndex
+            key={`${user.id}:${url}`}
+            owner={user.id}
+            url={url}
+            view={view}
+          />
+        </section>
+      </PlatformShell>
+    );
+  }
   let snapshot: SupportSnapshot | undefined;
   let failure: number | undefined;
   try {
@@ -82,8 +109,6 @@ export async function SupportPage({
     );
   const titles = {
     new: "Get help",
-    requests: "My requests",
-    inbox: "Assigned support inbox",
     routing: "Assign requests",
     detail: snapshot.detail?.subject ?? "Request"
   };
@@ -100,11 +125,7 @@ export async function SupportPage({
         >
           <PortalHeading
             title={titles[view]}
-            description={
-              view === "inbox"
-                ? "Only conversations currently assigned to you appear here. Check the audience before replying."
-                : "Ordinary help, clear ownership and updates you can return to. Private to each request’s authorized participants."
-            }
+            description="Ordinary help, clear ownership and updates you can return to. Private to each request’s authorized participants."
           />
           <SupportViews
             snapshot={snapshot}

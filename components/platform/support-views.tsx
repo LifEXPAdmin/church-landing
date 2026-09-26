@@ -13,7 +13,6 @@ import {
 import { SupportForm, type SupportField } from "./support-form";
 import {
   SupportConversation,
-  SupportRows,
   SupportTime
 } from "./regional-support-presentation";
 import {
@@ -22,6 +21,12 @@ import {
   PortalHelpContact,
   portalLinkClass
 } from "./portal-ui";
+import {
+  SupportNavigation,
+  SupportEligibility,
+  SupportListRows,
+  SupportPagination as Pagination
+} from "./support-list-presentation";
 const reason: SupportField = {
   name: "reason",
   label: "Explain the update",
@@ -51,38 +56,8 @@ export function SupportViews({
   const c = s.detail;
   return (
     <div className="space-y-6">
-      {navigation && (
-        <nav aria-label="Support" className="flex flex-wrap gap-x-6 gap-y-2">
-          <Link className={portalLinkClass} href="/platform/help">
-            Help and contacts
-          </Link>
-          <Link className={portalLinkClass} href="/platform/help/new">
-            Get help
-          </Link>
-          <Link className={portalLinkClass} href="/platform/help/requests">
-            My requests
-          </Link>
-          {s.staff.respond && (
-            <Link className={portalLinkClass} href="/platform/help/inbox">
-              Assigned inbox
-            </Link>
-          )}
-          {s.staff.assign && (
-            <Link className={portalLinkClass} href="/platform/help/routing">
-              Assign requests
-            </Link>
-          )}
-        </nav>
-      )}
-      {!s.viewer.adult && (
-        <PortalEmpty>
-          Private requests are for adults.{" "}
-          <Link className={portalLinkClass} href="/platform/my-church">
-            Review your eligibility
-          </Link>{" "}
-          or use direct contact without submitting a request.
-        </PortalEmpty>
-      )}
+      {navigation && <SupportNavigation staff={s.staff} />}
+      <SupportEligibility adult={s.viewer.adult} />
       {view === "new" && (
         <>
           <PortalCard title="A little help, with a clear audience">
@@ -194,14 +169,7 @@ export function SupportViews({
         </>
       )}
       {(view === "requests" || view === "inbox") && (
-        <>
-          <SupportRows rows={s.rows} />
-          <Pagination
-            page={s.page}
-            more={s.more}
-            base={`/platform/help/${view}`}
-          />
-        </>
+        <SupportListRows snapshot={s} view={view} />
       )}
       {view === "routing" && (
         <>
@@ -270,7 +238,11 @@ export function SupportViews({
             </p>
           )}
           <SupportConversation detail={c} />
-          <FeedbackAttachmentImages owner={s.viewer.id} detail={c} onRefresh={onRefresh}/>
+          <FeedbackAttachmentImages
+            owner={s.viewer.id}
+            detail={c}
+            onRefresh={onRefresh}
+          />
           <Pagination
             page={c.messagePage}
             more={c.moreMessages}
@@ -508,37 +480,5 @@ export function SupportViews({
         </>
       )}
     </div>
-  );
-}
-function Pagination({
-  page,
-  more,
-  base
-}: {
-  page: number;
-  more: boolean;
-  base: string;
-}) {
-  return (
-    (page > 0 || more) && (
-      <nav aria-label="Request pages" className="flex gap-6">
-        {page > 0 && (
-          <Link
-            className={portalLinkClass}
-            href={`${base}${base.includes("?") ? "&" : "?"}page=${page - 1}`}
-          >
-            Previous page
-          </Link>
-        )}
-        {more && page < 99 && (
-          <Link
-            className={portalLinkClass}
-            href={`${base}${base.includes("?") ? "&" : "?"}page=${page + 1}`}
-          >
-            Next page
-          </Link>
-        )}
-      </nav>
-    )
   );
 }

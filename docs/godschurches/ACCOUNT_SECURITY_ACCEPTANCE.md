@@ -1,5 +1,14 @@
 # Account security acceptance
 
+## Support index candidate, 26 September 2026 UTC
+
+Six isolated browser observations reproduce initial HTML and hidden DOM subject
+retention in the requester and assigned-owner lists after blur, offline and
+account replacement. The read-only index repair uses the existing Support API
+and shared current-access lifecycle while keeping uncertain form recovery
+unchanged. See [Support operations](SUPPORT_OPERATIONS.md). Exact build, browser,
+release and live acceptance are pending; previous verified receipts follow.
+
 ## Saved-draft privacy verified live, 26 September 2026 UTC
 
 Version **2026.09.26.6**, source `70cb24e2d594b30cb40c16ac300c954a71f75321`, is READY in

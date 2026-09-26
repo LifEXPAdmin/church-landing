@@ -32,11 +32,13 @@ const staticTime = (value: string) => <SupportTime value={value} />;
 export function SupportRows({
   rows,
   demo = false,
+  prefetch,
   detailBase = "/platform/help/cases",
   renderTime = staticTime
 }: {
   rows: SupportRow[];
   demo?: boolean;
+  prefetch?: boolean;
   detailBase?: string;
   renderTime?: (value: string) => React.ReactNode;
 }) {
@@ -54,6 +56,7 @@ export function SupportRows({
           <h2 className="mt-2 break-words text-2xl text-gc-text">
             <Link
               className={portalLinkClass + " text-xl"}
+              prefetch={prefetch}
               href={
                 demo
                   ? "/platform/demo/support-case"

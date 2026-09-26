@@ -1006,6 +1006,14 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "private-support-lists", version: "2026.09.26.7", date: "2026-09-26",
+    summary: "Keep private help subjects out of retained request lists when access needs to be checked again.",
+    added: [],
+    improved: ["My requests and Assigned inbox load their private lists after checking current access. Leaving the view, losing connection or a failed check clears the list until access is confirmed again.", "Changed requests require a deliberate reload. Case links open their private details only when you choose them."],
+    fixed: ["Private request subjects no longer remain in the initial list page or hidden list content after an account change. Request forms keep their existing recovery for unconfirmed submissions."],
+    featureIds: []
+  },
+  {
     id: "private-draft-refresh", version: "2026.09.26.6", date: "2026-09-26",
     summary: "Keep saved draft text private while refreshing access, without losing an unconfirmed discard request.",
     added: [],
