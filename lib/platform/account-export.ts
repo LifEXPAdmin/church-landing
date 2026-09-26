@@ -897,6 +897,8 @@ export async function downloadAccountExport(
             notificationVersion: true,
             calendarReminderMinutes: true,
             calendarReminderSince: true,
+            volunteerReminderMinutes: true,
+            volunteerReminderSince: true,
             notificationRecoveryRequired: true,
             feedbackEmailSince: true,
             notificationEmailSince: true,

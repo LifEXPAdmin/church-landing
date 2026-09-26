@@ -26,7 +26,10 @@ export async function recordDomainActivity(
   const key = `domain:${intent.kind}:${intent.sourceId}:${intent.once ? "first" : intent.sourceVersion}:${intent.recipientId}`;
   if (await tx.socialEvent.findUnique({ where: { key }, select: { id: true } }))
     return;
-  if (intent.kind === "RSVP_CHANGED")
+  if (
+    intent.kind === "RSVP_CHANGED" ||
+    intent.kind === "VOLUNTEER_CONFIRMATION"
+  )
     await wakeCalendarReminders(tx, intent.recipientId, false, now);
   const event: SocialEvent = {
     id: randomUUID(),

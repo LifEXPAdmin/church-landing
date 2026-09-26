@@ -120,7 +120,7 @@ const categorySql = Prisma.sql`CASE
   WHEN e.kind IN ('POST_REACTION','COMMENT_REACTION') THEN 'reactions'
   WHEN e.kind = 'PRAYER_ACK' OR (e.kind='COMMENT_ACTIVITY' AND e."notificationCategory"='prayer') THEN 'prayer'
   WHEN e.kind IN ('CHURCH_REVIEW','CHURCH_CONNECTION','CHURCH_ROLE','CHURCH_CAPABILITY') THEN 'church'
-  WHEN e.kind IN ('CALENDAR_REMINDER','EVENT_CHANGED','RSVP_CHANGED','VOLUNTEER_CHANGED','VOLUNTEER_REQUEST','VOLUNTEER_CONFIRMATION') THEN 'commitments'
+  WHEN e.kind IN ('CALENDAR_REMINDER','VOLUNTEER_REMINDER','EVENT_CHANGED','RSVP_CHANGED','VOLUNTEER_CHANGED','VOLUNTEER_REQUEST','VOLUNTEER_CONFIRMATION') THEN 'commitments'
   WHEN e.kind = 'COMMENT_ACTIVITY' THEN 'comments' ELSE 'reports' END`;
 const groupSql = Prisma.sql`CASE
   WHEN e.kind IN ('GROUP_MEMBERSHIP','GROUP_REVIEW') THEN e.kind || ':' || coalesce(e."sourceId",e.id)
@@ -131,7 +131,7 @@ const groupSql = Prisma.sql`CASE
   WHEN e.kind IN ('FEEDBACK_CASE','FEEDBACK_IDEA') THEN e.kind || ':' || coalesce(e."sourceId",e.id)
   WHEN e.kind='AUTHOR_POST' THEN 'author:' || coalesce(p."authorChurchId",e."actorId")
   WHEN e.kind IN ('POST_REACTION','COMMENT_REACTION','PRAYER_ACK') THEN 'reaction:' || coalesce(e."commentId",e."postId",e.id)
-  WHEN e.kind IN ('CHURCH_REVIEW','CHURCH_CONNECTION','CHURCH_ROLE','CHURCH_CAPABILITY','CALENDAR_REMINDER','EVENT_CHANGED','RSVP_CHANGED','VOLUNTEER_CHANGED','VOLUNTEER_REQUEST','VOLUNTEER_CONFIRMATION') THEN e.kind || ':' || coalesce(e."sourceId",e.id)
+  WHEN e.kind IN ('CHURCH_REVIEW','CHURCH_CONNECTION','CHURCH_ROLE','CHURCH_CAPABILITY','CALENDAR_REMINDER','VOLUNTEER_REMINDER','EVENT_CHANGED','RSVP_CHANGED','VOLUNTEER_CHANGED','VOLUNTEER_REQUEST','VOLUNTEER_CONFIRMATION') THEN e.kind || ':' || coalesce(e."sourceId",e.id)
   WHEN e.kind = 'ADULT_MESSAGE_CREATED' THEN 'conversation:' || coalesce(e."conversationId", e.id)
   WHEN e.kind IN ('ADULT_REQUEST_CREATED','ADULT_REQUEST_ACCEPTED') THEN 'request:' || coalesce(e."requestId", e.id)
   WHEN e.kind = 'POST_MENTION' THEN 'post-mention:' || coalesce(e."postId", e.id)

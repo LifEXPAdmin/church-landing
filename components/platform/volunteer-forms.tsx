@@ -225,11 +225,14 @@ export function VolunteerApplyForm({
   const router = useRouter(),
     id = useId(),
     [statement, setStatement] = useState(application?.statement ?? ""),
+    [availability, setAvailability] = useState(application?.availability ?? ""),
     [confirmed, setConfirmed] = useState(false);
   const action = usePrivateChoiceAction(
     endpoint,
     owner,
-    statement !== (application?.statement ?? "") || confirmed,
+    statement !== (application?.statement ?? "") ||
+      availability !== (application?.availability ?? "") ||
+      confirmed,
     () => router.push("/platform/serve/applications"),
     true
   );
@@ -245,6 +248,7 @@ export function VolunteerApplyForm({
           ...snapshot(opportunity),
           expectedVersion: application?.version ?? 0,
           statement,
+          availability,
           confirmed
         });
       }}
@@ -275,6 +279,23 @@ export function VolunteerApplyForm({
           Only you and an authorized coordinator can read your application. Keep
           out health details, screening documents and information about
           children.
+        </p>
+        <label className="block space-y-2" htmlFor={`${id}-availability`}>
+          <span>Availability for this opportunity (optional)</span>
+          <textarea
+            id={`${id}-availability`}
+            className={portalInputClass}
+            rows={3}
+            maxLength={500}
+            value={availability}
+            onChange={(e) => setAvailability(e.target.value)}
+            aria-describedby={`${id}-availability-help`}
+          />
+        </label>
+        <p id={`${id}-availability-help`} className="text-sm text-gc-muted">
+          Share preferred days or times with this opportunity’s authorized
+          coordinators. Include your time zone if helpful. This does not share
+          your calendar, reserve a place or change the published shift.
         </p>
         <label className="flex min-h-11 items-start gap-3">
           <input
@@ -327,6 +348,16 @@ export function VolunteerApplicationActions({
   };
   return (
     <div className="space-y-3">
+      {application.availability && (
+        <p className="whitespace-pre-wrap break-words">
+          Availability for this opportunity: {application.availability}
+        </p>
+      )}
+      {application.own &&
+        (application.canEditAvailability ||
+          application.canClearAvailability) && (
+          <VolunteerAvailabilityForm owner={owner} application={application} />
+        )}
       {application.own && application.canWithdraw && (
         <button
           className="gc-button gc-button-quiet"
@@ -416,5 +447,83 @@ export function VolunteerApplicationActions({
         )}
       {action.status}
     </div>
+  );
+}
+
+function VolunteerAvailabilityForm({
+  owner,
+  application
+}: {
+  owner: string;
+  application: VolunteerApplicationView;
+}) {
+  const id = useId();
+  const [availability, setAvailability] = useState(application.availability);
+  const action = usePrivateChoiceAction(
+    endpoint,
+    owner,
+    availability !== application.availability
+  );
+  const save = (value: string) => {
+    if (!action.blocked)
+      void action.command({
+        operation: "availability",
+        id: application.id,
+        expectedVersion: application.version,
+        availability: value
+      });
+  };
+  return (
+    <form
+      aria-label="Private volunteer availability"
+      className="space-y-3"
+      onSubmit={(e) => {
+        e.preventDefault();
+        save(availability);
+      }}
+    >
+      <fieldset disabled={action.blocked} className="space-y-3">
+        <legend className="font-semibold">Your availability</legend>
+        {application.canEditAvailability ? (
+          <>
+            <label className="block space-y-2" htmlFor={id}>
+              <span>
+                Preferred days or times for this opportunity (optional)
+              </span>
+              <textarea
+                id={id}
+                rows={3}
+                maxLength={500}
+                className={portalInputClass}
+                value={availability}
+                aria-describedby={`${id}-help`}
+                onChange={(e) => setAvailability(e.target.value)}
+              />
+            </label>
+            <p id={`${id}-help`} className="text-sm text-gc-muted">
+              Only you and this opportunity’s current authorized coordinators
+              can read this preference. Include a time zone if needed. Keep out
+              health details, screening documents and information about
+              children. Saving does not change your assignment or calendar.
+            </p>
+            <button type="submit" className="gc-button">
+              Save availability
+            </button>
+          </>
+        ) : (
+          <p>You can still remove your saved availability.</p>
+        )}
+        {application.canClearAvailability && (
+          <button
+            type="button"
+            className="gc-button gc-button-quiet"
+            onClick={() => save("")}
+          >
+            Remove availability
+          </button>
+        )}
+      </fieldset>
+      {action.status}
+    </form>
   );
 }

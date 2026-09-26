@@ -303,7 +303,8 @@ export function NotificationSettings({ owner }: { owner: string }) {
                   quietHours: fields.quietHours,
                   emailCategories: fields.emailCategories,
                   feedbackEmail: fields.feedbackEmail,
-                  calendarReminderMinutes: fields.calendarReminderMinutes
+                  calendarReminderMinutes: fields.calendarReminderMinutes,
+                  volunteerReminderMinutes: fields.volunteerReminderMinutes
                 })
               );
             }}
@@ -313,6 +314,52 @@ export function NotificationSettings({ owner }: { owner: string }) {
               className="space-y-5"
             >
               <legend className="text-xl">Categories and channels</legend>
+              <div className="space-y-3 rounded-lg border border-gc-divider p-3">
+                <label
+                  htmlFor="volunteer-reminder-minutes"
+                  className="block font-semibold"
+                >
+                  Volunteer shift reminders
+                </label>
+                <select
+                  id="volunteer-reminder-minutes"
+                  className="gc-input w-full"
+                  value={fields.volunteerReminderMinutes}
+                  disabled={
+                    !view.channels.volunteerReminders &&
+                    fields.volunteerReminderMinutes === 0
+                  }
+                  onChange={(event) =>
+                    change({
+                      ...fields,
+                      volunteerReminderMinutes: Number(event.target.value)
+                    })
+                  }
+                >
+                  <option value={0}>Off</option>
+                  <option value={15}>15 minutes before</option>
+                  <option value={60}>60 minutes before</option>
+                </select>
+                {!view.channels.volunteerReminders && (
+                  <p>
+                    Verify your email and complete adult account setup to enable
+                    reminders. You can still turn an existing choice off.
+                  </p>
+                )}
+                <p>
+                  Optional reminders for your confirmed timed volunteer shifts,
+                  using the shift’s own start time. Applying does not reserve a
+                  shift or turn reminders on. Untimed roles and all-day
+                  commitments without timed shifts do not create reminders.
+                </p>
+                <p>
+                  Past reminder times are not replayed. Canceled, completed or
+                  unavailable shifts do not send reminders. Activity and phone
+                  choices below stay separate; phone alerts require a current
+                  device and respect quiet hours. A phone reminder is never sent
+                  after the shift starts.
+                </p>
+              </div>
               <div className="space-y-3 rounded-lg border border-gc-divider p-3">
                 <label
                   htmlFor="calendar-reminder-minutes"

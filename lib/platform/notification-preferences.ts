@@ -1,5 +1,6 @@
 import {
   calendarReminderMinutes,
+  volunteerReminderMinutes,
   wakeCalendarReminders
 } from "./calendar-reminder-plan";
 import { socialEmailAvailable, socialEmailCategories } from "./social-email";
@@ -189,6 +190,7 @@ export function notificationEmailAllowed(
 export function projectNotificationPreferences(row: SocialPreferences | null) {
   return {
     calendarReminderMinutes: calendarReminderMinutes(row),
+    volunteerReminderMinutes: volunteerReminderMinutes(row),
     version: row?.version ?? 0,
     emailCategories: socialEmailCategories.filter((category) =>
       notificationEmailAllowed(row, new Date(8640000000000000), category)
@@ -238,6 +240,7 @@ export function readNotificationPreferences(db: PrismaClient, token: unknown) {
       channels: {
         inApp: true,
         calendarReminders: eligible,
+        volunteerReminders: eligible,
         push: push && eligible,
         socialEmail: socialEmail && eligible,
         email: email && eligible
@@ -260,7 +263,8 @@ export async function notificationPreferenceCommand(
     "quietHours",
     "emailCategories",
     "feedbackEmail",
-    "calendarReminderMinutes"
+    "calendarReminderMinutes",
+    "volunteerReminderMinutes"
   ]);
   if (input.operation !== "preferences")
     throw new PortalError(400, "Choose a supported notification control.");
@@ -298,6 +302,30 @@ export async function notificationPreferenceCommand(
         throw new PortalError(
           403,
           "Verify your email and complete adult account setup before enabling calendar reminders."
+        );
+      const volunteerMinutes =
+        input.volunteerReminderMinutes === undefined
+          ? old.volunteerReminderMinutes
+          : input.volunteerReminderMinutes;
+      if (
+        typeof volunteerMinutes !== "number" ||
+        ![0, 15, 60].includes(volunteerMinutes)
+      )
+        throw new PortalError(
+          400,
+          "Choose Off, 15 minutes or 60 minutes for volunteer shift reminders."
+        );
+      if (
+        volunteerMinutes &&
+        volunteerMinutes !== old.volunteerReminderMinutes &&
+        !(await tx.platformUser.findFirst({
+          where: { id: ownerId, ...eligibleWhere },
+          select: { id: true }
+        }))
+      )
+        throw new PortalError(
+          403,
+          "Verify your email and complete adult account setup before enabling volunteer shift reminders."
         );
       const categories = input.pushCategories;
       const choices = input.inApp as Record<string, unknown> | undefined;
@@ -501,6 +529,12 @@ export async function notificationPreferenceCommand(
         ])
       );
       const data = {
+        volunteerReminderMinutes: volunteerMinutes,
+        volunteerReminderSince: volunteerMinutes
+          ? volunteerMinutes === old.volunteerReminderMinutes
+            ? prior!.volunteerReminderSince
+            : now
+          : null,
         calendarReminderMinutes: reminderMinutes,
         calendarReminderSince: reminderMinutes
           ? reminderMinutes === old.calendarReminderMinutes
@@ -544,7 +578,10 @@ export async function notificationPreferenceCommand(
         create: { ownerId, ...data },
         update: { ...data, version: { increment: 1 } }
       });
-      if (reminderMinutes !== old.calendarReminderMinutes)
+      if (
+        reminderMinutes !== old.calendarReminderMinutes ||
+        volunteerMinutes !== old.volunteerReminderMinutes
+      )
         await wakeCalendarReminders(tx, ownerId, true, now);
       await recordDiscoveryControl(
         tx,

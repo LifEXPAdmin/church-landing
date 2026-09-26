@@ -105,6 +105,11 @@ function applicationView(
 ) {
   const current = !!source && !row.recoveryRequired;
   const signup = row.signup;
+  const availabilityCurrent =
+    current &&
+    ["SUBMITTED", "ACCEPTED"].includes(row.state) &&
+    signup?.state !== "CANCELED" &&
+    !signup?.completedAt;
   const history = current ? row.events : [];
   const detailsChanged =
     !!source &&
@@ -128,6 +133,9 @@ function applicationView(
         ? ("WITHDRAWN" as const)
         : row.state,
     statement: current ? row.statement : "",
+    availability: availabilityCurrent ? row.availability : "",
+    canEditAvailability: row.userId === context.actorId && availabilityCurrent,
+    canClearAvailability: row.userId === context.actorId && !!row.availability,
     decisionNote: current ? row.decisionNote : "",
     title: current ? source!.row.title : "Unavailable volunteer opportunity",
     opportunityId: current ? row.opportunityId : null,

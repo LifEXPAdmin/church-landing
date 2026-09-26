@@ -1,7 +1,8 @@
-import type { PrismaClient } from "@prisma/client";
+import { Prisma, type PrismaClient } from "@prisma/client";
 import { recordDomainActivity } from "./domain-activity";
 import {
   calendarReminderMinutes,
+  volunteerReminderMinutes,
   wakeCalendarReminders
 } from "./calendar-reminder-plan";
 import { eligibleWhere } from "./portal-policy";
@@ -38,14 +39,29 @@ export async function dispatchCalendarReminders(
   ownerId?: string,
   publish: CalendarReminderPublish = publishReminder,
   now = new Date(),
-  occurrenceId?: string
+  occurrenceId?: string,
+  slotId?: string
 ) {
   const rows = await db.calendarReminderJob.findMany({
     where: {
       ...(ownerId ? { ownerId } : {}),
       ...(occurrenceId
-        ? { owner: { eventResponses: { some: { occurrenceId } } } }
+        ? {
+            owner: {
+              OR: [
+                { eventResponses: { some: { occurrenceId } } },
+                {
+                  volunteerSignups: {
+                    some: {
+                      slot: { post: { eventOccurrenceId: occurrenceId } }
+                    }
+                  }
+                }
+              ]
+            }
+          }
         : {}),
+      ...(slotId ? { owner: { volunteerSignups: { some: { slotId } } } } : {}),
       wakeAt: { lte: new Date(now.getTime() + 6 * DAY) },
       AND: [
         {
@@ -156,8 +172,9 @@ export async function advanceCalendarReminders(
       where: { ownerId }
     });
     const lead = calendarReminderMinutes(preferences);
+    const volunteerLead = volunteerReminderMinutes(preferences);
     if (
-      !lead ||
+      (!lead && !volunteerLead) ||
       !(await tx.platformUser.findFirst({
         where: { id: ownerId, ...eligibleWhere },
         select: { id: true }
@@ -177,45 +194,74 @@ export async function advanceCalendarReminders(
         ),
         handoff: false
       };
-    const offset = lead * 60000,
-      cursorStart = new Date(job.throughAt.getTime() + offset),
-      dueThrough = new Date(now.getTime() + offset);
-    const source = {
-      allDay: false,
-      canceledAt: null,
-      event: { canceledAt: null, calendar: { archivedAt: null } }
+    // A shared due-time cursor orders both sources, including different lead times.
+    // RSVP keys retain their old raw IDs, preserving existing queued cursors.
+    const sources: Prisma.Sql[] = [];
+    if (lead)
+      sources.push(Prisma.sql`
+      SELECT r.id AS "sourceId", r.id AS "cursorKey", 'CALENDAR_REMINDER' AS kind,
+        o.version AS "sourceVersion", o."startAt" AS "startAt",
+        o."startAt" - (${lead} * interval '1 minute') AS "dueAt"
+      FROM "CalendarResponse" r
+      JOIN "CalendarOccurrence" o ON o.id=r."occurrenceId"
+      JOIN "CalendarEvent" e ON e.id=o."eventId"
+      JOIN "PlatformCalendar" c ON c.id=e."calendarId"
+      WHERE r."userId"=${ownerId} AND r.state IN ('GOING','MAYBE')
+        AND NOT o."allDay" AND o."canceledAt" IS NULL AND e."canceledAt" IS NULL
+        AND c."archivedAt" IS NULL`);
+    // Legacy shift columns are UTC timestamps without a zone; normalize them
+    // before comparing with zoned occurrence instants, regardless of DB timezone.
+    if (volunteerLead)
+      sources.push(Prisma.sql`
+      SELECT s.id AS "sourceId", 'v:' || s.id AS "cursorKey", 'VOLUNTEER_REMINDER' AS kind,
+        (s.version::bigint + v.version + o.version)::double precision AS "sourceVersion",
+        coalesce(v."shiftStartAt" AT TIME ZONE 'UTC',o."startAt") AS "startAt",
+        coalesce(v."shiftStartAt" AT TIME ZONE 'UTC',o."startAt") - (${volunteerLead} * interval '1 minute') AS "dueAt"
+      FROM "PostVolunteerSignup" s
+      JOIN "PostVolunteerSlot" v ON v.id=s."slotId"
+      JOIN "PlatformPost" p ON p.id=v."postId"
+      JOIN "CalendarOccurrence" o ON o.id=p."eventOccurrenceId"
+      JOIN "CalendarEvent" e ON e.id=o."eventId"
+      JOIN "PlatformCalendar" c ON c.id=e."calendarId"
+      WHERE s."userId"=${ownerId} AND s.state='ACTIVE' AND s."completedAt" IS NULL
+        AND (NOT o."allDay" OR (v."shiftStartAt" IS NOT NULL AND v."shiftEndAt" IS NOT NULL))
+        AND coalesce(v."shiftStartAt" AT TIME ZONE 'UTC',o."startAt") >= o."startAt"
+        AND coalesce(v."shiftEndAt" AT TIME ZONE 'UTC',o."endAt") <= o."endAt"
+        AND o."canceledAt" IS NULL AND e."canceledAt" IS NULL AND c."archivedAt" IS NULL`);
+    type Candidate = {
+      sourceId: string;
+      cursorKey: string;
+      kind: string;
+      sourceVersion: number;
+      startAt: Date;
+      dueAt: Date;
     };
-    const rows = await tx.calendarResponse.findMany({
-      where: {
-        userId: ownerId,
-        state: { in: ["GOING", "MAYBE"] },
-        occurrence: { ...source, startAt: { gt: now, lte: dueThrough } },
-        OR: [
-          { occurrence: { startAt: { gt: cursorStart } } },
-          { occurrence: { startAt: cursorStart }, id: { gt: job.throughId } }
-        ]
-      },
-      include: { occurrence: { select: { startAt: true, version: true } } },
-      orderBy: [{ occurrence: { startAt: "asc" } }, { id: "asc" }],
-      take: 11
-    });
+    const candidates = Prisma.join(sources, " UNION ALL ");
+    const rows = await tx.$queryRaw<Candidate[]>(Prisma.sql`
+      SELECT * FROM (${candidates}) candidate
+      WHERE "startAt">${now} AND "dueAt"<=${now}
+        AND ("dueAt">${job.throughAt} OR ("dueAt"=${job.throughAt} AND "cursorKey">${job.throughId}))
+      ORDER BY "dueAt", "cursorKey" LIMIT 11`);
     let recorded = 0;
     for (const row of rows.slice(0, 10)) {
-      const due = new Date(row.occurrence.startAt.getTime() - offset);
-      if (row.updatedAt >= due || preferences!.calendarReminderSince! >= due)
+      if (
+        !Number.isSafeInteger(row.sourceVersion) ||
+        row.sourceVersion <= 0 ||
+        row.sourceVersion > 2147483647
+      )
         continue;
-      // The source resolver rechecks current event version, access and consent.
+      // Each source resolver checks dated consent, current versions and access.
       if (
         await recordDomainActivity(
           tx,
           {
-            kind: "CALENDAR_REMINDER",
+            kind: row.kind,
             category: "commitments",
-            sourceId: row.id,
-            sourceVersion: row.occurrence.version,
+            sourceId: row.sourceId,
+            sourceVersion: row.sourceVersion,
             actorId: ownerId,
             recipientId: ownerId,
-            createdAt: due
+            createdAt: row.dueAt
           },
           now
         )
@@ -226,30 +272,18 @@ export async function advanceCalendarReminders(
     const next =
       rows.length > 10
         ? null
-        : await tx.calendarResponse.findFirst({
-            where: {
-              userId: ownerId,
-              state: { in: ["GOING", "MAYBE"] },
-              occurrence: { ...source, startAt: { gt: dueThrough } }
-            },
-            select: { occurrence: { select: { startAt: true } } },
-            orderBy: [{ occurrence: { startAt: "asc" } }, { id: "asc" }]
-          });
+        : (
+            await tx.$queryRaw<Candidate[]>(Prisma.sql`
+      SELECT * FROM (${candidates}) candidate WHERE "dueAt">${now}
+      ORDER BY "dueAt", "cursorKey" LIMIT 1`)
+          )[0];
     await tx.calendarReminderJob.update({
       where: { ownerId },
       data: {
         version: { increment: 1 },
-        throughAt:
-          rows.length > 10
-            ? new Date(last.occurrence.startAt.getTime() - offset)
-            : now,
-        throughId: rows.length > 10 ? last.id : "",
-        wakeAt:
-          rows.length > 10
-            ? now
-            : next
-              ? new Date(next.occurrence.startAt.getTime() - offset)
-              : null,
+        throughAt: rows.length > 10 ? last.dueAt : now,
+        throughId: rows.length > 10 ? last.cursorKey : "",
+        wakeAt: rows.length > 10 ? now : next ? next.dueAt : null,
         dispatchedAt: null,
         dispatchClaimedAt: null
       }
@@ -271,8 +305,16 @@ export async function recoverCalendarReminders(
 ) {
   const rows = await db.socialPreferences.findMany({
     where: {
-      calendarReminderMinutes: { in: [15, 60] },
-      calendarReminderSince: { not: null },
+      OR: [
+        {
+          calendarReminderMinutes: { in: [15, 60] },
+          calendarReminderSince: { not: null }
+        },
+        {
+          volunteerReminderMinutes: { in: [15, 60] },
+          volunteerReminderSince: { not: null }
+        }
+      ],
       notificationRecoveryRequired: false,
       owner: { ...eligibleWhere, calendarReminderJob: null }
     },

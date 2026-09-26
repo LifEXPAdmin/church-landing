@@ -6,7 +6,13 @@ export async function recordVolunteerApplicationChange(
   tx: PostTx,
   row: VolunteerApplication,
   actorId: string,
-  action: "SUBMITTED" | "WITHDRAWN" | "DECLINED" | "ACCEPTED" | "CANCELED",
+  action:
+    | "SUBMITTED"
+    | "WITHDRAWN"
+    | "DECLINED"
+    | "ACCEPTED"
+    | "CANCELED"
+    | "AVAILABILITY_UPDATED",
   note = ""
 ) {
   await tx.volunteerApplicationEvent.create({
@@ -34,7 +40,7 @@ export async function syncVolunteerCancellation(
   if (!prior || prior.state !== "ACCEPTED") return;
   const row = await tx.volunteerApplication.update({
     where: { id: prior.id },
-    data: { state: "WITHDRAWN", version: { increment: 1 } }
+    data: { state: "WITHDRAWN", availability: "", version: { increment: 1 } }
   });
   await recordVolunteerApplicationChange(tx, row, actorId, "CANCELED");
 }

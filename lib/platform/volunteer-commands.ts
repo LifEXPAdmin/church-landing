@@ -44,9 +44,11 @@ const fields: Record<string, string[]> = {
     "eventVersion",
     "occurrenceVersion",
     "statement",
+    "availability",
     "confirmed"
   ],
   withdraw: ["id"],
+  availability: ["id", "availability"],
   accept: [
     "id",
     "opportunityVersion",
@@ -119,6 +121,23 @@ async function authorized(
   if (op === "withdraw") {
     const prior = await ownedVolunteerApplication(tx, actorId, input.id);
     unchangedOrJustSaved(prior.version, prior.state === "WITHDRAWN");
+    return;
+  }
+  if (op === "availability") {
+    const prior = await ownedVolunteerApplication(tx, actorId, input.id);
+    const availability = postField(input.availability, 500, 0);
+    unchangedOrJustSaved(prior.version, true);
+    if (availability) {
+      if (
+        !prior.opportunityId ||
+        prior.recoveryRequired ||
+        applicationIsTerminal(prior) ||
+        prior.signup?.state === "CANCELED" ||
+        prior.signup?.completedAt
+      )
+        throw unavailableVolunteer();
+      await requireVolunteerApplicant(tx, actorId, prior.opportunityId);
+    }
     return;
   }
   if (op === "apply") {
@@ -346,6 +365,7 @@ async function apply(
     signupId: null,
     state: "SUBMITTED" as const,
     statement: postField(input.statement, 1000, 0),
+    availability: postField(input.availability ?? "", 500, 0),
     decisionNote: ""
   };
   const row = prior
@@ -432,7 +452,13 @@ async function review(
   const state = accept ? "ACCEPTED" : "DECLINED";
   const row = await tx.volunteerApplication.update({
     where: { id: prior.id },
-    data: { state, signupId, decisionNote: note, version: { increment: 1 } }
+    data: {
+      state,
+      signupId,
+      decisionNote: note,
+      ...(!accept ? { availability: "" } : {}),
+      version: { increment: 1 }
+    }
   });
   await recordVolunteerApplicationChange(tx, row, actorId, state, note);
   return receipt(
@@ -494,7 +520,7 @@ async function withdraw(
   }
   const row = await tx.volunteerApplication.update({
     where: { id: prior.id },
-    data: { state: "WITHDRAWN", version: { increment: 1 } }
+    data: { state: "WITHDRAWN", availability: "", version: { increment: 1 } }
   });
   await recordVolunteerApplicationChange(
     tx,
@@ -505,6 +531,44 @@ async function withdraw(
   return receipt(
     row,
     "Application or assignment withdrawn. Its private history is retained."
+  );
+}
+
+async function saveAvailability(
+  tx: PostTx,
+  actorId: string,
+  input: Record<string, unknown>
+) {
+  const prior = await ownedVolunteerApplication(tx, actorId, input.id);
+  expected(input.expectedVersion, prior.version);
+  const availability = postField(input.availability, 500, 0);
+  if (availability) {
+    if (
+      !prior.opportunityId ||
+      prior.recoveryRequired ||
+      applicationIsTerminal(prior) ||
+      prior.signup?.state === "CANCELED" ||
+      prior.signup?.completedAt
+    )
+      throw unavailableVolunteer();
+    await requireVolunteerApplicant(tx, actorId, prior.opportunityId);
+  }
+  const row = await tx.volunteerApplication.update({
+    where: { id: prior.id },
+    data: { availability, version: { increment: 1 } }
+  });
+  // Record the change, never the private preference text, in history/recovery.
+  await recordVolunteerApplicationChange(
+    tx,
+    row,
+    actorId,
+    "AVAILABILITY_UPDATED"
+  );
+  return receipt(
+    row,
+    availability
+      ? "Availability saved for this opportunity's current authorized coordinators. Your assignment and calendar have not changed."
+      : "Availability removed. Your assignment and calendar have not changed."
   );
 }
 
@@ -530,6 +594,7 @@ export function volunteerCommand(
     (tx, actorId) => {
       if (op === "save") return save(tx, actorId, input);
       if (op === "apply") return apply(tx, actorId, input);
+      if (op === "availability") return saveAvailability(tx, actorId, input);
       if (op === "withdraw" || op === "cancel")
         return withdraw(tx, actorId, input, op === "cancel");
       return review(tx, actorId, input, op === "accept");

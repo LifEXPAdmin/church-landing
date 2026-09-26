@@ -16,6 +16,22 @@ export function calendarReminderMinutes(
     : 0;
 }
 
+export function volunteerReminderMinutes(
+  row: Pick<
+    SocialPreferences,
+    | "volunteerReminderMinutes"
+    | "volunteerReminderSince"
+    | "notificationRecoveryRequired"
+  > | null
+) {
+  return row &&
+    !row.notificationRecoveryRequired &&
+    row.volunteerReminderSince &&
+    [15, 60].includes(row.volunteerReminderMinutes)
+    ? row.volunteerReminderMinutes
+    : 0;
+}
+
 /** Called under the existing permission/consent writer lock; this never sends. */
 export async function wakeCalendarReminders(
   tx: Prisma.TransactionClient,
@@ -28,10 +44,15 @@ export async function wakeCalendarReminders(
     select: {
       calendarReminderMinutes: true,
       calendarReminderSince: true,
+      volunteerReminderMinutes: true,
+      volunteerReminderSince: true,
       notificationRecoveryRequired: true
     }
   });
-  if (!calendarReminderMinutes(preferences)) {
+  if (
+    !calendarReminderMinutes(preferences) &&
+    !volunteerReminderMinutes(preferences)
+  ) {
     if (reset) await tx.calendarReminderJob.deleteMany({ where: { ownerId } });
     return;
   }
@@ -42,8 +63,7 @@ export async function wakeCalendarReminders(
       version: { increment: 1 },
       wakeAt: now,
       dispatchedAt: null,
-      dispatchClaimedAt: null,
-      ...(reset ? { throughAt: now, throughId: "" } : {})
+      dispatchClaimedAt: null
     }
   });
 }
