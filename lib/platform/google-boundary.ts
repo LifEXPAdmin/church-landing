@@ -40,6 +40,7 @@ import {
   withOwnedSession,
   revokeReplacedAccountSession
 } from "./account-sessions";
+import { ambiguousAccountSessionCookie } from "./account-cookies";
 
 const responseHeaders = {
   "Cache-Control": "no-store",
@@ -165,6 +166,8 @@ export async function handleGoogleRequest(
       );
     const config = googleConfig();
     if (!config) return unavailable();
+    if (ambiguousAccountSessionCookie(request.headers.get("cookie")))
+      return reply("Your sign-in changed. Reload before continuing.", 401);
     const body = await readBody(request);
     const fields: Record<string, string[]> = {
       start: ["next"],
@@ -400,6 +403,10 @@ export async function handleGoogleCallback(
     const account = accountConfig();
     const config = googleConfig();
     if (!config) return redirect("/platform/login?notice=google-unavailable");
+    // A rejected ambiguous account must not become an anonymous authorization
+    // attempt. Leave its browser proof, existing sessions and provider untouched.
+    if (ambiguousAccountSessionCookie(request.headers.get("cookie")))
+      throw new GoogleAccountError();
     const url = new URL(request.url);
     const params = url.searchParams;
     if (

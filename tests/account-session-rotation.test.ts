@@ -372,7 +372,7 @@ async function googleAttempt(owner: Awaited<ReturnType<typeof actor>>) {
   return {
     stateHash,
     count: () => exchanges,
-    callback: async (token: string) => {
+    callback: async (token: string, extraCookies = "") => {
       const keys = [
         "ACCOUNT_GOOGLE_ENABLED",
         "GOOGLE_CLIENT_ID",
@@ -394,7 +394,7 @@ async function googleAttempt(owner: Awaited<ReturnType<typeof actor>>) {
               "&code=fictional-code",
             {
               headers: {
-                Cookie: `${googleCookieName("browser", true)}=${browser}; ${cookie(token)}`
+                Cookie: `${googleCookieName("browser", true)}=${browser}; ${cookie(token)}${extraCookies}`
               }
             }
           ),
@@ -476,4 +476,30 @@ test("Google anonymous login cannot replace an account signed in during its redi
     null
   );
   assert.equal(await ownerAtHttp(previous.current), previous.user.id);
+});
+
+test("Google callback cannot treat conflicting active cookies as an anonymous browser", async () => {
+  const previous = await actor();
+  const next = await actor();
+  const attempt = await googleAttempt(next);
+  const before = await sessions([previous.user.id, next.user.id]);
+  const response = await attempt.callback(
+    previous.current,
+    `; ${cookie(next.current)}`
+  );
+  assert.equal(
+    response.headers.get("location"),
+    "/platform/login?notice=google-retry"
+  );
+  assert.equal(response.headers.get("set-cookie"), null);
+  assert.equal(attempt.count(), 0);
+  assert.deepEqual(await sessions([previous.user.id, next.user.id]), before);
+  assert.equal(
+    (
+      await db.platformGoogleAttempt.findUniqueOrThrow({
+        where: { stateHash: attempt.stateHash }
+      })
+    ).consumedAt,
+    null
+  );
 });

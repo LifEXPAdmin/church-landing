@@ -4,13 +4,23 @@ export const ACCOUNT_SESSION_COOKIE = "church_platform_session";
 
 // Read the original header: cookie stores can collapse duplicate names before
 // readers agree on which account is acting. Ambiguity must never choose one.
+function sessionCookieEntries(header: string | null) {
+  return (
+    header
+      ?.split(";")
+      .map((entry) => entry.trim())
+      .filter(
+        (entry) => entry.split("=", 1)[0].trim() === ACCOUNT_SESSION_COOKIE
+      ) ?? []
+  );
+}
+
+export function ambiguousAccountSessionCookie(header: string | null) {
+  return sessionCookieEntries(header).length > 1;
+}
+
 export function accountSessionCookie(header: string | null) {
-  const values = header
-    ?.split(";")
-    .map((entry) => entry.trim())
-    .filter(
-      (entry) => entry.split("=", 1)[0].trim() === ACCOUNT_SESSION_COOKIE
-    );
+  const values = sessionCookieEntries(header);
   if (
     values?.length !== 1 ||
     !values[0].startsWith(ACCOUNT_SESSION_COOKIE + "=")
