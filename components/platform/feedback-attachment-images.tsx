@@ -7,7 +7,7 @@ import type { ImageView } from "@/lib/platform/media";
 import type { SupportDetail } from "@/lib/platform/support-types";
 import { useReadVisibility } from "./read-visibility";
 import { PhotoViewer } from "./photo-viewer";
-import { SupportForm } from "./support-form";
+import { SupportForm, type SupportFormPrivacy } from "./support-form";
 import { useReadingPreferences } from "./reading-preferences";
 export function FeedbackImagePreview({
   image,
@@ -80,40 +80,62 @@ export function FeedbackImagePreview({
 export function FeedbackAttachmentImages({
   owner,
   detail: c,
-  onRefresh
+  onRefresh,
+  privacy
 }: {
   owner: string;
   detail: SupportDetail;
   onRefresh?: () => void;
+  privacy?: SupportFormPrivacy;
 }) {
   const [selected, setSelected] = useState<string | null>(null);
+  const visible = privacy?.visible ?? true;
   if (!c.feedback?.attachments.length) return null;
   return (
-    <section className="space-y-5" aria-label="Private feedback attachments">
-      <h3 className="text-xl font-semibold">Private attachments</h3>
-      <p className="text-sm text-gc-muted">
-        These images are available only to this receipt’s current authorized
-        participants.
-      </p>
+    <section
+      className="space-y-5"
+      aria-label={visible ? "Private feedback attachments" : undefined}
+    >
+      {visible && (
+        <>
+          <h3 className="text-xl font-semibold">Private attachments</h3>
+          <p className="text-sm text-gc-muted">
+            These images are available only to this receipt’s current authorized
+            participants.
+          </p>
+        </>
+      )}
       <ul className="grid gap-5 sm:grid-cols-2">
-        {c.feedback.attachments.map((image) => (
+        {c.feedback.attachments.map((image, index) => (
           <li
             key={image.id}
             className="min-w-0 space-y-3 rounded-xl border border-gc-divider p-4"
           >
-            <FeedbackImagePreview
-              image={image}
-              open={() => setSelected(image.id)}
-            />
-            <Link
-              href={reportEntryHref("FEEDBACK_ATTACHMENT", image.id)}
-              prefetch={false}
-              className="inline-flex min-h-11 items-center text-sm text-gc-accent underline"
-            >
-              Report this attachment
-            </Link>
+            {visible && (
+              <>
+                <FeedbackImagePreview
+                  image={image}
+                  open={() => setSelected(image.id)}
+                />
+                <Link
+                  href={reportEntryHref("FEEDBACK_ATTACHMENT", image.id)}
+                  prefetch={false}
+                  className="inline-flex min-h-11 items-center text-sm text-gc-accent underline"
+                >
+                  Report this attachment
+                </Link>
+              </>
+            )}
             {c.access.requester && (
               <SupportForm
+                privacy={
+                  privacy
+                    ? {
+                        ...privacy,
+                        recoveryLabel: `Remove attachment ${index + 1}`
+                      }
+                    : undefined
+                }
                 owner={owner}
                 operation="feedback-remove-attachment"
                 endpoint="/api/platform/feedback"
@@ -133,6 +155,7 @@ export function FeedbackAttachmentImages({
       </ul>
       {selected && (
         <PhotoViewer
+          removeWhenHidden={!!privacy}
           source={`/api/platform/feedback?view=attachments&caseId=${encodeURIComponent(c.id)}`}
           accountId={owner}
           initialId={selected}

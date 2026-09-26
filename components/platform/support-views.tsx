@@ -1,3 +1,4 @@
+import type { ComponentProps } from "react";
 import { FeedbackAttachmentImages } from "./feedback-attachment-images";
 import type {
   SupportSnapshot,
@@ -8,7 +9,11 @@ import {
   supportStatuses,
   featureDecisions
 } from "@/lib/platform/support-types";
-import { SupportForm, type SupportField } from "./support-form";
+import {
+  SupportForm as BaseSupportForm,
+  type SupportField,
+  type SupportFormPrivacy
+} from "./support-form";
 import {
   SupportConversation,
   SupportTime
@@ -20,6 +25,22 @@ import {
   SupportListRows,
   SupportPagination as Pagination
 } from "./support-list-presentation";
+// Keep every original controller at its original position while removing its fields.
+function SupportForm(props: ComponentProps<typeof BaseSupportForm>) {
+  return (
+    <BaseSupportForm
+      {...props}
+      privacy={
+        props.privacy
+          ? {
+              ...props.privacy,
+              recoveryLabel: props.privacy.recoveryLabel ?? props.button
+            }
+          : undefined
+      }
+    />
+  );
+}
 const reason: SupportField = {
   name: "reason",
   label: "Explain the update",
@@ -34,7 +55,8 @@ export function SupportViews({
   detailBase,
   handoffDestination,
   onRefresh,
-  navigation = true
+  navigation = true,
+  privacy
 }: {
   snapshot: SupportSnapshot;
   view: Exclude<SupportView, "new">;
@@ -43,13 +65,15 @@ export function SupportViews({
   handoffDestination?: string;
   onRefresh?: () => void;
   navigation?: boolean;
+  privacy?: SupportFormPrivacy;
 }) {
   const c = s.detail;
+  const visible = privacy?.visible ?? true;
   return (
     <div className="space-y-6">
-      {navigation && <SupportNavigation staff={s.staff} />}
-      <SupportEligibility adult={s.viewer.adult} />
-      {(view === "requests" || view === "inbox") && (
+      {visible && navigation && <SupportNavigation staff={s.staff} />}
+      {visible && <SupportEligibility adult={s.viewer.adult} />}
+      {visible && (view === "requests" || view === "inbox") && (
         <SupportListRows snapshot={s} view={view} />
       )}
       {view === "routing" && (
@@ -59,23 +83,38 @@ export function SupportViews({
             people or conversations. Assigning a request does not let you read
             it.
           </PortalEmpty>
-          {s.routing.length === 0 && (
+          {visible && s.routing.length === 0 && (
             <PortalEmpty>No open requests are awaiting assignment.</PortalEmpty>
           )}
-          {s.routing.map((row) => (
-            <PortalCard key={row.id} title={supportCategories[row.category]}>
-              <p className="break-all text-xs text-gc-muted">
-                Reference: {row.id}
-                {row.churchId
-                  ? ` / Church scope: ${row.churchId}`
-                  : " / General support"}
-              </p>
-              <p className="text-sm text-gc-muted">
-                {supportStatuses[row.status]} / Received{" "}
-                <SupportTime value={row.createdAt} />
-              </p>
+          {s.routing.map((row, index) => (
+            <PortalCard
+              key={row.id}
+              title={visible ? supportCategories[row.category] : ""}
+            >
+              {visible && (
+                <>
+                  <p className="break-all text-xs text-gc-muted">
+                    Reference: {row.id}
+                    {row.churchId
+                      ? ` / Church scope: ${row.churchId}`
+                      : " / General support"}
+                  </p>
+                  <p className="text-sm text-gc-muted">
+                    {supportStatuses[row.status]} / Received{" "}
+                    <SupportTime value={row.createdAt} />
+                  </p>
+                </>
+              )}
               {s.ownerOptions.length ? (
                 <SupportForm
+                  privacy={
+                    privacy
+                      ? {
+                          ...privacy,
+                          recoveryLabel: `Assign request ${index + 1}`
+                        }
+                      : undefined
+                  }
                   onRefresh={onRefresh}
                   owner={s.viewer.id}
                   operation="handoff"
@@ -94,22 +133,27 @@ export function SupportViews({
                   button="Assign request"
                 />
               ) : (
-                <PortalEmpty>
-                  No eligible support owner is available.
-                </PortalEmpty>
+                visible && (
+                  <PortalEmpty>
+                    No eligible support owner is available.
+                  </PortalEmpty>
+                )
               )}
             </PortalCard>
           ))}
-          <Pagination
-            page={s.page}
-            more={s.more}
-            base="/platform/help/routing"
-          />
+          {visible && (
+            <Pagination
+              page={s.page}
+              more={s.more}
+              base="/platform/help/routing"
+              freshPage={!!privacy}
+            />
+          )}
         </>
       )}
       {c && (
         <>
-          {received && (
+          {visible && received && (
             <p
               role="status"
               className="rounded-xl border border-gc-action p-4 text-gc-accent"
@@ -118,19 +162,24 @@ export function SupportViews({
               email was sent.
             </p>
           )}
-          <SupportConversation detail={c} />
+          {visible && <SupportConversation detail={c} />}
           <FeedbackAttachmentImages
+            privacy={privacy}
             owner={s.viewer.id}
             detail={c}
             onRefresh={onRefresh}
           />
-          <Pagination
-            page={c.messagePage}
-            more={c.moreMessages}
-            base={detailBase ?? `/platform/help/cases/${c.id}`}
-          />
+          {visible && (
+            <Pagination
+              page={c.messagePage}
+              more={c.moreMessages}
+              base={detailBase ?? `/platform/help/cases/${c.id}`}
+              freshPage={!!privacy}
+            />
+          )}
           {c.unread && (
             <SupportForm
+              privacy={privacy}
               onRefresh={onRefresh}
               owner={s.viewer.id}
               operation="mark-read"
@@ -140,19 +189,24 @@ export function SupportViews({
           )}
           {!["RESOLVED", "CLOSED"].includes(c.status) ? (
             c.feedback && !c.feedback.contactAllowed && !c.access.requester ? (
-              <PortalEmpty>
-                Follow-up permission is off. You can record a status or
-                resolution, but cannot ask the requester to reply.
-              </PortalEmpty>
+              visible && (
+                <PortalEmpty>
+                  Follow-up permission is off. You can record a status or
+                  resolution, but cannot ask the requester to reply.
+                </PortalEmpty>
+              )
             ) : (
-              <PortalCard title="Add a reply">
-                <p className="text-sm text-gc-muted">
-                  Visible to {c.requester.name}
-                  {c.owner ? `, ${c.owner.name}` : " (awaiting an owner)"}
-                  {c.coordinator ? `, and ${c.coordinator.name}` : ""}. Do not
-                  include passwords, codes or sensitive personal details.
-                </p>
+              <PortalCard title={visible ? "Add a reply" : ""}>
+                {visible && (
+                  <p className="text-sm text-gc-muted">
+                    Visible to {c.requester.name}
+                    {c.owner ? `, ${c.owner.name}` : " (awaiting an owner)"}
+                    {c.coordinator ? `, and ${c.coordinator.name}` : ""}. Do not
+                    include passwords, codes or sensitive personal details.
+                  </p>
+                )}
                 <SupportForm
+                  privacy={privacy}
                   onRefresh={onRefresh}
                   owner={s.viewer.id}
                   operation="reply"
@@ -171,8 +225,9 @@ export function SupportViews({
             )
           ) : (
             (c.access.requester || c.access.owner) && (
-              <PortalCard title="Still need help?">
+              <PortalCard title={visible ? "Still need help?" : ""}>
                 <SupportForm
+                  privacy={privacy}
                   onRefresh={onRefresh}
                   owner={s.viewer.id}
                   operation="reopen"
@@ -187,8 +242,9 @@ export function SupportViews({
             )
           )}
           {(c.access.owner || c.access.requester) && c.status !== "CLOSED" && (
-            <PortalCard title="Update the request status">
+            <PortalCard title={visible ? "Update the request status" : ""}>
               <SupportForm
+                privacy={privacy}
                 onRefresh={onRefresh}
                 owner={s.viewer.id}
                 operation="transition"
@@ -222,15 +278,18 @@ export function SupportViews({
             </PortalCard>
           )}
           {c.access.requester && !c.feedback && (
-            <PortalCard title="Church coordinator sharing">
+            <PortalCard title={visible ? "Church coordinator sharing" : ""}>
               {c.coordinator ? (
                 <>
-                  <p className="text-gc-muted">
-                    {c.coordinator.name} can read this history and future
-                    replies. Removing access stops future access here; it cannot
-                    erase information already seen.
-                  </p>
+                  {visible && (
+                    <p className="text-gc-muted">
+                      {c.coordinator.name} can read this history and future
+                      replies. Removing access stops future access here; it
+                      cannot erase information already seen.
+                    </p>
+                  )}
                   <SupportForm
+                    privacy={privacy}
                     onRefresh={onRefresh}
                     owner={s.viewer.id}
                     operation="revoke"
@@ -241,6 +300,7 @@ export function SupportViews({
               ) : c.shareOptions.length &&
                 !["RESOLVED", "CLOSED"].includes(c.status) ? (
                 <SupportForm
+                  privacy={privacy}
                   onRefresh={onRefresh}
                   owner={s.viewer.id}
                   operation="share"
@@ -266,18 +326,21 @@ export function SupportViews({
                   caution="Sharing is optional. You may remove access here at any time. A new church connection does not move or share this history."
                 />
               ) : (
-                <p className="text-gc-muted">
-                  No coordinator is included. Sharing requires an open
-                  church-context request, your approved connection and an
-                  eligible appointed coordinator.
-                </p>
+                visible && (
+                  <p className="text-gc-muted">
+                    No coordinator is included. Sharing requires an open
+                    church-context request, your approved connection and an
+                    eligible appointed coordinator.
+                  </p>
+                )
               )}
             </PortalCard>
           )}
           {c.access.owner && (
-            <PortalCard title="Support owner tools">
+            <PortalCard title={visible ? "Support owner tools" : ""}>
               {c.featureDecision && (
                 <SupportForm
+                  privacy={privacy}
                   onRefresh={onRefresh}
                   owner={s.viewer.id}
                   operation="feature"
@@ -299,6 +362,7 @@ export function SupportViews({
               )}
               {c.ownerOptions.length > 0 && (
                 <SupportForm
+                  privacy={privacy}
                   onRefresh={onRefresh}
                   owner={s.viewer.id}
                   operation="handoff"
@@ -320,17 +384,26 @@ export function SupportViews({
                 />
               )}
               {c.access.redact && (
-                <details className="rounded-xl border border-gc-divider p-4">
-                  <summary className="min-h-11 cursor-pointer font-semibold text-gc-accent">
-                    Restricted privacy redaction
-                  </summary>
-                  <p className="my-4 text-sm text-gc-muted">
-                    Only after verifying the request under the support
-                    operations procedure. This removes the subject, description
-                    and conversation content from the active case. Backup
-                    handling is separate. This cannot be undone here.
-                  </p>
+                <details
+                  open={privacy && !visible ? true : undefined}
+                  className="rounded-xl border border-gc-divider p-4"
+                >
+                  {visible && (
+                    <>
+                      <summary className="min-h-11 cursor-pointer font-semibold text-gc-accent">
+                        Restricted privacy redaction
+                      </summary>
+                      <p className="my-4 text-sm text-gc-muted">
+                        Only after verifying the request under the support
+                        operations procedure. This removes the subject,
+                        description and conversation content from the active
+                        case. Backup handling is separate. This cannot be undone
+                        here.
+                      </p>
+                    </>
+                  )}
                   <SupportForm
+                    privacy={privacy}
                     onRefresh={onRefresh}
                     owner={s.viewer.id}
                     operation="redact"

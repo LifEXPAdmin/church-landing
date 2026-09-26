@@ -3,6 +3,7 @@ import {
   useCallback,
   useEffect,
   useId,
+  useLayoutEffect,
   useRef,
   useState,
   type ReactNode
@@ -24,6 +25,9 @@ export type SupportFormPrivacy = {
   visible: boolean;
   currentAccess: boolean;
   onAccessDenied: () => void;
+  onWorkChange?: (id: string, pending: boolean) => void;
+  onNavigate?: (id: string, destination: string) => void;
+  recoveryLabel?: string;
 };
 export function SupportForm({
   owner,
@@ -82,6 +86,11 @@ export function SupportForm({
   const formRef = useRef<HTMLFormElement>(null);
   const latestSubmit = useRef<() => void>(() => {});
   const retryOriginal = useCallback(() => latestSubmit.current(), []);
+  const onWorkChange = privacy?.onWorkChange;
+  useLayoutEffect(() => {
+    onWorkChange?.(id, dirty || busy || !!retryBody);
+    return () => onWorkChange?.(id, false);
+  }, [onWorkChange, id, dirty, busy, retryBody]);
   usePrivateRecovery(id, !!retryBody, busy, retryOriginal);
   useUnsavedSocialWork(
     {
@@ -104,16 +113,23 @@ export function SupportForm({
       setSourceChanged(true);
   }, [fixed, dirty, retryBody, onRefresh]);
   const navigationAllowed = privacy?.currentAccess ?? true;
+  const onNavigate = privacy?.onNavigate;
   useEffect(() => {
     let active = true;
     if (navigation && navigationAllowed)
       void settlePhotoNavigation().then(() => {
-        if (active) window.location.assign(navigation);
+        if (active) {
+          // Consume this intent before a sibling-preserving current read can
+          // change access and run this effect again.
+          setNavigation(null);
+          if (onNavigate) onNavigate(id, navigation);
+          else window.location.assign(navigation);
+        }
       });
     return () => {
       active = false;
     };
-  }, [navigation, navigationAllowed]);
+  }, [navigation, navigationAllowed, onNavigate, id]);
   useEffect(() => {
     if (feedback && !busy) feedbackRef.current?.focus();
   }, [feedback, busy]);
@@ -190,7 +206,7 @@ export function SupportForm({
     } catch (error) {
       if (
         error instanceof SocialClientError &&
-        [401, 403].includes(error.status)
+        [401, 403, 404].includes(error.status)
       )
         privacy?.onAccessDenied();
       if (
@@ -218,6 +234,23 @@ export function SupportForm({
     }
   };
   latestSubmit.current = () => void submit(formRef.current ?? undefined);
+  const discard = () => {
+    if (
+      retryBody &&
+      !confirm(
+        "This request may already be saved. Clear only this browser's pending retry and entries?"
+      )
+    )
+      return;
+    setRetryBody(null);
+    setDirty(false);
+    setSourceChanged(false);
+    initialFixed.current = fixed;
+    setValues({});
+    formRef.current?.reset();
+    onDiscard?.();
+    setFeedback("Local entries discarded. Previously saved changes remain.");
+  };
   if (privacy && !privacy.visible) {
     return privacy.currentAccess ? (
       <div className="space-y-3">
@@ -232,10 +265,26 @@ export function SupportForm({
           <button
             type="button"
             className="gc-button"
+            aria-label={
+              privacy.recoveryLabel
+                ? `Confirm original request: ${privacy.recoveryLabel}`
+                : undefined
+            }
             disabled={busy}
             onClick={retryOriginal}
           >
             {busy ? "Confirming original request…" : "Confirm original request"}
+          </button>
+        )}
+        {(dirty || retryBody) && privacy.recoveryLabel && (
+          <button
+            type="button"
+            className="gc-button gc-button-quiet"
+            disabled={busy}
+            aria-label={`Discard local entries: ${privacy.recoveryLabel}`}
+            onClick={discard}
+          >
+            Discard local entries
           </button>
         )}
       </div>
@@ -421,25 +470,7 @@ export function SupportForm({
           type="button"
           disabled={busy}
           className="gc-button gc-button-quiet"
-          onClick={() => {
-            if (
-              retryBody &&
-              !confirm(
-                "This request may already be saved. Clear only this browser's pending retry and entries?"
-              )
-            )
-              return;
-            setRetryBody(null);
-            setDirty(false);
-            setSourceChanged(false);
-            initialFixed.current = fixed;
-            setValues({});
-            formRef.current?.reset();
-            onDiscard?.();
-            setFeedback(
-              "Local entries discarded. Previously saved changes remain."
-            );
-          }}
+          onClick={discard}
         >
           Discard local entries
         </button>

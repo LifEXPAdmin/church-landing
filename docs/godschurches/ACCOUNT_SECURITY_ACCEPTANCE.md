@@ -1,5 +1,21 @@
 # Account security acceptance
 
+## Support case privacy candidate, 26 September 2026 UTC
+
+The unchanged prior production source reproduced private case text and routing
+choices in initial HTML/RSC and retained controls after concealment/account change.
+Support detail/routing now use the same client-read, frozen snapshot lifecycle as
+Get help. Every form controller stays mounted; private conversation, choice and
+attachment presentation is removed during current-access checks. Exact uncertain
+commands are preserved, including when routing rows or attachments disappear.
+
+A successful action navigates only when no sibling form has dirty or uncertain
+work. Otherwise it retains the siblings and rechecks access without silently
+rebasing them. Access-denial 404 responses conceal alongside 401/403. The scoped
+photo viewer removes presentation while retaining its one controller/history
+entry. Feedback/Admin refresh owners and server authorization are unchanged.
+Browser, integration and release acceptance remain pending. No live claim is made.
+
 ## Get help privacy and safe retries verified live, 26 September 2026 UTC
 
 Version **2026.09.26.8**, source `e086db1b20623aa24882d90a3d011b7de66bcc1f`, is READY in

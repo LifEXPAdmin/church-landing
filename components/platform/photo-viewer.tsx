@@ -11,13 +11,15 @@ export function PhotoViewer({
   accountId,
   initialId,
   onClose,
-  pageLimit = 10
+  pageLimit = 10,
+  removeWhenHidden = false
 }: {
   source: string;
   accountId?: string | null;
   initialId: string;
   onClose: () => void;
   pageLimit?: 10 | 24;
+  removeWhenHidden?: boolean;
 }) {
   const sourceVisible = useReadVisibility();
   const titleId = useId(),
@@ -124,6 +126,9 @@ export function PhotoViewer({
   }
   const touch = useRef<{ x: number; y: number } | null>(null);
   const variant = image?.variants.large;
+  // Support keeps the viewer controller and its single history entry mounted
+  // while removing private media presentation during current-access checks.
+  if (removeWhenHidden && !sourceVisible) return null;
   return (
     <dialog
       ref={dialog}

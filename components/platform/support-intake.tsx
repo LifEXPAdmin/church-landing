@@ -1,7 +1,5 @@
 "use client";
-import { useCallback, useEffect, useRef, useState } from "react";
-import type { SupportSnapshot } from "@/lib/platform/support-types";
-import { socialRequest } from "@/lib/platform/social-client";
+import { useSupportPrivateSnapshot } from "./use-support-private-snapshot";
 import { SupportIntakePresentation } from "./support-intake-presentation";
 
 // The original snapshot and form controller stay in memory until deliberate
@@ -16,110 +14,8 @@ export function SupportIntake({
   url: string;
   churchId?: string;
 }) {
-  const [snapshot, setSnapshot] = useState<SupportSnapshot | null>(null);
-  const [visible, setVisible] = useState(false);
-  const [currentAccess, setCurrentAccess] = useState(false);
-  const [notice, setNotice] = useState("Checking current help form access…");
-  const checksum = useRef<string | null>(null);
-  const generation = useRef(0),
-    active = useRef(false),
-    reading = useRef(false),
-    queued = useRef(false);
-  const latest = useRef<() => Promise<void>>(async () => {});
-  const load = useCallback(async () => {
-    if (!active.current || document.visibilityState === "hidden") return;
-    if (reading.current) {
-      queued.current = true;
-      return;
-    }
-    reading.current = true;
-    const seq = ++generation.current;
-    setVisible(false);
-    setCurrentAccess(false);
-    setNotice("Checking current help form access…");
-    try {
-      const { data } = await socialRequest<SupportSnapshot>(
-        url,
-        undefined,
-        owner
-      );
-      const digest = Array.from(
-        new Uint8Array(
-          await crypto.subtle.digest(
-            "SHA-256",
-            new TextEncoder().encode(JSON.stringify(data))
-          )
-        ),
-        (b) => b.toString(16).padStart(2, "0")
-      ).join("");
-      if (seq !== generation.current) return;
-      setCurrentAccess(true);
-      if (checksum.current !== null && checksum.current !== digest) {
-        setNotice(
-          "This help form or its access changed. Reload to inspect current details. Unsaved entries will be cleared; an unconfirmed request may already be saved."
-        );
-      } else {
-        if (checksum.current === null) {
-          checksum.current = digest;
-          setSnapshot(data);
-        }
-        setVisible(true);
-        setNotice("");
-      }
-    } catch (error) {
-      if (seq === generation.current)
-        setNotice(
-          error instanceof Error
-            ? error.message
-            : "Current help form access could not be confirmed."
-        );
-    } finally {
-      reading.current = false;
-      if (queued.current && active.current) {
-        queued.current = false;
-        void latest.current();
-      }
-    }
-  }, [owner, url]);
-  latest.current = load;
-  const hide = useCallback(() => {
-    active.current = false;
-    queued.current = false;
-    generation.current++;
-    setVisible(false);
-    setCurrentAccess(false);
-    setNotice("Checking current help form access…");
-  }, []);
-  useEffect(() => {
-    const resume = () => {
-      if (document.visibilityState !== "hidden") {
-        active.current = true;
-        void load();
-      }
-    };
-    const visibility = () =>
-      document.visibilityState === "hidden" ? hide() : resume();
-    resume();
-    window.addEventListener("blur", hide);
-    window.addEventListener("pagehide", hide);
-    window.addEventListener("offline", hide);
-    window.addEventListener("focus", resume);
-    window.addEventListener("online", resume);
-    window.addEventListener("pageshow", resume);
-    window.addEventListener("social-relationships-changed", resume);
-    document.addEventListener("visibilitychange", visibility);
-    return () => {
-      hide();
-      window.removeEventListener("blur", hide);
-      window.removeEventListener("pagehide", hide);
-      window.removeEventListener("offline", hide);
-      window.removeEventListener("focus", resume);
-      window.removeEventListener("online", resume);
-      window.removeEventListener("pageshow", resume);
-      window.removeEventListener("social-relationships-changed", resume);
-      document.removeEventListener("visibilitychange", visibility);
-    };
-  }, [load, hide]);
+  const { snapshot, visible, currentAccess, notice, hide, recheck } =
+    useSupportPrivateSnapshot(owner, url, "help form");
   return (
     <div className="space-y-6">
       {!visible && (
@@ -128,12 +24,7 @@ export function SupportIntake({
           <button
             type="button"
             className="gc-button gc-button-quiet"
-            onClick={() => {
-              if (document.visibilityState !== "hidden") {
-                active.current = true;
-                void load();
-              }
-            }}
+            onClick={recheck}
           >
             Recheck current access
           </button>

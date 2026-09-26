@@ -1006,6 +1006,14 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "private-help-conversations", version: "2026.09.26.9", date: "2026-09-26",
+    summary: "Help conversations and assignment choices check current access before showing private details.",
+    added: [],
+    improved: ["Private case content, assignment choices and attachment presentation clear when the page is concealed or access changes.", "Unsent replies and original unconfirmed requests stay with their account while access is rechecked."],
+    fixed: ["Saving one case action preserves another form's unsent entries or unconfirmed request. Private attachment viewing keeps one Back step while checking access."],
+    featureIds: []
+  },
+  {
     id: "private-help-form", version: "2026.09.26.8", date: "2026-09-26",
     summary: "Protect an open help request while keeping your unsent work and original submission recoverable.",
     added: [],

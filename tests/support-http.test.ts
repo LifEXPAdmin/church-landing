@@ -62,9 +62,14 @@ test("HTTP create and retry save once, return minimal receipt and expose scoped 
   assert.deepEqual(Object.keys(c).sort(), ["caseId", "message", "version"]);
   assert.match(c.message, /Request received/);
   const detail = await get(f.memberA, "detail", c.caseId);
+  assert.equal(detail.status, 200);
   privateHeaders(detail);
   const s = await detail.json();
   assert.equal(s.detail.id, c.caseId);
+  assert.equal(s.detail.subject, input.subject);
+  assert.equal(s.detail.description, input.description);
+  assert.equal(s.detail.requester.id, f.memberA.id);
+  assert.equal(s.detail.owner.id, f.owner.id);
   assert.ok(!JSON.stringify(s).includes(f.memberA.email));
   assert.ok(!JSON.stringify(s).includes(f.memberA.token));
   const list = await get(f.memberA, "requests");
@@ -106,8 +111,31 @@ test("HTTP denies missing sessions, forged origin/fields, other actors and body 
   const guessed = await get(f.memberB, "detail", "unrelated-opaque-case");
   assert.equal(guessed.status, 404);
 });
-test("private case HTML and raw production RSC deny cross-account content, contacts and tokens", async () => {
+test("private case HTML and raw production RSC omit detail even for an authorized account; its API retains the conversation", async () => {
   const c = await newCase();
+  const privateReply = `Fictional private case reply ${randomUUID()}`;
+  const reply = await post(f.owner, {
+    operation: "reply",
+    caseId: c.caseId,
+    expectedVersion: c.version,
+    requestKey: randomUUID(),
+    body: privateReply
+  });
+  assert.equal(reply.status, 200);
+  const detail = await get(f.memberA, "detail", c.caseId);
+  assert.equal(detail.status, 200);
+  privateHeaders(detail);
+  const snapshot = await detail.json();
+  assert.equal(snapshot.detail.subject, "Fictional private help subject");
+  assert.equal(
+    snapshot.detail.description,
+    "Fictional private description for isolated support tests."
+  );
+  assert.ok(
+    snapshot.detail.messages.some(
+      (message: { body: string }) => message.body === privateReply
+    )
+  );
   const path = `/platform/help/cases/${c.caseId}`;
   for (const rsc of [false, true])
     for (const a of [f.memberA, f.memberB, f.manager]) {
@@ -122,14 +150,19 @@ test("private case HTML and raw production RSC deny cross-account content, conta
         rsc ? /text\/x-component/ : /text\/html/
       );
       const body = await r.text();
-      assert.equal(
-        body.includes("Fictional private description"),
-        a.id === f.memberA.id
-      );
+      for (const privateValue of [
+        "Fictional private description",
+        "Fictional private help subject",
+        privateReply,
+        f.owner.name
+      ])
+        assert.ok(
+          !body.includes(privateValue),
+          "Initial HTML and RSC contain no private case presentation or snapshot"
+        );
       if (a.id !== f.memberA.id) {
-        assert.ok(!body.includes("Fictional private help subject"));
+        // The shell may identify its signed-in viewer, never another requester.
         assert.ok(!body.includes(f.memberA.name));
-        assert.ok(!body.includes(f.owner.name));
       }
       for (const privateValue of [
         a.token,
@@ -149,7 +182,7 @@ test("private case HTML and raw production RSC deny cross-account content, conta
       }
     }
 });
-test("unassigned manager sees routing metadata but no private history across HTTP and raw RSC", async () => {
+test("unassigned manager receives bounded routing metadata only through the authorized API, never initial HTML or RSC", async () => {
   const c = await newCase();
   await db.supportCapabilityGrant.update({
     where: { id: f.ownerGrant.id },
@@ -157,17 +190,27 @@ test("unassigned manager sees routing metadata but no private history across HTT
   });
   let routingPage = 0;
   let text = "";
+  let ownerOptions: { id: string; name: string; version: number }[] = [];
   for (; routingPage < 10; routingPage++) {
     const r = await get(f.manager, "routing&page=" + routingPage);
     assert.equal(r.status, 200);
+    privateHeaders(r);
     text = await r.text();
     const value = JSON.parse(text);
     assert.ok(value.routing.length <= 20);
+    assert.ok(value.ownerOptions.length <= 20);
+    ownerOptions = value.ownerOptions;
+    for (const option of ownerOptions) {
+      assert.equal(typeof option.id, "string");
+      assert.equal(typeof option.name, "string");
+      assert.ok(Number.isSafeInteger(option.version) && option.version > 0);
+    }
     assert.ok(!text.includes("Fictional private"));
     assert.ok(!text.includes(f.memberA.name));
     if (text.includes(c.caseId) || !value.more) break;
   }
   assert.ok(text.includes(c.caseId));
+  assert.ok(ownerOptions.length > 0, "An eligible routing owner remains available");
   assert.ok(!text.includes("Fictional private"));
   assert.ok(!text.includes(f.memberA.name));
   for (const rsc of [false, true]) {
@@ -177,8 +220,27 @@ test("unassigned manager sees routing metadata but no private history across HTT
         headers: { Cookie: cookie(f.manager), ...(rsc ? { RSC: "1" } : {}) }
       }
     );
+    assert.equal(page.status, 200);
+    privateHeaders(page);
+    assert.match(
+      page.headers.get("content-type") ?? "",
+      rsc ? /text\/x-component/ : /text\/html/
+    );
     const body = await page.text();
-    assert.ok(body.includes(c.caseId));
+    assert.ok(
+      !body.includes(c.caseId),
+      "Routing references stay out of HTML and RSC"
+    );
+    for (const option of ownerOptions) {
+      assert.ok(
+        !body.includes(option.id),
+        "Owner grant IDs stay out of HTML and RSC"
+      );
+      assert.ok(
+        !body.includes(option.name),
+        "Owner choices stay out of HTML and RSC"
+      );
+    }
     assert.ok(!body.includes("Fictional private"));
     assert.ok(!body.includes(f.memberA.email));
   }
