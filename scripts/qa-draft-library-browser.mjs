@@ -65,7 +65,7 @@ const ok = (s) => {
   results.push(s);
   console.log("PASS " + s);
 };
-const output = fixtureDir + "/draft-library-browser";
+const output = fixtureDir + "/draft-library-browser-" + Date.now();
 mkdirSync(output, { recursive: true });
 const go = async (path) => {
   await page.goto(config.origin + path);
@@ -429,14 +429,33 @@ try {
     .getByRole("button", { name: "Refresh drafts", exact: true })
     .click();
   await settle();
-  assert.equal(await rows().count(), 19);
+  // A fresh first page fills back to twenty from the remaining twenty-one
+  // drafts. Retrying the confirmed server receipt must not remove another row.
+  assert.equal(await rows().count(), 20);
+  const discarded = await db.privatePostDraft.findUniqueOrThrow({
+    where: { ownerId_id: { ownerId: a.id, id: JSON.parse(sent[0]).id } }
+  });
+  assert.ok(discarded.deletedAt);
+  assert.equal(discarded.version, JSON.parse(sent[0]).expectedVersion + 1);
   await page
     .getByRole("button", { name: "Retry discard", exact: true })
     .click();
   await settle();
   assert.equal(sent.length, 2);
   assert.equal(sent[0], sent[1]);
-  assert.equal(await rows().count(), 19);
+  assert.deepEqual(
+    await db.privatePostDraft.findUniqueOrThrow({
+      where: { ownerId_id: { ownerId: a.id, id: discarded.id } }
+    }),
+    discarded
+  );
+  assert.equal(
+    await db.privatePostDraft.count({
+      where: { ownerId: a.id, deletedAt: null }
+    }),
+    21
+  );
+  assert.equal(await rows().count(), 20);
   assert.match(await page.getByRole("status").innerText(), /Draft discarded/);
   await page.unroute("**/api/platform/post-workspace");
   ok(
