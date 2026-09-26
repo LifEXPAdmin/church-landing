@@ -1,7 +1,92 @@
 # Volunteer availability and cancellation notices
 
-Tested handoff for release-owner integration, 26 September 2026 UTC. This report
-does not establish production migration, provider delivery or live acceptance.
+## Release accepted, 26 September 2026 UTC
+
+Version **2026.09.26.4**, serving source
+`0b6683ee23ec3bcaa4a82397f0c9dc1b12453613`, is READY in deployment
+`dpl_2WsymHiMeDsA3udAMGdyDYWRgyWv`. Independent `godschurches.com` assignment
+and exact serving identity passed at 06:15 UTC. Final original-column data
+comparison passed at 06:22 UTC. The evidence below supersedes the earlier
+integration-pending checkpoint while preserving its source attribution.
+
+### Combined source and verification
+
+The complete uninterrupted support gate on combined backend source
+`bd18df08dc33f1328b57e131c83875ed2ed318a2` discovers 210 files and records
+1,341 test executions: 1,339 passes, two expected skips and no failures or
+cancellations. The two development-delivery cases passed in development and
+intentionally skipped in production. This includes historical upgrade, restore,
+service, development HTTP, production HTTPS and restart stages. These are staged
+test executions, not inferred unique assertions.
+
+Final source `0b6683e` changes only narrow-screen spacing and the existing browser
+assertion. At 320 pixels and enlarged text, nested padding left an application
+form 166 pixels wide and split button words. The reproduced repair widens it to
+270 pixels, preserves whole words and removes no control. Four final screenshots
+were inspected at 320, 390 and 1,280 pixels, including enlarged text and reminder
+settings. The final 12 volunteer browser groups plus 20 existing calendar,
+privacy and header groups pass without browser errors or external requests.
+The earlier and final 32-group runs are not added together. A source-delta guard
+confirms service, schema, recovery and dependencies match the full-gate baseline.
+
+The final production build passed in 48.217 seconds with 231 runtime traces,
+329 public files and zero security findings. Types, focused lint, copy, diff and
+format checks pass. Exact-source Linux CI
+[36222442872](https://github.com/LifEXPAdmin/church-landing/actions/runs/36222442872)
+passes. Final startup JavaScript changes versus the retained prior release are
++530 gzip bytes on Serve paths and +243 on Settings; CSS adds 42 gzip bytes.
+There is no new dependency or scheduler. Ten local reminder advances used 279
+statements in one 114.762 ms sample. Batched source checks for either one or ten
+notices used 27 statements. These are scoped local measurements, not production
+load or speed claims.
+
+### Production and recovery acceptance
+
+The canonical production build applied all five migrations successfully at
+06:10:55 UTC. Production, source and installed registry match all 115 migration
+checksums, with no pending migrations. Four new constraints are validated, three
+triggers enabled, and new values/defaults satisfy the inspected bounds.
+Migration DDL and privacy scrub statements are deployment writes, separate from
+zero verification test writes. Preflight scrub candidate counts were zero; they
+are not transaction-level affected-row receipts. Final fingerprints are unchanged
+for all 149 existing tables over their original columns.
+
+A fresh encrypted production copy upgraded from 110 to 115 locally, preserved
+those original tables and completed current protected replay at 05:14 UTC.
+The unchanged backend retains that evidence. A new installed encrypted
+115-to-115 restore at 06:15 UTC restored 149 tables and removed plaintext;
+ordinary installed restore does not itself replay protected controls. The actual
+nightly job advanced from run 18 to 19, exited zero and validated 100 retained
+sets with no issues or removals. Retention runtime was not replaced.
+
+All 27 live guest/browser checks and six health checks pass. Guest Settings
+redirects are same-origin, exact and noncacheable. Authenticated availability,
+coordinator access, consent and cancellation journeys were verified with isolated
+fictional records, not real production recipients. One opaque nonexistent-owner
+native queue probe was published once; the exact deployment consumer returned
+HTTP 200. Correlation is limited to deployment, route, mode and time window,
+not a per-message log identifier. It made no application writes or recipient
+sends. Scoped runtime error/fatal rows are zero. No physical phone receipt is
+claimed.
+
+### Rollback and remaining gates
+
+Eleven actual older/current built-runtime checks pass on schema 115 and preserve
+the reviewed private data and authority boundaries. They also demonstrate a
+behavior limit: the old RSVP-Off writer removes a volunteer-only reminder job;
+the current writer can reestablish it without inventing consent. Old slot writes
+advance the trigger clock and current resolution rejects stale notices.
+**The older runtime is not fully compatible with continued volunteer reminders.**
+Feature continuity requires the current combined consent, planner, producer,
+consumer, source checks and privacy paths. Recovery does not backfill past due
+times. Actual provider/device receipt, screening, pilot and broader parent
+acceptance remain open in their owning tasks.
+
+## Preserved implementation and handoff evidence
+
+The following sections describe local implementation and earlier integration
+checkpoints; their pending-production statements are historical. Current
+production acceptance is recorded above.
 
 ## Scope and existing owners
 

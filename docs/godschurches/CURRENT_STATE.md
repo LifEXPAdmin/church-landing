@@ -1,3 +1,30 @@
+## Volunteer availability and reminders verified live, 26 September 2026 UTC
+
+Version **2026.09.26.4**, source `0b6683ee23ec3bcaa4a82397f0c9dc1b12453613`,
+is READY in `dpl_2WsymHiMeDsA3udAMGdyDYWRgyWv`. Independent canonical-domain
+and serving checks passed at 06:15 UTC; final data acceptance passed at 06:22 UTC.
+Optional availability stays private to its applicant and authorized coordinators.
+Separate volunteer shift reminders start Off; cancellation and source revocation
+suppress stale notices. A reproduced small-screen enlarged-text defect was fixed
+before release. See the [full receipt](VOLUNTEER_AVAILABILITY_REPORT.md) and
+[published notes](https://godschurches.com/platform/releases/volunteer-availability-reminders).
+
+The complete backend-baseline gate covers 210 discovered files with 1,339 passes,
+two expected production-only skips and no failures. The final layout delta passes
+32 built-browser/header groups, the build and exact-source CI. All 27 live checks
+and six health checks pass. Five migrations applied successfully; all 115 source,
+production and installed checksums match. All 149 original-column table
+fingerprints are unchanged. Protected recovery, fresh installed encrypted restore
+and the actual nightly backup job passed. One nonrecipient queue probe reached
+the exact deployment consumer; scoped runtime error/fatal rows are zero.
+Verification made zero production test writes and sent zero recipient messages.
+
+Actual provider/device receipt, screening, pilot and broader security/parent gates
+remain open. Older-runtime database compatibility does not preserve volunteer
+reminder behavior. The interchurch definition is accepted as a separate contract;
+its implementation and authority grants are still pending. Next: integrate the
+reviewed incident runbook, then continue eligible work by priority.
+
 ## Account boundary repairs verified live, 26 September 2026 UTC
 
 Version **2026.09.26.3**, source `2c92f844d5996d3f87afab0bdbb63c45f41ddf2e`,

@@ -1,5 +1,18 @@
 # Encrypted recovery copies and expiry
 
+## Volunteer release recovery verified, 26 September 2026 UTC
+
+Production and the installed registry now match all 115 source migration
+checksums. The protected 110-to-115 rehearsal at 05:14 UTC preserved 149 original
+tables over their original columns and replayed current protected controls.
+Its backend is unchanged by the final small-screen layout repair. A fresh
+installed encrypted 115-to-115 restore passed at 06:15 UTC, restored 149 tables
+and removed plaintext. Ordinary installed restore does not itself replay controls.
+The actual launchd maintenance job advanced from run 18 to 19, exited zero and
+validated 100 sets with no issues, expiry candidates or removals. The installed
+retention runtime is unchanged; verification made no production database writes.
+See [the release and rollback limits](VOLUNTEER_AVAILABILITY_REPORT.md).
+
 ## Calendar release recovery verified, 26 September 2026 UTC
 
 Installed registry and production match 110 migration checksums. Protected
