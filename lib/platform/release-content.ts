@@ -14,6 +14,20 @@ export type Feature = {
 };
 export const features: Feature[] = [
   {
+    id: "calendar-display", category: "Events and calendars", name: "Saved calendar display",
+    description: "Choose your week start, Agenda or Month view, and a fixed or device-following viewing time zone.",
+    steps: "Open Settings, Calendar, Saved calendar display. Save your choices for future sessions. Temporary calendar view controls can override them for the current page.",
+    href: "/platform/settings/calendar/view",
+    eligibility: "Requires sign-in. Source event times and all-day dates remain unchanged. Device following checks the browser zone when a calendar view opens. Month view retains Busy-only redaction and links crowded days to the agenda.", availability: "available"
+  },
+  {
+    id: "calendar-reminders", category: "Events and calendars", name: "Optional timed event reminders",
+    description: "Choose a reminder 15 or 60 minutes before timed events marked Going or Maybe.",
+    steps: "Open Settings, Calendar, Event notification preferences. Reminders start Off. Select a lead time and save. Activity and phone choices stay separate; event phone alerts also need a current device.",
+    href: "/platform/settings/notifications/availability",
+    eligibility: "Requires an eligible adult account, a future reminder time and current event-detail access. All-day events, calendar following and volunteer-only commitments do not create reminders. Quiet hours apply; phone delivery stops at the event start. Scheduling and device delivery are best effort. Changing display or hidden calendars never grants notification consent.", availability: "conditional"
+  },
+  {
     id: "calendar-following", category: "Events and calendars", name: "Saved calendar layers",
     description: "Follow, hide and color available calendars with private choices saved to your account.",
     steps: "Open My calendars, expand My choices for an available calendar and save. Unfollow to remove its saved overlay, or hide while keeping it followed. Return to your saved choices after trying a temporary view.",
@@ -25,9 +39,9 @@ export const features: Feature[] = [
     category: "Events and calendars",
     name: "Personal Calendar settings",
     description: "Find date formats, viewing choices, event alerts and schedule sharing in separate Settings groups.",
-    steps: "Open Settings, Calendar. Save date and time formats in Language and location, review event notifications, or open your calendars to choose a view and deliberately manage sharing.",
+    steps: "Open Settings, Calendar. Save display defaults and date/time formats, review timed reminders and event notifications, or open your calendars to manage saved layers and deliberately review sharing.",
     href: "/platform/settings/calendar",
-    eligibility: "Requires sign-in. Busy-only availability and event-detail sharing remain separate choices on each calendar or event. Saved default views, timed reminders, calendar subscriptions and external connections are not available here yet. Personal viewing choices never publish events or grant church duties.",
+    eligibility: "Requires sign-in. Busy-only availability and event-detail sharing remain separate choices on each calendar or event. Private feed subscription links and external calendar connections are not available here yet. Personal viewing choices never publish events or grant church duties.",
     availability: "available"
   },
   {
@@ -991,6 +1005,13 @@ export const features: Feature[] = [
   }
 ];
 export const releases: ReleaseEntry[] = [
+  {
+    id: "calendar-display-reminders", version: "2026.09.26.1", date: "2026-09-26",
+    summary: "Save your calendar display and choose optional reminders for timed events in your commitments.",
+    added: ["Saved week start, Agenda or Month view, and fixed or device-following viewing zones apply across sign-ins.", "Optional reminders start Off and can be set to 15 or 60 minutes before timed events marked Going or Maybe."],
+    improved: ["Calendar Settings reuses your existing formats, calendar layers and notification choices. Busy-only events stay redacted in Month view; crowded days link to the complete agenda.", "Reminder delivery rechecks current event access and consent, respects quiet hours and stops at the event start."],
+    fixed: [], featureIds: ["calendar-display", "calendar-reminders", "calendar-following", "calendar-settings"]
+  },
   {
     id: "calendar-following", version: "2026.09.22.6", date: "2026-09-22",
     summary: "Save private follow, visibility and color choices for your available calendars.",

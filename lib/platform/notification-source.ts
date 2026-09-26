@@ -21,6 +21,8 @@ export type NotificationSource = {
   href: string;
   group: string;
   summary?: string;
+  /** Source deadline bounds provider retention as well as worker submission. */
+  expiresAt?: Date;
 };
 
 // All channels reuse current canonical authority. Bounded pages share metadata

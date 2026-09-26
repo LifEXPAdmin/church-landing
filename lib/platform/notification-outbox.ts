@@ -138,7 +138,8 @@ export async function enqueueNotification(
     Math.min(
       event.createdAt.getTime() +
         (source.category === "test" ? 600000 : 7 * DAY),
-      now.getTime() + 7 * DAY
+      now.getTime() + 7 * DAY,
+      source.expiresAt?.getTime() ?? Infinity
     )
   );
   if (expiresAt <= now) return;

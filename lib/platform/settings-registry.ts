@@ -747,7 +747,7 @@ export const settingsRegistry: readonly SettingRegistration[] = Object.freeze([
   ),
   entry(
     "calendar.alerts", "calendar", "Event notification preferences",
-    "Review your event Activity and phone choices. Timed calendar reminders are not available yet.",
+    "Choose Off, 15 minutes or 60 minutes before timed events marked Going or Maybe. Review your event Activity and phone choices in the same place.",
     ["calendar reminder", "event alerts", "reminders", "notifications"],
     { href: "/platform/settings/notifications/availability" },
     linked("notification-preferences.ts", "notification-preferences.ts")

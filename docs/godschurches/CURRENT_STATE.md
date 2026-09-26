@@ -1,3 +1,13 @@
+## Timed calendar reminders local checkpoint, 26 September 2026 UTC
+
+The [reminder checkpoint](CALENDAR_REMINDERS_REPORT.md) extends the existing
+notification owner with default-Off timed reminders for Going/Maybe commitments.
+It completes the local implementation required alongside saved calendar display.
+Fifty-one focused checks, types, copy, lint and production build pass. A local
+encrypted 106-to-110 restore upgrade preserves original production fingerprints.
+Final browser, full regression, compatible rollback, cost and release gates are
+still in progress. Production remains the verified calendar-layer release below.
+
 ## Saved calendar display local checkpoint, 22 September 2026 UTC
 
 The [display checkpoint](CALENDAR_DISPLAY_PREFERENCES_REPORT.md) adds saved

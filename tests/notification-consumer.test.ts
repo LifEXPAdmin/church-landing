@@ -1,3 +1,4 @@
+import { calendarReminderMessage } from "../lib/platform/calendar-reminders";
 import { exchangeHandoffMessage } from "../lib/platform/exchange-handoff-queue";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
@@ -38,6 +39,9 @@ test("shared native consumer rejects unsupported topics and mismatched payloads 
       { id: "valid", kind: "comment" },
       { id: "valid", kind: "unknown" },
       { id: "valid", kind: "activity", version: 1 },
+      { id: "valid", kind: "calendar-reminder" },
+      { id: "valid", kind: "calendar-reminder", version: 0 },
+      { id: "valid", kind: "calendar-reminder", version: 1, body: "unwanted" },
       { id: "valid", kind: "handoff" },
       { id: "valid", kind: "handoff", version: 0 },
       { id: "valid", kind: "handoff", version: 1, body: "unwanted" },
@@ -64,6 +68,7 @@ test("shared native consumer rejects unsupported topics and mismatched payloads 
 test("legacy comments and both new message kinds reach their own canonical no-op path without creating work or delivery", async (t) => {
   const counts = async () =>
     Promise.all([
+      db.calendarReminderJob.count(),
       db.commentFollowerJob.count(),
       db.notificationFanoutJob.count(),
       db.platformPost.count(),
@@ -80,7 +85,8 @@ test("legacy comments and both new message kinds reach their own canonical no-op
     { id },
     notificationFanoutMessage(id),
     scheduledPublicationMessage({ id, version: 1 }),
-    exchangeHandoffMessage({ id, version: 1 })
+    exchangeHandoffMessage({ id, version: 1 }),
+    calendarReminderMessage({ id, version: 1 })
   ])
     await consumeNotificationWork(db, NOTIFICATION_WORK_TOPIC, value);
   assert.deepEqual(await counts(), before);
@@ -88,6 +94,7 @@ test("legacy comments and both new message kinds reach their own canonical no-op
     ["comment_follower_queue_probe_completed", { applicationWrites: 0 }],
     ["activity_fanout_queue_probe_completed", { applicationWrites: 0 }],
     ["scheduled_publication_queue_probe_completed", { applicationWrites: 0 }],
-    ["exchange_handoff_queue_probe_completed", { applicationWrites: 0 }]
+    ["exchange_handoff_queue_probe_completed", { applicationWrites: 0 }],
+    ["calendar_reminder_queue_probe_completed", { applicationWrites: 0 }]
   ]);
 });

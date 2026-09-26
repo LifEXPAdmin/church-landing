@@ -340,6 +340,7 @@ model PlatformUser {
   contactAssignments ChurchContactAssignment[]
   calendars PlatformCalendar[] @relation("CalendarOwner")
   calendarLayerPreferences CalendarLayerPreference[]
+  calendarReminderJob CalendarReminderJob?
   createdCalendars PlatformCalendar[] @relation("CalendarCreator")
   eventResponses CalendarResponse[]
   pollBallots PostPollBallot[]
@@ -1039,6 +1040,20 @@ model PlatformCalendar {
   @@index([churchId, archivedAt])
 }
 
+model CalendarReminderJob {
+  ownerId String @id
+  version Int @default(1)
+  wakeAt DateTime? @db.Timestamptz(3)
+  throughAt DateTime @db.Timestamptz(3)
+  throughId String @default("")
+  dispatchedAt DateTime?
+  dispatchClaimedAt DateTime?
+  dispatchAttempts Int @default(0)
+  lastDispatchErrorAt DateTime?
+  owner PlatformUser @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  @@index([wakeAt, dispatchedAt])
+}
+
 model CalendarLayerPreference {
   id String @id @default(cuid())
   ownerId String
@@ -1101,6 +1116,7 @@ model CalendarOccurrence {
   endAt DateTime @db.Timestamptz(3)
   isException Boolean @default(false)
   canceledAt DateTime?
+  updatedAt DateTime @default(now()) @updatedAt @db.Timestamptz(3)
   version Int @default(1)
   event CalendarEvent @relation(fields: [eventId], references: [id], onDelete: Restrict)
   responses CalendarResponse[]
@@ -2956,6 +2972,8 @@ model PostWorkspaceOperation {
 
 
 model SocialPreferences {
+  calendarReminderMinutes Int @default(0)
+  calendarReminderSince DateTime? @db.Timestamptz(3)
   menuShortcutIds String[] @default([])
   menuShortcutsVersion Int @default(0)
   onboardingDismissed String[] @default([])

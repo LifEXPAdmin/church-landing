@@ -1,3 +1,8 @@
+import { wakeCalendarReminders } from "./calendar-reminder-plan";
+import {
+  dispatchCalendarReminders,
+  type CalendarReminderPublish
+} from "./calendar-reminders";
 import { recordExchangeSearchMatch } from "./exchange-alerts";
 import { feedbackNotificationFamily } from "./feedback-notification-source";
 import { feedbackFollowupEnabled } from "./feedback-followup-policy";
@@ -36,7 +41,14 @@ export function processNotificationFanoutBatch(
       await tx.$queryRaw`SELECT id FROM "NotificationFanoutJob" WHERE id=${id} FOR UPDATE`;
       const job = await tx.notificationFanoutJob.findUnique({ where: { id } });
       if (!job || job.completedAt)
-        return { done: true, processed: 0, sourceId: null };
+        return {
+          done: true,
+          processed: 0,
+          sourceId: null,
+          ...(job?.kind === "EVENT_CHANGED"
+            ? { reminderSourceId: job.sourceId }
+            : {})
+        };
       let recipients: { id: string; ownerId: string }[] = [];
       let postId: string | null = null;
       let valid = job.createdAt.getTime() + 7 * DAY > now.getTime();
@@ -319,6 +331,25 @@ export function processNotificationFanoutBatch(
           ).map((r) => ({ id: r.id, ownerId: r.userId }));
         else valid = false;
       } else valid = false;
+      // One bounded consent read avoids work for the default-Off audience.
+      const reminderOwners =
+        job.kind === "EVENT_CHANGED" &&
+        job.phase === "PRIMARY" &&
+        recipients.length
+          ? await tx.socialPreferences.findMany({
+              where: {
+                ownerId: { in: recipients.map((r) => r.ownerId) },
+                calendarReminderMinutes: { in: [15, 60] },
+                calendarReminderSince: { not: null },
+                notificationRecoveryRequired: false
+              },
+              select: { ownerId: true },
+              orderBy: { ownerId: "asc" },
+              take: NOTIFICATION_FANOUT_BATCH
+            })
+          : [];
+      for (const owner of reminderOwners)
+        await wakeCalendarReminders(tx, owner.ownerId, false, now);
       for (const recipient of recipients) {
         if (recipient.ownerId === job.actorId) continue;
         if (job.kind === "EXCHANGE_LISTING") {
@@ -359,7 +390,14 @@ export function processNotificationFanoutBatch(
           ...(done ? { completedAt: now } : {})
         }
       });
-      return { done, processed: recipients.length, sourceId: job.sourceId };
+      return {
+        done,
+        processed: recipients.length,
+        sourceId: job.sourceId,
+        ...(job.kind === "EVENT_CHANGED"
+          ? { reminderSourceId: job.sourceId }
+          : {})
+      };
     },
     { maxWait: 10000, timeout: 15000 }
   );
@@ -367,7 +405,8 @@ export function processNotificationFanoutBatch(
 export async function advanceNotificationFanout(
   db: PrismaClient,
   id: string,
-  publish?: QueuePublish
+  publish?: QueuePublish,
+  reminderPublish?: CalendarReminderPublish
 ) {
   const result = await processNotificationFanoutBatch(db, id);
   let failed = 0;
@@ -377,7 +416,19 @@ export async function advanceNotificationFanout(
       failed += sent.failed;
       if (sent.failed || sent.queued < 100) break;
     }
-  return { ...result, failed };
+  // Recover every pending owner touched by this occurrence, including earlier
+  // batches whose database commit succeeded but queue handoff failed.
+  const reminders = result.reminderSourceId
+    ? await dispatchCalendarReminders(
+        db,
+        undefined,
+        reminderPublish,
+        new Date(),
+        result.reminderSourceId
+      )
+    : { queued: 0, failed: 0 };
+  failed += reminders.failed;
+  return { ...result, done: result.done && reminders.queued < 100, failed };
 }
 export async function dispatchNotificationFanout(
   db: PrismaClient,
@@ -456,6 +507,8 @@ export function scheduleDomainActivity(
             .failed
         )
           console.error("domain_activity_delivery_handoff_incomplete");
+        if ((await dispatchCalendarReminders(db, actorId)).failed)
+          console.error("calendar_reminder_handoff_incomplete");
         if ((await dispatchNotificationFanout(db, actorId)).failed)
           console.error("domain_activity_handoff_incomplete");
       } catch {

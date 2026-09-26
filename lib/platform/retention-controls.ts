@@ -1091,6 +1091,8 @@ export async function replayRetentionControls(
                 data: {
                   notificationVersion: entry.version,
                   notificationRecoveryRequired: true,
+                  calendarReminderMinutes: 0,
+                  calendarReminderSince: null,
                   pushCategories: [],
                   notificationPushSince: Prisma.DbNull,
                   feedbackEmailSince: null,

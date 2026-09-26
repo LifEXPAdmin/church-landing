@@ -155,6 +155,16 @@ test("secured notification inspection verifies configuration without delivery or
     assert.equal(probe.applicationWrites, 0);
     assert.equal(probe.providerMessageId, "fixture-provider-message");
     assert.equal(sent, 1);
+    const reminders = await (
+      await handleNotificationMaintenance(
+        db,
+        request("probe-calendar-reminders"),
+        publish
+      )
+    ).json();
+    assert.equal(reminders.queued, 1);
+    assert.equal(reminders.applicationWrites, 0);
+    assert.equal(sent, 2);
     assert.equal(await snapshot(), before);
   } finally {
     process.env.PUSH_ENABLED = "true";

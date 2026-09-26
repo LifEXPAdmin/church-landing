@@ -99,6 +99,7 @@ async function erasePrivateCollections(tx: Tx, userId: string) {
   await tx.conversationPreference.deleteMany({ where: { ownerId: userId } });
   await tx.feedSnapshot.deleteMany({ where: { ownerId: userId } });
   await tx.socialPreferences.deleteMany({ where: { ownerId: userId } });
+  await tx.calendarReminderJob.deleteMany({ where: { ownerId: userId } });
   await tx.founderAnnouncementRecipient.deleteMany({
     where: { recipientId: userId }
   });

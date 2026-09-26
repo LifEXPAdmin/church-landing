@@ -1,5 +1,15 @@
 # Calendar settings ownership and readiness
 
+September 22 reminder implementation is local and under verification. The
+existing notification owner now stores explicit Off/15/60-minute consent for
+timed Going/Maybe event reminders. Calendar Settings links that same control;
+saved calendar layers keep their own canonical owner. Hiding does not cancel
+RSVP, reminder consent or membership. Activity, dated phone consent, current
+devices, quiet hours and protected recovery remain separate checks. See the
+[reminder contract](CALENDAR_REMINDERS_CONTRACT.md). This supersedes the
+historical absence of timed reminders below only for the current local code;
+combined regression, restore, rollback and release acceptance remain open.
+
 September 22 saved-display implementation is local and under verification. The
 existing account regional owner now also stores week start, Agenda/Month and a
 fixed/device-following viewing zone. Calendar Settings binds the same writer;

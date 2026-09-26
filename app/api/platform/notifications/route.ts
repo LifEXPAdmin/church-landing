@@ -7,8 +7,12 @@ export const dynamic = "force-dynamic";
 export const GET = (request: Request) =>
   handleNotificationRequest(prisma, request);
 export const POST = (request: Request) =>
-  handleNotificationRequest(prisma, request, (sourceId) =>
-    after(async () => {
-      await dispatchNotifications(prisma, sourceId);
-    })
+  handleNotificationRequest(
+    prisma,
+    request,
+    (sourceId) =>
+      after(async () => {
+        await dispatchNotifications(prisma, sourceId);
+      }),
+    after
   );

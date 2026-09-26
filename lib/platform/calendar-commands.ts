@@ -1,3 +1,4 @@
+import { wakeCalendarReminders } from "./calendar-reminder-plan";
 import { saveCalendarLayer } from "./calendar-layer-preferences";
 import { recordDomainActivity, recordFanout } from "./domain-activity";
 import type {
@@ -181,6 +182,7 @@ export async function calendarCommand(
         "WITHDRAW_RESPONSE",
         prior.version + 1
       );
+      await wakeCalendarReminders(tx, actor.id);
       return { id: prior.occurrenceId, message: "Your commitment has ended." };
     }
     if (

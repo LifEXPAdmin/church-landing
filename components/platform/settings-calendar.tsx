@@ -40,9 +40,11 @@ export function SettingsCalendar({
           Reminders and alerts
         </h2>
         <p>
-          Review event Activity and phone choices in Notifications. Phone alerts
-          also need a current device. Timed calendar reminders are not available
-          yet.
+          Choose Off, 15 minutes or 60 minutes before timed events marked Going
+          or Maybe. Review these reminders and event Activity in Notifications.
+          Phone alerts also need your event notification choice and a current
+          device. Quiet hours apply; reminders do not send after an event
+          starts.
         </p>
         {entries("calendar.alerts")}
       </section>
@@ -54,13 +56,14 @@ export function SettingsCalendar({
           Calendars and subscriptions
         </h2>
         <p>
-          Save which available calendars you follow, show and color in My calendars.
-          Hiding or unfollowing does not leave a church, cancel an RSVP or remove
-          a volunteer commitment.
+          Save which available calendars you follow, show and color in My
+          calendars. Hiding or unfollowing does not leave a church, cancel an
+          RSVP or remove a volunteer commitment.
         </p>
         {entries("calendar.layers", "calendar.commitments")}
         <p className="text-sm text-gc-muted">
-          Private subscription links and connections to external calendars are not available yet.
+          Private subscription links and connections to external calendars are
+          not available yet.
         </p>
       </section>
       <section

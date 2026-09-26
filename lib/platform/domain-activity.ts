@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { wakeCalendarReminders } from "./calendar-reminder-plan";
 import type { Prisma, SocialEvent, PlatformPost } from "@prisma/client";
 import { domainNotificationSources } from "./domain-notification-source";
 import { enqueueNotification } from "./notification-outbox";
@@ -17,10 +18,16 @@ export type DomainIntent = {
   createdAt?: Date;
   once?: boolean;
 };
-export async function recordDomainActivity(tx: Tx, intent: DomainIntent) {
+export async function recordDomainActivity(
+  tx: Tx,
+  intent: DomainIntent,
+  now = new Date()
+) {
   const key = `domain:${intent.kind}:${intent.sourceId}:${intent.once ? "first" : intent.sourceVersion}:${intent.recipientId}`;
   if (await tx.socialEvent.findUnique({ where: { key }, select: { id: true } }))
     return;
+  if (intent.kind === "RSVP_CHANGED")
+    await wakeCalendarReminders(tx, intent.recipientId, false, now);
   const event: SocialEvent = {
     id: randomUUID(),
     key,
@@ -44,14 +51,7 @@ export async function recordDomainActivity(tx: Tx, intent: DomainIntent) {
   };
   if (
     !(
-      await domainNotificationSources(
-        tx,
-        [event],
-        false,
-        new Date(),
-        undefined,
-        "ANY"
-      )
+      await domainNotificationSources(tx, [event], false, now, undefined, "ANY")
     ).has(event.id)
   )
     return;
@@ -59,6 +59,7 @@ export async function recordDomainActivity(tx: Tx, intent: DomainIntent) {
   void ignored;
   const saved = await tx.socialEvent.create({ data });
   await enqueueNotification(tx, saved, undefined, event.createdAt);
+  return saved;
 }
 
 export async function recordFanout(

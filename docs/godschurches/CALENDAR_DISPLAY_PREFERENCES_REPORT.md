@@ -30,7 +30,8 @@ These choices grant no membership or source permission, change no event instant,
 and do not alter following, hidden calendars, sharing, RSVP or notification
 consent. Hidden calendars already have the canonical saved-layer owner. Existing
 event-change alerts remain owned by notification preferences. Timed reminders
-have no delivery capability yet; the original reminder acceptance remains open.
+now have a separate local implementation under the [reminder contract](CALENDAR_REMINDERS_CONTRACT.md);
+the original reminder acceptance remains open pending combined verification and release.
 This display checkpoint does not claim the broader calendar preference feature
 or reminder/subscription integration is complete.
 
@@ -63,6 +64,9 @@ or reminder/subscription integration is complete.
   needs another route resolution only when the browser and rendered zones differ.
 
 Migration 107 adds four defaulted account columns and bounded database checks.
-The isolated fictional database has all 107 migrations. Production still has
-106. Full regression, upgrade/restore, compatible rollback, remaining reminder
-implementation, documentation reconciliation and release remain open.
+The original display-only fixture passed at 107 migrations. A separate fresh
+combined reminder fixture now contains 110 migrations, including default-Off
+consent, an opaque wake-up row, the extended Activity source constraint and an
+occurrence modification timestamp.
+Production still has 106. Full regression, upgrade/restore, compatible rollback,
+remaining reminder acceptance, documentation reconciliation and release remain open.

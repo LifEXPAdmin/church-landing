@@ -1,3 +1,7 @@
+import {
+  calendarReminderMinutes,
+  wakeCalendarReminders
+} from "./calendar-reminder-plan";
 import { socialEmailAvailable, socialEmailCategories } from "./social-email";
 import { feedbackEmailAvailable } from "./feedback-email";
 import { recordDiscoveryControl } from "./retention-controls";
@@ -184,6 +188,7 @@ export function notificationEmailAllowed(
 }
 export function projectNotificationPreferences(row: SocialPreferences | null) {
   return {
+    calendarReminderMinutes: calendarReminderMinutes(row),
     version: row?.version ?? 0,
     emailCategories: socialEmailCategories.filter((category) =>
       notificationEmailAllowed(row, new Date(8640000000000000), category)
@@ -223,17 +228,16 @@ export function readNotificationPreferences(db: PrismaClient, token: unknown) {
     const push = pushAvailable(),
       socialEmail = socialEmailAvailable(),
       email = feedbackEmailAvailable();
-    const eligible =
-      (push || socialEmail || email) &&
-      !!(await tx.platformUser.findFirst({
-        where: { id: session.userId, ...eligibleWhere },
-        select: { id: true }
-      }));
+    const eligible = !!(await tx.platformUser.findFirst({
+      where: { id: session.userId, ...eligibleWhere },
+      select: { id: true }
+    }));
     return {
       ownerId: session.userId,
       preferences: await notificationPreferencesIn(tx, session.userId),
       channels: {
         inApp: true,
+        calendarReminders: eligible,
         push: push && eligible,
         socialEmail: socialEmail && eligible,
         email: email && eligible
@@ -255,7 +259,8 @@ export async function notificationPreferenceCommand(
     "pushCategories",
     "quietHours",
     "emailCategories",
-    "feedbackEmail"
+    "feedbackEmail",
+    "calendarReminderMinutes"
   ]);
   if (input.operation !== "preferences")
     throw new PortalError(400, "Choose a supported notification control.");
@@ -270,6 +275,30 @@ export async function notificationPreferenceCommand(
       });
       const old = projectNotificationPreferences(prior);
       expected(input.expectedVersion, old.version);
+      const reminderMinutes =
+        input.calendarReminderMinutes === undefined
+          ? old.calendarReminderMinutes
+          : input.calendarReminderMinutes;
+      if (
+        typeof reminderMinutes !== "number" ||
+        ![0, 15, 60].includes(reminderMinutes)
+      )
+        throw new PortalError(
+          400,
+          "Choose Off, 15 minutes or 60 minutes for calendar reminders."
+        );
+      if (
+        reminderMinutes &&
+        reminderMinutes !== old.calendarReminderMinutes &&
+        !(await tx.platformUser.findFirst({
+          where: { id: ownerId, ...eligibleWhere },
+          select: { id: true }
+        }))
+      )
+        throw new PortalError(
+          403,
+          "Verify your email and complete adult account setup before enabling calendar reminders."
+        );
       const categories = input.pushCategories;
       const choices = input.inApp as Record<string, unknown> | undefined;
       if (
@@ -472,6 +501,12 @@ export async function notificationPreferenceCommand(
         ])
       );
       const data = {
+        calendarReminderMinutes: reminderMinutes,
+        calendarReminderSince: reminderMinutes
+          ? reminderMinutes === old.calendarReminderMinutes
+            ? prior!.calendarReminderSince
+            : now
+          : null,
         notificationEmailSince: emailSince,
         feedbackEmailSince: email
           ? old.feedbackEmail
@@ -509,6 +544,8 @@ export async function notificationPreferenceCommand(
         create: { ownerId, ...data },
         update: { ...data, version: { increment: 1 } }
       });
+      if (reminderMinutes !== old.calendarReminderMinutes)
+        await wakeCalendarReminders(tx, ownerId, true, now);
       await recordDiscoveryControl(
         tx,
         "NOTIFICATION_PREFERENCES",

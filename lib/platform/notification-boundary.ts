@@ -1,4 +1,5 @@
 import type { PrismaClient } from "@prisma/client";
+import { scheduleCalendarReminders } from "./calendar-reminders";
 import { requestSessionToken } from "./account-boundary";
 import {
   socialError,
@@ -22,7 +23,8 @@ import { openNotification } from "./notification-outbox";
 export async function handleNotificationRequest(
   db: PrismaClient,
   request: Request,
-  afterTest?: (sourceId: string) => void
+  afterTest?: (sourceId: string) => void,
+  afterResponse?: (work: () => Promise<void>) => void
 ) {
   try {
     if (request.method === "GET") {
@@ -57,6 +59,8 @@ export async function handleNotificationRequest(
           ? await requestTestNotification(db, token, input)
           : await pushSubscriptionCommand(db, token, input);
     if (input.operation === "test") afterTest?.(result.id);
+    if (input.operation === "preferences")
+      scheduleCalendarReminders(db, result.id, afterResponse);
     return Response.json(result, { headers: socialHeaders });
   } catch (error) {
     return socialError(error);

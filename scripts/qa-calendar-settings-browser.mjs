@@ -282,7 +282,7 @@ try {
   await page.locator("#setting-calendar-alerts").waitFor();
   assert.match(
     await page.locator("#setting-calendar-alerts").innerText(),
-    /not available yet/
+    /15 minutes or 60 minutes/
   );
   await context.clearCookies();
   await go("/platform/settings/calendar");

@@ -1,4 +1,5 @@
 import { pantryNotificationSources } from "./pantry-notifications";
+import { calendarReminderSources } from "./calendar-reminder-policy";
 import { groupNotificationSources } from "./group-notifications";
 import { needNotificationSources } from "./exchange-need-notifications";
 import { exchangeHandoffNotificationSources } from "./exchange-handoff-notifications";
@@ -21,6 +22,7 @@ import { volunteerShift } from "./volunteer-shift";
 
 type Tx = Prisma.TransactionClient;
 export const domainNotificationKinds = [
+  "CALENDAR_REMINDER",
   "GROUP_MEMBERSHIP",
   "GROUP_REVIEW",
   "PANTRY_REQUEST",
@@ -86,6 +88,13 @@ export async function domainNotificationSources(
   };
   const context = suppliedContext ?? (await postContext(tx, ownerId));
   if (context.actorId !== ownerId || !context.eligible) return result;
+  const calendarReminders = await calendarReminderSources(
+    tx,
+    events.filter((e) => e.kind === "CALENDAR_REMINDER"),
+    delivery,
+    now
+  );
+  for (const [id, source] of calendarReminders) result.set(id, source);
   const groups = await groupNotificationSources(
     tx,
     events.filter(
@@ -635,7 +644,9 @@ export async function domainNotificationSources(
         version: true,
         shiftStartAt: true,
         shiftEndAt: true,
-        opportunity: { select: { id: true, recoveryRequired: true, closedAt: true } },
+        opportunity: {
+          select: { id: true, recoveryRequired: true, closedAt: true }
+        },
         post: {
           select: {
             eventOccurrence: {
@@ -685,7 +696,9 @@ export async function domainNotificationSources(
         add(
           e,
           "commitments",
-          slot.opportunity ? `/platform/serve/${slot.opportunity.id}` : `/platform/posts/${p.id}#volunteer-${slot.id}`,
+          slot.opportunity
+            ? `/platform/serve/${slot.opportunity.id}`
+            : `/platform/posts/${p.id}#volunteer-${slot.id}`,
           `slot:${slot.id}`
         );
     }
@@ -870,7 +883,9 @@ export async function domainNotificationSources(
           add(
             e,
             "commitments",
-            r.slot.opportunity ? `/platform/serve/${r.slot.opportunity.id}` : `/platform/posts/${r.slot.postId}#volunteer-${r.slot.id}`,
+            r.slot.opportunity
+              ? `/platform/serve/${r.slot.opportunity.id}`
+              : `/platform/posts/${r.slot.postId}#volunteer-${r.slot.id}`,
             `slot:${r.slot.id}`
           );
       }

@@ -1,3 +1,8 @@
+import {
+  recoverCalendarReminders,
+  dispatchCalendarReminders,
+  calendarReminderMessage
+} from "./calendar-reminders";
 import { advanceNeedDeadlines } from "./exchange-need-maintenance";
 import {
   dispatchExchangeHandoffs,
@@ -60,7 +65,8 @@ export async function handleNotificationMaintenance(
       "probe-followers",
       "probe-activity",
       "probe-scheduled",
-      "probe-handoffs"
+      "probe-handoffs",
+      "probe-calendar-reminders"
     ].includes(mode)
   )
     return Response.json(
@@ -73,7 +79,8 @@ export async function handleNotificationMaintenance(
       mode === "probe-followers" ||
       mode === "probe-activity" ||
       mode === "probe-scheduled" ||
-      mode === "probe-handoffs"
+      mode === "probe-handoffs" ||
+      mode === "probe-calendar-reminders"
     ) {
       // A single reserved, nonexistent delivery verifies the deployed private
       // consumer. It cannot create an app message, subscription or phone alert.
@@ -90,13 +97,15 @@ export async function handleNotificationMaintenance(
         throw Error("Probe collision");
       if (await db.exchangeInquiry.findUnique({ where: { id } }))
         throw Error("Probe collision");
+      if (await db.calendarReminderJob.findUnique({ where: { ownerId: id } }))
+        throw Error("Probe collision");
       const key = `${mode}-queue-probe:${Math.floor(Date.now() / 3600000)}`;
       const result = publish
         ? await publish(id, 0, key)
         : await (
             await import("@vercel/queue")
           ).send(
-            mode === "probe-handoffs"
+            mode === "probe-handoffs" || mode === "probe-calendar-reminders"
               ? NOTIFICATION_WORK_TOPIC
               : mode === "probe-scheduled"
                 ? SCHEDULED_PUBLICATION_TOPIC
@@ -105,13 +114,15 @@ export async function handleNotificationMaintenance(
                   : mode === "probe-followers"
                     ? COMMENT_FOLLOWER_TOPIC
                     : PUSH_TOPIC,
-            mode === "probe-handoffs"
-              ? exchangeHandoffMessage({ id, version: 1 })
-              : mode === "probe-scheduled"
-                ? scheduledPublicationMessage({ id, version: 1 })
-                : mode === "probe-activity"
-                  ? notificationFanoutMessage(id)
-                  : { id },
+            mode === "probe-calendar-reminders"
+              ? calendarReminderMessage({ id, version: 1 })
+              : mode === "probe-handoffs"
+                ? exchangeHandoffMessage({ id, version: 1 })
+                : mode === "probe-scheduled"
+                  ? scheduledPublicationMessage({ id, version: 1 })
+                  : mode === "probe-activity"
+                    ? notificationFanoutMessage(id)
+                    : { id },
             {
               retentionSeconds: 60,
               idempotencyKey: key
@@ -138,7 +149,8 @@ export async function handleNotificationMaintenance(
         conversationFollowers,
         activityFanout,
         scheduledPosts,
-        exchangeHandoffs
+        exchangeHandoffs,
+        calendarReminders
       ] = await Promise.all([
         db.pushSubscription.count({
           where: { revokedAt: null, expiresAt: { gt: new Date() } }
@@ -151,7 +163,8 @@ export async function handleNotificationMaintenance(
         db.platformPost.count({ where: { status: "SCHEDULED" } }),
         db.exchangeInquiry.count({
           where: { state: { in: ["INQUIRED", "SELECTED", "RESERVED"] } }
-        })
+        }),
+        db.calendarReminderJob.count({ where: { wakeAt: { not: null } } })
       ]);
       return Response.json(
         {
@@ -168,7 +181,8 @@ export async function handleNotificationMaintenance(
           conversationFollowers,
           activityFanout,
           scheduledPosts,
-          exchangeHandoffs
+          exchangeHandoffs,
+          calendarReminders
         },
         { headers }
       );
@@ -204,6 +218,13 @@ export async function handleNotificationMaintenance(
       ? { queued: 0, failed: 1 }
       : await dispatchExchangeHandoffs(db);
     failed += handoffRecovery.failed + handoffs.failed;
+    const reminderRecovery = signal.aborted
+      ? { checked: 0 }
+      : await recoverCalendarReminders(db);
+    const reminders = signal.aborted
+      ? { queued: 0, failed: 1 }
+      : await dispatchCalendarReminders(db);
+    failed += reminders.failed;
     const welcomes = signal.aborted
       ? { queued: 0, failed: 1 }
       : await dispatchPendingFounderWelcomes(db);
@@ -232,6 +253,8 @@ export async function handleNotificationMaintenance(
       scheduledQueued,
       needDeadlinesChecked: needDeadlines.checked,
       needDeadlineNotices: needDeadlines.recorded,
+      calendarReminderQueued: reminders.queued,
+      calendarReminderRecoveryChecked: reminderRecovery.checked,
       handoffQueued: handoffs.queued,
       handoffRecoveryChecked: handoffRecovery.checked,
       failed,

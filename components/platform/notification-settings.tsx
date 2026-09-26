@@ -302,7 +302,8 @@ export function NotificationSettings({ owner }: { owner: string }) {
                   pushCategories: fields.pushCategories,
                   quietHours: fields.quietHours,
                   emailCategories: fields.emailCategories,
-                  feedbackEmail: fields.feedbackEmail
+                  feedbackEmail: fields.feedbackEmail,
+                  calendarReminderMinutes: fields.calendarReminderMinutes
                 })
               );
             }}
@@ -312,6 +313,53 @@ export function NotificationSettings({ owner }: { owner: string }) {
               className="space-y-5"
             >
               <legend className="text-xl">Categories and channels</legend>
+              <div className="space-y-3 rounded-lg border border-gc-divider p-3">
+                <label
+                  htmlFor="calendar-reminder-minutes"
+                  className="block font-semibold"
+                >
+                  Timed calendar reminders
+                </label>
+                <select
+                  id="calendar-reminder-minutes"
+                  className="gc-input w-full"
+                  value={fields.calendarReminderMinutes}
+                  disabled={
+                    !view.channels.calendarReminders &&
+                    fields.calendarReminderMinutes === 0
+                  }
+                  onChange={(event) =>
+                    change({
+                      ...fields,
+                      calendarReminderMinutes: Number(event.target.value)
+                    })
+                  }
+                >
+                  <option value={0}>Off</option>
+                  <option value={15}>15 minutes before</option>
+                  <option value={60}>60 minutes before</option>
+                </select>
+                {!view.channels.calendarReminders && (
+                  <p>
+                    Verify your email and complete adult account setup to enable
+                    reminders. You can still turn an existing choice off.
+                  </p>
+                )}
+                <p>
+                  For timed events you marked Going or Maybe before their
+                  reminder time. Applies to existing and new future responses.
+                  All-day events, following a calendar and volunteer-only
+                  commitments are separate. Past reminder times are not
+                  replayed.
+                </p>
+                <p>
+                  Reminders use your Event changes and commitments Activity or
+                  phone choices below. Phone alerts also need a current device
+                  and respect quiet hours. Delivery can be delayed or missed; a
+                  phone reminder is never sent after the event starts. Display
+                  time zones do not change reminder times.
+                </p>
+              </div>
               {categories.map((category) => (
                 <fieldset
                   key={category}
