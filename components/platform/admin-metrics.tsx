@@ -573,7 +573,7 @@ export function AdminMetrics({ data }: { data: MetricSnapshot }) {
           {r.series.map((d) => (
             <div
               key={d.day}
-              className="grid grid-cols-[6rem_minmax(0,1fr)_3rem] items-center gap-2 text-xs"
+              className="grid grid-cols-[6em_minmax(0,1fr)_3em] items-center gap-2 text-xs"
             >
               <span>{d.day}</span>
               <span
