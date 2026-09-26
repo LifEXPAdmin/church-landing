@@ -1,5 +1,34 @@
 # Retained reader privacy
 
+## Feedback intake implementation checkpoint, 26 September 2026 UTC
+
+The next local candidate removes private recipient, draft-control and selected
+image presentation while keeping their account-bound controllers mounted.
+Controlled choices include inactive feedback kinds, rating, all written fields,
+contact/sharing options, consent and optional technical context. Discard clears
+written entries and retains uploads as disclosed. Uncertain creation keeps its
+original recipient, notice, attachment IDs and request key; dirty drafts still
+require explicit adoption of a changed recipient. Uploads retain their File and
+serialized command. Unconfirmed removal keeps its original asset/version and
+blocks submission until reconciled. A confirmed creation waits for another
+unconfirmed preference before opening the saved receipt.
+
+Source review corrected upload and sibling preference denial forwarding for
+401/403/404. The default photo uploader keeps its existing account-change
+behavior. No storage, schema, endpoint, dependency or background worker was added.
+This is presentation cleanup, not heap, browser-history or OS erasure.
+
+Reproduction preceded edits on `951e57b`. TypeScript, standard repository lint,
+copy/source checks and 27 source-security/migration-guard tests pass. The custom
+zero-warning whole-repository lint attempt found 36 existing warnings and no
+errors; the unchanged standard lint gate passes. Isolated browser, build, service,
+visual and runtime-cost acceptance are still pending at this checkpoint.
+
+The candidate is not merged or live. Vercel's daily deployment quota still blocks
+publication of the preceding tested `.12`; `.11/925536c` remains the last verified
+canonical release. No new production write, migration or recipient send occurred.
+SEC-01 remains open. Continue local verification and preserve release gates.
+
 ## My feedback tested and merged; deployment quota blocked, 26 September 2026 UTC
 
 Version **2026.09.26.12**, source `951e57b1fe2037138b8795e177c48d4ba502dd17`, is implemented,

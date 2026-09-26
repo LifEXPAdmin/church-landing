@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useFeedbackSnapshot } from "./use-feedback-snapshot";
 import type { SupportSnapshot } from "@/lib/platform/support-types";
 import { FeedbackForm } from "./feedback-form";
@@ -99,6 +99,23 @@ function FeedbackViews({
   promptClaimId?: string;
 }) {
   const visible = useReadVisibility();
+  const pendingWork = useRef(new Set<string>());
+  const [workRevision, setWorkRevision] = useState(0);
+  const [destination, setDestination] = useState<string | null>(null);
+  const onWorkChange = useCallback((id: string, pending: boolean) => {
+    if (pendingWork.current.has(id) === pending) return;
+    if (pending) pendingWork.current.add(id);
+    else pendingWork.current.delete(id);
+    setWorkRevision((value) => value + 1);
+  }, []);
+  const onNavigate = useCallback(
+    (_id: string, next: string) => setDestination(next),
+    []
+  );
+  useEffect(() => {
+    if (destination && visible && pendingWork.current.size === 0)
+      window.location.assign(destination);
+  }, [destination, visible, workRevision]);
   const everReady = useRef(false);
   if (s.intake.available) everReady.current = true;
   return (
@@ -135,28 +152,43 @@ function FeedbackViews({
               . This form is not an emergency, pastoral-care or independent
               complaints service.
             </p>
-            {s.intake.available && s.intake.recipient ? (
-              <p className="rounded-xl border border-gc-action p-4">
-                Recipient: {s.intake.recipient.name}, your assigned God’s
-                Churches support owner. Your original feedback is private to you
-                and the currently authorized assigned owner. Church
-                representatives and ordinary members are not included.
-              </p>
-            ) : (
-              <PortalEmpty>
-                Feedback intake is not available yet. The recipient and privacy
-                setup must be ready before a new submission can be accepted. An
-                existing draft stays on this page; it has not been saved.
-              </PortalEmpty>
-            )}
-            {!s.viewer.adult && (
+            {visible &&
+              (s.intake.available && s.intake.recipient ? (
+                <p className="rounded-xl border border-gc-action p-4">
+                  Recipient: {s.intake.recipient.name}, your assigned God’s
+                  Churches support owner. Your original feedback is private to
+                  you and the currently authorized assigned owner. Church
+                  representatives and ordinary members are not included.
+                </p>
+              ) : (
+                <PortalEmpty>
+                  Feedback intake is not available yet. The recipient and
+                  privacy setup must be ready before a new submission can be
+                  accepted. An existing draft stays on this page; it has not
+                  been saved.
+                </PortalEmpty>
+              ))}
+            {visible && !s.viewer.adult && (
               <PortalEmpty>
                 Private feedback intake is for adults. You can still use Help
                 and contacts.
               </PortalEmpty>
             )}
+            {visible && destination && (
+              <p role="status">
+                Your feedback was saved. Finish confirming your other work on
+                this page to open the receipt.
+              </p>
+            )}
             {everReady.current && (
               <FeedbackForm
+                privacy={{
+                  visible,
+                  currentAccess: visible,
+                  onAccessDenied: onRefresh,
+                  onWorkChange,
+                  onNavigate
+                }}
                 snapshot={s}
                 release={release}
                 promptClaimId={promptClaimId}
@@ -183,7 +215,13 @@ function FeedbackViews({
           <FeedbackPagination page={s.page} more={s.more} />
         </>
       )}
-      {view !== "detail" && <FeedbackPromptPreferences owner={s.viewer.id} />}
+      {view !== "detail" && (
+        <FeedbackPromptPreferences
+          owner={s.viewer.id}
+          onWorkChange={onWorkChange}
+          onAccessDenied={onRefresh}
+        />
+      )}
     </>
   );
 }

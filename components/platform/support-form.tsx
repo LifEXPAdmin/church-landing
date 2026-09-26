@@ -88,9 +88,24 @@ export function SupportForm({
   const retryOriginal = useCallback(() => latestSubmit.current(), []);
   const onWorkChange = privacy?.onWorkChange;
   useLayoutEffect(() => {
-    onWorkChange?.(id, dirty || busy || !!retryBody);
+    onWorkChange?.(
+      id,
+      dirty ||
+        busy ||
+        !!retryBody ||
+        !!additionalWork?.dirty ||
+        !!additionalWork?.saving
+    );
     return () => onWorkChange?.(id, false);
-  }, [onWorkChange, id, dirty, busy, retryBody]);
+  }, [
+    onWorkChange,
+    id,
+    dirty,
+    busy,
+    retryBody,
+    additionalWork?.dirty,
+    additionalWork?.saving
+  ]);
   usePrivateRecovery(id, !!retryBody, busy, retryOriginal);
   useUnsavedSocialWork(
     {

@@ -44,25 +44,27 @@ function FilePreview({ file }: { file: File }) {
     <div className="h-28 w-28" />
   );
 }
-export function PhotoUploadManager({
-  ownerId,
-  targetId,
-  purpose,
-  available,
-  remaining,
-  details = {},
-  onSaved,
-  onPending
-}: {
+export type PhotoUploadManagerOptions = {
   ownerId: string;
   targetId: string;
-  purpose: "POST_PHOTO" | "PROFILE_PHOTO" | "SUPPORT_ATTACHMENT" | "EXCHANGE_PHOTO";
+  purpose:
+    | "POST_PHOTO"
+    | "PROFILE_PHOTO"
+    | "SUPPORT_ATTACHMENT"
+    | "EXCHANGE_PHOTO";
   available: boolean;
   remaining: number;
   details?: Record<string, string | null>;
   onSaved: (image: ImageView) => void | Promise<void>;
   onPending?: (pending: boolean) => void;
-}) {
+  privacy?: { visible: boolean; onAccessDenied: () => void };
+};
+
+// The caller may keep this controller above a removable private presenter.
+// Concealment never destroys selected Files or the original upload command.
+export function usePhotoUploadManager(options: PhotoUploadManagerOptions) {
+  const { ownerId, purpose, available, remaining, privacy, onPending } =
+    options;
   const uid = useId(),
     [entries, setEntries] = useState<Entry[]>([]),
     [notice, setNotice] = useState(""),
@@ -70,10 +72,19 @@ export function PhotoUploadManager({
     [changedAccount, setChangedAccount] = useState(false);
   const work = useRef(new Map<string, ReturnType<typeof uploadPhotoFile>>()),
     generation = useRef(0),
+    identityGeneration = useRef(0),
+    mounted = useRef(false),
+    privacyDenied = useRef(false),
     entriesRef = useRef(entries),
-    onSavedRef = useRef(onSaved);
+    current = useRef(options);
   entriesRef.current = entries;
-  onSavedRef.current = onSaved;
+  current.current = options;
+  // A later visible render is owned by the parent's current-account check.
+  // A stale event between denial and that parent's hide cannot start work.
+  if (!privacy?.visible) privacyDenied.current = false;
+  const canPresent = () =>
+    !current.current.privacy ||
+    (current.current.privacy.visible && !privacyDenied.current);
   const pending = entries.some((row) => row.state !== "saved"),
     saving = entries.some((row) => row.state === "uploading");
   useUnsavedSocialWork(
@@ -85,34 +96,61 @@ export function PhotoUploadManager({
     true
   );
   useEffect(() => {
-    onPending?.(pending || checking);
+    current.current.onPending?.(pending || checking);
   }, [onPending, pending, checking]);
   const clearAccount = useCallback(() => {
+    if (!mounted.current) return;
+    if (current.current.privacy) {
+      privacyDenied.current = true;
+      setNotice(
+        "Your sign-in changed. Recheck the original account before continuing with these retained uploads."
+      );
+      current.current.privacy.onAccessDenied();
+      return;
+    }
     generation.current++;
     work.current.forEach((upload) => upload.abort());
     work.current.clear();
     setEntries([]);
+    setChecking(false);
     setChangedAccount(true);
     setNotice(
       "Your sign-in changed. Pending files were cleared. Reload before adding photos."
     );
   }, []);
   useEffect(() => {
+    // Supersede checks started before a concealment or an authorized return.
+    // This does not cancel transport or restart its ownership effect.
+    identityGeneration.current++;
+  }, [privacy?.visible]);
+  useEffect(() => {
+    mounted.current = true;
     const uploads = work.current;
     const verify = async () => {
       if (document.visibilityState === "hidden") return;
+      const seq = generation.current,
+        identity = ++identityGeneration.current;
+      const valid = () =>
+        mounted.current &&
+        current.current.ownerId === ownerId &&
+        seq === generation.current &&
+        identity === identityGeneration.current;
       try {
-        if ((await currentSocialOwner()) !== ownerId) clearAccount();
+        const actor = await currentSocialOwner();
+        if (valid() && actor !== ownerId) clearAccount();
       } catch {
-        setNotice(
-          "Reconnect to confirm your account before uploading. Your selections remain here."
-        );
+        if (valid())
+          setNotice(
+            "Reconnect to confirm your account before uploading. Your selections remain here."
+          );
       }
     };
     window.addEventListener("focus", verify);
     window.addEventListener("online", verify);
     const invalidate = () => {
+      mounted.current = false;
       generation.current++;
+      identityGeneration.current++;
     };
     return () => {
       invalidate();
@@ -127,7 +165,8 @@ export function PhotoUploadManager({
       rows.map((row) => (row.id === id ? { ...row, ...patch } : row))
     );
   async function select(files: FileList | null) {
-    if (!files || changedAccount) return;
+    if (!files || changedAccount || !mounted.current || !canPresent()) return;
+    const { remaining, purpose, ownerId } = current.current;
     const room = Math.min(
       10,
       Math.max(
@@ -138,7 +177,11 @@ export function PhotoUploadManager({
     );
     if (files.length > room) {
       setNotice(
-        purpose === "SUPPORT_ATTACHMENT" ? `Choose at most ${room} more images. Each feedback receipt holds up to three.` : purpose === "EXCHANGE_PHOTO" ? `Choose at most ${room} more photos. Each listing holds up to eight.` : `Choose at most ${room} more photos in this batch. Each post holds up to ten photos; a profile library holds up to 1,000.`
+        purpose === "SUPPORT_ATTACHMENT"
+          ? `Choose at most ${room} more images. Each feedback receipt holds up to three.`
+          : purpose === "EXCHANGE_PHOTO"
+            ? `Choose at most ${room} more photos. Each listing holds up to eight.`
+            : `Choose at most ${room} more photos in this batch. Each post holds up to ten photos; a profile library holds up to 1,000.`
       );
       return;
     }
@@ -177,15 +220,28 @@ export function PhotoUploadManager({
           };
         })
       );
-      if (seq === generation.current)
+      if (
+        mounted.current &&
+        current.current.ownerId === ownerId &&
+        seq === generation.current
+      )
         setEntries((rows) => [...rows, ...selected]);
     } finally {
-      if (seq === generation.current) setChecking(false);
+      if (mounted.current && seq === generation.current) setChecking(false);
     }
   }
   async function save(id: string) {
+    const {
+      ownerId,
+      purpose,
+      targetId,
+      available,
+      details = {}
+    } = current.current;
     const row = entriesRef.current.find((entry) => entry.id === id);
     if (
+      !mounted.current ||
+      !canPresent() ||
       !row ||
       row.invalid ||
       row.state === "saved" ||
@@ -205,6 +261,10 @@ export function PhotoUploadManager({
         requestKey: crypto.randomUUID()
       });
     const seq = generation.current;
+    const valid = () =>
+      mounted.current &&
+      current.current.ownerId === ownerId &&
+      seq === generation.current;
     update(id, {
       body,
       state: "uploading",
@@ -212,7 +272,7 @@ export function PhotoUploadManager({
       message: "Checking your account and uploading…"
     });
     const task = uploadPhotoFile(row.file, body, ownerId, (percent) => {
-      if (seq === generation.current)
+      if (valid())
         update(id, {
           progress: percent,
           message: percent === 100 ? "Processing and saving…" : "Uploading…"
@@ -221,7 +281,7 @@ export function PhotoUploadManager({
     work.current.set(id, task);
     try {
       const image = await task.promise;
-      if (seq !== generation.current) return;
+      if (!valid()) return;
       update(id, {
         image,
         state: "saved",
@@ -229,16 +289,23 @@ export function PhotoUploadManager({
         message: "Photo saved."
       });
       try {
-        await onSavedRef.current(image);
-        if (purpose === "SUPPORT_ATTACHMENT") setEntries(rows => rows.filter(entry => entry.id !== id));
+        await current.current.onSaved(image);
+        if (valid() && purpose === "SUPPORT_ATTACHMENT")
+          setEntries((rows) => rows.filter((entry) => entry.id !== id));
       } catch {
-        setNotice(
-          "The photo was saved. Refresh the collection to check its latest position."
-        );
+        if (valid())
+          setNotice(
+            "The photo was saved. Refresh the collection to check its latest position."
+          );
       }
     } catch (error) {
-      if (seq !== generation.current) return;
-      if (error instanceof SocialClientError && error.status === 401) {
+      if (!valid()) return;
+      const accountDenied =
+        error instanceof SocialClientError &&
+        (current.current.privacy
+          ? [401, 403, 404].includes(error.status)
+          : error.status === 401);
+      if (accountDenied && !current.current.privacy) {
         clearAccount();
         return;
       }
@@ -250,20 +317,112 @@ export function PhotoUploadManager({
             ? error.message
             : "Save was not confirmed. Retry the same file."
       });
+      // Retain the exact file and details, but make an interrupted private
+      // request retryable after the original account has been checked again.
+      if (accountDenied) clearAccount();
     } finally {
-      work.current.delete(id);
+      if (work.current.get(id) === task) work.current.delete(id);
     }
   }
+  function edit(id: string, patch: Pick<Partial<Entry>, "caption" | "alt">) {
+    const row = entriesRef.current.find((entry) => entry.id === id);
+    if (
+      !mounted.current ||
+      !canPresent() ||
+      changedAccount ||
+      !row ||
+      row.body ||
+      row.invalid
+    )
+      return;
+    update(id, patch);
+  }
+  function remove(id: string) {
+    if (
+      !mounted.current ||
+      !canPresent() ||
+      entriesRef.current.find((row) => row.id === id)?.state === "uploading"
+    )
+      return;
+    setEntries((rows) => rows.filter((entry) => entry.id !== id));
+  }
+  function stop(id: string) {
+    if (mounted.current && canPresent()) work.current.get(id)?.abort();
+  }
+  function saveAll() {
+    for (const row of entriesRef.current)
+      if (!row.invalid && row.state !== "saved") void save(row.id);
+  }
+  return {
+    uid,
+    entries,
+    notice,
+    checking,
+    changedAccount,
+    pending: pending || checking,
+    saving,
+    purpose,
+    available,
+    remaining,
+    visible: canPresent(),
+    select,
+    save,
+    saveAll,
+    edit,
+    remove,
+    stop
+  };
+}
+
+export type PhotoUploadManagerController = ReturnType<
+  typeof usePhotoUploadManager
+>;
+
+export function PhotoUploadManager(options: PhotoUploadManagerOptions) {
+  const controller = usePhotoUploadManager(options);
+  return <PhotoUploadManagerView controller={controller} />;
+}
+
+export function PhotoUploadManagerView({
+  controller
+}: {
+  controller: PhotoUploadManagerController;
+}) {
+  const {
+    uid,
+    entries,
+    notice,
+    checking,
+    changedAccount,
+    saving,
+    purpose,
+    available,
+    remaining,
+    select,
+    save,
+    saveAll,
+    edit,
+    remove,
+    stop,
+    visible
+  } = controller;
+  if (!visible) return null;
   return (
     <section
       aria-labelledby={`${uid}-title`}
       className="space-y-4 rounded-xl border border-gc-divider p-4"
     >
       <h3 id={`${uid}-title`} className="text-xl">
-        {purpose === "SUPPORT_ATTACHMENT" ? "Optional private attachments" : "Add photos"}
+        {purpose === "SUPPORT_ATTACHMENT"
+          ? "Optional private attachments"
+          : "Add photos"}
       </h3>
       <p className="text-sm text-gc-muted">
-        {purpose === "SUPPORT_ATTACHMENT" ? "Choose up to three still JPEG, PNG or WebP images, each up to 4 MiB. Review and remove private details before uploading. Uploaded images join the private receipt only when you send feedback; unsent uploads expire after 24 hours." : purpose === "EXCHANGE_PHOTO" ? "Choose up to eight still JPEG, PNG or WebP listing photos, each up to 4 MiB. Keep private contact details and exact pickup addresses out of photos. Captions and image descriptions are optional." : "Select up to ten still JPEG, PNG or WebP files per batch, each up to 4 MiB. Captions and image descriptions are optional. Saved files stay saved if another file fails."}
+        {purpose === "SUPPORT_ATTACHMENT"
+          ? "Choose up to three still JPEG, PNG or WebP images, each up to 4 MiB. Review and remove private details before uploading. Uploaded images join the private receipt only when you send feedback; unsent uploads expire after 24 hours."
+          : purpose === "EXCHANGE_PHOTO"
+            ? "Choose up to eight still JPEG, PNG or WebP listing photos, each up to 4 MiB. Keep private contact details and exact pickup addresses out of photos. Captions and image descriptions are optional."
+            : "Select up to ten still JPEG, PNG or WebP files per batch, each up to 4 MiB. Captions and image descriptions are optional. Saved files stay saved if another file fails."}
       </p>
       {!available && (
         <p role="status">
@@ -297,12 +456,11 @@ export function PhotoUploadManager({
             checking ||
             !entries.some((row) => !row.invalid && row.state !== "saved")
           }
-          onClick={() => {
-            for (const row of entriesRef.current)
-              if (!row.invalid && row.state !== "saved") void save(row.id);
-          }}
+          onClick={saveAll}
         >
-          {purpose === "SUPPORT_ATTACHMENT" ? "Upload selected attachments" : "Save selected photos"}
+          {purpose === "SUPPORT_ATTACHMENT"
+            ? "Upload selected attachments"
+            : "Save selected photos"}
         </button>
       )}
       <p role="status">
@@ -336,7 +494,7 @@ export function PhotoUploadManager({
                 maxLength={500}
                 value={row.caption}
                 onChange={(event) =>
-                  update(row.id, { caption: event.target.value })
+                  edit(row.id, { caption: event.target.value })
                 }
               />
               <label htmlFor={`${row.id}-alt`} className="block">
@@ -347,9 +505,7 @@ export function PhotoUploadManager({
                 className={portalInputClass}
                 maxLength={300}
                 value={row.alt}
-                onChange={(event) =>
-                  update(row.id, { alt: event.target.value })
-                }
+                onChange={(event) => edit(row.id, { alt: event.target.value })}
               />
             </fieldset>
             {row.state === "uploading" && (
@@ -381,14 +537,18 @@ export function PhotoUploadManager({
                   }
                   onClick={() => void save(row.id)}
                 >
-                  {row.body ? "Retry same upload" : purpose === "SUPPORT_ATTACHMENT" ? "Upload private attachment" : "Save photo"}
+                  {row.body
+                    ? "Retry same upload"
+                    : purpose === "SUPPORT_ATTACHMENT"
+                      ? "Upload private attachment"
+                      : "Save photo"}
                 </button>
               )}
               {row.state === "uploading" ? (
                 <button
                   type="button"
                   className={portalButtonClass}
-                  onClick={() => work.current.get(row.id)?.abort()}
+                  onClick={() => stop(row.id)}
                 >
                   Stop upload
                 </button>
@@ -396,11 +556,7 @@ export function PhotoUploadManager({
                 <button
                   type="button"
                   className={portalButtonClass}
-                  onClick={() =>
-                    setEntries((rows) =>
-                      rows.filter((entry) => entry.id !== row.id)
-                    )
-                  }
+                  onClick={() => remove(row.id)}
                 >
                   {row.state === "saved"
                     ? "Clear saved receipt"

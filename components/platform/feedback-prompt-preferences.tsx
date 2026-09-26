@@ -1,20 +1,42 @@
 "use client";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { socialRequest } from "@/lib/platform/social-client";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState
+} from "react";
+import { socialRequest, SocialClientError } from "@/lib/platform/social-client";
 import type { FeedbackPromptState } from "@/lib/platform/feedback-prompt-policy";
 import { useReadVisibility } from "./read-visibility";
 import { useUnsavedSocialWork } from "./use-unsaved-social-work";
 const endpoint = "/api/platform/feedback/prompts";
-export function FeedbackPromptPreferences({ owner }: { owner: string }) {
+export function FeedbackPromptPreferences({
+  owner,
+  onWorkChange,
+  onAccessDenied
+}: {
+  owner: string;
+  onWorkChange?: (id: string, pending: boolean) => void;
+  onAccessDenied?: () => void;
+}) {
+  const workId = useId();
   const visible = useReadVisibility();
   const visibleNow = useRef(visible),
-    mounted = useRef(false);
+    mounted = useRef(false),
+    denied = useRef(onAccessDenied);
   visibleNow.current = visible;
+  denied.current = onAccessDenied;
   const [state, setState] = useState<FeedbackPromptState | null>(null),
     [busy, setBusy] = useState(false),
     [notice, setNotice] = useState("");
   const [pending, setPending] = useState<string | null>(null),
     generation = useRef(0);
+  useLayoutEffect(() => {
+    onWorkChange?.(workId, !!pending || busy);
+    return () => onWorkChange?.(workId, false);
+  }, [onWorkChange, workId, pending, busy]);
   const load = useCallback(async () => {
     if (!mounted.current) return;
     const seq = ++generation.current;
@@ -33,11 +55,17 @@ export function FeedbackPromptPreferences({ owner }: { owner: string }) {
         data.ownerId === owner
       )
         setState(data);
-    } catch {
-      if (mounted.current && visibleNow.current && seq === generation.current)
+    } catch (error) {
+      if (mounted.current && visibleNow.current && seq === generation.current) {
+        if (
+          error instanceof SocialClientError &&
+          [401, 403, 404].includes(error.status)
+        )
+          denied.current?.();
         setNotice(
           "Prompt preferences could not be checked. Retry when connected."
         );
+      }
     }
   }, [owner]);
   const invalidate = useCallback(() => {
@@ -87,6 +115,12 @@ export function FeedbackPromptPreferences({ owner }: { owner: string }) {
         c.close();
       }
     } catch (error) {
+      if (
+        mounted.current &&
+        error instanceof SocialClientError &&
+        [401, 403, 404].includes(error.status)
+      )
+        denied.current?.();
       setNotice(
         error instanceof Error
           ? error.message

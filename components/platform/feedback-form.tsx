@@ -14,8 +14,11 @@ import {
 import { metricBrowsers, metricDevices } from "@/lib/platform/metric-policy";
 import { SupportForm, type SupportFormPrivacy } from "./support-form";
 import type { ImageView } from "@/lib/platform/media";
-import { socialRequest } from "@/lib/platform/social-client";
-import { PhotoUploadManager } from "./photo-upload-manager";
+import { socialRequest, SocialClientError } from "@/lib/platform/social-client";
+import {
+  PhotoUploadManagerView,
+  usePhotoUploadManager
+} from "./photo-upload-manager";
 import { FeedbackImagePreview } from "./feedback-attachment-images";
 
 export const feedbackInputClass =
@@ -189,25 +192,63 @@ export function FeedbackForm({
   snapshot: s,
   release,
   onRefresh,
-  promptClaimId
+  promptClaimId,
+  privacy
 }: {
   snapshot: SupportSnapshot;
   release: string;
   onRefresh: () => void;
   promptClaimId?: string;
+  privacy: SupportFormPrivacy;
 }) {
   const [kind, setKind] = useState<FeedbackKind>("GENERAL"),
     [context, setContext] = useState(false);
   const id = useId();
   const [attachments, setAttachments] = useState<ImageView[]>([]),
-    [uploadPending, setUploadPending] = useState(false),
     [removing, setRemoving] = useState<string | null>(null),
     [attachmentNotice, setAttachmentNotice] = useState("");
+  const [draft, setDraft] = useState<Record<string, string>>({});
+  const [choices, setChoices] = useState<ChoiceDraft>(() => savedChoices());
+  const [consent, setConsent] = useState(false),
+    [completed, setCompleted] = useState(false);
+  const [removalBodies, setRemovalBodies] = useState<Record<string, string>>(
+    {}
+  );
+  const field = (name: string, fallback = "") => ({
+    value: draft[name] ?? fallback,
+    onChange: (value: string) =>
+      setDraft((current) => ({ ...current, [name]: value }))
+  });
+  const resetWritten = () => {
+    setKind("GENERAL");
+    setContext(false);
+    setDraft({});
+    setChoices(savedChoices());
+    setConsent(false);
+  };
+  const uploads = usePhotoUploadManager({
+    ownerId: s.viewer.id,
+    targetId: s.viewer.id,
+    purpose: "SUPPORT_ATTACHMENT",
+    available: s.intake.available && !removing && !completed,
+    remaining: 3 - attachments.length,
+    privacy: {
+      visible: privacy.visible && !completed,
+      onAccessDenied: privacy.onAccessDenied
+    },
+    onSaved: (image) => {
+      setAttachments((current) =>
+        current.some((a) => a.id === image.id) ? current : [...current, image]
+      );
+    }
+  });
+  const uploadPending = uploads.pending;
   const recipient = s.intake.recipient;
   // Keep a mounted draft when the recipient or availability changes. The native
   // form requires a deliberate version review, and the server checks readiness.
   return (
     <SupportForm
+      privacy={{ ...privacy, visible: privacy.visible && !completed }}
       owner={s.viewer.id}
       operation="feedback-create"
       endpoint="/api/platform/feedback"
@@ -218,12 +259,22 @@ export function FeedbackForm({
         recipientVersion: recipient?.version ?? null,
         notice: FEEDBACK_NOTICE
       }}
-      available={s.intake.available && !uploadPending && !removing}
+      available={
+        s.intake.available &&
+        !uploadPending &&
+        !removing &&
+        !Object.keys(removalBodies).length &&
+        !completed
+      }
       additionalWork={{
         dirty: attachments.length > 0,
         saving: uploadPending || !!removing
       }}
-      onConfirmed={() => setAttachments([])}
+      onConfirmed={() => {
+        setAttachments([]);
+        resetWritten();
+        setCompleted(true);
+      }}
       readFields={(data) => ({
         kind,
         ...(promptClaimId ? { promptClaimId } : {}),
@@ -254,10 +305,7 @@ export function FeedbackForm({
             }
           : {})
       })}
-      onDiscard={() => {
-        setKind("GENERAL");
-        setContext(false);
-      }}
+      onDiscard={resetWritten}
       button="Send feedback"
       caution="Up to five new requests each day. Every rating receives the same access to help. This saves a private receipt; it does not promise a response time or send an email."
     >
@@ -285,7 +333,12 @@ export function FeedbackForm({
       </label>
       <label className="block font-semibold">
         How has the website been for you? (optional)
-        <select name="rating" className={feedbackInputClass} defaultValue="">
+        <select
+          name="rating"
+          className={feedbackInputClass}
+          value={draft.rating ?? ""}
+          onChange={(event) => field("rating").onChange(event.target.value)}
+        >
           <option value="">Skip rating</option>
           {[1, 2, 3, 4, 5].map((n) => (
             <option key={n} value={n}>
@@ -294,22 +347,35 @@ export function FeedbackForm({
           ))}
         </select>
       </label>
-      <TextField name="subject" label="Short summary (optional)" max={120} />
+      <TextField
+        name="subject"
+        {...field("subject")}
+        label="Short summary (optional)"
+        max={120}
+      />
       <fieldset
         hidden={kind !== "BUG"}
         disabled={kind !== "BUG"}
         className="min-w-0 space-y-4"
       >
         <legend className="sr-only">Problem details</legend>
-        <TextField name="actual" label="What happened?" max={1200} required />
+        <TextField
+          name="actual"
+          {...field("actual")}
+          label="What happened?"
+          max={1200}
+          required
+        />
         <TextField
           name="expected"
+          {...field("expected")}
           label="What did you expect?"
           max={800}
           required
         />
         <TextField
           name="steps"
+          {...field("steps")}
           label="How can we reproduce it? (optional)"
           max={800}
         />
@@ -322,12 +388,14 @@ export function FeedbackForm({
         <legend className="sr-only">Suggestion details</legend>
         <TextField
           name="outcome"
+          {...field("outcome")}
           label="What would you like to be able to do?"
           max={1600}
           required
         />
         <TextField
           name="helps"
+          {...field("helps")}
           label="Who would this help?"
           max={400}
           required
@@ -335,6 +403,7 @@ export function FeedbackForm({
       </fieldset>
       <TextField
         name="description"
+        {...field("description")}
         label={
           kind === "GENERAL"
             ? "Your experience (optional with a rating)"
@@ -347,22 +416,12 @@ export function FeedbackForm({
         passwords, sign-in codes, private member lists and sensitive pastoral
         information.
       </p>
-      <FeedbackChoicesFields kind={kind} />
-      <PhotoUploadManager
-        ownerId={s.viewer.id}
-        targetId={s.viewer.id}
-        purpose="SUPPORT_ATTACHMENT"
-        available={s.intake.available && !removing}
-        remaining={3 - attachments.length}
-        onPending={setUploadPending}
-        onSaved={(image) => {
-          setAttachments((current) =>
-            current.some((a) => a.id === image.id)
-              ? current
-              : [...current, image]
-          );
-        }}
+      <FeedbackChoicesFields
+        kind={kind}
+        value={choices}
+        onChange={setChoices}
       />
+      <PhotoUploadManagerView controller={uploads} />
       {attachments.length > 0 && (
         <section
           className="min-w-0 space-y-4"
@@ -388,21 +447,24 @@ export function FeedbackForm({
                   className="gc-button gc-button-quiet"
                   disabled={!!removing}
                   onClick={async () => {
-                    if (removing) return;
+                    if (removing || !privacy.visible || completed) return;
+                    const body =
+                      removalBodies[image.id] ??
+                      JSON.stringify({
+                        operation: "feedback-remove-upload",
+                        assetId: image.id,
+                        assetVersion: image.version
+                      });
+                    setRemovalBodies((current) => ({
+                      ...current,
+                      [image.id]: body
+                    }));
                     setRemoving(image.id);
                     setAttachmentNotice("");
                     try {
                       const { data } = await socialRequest<{
                         removed: boolean;
-                      }>(
-                        "/api/platform/feedback",
-                        JSON.stringify({
-                          operation: "feedback-remove-upload",
-                          assetId: image.id,
-                          assetVersion: image.version
-                        }),
-                        s.viewer.id
-                      );
+                      }>("/api/platform/feedback", body, s.viewer.id);
                       if (!data.removed)
                         throw Error(
                           "Removal is unconfirmed. Retry removing this image."
@@ -410,8 +472,18 @@ export function FeedbackForm({
                       setAttachments((current) =>
                         current.filter((a) => a.id !== image.id)
                       );
+                      setRemovalBodies((current) => {
+                        const next = { ...current };
+                        delete next[image.id];
+                        return next;
+                      });
                       setAttachmentNotice("Private upload removed.");
                     } catch (error) {
+                      if (
+                        error instanceof SocialClientError &&
+                        [401, 403, 404].includes(error.status)
+                      )
+                        privacy.onAccessDenied();
                       setAttachmentNotice(
                         error instanceof Error
                           ? error.message
@@ -458,7 +530,12 @@ export function FeedbackForm({
           <p>App version: {release}</p>
           <label className="block">
             Device category
-            <select name="device" className={feedbackInputClass}>
+            <select
+              name="device"
+              className={feedbackInputClass}
+              value={draft.device ?? "UNKNOWN"}
+              onChange={(event) => field("device").onChange(event.target.value)}
+            >
               {Object.entries(metricDevices).map(([v, l]) => (
                 <option key={v} value={v}>
                   {l}
@@ -468,7 +545,14 @@ export function FeedbackForm({
           </label>
           <label className="block">
             Browser category
-            <select name="browser" className={feedbackInputClass}>
+            <select
+              name="browser"
+              className={feedbackInputClass}
+              value={draft.browser ?? "UNKNOWN"}
+              onChange={(event) =>
+                field("browser").onChange(event.target.value)
+              }
+            >
               {Object.entries(metricBrowsers).map(([v, l]) => (
                 <option key={v} value={v}>
                   {l}
@@ -480,6 +564,10 @@ export function FeedbackForm({
             Error reference shown by the app (optional)
             <input
               name="errorReference"
+              value={draft.errorReference ?? ""}
+              onChange={(event) =>
+                field("errorReference").onChange(event.target.value)
+              }
               maxLength={48}
               pattern="[A-Z0-9][A-Z0-9_-]{2,47}"
               className={feedbackInputClass}
@@ -496,6 +584,8 @@ export function FeedbackForm({
           required
           type="checkbox"
           name="consent"
+          checked={consent}
+          onChange={(event) => setConsent(event.target.checked)}
           className="mt-1 h-5 w-5 shrink-0 accent-[#e6b56c]"
         />
         <span>
@@ -510,18 +600,24 @@ function TextField({
   name,
   label,
   max,
-  required = false
+  required = false,
+  value,
+  onChange
 }: {
   name: string;
   label: string;
   max: number;
   required?: boolean;
+  value: string;
+  onChange: (value: string) => void;
 }) {
   return (
     <label className="block font-semibold">
       {label}
       <textarea
         name={name}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
         maxLength={max}
         minLength={required ? 3 : undefined}
         required={required}

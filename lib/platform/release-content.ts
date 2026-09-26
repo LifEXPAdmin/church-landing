@@ -1006,6 +1006,14 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "private-feedback-drafts", version: "2026.09.26.13", date: "2026-09-26",
+    summary: "Feedback drafts check current access before showing your private entries and selected images.",
+    added: [],
+    improved: ["Written choices and selected attachments stay on this page while their presentation clears when access is being checked."],
+    fixed: ["Unconfirmed uploads, removals and feedback keep their original requests for safe retry. A saved submission waits for other unconfirmed work before opening its receipt."],
+    featureIds: ["private-feedback"]
+  },
+  {
     id: "private-feedback-list", version: "2026.09.26.12", date: "2026-09-26",
     summary: "My feedback checks current access before showing your private receipt list.",
     added: [],
