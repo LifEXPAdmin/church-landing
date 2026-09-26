@@ -312,11 +312,11 @@ try {
     return route.continue();
   });
   await save();
-  await editor()
+  await page
     .getByRole("button", { name: "Confirm original save", exact: true })
     .waitFor();
   assert.equal((await row(owner)).menuShortcutsVersion, 3);
-  await editor()
+  await page
     .getByRole("button", { name: "Confirm original save", exact: true })
     .click();
   await waitUntil(async () => (await menuTitles()).join() === "Gather groups");
@@ -337,7 +337,7 @@ try {
     mutationId: randomUUID()
   });
   await save();
-  await editor()
+  await page
     .getByRole("button", { name: "Reload current saved choices", exact: true })
     .waitFor();
   assert.equal(
@@ -348,7 +348,7 @@ try {
   );
   assert.deepEqual((await row(owner)).menuShortcutIds, ["settings"]);
   page.once("dialog", (d) => d.accept());
-  await editor()
+  await page
     .getByRole("button", { name: "Reload current saved choices", exact: true })
     .click();
   await waitUntil(

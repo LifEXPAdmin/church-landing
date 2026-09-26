@@ -1006,6 +1006,14 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "private-menu-choices", version: "2026.09.26.27", date: "2026-09-26",
+    summary: "Menu protects your saved shortcuts and current Admin entry when the page is concealed.",
+    added: [],
+    improved: ["Saved Menu choices appear after current account access is checked and clear from hidden or offline pages."],
+    fixed: ["Unavailable shortcuts remain removable without exposing former access. An uncertain save keeps its original request while current access is checked."],
+    featureIds: ["menu-shortcuts"]
+  },
+  {
     id: "private-content-decisions", version: "2026.09.26.26", date: "2026-09-26",
     summary: "Content decisions keep private details concealed while preserving reconsideration drafts and original requests.",
     added: [],
