@@ -233,6 +233,7 @@ try {
     ["PlatformCalendar", "id"],
     ["CalendarEvent", "id"],
     ["CalendarOccurrence", "id"],
+    ["CalendarReminderJob", "ownerId"],
     ["CalendarShare", "id"],
     ["CalendarEventShare", "id"],
     ["CalendarResponse", "id"],
@@ -293,7 +294,7 @@ try {
   const fingerprint = (table, key, url = database, beforeChurch = false) => {
     const row =
       beforeChurch && table === "PlatformUser"
-        ? `to_jsonb(t) - ARRAY['deactivatedAt','suspendedAt','adultAcknowledgedAt','adultPolicyVersion','portalVersion','deletionRequestedAt','erasedAt','pendingFounderWelcomeAt','metricCreationMethod','metricExcluded','dateFormat','timeFormat','regionalVersion','locationAudience','locationVersion','locationRecoveryRequired']`
+        ? `to_jsonb(t) - ARRAY['deactivatedAt','suspendedAt','adultAcknowledgedAt','adultPolicyVersion','portalVersion','deletionRequestedAt','erasedAt','pendingFounderWelcomeAt','metricCreationMethod','metricExcluded','dateFormat','timeFormat','regionalVersion','locationAudience','locationVersion','locationRecoveryRequired','calendarWeekStart','calendarDefaultView','calendarTimeZoneMode','calendarDisplayTimeZone']`
         : beforeChurch && table === "PlatformPostLike"
           ? "to_jsonb(t) - 'active' - 'version' - 'firstLikedAt'"
           : beforeChurch && table === "PlatformPostComment"
@@ -332,7 +333,7 @@ try {
       JOIN pg_namespace n ON n.oid = r.relnamespace
       WHERE n.nspname = 'public' AND r.relname IN (${churchNames})
       UNION ALL
-      SELECT 'trigger', t.tgname, pg_get_triggerdef(t.oid) FROM pg_trigger t JOIN pg_class r ON r.oid = t.tgrelid WHERE r.relname IN ('SupportCase','SupportCapabilityGrant','ChurchPosition','PlatformPost','PlatformPostComment','PlatformUser','PlatformOperatorGrant','PlatformMeasurementChoice','PlatformMetricConfiguration','SocialRelationship','TopicMembership','CalendarResponse','PostVolunteerSignup','ChurchConnection') AND NOT t.tgisinternal
+      SELECT 'trigger', t.tgname, pg_get_triggerdef(t.oid) FROM pg_trigger t JOIN pg_class r ON r.oid = t.tgrelid WHERE r.relname IN ('SupportCase','SupportCapabilityGrant','ChurchPosition','PlatformPost','PlatformPostComment','PlatformUser','PlatformOperatorGrant','PlatformMeasurementChoice','PlatformMetricConfiguration','SocialRelationship','TopicMembership','CalendarResponse','CalendarOccurrence','PostVolunteerSignup','ChurchConnection') AND NOT t.tgisinternal
       UNION ALL SELECT 'function', p.proname, pg_get_functiondef(p.oid) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND (p.proname IN ('church_position_acyclic','comment_thread_shape','reported_comment_retention','enforceTopicCommentScope','preservePostTopicScope','gc_current_success_time','gc_connection_success_times') OR p.proname LIKE 'gc\\_metric\\_%')
     ) t`
       ],
@@ -404,7 +405,11 @@ try {
         "regionalVersion",
         "locationAudience",
         "locationVersion",
-        "locationRecoveryRequired"
+        "locationRecoveryRequired",
+        "calendarWeekStart",
+        "calendarDefaultView",
+        "calendarTimeZoneMode",
+        "calendarDisplayTimeZone"
       ]
     ],
     ["SocialRelationship", ["followingSince"]],
@@ -1019,6 +1024,27 @@ try {
       if (psql(["-Atc", `SELECT count(*) FROM "Church" WHERE "serviceTimes"<>'' OR "accessibilityInfo"<>'' OR "languages"<>'' OR "childrenPrograms"<>'' OR "contactPreferences"<>''`]).trim() !== "0")
         throw Error("Visitor information migration inferred supplied facts");
       console.log(`Visitor information upgrade preserves original columns in ${originals.length} tables and leaves all five supplied fields empty.`);
+    } else if ([
+      "20260922084500_calendar_display_preferences",
+      "20260922093000_calendar_reminders",
+      "20260922094500_calendar_reminder_source",
+      "20260926014500_calendar_occurrence_modified"
+    ].includes(name)) {
+      const originals = JSON.parse(psql(["-Atc", `SELECT json_agg(json_build_object('table',table_name,'columns',cols) ORDER BY table_name) FROM (SELECT table_name,json_agg(column_name ORDER BY ordinal_position) AS cols FROM information_schema.columns WHERE table_schema='public' AND table_name<>'_prisma_migrations' GROUP BY table_name) x`]));
+      const ident = value => '"' + value.replaceAll('"', '""') + '"';
+      const snapshot = () => originals.map(row => psql(["-Atc", `SELECT md5(coalesce(jsonb_agg(to_jsonb(t) ORDER BY to_jsonb(t)::text)::text,'[]')) FROM (SELECT ${row.columns.map(ident).join(',')} FROM ${ident(row.table)}) t`]).trim());
+      const before = snapshot();
+      psql(["-f", `prisma/migrations/${name}/migration.sql`]);
+      const after = snapshot();
+      const changed = originals.filter((row, i) => before[i] !== after[i]).map(row => row.table);
+      if (changed.length) throw Error(`Calendar preference migration ${name} changed original fields in: ${changed.join(', ')}`);
+      if (name === "20260922084500_calendar_display_preferences" && psql(["-Atc", `SELECT count(*) FROM "PlatformUser" WHERE "calendarWeekStart"<>0 OR "calendarDefaultView"<>'AGENDA' OR "calendarTimeZoneMode"<>'FIXED' OR "calendarDisplayTimeZone"<>'UTC'`]).trim() !== "0")
+        throw Error("Calendar display migration changed existing presentation defaults");
+      if (name === "20260922093000_calendar_reminders" && psql(["-Atc", `SELECT (SELECT count(*) FROM "SocialPreferences" WHERE "calendarReminderMinutes"<>0 OR "calendarReminderSince" IS NOT NULL)+(SELECT count(*) FROM "CalendarReminderJob")`]).trim() !== "0")
+        throw Error("Calendar reminder migration inferred consent or delivery work");
+      if (name === "20260926014500_calendar_occurrence_modified" && psql(["-Atc", `SELECT count(*) FROM "CalendarOccurrence" WHERE "updatedAt" IS NULL OR "updatedAt">clock_timestamp()`]).trim() !== "0")
+        throw Error("Calendar occurrence migration failed to initialize a conservative modification time");
+      console.log(`Calendar preference upgrade ${name} preserves original fields in ${originals.length} tables and explicit defaults.`);
     } else psql(["-f", `prisma/migrations/${name}/migration.sql`]);
   }
   if (beforeMetrics) {
