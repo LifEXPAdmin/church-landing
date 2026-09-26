@@ -136,6 +136,7 @@ export function AdminWorkspace({
     resume();
     window.addEventListener("blur", hide);
     window.addEventListener("offline", hide);
+    window.addEventListener("pagehide", hide);
     window.addEventListener("focus", resume);
     window.addEventListener("online", resume);
     window.addEventListener("pageshow", resume);
@@ -146,6 +147,7 @@ export function AdminWorkspace({
       queued.current = false;
       window.removeEventListener("blur", hide);
       window.removeEventListener("offline", hide);
+      window.removeEventListener("pagehide", hide);
       window.removeEventListener("focus", resume);
       window.removeEventListener("online", resume);
       window.removeEventListener("pageshow", resume);

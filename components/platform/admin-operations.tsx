@@ -8,6 +8,7 @@ import type {
 } from "@/lib/platform/admin-operations";
 import { AdminForm } from "./admin-form";
 import { SupportTime } from "./regional-support-presentation";
+import { useReadVisibility } from "./read-visibility";
 export function AdminPeople({ navigation }: { navigation: AdminNavigation }) {
   const [person, setPerson] = useState<AdminLookupResult["person"]>(null),
     [checked, setChecked] = useState("");
@@ -137,6 +138,8 @@ export function AdminChurches({ navigation }: { navigation: AdminNavigation }) {
   );
 }
 export function AdminAudit({ data }: { data: AdminAuditSnapshot }) {
+  const visible = useReadVisibility();
+  if (!visible) return null;
   return (
     <div className="space-y-5">
       <h1 className="text-3xl font-semibold">Access and lookup audit</h1>
@@ -171,12 +174,12 @@ export function AdminAudit({ data }: { data: AdminAuditSnapshot }) {
         </ol>
       )}
       {data.next && (
-        <Link
+        <a
           className="gc-button gc-button-quiet"
           href={"/platform/admin/audit?after=" + encodeURIComponent(data.next)}
         >
           Older audit records
-        </Link>
+        </a>
       )}
     </div>
   );

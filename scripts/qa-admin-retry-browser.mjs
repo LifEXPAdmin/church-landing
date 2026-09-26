@@ -190,8 +190,16 @@ try {
   assert.equal(await field.inputValue(), note);
   assert.equal(await field.isEnabled(), false);
   await oneEffect();
+  await page.evaluate(() => window.dispatchEvent(new Event("pagehide")));
+  assert.equal(await form.isVisible(), false);
+  await page.evaluate(() => window.dispatchEvent(new Event("pageshow")));
+  await retry.waitFor();
+  assert.equal(await field.inputValue(), note);
+  assert.equal(await field.isEnabled(), false);
+  assert.equal(attempts.length, 1);
+  await oneEffect();
   ok(
-    "A real accepted internal note with a lost response retains the original command and stays private from its requester."
+    "A real accepted internal note with a lost response retains the original command through pagehide/pageshow and stays private from its requester."
   );
   await retry.click();
   await form
