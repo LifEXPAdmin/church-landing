@@ -1,13 +1,49 @@
 # Scoped admin requests and access
 
-## Original retry preservation candidate, 26 September 2026 UTC
+## Admin original retry verified live, 26 September 2026 UTC
 
-A rate limit can occur before an accepted action's receipt is read. Admin forms
-now preserve their exact pending command and frozen fields through that cooldown,
-matching their existing uncertain-response recovery. No backend, authority,
-version, schema or configuration change is made. The unchanged release reproduced
-the lost retry control after a saved note's response was lost and its retry was
-rate limited. Final browser and release acceptance remain pending.
+Version **2026.09.26.10**, source `1aea49d860a252b8a8c909f193b2c262cf38703f`, is READY in
+`dpl_FfnPFGy2huu7dpAXQZ7vL4LPoNs5`. Canonical-domain and serving identity checks passed at
+10:33 UTC; production data acceptance passed at 10:34 UTC.
+[Published notes](https://godschurches.com/platform/releases/admin-original-retry).
+
+The preceding build reproduced a real saved internal note with a lost response,
+followed by a rate limit that erased the browser's original pending command.
+Admin forms now retain the exact original bytes and key through that cooldown.
+Frozen inputs, deliberate discard, conflict recovery and current account checks
+keep their existing owners. No server receipt, authority, version, schema or
+configuration change is made. Broader private-reader cleanup remains open.
+
+The exact production build (40.107 seconds) and
+[CI](https://github.com/LifEXPAdmin/church-landing/actions/runs/36235600253) pass, with all 18 browser groups and 26 service checks on this source.
+The focused browser confirms four identical requests across a lost response,
+injected 429/503 and the real original receipt: one private note, one operation,
+one source/admin version increment, and requester exclusion after each stage.
+The injected responses test recovery, not limiter configuration. Existing Admin
+and Support case browser regressions pass. Actual 390px and 320px/enlarged
+screenshots were reviewed; no physical-device observation is claimed.
+
+An initial service run overlapped browser fixture writes to the single test
+intake setting, so three service cases correctly denied the mismatched recipient.
+The failed run is preserved. Serial execution passed all 26 checks without an
+application permission change. The unchanged backend retains its separately
+attributed 210-file baseline: 1,339 passes, two expected skips and no failures.
+
+All 45 live guest/browser checks and six health checks pass. All 149 production
+table fingerprints remain unchanged. All 115 source, production and installed
+migration checksums match, with no pending or applied migration. A fresh actual
+installed restore at 10:23:35 UTC restored 149 tables, removed its plaintext
+restore and left production unchanged; actual scheduled job run 20 then passed.
+Scoped runtime errors/fatals, production test writes, recipient sends and new
+queue probes are zero. No production operator authority was created.
+
+Measured startup JavaScript changes versus the verified preceding build are
+-5 gzip bytes for Admin case detail,
+-4 for its queue and
+-4 for access management. CSS is unchanged. This is a size
+measurement, not a speed claim. No new request, timer, dependency, database read,
+endpoint or worker is introduced. Other privacy readers, policy coverage and
+actual owner/provider/OS/device acceptance remain open.
 
 ## Shared feedback integration — September 16, 2026 UTC
 
