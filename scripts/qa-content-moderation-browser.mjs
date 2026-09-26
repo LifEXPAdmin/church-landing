@@ -329,8 +329,8 @@ try {
   );
   await focusAgain();
   await currentNotice().waitFor({ state: "hidden" });
-  await button("Confirm original request").waitFor();
-  await button("Confirm original request").click();
+  await button("Confirm original request: reconsideration").waitFor();
+  await button("Confirm original request: reconsideration").click();
   await page.waitForURL(/\/platform\/help\/cases\//);
   await page.getByText(explanation, { exact: true }).waitFor();
   assert.equal(supportBodies.length, 2);
