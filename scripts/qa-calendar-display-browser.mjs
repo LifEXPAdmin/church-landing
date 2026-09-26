@@ -174,6 +174,15 @@ try {
   await go("/platform/calendars?month=2026-10");
   const month = page.getByRole("region", { name: "Scrollable calendar month" });
   await month.waitFor();
+  const monthPicker = page.getByLabel("Month", { exact: true });
+  const pickerStyle = await monthPicker.evaluate((element) => {
+    const style = getComputedStyle(element), rect = element.getBoundingClientRect();
+    return { display: style.display, border: parseFloat(style.borderTopWidth),
+      width: rect.width, height: rect.height, className: element.className };
+  });
+  assert.equal(pickerStyle.display, "block");
+  assert.ok(pickerStyle.border >= 1 && pickerStyle.width >= 150 && pickerStyle.height >= 44);
+  assert.ok(!pickerStyle.className.includes("function"), "Server-rendered picker uses actual shared style values");
   assert.equal(await month.locator("th").first().innerText(), "Monday");
   assert.match(
     await page.locator("body").innerText(),

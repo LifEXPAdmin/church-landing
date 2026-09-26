@@ -4,6 +4,8 @@ import { announcePrivilegedChallenge } from "@/lib/platform/privileged-auth-navi
 import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { StructureOperation } from "@/lib/platform/church-structure-types";
+import { portalInputClass, portalButtonClass } from "./portal-control-styles";
+export { portalInputClass, portalButtonClass } from "./portal-control-styles";
 
 export type PortalOperation =
   | "ack-adult"
@@ -28,11 +30,6 @@ export type PortalField = {
   hint?: string;
   options?: { value: string; label: string }[];
 };
-
-export const portalInputClass =
-  "mt-2 block min-h-11 w-full rounded-xl border border-gc-divider bg-gc-canvas px-3 py-3 text-base text-gc-text placeholder:text-gc-muted focus:outline-none focus:ring-2 focus:ring-gc-focus disabled:opacity-60";
-export const portalButtonClass =
-  "inline-flex min-h-11 items-center justify-center rounded-full bg-gc-action px-5 py-3 text-sm font-semibold text-gc-on-action hover:bg-gc-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gc-focus focus-visible:ring-offset-2 focus-visible:ring-offset-gc-surface disabled:cursor-not-allowed disabled:opacity-60";
 
 export function PortalActionForm({
   operation,

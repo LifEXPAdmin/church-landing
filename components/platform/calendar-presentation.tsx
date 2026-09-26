@@ -20,7 +20,7 @@ import {
   DeviceZoneButton
 } from "./calendar-form";
 import { PortalEmpty, portalLinkClass } from "./portal-ui";
-import { portalInputClass, portalButtonClass } from "./portal-action-form";
+import { portalInputClass, portalButtonClass } from "./portal-control-styles";
 import { LocalEventTime } from "./local-event-time";
 import { CalendarSharingPreview } from "./calendar-sharing-preview";
 
