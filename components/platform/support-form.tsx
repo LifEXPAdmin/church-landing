@@ -474,6 +474,7 @@ export function SupportForm({
             ) {
               setDirty(false);
               setRetryBody(null);
+              setFailed(false);
               setSourceChanged(false);
               initialFixed.current = fixed;
               setValues({});
