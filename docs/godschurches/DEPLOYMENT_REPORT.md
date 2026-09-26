@@ -1,3 +1,19 @@
+## Weekly feedback locally tested; release blocked, 26 September 2026 UTC
+
+Version **2026.09.26.18** (`03b8e26`, QA `5704282`) removes concealed weekly
+report and note presentation while preserving four-field drafts, original
+uncertain saves and their reporting week. Clean defaults refresh; dirty changes
+require explicit adoption. Warned local discard restores authoritative saved
+notes and announces success correctly. All 42 final-source browser groups pass,
+plus the 41.188-second production build and reviewed narrow/enlarged captures.
+Nineteen services passed on `1a6ef69` and are reused with source equivalence;
+the final change only fixes the discard status flag. Test setup and accessibility
+failures remain recorded. This is **not merged or live** under the provider daily
+cap. No production writes, sends, migrations or release retries occurred. Prior
+live identity remains `.11/925536c`, last checked at 12:58:03 UTC. See
+[retained reader privacy](RETAINED_READER_PRIVACY.md) for exact evidence, fixture
+effects, costs and remaining acceptance. Continue eligible priority work.
+
 ## Feedback intake locally tested; release blocked, 26 September 2026 UTC
 
 ## Admin duty changes locally tested; release blocked, 26 September 2026 UTC

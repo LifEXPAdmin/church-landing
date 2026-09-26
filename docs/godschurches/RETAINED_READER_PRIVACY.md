@@ -1,5 +1,69 @@
 # Retained reader privacy
 
+## Weekly feedback locally tested; release blocked, 26 September 2026 UTC
+
+Version **2026.09.26.18**, application `03b8e262ac04d9bd088108af9d94094d0394757c`
+and QA-only `5704282`, removes concealed weekly reports, case links, saved notes
+and unfinished note fields while preserving their mounted command owner.
+Before editing, the unchanged prior source retained private report and draft
+content after blur, pagehide, offline, failed/held reads, account replacement and
+actual product-grant revocation. Initial HTML/RSC already omitted private content.
+
+The four controlled note fields synchronize fresh saved defaults only while
+clean. Dirty notes survive refresh and require explicit version adoption after a
+concurrent change. Native week selection remains blocked during unfinished work.
+The workspace pins its initially resolved default week for subsequent reads;
+explicit fresh-document navigation deliberately chooses another week. Successful
+local discard clears uncertainty and refreshes authoritative saved defaults.
+Confirmed status messages survive the refresh in this form. People lookup keeps
+its existing concealment cleanup. Non-opt-in forms retain their behavior.
+
+All **42 browser groups** pass on the final application: five focused Weekly
+privacy groups and 37 existing Weekly, access, People, summary, audit, retry and
+Admin groups. Four byte-identical original save attempts survive a lost response,
+actual grant revocation/restoration, account replacement, 429 and 503 with one
+saved review increment. A second accepted save with a lost response remains saved
+after warned local discard. Canceling discard preserves recovery; confirming it
+fetches the four nonempty saved defaults and restores the proper status role.
+The focused fixture has two actors, two grants, one Support/Feedback case, three
+service review saves and two browser saves, five audit/retention effects and five
+browser POST attempts. Fourteen 390px/320px/200% captures have no horizontal
+overflow; enlarged notes/actions were reviewed. Browser/runtime/route errors and
+external requests are zero. Real subsequent GET parameters prove week pinning;
+a real Monday rollover is not claimed.
+
+The final **41.188-second** production build `rjsm_vQlO37Qmdemsy80v`, lint,
+types, copy, source/build security and runtime traces pass. All 1,906 candidate
+source hashes and 115 unchanged migration sources are recorded. **Nineteen service
+checks** passed on initial `1a6ef69` and are reused with source comparison: Weekly
+3, feedback metrics 4, Admin operations 10 and release content 2. All 1,905 other
+existing files, including backend, tests, dependencies and migrations, match.
+The only final application correction clears the failed flag on local discard;
+all browser groups were rerun. This is not a fresh full backend suite.
+
+The initial strict focused browser check exposed an actual accessibility defect:
+a successful discard after a failed save was announced as an alert. The final
+source fixes that flag; the strict status assertion is retained. An intermediate
+weakened assertion is preserved but is not acceptance evidence. A separate Admin
+bulk-service check initially returned 503 because its test retention path lay
+outside the required fixture directory. The unchanged suite passes 10/10 in the
+corrected separate fixture. Both failures and their fixture effects are retained.
+
+Compared with tested `.17`, Admin startup JavaScript adds 188 to 189 gzip bytes,
+and the separately loaded Weekly chunk adds 237 bytes (3,271 to 3,508). Shared
+CSS is unchanged. No schema, dependency, endpoint, polling or worker was added;
+no speed improvement is claimed. Synthetic lifecycle/failure checks do not prove
+OS snapshot, physical-device or rate-limiter behavior. In-memory draft retention
+is intentional; no heap, browser-history or storage erasure is claimed.
+
+This candidate is **not merged or live**. Provider daily deployment capacity
+still blocks remote CI/publication. No push, deployment retry, production write,
+migration, recipient send or new queue probe occurred. Prior live identity
+remains `.11/925536c`, last checked at 12:58:03 UTC. Prior restore/fingerprint
+receipts retain their timestamps; fresh release gates are required when capacity
+returns. Remaining readers and broader security/provider/device acceptance stay
+open. All earlier candidates and evidence are preserved.
+
 ## Admin duty changes locally tested; release blocked, 26 September 2026 UTC
 
 Version **2026.09.26.17**, application `444f896ba06ef2668cf41a4bcf36047fa53dab12`
