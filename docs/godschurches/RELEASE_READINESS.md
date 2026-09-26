@@ -1,3 +1,23 @@
+## Original report review retry locally tested; release blocked, 26 September 2026 UTC
+
+Version **2026.09.26.23** (`cabd037`, QA `88de757`) preserves an uncertain
+report decision's exact key and body through rate limiting. Before editing,
+unchanged `.22` reproduced a lost acknowledgment followed by 429 discarding the
+original retry; a fresh submit then saved a duplicate same-intent decision.
+Current authority, cooldowns, deliberate discard and explicit 409 version
+adoption remain enforced. All **22 browser groups**, **20 fresh service/HTTPS
+checks** and the **37.961-second** production build pass. Four inspected actual
+keyboard captures and eight physical DOM observations pass. Detailed effects,
+fixture counts and diagnostic limitations are recorded in
+[retained reader privacy](RETAINED_READER_PRIVACY.md).
+This is **implemented and locally tested, not merged or live**. The recorded
+Vercel daily deployment cap still blocks publication. The latest read-only live
+check at **16:41:19 UTC** confirms `.11/925536c`, READY on the canonical domain
+with public health OK. No production write, send, migration, push or deployment
+retry occurred. Refresh expired installed restore evidence before a future
+release. Wider security and physical-device gates remain open; continue the
+ordinary priority queue.
+
 ## Admin case privacy locally tested; release blocked, 26 September 2026 UTC
 
 Version **2026.09.26.22** (`b4ebdb6`, QA `c787a16`) removes concealed private

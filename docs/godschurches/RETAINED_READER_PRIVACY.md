@@ -1,5 +1,79 @@
 # Retained reader privacy
 
+## Original report review retry locally tested; release blocked, 26 September 2026 UTC
+
+Version **2026.09.26.23**, application `cabd037e50b5c666b872d16a09d259bd53c55caf`
+and QA-only `88de757`, retains an uncertain review's exact mutation key and body
+when a later attempt is rate limited. Before application editing, unchanged
+`.22/b4ebdb6` reproduced a real accepted FOLLOW_UP_REQUIRED decision whose
+acknowledgment was lost, followed by a transport-injected 429. The original retry
+disappeared. A fresh submit used a different key and version and created a second
+same-intent decision: three browser attempts, two decisions and two receipts.
+
+Rate limiting happens before receipt lookup and cannot establish whether an
+earlier attempt saved. The client now keeps its pending request on 429, alongside
+existing current-authority checks and cooldown behavior. Definitive 400/409
+handling, explicit current-version adoption and warned local discard are
+unchanged. No backend, schema, endpoint, dependency or polling change is included.
+
+All **six focused browser groups** pass on the final application. A standalone
+status decision uses five identical body/key/account attempts through loss of
+acknowledgment, 429, 503, account replacement and actual review-grant revocation
+and renewal, confirming one original decision and receipt. An embedded Admin
+HIDE decision uses four identical attempts through loss of acknowledgment, 429,
+503 and page concealment, likewise producing one decision and receipt. Its source
+is hidden while sharing and reply permissions remain unchanged. Cooldowns prevent
+fresh or original sends; fields stay locked while confirmation is pending.
+Cancelled and accepted warned discard preserve the already saved effect. A real
+409 blocks fresh submission until explicit current-version adoption.
+
+The final focused run records **13 browser POST attempts and one deliberate
+concurrent service command**, producing exactly **five decisions and five
+SocialOperations** across four report/source pairs. Three effects belong to the
+status, moderation and discard cases; two are deliberate separate intents in
+the concurrent-version case. It creates three fictional actors and one review
+grant, renewed from version one to three, plus three local verification files.
+Actor setup clears one isolated auth-limit row, with all three clear calls
+recorded. Eight physical DOM/live-value absence observations pass. Four captures
+at 320px and normal or 200% root text use actual Tab/Shift+Tab, two-pixel focus
+outlines, center hit testing and unobstructed primary targets above fixed
+navigation; no horizontal overflow remains. The prior denied-attempt notice can
+remain until original confirmation after renewed access; this existing copy does
+not represent a failed authority read.
+
+A first focused attempt stopped after three identical POSTs and one saved effect
+because its test waited for a transient 503 notice immediately replaced by the
+automatic current-read busy state. Only the test wait changed to the actual
+response and held-read concealment assertion. Failed and successful receipts are
+preserved separately; no application change was made for this diagnostic.
+Transport-injected 429/503, actual denied-authority 404 and definitive 409 console
+diagnostics are expected and recorded. No page exception, route failure or
+external request occurred. Chromium lifecycle signals do not prove physical-device
+or operating-system snapshot behavior.
+
+All **16 existing browser groups** also pass: report review 11 and content
+moderation 5, for **22 browser groups** overall. All **20 service/HTTPS tests**
+are freshly executed on an independent database: report review 7, content
+moderation 7, report HTTP 4 and release content 2. Its runtime stopped with data
+preserved; 113 local verification files and final fictional row inventories are
+recorded separately from mutation counts. The **37.961-second** production build,
+ID `hnAmeAhZXPsloqBfJV06B`, passes types, lint, copy, source/build security and
+runtime trace checks. All **1,911 tracked snapshot files** remain unchanged and
+**115 migrations** are unchanged. Compared with tested `.22`, standalone review
+startup shrinks two gzip bytes, Admin routes one to two bytes, the ordinary
+platform grows three bytes and CSS does not grow. These tiny bundle differences
+are not a speed improvement claim or a fresh whole-system baseline.
+
+This candidate is **implemented and locally tested, not merged or live**.
+Main remains `.12/951e57b`; the recorded Vercel daily deployment cap blocks
+publication. The latest read-only check at **16:41:19 UTC** confirms prior live
+`.11/925536c` on READY deployment `dpl_BYb9LtWJw2kLfk2cFLKEZ9Pv8oqt`, assigned to
+`godschurches.com`, with public health OK. No production write, send, migration,
+push or deployment retry occurred. Refresh the expired installed restore evidence
+before a future release. Wider security, provider, pilot and physical-device
+gates stay open. Continue the ordinary priority queue; report intake retry
+semantics require a separate investigation before any further change.
+
 ## Admin case privacy locally tested; release blocked, 26 September 2026 UTC
 
 Version **2026.09.26.22**, application `b4ebdb643ee8d1aebbfb02283d9f3c5bb3fc9a8b`
