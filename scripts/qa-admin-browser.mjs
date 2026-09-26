@@ -254,7 +254,9 @@ try {
   await noteForm
     .getByRole("button", { name: "Save internal note", exact: true })
     .click();
-  await page.getByText(note, { exact: true }).waitFor();
+  // A controlled textarea already contains the unsaved text. Wait for the
+  // current persisted note presentation before checking its database effect.
+  await page.locator("li p").filter({ hasText: note }).waitFor();
   assert.equal(
     await db.adminCaseNote.count({
       where: { supportCaseId: created.caseId, body: note }

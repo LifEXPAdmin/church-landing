@@ -372,7 +372,8 @@ try {
     "The selected context is being reviewed " + randomUUID();
   await page.getByLabel("Your reply", { exact: true }).fill(reviewerReply);
   await button("Save reply").click();
-  await page.getByText(reviewerReply, { exact: true }).waitFor();
+  // Wait for the saved conversation after its navigation, not the local draft.
+  await page.locator("li p").filter({ hasText: reviewerReply }).waitFor();
   assert.equal(
     (await db.platformPost.findUniqueOrThrow({ where: { id: source.id } }))
       .moderationState,
