@@ -143,6 +143,11 @@ export function AdminWorkspace({
     };
     const visibility = () =>
       document.visibilityState === "hidden" ? hide() : resume();
+    const accessChanged = () => {
+      // A delayed mutation denial must not reactivate a concealed workspace.
+      // Physical resume events remain responsible for the next current read.
+      if (active.current) void load();
+    };
     resume();
     window.addEventListener("blur", hide);
     window.addEventListener("offline", hide);
@@ -150,7 +155,7 @@ export function AdminWorkspace({
     window.addEventListener("focus", resume);
     window.addEventListener("online", resume);
     window.addEventListener("pageshow", resume);
-    window.addEventListener("admin-access-changed", resume);
+    window.addEventListener("admin-access-changed", accessChanged);
     document.addEventListener("visibilitychange", visibility);
     return () => {
       hide();
@@ -161,7 +166,7 @@ export function AdminWorkspace({
       window.removeEventListener("focus", resume);
       window.removeEventListener("online", resume);
       window.removeEventListener("pageshow", resume);
-      window.removeEventListener("admin-access-changed", resume);
+      window.removeEventListener("admin-access-changed", accessChanged);
       document.removeEventListener("visibilitychange", visibility);
     };
   }, [load]);

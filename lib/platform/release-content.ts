@@ -1006,6 +1006,14 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "private-idea-review", version: "2026.09.26.20", date: "2026-09-26",
+    summary: "Private idea reviews preserve unfinished work through current access and publication changes.",
+    added: [],
+    improved: ["Private source text and review fields leave the page during concealment while original actions and unsaved entries stay recoverable."],
+    fixed: ["Publishing, merging, reversing and withdrawing keep their original retry details after the current idea changes. Destination searches wait until unfinished review work is settled."],
+    featureIds: ["admin-requests"]
+  },
+  {
     id: "private-growth-reports", version: "2026.09.26.19", date: "2026-09-26",
     summary: "Growth reports and exports follow current access without losing original retry details.",
     added: [],

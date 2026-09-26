@@ -92,6 +92,10 @@ export function AdminForm({
   const status = useRef<HTMLParagraphElement>(null);
   const focusPending = useRef(false);
   const defaults = privacy ? JSON.stringify(initialFieldValues(fields)) : null;
+  const unavailableSelection = !!privacy && fields.some(
+    (field) => field.type === "select" && values[field.name] !== undefined &&
+      !field.options?.some((option) => option.value === String(values[field.name]))
+  );
   useLayoutEffect(() => {
     // Fresh saved values can replace a clean editor, never a local draft or
     // an unconfirmed command. Stable serialized defaults avoid render loops.
@@ -198,6 +202,7 @@ export function AdminForm({
           writing.current ||
           (privacy && (!privacy.visible || !privacy.currentAccess)) ||
           (!available && !pending) ||
+          (unavailableSelection && !pending) ||
           retryAt ||
           (conflict && !pending) ||
           (confirmationPurpose && !confirmation.ready && !pending)
@@ -377,6 +382,15 @@ export function AdminForm({
                 required={!field.optional}
                 className={adminInputClass}
               >
+                {privacy &&
+                  values[field.name] !== undefined &&
+                  !field.options?.some(
+                    (option) => option.value === String(values[field.name])
+                  ) && (
+                    <option value={String(values[field.name])} disabled>
+                      Previous selection is no longer available
+                    </option>
+                  )}
                 {field.options?.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
@@ -410,6 +424,9 @@ export function AdminForm({
         ))}
       </fieldset>
       {caution && <p className="text-sm text-gc-muted">{caution}</p>}
+      {unavailableSelection && !pending && (
+        <p>Choose a current value for the unavailable selection before saving.</p>
+      )}
       <p
         ref={status}
         tabIndex={-1}
@@ -452,6 +469,7 @@ export function AdminForm({
           disabled={
             busy ||
             (!available && !pending) ||
+            (unavailableSelection && !pending) ||
             !!retryAt ||
             (conflict && !pending) ||
             !!(confirmationPurpose && !confirmation.ready && !pending)
