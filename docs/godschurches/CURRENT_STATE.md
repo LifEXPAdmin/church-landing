@@ -1,3 +1,14 @@
+## Regular workflow propagation verified, 26 September 2026 UTC
+
+Both previously unavailable private index writes now succeed and have fresh
+readback: **Godschurches Work Queue — Tasks, Subtasks and Tonight’s Order** and
+**Current State and Next Three Outcomes**. Each begins with the regular priority
+workflow and preserves its dated history. The existing workflow task and exact
+Session Log row record the resolved propagation blocker. The separate future
+fresh-session automatic instruction-loading observation remains open. No
+application behavior, production record or historical worktree was changed by
+this documentation reconciliation.
+
 ## Timed calendar reminders local checkpoint, 26 September 2026 UTC
 
 The [reminder checkpoint](CALENDAR_REMINDERS_REPORT.md) extends the existing
