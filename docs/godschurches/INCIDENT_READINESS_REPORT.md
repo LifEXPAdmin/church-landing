@@ -1,5 +1,25 @@
 # Incident runbook readiness
 
+## Release-owner integration review, 26 September 2026 UTC
+
+The tested documentation handoff was reconciled with verified release
+**2026.09.26.4**, source `0b6683ee`, and the saved volunteer acceptance reports.
+The overlapping backup introduction was resolved by preserving both dated
+sections. No application, schema or dependency file changes in this integration.
+The original 24 control/archive checks and five agent-led scenarios below retain
+their own source and execution dates; no new human drill is implied.
+
+The now-current [volunteer recovery receipt](VOLUNTEER_AVAILABILITY_REPORT.md)
+records the protected 110-to-115 rehearsal, fresh installed 115-to-115 encrypted
+restore and actual nightly run 19 validating 100 sets. Those are separate release
+executions, not tests performed by this runbook. The older recovery receipts
+below remain historical. Current credentials and authority still require
+reconciliation before any real restore resumes traffic.
+
+This documentation is accepted for integration. Actual human coverage, provider
+controls, future-module adapters and operational acceptance remain open. The
+runbook does not appoint an operator or establish a response-time guarantee.
+
 26 September 2026 UTC. Documentation and isolated current-control exercise only.
 No application behavior, schema, dependency, provider setting, production record,
 operator grant or recipient message changes. The existing future-module queue
