@@ -112,6 +112,7 @@ export function AdminMetrics({ data }: { data: MetricSnapshot }) {
       owner: string;
     } | null>(null),
     [failed, setFailed] = useState(false),
+    [localNotice, setLocalNotice] = useState(false),
     [retryAt, setRetryAt] = useState(0),
     [dates, setDates] = useState({
       from: r.window.from,
@@ -168,8 +169,9 @@ export function AdminMetrics({ data }: { data: MetricSnapshot }) {
       setDates({ from: r.window.from, through: r.window.through });
   }, [r.window.from, r.window.through, datesEdited]);
   useEffect(() => {
-    if (message && !busy && visible && canExport) status.current?.focus();
-  }, [message, busy, visible, canExport]);
+    if (message && !busy && visible && (canExport || localNotice))
+      status.current?.focus();
+  }, [message, busy, visible, canExport, localNotice]);
   useEffect(() => {
     if (!retryAt) return;
     const timer = setTimeout(
@@ -195,6 +197,7 @@ export function AdminMetrics({ data }: { data: MetricSnapshot }) {
     setPending(null);
     setRetryAt(0);
     setFailed(false);
+    setLocalNotice(true);
     setMessage("Local export retry discarded. Saved audit records remain.");
   };
   if (!visible) return null;
@@ -226,6 +229,7 @@ export function AdminMetrics({ data }: { data: MetricSnapshot }) {
     };
     const sequence = generation.current;
     writing.current = true;
+    setLocalNotice(false);
     setBusy(true);
     setPending(command);
     setMessage("");
@@ -452,7 +456,7 @@ export function AdminMetrics({ data }: { data: MetricSnapshot }) {
           Wait for the export cooldown, then retry the original export.
         </p>
       )}
-      {canExport && message && (
+      {(canExport || localNotice) && message && (
         <p ref={status} role={failed ? "alert" : "status"} tabIndex={-1}>
           {message}
         </p>
