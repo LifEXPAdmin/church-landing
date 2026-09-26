@@ -191,6 +191,7 @@ try {
   assert.equal(await field.isEnabled(), false);
   await oneEffect();
   await page.evaluate(() => window.dispatchEvent(new Event("pagehide")));
+  await form.waitFor({ state: "hidden" });
   assert.equal(await form.isVisible(), false);
   await page.evaluate(() => window.dispatchEvent(new Event("pageshow")));
   await retry.waitFor();
