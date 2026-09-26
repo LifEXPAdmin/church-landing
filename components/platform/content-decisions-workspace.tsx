@@ -120,6 +120,9 @@ export function ContentDecisionsWorkspace({
   useEffect(() => {
     const visibility = () =>
       document.visibilityState === "hidden" ? hide() : recheck();
+    const relationshipsChanged = () => {
+      if (active.current) void load();
+    };
     recheck();
     window.addEventListener("blur", hide);
     window.addEventListener("offline", hide);
@@ -127,7 +130,10 @@ export function ContentDecisionsWorkspace({
     window.addEventListener("focus", recheck);
     window.addEventListener("online", recheck);
     window.addEventListener("pageshow", recheck);
-    window.addEventListener("social-relationships-changed", recheck);
+    window.addEventListener(
+      "social-relationships-changed",
+      relationshipsChanged
+    );
     document.addEventListener("visibilitychange", visibility);
     return () => {
       hide();
@@ -137,10 +143,13 @@ export function ContentDecisionsWorkspace({
       window.removeEventListener("focus", recheck);
       window.removeEventListener("online", recheck);
       window.removeEventListener("pageshow", recheck);
-      window.removeEventListener("social-relationships-changed", recheck);
+      window.removeEventListener(
+        "social-relationships-changed",
+        relationshipsChanged
+      );
       document.removeEventListener("visibilitychange", visibility);
     };
-  }, [hide, recheck]);
+  }, [hide, load, recheck]);
   return (
     <div className="space-y-5">
       {!visible && (
