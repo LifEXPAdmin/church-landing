@@ -1,5 +1,19 @@
 ## Feedback intake locally tested; release blocked, 26 September 2026 UTC
 
+## People lookup locally tested; release blocked, 26 September 2026 UTC
+
+Version **2026.09.26.16** (`e269933`) fixes stale People/Churches permissions and
+removes concealed private lookup presentation while preserving drafts and exact
+original retries. All 28 browser groups pass on the final source, plus the
+40.591-second production build. Thirty-nine service checks are reused from
+`92ee5df` after source comparison; this distinction is recorded in
+[retained reader privacy](RETAINED_READER_PRIVACY.md). The focused suite has seven
+fictional POST attempts/four lookup effects, no runtime errors or external calls,
+and reviewed 390px/320px/200% captures. It is **not merged or live**. Provider
+capacity still blocks remote CI/publication; no production writes, sends,
+migrations or deployment retries occurred. Prior live identity remains `.11`,
+last checked at 12:58:03 UTC. Remaining acceptance stays open.
+
 ## Admin summaries locally tested; release blocked, 26 September 2026 UTC
 
 Version **2026.09.26.15** (`64ea8e2`, QA-only `ed8b62e`) removes concealed Admin

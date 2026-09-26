@@ -54,6 +54,14 @@ partial metrics revocation removes growth while preserving current request
 access. All 21 browser groups and 30 services pass; publication remains open.
 See [retained reader privacy](RETAINED_READER_PRIVACY.md).
 
+The local `.16/e269933` People lookup uses removable controlled fields and a
+persistent original-command owner. Partial permission loss keeps only generic
+local discard available; confirmed target details clear on concealment and old
+held responses cannot repopulate them. Explicit retry reads current target data
+with the original key. Fresh raw navigation also updates Churches destinations.
+All 28 browser groups pass, with 39 unchanged service checks reused by source
+comparison. Publication remains open. See [retained reader privacy](RETAINED_READER_PRIVACY.md).
+
 ## Cookies
 
 The account cookie writers use HttpOnly, SameSite=Lax and Path=/, with Secure when

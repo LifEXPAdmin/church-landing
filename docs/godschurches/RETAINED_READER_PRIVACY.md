@@ -1,5 +1,58 @@
 # Retained reader privacy
 
+## People lookup locally tested; release blocked, 26 September 2026 UTC
+
+Version **2026.09.26.16**, source `e2699335a701f813ef8ac42a2bc11c03a1d9690c`,
+uses current raw Admin navigation instead of the initial server snapshot. Before
+editing, actual lookup revocation left People available through a different
+capability, but the page visibly restored the revoked lookup form and old target.
+Private target details and unsent username/purpose also remained in concealed DOM.
+
+The lookup command owner now remains mounted across concealment and partial
+permission loss. Opt-in controlled fields leave the DOM, retain original values
+and reset on confirmation or deliberate discard. Current access gates every
+submit and retry. Partial revocation offers only generic local-retention/discard
+controls. Existing non-opt-in Admin forms retain their behavior. Confirmed target
+results clear on concealment; a late earlier response may settle its command but
+cannot repopulate old details. Explicit authorized retry rereads the target with
+the original request key. Success feedback clears with removed results; a late
+confirmation explicitly requests a fresh lookup. Error/retry guidance remains.
+
+All **28 browser groups** pass on this final source: seven People privacy, six
+summary, seven audit, three original Admin retry and five existing Admin checks.
+The focused suite makes seven fictional POST attempts and four distinct lookup
+audit effects. One lost acknowledgment survives partial revocation, account
+replacement, 429 and 503 using four identical bodies, keys and accounts, with one
+unchanged operation. Denied local discard preserves saved audit history and
+requires confirmation for uncertainty. A no-focus account swap sends no lookup.
+Churches also uses fresh raw navigation after partial listing-review revocation,
+with no management action. Initial HTML/RSC, failed/held reads and lifecycle
+checks pass. Fourteen captures cover 390px/320px/200% without horizontal overflow;
+enlarged draft and pending-action captures were visually reviewed. No browser
+runtime errors or external requests occur in the focused suite.
+
+The final 40.591-second build `DMqqQEr9KyAfhrm2WEsOZ`, lint, types, copy,
+source/build security and runtime traces pass. All 1,905 candidate source hashes
+and 115 unchanged migration sources are recorded. The **39 relevant service
+checks** passed on `92ee5df` and are explicitly reused: 1,902 existing tracked
+files match, including all backend, service-test, dependency, schema and release
+content sources. Only two presentation components changed, plus new browser QA;
+all browser groups were rerun. This is not a new full backend suite. The initial
+passing build and the subsequent visual feedback correction remain documented.
+
+Compared with `.15`, measured Admin startup JavaScript adds 457 gzip bytes; CSS
+is unchanged. No endpoint, dependency, polling, schema or worker was added, and
+no speed improvement is claimed. Synthetic lifecycle and injected retry failures
+do not establish physical-device/OS behavior or rate-limiter configuration.
+
+This source is **not merged or live**. Remote CI and publication remain blocked
+by provider daily deployment capacity. There were no pushes, deployment retries,
+production writes, migrations, recipient sends or new queue probes. Earlier live
+identity remains `.11/925536c`, checked at 12:58:03 UTC. All unreleased source and
+prior receipts are preserved. Remaining Admin access/form presentation and wider
+security/provider/device acceptance stay open; refresh release gates when
+capacity returns.
+
 ## Admin summaries locally tested; release blocked, 26 September 2026 UTC
 
 Version **2026.09.26.15**, application `64ea8e20341fef256c13e321348bd6bb699c251b`,
