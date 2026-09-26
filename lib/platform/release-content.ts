@@ -1006,6 +1006,14 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "original-report-review-retry", version: "2026.09.26.23", date: "2026-09-26",
+    summary: "Unconfirmed report reviews keep their original retry through a waiting period.",
+    added: [],
+    improved: ["A rate-limited review retains the exact original decision while the existing cooldown runs."],
+    fixed: ["Retrying an already recorded review after a lost response confirms that decision instead of starting another one."],
+    featureIds: ["report-review"]
+  },
+  {
     id: "private-admin-cases", version: "2026.09.26.22", date: "2026-09-26",
     summary: "Private case reviews keep unfinished entries and original actions recoverable when current details change.",
     added: [],

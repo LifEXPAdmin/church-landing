@@ -206,9 +206,9 @@ export function CommunityReportReview({
     } catch (error) {
       if (seq !== generation.current || !parentAccess.current) return;
       const status = error instanceof SocialClientError ? error.status : 503;
-      // Review authority is checked BEFORE receipt replay. Losing it cannot
-      // prove an earlier uncertain decision failed; preserve the original key.
-      if ([400, 409, 429].includes(status)) setPending(null);
+      // Authority and rate limits run before receipt replay. Neither a denial
+      // nor a cooldown proves an earlier decision failed; retain its exact key.
+      if ([400, 409].includes(status)) setPending(null);
       if ([401, 403, 404, 409].includes(status) || status >= 500) {
         setHidden(true);
         setData(null);
