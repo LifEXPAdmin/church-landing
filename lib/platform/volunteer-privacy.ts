@@ -11,6 +11,7 @@ export async function exportVolunteerApplications(
     orderBy: { id: "asc" },
     take: limit + 1,
     include: {
+      signup: { select: { state: true, completedAt: true } },
       events: {
         orderBy: { version: "desc" },
         take: 20,
@@ -73,6 +74,13 @@ export async function exportVolunteerApplications(
       updatedAt: row.updatedAt,
       current,
       statement: current ? row.statement : "",
+      availability:
+        current &&
+        ["SUBMITTED", "ACCEPTED"].includes(row.state) &&
+        row.signup?.state !== "CANCELED" &&
+        !row.signup?.completedAt
+          ? row.availability
+          : "",
       decisionNote: current ? row.decisionNote : "",
       // Only this applicant's own receipt; no church roster, contact, source
       // logistics, other applicants, reviewer identity or authority grants.
@@ -113,6 +121,7 @@ export async function eraseVolunteerApplications(
     data: {
       userId: null,
       statement: "",
+      availability: "",
       decisionNote: "",
       recoveryRequired: true,
       version: { increment: 1 }

@@ -2291,6 +2291,7 @@ model PostPollBallot {
 }
 
 model PostVolunteerSlot {
+  updatedAt DateTime @default(now()) @updatedAt @db.Timestamptz(3)
   opportunity VolunteerOpportunity?
   shiftStartAt DateTime?
   shiftEndAt DateTime?
@@ -2368,6 +2369,7 @@ model VolunteerApplication {
   userId String?
   signupId String? @unique
   statement String @default("")
+  availability String @default("")
   decisionNote String @default("")
   state VolunteerApplicationState @default(SUBMITTED)
   opportunityVersion Int @default(1)
@@ -2974,6 +2976,8 @@ model PostWorkspaceOperation {
 model SocialPreferences {
   calendarReminderMinutes Int @default(0)
   calendarReminderSince DateTime? @db.Timestamptz(3)
+  volunteerReminderMinutes Int @default(0)
+  volunteerReminderSince DateTime? @db.Timestamptz(3)
   menuShortcutIds String[] @default([])
   menuShortcutsVersion Int @default(0)
   onboardingDismissed String[] @default([])

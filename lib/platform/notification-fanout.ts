@@ -47,6 +47,9 @@ export function processNotificationFanoutBatch(
           sourceId: null,
           ...(job?.kind === "EVENT_CHANGED"
             ? { reminderSourceId: job.sourceId }
+            : {}),
+          ...(job?.kind === "VOLUNTEER_CHANGED"
+            ? { reminderSlotId: job.sourceId }
             : {})
         };
       let recipients: { id: string; ownerId: string }[] = [];
@@ -333,14 +336,21 @@ export function processNotificationFanoutBatch(
       } else valid = false;
       // One bounded consent read avoids work for the default-Off audience.
       const reminderOwners =
-        job.kind === "EVENT_CHANGED" &&
-        job.phase === "PRIMARY" &&
+        ["EVENT_CHANGED", "VOLUNTEER_CHANGED"].includes(job.kind) &&
         recipients.length
           ? await tx.socialPreferences.findMany({
               where: {
                 ownerId: { in: recipients.map((r) => r.ownerId) },
-                calendarReminderMinutes: { in: [15, 60] },
-                calendarReminderSince: { not: null },
+                OR: [
+                  {
+                    calendarReminderMinutes: { in: [15, 60] },
+                    calendarReminderSince: { not: null }
+                  },
+                  {
+                    volunteerReminderMinutes: { in: [15, 60] },
+                    volunteerReminderSince: { not: null }
+                  }
+                ],
                 notificationRecoveryRequired: false
               },
               select: { ownerId: true },
@@ -396,6 +406,9 @@ export function processNotificationFanoutBatch(
         sourceId: job.sourceId,
         ...(job.kind === "EVENT_CHANGED"
           ? { reminderSourceId: job.sourceId }
+          : {}),
+        ...(job.kind === "VOLUNTEER_CHANGED"
+          ? { reminderSlotId: job.sourceId }
           : {})
       };
     },
@@ -418,15 +431,17 @@ export async function advanceNotificationFanout(
     }
   // Recover every pending owner touched by this occurrence, including earlier
   // batches whose database commit succeeded but queue handoff failed.
-  const reminders = result.reminderSourceId
-    ? await dispatchCalendarReminders(
-        db,
-        undefined,
-        reminderPublish,
-        new Date(),
-        result.reminderSourceId
-      )
-    : { queued: 0, failed: 0 };
+  const reminders =
+    result.reminderSourceId || result.reminderSlotId
+      ? await dispatchCalendarReminders(
+          db,
+          undefined,
+          reminderPublish,
+          new Date(),
+          result.reminderSourceId,
+          result.reminderSlotId
+        )
+      : { queued: 0, failed: 0 };
   failed += reminders.failed;
   return { ...result, done: result.done && reminders.queued < 100, failed };
 }
@@ -489,7 +504,8 @@ export async function cleanNotificationFanout(
 export function scheduleDomainActivity(
   db: PrismaClient,
   actorId: string,
-  afterResponse?: (work: () => Promise<void>) => void
+  afterResponse?: (work: () => Promise<void>) => void,
+  volunteerApplicationId?: string
 ) {
   if (!afterResponse) return;
   try {
@@ -509,6 +525,21 @@ export function scheduleDomainActivity(
           console.error("domain_activity_delivery_handoff_incomplete");
         if ((await dispatchCalendarReminders(db, actorId)).failed)
           console.error("calendar_reminder_handoff_incomplete");
+        // The successful mutation supplies one canonical application receipt.
+        // A retry recovers its owner's pending plan without scanning other events.
+        if (volunteerApplicationId) {
+          const application = await db.volunteerApplication.findUnique({
+            where: { id: volunteerApplicationId },
+            select: { userId: true, signupId: true }
+          });
+          if (
+            application?.signupId &&
+            application.userId &&
+            application.userId !== actorId &&
+            (await dispatchCalendarReminders(db, application.userId)).failed
+          )
+            console.error("calendar_reminder_handoff_incomplete");
+        }
         if ((await dispatchNotificationFanout(db, actorId)).failed)
           console.error("domain_activity_handoff_incomplete");
       } catch {

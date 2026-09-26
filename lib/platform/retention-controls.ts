@@ -1093,6 +1093,8 @@ export async function replayRetentionControls(
                   notificationRecoveryRequired: true,
                   calendarReminderMinutes: 0,
                   calendarReminderSince: null,
+                  volunteerReminderMinutes: 0,
+                  volunteerReminderSince: null,
                   pushCategories: [],
                   notificationPushSince: Prisma.DbNull,
                   feedbackEmailSince: null,
@@ -1378,6 +1380,7 @@ export async function replayRetentionControls(
             recoveryRequired: true,
             state: "WITHDRAWN" as const,
             statement: "",
+            availability: "",
             decisionNote: ""
           };
           if (!prior)

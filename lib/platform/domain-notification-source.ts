@@ -1,4 +1,5 @@
 import { pantryNotificationSources } from "./pantry-notifications";
+import { volunteerReminderSources } from "./volunteer-reminder-policy";
 import { calendarReminderSources } from "./calendar-reminder-policy";
 import { groupNotificationSources } from "./group-notifications";
 import { needNotificationSources } from "./exchange-need-notifications";
@@ -23,6 +24,7 @@ import { volunteerShift } from "./volunteer-shift";
 type Tx = Prisma.TransactionClient;
 export const domainNotificationKinds = [
   "CALENDAR_REMINDER",
+  "VOLUNTEER_REMINDER",
   "GROUP_MEMBERSHIP",
   "GROUP_REVIEW",
   "PANTRY_REQUEST",
@@ -95,6 +97,14 @@ export async function domainNotificationSources(
     now
   );
   for (const [id, source] of calendarReminders) result.set(id, source);
+  const volunteerReminders = await volunteerReminderSources(
+    tx,
+    events.filter((e) => e.kind === "VOLUNTEER_REMINDER"),
+    delivery,
+    now,
+    context
+  );
+  for (const [id, source] of volunteerReminders) result.set(id, source);
   const groups = await groupNotificationSources(
     tx,
     events.filter(
@@ -845,9 +855,11 @@ export async function domainNotificationSources(
             "commitments",
             `/platform/events/${o.id}`,
             `event:${o.id}`,
-            o.event.calendar.church
-              ? `An event from ${o.event.calendar.church.name} in your commitments changed`
-              : undefined
+            o.canceledAt || o.event.canceledAt
+              ? "An event in your commitments was canceled"
+              : o.event.calendar.church
+                ? `An event from ${o.event.calendar.church.name} in your commitments changed`
+                : undefined
           );
       } else if (e.kind === "RSVP_CHANGED") {
         const r = responses.find((r) => r.id === e.sourceId),
@@ -872,7 +884,10 @@ export async function domainNotificationSources(
             e,
             "commitments",
             `/platform/commitments?signup=${r.id}`,
-            `signup:${r.id}`
+            `signup:${r.id}`,
+            r.state === "CANCELED" && r.version === e.sourceVersion
+              ? "Your volunteer signup is canceled"
+              : undefined
           );
         } else if (
           details(r.slot.post.eventOccurrenceId) &&
