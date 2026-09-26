@@ -1,6 +1,6 @@
 "use client";
 /* eslint-disable @next/next/no-img-element -- Private feedback images bypass shared optimization. */
-import { useState } from "react";
+import { useEffect, useRef, useState, type Ref } from "react";
 import Link from "next/link";
 import { reportEntryHref } from "@/lib/platform/community-report-types";
 import type { ImageView } from "@/lib/platform/media";
@@ -11,10 +11,12 @@ import { SupportForm, type SupportFormPrivacy } from "./support-form";
 import { useReadingPreferences } from "./reading-preferences";
 export function FeedbackImagePreview({
   image,
-  open
+  open,
+  buttonRef
 }: {
   image: ImageView;
   open?: () => void;
+  buttonRef?: Ref<HTMLButtonElement>;
 }) {
   const [failed, setFailed] = useState(false),
     [attempt, setAttempt] = useState(0);
@@ -55,6 +57,7 @@ export function FeedbackImagePreview({
     <figure className="space-y-2">
       {open ? (
         <button
+          ref={buttonRef}
           type="button"
           className="block w-full rounded-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4"
           aria-label={`Enlarge attachment${image.caption ? `: ${image.caption}` : ""}`}
@@ -90,6 +93,15 @@ export function FeedbackAttachmentImages({
 }) {
   const [selected, setSelected] = useState<string | null>(null);
   const visible = privacy?.visible ?? true;
+  const openers = useRef(new Map<string, HTMLButtonElement>());
+  const lastOpened = useRef<string | null>(null);
+  useEffect(() => {
+    if (selected !== null || !visible || !lastOpened.current) return;
+    // Concealment recreates the opener. Restore the current authorized element,
+    // after the viewer's dialog cleanup, rather than a detached old button.
+    openers.current.get(lastOpened.current)?.focus({ preventScroll: true });
+    lastOpened.current = null;
+  }, [selected, visible]);
   return (
     <>
       {!!c.feedback?.attachments.length && (
@@ -116,7 +128,14 @@ export function FeedbackAttachmentImages({
                   <>
                     <FeedbackImagePreview
                       image={image}
-                      open={() => setSelected(image.id)}
+                      buttonRef={(node) => {
+                        if (node) openers.current.set(image.id, node);
+                        else openers.current.delete(image.id);
+                      }}
+                      open={() => {
+                        lastOpened.current = image.id;
+                        setSelected(image.id);
+                      }}
                     />
                     <Link
                       href={reportEntryHref("FEEDBACK_ATTACHMENT", image.id)}
