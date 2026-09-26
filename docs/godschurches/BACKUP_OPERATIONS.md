@@ -1,5 +1,15 @@
 # Encrypted recovery copies and expiry
 
+## Incident recovery boundary, 26 September 2026 UTC
+
+[The incident response runbook](INCIDENT_RESPONSE_RUNBOOK.md) connects these
+existing backup receipts to containment and deliberate resumption. A pause,
+ordinary authenticated restore and protected replay prove different things.
+Protected replay leaves traffic disabled and current authorization review
+required; it does not reset password hashes. Reconcile current credentials,
+restrictions and missing current records before reopening traffic. This
+documentation adds no new scheduled backup, media coverage or production restore.
+
 ## Calendar release recovery verified, 26 September 2026 UTC
 
 Installed registry and production match 110 migration checksums. Protected
