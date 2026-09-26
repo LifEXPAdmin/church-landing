@@ -1,5 +1,14 @@
 # Account security acceptance
 
+## Saved-draft read candidate, 26 September 2026 UTC
+
+An isolated .5 browser reproduced private draft text remaining after failed
+identity and list refreshes. The candidate conceals read rows, clears failed data
+and rejects delayed responses after concealment while preserving the exact
+uncertain discard request through manual refresh. The composer remains mounted.
+See the [draft library report](DRAFT_LIBRARY_MANIFEST_REPORT.md). Built-browser,
+release and live acceptance are pending; the verified .5 receipt follows.
+
 ## Browser privacy cleanup verified live, 26 September 2026 UTC
 
 The current release repairs two reproduced browser defects. The preceding

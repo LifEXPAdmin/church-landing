@@ -1,5 +1,22 @@
 # Private draft library and app manifest
 
+## Failed-read privacy candidate, 26 September 2026 UTC
+
+The current candidate follows isolated reproduction on published 2026.09.26.5:
+loaded private draft text remains in the DOM after either an identity or list
+503 response. Reads now conceal rows before checking access and clear failed-read
+data. Offline and pagehide also clear rows, with generation checks rejecting late
+responses. The existing pagination accumulator remains only while concealed and
+is adopted after current owner checks. No server, schema or dependency changes.
+
+A possibly committed discard retains its exact command, expected version and
+mutation ID through failed reads and manual refresh. Its existing explicit retry
+and review controls remain responsible for resolving it. The mounted composer is
+unchanged. Browser and release acceptance are pending; the historical receipt
+below is preserved as prior evidence.
+
+## Original library and manifest release
+
 September 11, 2026. Medium interface batch on `codex/medium-private-library`,
 based on published `777c594`. Application `a230b36104507f6918217fc753218c7924b440a0`
 is published in READY deployment `dpl_EfZ2CynF7cxXmr9jZmyB8uUZmZ9z`.

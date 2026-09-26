@@ -1006,6 +1006,14 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "private-draft-refresh", version: "2026.09.26.6", date: "2026-09-26",
+    summary: "Keep saved draft text private while refreshing access, without losing an unconfirmed discard request.",
+    added: [],
+    improved: ["Saved draft rows clear when a current account or list read cannot be confirmed. Return to the page or use Refresh drafts to check access again.", "An unconfirmed discard keeps the same request through a failed read and refresh, so Retry discard can safely confirm the original result."],
+    fixed: ["A late draft-list response cannot restore rows after leaving the page or going offline. Current account checks and private draft pagination remain in place."],
+    featureIds: []
+  },
+  {
     id: "private-browser-cleanup", version: "2026.09.26.5", date: "2026-09-26",
     summary: "Clear scheduled post previews while checking access and remove unusable deletion recovery references from this browser.",
     added: [],

@@ -163,6 +163,89 @@ try {
   await settle();
   assert.equal(await rows().count(), 22);
   ok("Owner-only pagination, exact incomplete text and 320/390 pixel layout");
+  const absentRows = async () => {
+    await page.waitForFunction(
+      (text) => !document.body.textContent.includes(text),
+      marker
+    );
+    assert.equal(await rows().count(), 0);
+  };
+  for (const source of ["identity", "list"]) {
+    const route =
+      source === "identity"
+        ? "**/api/platform/profile"
+        : "**/api/platform/post-workspace?*";
+    await page.route(route, (request) =>
+      request.fulfill({
+        status: 503,
+        contentType: "application/json",
+        body: JSON.stringify({ message: "Temporary private draft read outage" })
+      })
+    );
+    await page
+      .getByRole("button", { name: "Refresh drafts", exact: true })
+      .click();
+    await settle();
+    await absentRows();
+    await page.unroute(route);
+    await page
+      .getByRole("button", { name: "Refresh drafts", exact: true })
+      .click();
+    await settle();
+    assert.equal(await rows().count(), 20);
+  }
+  ok(
+    "Loaded draft text leaves the DOM after failed identity or list refresh and returns only after a fresh same-owner read"
+  );
+  let held, release;
+  const captured = new Promise((resolve) => {
+    held = resolve;
+  });
+  const gate = new Promise((resolve) => {
+    release = resolve;
+  });
+  await page.route("**/api/platform/post-workspace?*", async (route) => {
+    const response = await route.fetch();
+    held();
+    await gate;
+    await route.fulfill({ response });
+  });
+  await page
+    .getByRole("button", { name: "Refresh drafts", exact: true })
+    .click();
+  await captured;
+  await absentRows();
+  await page.evaluate(() => window.dispatchEvent(new Event("pagehide")));
+  const afterIdentity = page.waitForResponse(
+    (response) =>
+      new URL(response.url()).pathname === "/api/platform/profile" &&
+      !new URL(response.url()).search
+  );
+  release();
+  await (await afterIdentity).finished();
+  await settle();
+  await absentRows();
+  await page.unroute("**/api/platform/post-workspace?*");
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await settle();
+  assert.equal(await rows().count(), 20);
+  ok(
+    "A late list response cannot restore concealed rows after pagehide; same-owner focus revalidates them"
+  );
+  await page.evaluate(() => window.dispatchEvent(new Event("offline")));
+  await absentRows();
+  await page
+    .getByRole("button", { name: "Refresh drafts", exact: true })
+    .click();
+  await settle();
+  assert.equal(await rows().count(), 20);
+  await page.getByRole("button", { name: "More drafts", exact: true }).click();
+  await settle();
+  assert.equal(await rows().count(), 22);
+  ok(
+    "Offline clears draft rows, deliberate refresh restores current access and pagination still accumulates the current list"
+  );
+
   await page
     .getByRole("button", { name: "Discard draft 1", exact: true })
     .click();
@@ -238,6 +321,24 @@ try {
     /could not be confirmed/
   );
   assert.equal(await rows().count(), 20);
+  await page.route("**/api/platform/post-workspace?*", (route) =>
+    route.fulfill({
+      status: 503,
+      contentType: "application/json",
+      body: JSON.stringify({
+        message: "Temporary read outage with an uncertain discard"
+      })
+    })
+  );
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await settle();
+  await absentRows();
+  await page.unroute("**/api/platform/post-workspace?*");
+  await page
+    .getByRole("button", { name: "Refresh drafts", exact: true })
+    .click();
+  await settle();
+  assert.equal(await rows().count(), 19);
   await page
     .getByRole("button", { name: "Retry discard", exact: true })
     .click();
@@ -248,7 +349,7 @@ try {
   assert.match(await page.getByRole("status").innerText(), /Draft discarded/);
   await page.unroute("**/api/platform/post-workspace");
   ok(
-    "Lost acknowledgment preserves list and retries the identical mutation safely"
+    "Lost acknowledgment survives a failed read and manual refresh, then retries the identical discard without a duplicate mutation"
   );
   await page.evaluate(() => window.dispatchEvent(new Event("blur")));
   assert.equal(await rows().count(), 0);

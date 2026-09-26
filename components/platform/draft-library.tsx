@@ -56,9 +56,17 @@ export function DraftLibrary({ ownerId }: { ownerId: string }) {
 
   const load = useCallback(
     async (after?: string): Promise<void> => {
-      if (busy.current) return;
+      if (
+        busy.current ||
+        concealed.current ||
+        document.visibilityState === "hidden"
+      )
+        return;
       busy.current = true;
       const turn = ++generation.current;
+      // Keep the pagination accumulator only while concealed. A failed read
+      // drops it; the independent discard command still owns its exact retry.
+      setVisible(false);
       setPending(true);
       setMessage("");
       try {
@@ -100,12 +108,14 @@ export function DraftLibrary({ ownerId }: { ownerId: string }) {
         }));
         setVisible(true);
       } catch (error) {
-        if (alive.current && turn === generation.current)
+        if (alive.current && turn === generation.current) {
+          setData(null);
           setMessage(
             error instanceof Error && !(error instanceof TypeError)
               ? error.message
               : "Drafts could not be loaded. Check your connection and retry."
           );
+        }
       } finally {
         busy.current = false;
         if (alive.current) {
@@ -141,13 +151,19 @@ export function DraftLibrary({ ownerId }: { ownerId: string }) {
       }
     };
     window.addEventListener("blur", hide);
+    window.addEventListener("offline", hide);
+    window.addEventListener("pagehide", hide);
     window.addEventListener("focus", restore);
+    window.addEventListener("online", restore);
     document.addEventListener("visibilitychange", visibility);
     window.addEventListener("pageshow", pageshow);
     return () => {
       alive.current = false;
       window.removeEventListener("blur", hide);
+      window.removeEventListener("offline", hide);
+      window.removeEventListener("pagehide", hide);
       window.removeEventListener("focus", restore);
+      window.removeEventListener("online", restore);
       document.removeEventListener("visibilitychange", visibility);
       window.removeEventListener("pageshow", pageshow);
     };
@@ -233,9 +249,14 @@ export function DraftLibrary({ ownerId }: { ownerId: string }) {
         className="gc-button gc-button-quiet"
         disabled={pending}
         onClick={() => {
-          setCommand(null);
-          setConflict(false);
-          setAttempted(false);
+          // Refreshing read access must not abandon a possibly committed
+          // discard. Its existing recovery controls resolve that request.
+          if (!attempted || conflict) {
+            setCommand(null);
+            setConflict(false);
+            setAttempted(false);
+          }
+          concealed.current = false;
           void load();
         }}
       >
