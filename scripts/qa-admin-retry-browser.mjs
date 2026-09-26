@@ -249,6 +249,12 @@ try {
     "Rate limiting and temporary service failure preserve frozen entries, accessible retry controls and the cooldown."
   );
   await retry.click();
+  // The page lifecycle refresh may already display the once-saved note before
+  // the original command's acknowledgment is recovered. Wait for confirmation
+  // in its retained form, not just the independently refreshed reader.
+  await form
+    .getByRole("button", { name: "Save internal note", exact: true })
+    .waitFor();
   await page.getByText(note, { exact: true }).waitFor();
   assert.equal(attempts.length, 4);
   assert.ok(
