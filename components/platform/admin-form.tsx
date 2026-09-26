@@ -153,6 +153,7 @@ export function AdminForm({
       return;
     setPending(null);
     setDirty(false);
+    setFailed(false);
     setConflict(false);
     original.current = fixed;
     if (privacy) setValues(initialFieldValues(fields));
