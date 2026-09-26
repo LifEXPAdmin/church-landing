@@ -1,5 +1,56 @@
 # Selected feedback follow-up acceptance
 
+## Feedback intake locally tested; release blocked, 26 September 2026 UTC
+
+Version **2026.09.26.13**, source `af119d1afc6c3454ff0abb1169297968adfde469`, is
+implemented and tested locally. It is **not merged or verified live**. Remote CI
+and release acceptance remain open under the existing provider deployment quota.
+
+Private recipient text, written fields, choices and selected-image presentation
+leave the DOM during concealment and access checks. Mounted owners retain all
+account-bound drafts, Files and original uncertain upload, removal and creation
+commands. A changed recipient requires deliberate adoption. Discard clears
+written entries while preserving uploaded attachments. A confirmed creation waits
+for an unconfirmed sibling preference before opening its receipt.
+
+All **74 browser groups** pass on the exact source: Feedback intake, list,
+prompts and receipt; Support intake/case; photo library/recovery; and avatars.
+Fifteen focused browser POST attempts affect fictional fixtures only. Lost
+upload, removal, creation and preference acknowledgments replay identical
+account/body/key or asset/version commands with one saved effect. The
+390px/320px/200% captures have no horizontal overflow; the upload action retains
+a 44px minimum tap height and an unobscured center. Physical devices are untested.
+
+The 40.072-second production build (`v9WgMcRi0he5nFBsRwH5G`), source hashes,
+copy, lint, types and build security/trace gates pass. Eight fresh avatar/release
+service checks pass; 68 unchanged service/HTTP checks are reused from `259c714`
+with source comparison, for 76 relevant checks. This is not a new full backend
+suite. The initial 27 source-security/migration-guard tests remain separately
+attributed. No schema, dependency, endpoint or background worker was added.
+
+Verification found and repaired an 11px upload-button overflow at 200% text.
+Exact accessible textbox selectors fix tests whose implicit-label text included
+controlled textarea contents. A persistent test interceptor preserves held reads
+and makes routing failures explicit. Photo regression then reproduced an unread
+avatar 404 body remaining active for 30 seconds; cancelling that body ended the
+browser request. Rejected avatar responses now release their bodies, with
+unchanged initials and access checks. Avatar privacy and photo regressions pass.
+Test setup, selector, route and response-lifecycle failures remain preserved.
+
+A measured styling helper overhead was removed before acceptance. Compared with
+`.12`, startup JavaScript adds 1291 gzip bytes on Feedback routes, 18 on Support
+detail, 351 on Settings and 588 to 620 on uploader routes. Shared CSS adds 28 gzip
+bytes. These measurements do not establish a speed improvement.
+
+At **12:58:03 UTC**, the independently READY/canonical deployment
+`dpl_BYb9LtWJw2kLfk2cFLKEZ9Pv8oqt` still serves **.11/925536c** and health passes.
+The tested/merged `.12/951e57b` and this local `.13` are not live. No deployment
+retry, main update, production migration, test write or recipient send occurred
+in this feature. All 115 migration sources are unchanged. Earlier production
+fingerprints and recovery evidence retain their original timestamps; fresh
+release gates are required when provider capacity returns. SEC-01 stays open
+for remaining readers, broader policy/device/provider acceptance and publication.
+
 ## My feedback tested and merged; deployment quota blocked, 26 September 2026 UTC
 
 Version **2026.09.26.12**, source `951e57b1fe2037138b8795e177c48d4ba502dd17`, is implemented,
