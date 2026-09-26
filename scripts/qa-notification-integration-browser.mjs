@@ -546,6 +546,101 @@ try {
   ok(
     "Read-only scheduled excerpts leave the DOM on blur or failed access checks and return only after the same owner's fresh check"
   );
+  let releaseRead;
+  let capturedRead;
+  let scheduledReadCount = 0;
+  let queuedDone;
+  const heldRead = new Promise((resolve) => {
+    capturedRead = resolve;
+  });
+  const readGate = new Promise((resolve) => {
+    releaseRead = resolve;
+  });
+  await page.route("**/api/platform/posts?*", async (route) => {
+    if (new URL(route.request().url()).searchParams.get("view") !== "scheduled")
+      return route.continue();
+    scheduledReadCount++;
+    const response = await route.fetch();
+    if (scheduledReadCount === 1) {
+      capturedRead();
+      await readGate;
+    }
+    await route.fulfill({ response });
+  });
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await heldRead;
+  await page.evaluate(() => window.dispatchEvent(new Event("pagehide")));
+  await absentScheduledExcerpt();
+  const ownerReadAfterHidden = page.waitForResponse(
+    (response) =>
+      new URL(response.url()).pathname === "/api/platform/profile" &&
+      response.url().includes("view=identity")
+  );
+  releaseRead();
+  await (await ownerReadAfterHidden).finished();
+  await page.evaluate(
+    () =>
+      new Promise((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(resolve))
+      )
+  );
+  await absentScheduledExcerpt();
+  assert.equal(scheduledReadCount, 1);
+  await page.unroute("**/api/platform/posts?*");
+  await page.evaluate(() => window.dispatchEvent(new Event("offline")));
+  await page
+    .getByRole("button", { name: "Recheck current access", exact: true })
+    .click();
+  await page.getByText(marker + " edited", { exact: true }).waitFor();
+  ok(
+    "A late scheduled response cannot restore concealed DOM, and a deliberate retry resumes after an offline event"
+  );
+  let releaseQueued;
+  const queuedGate = new Promise((resolve) => {
+    releaseQueued = resolve;
+  });
+  const queuedHeld = new Promise((resolve) => {
+    queuedDone = resolve;
+  });
+  scheduledReadCount = 0;
+  await page.route("**/api/platform/posts?*", async (route) => {
+    if (new URL(route.request().url()).searchParams.get("view") !== "scheduled")
+      return route.continue();
+    scheduledReadCount++;
+    const response = await route.fetch();
+    if (scheduledReadCount === 1) {
+      queuedDone();
+      await queuedGate;
+    }
+    await route.fulfill({ response });
+  });
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await queuedHeld;
+  await page.evaluate(() => {
+    window.dispatchEvent(new Event("blur"));
+    window.dispatchEvent(new Event("focus"));
+    window.dispatchEvent(new Event("focus"));
+  });
+  await absentScheduledExcerpt();
+  assert.equal(scheduledReadCount, 1);
+  releaseQueued();
+  await page.getByText(marker + " edited", { exact: true }).waitFor();
+  assert.equal(scheduledReadCount, 2);
+  await page.unroute("**/api/platform/posts?*");
+  await go(`/platform/scheduled-posts?after=${post.id}`);
+  await page
+    .getByText("No unpublished church posts are available on this page.", {
+      exact: true
+    })
+    .waitFor();
+  await absentScheduledExcerpt();
+  await page
+    .getByRole("link", { name: "Back to first page", exact: true })
+    .click();
+  await page.getByText(marker + " edited", { exact: true }).waitFor();
+  ok(
+    "Repeated resume events coalesce a held read into one fresh check, and pagination replaces the prior snapshot"
+  );
   const updateScheduledText = async (content) => {
     const saved = await db.platformPost.findUniqueOrThrow({
       where: { id: post.id }

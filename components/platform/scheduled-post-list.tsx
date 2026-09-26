@@ -121,7 +121,12 @@ export function ScheduledPostList({
         <button
           type="button"
           className="gc-button gc-button-quiet"
-          onClick={() => void load()}
+          onClick={() => {
+            if (document.visibilityState !== "hidden") {
+              active.current = true;
+              void load();
+            }
+          }}
         >
           Recheck current access
         </button>
