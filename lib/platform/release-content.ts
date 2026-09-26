@@ -1006,6 +1006,14 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "private-request-worklist", version: "2026.09.26.21", date: "2026-09-26",
+    summary: "Private request queues preserve filters and unfinished actions through current access changes.",
+    added: [],
+    improved: ["Request details and saved views leave concealed pages while local filter choices and unfinished entries remain recoverable."],
+    fixed: ["Removed views and requests keep their original retries. Partially rate-limited bulk updates retain the same batch, and filter changes wait for unfinished actions."],
+    featureIds: ["admin-requests"]
+  },
+  {
     id: "private-idea-review", version: "2026.09.26.20", date: "2026-09-26",
     summary: "Private idea reviews preserve unfinished work through current access and publication changes.",
     added: [],

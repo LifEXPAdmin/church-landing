@@ -269,7 +269,7 @@ export function AdminForm({
             );
           const uncertain = result.results?.some(
             (r) =>
-              !r.ok && ([401, 403, 404].includes(r.status) || r.status >= 500)
+              !r.ok && ([401, 403, 404, 429].includes(r.status) || r.status >= 500)
           );
           const incomplete = result.results?.some((r) => !r.ok);
           setNotice(
