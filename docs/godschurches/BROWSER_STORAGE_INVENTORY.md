@@ -41,6 +41,13 @@ Sensitivity below describes the data, not a legal classification or a new
 retention policy. Cookies also travel in matching requests; a browser preference
 cookie is not equivalent to data held only in localStorage.
 
+The local `.14/4064ce5` audit presenter removes reasons, actor details, empty
+state and cursor controls during concealment. Admin pagehide invalidates reads
+without unmounting command owners. The retained form recovers one saved note
+through four identical original attempts. Other Admin form DOM contracts remain
+open. All 25 browser groups and 26 services pass; this source is not merged or
+live. See [retained reader privacy](RETAINED_READER_PRIVACY.md).
+
 ## Cookies
 
 The account cookie writers use HttpOnly, SameSite=Lax and Path=/, with Secure when

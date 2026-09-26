@@ -1,5 +1,47 @@
 # Retained reader privacy
 
+## Admin audit locally tested; release blocked, 26 September 2026 UTC
+
+Version **2026.09.26.14**, application `4064ce5cbb56ca133fb43be8386f884e9c85af07`,
+removes private audit reasons, actor details, empty state and paging from concealed
+DOM. Fresh-document pagination avoids speculative reads. The shared Admin
+pagehide handler invalidates reads while leaving original command owners mounted.
+Initial HTML/RSC omit private rows; current authorized API reads remain no-store.
+
+The defect was reproduced before editing on `.13/af119d1`: blur, offline and
+account replacement retained private rows in hidden DOM; pagehide left them
+visible. All **25 browser groups** now pass: seven audit privacy, three original
+Admin retry, five existing Admin and ten Support case checks. Revoked capability,
+failed/held identity and source reads, account replacement, actual 25-to-one
+cursor paging and a real empty range pass. The focused reader sends zero browser
+mutations. Eleven captures cover 390px, 320px and 200% text without overflow;
+enlarged audit rows and paging were visually reviewed. Synthetic lifecycle events
+do not establish physical-device, BFCache or OS snapshot behavior.
+
+Original note recovery retains four identical bodies, keys, versions and account
+identities through lost acknowledgment, pagehide/pageshow, 429 and 503, with one
+saved note and one version increment. The requester cannot read the internal note.
+A test initially checked before the fourth request because the refreshed reader
+already displayed the saved note. QA-only `ca288fa` now waits for acknowledgment
+in the retained form, and its scheduled concealment, before checking results.
+This test correction changes no application bytes; the failing receipt is kept.
+
+All **26 relevant services** pass, plus the 39.903-second production build
+`5Snjik2xdYASM-Pue_tK5`, lint, types, copy, source/build security and runtime trace
+gates. The immutable candidate contains 1,903 tracked files and 115 unchanged
+migrations. This is scoped regression acceptance, not a new full backend run.
+Compared with `.13`, measured Admin startup JavaScript adds 44 to 45 gzip bytes;
+shared CSS is unchanged. No endpoint, dependency, polling, schema or worker was
+added, and no speed improvement is claimed.
+
+This source is **not merged or live**. Remote CI and production publication remain
+open because of the provider daily deployment quota. No push, deployment retry,
+production write, migration, recipient send or new queue probe occurred. Canonical
+`.11/925536c` was last reverified at 12:58:03 UTC; that is earlier live evidence,
+not publication of this feature. Tested `.12` on main and local `.13` are preserved.
+Refresh release prerequisites when capacity returns. Remaining Admin presenters,
+stateful forms and broader security/device/provider gates keep acceptance open.
+
 ## Feedback intake locally tested; release blocked, 26 September 2026 UTC
 
 Version **2026.09.26.13**, source `af119d1afc6c3454ff0abb1169297968adfde469`, is

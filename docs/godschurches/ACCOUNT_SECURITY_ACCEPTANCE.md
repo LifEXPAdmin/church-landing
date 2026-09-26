@@ -1,5 +1,17 @@
 # Account security acceptance
 
+## Admin audit locally tested; release blocked, 26 September 2026 UTC
+
+Version **2026.09.26.14** (`4064ce5`, QA-only `ca288fa`) removes concealed audit
+rows and paging while preserving original Admin command recovery. All 25 browser
+groups and 26 relevant services pass, with the 39.903-second production build and
+reviewed 390px/320px/200% captures. It is **not merged or live**. Provider daily
+deployment capacity still blocks publication; remote CI and live acceptance stay
+open. No production writes, sends, migrations or deployment retries occurred.
+Canonical `.11/925536c` was last checked at 12:58:03 UTC. See the exact scope,
+reproduction, retry-test correction and costs in
+[retained reader privacy](RETAINED_READER_PRIVACY.md). Prior evidence is preserved.
+
 ## Feedback intake locally tested; release blocked, 26 September 2026 UTC
 
 Version **2026.09.26.13**, source `af119d1afc6c3454ff0abb1169297968adfde469`, is
