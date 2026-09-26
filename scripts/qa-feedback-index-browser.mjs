@@ -508,6 +508,10 @@ try {
     await openPreferences();
     await button("Don’t ask again").click();
     await button("Retry the same preference").waitFor();
+    await until(
+      async () => deliveries.length === 1,
+      "The original preference command did not reach the server"
+    );
     await deliveries[0];
     assert.equal(attempts.length, 1);
     const command = JSON.parse(attempts[0].body);
