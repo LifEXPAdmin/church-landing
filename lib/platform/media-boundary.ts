@@ -38,7 +38,15 @@ function failure(error: unknown) {
             ? "Sign in to manage images."
             : "The image could not be loaded or saved. Your entries are still here; try again."
     },
-    { status, headers: imageHeaders }
+    {
+      status,
+      headers: {
+        ...imageHeaders,
+        ...(status === 429 && error instanceof PortalError && error.retryAfter
+          ? { "Retry-After": String(error.retryAfter) }
+          : {})
+      }
+    }
   );
 }
 export async function handleImageRequest(
@@ -94,7 +102,8 @@ export async function handleImageRequest(
     )
       throw new PortalError(
         429,
-        "Too many image changes. Wait 15 minutes and try again."
+        "Too many image changes. Wait 15 minutes and try again.",
+        900
       );
     if (request.method === "DELETE") {
       let body: Record<string, unknown>;
