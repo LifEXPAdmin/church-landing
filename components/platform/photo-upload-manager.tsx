@@ -2,6 +2,7 @@
 /* eslint-disable @next/next/no-img-element -- File previews are local object URLs. */
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import type { ImageView } from "@/lib/platform/media";
+import { cn } from "@/lib/utils";
 import { uploadPhotoFile } from "@/lib/platform/photo-upload-client";
 import {
   currentSocialOwner,
@@ -9,6 +10,11 @@ import {
 } from "@/lib/platform/social-client";
 import { portalInputClass, portalButtonClass } from "./portal-action-form";
 import { useUnsavedSocialWork } from "./use-unsaved-social-work";
+
+const uploadButtonClass = cn(
+  portalButtonClass,
+  "min-w-0 max-w-full px-2 [overflow-wrap:anywhere] sm:px-5"
+);
 
 type Entry = {
   id: string;
@@ -33,7 +39,7 @@ function FilePreview({ file }: { file: File }) {
     <img
       src={url}
       alt="Selected file preview"
-      className="h-28 w-28 rounded object-contain"
+      className="aspect-square w-28 max-w-full rounded object-contain"
       width={112}
       height={112}
       onError={(event) => {
@@ -41,7 +47,7 @@ function FilePreview({ file }: { file: File }) {
       }}
     />
   ) : (
-    <div className="h-28 w-28" />
+    <div className="aspect-square w-28 max-w-full" />
   );
 }
 export type PhotoUploadManagerOptions = {
@@ -410,7 +416,7 @@ export function PhotoUploadManagerView({
   return (
     <section
       aria-labelledby={`${uid}-title`}
-      className="space-y-4 rounded-xl border border-gc-divider p-4"
+      className="min-w-0 space-y-4 rounded-xl border border-gc-divider p-2 sm:p-4"
     >
       <h3 id={`${uid}-title`} className="text-xl">
         {purpose === "SUPPORT_ATTACHMENT"
@@ -448,7 +454,7 @@ export function PhotoUploadManagerView({
       {entries.length > 1 && (
         <button
           type="button"
-          className={portalButtonClass}
+          className={uploadButtonClass}
           disabled={
             !available ||
             changedAccount ||
@@ -470,7 +476,7 @@ export function PhotoUploadManagerView({
         {entries.map((row) => (
           <li
             key={row.id}
-            className="space-y-3 rounded-lg border border-gc-divider p-3"
+            className="min-w-0 space-y-3 rounded-lg border border-gc-divider p-2 sm:p-3"
             aria-label={`Upload ${row.file.name}`}
           >
             <div className="flex flex-wrap gap-3">
@@ -528,7 +534,7 @@ export function PhotoUploadManagerView({
               {row.state !== "saved" && (
                 <button
                   type="button"
-                  className={portalButtonClass}
+                  className={uploadButtonClass}
                   disabled={
                     row.invalid ||
                     row.state === "uploading" ||
@@ -547,7 +553,7 @@ export function PhotoUploadManagerView({
               {row.state === "uploading" ? (
                 <button
                   type="button"
-                  className={portalButtonClass}
+                  className={uploadButtonClass}
                   onClick={() => stop(row.id)}
                 >
                   Stop upload
@@ -555,7 +561,7 @@ export function PhotoUploadManagerView({
               ) : (
                 <button
                   type="button"
-                  className={portalButtonClass}
+                  className={uploadButtonClass}
                   onClick={() => remove(row.id)}
                 >
                   {row.state === "saved"

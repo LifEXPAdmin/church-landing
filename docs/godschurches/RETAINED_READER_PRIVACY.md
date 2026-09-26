@@ -21,8 +21,21 @@ This is presentation cleanup, not heap, browser-history or OS erasure.
 Reproduction preceded edits on `951e57b`. TypeScript, standard repository lint,
 copy/source checks and 27 source-security/migration-guard tests pass. The custom
 zero-warning whole-repository lint attempt found 36 existing warnings and no
-errors; the unchanged standard lint gate passes. Isolated browser, build, service,
-visual and runtime-cost acceptance are still pending at this checkpoint.
+errors; the unchanged standard lint gate passes. The initial application source
+`259c714` passes a 40.413-second production build and 70 isolated service/HTTP
+checks. My feedback passes seven browser groups. Focused intake checks cover
+serialization, concealment, retained fields/files and denied identity reads.
+Remaining browser acceptance is still in progress.
+
+Browser verification reproduced a narrow-screen upload button overflowing by
+11 pixels at 320px with 200% text. Responsive uploader spacing, wrapping actions
+and bounded previews repair that layout; its fresh build and browser acceptance
+remain pending. The prompt regression now uses the exact accessible textbox
+name, because controlled textarea content becomes part of Playwright
+getByLabel's implicit-label text after editing. Retained-draft and navigation
+assertions remain intact. A single persistent test interception dispatcher
+replaces overlapping native registrations; routing errors still fail the suite.
+All failed attempts and their diagnostics are preserved in private evidence.
 
 The candidate is not merged or live. Vercel's daily deployment quota still blocks
 publication of the preceding tested `.12`; `.11/925536c` remains the last verified

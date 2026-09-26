@@ -236,8 +236,11 @@ try {
   const writing = await pageFor(fixture.memberA);
   await go(writing, "/platform/feedback");
   await createForm(writing).waitFor();
-  await writing
-    .getByLabel("Your experience (optional with a rating)", { exact: true })
+  await createForm(writing)
+    .getByRole("textbox", {
+      name: "Your experience (optional with a rating)",
+      exact: true
+    })
     .fill("Fictional unfinished feedback must not be interrupted.");
   await writing.getByRole("link", { name: "Menu", exact: true }).click();
   await pause(1500);
@@ -250,8 +253,11 @@ try {
     0
   );
   assert.equal(
-    await writing
-      .getByLabel("Your experience (optional with a rating)", { exact: true })
+    await createForm(writing)
+      .getByRole("textbox", {
+        name: "Your experience (optional with a rating)",
+        exact: true
+      })
       .inputValue(),
     "Fictional unfinished feedback must not be interrupted."
   );

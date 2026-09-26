@@ -89,14 +89,74 @@ const results = [],
   browserWrites = [],
   retryEvidence = [];
 const markers = [],
-  releases = new Set();
-await context.route("**/*", async (route) => {
-  const url = new URL(route.request().url());
-  if (url.origin !== config.origin) {
-    externalRequests.push(url.origin + url.pathname);
-    await route.abort();
-  } else await route.continue();
+  releases = new Set(),
+  routeErrors = [];
+let rejectRouting;
+const routingFailure = new Promise((_, reject) => {
+  rejectRouting = reject;
 });
+// Route callbacks run outside the awaited scenario. Preserve their diagnostic
+// and fail the scenario race, rather than leaving an unhandled rejection that
+// skips the failure report and singleton-intake cleanup.
+void routingFailure.catch(() => {});
+const guardRoute = (label, handle) => async (route) => {
+  try {
+    return await handle(route);
+  } catch (error) {
+    const request = route.request();
+    const diagnostic = {
+      label,
+      method: request.method(),
+      url: request.url(),
+      resourceType: request.resourceType(),
+      message: String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    };
+    routeErrors.push(diagnostic);
+    rejectRouting(
+      new Error("Browser routing failed: " + JSON.stringify(diagnostic), {
+        cause: error
+      })
+    );
+  }
+};
+const routeRules = [];
+const registerRoute = (pattern, handler) => {
+  let matches;
+  if (typeof pattern === "function") matches = pattern;
+  else if (pattern === "**/api/platform/profile?view=identity")
+    matches = (url) => url.href.endsWith(pattern.slice(2));
+  else {
+    assert.equal(typeof pattern, "string");
+    assert.match(pattern, /^https?:\/\//);
+    matches = (url) => url.href === pattern;
+  }
+  routeRules.unshift({ pattern, handler, matches });
+};
+const unregisterRoute = (pattern, handler) => {
+  for (let index = routeRules.length - 1; index >= 0; index--)
+    if (
+      routeRules[index].pattern === pattern &&
+      routeRules[index].handler === handler
+    )
+      routeRules.splice(index, 1);
+};
+// Keep exactly one native interception handler installed throughout the suite.
+// Sample a local rule synchronously: removing or adding later rules cannot
+// change ownership of a held request. Local blob previews need no interception.
+await context.route(
+  /^https?:\/\//,
+  guardRoute("persistent HTTP dispatcher", async (route) => {
+    const url = new URL(route.request().url());
+    if (url.origin !== config.origin) {
+      externalRequests.push(url.origin + url.pathname);
+      return route.abort();
+    }
+    const rule = routeRules.find((candidate) => candidate.matches(url));
+    if (rule) return rule.handler(route);
+    return route.continue();
+  })
+);
 context.on("request", (request) => {
   if (!["GET", "HEAD"].includes(request.method()))
     browserWrites.push({
@@ -238,7 +298,7 @@ const serialization = async () => {
 };
 const failedRead = async (pattern) => {
   const deliveries = [];
-  const handler = (route) => {
+  const handler = guardRoute("failed source read", (route) => {
     const delivery = route.fulfill({
       status: 503,
       contentType: "application/json",
@@ -246,8 +306,8 @@ const failedRead = async (pattern) => {
     });
     deliveries.push(delivery);
     return delivery;
-  };
-  await page.route(pattern, handler);
+  });
+  registerRoute(pattern, handler);
   try {
     await event("focus");
     await page
@@ -261,7 +321,7 @@ const failedRead = async (pattern) => {
     await absent();
     await Promise.all(deliveries);
   } finally {
-    await page.unroute(pattern, handler);
+    unregisterRoute(pattern, handler);
   }
   await button("Recheck current access").click();
   await retained();
@@ -278,7 +338,7 @@ const holdReads = async (pattern) => {
   });
   const deliveries = [];
   releases.add(release);
-  const handler = (route) => {
+  const handler = guardRoute("held source read", (route) => {
     const delivery = (async () => {
       const response = await route.fetch();
       capture();
@@ -287,8 +347,8 @@ const holdReads = async (pattern) => {
     })();
     deliveries.push(delivery);
     return delivery;
-  };
-  await page.route(pattern, handler);
+  });
+  registerRoute(pattern, handler);
   return {
     captured,
     release,
@@ -296,7 +356,7 @@ const holdReads = async (pattern) => {
       release();
       releases.delete(release);
       await Promise.all(deliveries);
-      await page.unroute(pattern, handler);
+      unregisterRoute(pattern, handler);
     }
   };
 };
@@ -383,6 +443,68 @@ const screenshot = async (name, width, enlarged = false) => {
     await target.scrollIntoViewIfNeeded();
     await page.screenshot({ path: output + "/" + name + "-" + part + ".png" });
   }
+  const overflow = await page.evaluate(() => {
+    const viewport = {
+      width: innerWidth,
+      height: innerHeight,
+      scrollX,
+      scrollY
+    };
+    const elements = [...document.body.querySelectorAll("*")]
+      .map((node) => {
+        const rect = node.getBoundingClientRect();
+        if (!rect.width || !rect.height) return null;
+        const right = rect.right + scrollX;
+        const left = rect.left + scrollX;
+        if (right <= innerWidth + 1 && left >= -1) return null;
+        const style = getComputedStyle(node);
+        return {
+          tag: node.tagName.toLowerCase(),
+          name: node.getAttribute("name") ?? node.getAttribute("aria-label"),
+          class: node.getAttribute("class"),
+          left,
+          right,
+          width: rect.width,
+          scrollWidth: node.scrollWidth,
+          clientWidth: node.clientWidth,
+          minWidth: style.minWidth,
+          maxWidth: style.maxWidth,
+          paddingLeft: style.paddingLeft,
+          paddingRight: style.paddingRight,
+          overflowX: style.overflowX,
+          whiteSpace: style.whiteSpace,
+          overflowWrap: style.overflowWrap,
+          text: (node.textContent ?? "")
+            .replace(/\s+/g, " ")
+            .trim()
+            .slice(0, 140)
+        };
+      })
+      .filter(Boolean)
+      .sort((a, b) => b.right - a.right || a.width - b.width);
+    return {
+      viewport,
+      scrollWidth: document.documentElement.scrollWidth,
+      bodyScrollWidth: document.body.scrollWidth,
+      overflowElementCount: elements.length,
+      elements: elements.slice(0, 60)
+    };
+  });
+  writeFileSync(
+    output + "/" + name + "-overflow.json",
+    JSON.stringify(overflow, null, 2),
+    { mode: 0o600 }
+  );
+  console.log(
+    "LAYOUT " +
+      name +
+      " viewport=" +
+      overflow.viewport.width +
+      " scrollWidth=" +
+      overflow.scrollWidth +
+      " overflowElements=" +
+      overflow.overflowElementCount
+  );
   assert.ok(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth + 1
@@ -451,7 +573,7 @@ const originalFile = {
   mimeType: "image/png",
   buffer: imageBytes
 };
-try {
+const run = async () => {
   fixture = await seedSupport(db);
   markers.push(
     fixture.owner.name,
@@ -557,20 +679,23 @@ try {
   });
   const preferenceReadDeliveries = [];
   releases.add(releasePreferenceCheck);
-  const changedPreferenceIdentity = (route) => {
-    const ordinal = ++preferenceReads;
-    const delivery = (async () => {
-      const response = await route.fetch();
-      if (ordinal > 1) {
-        capturePreferenceCheck();
-        await preferenceReadGate;
-      }
-      await route.fulfill({ response });
-    })();
-    preferenceReadDeliveries.push(delivery);
-    return delivery;
-  };
-  await page.route(identityRoute, changedPreferenceIdentity);
+  const changedPreferenceIdentity = guardRoute(
+    "preference identity reread",
+    (route) => {
+      const ordinal = ++preferenceReads;
+      const delivery = (async () => {
+        const response = await route.fetch();
+        if (ordinal > 1) {
+          capturePreferenceCheck();
+          await preferenceReadGate;
+        }
+        await route.fulfill({ response });
+      })();
+      preferenceReadDeliveries.push(delivery);
+      return delivery;
+    }
+  );
+  registerRoute(identityRoute, changedPreferenceIdentity);
   try {
     await signIn(fixture.memberB);
     // Deliberately no focus/visibility event: the inline preference owner must
@@ -587,7 +712,7 @@ try {
   } finally {
     releasePreferenceCheck();
     releases.delete(releasePreferenceCheck);
-    await page.unroute(identityRoute, changedPreferenceIdentity);
+    unregisterRoute(identityRoute, changedPreferenceIdentity);
   }
   await event("focus");
   await retained();
@@ -630,7 +755,7 @@ try {
     releaseUpload = done;
   });
   releases.add(releaseUpload);
-  const uploadHandler = (route) => {
+  const uploadHandler = guardRoute("upload retry", (route) => {
     const request = route.request();
     if (request.method() !== "POST") return route.continue();
     const details = decodeURIComponent(request.headers()["x-image-details"]);
@@ -658,8 +783,8 @@ try {
     })();
     uploadDeliveries.push(delivery);
     return delivery;
-  };
-  await page.route(imageEndpoint, uploadHandler);
+  });
+  registerRoute(imageEndpoint, uploadHandler);
   try {
     await button("Upload private attachment").click();
     await waitCaptured(uploaded);
@@ -739,7 +864,7 @@ try {
   } finally {
     releaseUpload();
     releases.delete(releaseUpload);
-    await page.unroute(imageEndpoint, uploadHandler);
+    unregisterRoute(imageEndpoint, uploadHandler);
   }
   await event("blur");
   await absent();
@@ -773,7 +898,7 @@ try {
   );
   const removalAttempts = [],
     removalDeliveries = [];
-  const removalHandler = (route) => {
+  const removalHandler = guardRoute("attachment removal retry", (route) => {
     const request = route.request();
     if (
       request.method() !== "POST" ||
@@ -790,8 +915,8 @@ try {
     })();
     removalDeliveries.push(delivery);
     return delivery;
-  };
-  await page.route(feedbackEndpoint, removalHandler);
+  });
+  registerRoute(feedbackEndpoint, removalHandler);
   try {
     await removeUploaded().nth(1).click();
     await until(
@@ -851,7 +976,7 @@ try {
       retirements: 1
     });
   } finally {
-    await page.unroute(feedbackEndpoint, removalHandler);
+    unregisterRoute(feedbackEndpoint, removalHandler);
   }
   await waitReadyButton(button("Send feedback"));
   ok(
@@ -891,7 +1016,7 @@ try {
   const creationAttempts = [],
     creationDeliveries = [];
   let created;
-  const creationHandler = (route) => {
+  const creationHandler = guardRoute("creation retry", (route) => {
     const request = route.request();
     if (
       request.method() !== "POST" ||
@@ -919,8 +1044,8 @@ try {
     })();
     creationDeliveries.push(delivery);
     return delivery;
-  };
-  await page.route(feedbackEndpoint, creationHandler);
+  });
+  registerRoute(feedbackEndpoint, creationHandler);
   try {
     await button("Send feedback").click();
     await waitReadyButton(retryCreation());
@@ -1018,7 +1143,7 @@ try {
       retryVersionIncrements: 0
     });
   } finally {
-    await page.unroute(feedbackEndpoint, creationHandler);
+    unregisterRoute(feedbackEndpoint, creationHandler);
   }
   ok(
     "A real lost creation acknowledgement retains its original recipient/version/notice, draft and attachment IDs through recipient replacement, account changes and 429/503 retries; four identical commands create one private case and attach its one surviving upload once."
@@ -1036,7 +1161,7 @@ try {
   });
   const preferenceAttempts = [],
     preferenceDeliveries = [];
-  const preferenceHandler = (route) => {
+  const preferenceHandler = guardRoute("preference retry", (route) => {
     const request = route.request();
     if (request.method() !== "POST") return route.continue();
     preferenceAttempts.push(jsonAttempt(request));
@@ -1049,8 +1174,8 @@ try {
     })();
     preferenceDeliveries.push(delivery);
     return delivery;
-  };
-  await page.route(preferenceEndpoint, preferenceHandler);
+  });
+  registerRoute(preferenceEndpoint, preferenceHandler);
   try {
     await button("Don’t ask again").click();
     await waitReadyButton(retryPreference());
@@ -1157,13 +1282,14 @@ try {
       navigationReleasedAfterConfirmation: true
     });
   } finally {
-    await page.unroute(preferenceEndpoint, preferenceHandler);
+    unregisterRoute(preferenceEndpoint, preferenceHandler);
   }
   ok(
     "A second confirmed creation removes its completed form but keeps the real unconfirmed never-ask sibling and receipt destination across concealment; only its identical preference confirmation releases automatic navigation, with one refusal and no duplicate case."
   );
 
   assert.deepEqual(errors, []);
+  assert.deepEqual(routeErrors, []);
   assert.deepEqual(externalRequests, []);
   assert.equal(await page.evaluate(() => localStorage.length), 0);
   assert.equal(
@@ -1196,6 +1322,7 @@ try {
       {
         results,
         errors,
+        routeErrors,
         externalRequests,
         browserWrites,
         retryEvidence,
@@ -1214,6 +1341,9 @@ try {
     { mode: 0o600 }
   );
   console.log("FEEDBACK_INTAKE_PRIVACY_BROWSER_PASS " + results.length);
+};
+try {
+  await Promise.race([run(), routingFailure]);
 } catch (error) {
   await page
     .screenshot({ path: output + "/failure.png", fullPage: true })
@@ -1224,6 +1354,7 @@ try {
       {
         results,
         errors,
+        routeErrors,
         externalRequests,
         browserWrites,
         retryEvidence,

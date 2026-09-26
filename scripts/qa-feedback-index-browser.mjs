@@ -705,13 +705,9 @@ try {
       async () => !(await intakeForm.isVisible()),
       "Intake was not concealed"
     );
-    // This is preservation coverage for the existing uncontrolled intake, not
-    // an assertion that its private DOM has been removed by this list repair.
-    assert.equal(await intakeForm.count(), 1);
-    assert.equal(
-      await intakeForm.locator('[name="description"]').inputValue(),
-      draft
-    );
+    // Intake now removes its presenter while retaining the controlled draft.
+    assert.equal(await intakeForm.count(), 0);
+    assert.ok(!(await page.locator("body").innerText()).includes(draft));
     await event(trigger === "pagehide" ? "pageshow" : "focus");
     await intakeForm.waitFor();
     assert.equal(
@@ -728,7 +724,7 @@ try {
     "Intake draft did not discard"
   );
   ok(
-    "The shared hook's pagehide/pageshow and blur/focus transitions preserve an existing dirty intake field; intake DOM cleanup is deliberately not claimed and no feedback is submitted."
+    "The shared hook's pagehide/pageshow and blur/focus transitions remove intake controls and restore the retained dirty field to the same account; explicit discard clears it and no feedback is submitted."
   );
 
   await go();
