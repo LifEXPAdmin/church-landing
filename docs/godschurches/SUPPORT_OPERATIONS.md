@@ -1,5 +1,13 @@
 # Ordinary support operations
 
+## Incident coordination, 26 September 2026 UTC
+
+Use [the incident response runbook](INCIDENT_RESPONSE_RUNBOOK.md) for targeted
+intake controls, credential/private-data handling, acknowledged ownership and
+safe recovery. It retains the actual operator, notice and response-coverage
+gates below. Direct contact is not a verified dedicated security inbox or an
+independent complaint route. See [the isolated readiness receipt](INCIDENT_READINESS_REPORT.md).
+
 ## Current integrated readiness: September 16, 2026
 
 Admin requests, scoped working notes, assignments, native resolution/reopening,
