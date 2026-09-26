@@ -38,7 +38,7 @@ function Opportunity({
   detail?: boolean;
 }) {
   return (
-    <article className="space-y-3 rounded-xl border border-gc-divider p-4">
+    <article className="space-y-3 rounded-xl border border-gc-divider p-4 max-[359px]:px-[12px]">
       <h2 className="text-2xl">
         <Link
           prefetch={false}
@@ -383,7 +383,7 @@ export async function VolunteerPage({
             {result.application && (
               <section
                 aria-label="Your application"
-                className="space-y-4 rounded-xl border p-4"
+                className="space-y-4 rounded-xl border p-4 max-[359px]:px-[12px]"
               >
                 <h2 className="text-2xl">Your application</h2>
                 <Application row={result.application} />
@@ -439,7 +439,7 @@ export async function VolunteerPage({
             {result.items.map((row) => (
               <article
                 key={`${row.id}:${row.version}`}
-                className="space-y-4 rounded-xl border p-4"
+                className="space-y-4 rounded-xl border p-4 max-[359px]:px-[12px]"
               >
                 <h2 className="text-2xl">{row.applicantName ?? row.title}</h2>
                 {row.opportunityId && (
@@ -522,7 +522,7 @@ export async function VolunteerPage({
   }
   return (
     <PlatformShell user={user} signInReturnTo={path}>
-      <section className="mx-auto w-full max-w-4xl space-y-5 px-4 py-8">
+      <section className="mx-auto w-full max-w-4xl space-y-5 px-4 py-8 max-[359px]:px-0">
         <h1 className="text-4xl">{titles[view]}</h1>
         <nav
           aria-label="Volunteer navigation"

@@ -250,6 +250,34 @@ try {
       document.documentElement.style.fontSize = enlarged ? "200%" : "";
     }, width === 320);
     await noOverflow(applicant.page);
+    if (width === 320) {
+      const brokenWords = await availabilityForm(applicant.page)
+        .getByRole("button")
+        .evaluateAll((buttons) =>
+          buttons.flatMap((button) => {
+            const broken = [];
+            const walker = document.createTreeWalker(
+              button,
+              NodeFilter.SHOW_TEXT
+            );
+            while (walker.nextNode()) {
+              const node = walker.currentNode;
+              for (const word of node.textContent.matchAll(/\S+/g)) {
+                const range = document.createRange();
+                range.setStart(node, word.index);
+                range.setEnd(node, word.index + word[0].length);
+                if (range.getClientRects().length > 1) broken.push(word[0]);
+              }
+            }
+            return broken;
+          })
+        );
+      assert.deepEqual(
+        brokenWords,
+        [],
+        "Enlarged action labels keep words intact"
+      );
+    }
     await applicant.page.screenshot({
       path: `${output}/availability-${width}.png`,
       fullPage: true
