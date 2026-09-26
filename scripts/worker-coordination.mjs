@@ -37,6 +37,43 @@ function resource(value) {
 function overlaps(a, b) {
   return a === b || (a.startsWith("file:") && b.startsWith("file:") && (a.startsWith(b + "/") || b.startsWith(a + "/")));
 }
+const workerPattern = /^[A-Z][A-Z0-9_-]{0,31}$/;
+function taskIds(value = []) {
+  assert.ok(Array.isArray(value) && value.length <= 100, "Use at most 100 exact task IDs");
+  for (const id of value) {
+    assert.equal(typeof id, "string");
+    assert.match(id, /^[A-Za-z0-9_-]{1,120}$/, "Use exact task IDs without spaces or paths");
+  }
+  return [...new Set(value)].sort();
+}
+function summary(state, directory) {
+  if (!state) return [];
+  return Object.entries(state.workers).map(([worker, entry]) => {
+    const identity = state.identities[worker], claim = state.claims[worker];
+    const path = join(directory, "workers", worker + ".json");
+    const saved = workerPattern.test(worker) && existsSync(path) ? read(path) : null;
+    const ownsClaim = Boolean(identity && claim?.session === identity.session);
+    const matches = Boolean(identity && saved?.worker === worker && saved.session === identity.session
+      && saved.updatedAt >= identity.registeredAt
+      && saved.worktree === entry.worktree && saved.task === (claim?.task ?? null)
+      && JSON.stringify(taskIds(saved.taskIds)) === JSON.stringify(taskIds(claim?.taskIds))
+      && (!claim || (ownsClaim && saved.updatedAt >= claim.at
+        && (claim.id === undefined || saved.claimId === claim.id)
+        && (saved.claimedAt === undefined || saved.claimedAt === claim.at))));
+    const checkpoint = matches ? saved : null;
+    return {
+      worker, label: identity?.label ?? worker, session: identity?.session ?? null,
+      worktree: entry.worktree, state: claim ? (ownsClaim ? "claimed" : "orphaned-claim") : identity ? "registered" : "unregistered",
+      task: claim?.task ?? null, taskIds: taskIds(claim?.taskIds), resources: claim?.resources ?? [],
+      claimedAt: claim?.at ?? null,
+      updatedAt: [identity?.updatedAt ?? identity?.registeredAt, claim?.at, checkpoint?.updatedAt].filter(Boolean).sort().at(-1) ?? null,
+      checkpoint: checkpoint ? {
+        updatedAt: checkpoint.updatedAt, status: checkpoint.status,
+        branch: checkpoint.branch, commit: checkpoint.commit
+      } : null
+    };
+  });
+}
 
 /** Cooperative local coordination, not an OS or provider permission boundary. */
 export function workerCommand(request, cwd = process.cwd()) {
@@ -44,10 +81,12 @@ export function workerCommand(request, cwd = process.cwd()) {
   const here = location(cwd), directory = join(here.common, "gc-coordination");
   const registryPath = join(directory, "registry.json");
   if (request.operation === "status") {
-    return { directory, registry: existsSync(registryPath) ? read(registryPath) : null,
+    const registry = existsSync(registryPath) ? read(registryPath) : null;
+    return { directory, registry, summary: summary(registry, directory),
       mutex: existsSync(join(directory, "claim.lock")) };
   }
-  assert.ok(["A1", "A2"].includes(request.worker), "Choose A1 or A2");
+  assert.equal(typeof request.worker, "string");
+  assert.match(request.worker, workerPattern, "Use an uppercase worker ID, at most 32 letters, digits, underscores or hyphens");
   assert.match(request.session ?? "", /^[A-Za-z0-9_-]{8,120}$/);
   mkdirSync(directory, { recursive: true, mode: 0o700 });
   const mutex = join(directory, "claim.lock"), token = randomUUID();
@@ -82,26 +121,44 @@ export function workerCommand(request, cwd = process.cwd()) {
       state.base = request.base;
       state.configuredAt = now;
     } else {
+      if (request.operation === "register" && !state.workers[request.worker]) {
+        assert.ok(state.configuredAt, "Configure the shared registry before registering another worker");
+        assert.ok(!identity && !state.claims[request.worker], "Preserve existing ownership");
+        assert.ok(!Object.values(state.workers).some(worker => worker.worktree === here.root), "This worktree is already assigned to another worker");
+        state.workers[request.worker] = { worktree: here.root };
+      }
       assert.equal(state.workers[request.worker]?.worktree, here.root, "Use only your assigned worktree");
-      if (request.worker === "A2") assert.notEqual(git(cwd, "branch", "--show-current"), "main", "A2 cannot use main");
+      if (request.worker !== "A1") {
+        const branch = git(cwd, "branch", "--show-current");
+        assert.ok(branch && branch !== "main", "Additional workers require a feature branch, not main or a detached checkout");
+      }
       if (request.operation === "register") {
         if (identity) owned();
+        assert.ok(!Object.entries(state.identities).some(([worker, owner]) => worker !== request.worker && owner.session === request.session), "This session already owns another worker identity");
         state.identities[request.worker] = identity ?? { session: request.session, registeredAt: now };
+        if (request.label !== undefined) {
+          assert.equal(typeof request.label, "string");
+          assert.ok(request.label.trim().length > 0 && request.label.length <= 200 && !/[\r\n\u0000-\u001f\u007f]/.test(request.label), "Use a short, single-line chat label");
+          state.identities[request.worker].label = request.label.trim();
+        }
       } else {
         owned();
         if (request.operation === "claim") {
           assert.equal(typeof request.task, "string");
-          assert.ok(request.task.length > 0 && request.task.length <= 200);
+          assert.ok(request.task.trim().length > 0 && request.task.length <= 200);
           assert.ok(Array.isArray(request.resources) && request.resources.length > 0 && request.resources.length <= 100);
-          const resources = [...new Set(request.resources.map(resource))];
           const prior = state.claims[request.worker];
+          const ids = taskIds(request.taskIds === undefined ? prior?.taskIds : request.taskIds);
+          const resources = [...new Set([...request.resources, ...ids.map(id => "contract:task-" + id)].map(resource))];
+          assert.ok(resources.length <= 100, "Use at most 100 resources, including task ID reservations");
           assert.ok(!prior || prior.task === request.task, "Finish the current task claim before choosing another task");
           for (const [worker, claim] of Object.entries(state.claims)) {
             if (worker === request.worker) continue;
             assert.notEqual(claim.task, request.task, "Another worker already owns this task");
+            assert.ok(!ids.some(id => (claim.taskIds ?? []).includes(id)), "Another worker already owns this exact task ID");
             assert.ok(!resources.some(a => claim.resources.some(b => overlaps(a, b))), "Resource overlaps another worker's current claim");
           }
-          state.claims[request.worker] = { session: request.session, task: request.task, resources, at: now };
+          state.claims[request.worker] = { id: randomUUID(), session: request.session, task: request.task, taskIds: ids, resources, at: now };
         } else if (request.operation === "finish") {
           assert.notEqual(state.release?.session, request.session, "Release closeout must finish before clearing the feature claim");
           delete state.claims[request.worker];
@@ -123,6 +180,8 @@ export function workerCommand(request, cwd = process.cwd()) {
             worker: request.worker, session: request.session, updatedAt: now,
             worktree: here.root, branch: git(cwd, "branch", "--show-current"), commit: git(cwd, "rev-parse", "HEAD"),
             task: state.claims[request.worker]?.task ?? null, resources: state.claims[request.worker]?.resources ?? [],
+            taskIds: state.claims[request.worker]?.taskIds ?? [], claimedAt: state.claims[request.worker]?.at ?? null,
+            claimId: state.claims[request.worker]?.id ?? null,
             status: request.status, handoff: request.handoff ?? ""
           });
         } else if (request.operation === "unregister") {
@@ -131,6 +190,7 @@ export function workerCommand(request, cwd = process.cwd()) {
         } else throw new Error("Unknown coordination operation");
       }
     }
+    if (state.identities[request.worker]) state.identities[request.worker].updatedAt = now;
     state.updatedAt = now;
     atomic(registryPath, state);
     return { directory, operation: request.operation, worker: request.worker, identity: state.identities[request.worker] ?? null,
