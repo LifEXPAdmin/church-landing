@@ -1006,6 +1006,14 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "original-report-intake-retry", version: "2026.09.26.24", date: "2026-09-26",
+    summary: "Unconfirmed private reports keep their original retry through a waiting period.",
+    added: [],
+    improved: ["After a cooldown, retrying confirms the same private report even if its source is no longer available."],
+    fixed: ["Stopping an uncertain retry keeps the warning that the report may already have been received."],
+    featureIds: ["private-reports"]
+  },
+  {
     id: "original-report-review-retry", version: "2026.09.26.23", date: "2026-09-26",
     summary: "Unconfirmed report reviews keep their original retry through a waiting period.",
     added: [],

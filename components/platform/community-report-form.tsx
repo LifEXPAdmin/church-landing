@@ -153,7 +153,9 @@ export function CommunityReportForm({
       const status = error instanceof SocialClientError ? error.status : 503;
       // Identity can change after a committed response. Only the original owner
       // can reveal and retry that retained receipt key.
-      if ([400, 403, 404, 409, 429].includes(status)) setPending(null);
+      // Transport throttling runs before receipt replay, so a waiting period
+      // cannot establish whether an earlier attempt already saved this report.
+      if ([400, 403, 404, 409].includes(status)) setPending(null);
       if ([403, 404, 409].includes(status)) {
         setTarget(null);
         setAvailable(false);
