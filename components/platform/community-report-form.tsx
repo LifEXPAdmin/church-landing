@@ -40,8 +40,11 @@ export function CommunityReportForm({
   const [waitingUntil, setWaitingUntil] = useState(0),
     [remaining, setRemaining] = useState(0);
   const generation = useRef(0),
+    active = useRef(true),
+    reading = useRef(false),
     inFlight = useRef(false),
     refreshQueued = useRef(false);
+  const acknowledgedReceipt = useRef<string | null>(null);
   const dirty = !receipt && (!!reason || !!details);
   useUnsavedSocialWork(
     { dirty, saving: !!pending, conflict: false },
@@ -52,14 +55,40 @@ export function CommunityReportForm({
     true
   );
   const load = useCallback(async () => {
-    if (inFlight.current) {
+    if (
+      !active.current ||
+      document.visibilityState === "hidden" ||
+      navigator.onLine === false
+    )
+      return;
+    if (inFlight.current || reading.current) {
       refreshQueued.current = true;
       return;
     }
+    reading.current = true;
     const seq = ++generation.current;
+    const receiptId = acknowledgedReceipt.current;
     setBusy(true);
     setHidden(true);
+    setTarget(null);
+    setAvailable(false);
     try {
+      if (receiptId) {
+        const result = await socialRequest<{ report?: { id: string } }>(
+          `/api/platform/community-reports?${new URLSearchParams({ view: "receipt", id: receiptId })}`,
+          undefined,
+          owner
+        );
+        if (seq !== generation.current || !active.current) return;
+        if (result.data.report?.id !== receiptId)
+          throw new SocialClientError(
+            503,
+            "Your private receipt could not be confirmed. Try again."
+          );
+        setHidden(false);
+        setMessage("Your private receipt is available.");
+        return;
+      }
       const result = await socialRequest<{
         target: Target;
         available: boolean;
@@ -68,7 +97,7 @@ export function CommunityReportForm({
         undefined,
         owner
       );
-      if (seq !== generation.current) return;
+      if (seq !== generation.current || !active.current) return;
       setTarget(result.data.target);
       setAvailable(result.data.available);
       setHidden(false);
@@ -78,9 +107,13 @@ export function CommunityReportForm({
           : "Reporting is unavailable for this item right now. No new report has been submitted."
       );
     } catch (error) {
-      if (seq !== generation.current) return;
-      const current = await currentSocialOwner().catch(() => null);
-      if (seq !== generation.current) return;
+      if (seq !== generation.current || !active.current) return;
+      // Own unfinished entries and exact acknowledgment recovery do not depend
+      // on the reported source remaining available. Never restore its old DTO.
+      const current = receiptId
+        ? null
+        : await currentSocialOwner().catch(() => null);
+      if (seq !== generation.current || !active.current) return;
       setTarget(null);
       setAvailable(false);
       setHidden(current !== owner);
@@ -90,28 +123,49 @@ export function CommunityReportForm({
           : "Access could not be checked. Your entries are unchanged."
       );
     } finally {
+      reading.current = false;
       if (seq === generation.current) setBusy(false);
+      if (refreshQueued.current && active.current && !inFlight.current) {
+        refreshQueued.current = false;
+        void load();
+      }
     }
   }, [owner, type, id]);
   useEffect(() => {
-    void load();
     const conceal = () => {
+      active.current = false;
       generation.current++;
+      refreshQueued.current = false;
       setHidden(true);
+      setTarget(null);
+      setAvailable(false);
+      setBusy(false);
     };
     const restore = () => {
-      if (document.visibilityState !== "hidden") void load();
+      if (document.visibilityState !== "hidden" && navigator.onLine !== false) {
+        active.current = true;
+        void load();
+      }
     };
     const visibility = () =>
       document.visibilityState === "hidden" ? conceal() : restore();
+    restore();
     window.addEventListener("blur", conceal);
+    window.addEventListener("offline", conceal);
+    window.addEventListener("pagehide", conceal);
+    window.addEventListener("pageshow", restore);
     window.addEventListener("focus", restore);
+    window.addEventListener("online", restore);
     document.addEventListener("visibilitychange", visibility);
     return () => {
       conceal();
       refreshQueued.current = false;
       window.removeEventListener("blur", conceal);
+      window.removeEventListener("offline", conceal);
+      window.removeEventListener("pagehide", conceal);
+      window.removeEventListener("pageshow", restore);
       window.removeEventListener("focus", restore);
+      window.removeEventListener("online", restore);
       document.removeEventListener("visibilitychange", visibility);
     };
   }, [load]);
@@ -130,9 +184,18 @@ export function CommunityReportForm({
     return () => clearInterval(timer);
   }, [waitingUntil]);
   async function send(body: string) {
-    if (inFlight.current || hidden || remaining) return;
+    if (
+      !active.current ||
+      reading.current ||
+      inFlight.current ||
+      hidden ||
+      remaining ||
+      document.visibilityState === "hidden" ||
+      navigator.onLine === false
+    )
+      return;
     inFlight.current = true;
-    const seq = generation.current;
+    const seq = ++generation.current;
     setBusy(true);
     setPending(body);
     setMessage("Sending your private report…");
@@ -142,14 +205,15 @@ export function CommunityReportForm({
         body,
         owner
       );
-      if (seq !== generation.current) return;
+      if (seq !== generation.current || !active.current) return;
+      acknowledgedReceipt.current = result.data.id;
       setPending(null);
       setDetails("");
       setReason("");
       setReceipt(result.data.id);
       setMessage(result.data.message);
     } catch (error) {
-      if (seq !== generation.current) return;
+      if (seq !== generation.current || !active.current) return;
       const status = error instanceof SocialClientError ? error.status : 503;
       // Identity can change after a committed response. Only the original owner
       // can reveal and retry that retained receipt key.
@@ -170,8 +234,8 @@ export function CommunityReportForm({
       );
     } finally {
       inFlight.current = false;
-      setBusy(false);
-      if (refreshQueued.current) {
+      if (seq === generation.current) setBusy(false);
+      if (refreshQueued.current && active.current && !reading.current) {
         refreshQueued.current = false;
         void load();
       }

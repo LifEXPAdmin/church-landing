@@ -1006,6 +1006,14 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "private-report-lifecycle", version: "2026.09.26.25", date: "2026-09-26",
+    summary: "Private reports keep drafts and receipts recoverable when you leave the page.",
+    added: [],
+    improved: ["Report forms and receipts clear from hidden or offline pages until your current access is checked."],
+    fixed: ["A queued refresh cannot redisplay private report details after the page is concealed again. Confirmed receipts reopen independently of the reported source."],
+    featureIds: ["private-reports"]
+  },
+  {
     id: "original-report-intake-retry", version: "2026.09.26.24", date: "2026-09-26",
     summary: "Unconfirmed private reports keep their original retry through a waiting period.",
     added: [],

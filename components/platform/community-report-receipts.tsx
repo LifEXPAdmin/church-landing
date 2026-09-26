@@ -27,8 +27,22 @@ export function CommunityReportReceipts({
   const [data, setData] = useState<Page | null>(null),
     [message, setMessage] = useState("Loading your private reports…"),
     [busy, setBusy] = useState(false);
-  const generation = useRef(0);
+  const generation = useRef(0),
+    active = useRef(true),
+    reading = useRef(false),
+    queued = useRef(false);
   const load = useCallback(async () => {
+    if (
+      !active.current ||
+      document.visibilityState === "hidden" ||
+      navigator.onLine === false
+    )
+      return;
+    if (reading.current) {
+      queued.current = true;
+      return;
+    }
+    reading.current = true;
     const seq = ++generation.current;
     setData(null);
     setBusy(true);
@@ -38,39 +52,57 @@ export function CommunityReportReceipts({
         undefined,
         owner
       );
-      if (seq !== generation.current) return;
+      if (seq !== generation.current || !active.current) return;
       setData(result.data);
       setMessage("");
     } catch (error) {
-      if (seq === generation.current)
+      if (seq === generation.current && active.current)
         setMessage(
           error instanceof Error
             ? error.message
             : "Private reports could not be loaded."
         );
     } finally {
+      reading.current = false;
       if (seq === generation.current) setBusy(false);
+      if (queued.current && active.current) {
+        queued.current = false;
+        void load();
+      }
     }
   }, [owner, id, after]);
   useEffect(() => {
-    void load();
     const conceal = () => {
+      active.current = false;
       generation.current++;
+      queued.current = false;
       setData(null);
       setBusy(false);
     };
     const restore = () => {
-      if (document.visibilityState !== "hidden") void load();
+      if (document.visibilityState !== "hidden" && navigator.onLine !== false) {
+        active.current = true;
+        void load();
+      }
     };
     const visibility = () =>
       document.visibilityState === "hidden" ? conceal() : restore();
+    restore();
     window.addEventListener("blur", conceal);
+    window.addEventListener("offline", conceal);
+    window.addEventListener("pagehide", conceal);
+    window.addEventListener("pageshow", restore);
     window.addEventListener("focus", restore);
+    window.addEventListener("online", restore);
     document.addEventListener("visibilitychange", visibility);
     return () => {
       conceal();
       window.removeEventListener("blur", conceal);
+      window.removeEventListener("offline", conceal);
+      window.removeEventListener("pagehide", conceal);
+      window.removeEventListener("pageshow", restore);
       window.removeEventListener("focus", restore);
+      window.removeEventListener("online", restore);
       document.removeEventListener("visibilitychange", visibility);
     };
   }, [load]);
