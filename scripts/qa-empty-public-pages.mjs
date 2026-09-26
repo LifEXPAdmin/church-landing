@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { execFileSync } from "node:child_process";
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { resolve } from "node:path";
 import { homedir } from "node:os";
 
@@ -408,6 +408,151 @@ try {
   ok(
     "Verified adult empty states link to guarded private choices and draft creation"
   );
+
+  // Exercise the real 200-candidate scan limit after church authority expires.
+  // Keep this last so earlier journeys still observe genuinely empty tables.
+  const suffix = randomUUID();
+  const churchId = `empty-scan-church-${suffix}`;
+  const connectionId = `empty-scan-connection-${suffix}`;
+  const grantId = `empty-scan-grant-${suffix}`;
+  const groupIds = Array.from(
+    { length: 201 },
+    (_, index) => `empty-scan-${suffix}-${String(index).padStart(3, "0")}`
+  );
+  const scanQuery = `continuation-${suffix}`;
+  const hiddenName = `Hidden group ${suffix}`;
+  const hiddenPurpose = `Hidden purpose ${suffix}`;
+  const hiddenSlug = `hidden-${suffix}`;
+  const visibleName = `Visible continuation ${suffix}`;
+  try {
+    await db.church.create({
+      data: {
+        id: churchId,
+        slug: `empty-scan-${suffix}`,
+        name: "Fictional continuation church",
+        summary: "Isolated browser fixture for revoked group authority.",
+        communityListed: true
+      }
+    });
+    await db.churchConnection.create({
+      data: {
+        id: connectionId,
+        userId: actor.id,
+        churchId,
+        state: "APPROVED"
+      }
+    });
+    await db.churchCapabilityGrant.create({
+      data: {
+        id: grantId,
+        userId: actor.id,
+        churchId,
+        capability: "MANAGE_CHURCH_GROUPS",
+        dependencyConnectionId: connectionId
+      }
+    });
+    const { groupChurchAuthority } =
+      await import("../lib/platform/group-policy.ts");
+    const ownerAuthorityKey = await groupChurchAuthority(db, churchId, actor.id);
+    assert.ok(ownerAuthorityKey, "The fixture starts with current authority");
+    await db.gatherGroup.createMany({
+      data: groupIds.map((id, index) => ({
+        id,
+        slug: index < 200 ? `${hiddenSlug}-${index}` : `visible-${suffix}`,
+        name: index < 200 ? `${hiddenName} ${index}` : visibleName,
+        nameKey: id,
+        purpose: index < 200 ? hiddenPurpose : "A visible fictional group.",
+        rules: "Respect every member and keep private discussions private.",
+        ownerId: actor.id,
+        creatorId: actor.id,
+        kind: index < 200 ? "CHURCH_LIFE" : "INTEREST",
+        churchId: index < 200 ? churchId : null,
+        ownerAuthorityKey: index < 200 ? ownerAuthorityKey : null,
+        topic: scanQuery
+      }))
+    });
+    await context.clearCookies();
+    const scanUrl =
+      config.origin +
+      "/api/platform/groups?" +
+      new URLSearchParams({ view: "list", q: scanQuery });
+    const beforeRevocation = await page.request.get(scanUrl);
+    assert.equal(beforeRevocation.status(), 200);
+    const currentGroups = await beforeRevocation.json();
+    assert.deepEqual(
+      currentGroups.groups.map((group) => group.id),
+      groupIds.slice(0, 20),
+      "These same groups are actually readable before revocation"
+    );
+    await db.churchCapabilityGrant.update({
+      where: { id: grantId },
+      data: { revokedAt: new Date(), version: { increment: 1 } }
+    });
+    assert.equal(await groupChurchAuthority(db, churchId, actor.id), null);
+    const afterRevocation = await page.request.get(scanUrl);
+    assert.equal(afterRevocation.status(), 200);
+    const emptyPage = await afterRevocation.json();
+    assert.deepEqual(emptyPage.groups, []);
+    assert.equal(emptyPage.nextCursor, groupIds[199]);
+    for (const privateValue of [hiddenName, hiddenPurpose, hiddenSlug])
+      assert.equal(JSON.stringify(emptyPage).includes(privateValue), false);
+
+    await go("/platform/groups?" + new URLSearchParams({ q: scanQuery }));
+    await heading("No groups on this page").waitFor({ state: "visible" });
+    await page
+      .getByText("Use Next groups to continue looking for available groups.", {
+        exact: true
+      })
+      .waitFor({ state: "visible" });
+    assert.equal(await heading("No groups match these filters").count(), 0);
+    for (const privateValue of [hiddenName, hiddenPurpose, hiddenSlug])
+      assert.equal((await page.content()).includes(privateValue), false);
+    const continuation = page.getByRole("link", {
+      name: "Next groups",
+      exact: true
+    });
+    assert.equal(await continuation.count(), 1);
+    const next = new URL(
+      await continuation.getAttribute("href"),
+      config.origin
+    );
+    assert.equal(next.searchParams.get("after"), emptyPage.nextCursor);
+    assert.equal(next.searchParams.get("q"), scanQuery);
+    await bounded();
+    await page.screenshot({
+      path: output + "/groups-empty-with-continuation.png",
+      fullPage: true
+    });
+    await keyboardLink("Next groups", "/platform/groups");
+    assert.equal(new URL(page.url()).searchParams.get("after"), groupIds[199]);
+    assert.equal(new URL(page.url()).searchParams.get("q"), scanQuery);
+    await heading(visibleName).waitFor({ state: "visible" });
+    assert.equal(await heading("No groups on this page").count(), 0);
+    assert.equal(
+      await page.getByRole("link", { name: "Next groups", exact: true }).count(),
+      0
+    );
+    for (const privateValue of [hiddenName, hiddenPurpose, hiddenSlug])
+      assert.equal((await page.content()).includes(privateValue), false);
+    ok(
+      "Gather conceals 200 revoked sources on an empty page and continues to the remaining visible group"
+    );
+  } finally {
+    // Delete only this journey's exact fictional records, even after failure.
+    await db.$transaction([
+      db.gatherGroup.deleteMany({
+        where: { id: { in: groupIds }, ownerId: actor.id }
+      }),
+      db.churchCapabilityGrant.deleteMany({
+        where: { id: grantId, userId: actor.id }
+      }),
+      db.churchConnection.deleteMany({
+        where: { id: connectionId, userId: actor.id }
+      }),
+      db.church.deleteMany({ where: { id: churchId } })
+    ]);
+  }
+  assert.equal(await db.gatherGroup.count(), 0);
   assert.equal(errors.length, 0, JSON.stringify(errors));
   writeFileSync(
     output + "/result.json",
