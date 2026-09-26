@@ -245,6 +245,97 @@ try {
   ok(
     "Offline clears draft rows, deliberate refresh restores current access and pagination still accumulates the current list"
   );
+  let resumeHeld,
+    resumeRelease,
+    reads = 0;
+  const resumeCaptured = new Promise((resolve) => {
+    resumeHeld = resolve;
+  });
+  const resumeGate = new Promise((resolve) => {
+    resumeRelease = resolve;
+  });
+  await page.route("**/api/platform/post-workspace?*", async (route) => {
+    reads++;
+    const response = await route.fetch();
+    if (reads === 1) {
+      resumeHeld();
+      await resumeGate;
+    }
+    await route.fulfill({ response });
+  });
+  await page
+    .getByRole("button", { name: "Refresh drafts", exact: true })
+    .click();
+  await resumeCaptured;
+  await page.evaluate(() => {
+    window.dispatchEvent(new Event("blur"));
+    window.dispatchEvent(new Event("focus"));
+  });
+  await absentRows();
+  assert.equal(reads, 1);
+  resumeRelease();
+  await page.waitForFunction(
+    () =>
+      document.querySelectorAll('[aria-label="Saved drafts"] > li').length ===
+      20
+  );
+  await settle();
+  assert.equal(reads, 2);
+  await page.unroute("**/api/platform/post-workspace?*");
+  ok(
+    "Focus during a pending list read requires a fresh authorized read before restoring rows"
+  );
+  let switchHeld,
+    switchRelease,
+    switchReads = 0;
+  const switchCaptured = new Promise((resolve) => {
+    switchHeld = resolve;
+  });
+  const switchGate = new Promise((resolve) => {
+    switchRelease = resolve;
+  });
+  await page.route("**/api/platform/post-workspace?*", async (route) => {
+    switchReads++;
+    const response = await route.fetch();
+    if (switchReads === 1) {
+      switchHeld();
+      await switchGate;
+    }
+    await route.fulfill({ response });
+  });
+  await page
+    .getByRole("button", { name: "Refresh drafts", exact: true })
+    .click();
+  await switchCaptured;
+  await signIn(b);
+  await page.evaluate(() => {
+    window.dispatchEvent(new Event("blur"));
+    window.dispatchEvent(new Event("focus"));
+  });
+  await absentRows();
+  switchRelease();
+  await page
+    .getByText("Other account private marker", { exact: true })
+    .waitFor();
+  assert.equal(
+    await page.evaluate(
+      (text) => document.body.textContent.includes(text),
+      marker
+    ),
+    false
+  );
+  assert.equal(await rows().count(), 1);
+  await page.unroute("**/api/platform/post-workspace?*");
+  await signIn(a);
+  await go("/platform/drafts");
+  await settle();
+  assert.equal(await rows().count(), 20);
+  await page.getByRole("button", { name: "More drafts", exact: true }).click();
+  await settle();
+  assert.equal(await rows().count(), 22);
+  ok(
+    "Account replacement during a held read cannot restore the prior owner's draft text"
+  );
 
   await page
     .getByRole("button", { name: "Discard draft 1", exact: true })
