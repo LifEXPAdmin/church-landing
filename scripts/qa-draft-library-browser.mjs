@@ -370,7 +370,13 @@ try {
     .getByRole("button", { name: "Discard saved draft", exact: true })
     .click();
   await settle();
-  assert.match(await page.getByRole("status").innerText(), /changed elsewhere/);
+  assert.match(
+    await page
+      .locator('[aria-label="Your private drafts"]')
+      .getByRole("status")
+      .innerText(),
+    /changed elsewhere/
+  );
   assert.equal(
     (
       await db.privatePostDraft.findUniqueOrThrow({
@@ -408,7 +414,10 @@ try {
     .click();
   await settle();
   assert.match(
-    await page.getByRole("status").innerText(),
+    await page
+      .locator('[aria-label="Your private drafts"]')
+      .getByRole("status")
+      .innerText(),
     /could not be confirmed/
   );
   assert.equal(await rows().count(), 20);
@@ -456,7 +465,13 @@ try {
     21
   );
   assert.equal(await rows().count(), 20);
-  assert.match(await page.getByRole("status").innerText(), /Draft discarded/);
+  assert.match(
+    await page
+      .locator('[aria-label="Your private drafts"]')
+      .getByRole("status")
+      .innerText(),
+    /Draft discarded/
+  );
   await page.unroute("**/api/platform/post-workspace");
   ok(
     "Lost acknowledgment survives a failed read and manual refresh, then retries the identical discard without a duplicate mutation"
@@ -492,7 +507,10 @@ try {
   await go("/platform/drafts");
   await settle();
   assert.match(
-    await page.getByRole("status").innerText(),
+    await page
+      .locator('[aria-label="Your private drafts"]')
+      .getByRole("status")
+      .innerText(),
     /Temporary draft test outage/
   );
   await page.unroute("**/api/platform/post-workspace?*");
