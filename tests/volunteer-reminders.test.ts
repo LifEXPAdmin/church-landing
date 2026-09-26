@@ -22,7 +22,10 @@ import {
 import { volunteerReminderSources } from "../lib/platform/volunteer-reminder-policy";
 import { calendarCommand } from "../lib/platform/calendar-commands";
 import { recordFanout } from "../lib/platform/domain-activity";
-import { advanceNotificationFanout } from "../lib/platform/notification-fanout";
+import {
+  advanceNotificationFanout,
+  scheduleDomainActivity
+} from "../lib/platform/notification-fanout";
 import {
   deliverNotification,
   notificationWrite
@@ -576,4 +579,78 @@ test("quiet hours and shift start are hard delivery limits, and private choice e
         data: { ...data, id: randomUUID(), key: randomUUID(), ...invalid }
       })
     );
+});
+
+test("coordinator handoff and retries use only the exact application recipient without scanning activity", async () => {
+  for (const scenario of [
+    "other",
+    "self",
+    "erased",
+    "untimed",
+    "missing",
+    "ordinary"
+  ] as const) {
+    const owners: string[] = [],
+      lookups: unknown[] = [];
+    let scans = 0;
+    const fake = {
+      notificationFanoutJob: { findMany: async () => [] },
+      notificationDelivery: { findMany: async () => [] },
+      calendarReminderJob: {
+        findMany: async (args: { where: { ownerId: string } }) => {
+          owners.push(args.where.ownerId);
+          return [];
+        }
+      },
+      socialEvent: {
+        findMany: async () => {
+          scans++;
+          throw Error("Unrelated activity must never be scanned");
+        }
+      },
+      volunteerApplication: {
+        findUnique: async (args: unknown) => {
+          lookups.push(args);
+          if (scenario === "missing") return null;
+          return {
+            userId:
+              scenario === "erased"
+                ? null
+                : scenario === "self"
+                  ? "coordinator"
+                  : "applicant",
+            signupId: scenario === "untimed" ? null : "canonical-signup"
+          };
+        }
+      }
+    } as unknown as PrismaClient;
+    const callbacks: (() => Promise<void>)[] = [];
+    for (let retry = 0; retry < 2; retry++) {
+      scheduleDomainActivity(
+        fake,
+        "coordinator",
+        (work) => callbacks.push(work),
+        scenario === "ordinary" ? undefined : "exact-application"
+      );
+      await callbacks[retry]();
+    }
+    assert.equal(scans, 0, scenario);
+    assert.deepEqual(
+      lookups,
+      scenario === "ordinary"
+        ? []
+        : Array(2).fill({
+            where: { id: "exact-application" },
+            select: { userId: true, signupId: true }
+          }),
+      scenario
+    );
+    assert.deepEqual(
+      owners,
+      scenario === "other"
+        ? ["coordinator", "applicant", "coordinator", "applicant"]
+        : ["coordinator", "coordinator"],
+      scenario
+    );
+  }
 });

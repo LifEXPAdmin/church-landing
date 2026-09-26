@@ -97,7 +97,14 @@ export async function handleVolunteerRequest(
       );
     }
     const result = await volunteerCommand(db, token, input);
-    scheduleDomainActivity(db, actor.id, afterResponse);
+    scheduleDomainActivity(
+      db,
+      actor.id,
+      afterResponse,
+      input.operation === "accept" || input.operation === "cancel"
+        ? result.id
+        : undefined
+    );
     let protectedRecovery = false;
     try {
       const controls = await journalRetentionControls(

@@ -504,7 +504,8 @@ export async function cleanNotificationFanout(
 export function scheduleDomainActivity(
   db: PrismaClient,
   actorId: string,
-  afterResponse?: (work: () => Promise<void>) => void
+  afterResponse?: (work: () => Promise<void>) => void,
+  volunteerApplicationId?: string
 ) {
   if (!afterResponse) return;
   try {
@@ -524,27 +525,21 @@ export function scheduleDomainActivity(
           console.error("domain_activity_delivery_handoff_incomplete");
         if ((await dispatchCalendarReminders(db, actorId)).failed)
           console.error("calendar_reminder_handoff_incomplete");
-        // Coordinator acceptance/cancellation wakes the signup owner, not the
-        // coordinator. Only exact recent canonical confirmation recipients qualify.
-        const recipients = await db.socialEvent.findMany({
-          where: {
-            actorId,
-            kind: "VOLUNTEER_CONFIRMATION",
-            recipientId: { not: actorId },
-            createdAt: { gte: new Date(Date.now() - DAY) }
-          },
-          select: { recipientId: true },
-          orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-          take: 20
-        });
-        for (const recipientId of new Set(
-          recipients.map((row) => row.recipientId)
-        ))
+        // The successful mutation supplies one canonical application receipt.
+        // A retry recovers its owner's pending plan without scanning other events.
+        if (volunteerApplicationId) {
+          const application = await db.volunteerApplication.findUnique({
+            where: { id: volunteerApplicationId },
+            select: { userId: true, signupId: true }
+          });
           if (
-            recipientId &&
-            (await dispatchCalendarReminders(db, recipientId)).failed
+            application?.signupId &&
+            application.userId &&
+            application.userId !== actorId &&
+            (await dispatchCalendarReminders(db, application.userId)).failed
           )
             console.error("calendar_reminder_handoff_incomplete");
+        }
         if ((await dispatchNotificationFanout(db, actorId)).failed)
           console.error("domain_activity_handoff_incomplete");
       } catch {
