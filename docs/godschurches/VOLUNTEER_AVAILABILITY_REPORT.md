@@ -87,6 +87,22 @@ This sequence alone is not production migration or protected-restore acceptance.
 No provider credentials, production data, permission grants or delivery settings
 are changed by this feature's local preparation.
 
+### Integration and rollback floor
+
+The release owner merged the tested handoff into the current account security
+baseline on 26 September 2026. Combined regression, production migration,
+installed recovery and live acceptance remain pending at this source checkpoint.
+
+Migration-110 client compatibility establishes older database reads and writes,
+not continued volunteer reminder behavior. The older RSVP-only planner can
+remove the shared owner job when RSVP reminders are Off, even when the new
+volunteer choice is On, and its worker does not resolve volunteer sources.
+A rollback promising continued volunteer reminders must retain the combined
+preference, planning, worker and notification-source implementation. An older
+application rollback therefore cannot claim that capability remains available.
+Keep all five additive migrations, including migration 115's older-writer
+erasure and recovery scrubs. Do not use destructive down migrations.
+
 ## Runtime cost and build evidence
 
 Compared with `20d81d7`, the implementation adds no package or lockfile changes.

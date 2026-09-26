@@ -25,7 +25,7 @@ export const features: Feature[] = [
     description: "Choose a reminder 15 or 60 minutes before timed events marked Going or Maybe.",
     steps: "Open Settings, Calendar, Event notification preferences. Reminders start Off. Select a lead time and save. Activity and phone choices stay separate; event phone alerts also need a current device.",
     href: "/platform/settings/notifications/availability",
-    eligibility: "Requires an eligible adult account, a future reminder time and current event-detail access. All-day events, calendar following and volunteer-only commitments do not create reminders. Quiet hours apply; phone delivery stops at the event start. Scheduling and device delivery are best effort. Changing display or hidden calendars never grants notification consent.", availability: "conditional"
+    eligibility: "Requires an eligible adult account, a future reminder time and current event-detail access. All-day events and calendar following do not create reminders. Volunteer shifts have a separate reminder choice. Quiet hours apply; phone delivery stops at the event start. Scheduling and device delivery are best effort. Changing display or hidden calendars never grants notification consent.", availability: "conditional"
   },
   {
     id: "calendar-following", category: "Events and calendars", name: "Saved calendar layers",
@@ -49,9 +49,9 @@ export const features: Feature[] = [
     category: "Events and calendars",
     name: "Volunteer applications and independent shifts",
     description: "Explore church opportunities, apply privately and track a coordinator’s decision for a timed shift or ongoing role.",
-    steps: "Open Volunteer opportunities from Menu. Review the duties and commitment, then submit an application. My applications shows the saved status and withdrawal action. Authorized church publishers with volunteer duties create opportunities from their church posts; coordinators review applications and confirm available places. Accepted timed shifts appear in My commitments.",
+    steps: "Open Volunteer opportunities from Menu. Review the duties and commitment, then apply with optional availability for that opportunity. My applications shows the saved status, availability controls and withdrawal action. Authorized church publishers with volunteer duties create opportunities from their church posts; coordinators review applications and confirm available places. Accepted timed shifts appear in My commitments. In Notification preferences, choose separate volunteer reminders 15 or 60 minutes before a shift; they start Off.",
     href: "/platform/serve",
-    eligibility: "Applying requires a verified eligible adult account and current source access. Applications reserve no place until approved and never grant church authority or additional access. A shift can use its parent event time or fixed shorter times within that event. Ongoing roles use agreed arrangements without creating calendar events. Application notes and decisions stay private; screening documents, child information and background checks are not collected here.",
+    eligibility: "Applying requires a verified eligible adult account and current source access. Applications reserve no place until approved and never grant church authority or additional access. A shift can use its parent event time or fixed shorter times within that event. Ongoing roles use agreed arrangements without creating calendar events. Optional availability is limited to 500 characters and visible only to you and current authorized coordinators. It does not change agreed shift times. Reminders recheck access and consent and stop for canceled shifts; phone delivery also needs separate Commitments consent and a current device. Application notes and decisions stay private; screening documents, child information and background checks are not collected here.",
     availability: "conditional"
   },
   {
@@ -1005,6 +1005,13 @@ export const features: Feature[] = [
   }
 ];
 export const releases: ReleaseEntry[] = [
+  {
+    id: "volunteer-availability-reminders", version: "2026.09.26.4", date: "2026-09-26",
+    summary: "Share optional availability with volunteer coordinators and choose reminders for accepted timed shifts.",
+    added: ["Add, update or remove a private availability preference for an opportunity application.", "Volunteer reminders have their own default-Off choice, with 15-minute and 60-minute options separate from event RSVP reminders."],
+    improved: ["Reminder delivery rechecks the current assignment, shift time, access and consent. Canceled shifts stop reminders, and assignment cancellation notices identify the current outcome."],
+    fixed: [], featureIds: ["volunteer-applications", "calendar-reminders"]
+  },
   {
     id: "safer-sign-in-boundaries", version: "2026.09.26.3", date: "2026-09-26",
     summary: "Keep account checks consistent and protect sign-in pages from external framing.",
