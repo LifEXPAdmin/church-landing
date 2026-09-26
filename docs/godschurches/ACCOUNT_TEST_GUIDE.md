@@ -6,6 +6,26 @@ file under `tests` and `lib` and runs it in the isolated HTTPS fixture. Its fina
 coverage count must include all discovered files. A diagnostic continuation after
 a failure is useful evidence but does not replace a passing complete gate.
 
+## Request privacy and session ambiguity
+
+The development phase of `tests/account-http.test.ts` verifies that actual HTML
+and RSC responses never serialize session tokens, unrelated cookies or private
+request headers. Both resolved request stores need diagnostic redaction. A
+production build alone cannot exercise Next.js development serialization.
+
+`tests/account-session-rotation.test.ts` runs against the isolated built HTTPS
+fixture. It verifies successful replacement, failed-login preservation, canonical
+session parsing, conflicting cookies at API and server-rendering boundaries,
+denied session revocation and Google account binding. Its Google cases use a
+trusted fictional verifier seam; the separate Google boundary suite verifies
+signed claims. Neither establishes actual Google provider acceptance.
+
+Run `scripts/qa-account-security-headers.mjs` with the fixture directory to verify
+top-level sign-in and an actual independent-origin framing denial, alongside
+headers on public/private/API/error responses. See the scoped
+[account security acceptance](ACCOUNT_SECURITY_ACCEPTANCE.md) for results,
+remaining requirements and the limits of this response policy.
+
 ## Privileged authenticator verification
 
 `tests/privileged-authentication.test.ts` exercises staged enrollment, current

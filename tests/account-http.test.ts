@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { PrismaClient } from "@prisma/client";
 import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { randomUUID } from "node:crypto";
 import { setTimeout as delay } from "node:timers/promises";
 import {
   handleAccountRequest,
@@ -249,6 +250,33 @@ test("public HTML/RSC and unauthenticated settings do not expose private account
   const body = await rsc.text();
   assert.ok(!body.includes(user.email));
   assert.ok(!body.includes(user.passwordHash!));
+});
+test("development HTML/RSC never serialize private request headers or cookies", async () => {
+  const cookie = (await login("http_account")).split(";")[0];
+  const token = cookie.slice(cookie.indexOf("=") + 1);
+  const marker = randomUUID();
+  for (const supplied of [cookie, `${cookie}; ${cookie}`]) {
+    for (const path of ["/platform", "/platform/settings", "/platform/login"]) {
+      for (const rsc of [false, true]) {
+        const response = await fetch(origin + path, {
+          redirect: "manual",
+          headers: {
+            Cookie: `${supplied}; fictional_private_cookie=${marker}`,
+            Authorization: `Bearer ${marker}`,
+            "X-Fictional-Private-Header": marker,
+            ...(rsc ? { RSC: "1" } : {})
+          }
+        });
+        assert.ok([200, 307].includes(response.status), path);
+        const body = await response.text();
+        for (const secret of [token, marker])
+          assert.ok(
+            !body.includes(secret),
+            `${path}: private request data absent`
+          );
+      }
+    }
+  }
 });
 test("HTTP password change invalidates cookie and all DB sessions; signed-in intro stays hidden", async () => {
   const cookie = await login("http_account");

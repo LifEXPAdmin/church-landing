@@ -5,12 +5,16 @@ import {
   accountSessionCookie
 } from "./account-cookies";
 
-// Next's development RSC diagnostics can serialize the resolved cookie store.
-// Redact JSON serialization before any component awaits its result. This does
+// Next's development RSC diagnostics can serialize resolved request stores.
+// Redact both stores before any component awaits the result. This does
 // not change HTTP cookie serialization. Ambiguous session reads fail closed.
 // Account readers must still return only their explicitly selected public DTO.
 export function privateCookies() {
   return Promise.all([cookies(), headers()]).then(([store, requestHeaders]) => {
+    Object.defineProperty(requestHeaders, "toJSON", {
+      configurable: true,
+      value: () => "[private request headers]"
+    });
     Object.defineProperty(store, "toJSON", {
       configurable: true,
       value: () => "[private request cookies]"
