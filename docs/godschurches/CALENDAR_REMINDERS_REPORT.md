@@ -52,13 +52,19 @@ The built browser check asserts visible input dimensions, border and block layou
 All 26 browser groups and five HTTP checks pass again on the final build. A
 browser timing correction waits for the account-change result rather than the
 earlier blur concealment before leaving the dirty form. Both failed attempts are
-preserved. The final change is limited to shared presentation constants and their
+preserved. The presentation change is limited to shared constants and their
 calendar import; services, permissions, schema and recovery are unchanged.
 
 The complete regression initially exposed a historical fingerprint assertion
 that included the new display columns. The harness now compares original fields
 and separately checks the four new migrations' defaults and original-column
-fingerprints. Its corrected uninterrupted complete run remains in progress.
+fingerprints. The next complete run found that the new reminder Help topic linked
+to an unregistered Settings route. It now links to the existing notification
+controls, without widening accepted sign-in destinations. All ten existing
+Settings and Help checks pass. A fresh build and two additional browser checks
+verify searching Help, opening those controls and reloading them with reminders
+still Off. The complete gate is running again over the exact corrected source,
+including the shared style fix. Both earlier failures remain preserved.
 
 The final encrypted production restore rehearsal passes a local 106-to-110
 migration upgrade, preserving all 148 original table fingerprints over their
@@ -75,8 +81,8 @@ No destructive schema rollback was used.
 
 Deduplicated startup JavaScript includes ancestor layouts. Compared with the
 previous built production source, compressed calendar-list/detail code grows by
-660/659 bytes, event detail by 929 bytes and Settings by 736 bytes. Including its
-notification lazy chunk, Settings grows by 1,158 bytes. Associated CSS grows by
+660/659 bytes, event detail by 929 bytes and Settings by 244 bytes. Including its
+notification lazy chunk, Settings grows by 666 bytes. Associated CSS grows by
 38 bytes. No dependency was added.
 
 A local fictional sample records one preference SELECT for a default-Off wake,
