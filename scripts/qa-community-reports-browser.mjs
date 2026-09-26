@@ -515,6 +515,7 @@ try {
     await db.platformAuthLimit.updateMany({
       data: { expiresAt: new Date(Date.now() + 3000) }
     });
+    const quotaAttempt = bodies.length;
     await page
       .getByRole("button", { name: "Send private report", exact: true })
       .click();
@@ -525,15 +526,23 @@ try {
     );
     await page.waitForFunction(() =>
       [...document.querySelectorAll("button")].some(
-        (b) => b.textContent === "Send private report" && !b.disabled
+        (b) => b.textContent === "Retry same report" && !b.disabled
       )
     );
     await page
-      .getByRole("button", { name: "Send private report", exact: true })
+      .getByRole("button", { name: "Retry same report", exact: true })
       .click();
     await receipt();
+    assert.equal(bodies.length, quotaAttempt + 2);
+    assert.equal(bodies[quotaAttempt], bodies[quotaAttempt + 1]);
+    assert.equal(
+      await db.communityReport.count({
+        where: { reporterId: f.memberA.id, targetId: quota.id }
+      }),
+      1
+    );
     groups.push(
-      "actual quota rejection displays Retry-After, retains text and succeeds after expiry"
+      "actual quota rejection displays Retry-After and confirms one report with the original body after expiry"
     );
   }
   for (const width of [320, 390, 1440]) {
