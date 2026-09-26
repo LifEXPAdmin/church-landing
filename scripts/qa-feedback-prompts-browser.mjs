@@ -448,15 +448,15 @@ try {
   await menu(retained); await offer(retained);
   await prompt(retained).getByRole("link", { name: "Share feedback", exact: true }).click();
   await createForm(retained).waitFor();
-  await retained.getByLabel("Your experience (optional with a rating)", { exact: true }).fill("Fictional feedback retained through a deliberate measurement withdrawal.");
+  await createForm(retained).getByRole("textbox", { name: "Your experience (optional with a rating)", exact: true }).fill("Fictional feedback retained through a deliberate measurement withdrawal.");
   const settings = await pageFor(fixture.memberA);
   await go(settings, "/platform/settings/privacy/measurement");
   await settings.getByRole("checkbox", { name: "Allow optional platform measurement", exact: true }).uncheck();
   await send(settings, "Save measurement choices", "measurement");
   await until(async () => (await db.feedbackPromptClaim.count({ where: { userId: fixture.memberA.id } })) === 0);
   await retained.bringToFront();
-  await retained.getByLabel("Your experience (optional with a rating)", { exact: true }).waitFor();
-  assert.equal(await retained.getByLabel("Your experience (optional with a rating)", { exact: true }).inputValue(), "Fictional feedback retained through a deliberate measurement withdrawal.");
+  await createForm(retained).getByRole("textbox", { name: "Your experience (optional with a rating)", exact: true }).waitFor();
+  assert.equal(await createForm(retained).getByRole("textbox", { name: "Your experience (optional with a rating)", exact: true }).inputValue(), "Fictional feedback retained through a deliberate measurement withdrawal.");
   await retained.getByRole("checkbox", { name: /I have read the privacy notice/ }).check();
   const unlinked = await send(retained, "Send feedback");
   await retained.waitForURL(url => url.pathname === "/platform/feedback/cases/" + unlinked.caseId, { waitUntil: "domcontentloaded" });

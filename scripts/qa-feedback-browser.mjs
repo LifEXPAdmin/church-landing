@@ -200,10 +200,10 @@ try {
     })
     .selectOption("BUG");
   await page
-    .getByLabel("What happened?", { exact: true })
+    .getByRole("textbox", { name: "What happened?", exact: true })
     .fill("Fictional retained problem details.");
   await page
-    .getByLabel("What did you expect?", { exact: true })
+    .getByRole("textbox", { name: "What did you expect?", exact: true })
     .fill("Fictional expected behavior.");
   await page
     .getByRole("combobox", {
@@ -218,7 +218,7 @@ try {
     })
     .selectOption("BUG");
   assert.equal(
-    await page.getByLabel("What happened?", { exact: true }).inputValue(),
+    await page.getByRole("textbox", { name: "What happened?", exact: true }).inputValue(),
     "Fictional retained problem details."
   );
   await page.context().setOffline(true);
@@ -228,7 +228,7 @@ try {
   await page.evaluate(() => window.dispatchEvent(new Event("online")));
   await createForm(page).waitFor();
   assert.equal(
-    await page.getByLabel("What happened?", { exact: true }).inputValue(),
+    await page.getByRole("textbox", { name: "What happened?", exact: true }).inputValue(),
     "Fictional retained problem details."
   );
   await db.supportIntakeSetting.update({
@@ -249,7 +249,7 @@ try {
     true
   );
   assert.equal(
-    await page.getByLabel("What happened?", { exact: true }).inputValue(),
+    await page.getByRole("textbox", { name: "What happened?", exact: true }).inputValue(),
     "Fictional retained problem details."
   );
   await page
@@ -458,7 +458,7 @@ try {
         .count()) === 1
   );
   await page
-    .getByLabel("Your experience (optional with a rating)", { exact: true })
+    .getByRole("textbox", { name: "Your experience (optional with a rating)", exact: true })
     .fill("A fictional screenshot illustrates this website feedback.");
   await page
     .getByRole("checkbox", { name: /I have read the privacy notice/ })
