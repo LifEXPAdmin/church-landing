@@ -178,7 +178,7 @@ try {
     .getByRole("button", { name: "Move Exchange up", exact: true })
     .click();
   await page.getByRole("link", { name: "Back to Home", exact: true }).click();
-  await editor()
+  await page
     .getByText("Save or resolve your private choice before leaving.", {
       exact: true
     })
@@ -467,7 +467,9 @@ try {
   await openEditor();
   await signIn(other);
   await page.evaluate(() => window.dispatchEvent(new Event("focus")));
-  await editor().waitFor({ state: "hidden" });
+  await waitUntil(async () => (await editor().locator("input, form, ol").count()) === 0);
+  assert.equal(await savedLinks().count(), 0);
+  assert.equal(await page.locator("#menu-admin").count(), 0);
   await go("/platform/menu");
   await page
     .getByText("No shortcuts selected. Choose the places you use most.", {
