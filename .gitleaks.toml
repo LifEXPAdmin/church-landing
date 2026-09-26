@@ -1,0 +1,16 @@
+title = "God's Churches secret scanning"
+
+[extend]
+useDefault = true
+
+# This exact password is used only by the loopback, test-sink browser fixture.
+# Both conditions must match. Other values and other files retain default rules.
+[[rules]]
+id = "generic-api-key"
+
+[[rules.allowlists]]
+description = "Exact fictional mission browser fixture password"
+condition = "AND"
+regexTarget = "secret"
+paths = ['''^scripts/qa-mission-browser\.mjs$''']
+regexes = ['''^Fictional-Mission-Signup-1$''']

@@ -1,0 +1,59 @@
+name: Source security
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: source-security-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install the locked graph without dependency lifecycle scripts
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Verify source boundaries and the migration guard
+        run: |
+          npm run check:security
+          node --test tests/source-security.test.mjs tests/prisma-deploy.test.mjs
+      - name: Check known dependency advisories
+        run: npm audit --audit-level=high
+      - name: Verify registry signatures and provenance
+        run: npm audit signatures
+      - name: Run the existing static analysis
+        run: npm run lint
+      - name: Install the checksum-pinned secret scanner
+        shell: bash
+        run: |
+          set -euo pipefail
+          scanner_dir="$RUNNER_TEMP/gitleaks-8.30.1"
+          mkdir -p "$scanner_dir"
+          curl --fail --location --retry 2 --max-time 90 \
+            https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz \
+            --output "$scanner_dir/gitleaks.tar.gz"
+          echo "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  $scanner_dir/gitleaks.tar.gz" | sha256sum --check --status
+          tar -xzf "$scanner_dir/gitleaks.tar.gz" -C "$scanner_dir" gitleaks
+          touch "$scanner_dir/empty.gitleaksignore"
+      - name: Scan reachable history with fully redacted output
+        shell: bash
+        run: |
+          "$RUNNER_TEMP/gitleaks-8.30.1/gitleaks" git . \
+            --config .gitleaks.toml --log-opts="--all --full-history -m" \
+            --gitleaks-ignore-path "$RUNNER_TEMP/gitleaks-8.30.1/empty.gitleaksignore" \
+            --ignore-gitleaks-allow --max-decode-depth=5 \
+            --redact=100 --no-banner --log-level=warn
