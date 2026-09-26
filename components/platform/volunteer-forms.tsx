@@ -506,22 +506,26 @@ function VolunteerAvailabilityForm({
               health details, screening documents and information about
               children. Saving does not change your assignment or calendar.
             </p>
-            <button type="submit" className="gc-button">
-              Save availability
-            </button>
           </>
         ) : (
           <p>You can still remove your saved availability.</p>
         )}
-        {application.canClearAvailability && (
-          <button
-            type="button"
-            className="gc-button gc-button-quiet"
-            onClick={() => save("")}
-          >
-            Remove availability
-          </button>
-        )}
+        <div className="flex flex-wrap gap-2">
+          {application.canEditAvailability && (
+            <button type="submit" className="gc-button">
+              Save availability
+            </button>
+          )}
+          {application.canClearAvailability && (
+            <button
+              type="button"
+              className="gc-button gc-button-quiet"
+              onClick={() => save("")}
+            >
+              Remove availability
+            </button>
+          )}
+        </div>
       </fieldset>
       {action.status}
     </form>

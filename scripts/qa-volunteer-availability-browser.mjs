@@ -126,10 +126,10 @@ const availabilityForm = (page) =>
     exact: true
   });
 const availabilityInput = (page) =>
-  availabilityForm(page).getByLabel(
-    "Preferred days or times for this opportunity (optional)",
-    { exact: true }
-  );
+  availabilityForm(page).getByRole("textbox", {
+    name: "Preferred days or times for this opportunity (optional)",
+    exact: true
+  });
 const endpoint = "/api/platform/volunteers";
 async function api(page, owner, path, body) {
   return page.evaluate(
@@ -335,10 +335,15 @@ try {
     async () => (await record()).availability === f.editedAvailability
   );
   await until(
+    async () => requests.length === 2,
+    "The exact retry must reach the request interceptor"
+  );
+  await until(
     async () =>
-      !(await applicant.page
-        .getByRole("button", { name: "Confirm original save", exact: true })
-        .count())
+      await availabilityForm(applicant.page)
+        .getByRole("button", { name: "Save availability", exact: true })
+        .isEnabled(),
+    "The retry must settle before removing the request interceptor"
   );
   await applicant.page.unroute(config.origin + endpoint);
   assert.equal(requests.length, 2);
@@ -490,8 +495,11 @@ try {
     await save().click();
     await until(
       async () =>
-        (await db.socialPreferences.findUnique({ where: { userId: f.lee.id } }))
-          ?.volunteerReminderMinutes === Number(value)
+        (
+          await db.socialPreferences.findUnique({
+            where: { ownerId: f.lee.id }
+          })
+        )?.volunteerReminderMinutes === Number(value)
     );
     await until(async () => !(await save().isEnabled()));
     await applicant.page.reload();
