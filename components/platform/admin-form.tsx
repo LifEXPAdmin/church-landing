@@ -122,8 +122,8 @@ export function AdminForm({
       setConflict(true);
   }, [fixed, dirty, pending]);
   useEffect(() => {
-    onDraftChange?.(dirty || !!pending);
-  }, [onDraftChange, dirty, pending]);
+    onDraftChange?.(dirty || !!pending || conflict);
+  }, [onDraftChange, dirty, pending, conflict]);
   useEffect(() => {
     if (notice && !busy) focusPending.current = true;
     const focus = () => {
@@ -167,7 +167,7 @@ export function AdminForm({
     // An uncertain action may already have changed the saved defaults.
     if (privacy) onSaved();
   };
-  const discardButton = (dirty || pending) && (
+  const discardButton = (dirty || pending || conflict) && (
     <button
       type="button"
       className="gc-button gc-button-quiet"
@@ -179,7 +179,7 @@ export function AdminForm({
   );
   if (privacy && !privacy.visible) return null;
   if (privacy && !privacy.currentAccess)
-    return dirty || pending ? (
+    return dirty || pending || conflict ? (
       <div className="space-y-3">
         <p>
           {pending

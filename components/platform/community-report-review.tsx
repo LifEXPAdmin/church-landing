@@ -1,6 +1,7 @@
 "use client";
 import { RegionalTime } from "@/components/platform/regional-presentation";
 import Link from "next/link";
+import { useReadVisibility } from "./read-visibility";
 import { FeedbackImagePreview } from "./feedback-attachment-images";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { socialRequest, SocialClientError } from "@/lib/platform/social-client";
@@ -31,6 +32,9 @@ export function CommunityReportReview({
   closed: boolean;
   after?: string;
 }) {
+  const parentVisible = useReadVisibility();
+  const parentAccess = useRef(parentVisible);
+  parentAccess.current = parentVisible;
   const [data, setData] = useState<CommunityReviewPage | null>(null),
     [hidden, setHidden] = useState(true),
     [busy, setBusy] = useState(false),
@@ -64,7 +68,12 @@ export function CommunityReportReview({
     true
   );
   const load = useCallback(async () => {
-    if (!active.current || document.visibilityState === "hidden") return;
+    if (
+      !parentAccess.current ||
+      !active.current ||
+      document.visibilityState === "hidden"
+    )
+      return;
     if (reading.current || writing.current) {
       queued.current = true;
       return;
@@ -88,7 +97,7 @@ export function CommunityReportReview({
         undefined,
         owner
       );
-      if (seq !== generation.current) return;
+      if (seq !== generation.current || !parentAccess.current) return;
       setData(data);
       setHidden(false);
       setReadError("");
@@ -118,16 +127,20 @@ export function CommunityReportReview({
       setBusy(false);
     };
     const resume = () => {
-      if (document.visibilityState !== "hidden") {
+      if (parentAccess.current && document.visibilityState !== "hidden") {
         active.current = true;
         void load();
       }
     };
     const visibility = () =>
       document.visibilityState === "hidden" ? hide() : resume();
-    active.current = true;
-    void load();
+    active.current = parentAccess.current;
+    if (parentAccess.current) void load();
+    else hide();
     window.addEventListener("blur", hide);
+    window.addEventListener("offline", hide);
+    window.addEventListener("pagehide", hide);
+    window.addEventListener("pageshow", resume);
     window.addEventListener("focus", resume);
     window.addEventListener("online", resume);
     document.addEventListener("visibilitychange", visibility);
@@ -135,11 +148,14 @@ export function CommunityReportReview({
       hide();
       queued.current = false;
       window.removeEventListener("blur", hide);
+      window.removeEventListener("offline", hide);
+      window.removeEventListener("pagehide", hide);
+      window.removeEventListener("pageshow", resume);
       window.removeEventListener("focus", resume);
       window.removeEventListener("online", resume);
       document.removeEventListener("visibilitychange", visibility);
     };
-  }, [load]);
+  }, [load, parentVisible]);
   useEffect(() => {
     if (!waitingUntil) return;
     const timer = setTimeout(
@@ -149,7 +165,15 @@ export function CommunityReportReview({
     return () => clearTimeout(timer);
   }, [waitingUntil]);
   async function send(body: string) {
-    if (writing.current || reading.current || hidden || waitingUntil) return;
+    if (
+      !parentAccess.current ||
+      !active.current ||
+      writing.current ||
+      reading.current ||
+      hidden ||
+      waitingUntil
+    )
+      return;
     writing.current = true;
     const seq = ++generation.current;
     setBusy(true);
@@ -161,7 +185,7 @@ export function CommunityReportReview({
         version: number;
         message: string;
       }>("/api/platform/community-reports", body, owner);
-      if (seq !== generation.current) return;
+      if (seq !== generation.current || !parentAccess.current) return;
       if (
         data.id !== id ||
         !Number.isSafeInteger(data.version) ||
@@ -180,7 +204,7 @@ export function CommunityReportReview({
       setNotice(data.message);
       queued.current = true;
     } catch (error) {
-      if (seq !== generation.current) return;
+      if (seq !== generation.current || !parentAccess.current) return;
       const status = error instanceof SocialClientError ? error.status : 503;
       // Review authority is checked BEFORE receipt replay. Losing it cannot
       // prove an earlier uncertain decision failed; preserve the original key.
@@ -228,6 +252,7 @@ export function CommunityReportReview({
     );
   }
   const report = data?.report;
+  if (!parentVisible) return null;
   return (
     <div className="space-y-5">
       <h1 className="text-3xl">

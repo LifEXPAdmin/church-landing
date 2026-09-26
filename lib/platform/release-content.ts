@@ -1006,6 +1006,14 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "private-admin-cases", version: "2026.09.26.22", date: "2026-09-26",
+    summary: "Private case reviews keep unfinished entries and original actions recoverable when current details change.",
+    added: [],
+    improved: ["Case details, notes and conversation fields leave concealed pages until current review access is checked."],
+    fixed: ["Accepted note redactions, ungrouping and request closures preserve their original confirmation. Saving a native request action protects other unfinished case entries."],
+    featureIds: ["admin-requests"]
+  },
+  {
     id: "private-request-worklist", version: "2026.09.26.21", date: "2026-09-26",
     summary: "Private request queues preserve filters and unfinished actions through current access changes.",
     added: [],

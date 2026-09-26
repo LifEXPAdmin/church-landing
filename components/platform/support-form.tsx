@@ -26,7 +26,7 @@ export type SupportFormPrivacy = {
   currentAccess: boolean;
   onAccessDenied: () => void;
   onWorkChange?: (id: string, pending: boolean) => void;
-  onNavigate?: (id: string, destination: string) => void;
+  onNavigate?: (id: string, destination: string, intent?: "saved" | "discarded") => void;
   recoveryLabel?: string;
 };
 export function SupportForm({
@@ -83,6 +83,7 @@ export function SupportForm({
   const [values, setValues] = useState<Record<string, string | boolean>>({});
   const [sourceChanged, setSourceChanged] = useState(false);
   const [navigation, setNavigation] = useState<string | null>(null);
+  const navigationIntent = useRef<"saved" | "discarded">("saved");
   const formRef = useRef<HTMLFormElement>(null);
   const latestSubmit = useRef<() => void>(() => {});
   const retryOriginal = useCallback(() => latestSubmit.current(), []);
@@ -137,7 +138,7 @@ export function SupportForm({
           // Consume this intent before a sibling-preserving current read can
           // change access and run this effect again.
           setNavigation(null);
-          if (onNavigate) onNavigate(id, navigation);
+          if (onNavigate) onNavigate(id, navigation, navigationIntent.current);
           else window.location.assign(navigation);
         }
       });
@@ -210,6 +211,7 @@ export function SupportForm({
       onConfirmed?.();
       setValues({});
       form?.reset();
+      navigationIntent.current = "saved";
       if (["create", "appeal", "feedback-create"].includes(operation))
         setNavigation(
           `${createdBase}/${encodeURIComponent(result.caseId)}?received=1`
@@ -472,6 +474,13 @@ export function SupportForm({
             ) {
               setDirty(false);
               setRetryBody(null);
+              setSourceChanged(false);
+              initialFixed.current = fixed;
+              setValues({});
+              formRef.current?.reset();
+              onDiscard?.();
+              setFeedback("Local entries discarded. Previously saved changes remain.");
+              navigationIntent.current = "discarded";
               setNavigation(window.location.href);
             }
           }}
