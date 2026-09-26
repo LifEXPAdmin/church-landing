@@ -1,8 +1,9 @@
 # Public page empty states
 
-Updated 26 September 2026 UTC. Local verification passed against application
-commit `b3c490af9f3465dce043d8376db4744f33e0e8e8`.
-Integration and production acceptance remain open with the designated release owner.
+Updated 26 September 2026 UTC. Integrated and verified live in **2026.09.26.2**,
+serving commit `20d81d73706e2ef38488617ebf57a27beb12acdb`.
+See [the current deployment receipt](DEPLOYMENT_REPORT.md). The dated local
+checkpoint below preserves the original contributor’s verification scope.
 
 ## Behavior
 
@@ -69,7 +70,7 @@ fragment state. Actions, unsent application details, authentication tokens and
 account-bound cursors never replay through sign-in. Unsupported destinations
 retain the existing Home fallback.
 
-## Verification checkpoint
+## Original local verification checkpoint
 
 The final production build passed, including verification of 231 runtime traces.
 Focused ESLint, TypeScript, authored-copy, six repository links and diff checks
@@ -105,10 +106,23 @@ The existing Communities and Exchange browser scripts retain their scenarios
 with updated empty-state assertions, including the filtered private invitation
 reset. Those two complete legacy browser suites were not rerun in this pass.
 
-## Integration and remaining acceptance
+## Integrated and live acceptance
 
-The designated release owner must reconcile this branch with the pending
-calendar release and the shared control-style repair, then verify the combined
-source, complete the required regression gate, and record deployment, canonical
-domain, serving identity and live behavior before product closure. Local
-verification alone does not establish integration or publication.
+The combined release completes the previously open continuation and legacy
+browser checks. All 21 empty-page groups, nine Communities groups and eight
+Exchange groups pass on the built application. A real fixture creates 200 readable
+groups, revokes their authority, verifies an empty API page with a continuation
+cursor and no hidden fields, then uses the keyboard to reach an independently
+visible group on the next page. No mocked response replaces that source boundary.
+The fixture is cleaned afterward. The previously source-only and unrun statements
+above describe the original handoff, not current acceptance.
+
+The actual Serve login returns to private applications without an application
+write. All 26 anonymous live HTTP/browser checks pass at 320, 390 and 1280 pixels,
+including correct sign-in destinations and release notes. The first private live
+script checked the URL before navigation settled; waiting for the exact destination
+and checking the link itself resolved that test timing defect without an app edit.
+There were no browser errors, production test writes or recipient sends. The
+combined regression, data, migration and cost scope is in the deployment report.
+This bounded product acceptance is complete; broader owner/provider gates remain
+with their existing tasks.

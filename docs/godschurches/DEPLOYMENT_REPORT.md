@@ -1,5 +1,41 @@
 # Godschurches deployment report
 
+## Public guidance and safeguards verified live, 26 September 2026 UTC
+
+Version **2026.09.26.2**, serving commit
+`20d81d73706e2ef38488617ebf57a27beb12acdb`, is READY in
+`dpl_7Eq9cXmhQiA11sf345goauVuWyeT`. Independent canonical-domain and
+serving checks passed at 04:06 UTC; live acceptance completed at 04:08 UTC.
+Home, Gather, Exchange and Serve now explain empty pages accurately and offer
+working, audience-appropriate next steps. Image upload/removal throttling returns
+the existing conservative 900-second retry delay. Source/build checks and hosted
+migration guards are integrated, as is the regular priority and chat ownership
+workflow. See [the published notes](https://godschurches.com/platform/releases/clear-public-next-steps).
+
+Combined acceptance includes 38 built-browser groups, 89 service/HTTP checks,
+42 navigation/coordination checks, 27 source-security checks and five final-build
+smoke checks, all passing. The final production build verifies 231 runtime traces;
+copy and type checks pass, and lint has zero errors and 36 existing warnings.
+The exact-source [Linux security workflow](https://github.com/LifEXPAdmin/church-landing/actions/runs/36215908264)
+passes. The earlier 202-file calendar gate remains the broad baseline, with
+1,290 passes and two expected skips; it is not a new full run for this delta.
+
+All 26 live HTTP/browser checks and six health checks pass. All 149 production
+table fingerprints are unchanged. All 110 source, production and installed
+migration checksums match, with zero new migrations or pending steps. Schema and
+recovery code are unchanged, so the recorded 03:33 encrypted restore and actual
+scheduled backup run remain applicable; no new restore is claimed. Scoped error
+and fatal logs are empty. Verification made zero production test writes and sent
+no recipient notifications. No new queue probe was sent.
+
+No dependency, new query, client component or background job is introduced.
+Measured startup JavaScript grows 122 gzip bytes on Home, 116 on Gather, 127 on
+Exchange, 124 on Serve, 123 on login and 103 on Settings; CSS is unchanged.
+Image throttling was tested locally, without production load. Actual operator,
+MFA/response coverage, provider isolation and enforcement, hosted capacity,
+physical-device delivery and future fresh-session instruction loading remain
+separate open acceptance gates.
+
 ## Calendar display and reminders verified live, 26 September 2026 UTC
 
 Version **2026.09.26.1**, serving commit

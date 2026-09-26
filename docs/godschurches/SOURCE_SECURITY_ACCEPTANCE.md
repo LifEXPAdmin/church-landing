@@ -1,5 +1,18 @@
 # Source and deployment security acceptance
 
+## Integrated release acceptance, 26 September 2026 UTC
+
+Engineering is integrated and deployed in **2026.09.26.2**, serving commit
+`20d81d73706e2ef38488617ebf57a27beb12acdb`. All 27 guard tests and the
+[exact-source Linux check](https://github.com/LifEXPAdmin/church-landing/actions/runs/36215908264)
+pass. The final local build checks 329 public files against three supplied fictional
+secret keys; this is not exhaustive production-secret coverage. All 110 production
+migrations match with no pending changes. Live page/health checks and scoped logs
+pass. Provider isolation, required checks, alerts and owner-account controls remain
+open. See [deployment evidence](DEPLOYMENT_REPORT.md).
+
+## Original engineering receipt
+
 26 September 2026 UTC. Engineering verification is separate from integration,
 hosted enforcement and the private provider/account acceptance record.
 

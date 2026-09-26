@@ -1,5 +1,16 @@
 # Shared abuse budgets and retry responses
 
+## Integrated release acceptance, 26 September 2026 UTC
+
+The image Retry-After repair is integrated and deployed in **2026.09.26.2**,
+serving commit `20d81d73706e2ef38488617ebf57a27beb12acdb`. Combined verification
+reran the new 15 checks plus existing media and social regressions inside its
+89 service/HTTP checks. All pass. Live health and release acceptance pass, without
+production throttling, writes or sends. Actual operator, MFA, response and hosted
+capacity acceptance remain open. See [deployment evidence](DEPLOYMENT_REPORT.md).
+
+## Original engineering receipt
+
 26 September 2026 UTC. Local engineering acceptance; integration and live
 acceptance remain with the designated release owner.
 
