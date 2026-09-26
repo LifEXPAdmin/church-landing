@@ -1006,6 +1006,14 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "safer-sign-in-boundaries", version: "2026.09.26.3", date: "2026-09-26",
+    summary: "Keep account checks consistent and protect sign-in pages from external framing.",
+    added: [],
+    improved: ["Pages prevent other sites from placing them inside a frame. Normal browsing and sign-in remain available."],
+    fixed: ["Conflicting or malformed browser session cookies no longer make page and account checks select different sign-ins. Affected requests ask you to sign in again."],
+    featureIds: []
+  },
+  {
     id: "clear-public-next-steps", version: "2026.09.26.2", date: "2026-09-26",
     summary: "Find useful next steps when Home, Gather, Exchange or Serve has nothing to show.",
     added: [],

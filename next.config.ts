@@ -53,6 +53,19 @@ const nextConfig: NextConfig = {
         ]
       : ["/:path*"];
     return [
+      {
+        source: "/:path*",
+        headers: [
+          // No current page is an embeddable widget. Keep this response policy
+          // independent of indexing and private-route cache rules.
+          {
+            key: "Content-Security-Policy",
+            value: "frame-ancestors 'none'; object-src 'none'; base-uri 'none'"
+          },
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "X-Content-Type-Options", value: "nosniff" }
+        ]
+      },
       ...privacy,
       ...sources.map((source) => ({
         source,

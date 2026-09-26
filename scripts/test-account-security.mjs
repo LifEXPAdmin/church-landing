@@ -1553,6 +1553,7 @@ try {
     if (!restarted) throw new Error("Production server restart failed");
     await runTests("tests/account-restart.test.ts", productionEnv);
     await runTests("tests/account-sessions.test.ts", productionEnv);
+    await runTests("tests/account-session-rotation.test.ts", productionEnv);
     await runTests("tests/account-export.test.ts", productionEnv);
     await runTests("tests/account-lifecycle.test.ts", productionEnv);
     await runTests("tests/account-email-http.test.ts", productionEnv);

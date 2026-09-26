@@ -3,8 +3,9 @@ import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 import { hashSessionToken, validToken } from "./auth";
 import { readAccountSession } from "./accounts";
+import { ACCOUNT_SESSION_COOKIE } from "./account-cookies";
 
-export const PLATFORM_SESSION_COOKIE = "church_platform_session";
+export const PLATFORM_SESSION_COOKIE = ACCOUNT_SESSION_COOKIE;
 // Components receive only the account DTO; credentials stay inside this reader.
 export const getCurrentPlatformUser = cache(() =>
   privateCookies().then((cookieStore) =>

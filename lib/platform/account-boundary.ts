@@ -55,18 +55,17 @@ import {
 import { protectedAccountDeletionJournal } from "./account-deletion-journal";
 import { protectDiscoveryRecovery } from "./discovery-recovery";
 import { readAccountSession } from "./accounts";
+import {
+  ACCOUNT_SESSION_COOKIE,
+  accountSessionCookie
+} from "./account-cookies";
 
-export const SESSION_COOKIE = "church_platform_session";
+export const SESSION_COOKIE = ACCOUNT_SESSION_COOKIE;
 export function sessionCookie(token: string, secure: boolean) {
   return `${SESSION_COOKIE}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${token ? SESSION_SECONDS : 0}${secure ? "; Secure" : ""}`;
 }
 export function requestSessionToken(request: Request) {
-  return request.headers
-    .get("cookie")
-    ?.split(";")
-    .map((v) => v.trim())
-    .find((v) => v.startsWith(`${SESSION_COOKIE}=`))
-    ?.slice(SESSION_COOKIE.length + 1);
+  return accountSessionCookie(request.headers.get("cookie"));
 }
 function reply(
   message: string,
@@ -653,7 +652,8 @@ async function processAccountRequest(
       );
     if (error instanceof AccountError) {
       const messages = {
-        "profile-event": "Your selected event is no longer available to add. Check its current access or remove the selection, then save again. Your other edits are still here.",
+        "profile-event":
+          "Your selected event is no longer available to add. Check its current access or remove the selection, then save again. Your other edits are still here.",
         "profile-disclosure":
           "Choose Only me for your location. Sharing with members requires a verified email and confirmed adult eligibility.",
         "profile-conflict":
