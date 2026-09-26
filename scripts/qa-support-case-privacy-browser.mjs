@@ -795,10 +795,23 @@ try {
     );
     await confirm.click();
     await response;
-    await page
-      .getByRole("alert")
-      .filter({ hasText: /We could not confirm the original request/ })
-      .waitFor();
+    for (const label of labels.slice(index)) {
+      const pendingAction = button("Confirm original request: " + label);
+      await pendingAction.waitFor();
+      await pendingAction
+        .locator("xpath=..")
+        .getByRole("alert")
+        .filter({ hasText: /We could not confirm the original request/ })
+        .waitFor();
+    }
+    assert.equal(
+      await page
+        .getByRole("alert")
+        .filter({ hasText: /We could not confirm the original request/ })
+        .count(),
+      labels.length - index,
+      "Each remaining uncertain handoff keeps its own alert and recovery action"
+    );
     await absent();
     if (index === 0) {
       await confirm.click();
