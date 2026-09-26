@@ -33,7 +33,7 @@ import { reportEntryHref } from "@/lib/platform/community-report-types";
 import { PortalError } from "@/lib/platform/portal-policy";
 import { PrivilegedAuthenticationError } from "@/lib/platform/privileged-auth-policy";
 import { privilegedChallengeHref } from "@/lib/platform/privileged-auth-navigation";
-import { portalInputClass } from "./portal-action-form";
+import { portalInputClass } from "./portal-control-styles";
 
 export type GroupSearch = Record<string, string | string[] | undefined>;
 const titles: Record<string, string> = {
@@ -152,7 +152,16 @@ export async function GroupPage({
         .update(JSON.stringify(data))
         .digest("hex");
       let body: ReactNode = null;
-      if ("groups" in data)
+      if ("groups" in data) {
+        const filters = new URLSearchParams(
+          Object.entries({
+            q: q.q?.trim(),
+            kind: q.kind,
+            format: q.format,
+            churchId: q.churchId
+          }).filter((entry): entry is [string, string] => !!entry[1])
+        );
+        const firstHref = path + (filters.size ? `?${filters}` : "");
         body = (
           <>
             <p>
@@ -270,10 +279,74 @@ export async function GroupPage({
               </article>
             ))}
             {!data.groups.length && (
-              <p>
-                No groups on this page. Try another search or continue to the
-                next page.
-              </p>
+              <section className="space-y-3 rounded-xl border border-gc-divider p-5">
+                <h2 className="text-2xl">
+                  {q.after || data.nextCursor
+                    ? "No groups on this page"
+                    : filters.size
+                      ? view === "invitations"
+                        ? "No group invitations match these filters"
+                        : "No groups match these filters"
+                      : view === "invitations"
+                        ? "No current group invitations"
+                        : "No public groups to show yet"}
+                </h2>
+                <p>
+                  {data.nextCursor
+                    ? "Use Next groups to continue looking for available groups."
+                    : q.after
+                      ? "Return to the first page to check the groups currently available."
+                      : filters.size
+                        ? view === "invitations"
+                          ? "Try a broader search or clear the filters to review your current invitations."
+                          : "Try a broader search or clear the filters to browse public groups."
+                        : view === "invitations"
+                          ? "Current invitations will appear here when a group leader invites you."
+                          : "Listed groups will appear here when available. Explore church pages or review your own group choices."}
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  {q.after && (
+                    <Link
+                      prefetch={false}
+                      className="gc-button gc-button-quiet"
+                      href={firstHref}
+                    >
+                      Back to first groups
+                    </Link>
+                  )}
+                  {filters.size > 0 && (
+                    <Link
+                      prefetch={false}
+                      className="gc-button gc-button-quiet"
+                      href={path}
+                    >
+                      Clear group filters
+                    </Link>
+                  )}
+                  <Link
+                    prefetch={false}
+                    className="gc-button gc-button-quiet"
+                    href="/platform/churches"
+                  >
+                    Explore churches
+                  </Link>
+                  {view === "list" && (
+                    <Link
+                      prefetch={false}
+                      className="gc-button gc-button-quiet"
+                      href={
+                        user
+                          ? "/platform/groups/mine"
+                          : accountEntryHref("login", "/platform/groups")
+                      }
+                    >
+                      {user
+                        ? "Review my group choices"
+                        : "Sign in for group choices"}
+                    </Link>
+                  )}
+                </div>
+              </section>
             )}
             {data.nextCursor && (
               <Link
@@ -286,7 +359,7 @@ export async function GroupPage({
             )}
           </>
         );
-      else if ("choices" in data)
+      } else if ("choices" in data)
         body = (
           <>
             <p>

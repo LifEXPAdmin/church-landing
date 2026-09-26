@@ -101,6 +101,18 @@ export default async function HomeFeedPage({
   const moreHref = result.nextCursor
     ? `/platform?${new URLSearchParams({ feed: selectedFeed, feedScope: result.scope, feedCursor: result.nextCursor })}`
     : undefined;
+  const requestedPage = Boolean(
+    params.feedCursor ||
+    params.before ||
+    params.cursor ||
+    (params.through && params.anchor)
+  );
+  const refreshHref = `/platform?${new URLSearchParams({
+    ...displayQuery,
+    feed: selectedFeed,
+    feedScope: result.scope,
+    refreshFeed: "1"
+  })}`;
   return (
     <PlatformShell user={currentUser}>
       <section className="container-shell">
@@ -217,18 +229,62 @@ export default async function HomeFeedPage({
               emptyContent={
                 <div className="gc-empty">
                   <MessageCircle aria-hidden="true" />
-                  <h2>{feedChoices[selectedFeed].empty}</h2>
+                  <h2>
+                    {requestedPage || moreHref
+                      ? "No posts on this page"
+                      : feedChoices[selectedFeed].empty}
+                  </h2>
                   <p>
-                    {selectedFeed === "friends"
-                      ? currentUser
-                        ? "Connect with friends, or browse Latest while you wait for their posts."
-                        : "Sign in to see posts from your accepted friends."
-                      : selectedFeed === "latest"
-                        ? "Conversations will appear here as people share."
-                        : discoveryMode(selectedFeed)
-                          ? "You have reached the end of this selection. Review Feed Settings, check your connections, or refresh when you are ready for new posts."
-                          : "Try Latest for new posts from across the community."}
+                    {moreHref
+                      ? "Continue to more posts, or refresh this feed to check for new posts."
+                      : requestedPage
+                        ? "Refresh this feed to check the posts currently available on its first page."
+                        : selectedFeed === "friends"
+                          ? currentUser
+                            ? "Connect with friends, or browse Latest while you wait for their posts."
+                            : "Sign in to see posts from your accepted friends."
+                          : selectedFeed === "latest"
+                            ? "No posts are available in Latest right now. Explore people, churches and events."
+                            : discoveryMode(selectedFeed)
+                              ? "No posts are available for these feed choices. Review Feed Settings, check your connections, or refresh to check again."
+                              : "Try Latest for new posts from across the community."}
                   </p>
+                  {(requestedPage || moreHref) && (
+                    <div className="flex flex-wrap gap-3">
+                      {moreHref && (
+                        <Link
+                          prefetch={false}
+                          className="gc-button gc-button-quiet"
+                          href={
+                            moreHref +
+                            (displayQuery.mode
+                              ? `&mode=${displayQuery.mode}`
+                              : "")
+                          }
+                        >
+                          {["latest", "friends"].includes(selectedFeed)
+                            ? "Read older posts"
+                            : "Read more posts"}
+                        </Link>
+                      )}
+                      <Link
+                        prefetch={false}
+                        className="gc-button gc-button-quiet"
+                        href={refreshHref}
+                      >
+                        Refresh this feed
+                      </Link>
+                    </div>
+                  )}
+                  {selectedFeed === "latest" && !requestedPage && !moreHref && (
+                    <Link
+                      prefetch={false}
+                      className="gc-button gc-button-quiet"
+                      href="/platform/search"
+                    >
+                      Explore the community
+                    </Link>
+                  )}
                   {discoveryMode(selectedFeed) &&
                     [
                       "following",
