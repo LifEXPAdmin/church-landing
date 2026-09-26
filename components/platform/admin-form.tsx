@@ -23,6 +23,19 @@ export type AdminField = {
   optional?: boolean;
   options?: { value: string; label: string }[];
 };
+const initialFieldValues = (fields: AdminField[]) =>
+  Object.fromEntries(
+    fields.map((field) => [
+      field.name,
+      field.type === "checkbox"
+        ? false
+        : String(
+            field.value ??
+              (field.type === "select" ? field.options?.[0]?.value : "") ??
+              ""
+          )
+    ])
+  ) as Record<string, string | boolean>;
 export const adminInputClass =
   "block min-h-11 w-full min-w-0 rounded-xl border border-gc-divider bg-gc-canvas px-3 py-3 text-base text-gc-text focus:border-gc-action focus:outline-none focus:ring-2 focus:ring-gc-focus";
 export function AdminForm({
@@ -37,7 +50,8 @@ export function AdminForm({
   onResult,
   confirmationPurpose,
   endpoint = "/api/platform/admin",
-  available = true
+  available = true,
+  privacy
 }: {
   owner: string;
   operation: string;
@@ -51,6 +65,7 @@ export function AdminForm({
   confirmationPurpose?: RecentAuthenticationPurpose;
   endpoint?: "/api/platform/admin" | "/api/platform/authenticator";
   available?: boolean;
+  privacy?: { visible: boolean; currentAccess: boolean };
 }) {
   const confirmation = useAccountConfirmation(
     confirmationPurpose ?? "manage-admin-access"
@@ -65,7 +80,10 @@ export function AdminForm({
     [notice, setNotice] = useState(""),
     [failed, setFailed] = useState(false),
     [conflict, setConflict] = useState(false),
-    [retryAt, setRetryAt] = useState(0);
+    [retryAt, setRetryAt] = useState(0),
+    [values, setValues] = useState<Record<string, string | boolean>>(() =>
+      privacy ? initialFieldValues(fields) : {}
+    );
   const status = useRef<HTMLParagraphElement>(null);
   const focusPending = useRef(false);
   useUnsavedSocialWork(
@@ -103,6 +121,46 @@ export function AdminForm({
       return () => clearTimeout(timer);
     }
   }, [retryAt]);
+  const changeValue = (name: string, value: string | boolean) =>
+    setValues((current) => ({ ...current, [name]: value }));
+  const discard = () => {
+    if (
+      pending &&
+      !confirm(
+        "This action may already be saved. Discard only this browser’s entries and pending retry?"
+      )
+    )
+      return;
+    setPending(null);
+    setDirty(false);
+    setConflict(false);
+    original.current = fixed;
+    if (privacy) setValues(initialFieldValues(fields));
+    form.current?.reset();
+    setNotice("Local entries discarded. Saved changes remain.");
+  };
+  const discardButton = (dirty || pending) && (
+    <button
+      type="button"
+      className="gc-button gc-button-quiet"
+      disabled={busy}
+      onClick={discard}
+    >
+      Discard local entries
+    </button>
+  );
+  if (privacy && !privacy.visible) return null;
+  if (privacy && !privacy.currentAccess)
+    return dirty || pending ? (
+      <div className="space-y-3">
+        <p>
+          {pending
+            ? "An unconfirmed action and its local entries are retained in this browser."
+            : "Your local entries are retained in this browser."}
+        </p>
+        {discardButton}
+      </div>
+    ) : null;
   return (
     <form
       ref={form}
@@ -114,6 +172,7 @@ export function AdminForm({
         event.preventDefault();
         if (
           writing.current ||
+          (privacy && (!privacy.visible || !privacy.currentAccess)) ||
           (!available && !pending) ||
           retryAt ||
           (conflict && !pending) ||
@@ -201,6 +260,7 @@ export function AdminForm({
           setDirty(!!incomplete);
           setConflict(!!incomplete && !uncertain);
           if (!incomplete) {
+            if (privacy) setValues(initialFieldValues(fields));
             form.current?.reset();
             if (confirmationPurpose) confirmation.finish();
           }
@@ -250,6 +310,12 @@ export function AdminForm({
                 id={`${id}-${field.name}`}
                 name={field.name}
                 type="checkbox"
+                checked={privacy ? values[field.name] === true : undefined}
+                onChange={
+                  privacy
+                    ? (event) => changeValue(field.name, event.currentTarget.checked)
+                    : undefined
+                }
                 required={!field.optional}
                 className="h-6 w-6 accent-gc-accent"
               />
@@ -257,7 +323,13 @@ export function AdminForm({
               <textarea
                 id={`${id}-${field.name}`}
                 name={field.name}
-                defaultValue={field.value}
+                defaultValue={privacy ? undefined : field.value}
+                value={privacy ? String(values[field.name] ?? "") : undefined}
+                onChange={
+                  privacy
+                    ? (event) => changeValue(field.name, event.currentTarget.value)
+                    : undefined
+                }
                 required={!field.optional}
                 minLength={field.min}
                 maxLength={field.max}
@@ -268,7 +340,13 @@ export function AdminForm({
               <select
                 id={`${id}-${field.name}`}
                 name={field.name}
-                defaultValue={field.value}
+                defaultValue={privacy ? undefined : field.value}
+                value={privacy ? String(values[field.name] ?? "") : undefined}
+                onChange={
+                  privacy
+                    ? (event) => changeValue(field.name, event.currentTarget.value)
+                    : undefined
+                }
                 required={!field.optional}
                 className={adminInputClass}
               >
@@ -287,7 +365,13 @@ export function AdminForm({
                     ? field.type
                     : "text"
                 }
-                defaultValue={field.value}
+                defaultValue={privacy ? undefined : field.value}
+                value={privacy ? String(values[field.name] ?? "") : undefined}
+                onChange={
+                  privacy
+                    ? (event) => changeValue(field.name, event.currentTarget.value)
+                    : undefined
+                }
                 required={!field.optional}
                 minLength={field.min}
                 maxLength={field.max}
@@ -348,30 +432,7 @@ export function AdminForm({
         >
           {busy ? "Saving…" : pending ? "Retry original action" : button}
         </button>
-        {(dirty || pending) && (
-          <button
-            type="button"
-            className="gc-button gc-button-quiet"
-            disabled={busy}
-            onClick={() => {
-              if (
-                pending &&
-                !confirm(
-                  "This action may already be saved. Discard only this browser’s entries and pending retry?"
-                )
-              )
-                return;
-              setPending(null);
-              setDirty(false);
-              setConflict(false);
-              original.current = fixed;
-              form.current?.reset();
-              setNotice("Local entries discarded. Saved changes remain.");
-            }}
-          >
-            Discard local entries
-          </button>
-        )}
+        {discardButton}
       </div>
     </form>
   );

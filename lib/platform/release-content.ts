@@ -1006,6 +1006,14 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "private-account-lookups", version: "2026.09.26.16", date: "2026-09-26",
+    summary: "Account lookups follow current permissions while preserving unfinished local work.",
+    added: [],
+    improved: ["Unsent lookup entries and original retries survive concealment without leaving their private fields in the page."],
+    fixed: ["Changed Admin permissions replace the initial navigation, and returning to a lookup requires fresh target details."],
+    featureIds: ["admin-requests"]
+  },
+  {
     id: "private-admin-summaries", version: "2026.09.26.15", date: "2026-09-26",
     summary: "Admin summaries check current access before showing private counts and operational details.",
     added: [],

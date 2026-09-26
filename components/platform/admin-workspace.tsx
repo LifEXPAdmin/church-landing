@@ -158,7 +158,11 @@ export function AdminWorkspace({
   useEffect(() => {
     if (visible) window.dispatchEvent(new Event("admin-view-visible"));
   }, [visible]);
-  const nav = data && "navigation" in data ? data.navigation : navigation;
+  const nav = data
+    ? "navigation" in data
+      ? data.navigation
+      : data
+    : navigation;
   return (
     <div className="space-y-5">
       {!visible && (

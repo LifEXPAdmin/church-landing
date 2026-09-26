@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import type { AdminNavigation } from "@/lib/platform/admin-types";
 import type {
   AdminLookupResult,
@@ -12,82 +12,95 @@ import { useReadVisibility } from "./read-visibility";
 export function AdminPeople({ navigation }: { navigation: AdminNavigation }) {
   const [person, setPerson] = useState<AdminLookupResult["person"]>(null),
     [checked, setChecked] = useState("");
+  const visible = useReadVisibility();
   const canLookup = navigation.capabilities.includes("LOOKUP_ACCOUNTS");
-  useEffect(() => {
-    if (!canLookup) setPerson(null);
-  }, [canLookup]);
+  const canPresent = visible && canLookup;
+  const generation = useRef(0);
+  const resultGeneration = generation.current;
+  useLayoutEffect(() => {
+    if (!canPresent) {
+      generation.current++;
+      setPerson(null);
+      setChecked("");
+    }
+  }, [canPresent]);
   return (
     <div className="space-y-5">
       <h1 className="text-3xl font-semibold">People</h1>
-      {canLookup && (
-        <>
-          <p>
-            Look up one complete username for a current operational reason.
-            Private conversations, contacts and profile history are not
-            included.
-          </p>
-          <AdminForm
-            owner={navigation.viewer.id}
-            operation="lookup"
-            fields={[
-              { name: "username", label: "Complete username", min: 3, max: 40 },
+      {canLookup ? (
+        <p>
+          Look up one complete username for a current operational reason.
+          Private conversations, contacts and profile history are not included.
+        </p>
+      ) : (
+        <p>Account lookup is not available with your current permissions.</p>
+      )}
+      <AdminForm
+        owner={navigation.viewer.id}
+        operation="lookup"
+        fields={[
+          { name: "username", label: "Complete username", min: 3, max: 40 },
+          {
+            name: "purpose",
+            label: "Operational reason",
+            type: "select",
+            options: [
+              { value: "SUPPORT", label: "An actual support request" },
               {
-                name: "purpose",
-                label: "Operational reason",
-                type: "select",
-                options: [
-                  { value: "SUPPORT", label: "An actual support request" },
-                  {
-                    value: "VERIFICATION",
-                    label: "An actual verification request"
-                  },
-                  { value: "SAFETY", label: "An actual safety case" }
+                value: "VERIFICATION",
+                label: "An actual verification request"
+              },
+              { value: "SAFETY", label: "An actual safety case" }
+            ]
+          }
+        ]}
+        button="Look up account"
+        available={canLookup}
+        privacy={{ visible, currentAccess: canPresent }}
+        onSaved={() => {}}
+        onResult={(result) => {
+          // A navigation read rechecks authority, not the target account.
+          // A command may settle after concealment without restoring its
+          // old private result when the account returns to this document.
+          if (!canPresent || resultGeneration !== generation.current) return;
+          setPerson(result.person as AdminLookupResult["person"]);
+          setChecked(new Date().toISOString());
+        }}
+      />
+      {canPresent && person && (
+        <section className="space-y-3 rounded-xl border border-gc-divider p-5">
+          <h2 className="text-xl font-semibold">
+            {person.name} (@{person.username})
+          </h2>
+          <p>
+            Lookup checked <SupportTime value={checked} />
+          </p>
+          <dl className="space-y-2">
+            <div>
+              <dt>Access</dt>
+              <dd>{person.state}</dd>
+            </div>
+            <div>
+              <dt>Email verification</dt>
+              <dd>{person.verified ? "Verified" : "Not verified"}</dd>
+            </div>
+            <div>
+              <dt>Adult acknowledgment</dt>
+              <dd>{person.adult ? "Current" : "Not current"}</dd>
+            </div>
+            <div>
+              <dt>Configured sign-in methods</dt>
+              <dd>
+                {[
+                  person.passwordSignIn ? "Password" : "",
+                  person.googleSignIn ? "Google" : ""
                 ]
-              }
-            ]}
-            button="Look up account"
-            onSaved={() => {}}
-            onResult={(result) => {
-              setPerson(result.person as AdminLookupResult["person"]);
-              setChecked(new Date().toISOString());
-            }}
-          />
-          {person && (
-            <section className="space-y-3 rounded-xl border border-gc-divider p-5">
-              <h2 className="text-xl font-semibold">
-                {person.name} (@{person.username})
-              </h2>
-              <p>
-                Lookup checked <SupportTime value={checked} />
-              </p>
-              <dl className="space-y-2">
-                <div>
-                  <dt>Access</dt>
-                  <dd>{person.state}</dd>
-                </div>
-                <div>
-                  <dt>Email verification</dt>
-                  <dd>{person.verified ? "Verified" : "Not verified"}</dd>
-                </div>
-                <div>
-                  <dt>Adult acknowledgment</dt>
-                  <dd>{person.adult ? "Current" : "Not current"}</dd>
-                </div>
-                <div>
-                  <dt>Configured sign-in methods</dt>
-                  <dd>
-                    {[
-                      person.passwordSignIn ? "Password" : "",
-                      person.googleSignIn ? "Google" : ""
-                    ]
-                      .filter(Boolean)
-                      .join(", ") || "Unavailable"}
-                  </dd>
-                </div>
-              </dl>
-            </section>
-          )}
-        </>
+                  .filter(Boolean)
+                  .join(", ") || "Unavailable"}
+              </dd>
+            </div>
+          </dl>
+        </section>
       )}
       {navigation.capabilities.includes("MANAGE_ACCOUNTS") && (
         <Link
