@@ -1,5 +1,72 @@
 # Retained reader privacy
 
+## Admin duty changes locally tested; release blocked, 26 September 2026 UTC
+
+Version **2026.09.26.17**, application `444f896ba06ef2668cf41a4bcf36047fa53dab12`
+and QA-only commit `13e693d`, removes concealed target/grant details and unfinished
+grant fields while retaining the command owner. Before editing, the unchanged
+prior candidate retained target names, grant rows, unsent lookup usernames and
+selected duties after blur, pagehide, account replacement and actual manager
+revocation. Initial HTML/RSC already omitted private target names and grant rows.
+The native lookup username remains part of its requested URL.
+
+The grant form now stays mounted through concealment, missing recipients,
+factor unavailability and changed eligibility. Its removable presentation keeps
+reason, authenticator code and current-password values in component memory.
+Password presentation remounts concealed. These entries clear on confirmed save
+or deliberate local discard. Recipient identity, username, capability and the
+requested grant/revoke intention stay fixed while work is unfinished. Fresh
+versions require explicit adoption; a newly active grant cannot silently change
+a retained Grant into Revoke. Recipient and duty selection unlock after completion
+or discard. Existing non-opt-in confirmation callers retain their behavior.
+
+All **33 browser groups** pass: five focused access groups and the previous
+28 People, summary, audit, original-retry and Admin groups. The focused suite
+makes six fictional POST attempts: one explicitly intercepted no-write 409 intent
+check, four byte-identical accepted-grant retries with one saved ACCESS effect,
+and one accepted grant later deliberately discarded locally. Both saved grants
+remain intact. Passwords/codes and exact bodies are compared only in memory;
+artifacts store safe metadata and hashes. Three fictional accounts, four seeded
+grants and two service MFA setup operations support these checks. Direct fixture
+transitions cover manager revocation, factor availability and target eligibility.
+Initial HTML/RSC, held/failed reads, account replacement and local discard pass.
+There are no browser runtime/route errors or external requests. Nine masked
+390px/320px/200% captures fit without horizontal overflow; enlarged reason and
+action views were reviewed.
+
+All **71 service checks** pass on unchanged application sources: Admin operations
+10, authenticator 4, privileged authentication 10, health 7, metric reports 6,
+Google accounts 20, account security 12 and release content 2. The added account
+suite first ran in the wrong unseeded shared fixture and failed; its unchanged
+correct rerun used the original pre-upgrade and Stage2A seed stages, all 115
+migrations, eight preserved prior table fingerprints and one dedicated sink.
+That isolated cluster is stopped and preserved. The focused browser's initial
+missing-register invocation also stopped before executing fixtures; its corrected
+repository registration passed. Failures remain recorded. This is targeted
+acceptance, not a fresh full backend or full account-runner execution.
+
+The 39.525-second production build `kWN34QKk8KgzLjYErL5EI`, lint, types,
+copy, source/build security and runtime trace gates pass. All 1,905 application
+candidate source hashes and 115 unchanged migration sources are recorded. The
+QA-only follow-up adds no runtime changes. Compared with tested `.16`, Admin
+startup JavaScript adds 346 to 347 gzip bytes; CSS is unchanged. No endpoint,
+dependency, polling, schema or worker was added; no speed improvement is claimed.
+
+Coverage is the current target/grant workspace with the isolated MFA mode off.
+Legacy inline MFA presentation and the canonical Account security authenticator
+remain separate open work. Service checks do not establish their browser flows
+or actual Google/provider acceptance. Injected 429/503 and synthetic lifecycle
+events do not prove rate-limit configuration, physical-device snapshots or OS
+cleanup. No browser storage, history or heap erasure is claimed.
+
+This candidate is **not merged or live**. Provider daily deployment capacity
+still blocks remote CI/publication. No push, deployment retry, production write,
+production migration, recipient send or new queue probe occurred. Prior live
+identity remains `.11/925536c`, last checked at 12:58:03 UTC. All unreleased
+candidates and evidence are preserved; wider security and release acceptance stay
+open. Continue the eligible priority queue and refresh release gates when capacity
+returns.
+
 ## People lookup locally tested; release blocked, 26 September 2026 UTC
 
 Version **2026.09.26.16**, source `e2699335a701f813ef8ac42a2bc11c03a1d9690c`,

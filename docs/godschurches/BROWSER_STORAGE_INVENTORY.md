@@ -1,5 +1,19 @@
 # Browser storage inventory
 
+## Admin duty changes locally tested; release blocked, 26 September 2026 UTC
+
+Version **2026.09.26.17** (`444f896`, QA `13e693d`) removes concealed
+target/grant presentation while preserving original intent, credentials and exact
+uncertain retries. All 33 browser groups and 71 targeted service checks pass;
+the production build takes 39.525 seconds. The initially misconfigured account
+suite passes in its correct separately staged fixture. Masked phone/enlarged
+captures were reviewed. This is **not merged or live**: provider daily capacity
+still blocks CI/publication. No production writes, sends, migrations or retries
+occurred. Live identity remains `.11/925536c`, checked at 12:58:03 UTC.
+Legacy/canonical MFA browser work and wider acceptance remain open. See
+[retained reader privacy](RETAINED_READER_PRIVACY.md) for exact scope, failures,
+fixture effects, costs and limitations.
+
 26 September 2026 UTC. Source inspection, not a browser cleanup certification.
 
 This inventory records application-owned storage and its current cleanup owners.
