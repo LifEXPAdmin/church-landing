@@ -489,6 +489,15 @@ try {
     )
     .waitFor();
   await member.bringToFront();
+  // Current-access checks remove the private receipt presentation. Returning
+  // recreates its disclosure closed while retaining the confirmed choices.
+  const choicesDisclosure = member.getByText(
+    "Change contact and sharing choices",
+    { exact: true }
+  );
+  await choicesDisclosure.waitFor();
+  if (!(await choicesDisclosure.evaluate((node) => node.closest("details").open)))
+    await choicesDisclosure.click();
   await member
     .getByRole("checkbox", {
       name: "Also allow my name to be shown with that reviewed summary.",

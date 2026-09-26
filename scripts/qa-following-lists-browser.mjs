@@ -11,14 +11,18 @@ assert.ok(
 const config = JSON.parse(
   readFileSync(fixtureDir + "/browser-env.json", "utf8")
 );
-assert.match(config.origin, /^https:\/\/following-fixture\.example\.test:\d+$/);
-assert.match(config.localOrigin, /^https:\/\/127\.0\.0\.1:\d+$/);
+assert.match(
+  config.origin,
+  /^https:\/\/(?:following-fixture\.example\.test|127\.0\.0\.1):\d+$/
+);
+const localOrigin = config.localOrigin ?? config.origin;
+assert.match(localOrigin, /^https:\/\/127\.0\.0\.1:\d+$/);
 assert.equal(new URL(config.database).hostname, "127.0.0.1");
 Object.assign(process.env, {
   DATABASE_URL: config.database,
   DIRECT_URL: config.database,
-  ACCOUNT_ORIGIN: config.localOrigin,
-  NEXT_PUBLIC_SITE_URL: config.localOrigin,
+  ACCOUNT_ORIGIN: localOrigin,
+  NEXT_PUBLIC_SITE_URL: localOrigin,
   ACCOUNT_TEST_ISOLATED: "1",
   ACCOUNT_DELIVERY_MODE: "test-sink",
   ACCOUNT_TEST_SINK_DIR: process.cwd() + "/" + fixtureDir + "/sink",
@@ -70,7 +74,7 @@ const context = await browser.newContext({
   hasTouch: true
 });
 await context.route("**/*", (route) =>
-  new URL(route.request().url()).hostname === "following-fixture.example.test"
+  new URL(route.request().url()).origin === config.origin
     ? route.continue()
     : route.abort()
 );
@@ -212,7 +216,7 @@ try {
       lost = true;
       originalBody = route.request().postData();
       const response = await route.fetch({
-        url: config.localOrigin + new URL(route.request().url()).pathname
+        url: localOrigin + new URL(route.request().url()).pathname
       });
       assert.equal(response.status(), 200, await response.text());
       return route.abort("failed");

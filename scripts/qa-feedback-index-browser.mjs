@@ -292,7 +292,17 @@ const fitAndCapture = async (name, width, enlarged = false) => {
   await page.setViewportSize({ width, height: 844 });
   if (enlarged)
     await page.addStyleTag({ content: "html{font-size:200%!important}" });
-  await page.screenshot({ path: output + "/" + name + ".png", fullPage: true });
+  await page.evaluate(() => scrollTo(0, 0));
+  // Twenty enlarged cards exceed common full-page raster limits. Keep actual
+  // viewport captures of the header and final preferences at this text size.
+  await page.screenshot({
+    path: output + "/" + name + ".png",
+    fullPage: !enlarged
+  });
+  if (enlarged) {
+    await preference().scrollIntoViewIfNeeded();
+    await page.screenshot({ path: output + "/" + name + "-preferences.png" });
+  }
   assert.ok(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth + 1
