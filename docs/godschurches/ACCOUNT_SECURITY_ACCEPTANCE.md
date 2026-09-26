@@ -1,3 +1,17 @@
+## Menu privacy acceptance, 26 September 2026 UTC
+
+The local `.27/9fa52ac` candidate with QA `e2ac6a0` passes 18 browser groups,
+11 fresh services and the 39.728-second production build. Saved order, checked
+choices and derived Admin presentation are absent from serialized and concealed
+page content. Current authority, same-version unavailable removal, deliberate
+discard, exact pending save/reset and deferred clean-Reset history cleanup are
+verified. Four actual-keyboard narrow/enlarged captures pass. There is no new
+browser storage, schema, endpoint or broadened authority. The scoped result is
+local, not merged/live or complete security acceptance. See
+[retained reader privacy](RETAINED_READER_PRIVACY.md) for counts and limitations.
+The confirmed Pro upgrade allows batched release preparation; existing publication,
+owner/provider/device and policy gates remain distinct.
+
 # Account security acceptance
 
 ## Content decision privacy locally tested; release blocked, 26 September 2026 UTC

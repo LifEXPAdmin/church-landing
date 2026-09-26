@@ -1,3 +1,16 @@
+## Current hosting-plan correction, 26 September 2026 UTC
+
+Authenticated provider inspection confirms active Vercel Pro. The older Hobby
+observation below is dated history. Spend Management is now available, but an
+actual team-wide threshold, pause policy, alert recipients and response coverage
+remain unverified. An analytics-specific spending field is not a global cap.
+Existing provider recovery, MFA, credential separation and branch-protection
+acceptance remains open. The reviewed local batch policy suppresses automatic
+Git deployments while retaining independent source/security CI and deliberate
+release gates; it applies only to branches containing that configuration.
+[Current Pro documentation](https://vercel.com/docs/plans/pro-plan),
+[Spend Management](https://vercel.com/docs/spend-management).
+
 # Source and deployment security acceptance
 
 ## Integrated release acceptance, 26 September 2026 UTC

@@ -1,3 +1,33 @@
+## Private Menu lifecycle locally verified, 26 September 2026 UTC
+
+Application `9fa52ac`, QA `e2ac6a0`, version **2026.09.26.27**, is locally tested
+with 18 browser groups, 11 fresh services and a 39.728-second production build.
+The current Menu API and saved preference version remain the authority. The page
+no longer serializes saved order or the permitted Admin entry; the client removes
+private presentation on concealment and failed current access. Its editor remains
+mounted through same-version authority changes, preserving the saved baseline,
+local order and generic unavailable removal. The details shell remains generic;
+private fields/order are physically absent while concealed, and generic original
+recovery is available independently of whether the details shell is open.
+
+Save and Reset retain the original body/key/owner through uncertain replies and
+pre-receipt authority or rate-limit denial. A validated acknowledgement is retained
+atomically before history protection can settle; current account revalidation
+precedes saved-version adoption. Different current saved versions remain concealed
+until original confirmation or deliberate warned reload. Same-address navigation
+rechecks current authority without replacing unsaved choices.
+
+The existing eight shortcut and five navigation groups pass, including unavailable
+removal, no-write discard, hidden-ID Reset, other-device persistence, Back and
+account replacement. Five focused groups add HTML/RSC and physical-DOM absence,
+late/failed reads, exact 429/503/revoked-Admin recovery and held clean-Reset history.
+Four actual-keyboard 320px normal/enlarged captures pass. Full effects, corrected
+harness assumptions, source hashes and runtime costs are in
+[retained reader privacy](RETAINED_READER_PRIVACY.md). This supersedes the old
+retained hidden-DOM presentation only; it preserves the baseline/authority contract
+below. The new candidate is not merged or live. It will be considered with the
+reviewed privacy batch under the current batched-release workflow.
+
 # Account-owned Menu shortcuts
 
 The Menu lets a signed-in member select up to six working destinations, arrange

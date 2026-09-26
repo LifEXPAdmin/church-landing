@@ -1,3 +1,63 @@
+## Menu choices and exact recovery locally verified, 26 September 2026 UTC
+
+Application `9fa52ac`, QA `e2ac6a0`, version **2026.09.26.27**. Before editing,
+three baseline groups on unchanged `.26/a996e88` reproduced initial HTML/RSC
+serialization of saved order and Admin capability, retained checked/order/link
+DOM after blur/offline/pagehide, and previous-owner presentation after account
+replacement. Baseline made zero browser POSTs and one fictional service save.
+
+The route now supplies only its account owner and a public refresh signal to a
+keyed Menu workspace. The existing owned Menu API supplies current choices.
+Concealment physically removes saved links, controls/order and derived Admin;
+late/queued/failed reads cannot reopen them. Same-version authority reads preserve
+the mounted editor and its saved baseline while filtering current available
+choices. Generic unavailable rows remain removable; deliberate discard writes
+nothing. Changed saved versions retain the original owner and warned recovery.
+The optional Menu-only action contract retains original request bytes through
+401/403/404/429, defers successful adoption until current access, and atomically
+moves a clean Reset from pending to confirmed history protection. Other users of
+the action hook retain their existing path. No new endpoint, schema, dependency,
+polling loop or browser-persistent choice store was added.
+
+Acceptance on the unchanged 1,918-file candidate: **8 shortcut + 5 navigation +
+5 focused browser groups**, **11 fresh services** (Menu 5, registry 4, release 2),
+focused lint/types/copy and a **39.728-second** production build. All 115 migrations
+are unchanged. Focused verification includes 24 physical absence observations,
+one authorized positive, two initial HTML/RSC reads and four inspected 320px
+normal/200-percent actual-keyboard Save/Discard captures. Concealed clean Reset
+and a held owner recheck cause zero Back/popstate cleanup; restoration causes
+exactly one cleanup to the original history entry.
+
+The final focused run has **8 browser POST attempts and 3 direct service saves**,
+resulting in 6 owned operations and shortcut version 6. Five byte-identical,
+same-owner attempts traverse accepted/lost 200, injected 429, injected 503, real
+revoked-Admin 403 and successful original receipt replay. Actual 409 rejects a
+competing version; explicit Reset clears hidden stored IDs. Unrelated feed and
+mention preferences are unchanged. Two fictional actors/two local sink files and
+one owned Admin grant (restored at version 7) support the final run. No production
+writes or external delivery occurred. The 429 is injected; no real cooldown UI
+or physical-device acceptance is claimed.
+
+Earlier failures remain evidence: two existing assertions assumed status and
+concealment belonged to the whole details element; they now inspect the generic
+recovery area and actual private DOM absence. Two focused harness assumptions
+opened an old version before remount or assumed document reload erased native
+history state. Corrected synchronization and original-entry comparison pass;
+no application change followed those runtime attempts. Across all three focused
+attempts: six actors/sinks, 21 browser POSTs, seven service saves and 14 stored
+operations; all three owned grants restored. Final diagnostics contain expected
+transport/permission/conflict responses, one measurement denial during identity
+replacement, one intentional lost-ack failure and aborted GETs. No page errors,
+external requests or unexpected mutation routes occurred.
+
+Deduplicated Menu startup JavaScript is **2,585 gzip bytes larger** than `.26`;
+Settings is 4 bytes smaller, Home 11 bytes larger and CSS unchanged. Release
+content is included in these measurements; no speed improvement is claimed.
+Source review caught and fixed the clean-Reset atomic acknowledgement defect
+before the accepted build. Full wider security acceptance remains open.
+The Pro plan is confirmed, but this candidate is still local. It belongs in the
+reviewed privacy/recovery release batch with exact CI, integration and live gates.
+
 # Retained reader privacy
 
 ## Content decision privacy locally tested; release blocked, 26 September 2026 UTC

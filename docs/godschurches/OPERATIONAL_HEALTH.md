@@ -1,3 +1,17 @@
+## Current Pro operations review, 26 September 2026 UTC
+
+The team is active Pro; older Hobby observations remain dated history. Existing
+Fluid compute, region and Node 24 configuration remains. Observability Plus is
+already enabled for the project and has usage-based event pricing; no additional
+instrumentation or paid resource was enabled during this review. Use available
+request, error and runtime evidence for release diagnosis. Capability does not
+prove a received incident alert or real response coverage. Overall spending
+thresholds and pause behavior still need explicit current evidence.
+The actual retention, notification and image maintenance schedules remain daily.
+All existing authentication, bounded work and recovery safeguards still apply.
+[Observability](https://vercel.com/docs/observability/observability-plus),
+[Spend Management](https://vercel.com/docs/spend-management).
+
 # Operational health and measured hosting resources
 
 ## Backup startup recovery, 22 September 2026 UTC

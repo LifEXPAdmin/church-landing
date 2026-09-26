@@ -32,8 +32,13 @@ Session Log; retain other task labels when adding gc_in_progress. Refresh at
 meaningful checkpoints and handoffs. Never steal an active or unexamined lock.
 Coordinate overlaps with their owner and take other eligible work meanwhile.
 
-Finish every required UI, integration, configuration, regression, release-note
-and deployment step in the same feature cycle. One designated release owner
+Finish every required UI, integration, configuration, regression and documentation
+step locally for each feature. Save tested checkpoints and combine compatible
+finished work into a named release batch. Publish when that batch is ready; avoid
+intermediate, per-small-feature and report-only deployments. Urgent production
+repairs may justify a focused release. Before new work, honor any requested
+progress review with completed work, remaining gates and owner actions.
+One designated release owner
 integrates main, applies production migrations and deploys under existing
 permissions and the atomic release lock. Other chats hand over tested commits
 with gc_ready_to_merge, preserving open release acceptance. At safe checkpoints,

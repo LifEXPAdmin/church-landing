@@ -1,3 +1,13 @@
+## Current schedule and Pro capability, 26 September 2026 UTC
+
+The hosting team is now confirmed Pro. The older Hobby timing window below is
+historical; Pro supports finer scheduling precision. The actual image job still
+uses `0 7 * * *` UTC. Its 100-prefix bound, 40-second budget, 24-hour grace,
+permission checks and failure recovery are unchanged. A shorter reviewed cadence
+could reduce backlog delay; no such schedule change or broader storage allowance
+is claimed. Inspect actual due age, usage and budget before increasing work.
+[Cron limits](https://vercel.com/docs/cron-jobs/usage-and-pricing).
+
 # Image maintenance and activation
 
 September 12, 2026. Extends [the image foundation](IMAGE_FOUNDATION_REPORT.md).

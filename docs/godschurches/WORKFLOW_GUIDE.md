@@ -1,6 +1,6 @@
 # Godschurches workflow guide
 
-Version 5.0 · Updated 26 September 2026 UTC
+Version 5.1 · Updated 26 September 2026 UTC
 
 This is the repository entry point for work that continues between ChatGPT, Codex,
 the private second brain, and the development workstation. Keep this file's path
@@ -107,6 +107,37 @@ never releases a reservation automatically. Reproduce reported
 issues before changing code. Reuse current canonical implementations and valid
 prior test evidence where applicable. Necessary smaller finishing steps stay
 inside the feature instead of being deferred to another agent or later task.
+
+### Local completion and batched publication
+
+Finish and meaningfully verify each coherent task on localhost, including its
+necessary smaller steps. Keep its tested checkpoint and acceptance evidence.
+Combine compatible completed work into a named release batch with explicit
+included and excluded changes. Publish when that chunk is ready instead of
+publishing every intermediate edit, small feature or report-only commit. An
+urgent production repair may warrant its own focused release. No fixed feature
+count or deployment quota is a reason to ship an unfinished batch.
+
+Before publication, verify the combined source and required CI, migration,
+recovery and live acceptance gates. Reuse earlier checks only when their source
+and environment remain applicable. Keep implemented, tested, merged and live
+status distinct while work waits in the batch. A successful local feature check
+never closes its promised release acceptance.
+
+Automatic Git deployments are disabled by the reviewed `vercel.json` policy.
+Keep independent GitHub source/security CI. The release owner deliberately
+publishes the exact approved batch through the existing guarded release process.
+Carry this policy into a branch before pushing it; an old branch without the
+setting can still trigger a provider build. Inspect deployment state before any
+manual retry, and do not deploy solely to update a report commit identity.
+
+A hosting-plan upgrade does not authorize unlimited on-demand spending, paid
+add-ons or unreviewed higher-frequency jobs. Use observed workload and budget
+before changing allocations or schedules. When the owner requests a progress
+review before continuing, finish the active checks, save the checkpoint and
+report accomplished work, remaining gates, owner actions and questions before
+choosing another task. This reporting request takes precedence over automatic
+queue continuation below.
 
 One designated release owner handles integration, main updates, production
 migrations and deployment under existing permissions and the atomic release
@@ -384,6 +415,9 @@ allow an authorized assistant to locate the context without publishing it.
 
 ## Change log
 
+- **5.1, 26 September 2026 UTC:** Adopted local task completion and named release
+  batches, deliberate publication, suppressed intermediate Git deployments,
+  budget-aware hosting changes and owner-requested progress reviews before new work.
 - **5.0, 26 September 2026 UTC:** The owner requested concurrent independent
   chats and visible task ownership. Retained one priority queue; added exact
   task-ID claims, readable chat ownership and private status checkpoints.
@@ -443,6 +477,9 @@ allow an authorized assistant to locate the context without publishing it.
 
 ### Public release content maintenance
 
+Each published batch receives one final serving version and a truthful account
+of its included improvements. Preserve historical notes; a locally prepared
+version entry alone is not proof it was published.
 Each user-visible release updates `lib/platform/release-content.ts` in the same
 reviewed batch: retain old notes, add a stable release ID and date-based product
 version (`YYYY.MM.DD.sequence`), and describe Added/Improved/Fixed behavior with

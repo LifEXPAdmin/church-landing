@@ -1,3 +1,13 @@
+## Current recovery schedule and Pro capability, 26 September 2026 UTC
+
+Authenticated inspection confirms Pro, superseding the historical Hobby-plan
+premise below. Secured notification maintenance still runs daily at 06:00 UTC
+with the existing 500-handoff bound. Ordinary committed sources still attempt
+immediate native-queue handoff. Pro permits a reviewed finer recovery cadence,
+but no schedule, consent, retry, expiry or delivery guarantee changed. Actual
+phone/provider acceptance remains separate from this plan upgrade.
+[Cron limits](https://vercel.com/docs/cron-jobs/usage-and-pricing).
+
 # Phone notification contract
 
 ## Expanded preferences and shared worker — 15 September 2026

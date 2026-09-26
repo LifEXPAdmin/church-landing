@@ -1,3 +1,32 @@
+## Menu privacy locally verified; Pro batch review, 26 September 2026 UTC
+
+Version **2026.09.26.27**, application `9fa52ac` and QA `e2ac6a0`, is implemented
+and locally tested. Saved shortcut order and capability-derived Admin entries
+are absent from initial HTML/RSC and physically removed while concealed. The
+original editor retains unsaved choices, unavailable-choice removal and exact
+save/reset recovery. A clean Reset acknowledgement cannot release history
+protection until current account access is checked.
+All **18 browser groups**, **11 fresh service tests**, focused lint/types and the
+**39.728-second** production build pass. Four actual-keyboard narrow/enlarged
+captures were reviewed; 24 physical absence observations pass. Detailed effects,
+QA corrections and limits are in [retained reader privacy](RETAINED_READER_PRIVACY.md).
+The 1,918-file application candidate remains unchanged; 115 migrations match.
+This work is **not merged or live**. At the 19:00 UTC read, canonical production
+remains READY on **2026.09.26.11 / `925536c`**; main remains `.12/951e57b`.
+
+The hosting team is now confirmed **Pro**. The historical Hobby daily-limit
+rejection is preserved below but is no longer the current plan restriction.
+The owner requests meaningful localhost completion and **batched publication**.
+The reviewed local Git policy suppresses automatic deployments while independent
+source/security CI remains; it must reach any branch before that branch is pushed.
+No deployment, push, production application write or recipient send occurred.
+A fresh installed encrypted restore passed at **19:05:46 UTC**: 149 tables,
+115 migrations, plaintext removed and production unmodified. The actual nightly
+job advanced from run 20 to 21 with 102 sets and no issues or removals.
+Six combined regression checks are being completed before the requested progress
+report. Exact combined CI, integration and READY/canonical/live acceptance still
+remain before publication. Wider security, owner/provider and device gates stay open.
+
 ## Content decision privacy locally tested; release blocked, 26 September 2026 UTC
 
 Version **2026.09.26.26** (`a996e88`, QA `80847e3`) loads private content

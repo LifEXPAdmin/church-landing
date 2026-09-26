@@ -1,3 +1,16 @@
+## Current hosting-plan correction, 26 September 2026 UTC
+
+Authenticated inspection now confirms active Vercel Pro. Hobby allowances in
+the dated measurements below are historical, not the current capacity budget.
+Current team usage, remaining credit, Blob allowances and downstream Neon/Resend
+limits require separate current evidence. The upgrade does not make the unmet
+100-client latency target pass. Fluid compute, the existing region and Node 24
+were already configured. No larger allocation or paid load test was enabled.
+Finer cron scheduling is available, but the existing daily cleanup/recovery
+schedules and bounded workers remain unchanged pending measured need.
+[Pro plan](https://vercel.com/docs/plans/pro-plan),
+[Cron limits](https://vercel.com/docs/cron-jobs/usage-and-pricing).
+
 # Pilot capacity, costs and recovery limits
 
 ## Enabled-module budget refresh, September 18, 2026 UTC
