@@ -2,7 +2,6 @@
 /* eslint-disable @next/next/no-img-element -- File previews are local object URLs. */
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import type { ImageView } from "@/lib/platform/media";
-import { cn } from "@/lib/utils";
 import { uploadPhotoFile } from "@/lib/platform/photo-upload-client";
 import {
   currentSocialOwner,
@@ -11,10 +10,7 @@ import {
 import { portalInputClass, portalButtonClass } from "./portal-action-form";
 import { useUnsavedSocialWork } from "./use-unsaved-social-work";
 
-const uploadButtonClass = cn(
-  portalButtonClass,
-  "min-w-0 max-w-full px-2 [overflow-wrap:anywhere] sm:px-5"
-);
+const uploadButtonClass = `${portalButtonClass} min-w-0 max-w-full [overflow-wrap:anywhere] max-sm:px-2`;
 
 type Entry = {
   id: string;
