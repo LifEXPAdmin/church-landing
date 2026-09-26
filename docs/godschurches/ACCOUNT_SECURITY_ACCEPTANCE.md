@@ -1,13 +1,44 @@
 # Account security acceptance
 
-## Support index candidate, 26 September 2026 UTC
+## Support list privacy verified live, 26 September 2026 UTC
 
-Six isolated browser observations reproduce initial HTML and hidden DOM subject
-retention in the requester and assigned-owner lists after blur, offline and
-account replacement. The read-only index repair uses the existing Support API
-and shared current-access lifecycle while keeping uncertain form recovery
-unchanged. See [Support operations](SUPPORT_OPERATIONS.md). Exact build, browser,
-release and live acceptance are pending; previous verified receipts follow.
+Version **2026.09.26.7**, source `d480b1a8408a24b83e7e260525570804eaab90be`, is READY in
+`dpl_FZ8PsiDicLzZKetUPEiiqHzvTcUi`. Canonical-domain and serving identity checks
+passed at 08:43 UTC; final production data acceptance passed at 08:47 UTC.
+[Published notes](https://godschurches.com/platform/releases/private-support-lists).
+
+My requests and Assigned support inbox load private rows after hydration through
+the existing identity-bound API. Initial HTML and serialized server children no
+longer contain request subjects. Concealment clears rows and rejects late reads;
+changed access or data requires deliberate reload. New, detail and routing forms
+retain their existing exact uncertain-request recovery. Read-only pagination uses
+fresh documents and repeats the account check; actual 20/2-row navigation passed.
+
+The exact production build and [CI](https://github.com/LifEXPAdmin/church-landing/actions/runs/36229996589)
+pass with 42 browser/header groups and 25 service/HTTP checks. Narrow 320px,
+200-percent text, regional times, grant revocation and explicit reassignment pass
+on fictional fixtures. The unchanged backend retains the attributed 210-file
+baseline: 1,339 passes, two expected skips, no failures. Startup JavaScript grows
+by 4,262 gzip bytes on each Support list, 4,263 on case detail, 77 on scheduled
+posts and 505 on Settings; Home changes by -1 byte and CSS is unchanged. This is
+a privacy repair, with no speed claim, new dependency, schema, timer or worker.
+
+All 27 live checks and six health checks pass, including actual browser sign-in
+redirects for guest Support access. All 149 production table fingerprints remain
+unchanged; all 115 source, production and installed migration checksums match.
+No migration was applied or pending. Unchanged recovery reuses the actual 06:15
+installed restore and nightly job evidence. Scoped runtime errors and fatals,
+production test writes, recipient sends and new queue probes are zero.
+
+The legacy Settings-help browser check exposed stale topic-count/copy assertions
+and is preserved as a failed attempt, not counted as passing. Current Support
+recovery is covered by the content-moderation browser and Support service suites.
+Intermittent incomplete client transitions observed in the isolated fixture are
+bounded here with fresh-document list pagination; their broader cause remains
+unresolved. The first guest live check assumed only an HTTP redirect; streamed
+redirect markup and actual browser navigation now establish guest denial.
+Broader form privacy, CSP, cookie/session/password policy and real owner/provider/
+device acceptance remain open. This does not complete the wider security task.
 
 ## Saved-draft privacy verified live, 26 September 2026 UTC
 

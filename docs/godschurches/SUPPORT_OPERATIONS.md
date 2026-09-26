@@ -1,6 +1,6 @@
 # Ordinary support operations
 
-## Read-only index privacy candidate, 26 September 2026 UTC
+## Read-only index privacy verified live, 26 September 2026 UTC
 
 An isolated production browser reproduced private subjects in initial HTML and
 hidden DOM on My requests and Assigned inbox after blur, offline and account
@@ -14,15 +14,21 @@ The existing scheduled-list lifecycle is shared by these read-only snapshots.
 Navigation, eligibility, regional times and bounded pagination reuse the same
 presentation. New, detail and routing forms retain their existing snapshot guard
 and exact uncertain-request owner. No backend, schema, retention, authority or
-intake activation changes. Production build/browser/release acceptance is pending;
-the accepted current .6 release remains separate.
+intake activation changes. Version 2026.09.26.7 is READY and canonical with
+27 live checks, six health checks, 42 browser/header groups and 25 service/HTTP
+checks passing. All 149 production table fingerprints are unchanged, and 115
+migration checksums match. No production test writes or recipient sends occurred.
+See the [exact release receipt](ACCOUNT_SECURITY_ACCEPTANCE.md).
 
 The two private lists use fresh-document Next/Previous links. Isolated browser
 verification found intermittent incomplete client transitions, including without
 the HTTPS proxy or request interception. A fresh document repeats the current
 account check and replaces the list reader. No framework patch or change to other
 Support navigation is included. The wider client-transition diagnosis remains
-open; the final browser gate must verify actual pagination and row counts.
+open. The final browser gate verifies actual Next/Previous document replacement
+and 20/2-row pagination. Grant renewal does not resurrect retired assignments;
+explicit fictional reassignment with the renewed grant version is separately
+verified. No authority rule changed.
 
 ## Incident coordination, 26 September 2026 UTC
 
