@@ -1,5 +1,20 @@
 # Browser storage inventory
 
+## Growth reports locally tested; release blocked, 26 September 2026 UTC
+
+Version **2026.09.26.19** (`462ef53`, QA `3a0e11f`) removes concealed Growth
+reports and date fields, preserves original uncertain export commands and stops
+late CSV downloads after concealment. Recorded exports retain their existing
+409 no-replay rule; a new current file requires a deliberate click. All 35 final
+browser groups pass, plus the 40.065-second build. Nineteen services passed on
+`3628219` and are reused with source proof. A reproduced 12px enlarged-text chart
+overflow is fixed; final captures, export-button hit testing and keyboard focus
+pass. Full effects, failures, costs and limits are in
+[retained reader privacy](RETAINED_READER_PRIVACY.md). This is **not merged or
+live** under the provider daily cap. No production writes, sends, migrations,
+pushes or release retries occurred. Prior live identity remains `.11/925536c`,
+last checked at 12:58:03 UTC. Remaining security and release gates stay open.
+
 ## Weekly feedback locally tested; release blocked, 26 September 2026 UTC
 
 Version **2026.09.26.18** (`03b8e26`, QA `5704282`) removes concealed weekly

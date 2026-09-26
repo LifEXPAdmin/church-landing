@@ -1,5 +1,77 @@
 # Retained reader privacy
 
+## Growth reports locally tested; release blocked, 26 September 2026 UTC
+
+Version **2026.09.26.19**, application `462ef533d7a3bd87772e79b730e10c948887bad1`
+and QA-only `3a0e11f`, removes concealed Growth report/filter presentation while
+retaining date edits and original export commands. Before editing, unchanged
+`.18` retained 16 tables and an unsent date after blur/pagehide. Held successful
+responses downloaded CSVs while concealed. Lost acknowledgment followed by 429
+and another click used three keys and created two audit records for that sequence.
+The initial local-CA interception error was corrected at process launch; all
+failed attempts and their fictional effects remain recorded.
+
+The mounted owner now removes its presentation during current-access checks and
+concealment. An uncertain export retains identical body, dates, key and account.
+Preset and native date navigation wait until it is settled or deliberately
+discarded. Each send still uses current identity and server permissions. The
+existing service intentionally refuses to replay a recorded CSV: its duplicate
+409 ends the original recovery without another audit or download. A new current
+export requires another deliberate click. A late successful response may settle
+the command but drops its CSV across concealment or a source refresh. Late
+denials cannot trigger a hidden report to reopen. Object URLs are released on
+concealment, replacement and cleanup. Local discard remains available after
+export permission loss and announces its generic success accessibly.
+
+All **35 browser groups** pass on the final source: seven focused privacy/export
+groups, nine existing Metrics groups, six summary groups, three retry groups,
+five Admin groups and five Weekly privacy groups. The focused suite makes 13
+fictional POST attempts, seven export audit effects and two actual CSV downloads
+with matching audit hashes. Seven byte-identical original attempts cross lost
+acknowledgment, held 401/403/404, 429 and 503 before the real duplicate 409;
+only one audit belongs to that sequence. Three held successes produce no late
+download. Actual VIEW/EXPORT revocation/restoration and account replacement pass.
+Warned discard preserves the already recorded export; deliberate fresh export
+creates its own current receipt. Two fictional actors, two grants and ten grant
+transitions support the focused checks. Shared measurement configuration and
+unrelated actor choices stay untouched. There are no browser/runtime/route errors
+or external requests.
+
+Twelve final 390px/320px/200% captures have no page overflow. Strict enlarged-text
+verification first found a 12px spill from fixed-rem chart columns. Measured
+browser geometry confirmed the cause; columns relative to their own text size
+resolve it. The two failed runs and browser-only style probe remain diagnostic
+evidence. Three supplemental final-source captures confirm the full export
+button above fixed navigation, an unobstructed center and visible keyboard focus.
+That supplemental check adds one fictional actor, two grants and one local
+verification message, with no export command or download. It resolves the
+initial screenshot's partial-button positioning without a further app change.
+
+The **40.065-second** production build `wS04hYFIRyHglGquL76Dz`, lint, types,
+copy, source/build security and runtime traces pass. All 1,907 candidate source
+hashes and 115 unchanged migration sources are recorded. **Nineteen service
+checks** passed on `3628219` and are reused with source comparison: metric math
+6, canonical sources 1, reports 6, feedback metrics 4 and release content 2.
+All 1,906 other existing files match, including backend, tests, dependencies and
+migrations. Later changes only concern local discard feedback and chart sizing;
+all browser groups were rerun. This is not a fresh full backend suite.
+
+Compared with tested `.18`, Growth startup JavaScript adds 5 gzip bytes and its
+separately loaded component adds 1,011 bytes (6,778 to 7,789). Shared CSS size is
+unchanged. No schema, dependency, endpoint, polling or worker was added; no speed
+improvement is claimed. Lifecycle and response-failure simulations do not prove
+physical-device/OS behavior, production MFA or rate-limit policy. Downloaded files
+remain subject to the user's browser/device handling; no file, heap or history
+erasure is claimed.
+
+This candidate is **not merged or live**. Provider daily deployment capacity
+still blocks remote CI/publication. No push, deployment retry, production write,
+migration, recipient send or new queue probe occurred. Prior live identity
+remains `.11/925536c`, last checked at 12:58:03 UTC. Earlier recovery/fingerprint
+receipts keep their original timestamps; refresh release gates when capacity
+returns. Wider security, other readers and actual owner/provider/device gates
+remain open. Continue eligible priority work with all earlier candidates intact.
+
 ## Weekly feedback locally tested; release blocked, 26 September 2026 UTC
 
 Version **2026.09.26.18**, application `03b8e262ac04d9bd088108af9d94094d0394757c`
