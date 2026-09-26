@@ -1,13 +1,37 @@
 # Account security acceptance
 
-## Saved-draft read candidate, 26 September 2026 UTC
+## Saved-draft privacy verified live, 26 September 2026 UTC
 
-An isolated .5 browser reproduced private draft text remaining after failed
-identity and list refreshes. The candidate conceals read rows, clears failed data
-and rejects delayed responses after concealment while preserving the exact
-uncertain discard request through manual refresh. The composer remains mounted.
-See the [draft library report](DRAFT_LIBRARY_MANIFEST_REPORT.md). Built-browser,
-release and live acceptance are pending; the verified .5 receipt follows.
+Version **2026.09.26.6**, source `70cb24e2d594b30cb40c16ac300c954a71f75321`, is READY in
+`dpl_9PS9VaUAYTG1QY99XeiED4UetmbB`. Independent canonical-domain and serving identity
+checks passed at 07:50 UTC; final runtime acceptance passed at 07:51 UTC.
+[Published notes](https://godschurches.com/platform/releases/private-draft-refresh).
+
+Saved draft rows conceal before current-access reads and clear after failed
+identity/list checks, offline or pagehide. Delayed responses cannot restore them
+after concealment. The exact unconfirmed discard request survives failed reads
+and manual refresh; retry confirms the original result without another deletion
+or version change. Pagination and the independently mounted composer are retained.
+See the [draft library receipt](DRAFT_LIBRARY_MANIFEST_REPORT.md).
+
+The exact production build and CI pass with 32 browser/header groups and 18
+service/HTTP checks. Browser checks cover held reads, account replacement, exact
+mutation recovery, comment/post composition and light/dark narrow/enlarged layouts.
+The unchanged backend retains its attributed 210-file broad baseline: 1,339 passes,
+two expected skips, no failures. Drafts startup JavaScript grows by 60 gzip bytes;
+Home and CSS are unchanged. No dependency, timer, worker or schema change is added.
+
+All 21 live checks and six health checks pass. All 149 production table fingerprints
+are unchanged; all 115 source, production and installed migration checksums match.
+No migration is pending or applied. Unchanged recovery reuses the actual 06:15
+installed restore and nightly job receipt. Scoped runtime errors and fatals,
+production test writes, recipient sends and queue probes are zero.
+
+The normal main push did not create a production deployment during the observed
+wait. Explicitly rebuilding the same verified commit in the production environment
+succeeded; no alternate source or configuration change was introduced. Broader
+retained forms, CSP, cookie/session/password policy and real owner/provider/device
+acceptance remain open. This scoped repair is not complete ASVS acceptance.
 
 ## Browser privacy cleanup verified live, 26 September 2026 UTC
 

@@ -1,5 +1,14 @@
 # Retained reader privacy
 
+## Saved-draft read cleanup verified live, 26 September 2026 UTC
+
+Version 2026.09.26.6 clears private library rows during current-access checks,
+failed reads and concealment. Pending responses cannot restore concealed rows.
+A possibly committed discard retains its exact request through refresh and retry;
+the independently mounted composer keeps its existing recovery owner. No shared
+form guard changes. See the [draft library receipt](DRAFT_LIBRARY_MANIFEST_REPORT.md).
+Support and other retained form snapshots remain separate open acceptance.
+
 ## Scheduled index cleanup verified live, 26 September 2026 UTC
 
 The scheduled index has no pending forms. Its new client-owned list loads private

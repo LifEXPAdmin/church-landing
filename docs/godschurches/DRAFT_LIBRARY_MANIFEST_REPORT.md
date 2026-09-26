@@ -1,19 +1,63 @@
 # Private draft library and app manifest
 
-## Failed-read privacy candidate, 26 September 2026 UTC
+## Saved-draft privacy verified live, 26 September 2026 UTC
 
-The current candidate follows isolated reproduction on published 2026.09.26.5:
-loaded private draft text remains in the DOM after either an identity or list
-503 response. Reads now conceal rows before checking access and clear failed-read
-data. Offline and pagehide also clear rows, with generation checks rejecting late
-responses. The existing pagination accumulator remains only while concealed and
-is adopted after current owner checks. No server, schema or dependency changes.
+Version **2026.09.26.6**, source `70cb24e2d594b30cb40c16ac300c954a71f75321`, is READY in
+`dpl_9PS9VaUAYTG1QY99XeiED4UetmbB`. Independent canonical-domain and serving identity
+checks passed at 07:50 UTC; final runtime acceptance passed at 07:51 UTC.
+[Published notes](https://godschurches.com/platform/releases/private-draft-refresh).
 
-A possibly committed discard retains its exact command, expected version and
-mutation ID through failed reads and manual refresh. Its existing explicit retry
-and review controls remain responsible for resolving it. The mounted composer is
-unchanged. Browser and release acceptance are pending; the historical receipt
-below is preserved as prior evidence.
+Saved draft rows conceal before current-access reads and clear after failed
+identity/list checks, offline or pagehide. Delayed responses cannot restore them
+after concealment. The exact unconfirmed discard request survives failed reads
+and manual refresh; retry confirms the original result without another deletion
+or version change. Pagination and the independently mounted composer are retained.
+See the [draft library receipt](DRAFT_LIBRARY_MANIFEST_REPORT.md).
+
+The exact production build and CI pass with 32 browser/header groups and 18
+service/HTTP checks. Browser checks cover held reads, account replacement, exact
+mutation recovery, comment/post composition and light/dark narrow/enlarged layouts.
+The unchanged backend retains its attributed 210-file broad baseline: 1,339 passes,
+two expected skips, no failures. Drafts startup JavaScript grows by 60 gzip bytes;
+Home and CSS are unchanged. No dependency, timer, worker or schema change is added.
+
+All 21 live checks and six health checks pass. All 149 production table fingerprints
+are unchanged; all 115 source, production and installed migration checksums match.
+No migration is pending or applied. Unchanged recovery reuses the actual 06:15
+installed restore and nightly job receipt. Scoped runtime errors and fatals,
+production test writes, recipient sends and queue probes are zero.
+
+The normal main push did not create a production deployment during the observed
+wait. Explicitly rebuilding the same verified commit in the production environment
+succeeded; no alternate source or configuration change was introduced. Broader
+retained forms, CSP, cookie/session/password policy and real owner/provider/device
+acceptance remain open. This scoped repair is not complete ASVS acceptance.
+
+### Reproduction and focused acceptance
+
+On the preceding .5 build, a loaded private draft paragraph remained after either
+an identity 503 or list 503. The repair uses the existing read owner and authorized
+API. A temporary pagination accumulator remains concealed only until a successful
+current-owner read; failures and concealment events clear it. No browser storage,
+server model or endpoint is added.
+
+Fifteen final draft-library groups prove actual DOM removal, delayed-response
+rejection, exactly one fresh list read after a pending focus invalidation,
+account replacement, offline recovery, twenty-row paging and exact uncertain
+Discard replay. The canonical deletion timestamp, version and tombstone payload
+are unchanged by replay. Seven current composer groups preserve save/publish
+retries, newer unsaved text, conflicts, reply permissions, revoked church checks,
+comment targets and narrow/enlarged layout. Ten header groups also pass.
+
+The old draft-controller harness stopped at a retired opener selector before
+application assertions. Its attempt is preserved; the current composer-shell
+suite supplies the relevant acceptance. The HTTP runner initially lacked the
+built server's release SHA, so its public metadata comparison expected null.
+Matching that test-process identity made all four HTTP checks pass. Earlier
+pagination-count and status-selector corrections affected tests only. None of
+these harness repairs changed the product runtime or production environment.
+Authenticated writes and recovery tests used isolated fictional accounts. Live
+checks were read-only guest/browser/health observations, not real member changes.
 
 ## Original library and manifest release
 
