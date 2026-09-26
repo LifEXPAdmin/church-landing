@@ -1,6 +1,8 @@
 # Saved calendar display implementation checkpoint
 
-22 September 2026 UTC. Local work in progress, not a production receipt.
+Current combined release is verified live in **2026.09.26.1**. See the
+[complete release receipt](CALENDAR_REMINDERS_REPORT.md). The display-only
+checkpoint below preserves its original 22 September evidence.
 
 Calendar display extends the existing account regional preference owner and
 version. It adds Sunday or Monday week start, Agenda or Month default view,
@@ -30,10 +32,9 @@ These choices grant no membership or source permission, change no event instant,
 and do not alter following, hidden calendars, sharing, RSVP or notification
 consent. Hidden calendars already have the canonical saved-layer owner. Existing
 event-change alerts remain owned by notification preferences. Timed reminders
-now have a separate local implementation under the [reminder contract](CALENDAR_REMINDERS_CONTRACT.md);
-the original reminder acceptance remains open pending combined verification and release.
-This display checkpoint does not claim the broader calendar preference feature
-or reminder/subscription integration is complete.
+now use the existing notification owner under the [reminder contract](CALENDAR_REMINDERS_CONTRACT.md).
+The combined display and personal reminder integration has passed release gates;
+external feeds and physical-device acceptance remain separately scoped.
 
 ## Observed local evidence
 
@@ -68,5 +69,5 @@ The original display-only fixture passed at 107 migrations. A separate fresh
 combined reminder fixture now contains 110 migrations, including default-Off
 consent, an opaque wake-up row, the extended Activity source constraint and an
 occurrence modification timestamp.
-Production still has 106. Full regression, upgrade/restore, compatible rollback,
-remaining reminder acceptance, documentation reconciliation and release remain open.
+Production and installed recovery now match all 110 migration checksums. The
+combined receipt records full regression, recovery, rollback and live acceptance.

@@ -1,5 +1,15 @@
 # Encrypted recovery copies and expiry
 
+## Calendar release recovery verified, 26 September 2026 UTC
+
+Installed registry and production match 110 migration checksums. Protected
+106-to-110 rehearsal preserved 148 original tables over their original columns
+and replayed controls. Fresh installed encrypted 110-to-110 restore passed for
+149 tables and removed plaintext. The actual launchd maintenance job exited zero
+on run 18, validating 98 sets with no issues, expiry candidates or removals.
+No production database writes occurred. The installed retention and recovery
+runtime is unchanged. See [the release receipt](CALENDAR_REMINDERS_REPORT.md).
+
 ## Scheduled restore startup repaired, 22 September 2026 UTC
 
 The 20 and 21 September daily jobs encrypted their archives but failed during
