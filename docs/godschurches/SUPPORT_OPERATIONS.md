@@ -1,20 +1,20 @@
 # Ordinary support operations
 
-## Support case privacy candidate, 26 September 2026 UTC
+## Support case privacy verified live, 26 September 2026 UTC
 
-The unchanged prior production source reproduced private case text and routing
-choices in initial HTML/RSC and retained controls after concealment/account change.
-Support detail/routing now use the same client-read, frozen snapshot lifecycle as
-Get help. Every form controller stays mounted; private conversation, choice and
-attachment presentation is removed during current-access checks. Exact uncertain
-commands are preserved, including when routing rows or attachments disappear.
+Version 2026.09.26.9 extends client-only reads and physical presentation cleanup
+to Support case detail and routing. Original form controllers remain mounted,
+retaining dirty fields and exact uncertain commands through changed snapshots,
+account replacement and temporary errors. One successful action cannot silently
+discard a sibling's work. The attachment viewer removes its presentation while
+retaining its single history owner. Default Feedback/Admin behavior and every
+server authority/receipt rule are unchanged. No intake or operator activation,
+schema, backend or production configuration changed.
 
-A successful action navigates only when no sibling form has dirty or uncertain
-work. Otherwise it retains the siblings and rechecks access without silently
-rebasing them. Access-denial 404 responses conceal alongside 401/403. The scoped
-photo viewer removes presentation while retaining its one controller/history
-entry. Feedback/Admin refresh owners and server authorization are unchanged.
-Browser, integration and release acceptance remain pending. No live claim is made.
+All 65 browser/header groups pass on the serving source; 48 service/HTTP
+checks retain their attributed identical-source baseline; 36 live plus six health checks pass, with 149 unchanged production tables
+and zero production test writes, sends or migrations. See the
+[full release receipt](ACCOUNT_SECURITY_ACCEPTANCE.md).
 
 ## Get help privacy verified live, 26 September 2026 UTC
 

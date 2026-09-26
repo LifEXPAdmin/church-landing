@@ -1,5 +1,15 @@
 # Retained reader privacy
 
+## Support case cleanup verified live, 26 September 2026 UTC
+
+Version 2026.09.26.9 extends the frozen client snapshot to case detail and routing.
+Private content, controls and attachment presentation leave the DOM during
+concealment; original command owners stay in memory. Changed snapshots never
+rebase dirty or uncertain work. Sibling saves preserve each other. The scoped
+viewer retains one history owner with no private presentation while concealed.
+Other retained readers and Feedback/Admin form acceptance remain open. See
+[Support operations](SUPPORT_OPERATIONS.md) and the [security receipt](ACCOUNT_SECURITY_ACCEPTANCE.md).
+
 ## Get help form cleanup verified live, 26 September 2026 UTC
 
 Version 2026.09.26.8 removes recipient/context and typed controls from private

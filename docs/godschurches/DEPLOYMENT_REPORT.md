@@ -1,3 +1,53 @@
+## Support case privacy verified live, 26 September 2026 UTC
+
+Version **2026.09.26.9**, source `69d2df3a7bad8221e9f670ea86178b1ab8ce56bc`, is READY in
+`dpl_6df4SGc43xCeRS5kxTnmRA5jDTae`. Canonical-domain and serving identity checks passed at
+10:14 UTC; production data acceptance passed at 10:15 UTC.
+[Published notes](https://godschurches.com/platform/releases/private-help-conversations).
+
+Support case detail and assignment routing now read private snapshots only after
+hydration and current account checks. Initial HTML/RSC omits private case content,
+routing rows and recipient choices. Concealment, failed reads and 401/403/404
+mutation denials remove private conversation, choices, fields and attachment
+presentation. The original snapshot and every command owner stay in memory.
+Unchanged current reads restore dirty inputs; changed data requires deliberate
+reload without silently rebasing versions, recipients or original requests.
+
+A confirmed action preserves another form's dirty or uncertain work instead of
+navigating away. Every pending command keeps its exact bytes and key, including
+when routing rows or removed attachments disappear from current reads. Explicit
+retry/discard controls identify the original action. Concealed redaction recovery
+remains reachable. Support's attachment viewer removes its presentation while
+retaining one mounted controller and history entry, then rereads on return.
+Other Feedback/Admin readers retain their existing refresh and authorization owners.
+
+The exact production build and [CI](https://github.com/LifEXPAdmin/church-landing/actions/runs/36234372268) pass.
+All 65 browser/header groups pass on this exact source. The 48 service/HTTP
+checks passed on `677447d`; explicit source equivalence
+confirms all 1896 other tracked files byte-identical, with only browser QA changed.
+The unchanged backend retains its attributed 210-file baseline: 1,339 passes,
+two expected skips, no failures. Actual narrow/enlarged browser screenshots were
+reviewed; no physical-device run is claimed. All 36 live checks and six health
+checks pass. All 149 production table fingerprints remain unchanged. All 115
+source, production and installed migration checksums match, with no pending or
+applied migration. Existing actual installed restore and nightly evidence are
+recorded in the release preflight. Scoped runtime errors/fatals, production test
+writes, recipient sends and new queue probes are zero.
+
+Measured startup JavaScript changes versus the preceding verified build:
+case detail 720 gzip bytes,
+routing 720,
+Feedback detail -370,
+Home 21, and Settings
+-14. CSS is unchanged.
+These are build measurements, not a speed claim. No dependency, new endpoint,
+polling timer, worker, schema or production configuration is added.
+
+Broader client-transition diagnosis, other retained readers/forms, CSP,
+cookie/session/password policy and actual owner/provider/OS/device gates remain
+open. This scoped DOM repair does not claim JavaScript heap, browser history,
+OS or provider erasure, or completion of the broader security task.
+
 ## Get help privacy and safe retries verified live, 26 September 2026 UTC
 
 Version **2026.09.26.8**, source `e086db1b20623aa24882d90a3d011b7de66bcc1f`, is READY in
