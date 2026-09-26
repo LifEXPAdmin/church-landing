@@ -4,9 +4,9 @@
 
 This inventory records application-owned storage and its current cleanup owners.
 The baseline inspected is `0f66ee2b5d4273371956ecdd5e0a512f1f2cc3d2`.
-The active browser-privacy candidate repairs reproduced deletion-receipt
-cleanup and scheduled-list DOM/serialized-page retention. Those changes are pending
-verification here; this document does not establish that they are live.
+The deletion-reference and scheduled-list DOM/serialized-page repairs are
+verified live in 2026.09.26.5. See the [security receipt](ACCOUNT_SECURITY_ACCEPTANCE.md).
+The remaining inventory records source findings without certifying every client.
 
 The scan covered `app/`, `components/`, `lib/` and `public/`, excluding test files
 and source maps, with targeted reads of cookie writers, browser storage, history,
@@ -45,7 +45,7 @@ authorization protect application use; they do not encrypt values on the device.
 
 | Key or store and owner | Data and sensitivity | Bound and clearing behavior |
 | --- | --- | --- |
-| localStorage `gc.account-deletion.v1`; `components/platform/account-deletion.tsx` | Owner ID, random read-only progress proof and `savedAt`. The proof can reveal deletion dates, completion and duty counts. No password or Google confirmation proof is stored. | Written before sending the irreversible request so a lost response remains recoverable. A different signed-in owner does not adopt it; anonymous progress deliberately can. The candidate keeps the existing age below 365 days, permits at most five minutes of future clock skew, and removes malformed, oversized, unexpected-field, expired or implausibly future-dated entries when read. Built-browser acceptance is pending. Server proof expiry is separately 90 days after completed deletion, not 90 days after request. |
+| localStorage `gc.account-deletion.v1`; `components/platform/account-deletion.tsx` | Owner ID, random read-only progress proof and `savedAt`. The proof can reveal deletion dates, completion and duty counts. No password or Google confirmation proof is stored. | Written before sending the irreversible request so a lost response remains recoverable. A different signed-in owner does not adopt it; anonymous progress deliberately can. The current repair keeps the existing age below 365 days, permits at most five minutes of future clock skew, and removes malformed, oversized, unexpected-field, expired or implausibly future-dated entries when read. Built-browser and scoped live acceptance passed. Server proof expiry is separately 90 days after completed deletion, not 90 days after request. |
 | localStorage `gc.push-device.v1`; `lib/platform/push-browser.ts`, `components/platform/push-session-boundary.tsx` | Owner ID, random browser binding and optional association ID/version. Sensitive association material; subscription endpoint and encryption keys are not stored here. | No timestamp or local TTL. `forgetBrowserPush` removes it after unsubscribe/notification cleanup. Reconciliation runs on mount/focus, verifies a changed owner, and reacts to missing/revoked permission/subscription. Failed cleanup is retried on a later visit; malformed stored values are ignored rather than removed. Server session/device revocation remains authoritative. |
 | localStorage `gc-reading-break-minutes`; `components/platform/feed-break-reminder.tsx` | Browser preference: Off, 15, 30 or 60 minutes. Reading elapsed time stays in memory. | No TTL. Overwritten when changed, including Off; only allowed enabled values are adopted. Invalid values are ignored, not removed. No account scoping. |
 | localStorage `gc-install-help-dismissed-v1`; `components/platform/installation-help.tsx` | The value `yes` records a dismissed installation hint. | No TTL or automatic clearing found. Browser preference, not account state. |
@@ -67,7 +67,7 @@ The deletion proof must survive uncertain acceptance and ordinary sign-out; see
 | `feed-reader.tsx`, `explore-search-form.tsx`, `settings-workspace.tsx` | URLs/history retain selected post/feed IDs, scope/cursor, filters and search text. Search terms can be sensitive. The settings return-position map is memory-only and capped at 40 entries. No application-wide browsing-history deletion is implemented. |
 | `exchange-search-position.tsx`, `photo-viewer.tsx`, `use-photo-back-guard.ts` | History holds Exchange owner/path/scroll position or opaque photo-viewer/work guard IDs, not copied result rows or selected file bytes. Photo guard entries coordinate Back and pending work; release removes the current extra entry where possible. Navigation metadata may remain in browser history. |
 | `lib/platform/draft-controller.ts`, `components/platform/comment-composer.tsx`, `use-message-workspace.ts`, `use-unsaved-social-work.ts` | Mounted owners retain private draft text, source/version choices and exact pending commands. Post draft controller clears its owner state after confirmed identity change/denial; source concealment preserves work. Message workspace preserves owner-bound text/retry state through failed reads and hides it until identity/access revalidate. Server-saved private drafts are a separate database record, not browser Web Storage. No single cleanup policy applies to all these owners. |
-| `support-form.tsx`, `private-snapshot-guard.tsx`, `community-report-form.tsx`, `community-report-review.tsx` | Support owns its serialized retry body and uncontrolled input values in the mounted form. Report/review owners conditionally remove private rendered fields while retaining owner-bound pending requests in memory. Guarded server snapshots and ordinary/reposted readers can remain in hidden/inert DOM. A status-only global unmount would destroy Support recovery. The scheduled index candidate instead loads its read-only DTO after hydration and clears rendered data on concealment. Acceptance is pending; it does not settle other callers. |
+| `support-form.tsx`, `private-snapshot-guard.tsx`, `community-report-form.tsx`, `community-report-review.tsx` | Support owns its serialized retry body and uncontrolled input values in the mounted form. Report/review owners conditionally remove private rendered fields while retaining owner-bound pending requests in memory. Guarded server snapshots and ordinary/reposted readers can remain in hidden/inert DOM. A status-only global unmount would destroy Support recovery. The scheduled index instead loads its read-only DTO after hydration and clears rendered data on concealment. Scoped acceptance passed; it does not settle other callers. |
 | `privileged-authenticator.tsx`, `google-account.tsx`, account forms | Password/code inputs and confirmation state are transient form/component data, with no Web Storage writer found. Authenticator setup secret/QR and recovery codes clear after ten minutes, factor-version change or owner/session retirement; recovery codes can also be explicitly hidden. Blur concealment itself is not erasure. Browser autofill and password-manager storage are outside this inventory. |
 | `account-export.tsx`, `admin-metrics.tsx`, `author-avatar.tsx`, `profile-image-control.tsx`, `photo-upload-manager.tsx` | Blob/object URLs reference sensitive exports or selected/private image bytes in memory. Account export URL expires after 60 seconds and revokes on replacement/unmount; metrics export revokes after two seconds. Upload previews revoke on file change/unmount. Avatar owner coalesces only simultaneous reads and revokes its URL on concealment. Downloaded files, screenshots and user-saved recovery codes are outside application erasure. |
 | `measurement-foreground.tsx` | Optional measurement choice and foreground cursor stay in component memory and clear on concealment/unmount. This owner does not introduce a browser tracking identifier or Web Storage record. Its server-side measurement records have their own contract and retention owner. |
@@ -100,14 +100,13 @@ was performed for this inventory.
 
 Remaining concrete acceptance:
 
-- Verify the pending deletion-receipt repair, including actual removal of invalid,
-  expired and future-dated values, storage-denied behavior and preservation of a
-  valid proof through lost acceptance and anonymous progress. Do not replace the
-  service's completion-relative expiry with an invented request-relative period.
-- Verify read-only scheduled-list DOM removal separately from the broader
-  snapshot/composer/Support cleanup problem. Check DOM text and input values,
-  not merely visibility, while preserving exact uncertain retries and authorized
-  same-owner restoration.
+- The deletion-reference repair passed isolated invalid/expired/future, denied
+  storage, lost-response and anonymous recovery checks. Live browser checks used
+  synthetic local references without submitting them. Server expiry is unchanged;
+  broader device restoration and storage-denial observations remain separate.
+- Scheduled-list DOM/serialized-page cleanup passed. Continue the broader
+  snapshot/composer/Support cleanup while preserving exact uncertain retries and
+  authorized same-owner restoration. Passing visibility alone is insufficient.
 - Decide and implement only approved bounds for browser preferences, push metadata
   and accumulated message-position keys. Existing no-TTL values are documented
   here, not silently assigned a new retention period. Chart expiry currently

@@ -1,8 +1,8 @@
 # Account security acceptance
 
-## Browser privacy cleanup candidate, 26 September 2026 UTC
+## Browser privacy cleanup verified live, 26 September 2026 UTC
 
-The current candidate repairs two reproduced browser defects. The preceding
+The current release repairs two reproduced browser defects. The preceding
 runtime retained unpublished scheduled text in hidden DOM and serialized page
 data after account change, and retained malformed/expired deletion references.
 A future-dated reference was incorrectly accepted. Reproduction used an isolated
@@ -22,7 +22,32 @@ Cleanup is on read, not a timer. The existing one-year browser bound and server
 expiry 90 days after completion are unchanged. See the
 [browser storage inventory](BROWSER_STORAGE_INVENTORY.md).
 
-Implementation is local pending built-browser, release and live acceptance.
+Serving source `2c61bf260036c8844019bfa3528eb17f66d2c999`, version **2026.09.26.5**, is READY in
+`dpl_CuCEffpd2fU2ve8tQAvtCsJFyQiw` and independently canonical at 07:19 UTC.
+The exact production build, source security scan and CI pass. Acceptance covers
+41 built-browser/header groups, 16 service/HTTP checks and final authenticated
+HTML/DOM plus 320px/200% capture. Earlier broad backend evidence remains attributed
+to its actual source, with 1,339 passes and two expected skips across 210 files.
+All 23 live and 6 health checks pass. Three malformed/expired/future
+synthetic references are removed by the live browser without a server request;
+a valid synthetic reference survives and is then removed locally. No real account
+was deleted. All 149 production table fingerprints are unchanged, 115 source and
+installed migration checksums match, and no migration or new recovery run occurs.
+The actual 06:15 restore/nightly evidence is retained. Scoped runtime errors and
+fatals, production test writes, recipient sends and new queue probes are zero.
+
+The deletion browser fixture initially omitted intake availability; correcting
+its isolated local journal configuration enabled the existing request journey.
+A capture selector was corrected without changing application code. No production
+configuration changed. Authenticated account and scheduled flows were exercised
+with isolated fictional data, not real member mutations.
+
+Measured route/layout startup JS changes are -111 gzip bytes for scheduled posts,
++104 for deletion, -136 for Settings and zero for Home, with unchanged CSS.
+The existing identity/DTO/identity request chain remains; the redundant initial
+server-side list read is removed. Repeated resume events coalesce into one fresh
+read after an invalidated request. No dependency, timer or background job is added.
+These measurements are not a production latency or capacity claim.
 Broader retained forms, CSP, cookie prefix, idle/password policy, provider, device
 and ASVS acceptance stay open.
 

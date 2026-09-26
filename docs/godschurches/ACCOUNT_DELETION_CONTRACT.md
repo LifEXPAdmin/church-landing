@@ -33,7 +33,8 @@ survive ordinary sign-out and a different owner's settings visit so an uncertain
 accepted request remains recoverable. Anonymous progress intentionally consumes
 that capability. This browser validation does not change the separate server
 expiry 90 days after completed deletion or promise continuous background cleanup.
-The current repair is pending built-browser and release acceptance.
+This repair is verified live in version 2026.09.26.5; see the
+[scoped security receipt](ACCOUNT_SECURITY_ACCEPTANCE.md) for evidence.
 
 ## Dispositions in the current service
 

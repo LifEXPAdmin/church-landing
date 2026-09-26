@@ -1,3 +1,40 @@
+## Browser privacy cleanup verified live, 26 September 2026 UTC
+
+Version **2026.09.26.5**, source `2c61bf260036c8844019bfa3528eb17f66d2c999`, is READY in
+`dpl_CuCEffpd2fU2ve8tQAvtCsJFyQiw`. Independent canonical-domain and serving identity
+checks passed at 07:19 UTC; final runtime acceptance passed at 07:20 UTC.
+[Published notes](https://godschurches.com/platform/releases/private-browser-cleanup).
+
+Unpublished scheduled previews now load through the existing authorized API after
+hydration. Initial HTML and serialized page scripts contain no excerpt. Blur,
+hidden/pagehide and offline events clear list data; late responses cannot restore
+it, account changes deny it, and changed snapshots require deliberate reload.
+Shared form guards retain their exact uncertain-request recovery. Invalid deletion
+progress references are removed on read while valid anonymous recovery survives.
+See the [security receipt](ACCOUNT_SECURITY_ACCEPTANCE.md) and
+[browser storage inventory](BROWSER_STORAGE_INVENTORY.md).
+
+The exact build and CI pass with 41 browser/header groups and 16 service/HTTP
+checks. Raw authenticated HTML, same-owner recovery, delayed reads, pagination,
+account replacement and 320px/200% visuals pass on isolated fictional data.
+The unchanged backend retains its 210-file broad baseline: 1,339 passes, two
+expected skips, no failures. Measured startup JavaScript changes by -111 gzip
+bytes for the scheduled list, +104 for deletion, -136 for Settings and zero for
+Home; CSS is unchanged. No dependency, timer, worker or schema change is added.
+
+All 23 live checks and 6 health checks pass, including actual browser
+removal of three unusable local references without submitting a progress request.
+All 149 production table fingerprints are unchanged. All 115 source, production
+and installed migration checksums match; no migration is pending or applied.
+Unchanged recovery code reuses the actual 06:15 installed restore and nightly job
+receipt without claiming another run. Scoped runtime error/fatal rows are zero.
+Production test writes, recipient sends and new queue probes are zero.
+
+The earlier volunteer release and incident runbook remain included. Broader
+retained forms, browser/OS/provider erasure, CSP, cookie/session/password policy,
+actual privileged MFA and operator/device/pilot gates remain open. This scoped
+repair is not complete ASVS acceptance. Continue the next eligible priority work.
+
 # Godschurches deployment report
 
 ## Volunteer availability and reminders verified live, 26 September 2026 UTC
