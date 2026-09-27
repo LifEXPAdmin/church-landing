@@ -27,6 +27,8 @@ export default async function ChangeEmailPage() {
           <h1 className="text-4xl text-gc-text">Your sign-in email</h1>
           <GoogleAccountOptions enabled={googleAvailable() && !!user}>
             <AccountEmailChange
+              key={user?.id ?? "guest"}
+              owner={user?.id}
               available={available}
               signedIn={!!user}
               confirm

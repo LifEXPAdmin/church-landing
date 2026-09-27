@@ -1,4 +1,4 @@
-import test, { after, beforeEach } from "node:test";
+import test, { after, beforeEach, type TestContext } from "node:test";
 import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
 import { PrismaClient } from "@prisma/client";
@@ -19,6 +19,8 @@ import {
 import { deactivateAccount } from "../lib/platform/account-lifecycle";
 import { hashSessionToken, createSessionToken } from "../lib/platform/auth";
 import { handleAccountRequest } from "../lib/platform/account-boundary";
+import type { GoogleCredential } from "../lib/platform/account-credential";
+import { googleCookieName } from "../lib/platform/google-cookies";
 
 assert.equal(process.env.ACCOUNT_TEST_ISOLATED, "1");
 const database = new URL(process.env.DATABASE_URL!);
@@ -61,6 +63,288 @@ async function prepare(
 }
 const code = (value: string) => (e: unknown) =>
   e instanceof AccountError && e.code === value;
+
+const credentialOperations = [
+  "change-password",
+  "request-email-change",
+  "confirm-email-change"
+] as const;
+
+async function credentialState(userId: string) {
+  return {
+    user: await db.platformUser.findUniqueOrThrow({ where: { id: userId } }),
+    sessions: await db.platformSession.findMany({
+      where: { userId },
+      orderBy: { id: "asc" }
+    }),
+    grants: await db.platformAccountGrant.findMany({
+      where: { userId },
+      orderBy: { id: "asc" }
+    }),
+    pending: await db.platformEmailChange.findUnique({ where: { userId } }),
+    proofs: await db.platformRecentAuthentication.findMany({
+      where: { userId },
+      orderBy: { id: "asc" }
+    }),
+    identity: await db.platformGoogleIdentity.findUnique({ where: { userId } })
+  };
+}
+
+function fictionalCredentialBoundary(t: TestContext) {
+  const config = {
+    VERCEL: "1",
+    VERCEL_ENV: "production",
+    ACCOUNT_ORIGIN: "https://godschurches.example.test",
+    AUTH_RATE_LIMIT_SECRET: "fictional-credential-owner-binding-rate-secret",
+    ACCOUNT_DELIVERY_MODE: "resend",
+    ACCOUNT_EMAIL_FROM: "accounts@mail.godschurches.example.test",
+    RESEND_API_KEY: "re_synthetic_never_a_real_key",
+    ACCOUNT_GOOGLE_ENABLED: "true",
+    GOOGLE_CLIENT_ID: "fixture.apps.googleusercontent.com",
+    GOOGLE_CLIENT_SECRET: "fictional-owner-binding-secret"
+  };
+  for (const [key, value] of Object.entries(config)) {
+    const previous = process.env[key];
+    process.env[key] = value;
+    t.after(() => {
+      if (previous === undefined) delete process.env[key];
+      else process.env[key] = previous;
+    });
+  }
+  const deliveries: Array<{ to: string[] }> = [];
+  t.mock.method(globalThis, "fetch", async (url: string, init: RequestInit) => {
+    assert.equal(url, "https://api.resend.com/emails");
+    deliveries.push(JSON.parse(String(init.body)));
+    return Response.json({ id: "synthetic-owner-binding-delivery" });
+  });
+  return { origin: config.ACCOUNT_ORIGIN, deliveries };
+}
+
+for (const throughHttp of [false, true]) {
+  for (const google of [false, true]) {
+    test(`${throughHttp ? "account HTTP boundary" : "credential services"} reject wrong and empty expected owners without effects, then accept the correct owner with ${google ? "the same one-use Google proof" : "the current password"}`, async (t) => {
+      const boundary = throughHttp ? fictionalCredentialBoundary(t) : null;
+      const other = await owner();
+      const otherBefore = await credentialState(other.user.id);
+      for (const operation of credentialOperations) {
+        const a = await owner();
+        const secondSession = await loginAccount(
+          db,
+          a.user.email,
+          password,
+          null
+        );
+        const pending = await prepare(a);
+        await pending.work();
+        await requestAccountGrant(
+          db,
+          a.user.email,
+          "RESET_PASSWORD",
+          async () => {}
+        );
+        // Confirmation intentionally supports another current session of the owner.
+        const sessionToken =
+          operation === "confirm-email-change" ? secondSession : a.token;
+        let credential: string | GoogleCredential = password;
+        if (google) {
+          const identity = await db.platformGoogleIdentity.create({
+            data: {
+              userId: a.user.id,
+              issuer: "https://accounts.google.com",
+              subject: unique()
+            }
+          });
+          const session = await db.platformSession.findUniqueOrThrow({
+            where: { tokenHash: hashSessionToken(sessionToken) }
+          });
+          const token = createSessionToken();
+          await db.platformRecentAuthentication.create({
+            data: {
+              userId: a.user.id,
+              sessionId: session.id,
+              googleIdentityId: identity.id,
+              credentialVersion: session.credentialVersion,
+              purpose: operation,
+              tokenHash: hashSessionToken(token),
+              expiresAt: new Date(Date.now() + 300_000)
+            }
+          });
+          await db.platformUser.update({
+            where: { id: a.user.id },
+            data: { passwordHash: null }
+          });
+          credential = { kind: "google-reauth", token };
+        }
+        const before = await credentialState(a.user.id);
+        assert.equal(before.sessions.length, 2);
+        assert.ok(before.grants.some((grant) => grant.consumedAt === null));
+        assert.ok(before.pending);
+        assert.equal(before.proofs.length, google ? 1 : 0);
+        const newEmail =
+          operation === "request-email-change"
+            ? unique() + "@example.test"
+            : pending.newEmail;
+        const nextPassword = password + "-changed";
+        const deliveries: string[] = [];
+        const callbacks: Array<() => Promise<void>> = [];
+        const service = (expectedOwner: string) => {
+          if (operation === "change-password")
+            return changeAccountPassword(
+              db,
+              sessionToken,
+              credential,
+              nextPassword,
+              nextPassword,
+              expectedOwner
+            );
+          if (operation === "request-email-change")
+            return requestEmailChange(
+              db,
+              sessionToken,
+              credential,
+              newEmail,
+              async (email) => {
+                deliveries.push(email);
+              },
+              expectedOwner
+            );
+          return confirmEmailChange(
+            db,
+            sessionToken,
+            credential,
+            pending.deliveries[0].token,
+            expectedOwner
+          );
+        };
+        const http = (expectedOwner: string) => {
+          assert.ok(boundary);
+          const body = {
+            operation,
+            ...(typeof credential === "string"
+              ? { currentPassword: credential }
+              : { credentialMethod: "google" }),
+            ...(operation === "change-password"
+              ? { password: nextPassword, confirmPassword: nextPassword }
+              : operation === "request-email-change"
+                ? { newEmail }
+                : { token: pending.deliveries[0].token })
+          };
+          return handleAccountRequest(
+            db,
+            new Request(boundary.origin + "/api/platform/account", {
+              method: "POST",
+              headers: {
+                Origin: boundary.origin,
+                "Content-Type": "application/json",
+                "X-Expected-Account": expectedOwner,
+                Cookie:
+                  "church_platform_session=" +
+                  sessionToken +
+                  (typeof credential === "string"
+                    ? ""
+                    : "; " +
+                      googleCookieName("recent", true) +
+                      "=" +
+                      credential.token)
+              },
+              body: JSON.stringify(body)
+            }),
+            (work) => callbacks.push(work)
+          );
+        };
+        const sentBefore = boundary?.deliveries.length ?? 0;
+        for (const expectedOwner of [other.user.id, ""]) {
+          if (throughHttp) {
+            const response = await http(expectedOwner);
+            assert.equal(
+              response.status,
+              operation === "change-password" ? 400 : 401
+            );
+            assert.equal(response.headers.get("set-cookie"), null);
+            assert.equal(
+              (await response.json()).message,
+              "Please sign in again before changing your account."
+            );
+          } else {
+            await assert.rejects(service(expectedOwner), code("session"));
+          }
+          assert.deepEqual(await credentialState(a.user.id), before);
+          assert.deepEqual(await credentialState(other.user.id), otherBefore);
+          assert.equal(callbacks.length, 0);
+          assert.equal(deliveries.length, 0);
+          assert.equal(boundary?.deliveries.length ?? 0, sentBefore);
+        }
+        if (throughHttp) {
+          const response = await http(a.user.id);
+          assert.equal(response.status, 200);
+          if (operation === "request-email-change") {
+            assert.equal(callbacks.length, 1);
+            await callbacks[0]();
+            assert.equal(boundary!.deliveries.length, sentBefore + 1);
+            assert.deepEqual(boundary!.deliveries.at(-1)!.to, [newEmail]);
+          } else {
+            assert.equal(callbacks.length, 0);
+            assert.doesNotMatch(
+              response.headers.get("set-cookie") ?? "",
+              /church_platform_session=/
+            );
+            assert.equal(
+              (await response.json()).redirect,
+              "/platform/login?notice=" +
+                (operation === "change-password"
+                  ? "password-changed"
+                  : "email-changed")
+            );
+          }
+        } else {
+          const send = await service(a.user.id);
+          if (operation === "request-email-change") {
+            assert.ok(typeof send === "function");
+            await send();
+            assert.deepEqual(deliveries, [newEmail]);
+          }
+        }
+        const after = await credentialState(a.user.id);
+        assert.deepEqual(after.identity, before.identity);
+        assert.equal(after.proofs.length, 0);
+        if (operation === "request-email-change") {
+          assert.deepEqual(after.user, before.user);
+          assert.deepEqual(after.sessions, before.sessions);
+          assert.deepEqual(after.grants, before.grants);
+          assert.equal(after.pending?.newEmail, newEmail);
+          assert.notEqual(after.pending?.tokenHash, before.pending.tokenHash);
+        } else {
+          assert.equal(
+            after.user.credentialVersion,
+            before.user.credentialVersion + 1
+          );
+          assert.equal(after.sessions.length, 0);
+          assert.equal(after.grants.length, before.grants.length);
+          assert.ok(after.grants.every((grant) => grant.consumedAt !== null));
+          assert.equal(after.pending, null);
+          if (operation === "change-password") {
+            assert.ok(after.user.passwordHash);
+            assert.notEqual(after.user.passwordHash, before.user.passwordHash);
+            assert.equal(after.user.email, before.user.email);
+          } else {
+            assert.equal(after.user.email, newEmail);
+            assert.ok(after.user.emailVerifiedAt);
+          }
+        }
+        if (google) {
+          // Do not let transport rate limits mask the original proof's one-use check.
+          await assert.rejects(
+            service(a.user.id),
+            code(
+              operation === "request-email-change" ? "credentials" : "session"
+            )
+          );
+          assert.deepEqual(await credentialState(a.user.id), after);
+        }
+      }
+    });
+  }
+}
 
 test("email changes require the owner and current password; preparation stores only a hash and leaves identity unchanged", async () => {
   const a = await owner();

@@ -547,7 +547,8 @@ export async function changeAccountPassword(
   token: unknown,
   oldPassword: unknown,
   password: unknown,
-  confirmation: unknown
+  confirmation: unknown,
+  expectedOwner?: unknown
 ) {
   if (!validToken(token)) throw new AccountError("session");
   if (
@@ -574,6 +575,8 @@ export async function changeAccountPassword(
       session.expiresAt <= new Date() ||
       session.credentialVersion !== session.user.credentialVersion
     )
+      throw new AccountError("session");
+    if (expectedOwner != null && expectedOwner !== session.userId)
       throw new AccountError("session");
     await requireAccountCredential(tx, session, oldPassword, "change-password");
     await tx.platformUser.update({

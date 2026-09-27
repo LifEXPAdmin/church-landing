@@ -3,19 +3,28 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { accountInputClass } from "./account-form";
 import { AccountConfirmation, useAccountConfirmation } from "./google-account";
+import {
+  CredentialPrivacyNotice,
+  useCredentialPrivacy
+} from "./account-credential-privacy";
 
 export function AccountEmailChange({
   available,
+  owner,
   confirm = false,
   signedIn = true
 }: {
   available: boolean;
+  owner?: string;
   confirm?: boolean;
   signedIn?: boolean;
 }) {
   const confirmation = useAccountConfirmation(
     confirm ? "confirm-email-change" : "request-email-change"
   );
+  const privacy = useCredentialPrivacy(owner, available && signedIn);
+  const [newEmail, setNewEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [token, setToken] = useState<string | null>(null);
   const [ready, setReady] = useState(!confirm);
   const [pending, setPending] = useState(false);
@@ -36,6 +45,9 @@ export function AccountEmailChange({
     window.history.replaceState(null, "", window.location.pathname);
     setReady(true);
   }, [confirm]);
+  useEffect(() => {
+    if (privacy.visible && message && !pending) feedback.current?.focus();
+  }, [privacy.visible, message, pending]);
   const prefix = confirm ? "confirm-email-change" : "request-email-change";
   const button = confirm
     ? "Confirm sign-in email change"
@@ -69,6 +81,8 @@ export function AccountEmailChange({
             Sign in
           </Link>
         </p>
+      ) : !privacy.visible ? (
+        <CredentialPrivacyNotice value={privacy} />
       ) : confirm && !token && confirmation.loading ? (
         <p role="status">Checking your email confirmation…</p>
       ) : confirm && !token && !confirmation.options?.emailConfirmationReady ? (
@@ -93,18 +107,23 @@ export function AccountEmailChange({
             event.preventDefault();
             if (busy.current) return;
             busy.current = true;
-            const form = event.currentTarget;
-            const values = new FormData(form);
+            const values = new FormData(event.currentTarget);
+            const credentials = confirmation.credentials(values);
+            let redirect: unknown;
             setPending(true);
             setFailed(false);
             setMessage("");
             try {
+              await privacy.begin();
               const response = await fetch("/api/platform/account", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: {
+                  "Content-Type": "application/json",
+                  "X-Expected-Account": owner ?? ""
+                },
                 body: JSON.stringify({
                   operation: prefix,
-                  ...confirmation.credentials(values),
+                  ...credentials,
                   ...(confirm
                     ? token
                       ? { token }
@@ -114,13 +133,14 @@ export function AccountEmailChange({
               });
               const result = await response.json();
               if (response.ok) {
-                form.reset();
+                setNewEmail("");
+                setPassword("");
                 if (confirm) setToken(null);
                 if (
                   typeof result.redirect === "string" &&
                   /^\/platform(?:[/?]|$)/.test(result.redirect)
                 ) {
-                  window.location.replace(result.redirect);
+                  redirect = result.redirect;
                   return;
                 }
               }
@@ -138,7 +158,7 @@ export function AccountEmailChange({
               confirmation.finish();
               busy.current = false;
               setPending(false);
-              requestAnimationFrame(() => feedback.current?.focus());
+              privacy.finish(redirect);
             }
           }}
         >
@@ -147,6 +167,8 @@ export function AccountEmailChange({
               <label htmlFor="new-sign-in-email">New sign-in email</label>
               <input
                 id="new-sign-in-email"
+                value={newEmail}
+                onChange={(event) => setNewEmail(event.currentTarget.value)}
                 type="email"
                 name="newEmail"
                 autoComplete="email"
@@ -167,6 +189,7 @@ export function AccountEmailChange({
             emailToken={token}
             id={`${prefix}-password`}
             label="Current password for sign-in email"
+            password={{ value: password, onChange: setPassword }}
           />
           {confirm && (
             <p className="text-gc-muted">
@@ -186,15 +209,17 @@ export function AccountEmailChange({
           </noscript>
         </form>
       )}
-      <p
-        ref={feedback}
-        id={`${prefix}-feedback`}
-        role={failed ? "alert" : "status"}
-        tabIndex={-1}
-        className={`break-words text-sm ${failed ? "text-gc-error" : "text-gc-accent"}`}
-      >
-        {message}
-      </p>
+      {privacy.visible && (
+        <p
+          ref={feedback}
+          id={`${prefix}-feedback`}
+          role={failed ? "alert" : "status"}
+          tabIndex={-1}
+          className={`break-words text-sm ${failed ? "text-gc-error" : "text-gc-accent"}`}
+        >
+          {message}
+        </p>
+      )}
     </section>
   );
 }

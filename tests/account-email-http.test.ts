@@ -178,7 +178,7 @@ test(
     );
     const response = await post(confirm, a.token);
     assert.equal(response.status, 200);
-    assert.match(response.headers.get("set-cookie")!, /Max-Age=0/);
+    assert.equal(response.headers.get("set-cookie"), null);
     assert.equal(
       (await response.json()).redirect,
       "/platform/login?notice=email-changed"

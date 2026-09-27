@@ -371,7 +371,8 @@ async function processAccountRequest(
           requestSessionToken(request),
           credential,
           body.newEmail,
-          accountGrantDelivery(config)
+          accountGrantDelivery(config),
+          request.headers.get("X-Expected-Account")
         );
         const work = async () => {
           try {
@@ -393,12 +394,15 @@ async function processAccountRequest(
         db,
         requestSessionToken(request),
         credential,
-        body.token ?? googleRequestToken(request, "email", config.secureCookie)
+        body.token ?? googleRequestToken(request, "email", config.secureCookie),
+        request.headers.get("X-Expected-Account")
       );
       return reply(
         "Sign-in email changed. All devices are signed out. Sign in again using your new email and password or your linked Google account.",
         200,
-        { "Set-Cookie": sessionCookie("", config.secureCookie) },
+        // Access was revoked transactionally. A delayed response must not
+        // clear a newer login cookie established after that transaction.
+        {},
         "/platform/login?notice=email-changed"
       );
     }
@@ -598,12 +602,15 @@ async function processAccountRequest(
         requestSessionToken(request),
         credential,
         body.password,
-        body.confirmPassword
+        body.confirmPassword,
+        request.headers.get("X-Expected-Account")
       );
       return reply(
         "Password changed. All devices are signed out. Sign in with your new password.",
         200,
-        { "Set-Cookie": sessionCookie("", config.secureCookie) },
+        // Keep an unrelated newer login intact if this response is delayed.
+        // The old token no longer names an active server-side session.
+        {},
         "/platform/login?notice=password-changed"
       );
     }

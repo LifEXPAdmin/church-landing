@@ -42,7 +42,8 @@ export async function requestEmailChange(
   sessionToken: unknown,
   currentPassword: unknown,
   newEmailInput: unknown,
-  deliver: Delivery
+  deliver: Delivery,
+  expectedOwner?: unknown
 ) {
   const newEmail = normalizeEmail(newEmailInput);
   if (!newEmail)
@@ -53,6 +54,8 @@ export async function requestEmailChange(
     db,
     sessionToken,
     async (tx, current) => {
+      if (expectedOwner != null && expectedOwner !== current.userId)
+        throw new AccountError("session");
       await requireAccountCredential(
         tx,
         current,
@@ -114,7 +117,8 @@ export async function confirmEmailChange(
   db: PrismaClient,
   sessionToken: unknown,
   currentPassword: unknown,
-  token: unknown
+  token: unknown,
+  expectedOwner?: unknown
 ) {
   if (!validToken(token)) throw new AccountError("grant");
   try {
@@ -122,6 +126,8 @@ export async function confirmEmailChange(
       db,
       sessionToken,
       async (tx, current) => {
+        if (expectedOwner != null && expectedOwner !== current.userId)
+          throw new AccountError("session");
         await requireAccountCredential(
           tx,
           current,

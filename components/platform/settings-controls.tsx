@@ -81,7 +81,11 @@ export function SettingsControls({
       );
     case "email":
       return !data.emailAvailable || canConfirm ? (
-        <AccountEmailChange available={data.emailAvailable} />
+        <AccountEmailChange
+          key={data.ownerId}
+          owner={data.ownerId}
+          available={data.emailAvailable}
+        />
       ) : (
         <SettingsCredentialHelp data={data} />
       );
@@ -115,7 +119,11 @@ export function SettingsControls({
       );
     case "password":
       return canConfirm ? (
-        <AccountForm operation="change-password" />
+        <AccountForm
+          key={data.ownerId}
+          owner={data.ownerId}
+          operation="change-password"
+        />
       ) : (
         <SettingsCredentialHelp data={data} />
       );
@@ -124,7 +132,11 @@ export function SettingsControls({
       return data.googleAvailable ? (
         <>
           <GoogleSignInMethods />
-          <AccountForm operation="change-password" />
+          <AccountForm
+            key={data.ownerId}
+            owner={data.ownerId}
+            operation="change-password"
+          />
         </>
       ) : (
         <div className="gc-settings">

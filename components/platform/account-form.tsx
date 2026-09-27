@@ -1,9 +1,14 @@
 "use client";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { safeAccountReturn } from "@/lib/platform/account-entry";
 import { ParticipationChoice } from "./participation-choice";
 import { AccountConfirmation, useAccountConfirmation } from "./google-account";
+
+import {
+  CredentialPrivacyNotice,
+  useCredentialPrivacy
+} from "./account-credential-privacy";
 
 type Operation =
   | "register"
@@ -15,12 +20,14 @@ import { PasswordField, accountInputClass } from "./account-fields";
 export { PasswordField, accountInputClass } from "./account-fields";
 export function AccountForm({
   operation,
+  owner,
   invitation,
   initialEmail = "",
   returnTo = "/platform",
   onRegistered
 }: {
   operation: Operation;
+  owner?: string;
   invitation?: { code: string; name: string };
   initialEmail?: string;
   returnTo?: string;
@@ -34,6 +41,14 @@ export function AccountForm({
   const feedback = useRef<HTMLParagraphElement>(null);
   const registration = operation === "register";
   const change = operation === "change-password";
+  const privacy = useCredentialPrivacy(owner, change);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  useEffect(() => {
+    if (change && privacy.visible && message && !pending)
+      feedback.current?.focus();
+  }, [change, privacy.visible, message, pending]);
   const request = operation.startsWith("request-");
   const id = (name: string) => `account-${operation}-${name}`;
   const title = {
@@ -48,6 +63,8 @@ export function AccountForm({
     "request-reset": "Request a password reset",
     "request-verification": "Verify your email"
   }[operation];
+  if (change && !privacy.visible)
+    return <CredentialPrivacyNotice value={privacy} />;
   return (
     <form
       id={id("form")}
@@ -65,19 +82,24 @@ export function AccountForm({
         event.preventDefault();
         if (busy.current) return;
         busy.current = true;
-        const values = Object.fromEntries(new FormData(event.currentTarget));
+        const formValues = new FormData(event.currentTarget);
+        const values = Object.fromEntries(formValues);
+        const credentials = change ? confirmation.credentials(formValues) : {};
+        let redirect: unknown;
         setPending(true);
         setFailed(false);
         setMessage("");
         try {
+          if (change) await privacy.begin();
           const response = await fetch("/api/platform/account", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              "Content-Type": "application/json",
+              ...(change ? { "X-Expected-Account": owner ?? "" } : {})
+            },
             body: JSON.stringify({
               ...values,
-              ...(change
-                ? confirmation.credentials(new FormData(event.currentTarget))
-                : {}),
+              ...credentials,
               operation,
               ...(registration && invitation
                 ? { friendInvitation: invitation.code, friendConsent: true }
@@ -88,6 +110,13 @@ export function AccountForm({
             })
           });
           const result = await response.json();
+          if (response.ok && change) {
+            setCurrentPassword("");
+            setPassword("");
+            setConfirmPassword("");
+            redirect = result.redirect;
+            return;
+          }
           if (response.ok && registration && onRegistered) {
             onRegistered(String(values.email ?? ""));
             return;
@@ -106,15 +135,20 @@ export function AccountForm({
           setMessage(
             `${result.message ?? "Please try again."}${!response.ok && reference ? ` Reference: ${reference}` : ""}`
           );
-          requestAnimationFrame(() => feedback.current?.focus());
+          if (!change) requestAnimationFrame(() => feedback.current?.focus());
         } catch {
           setFailed(true);
           setMessage(
-            "We could not confirm the response. If you were creating an account, try signing in before submitting again. Otherwise check your connection and try again."
+            change
+              ? "We could not confirm the response. Try signing in with your new password before submitting another change. This request will not be repeated automatically."
+              : "We could not confirm the response. If you were creating an account, try signing in before submitting again. Otherwise check your connection and try again."
           );
-          requestAnimationFrame(() => feedback.current?.focus());
+          if (!change) requestAnimationFrame(() => feedback.current?.focus());
         } finally {
-          if (change) confirmation.finish();
+          if (change) {
+            confirmation.finish();
+            privacy.finish(redirect);
+          }
           busy.current = false;
           setPending(false);
         }
@@ -193,6 +227,7 @@ export function AccountForm({
           value={confirmation}
           id={id("current-password")}
           label="Current password"
+          password={{ value: currentPassword, onChange: setCurrentPassword }}
         />
       )}
       {!request && (
@@ -200,6 +235,8 @@ export function AccountForm({
           id={id("password")}
           name="password"
           label={change ? "New password" : "Password"}
+          value={change ? password : undefined}
+          onChange={change ? setPassword : undefined}
           autocomplete={
             registration || change ? "new-password" : "current-password"
           }
@@ -215,6 +252,8 @@ export function AccountForm({
             id={id("confirmation")}
             name="confirmPassword"
             label="Confirm password"
+            value={change ? confirmPassword : undefined}
+            onChange={change ? setConfirmPassword : undefined}
             autocomplete="new-password"
           />
         </>

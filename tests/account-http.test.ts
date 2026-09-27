@@ -325,7 +325,7 @@ test("HTTP password change invalidates cookie and all DB sessions; signed-in int
     cookie
   );
   assert.equal(changed.status, 200);
-  assert.match(changed.headers.get("set-cookie")!, /Max-Age=0/);
+  assert.equal(changed.headers.get("set-cookie"), null);
   assert.equal(
     await db.platformSession.count({ where: { userId: user.id } }),
     0

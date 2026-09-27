@@ -1006,6 +1006,14 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "private-account-credentials", version: "2026.09.27.30", date: "2026-09-27",
+    summary: "Password and sign-in email forms protect private entries while account access is checked.",
+    added: [],
+    improved: ["Private entries leave concealed or offline pages and return only after the original account is checked. Uncertain changes are never repeated automatically."],
+    fixed: ["Credential changes reject forms from a different account. Delayed successful responses preserve a newer sign-in."],
+    featureIds: ["account"]
+  },
+  {
     id: "private-active-sign-ins", version: "2026.09.27.29", date: "2026-09-27",
     summary: "Devices and sessions protects private sign-in details while current account access is checked.",
     added: [],
