@@ -1,3 +1,5 @@
+import { interchurchHelpCommand } from "./interchurch-help-commands";
+import { readInterchurchHelp } from "./interchurch-help-reads";
 import { exchangeNeedCommand } from "./exchange-need-commands";
 import { readExchangeNeeds } from "./exchange-need-reads";
 import {
@@ -58,27 +60,29 @@ export async function handleExchangeRequest(
       );
     if (request.method === "GET") {
       const view = q.get("view") ?? "list";
-      const allowed = view.startsWith("need-")
-        ? ["view", "id", "listingId", "after"]
-        : view.startsWith("handoff-")
+      const allowed = view.startsWith("help-")
+        ? ["view", "id", "requestId", "after", "category", "area", "date"]
+        : view.startsWith("need-")
           ? ["view", "id", "listingId", "after"]
-          : view === "defaults"
-            ? ["view"]
-            : view === "list" || view === "mine"
-              ? [
-                  "view",
-                  ...exchangeSearchKeys,
-                  view === "mine" ? "state" : "availability"
-                ]
-              : view === "favorites" || view === "searches"
-                ? ["view", "after"]
-                : view === "search"
-                  ? ["view", "searchId"]
-                  : view === "favorite"
-                    ? ["view", "listingId"]
-                    : view === "context"
-                      ? ["view"]
-                      : ["view", "id"];
+          : view.startsWith("handoff-")
+            ? ["view", "id", "listingId", "after"]
+            : view === "defaults"
+              ? ["view"]
+              : view === "list" || view === "mine"
+                ? [
+                    "view",
+                    ...exchangeSearchKeys,
+                    view === "mine" ? "state" : "availability"
+                  ]
+                : view === "favorites" || view === "searches"
+                  ? ["view", "after"]
+                  : view === "search"
+                    ? ["view", "searchId"]
+                    : view === "favorite"
+                      ? ["view", "listingId"]
+                      : view === "context"
+                        ? ["view"]
+                        : ["view", "id"];
       if (
         [...q.keys()].some(
           (key) => !allowed.includes(key) || q.getAll(key).length !== 1
@@ -86,7 +90,12 @@ export async function handleExchangeRequest(
       )
         throw new PortalError(400, "Use only the supported listing filters.");
       let result;
-      if (view.startsWith("need-"))
+      if (view.startsWith("help-"))
+        result = await readInterchurchHelp(db, token, {
+          ...Object.fromEntries(q),
+          view: view.slice(5)
+        });
+      else if (view.startsWith("need-"))
         result = await readExchangeNeeds(db, token, {
           ...Object.fromEntries(q),
           view: view.slice(5)
@@ -178,26 +187,32 @@ export async function handleExchangeRequest(
       typeof input.operation === "string" &&
       input.operation.startsWith("handoff-");
     const result =
-      typeof input.operation === "string" && input.operation.startsWith("need-")
-        ? await exchangeNeedCommand(db, token, {
+      typeof input.operation === "string" && input.operation.startsWith("help-")
+        ? await interchurchHelpCommand(db, token, {
             ...input,
             operation: input.operation.slice(5)
           })
-        : handoff
-          ? await exchangeHandoffCommand(db, token, {
+        : typeof input.operation === "string" &&
+            input.operation.startsWith("need-")
+          ? await exchangeNeedCommand(db, token, {
               ...input,
-              operation: String(input.operation).slice(8)
+              operation: input.operation.slice(5)
             })
-          : input.operation === "defaults-save"
-            ? await exchangeDefaultsCommand(db, token, input)
-            : [
-                  "favorite-add",
-                  "favorite-remove",
-                  "search-save",
-                  "search-delete"
-                ].includes(String(input.operation))
-              ? await exchangeSavedCommand(db, token, input)
-              : await exchangeListingCommand(db, token, input);
+          : handoff
+            ? await exchangeHandoffCommand(db, token, {
+                ...input,
+                operation: String(input.operation).slice(8)
+              })
+            : input.operation === "defaults-save"
+              ? await exchangeDefaultsCommand(db, token, input)
+              : [
+                    "favorite-add",
+                    "favorite-remove",
+                    "search-save",
+                    "search-delete"
+                  ].includes(String(input.operation))
+                ? await exchangeSavedCommand(db, token, input)
+                : await exchangeListingCommand(db, token, input);
     scheduleDomainActivity(db, actor.id, afterResponse);
     if (handoff) scheduleExchangeHandoffs(db, result.id, afterResponse);
     let protectedRecovery = false;

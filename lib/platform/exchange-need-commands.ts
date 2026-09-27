@@ -111,6 +111,11 @@ async function authorized(
   await requireContactActor(tx, ownerId);
   if (op === "configure") {
     const result = await managedNeedListing(tx, ownerId, input.listingId);
+    if (result.listing.helpPurpose !== null)
+      throw new PortalError(
+        409,
+        "Ministry help cannot use quantity need actions."
+      );
     if (
       !result.listing.ownerChurchId ||
       !(await exchangeReceiverKey(tx, result.listing, ownerId))

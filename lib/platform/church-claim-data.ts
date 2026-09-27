@@ -1,4 +1,6 @@
 export const claimScopes = {
+  COMMIT_INTERCHURCH_HELP:
+    "Offer church ministry resources with explicit personal responsibility",
   HOST_CHURCH_WELCOME:
     "Host church introductions, questions and participation totals",
   MANAGE_CHURCH_PROFILE: "Manage the public church profile",
@@ -9,10 +11,13 @@ export const claimScopes = {
   PUBLISH_CHURCH_POSTS: "Publish church posts",
   MODERATE_CHURCH_POSTS: "Moderate church posts",
   MANAGE_CHURCH_VOLUNTEERS: "Manage church volunteer roles and rosters",
-  PUBLISH_EXCHANGE_LISTINGS: "Create church Exchange listings and manage your church drafts",
+  PUBLISH_EXCHANGE_LISTINGS:
+    "Create church Exchange listings and manage your church drafts",
   MANAGE_EXCHANGE_LISTINGS: "Publish and manage church Exchange listings",
-  MANAGE_CHURCH_GROUPS: "Manage official church groups and accept group leadership",
-  MANAGE_CHURCH_ASSISTANCE: "Manage church assistance and accept private coordinator duties",
+  MANAGE_CHURCH_GROUPS:
+    "Manage official church groups and accept group leadership",
+  MANAGE_CHURCH_ASSISTANCE:
+    "Manage church assistance and accept private coordinator duties",
   MODERATE_EXCHANGE_LISTINGS: "Review reports about church Exchange listings",
   REVIEW_CONNECTIONS: "Review church connection requests",
   APPOINT_COORDINATORS: "Appoint church help coordinators"

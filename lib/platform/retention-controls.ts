@@ -40,6 +40,7 @@ export type RetentionControlEntry = {
     | "EXCHANGE_VISIBILITY"
     | "EXCHANGE_FAVORITE"
     | "EXCHANGE_SAVED_SEARCH"
+    | "INTERCHURCH_HELP"
     | "EXCHANGE_NEED"
     | "VOLUNTEER_OPPORTUNITY"
     | "VOLUNTEER_APPLICATION"
@@ -117,6 +118,7 @@ function validate(value: unknown): RetentionControlEntry {
       "EXCHANGE_VISIBILITY",
       "EXCHANGE_FAVORITE",
       "EXCHANGE_SAVED_SEARCH",
+      "INTERCHURCH_HELP",
       "EXCHANGE_NEED",
       "VOLUNTEER_OPPORTUNITY",
       "VOLUNTEER_APPLICATION",
@@ -464,6 +466,7 @@ export async function recordDiscoveryControl(
     | "EXCHANGE_VISIBILITY"
     | "EXCHANGE_FAVORITE"
     | "EXCHANGE_SAVED_SEARCH"
+    | "INTERCHURCH_HELP"
     | "EXCHANGE_NEED"
     | "VOLUNTEER_OPPORTUNITY"
     | "VOLUNTEER_APPLICATION"
@@ -1406,6 +1409,60 @@ export async function replayRetentionControls(
                 data: { state: "CANCELED", version: { increment: 1 } }
               });
           }
+          await record(tx, entry);
+          await tx.retentionControl.updateMany({
+            where: { id: entry.id, journaledAt: null },
+            data: { journaledAt: new Date() }
+          });
+          continue;
+        }
+        if (entry.kind === "INTERCHURCH_HELP") {
+          const prior = await tx.interchurchHelpRequest.findUnique({
+            where: { id: entry.sourceId }
+          });
+          if (prior && prior.version < entry.version) {
+            await tx.interchurchHelpRequest.update({
+              where: { id: prior.id },
+              data: {
+                version: entry.version,
+                recoveryRequired: true,
+                coordinatorKey: null
+              }
+            });
+            await tx.interchurchHelpOffer.updateMany({
+              where: { requestId: prior.id },
+              data: { authorityKey: null, noticeSince: null }
+            });
+            await tx.interchurchHelpAgreement.updateMany({
+              where: {
+                offer: { requestId: prior.id },
+                state: { in: ["NEEDS_REVIEW", "CONFIRMED"] }
+              },
+              data: { state: "REVOKED" }
+            });
+            await tx.interchurchHelpAgreement.updateMany({
+              where: { offer: { requestId: prior.id } },
+              data: {
+                authorityKey: null,
+                requesterContact: "",
+                responderContact: "",
+                requesterAcknowledged: null,
+                responderAcknowledged: null,
+                requesterNoticeSince: null,
+                responderNoticeSince: null
+              }
+            });
+            if (prior.listingId)
+              await tx.exchangeListing.updateMany({
+                where: { id: prior.listingId },
+                data: {
+                  state: "DRAFT",
+                  recoveryRequired: true,
+                  version: { increment: 1 }
+                }
+              });
+          }
+          // The durable control is also a tombstone for a source absent in an older backup.
           await record(tx, entry);
           await tx.retentionControl.updateMany({
             where: { id: entry.id, journaledAt: null },

@@ -112,10 +112,11 @@ async function manager(tx: PostTx, id: unknown, ownerId: string) {
       "This listing is unavailable to your current account or church duties."
     );
   if (
-    await tx.exchangeNeed.findUnique({
+    listing.helpPurpose !== null ||
+    (await tx.exchangeNeed.findUnique({
       where: { listingId: listing.id },
       select: { id: true }
-    })
+    }))
   )
     throw new PortalError(
       409,

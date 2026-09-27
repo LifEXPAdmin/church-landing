@@ -1,3 +1,4 @@
+import { interchurchHelpNotificationSources } from "./interchurch-help-notifications";
 import { pantryNotificationSources } from "./pantry-notifications";
 import { volunteerReminderSources } from "./volunteer-reminder-policy";
 import { calendarReminderSources } from "./calendar-reminder-policy";
@@ -23,6 +24,7 @@ import { volunteerShift } from "./volunteer-shift";
 
 type Tx = Prisma.TransactionClient;
 export const domainNotificationKinds = [
+  "INTERCHURCH_HELP",
   "CALENDAR_REMINDER",
   "VOLUNTEER_REMINDER",
   "GROUP_MEMBERSHIP",
@@ -121,6 +123,13 @@ export async function domainNotificationSources(
     feedbackChannel
   );
   for (const [id, source] of assistance) result.set(id, source);
+  const help = await interchurchHelpNotificationSources(
+    tx,
+    events.filter((e) => e.kind === "INTERCHURCH_HELP"),
+    context,
+    feedbackChannel
+  );
+  for (const [id, source] of help) result.set(id, source);
   const needs = await needNotificationSources(
     tx,
     events.filter(

@@ -588,6 +588,7 @@ enum ChurchCapability {
   MODERATE_EXCHANGE_LISTINGS
   MANAGE_CHURCH_ASSISTANCE
   MANAGE_CHURCH_GROUPS
+  COMMIT_INTERCHURCH_HELP
 }
 
 enum OperatorCapability {
@@ -608,6 +609,7 @@ enum OperatorCapability {
 }
 
 enum CommunityReportTarget {
+  INTERCHURCH_OFFER
   GROUP
   PANTRY_REQUEST
   NEED_CONTRIBUTION
@@ -1850,6 +1852,8 @@ model ExchangeListing {
   searchMatches ExchangeSearchMatch[]
   inquiries ExchangeInquiry[]
   need ExchangeNeed?
+  helpPurpose String?
+  helpRequest InterchurchHelpRequest?
   @@index([inquiryReceiverId, inquiriesEnabled])
   @@index([ownerId, updatedAt(sort: Desc), id(sort: Desc)])
   @@index([ownerChurchId, updatedAt(sort: Desc), id(sort: Desc)])
@@ -3446,4 +3450,104 @@ model PantryEvent {
   hub PantryHub @relation(fields: [hubId], references: [id], onDelete: Restrict)
   @@unique([hubId, version])
   @@index([hubId, createdAt, id])
+}
+
+// Canonical publication, ownership and audience remain on ExchangeListing.
+model InterchurchHelpRequest {
+  id String @id
+  listingId String? @unique
+  schema Int @default(1)
+  version Int @default(1)
+  termsVersion Int @default(1)
+  recoveryRequired Boolean @default(false)
+  category String
+  duties String
+  dutyClass String
+  equipmentMode String
+  startLocal String
+  endLocal String
+  timeZone String
+  startAt DateTime
+  endAt DateTime
+  compensation String
+  amountMinor Int?
+  currency String?
+  rateUnit String?
+  reimbursement String
+  coordinatorId String?
+  coordinatorKey String?
+  coordinatorDisplay String
+  consentVersion Int @default(1)
+  outcome String @default("OPEN")
+  outcomeReason String @default("")
+  completedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  listing ExchangeListing? @relation(fields: [listingId], references: [id], onDelete: SetNull)
+  offers InterchurchHelpOffer[]
+  events InterchurchHelpEvent[]
+  @@index([category, startAt, id])
+  @@index([coordinatorId, updatedAt, id])
+}
+
+model InterchurchHelpOffer {
+  id String @id
+  requestId String
+  responderId String?
+  coordinatorId String?
+  respondingChurchId String?
+  kind String
+  schema Int @default(1)
+  version Int @default(1)
+  requestTermsVersion Int
+  authorityKey String?
+  state String @default("OFFERED")
+  terms Json
+  noticeSince DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  endedAt DateTime?
+  request InterchurchHelpRequest @relation(fields: [requestId], references: [id], onDelete: Restrict)
+  agreement InterchurchHelpAgreement?
+  @@index([requestId, state, id])
+  @@index([responderId, createdAt, id])
+  @@index([coordinatorId, createdAt, id])
+}
+
+model InterchurchHelpAgreement {
+  id String @id
+  offerId String @unique
+  version Int @default(1)
+  termsVersion Int @default(1)
+  requestTermsVersion Int
+  offerVersion Int
+  authorityKey String?
+  state String @default("NEEDS_REVIEW")
+  terms Json
+  requesterAcknowledged Int?
+  responderAcknowledged Int?
+  requesterContact String @default("")
+  responderContact String @default("")
+  contactVersion Int @default(1)
+  requesterNoticeSince DateTime?
+  responderNoticeSince DateTime?
+  completionNote String @default("")
+  completedAt DateTime?
+  canceledAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  offer InterchurchHelpOffer @relation(fields: [offerId], references: [id], onDelete: Restrict)
+}
+
+model InterchurchHelpEvent {
+  id String @id @default(cuid())
+  requestId String
+  actorId String?
+  targetId String?
+  version Int
+  action String
+  reason String @default("")
+  createdAt DateTime @default(now())
+  request InterchurchHelpRequest @relation(fields: [requestId], references: [id], onDelete: Restrict)
+  @@index([requestId, version])
 }

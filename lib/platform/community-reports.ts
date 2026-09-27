@@ -1,3 +1,5 @@
+import { helpOfferEvidence } from "./interchurch-help-retention";
+import { currentHelpOffer } from "./interchurch-help-policy";
 import {
   currentGroupInvitation,
   groupLeaderCurrent,
@@ -156,6 +158,31 @@ async function targetIn(
         href: "/platform/pantry/mine"
       },
       evidencePreview: pantryRequestEvidence(row)
+    };
+  }
+  if (type === "INTERCHURCH_OFFER") {
+    const row = await tx.interchurchHelpOffer.findUnique({
+      where: { id },
+      include: { agreement: true }
+    });
+    if (
+      !row ||
+      !context.actorId ||
+      ![row.responderId, row.coordinatorId].includes(context.actorId) ||
+      !(await currentHelpOffer(tx, row))
+    )
+      return null;
+    return {
+      type,
+      id,
+      version: row.version,
+      contextVersion: 0,
+      scopeChurchId: null,
+      source: {
+        label: "Selected private ministry help offer",
+        href: "/platform/exchange/help/offers"
+      },
+      evidencePreview: helpOfferEvidence(row)
     };
   }
   if (type === "NEED_CONTRIBUTION") {
@@ -817,6 +844,19 @@ export function readCommunityReports(
           selectedHandoff = {
             type: report.targetType,
             content: pantryRequestEvidence(row),
+            version: row.version,
+            createdAt: row.createdAt
+          };
+      }
+      if (report.targetType === "INTERCHURCH_OFFER") {
+        const row = await tx.interchurchHelpOffer.findUnique({
+          where: { id: report.targetId },
+          include: { agreement: true, request: true }
+        });
+        if (row && !row.request.recoveryRequired)
+          selectedHandoff = {
+            type: report.targetType,
+            content: helpOfferEvidence(row),
             version: row.version,
             createdAt: row.createdAt
           };

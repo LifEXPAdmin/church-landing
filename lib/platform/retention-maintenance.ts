@@ -1,3 +1,4 @@
+import { expireHelpContacts } from "./interchurch-help-retention";
 import { expireFeedSnapshots } from "./feed-snapshot-retention";
 import { purgeExpiredMeasurements } from "./platform-measurement";
 import { Prisma, type PrismaClient } from "@prisma/client";
@@ -150,7 +151,12 @@ export async function expireRetentionReceipts(
       })
     )
       continue;
-    if (row.target !== "REPORT" && row.target !== "MESSAGE" && row.target !== "EXCHANGE_INQUIRY") continue; // Other targets have dedicated lifecycle owners.
+    if (
+      row.target !== "REPORT" &&
+      row.target !== "MESSAGE" &&
+      row.target !== "EXCHANGE_INQUIRY"
+    )
+      continue; // Other targets have dedicated lifecycle owners.
     const record: PurgeRecord = {
       target: row.target,
       id: row.targetId,
@@ -204,10 +210,14 @@ export async function runRetentionOperations(
   journals: RetentionJournals,
   signal = AbortSignal.timeout(40000)
 ) {
+  await expireHelpContacts(db);
   const feedSnapshotsExpired = await expireFeedSnapshots(db);
-  let measurementsExpired = { days: 0, choices: 0, trimmedDays: 0 }, measurementFailure = 0;
+  let measurementsExpired = { days: 0, choices: 0, trimmedDays: 0 },
+    measurementFailure = 0;
   try {
-    measurementsExpired = await db.$transaction((tx) => purgeExpiredMeasurements(tx));
+    measurementsExpired = await db.$transaction((tx) =>
+      purgeExpiredMeasurements(tx)
+    );
   } catch {
     // Optional measurement maintenance must not stop account or message erasure.
     measurementFailure = 1;

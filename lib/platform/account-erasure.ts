@@ -1,3 +1,4 @@
+import { eraseHelp } from "./interchurch-help-retention";
 import { revokeAccountContact } from "./adult-contact-policy";
 import {
   closeGroupAccountAccess,
@@ -205,6 +206,7 @@ async function eraseSocialData(tx: Tx, userId: string, now: Date) {
   await tx.$executeRaw`UPDATE "ExchangeNeedContribution" c SET note='', "disputeNote"='', "loanResponsibility"=''
     WHERE c."contributorId"=${userId} AND NOT EXISTS (SELECT 1 FROM "CommunityReport" r
       WHERE r."targetType"='NEED_CONTRIBUTION' AND r."targetId"=c.id)`;
+  await eraseHelp(tx, userId);
   await tx.exchangeNeedContribution.updateMany({
     where: { contributorId: userId },
     data: { contributorId: null, shareName: false, authorityKey: null }
@@ -281,10 +283,20 @@ async function eraseSocialData(tx: Tx, userId: string, now: Date) {
   await tx.postPoll.deleteMany({ where: { post: personalPost(userId) } });
   await eraseVolunteerApplications(tx, userId);
   await tx.postVolunteerSignup.deleteMany({
-    where: { OR: [
-      { userId, NOT: { AND: [{ completedAt: { not: null } }, { application: { isNot: null } }] } },
-      { slot: { post: personalPost(userId) } }
-    ] }
+    where: {
+      OR: [
+        {
+          userId,
+          NOT: {
+            AND: [
+              { completedAt: { not: null } },
+              { application: { isNot: null } }
+            ]
+          }
+        },
+        { slot: { post: personalPost(userId) } }
+      ]
+    }
   });
   await tx.postVolunteerSlot.deleteMany({
     where: { post: personalPost(userId) }

@@ -1,5 +1,9 @@
+import { revokeHelpOffers } from "./interchurch-help-lifecycle";
 import { revokeGroupContact } from "./group-lifecycle";
-import { revokePantryRequests, disablePantryCoordinator } from "./pantry-lifecycle";
+import {
+  revokePantryRequests,
+  disablePantryCoordinator
+} from "./pantry-lifecycle";
 import {
   revokeNeedContributions,
   disableNeedCoordinator
@@ -103,11 +107,38 @@ export async function contactPolicy(
 // Called by the canonical relationship writer inside its permission transaction.
 // Unblocking or following again never revives revoked acceptance.
 export async function revokeBlockedContact(tx: Tx, a: string, b: string) {
-  await revokeGroupContact(tx, { OR: [
-    { userId: a, invitedById: b }, { userId: b, invitedById: a },
-    { userId: a, offeredById: b }, { userId: b, offeredById: a }
-  ] }, a);
-  await revokePantryRequests(tx, { OR: [{ requesterId: a, coordinatorId: b }, { requesterId: b, coordinatorId: a }] }, a);
+  await revokeHelpOffers(
+    tx,
+    {
+      OR: [
+        { responderId: a, coordinatorId: b },
+        { responderId: b, coordinatorId: a }
+      ]
+    },
+    a
+  );
+  await revokeGroupContact(
+    tx,
+    {
+      OR: [
+        { userId: a, invitedById: b },
+        { userId: b, invitedById: a },
+        { userId: a, offeredById: b },
+        { userId: b, offeredById: a }
+      ]
+    },
+    a
+  );
+  await revokePantryRequests(
+    tx,
+    {
+      OR: [
+        { requesterId: a, coordinatorId: b },
+        { requesterId: b, coordinatorId: a }
+      ]
+    },
+    a
+  );
   await revokeNeedContributions(
     tx,
     {
@@ -187,9 +218,25 @@ export async function revokeUnfollowedRequests(
   });
 }
 export async function revokeAccountContact(tx: Tx, userId: string) {
-  await revokeGroupContact(tx, { OR: [{ userId }, { invitedById: userId }, { offeredById: userId }] }, userId);
-  await revokePantryRequests(tx, { OR: [{ requesterId: userId }, { coordinatorId: userId }] }, userId);
-  const hubs = await tx.pantryHub.findMany({ where: { coordinatorId: userId, coordinatorKey: { not: null } }, select: { id: true } });
+  await revokeHelpOffers(
+    tx,
+    { OR: [{ responderId: userId }, { coordinatorId: userId }] },
+    userId
+  );
+  await revokeGroupContact(
+    tx,
+    { OR: [{ userId }, { invitedById: userId }, { offeredById: userId }] },
+    userId
+  );
+  await revokePantryRequests(
+    tx,
+    { OR: [{ requesterId: userId }, { coordinatorId: userId }] },
+    userId
+  );
+  const hubs = await tx.pantryHub.findMany({
+    where: { coordinatorId: userId, coordinatorKey: { not: null } },
+    select: { id: true }
+  });
   for (const hub of hubs) await disablePantryCoordinator(tx, hub.id, userId);
   await revokeNeedContributions(
     tx,

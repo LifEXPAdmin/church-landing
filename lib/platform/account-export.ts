@@ -1,3 +1,4 @@
+import { exportHelp } from "./interchurch-help-retention";
 import { currentExchangeInquiry } from "./exchange-handoff-policy";
 import { projectClaimAuthority, claimScopes } from "./church-claim-data";
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
@@ -627,6 +628,7 @@ export async function downloadAccountExport(
       });
     }
     const collections = {
+      interchurchHelp: await exportHelp(tx, userId, MAX_ROWS),
       exchangeInquiries,
       assistanceRequests: await tx.pantryRequest
         .findMany({

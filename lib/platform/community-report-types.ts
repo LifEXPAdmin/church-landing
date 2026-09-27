@@ -1,4 +1,5 @@
 export const communityReportTargets = [
+  "INTERCHURCH_OFFER",
   "GROUP",
   "PANTRY_REQUEST",
   "NEED_CONTRIBUTION",
@@ -17,6 +18,7 @@ export const communityReportTargets = [
 ] as const;
 export type CommunityReportTarget = (typeof communityReportTargets)[number];
 export const communityReportTargetLabels = {
+  INTERCHURCH_OFFER: "private ministry help offer and agreement",
   GROUP: "Gather group",
   PANTRY_REQUEST: "private assistance request",
   NEED_CONTRIBUTION: "private Church Needs contribution",

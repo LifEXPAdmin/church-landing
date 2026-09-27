@@ -62,6 +62,7 @@ import { imagesAvailable } from "./media-storage";
 export const EXCHANGE_PAGE_SIZE = 20;
 const publicSelect = {
   id: true,
+  helpPurpose: true,
   version: true,
   title: true,
   description: true,
@@ -92,6 +93,7 @@ const publicSelect = {
 // request and item text stays on the authorized detail/editor projection.
 const cardSelect = {
   id: true,
+  helpPurpose: true,
   version: true,
   title: true,
   description: true,
@@ -123,7 +125,10 @@ function fieldsOf(
   row: Pick<ExchangeListing, keyof ExchangeListingFields>
 ): ExchangeListingFields {
   if (row.audience !== "PUBLIC" && row.audience !== "CHURCH")
-    throw new PortalError(503, "This listing's audience needs review before publication.");
+    throw new PortalError(
+      503,
+      "This listing's audience needs review before publication."
+    );
   // Stored values were validated at the write boundary. Revalidate publication
   // from the complete current snapshot rather than trusting an old saved form.
   return {
@@ -401,6 +406,11 @@ export function exchangeListingCommand(
         };
       }
       const row = await manage(tx, context, authority, input.listingId);
+      if (row.helpPurpose !== null)
+        throw new PortalError(
+          409,
+          "Use the ministry help controls for this request. Generic listing edits, copies and status changes are unavailable."
+        );
       expected(input.expectedVersion, row.version);
       if (op === "duplicate") {
         if (row.moderationState !== "VISIBLE")
@@ -986,3 +996,11 @@ export function readExchangeGallery(
     };
   });
 }
+
+// The typed ministry request uses the same publication, capacity and audit owners.
+export {
+  publication as validateHelpPublication,
+  capacity as helpListingCapacity,
+  activity as helpListingActivity,
+  audit as helpListingAudit
+};
