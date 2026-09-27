@@ -144,3 +144,32 @@ was added. Tested commits are ready for integration with the two additive migrat
 and the final compatible source. Integration rebuild, release-owner review and live
 acceptance remain required; no production migration, deployment or real grant was
 performed by this feature builder.
+
+## Integration review corrections
+
+Integration review reproduced two additional privacy defects on the handed-off
+application source above, before corrective edits. A background relationship signal
+after blur or pagehide could resume private reads and redisplay retained drafts.
+Private coordinator and organization-offer reads also omitted the canonical
+session-bound authenticator requirement when privileged enforcement was enabled.
+Both findings were reproduced against the earlier built HTTPS application; its
+acceptance is superseded for these boundaries.
+
+Background refresh now requires an already active page. Concealment clears queued
+refreshes, and late primary reads cannot start a follow-up context read or restore
+fields. Current church-duty private projections require current privileged session
+assurance before disclosing names, terms or contacts. Expiry denies only access;
+it does not revoke pair consent. A renewed real authenticator challenge restores
+access. Personal offers retain personal access despite unrelated assigned duties.
+
+Corrected build `DfkFVW0cCseK0wY7bVOvI` passes 17 browser groups, 37 focused
+service/compatibility/HTTPS assertions including nested assurance cases, and a
+separate 14-assertion enforced-MFA HTTPS run. Those tests cover absent, expired,
+wrong-session and changed-authority proof, canonical proof renewal with unchanged
+agreement/contact consent, concealed contact and draft fields, delayed responses,
+queued background work and focus recovery. Application source digests match the
+built snapshot. Type/lint/build, copy, hydration, trace and source-security checks
+pass. The earlier 213-file broad harness remains separate valid baseline evidence;
+it was not rerun or represented as a run of this corrective source. No schema,
+migration, production setting or real grant changed in this correction. The
+corrective source is mandatory for integration and a compatible rollback baseline.
