@@ -366,6 +366,25 @@ test("HTTPS rejects forged owner/target/origin and anonymous callers without tou
   );
 });
 
+test("passive session refresh has a separate bounded budget and cannot exhaust credential confirmations", async () => {
+  const { current, other, user } = await signins();
+  for (let index = 0; index < 121; index++) {
+    const response = await post({ operation: "list-sessions" }, current, {
+      "X-Expected-Account": user.id
+    });
+    assert.equal(response.status, index < 120 ? 200 : 429);
+    await response.body?.cancel();
+    if (index === 120) assert.equal(response.headers.get("retry-after"), "900");
+  }
+  const revoke = await post({ operation: "revoke-other-sessions", currentPassword: password }, current, {
+    "X-Expected-Account": user.id
+  });
+  assert.equal(revoke.status, 200);
+  await revoke.body?.cancel();
+  assert.ok(await readAccountSession(db, current));
+  assert.equal(await readAccountSession(db, other), null);
+});
+
 test("wrong-password session revocation is durably rate limited", async () => {
   const { current, other } = await signins();
   for (let index = 0; index < 11; index++) {

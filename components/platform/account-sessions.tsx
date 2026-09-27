@@ -88,7 +88,7 @@ export function AccountSessions({
     setListing(null);
     setNotice("Checking your current account…");
     try {
-      if ((await currentSocialOwner()) !== owner)
+      if (!requested.current && (await currentSocialOwner()) !== owner)
         throw new Error(
           "Your sign-in changed. Reload settings before continuing."
         );

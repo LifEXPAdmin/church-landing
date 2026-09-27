@@ -47,14 +47,17 @@ export function allowAccountAttempt(
   ip: string,
   subject: string
 ) {
+  // Passive session-list recovery does no credential hashing. Keep it bounded
+  // without consuming the smaller sign-in and password-confirmation budgets.
+  const sessionRead = operation === "list-sessions";
   return allowLimitedAttempt(
     db,
-    secret,
+    sessionRead ? secret + ":session-list" : secret,
     operation,
     ip,
     subject,
-    30,
-    operation.startsWith("request-") ? 3 : 10
+    sessionRead ? 300 : 30,
+    sessionRead ? 120 : operation.startsWith("request-") ? 3 : 10
   );
 }
 

@@ -191,4 +191,11 @@ try {
   ok("Deliberate confirmed revocation clears the password, retains this session and fits narrow/enlarged layouts without storing private credentials");
   writeFileSync(output + "/result.json", JSON.stringify({ at: new Date().toISOString(), results, errors, source: execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim(), actorIds: actors, productionBuild: true, productionWrites: 0, externalSends: 0 }, null, 2), { mode: 0o600 });
   console.log("ACCOUNT_SESSION_PRIVACY_BROWSER_PASS " + results.length);
+} catch (error) {
+  const failure = output + "/failure-" + Date.now();
+  writeFileSync(failure + ".json", JSON.stringify({ results, errors, error: String(error),
+    state: await page.evaluate(() => ({ online: navigator.onLine, visibility: document.visibilityState, text: document.body.innerText })),
+    requests: outbound }, null, 2), { mode: 0o600 });
+  await page.screenshot({ path: failure + ".png", fullPage: true });
+  throw error;
 } finally { await browser.close(); await db.$disconnect(); }
