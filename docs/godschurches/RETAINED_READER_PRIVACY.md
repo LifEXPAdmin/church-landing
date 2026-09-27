@@ -1,3 +1,46 @@
+## Credential privacy and ministry help verified live, 27 September 2026 UTC
+
+Credential privacy .30 and interchurch ministry help .31 are **implemented,
+tested, merged and verified live** in one **2026.09.27.31** deployment.
+Source `43839c4ba2ae2fdb814d126196cfb465ccb6b19c` is READY and independently
+canonical as `dpl_59inZ5mK3kHTNcfm1RJTEuUJVLDo`, confirmed at **22:19:14 UTC**.
+This supersedes the local-only credential and interchurch entries below.
+
+The combined application passed 39 browser groups, 222 checks across 18 focused
+test files including a ready-server HTTPS export retry, a ministry HTTPS flow,
+and 14 enforced-MFA HTTPS assertions. The production build used `704a865`;
+the only later source change is the test query typing correction in `43839c4`.
+Full TypeScript, targeted lint and exact-source CI passed. Production passed
+94 guest/page/browser/API checks and six health checks, with no page errors,
+blocked mutation attempts, test writes or real-recipient sends. All 149 original
+table fingerprints remained unchanged at **22:20:46 UTC**; scoped runtime error
+and fatal logs were empty. Private account writes were tested only in isolated
+fictional fixtures.
+
+Both additive ministry-help migrations are applied and match all 117 source
+checksums. There are 153 application tables; the four new help tables, typed
+listing markers and new delegation grants were empty after migration. Fresh
+115-to-117 encrypted restoration preserved the original table/column fingerprints
+and completed protected replay against stable frozen journal snapshots. Provider
+mutations were denied at fetch and Undici transport boundaries with zero attempts.
+The installed 117 migration registry is updated; ordinary installed restore and
+scheduled-job closeout are recorded in the backup operations report.
+
+Password and email drafts remain only in mounted memory while private fields
+leave concealed DOM. Expected-account checks precede credential use; delayed
+success cannot clear a newer account or Google confirmation cookie. The actual
+Account, Connected sign-in methods route and explicit recovery links passed.
+Ministry requests, scoped personal or organization offers, agreed terms and
+outcomes use current delegated authority, explicit pair consent and privileged
+session assurance. Background signals cannot reveal concealed help data.
+
+Retain the complete corrected, enum-aware application and 117 migrations for
+recovery. Revoking a grant does not make older Prisma clients safe; do not
+blindly roll back to .29 or remove the new schema. Broader security review,
+legitimate appointments, child-duty policy, real-provider/device acceptance and
+operator/pilot readiness remain open. This release is not a certification or an
+authorization to reopen restored traffic.
+
 ## Credential privacy implementation checkpoint, 27 September 2026 UTC
 
 Password and email credential changes are implemented for the next release batch,

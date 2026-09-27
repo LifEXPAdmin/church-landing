@@ -1,5 +1,31 @@
 # Encrypted recovery copies and expiry
 
+## Credential and ministry help release recovery, 27 September 2026 UTC
+
+Production, source and the installed migration registry now match 117 checksums.
+The fresh encrypted 115-to-117 production-copy rehearsal preserved all 149 original
+tables over their original columns and produced 153 tables. Both additive migrations
+were accepted before production application. The four new help tables remained empty;
+no requests, consent or authority were inferred.
+
+Protected replay used independently captured, stable journal snapshots with validated
+read-only stores. Explicit existing storage credentials avoided the SDK's automatic
+OIDC refresh. Both fetch and Undici dispatch rejected provider mutations; successful
+replay recorded zero attempted mutations, unresolved reports or review counters.
+This is an isolated rehearsal. Current-authorization review remains required before
+reopening recovered traffic, and no global production pause or real incident drill
+is claimed. The complete corrected credential/privacy and ministry application is
+the compatible recovery floor; revoked new enum values still break older clients.
+
+The installed ordinary encrypted 117-to-117 restore passed at 22:24 UTC for all
+153 tables, with matching migration checksums and temporary plaintext removed.
+The actual launchd maintenance job advanced from run 23 to 24 and exited zero,
+validating 109 sets with no issues, expiry candidates or removals. The installed
+recovery runtime and protected existing listener stayed unchanged. Production
+application writes and recipient sends were zero. Earlier failed rehearsal
+diagnostics and their unchanged encrypted archives are preserved separately; subsequent ordinary restore attestation never
+turns a failed protected rehearsal into a protected acceptance result.
+
 ## Volunteer release recovery verified, 26 September 2026 UTC
 
 Production and the installed registry now match all 115 source migration
