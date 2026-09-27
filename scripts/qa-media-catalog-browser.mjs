@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "./session-cookie-fixture.mjs";
 import assert from "node:assert/strict";
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { createRequire } from "node:module";
@@ -75,7 +76,7 @@ const go = async (path) => {
 const actor = await createPortalActor(db, "mediabrowser");
 await context.addCookies([
   {
-    name: "church_platform_session",
+    name: sessionCookieFixtureName(origin),
     value: actor.token,
     url: origin,
     httpOnly: true,
@@ -315,7 +316,7 @@ try {
     const response = await route.fetch();
     await context.addCookies([
       {
-        name: "church_platform_session",
+        name: sessionCookieFixtureName(origin),
         value: other.token,
         url: origin,
         httpOnly: true,
@@ -355,7 +356,7 @@ try {
   await context.unroute("**/api/platform/media-catalog", swapResponse);
   await context.addCookies([
     {
-      name: "church_platform_session",
+      name: sessionCookieFixtureName(origin),
       value: actor.token,
       url: origin,
       httpOnly: true,

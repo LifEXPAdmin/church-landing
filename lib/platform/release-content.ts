@@ -14,11 +14,19 @@ export type Feature = {
 };
 export const features: Feature[] = [
   {
+    id: "media-catalog", category: "Media and learning", name: "Media library and publishing studio",
+    description: "Discover permitted media by title, speaker, series, topic, language and format, and prepare your own reviewed source links.",
+    steps: "Open Media to browse or search. In My media, create a private draft, review its source and sharing rights, then publish or unpublish deliberately. Open source only when you choose to visit its provider.",
+    href: "/platform/media",
+    eligibility: "Publishing requires an eligible verified adult account and a current rights acknowledgment. Church publishing requires an explicit media duty and current church authority. The library rechecks audience, membership, blocks, rights and source status. Native uploads, embedded playback, transcripts and Scripture-reference search are not available yet.",
+    availability: "available"
+  },
+  {
     id: "post-resource-attachments", category: "Posts and conversations", name: "Existing resources in posts",
-    description: "Add up to three existing listings, events or volunteer opportunities to a post.",
+    description: "Add up to three existing listings, events, volunteer opportunities or media items to a post.",
     steps: "Open the post composer, add a resource page link and check its current details. Save your draft or publish to a compatible audience. Remove a card to leave the source unchanged.",
     href: "/platform/feed",
-    eligibility: "Requires current publishing access and permission to each source. A card does not grant access. Readers see only currently permitted details; unavailable sources are omitted. Media and fundraising attachments are not available yet.",
+    eligibility: "Requires current publishing access and permission to each source. A card does not grant access. Readers see only currently permitted details; unavailable sources are omitted. Fundraising attachments are not available yet.",
     availability: "available"
   },
   {
@@ -1023,6 +1031,14 @@ export const features: Feature[] = [
   }
 ];
 export const releases: ReleaseEntry[] = [
+  {
+    id: "media-library-and-post-cards", version: "2026.09.27.35", date: "2026-09-27",
+    summary: "Browse the media library, publish reviewed source links and attach permitted media to posts.",
+    added: ["The media studio supports private drafts, explicit publication and unpublishing, metadata search and current rights acknowledgments. Named church media duties control delegated publishing."],
+    improved: ["Posts can include current media cards with the same source access checks as the library. Choosing a card grants no additional access and never opens its provider automatically."],
+    fixed: ["Hidden pages, lost access and expired rights conceal media details. Exact retries preserve uncertain saves without duplicate publication."],
+    featureIds: ["media-catalog", "post-resource-attachments"]
+  },
   {
     id: "host-bound-account-cookies", version: "2026.09.27.34", date: "2026-09-27",
     summary: "New HTTPS sign-ins use browser-enforced host-only session cookies.",
