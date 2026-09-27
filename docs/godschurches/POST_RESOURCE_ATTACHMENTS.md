@@ -3,6 +3,15 @@
 27 September 2026 — isolated implementation, ready for integration review after
 the checks below. This report does not establish a production release.
 
+Integration review subsequently reproduced two browser gaps on the original
+handoff: removal-only post edits bypassed the unsaved-navigation guard, and
+offline-to-online recovery required another focus event. The separate correction
+tracks resource-reference changes in the existing form guard and tracks network
+availability independently from focus. It preserves the original commit and
+requires both commits for integration. Published and scheduled removal-only
+edits now protect navigation; discard restores saved choices and save clears the
+guard. Focused reconnect rechecks cards, while background reconnect conceals them.
+
 People and authorized church publishers can add up to three existing listing,
 event occurrence or volunteer opportunity cards to a post. The composer accepts
 canonical page links, checks current access and provides remove controls. Private
@@ -58,13 +67,20 @@ operator, policy, provider, physical-device and pilot gates remain open.
 
 ## Verification
 
-Final application build: `48nHYzXNS8CWW_X7e2cx_`.
+Original application build: `48nHYzXNS8CWW_X7e2cx_`. Corrected application build:
+`btg1xSkOzwDP-0QONKNQG`, with all 1,041 application-source digests matched.
+The correction passed thirteen built-browser groups, two HTTPS groups, type
+checking, targeted lint, copy, build, hydration, runtime-trace and security checks.
+A separate bounded review found no remaining blocker. It changes four interface
+files and the regression script; the backend and migration remain unchanged.
+The original layered service/database evidence below remains applicable to that
+unchanged backend, without claiming a fresh whole-repository regression.
 
 - Seventeen focused service groups passed, including all three resource owners,
   source narrowing, blocks/revoked membership, busy-only event privacy,
   publication audience checks, omitted-reference retry revalidation, explicit
   removal, drafts, schedules, export, erasure and withdrawal replay.
-- Nine built-browser groups passed at a mobile viewport: chooser/link validation,
+- The original nine built-browser groups passed at a mobile viewport: chooser/link validation,
   delayed-response draft preservation, blur and relationship-change invalidation,
   saved-draft resume/publication, background concealment, revocation, existing
   versioned editing and another reader's source removal. Screenshots were

@@ -150,6 +150,28 @@ try {
   ok(
     "Mobile composer attaches a current resource with accessible remove controls and no overflow"
   );
+  await context.setOffline(true);
+  await wait(
+    async () =>
+      (await form
+        .getByText("Listing: " + first.title, { exact: false })
+        .count()) === 0
+  );
+  await context.setOffline(false);
+  await form.getByText("Listing: " + first.title, { exact: false }).waitFor();
+  await page.evaluate(() => window.dispatchEvent(new Event("blur")));
+  await context.setOffline(true);
+  await context.setOffline(false);
+  await page.waitForTimeout(350);
+  assert.equal(
+    await form.getByText("Listing: " + first.title, { exact: false }).count(),
+    0
+  );
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await form.getByText("Listing: " + first.title, { exact: false }).waitFor();
+  ok(
+    "Composer reconnects while focused and keeps previews concealed when reconnecting in the background"
+  );
 
   await form
     .getByLabel("Resource page link", { exact: true })
@@ -362,6 +384,20 @@ try {
   ok(
     "Saved draft resumes and publishes once with ordered current resource cards"
   );
+  await context.setOffline(true);
+  await wait(async () => (await cards.getByRole("link").count()) === 0);
+  await context.setOffline(false);
+  await cards.getByRole("link", { name: second.title, exact: true }).waitFor();
+  await page.evaluate(() => window.dispatchEvent(new Event("blur")));
+  await context.setOffline(true);
+  await context.setOffline(false);
+  await page.waitForTimeout(350);
+  assert.equal(await cards.getByRole("link").count(), 0);
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await cards.getByRole("link", { name: second.title, exact: true }).waitFor();
+  ok(
+    "Reader reconnects without an extra focus event and does not redisplay cards during background reconnect"
+  );
 
   await page.evaluate(() => window.dispatchEvent(new Event("blur")));
   await db.exchangeListing.update({
@@ -390,6 +426,28 @@ try {
     .getByRole("button", { name: "Remove resource card 1", exact: true })
     .click();
   await edit
+    .getByRole("button", {
+      name: "Discard local changes and reload",
+      exact: true
+    })
+    .waitFor();
+  await page.waitForFunction(() => !!window.history.state?.gcPhotoWork);
+  await page.getByRole("link", { name: "Browse posts", exact: true }).click();
+  await edit
+    .getByText("Save or discard these local post changes before leaving.", {
+      exact: true
+    })
+    .waitFor();
+  assert.ok(page.url().includes("/platform/posts/" + published.id));
+  assert.equal(
+    (await db.platformPost.findUniqueOrThrow({ where: { id: published.id } }))
+      .resourceReferences.length,
+    2
+  );
+  ok(
+    "Removal-only published edits protect unsaved navigation and leave the saved post unchanged"
+  );
+  await edit
     .getByRole("button", { name: "Save post changes", exact: true })
     .click();
   await wait(
@@ -407,6 +465,88 @@ try {
   assert.equal(edited.version, published.version + 1);
   ok(
     "Attachment removal uses the existing versioned post edit and Edited marker"
+  );
+
+  const church = await db.church.create({
+    data: {
+      slug: randomUUID(),
+      name: "Fictional scheduled card church",
+      summary: "Owned isolated browser fixture",
+      communityListed: true
+    }
+  });
+  await db.churchConnection.create({
+    data: { userId: actor.id, churchId: church.id, state: "APPROVED" }
+  });
+  await db.churchCapabilityGrant.create({
+    data: {
+      userId: actor.id,
+      churchId: church.id,
+      capability: "PUBLISH_CHURCH_POSTS"
+    }
+  });
+  const { postCommand } = await import("../lib/platform/post-commands.ts");
+  const scheduled = await postCommand(db, actor.token, {
+    operation: "create",
+    requestKey: randomUUID(),
+    authorChurchId: church.id,
+    content: "Fictional scheduled resource edit",
+    audience: "PUBLIC",
+    scheduleLocal: new Date(Date.now() + 3600000).toISOString().slice(0, 16),
+    scheduleZone: "UTC",
+    resourceReferences: [{ kind: "exchangeListing", id: second.id }]
+  });
+  await go("/platform/scheduled-posts/" + scheduled.id);
+  await page.getByText("Edit post", { exact: true }).click();
+  const scheduleEdit = page.locator("#post-edit");
+  await scheduleEdit
+    .getByRole("button", { name: "Remove resource card 1", exact: true })
+    .click();
+  await scheduleEdit
+    .getByRole("button", {
+      name: "Discard local changes and reload",
+      exact: true
+    })
+    .waitFor();
+  await page
+    .getByRole("link", { name: "Scheduled church posts", exact: true })
+    .click();
+  await scheduleEdit
+    .getByText("Save or discard these local post changes before leaving.", {
+      exact: true
+    })
+    .waitFor();
+  assert.ok(page.url().includes("/platform/scheduled-posts/" + scheduled.id));
+  await scheduleEdit
+    .getByRole("button", {
+      name: "Discard local changes and reload",
+      exact: true
+    })
+    .click();
+  await page.waitForLoadState("networkidle");
+  await page.getByText("Edit post", { exact: true }).click();
+  await scheduleEdit
+    .getByRole("button", { name: "Remove resource card 1", exact: true })
+    .waitFor();
+  assert.equal(
+    (await db.platformPost.findUniqueOrThrow({ where: { id: scheduled.id } }))
+      .resourceReferences.length,
+    1
+  );
+  await scheduleEdit
+    .getByRole("button", { name: "Remove resource card 1", exact: true })
+    .click();
+  await scheduleEdit
+    .getByRole("button", { name: "Save post changes", exact: true })
+    .click();
+  await wait(
+    async () =>
+      (await db.platformPost.findUniqueOrThrow({ where: { id: scheduled.id } }))
+        .resourceReferences.length === 0
+  );
+  await page.waitForFunction(() => !window.history.state?.gcPhotoWork);
+  ok(
+    "Scheduled removal-only edits protect navigation; discard restores the saved card and saving clears the guard"
   );
 
   await signIn(other);

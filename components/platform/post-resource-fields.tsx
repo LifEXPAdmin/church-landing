@@ -55,6 +55,7 @@ export function PostResourceFields({
   } | null>(null);
   const sequence = useRef(0),
     focused = useRef<boolean | null>(null),
+    connected = useRef<boolean | null>(null),
     mounted = useRef(false);
   const pending = useRef(false);
   const change = useRef(onChange);
@@ -66,22 +67,31 @@ export function PostResourceFields({
     () =>
       mounted.current &&
       focused.current &&
+      connected.current &&
       document.visibilityState !== "hidden",
     []
   );
   useEffect(() => {
     mounted.current = true;
     if (focused.current === null) focused.current = document.hasFocus();
+    if (connected.current === null) connected.current = navigator.onLine;
     const invalidate = () => {
       sequence.current++;
     };
     const hide = () => {
-      focused.current = false;
       sequence.current++;
       setPreview(null);
       setBusy(false);
       pending.current = false;
       setMessage("");
+    };
+    const blur = () => {
+      focused.current = false;
+      hide();
+    };
+    const offline = () => {
+      connected.current = false;
+      hide();
     };
     const refresh = async () => {
       if (!visible || !active() || pending.current) return;
@@ -109,16 +119,20 @@ export function PostResourceFields({
       setBusy(false);
       void refresh();
     };
+    const online = () => {
+      connected.current = true;
+      change();
+    };
     const visibility = () =>
-      document.visibilityState === "hidden" ? hide() : focus();
+      document.visibilityState === "hidden" ? blur() : focus();
     void refresh();
     const timer = setInterval(() => void refresh(), 30000);
-    window.addEventListener("blur", hide);
-    window.addEventListener("pagehide", hide);
-    window.addEventListener("offline", hide);
+    window.addEventListener("blur", blur);
+    window.addEventListener("pagehide", blur);
+    window.addEventListener("offline", offline);
     window.addEventListener("focus", focus);
     window.addEventListener("pageshow", focus);
-    window.addEventListener("online", change);
+    window.addEventListener("online", online);
     window.addEventListener("social-relationships-changed", change);
     document.addEventListener("visibilitychange", visibility);
     return () => {
@@ -128,12 +142,12 @@ export function PostResourceFields({
       pending.current = false;
       setBusy(false);
       clearInterval(timer);
-      window.removeEventListener("blur", hide);
-      window.removeEventListener("pagehide", hide);
-      window.removeEventListener("offline", hide);
+      window.removeEventListener("blur", blur);
+      window.removeEventListener("pagehide", blur);
+      window.removeEventListener("offline", offline);
       window.removeEventListener("focus", focus);
       window.removeEventListener("pageshow", focus);
-      window.removeEventListener("online", change);
+      window.removeEventListener("online", online);
       window.removeEventListener("social-relationships-changed", change);
       document.removeEventListener("visibilitychange", visibility);
     };
