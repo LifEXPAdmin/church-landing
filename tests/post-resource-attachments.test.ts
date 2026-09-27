@@ -1,3 +1,4 @@
+import { sessionCookie } from "../lib/platform/account-boundary";
 import test, { before, beforeEach, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -194,7 +195,6 @@ test("strict bounded references reject unknown/reserved kinds, metadata, duplica
     null,
     {},
     [null],
-    [{ kind: "mediaCatalogItem", id: "x" }],
     [{ kind: "fundraisingCampaign", id: "x" }],
     [{ kind: "post", id: "x" }],
     [{ kind: "eventOccurrence", id: "x", title: "private" }],
@@ -654,7 +654,12 @@ test("owner-pinned preview rejects mismatches and reserved kinds without exposin
         {
           headers: {
             ...(actor
-              ? { cookie: `church_platform_session=${actor.token}` }
+              ? {
+                  cookie: sessionCookie(
+                    actor.token,
+                    new URL(process.env.ACCOUNT_ORIGIN!).protocol === "https:"
+                  ).split(";", 1)[0]
+                }
               : {}),
             ...(owner ? { "x-expected-account": owner } : {})
           }
@@ -664,7 +669,7 @@ test("owner-pinned preview rejects mismatches and reserved kinds without exposin
   assert.equal((await call(author, null, [])).status, 401);
   assert.equal((await call(author, outsider.id, [])).status, 401);
   assert.equal(
-    (await call(author, author.id, [{ kind: "mediaCatalogItem", id: l.id }]))
+    (await call(author, author.id, [{ kind: "fundraisingCampaign", id: l.id }]))
       .status,
     400
   );

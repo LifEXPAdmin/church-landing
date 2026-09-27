@@ -7,7 +7,8 @@ export const POST_RESOURCE_LIMIT = 3;
 export const postResourceKinds = [
   "exchangeListing",
   "eventOccurrence",
-  "volunteerOpportunity"
+  "volunteerOpportunity",
+  "mediaCatalogItem"
 ] as const;
 export type PostResourceKind = (typeof postResourceKinds)[number];
 export type PostResourceReference = { kind: PostResourceKind; id: string };
@@ -22,7 +23,7 @@ export function postResourceReferences(
     if (!postResourceKinds.includes(row.kind))
       throw new PortalError(
         400,
-        "Choose an available listing, event or opportunity."
+        "Choose an available listing, event, opportunity or media item."
       );
     requireImplementedResource(row.kind);
     return { kind: row.kind as PostResourceKind, id: postId(row.id) };

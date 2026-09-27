@@ -9,7 +9,8 @@ import { RegionalEventTime } from "./regional-presentation";
 export const resourceLabels = {
   exchangeListing: "Listing",
   eventOccurrence: "Event",
-  volunteerOpportunity: "Opportunity"
+  volunteerOpportunity: "Opportunity",
+  mediaCatalogItem: "Media"
 };
 
 /** No copied source metadata enters HTML/RSC. Active reads share the bounded post checker. */
