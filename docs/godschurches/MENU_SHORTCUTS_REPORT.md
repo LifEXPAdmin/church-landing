@@ -1,3 +1,52 @@
+## Privacy and recovery batch verified live, 27 September 2026 UTC
+
+Versions **2026.09.26.12 through .27** are integrated and verified live as
+**2026.09.26.27**, source **28aafcdf9c6136a8081c3b16ec79941dad11e512**.
+One deliberate production deployment, **dpl_7wqjsdmvh5UJyc2tVzwF3NdDuQvw**,
+is READY and independently assigned to **godschurches.com**. Serving identity
+matched at **19:56:25 UTC**. This supersedes the local-only and historical
+Hobby-limit statements in the dated receipts below.
+
+The batch covers private Feedback lists/intake, Admin audit/summary/people/access,
+weekly feedback, metrics, idea review, worklists/cases, report retry/lifecycle,
+content decisions and Menu choices. Current access checks remove private
+presentation while preserving original drafts and uncertain requests. Previously
+accepted Groups and other integrated features are preserved. The independent
+interchurch-help implementation is outside this release.
+
+Fresh [exact-source CI](https://github.com/LifEXPAdmin/church-landing/actions/runs/36345656740)
+passed. The source audit verified 1,918 unchanged candidate files, 319 evidence
+files and the preceding 15 acceptance sources. Applicable local evidence remains
+18 Menu browser groups and 11 service checks, plus the six combined suites with
+54 browser groups and ten header/frame checks. The application build took
+39.728 seconds locally; no new local build is claimed. The provider separately
+compiled and passed its production build, hydration, runtime-trace and source
+security gates. Changes after the tested application are reviewed documentation,
+QA and the automatic Git deployment suppression policy.
+
+Fresh live verification passed **69 public, guest privacy and browser checks**
+and **six health checks**, with zero browser errors or mutation attempts. Sign-in
+and release notes were checked at 320, 390 and 1280 pixels; the 320-pixel capture
+was inspected. All **149 production table fingerprints** were unchanged at
+**19:57:23 UTC**. All **115 migration checksums** match source, installed registry
+and production; zero migrations were added or applied. Scoped live error/fatal
+rows, production test writes, recipient sends and new queue probes are zero.
+The bounded log window is not a continuous monitoring or new queue-execution test.
+
+The installed authenticated encrypted restore passed at **19:52:06 UTC** with
+149 tables and 115 migrations, plaintext removed and production unchanged.
+Actual nightly maintenance advanced run 22 to 23 with 104 sets and no issues or
+removals. This ordinary restore does not claim a new protected-control replay,
+asset backup or production restore. Prior .11 is schema-compatible but would
+reintroduce repaired privacy defects, so it is not an unreviewed rollback target.
+
+Only disposable webpack caches in five verified stopped candidates were removed,
+reclaiming 2.63 GB. Source, compiled runtime, fixtures, databases and evidence
+remained unchanged; other workers and running jobs were preserved. The wider
+security review, provider/operator permissions, actual MFA enrollment, device
+and pilot acceptance remain open. Continue eligible priority work, reproduce
+new defects before edits and accumulate the next completed release batch.
+
 ## Private Menu lifecycle locally verified, 26 September 2026 UTC
 
 Application `9fa52ac`, QA `e2ac6a0`, version **2026.09.26.27**, is locally tested
