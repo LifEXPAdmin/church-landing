@@ -1,3 +1,41 @@
+## Credential privacy implementation checkpoint, 27 September 2026 UTC
+
+Password and email credential changes are implemented for the next release batch,
+**not merged or live**. Tested source `8d93bd37f903960ada8d2844f63e07d3cc78aa7f`
+passed 16 credential browser groups, five Google lifecycle/cookie browser groups,
+33 fresh service checks and three retained password-race checks. Its isolated
+production build passed in 41.070 seconds, with all 1,924 tracked files unchanged
+and 115 migrations. Narrow-screen doubled-text focus and hit targets passed.
+Google navigation responses were fictional; proof-cookie checks used actual
+candidate services applied through the browser. No real provider acceptance is
+claimed, and no production test writes or external sends occurred.
+
+Unchanged-code reproduction established retained private inputs after concealment,
+ignored expected-owner headers with valid cookie-owner credentials, delayed success
+clearing a replacement login, Settings account refresh discarding original drafts,
+late Google navigation after concealment, and deletion of newer Google proof cookies.
+The repair checks expected owners within existing locked transactions before
+credential consumption, removes concealed private DOM while preserving original
+in-memory drafts, and never automatically repeats uncertain commands. Confirmed
+self-revoking changes recognize the intentionally missing session. They no longer
+clear newer browser credentials after server-side revocation. Google navigation is
+opted into fresh owner and lifecycle checks; public sign-in flows are unchanged.
+
+Two subsequent interface corrections remain for **combined-source acceptance**:
+the second password form is under Account, Connected sign-in methods, and failed
+Settings refresh must leave accessible Sign in and explicit discard/reload links.
+The actual second-route draft loss was reproduced on the tested build before the
+route predicate and regression were corrected. That correction is not included
+in the 21 browser groups above. Initial stale cookie expectations and a harness
+assertion requiring a concealed child notice to be visible are preserved separately.
+
+Draft retention is memory-only, not heap or operating-system erasure. Existing
+one-use Google purpose proofs, email-link expiry and same-owner second-session
+confirmation remain enforced. Headerless older clients remain compatible. Broader
+security policies and real provider/device/operator acceptance remain open. The
+serving release remains **2026.09.27.29**. Interchurch integration and both additive
+migrations require a combined build, recovery review and live acceptance.
+
 ## Account privacy and recovery batch verified live, 27 September 2026 UTC
 
 Authenticator .28 and active sign-in .29 are **implemented, tested, merged and

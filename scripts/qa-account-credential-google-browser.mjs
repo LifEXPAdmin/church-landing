@@ -192,6 +192,57 @@ try {
       body: JSON.stringify(data)
     });
   });
+  stage = "Connected sign-in methods retains original password draft";
+  const statusOnly = (route) => {
+    assert.equal(route.request().postDataJSON().operation, "status");
+    return route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        signedIn: true,
+        methods: { password: true, google: true },
+        recentPurpose: null,
+        emailConfirmationReady: false,
+        pending: null
+      })
+    });
+  };
+  await context.route("**/api/platform/google", statusOnly);
+  const swappedOwner = await actor();
+  await signIn(a);
+  await page.goto(config.origin + "/platform/settings/account/methods");
+  const methodsFields = [
+    ["#account-change-password-current-password", a.password],
+    ["#account-change-password-password", "Fictional-methods-new-1"],
+    ["#account-change-password-confirmation", "Fictional-methods-new-1"]
+  ];
+  for (const [selector, value] of methodsFields)
+    await page.locator(selector).fill(value);
+  await page.evaluate(() => window.dispatchEvent(new Event("blur")));
+  await signIn(swappedOwner);
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await page
+    .getByRole("link", {
+      name: "Reload settings and discard retained entries",
+      exact: true
+    })
+    .waitFor();
+  await page.getByRole("link", { name: "Sign in", exact: true }).waitFor();
+  for (const [selector] of methodsFields)
+    assert.equal(await page.locator(selector).count(), 0);
+  await signIn(a);
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  for (const [selector, value] of methodsFields) {
+    await page.locator(selector).waitFor();
+    assert.equal(await page.locator(selector).inputValue(), value);
+  }
+  await context.unroute("**/api/platform/google", statusOnly);
+  results.push({
+    kind: "connected sign-in methods parent recovery",
+    originalDraftRetained: true,
+    explicitRecoveryLinksAccessible: true,
+    accountReplacementConcealed: true
+  });
   for (const event of ["blur", "pagehide", "account replacement"]) {
     stage = "Google redirect after " + event;
     await signIn(a);

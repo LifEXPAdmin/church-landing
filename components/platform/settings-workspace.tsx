@@ -52,9 +52,8 @@ export function SettingsWorkspace({
   // Keep their original owner mounted on a failed refresh; explicit navigation
   // can discard the draft, but a background identity check cannot.
   const preserveCredentialDraft =
-    (folder === "security" &&
-      ["password", "methods"].includes(setting ?? "")) ||
-    (folder === "account" && setting === "email");
+    (folder === "security" && setting === "password") ||
+    (folder === "account" && ["email", "methods"].includes(setting ?? ""));
   const key =
     pathname + (initialQuery ? "?q=" + encodeURIComponent(initialQuery) : "");
   const load = useCallback(async () => {
@@ -296,6 +295,16 @@ export function SettingsWorkspace({
             >
               Retry settings
             </button>
+            {preserveCredentialDraft && (
+              <p className="mt-3 flex flex-wrap gap-4">
+                <a className="underline" href="/platform/login">
+                  Sign in
+                </a>
+                <a className="underline" href={pathname}>
+                  Reload settings and discard retained entries
+                </a>
+              </p>
+            )}
           </div>
         )}
         {data && (

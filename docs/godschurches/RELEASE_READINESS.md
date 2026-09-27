@@ -1,3 +1,13 @@
+## Credential privacy implementation checkpoint, 27 September 2026 UTC
+
+Credential-form privacy, expected-owner binding and delayed-response recovery are
+implemented for the next batch, **not merged or live**. Source `8d93bd3` passed
+21 browser groups, 36 distinct service checks and an isolated production build.
+The second password-form route correction and explicit recovery links still need
+combined-source acceptance. See [retained reader privacy](RETAINED_READER_PRIVACY.md)
+for reproduced defects, scope and remaining gates. Current production remains .29;
+interchurch integration, schema/recovery and live checks are still pending.
+
 ## Account privacy and recovery batch verified live, 27 September 2026 UTC
 
 Authenticator .28 and active sign-in .29 are **implemented, tested, merged and
