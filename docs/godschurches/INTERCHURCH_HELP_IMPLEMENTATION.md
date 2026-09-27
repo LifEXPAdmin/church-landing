@@ -1,9 +1,10 @@
 # Interchurch help implementation
 
-This implements the accepted Interchurch Help Contract. The first checkpoint
-contains typed storage, current-authority service boundaries and recovery owners.
-The ministry-help interface and full release acceptance follow in a separate
-checkpoint. It is not a production activation or an appointment of a real person.
+This implements the accepted Interchurch Help Contract as a usable request,
+private offer and explicit outcome flow. The isolated feature includes its storage,
+services, interface, existing access/retention owners and focused verification.
+Broad regression is still running at this checkpoint. This is not integrated,
+deployed or activated for real church delegates.
 
 ## Canonical ownership and consent
 
@@ -61,26 +62,75 @@ grants containing the new capability, even when the grant is revoked. Revoking a
 grant does not make that old build a safe rollback. The current enum-aware client
 reads both states. Older generic writers cannot edit typed help records.
 
-The backend compatibility checkpoint is the minimum candidate rollback baseline;
-its built artifact must be accepted by the release owner before any real new grant.
-It has no ministry-help interface. Rollback can therefore make that interface
-unavailable while preserving restrictive data/service behavior. Do not drop enum
-values or typed tables to force a rollback. Production migration, compatible rollback
-artifact acceptance, deployment, canonical-domain verification and real delegate
-appointments belong to the release owner and reviewed operators.
+Migration `20260927210000_interchurch_help_terminal_offers` follows the first
+migration. It releases the current-offer uniqueness slot when a selected agreement
+is explicitly completed, preserving the completed receipt and allowing a fresh,
+deliberate proposal. Cancellation similarly ends the active offer without erasing
+its receipt. Canceled request outcomes are terminal for new acceptance, and canceling
+an entire request clears unfinished agreement acknowledgment/contact consent.
+Fulfillment requires a current-scope completion receipt and no unfinished selected
+commitments; canceled history is retained without becoming required replacement work.
+Neither migration creates a real appointment or inferred consent.
 
-## Local evidence and remaining acceptance
+The complete tested feature source and enum-aware generated client are the proposed
+minimum compatible rollback baseline. The earlier backend checkpoint is superseded
+by subsequent consent/revocation corrections and must not be treated as sufficient.
+The release owner must accept an integration-compatible artifact before any real
+new grant. Rebuild with the locked dependencies and regenerate Prisma after merging
+both migrations; the preserved local built artifact is isolated verification evidence,
+not a production deployment. Do not drop enum values or typed tables to force a
+rollback. Production migration, compatible artifact acceptance, canonical-domain
+verification and real appointments remain with the release owner and reviewed operators.
 
-Twelve focused service and actual reviewed-client compatibility groups pass,
-covering parser boundaries, immutable storage, publication, exact retries, private
-pairs, organization authority, amendments, fulfillment, blocks, erasure/export,
-selected reporting, protected restore, coordinator withdrawal and generic notices.
-The two-offer authority batch stays within sixteen queries. TypeScript, authored
-copy, source security and the production backend build pass. Built hydration repair,
-231 runtime traces and public build secret checks pass. This is local evidence only.
+## Interface and focused verification
 
-Built HTTPS/browser flows, responsive and enlarged-text layouts, full regression,
-data-preservation rehearsal and final handoff are still pending at this checkpoint.
-Real appointment, safeguarding/policy, provider, device and pilot acceptance remain
-open. Later event/shift associations, equipment catalogs and church partnerships
-are separate features; no duplicated calendar or volunteer capacity was added.
+The Exchange links lead to category/place/date discovery, church request drafts,
+publication, private personal or explicitly delegated organization offers, bilateral
+terms, independent optional contact sharing, cancellation and explicit completion.
+Public requests display proposed duties, window/time zone, compensation and chosen
+coordinator information. Private cards identify only the authorized named pair and
+represented church. There is no inferred signup, loan reservation or checkout.
+
+The client keeps private fields out of HTML/RSC and conceals them on blur, offline
+or account changes. Current-account checks precede redisplay. An uncertain mutation
+retains its exact original body/key; stale drafts stay guarded. Pristine editors
+adopt updated fields and versions together, preventing silent concurrent overwrites.
+Agreement acknowledgment, proposed amendments, contact consent and optional push
+notices are distinct deliberate choices.
+
+Twenty-one focused service/compatibility groups pass, including the actual old-client
+enum failure, preservation of all original columns in 149 existing tables through
+both migrations, no inferred permissions, concurrent selection, private pair/role
+revocation, erasure/export, selected reporting, protected restore, completed history,
+contact/push consent and exact retries. Two-pair current authority resolution uses
+13 queries. Pages are bounded at 20 records; private identity names use two batched
+lookups after authorization. There is no polling, new dependency or new scheduler.
+The help routes report 2.62 kB route JavaScript and 166 kB first-load JavaScript in
+the production build; these are measurements, not a claimed baseline improvement.
+
+Built artifact `53ObwwQCDcIAKdf1AJ5xq` passes 14 actual browser groups and an HTTPS
+boundary group. Coverage includes request creation/publication, private and paid
+organization offers, explicit church delegation, loss of a committed response,
+account switching, HTML/RSC concealment, independent contact consent/withdrawal,
+concurrent pristine-editor refresh, explicit fulfillment, and a 320-pixel enlarged
+dark layout. No uncaught browser errors were observed. TypeScript, lint during
+build, authored-copy and source-security checks pass. Hydration verification,
+235 runtime traces and built public-file secret checks pass. The source-copy build
+has no Git index, so source-security verification was also run in the real worktree.
+
+Browser fixture corrections preserved real guards: startup certificate trust was
+set before Node began, accessible form labels were separated from control values,
+and navigation waits for existing unsaved-history cleanup. Private failure evidence
+is retained. No other worker's files, processes or fixtures were changed.
+
+The broad account/portal/support harness remains active. Its original production
+artifact predates final focused corrections, so the separate final built browser and
+HTTPS checks above are authoritative for this feature's final interface. Its raw
+migration fixture received the terminal-offer migration transactionally before the
+new help tests; separate focused rehearsal verifies fresh additive upgrades.
+
+Real appointment, safeguarding/policy, provider, physical-device and pilot acceptance
+remain open. Later event/shift associations, equipment catalogs and church
+partnerships are separate features; no duplicated calendar or volunteer capacity
+was added. Ready-to-merge status requires the final broad regression receipt and
+committed handoff; local verification alone is not integration or live acceptance.

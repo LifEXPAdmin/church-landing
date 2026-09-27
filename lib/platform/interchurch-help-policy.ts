@@ -153,6 +153,27 @@ async function helpAuthorityKeys(tx: PostTx, inputs: AuthorityInput[]) {
   }
   return result;
 }
+export async function helpChurchOfferChoices(
+  tx: PostTx,
+  userId: string,
+  churchIds: string[]
+) {
+  const keys = await helpAuthorityKeys(
+    tx,
+    churchIds.map((churchId) => ({
+      userId,
+      churchId,
+      capability: "COMMIT_INTERCHURCH_HELP"
+    }))
+  );
+  return new Set(
+    churchIds.filter((churchId) =>
+      keys.has(
+        authorityId({ userId, churchId, capability: "COMMIT_INTERCHURCH_HELP" })
+      )
+    )
+  );
+}
 export async function helpAuthorityKey(
   tx: PostTx,
   userId: string,

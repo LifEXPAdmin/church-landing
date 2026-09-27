@@ -40,7 +40,9 @@ export async function interchurchHelpNotificationSources(
       continue;
     const consent =
       context.actorId === row.responderId
-        ? (row.agreement?.responderNoticeSince ?? row.noticeSince)
+        ? row.agreement
+          ? row.agreement.responderNoticeSince
+          : row.noticeSince
         : row.agreement?.requesterNoticeSince;
     if (channel === "PUSH" && (!consent || consent >= event.createdAt))
       continue;

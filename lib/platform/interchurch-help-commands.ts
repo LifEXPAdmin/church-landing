@@ -36,6 +36,7 @@ import {
 } from "./interchurch-help-policy";
 import {
   invalidateHelpTerms,
+  cancelHelpCommitments,
   recordHelpChange,
   revokeHelpOffers
 } from "./interchurch-help-lifecycle";
@@ -231,7 +232,8 @@ export function interchurchHelpCommand(
         await tx.interchurchHelpRequest.update({
           where: { id: row.id },
           data: {
-            coordinatorId: null,
+            // Keep the former owner reference for exact withdrawal receipts.
+            // The null authority key ends access; replacements never inherit it.
             coordinatorKey: null,
             coordinatorDisplay: "Coordinator unavailable",
             consentVersion: { increment: 1 }
@@ -460,6 +462,11 @@ export function interchurchHelpCommand(
               "request outcome"
             ),
             reason = postField(input.reason, 1000, 3);
+          if (row.outcome === "CANCELED")
+            throw new PortalError(
+              409,
+              "This request was canceled. Start a new request for new help; previous commitments remain ended."
+            );
           if (outcome === "FULFILLED" || outcome === "PARTIAL") {
             await requireHelpCoordinator(tx, row, actorId);
             const agreements = await tx.interchurchHelpAgreement.findMany({
@@ -471,20 +478,30 @@ export function interchurchHelpCommand(
                 409,
                 "These agreements need a size review."
               );
-            if (!agreements.some((a) => a.state === "COMPLETED"))
+            if (
+              !agreements.some(
+                (a) =>
+                  a.state === "COMPLETED" &&
+                  a.requestTermsVersion === row.termsVersion
+              )
+            )
               throw new PortalError(
                 409,
                 "Record the delivered work before recording fulfillment."
               );
             if (
               outcome === "FULFILLED" &&
-              agreements.some((a) => a.state !== "COMPLETED")
+              agreements.some((a) =>
+                ["NEEDS_REVIEW", "CONFIRMED"].includes(a.state)
+              )
             )
               throw new PortalError(
                 409,
-                "Every selected agreement must have an explicit completion receipt. Use Partly fulfilled for unmet scope."
+                "Every remaining selected agreement must have an explicit completion receipt. Use Partly fulfilled for unmet scope."
               );
           }
+          if (outcome === "CANCELED")
+            await cancelHelpCommitments(tx, row.id, actorId);
           await tx.interchurchHelpRequest.update({
             where: { id: row.id },
             data: {
@@ -556,6 +573,7 @@ export function interchurchHelpCommand(
               kind,
               respondingChurchId: churchId,
               state: { in: ["OFFERED", "SELECTED"] },
+              endedAt: null,
               authorityKey: { not: null }
             }
           })
@@ -713,6 +731,14 @@ export function interchurchHelpCommand(
               contactVersion: { increment: 1 }
             }
           });
+          await tx.interchurchHelpOffer.update({
+            where: { id: offer.id },
+            data: {
+              state: "WITHDRAWN",
+              endedAt: new Date(),
+              version: { increment: 1 }
+            }
+          });
         } else {
           if (agreement.authorityKey !== offer.authorityKey)
             throw helpUnavailable();
@@ -809,6 +835,10 @@ export function interchurchHelpCommand(
                 version: { increment: 1 },
                 contactVersion: { increment: 1 }
               }
+            });
+            await tx.interchurchHelpOffer.update({
+              where: { id: offer.id },
+              data: { endedAt: new Date() }
             });
           } else if (op === "contact") {
             expected(input.termsVersion, agreement.termsVersion);

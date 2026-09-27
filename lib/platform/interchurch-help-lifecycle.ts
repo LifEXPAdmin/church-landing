@@ -140,3 +140,76 @@ export async function invalidateHelpTerms(
     await recordHelpChange(tx, requestId, actorId, "REQUEST_CHANGED", offer.id);
   }
 }
+
+export async function disableHelpCoordinator(
+  tx: PostTx,
+  where: Prisma.InterchurchHelpRequestWhereInput,
+  actorId: string
+) {
+  let after: string | undefined;
+  for (;;) {
+    const rows = await tx.interchurchHelpRequest.findMany({
+      where: {
+        AND: [
+          where,
+          { coordinatorKey: { not: null } },
+          ...(after ? [{ id: { gt: after } }] : [])
+        ]
+      },
+      select: { id: true },
+      orderBy: { id: "asc" },
+      take: 100
+    });
+    for (const row of rows) {
+      await tx.interchurchHelpRequest.update({
+        where: { id: row.id },
+        data: {
+          coordinatorKey: null,
+          coordinatorDisplay: "Coordinator unavailable",
+          consentVersion: { increment: 1 }
+        }
+      });
+      await recordHelpChange(tx, row.id, actorId, "COORDINATOR_ACCESS_ENDED");
+    }
+    if (rows.length < 100) return;
+    after = rows.at(-1)!.id;
+  }
+}
+
+export async function cancelHelpCommitments(
+  tx: PostTx,
+  requestId: string,
+  actorId: string
+) {
+  const rows = await tx.interchurchHelpOffer.findMany({
+    where: {
+      requestId,
+      agreement: { state: { in: ["NEEDS_REVIEW", "CONFIRMED"] } }
+    },
+    take: 101
+  });
+  if (rows.length > 100) throw Error("Ministry help agreement bound exceeded");
+  for (const row of rows) {
+    await tx.interchurchHelpAgreement.update({
+      where: { offerId: row.id },
+      data: {
+        state: "CANCELED",
+        canceledAt: new Date(),
+        completionNote: "The requesting church canceled this request.",
+        requesterAcknowledged: null,
+        responderAcknowledged: null,
+        requesterContact: "",
+        responderContact: "",
+        requesterNoticeSince: null,
+        responderNoticeSince: null,
+        version: { increment: 1 },
+        contactVersion: { increment: 1 }
+      }
+    });
+    await tx.interchurchHelpOffer.update({
+      where: { id: row.id },
+      data: { endedAt: new Date(), version: { increment: 1 } }
+    });
+    await recordHelpChange(tx, requestId, actorId, "REQUEST_CANCELED", row.id);
+  }
+}

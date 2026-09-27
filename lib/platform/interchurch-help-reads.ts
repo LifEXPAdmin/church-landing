@@ -13,7 +13,7 @@ import {
 } from "./exchange-policy";
 import {
   currentHelpOffers,
-  helpAuthorityKey,
+  helpChurchOfferChoices,
   helpCoordinatorCurrent,
   helpUnavailable
 } from "./interchurch-help-policy";
@@ -94,26 +94,24 @@ export function readInterchurchHelp(
         orderBy: { id: "asc" },
         take: 21
       });
+      const offerChurches = await helpChurchOfferChoices(
+        tx,
+        actor!.id,
+        churches.map((c) => c.id)
+      );
       return {
         view: "context" as const,
         owner: actor!.id,
         drafts: drafts.slice(0, 20),
         moreDrafts: drafts.length > 20,
-        churches: await Promise.all(
-          churches.map(async (c) => ({
-            ...c,
-            canDraft:
-              authority.managers.includes(c.id) ||
-              authority.publishers.includes(c.id),
-            canManage: authority.managers.includes(c.id),
-            canOffer: !!(await helpAuthorityKey(
-              tx,
-              actor!.id,
-              c.id,
-              "COMMIT_INTERCHURCH_HELP"
-            ))
-          }))
-        )
+        churches: churches.map((c) => ({
+          ...c,
+          canDraft:
+            authority.managers.includes(c.id) ||
+            authority.publishers.includes(c.id),
+          canManage: authority.managers.includes(c.id),
+          canOffer: offerChurches.has(c.id)
+        }))
       };
     }
     if (view === "list") {
@@ -227,6 +225,8 @@ export function readInterchurchHelp(
           actor.id !== row.coordinatorId &&
           row.outcome === "OPEN" &&
           row.listing.state === "ACTIVE" &&
+          row.listing.moderationState === "VISIBLE" &&
+          !row.listing.recoveryRequired &&
           row.endAt > new Date() &&
           row.dutyClass === "ADULT_LOGISTICS"
       };
@@ -253,6 +253,27 @@ export function readInterchurchHelp(
       tx,
       rows.slice(0, HELP_PAGE_SIZE)
     );
+    const permitted = rows.filter((row) => currentPairs.has(row.id));
+    const people = await tx.platformUser.findMany({
+      where: {
+        id: {
+          in: permitted.flatMap((row) =>
+            row.responderId ? [row.responderId] : []
+          )
+        }
+      },
+      select: { id: true, name: true }
+    });
+    const represented = await tx.church.findMany({
+      where: {
+        id: {
+          in: permitted.flatMap((row) =>
+            row.respondingChurchId ? [row.respondingChurchId] : []
+          )
+        }
+      },
+      select: { id: true, name: true }
+    });
     const projected = [];
     for (const row of rows.slice(0, HELP_PAGE_SIZE)) {
       const pair = currentPairs.get(row.id),
@@ -284,6 +305,13 @@ export function readInterchurchHelp(
         state: row.state,
         kind: row.kind,
         respondingChurchId: row.respondingChurchId,
+        respondingChurchName:
+          represented.find((church) => church.id === row.respondingChurchId)
+            ?.name ?? null,
+        responderName:
+          people.find((person) => person.id === row.responderId)?.name ??
+          "Unavailable account",
+        coordinatorDisplay: pair.request.coordinatorDisplay,
         requestId: row.requestId,
         requestTitle: pair.request.listing!.title,
         requestTermsVersion: pair.request.termsVersion,

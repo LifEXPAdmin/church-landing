@@ -1,3 +1,4 @@
+import { InterchurchHelpPage } from "@/components/platform/interchurch-help-page";
 import { ExchangeInquiryEntry } from "@/components/platform/exchange-handoff-page";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -48,6 +49,16 @@ export default async function Page({
     const result = await exchangeListingPage(id),
       listing = result.listing,
       owner = listing.ownerChurch ?? listing.owner;
+    if (listing.helpPurpose)
+      return (
+        <PlatformShell user={user}>
+          <InterchurchHelpPage
+            owner={user?.id ?? null}
+            view="request"
+            id={id}
+          />
+        </PlatformShell>
+      );
     const ownerHref = listing.ownerChurch
       ? `/platform/churches/${listing.ownerChurch.slug}`
       : listing.owner?.username

@@ -22,6 +22,7 @@ import { readCommunityReports } from "../lib/platform/community-reports";
 import { interchurchHelpNotificationSources } from "../lib/platform/interchurch-help-notifications";
 import { postContext } from "../lib/platform/post-access";
 import { currentHelpOffers } from "../lib/platform/interchurch-help-policy";
+import { revokeAccountContact } from "../lib/platform/adult-contact-policy";
 import { relationshipCommand } from "../lib/platform/relationships";
 import { currentHelpOffer } from "../lib/platform/interchurch-help-policy";
 let queryCount = 0;
@@ -730,10 +731,11 @@ test("coordinator withdrawal after grant revocation remains possible and never t
     requestId: f.id,
     expectedVersion: r.version
   });
-  await command(db, f.manager.token, body);
+  const receipt = await command(db, f.manager.token, body);
+  assert.deepEqual(await command(db, f.manager.token, body), receipt);
   assert.equal(
     (await db.interchurchHelpRequest.findUniqueOrThrow({ where: { id: f.id } }))
-      .coordinatorId,
+      .coordinatorKey,
     null
   );
   assert.equal(
@@ -756,6 +758,9 @@ test("notification projection is generic, optional push consent stays separate a
   const pairs = await currentHelpOffers(db, rows);
   assert.equal(pairs.size, 2);
   assert.ok(queryCount <= 16, `batch used ${queryCount} queries`);
+  console.log(
+    `Two-pair current authority projection used ${queryCount} queries.`
+  );
   const events = await db.socialEvent.findMany({
     where: {
       kind: "INTERCHURCH_HELP",
@@ -782,5 +787,436 @@ test("notification projection is generic, optional push consent stays separate a
     (await interchurchHelpNotificationSources(db, events, context, "EMAIL"))
       .size,
     0
+  );
+});
+
+test("account contact revocation never revives coordinator consent for a new offer", async () => {
+  const f = await setup();
+  await db.$transaction((tx) => revokeAccountContact(tx, f.manager.id));
+  const row = await db.interchurchHelpRequest.findUniqueOrThrow({
+    where: { id: f.id }
+  });
+  assert.equal(row.coordinatorKey, null);
+  await denied(f.offer(), 404);
+  await command(
+    db,
+    f.manager.token,
+    input("coordinator", {
+      requestId: f.id,
+      expectedVersion: row.version,
+      acceptCoordinator: true,
+      coordinatorDisplay: "Fresh consenting coordinator"
+    })
+  );
+  await f.offer();
+});
+
+test("two selected named pairs keep chosen contacts separate and stale request edits cannot confirm obsolete terms", async () => {
+  const f = await setup(),
+    first = await f.offer(),
+    second = await f.offer(f.b);
+  await confirmed(f, first.id);
+  const secondAgreement = await select(f, second.id);
+  await command(
+    db,
+    f.b.token,
+    input("acknowledge", {
+      offerId: second.id,
+      expectedVersion: secondAgreement.version,
+      termsVersion: secondAgreement.termsVersion,
+      requestTermsVersion: secondAgreement.requestTermsVersion,
+      acceptTerms: true,
+      externalNotices: false
+    })
+  );
+  let a = await db.interchurchHelpAgreement.findUniqueOrThrow({
+    where: { offerId: first.id }
+  });
+  await command(
+    db,
+    f.a.token,
+    input("contact", {
+      offerId: first.id,
+      expectedVersion: a.version,
+      termsVersion: a.termsVersion,
+      contact: "Only first pair chosen contact",
+      consent: true
+    })
+  );
+  const secondView = await read(db, f.b.token, {
+    view: "offer",
+    id: second.id
+  });
+  assert.ok(!JSON.stringify(secondView).includes("Only first pair"));
+  await denied(read(db, f.a.token, { view: "offer", id: second.id }), 404);
+  const request = await db.interchurchHelpRequest.findUniqueOrThrow({
+    where: { id: f.id }
+  });
+  a = await db.interchurchHelpAgreement.findUniqueOrThrow({
+    where: { offerId: first.id }
+  });
+  const race = await Promise.allSettled([
+    command(
+      db,
+      f.manager.token,
+      input("save", {
+        requestId: f.id,
+        expectedVersion: request.version,
+        schema: 1,
+        fields: {
+          ...f.fields,
+          terms: { ...terms(), duties: "Revised public adult logistics" }
+        },
+        itemPolicy: EXCHANGE_ITEM_POLICY,
+        itemConfirmed: true
+      })
+    ),
+    command(
+      db,
+      f.a.token,
+      input("acknowledge", {
+        offerId: first.id,
+        expectedVersion: a.version,
+        termsVersion: a.termsVersion,
+        requestTermsVersion: request.termsVersion,
+        acceptTerms: true,
+        externalNotices: false
+      })
+    )
+  ]);
+  assert.equal(race.filter((r) => r.status === "fulfilled").length, 1);
+  const current = await db.interchurchHelpRequest.findUniqueOrThrow({
+    where: { id: f.id }
+  });
+  a = await db.interchurchHelpAgreement.findUniqueOrThrow({
+    where: { offerId: first.id }
+  });
+  if (a.state === "CONFIRMED")
+    assert.equal(a.requestTermsVersion, current.termsVersion);
+  else {
+    assert.equal(a.state, "NEEDS_REVIEW");
+    assert.equal(a.responderContact, "");
+    assert.equal(a.responderAcknowledged, null);
+  }
+});
+test("cross-church delegation and archived appointment cannot authorize an organization offer", async () => {
+  const f = await setup();
+  const other = await db.church.create({
+    data: {
+      slug: "otherhelp-" + randomUUID(),
+      name: "Other fictional church",
+      summary: "Separate authority boundary"
+    }
+  });
+  await db.churchCapabilityGrant.create({
+    data: {
+      userId: f.a.id,
+      churchId: other.id,
+      capability: "COMMIT_INTERCHURCH_HELP"
+    }
+  });
+  await denied(f.offer(f.a, "ORGANIZATION", f.church.id), 404);
+  const connection = await db.churchConnection.findUniqueOrThrow({
+    where: { userId_churchId: { userId: f.a.id, churchId: f.church.id } }
+  });
+  const position = await db.churchPosition.create({
+    data: {
+      churchId: f.church.id,
+      name: "Fictional scoped delegate",
+      requestKey: randomUUID()
+    }
+  });
+  const assignment = await db.churchPositionAssignment.create({
+    data: {
+      churchId: f.church.id,
+      positionId: position.id,
+      connectionId: connection.id
+    }
+  });
+  const role = await db.churchRoleGrant.create({
+    data: {
+      churchId: f.church.id,
+      assignmentId: assignment.id,
+      connectionId: connection.id,
+      grantedById: f.manager.id,
+      capability: "COMMIT_INTERCHURCH_HELP"
+    }
+  });
+  const offered = await f.offer(f.a, "ORGANIZATION", f.church.id);
+  await db.churchPosition.update({
+    where: { id: position.id },
+    data: { archivedAt: new Date() }
+  });
+  assert.equal(
+    await currentHelpOffer(
+      db,
+      await db.interchurchHelpOffer.findUniqueOrThrow({
+        where: { id: offered.id }
+      })
+    ),
+    null
+  );
+  await db.churchRoleGrant.update({
+    where: { id: role.id },
+    data: { revokedAt: new Date(), version: { increment: 1 } }
+  });
+  await db.churchPositionAssignment.update({
+    where: { id: assignment.id },
+    data: { revokedAt: new Date(), version: { increment: 1 } }
+  });
+  await db.churchPosition.update({
+    where: { id: position.id },
+    data: { archivedAt: null }
+  });
+  await denied(f.offer(f.a, "ORGANIZATION", f.church.id), 404);
+});
+
+test("canceling a commitment retains its receipt and permits a fresh explicit offer", async () => {
+  const f = await setup(),
+    o = await f.offer();
+  await confirmed(f, o.id);
+  const agreement = await db.interchurchHelpAgreement.findUniqueOrThrow({
+    where: { offerId: o.id }
+  });
+  const cancel = input("cancel", {
+    offerId: o.id,
+    expectedVersion: agreement.version,
+    reason: "The original proposed date no longer works"
+  });
+  const receipt = await command(db, f.a.token, cancel);
+  assert.deepEqual(await command(db, f.a.token, cancel), receipt);
+  assert.equal(
+    (await db.interchurchHelpOffer.findUniqueOrThrow({ where: { id: o.id } }))
+      .state,
+    "WITHDRAWN"
+  );
+  assert.equal(
+    (
+      await db.interchurchHelpAgreement.findUniqueOrThrow({
+        where: { offerId: o.id }
+      })
+    ).state,
+    "CANCELED"
+  );
+  assert.ok(
+    JSON.stringify(
+      await read(db, f.a.token, { view: "offer", id: o.id })
+    ).includes("CANCELED")
+  );
+  const fresh = await f.offer();
+  assert.notEqual(fresh.id, o.id);
+  assert.equal(
+    await db.interchurchHelpAgreement.count({ where: { offerId: fresh.id } }),
+    0
+  );
+});
+
+test("agreement push opt-out never falls back to an older offer opt-in", async () => {
+  const f = await setup(),
+    offer = await f.offer();
+  await db.interchurchHelpOffer.update({
+    where: { id: offer.id },
+    data: { noticeSince: new Date(Date.now() - 60000) }
+  });
+  const agreement = await select(f, offer.id);
+  await command(
+    db,
+    f.a.token,
+    input("acknowledge", {
+      offerId: offer.id,
+      expectedVersion: agreement.version,
+      termsVersion: agreement.termsVersion,
+      requestTermsVersion: agreement.requestTermsVersion,
+      acceptTerms: true,
+      externalNotices: false
+    })
+  );
+  const row = await db.interchurchHelpOffer.findUniqueOrThrow({
+    where: { id: offer.id },
+    include: { agreement: true }
+  });
+  assert.ok(row.noticeSince);
+  assert.equal(row.agreement!.responderNoticeSince, null);
+  const event = await db.socialEvent.findFirstOrThrow({
+    where: { kind: "INTERCHURCH_HELP", sourceId: offer.id, recipientId: f.a.id }
+  });
+  const current = {
+    ...event,
+    sourceVersion: row.version,
+    createdAt: new Date()
+  };
+  const context = await postContext(db, f.a.id);
+  assert.equal(
+    (
+      await interchurchHelpNotificationSources(
+        db,
+        [current],
+        context,
+        "ACTIVITY"
+      )
+    ).size,
+    1
+  );
+  assert.equal(
+    (await interchurchHelpNotificationSources(db, [current], context, "PUSH"))
+      .size,
+    0
+  );
+});
+
+test("completed receipts do not reserve a fresh deliberate offer slot", async () => {
+  const f = await setup(),
+    o = await f.offer();
+  await confirmed(f, o.id);
+  const a = await db.interchurchHelpAgreement.findUniqueOrThrow({
+    where: { offerId: o.id }
+  });
+  await command(
+    db,
+    f.manager.token,
+    input("complete", {
+      offerId: o.id,
+      expectedVersion: a.version,
+      reason: "The original adult setup was delivered"
+    })
+  );
+  const fresh = await f.offer();
+  assert.notEqual(fresh.id, o.id);
+  assert.equal(
+    (
+      await db.interchurchHelpAgreement.findUniqueOrThrow({
+        where: { offerId: o.id }
+      })
+    ).state,
+    "COMPLETED"
+  );
+  assert.equal(
+    await db.interchurchHelpAgreement.count({ where: { offerId: fresh.id } }),
+    0
+  );
+});
+
+test("a canceled agreement can be replaced and delivered without making terminal history required work", async () => {
+  const f = await setup(),
+    original = await f.offer();
+  await confirmed(f, original.id);
+  let a = await db.interchurchHelpAgreement.findUniqueOrThrow({
+    where: { offerId: original.id }
+  });
+  await command(
+    db,
+    f.a.token,
+    input("cancel", {
+      offerId: original.id,
+      expectedVersion: a.version,
+      reason: "Replace the original arrangement"
+    })
+  );
+  const replacement = await f.offer();
+  await confirmed(f, replacement.id);
+  a = await db.interchurchHelpAgreement.findUniqueOrThrow({
+    where: { offerId: replacement.id }
+  });
+  await command(
+    db,
+    f.manager.token,
+    input("complete", {
+      offerId: replacement.id,
+      expectedVersion: a.version,
+      reason: "All replacement adult setup delivered"
+    })
+  );
+  const request = await db.interchurchHelpRequest.findUniqueOrThrow({
+    where: { id: f.id }
+  });
+  await command(
+    db,
+    f.manager.token,
+    input("close", {
+      requestId: f.id,
+      expectedVersion: request.version,
+      outcome: "FULFILLED",
+      reason: "All requested scope delivered by the replacement agreement"
+    })
+  );
+  assert.equal(
+    (await db.interchurchHelpRequest.findUniqueOrThrow({ where: { id: f.id } }))
+      .outcome,
+    "FULFILLED"
+  );
+  assert.equal(
+    (
+      await db.interchurchHelpAgreement.findUniqueOrThrow({
+        where: { offerId: original.id }
+      })
+    ).state,
+    "CANCELED"
+  );
+});
+test("request cancellation ends unfinished consent and cannot be relabeled to revive acceptance", async () => {
+  const f = await setup(),
+    o = await f.offer();
+  await confirmed(f, o.id);
+  let a = await db.interchurchHelpAgreement.findUniqueOrThrow({
+    where: { offerId: o.id }
+  });
+  await command(
+    db,
+    f.a.token,
+    input("contact", {
+      offerId: o.id,
+      expectedVersion: a.version,
+      termsVersion: a.termsVersion,
+      contact: "Chosen contact to withdraw",
+      consent: true
+    })
+  );
+  let request = await db.interchurchHelpRequest.findUniqueOrThrow({
+    where: { id: f.id }
+  });
+  const cancel = input("close", {
+    requestId: f.id,
+    expectedVersion: request.version,
+    outcome: "CANCELED",
+    reason: "The requesting church canceled the planned work"
+  });
+  const receipt = await command(db, f.manager.token, cancel);
+  assert.deepEqual(await command(db, f.manager.token, cancel), receipt);
+  a = await db.interchurchHelpAgreement.findUniqueOrThrow({
+    where: { offerId: o.id }
+  });
+  assert.equal(a.state, "CANCELED");
+  assert.equal(a.responderContact, "");
+  assert.equal(a.responderAcknowledged, null);
+  request = await db.interchurchHelpRequest.findUniqueOrThrow({
+    where: { id: f.id }
+  });
+  await denied(
+    command(
+      db,
+      f.manager.token,
+      input("close", {
+        requestId: f.id,
+        expectedVersion: request.version,
+        outcome: "CLOSED",
+        reason: "Cannot remove the cancellation guard"
+      })
+    ),
+    409
+  );
+  await denied(
+    command(
+      db,
+      f.a.token,
+      input("acknowledge", {
+        offerId: o.id,
+        expectedVersion: a.version,
+        termsVersion: a.termsVersion,
+        requestTermsVersion: request.termsVersion,
+        acceptTerms: true,
+        externalNotices: false
+      })
+    ),
+    409
   );
 });

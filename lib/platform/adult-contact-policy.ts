@@ -1,4 +1,7 @@
-import { revokeHelpOffers } from "./interchurch-help-lifecycle";
+import {
+  revokeHelpOffers,
+  disableHelpCoordinator
+} from "./interchurch-help-lifecycle";
 import { revokeGroupContact } from "./group-lifecycle";
 import {
   revokePantryRequests,
@@ -218,6 +221,7 @@ export async function revokeUnfollowedRequests(
   });
 }
 export async function revokeAccountContact(tx: Tx, userId: string) {
+  await disableHelpCoordinator(tx, { coordinatorId: userId }, userId);
   await revokeHelpOffers(
     tx,
     { OR: [{ responderId: userId }, { coordinatorId: userId }] },

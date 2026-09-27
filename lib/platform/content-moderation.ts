@@ -1,4 +1,7 @@
-import { revokeHelpOffers } from "./interchurch-help-lifecycle";
+import {
+  revokeHelpOffers,
+  disableHelpCoordinator
+} from "./interchurch-help-lifecycle";
 import { recordGroupAccessControl } from "./retention-controls";
 import { retireGroupInvitations, retireGroupOffers } from "./group-lifecycle";
 import { disableNeedCoordinator } from "./exchange-need-lifecycle";
@@ -236,6 +239,7 @@ export async function moderateReportedContent(
     } else if (source.type === "TOPIC")
       await tx.topicCommunity.update({ where: { id: source.id }, data });
     else if (source.type === "EXCHANGE_LISTING") {
+      await disableHelpCoordinator(tx, { listingId: source.id }, actorId);
       await revokeHelpOffers(
         tx,
         { request: { listingId: source.id } },
