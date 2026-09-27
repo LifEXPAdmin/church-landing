@@ -1,4 +1,6 @@
-import type { PlatformPost } from "@prisma/client";
+import { Prisma, type PlatformPost } from "@prisma/client";
+import { mediaReadableSql } from "./media-catalog-policy";
+import { mediaFormatNames } from "./media-catalog-options";
 import { calendarContext, eventAccess, eventInclude } from "./calendar-access";
 import { exchangeReadableWhere } from "./exchange-policy";
 import {
@@ -157,6 +159,27 @@ export async function resolvePostResourcesIn(
       result.set(resourceKey(card), card);
     }
   }
+  const media = ids("mediaCatalogItem");
+  if (media.length) {
+    // Reuse the source owner's current predicate, without a source URL,
+    // management projection, provider request or one lookup per card.
+    const rows = await tx.$queryRaw<
+      { id: string; title: string; format: string }[]
+    >(
+      Prisma.sql`SELECT m.id,m.title,m.format FROM "MediaCatalogItem" m
+        WHERE m.id IN (${Prisma.join(media)}) AND (${mediaReadableSql(context)})`
+    );
+    for (const row of rows) {
+      const card: PostResourceCard = {
+        kind: "mediaCatalogItem",
+        id: row.id,
+        title: row.title,
+        href: `/platform/media/${row.id}`,
+        state: mediaFormatNames[row.format as keyof typeof mediaFormatNames]
+      };
+      result.set(resourceKey(card), card);
+    }
+  }
   return result;
 }
 
@@ -186,7 +209,9 @@ export async function validatePostResourcesIn(
     );
   const audience: PostContext = {
     actorId: null,
-    eligible: false,
+    // Church and group readers must be eligible accounts under post policy.
+    // They can read MEMBERS media, but group membership grants no church access.
+    eligible: post.audience === "CHURCH" || post.audience === "GROUP",
     churches:
       post.audience === "CHURCH" && post.audienceChurchId
         ? [post.audienceChurchId]

@@ -13,7 +13,7 @@ edits now protect navigation; discard restores saved choices and save clears the
 guard. Focused reconnect rechecks cards, while background reconnect conceals them.
 
 People and authorized church publishers can add up to three existing listing,
-event occurrence or volunteer opportunity cards to a post. The composer accepts
+event occurrence, volunteer opportunity or media catalog cards to a post. The composer accepts
 canonical page links, checks current access and provides remove controls. Private
 drafts preserve the ordered choices through save, resume, conflicts and retries.
 Published changes reuse the existing post version, Edited label and deliberate
@@ -23,9 +23,10 @@ manufacturing a post revision or exposing previous private text.
 ## Permission and persistence contract
 
 - Store only bounded, strict `{kind,id}` references. Reject duplicates, extra
-  metadata, unknown kinds and unimplemented registry sources. Media catalog and
-  fundraising campaign adapters remain unavailable until their owning services
-  exist; this work does not create those services or document-upload processing.
+  metadata, unknown kinds and unimplemented registry sources. The media adapter
+  requires the separately implemented catalog source described below.
+  Fundraising campaign cards remain unavailable until their owning service
+  exists; this work does not create that service or document-upload processing.
 - At publication, edit, exact retry and scheduled publication, require current
   author access and compatibility with the post audience. Private editor access
   and busy-only calendar access cannot become publication permission. A card
@@ -107,3 +108,58 @@ unchanged backend, without claiming a fresh whole-repository regression.
 
 All runtime writes were limited to owned fictional fixtures. Production writes,
 production migrations, deployments and main-branch changes by this builder: zero.
+
+## Follow-on media adapter
+
+The separate media-card change requires the tested media library and publishing
+implementation, application `ebc3eb0` and report `2982152`. It adds no schema,
+package, provider call or authority grant. Integrate it after that source and the
+previous listing/event/opportunity correction; keep those handoffs immutable.
+
+The existing chooser accepts a canonical media page link and retains only its
+typed ID. The reader returns ID, title, format label and the internal detail
+address. It never copies the external provider URL, rights evidence, assertion
+actor or extended source description into a post card. One bounded SQL query
+reuses `mediaReadableSql` for current lifecycle, audience, rights, blocks,
+managed-church eligibility, moderation and recovery checks. It is one query for
+one reference or 180 repeated references; no per-card provider work is added.
+
+PUBLIC posts can attach only publicly readable media. Church and group post
+readers are eligible accounts under their existing owners, so their posts may
+reference MEMBERS media. Only an exact matching church audience can reference
+CHURCH media. A group context acquires no church membership. Draft-management
+access never becomes publication permission. Current author and least-privileged
+post-audience checks run at publication, edit, retry and scheduled publication.
+
+Source changes refresh the card without manufacturing a post revision. Changing
+or removing the reference reuses existing post versions, Edited labels, explicit
+widening confirmation, unsaved guards and private-draft recovery. Rights expiry,
+withdrawal, unpublishing, source failure, moderation, quarantine, blocks and
+membership revocation hide retained cards while preserving independently
+readable post text. Current access is rechecked after concealment and reconnect.
+
+Final adapter build `ubxpAF-D_K7UHQzRvQiX1` matched all 1,203 application-source
+hashes. Twenty-five service groups passed (eight media-specific plus seventeen
+existing attachment groups), as did four HTTPS groups (two media and two listing)
+and two complete thirteen-group browser journeys, one for each source. Browser
+coverage includes chooser validation, delayed reads, draft resume, publication,
+concealment/reconnect, withdrawal, published/scheduled removal guards, discard,
+save and revision markers. Mobile screenshots were inspected with no overflow;
+no page errors occurred. Type checking, targeted lint, copy, build, hydration and
+runtime traces passed. The trace check covered 242 traces and 601 server scripts.
+
+Review/type checking identified a missing media reader label, which was fixed
+before the final build. Initial media HTTP/browser fixture setup omitted explicit
+personal ownership and was rejected before test assertions; the corrected setup
+passed. A preliminary build inherited the test environment and is not the final
+acceptance artifact; the final build explicitly used production mode and disabled
+delivery. Current HTTPS fixtures derive their cookie wire name from the shared
+issuer so the separate session-cookie migration does not require a second
+fixture policy. Earlier failures and preliminary artifacts remain preserved.
+
+The full cross-feature attachment tasks still require campaign adapters and
+their own source acceptance. Media retains migration 119 and its mandatory
+media-aware recovery/rollback baseline before activation; older recovery code
+cannot replay `MEDIA_CATALOG` controls. A1 retains integration and production
+authority. Real operator, provider, policy, physical-device and pilot gates
+remain open.

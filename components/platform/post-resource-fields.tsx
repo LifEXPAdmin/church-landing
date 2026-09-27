@@ -9,27 +9,30 @@ import { portalInputClass } from "./portal-action-form";
 const labels = {
   exchangeListing: "Listing",
   eventOccurrence: "Event",
-  volunteerOpportunity: "Opportunity"
+  volunteerOpportunity: "Opportunity",
+  mediaCatalogItem: "Media"
 };
 const key = (r: PostResourceReference) => `${r.kind}:${r.id}`;
 function referenceFromUrl(text: string): PostResourceReference {
   const url = new URL(text.trim(), location.origin);
   if (url.origin !== location.origin || url.search || url.hash)
     throw new Error(
-      "Copy a listing, event or opportunity page link from this website."
+      "Copy a listing, event, opportunity or media page link from this website."
     );
   const match =
-    /^\/platform\/(exchange\/(?:help\/)?|events\/|serve\/)([A-Za-z0-9_-]{1,100})\/?$/.exec(
+    /^\/platform\/(exchange\/(?:help\/)?|events\/|serve\/|media\/)([A-Za-z0-9_-]{1,100})\/?$/.exec(
       url.pathname
     );
   if (!match)
-    throw new Error("Choose a listing, event or opportunity page link.");
+    throw new Error("Choose a listing, event, opportunity or media page link.");
   return {
     kind: match[1].startsWith("exchange")
       ? "exchangeListing"
       : match[1] === "events/"
         ? "eventOccurrence"
-        : "volunteerOpportunity",
+        : match[1] === "media/"
+          ? "mediaCatalogItem"
+          : "volunteerOpportunity",
     id: match[2]
   };
 }
@@ -203,9 +206,9 @@ export function PostResourceFields({
     >
       <legend className="px-1 font-semibold">Resource cards</legend>
       <p className="text-sm text-gc-muted">
-        Attach up to three listings, events or volunteer opportunities. Copy the
-        page link from this website. Each card uses current source details and
-        permissions.
+        Attach up to three listings, events, volunteer opportunities or media
+        items. Copy the page link from this website. Each card uses current
+        source details and permissions.
       </p>
       {references.length > 0 && (
         <ul className="space-y-2">

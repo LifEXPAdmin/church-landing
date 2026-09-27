@@ -4,6 +4,9 @@ import { createRequire } from "node:module";
 import { randomUUID, createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 const fixture = process.argv[2];
+const mediaMode = process.argv.includes("--media");
+const sourceLabel = mediaMode ? "Media: " : "Listing: ";
+const sourcePath = mediaMode ? "/platform/media/" : "/platform/exchange/";
 assert.ok(fixture, "Pass the owned isolated fixture directory");
 Object.assign(
   process.env,
@@ -11,6 +14,11 @@ Object.assign(
 );
 const origin = process.env.ACCOUNT_ORIGIN;
 assert.match(origin, /^https:\/\/127\.0\.0\.1:\d+$/);
+const { sessionCookie } = await import("../lib/platform/account-boundary.ts");
+const fixtureCookieName = sessionCookie(
+  "",
+  new URL(origin).protocol === "https:"
+).split("=", 1)[0];
 const { PrismaClient } = await import("@prisma/client");
 const { createPortalActor, assertPortalTestDatabase } =
   await import("../tests/seed-portal.ts");
@@ -80,7 +88,7 @@ const signIn = async (actor) => {
   if (actor)
     await context.addCookies([
       {
-        name: "church_platform_session",
+        name: fixtureCookieName,
         value: actor.token,
         url: origin,
         secure: true,
@@ -100,8 +108,55 @@ const bounds = async () =>
 try {
   const actor = await createPortalActor(db, "cardsbrowser"),
     other = await createPortalActor(db, "cardsother");
-  const makeListing = (title) =>
-    db.exchangeListing.create({
+  const makeListing = async (title) => {
+    if (mediaMode) {
+      const { mediaCatalogCommand } =
+        await import("../lib/platform/media-catalog-commands.ts");
+      const { mediaFields } =
+        await import("../lib/platform/media-catalog-input.ts");
+      const { MEDIA_POLICY } =
+        await import("../lib/platform/media-catalog-options.ts");
+      const fields = mediaFields({
+        title,
+        format: "SERMON",
+        presentation: "VIDEO",
+        audience: "PUBLIC",
+        details: { preachedOn: null },
+        sourceUrl: "https://youtu.be/abcdefghijk"
+      });
+      const review = {
+        fields,
+        acknowledgment: {
+          policy: MEDIA_POLICY,
+          sourceUrl: fields.sourceUrl,
+          audience: fields.audience,
+          accepted: true
+        },
+        rights: {
+          basis: "OWN",
+          reviewed: true,
+          publicRecording: true,
+          textRights: true
+        }
+      };
+      const draft = await mediaCatalogCommand(db, actor.token, {
+        operation: "create",
+        ownerChurchId: null,
+        mutationId: randomUUID(),
+        ...review
+      });
+      const result = await mediaCatalogCommand(db, actor.token, {
+        operation: "publish",
+        mutationId: randomUUID(),
+        itemId: draft.id,
+        expectedVersion: draft.version,
+        ...review
+      });
+      return db.mediaCatalogItem.findUniqueOrThrow({
+        where: { id: result.id }
+      });
+    }
+    return db.exchangeListing.create({
       data: {
         ownerId: actor.id,
         creatorId: actor.id,
@@ -118,6 +173,7 @@ try {
         publishedAt: new Date()
       }
     });
+  };
   const first = await makeListing(
     "Fictional current resource A " + randomUUID()
   );
@@ -134,14 +190,14 @@ try {
     .fill("Initial fictional browser draft");
   await form
     .getByLabel("Resource page link", { exact: true })
-    .fill(origin + "/platform/exchange/" + first.id);
+    .fill(origin + sourcePath + first.id);
   await form
     .getByRole("button", { name: "Add resource card", exact: true })
     .click();
   await form
     .getByRole("button", { name: "Remove resource card 1", exact: true })
     .waitFor();
-  await form.getByText("Listing: " + first.title, { exact: false }).waitFor();
+  await form.getByText(sourceLabel + first.title, { exact: false }).waitFor();
   await bounds();
   await page.screenshot({
     path: output + "/composer-mobile.png",
@@ -154,21 +210,21 @@ try {
   await wait(
     async () =>
       (await form
-        .getByText("Listing: " + first.title, { exact: false })
+        .getByText(sourceLabel + first.title, { exact: false })
         .count()) === 0
   );
   await context.setOffline(false);
-  await form.getByText("Listing: " + first.title, { exact: false }).waitFor();
+  await form.getByText(sourceLabel + first.title, { exact: false }).waitFor();
   await page.evaluate(() => window.dispatchEvent(new Event("blur")));
   await context.setOffline(true);
   await context.setOffline(false);
   await page.waitForTimeout(350);
   assert.equal(
-    await form.getByText("Listing: " + first.title, { exact: false }).count(),
+    await form.getByText(sourceLabel + first.title, { exact: false }).count(),
     0
   );
   await page.evaluate(() => window.dispatchEvent(new Event("focus")));
-  await form.getByText("Listing: " + first.title, { exact: false }).waitFor();
+  await form.getByText(sourceLabel + first.title, { exact: false }).waitFor();
   ok(
     "Composer reconnects while focused and keeps previews concealed when reconnecting in the background"
   );
@@ -181,13 +237,13 @@ try {
     .click();
   await form
     .getByText(
-      "Copy a listing, event or opportunity page link from this website.",
+      "Copy a listing, event, opportunity or media page link from this website.",
       { exact: true }
     )
     .waitFor();
   await form
     .getByLabel("Resource page link", { exact: true })
-    .fill(origin + "/platform/exchange/" + first.id);
+    .fill(origin + sourcePath + first.id);
   await form
     .getByRole("button", { name: "Add resource card", exact: true })
     .click();
@@ -215,7 +271,7 @@ try {
   await context.route("**/api/platform/post-resources?*", addRoute);
   await form
     .getByLabel("Resource page link", { exact: true })
-    .fill(origin + "/platform/exchange/" + second.id);
+    .fill(origin + sourcePath + second.id);
   await form
     .getByRole("button", { name: "Add resource card", exact: true })
     .click();
@@ -256,7 +312,7 @@ try {
   await context.route("**/api/platform/post-resources?*", lateRoute);
   await form
     .getByLabel("Resource page link", { exact: true })
-    .fill(origin + "/platform/exchange/" + third.id);
+    .fill(origin + sourcePath + third.id);
   await form
     .getByRole("button", { name: "Add resource card", exact: true })
     .click();
@@ -300,7 +356,7 @@ try {
   await context.route("**/api/platform/post-resources?*", changedRoute);
   await form
     .getByLabel("Resource page link", { exact: true })
-    .fill(origin + "/platform/exchange/" + third.id);
+    .fill(origin + sourcePath + third.id);
   await form
     .getByRole("button", { name: "Add resource card", exact: true })
     .click();
@@ -400,7 +456,7 @@ try {
   );
 
   await page.evaluate(() => window.dispatchEvent(new Event("blur")));
-  await db.exchangeListing.update({
+  await (mediaMode ? db.mediaCatalogItem : db.exchangeListing).update({
     where: { id: first.id },
     data: { moderationState: "HIDDEN" }
   });
@@ -494,7 +550,12 @@ try {
     audience: "PUBLIC",
     scheduleLocal: new Date(Date.now() + 3600000).toISOString().slice(0, 16),
     scheduleZone: "UTC",
-    resourceReferences: [{ kind: "exchangeListing", id: second.id }]
+    resourceReferences: [
+      {
+        kind: mediaMode ? "mediaCatalogItem" : "exchangeListing",
+        id: second.id
+      }
+    ]
   });
   await go("/platform/scheduled-posts/" + scheduled.id);
   await page.getByText("Edit post", { exact: true }).click();
@@ -556,9 +617,9 @@ try {
   await otherCards
     .getByRole("link", { name: second.title, exact: true })
     .waitFor();
-  await db.exchangeListing.update({
+  await (mediaMode ? db.mediaCatalogItem : db.exchangeListing).update({
     where: { id: second.id },
-    data: { state: "ARCHIVED" }
+    data: { state: mediaMode ? "UNPUBLISHED" : "ARCHIVED" }
   });
   await page.evaluate(() =>
     window.dispatchEvent(new Event("social-relationships-changed"))
@@ -576,7 +637,11 @@ try {
   assert.deepEqual(errors, []);
   writeFileSync(
     output + "/result.json",
-    JSON.stringify({ passed: results.length, results, errors }, null, 2)
+    JSON.stringify(
+      { mediaMode, passed: results.length, results, errors },
+      null,
+      2
+    )
   );
   console.log(JSON.stringify({ output, passed: results.length }));
 } catch (error) {
