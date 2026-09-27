@@ -1,4 +1,6 @@
 export const claimScopes = {
+  EDIT_CHURCH_MEDIA: "Create and edit your own church media drafts",
+  MANAGE_CHURCH_MEDIA: "Review, publish and manage church media",
   COMMIT_INTERCHURCH_HELP:
     "Offer church ministry resources with explicit personal responsibility",
   HOST_CHURCH_WELCOME:

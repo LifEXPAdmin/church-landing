@@ -1,3 +1,4 @@
+import { exportMedia } from "./media-catalog-retention";
 import { exportHelp } from "./interchurch-help-retention";
 import { currentExchangeInquiry } from "./exchange-handoff-policy";
 import { projectClaimAuthority, claimScopes } from "./church-claim-data";
@@ -629,6 +630,7 @@ export async function downloadAccountExport(
       });
     }
     const collections = {
+      personalMedia: await exportMedia(tx,userId,MAX_ROWS),
       interchurchHelp: await exportHelp(tx, userId, MAX_ROWS),
       exchangeInquiries,
       assistanceRequests: await tx.pantryRequest

@@ -1,3 +1,4 @@
+import { eraseMedia } from "./media-catalog-retention";
 import { eraseHelp } from "./interchurch-help-retention";
 import { revokeAccountContact } from "./adult-contact-policy";
 import {
@@ -177,6 +178,7 @@ async function erasePersonalCalendars(tx: Tx, userId: string, now: Date) {
 }
 
 async function eraseSocialData(tx: Tx, userId: string, now: Date) {
+  await eraseMedia(tx,userId,now);
   await revokeAccountContact(tx, userId);
   await tx.$executeRaw`UPDATE "PantryEvent" e SET reason='' WHERE EXISTS (SELECT 1 FROM "PantryRequest" r WHERE r.id=e."targetId" AND r."requesterId"=${userId})`;
   await tx.$executeRaw`UPDATE "PantryRequest" r SET note='', items='[]'::jsonb WHERE r."requesterId"=${userId} AND NOT EXISTS (SELECT 1 FROM "CommunityReport" p WHERE p."targetType"='PANTRY_REQUEST' AND p."targetId"=r.id)`;
