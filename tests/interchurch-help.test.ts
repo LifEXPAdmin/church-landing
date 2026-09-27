@@ -118,11 +118,12 @@ test("private ministry reads bind privileged assurance to current coordinator an
       );
       return body as Awaited<ReturnType<typeof read>>;
     };
+    const readQueries = (offerId: string): Record<string, string>[] => [
+      { view: "offer", id: offerId },
+      { view: "offers", requestId: f.id }
+    ];
     const protectedRead = async (token: string) => {
-      for (const q of [
-        { view: "offer", id: organization.id },
-        { view: "offers", requestId: f.id }
-      ]) {
+      for (const q of readQueries(organization.id)) {
         await assert.rejects(
           privateRead(token, q),
           (error: unknown) => error instanceof PrivilegedAuthenticationError
@@ -130,10 +131,7 @@ test("private ministry reads bind privileged assurance to current coordinator an
       }
     };
     const personalRead = async () => {
-      for (const q of [
-        { view: "offer", id: personal.id },
-        { view: "offers", requestId: f.id }
-      ]) {
+      for (const q of readQueries(personal.id)) {
         const result = await privateRead(f.b.token, q);
         assert.equal(result.view, "offers");
         if (result.view !== "offers")
@@ -201,10 +199,7 @@ test("private ministry reads bind privileged assurance to current coordinator an
             },
             undefined
           );
-          for (const q of [
-            { view: "offer", id: organization.id },
-            { view: "offers", requestId: f.id }
-          ]) {
+          for (const q of readQueries(organization.id)) {
             const current = await privateRead(actor.token, q);
             assert.equal(current.view, "offers");
             assert.ok(
@@ -269,10 +264,7 @@ test("private ministry reads bind privileged assurance to current coordinator an
                 },
                 undefined
               );
-              for (const q of [
-                { view: "offer", id: organization.id },
-                { view: "offers", requestId: f.id }
-              ]) {
+              for (const q of readQueries(organization.id)) {
                 const restored = await privateRead(actor.token, q);
                 assert.equal(restored.view, "offers");
                 assert.ok(
