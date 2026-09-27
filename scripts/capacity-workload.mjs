@@ -9,6 +9,7 @@ import { PrismaClient } from "@prisma/client";
 import { assertPortalTestDatabase } from "../tests/seed-portal.ts";
 import { participationCommand } from "../lib/platform/post-participation.ts";
 import { releases } from "../lib/platform/release-content.ts";
+import { sessionCookieFixtureName } from "./session-cookie-fixture.mjs";
 
 const db = new PrismaClient(),
   dir = process.env.CAPACITY_FIXTURE_DIR;
@@ -38,7 +39,7 @@ async function call(actor, path, body, group) {
       redirect: "manual",
       signal: AbortSignal.timeout(45000),
       headers: {
-        cookie: `church_platform_session=${actor.token}`,
+        cookie: `${sessionCookieFixtureName(origin)}=${actor.token}`,
         origin,
         "content-type": "application/json",
         "x-expected-account": actor.id

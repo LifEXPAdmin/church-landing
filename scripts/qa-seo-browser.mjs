@@ -3,6 +3,7 @@ import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { createRequire } from "node:module";
 import { execFileSync } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
+import { sessionCookieFixtureName } from "./session-cookie-fixture.mjs";
 const fixtureDir = process.argv[2];
 assert.ok(fixtureDir, "Pass the existing isolated preview artifact directory");
 const config = JSON.parse(
@@ -174,7 +175,7 @@ try {
   );
   await context.addCookies([
     {
-      name: "church_platform_session",
+      name: sessionCookieFixtureName(config.origin),
       value: f.author.token,
       url: config.origin,
       httpOnly: true,

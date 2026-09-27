@@ -18,6 +18,7 @@ import { listGroups } from "../lib/platform/group-reads.ts";
 import { getCalendarAgenda } from "../lib/platform/calendar-reads.ts";
 import { readImage } from "../lib/platform/media.ts";
 import { imageStorage } from "../lib/platform/media-storage.ts";
+import { sessionCookieFixtureName } from "./session-cookie-fixture.mjs";
 
 const dir = realpathSync(resolve(process.argv[2] ?? ""));
 assert.ok(dir.startsWith(realpathSync(".account-test") + sep));
@@ -375,7 +376,8 @@ try {
             redirect: "manual",
             signal: AbortSignal.timeout(20000),
             headers: {
-              cookie: "church_platform_session=" + current.token,
+              cookie:
+                sessionCookieFixtureName(config.origin) + "=" + current.token,
               "x-expected-account": current.id
             }
           });

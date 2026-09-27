@@ -4,6 +4,7 @@ import { resolve, join } from "node:path";
 import { createRequire } from "node:module";
 import { execFileSync } from "node:child_process";
 import { createHash, randomBytes } from "node:crypto";
+import { sessionCookieFixtureName } from "./session-cookie-fixture.mjs";
 
 const root = process.cwd();
 const runDir = resolve(
@@ -513,7 +514,9 @@ async function demoAudit() {
           );
           assert.equal(
             (await context.cookies()).filter(
-              (cookie) => cookie.name === "church_platform_session"
+              (cookie) =>
+                cookie.name === sessionCookieFixtureName(origin) ||
+                cookie.name === "church_platform_session"
             ).length,
             0
           );

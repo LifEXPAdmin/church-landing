@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { after, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
@@ -17,10 +18,7 @@ import {
   createSessionToken,
   verifyPassword
 } from "../lib/platform/auth";
-import {
-  handleAccountRequest,
-  SESSION_COOKIE
-} from "../lib/platform/account-boundary";
+import { handleAccountRequest } from "../lib/platform/account-boundary";
 import { assertPortalTestDatabase } from "./seed-portal";
 
 const db = new PrismaClient({ log: [{ level: "query", emit: "event" }] });
@@ -410,7 +408,7 @@ test("policy feedback retains the existing origin and ambiguous-session boundary
     (
       await boundary(
         body,
-        `${SESSION_COOKIE}=${a.token}`,
+        `${sessionCookieFixtureName()}=${a.token}`,
         a.id,
         "https://unrelated.example.test"
       )
@@ -420,7 +418,7 @@ test("policy feedback retains the existing origin and ambiguous-session boundary
   const before = await state(a.id);
   const ambiguous = await boundary(
     body,
-    `${SESSION_COOKIE}=${a.token}; ${SESSION_COOKIE}=${a.token}`,
+    `${sessionCookieFixtureName()}=${a.token}; ${sessionCookieFixtureName()}=${a.token}`,
     a.id
   );
   assert.equal(ambiguous.status, 400);
@@ -429,7 +427,11 @@ test("policy feedback retains the existing origin and ambiguous-session boundary
     "Please sign in again before changing your account."
   );
   assert.deepEqual(await state(a.id), before);
-  const rejected = await boundary(body, `${SESSION_COOKIE}=${a.token}`, a.id);
+  const rejected = await boundary(
+    body,
+    `${sessionCookieFixtureName()}=${a.token}`,
+    a.id
+  );
   assert.equal(rejected.status, 400);
   assert.equal((await rejected.json()).code, "ACCOUNT_PASSWORD_UNSAFE");
   assert.equal(rejected.headers.get("cache-control"), "no-store");

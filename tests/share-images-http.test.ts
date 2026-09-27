@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { PrismaClient } from "@prisma/client";
@@ -16,7 +17,7 @@ const get = (url: string, token = "") =>
   fetch(new URL(url, origin), {
     headers: {
       "User-Agent": "Twitterbot/1.0",
-      cookie: `church_platform_session=${token}`
+      cookie: `${sessionCookieFixtureName()}=${token}`
     }
   });
 async function metadata(path: string, token = "") {

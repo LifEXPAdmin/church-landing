@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -10,7 +11,7 @@ before(() => assertPortalTestDatabase(db));
 after(() => db.$disconnect());
 const get = (path: string, token = "", extra = {}) =>
   fetch(origin + path, {
-    headers: { Cookie: "church_platform_session=" + token, ...extra },
+    headers: { Cookie: sessionCookieFixtureName() + "=" + token, ...extra },
     redirect: "manual"
   });
 const save = (token: string, body: Record<string, unknown>, source = origin) =>
@@ -18,7 +19,7 @@ const save = (token: string, body: Record<string, unknown>, source = origin) =>
     method: "POST",
     headers: {
       Origin: source,
-      Cookie: "church_platform_session=" + token,
+      Cookie: sessionCookieFixtureName() + "=" + token,
       "Content-Type": "application/json"
     },
     body: JSON.stringify({ operation: "update-profile", ...body })
@@ -53,7 +54,7 @@ test("actual profile HTML/RSC/API gate guest details, media and previews while m
     method: "POST",
     headers: {
       Origin: origin,
-      Cookie: "church_platform_session=" + a.token,
+      Cookie: sessionCookieFixtureName() + "=" + a.token,
       "Content-Type": "application/octet-stream",
       "X-Image-Details": encodeURIComponent(
         JSON.stringify({

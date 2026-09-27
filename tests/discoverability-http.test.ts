@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -12,7 +13,10 @@ before(() => assertPortalTestDatabase(db));
 after(() => db.$disconnect());
 const get = (path: string, token = "", agent = "Googlebot") =>
   fetch(new URL(path, origin), {
-    headers: { cookie: "church_platform_session=" + token, "User-Agent": agent }
+    headers: {
+      cookie: sessionCookieFixtureName() + "=" + token,
+      "User-Agent": agent
+    }
   });
 async function page(path: string, token = "", agent = "Googlebot") {
   const response = await get(path, token, agent),

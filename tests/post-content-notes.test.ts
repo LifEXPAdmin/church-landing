@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -448,7 +449,7 @@ test("published controls require the pinned account, confirm one exact receipt, 
         method: "POST",
         headers: {
           Origin: origin,
-          Cookie: "church_platform_session=" + token,
+          Cookie: sessionCookieFixtureName() + "=" + token,
           "Content-Type": "application/json",
           ...(owner ? { "X-Expected-Account": owner } : {})
         },
@@ -497,7 +498,7 @@ test("published controls require the pinned account, confirm one exact receipt, 
     db,
     new Request(origin + "/api/platform/posts?postId=" + post.id, {
       headers: {
-        Cookie: "church_platform_session=" + f.memberA.token,
+        Cookie: sessionCookieFixtureName() + "=" + f.memberA.token,
         "X-Expected-Account": f.memberB.id
       }
     })

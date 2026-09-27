@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomBytes, randomUUID } from "node:crypto";
@@ -30,7 +31,7 @@ const request = (authorization = `Bearer ${secret}`, method = "GET") =>
     method,
     headers: {
       authorization,
-      cookie: "church_platform_session=not-operator-authority"
+      cookie: sessionCookieFixtureName() + "=not-operator-authority"
     }
   });
 

@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { PrismaClient } from "@prisma/client";
@@ -208,7 +209,7 @@ test("HTTP accepts bounded multilingual profile sections and rejects oversized p
       headers: {
         origin,
         "content-type": "application/json",
-        cookie: "church_platform_session=" + actor.token,
+        cookie: sessionCookieFixtureName() + "=" + actor.token,
         "x-expected-account": actor.id
       },
       body: content
@@ -308,7 +309,7 @@ test("HTTP rejects PostgreSQL-incompatible module text without profile or recove
       headers: {
         origin,
         "content-type": "application/json",
-        cookie: "church_platform_session=" + actor.token,
+        cookie: sessionCookieFixtureName() + "=" + actor.token,
         "x-expected-account": actor.id
       },
       body

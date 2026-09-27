@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { before, beforeEach, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -17,7 +18,7 @@ beforeEach(async () => {
 after(async () => {
   await db.$disconnect();
 });
-const cookie = (a: PortalActor) => `church_platform_session=${a.token}`;
+const cookie = (a: PortalActor) => `${sessionCookieFixtureName()}=${a.token}`;
 const get = (a: PortalActor | null, view: string, id?: string) =>
   fetch(
     `${origin}/api/platform/support?view=${view}${id ? `&caseId=${id}` : ""}`,

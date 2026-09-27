@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { before, beforeEach, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomBytes, randomUUID } from "node:crypto";
@@ -33,7 +34,10 @@ after(async () => {
 const request = (authorization = `Bearer ${secret}`, method = "GET") =>
   new Request("https://example.test/api/maintenance/images", {
     method,
-    headers: { authorization, cookie: "church_platform_session=not-authority" }
+    headers: {
+      authorization,
+      cookie: sessionCookieFixtureName() + "=not-authority"
+    }
   });
 function memoryStore() {
   const files = new Map<string, Buffer>();

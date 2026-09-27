@@ -1349,10 +1349,11 @@ try {
         `
       import assert from 'node:assert/strict';
       import { randomBytes } from 'node:crypto';
+      import { sessionCookieFixtureName } from './scripts/session-cookie-fixture.mjs';
       const token = randomBytes(32).toString('base64url');
       for (const rsc of [false, true]) for (const guarded of ["portal", "support"]) {
         const response = await fetch(process.env.ACCOUNT_ORIGIN + (guarded === 'portal' ? '/platform/churches/fictional-guard-probe/directory' : '/platform/help/cases/fictional-guard-probe'), {
-          headers: { Cookie: 'church_platform_session=' + token, ...(rsc ? { RSC: '1' } : {}) }
+          headers: { Cookie: sessionCookieFixtureName() + '=' + token, ...(rsc ? { RSC: '1' } : {}) }
         });
         assert.equal(response.status, 200);
         assert.match(response.headers.get('content-type'), rsc ? /text\\/x-component/ : /text\\/html/);

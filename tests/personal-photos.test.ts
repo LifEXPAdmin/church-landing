@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -910,7 +911,7 @@ test("bounded saved-photo reads and member previews omit private choices; source
   const origin = process.env.ACCOUNT_ORIGIN!,
     headers = {
       Origin: origin,
-      Cookie: "church_platform_session=" + a.token,
+      Cookie: sessionCookieFixtureName() + "=" + a.token,
       "X-Expected-Account": b.id,
       "Content-Type": "application/json"
     };

@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { PrismaClient } from "@prisma/client";
@@ -36,7 +37,7 @@ test("device lookup pins the active adult account, uses private transient cells 
         {
           method: options.method ?? (options.body ? "POST" : "GET"),
           headers: {
-            cookie: `church_platform_session=${options.token ?? a.token}`,
+            cookie: `${sessionCookieFixtureName()}=${options.token ?? a.token}`,
             "x-expected-account": options.owner ?? a.id,
             origin: options.origin ?? origin,
             ...(options.body ? { "content-type": "application/json" } : {})

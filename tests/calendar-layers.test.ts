@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -180,7 +181,7 @@ test("exact retries are idempotent, competing saves conflict, and unsupported fi
       headers: {
         origin,
         "content-type": "application/json",
-        cookie: "church_platform_session=" + a.token,
+        cookie: sessionCookieFixtureName() + "=" + a.token,
         "x-expected-account": b.id
       },
       body: JSON.stringify(save(id, 2))

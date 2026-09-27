@@ -3,6 +3,7 @@ import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { createRequire } from "node:module";
 import { execFileSync } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
+import { sessionCookieFixtureName } from "./session-cookie-fixture.mjs";
 const root = process.cwd();
 assert.ok(
   process.argv[2],
@@ -100,10 +101,9 @@ page.on("requestfailed", (request) => terminalRequests.add(request));
 const cookie = async (actor) =>
   context.addCookies([
     {
-      name: "church_platform_session",
+      name: sessionCookieFixtureName(config.origin),
       value: actor.token,
-      domain: "127.0.0.1",
-      path: "/",
+      url: config.origin,
       secure: true,
       httpOnly: true,
       sameSite: "Lax"

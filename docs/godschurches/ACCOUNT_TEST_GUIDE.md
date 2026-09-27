@@ -6,6 +6,20 @@ file under `tests` and `lib` and runs it in the isolated HTTPS fixture. Its fina
 coverage count must include all discovered files. A diagnostic continuation after
 a failure is useful evidence but does not replace a passing complete gate.
 
+## Ordinary cookie transition verification
+
+`tests/account-cookies.test.ts` exercises deterministic retirement boundaries,
+conflicting identities, HTTP isolation and origin-only configuration policy.
+The actual HTTPS browser flow in `scripts/qa-session-cookie-prefix-browser.mjs`
+checks password-form issuance, sibling Domain and narrow-Path rejection,
+compatible legacy reads without promotion, account switching and the real logout
+Server Action. Run the session-rotation and Google-boundary suites alongside the
+development HTML/RSC tests. Ordinary fixtures use
+`scripts/session-cookie-fixture.mjs` at request time, based on their inspected
+account origin; they must not depend on the legacy compatibility window.
+Explicit historical rollback rehearsals record their artifact's cookie capability.
+See [session cookie policy](SESSION_COOKIE_POLICY.md) for release and fallback gates.
+
 ## Request privacy and session ambiguity
 
 The development phase of `tests/account-http.test.ts` verifies that actual HTML

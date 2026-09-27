@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -37,7 +38,7 @@ test("profile pin HTTPS requires the current account and same origin, preserves 
       method,
       headers: {
         origin: from,
-        cookie: `church_platform_session=${token}`,
+        cookie: `${sessionCookieFixtureName()}=${token}`,
         "x-expected-account": account,
         "content-type": "application/json"
       },
@@ -159,7 +160,7 @@ test("profile HTML and member preview suppress a church-only pin while the curre
   const get = (token: string, suffix = "", rsc = false) =>
     fetch(path + suffix, {
       headers: {
-        cookie: `church_platform_session=${token}`,
+        cookie: `${sessionCookieFixtureName()}=${token}`,
         ...(rsc ? { RSC: "1" } : {})
       }
     });

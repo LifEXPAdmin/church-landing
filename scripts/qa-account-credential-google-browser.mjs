@@ -5,6 +5,7 @@ import { execFileSync } from "node:child_process";
 import { createHash, randomBytes } from "node:crypto";
 import { pathToFileURL } from "node:url";
 import { request as httpsRequest } from "node:https";
+import { sessionCookieFixtureName } from "./session-cookie-fixture.mjs";
 assert.ok(process.argv[2], "Pass the isolated credential environment JSON");
 const config = JSON.parse(readFileSync(process.argv[2], "utf8"));
 const prefix = config.fixture + "/credential-google-browser";
@@ -140,7 +141,7 @@ const signIn = async (a) => {
   await context.clearCookies();
   await context.addCookies([
     {
-      name: "church_platform_session",
+      name: sessionCookieFixtureName(config.origin),
       value: a.token,
       url: config.origin,
       secure: true,
@@ -366,7 +367,8 @@ try {
           "Content-Type": "application/json",
           "X-Expected-Account": original.id,
           Cookie:
-            "church_platform_session=" +
+            sessionCookieFixtureName(config.origin) +
+            "=" +
             original.token +
             "; __Host-gc_google_recent=" +
             oldProof
@@ -437,7 +439,8 @@ try {
     assert.ok(
       cookies.some(
         (c) =>
-          c.name === "church_platform_session" && c.value === replacement.token
+          c.name === sessionCookieFixtureName(config.origin) &&
+          c.value === replacement.token
       )
     );
     results.push({

@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -89,7 +90,7 @@ after(() => db.$disconnect());
 const get = (path: string, token = "", rsc = false) =>
   fetch(origin + path, {
     headers: {
-      ...(token ? { Cookie: "church_platform_session=" + token } : {}),
+      ...(token ? { Cookie: sessionCookieFixtureName() + "=" + token } : {}),
       ...(rsc ? { RSC: "1" } : {})
     }
   });
@@ -124,7 +125,7 @@ const post = (input: unknown, token = ada.token, extra = {}) =>
     headers: {
       Origin: origin,
       "Content-Type": "application/json",
-      Cookie: "church_platform_session=" + token,
+      Cookie: sessionCookieFixtureName() + "=" + token,
       ...extra
     },
     body: JSON.stringify(input)

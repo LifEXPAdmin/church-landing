@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID, createECDH, randomBytes } from "node:crypto";
@@ -30,7 +31,7 @@ import {
   notificationWrite
 } from "../lib/platform/notification-outbox";
 import { accountConfig } from "../lib/platform/account-config";
-import { SESSION_COOKIE } from "../lib/platform/account-boundary";
+
 const db = new PrismaClient();
 const names = [
   "FOUNDER_ACCOUNT_ID",
@@ -473,7 +474,7 @@ test("the HTTP boundary retains origin/owner protections and a scheduling failur
       method: "POST",
       headers: {
         origin: site,
-        cookie: `${SESSION_COOKIE}=${founder.token}`,
+        cookie: `${sessionCookieFixtureName()}=${founder.token}`,
         "content-type": "application/json"
       },
       body: JSON.stringify(data)

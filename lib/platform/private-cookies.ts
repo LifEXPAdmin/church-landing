@@ -2,7 +2,8 @@ import "server-only";
 import { cookies, headers } from "next/headers";
 import {
   ACCOUNT_SESSION_COOKIE,
-  accountSessionCookie
+  accountSessionCookie,
+  isAccountSessionCookieName
 } from "./account-cookies";
 
 // Next's development RSC diagnostics can serialize resolved request stores.
@@ -19,11 +20,10 @@ export function privateCookies() {
       configurable: true,
       value: () => "[private request cookies]"
     });
-    if (
-      accountSessionCookie(requestHeaders.get("cookie")) ===
-      store.get(ACCOUNT_SESSION_COOKIE)?.value
-    )
-      return store;
+    const token = accountSessionCookie(requestHeaders.get("cookie"));
+    const selected = token
+      ? { name: ACCOUNT_SESSION_COOKIE, value: token }
+      : undefined;
     // Keep all current server readers consistent with the HTTP boundary. Do not
     // mutate the framework's store or revoke either account's valid sessions.
     return new Proxy(store, {
@@ -32,21 +32,43 @@ export function privateCookies() {
           return (name: string | { name: string }) =>
             (typeof name === "string" ? name : name.name) ===
             ACCOUNT_SESSION_COOKIE
-              ? undefined
-              : target.get(typeof name === "string" ? name : name.name);
+              ? selected
+              : isAccountSessionCookieName(
+                    typeof name === "string" ? name : name.name
+                  )
+                ? undefined
+                : target.get(typeof name === "string" ? name : name.name);
         if (property === "getAll")
           return (name?: string | { name: string }) =>
-            (name === undefined
-              ? target.getAll()
-              : target.getAll(typeof name === "string" ? name : name.name)
-            ).filter((cookie) => cookie.name !== ACCOUNT_SESSION_COOKIE);
+            name === undefined
+              ? [
+                  ...target
+                    .getAll()
+                    .filter(
+                      (cookie) => !isAccountSessionCookieName(cookie.name)
+                    ),
+                  ...(selected ? [selected] : [])
+                ]
+              : (typeof name === "string" ? name : name.name) ===
+                  ACCOUNT_SESSION_COOKIE
+                ? selected
+                  ? [selected]
+                  : []
+                : isAccountSessionCookieName(
+                      typeof name === "string" ? name : name.name
+                    )
+                  ? []
+                  : target.getAll(typeof name === "string" ? name : name.name);
         if (property === "has")
           return (name: string) =>
-            name !== ACCOUNT_SESSION_COOKIE && target.has(name);
+            name === ACCOUNT_SESSION_COOKIE
+              ? Boolean(selected)
+              : !isAccountSessionCookieName(name) && target.has(name);
         if (property === Symbol.iterator)
           return function* () {
             for (const entry of target)
-              if (entry[0] !== ACCOUNT_SESSION_COOKIE) yield entry;
+              if (!isAccountSessionCookieName(entry[0])) yield entry;
+            if (selected) yield [ACCOUNT_SESSION_COOKIE, selected];
           };
         const value = Reflect.get(target, property, target);
         return typeof value === "function" ? value.bind(target) : value;

@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -15,7 +16,7 @@ after(() => db.$disconnect());
 const get = (path: string, token = "", rsc = false) =>
   fetch(origin + path, {
     headers: {
-      Cookie: "church_platform_session=" + token,
+      Cookie: sessionCookieFixtureName() + "=" + token,
       ...(rsc ? { RSC: "1" } : {})
     }
   });
@@ -106,7 +107,7 @@ test("canonical comment API writes only to the selected reader post without alte
       method: "POST",
       headers: {
         Origin: origin,
-        Cookie: "church_platform_session=" + f.lee.token,
+        Cookie: sessionCookieFixtureName() + "=" + f.lee.token,
         "Content-Type": "application/json",
         "X-Expected-Account": f.lee.id
       },

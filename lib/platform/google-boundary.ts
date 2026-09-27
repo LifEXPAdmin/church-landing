@@ -7,7 +7,7 @@ import { allowAccountAttempt } from "./account-limits";
 import {
   readBody,
   requestSessionToken,
-  sessionCookie
+  withSessionCookie
 } from "./account-boundary";
 import { accountEntryHref } from "./account-entry";
 import { createSessionToken, hashSessionToken, validToken } from "./auth";
@@ -271,10 +271,7 @@ export async function handleGoogleRequest(
         redirect: result.next
       });
       clearGoogleCookies(response, account.secureCookie);
-      response.headers.append(
-        "Set-Cookie",
-        sessionCookie(result.token, account.secureCookie)
-      );
+      withSessionCookie(response, result.token, account.secureCookie);
       return response;
     }
     if (operation === "reactivate") {
@@ -506,10 +503,7 @@ export async function handleGoogleCallback(
         requestSessionToken(request),
         result.token
       );
-      response.headers.append(
-        "Set-Cookie",
-        sessionCookie(result.token, account.secureCookie)
-      );
+      withSessionCookie(response, result.token, account.secureCookie);
     }
     return response;
   } catch {

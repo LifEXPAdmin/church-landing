@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { PrismaClient } from "@prisma/client";
@@ -18,7 +19,7 @@ import {
 } from "../lib/platform/retention-controls";
 import { readVolunteers } from "../lib/platform/volunteer-reads";
 import { handleVolunteerRequest } from "../lib/platform/volunteer-boundary";
-import { SESSION_COOKIE } from "../lib/platform/account-boundary";
+
 import { accountConfig } from "../lib/platform/account-config";
 import { getCalendarCommitments } from "../lib/platform/calendar-reads";
 import { getPostParticipation } from "../lib/platform/post-participation-reads";
@@ -414,7 +415,7 @@ test("HTTP enforces account pin, origin, bounded strict input, private cache hea
     new Request(origin + "/api/platform/volunteers", {
       method: "POST",
       headers: {
-        cookie: `${SESSION_COOKIE}=${f.lee.token}`,
+        cookie: `${sessionCookieFixtureName()}=${f.lee.token}`,
         "content-type": "application/json",
         origin: source,
         "x-expected-account": owner
@@ -460,7 +461,7 @@ test("HTTP enforces account pin, origin, bounded strict input, private cache hea
   const get = (query: string, owner = f.lee.id) =>
     new Request(origin + "/api/platform/volunteers?" + query, {
       headers: {
-        cookie: `${SESSION_COOKIE}=${f.lee.token}`,
+        cookie: `${sessionCookieFixtureName()}=${f.lee.token}`,
         "x-expected-account": owner
       }
     });

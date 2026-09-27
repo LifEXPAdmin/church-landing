@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { before, beforeEach, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID, createHmac } from "node:crypto";
@@ -89,7 +90,7 @@ const request = (
     headers: {
       Origin: accountConfig().origin,
       "Content-Type": "application/json",
-      Cookie: `church_platform_session=${actor.token}`,
+      Cookie: `${sessionCookieFixtureName()}=${actor.token}`,
       "X-Expected-Account": actor.id,
       "X-Real-IP": "192.0.2.20"
     },

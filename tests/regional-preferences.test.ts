@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -117,7 +118,7 @@ test("regional endpoint pins the account, rejects cross-origin and invalid field
     new Request(origin + "/api/platform/regional", {
       method: body === undefined ? "GET" : "POST",
       headers: {
-        Cookie: `church_platform_session=${token}`,
+        Cookie: `${sessionCookieFixtureName()}=${token}`,
         Origin: origin,
         "Content-Type": "application/json",
         "X-Expected-Account": a.id,

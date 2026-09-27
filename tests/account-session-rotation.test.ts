@@ -7,14 +7,16 @@ import {
   readAccountSession,
   registerAccount
 } from "../lib/platform/accounts";
-import {
-  requestSessionToken,
-  SESSION_COOKIE
-} from "../lib/platform/account-boundary";
+import { requestSessionToken } from "../lib/platform/account-boundary";
 import { createSessionToken, hashSessionToken } from "../lib/platform/auth";
 import { handleGoogleCallback } from "../lib/platform/google-boundary";
 import { googleCookieName } from "../lib/platform/google-cookies";
 import { GOOGLE_ISSUER } from "../lib/platform/google-provider";
+import {
+  ACCOUNT_SECURE_SESSION_COOKIE,
+  ACCOUNT_SESSION_COOKIE as LEGACY_SESSION_COOKIE,
+  LEGACY_SECURE_SESSION_ENDS_AT
+} from "../lib/platform/account-cookies";
 import { accountConfig } from "../lib/platform/account-config";
 
 const origin = process.env.ACCOUNT_ORIGIN!;
@@ -91,7 +93,9 @@ async function actor() {
   const other = await loginAccount(db, user.email, password, "Other device");
   return { user, current, other };
 }
+const SESSION_COOKIE = ACCOUNT_SECURE_SESSION_COOKIE;
 const cookie = (token: string) => `${SESSION_COOKIE}=${token}`;
+const legacyAccepted = Date.now() < Date.parse(LEGACY_SECURE_SESSION_ENDS_AT);
 function post(body: object, cookies = "", extra: Record<string, string> = {}) {
   return fetch(origin + "/api/platform/account", {
     method: "POST",
@@ -113,14 +117,34 @@ const sessions = (ids: string[]) =>
 function issuedToken(response: Response) {
   const entries = response.headers
     .getSetCookie()
-    .filter((value) => value.startsWith(SESSION_COOKIE + "="));
+    .filter((value) => value.startsWith(ACCOUNT_SECURE_SESSION_COOKIE + "="));
   assert.equal(entries.length, 1);
   assert.match(entries[0], /; Path=\//);
   assert.match(entries[0], /; HttpOnly/);
   assert.match(entries[0], /; SameSite=Lax/);
   assert.match(entries[0], /; Secure(?:;|$)/);
-  const token = entries[0].split(";")[0].slice(SESSION_COOKIE.length + 1);
+  const token = entries[0]
+    .split(";")[0]
+    .slice(ACCOUNT_SECURE_SESSION_COOKIE.length + 1);
   assert.match(token, /^[A-Za-z0-9_-]{43}$/);
+  assert.equal(
+    response.headers
+      .getSetCookie()
+      .filter((value) => value.startsWith(LEGACY_SESSION_COOKIE + "=")).length,
+    1
+  );
+  assert.ok(
+    response.headers
+      .getSetCookie()
+      .some(
+        (value) =>
+          value.startsWith(LEGACY_SESSION_COOKIE + "=;") &&
+          value.includes("Max-Age=0")
+      )
+  );
+  assert.ok(
+    response.headers.getSetCookie().every((value) => !/; Domain=/i.test(value))
+  );
   return token;
 }
 async function ownerAtHttp(token: string) {
@@ -242,6 +266,40 @@ test("ordinary session parsing rejects duplicates, including repeated identical 
     assert.equal(read(value), undefined);
 });
 
+test("HTTPS API and pages accept the host name and compatible legacy identity without extending or rewriting the session", async () => {
+  const a = await actor();
+  const before = await sessions([a.user.id]);
+  for (const value of [
+    cookie(a.current),
+    ...(legacyAccepted
+      ? [
+          `${LEGACY_SESSION_COOKIE}=${a.current}`,
+          `${LEGACY_SESSION_COOKIE}=${a.current}; ${cookie(a.current)}`
+        ]
+      : [])
+  ]) {
+    const api = await fetch(origin + "/api/platform/profile?view=identity", {
+      headers: { Cookie: value },
+      redirect: "manual"
+    });
+    assert.equal(api.status, 200);
+    assert.equal((await api.json()).id, a.user.id);
+    assert.equal(api.headers.get("set-cookie"), null);
+    for (const rsc of [false, true]) {
+      const page = await fetch(origin + "/platform/settings", {
+        headers: { Cookie: value, ...(rsc ? { RSC: "1" } : {}) },
+        redirect: "manual"
+      });
+      assert.equal(page.status, 200);
+      assert.equal(page.headers.get("set-cookie"), null);
+      const body = await page.text();
+      assert.ok(body.includes("Settings"));
+      assert.ok(!body.includes(a.current));
+    }
+  }
+  assert.deepEqual(await sessions([a.user.id]), before);
+});
+
 test("HTTPS API and server-rendered settings reject duplicate principals in either order without leaking or revoking either account", async () => {
   const a = await actor();
   const b = await actor();
@@ -252,6 +310,13 @@ test("HTTPS API and server-rendered settings reject duplicate principals in eith
   assert.equal(await ownerAtHttp(b.current), b.user.id);
   const outcomes = [];
   const ambiguous = [
+    ...(legacyAccepted
+      ? [
+          `${cookie(a.current)}; ${LEGACY_SESSION_COOKIE}=${b.current}`,
+          `${LEGACY_SESSION_COOKIE}=${b.current}; ${cookie(a.current)}`
+        ]
+      : []),
+    `${ACCOUNT_SECURE_SESSION_COOKIE}=${a.current}; ${ACCOUNT_SECURE_SESSION_COOKIE}=${a.current}`,
     ...[
       [a.current, b.current],
       [b.current, a.current],
@@ -485,7 +550,7 @@ test("Google callback cannot treat conflicting active cookies as an anonymous br
   const before = await sessions([previous.user.id, next.user.id]);
   const response = await attempt.callback(
     previous.current,
-    `; ${cookie(next.current)}`
+    `; ${ACCOUNT_SECURE_SESSION_COOKIE}=${next.current}`
   );
   assert.equal(
     response.headers.get("location"),

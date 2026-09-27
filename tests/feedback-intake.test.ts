@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -406,7 +407,7 @@ test("whole-case privacy recovery clears restored feedback and source text witho
 test("feedback HTTP reads and writes require the current owner, reject cross-site changes and return private responses", async () => {
   const f = await seedSupport(db);
   const headers = {
-    cookie: `church_platform_session=${f.memberA.token}`,
+    cookie: `${sessionCookieFixtureName()}=${f.memberA.token}`,
     "x-expected-account": f.memberA.id
   };
   const origin = accountConfig().origin;

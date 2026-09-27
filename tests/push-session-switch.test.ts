@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import webpush from "web-push";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
@@ -6,10 +7,7 @@ import { PrismaClient } from "@prisma/client";
 import { assertPortalTestDatabase, createPortalActor } from "./seed-portal";
 import { pushSubscriptionCommand } from "../lib/platform/push-subscriptions";
 import { createSessionToken, hashSessionToken } from "../lib/platform/auth";
-import {
-  handleAccountRequest,
-  SESSION_COOKIE
-} from "../lib/platform/account-boundary";
+import { handleAccountRequest } from "../lib/platform/account-boundary";
 import { accountConfig } from "../lib/platform/account-config";
 const db = new PrismaClient();
 before(() => assertPortalTestDatabase(db));
@@ -57,7 +55,7 @@ test("normal password account switching revokes the replaced browser session and
         method: "POST",
         headers: {
           origin,
-          cookie: `${SESSION_COOKIE}=${a.token}`,
+          cookie: `${sessionCookieFixtureName()}=${a.token}`,
           "content-type": "application/json"
         },
         body: JSON.stringify({
@@ -68,7 +66,13 @@ test("normal password account switching revokes the replaced browser session and
       })
     );
     assert.equal(result.status, 200);
-    assert.match(result.headers.get("set-cookie")!, /church_platform_session=/);
+    assert.match(
+      result.headers
+        .getSetCookie()
+        .find((value) => value.startsWith(sessionCookieFixtureName() + "=")) ??
+        "",
+      /^[^=]+=[A-Za-z0-9_-]{43};/
+    );
     assert.equal(
       await db.platformSession.count({
         where: { tokenHash: hashSessionToken(a.token) }

@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -326,7 +327,7 @@ test("HTTP pins the acting account and returns private current management histor
         method: "POST",
         headers: {
           Origin: origin,
-          Cookie: "church_platform_session=" + f.contact.token,
+          Cookie: sessionCookieFixtureName() + "=" + f.contact.token,
           "Content-Type": "application/json",
           "X-Expected-Account": expectedAccount
         },
@@ -344,7 +345,7 @@ test("HTTP pins the acting account and returns private current management histor
     db,
     new Request(origin + "/api/platform/posts?postId=" + f.post.id, {
       headers: {
-        Cookie: "church_platform_session=" + f.contact.token,
+        Cookie: sessionCookieFixtureName() + "=" + f.contact.token,
         "X-Expected-Account": f.contact.id
       }
     })

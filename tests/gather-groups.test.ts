@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import { handleGroupRequest } from "../lib/platform/group-boundary";
 import { safeAccountReturn } from "../lib/platform/account-entry";
 import { notificationSource } from "../lib/platform/notification-source";
@@ -1574,7 +1575,7 @@ test("group HTTP boundaries pin the account, reject foreign actions and retain p
       new Request(origin + "/api/platform/groups", {
         method: "POST",
         headers: {
-          cookie: "church_platform_session=" + member.token,
+          cookie: sessionCookieFixtureName() + "=" + member.token,
           "content-type": "application/json",
           ...headers
         },

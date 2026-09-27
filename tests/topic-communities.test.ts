@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -33,7 +34,7 @@ import {
 import { PortalError } from "../lib/platform/portal-policy";
 import { handleTopicRequest } from "../lib/platform/topic-boundary";
 import { accountConfig } from "../lib/platform/account-config";
-import { SESSION_COOKIE } from "../lib/platform/account-boundary";
+
 import { safeAccountReturn } from "../lib/platform/account-entry";
 import { readSupport, supportCommand } from "../lib/platform/support";
 import { contentAppealOffer } from "../lib/platform/moderation-support";
@@ -635,7 +636,7 @@ test("HTTP requires same-origin current-account writes, preserves safe topic ret
   const headers = {
     origin,
     "content-type": "application/json",
-    cookie: `${SESSION_COOKIE}=${f.member.token}`,
+    cookie: `${sessionCookieFixtureName()}=${f.member.token}`,
     "x-expected-account": f.member.id
   };
   const before = await db.topicMembership.count();

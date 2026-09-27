@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -20,7 +21,7 @@ test("HTTPS Likes preserve exact retries, Unlike versions, account and current s
       method: "POST",
       headers: {
         origin: from,
-        cookie: `church_platform_session=${token}`,
+        cookie: `${sessionCookieFixtureName()}=${token}`,
         "content-type": "application/json",
         "x-expected-account": account
       },
@@ -29,7 +30,7 @@ test("HTTPS Likes preserve exact retries, Unlike versions, account and current s
   const state = async () =>
     (
       await fetch(origin + "/api/platform/post-likes?postId=" + row.id, {
-        headers: { cookie: `church_platform_session=${a.token}` }
+        headers: { cookie: `${sessionCookieFixtureName()}=${a.token}` }
       })
     ).json();
   const input = {
@@ -118,7 +119,7 @@ test("identity projection stays minimal and private and rejects revoked credenti
   const actor = await createPortalActor(db, "identityapi");
   const read = (token = actor.token) =>
     fetch(origin + "/api/platform/profile?view=identity", {
-      headers: { cookie: `church_platform_session=${token}` }
+      headers: { cookie: `${sessionCookieFixtureName()}=${token}` }
     });
   const response = await read();
   assert.equal(response.status, 200);

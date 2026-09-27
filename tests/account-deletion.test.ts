@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -492,7 +493,7 @@ test("deletion HTTP boundary rejects forged origins, switched accounts and extra
         headers: {
           origin,
           "content-type": "application/json",
-          cookie: "church_platform_session=" + token
+          cookie: sessionCookieFixtureName() + "=" + token
         },
         body: JSON.stringify(body)
       }),

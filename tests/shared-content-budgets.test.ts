@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { after, before, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import { createHmac, randomUUID } from "node:crypto";
@@ -362,7 +363,7 @@ test("post, DM and report boundaries cancel oversized streams before canonical w
       headers: {
         origin: accountConfig().origin,
         "content-type": "application/json",
-        cookie: `church_platform_session=${actor.token}`,
+        cookie: `${sessionCookieFixtureName()}=${actor.token}`,
         "x-expected-account": actor.id
       }
     } as RequestInit & { duplex: "half" });

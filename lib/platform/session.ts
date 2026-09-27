@@ -3,7 +3,8 @@ import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 import { hashSessionToken, validToken } from "./auth";
 import { readAccountSession } from "./accounts";
-import { ACCOUNT_SESSION_COOKIE } from "./account-cookies";
+import { ACCOUNT_SESSION_COOKIE, sessionCookieName } from "./account-cookies";
+import { accountOrigin } from "./account-config";
 
 export const PLATFORM_SESSION_COOKIE = ACCOUNT_SESSION_COOKIE;
 // Components receive only the account DTO; credentials stay inside this reader.
@@ -19,5 +20,14 @@ export async function clearPlatformSession() {
     await prisma.platformSession.deleteMany({
       where: { tokenHash: hashSessionToken(token) }
     });
-  cookieStore.delete(PLATFORM_SESSION_COOKIE);
+  const secure = accountOrigin().protocol === "https:";
+  const options = {
+    path: "/",
+    httpOnly: true,
+    secure,
+    sameSite: "lax" as const,
+    maxAge: 0
+  };
+  cookieStore.set(sessionCookieName(secure), "", options);
+  if (secure) cookieStore.set(ACCOUNT_SESSION_COOKIE, "", options);
 }

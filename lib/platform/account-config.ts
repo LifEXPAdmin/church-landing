@@ -7,9 +7,7 @@ export type AccountConfig = {
   secureCookie: boolean;
 };
 
-export function accountConfig(
-  env: NodeJS.ProcessEnv = process.env
-): AccountConfig {
+export function accountOrigin(env: NodeJS.ProcessEnv = process.env) {
   const origin = new URL(
     env.ACCOUNT_ORIGIN ?? env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"
   );
@@ -26,6 +24,15 @@ export function accountConfig(
   const production = env.NODE_ENV === "production" || Boolean(env.VERCEL);
   if ((!local || production) && origin.protocol !== "https:")
     throw new Error("Account origin requires HTTPS");
+  return origin;
+}
+
+export function accountConfig(
+  env: NodeJS.ProcessEnv = process.env
+): AccountConfig {
+  const origin = accountOrigin(env);
+  const local = ["localhost", "127.0.0.1", "[::1]"].includes(origin.hostname);
+  const production = env.NODE_ENV === "production" || Boolean(env.VERCEL);
   const rateSecret =
     env.AUTH_RATE_LIMIT_SECRET ??
     (!production && local ? "local-development-only-account-limit-key" : "");

@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -16,7 +17,7 @@ import { handleActivityRequest } from "../lib/platform/activity-boundary";
 import { commentCommand } from "../lib/platform/comment-commands";
 import { portalCommand } from "../lib/platform/portal";
 import { PortalError } from "../lib/platform/portal-policy";
-import { SESSION_COOKIE } from "../lib/platform/account-boundary";
+
 import { accountConfig } from "../lib/platform/account-config";
 
 const db = new PrismaClient();
@@ -75,7 +76,7 @@ const request = (
   new Request(accountConfig().origin + "/api/platform/activity" + query, {
     method: input ? "POST" : "GET",
     headers: {
-      ...(token ? { cookie: `${SESSION_COOKIE}=${token}` } : {}),
+      ...(token ? { cookie: `${sessionCookieFixtureName()}=${token}` } : {}),
       ...(input ? { origin, "content-type": "application/json" } : {})
     },
     body: input ? JSON.stringify(input) : undefined

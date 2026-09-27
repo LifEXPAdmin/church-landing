@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { after, before } from "node:test";
 import assert from "node:assert/strict";
 import { createHmac, randomUUID } from "node:crypto";
@@ -55,7 +56,7 @@ function lazyRequest(
     method,
     headers: {
       Origin: accountConfig().origin,
-      Cookie: "church_platform_session=" + actor.token,
+      Cookie: sessionCookieFixtureName() + "=" + actor.token,
       "Content-Type":
         method === "POST" ? "application/octet-stream" : "application/json",
       "X-Expected-Account": actor.id,

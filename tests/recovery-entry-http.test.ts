@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -35,7 +36,10 @@ test("actual Home exposes non-followers' public posts equally and verification p
   await db.platformPost.create({
     data: { authorId: author.id, content: marker }
   });
-  const headers = { Cookie: "church_platform_session=" + token, RSC: "1" };
+  const headers = {
+    Cookie: sessionCookieFixtureName() + "=" + token,
+    RSC: "1"
+  };
   for (const signedIn of [false, true]) {
     const response = await fetch(origin + "/platform", {
       headers: signedIn ? headers : { RSC: "1" }

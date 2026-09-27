@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { after, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
@@ -56,7 +57,7 @@ const row = (token: string) =>
   db.platformSession.findUniqueOrThrow({
     where: { tokenHash: hashSessionToken(token) }
   });
-const cookie = (token: string) => "church_platform_session=" + token;
+const cookie = (token: string) => sessionCookieFixtureName() + "=" + token;
 const post = (
   body: Record<string, unknown>,
   token = "",

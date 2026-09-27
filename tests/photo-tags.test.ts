@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -26,7 +27,7 @@ import {
 } from "../lib/platform/retention-controls";
 import { portalCommand } from "../lib/platform/portal";
 import { handlePhotoTagRequest } from "../lib/platform/photo-tag-boundary";
-import { SESSION_COOKIE } from "../lib/platform/account-boundary";
+
 import { accountConfig } from "../lib/platform/account-config";
 
 const db = new PrismaClient();
@@ -448,7 +449,7 @@ test("photo tag HTTP denies account confusion, unsupported queries, foreign priv
       db,
       new Request(config.origin + "/api/platform/photo-tags" + query, {
         headers: {
-          cookie: `${SESSION_COOKIE}=${actor.token}`,
+          cookie: `${sessionCookieFixtureName()}=${actor.token}`,
           "x-expected-account": expected
         }
       })
@@ -481,7 +482,7 @@ test("photo tag HTTP denies account confusion, unsupported queries, foreign priv
       method: "POST",
       headers: {
         origin: config.origin,
-        cookie: `${SESSION_COOKIE}=${f.b.token}`,
+        cookie: `${sessionCookieFixtureName()}=${f.b.token}`,
         "content-type": "application/json",
         "x-expected-account": f.a.id
       },

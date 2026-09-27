@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import { privilegedAuthenticatorCommand } from "../lib/platform/privileged-auth";
 import {
   authenticatorTotp,
@@ -31,7 +32,7 @@ import {
   projectNotificationPreferences
 } from "../lib/platform/notification-preferences";
 import { handleExchangeRequest } from "../lib/platform/exchange-boundary";
-import { SESSION_COOKIE } from "../lib/platform/account-boundary";
+
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -1279,7 +1280,7 @@ test("handoff HTTP boundary rejects cross-site writes, switched accounts and gue
   const { receipt } = await inquire(requester, listing.id);
   const origin = process.env.ACCOUNT_ORIGIN!;
   const headers = {
-    cookie: `${SESSION_COOKIE}=${requester.token}`,
+    cookie: `${sessionCookieFixtureName()}=${requester.token}`,
     origin,
     "content-type": "application/json",
     "x-expected-account": requester.id

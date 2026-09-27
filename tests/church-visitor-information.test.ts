@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -522,7 +523,7 @@ test("bounded listing and claim handlers accept maximum multilingual fields and 
       method: "POST",
       headers: {
         Origin: process.env.ACCOUNT_ORIGIN!,
-        Cookie: "church_platform_session=" + owner.token,
+        Cookie: sessionCookieFixtureName() + "=" + owner.token,
         "Content-Type": "application/json"
       },
       body

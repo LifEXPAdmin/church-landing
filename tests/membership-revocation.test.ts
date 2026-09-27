@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -9,7 +10,7 @@ import {
   requestConnection
 } from "./seed-portal";
 import { portalCommand } from "../lib/platform/portal";
-import { SESSION_COOKIE } from "../lib/platform/account-boundary";
+
 import { PortalError } from "../lib/platform/portal-policy";
 import { getPost } from "../lib/platform/post-reads";
 import { postCommand } from "../lib/platform/post-commands";
@@ -168,7 +169,7 @@ for (const action of ["LEAVE", "REMOVE"] as const) {
         `https://fixture.example.test/api/platform/images/${image.id}/${variant}?token=obsolete-signed-link`,
         {
           headers: {
-            cookie: `${SESSION_COOKIE}=${actor.token}`,
+            cookie: `${sessionCookieFixtureName()}=${actor.token}`,
             "if-none-match": "old-etag",
             range: "bytes=0-100"
           }

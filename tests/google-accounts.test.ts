@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { after, mock } from "node:test";
 import assert from "node:assert/strict";
 import { generateKeyPairSync, randomBytes, sign } from "node:crypto";
@@ -47,10 +48,7 @@ import {
   requireAccountCredential,
   type RecentAuthenticationPurpose
 } from "../lib/platform/account-credential";
-import {
-  handleAccountRequest,
-  SESSION_COOKIE
-} from "../lib/platform/account-boundary";
+import { handleAccountRequest } from "../lib/platform/account-boundary";
 
 assert.equal(process.env.ACCOUNT_TEST_ISOLATED, "1");
 assert.equal(new URL(process.env.DATABASE_URL!).hostname, "127.0.0.1");
@@ -1041,7 +1039,7 @@ test("Google exports contain only the owner's identity metadata, and HTTP passwo
       headers: {
         Origin: origin,
         "Content-Type": "application/json",
-        Cookie: `${SESSION_COOKIE}=${a.outcome.token}`
+        Cookie: `${sessionCookieFixtureName()}=${a.outcome.token}`
       },
       body: JSON.stringify({
         operation: "prepare-export",

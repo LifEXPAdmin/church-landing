@@ -3,6 +3,7 @@ import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { createRequire } from "node:module";
 import { execFileSync } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
+import { sessionCookieFixtureName } from "./session-cookie-fixture.mjs";
 const dir = process.argv[2];
 const groupMode = process.argv.includes("--groups");
 assert.ok(dir, "Pass the existing isolated HTTPS fixture directory");
@@ -152,7 +153,7 @@ groups.push = (...items) => {
 const login = (actor) =>
   context.addCookies([
     {
-      name: "church_platform_session",
+      name: sessionCookieFixtureName(config.origin),
       value: actor.token,
       url: config.origin,
       secure: true,

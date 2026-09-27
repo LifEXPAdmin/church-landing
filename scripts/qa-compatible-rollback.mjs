@@ -27,6 +27,14 @@ assert.equal(database.pathname, "/godschurches_security_test");
 assert.equal(database.port, String(config.ports.postgres));
 assert.equal(origin.hostname, "127.0.0.1");
 assert.equal(origin.protocol, "https:");
+// Historical artifacts can predate the host-prefixed issuer. Require the
+// rehearsal plan to state its wire identity instead of silently upgrading it.
+assert.ok(
+  ["church_platform_session", "__Host-church_platform_session"].includes(
+    config.sessionCookieName
+  ),
+  "Declare the inspected artifact sessionCookieName in browser-env.json"
+);
 assert.equal(env.DATABASE_URL, config.database);
 assert.equal(env.ACCOUNT_TEST_ISOLATED, "1");
 assert.equal(env.ACCOUNT_DELIVERY_MODE, "test-sink");
@@ -93,6 +101,20 @@ for (const kind of ["canary", "recovery"]) {
   );
   assert.equal(build.code, 0);
   assert.equal(build.source, config.source);
+  const cookieSource = readFileSync(
+    config.roots[kind] + "/lib/platform/account-cookies.ts",
+    "utf8"
+  );
+  const supportsHostPrefix = /export const ACCOUNT_SECURE_SESSION_COOKIE\s*=/.test(
+    cookieSource
+  );
+  assert.equal(
+    config.sessionCookieName,
+    supportsHostPrefix
+      ? "__Host-church_platform_session"
+      : "church_platform_session",
+    kind + " wire identity must match its verified artifact capability"
+  );
 }
 const oldForm = execFileSync("git", [
   "show",
@@ -273,7 +295,7 @@ const api = (actor, path, body) =>
   fetch(config.origin + path, {
     method: body ? "POST" : "GET",
     headers: {
-      Cookie: "church_platform_session=" + actor.token,
+      Cookie: config.sessionCookieName + "=" + actor.token,
       "X-Expected-Account": actor.id,
       ...(body
         ? { Origin: config.origin, "Content-Type": "application/json" }
@@ -351,7 +373,7 @@ try {
     });
     await context.addCookies([
       {
-        name: "church_platform_session",
+        name: config.sessionCookieName,
         value: owner.token,
         url: config.origin,
         secure: true,
@@ -519,6 +541,7 @@ try {
   receipt = {
     source: config.source,
     olderUiSource: config.oldUiSource,
+    sessionCookieName: config.sessionCookieName,
     sourceFilesVerified: sourceFiles.length,
     sourceDeltas: config.deltas,
     processes,

@@ -4,6 +4,7 @@ import { createRequire } from "node:module";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { resolve } from "node:path";
+import { sessionCookieFixtureName } from "./session-cookie-fixture.mjs";
 
 const dir = resolve(process.argv[2] ?? "");
 assert.ok(process.argv[2], "Pass an existing isolated preview directory");
@@ -72,10 +73,9 @@ const ok = (message) => {
   console.log("PASS " + message);
 };
 const cookie = (actor) => ({
-  name: "church_platform_session",
+  name: sessionCookieFixtureName(config.origin),
   value: actor.token,
-  domain: "127.0.0.1",
-  path: "/",
+  url: config.origin,
   secure: true,
   httpOnly: true,
   sameSite: "Lax"

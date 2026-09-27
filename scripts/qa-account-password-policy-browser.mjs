@@ -3,6 +3,7 @@ import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { createRequire } from "node:module";
 import { execFileSync } from "node:child_process";
 import { createHash, randomBytes } from "node:crypto";
+import { sessionCookieFixtureName } from "./session-cookie-fixture.mjs";
 
 const fixture = process.argv[2];
 assert.ok(fixture, "Pass the isolated password-policy fixture directory");
@@ -49,7 +50,7 @@ async function go(path) {
 async function signIn(actor, proof) {
   await context.clearCookies();
   await context.addCookies([
-    { name: "church_platform_session", value: actor.token, url: config.origin, httpOnly: true, secure: true, sameSite: "Lax" },
+    { name: sessionCookieFixtureName(config.origin), value: actor.token, url: config.origin, httpOnly: true, secure: true, sameSite: "Lax" },
     ...(proof ? [{ name: "__Host-gc_google_recent", value: proof, url: config.origin, httpOnly: true, secure: true, sameSite: "Lax" }] : [])
   ]);
   await db.platformAuthLimit.deleteMany();

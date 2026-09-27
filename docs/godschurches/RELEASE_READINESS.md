@@ -1,3 +1,16 @@
+## Host-bound session transition prepared, 27 September 2026 UTC
+
+The local HTTPS cookie transition is implemented on the existing fixed-expiry
+session service. Seventeen focused parsing and Google-boundary checks pass;
+built browser, HTTP/SSR, development-RSC, compatible recovery and live gates
+remain open. The unchanged .33 source reproduced the sibling-domain legacy
+cookie issue before edits. Shared identity selection, no background promotion
+and current-session proof binding are preserved. Legacy compatibility has a
+fixed end and a publication deadline; see [session cookie policy](SESSION_COOKIE_POLICY.md)
+for residual risk and the required prefix-aware fallback. The ordinary fixture
+wire-name migration is test maintenance, not a new authentication bypass.
+Production remains verified .33 until the next named batch passes its gates.
+
 ## Password safety and post resource cards verified live, 27 September 2026 UTC
 
 Password screening .32 and current listing/event/volunteer post cards .33 are

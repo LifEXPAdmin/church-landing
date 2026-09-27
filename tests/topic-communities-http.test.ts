@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -21,7 +22,7 @@ const req = (
     method: body ? "POST" : "GET",
     redirect: "manual",
     headers: {
-      cookie: `church_platform_session=${token}`,
+      cookie: `${sessionCookieFixtureName()}=${token}`,
       origin,
       ...(body ? { "content-type": "application/json" } : {}),
       ...headers

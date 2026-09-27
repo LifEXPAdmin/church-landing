@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -38,7 +39,11 @@ test("retained repost checks return only currently permitted source counts", asy
       db,
       new Request(
         `http://127.0.0.1/api/platform/reposts?view=entry&id=${entry.id}`,
-        { headers: { Cookie: "church_platform_session=" + f.contact.token } }
+        {
+          headers: {
+            Cookie: sessionCookieFixtureName() + "=" + f.contact.token
+          }
+        }
       )
     );
     assert.equal(response.status, 200);
@@ -164,7 +169,7 @@ test("batch transport rejects changed accounts, malformed or oversized inputs an
           ]),
         {
           headers: {
-            Cookie: "church_platform_session=" + f.memberA.token,
+            Cookie: sessionCookieFixtureName() + "=" + f.memberA.token,
             "X-Expected-Account": owner
           }
         }

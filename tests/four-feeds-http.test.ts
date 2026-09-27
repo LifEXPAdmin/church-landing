@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -30,7 +31,7 @@ test("feed preference HTTPS boundary pins the account, checks origin and preserv
       method: "POST",
       headers: {
         origin: from,
-        cookie: `church_platform_session=${token}`,
+        cookie: `${sessionCookieFixtureName()}=${token}`,
         "content-type": "application/json",
         "x-expected-account": expected
       },

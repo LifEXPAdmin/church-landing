@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -159,7 +160,7 @@ test("private staging reuses normalized variants and excludes every ordinary ima
   const response = await handleImageDelivery(
     db,
     new Request(accountConfig().origin + asset.variants.thumb.url, {
-      headers: { cookie: `church_platform_session=${f.memberA.token}` }
+      headers: { cookie: `${sessionCookieFixtureName()}=${f.memberA.token}` }
     }),
     asset.id,
     "thumb",
@@ -505,7 +506,7 @@ test("the viewer list requires its current account and case access, including st
         `/api/platform/feedback?view=attachments&caseId=${saved.caseId}`,
       {
         headers: {
-          cookie: `church_platform_session=${actor.token}`,
+          cookie: `${sessionCookieFixtureName()}=${actor.token}`,
           ...(owner ? { "x-expected-account": owner } : {})
         }
       }

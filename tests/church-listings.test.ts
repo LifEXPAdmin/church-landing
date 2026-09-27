@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -460,7 +461,7 @@ test("listing boundary enforces origin, session, body size, methods and private 
         headers: {
           Origin: origin,
           "Content-Type": "application/json",
-          Cookie: "church_platform_session=" + token,
+          Cookie: sessionCookieFixtureName() + "=" + token,
           ...headers
         },
         ...(body !== undefined ? { body: JSON.stringify(body) } : {})

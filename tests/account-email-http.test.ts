@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { after, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
@@ -43,7 +44,7 @@ function post(
     headers: {
       Origin: origin,
       "Content-Type": "application/json",
-      Cookie: "church_platform_session=" + token,
+      Cookie: sessionCookieFixtureName() + "=" + token,
       ...headers
     },
     body: JSON.stringify(body)
@@ -112,7 +113,7 @@ test("actual email-change HTTP rejects forged origins/owner fields and advertise
     ]) {
       const html = await (
         await fetch(origin + path, {
-          headers: { Cookie: "church_platform_session=" + a.token }
+          headers: { Cookie: sessionCookieFixtureName() + "=" + a.token }
         })
       ).text();
       if (path === "/platform/account/change-email")
@@ -120,7 +121,7 @@ test("actual email-change HTTP rejects forged origins/owner fields and advertise
       else {
         // Settings loads private capability context after hydration.
         const context = await fetch(origin + "/api/platform/settings", {
-          headers: { Cookie: "church_platform_session=" + a.token }
+          headers: { Cookie: sessionCookieFixtureName() + "=" + a.token }
         });
         assert.equal(context.status, 200);
         assert.equal((await context.json()).emailAvailable, false);
@@ -156,7 +157,7 @@ test(
     assert.equal(link.search, "");
     const token = new URLSearchParams(link.hash.slice(1)).get("token")!;
     const page = await fetch(link, {
-      headers: { Cookie: "church_platform_session=" + a.token }
+      headers: { Cookie: sessionCookieFixtureName() + "=" + a.token }
     });
     assert.equal(page.status, 200);
     const html = await page.text();

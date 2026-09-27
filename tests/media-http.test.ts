@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -20,7 +21,7 @@ const picture = () =>
     .toBuffer();
 const get = (path: string, token = "", headers = {}) =>
   fetch(origin + path, {
-    headers: { Cookie: "church_platform_session=" + token, ...headers },
+    headers: { Cookie: sessionCookieFixtureName() + "=" + token, ...headers },
     redirect: "manual"
   });
 const upload = (
@@ -33,7 +34,7 @@ const upload = (
     method: "POST",
     headers: {
       Origin: source,
-      Cookie: "church_platform_session=" + token,
+      Cookie: sessionCookieFixtureName() + "=" + token,
       "Content-Type": "application/octet-stream",
       "X-Image-Details": encodeURIComponent(JSON.stringify(input))
     },
@@ -85,7 +86,7 @@ test("actual image endpoint processes profile uploads, stable retries, account g
     method: "DELETE",
     headers: {
       Origin: origin,
-      Cookie: "church_platform_session=" + f.ada.token,
+      Cookie: sessionCookieFixtureName() + "=" + f.ada.token,
       "Content-Type": "application/json"
     },
     body: JSON.stringify({ id: result.id, expectedVersion: 1 })

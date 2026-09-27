@@ -7,10 +7,8 @@ import {
   handleGoogleRequest,
   handleGoogleCallback
 } from "../lib/platform/google-boundary";
-import {
-  handleAccountRequest,
-  SESSION_COOKIE
-} from "../lib/platform/account-boundary";
+import { handleAccountRequest } from "../lib/platform/account-boundary";
+import { ACCOUNT_SECURE_SESSION_COOKIE as SESSION_COOKIE } from "../lib/platform/account-cookies";
 import {
   googleCookieName,
   googleRequestToken
@@ -88,6 +86,29 @@ const exchange = (
 ) => verifyGoogleIdToken(config, code, nonce, client);
 type Jar = Map<string, string>;
 function absorb(jar: Jar, response: Response) {
+  const issued = response.headers
+    .getSetCookie()
+    .find(
+      (value) =>
+        value.startsWith(SESSION_COOKIE + "=") &&
+        !value.startsWith(SESSION_COOKIE + "=;")
+    );
+  if (issued) {
+    assert.match(
+      issued,
+      /; Path=\/; HttpOnly; SameSite=Lax; Max-Age=2592000; Secure$/
+    );
+    assert.ok(!/; Domain=/i.test(issued));
+    assert.ok(
+      response.headers
+        .getSetCookie()
+        .some(
+          (value) =>
+            value.startsWith("church_platform_session=;") &&
+            value.includes("Max-Age=0")
+        )
+    );
+  }
   for (const cookie of response.headers.getSetCookie()) {
     const pair = cookie.split(";")[0];
     const [name, value] = pair.split("=");
@@ -659,6 +680,7 @@ test("Google-only account can prepare its private export and add a password thro
   assert.ok(!content.includes(person.token));
   assert.doesNotMatch(content, /tokenHash|browserHash|signupTokenHash/);
   await reauth(person, "change-password");
+  const beforeCookies = new Map(person.jar);
   const changed = await account(
     {
       operation: "change-password",
@@ -669,8 +691,8 @@ test("Google-only account can prepare its private export and add a password thro
     person.jar
   );
   assert.equal(changed.status, 200);
-  assert.equal(person.jar.has(SESSION_COOKIE), false);
-  assert.equal(person.jar.size, 0);
+  assert.equal(changed.headers.get("set-cookie"), null);
+  assert.deepEqual(person.jar, beforeCookies);
   assert.equal(await readAccountSession(db, person.token), null);
   assert.ok(await loginAccount(db, person.user.email, password, null));
   assert.equal(
@@ -740,16 +762,14 @@ test("email-change token survives Google redirect only in an owner-bound HttpOnl
   assert.equal(state.emailConfirmationReady, true);
   assert.equal(state.recentPurpose, "confirm-email-change");
   assert.ok(!JSON.stringify(state).includes(emailToken));
-  assert.equal(
-    (
-      await account(
-        { operation: "confirm-email-change", credentialMethod: "google" },
-        person.jar
-      )
-    ).status,
-    200
+  const beforeCookies = new Map(person.jar);
+  const changed = await account(
+    { operation: "confirm-email-change", credentialMethod: "google" },
+    person.jar
   );
-  assert.equal(person.jar.size, 0);
+  assert.equal(changed.status, 200);
+  assert.equal(changed.headers.get("set-cookie"), null);
+  assert.deepEqual(person.jar, beforeCookies);
   assert.equal(await readAccountSession(db, person.token), null);
   const updated = await db.platformUser.findUniqueOrThrow({
     where: { id: person.user.id }
@@ -778,12 +798,14 @@ test("a password-backed owner may choose password confirmation after the Google 
     person.jar
   );
   assert.equal(wrong.status, 400);
+  const beforeCookies = new Map(person.jar);
   const changed = await account(
     { operation: "confirm-email-change", currentPassword: password },
     person.jar
   );
   assert.equal(changed.status, 200);
-  assert.equal(person.jar.size, 0);
+  assert.equal(changed.headers.get("set-cookie"), null);
+  assert.deepEqual(person.jar, beforeCookies);
   assert.equal(await readAccountSession(db, person.token), null);
 });
 

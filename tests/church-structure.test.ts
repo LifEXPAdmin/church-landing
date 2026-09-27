@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -659,7 +660,7 @@ test("structure: real boundary rejects anonymous/origin/body faults and keeps sa
         headers: {
           Origin: sentOrigin,
           "Content-Type": "application/json",
-          Cookie: "church_platform_session=" + token
+          Cookie: sessionCookieFixtureName() + "=" + token
         },
         body: JSON.stringify(input)
       })
@@ -688,7 +689,7 @@ test("structure: real boundary rejects anonymous/origin/body faults and keeps sa
     db,
     new Request(
       origin + `/api/platform/church-structure?churchId=${f.churchA.id}`,
-      { headers: { Cookie: "church_platform_session=" + f.ada.token } }
+      { headers: { Cookie: sessionCookieFixtureName() + "=" + f.ada.token } }
     )
   );
   assert.equal(snapshot.status, 200);

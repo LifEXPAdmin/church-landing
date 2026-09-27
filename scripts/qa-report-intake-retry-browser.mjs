@@ -7,6 +7,7 @@ import { createRequire } from "node:module";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { readFileSync, writeFileSync, mkdirSync, readdirSync } from "node:fs";
+import { sessionCookieFixtureName } from "./session-cookie-fixture.mjs";
 
 const root = process.cwd(), baseline = process.argv.includes("--baseline");
 assert.ok(process.argv[2], "Pass an existing isolated HTTPS fixture directory");
@@ -77,7 +78,7 @@ const button = (name) => page.getByRole("button", { name, exact: true });
 const details = () => page.getByLabel("Report details", { exact: true });
 const reason = () => page.getByLabel("Report reason", { exact: true });
 const command = (request) => new URL(request.url()).pathname === "/api/platform/community-reports" && request.method() === "POST";
-const login = async (actor) => { await context.clearCookies(); await context.addCookies([{ name: "church_platform_session", value: actor.token,
+const login = async (actor) => { await context.clearCookies(); await context.addCookies([{ name: sessionCookieFixtureName(config.origin), value: actor.token,
   url: config.origin, secure: true, httpOnly: true, sameSite: "Lax" }]); };
 const enabled = async (name) => { await button(name).waitFor(); await page.waitForFunction((name) => [...document.querySelectorAll("button")].some((node) => node.textContent === name && !node.disabled), name); };
 const ready = async (value = "") => { await details().waitFor(); await page.waitForFunction((value) => document.querySelector('[aria-label="Report details"]')?.value === value, value); };

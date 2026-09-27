@@ -57,12 +57,27 @@ import { protectDiscoveryRecovery } from "./discovery-recovery";
 import { readAccountSession } from "./accounts";
 import {
   ACCOUNT_SESSION_COOKIE,
-  accountSessionCookie
+  ACCOUNT_SECURE_SESSION_COOKIE,
+  accountSessionCookie,
+  sessionCookieName
 } from "./account-cookies";
 
 export const SESSION_COOKIE = ACCOUNT_SESSION_COOKIE;
 export function sessionCookie(token: string, secure: boolean) {
-  return `${SESSION_COOKIE}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${token ? SESSION_SECONDS : 0}${secure ? "; Secure" : ""}`;
+  return `${sessionCookieName(secure)}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${token ? SESSION_SECONDS : 0}${secure ? "; Secure" : ""}`;
+}
+export function withSessionCookie(
+  response: Response,
+  token: string,
+  secure: boolean
+) {
+  response.headers.append("Set-Cookie", sessionCookie(token, secure));
+  if (secure)
+    response.headers.append(
+      "Set-Cookie",
+      `${sessionCookie("", false)}; Secure`
+    );
+  return response;
 }
 export function requestSessionToken(request: Request) {
   return accountSessionCookie(request.headers.get("cookie"));
@@ -147,9 +162,17 @@ export async function handleAccountRequest(
     deletionJournal
   );
   if (response.ok && !credentialUse.sessionRevoked) {
-    const sessionEnded = response.headers
-      .get("Set-Cookie")
-      ?.includes(`${SESSION_COOKIE}=;`);
+    const sessionCookies = response.headers.getSetCookie();
+    const primary =
+      sessionCookies.find((cookie) =>
+        cookie.startsWith(ACCOUNT_SECURE_SESSION_COOKIE + "=")
+      ) ??
+      sessionCookies.find((cookie) =>
+        cookie.startsWith(ACCOUNT_SESSION_COOKIE + "=")
+      );
+    const sessionEnded =
+      primary?.startsWith(`${ACCOUNT_SECURE_SESSION_COOKIE}=;`) ||
+      primary?.startsWith(`${ACCOUNT_SESSION_COOKIE}=;`);
     if (credentialUse.google || sessionEnded) {
       const secure = accountConfig().secureCookie;
       if (sessionEnded) clearGoogleCookies(response, secure);
@@ -463,15 +486,15 @@ async function processAccountRequest(
               deletionJournal ?? protectedAccountDeletionJournal(),
               body.ownerId
             );
-      return Response.json(result, {
+      const response = Response.json(result, {
         headers: {
           "Cache-Control": "no-store",
-          "Referrer-Policy": "no-referrer",
-          ...(operation === "delete-account"
-            ? { "Set-Cookie": sessionCookie("", config.secureCookie) }
-            : {})
+          "Referrer-Policy": "no-referrer"
         }
       });
+      return operation === "delete-account"
+        ? withSessionCookie(response, "", config.secureCookie)
+        : response;
     }
     if (operation === "deactivate-account") {
       await deactivateAccount(
@@ -480,11 +503,15 @@ async function processAccountRequest(
         credential,
         body.confirmed
       );
-      return reply(
-        "Account deactivated. All devices are signed out.",
-        200,
-        { "Set-Cookie": sessionCookie("", config.secureCookie) },
-        "/platform/account/reactivate?notice=deactivated"
+      return withSessionCookie(
+        reply(
+          "Account deactivated. All devices are signed out.",
+          200,
+          {},
+          "/platform/account/reactivate?notice=deactivated"
+        ),
+        "",
+        config.secureCookie
       );
     }
     if (operation === "reactivate-account") {
@@ -568,11 +595,10 @@ async function processAccountRequest(
         token
       );
       scheduleFounderWelcome(db, token, afterResponse);
-      return reply(
-        "Signed in.",
-        200,
-        { "Set-Cookie": sessionCookie(token, config.secureCookie) },
-        safeAccountReturn(body.next)
+      return withSessionCookie(
+        reply("Signed in.", 200, {}, safeAccountReturn(body.next)),
+        token,
+        config.secureCookie
       );
     }
     if (operation === "update-profile") {
@@ -630,11 +656,15 @@ async function processAccountRequest(
       body.confirmPassword
     );
     if (operation === "consume-reset")
-      return reply(
-        "Password reset. All devices are signed out. Sign in with your new password.",
-        200,
-        { "Set-Cookie": sessionCookie("", config.secureCookie) },
-        "/platform/login?notice=password-changed"
+      return withSessionCookie(
+        reply(
+          "Password reset. All devices are signed out. Sign in with your new password.",
+          200,
+          {},
+          "/platform/login?notice=password-changed"
+        ),
+        "",
+        config.secureCookie
       );
     scheduleFounderWelcome(db, requestSessionToken(request), afterResponse);
     return reply("Email verified. You can return to your account.", 200);

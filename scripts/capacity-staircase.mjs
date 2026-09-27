@@ -10,6 +10,7 @@ import { readOperationalHealth } from "../lib/platform/operational-health.ts";
 import { isDeepStrictEqual } from "node:util";
 import { PrismaClient } from "@prisma/client";
 import { assertPortalTestDatabase } from "../tests/seed-portal.ts";
+import { sessionCookieFixtureName } from "./session-cookie-fixture.mjs";
 
 const db = new PrismaClient();
 await assertPortalTestDatabase(db);
@@ -55,7 +56,7 @@ async function call(actor, path, group, stats, body, extraHeaders = {}) {
       redirect: "manual",
       signal: AbortSignal.timeout(45_000),
       headers: {
-        cookie: `church_platform_session=${actor.token}`,
+        cookie: `${sessionCookieFixtureName(origin)}=${actor.token}`,
         origin,
         "x-expected-account": actor.id,
         ...(body ? { "content-type": "application/json" } : {}),

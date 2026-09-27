@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { after, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
@@ -55,7 +56,7 @@ function post(
     headers: {
       Origin: origin,
       "Content-Type": "application/json",
-      Cookie: "church_platform_session=" + token,
+      Cookie: sessionCookieFixtureName() + "=" + token,
       ...headers
     },
     body: JSON.stringify(body)
@@ -516,7 +517,7 @@ test("production HTTPS export is an owner-bound no-store attachment with strict 
   assert.ok(!content.includes(b.user.email));
   assert.ok(!content.includes(authorization));
   const page = await fetch(origin + "/platform/settings/data/export", {
-    headers: { Cookie: "church_platform_session=" + a.token }
+    headers: { Cookie: sessionCookieFixtureName() + "=" + a.token }
   });
   const html = await page.text();
   assert.equal(page.status, 200);

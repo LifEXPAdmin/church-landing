@@ -3,6 +3,7 @@ import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { createRequire } from "node:module";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
+import { sessionCookieFixtureName } from "./session-cookie-fixture.mjs";
 const fixtureDir = process.argv[2];
 assert.ok(fixtureDir, "Pass the existing isolated preview artifact directory");
 const config = JSON.parse(
@@ -81,10 +82,9 @@ const bounded = async () =>
 const signIn = async (actor) =>
   context.addCookies([
     {
-      name: "church_platform_session",
+      name: sessionCookieFixtureName(config.origin),
       value: actor.token,
-      domain: "127.0.0.1",
-      path: "/",
+      url: config.origin,
       secure: true,
       httpOnly: true,
       sameSite: "Lax"
@@ -235,7 +235,7 @@ try {
         ?.value === "EVERYONE"
   );
   assert.equal(await counts().isChecked(), true);
-  await context.clearCookies({ name: "church_platform_session" });
+  await context.clearCookies({ name: sessionCookieFixtureName(config.origin) });
   await go("/platform/settings/privacy/relationships");
   assert.equal(await privacy().count(), 0);
   ok(

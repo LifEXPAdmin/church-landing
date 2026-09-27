@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { after, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
@@ -78,7 +79,7 @@ function post(
     headers: {
       Origin: origin,
       "Content-Type": "application/json",
-      Cookie: "church_platform_session=" + token,
+      Cookie: sessionCookieFixtureName() + "=" + token,
       ...headers
     },
     body: JSON.stringify(body)
@@ -98,7 +99,7 @@ test("actual publishing binds authors to cookies and rejects cross-origin and de
       method: "POST",
       redirect: "manual",
       headers: {
-        Cookie: "church_platform_session=" + a.token,
+        Cookie: sessionCookieFixtureName() + "=" + a.token,
         Origin: source,
         "Content-Type": "application/json"
       },
@@ -452,7 +453,7 @@ test("inactive community content and relationships disappear from HTML and RSC, 
         headers: {
           ...(rsc ? { RSC: "1" } : {}),
           ...(path.includes("/profile/")
-            ? { Cookie: "church_platform_session=" + b.token }
+            ? { Cookie: sessionCookieFixtureName() + "=" + b.token }
             : {})
         }
       });
@@ -468,7 +469,7 @@ test("inactive community content and relationships disappear from HTML and RSC, 
     }
   }
   const profile = await fetch(origin + "/platform/profile/" + a.user.username, {
-    headers: { Cookie: "church_platform_session=" + b.token }
+    headers: { Cookie: sessionCookieFixtureName() + "=" + b.token }
   });
   assert.equal(profile.status, 404);
   assert.ok(!(await profile.text()).includes(marker));

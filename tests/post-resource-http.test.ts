@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -15,10 +16,10 @@ before(async () => {
 });
 after(() => db.$disconnect());
 function get(path: string, user: PortalActor | null = null, rsc = false, expected?: string) {
-  return fetch(origin + path, { headers: { ...(user ? { cookie: `church_platform_session=${user.token}` } : {}), ...(expected ? { "x-expected-account": expected } : {}), ...(rsc ? { RSC: "1" } : {}) } });
+  return fetch(origin + path, { headers: { ...(user ? { cookie: `${sessionCookieFixtureName()}=${user.token}` } : {}), ...(expected ? { "x-expected-account": expected } : {}), ...(rsc ? { RSC: "1" } : {}) } });
 }
 function send(body: unknown, source = origin) {
-  return fetch(origin + "/api/platform/posts", { method: "POST", headers: { origin: source, cookie: `church_platform_session=${actor.token}`, "x-expected-account": actor.id, "content-type": "application/json" }, body: JSON.stringify(body) });
+  return fetch(origin + "/api/platform/posts", { method: "POST", headers: { origin: source, cookie: `${sessionCookieFixtureName()}=${actor.token}`, "x-expected-account": actor.id, "content-type": "application/json" }, body: JSON.stringify(body) });
 }
 test("HTTPS resource preview is owner-pinned, strictly bounded and private at every cache", async () => {
   const path = `/api/platform/post-resources?${new URLSearchParams({ references: JSON.stringify([{ kind: "exchangeListing", id: listingId }]) })}`;

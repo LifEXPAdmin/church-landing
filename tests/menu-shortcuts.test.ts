@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -182,7 +183,7 @@ test("shortcut HTTP enforces account, session, origin and body bounds with priva
     new Request(origin + "/api/platform/menu-shortcuts" + query, {
       method: body === undefined ? "GET" : "POST",
       headers: {
-        Cookie: `church_platform_session=${token}`,
+        Cookie: `${sessionCookieFixtureName()}=${token}`,
         Origin: origin,
         "Content-Type": "application/json",
         "X-Expected-Account": a.id,

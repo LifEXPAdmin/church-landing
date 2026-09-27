@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -49,7 +50,7 @@ import {
   readCommunityReports
 } from "../lib/platform/community-reports";
 import { handleExchangeRequest } from "../lib/platform/exchange-boundary";
-import { SESSION_COOKIE } from "../lib/platform/account-boundary";
+
 import { accountConfig } from "../lib/platform/account-config";
 import { currentNeedContribution } from "../lib/platform/exchange-need-policy";
 import { needContributionReadSources } from "../lib/platform/exchange-need-read-access";
@@ -878,7 +879,7 @@ test("HTTP commands require the exact current account pin and same-origin reques
     new Request(accountConfig().origin + "/api/platform/exchange", {
       method: "POST",
       headers: {
-        cookie: `${SESSION_COOKIE}=${f.manager.token}`,
+        cookie: `${sessionCookieFixtureName()}=${f.manager.token}`,
         "content-type": "application/json",
         origin,
         "x-expected-account": owner

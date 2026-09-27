@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { after, beforeEach, type TestContext } from "node:test";
 import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
@@ -238,7 +239,8 @@ for (const throughHttp of [false, true]) {
                 "Content-Type": "application/json",
                 "X-Expected-Account": expectedOwner,
                 Cookie:
-                  "church_platform_session=" +
+                  sessionCookieFixtureName() +
+                  "=" +
                   sessionToken +
                   (typeof credential === "string"
                     ? ""
@@ -737,7 +739,7 @@ test("production-config boundary defers recipient checks and emits a purpose-spe
       headers: {
         Origin: sender.ACCOUNT_ORIGIN,
         "Content-Type": "application/json",
-        Cookie: "church_platform_session=" + a.token
+        Cookie: sessionCookieFixtureName() + "=" + a.token
       },
       body: JSON.stringify({
         operation: "request-email-change",

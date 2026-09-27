@@ -4,6 +4,7 @@ import { createRequire } from "node:module";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { resolve, join } from "node:path";
+import { sessionCookieFixtureName } from "./session-cookie-fixture.mjs";
 
 const fixture = resolve(process.argv[2] ?? "");
 assert.ok(process.argv[2], "Pass an isolated built HTTPS fixture directory");
@@ -73,7 +74,7 @@ const signIn = async (actor) => {
   await context.clearCookies();
   await context.addCookies([
     {
-      name: "church_platform_session",
+      name: sessionCookieFixtureName(config.origin),
       value: actor.token,
       url: config.origin,
       httpOnly: true,

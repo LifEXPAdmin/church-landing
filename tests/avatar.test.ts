@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -48,7 +49,7 @@ test("avatar delivery binds the expected account, serves only private thumbnail 
       process.env.ACCOUNT_ORIGIN + "/api/platform/avatars/" + f.owner.id,
       {
         headers: {
-          Cookie: "church_platform_session=" + token,
+          Cookie: sessionCookieFixtureName() + "=" + token,
           ...(expected ? { "X-Expected-Account": expected } : {})
         }
       }

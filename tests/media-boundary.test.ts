@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -29,7 +30,7 @@ function request(
     method: "POST",
     headers: {
       Origin: origin,
-      Cookie: "church_platform_session=" + token,
+      Cookie: sessionCookieFixtureName() + "=" + token,
       "Content-Type": "application/octet-stream",
       "X-Image-Details": encodeURIComponent(JSON.stringify(input)),
       ...extra
@@ -118,7 +119,7 @@ test("image boundary checks CSRF, sign-in, impersonation and actual streamed siz
         method: "DELETE",
         headers: {
           Origin: origin,
-          Cookie: "church_platform_session=" + f.ada.token,
+          Cookie: sessionCookieFixtureName() + "=" + f.ada.token,
           "Content-Type": "application/json"
         },
         body
@@ -150,7 +151,7 @@ test("direct delivery never forwards storage URLs, range or conditional caching 
   const get = (token = "") =>
     new Request(origin + `/api/platform/images/${uploaded.id}/thumb`, {
       headers: {
-        Cookie: "church_platform_session=" + token,
+        Cookie: sessionCookieFixtureName() + "=" + token,
         Range: "bytes=0-2",
         "If-None-Match": "*",
         "If-Modified-Since": new Date().toUTCString()

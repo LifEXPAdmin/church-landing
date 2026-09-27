@@ -1024,6 +1024,14 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "host-bound-account-cookies", version: "2026.09.27.34", date: "2026-09-27",
+    summary: "New HTTPS sign-ins use browser-enforced host-only session cookies.",
+    added: [],
+    improved: ["Password and Google sign-in share the same cookie policy. Existing sign-ins retain their original expiry during the compatibility transition."],
+    fixed: ["API requests and rendered pages agree on account identity and reject conflicting session cookies. Background reads do not replace a newer sign-in."],
+    featureIds: ["account"]
+  },
+  {
     id: "post-resource-attachments", version: "2026.09.27.33", date: "2026-09-27",
     summary: "Posts can include existing listings, events and volunteer opportunities with current access checks.",
     added: ["Add up to three resource cards using their page links. Drafts, scheduled posts and versioned edits retain your choices."],

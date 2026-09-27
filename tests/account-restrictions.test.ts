@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -291,7 +292,7 @@ test("HTTP account decisions require a pinned current account; mismatched reads 
       method,
       headers: {
         origin,
-        Cookie: `church_platform_session=${f.actor.token}`,
+        Cookie: `${sessionCookieFixtureName()}=${f.actor.token}`,
         "Content-Type": "application/json",
         ...(expected !== undefined ? { "X-Expected-Account": expected } : {})
       },
@@ -711,7 +712,7 @@ test("exact account lookup reaches beyond the initial hundred and retains scoped
       db,
       new Request(`${origin}/api/platform/portal?view=operator&q=${username}`, {
         headers: {
-          Cookie: `church_platform_session=${f.actor.token}`,
+          Cookie: `${sessionCookieFixtureName()}=${f.actor.token}`,
           "X-Expected-Account": expected
         }
       })

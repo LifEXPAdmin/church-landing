@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -416,7 +417,7 @@ const adminRequest = (
   new Request(accountConfig().origin + "/api/platform/admin?" + query, {
     method: body ? "POST" : "GET",
     headers: {
-      Cookie: `church_platform_session=${token}`,
+      Cookie: `${sessionCookieFixtureName()}=${token}`,
       Origin: accountConfig().origin,
       "Content-Type": "application/json",
       "X-Expected-Account": owner

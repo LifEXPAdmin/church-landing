@@ -3,6 +3,7 @@ import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { createRequire } from "node:module";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
+import { sessionCookieFixtureName } from "./session-cookie-fixture.mjs";
 const fixtureDir = process.argv[2];
 assert.ok(fixtureDir, "Pass the isolated profile fixture directory");
 const config = JSON.parse(
@@ -296,7 +297,7 @@ try {
   );
   await context.addCookies([
     {
-      name: "church_platform_session",
+      name: sessionCookieFixtureName(config.origin),
       value: renewed,
       url: config.origin,
       secure: true,
@@ -468,7 +469,7 @@ try {
     beforeOther = await getProfileEditor(db, another.token);
   await context.addCookies([
     {
-      name: "church_platform_session",
+      name: sessionCookieFixtureName(config.origin),
       value: another.token,
       url: config.origin,
       secure: true,

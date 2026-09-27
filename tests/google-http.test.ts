@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { after, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import { PrismaClient } from "@prisma/client";
@@ -44,7 +45,7 @@ test("HTML and RSC keep request cookies private while preserving account recogni
   try {
     for (const signedIn of [false, true]) {
       const cookie = [
-        ...(signedIn ? ["church_platform_session=" + session] : []),
+        ...(signedIn ? [sessionCookieFixtureName() + "=" + session] : []),
         ...privateCookies.map(({ name, value }) => `${name}=${value}`)
       ].join("; ");
       for (const path of [

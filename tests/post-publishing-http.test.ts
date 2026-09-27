@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -26,7 +27,7 @@ async function fixture() {
 const get = (path: string, token = "", rsc = false) =>
   fetch(origin + path, {
     headers: {
-      ...(token ? { Cookie: "church_platform_session=" + token } : {}),
+      ...(token ? { Cookie: sessionCookieFixtureName() + "=" + token } : {}),
       ...(rsc ? { RSC: "1" } : {})
     }
   });
@@ -38,7 +39,7 @@ test("publishing API accepts exactly 3000 normalized multiline characters and re
     fetch(origin + "/api/platform/posts", {
       method: "POST",
       headers: {
-        Cookie: "church_platform_session=" + f.memberA.token,
+        Cookie: sessionCookieFixtureName() + "=" + f.memberA.token,
         Origin: origin,
         "Content-Type": "application/json"
       },

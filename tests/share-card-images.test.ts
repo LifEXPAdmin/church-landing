@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import sharp from "sharp";
@@ -23,7 +24,7 @@ const request = (kind = "", id = "", token = "") =>
     origin +
       "/api/platform/share-preview?format=png" +
       (kind ? "&" + new URLSearchParams({ kind, id }) : ""),
-    { headers: { cookie: `church_platform_session=${token}` } }
+    { headers: { cookie: `${sessionCookieFixtureName()}=${token}` } }
   );
 const bytes = async (response: Response) => {
   assert.equal(response.status, 200);

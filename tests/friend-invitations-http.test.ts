@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -12,7 +13,7 @@ const post = (body: Record<string, unknown>, token: string, source = origin) =>
     method: "POST",
     headers: {
       Origin: source,
-      Cookie: "church_platform_session=" + token,
+      Cookie: sessionCookieFixtureName() + "=" + token,
       "Content-Type": "application/json"
     },
     body: JSON.stringify(body)
@@ -24,7 +25,7 @@ test("invitation HTTP reads are private and inert; writes enforce origin, schema
   assert.equal(guest.status, 401);
   assert.match(guest.headers.get("cache-control")!, /no-store/);
   const read = await fetch(origin + "/api/platform/friend-invitations", {
-    headers: { Cookie: "church_platform_session=" + a.token }
+    headers: { Cookie: sessionCookieFixtureName() + "=" + a.token }
   });
   assert.equal(read.status, 200);
   assert.equal((await read.json()).url, null);

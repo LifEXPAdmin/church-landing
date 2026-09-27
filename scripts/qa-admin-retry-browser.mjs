@@ -4,6 +4,7 @@ import { createRequire } from "node:module";
 import { execFileSync } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
 import { pathToFileURL } from "node:url";
+import { sessionCookieFixtureName } from "./session-cookie-fixture.mjs";
 
 const fixtureDir = process.argv[2];
 assert.ok(fixtureDir, "Pass the existing isolated HTTPS fixture directory");
@@ -96,7 +97,7 @@ try {
   const note = "Private fictional retry note " + randomUUID();
   await context.addCookies([
     {
-      name: "church_platform_session",
+      name: sessionCookieFixtureName(config.origin),
       value: f.owner.token,
       url: config.origin,
       httpOnly: true,

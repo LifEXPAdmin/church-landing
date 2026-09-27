@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import { postCommand } from "../lib/platform/post-commands";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
@@ -620,7 +621,7 @@ test("boundary rejects cross-site, guests, forged actors, changed accounts and r
       headers: {
         origin,
         "content-type": "application/json",
-        cookie: `church_platform_session=${actor.token}`,
+        cookie: `${sessionCookieFixtureName()}=${actor.token}`,
         "x-expected-account": actor.id,
         ...headers
       },
@@ -658,7 +659,7 @@ test("boundary rejects cross-site, guests, forged actors, changed accounts and r
     headers: {
       origin,
       "content-type": "application/json",
-      cookie: `church_platform_session=${actor.token}`,
+      cookie: `${sessionCookieFixtureName()}=${actor.token}`,
       "x-expected-account": "previous-account"
     },
     body: JSON.stringify(

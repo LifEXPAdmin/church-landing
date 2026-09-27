@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -18,7 +19,7 @@ before(async () => {
 after(() => db.$disconnect());
 const get = (query = "", actor = owner) =>
   fetch(origin + "/api/platform/activity" + query, {
-    headers: { cookie: `church_platform_session=${actor.token}` }
+    headers: { cookie: `${sessionCookieFixtureName()}=${actor.token}` }
   });
 const send = (
   body: Record<string, unknown>,
@@ -29,7 +30,7 @@ const send = (
   fetch(origin + "/api/platform/activity", {
     method: "POST",
     headers: {
-      cookie: `church_platform_session=${actor.token}`,
+      cookie: `${sessionCookieFixtureName()}=${actor.token}`,
       origin: from,
       "content-type": "application/json",
       "x-expected-account": expected

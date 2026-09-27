@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import {
   exchangeSavedCommand,
   readExchangeSaved,
@@ -25,7 +26,7 @@ import {
 } from "../lib/platform/exchange-listings";
 import { handleExchangeRequest } from "../lib/platform/exchange-boundary";
 import { handleImageRequest } from "../lib/platform/media-boundary";
-import { SESSION_COOKIE } from "../lib/platform/account-boundary";
+
 import {
   emptyExchangeFields,
   changeExchangeIntent,
@@ -1461,7 +1462,7 @@ test("the listing transport rejects changed accounts, cross-origin writes, dupli
       headers: {
         Origin: from,
         "Content-Type": "application/json",
-        Cookie: `${SESSION_COOKIE}=${owner.token}`,
+        Cookie: `${sessionCookieFixtureName()}=${owner.token}`,
         ...(account ? { "X-Expected-Account": account } : {})
       },
       body: raw
@@ -1502,7 +1503,7 @@ test("the listing transport rejects changed accounts, cross-origin writes, dupli
       db,
       new Request(
         origin + `/api/platform/exchange?view=editor&id=${saved.id}`,
-        { headers: { Cookie: `${SESSION_COOKIE}=${other.token}` } }
+        { headers: { Cookie: `${sessionCookieFixtureName()}=${other.token}` } }
       )
     )
   ]) {
@@ -1529,7 +1530,7 @@ test("the listing transport rejects changed accounts, cross-origin writes, dupli
     db,
     new Request(origin + `/api/platform/exchange?view=editor&id=${saved.id}`, {
       headers: {
-        Cookie: `${SESSION_COOKIE}=${owner.token}`,
+        Cookie: `${sessionCookieFixtureName()}=${owner.token}`,
         "X-Expected-Account": other.id
       }
     })
@@ -1587,7 +1588,7 @@ test("photo metadata and order use complete current listing versions; byte deliv
     method: "DELETE",
     headers: {
       Origin: origin,
-      Cookie: `${SESSION_COOKIE}=${owner.token}`,
+      Cookie: `${sessionCookieFixtureName()}=${owner.token}`,
       "Content-Type": "application/json"
     },
     body: JSON.stringify({ id: a.id, expectedVersion: a.version })

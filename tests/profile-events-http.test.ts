@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { PrismaClient } from "@prisma/client";
@@ -13,7 +14,7 @@ before(() => assertPortalTestDatabase(db));
 after(() => db.$disconnect());
 const get = (path: string, token = "", headers = {}) =>
   fetch(origin + path, {
-    headers: { Cookie: "church_platform_session=" + token, ...headers },
+    headers: { Cookie: sessionCookieFixtureName() + "=" + token, ...headers },
     redirect: "manual"
   });
 
@@ -119,7 +120,7 @@ test("actual profile writes require current source access, same-origin intent an
     fetch(origin + "/api/platform/account", {
       method: "POST",
       headers: {
-        Cookie: "church_platform_session=" + token,
+        Cookie: sessionCookieFixtureName() + "=" + token,
         Origin: requestOrigin,
         "Content-Type": "application/json",
         "x-expected-account": expectedOwner

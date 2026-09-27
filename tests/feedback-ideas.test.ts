@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { beforeEach, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -536,7 +537,7 @@ test("HTTP owner/origin checks, private caching, protected acknowledgment, and e
   const config = accountConfig(),
     url = config.origin + "/api/platform/feedback/ideas";
   const headers = {
-    cookie: `church_platform_session=${f.memberA.token}`,
+    cookie: `${sessionCookieFixtureName()}=${f.memberA.token}`,
     origin: config.origin,
     "x-expected-account": f.memberA.id,
     "content-type": "application/json"
@@ -603,7 +604,7 @@ test("HTTP owner/origin checks, private caching, protected acknowledgment, and e
         c.caseId,
       {
         headers: {
-          cookie: `church_platform_session=${f.owner.token}`,
+          cookie: `${sessionCookieFixtureName()}=${f.owner.token}`,
           "x-expected-account": f.owner.id
         }
       }
@@ -830,7 +831,7 @@ test("native support choices retain the same pending receipt until recovery prot
       headers: {
         origin: config.origin,
         "content-type": "application/json",
-        cookie: `church_platform_session=${f.memberA.token}`,
+        cookie: `${sessionCookieFixtureName()}=${f.memberA.token}`,
         "x-expected-account": f.memberA.id
       },
       body

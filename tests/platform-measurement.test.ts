@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -283,7 +284,7 @@ test("HTTP collection rejects private payloads, guests, cross-site requests and 
           Origin: origin,
           "Content-Type": "application/json",
           "x-expected-account": owner,
-          Cookie: "church_platform_session=" + token
+          Cookie: sessionCookieFixtureName() + "=" + token
         },
         body: JSON.stringify(body)
       })

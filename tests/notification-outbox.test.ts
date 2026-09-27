@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import webpush from "web-push";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
@@ -30,7 +31,7 @@ import {
   readCommunityReports
 } from "../lib/platform/community-reports";
 import { relationshipCommand } from "../lib/platform/relationships";
-import { SESSION_COOKIE } from "../lib/platform/account-boundary";
+
 import { accountConfig } from "../lib/platform/account-config";
 import { handleNotificationMaintenance } from "../lib/platform/notification-maintenance";
 const db = new PrismaClient();
@@ -429,7 +430,7 @@ test("recipient test is current-device only, exact retries deduplicate, and HTTP
       method: "POST",
       headers: {
         origin: site,
-        cookie: `${SESSION_COOKIE}=${a.token}`,
+        cookie: `${sessionCookieFixtureName()}=${a.token}`,
         "content-type": "application/json"
       },
       body: JSON.stringify(data)

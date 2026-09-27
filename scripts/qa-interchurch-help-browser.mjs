@@ -3,6 +3,7 @@ import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { createRequire } from "node:module";
 import { randomUUID, createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
+import { sessionCookieFixtureName } from "./session-cookie-fixture.mjs";
 const fixture = process.argv[2];
 assert.ok(fixture, "Pass the owned isolated fixture directory");
 Object.assign(
@@ -80,7 +81,7 @@ const signIn = async (actor) => {
   if (actor)
     await context.addCookies([
       {
-        name: "church_platform_session",
+        name: sessionCookieFixtureName(origin),
         value: actor.token,
         url: origin,
         secure: true,

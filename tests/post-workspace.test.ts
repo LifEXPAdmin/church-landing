@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -317,7 +318,7 @@ test("HTTP rejects guests, cross-origin and forged owners, sets private caching,
     handlePostWorkspaceRequest(
       db,
       new Request(`${origin}/api/platform/post-workspace`, {
-        headers: { cookie: `church_platform_session=${token}` }
+        headers: { cookie: `${sessionCookieFixtureName()}=${token}` }
       })
     );
   assert.equal((await get()).status, 401);
@@ -331,7 +332,7 @@ test("HTTP rejects guests, cross-origin and forged owners, sets private caching,
         method: "POST",
         headers: {
           origin: originHeader,
-          cookie: `church_platform_session=${a.token}`,
+          cookie: `${sessionCookieFixtureName()}=${a.token}`,
           "content-type": "application/json"
         },
         body: JSON.stringify(

@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -24,7 +25,7 @@ test("calendar writes reject a switched account before mutation and accept the c
       method: "POST",
       headers: {
         Origin: accountConfig().origin,
-        Cookie: `church_platform_session=${current.token}`,
+        Cookie: `${sessionCookieFixtureName()}=${current.token}`,
         "Content-Type": "application/json",
         "X-Expected-Account": expected
       },
@@ -69,7 +70,7 @@ test("calendar commitments GET keeps the focused signup boundary instead of retu
     handleCalendarRequest(
       db,
       new Request(url, {
-        headers: { Cookie: `church_platform_session=${actor.token}` }
+        headers: { Cookie: `${sessionCookieFixtureName()}=${actor.token}` }
       })
     );
   assert.equal((await read()).status, 200);

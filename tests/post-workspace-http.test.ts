@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import {
   releaseMetadata,
   currentRelease
@@ -19,7 +20,7 @@ before(() => assertPortalTestDatabase(db));
 after(() => db.$disconnect());
 const get = (path: string, token = "") =>
   fetch(origin + path, {
-    headers: { cookie: `church_platform_session=${token}` }
+    headers: { cookie: `${sessionCookieFixtureName()}=${token}` }
   });
 test("actual HTTPS workspace routes retain private drafts, enforce CSRF and ownership, and publish one post", async () => {
   const a = await createPortalActor(db, "httpsw"),
@@ -41,7 +42,7 @@ test("actual HTTPS workspace routes retain private drafts, enforce CSRF and owne
       method: "POST",
       headers: {
         origin: originHeader,
-        cookie: `church_platform_session=${a.token}`,
+        cookie: `${sessionCookieFixtureName()}=${a.token}`,
         "content-type": "application/json"
       },
       body: JSON.stringify(value)
@@ -126,7 +127,7 @@ test("actual HTTPS preserves both reply modes through retry/conflict/resume and 
       method: "POST",
       headers: {
         origin,
-        cookie: `church_platform_session=${a.token}`,
+        cookie: `${sessionCookieFixtureName()}=${a.token}`,
         "content-type": "application/json"
       },
       body: JSON.stringify(value)
@@ -227,7 +228,7 @@ test("actual HTTPS legacy draft cannot publish until reply permissions are expli
       method: "POST",
       headers: {
         origin,
-        cookie: `church_platform_session=${a.token}`,
+        cookie: `${sessionCookieFixtureName()}=${a.token}`,
         "content-type": "application/json"
       },
       body: JSON.stringify(value)

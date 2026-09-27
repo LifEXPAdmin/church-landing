@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { after, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
@@ -50,7 +51,7 @@ function get(
   return fetch(origin + path, {
     redirect,
     headers: {
-      ...(token ? { Cookie: "church_platform_session=" + token } : {}),
+      ...(token ? { Cookie: sessionCookieFixtureName() + "=" + token } : {}),
       ...(rsc ? { RSC: "1" } : {})
     }
   });
@@ -61,7 +62,7 @@ function post(body: Record<string, unknown>, token = "") {
     headers: {
       Origin: origin,
       "Content-Type": "application/json",
-      Cookie: "church_platform_session=" + token
+      Cookie: sessionCookieFixtureName() + "=" + token
     },
     body: JSON.stringify(body)
   });

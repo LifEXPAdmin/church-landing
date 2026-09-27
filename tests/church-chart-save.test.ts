@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -312,7 +313,7 @@ test("200-change HTTP payload is bounded and honors session, origin and church s
         headers: {
           "content-type": "application/json",
           origin: sender,
-          cookie: "church_platform_session=" + token
+          cookie: sessionCookieFixtureName() + "=" + token
         },
         body: value
       })

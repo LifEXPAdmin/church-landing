@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -356,7 +357,7 @@ test("private prompt HTTP rejects account/origin changes and protects the saved 
         origin: source,
         "content-type": "application/json",
         "x-expected-account": owner,
-        cookie: `church_platform_session=${f.memberA.token}`
+        cookie: `${sessionCookieFixtureName()}=${f.memberA.token}`
       },
       body: JSON.stringify({ operation: "never-ask", mutationId: randomUUID() })
     });

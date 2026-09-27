@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { after, before } from "node:test";
 import assert from "node:assert/strict";
 import { createHash, randomBytes } from "node:crypto";
@@ -39,7 +40,7 @@ before(async () => {
 });
 after(() => db.$disconnect());
 
-const cookie = () => "church_platform_session=" + fixture.memberA.token;
+const cookie = () => sessionCookieFixtureName() + "=" + fixture.memberA.token;
 const get = (path: string, signedIn = false, rsc = false) =>
   fetch(origin + path, {
     redirect: "manual",

@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -640,7 +641,7 @@ test("claims: request boundary rejects cross-origin and unauthenticated access, 
         headers: {
           Origin: requestOrigin,
           "Content-Type": "application/json",
-          Cookie: "church_platform_session=" + cookie
+          Cookie: sessionCookieFixtureName() + "=" + cookie
         },
         body
       })

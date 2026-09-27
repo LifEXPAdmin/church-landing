@@ -3,6 +3,7 @@ import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { createRequire } from "node:module";
 import { execFileSync } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
+import { sessionCookieFixtureName } from "./session-cookie-fixture.mjs";
 const fixtureDir = process.argv[2];
 assert.ok(fixtureDir, "Pass the isolated credential preview directory");
 const config = JSON.parse(
@@ -82,7 +83,7 @@ const signIn = async (actor) => {
   await context.clearCookies();
   await context.addCookies([
     {
-      name: "church_platform_session",
+      name: sessionCookieFixtureName(config.origin),
       value: actor.token,
       url: config.origin,
       secure: true,
@@ -423,7 +424,7 @@ try {
     assert.equal(response.headers["set-cookie"], undefined);
     assert.equal(
       (await context.cookies()).find(
-        (c) => c.name === "church_platform_session"
+        (c) => c.name === sessionCookieFixtureName(config.origin)
       )?.value,
       replacement.token
     );

@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -18,7 +19,7 @@ const request = (
   fetch(origin + "/api/platform/prayers" + query, {
     method: body ? "POST" : "GET",
     headers: {
-      cookie: `church_platform_session=${token}`,
+      cookie: `${sessionCookieFixtureName()}=${token}`,
       origin,
       ...(body ? { "content-type": "application/json" } : {}),
       ...extra
@@ -98,7 +99,7 @@ test("real HTTPS prayer endpoints preserve identity, origin, private caching, cu
   const comments = await fetch(
     origin +
       `/api/platform/comments?postId=${p.id}&view=context&commentId=${receipt.id}`,
-    { headers: { cookie: `church_platform_session=${a.token}` } }
+    { headers: { cookie: `${sessionCookieFixtureName()}=${a.token}` } }
   );
   const thread = await comments.json();
   assert.equal(thread.target.prayerUpdateKind, "UPDATE");

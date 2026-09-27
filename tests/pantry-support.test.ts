@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import { exchangeNeedCommand } from "../lib/platform/exchange-need-commands";
 import { exchangeListingCommand } from "../lib/platform/exchange-listings";
 import { EXCHANGE_ITEM_POLICY } from "../lib/platform/exchange-options";
@@ -997,7 +998,7 @@ test("pantry HTTP writes require same-origin and the exact current account pin",
       new Request(origin + "/api/platform/pantry", {
         method: "POST",
         headers: {
-          cookie: "church_platform_session=" + f.a.token,
+          cookie: sessionCookieFixtureName() + "=" + f.a.token,
           "content-type": "application/json",
           ...headers
         },

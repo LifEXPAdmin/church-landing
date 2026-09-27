@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { after, before, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import { PrismaClient } from "@prisma/client";
@@ -29,7 +30,8 @@ beforeEach(async () => {
 after(async () => {
   await db.$disconnect();
 });
-const cookie = (actor: PortalActor) => `church_platform_session=${actor.token}`;
+const cookie = (actor: PortalActor) =>
+  `${sessionCookieFixtureName()}=${actor.token}`;
 
 test("public demo is fixture-only, signed-out and read-only across HTML/RSC", async () => {
   const state = async () =>
@@ -295,8 +297,11 @@ test("actual portal POST enforces exact trusted origin, session cookie and valid
     assert.equal((await post(f.unacknowledged, body, headers)).status, 403);
   assert.equal((await post(undefined, body)).status, 401);
   assert.equal(
-    (await post(undefined, body, { Cookie: "church_platform_session=forged" }))
-      .status,
+    (
+      await post(undefined, body, {
+        Cookie: sessionCookieFixtureName() + "=forged"
+      })
+    ).status,
     401
   );
   assert.equal(

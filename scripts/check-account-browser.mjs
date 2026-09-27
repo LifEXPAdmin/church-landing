@@ -5,6 +5,7 @@ import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import { request as httpsRequest } from "node:https";
+import { sessionCookieFixtureName } from "./session-cookie-fixture.mjs";
 const modulePath =
   process.env.PLAYWRIGHT_MODULE ??
   `${process.env.HOME}/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/package.json`;
@@ -199,7 +200,9 @@ export async function checkAccountBrowser({
     assert.ok(!page.url().includes(identity.email));
     assert.equal(
       (await context.cookies()).filter(
-        (c) => c.name === "church_platform_session"
+        (c) =>
+          c.name === sessionCookieFixtureName(origin) ||
+          c.name === "church_platform_session"
       ).length,
       0
     );
@@ -232,7 +235,7 @@ export async function checkAccountBrowser({
       "event-free DOM autofill submits current credentials and removes sign-in form"
     );
     const cookies = (await context.cookies()).filter(
-      (c) => c.name === "church_platform_session"
+      (c) => c.name === sessionCookieFixtureName(origin)
     );
     assert.equal(cookies.length, 1);
     const cookie = cookies[0];
@@ -287,7 +290,7 @@ export async function checkAccountBrowser({
     ])
       for (const rsc of [false, true]) {
         const r = await get(path, {
-          Cookie: `church_platform_session=${cookie.value}`,
+          Cookie: `${sessionCookieFixtureName(origin)}=${cookie.value}`,
           ...(rsc ? { RSC: "1" } : {})
         });
         assert.equal(r.status, 200);
@@ -311,7 +314,7 @@ export async function checkAccountBrowser({
     await logout.click();
     await page.waitForURL(origin + "/platform/login");
     const denied = await get("/platform/profile/me", {
-      Cookie: `church_platform_session=${cookie.value}`
+      Cookie: `${sessionCookieFixtureName(origin)}=${cookie.value}`
     });
     assert.equal(denied.status, 307);
     pass("logout invalidates the prior server session");

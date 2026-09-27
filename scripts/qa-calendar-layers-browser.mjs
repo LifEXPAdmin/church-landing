@@ -3,6 +3,7 @@ import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { createRequire } from "node:module";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
+import { sessionCookieFixtureName } from "./session-cookie-fixture.mjs";
 const fixtureDir = process.argv[2];
 assert.ok(fixtureDir, "Pass the isolated calendar fixture directory");
 const config = JSON.parse(
@@ -86,10 +87,9 @@ const signIn = async (actor) => {
   await context.clearCookies();
   await context.addCookies([
     {
-      name: "church_platform_session",
+      name: sessionCookieFixtureName(config.origin),
       value: actor.token,
-      domain: "127.0.0.1",
-      path: "/",
+      url: config.origin,
       secure: true,
       httpOnly: true,
       sameSite: "Lax"
@@ -392,10 +392,9 @@ try {
   await context.clearCookies();
   await context.addCookies([
     {
-      name: "church_platform_session",
+      name: sessionCookieFixtureName(config.origin),
       value: owner.token,
-      domain: "127.0.0.1",
-      path: "/",
+      url: config.origin,
       secure: true,
       httpOnly: true,
       sameSite: "Lax"

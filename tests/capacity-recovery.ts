@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import assert from "node:assert/strict";
 import { readFile, writeFile, stat } from "node:fs/promises";
 import { join } from "node:path";
@@ -38,7 +39,7 @@ try {
     method: "POST",
     headers: {
       origin,
-      cookie: `church_platform_session=${f.actors[0].token}`,
+      cookie: `${sessionCookieFixtureName()}=${f.actors[0].token}`,
       "x-expected-account": actor.id,
       "content-type": "application/json"
     },
@@ -61,7 +62,7 @@ try {
   const paused = await fetch(
     origin + "/api/platform/notifications?view=devices",
     {
-      headers: { cookie: `church_platform_session=${f.actors[0].token}` }
+      headers: { cookie: `${sessionCookieFixtureName()}=${f.actors[0].token}` }
     }
   );
   assert.equal(paused.status, 200);

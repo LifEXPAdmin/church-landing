@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
@@ -170,7 +171,7 @@ test("secured staged maintenance inspects first, continues after a journal failu
         method,
         headers: {
           authorization: auth,
-          cookie: "church_platform_session=not-authority"
+          cookie: sessionCookieFixtureName() + "=not-authority"
         }
       });
     let opened = 0,

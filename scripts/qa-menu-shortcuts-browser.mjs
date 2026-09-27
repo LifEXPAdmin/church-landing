@@ -3,6 +3,7 @@ import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { createRequire } from "node:module";
 import { execFileSync } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
+import { sessionCookieFixtureName } from "./session-cookie-fixture.mjs";
 
 const fixtureDir = process.argv[2];
 assert.match(fixtureDir ?? "", /^\.account-test\/[a-z0-9-]+$/);
@@ -96,7 +97,7 @@ const signIn = async (actor) => {
   if (actor)
     await context.addCookies([
       {
-        name: "church_platform_session",
+        name: sessionCookieFixtureName(config.origin),
         value: actor.token,
         url: config.origin,
         secure: true,
@@ -219,7 +220,7 @@ try {
   );
   await second.addCookies([
     {
-      name: "church_platform_session",
+      name: sessionCookieFixtureName(config.origin),
       value: secondToken,
       url: config.origin,
       secure: true,

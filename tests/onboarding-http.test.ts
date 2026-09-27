@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -15,7 +16,7 @@ before(async () => {
 });
 const read = (path: string, token = "", extra: Record<string, string> = {}) =>
   fetch(new URL(path, origin), {
-    headers: { cookie: "church_platform_session=" + token, ...extra }
+    headers: { cookie: sessionCookieFixtureName() + "=" + token, ...extra }
   });
 const write = (
   input: Record<string, unknown>,
@@ -26,7 +27,7 @@ const write = (
   fetch(new URL("/api/platform/church-tools", origin), {
     method: "POST",
     headers: {
-      cookie: "church_platform_session=" + token,
+      cookie: sessionCookieFixtureName() + "=" + token,
       "content-type": "application/json",
       origin,
       ...(owner ? { "x-expected-account": owner } : {}),
@@ -110,7 +111,7 @@ test("actual HTTPS account download includes only the owner's saved hints and au
       headers: {
         origin,
         "content-type": "application/json",
-        cookie: "church_platform_session=" + actor.token
+        cookie: sessionCookieFixtureName() + "=" + actor.token
       },
       body: JSON.stringify(body)
     });

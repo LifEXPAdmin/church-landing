@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -98,7 +99,7 @@ test("private ministry reads bind privileged assurance to current coordinator an
         {
           redirect: "manual",
           headers: {
-            cookie: `church_platform_session=${token}`,
+            cookie: `${sessionCookieFixtureName()}=${token}`,
             "x-expected-account": actor.id,
             origin
           }

@@ -1,3 +1,4 @@
+import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -11,7 +12,7 @@ import {
 import { handleActivityRequest } from "../lib/platform/activity-boundary";
 import { commentCommand } from "../lib/platform/comment-commands";
 import { notificationSources } from "../lib/platform/notification-source";
-import { SESSION_COOKIE } from "../lib/platform/account-boundary";
+
 import { accountConfig } from "../lib/platform/account-config";
 
 const db = new PrismaClient();
@@ -267,7 +268,7 @@ test("scalar summary is account-bound, private and rejects filter ambiguity or f
   const request = (query: string, expected: string | null = f.owner.id) =>
     new Request(accountConfig().origin + "/api/platform/activity" + query, {
       headers: {
-        cookie: `${SESSION_COOKIE}=${f.owner.token}`,
+        cookie: `${sessionCookieFixtureName()}=${f.owner.token}`,
         ...(expected ? { "x-expected-account": expected } : {})
       }
     });
