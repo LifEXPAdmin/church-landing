@@ -161,6 +161,7 @@ async function erasePersonalCalendars(tx: Tx, userId: string, now: Date) {
       eventOccurrenceId: null,
       withdrawnAt: now,
       status: "WITHDRAWN",
+      resourceReferences: [],
       version: { increment: 1 }
     }
   });
@@ -338,6 +339,7 @@ async function eraseSocialData(tx: Tx, userId: string, now: Date) {
     where: personalPost(userId),
     data: {
       status: "WITHDRAWN",
+      resourceReferences: [],
       withdrawnAt: now,
       scripture: null,
       linkUrl: null,

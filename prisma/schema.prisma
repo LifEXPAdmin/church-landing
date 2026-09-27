@@ -2131,6 +2131,7 @@ model ExchangeListingAudit {
 }
 
 model PlatformPost {
+  resourceReferences Json @default("[]")
   groupId String?
   group GatherGroup? @relation(fields: [groupId], references: [id], onDelete: Restrict)
   groupAuthor GatherGroupMembership? @relation("GatherPostAuthor", fields: [groupId, authorId], references: [groupId, userId], onDelete: NoAction, onUpdate: NoAction)

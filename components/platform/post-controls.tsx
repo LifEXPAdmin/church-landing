@@ -1,4 +1,5 @@
 "use client";
+import { PostResourceFields } from "./post-resource-fields";
 import { RegionalWallTime, RegionalTime } from "./regional-presentation";
 import { useEffect, useId, useState } from "react";
 import type { PostEditorView } from "@/lib/platform/post-editor";
@@ -21,6 +22,7 @@ function EditPost({ post, owner }: { post: PostEditorView; owner: string }) {
     [draft, setDraft] = useState<PostDraft>({
       discovery: post.discovery,
       mentionIds: post.mentionIds,
+      resourceReferences: post.resourceReferences,
       content: post.content,
       contentNote: post.contentNote,
       safeExcerpt: post.safeExcerpt,
@@ -59,7 +61,9 @@ function EditPost({ post, owner }: { post: PostEditorView; owner: string }) {
       label="Save post changes"
       fields={() => ({
         ...draft,
-        ...(post.groupId ? { groupId: post.groupId, groupThreadKind, groupCategory } : {}),
+        ...(post.groupId
+          ? { groupId: post.groupId, groupThreadKind, groupCategory }
+          : {}),
         allowReposts,
         confirmAudienceChange: confirmation
       })}
@@ -115,6 +119,13 @@ function EditPost({ post, owner }: { post: PostEditorView; owner: string }) {
         </>
       )}
       <PostDraftFields draft={draft} change={setDraft} />
+      <PostResourceFields
+        owner={owner}
+        references={draft.resourceReferences ?? []}
+        onChange={(resourceReferences) =>
+          setDraft((latest) => ({ ...latest, resourceReferences }))
+        }
+      />
       <CommentMentions
         resolveSelections
         owner={owner}
@@ -379,9 +390,11 @@ export function PostControls({
               className={portalInputClass}
             >
               <option value="VIEWERS">
-                {post.groupId ? "Current group members who accept the current rules" : post.topicCommunityId
-                  ? "Joined topic members who accept the current rules"
-                  : "Eligible viewers with an account"}
+                {post.groupId
+                  ? "Current group members who accept the current rules"
+                  : post.topicCommunityId
+                    ? "Joined topic members who accept the current rules"
+                    : "Eligible viewers with an account"}
               </option>
               {post.churchId && (
                 <option value="CHURCH_MEMBERS">

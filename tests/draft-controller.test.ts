@@ -76,6 +76,26 @@ function fixture() {
 const settle = async () => {
   for (let i = 0; i < 20; i++) await Promise.resolve();
 };
+test("resource references survive response loss, exact retry, resume and local conflict without copied card metadata", async () => {
+  const f = fixture(), c = f.controller;
+  const resourceReferences = [{ kind: "exchangeListing" as const, id: "listing-a" }];
+  try {
+    await c.verify(); c.start();
+    c.change({ ...c.getSnapshot().fields, content: "Private resource draft", resourceReferences });
+    f.lose(); await c.save();
+    assert.equal(c.getSnapshot().retry, true);
+    await c.retry(); assert.equal(f.bodies[0], f.bodies[1]);
+    await c.resume("draft-1"); assert.deepEqual(c.getSnapshot().fields.resourceReferences, resourceReferences);
+    f.conflict(true); c.change({ ...c.getSnapshot().fields, resourceReferences: [] });
+    await c.save(); assert.equal(c.getSnapshot().conflict, true);
+    assert.deepEqual(c.getSnapshot().fields.resourceReferences, []);
+    f.conflict(false); await c.loadLatest(); c.useLatest();
+    assert.deepEqual(c.getSnapshot().fields.resourceReferences, resourceReferences);
+    const payload = composerPayload({ ...c.getSnapshot().fields, resourceReferences: [{ ...resourceReferences[0], title: "must not persist" } as typeof resourceReferences[0]] });
+    assert.deepEqual(payload.resourceReferences, resourceReferences);
+    await c.publish(); assert.equal(f.posts, 1);
+  } finally { c.dispose(); }
+});
 test("late hydration keeps the anonymous server state after sibling identity and private edits", async () => {
   const f = fixture(),
     c = f.controller;

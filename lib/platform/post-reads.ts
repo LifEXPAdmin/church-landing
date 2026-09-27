@@ -1,3 +1,8 @@
+import {
+  resolvePostResourcesIn,
+  resourceCards
+} from "./post-resource-attachments";
+import { storedPostResources } from "./post-resource-input";
 import { exchangeReadableWhere } from "./exchange-policy";
 import { feedMode } from "./feed-options";
 import { discoveryMode, guestDiscoveryPreferences } from "./discovery-options";
@@ -578,6 +583,7 @@ export function getPostAvailabilityBatch(
       select: {
         id: true,
         version: true,
+        resourceReferences: true,
         _count: {
           select: {
             comments: { where: commentVisibleWhere(context) },
@@ -587,13 +593,23 @@ export function getPostAvailabilityBatch(
       }
     });
     const byId = new Map(rows.map((row) => [row.id, row]));
+    const references = new Map(
+      rows.map((row) => [row.id, storedPostResources(row.resourceReferences)])
+    );
+    const resources = await resolvePostResourcesIn(
+      tx,
+      context,
+      [...references.values()].flat()
+    );
     return {
       posts: ids.map((id) => {
         const row = byId.get(id);
+        const cards = resourceCards(references.get(id) ?? [], resources);
         return {
           id,
           available: !!row,
           entryVersion: row?.version ?? null,
+          ...(cards.length ? { resources: cards } : {}),
           commentCount: row?._count.comments ?? null,
           likeCount: row?._count.likes ?? null
         };

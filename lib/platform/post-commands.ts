@@ -1,4 +1,6 @@
 import { groupPostDestination } from "./group-post-policy";
+import { validatePostResourcesIn } from "./post-resource-attachments";
+import { postResourceReferences } from "./post-resource-input";
 import { requireGroupParticipation } from "./group-policy";
 import { setPostMentions } from "./person-mentions";
 import { recordPostMentions, recordPostPublication } from "./domain-activity";
@@ -254,6 +256,12 @@ export async function postCommandIn(
     if (prior) {
       if (!postCanEdit(context, prior))
         throw new PortalError(403, "This saved request is no longer editable.");
+      await validatePostResourcesIn(
+        tx,
+        context,
+        prior,
+        prior.resourceReferences
+      );
       return {
         id: prior.id,
         version: prior.version,
@@ -298,6 +306,7 @@ export async function postCommandIn(
     const post = await tx.platformPost.create({
       data: {
         ...details(input),
+        resourceReferences: postResourceReferences(input.resourceReferences),
         ...(input.discovery !== undefined
           ? {
               ...(await postDiscoveryData(input.discovery)),
@@ -331,6 +340,7 @@ export async function postCommandIn(
       }
     });
     await attachPostPhotosIn(tx, context, post, input.photos);
+    await validatePostResourcesIn(tx, context, post, post.resourceReferences);
     await setPostMentions(tx, context, post, input.mentionIds);
     if (input.discovery !== undefined)
       await recordDiscoveryControl(
@@ -468,9 +478,18 @@ export async function postCommandIn(
         }))
       );
     }
+    const resourceReferences = await validatePostResourcesIn(
+      tx,
+      context,
+      { ...post, audience: nextAudience },
+      input.resourceReferences === undefined
+        ? post.resourceReferences
+        : input.resourceReferences
+    );
     const updated = await tx.platformPost.update({
       where: { id: post.id },
       data: {
+        resourceReferences,
         ...details({ ...post, ...input }),
         ...(post.groupId
           ? groupPostDestination({ ...post, ...input, groupId: post.groupId })
@@ -518,6 +537,7 @@ export async function postCommandIn(
       where: { id: post.id },
       data: {
         status: "WITHDRAWN",
+        resourceReferences: [],
         withdrawnAt: now,
         discussionClosed: true,
         ...(!reported
@@ -799,6 +819,13 @@ async function receiptedPostCreation(
     });
     if (prior && !postCanEdit(await postContext(tx, ownerId), prior))
       throw new PortalError(403, "This saved request is no longer editable.");
+    if (prior)
+      await validatePostResourcesIn(
+        tx,
+        await postContext(tx, ownerId),
+        prior,
+        prior.resourceReferences
+      );
     return { prior, ownerId };
   };
   let preparedLink: PostLink | undefined;
@@ -873,6 +900,22 @@ async function receiptedPostAction(
       throw new PortalError(
         403,
         "You cannot change this post. Refresh to check your current access."
+      );
+    if (input.operation === "edit")
+      await validatePostResourcesIn(
+        tx,
+        context,
+        {
+          ...post,
+          audience: audience(
+            input.audience ?? post.audience,
+            post.audienceChurchId,
+            post.groupId
+          )
+        },
+        input.resourceReferences === undefined
+          ? post.resourceReferences
+          : input.resourceReferences
       );
     return { context, post };
   };
@@ -970,6 +1013,12 @@ export async function publishScheduledPost(
             context,
             post.eventOccurrenceId,
             post.audienceChurchId
+          );
+          await validatePostResourcesIn(
+            tx,
+            context,
+            post,
+            post.resourceReferences
           );
           const photos = await tx.postPhotoReference.findMany({
             where: { postId: post.id },

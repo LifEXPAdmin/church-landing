@@ -1,4 +1,9 @@
 import { groupPostDestination } from "./group-post-policy";
+import {
+  postResourceReferences,
+  type PostResourceReference
+} from "./post-resource-input";
+import { validatePostResourcesIn } from "./post-resource-attachments";
 import { requireGroupParticipation } from "./group-policy";
 import { personMentionIds } from "./person-mentions";
 import { postInteractionIdIn } from "./post-reads";
@@ -24,6 +29,7 @@ import { POST_TOPICS, postPreviewText } from "./post-options";
 
 export const WORKSPACE_PAGE_SIZE = 20;
 export type PrivateDraftPayload = {
+  resourceReferences?: PostResourceReference[];
   mentionIds?: string[];
   discovery?: PostDiscoveryInput;
   scheduleLocal?: string;
@@ -48,6 +54,7 @@ export type PrivateDraftPayload = {
   topicCommunityId?: string | null;
 };
 const draftFields = [
+  "resourceReferences",
   "groupId",
   "groupThreadKind",
   "groupCategory",
@@ -151,6 +158,9 @@ export function privateDraftPayload(value: unknown): PrivateDraftPayload {
     audienceChurchId: reference(p.audienceChurchId),
     eventOccurrenceId: reference(p.eventOccurrenceId),
     linkUrl: text(p.linkUrl ?? "", 2048),
+    ...(p.resourceReferences !== undefined
+      ? { resourceReferences: postResourceReferences(p.resourceReferences) }
+      : {}),
     ...(p.topicCommunityId !== undefined
       ? { topicCommunityId: reference(p.topicCommunityId) }
       : {}),
@@ -465,7 +475,13 @@ export async function postWorkspaceCommand(
     if (op === "publish-draft" && result.postId) {
       const post = await tx.platformPost.findUnique({
         where: { id: result.postId },
-        select: { topicCommunityId: true, groupId: true }
+        select: {
+          topicCommunityId: true,
+          groupId: true,
+          audience: true,
+          audienceChurchId: true,
+          resourceReferences: true
+        }
       });
       if (post?.groupId)
         requireGroupParticipation(await postContext(tx, ownerId), post.groupId);
@@ -473,6 +489,13 @@ export async function postWorkspaceCommand(
         requireTopicParticipation(
           await postContext(tx, ownerId),
           post.topicCommunityId
+        );
+      if (post)
+        await validatePostResourcesIn(
+          tx,
+          await postContext(tx, ownerId),
+          post,
+          post.resourceReferences
         );
     }
     if (
@@ -574,6 +597,14 @@ export async function postWorkspaceCommand(
         if (op === "save-draft") {
           const payload = privateDraftPayload(input.payload);
           const previous = row ? privateDraftPayload(row.payload) : null;
+          if (
+            previous?.resourceReferences?.length &&
+            !Object.hasOwn(payload, "resourceReferences")
+          )
+            throw new PortalError(
+              400,
+              "This draft has resource cards. Reload it before saving so those choices are preserved."
+            );
           if (row && (row.groupId ?? null) !== (payload.groupId ?? null))
             throw new PortalError(
               400,

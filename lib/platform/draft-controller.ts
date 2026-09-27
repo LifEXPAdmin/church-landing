@@ -35,6 +35,7 @@ export const emptyComposer = (
   churchId: string | null = null
 ): ComposerFields => ({
   content: "",
+  resourceReferences: [],
   contentNote: "",
   safeExcerpt: "",
   scripture: "",
@@ -50,6 +51,14 @@ export const emptyComposer = (
 // Explicit whitelist: short-lived preview credentials never enter snapshots.
 export function composerPayload(f: ComposerFields): PrivateDraftPayload {
   return {
+    ...(f.resourceReferences !== undefined
+      ? {
+          resourceReferences: f.resourceReferences.map(({ kind, id }) => ({
+            kind,
+            id
+          }))
+        }
+      : {}),
     ...(f.scheduleLocal !== undefined
       ? { scheduleLocal: f.scheduleLocal }
       : {}),
