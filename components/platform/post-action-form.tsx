@@ -28,6 +28,7 @@ export function PostActionForm({
   onLatest,
   onSuccess,
   returnHref,
+  changeKey,
   disabled = false
 }: {
   owner: string;
@@ -39,6 +40,7 @@ export function PostActionForm({
   onLatest?: (post: PostEditorView) => void;
   onSuccess?: (id: string) => void;
   returnHref?: string;
+  changeKey?: string;
   disabled?: boolean;
 }) {
   const router = useRouter(),
@@ -47,6 +49,7 @@ export function PostActionForm({
     version = useRef(payload.expectedVersion),
     status = useRef<HTMLParagraphElement>(null);
   const id = useId();
+  const previousChange = useRef(changeKey);
   const [dirty, setDirty] = useState(false),
     [retry, setRetry] = useState<string | null>(null);
   const [pending, setPending] = useState(false),
@@ -58,6 +61,12 @@ export function PostActionForm({
   const [savedId, setSavedId] = useState<string | null>(null);
   const [needsSignIn, setNeedsSignIn] = useState(false);
   const busy = pending || refreshing;
+  useEffect(() => {
+    if (previousChange.current !== changeKey) {
+      previousChange.current = changeKey;
+      setDirty(true);
+    }
+  }, [changeKey]);
   const retryOriginal = useCallback(() => form.current?.requestSubmit(), []);
   usePrivateRecovery(id, !!retry, busy, retryOriginal);
   useUnsavedSocialWork(

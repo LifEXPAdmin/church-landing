@@ -59,6 +59,7 @@ function EditPost({ post, owner }: { post: PostEditorView; owner: string }) {
         expectedVersion: post.version
       }}
       label="Save post changes"
+      changeKey={JSON.stringify(draft.resourceReferences ?? [])}
       fields={() => ({
         ...draft,
         ...(post.groupId

@@ -25,16 +25,19 @@ export function PostResourceCards({
   const visible = useReadVisibility();
   const root = useRef<HTMLDivElement>(null);
   const focused = useRef<boolean | null>(null);
+  const connected = useRef<boolean | null>(null);
   const [cards, setCards] = useState<PostResourceCard[]>([]);
   useEffect(() => {
     let live = true,
       intersecting = false,
       sequence = 0;
     if (focused.current === null) focused.current = document.hasFocus();
+    if (connected.current === null) connected.current = navigator.onLine;
     const active = () =>
       live &&
       visible &&
       focused.current &&
+      connected.current &&
       intersecting &&
       document.visibilityState !== "hidden";
     const hide = () => {
@@ -68,6 +71,14 @@ export function PostResourceCards({
       hide();
       void refresh();
     };
+    const offline = () => {
+      connected.current = false;
+      hide();
+    };
+    const online = () => {
+      connected.current = true;
+      change();
+    };
     const visibility = () =>
       document.visibilityState === "hidden" ? blur() : focus();
     const observer = new IntersectionObserver((entries) => {
@@ -79,10 +90,10 @@ export function PostResourceCards({
     const timer = setInterval(() => void refresh(), 30000);
     window.addEventListener("blur", blur);
     window.addEventListener("pagehide", blur);
-    window.addEventListener("offline", blur);
+    window.addEventListener("offline", offline);
     window.addEventListener("focus", focus);
     window.addEventListener("pageshow", focus);
-    window.addEventListener("online", change);
+    window.addEventListener("online", online);
     window.addEventListener("social-relationships-changed", change);
     document.addEventListener("visibilitychange", visibility);
     return () => {
@@ -93,10 +104,10 @@ export function PostResourceCards({
       clearInterval(timer);
       window.removeEventListener("blur", blur);
       window.removeEventListener("pagehide", blur);
-      window.removeEventListener("offline", blur);
+      window.removeEventListener("offline", offline);
       window.removeEventListener("focus", focus);
       window.removeEventListener("pageshow", focus);
-      window.removeEventListener("online", change);
+      window.removeEventListener("online", online);
       window.removeEventListener("social-relationships-changed", change);
       document.removeEventListener("visibilitychange", visibility);
     };
