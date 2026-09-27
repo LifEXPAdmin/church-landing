@@ -53,23 +53,30 @@ export function GoogleButton({
   body,
   label = "Sign in with Google",
   disabled = false,
-  submit = false
+  submit = false,
+  allowNavigation
 }: {
   body: Record<string, unknown> | (() => Record<string, unknown> | null);
   label?: string;
   disabled?: boolean;
   submit?: boolean;
+  allowNavigation?: () => Promise<boolean>;
 }) {
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState("");
   const busy = useRef(false);
+  const mounted = useRef(false);
   useEffect(() => {
+    mounted.current = true;
     const returned = () => {
       busy.current = false;
       setPending(false);
     };
     window.addEventListener("pageshow", returned);
-    return () => window.removeEventListener("pageshow", returned);
+    return () => {
+      mounted.current = false;
+      window.removeEventListener("pageshow", returned);
+    };
   }, []);
   return (
     <div className="space-y-2">
@@ -91,7 +98,21 @@ export function GoogleButton({
               setPending(false);
               return;
             }
-            followAccountRedirect((await googleRequest(values)).redirect);
+            const canNavigate = async () =>
+              !allowNavigation ||
+              (mounted.current && (await allowNavigation()) && mounted.current);
+            if (!(await canNavigate())) {
+              busy.current = false;
+              setPending(false);
+              return;
+            }
+            const result = await googleRequest(values);
+            if (!(await canNavigate())) {
+              busy.current = false;
+              setPending(false);
+              return;
+            }
+            followAccountRedirect(result.redirect);
           } catch (error) {
             setMessage(
               error instanceof Error && !(error instanceof TypeError)
@@ -265,21 +286,23 @@ const confirmationActions: Record<RecentAuthenticationPurpose, string> = {
   "request-email-change": "requesting an email change",
   "confirm-email-change": "changing your sign-in email",
   "unlink-google": "disconnecting Google",
-  "manage-admin-authenticator":"your admin authenticator",
-  "manage-privileged-authenticator":"your authenticator",
-  "manage-admin-access":"an admin access change"
+  "manage-admin-authenticator": "your admin authenticator",
+  "manage-privileged-authenticator": "your authenticator",
+  "manage-admin-access": "an admin access change"
 };
 export function AccountConfirmation({
   value,
   id,
   label,
   emailToken,
-  password
+  password,
+  allowNavigation
 }: {
   value: ReturnType<typeof useAccountConfirmation>;
   id: string;
   label: string;
   emailToken?: string | null;
+  allowNavigation?: () => Promise<boolean>;
   password?: { value: string; onChange: (value: string) => void };
 }) {
   if (!value.loaded)
@@ -336,6 +359,7 @@ export function AccountConfirmation({
             </p>
           ) : (
             <GoogleButton
+              allowNavigation={allowNavigation}
               label={
                 "Sign in with Google to confirm " +
                 confirmationActions[value.purpose]

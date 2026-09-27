@@ -92,6 +92,24 @@ export function useCredentialPrivacy(owner?: string, enabled = true) {
     visible: !enabled || visible,
     notice,
     resume,
+    allowNavigation: async () => {
+      const request = generation.current;
+      const available = () =>
+        document.visibilityState !== "hidden" && navigator.onLine !== false;
+      if (!active.current || !available()) return false;
+      try {
+        const current = await currentSocialOwner();
+        if (request !== generation.current || !active.current) return false;
+        if (!originalOwner || current !== originalOwner) {
+          hide();
+          return false;
+        }
+        return available();
+      } catch {
+        if (request === generation.current) hide();
+        return false;
+      }
+    },
     begin: async () => {
       if (busy.current || !active.current || !visible || !originalOwner)
         throw new Error("Recheck your current account before continuing.");

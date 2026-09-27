@@ -186,6 +186,7 @@ export function AccountEmailChange({
           )}
           <AccountConfirmation
             value={confirmation}
+            allowNavigation={privacy.allowNavigation}
             emailToken={token}
             id={`${prefix}-password`}
             label="Current password for sign-in email"

@@ -137,7 +137,7 @@ export async function handleAccountRequest(
   deletionJournal?: AccountDeletionJournal
 ): Promise<Response> {
   const requestId = randomUUID();
-  const credentialUse = { google: false };
+  const credentialUse = { google: false, sessionRevoked: false };
   const response = await processAccountRequest(
     db,
     request,
@@ -146,7 +146,7 @@ export async function handleAccountRequest(
     credentialUse,
     deletionJournal
   );
-  if (response.ok) {
+  if (response.ok && !credentialUse.sessionRevoked) {
     const sessionEnded = response.headers
       .get("Set-Cookie")
       ?.includes(`${SESSION_COOKIE}=;`);
@@ -180,7 +180,7 @@ async function processAccountRequest(
   request: Request,
   requestId: string,
   afterResponse?: (work: () => Promise<void>) => void,
-  credentialUse = { google: false },
+  credentialUse = { google: false, sessionRevoked: false },
   deletionJournal?: AccountDeletionJournal
 ): Promise<Response> {
   if (request.method !== "POST")
@@ -397,6 +397,7 @@ async function processAccountRequest(
         body.token ?? googleRequestToken(request, "email", config.secureCookie),
         request.headers.get("X-Expected-Account")
       );
+      credentialUse.sessionRevoked = true;
       return reply(
         "Sign-in email changed. All devices are signed out. Sign in again using your new email and password or your linked Google account.",
         200,
@@ -605,6 +606,7 @@ async function processAccountRequest(
         body.confirmPassword,
         request.headers.get("X-Expected-Account")
       );
+      credentialUse.sessionRevoked = true;
       return reply(
         "Password changed. All devices are signed out. Sign in with your new password.",
         200,

@@ -225,6 +225,7 @@ export function AccountForm({
       {change && (
         <AccountConfirmation
           value={confirmation}
+          allowNavigation={privacy.allowNavigation}
           id={id("current-password")}
           label="Current password"
           password={{ value: currentPassword, onChange: setCurrentPassword }}

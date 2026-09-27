@@ -284,10 +284,7 @@ for (const throughHttp of [false, true]) {
             assert.deepEqual(boundary!.deliveries.at(-1)!.to, [newEmail]);
           } else {
             assert.equal(callbacks.length, 0);
-            assert.doesNotMatch(
-              response.headers.get("set-cookie") ?? "",
-              /church_platform_session=/
-            );
+            assert.equal(response.headers.get("set-cookie"), null);
             assert.equal(
               (await response.json()).redirect,
               "/platform/login?notice=" +

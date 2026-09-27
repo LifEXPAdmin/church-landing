@@ -48,6 +48,13 @@ export function SettingsWorkspace({
   const generation = useRef(0),
     restored = useRef(false),
     savedQuery = useRef(initialQuery);
+  // These controllers own private drafts and uncertain self-revoking commands.
+  // Keep their original owner mounted on a failed refresh; explicit navigation
+  // can discard the draft, but a background identity check cannot.
+  const preserveCredentialDraft =
+    (folder === "security" &&
+      ["password", "methods"].includes(setting ?? "")) ||
+    (folder === "account" && setting === "email");
   const key =
     pathname + (initialQuery ? "?q=" + encodeURIComponent(initialQuery) : "");
   const load = useCallback(async () => {
@@ -62,8 +69,10 @@ export function SettingsWorkspace({
       );
       if (seq !== generation.current) return;
       if (r.data.ownerId !== owner) {
-        setData(null);
-        router.refresh();
+        if (!preserveCredentialDraft) {
+          setData(null);
+          router.refresh();
+        }
         throw new Error(
           "Your sign-in changed. Reload settings before continuing."
         );
@@ -94,7 +103,11 @@ export function SettingsWorkspace({
             ? e.message
             : "Settings could not be checked. Try again."
         );
-        if (e instanceof SocialClientError && e.status === 401) {
+        if (
+          !preserveCredentialDraft &&
+          e instanceof SocialClientError &&
+          e.status === 401
+        ) {
           setData(null);
           router.refresh();
         }
@@ -102,7 +115,7 @@ export function SettingsWorkspace({
     } finally {
       if (seq === generation.current) setBusy(false);
     }
-  }, [owner, router, folder]);
+  }, [owner, router, folder, preserveCredentialDraft]);
   useEffect(() => {
     if (positionOwner !== owner) {
       positions.clear();
@@ -373,7 +386,9 @@ export function SettingsWorkspace({
               {folder === "data" && !active && <SettingsData />}
               {folder === "help" && !active && <SettingsHelp />}
               {folder === "media" && !active && <SettingsMedia />}
-              {folder === "calendar" && !active && <SettingsCalendar rows={rows} />}
+              {folder === "calendar" && !active && (
+                <SettingsCalendar rows={rows} />
+              )}
               {folder === "communities" && !active && (
                 <section
                   className="gc-settings space-y-3"

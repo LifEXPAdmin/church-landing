@@ -278,7 +278,7 @@ try {
     await concealed(fields);
     await page
       .getByText("Your account could not be checked.", { exact: false })
-      .waitFor();
+      .waitFor({ state: "attached" });
     await page.unroute("**/api/platform/profile?view=identity", fail);
     await pulse("focus");
     await restored(fields);
@@ -289,7 +289,8 @@ try {
       .getByText("Your sign-in changed. Private entries remain concealed.", {
         exact: false
       })
-      .waitFor();
+      .waitFor({ state: "attached" });
+    await page.waitForTimeout(300);
     await concealed(fields);
     await signIn(actor);
     await pulse("focus");
@@ -356,7 +357,7 @@ try {
         .getByText("Your sign-in changed. Private entries remain concealed.", {
           exact: false
         })
-        .waitFor();
+        .waitFor({ state: "attached" });
     for (const [hide, resume] of [
       ["blur", "focus"],
       ["offline", "online"],
@@ -431,7 +432,7 @@ try {
     await pulse("focus");
     await page
       .getByText("The change was confirmed.", { exact: false })
-      .waitFor();
+      .waitFor({ state: "attached" });
     await concealed(f.fields);
     assert.equal(page.url(), before);
     assert.equal(count, 1);
