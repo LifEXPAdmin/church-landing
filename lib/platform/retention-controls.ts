@@ -1,3 +1,4 @@
+import { replayMediaControl } from "./media-catalog-retention";
 import { randomUUID } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
 import { emptyFeedback } from "./feedback-policy";
@@ -40,6 +41,7 @@ export type RetentionControlEntry = {
     | "EXCHANGE_VISIBILITY"
     | "EXCHANGE_FAVORITE"
     | "EXCHANGE_SAVED_SEARCH"
+    | "MEDIA_CATALOG"
     | "INTERCHURCH_HELP"
     | "EXCHANGE_NEED"
     | "VOLUNTEER_OPPORTUNITY"
@@ -118,6 +120,7 @@ function validate(value: unknown): RetentionControlEntry {
       "EXCHANGE_VISIBILITY",
       "EXCHANGE_FAVORITE",
       "EXCHANGE_SAVED_SEARCH",
+      "MEDIA_CATALOG",
       "INTERCHURCH_HELP",
       "EXCHANGE_NEED",
       "VOLUNTEER_OPPORTUNITY",
@@ -466,6 +469,7 @@ export async function recordDiscoveryControl(
     | "EXCHANGE_VISIBILITY"
     | "EXCHANGE_FAVORITE"
     | "EXCHANGE_SAVED_SEARCH"
+    | "MEDIA_CATALOG"
     | "INTERCHURCH_HELP"
     | "EXCHANGE_NEED"
     | "VOLUNTEER_OPPORTUNITY"
@@ -1414,6 +1418,12 @@ export async function replayRetentionControls(
             where: { id: entry.id, journaledAt: null },
             data: { journaledAt: new Date() }
           });
+          continue;
+        }
+        if (entry.kind === "MEDIA_CATALOG") {
+          await replayMediaControl(tx,entry.sourceId,entry.version,new Date(entry.recordedAt));
+          await record(tx,entry);
+          await tx.retentionControl.updateMany({where:{id:entry.id,journaledAt:null},data:{journaledAt:new Date()}});
           continue;
         }
         if (entry.kind === "INTERCHURCH_HELP") {

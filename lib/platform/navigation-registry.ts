@@ -11,6 +11,8 @@ type Destination = {
   resource?: ResourceKind;
 };
 export const navigationRegistry = {
+  media: {href:"/platform/media",title:"Media library",description:"Browse sermons, podcasts, testimonies, services and teaching.",icon:"book",resource:"mediaCatalogItem",prefetch:false},
+  mediaStudio: {href:"/platform/media/studio",title:"Publishing studio",description:"Create private media drafts and review publication.",icon:"file",resource:"mediaCatalogItem",prefetch:false},
   home: {
     href: "/platform",
     title: "Home",
@@ -287,6 +289,7 @@ const menuGroups = [
     title: "Discover",
     entries: [
       { id: "explore" },
+      { id: "media" },
       { id: "feed" },
       { id: "features" },
       { id: "releases" }
@@ -301,6 +304,7 @@ const menuGroups = [
       { id: "contactRequests", signedIn: true },
       { id: "saved", signedIn: true },
       { id: "drafts", signedIn: true },
+      { id: "mediaStudio", signedIn: true },
       { id: "prayers", signedIn: true },
       { id: "calendars" },
       { id: "commitments" },

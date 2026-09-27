@@ -9,7 +9,6 @@ import {
 
 test("reserved and unknown resource kinds cannot select a working service", () => {
   for (const kind of [
-    "mediaCatalogItem",
     "fundraisingCampaign",
     "family",
     "__proto__",
@@ -57,6 +56,7 @@ test("implemented resources point to their existing authority without granting a
     "exchangeInquiry",
     "pantryHub",
     "gatherGroup",
+    "mediaCatalogItem",
     "volunteerOpportunity"
   ] as const) {
     const contract = requireImplementedResource(kind);

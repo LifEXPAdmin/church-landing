@@ -213,6 +213,10 @@ enum PlatformPostType {
 }
 
 model PlatformUser {
+  ownedCatalogItems MediaCatalogItem[] @relation("CatalogPersonalOwner")
+  createdCatalogItems MediaCatalogItem[] @relation("CatalogCreator")
+  catalogRights MediaCatalogRights[]
+  catalogEvents MediaCatalogEvent[]
   createdGatherGroups GatherGroup[] @relation("GatherGroupCreator")
   ownedGatherGroups GatherGroup[] @relation("GatherGroupOwner")
   gatherMemberships GatherGroupMembership[]
@@ -589,6 +593,8 @@ enum ChurchCapability {
   MANAGE_CHURCH_ASSISTANCE
   MANAGE_CHURCH_GROUPS
   COMMIT_INTERCHURCH_HELP
+  EDIT_CHURCH_MEDIA
+  MANAGE_CHURCH_MEDIA
 }
 
 enum OperatorCapability {
@@ -796,6 +802,7 @@ enum DirectoryAudience {
 }
 
 model Church {
+  catalogItems MediaCatalogItem[]
   gatherGroups GatherGroup[]
   pantryHub PantryHub?
   ownedExchangeListings ExchangeListing[] @relation("ExchangeChurchOwner")
@@ -3551,4 +3558,76 @@ model InterchurchHelpEvent {
   createdAt DateTime @default(now())
   request InterchurchHelpRequest @relation(fields: [requestId], references: [id], onDelete: Restrict)
   @@index([requestId, version])
+}
+
+
+model MediaCatalogItem {
+  id String @id @default(cuid())
+  version Int @default(1)
+  controlVersion Int @default(1)
+  ownerId String?
+  ownerChurchId String?
+  createdById String?
+  owner PlatformUser? @relation("CatalogPersonalOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  ownerChurch Church? @relation(fields: [ownerChurchId], references: [id], onDelete: SetNull)
+  createdBy PlatformUser? @relation("CatalogCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  state String @default("DRAFT")
+  audience String?
+  title String @default("")
+  description String @default("")
+  format String?
+  presentation String?
+  durationSeconds Int?
+  languageIds String[] @default([])
+  speakers String[] @default([])
+  churchCredit String @default("")
+  series String @default("")
+  sequence Int?
+  topics String[] @default([])
+  recordedOn String?
+  details Json @default("null")
+  sourceUrl String?
+  sourceProvider String?
+  sourceState String @default("REVIEW_NEEDED")
+  acknowledgment String?
+  attribution String @default("")
+  moderationState String @default("VISIBLE")
+  recoveryRequired Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  publishedAt DateTime?
+  removedAt DateTime?
+  rights MediaCatalogRights?
+  events MediaCatalogEvent[]
+  @@index([state, audience, publishedAt, id])
+  @@index([ownerId, state, updatedAt])
+  @@index([ownerChurchId, state, updatedAt])
+}
+
+model MediaCatalogRights {
+  itemId String @id
+  item MediaCatalogItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  actorId String?
+  actor PlatformUser? @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  basis String
+  evidenceReference String @default("")
+  license String @default("")
+  consentReference String @default("")
+  fingerprint String
+  policy String
+  assertedAt DateTime
+  expiresAt DateTime?
+  revokedAt DateTime?
+}
+
+model MediaCatalogEvent {
+  id String @id @default(cuid())
+  itemId String
+  item MediaCatalogItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  actorId String?
+  actor PlatformUser? @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  action String
+  version Int
+  createdAt DateTime @default(now())
+  @@index([itemId, createdAt])
 }

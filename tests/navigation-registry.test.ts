@@ -53,13 +53,15 @@ test("Menu separates private entries from guest reading without inventing admini
     "settings",
     "calendars",
     "commitments",
-    "volunteers"
+    "volunteers",
+    "media"
   ])
     assert.ok(guestIds.includes(id as NavigationId), id);
   for (const id of [
     "activity",
     "saved",
     "drafts",
+    "mediaStudio",
     "helpRequests",
     "feedback",
     "reports",
@@ -133,7 +135,7 @@ test("every registered destination resolves to a real page and optional modules 
     for (const item of projected) {
       reachable.add(item.id);
       assert.ok(
-        !/^\/platform\/(?:media|businesses|foundry)(?:\/|$)/.test(item.href),
+        !/^\/platform\/(?:businesses|foundry)(?:\/|$)/.test(item.href),
         item.href
       );
     }
