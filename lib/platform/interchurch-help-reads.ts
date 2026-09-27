@@ -28,10 +28,10 @@ import { postId, postField } from "./post-input";
 import { PortalError } from "./portal-policy";
 import { effectiveChurchGrants } from "./church-permissions";
 
-export function publicHelp(row: InterchurchHelpRequest) {
+export function publicHelp(row: InterchurchHelpRequest, management = false) {
   return {
     id: row.id,
-    version: row.version,
+    version: management ? row.version : row.termsVersion,
     termsVersion: row.termsVersion,
     category: row.category,
     terms: helpTermsFields(row as HelpTerms),
@@ -203,7 +203,7 @@ export function readInterchurchHelp(
       const current = await helpCoordinatorCurrent(tx, row);
       return {
         view: "request" as const,
-        request: publicHelp(row),
+        request: publicHelp(row, manage),
         listing: {
           id: row.listing.id,
           title: row.listing.title,

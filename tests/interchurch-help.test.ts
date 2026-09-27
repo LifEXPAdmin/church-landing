@@ -547,6 +547,42 @@ async function confirmed(
   );
   return db.interchurchHelpAgreement.findUniqueOrThrow({ where: { offerId } });
 }
+test("public request versions do not reveal private offer, selection or contact activity", async () => {
+  const f = await setup();
+  const snapshot = async (token: unknown) => {
+    const detail = await read(db, token, { view: "request", id: f.id });
+    let after: string | undefined;
+    for (;;) {
+      const page = await read(db, token, { view: "list", after });
+      assert.equal(page.view, "list");
+      if (page.view !== "list") throw new Error("Expected request list");
+      const request = page.requests.find((row) => row.id === f.id);
+      if (request) return JSON.stringify({ detail, request });
+      assert.ok(page.next, "Published request remains discoverable");
+      after = page.next;
+    }
+  };
+  const anonymous = await snapshot(null), responder = await snapshot(f.b.token);
+  const before = await read(db, f.manager.token, { view: "request", id: f.id });
+  const offer = await f.offer();
+  const agreement = await confirmed(f, offer.id);
+  await command(db, f.a.token, input("contact", {
+    offerId: offer.id,
+    expectedVersion: agreement.version,
+    termsVersion: agreement.termsVersion,
+    contact: "Private chosen contact",
+    consent: true
+  }));
+  assert.equal(await snapshot(null), anonymous);
+  assert.equal(await snapshot(f.b.token), responder);
+  const after = await read(db, f.manager.token, { view: "request", id: f.id });
+  assert.equal(before.view, "request");
+  assert.equal(after.view, "request");
+  if (before.view === "request" && after.view === "request") {
+    assert.ok(after.request.version > before.request.version);
+    assert.equal(after.request.termsVersion, before.request.termsVersion);
+  }
+});
 test("blocking a confirmed pair clears contact, preserves completion facts and never revives on unblock", async () => {
   const f = await setup(),
     o = await f.offer();
