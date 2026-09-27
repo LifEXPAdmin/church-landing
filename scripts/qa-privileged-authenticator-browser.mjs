@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { resolve } from "node:path";
 import { createRequire } from "node:module";
 import { execFileSync } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
@@ -13,7 +14,7 @@ Object.assign(process.env, {
   DATABASE_URL: config.database, DIRECT_URL: config.database,
   ACCOUNT_ORIGIN: config.localOrigin, NEXT_PUBLIC_SITE_URL: config.localOrigin,
   ACCOUNT_TEST_ISOLATED: "1", ACCOUNT_DELIVERY_MODE: "test-sink",
-  ACCOUNT_TEST_SINK_DIR: process.cwd() + "/" + fixtureDir + "/sink",
+  ACCOUNT_TEST_SINK_DIR: resolve(fixtureDir, "sink"),
   AUTH_RATE_LIMIT_SECRET: "medium-fixture-only-secret-".repeat(3),
   NODE_ENV: "test", VERCEL: "", PRIVILEGED_MFA_MODE: "off"
 });
@@ -249,7 +250,7 @@ try {
   const second = await createPortalActor(db, "mfachanged");
   await page.evaluate(() => window.dispatchEvent(new Event("blur")));
   await signIn(second); await page.evaluate(() => window.dispatchEvent(new Event("focus")));
-  await page.getByRole("link", { name: "Reload authenticator settings", exact: true }).waitFor();
+  await page.getByRole("button", { name: "Reload authenticator settings", exact: true }).waitFor();
   assert.equal(await setup.count(), 0);
   assert.equal(await page.locator('input[name="currentPassword"]').count(), 0);
   ok("Recovery retires old codes and other sessions; switching accounts removes retained setup secrets and password forms");

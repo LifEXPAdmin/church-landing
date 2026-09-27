@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { resolve } from "node:path";
 import { createRequire } from "node:module";
 import { execFileSync } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
@@ -13,13 +14,13 @@ Object.assign(process.env, {
   DATABASE_URL: config.database, DIRECT_URL: config.database,
   ACCOUNT_ORIGIN: config.localOrigin, NEXT_PUBLIC_SITE_URL: config.localOrigin,
   ACCOUNT_TEST_ISOLATED: "1", ACCOUNT_DELIVERY_MODE: "test-sink",
-  ACCOUNT_TEST_SINK_DIR: process.cwd() + "/" + fixtureDir + "/sink",
+  ACCOUNT_TEST_SINK_DIR: resolve(fixtureDir, "sink"),
   AUTH_RATE_LIMIT_SECRET: "medium-fixture-only-secret-".repeat(3),
   NODE_ENV: "test", VERCEL: "", PRIVILEGED_MFA_MODE: "off"
 });
 const { PrismaClient } = await import("@prisma/client");
 const { assertPortalTestDatabase, createPortalActor, seedOperatorGrants } = await import("../tests/seed-portal.ts");
-const { openAuthenticator, authenticatorTotp, authenticatorBase32 } = await import("../lib/platform/admin-authenticator-crypto.ts");
+const { openAuthenticator, authenticatorTotp } = await import("../lib/platform/admin-authenticator-crypto.ts");
 const { loginAccount } = await import("../lib/platform/accounts.ts");
 const db = new PrismaClient();
 await assertPortalTestDatabase(db);
@@ -58,22 +59,6 @@ const fetchIn = (path, body, owner, p = page) => p.evaluate(async ({ path, body,
     ...(body ? { body: JSON.stringify(body) } : {}) });
   return { status: response.status, body: await response.json() };
 }, { path, body, owner });
-const nextCode = async userId => {
-  const factor = await db.adminAuthenticator.findUniqueOrThrow({ where: { userId } });
-  const now = BigInt(Math.floor(Date.now() / 30000));
-  const counter = factor.lastCounter >= now ? factor.lastCounter + BigInt(1) : now;
-  const wait = Number(counter - now - BigInt(1)) * 30000;
-  if (wait > 0) await new Promise(resolve => setTimeout(resolve, Math.min(wait + 100, 31000)));
-  return authenticatorTotp(openAuthenticator(userId, factor.secretCiphertext), counter);
-};
-const challenge = async (actor, purpose, p = page) => {
-  const form = p.getByRole("form", { name: "Confirm protected work", exact: true });
-  await form.waitFor();
-  await form.getByLabel("Protected action", { exact: true }).selectOption(purpose);
-  await form.getByLabel("Six-digit authenticator code", { exact: true }).fill(await nextCode(actor.id));
-  await form.getByRole("button", { name: "Confirm protected work", exact: true }).click();
-  await form.getByText(purpose === "privileged-work" ? /Assigned duties are confirmed/ : /This protected action is confirmed once/).waitFor();
-};
 const setup = page.getByRole("region", { name: "Private authenticator setup", exact: true });
 const recovery = page.getByRole("region", { name: "Private recovery codes", exact: true });
 const start = () => page.getByRole("form", { name: /^(Start|Restart) authenticator setup$/ });
@@ -188,7 +173,7 @@ try {
   ok("Recovery codes, notices, selected purpose and typed code leave concealed DOM, restore only after a fresh read and never enter persistent browser state");
 
   for (const status of [401, 403, 429, 503]) {
-    await page.route("**/api/platform/authenticator", route => route.request().method() === "GET" ? route.fulfill({ status, contentType: "application/json", body: JSON.stringify({ error: "Fictional authority read failure" }) }) : route.continue());
+    await page.route("**/api/platform/authenticator", route => route.request().method() === "GET" ? route.fulfill({ status, contentType: "application/json", body: JSON.stringify({ message: "Fictional authority read failure" }) }) : route.continue());
     await pulse("focus"); await page.getByText("Fictional authority read failure", { exact: true }).waitFor();
     await privateAbsent(codes);
     await page.unroute("**/api/platform/authenticator");
@@ -225,15 +210,49 @@ try {
     await page.evaluate(() => { document.documentElement.style.fontSize = ""; });
   }
   response = await page.goto(config.origin + "/platform/account/authenticator"); html = await response.text();
-  for (const key of ["recoveryCodesRemaining", "confirmedForWork", "notices", confirmedFactor.id]) assert.ok(!html.includes(key), "No privileged snapshot in server page payload");
+  for (const key of ["recoveryCodesRemaining", "confirmedForWork", '\\"notices\\":']) assert.ok(!html.includes(key), "No privileged snapshot in server page payload");
   await protectedForm().waitFor();
   assert.equal(await recovery.count(), 0); assert.equal(await setup.count(), 0);
   assert.deepEqual(await db.adminAuthenticator.findUniqueOrThrow({ where: { userId: actor.id } }), confirmedFactor);
   assert.equal(await db.platformOperatorGrant.count({ where: { userId: actor.id } }), 1);
   assert.equal(await db.privilegedSessionProof.count({ where: { session: { userId: actor.id } } }), 0);
   ok("Acknowledgment erases codes with accessible focus, confirmed pages serialize no private snapshot, narrow layouts fit, and reading grants no duties or MFA proof");
+  const lateActor = await createPortalActor(db, "mfalateprivacy");
+  await signIn(lateActor); await go("/platform/account/authenticator");
+  await start().getByLabel("Confirm your current sign-in for this action", { exact: true }).fill(lateActor.password);
+  let releaseCommand, commandArrived, oldResult, oldBody, intercepted = false;
+  const commandReady = new Promise(resolve => { commandArrived = resolve; });
+  const commandHold = new Promise(resolve => { releaseCommand = resolve; });
+  await page.route("**/api/platform/authenticator", async route => {
+    if (route.request().method() !== "POST" || intercepted) return route.continue();
+    intercepted = true; oldBody = route.request().postDataJSON();
+    const result = await route.fetch({ url: config.localOrigin + "/api/platform/authenticator" });
+    assert.equal(result.status(), 200); oldResult = await result.json(); commandArrived();
+    await commandHold; await route.fulfill({ response: result }); await result.dispose();
+  });
+  await start().getByRole("button", { name: "Start authenticator setup", exact: true }).click();
+  await commandReady; await pulse("blur");
+  const newer = await fetchIn("/api/platform/authenticator", { ...oldBody, expectedVersion: oldResult.version, requestKey: randomUUID() }, lateActor.id);
+  assert.equal(newer.status, 200); assert.ok(newer.body.version > oldResult.version);
+  await pulse("focus"); await confirm().waitFor();
+  releaseCommand();
+  await page.waitForTimeout(200); await page.unroute("**/api/platform/authenticator");
+  await pulse("focus"); await confirm().waitFor();
+  assert.equal(await setup.count(), 0); assert.ok(!(await page.content()).includes(oldResult.secret));
+  assert.equal((await db.adminAuthenticator.findUniqueOrThrow({ where: { userId: lateActor.id } })).version, newer.body.version);
+  ok("A late successful setup result cannot display a replaced key or QR after a newer factor read");
+
+  await confirm().getByLabel("Six-digit authenticator code", { exact: true }).fill("123456");
+  await context.setOffline(true); await pulse("offline"); await privateAbsent(["123456"]);
+  const requestsBefore = outbound.length;
+  await page.getByRole("button", { name: "Recheck current sign-in", exact: true }).click();
+  assert.equal(outbound.length, requestsBefore);
+  await context.setOffline(false); await pulse("online"); await confirm().waitFor();
+  assert.equal(await confirm().getByLabel("Six-digit authenticator code", { exact: true }).inputValue(), "123456");
+  ok("Actual offline mode keeps fields absent and manual recheck performs no request until connectivity returns");
+
   assert.deepEqual(errors, []);
-  writeFileSync(output + "/result.json", JSON.stringify({ results, errors, source: execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim(), productionBuild: true, actorIds: [actor.id, changed.id], provider: "fictional local stub", productionWrites: 0, externalSends: 0 }, null, 2), { mode: 0o600 });
+  writeFileSync(output + "/result.json", JSON.stringify({ results, errors, source: execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim(), productionBuild: true, actorIds: [actor.id, changed.id, lateActor.id], provider: "fictional local stub", productionWrites: 0, externalSends: 0 }, null, 2), { mode: 0o600 });
   console.log("PRIVILEGED_AUTHENTICATOR_PRIVACY_BROWSER_PASS " + results.length);
 } finally {
   await browser.close(); await db.$disconnect();

@@ -1,3 +1,17 @@
+## Authenticator privacy locally accepted, 27 September 2026 UTC
+
+Version **2026.09.27.28**, application `84d5f7be809743408fad62d3ff6faf2cff0f8147`,
+is implemented and locally tested, **not merged or live**. Private fields, setup
+keys/QR, recovery codes and notices leave concealed DOM while mounted original
+commands retain exact retries. Fresh original-session reads gate recovery; late
+replaced-factor results cannot restore old material. The server no longer sends
+the private authenticator snapshot. Nineteen browser groups, sixteen service
+checks and a fresh production build pass. No new migration, production write,
+real send or MFA activation occurred. See [the focused acceptance report](AUTHENTICATOR_SETTINGS_REPORT.md)
+for reproduction, source/build identity, corrected test assumptions and limits.
+This completed feature awaits the next compatible batch. The serving release
+remains **2026.09.26.27**. Wider security and owner acceptance remain open.
+
 ## Privacy and recovery batch verified live, 27 September 2026 UTC
 
 Versions **2026.09.26.12 through .27** are integrated and verified live as

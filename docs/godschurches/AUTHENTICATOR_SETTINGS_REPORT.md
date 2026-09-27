@@ -1,3 +1,61 @@
+## Authenticator private presentation locally accepted, 27 September 2026 UTC
+
+Version **2026.09.27.28**, application source
+`84d5f7be809743408fad62d3ff6faf2cff0f8147`, is implemented and locally tested.
+It is **not merged or live**. The serving batch remains **2026.09.26.27**;
+this finished feature is retained for the next compatible release batch.
+
+Before editing, the unchanged application reproduced password, setup key and QR
+retention in concealed DOM, all eight recovery codes retained after offline,
+and setup still visible after `pagehide`. The server also serialized its complete
+authenticator snapshot. The isolated baseline reused the previously verified
+compiled application after runtime-source equivalence checks; no fresh baseline
+build is claimed.
+
+The route now sends only owner and opaque session identity, a public refresh key
+and the requested public purpose. Private factor/status/notice data comes from a
+fresh no-store read. Blur, offline, pagehide and hidden-document transitions remove
+private fields, setup material and notice markup. A late read cannot restore them.
+Same-address navigation rechecks access without replacing the mounted command
+owners. Each operation retains its original draft and exact uncertain request
+through factor changes, including a lost confirmation whose save is already visible.
+Another owner or a different sign-in for the same owner cannot reveal those retained
+values after revalidation. Restoring the original session permits recovery.
+
+Setup and recovery material is bound to its receipt version; a late response from a
+replaced factor cannot display an old key or QR. Challenge receipts do not reassign
+that binding. Existing ten-minute clearing, explicit code acknowledgment, accessible
+focus, one-use confirmations and service authorization remain intact. No dependency,
+endpoint, schema migration or provider capability was added.
+
+Fresh acceptance comprises **19 browser groups**: ten focused privacy/recovery,
+eight existing enforcement-mode flows and one staged-enrollment flow. They include
+real local HTTP writes, exact lost-response bytes, unchanged factor/replay notice
+counts, actual offline behavior, different-account/session denial, original-session
+recovery, purpose/field retention, late superseded results, QR decoding, protected
+work in another tab, replacement, code acknowledgment, no private browser storage,
+and 320/390/desktop layouts with enlarged text. The 320-pixel acknowledgment capture
+was inspected. **Sixteen service checks** pass: authenticator four, privileged
+authentication ten and release content two. Browser errors are zero.
+
+The **40.719-second production build** `vUVkSDDT5C69e7JfKdiI6` passed compilation,
+types, hydration, 231 runtime traces with 76,308 entries and 575 server JavaScript
+files, and build security. Focused lint, copy and source-security checks pass.
+All 115 migration sources are unchanged. QA-only follow-ups corrected an expected
+service count, an injected error envelope, a nonexistent fixture identifier, the
+reload control's new button role and fixture path resolution. Their initial failed
+runs are not counted as acceptance. Application source did not change after the build.
+
+All writes, enrollment, security notices and recovery were confined to fictional
+local fixtures with a local provider stub; production test writes, real sends and
+production MFA activation are zero. Source, fixture databases, screenshots and
+acceptance receipts are preserved. The shared large-build reservation was released.
+This is DOM presentation protection, not heap/OS-snapshot erasure or real-device
+acceptance. Same-owner cookie replacement without a lifecycle/read recheck remains
+an existing transport limitation: POSTs check owner and existing server session
+contracts, not an added view-key header. Legacy inline MFA, other account forms,
+real owner enrollment, broader security gates and operator acceptance remain open.
+
 # Authenticator settings acceptance
 
 September 18, 2026 UTC. Local acceptance is complete; integration and verified
