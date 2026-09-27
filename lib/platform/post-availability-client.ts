@@ -1,4 +1,5 @@
 import type { FeedMode } from "./feed-options";
+import type { PostResourceCard } from "./post-resource-attachments";
 import { socialRequest } from "./social-client";
 
 export type PostAvailability = {
@@ -7,6 +8,7 @@ export type PostAvailability = {
   entryVersion: number | null;
   commentCount: number | null;
   likeCount: number | null;
+  resources?: PostResourceCard[];
 };
 type Waiting = {
   id: string;

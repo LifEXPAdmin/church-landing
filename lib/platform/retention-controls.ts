@@ -1754,7 +1754,7 @@ export async function replayRetentionControls(
           // Source withdrawal has no reversal operation. Preserve it even when
           // a later moderation version is replayed first, without republishing.
           if (entry.kind === "AUTHOR_WITHDRAW_POST")
-            await tx.$executeRaw`UPDATE "PlatformPost" SET status='WITHDRAWN', "withdrawnAt"=coalesce("withdrawnAt",${entry.recordedAt}::timestamp), "discussionClosed"=true,
+            await tx.$executeRaw`UPDATE "PlatformPost" SET status='WITHDRAWN', "withdrawnAt"=coalesce("withdrawnAt",${entry.recordedAt}::timestamp), "discussionClosed"=true, "resourceReferences"='[]'::jsonb,
               "discoveryLanguage"=NULL, "discoveryDenomination"=NULL, "discoveryCountry"=NULL, "discoveryPlaceId"=NULL,
               "discoveryRegion"=NULL, "discoveryLatitude"=NULL, "discoveryLongitude"=NULL,
               version=greatest(version,${entry.version}) WHERE id=${entry.sourceId}`;

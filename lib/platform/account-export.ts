@@ -162,7 +162,8 @@ export async function downloadAccountExport(
         linkUrl: true,
         linkTitle: true,
         linkDescription: true,
-        linkSourceUrl: true
+        linkSourceUrl: true,
+        resourceReferences: true
       }
     });
     const exchangeListings = await tx.exchangeListing.findMany({

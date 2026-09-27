@@ -12,7 +12,9 @@ import { portalInputClass } from "./portal-action-form";
 import { PostLinkFields } from "./post-link-fields";
 import { PostDiscoveryFields } from "./post-discovery-fields";
 import type { PostDiscoveryInput } from "@/lib/platform/post-discovery";
+import type { PostResourceReference } from "@/lib/platform/post-resource-input";
 export type PostDraft = {
+  resourceReferences?: PostResourceReference[];
   mentionIds?: string[];
   discovery?: PostDiscoveryInput;
   content: string;

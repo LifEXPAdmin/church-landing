@@ -9,6 +9,7 @@ import {
 import { SourcePreview } from "./quote-source-preview";
 import { AuthorAvatar } from "./author-avatar";
 import { PostPhotos } from "./post-photos";
+import { PostResourceCards } from "./post-resource-cards";
 import { PublicShareControls } from "./public-share-controls";
 import { SavePostControl } from "./save-post-control";
 import { PostMoreMenu } from "./post-more-menu";
@@ -308,6 +309,12 @@ function PostCardContent({
                     </p>
                   )}
                   <PostLink {...post} />
+                  <PostResourceCards
+                    key={`${currentUserId ?? "guest"}:${post.id}:${post.version}`}
+                    postId={post.id}
+                    version={post.version}
+                    owner={currentUserId ?? null}
+                  />
                   {post.photoCount > 0 && (
                     <PostPhotos
                       postId={post.id}

@@ -125,7 +125,7 @@ try {
     sql(
       [
         "-Atc",
-        `SELECT md5(string_agg(row::text, '' ORDER BY row::text)) FROM (SELECT to_jsonb(t) AS row FROM (SELECT ${retainedUserColumns} FROM "PlatformUser") t WHERE id='fixture-upgrade' UNION ALL SELECT to_jsonb(t) - ARRAY['contentNote','safeExcerpt','topicCommunityId','discoveryLanguage','discoveryDenomination','discoveryCountry','discoveryPlaceId','discoveryRegion','discoveryLatitude','discoveryLongitude','discoveryVersion'] FROM "PlatformPost" t WHERE id='fixture-retained-post' UNION ALL SELECT to_jsonb(t) - ARRAY['parentId','rootId','version','editedAt','deletedAt','authorChurchId','topicCommunityId'] FROM "PlatformPostComment" t WHERE id='fixture-retained-comment' UNION ALL SELECT to_jsonb(t) FROM "PlatformFollow" t WHERE id='fixture-retained-follow' UNION ALL SELECT to_jsonb(t) FROM (SELECT ${retainedExchangeColumns} FROM "ExchangeListing") t WHERE id IN ('fixture-retained-free','fixture-retained-sale')) t`
+        `SELECT md5(string_agg(row::text, '' ORDER BY row::text)) FROM (SELECT to_jsonb(t) AS row FROM (SELECT ${retainedUserColumns} FROM "PlatformUser") t WHERE id='fixture-upgrade' UNION ALL SELECT to_jsonb(t) - ARRAY['resourceReferences','contentNote','safeExcerpt','topicCommunityId','discoveryLanguage','discoveryDenomination','discoveryCountry','discoveryPlaceId','discoveryRegion','discoveryLatitude','discoveryLongitude','discoveryVersion'] FROM "PlatformPost" t WHERE id='fixture-retained-post' UNION ALL SELECT to_jsonb(t) - ARRAY['parentId','rootId','version','editedAt','deletedAt','authorChurchId','topicCommunityId'] FROM "PlatformPostComment" t WHERE id='fixture-retained-comment' UNION ALL SELECT to_jsonb(t) FROM "PlatformFollow" t WHERE id='fixture-retained-follow' UNION ALL SELECT to_jsonb(t) FROM (SELECT ${retainedExchangeColumns} FROM "ExchangeListing") t WHERE id IN ('fixture-retained-free','fixture-retained-sale')) t`
       ],
       url
     );
@@ -199,7 +199,7 @@ try {
                       "tests/social-foundations.test.ts",
                       "tests/gallery-sharing.test.ts"
                     ]
-                  : ["tests/post-workspace.test.ts"]),
+                  : ["tests/post-workspace.test.ts", "tests/post-resource-attachments.test.ts"]),
               "tests/post-publishing.test.ts",
               "tests/community-search.test.ts",
               ...(process.argv.includes("--activity-limits")

@@ -1,3 +1,4 @@
+import { storedPostResources } from "./post-resource-input";
 import { photoLibraryEnabled } from "./personal-photo-policy";
 import { postDiscoveryInput } from "./post-discovery";
 import { postPreviewText } from "./post-options";
@@ -200,6 +201,9 @@ export function getPostEditor(db: PrismaClient, token: unknown, id: string) {
       groupThreadKind: post.groupThreadKind,
       groupCategory: post.groupCategory,
       version: post.version,
+      resourceReferences: canEdit
+        ? storedPostResources(post.resourceReferences)
+        : [],
       mentionIds: canEdit
         ? (
             await tx.postMention.findMany({

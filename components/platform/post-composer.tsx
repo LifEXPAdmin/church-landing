@@ -1,4 +1,5 @@
 "use client";
+import { PostResourceFields } from "./post-resource-fields";
 import { RegionalWallTime } from "./regional-presentation";
 import { CommentMentions } from "./comment-mentions";
 import { groupCategories } from "@/lib/platform/group-options";
@@ -379,6 +380,16 @@ function ComposerDraft({
           disabled={state.publishing || !!state.postId}
         >
           <PostDraftFields draft={draft} change={setDraft} />
+          {state.ownerId && (
+            <PostResourceFields
+              key={state.ownerId}
+              owner={state.ownerId}
+              references={draft.resourceReferences ?? []}
+              onChange={(resourceReferences) =>
+                setDraft((latest) => ({ ...latest, resourceReferences }))
+              }
+            />
+          )}
           {initialGroup && draft.groupId !== initialGroup && (
             <div className="space-y-3">
               <p role="status">
