@@ -1006,6 +1006,14 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "private-authenticator-recovery", version: "2026.09.27.28", date: "2026-09-27",
+    summary: "Authenticator settings protect private setup details and preserve original recovery actions.",
+    added: [],
+    improved: ["Private setup keys, recovery codes and entries clear from hidden or offline pages and return only after the original sign-in is checked."],
+    fixed: ["A lost setup or confirmation response keeps its original retry even when the saved authenticator has changed. Older results cannot display a replaced key."],
+    featureIds: ["account-authenticator"]
+  },
+  {
     id: "private-menu-choices", version: "2026.09.26.27", date: "2026-09-26",
     summary: "Menu protects your saved shortcuts and current Admin entry when the page is concealed.",
     added: [],
