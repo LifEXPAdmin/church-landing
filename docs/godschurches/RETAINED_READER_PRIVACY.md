@@ -1,3 +1,70 @@
+## Active sign-in privacy locally accepted, 27 September 2026 UTC
+
+Version **2026.09.27.29**, application source
+`ed38720d872a81a9e61292c06e3e841e161a81a6`, is implemented and locally tested,
+**not merged or live**. It is compatible with accepted authenticator .28 and
+retained for the next completed batch. The current serving version remains .27.
+
+The unchanged .28 runtime first reproduced retained session-list DOM on blur,
+visible private fields/listing after offline or pagehide, and an ignored
+`X-Expected-Account` header. A different cookie owner could list or revoke their
+own sessions despite a mismatched header when supplying their own valid password.
+The old password check rejected the first account's different password. This was
+an expected-owner binding gap, not demonstrated credential bypass or takeover.
+
+The existing session controller now owns its password draft in component memory,
+physically removes private controls/list/notices on concealment and uses fresh
+no-store identity/list reads for recovery. Late list responses cannot repopulate
+concealed DOM. List and revocation send the reviewed owner; the service checks it
+inside its existing owned-session transaction. Headerless older clients remain
+compatible. Wrong, empty and invalid expected owners fail closed. Original
+credential validation, current-session preservation and safe device/date labels
+remain in place. A lost accepted sign-out triggers only a fresh list. A login
+created after that sign-out survives recovery; another revocation requires a
+new deliberate action. This does not add an idempotency receipt or replay token.
+
+Initial acceptance of `fd6d439` found that repeated focus/reconnect reads exhausted
+the legacy ten-attempt account budget and blocked the list for fifteen minutes.
+The corrected implementation places only `list-sessions` in a separate bounded
+HMAC namespace: 120 global requests per minute, 300 per network and 120 per session
+subject per fifteen minutes. Password, sign-in, reset and mutation ceilings retain
+their prior namespace and limits. A redundant identity request was removed; list
+requests retain before/after owner checks. There is no polling or new dependency.
+
+All **eight browser groups** pass against the final production build: physical
+concealment and password preservation, late results, denied/throttled/unavailable
+reads, actual offline recovery, expected-owner/account switching, wrong credentials,
+lost accepted outcome without automatic replay and confirmed explicit revocation.
+The final run also verifies actual keyboard focus and field hit testing at 320,
+390 and 1280 pixels with doubled text. The 320-pixel capture was inspected; no
+horizontal overflow or browser page errors were observed. Earlier failed runs
+and their diagnostic captures remain separate from accepted evidence.
+
+**Twenty-six service/HTTPS checks** pass: nine session controls, eight session
+rotation/Google callback boundaries, seven shared abuse budgets and two release
+content checks. The new 121 rapid-read test proves bounded list admission and
+successful credential-confirmed revocation afterward. It reaches the global
+minute ceiling first, so it does not independently exercise the longer network
+and subject ceilings. Existing wrong-password throttling and shared auth budgets
+still pass. The **44.241-second** build `xShpLmVvJVVEER29eTw0J` passed compilation,
+hydration, 231 runtime traces, 76,308 entries, 575 server JavaScript files and build
+security. Types, focused lint, copy and source checks pass. All 1,921 candidate
+files stayed unchanged; all 115 migrations remain unchanged. Subsequent keyboard
+QA/report changes do not change application runtime source.
+
+All actors, credential checks and mutations were fictional and local. Production
+writes, migrations and real sends are zero. An unused npm download cache was
+verified and removed to recover 2.38 GB without touching installed dependencies,
+source, fixtures, backups or evidence. A new fixture initially hit PostgreSQL's
+shared-memory ID limit; only the completed superseded fixture was stopped,
+preserving its files, before the isolated final fixture was prepared successfully.
+
+This is DOM concealment, not heap, password-manager or OS-snapshot erasure. The
+list revalidates the expected account, not a new same-account view-session token.
+A browser cookie replacement for the same account retains the existing session
+semantics. Google provider confirmation, physical-device behavior, other account
+forms, password/session policy and broader security/operator gates remain open.
+
 ## Authenticator privacy locally accepted, 27 September 2026 UTC
 
 Version **2026.09.27.28**, application `84d5f7be809743408fad62d3ff6faf2cff0f8147`,

@@ -1,3 +1,17 @@
+## Active sign-in privacy locally accepted, 27 September 2026 UTC
+
+Version **2026.09.27.29**, application `ed38720d872a81a9e61292c06e3e841e161a81a6`,
+is implemented and locally tested, **not merged or live**. Session lists and
+password controls leave concealed DOM and recover after current-account checks.
+The server binds list/revocation to the reviewed account; uncertain sign-out
+recovers by reading, never automatically repeating a mutation. Passive list reads
+have a separate bounded budget without changing credential limits. Eight browser
+groups and 26 service/HTTPS checks pass, including session rotation and shared
+abuse budgets. The final production build passed in 44.241 seconds. No schema,
+production write or real send changed. See [retained reader privacy](RETAINED_READER_PRIVACY.md)
+for reproduction, evidence and limits. This feature and locally accepted .28
+await the next compatible release batch; **.27 remains live**.
+
 ## Authenticator privacy locally accepted, 27 September 2026 UTC
 
 Version **2026.09.27.28**, application `84d5f7be809743408fad62d3ff6faf2cff0f8147`,

@@ -40,7 +40,9 @@ context.setDefaultTimeout(10000);
 context.on("request", request => outbound.push({ url: request.url(), body: request.postData() ?? "" }));
 context.on("page", p => p.on("pageerror", e => errors.push(e.message)));
 page.on("pageerror", e => errors.push(e.message));
-const output = fixtureDir + "/account-session-privacy-browser";
+const evidenceTag = process.argv[3] ?? "";
+assert.match(evidenceTag, /^[a-z0-9-]*$/);
+const output = fixtureDir + "/account-session-privacy-browser" + (evidenceTag ? "-" + evidenceTag : "");
 mkdirSync(output, { recursive: true });
 const ok = message => { results.push(message); console.log("PASS " + message); };
 const signIn = async actor => {
@@ -182,6 +184,16 @@ try {
     await page.setViewportSize({ width, height: 900 });
     await page.evaluate(() => { document.documentElement.style.fontSize = "32px"; });
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+    await page.getByRole("button", { name: "Sign out other sessions", exact: true }).focus();
+    await page.keyboard.press("Shift+Tab");
+    await page.keyboard.press("Shift+Tab");
+    assert.equal(await password().evaluate(element => document.activeElement === element), true);
+    await password().scrollIntoViewIfNeeded();
+    assert.equal(await password().evaluate(element => {
+      const rect = element.getBoundingClientRect();
+      const hit = document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2);
+      return hit === element || element.contains(hit);
+    }), true);
     await page.screenshot({ path: output + "/sessions-" + width + ".png", fullPage: true });
     await page.evaluate(() => { document.documentElement.style.fontSize = ""; });
   }
