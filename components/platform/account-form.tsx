@@ -86,6 +86,7 @@ export function AccountForm({
         const values = Object.fromEntries(formValues);
         const credentials = change ? confirmation.credentials(formValues) : {};
         let redirect: unknown;
+        let passwordRejectedBeforeConfirmation = false;
         setPending(true);
         setFailed(false);
         setMessage("");
@@ -110,6 +111,9 @@ export function AccountForm({
             })
           });
           const result = await response.json();
+          passwordRejectedBeforeConfirmation =
+            response.status === 400 &&
+            result.code === "ACCOUNT_PASSWORD_UNSAFE";
           if (response.ok && change) {
             setCurrentPassword("");
             setPassword("");
@@ -146,7 +150,9 @@ export function AccountForm({
           if (!change) requestAnimationFrame(() => feedback.current?.focus());
         } finally {
           if (change) {
-            confirmation.finish();
+            // This explicit rejection happens before the one-use Google proof
+            // is consumed. Preserve it while the owner corrects the password.
+            if (!passwordRejectedBeforeConfirmation) confirmation.finish();
             privacy.finish(redirect);
           }
           busy.current = false;
@@ -236,6 +242,9 @@ export function AccountForm({
           id={id("password")}
           name="password"
           label={change ? "New password" : "Password"}
+          descriptionId={
+            registration || change ? id("password-help") : undefined
+          }
           value={change ? password : undefined}
           onChange={change ? setPassword : undefined}
           autocomplete={
@@ -245,14 +254,16 @@ export function AccountForm({
       )}
       {(registration || change) && (
         <>
-          <p className="text-sm text-gc-muted">
-            Use 8 to 128 characters. You can paste a password or use one your
-            password manager generates.
+          <p id={id("password-help")} className="text-sm text-gc-muted">
+            Use 8 to 128 characters, preferably 15 or more. Avoid common
+            passwords or versions of your account details or God's Churches. You
+            can paste a password or use one your password manager generates.
           </p>
           <PasswordField
             id={id("confirmation")}
             name="confirmPassword"
             label="Confirm password"
+            descriptionId={id("password-help")}
             value={change ? confirmPassword : undefined}
             onChange={change ? setConfirmPassword : undefined}
             autocomplete="new-password"

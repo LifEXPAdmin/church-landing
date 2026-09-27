@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import {
   readAccountLink,
@@ -23,6 +23,8 @@ export function RecoveryForm({
   signedIn?: boolean;
 }) {
   const busy = useRef(false);
+  const passwordHelp = useId();
+  const feedback = useRef<HTMLParagraphElement>(null);
   const linkVersion = useRef(0);
   const [grant, setGrant] = useState<{ token: string; purpose: string } | null>(
     null
@@ -31,6 +33,9 @@ export function RecoveryForm({
   const [message, setMessage] = useState("");
   const [pending, setPending] = useState(false);
   const [complete, setComplete] = useState(false);
+  useEffect(() => {
+    if (message && !pending) feedback.current?.focus();
+  }, [message, pending]);
   useEffect(() => {
     const read = () => {
       if (window.location.hash) {
@@ -165,6 +170,11 @@ export function RecoveryForm({
             Resetting your password signs out every device. You will need to
             sign in again.
           </p>
+          <p id={passwordHelp} className="text-sm text-gc-muted">
+            Use 8 to 128 characters, preferably 15 or more. Avoid common
+            passwords or versions of your account details or God's Churches. You
+            can paste a password or use one your password manager generates.
+          </p>
           <label className="block">
             New password
             <input
@@ -172,6 +182,7 @@ export function RecoveryForm({
               name="password"
               type="password"
               autoComplete="new-password"
+              aria-describedby={passwordHelp}
               minLength={8}
               maxLength={128}
               required
@@ -184,6 +195,7 @@ export function RecoveryForm({
               name="confirmPassword"
               type="password"
               autoComplete="new-password"
+              aria-describedby={passwordHelp}
               minLength={8}
               maxLength={128}
               required
@@ -191,7 +203,9 @@ export function RecoveryForm({
           </label>
         </>
       )}
-      <p role="status">{message}</p>
+      <p ref={feedback} role="status" tabIndex={-1}>
+        {message}
+      </p>
       {!complete && (
         <Button
           type="submit"

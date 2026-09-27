@@ -1016,6 +1016,14 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "new-password-screening", version: "2026.09.27.32", date: "2026-09-27",
+    summary: "New passwords are checked for common choices and predictable versions of account details.",
+    added: [],
+    improved: ["Account creation, password changes and reset links use local checks without sending passwords to another service. Password managers, paste and long passphrases remain supported."],
+    fixed: ["A rejected new password keeps the current credentials and confirmation link usable while you correct it. Existing passwords continue to sign in as before."],
+    featureIds: ["account"]
+  },
+  {
     id: "interchurch-ministry-help", version: "2026.09.27.31", date: "2026-09-27",
     summary: "Churches can describe ministry help and review private offers through named, permitted participants.",
     added: ["Ministry requests connect proposed duties and dates with private personal or delegated church offers, reviewed agreements and explicit outcomes."],

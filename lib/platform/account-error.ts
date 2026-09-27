@@ -1,6 +1,7 @@
 export class AccountError extends Error {
   code:
     | "invalid"
+    | "password-unsafe"
     | "credentials"
     | "registration"
     | "session"

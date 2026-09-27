@@ -1,3 +1,12 @@
+## New-password screening prepared locally, 27 September 2026 UTC
+
+Registration, change/add and reset now apply local common/context checks before
+credential mutation, preserving existing exact verification. The isolated
+pre-change reproduction and 34 passing policy/account/Google checks are recorded
+in [the password policy report](PASSWORD_POLICY.md). New UI guidance and
+Google confirmation preservation await built-browser/HTTPS acceptance. This is
+not merged or live; current production remains version 2026.09.27.31.
+
 ## Credential privacy and ministry help verified live, 27 September 2026 UTC
 
 Credential privacy .30 and interchurch ministry help .31 are **implemented,

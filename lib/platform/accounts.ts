@@ -4,6 +4,7 @@ import {
   clearPrivilegedSession
 } from "./privileged-session";
 import { AccountError } from "./account-error";
+import { requireNewPassword } from "./password-policy";
 export { AccountError } from "./account-error";
 import {
   bindSignupFriendInvitation,
@@ -71,6 +72,9 @@ export async function registerAccount(
     input.password !== input.confirmPassword
   )
     throw new AccountError("invalid");
+  // Submitted context only: a weak-password response must not reveal whether
+  // the email is already registered or which private account details it has.
+  requireNewPassword(input.password, { name, username, email });
   // Handles are public. Availability must not depend on a private email/handle pairing.
   if (
     await db.platformUser.findUnique({
@@ -578,6 +582,7 @@ export async function changeAccountPassword(
       throw new AccountError("session");
     if (expectedOwner != null && expectedOwner !== session.userId)
       throw new AccountError("session");
+    requireNewPassword(password, session.user);
     await requireAccountCredential(tx, session, oldPassword, "change-password");
     await tx.platformUser.update({
       where: { id: session.userId },
@@ -684,6 +689,7 @@ export async function consumeAccountGrant(
       grant.credentialVersion !== grant.user.credentialVersion
     )
       throw new AccountError("grant");
+    if (purpose === "RESET_PASSWORD") requireNewPassword(password, grant.user);
     await tx.platformAccountGrant.update({
       where: { id: grant.id },
       data: { consumedAt: new Date() }

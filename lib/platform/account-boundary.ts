@@ -663,6 +663,8 @@ async function processAccountRequest(
       );
     if (error instanceof AccountError) {
       const messages = {
+        "password-unsafe":
+          "Choose a more unique password. Avoid common passwords or versions of your name, username, email or God's Churches. A password manager can help.",
         "profile-event":
           "Your selected event is no longer available to add. Check its current access or remove the selection, then save again. Your other edits are still here.",
         "profile-disclosure":
@@ -704,7 +706,10 @@ async function processAccountRequest(
           ? 409
           : sessionOperation && error.code === "session"
             ? 401
-            : 400
+            : 400,
+        error.code === "password-unsafe"
+          ? { "X-Account-Code": "ACCOUNT_PASSWORD_UNSAFE" }
+          : {}
       );
     }
     // Avoid serializing errors that may contain SQL parameters, credential material, or contacts.

@@ -7,6 +7,7 @@ export function PasswordField({
   name,
   label,
   autocomplete,
+  descriptionId,
   value,
   onChange
 }: {
@@ -14,6 +15,7 @@ export function PasswordField({
   name: string;
   label: string;
   autocomplete: "new-password" | "current-password";
+  descriptionId?: string;
   value?: string;
   onChange?: (value: string) => void;
 }) {
@@ -27,8 +29,13 @@ export function PasswordField({
           name={name}
           type={visible ? "text" : "password"}
           autoComplete={autocomplete}
+          aria-describedby={descriptionId}
           value={value}
-          onChange={onChange ? (event) => onChange(event.currentTarget.value) : undefined}
+          onChange={
+            onChange
+              ? (event) => onChange(event.currentTarget.value)
+              : undefined
+          }
           minLength={8}
           maxLength={128}
           required
