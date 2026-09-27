@@ -1,3 +1,61 @@
+## Account privacy and recovery batch verified live, 27 September 2026 UTC
+
+Authenticator .28 and active sign-in .29 are **implemented, tested, merged and
+verified live** as **2026.09.27.29**, serving source
+`a15b772cc6997577e94a3ae044e05566cfcf1458`, deployment
+`dpl_2wUG8SuAEFFT4WJ8NfeULnu3M8M2`. READY and independent canonical assignment
+matched at **21:07:06 UTC**. This supersedes the local-only entries below.
+The combined source retains accepted .28 and .29 runtime behavior; exact-source
+CI and the 23-check evidence audit passed. All **76 live public/guest/browser
+checks**, **six health checks**, **149 unchanged production table fingerprints**
+and **115 migration checksums** passed. No new migration, production test write,
+real send, queue probe or actual MFA enforcement activation occurred. The scoped
+error/fatal log window was empty. The still-valid **19:52 UTC** encrypted restore
+was reused after archive, manifest, installed-actor and unchanged-recovery checks;
+no new restore is claimed. See [deployment evidence](DEPLOYMENT_REPORT.md).
+Broader security, provider, physical-device and owner acceptance remain open.
+Independent interchurch-help changes are outside this release.
+
+The batch was published once after both coherent features completed locally.
+Authenticator setup/recovery material now leaves concealed DOM while original
+command drafts and uncertain requests survive current original-session checks.
+Active sign-in controls remove private presentation, bind list/revocation to the
+reviewed account and recover a lost accepted sign-out through reads only. A newer
+login is never removed by automatic replay. Passive session-list admission is
+separate from credential limits and remains bounded. No dependency, schema,
+provider mode or production permissions changed.
+
+The .28 build and nineteen browser groups remain explicitly attributed to source
+`84d5f7b`; fourteen authenticator service checks are reused. The final .29 build
+`ed38720` passed in **44.241 seconds**, with eight browser groups and twenty-six
+service/HTTPS checks, including rotation, shared budgets and two release checks.
+These are **27 browser groups and 40 distinct service checks** across the source-
+bound acceptance records, not a new full-suite run. All 1,921 final candidate
+files and all 1,920 earlier candidate files retained their recorded hashes;
+release-source differences from the final app are five reports and one QA file.
+[Exact-source CI](https://github.com/LifEXPAdmin/church-landing/actions/runs/36349906861)
+passed. Vercel independently built the combined source and reported 115 migrations,
+none pending or applied. The hydration, runtime-trace and build security gates pass.
+
+Live checks included ordinary sign-in and both release notes, protected guest
+session/authenticator entry, earlier privacy surfaces, no-store/security headers
+and 320/390/1280-pixel browser layouts. The 320-pixel sign-in capture was inspected.
+All 149 full-table fingerprints matched at **21:08:08 UTC**. No live credential
+submission or protected-account mutation was attempted; those flows were tested
+with fictional local actors. Scoped error/fatal rows were zero for the recorded
+post-release window; this does not establish continuous monitoring or provider
+consumer execution. Earlier .27 is schema-compatible but would restore known
+privacy defects; prefer a reviewed forward fix, not an unreviewed whole rollback.
+
+The current-schema restore completed at **19:52:07 UTC** and remains within its
+four-hour gate until **23:51:52 UTC**. Its authenticated encrypted archive and
+manifest were rehashed, all installed actors still match, and schema/recovery
+source is unchanged. Fresh production migration metadata matches all 115 sources.
+No new restore, production restore, protected-control replay or asset backup is
+claimed. All prior source, fixture databases, screenshots and failure evidence
+remain preserved. Only verified disposable caches were removed during the work.
+Report-only commits record this outcome without another deployment.
+
 ## Privacy and recovery batch verified live, 27 September 2026 UTC
 
 Versions **2026.09.26.12 through .27** are integrated and verified live as

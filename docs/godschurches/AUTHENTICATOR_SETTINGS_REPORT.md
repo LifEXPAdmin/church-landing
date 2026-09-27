@@ -1,3 +1,21 @@
+## Account privacy and recovery batch verified live, 27 September 2026 UTC
+
+Authenticator .28 and active sign-in .29 are **implemented, tested, merged and
+verified live** as **2026.09.27.29**, serving source
+`a15b772cc6997577e94a3ae044e05566cfcf1458`, deployment
+`dpl_2wUG8SuAEFFT4WJ8NfeULnu3M8M2`. READY and independent canonical assignment
+matched at **21:07:06 UTC**. This supersedes the local-only entries below.
+The combined source retains accepted .28 and .29 runtime behavior; exact-source
+CI and the 23-check evidence audit passed. All **76 live public/guest/browser
+checks**, **six health checks**, **149 unchanged production table fingerprints**
+and **115 migration checksums** passed. No new migration, production test write,
+real send, queue probe or actual MFA enforcement activation occurred. The scoped
+error/fatal log window was empty. The still-valid **19:52 UTC** encrypted restore
+was reused after archive, manifest, installed-actor and unchanged-recovery checks;
+no new restore is claimed. See [deployment evidence](DEPLOYMENT_REPORT.md).
+Broader security, provider, physical-device and owner acceptance remain open.
+Independent interchurch-help changes are outside this release.
+
 ## Authenticator private presentation locally accepted, 27 September 2026 UTC
 
 Version **2026.09.27.28**, application source
