@@ -1,3 +1,51 @@
+## Password safety and post resource cards verified live, 27 September 2026 UTC
+
+Password screening .32 and current listing/event/volunteer post cards .33 are
+**implemented, tested, merged and verified live** in one **2026.09.27.33**
+deployment. Source `8c0a7ad5184beb05908cf5f0034c83576edbc393` is READY and
+canonical as `dpl_CXsPBL3gCRDkHAvvzaxGgzaMQNrw`, independently serving from
+`godschurches.com` at **23:22:45 UTC**. This supersedes the local-only entries below.
+
+Combined build `UDUz_KdQ1zgHa-A0tUPrb` took 42.199 seconds with all 1,965 tracked
+files unchanged. Full TypeScript, lint/copy/build security and exact-source CI
+passed. Twelve password and thirteen resource-card browser groups passed against
+that build. The focused 116-assertion run passed 115 and recorded one query-count
+mismatch, 13 versus 14. The unchanged four-test availability rerun passed; four
+captured diagnostic reads each used the same 13-query policy sequence and one
+bounded post query. Review found no reproduced product regression. The original
+extra query is unidentified; asynchronous log attribution is credible, not proven.
+The failed run remains recorded and is not presented as a clean whole-suite pass.
+
+Production passed 100 guest/page/browser/API checks and six health checks, with
+zero page errors, blocked mutation attempts, scoped error/fatal log rows, test
+writes or real-recipient sends. All 153 original-table/column fingerprints were
+unchanged at **23:24:50 UTC**. No new queue probe or provider activation occurred.
+
+The single additive resource-reference migration was applied at **23:19:19 UTC**;
+all 118 source and production checksums match. Existing post references were empty
+and valid. Protected encrypted 117-to-118 restoration preserved all 153 original
+table/column fingerprints and completed stable frozen-journal replay with zero
+provider-write attempts or unresolved items. The installed 118 registry, ordinary
+118-to-118 restore and actual nightly run 24 to 25 passed. All 111 backup sets
+were preserved; there were no expiry candidates, removals or maintenance issues.
+
+New-password checks run locally only at registration, change/add and reset.
+Existing credentials still sign in unchanged, and rejected new choices preserve
+the original session, reset grant or Google confirmation for correction. The
+finite historical password corpus is not a current global breach lookup. Resource
+cards recheck present source access and compatible publication audiences; hidden
+or unavailable sources reveal no previous details. Removal-only edits retain the
+unsaved-work guard, and reconnect respects focus and current access.
+
+The broader security task and complete attachment tasks remain open: media and
+campaign adapters need their owning source services and acceptance. Full CSP,
+cookie prefix/session-idle policy, real MFA enforcement, provider/device/operator
+and pilot gates are separate. Retain the complete .33 artifact and 118 schema;
+the prior .31 client is additive-schema compatible but lacks these new behaviors.
+Prefer a reviewed forward fix. No schema downgrade or production-restore readiness
+is implied. See [password policy](PASSWORD_POLICY.md) and
+[post attachments](POST_RESOURCE_ATTACHMENTS.md) for the scoped contracts.
+
 # Typed post resource attachments
 
 27 September 2026 — isolated implementation, ready for integration review after
