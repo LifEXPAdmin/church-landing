@@ -80,6 +80,7 @@ export function InterchurchHelpPage({
   const hide = useCallback(() => {
     active.current = false;
     accessChecked.current = false;
+    queued.current = false;
     generation.current++;
     setVisible(false);
     setNotice(
@@ -103,6 +104,7 @@ export function InterchurchHelpPage({
     setVisible(false);
     try {
       const result = await socialRequest<HelpPageData>(url, undefined, owner);
+      if (seq !== generation.current || !active.current) return;
       let choices: Extract<HelpPageData, { view: "context" }> | null = null;
       if (owner && ["new", "request"].includes(view)) {
         const r = await socialRequest<HelpPageData>(
@@ -194,6 +196,9 @@ export function InterchurchHelpPage({
   useEffect(() => {
     const visibility = () =>
       document.visibilityState === "hidden" ? hide() : recheck();
+    const backgroundRefresh = () => {
+      if (active.current) void load();
+    };
     recheck();
     window.addEventListener("blur", hide);
     window.addEventListener("offline", hide);
@@ -201,7 +206,7 @@ export function InterchurchHelpPage({
     window.addEventListener("focus", recheck);
     window.addEventListener("online", recheck);
     window.addEventListener("pageshow", recheck);
-    window.addEventListener("social-relationships-changed", recheck);
+    window.addEventListener("social-relationships-changed", backgroundRefresh);
     document.addEventListener("visibilitychange", visibility);
     return () => {
       hide();
@@ -211,10 +216,10 @@ export function InterchurchHelpPage({
       window.removeEventListener("focus", recheck);
       window.removeEventListener("online", recheck);
       window.removeEventListener("pageshow", recheck);
-      window.removeEventListener("social-relationships-changed", recheck);
+      window.removeEventListener("social-relationships-changed", backgroundRefresh);
       document.removeEventListener("visibilitychange", visibility);
     };
-  }, [hide, recheck]);
+  }, [hide, recheck, load]);
   const send = async (body: string) => {
     if (flight.current || !active.current || !accessChecked.current)
       return false;

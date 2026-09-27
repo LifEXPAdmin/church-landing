@@ -285,9 +285,53 @@ try {
   await form
     .getByRole("checkbox", { name: /I explicitly accept responsibility/ })
     .check();
-  await page.evaluate(() => window.dispatchEvent(new Event("blur")));
+  for (const event of ["blur", "pagehide"]) {
+    await page.evaluate((name) => window.dispatchEvent(new Event(name)), event);
+    await page.waitForFunction(() => document.querySelectorAll("textarea").length === 0);
+    const backgroundReads = [];
+    const observe = (request) => {
+      if (request.method() === "GET" && request.url().includes("view=help-"))
+        backgroundReads.push(request.url());
+    };
+    page.on("request", observe);
+    await page.evaluate(() => window.dispatchEvent(new Event("social-relationships-changed")));
+    await page.waitForTimeout(200);
+    assert.equal(await page.locator("textarea").count(), 0, event + " remains concealed");
+    assert.deepEqual(backgroundReads, [], event + " does not restart private reads");
+    page.off("request", observe);
+    await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+    await form.waitFor();
+    assert.equal(await form.getByLabel("Expected duties and resources", { exact: true }).inputValue(), secret);
+  }
+  ok("Background relationship signals cannot resume blur or pagehide; physical focus restores the retained draft");
+
+  let releaseRead;
+  const heldRead = new Promise((resolve) => { releaseRead = resolve; });
+  let reachedRead;
+  const startedRead = new Promise((resolve) => { reachedRead = resolve; });
+  let heldReads = 0;
+  const readPattern = /\/api\/platform\/exchange\?.*view=help-/;
+  const holdRead = async (route) => {
+    heldReads++;
+    const response = await route.fetch();
+    reachedRead();
+    await heldRead;
+    await route.fulfill({ response });
+  };
+  await page.route(readPattern, holdRead);
+  await page.evaluate(() => window.dispatchEvent(new Event("social-relationships-changed")));
+  await startedRead;
+  await page.evaluate(() => {
+    window.dispatchEvent(new Event("social-relationships-changed"));
+    window.dispatchEvent(new Event("blur"));
+  });
+  releaseRead();
+  await page.waitForTimeout(200);
   assert.equal(await page.locator("textarea").count(), 0);
+  assert.equal(heldReads, 1, "A concealed late read must not start a queued follow-up");
+  await page.unroute(readPattern, holdRead);
   await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  ok("Late private responses and queued background refreshes cannot reopen concealed entries");
   await form.waitFor();
   assert.equal(
     await form
@@ -504,6 +548,18 @@ try {
         })
       ).responderContact === "Chosen synthetic contact only"
   );
+  await button("Withdraw my contact sharing").waitFor();
+  for (const event of ["blur", "pagehide"]) {
+    await page.evaluate((name) => window.dispatchEvent(new Event(name)), event);
+    await page.waitForFunction(() => document.querySelectorAll("textarea").length === 0);
+    await page.evaluate(() => window.dispatchEvent(new Event("social-relationships-changed")));
+    await page.waitForTimeout(200);
+    assert.equal(await page.getByLabel("My optional contact for this exact pair", { exact: true }).count(), 0);
+    assert.ok(!(await page.content()).includes("Chosen synthetic contact only"));
+    await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+    await button("Withdraw my contact sharing").waitFor();
+  }
+  ok("Chosen private contact stays concealed through background signals until physical resume");
   await button("Withdraw my contact sharing").click();
   await wait(
     async () =>

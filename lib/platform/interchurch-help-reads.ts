@@ -27,6 +27,7 @@ import {
 import { postId, postField } from "./post-input";
 import { PortalError } from "./portal-policy";
 import { effectiveChurchGrants } from "./church-permissions";
+import { requirePrivilegedAuthentication } from "./privileged-auth-policy";
 
 export function publicHelp(row: InterchurchHelpRequest, management = false) {
   return {
@@ -254,6 +255,12 @@ export function readInterchurchHelp(
       rows.slice(0, HELP_PAGE_SIZE)
     );
     const permitted = rows.filter((row) => currentPairs.has(row.id));
+    if (
+      permitted.some(
+        (row) => row.coordinatorId === actor!.id || row.kind === "ORGANIZATION"
+      )
+    )
+      await requirePrivilegedAuthentication(tx, actor!.id);
     const people = await tx.platformUser.findMany({
       where: {
         id: {

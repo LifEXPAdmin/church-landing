@@ -25,6 +25,13 @@ import { currentHelpOffers } from "../lib/platform/interchurch-help-policy";
 import { revokeAccountContact } from "../lib/platform/adult-contact-policy";
 import { relationshipCommand } from "../lib/platform/relationships";
 import { currentHelpOffer } from "../lib/platform/interchurch-help-policy";
+import { privilegedAuthenticatorCommand } from "../lib/platform/privileged-auth";
+import {
+  authenticatorTotp,
+  openAuthenticator
+} from "../lib/platform/admin-authenticator-crypto";
+import { PrivilegedAuthenticationError } from "../lib/platform/privileged-auth-policy";
+import { loginAccount, readAccountSession } from "../lib/platform/accounts";
 let queryCount = 0;
 const db = new PrismaClient({ log: [{ emit: "event", level: "query" }] });
 db.$on("query", () => queryCount++);
@@ -42,6 +49,265 @@ const denied = (p: Promise<unknown>, status: number) =>
   );
 const time = (days: number) =>
   new Date(Date.now() + days * 86400000).toISOString().slice(0, 16);
+
+test("private ministry reads bind privileged assurance to current coordinator and organization sessions", async (t) => {
+  const previousMode = process.env.PRIVILEGED_MFA_MODE;
+  process.env.PRIVILEGED_MFA_MODE = "off";
+  try {
+    const f = await setup();
+    await db.churchCapabilityGrant.create({
+      data: {
+        churchId: f.church.id,
+        userId: f.a.id,
+        capability: "COMMIT_INTERCHURCH_HELP"
+      }
+    });
+    // Unrelated duties must not turn a personal offer into organization work.
+    await db.platformOperatorGrant.create({
+      data: { userId: f.b.id, capability: "VIEW_OPERATIONAL_HEALTH" }
+    });
+    const organization = await f.offer(f.a, "ORGANIZATION", f.church.id);
+    const personal = await f.offer(f.b);
+    const agreement = await confirmed(f, organization.id);
+    const privateContact = "fictional-ministry-private@example.test";
+    await command(
+      db,
+      f.a.token,
+      input("contact", {
+        offerId: organization.id,
+        expectedVersion: agreement.version,
+        termsVersion: agreement.termsVersion,
+        consent: true,
+        contact: privateContact
+      })
+    );
+    process.env.PRIVILEGED_MFA_MODE = "enforce";
+    const privateRead = async (token: string, q: Record<string, string>) => {
+      if (process.env.B1_HELP_MFA_HTTP !== "1") return read(db, token, q);
+      const actor = await readAccountSession(db, token);
+      assert.ok(actor, "HTTP fixture session must remain valid");
+      const origin = process.env.ACCOUNT_ORIGIN!;
+      assert.ok(["127.0.0.1", "localhost"].includes(new URL(origin).hostname));
+      const response = await fetch(
+        origin +
+          "/api/platform/exchange?" +
+          new URLSearchParams({
+            ...q,
+            view: "help-" + q.view
+          }),
+        {
+          redirect: "manual",
+          headers: {
+            cookie: `church_platform_session=${token}`,
+            "x-expected-account": actor.id,
+            origin
+          }
+        }
+      );
+      assert.match(response.headers.get("cache-control") ?? "", /no-store/);
+      const body = await response.json();
+      if (response.status === 403) {
+        assert.equal(body.authenticatorPurpose, "privileged-work");
+        assert.ok(!JSON.stringify(body).includes(privateContact));
+        throw new PrivilegedAuthenticationError("privileged-work", false);
+      }
+      assert.equal(
+        response.status,
+        200,
+        "Private HTTP fixture read must succeed or explicitly require authentication"
+      );
+      return body as Awaited<ReturnType<typeof read>>;
+    };
+    const protectedRead = async (token: string) => {
+      for (const q of [
+        { view: "offer", id: organization.id },
+        { view: "offers", requestId: f.id }
+      ]) {
+        await assert.rejects(
+          privateRead(token, q),
+          (error: unknown) => error instanceof PrivilegedAuthenticationError
+        );
+      }
+    };
+    const personalRead = async () => {
+      for (const q of [
+        { view: "offer", id: personal.id },
+        { view: "offers", requestId: f.id }
+      ]) {
+        const result = await privateRead(f.b.token, q);
+        assert.equal(result.view, "offers");
+        if (result.view !== "offers")
+          throw new Error("Expected private offers");
+        assert.ok(
+          result.offers.some((o) => o.id === personal.id && o.available)
+        );
+        assert.ok(!JSON.stringify(result).includes(privateContact));
+      }
+    };
+    await t.test(
+      "unconfirmed coordinator cannot read private offers or contacts",
+      () => protectedRead(f.manager.token)
+    );
+    await t.test(
+      "unconfirmed organization responder cannot read private offers or contacts",
+      () => protectedRead(f.a.token)
+    );
+    await t.test(
+      "personal responder retains private access despite unrelated duties",
+      personalRead
+    );
+    for (const [label, actor] of [
+      ["coordinator", f.manager],
+      ["organization responder", f.a]
+    ] as const) {
+      await t.test(
+        `${label} requires a fresh session and current authority proof`,
+        async (proofTest) => {
+          await privilegedAuthenticatorCommand(
+            db,
+            actor.token,
+            {
+              operation: "mfa-start",
+              requestKey: randomUUID(),
+              expectedVersion: 0
+            },
+            actor.password
+          );
+          const factor = await db.adminAuthenticator.findUniqueOrThrow({
+            where: { userId: actor.id }
+          });
+          const secret = openAuthenticator(actor.id, factor.secretCiphertext);
+          const counter = BigInt(Math.floor(Date.now() / 30000));
+          const enrolled = await privilegedAuthenticatorCommand(
+            db,
+            actor.token,
+            {
+              operation: "mfa-confirm",
+              requestKey: randomUUID(),
+              expectedVersion: factor.version,
+              code: authenticatorTotp(secret, counter - BigInt(1))
+            },
+            undefined
+          );
+          await privilegedAuthenticatorCommand(
+            db,
+            actor.token,
+            {
+              operation: "mfa-challenge",
+              requestKey: randomUUID(),
+              expectedVersion: Number(enrolled.version),
+              purpose: "privileged-work",
+              code: authenticatorTotp(secret, counter)
+            },
+            undefined
+          );
+          for (const q of [
+            { view: "offer", id: organization.id },
+            { view: "offers", requestId: f.id }
+          ]) {
+            const current = await privateRead(actor.token, q);
+            assert.equal(current.view, "offers");
+            assert.ok(
+              JSON.stringify(current).includes(privateContact),
+              "Fresh proof permits current private contact projection"
+            );
+          }
+          const otherSession = await loginAccount(
+            db,
+            actor.email,
+            actor.password,
+            "fictional ministry second browser"
+          );
+          await proofTest.test(
+            "proof does not authorize another browser session",
+            () => protectedRead(otherSession)
+          );
+          const proof = await db.privilegedSessionProof.findFirstOrThrow({
+            where: { session: { userId: actor.id }, purpose: "privileged-work" }
+          });
+          const proofKey = {
+            sessionId_purpose: {
+              sessionId: proof.sessionId,
+              purpose: proof.purpose
+            }
+          };
+          const pairBeforeExpiry =
+            await db.interchurchHelpOffer.findUniqueOrThrow({
+              where: { id: organization.id },
+              include: { agreement: true }
+            });
+          await db.privilegedSessionProof.update({
+            where: proofKey,
+            data: { expiresAt: new Date(Date.now() - 1) }
+          });
+          await proofTest.test("expired proof conceals private data", () =>
+            protectedRead(actor.token)
+          );
+          await proofTest.test(
+            "renewed proof restores access without changing pair consent",
+            async () => {
+              assert.deepEqual(
+                await db.interchurchHelpOffer.findUniqueOrThrow({
+                  where: { id: organization.id },
+                  include: { agreement: true }
+                }),
+                pairBeforeExpiry,
+                "Expiring authentication must not revoke or rewrite pair consent"
+              );
+              const currentCounter = BigInt(Math.floor(Date.now() / 30000));
+              const nextCounter =
+                currentCounter > counter ? currentCounter : counter + BigInt(1);
+              await privilegedAuthenticatorCommand(
+                db,
+                actor.token,
+                {
+                  operation: "mfa-challenge",
+                  requestKey: randomUUID(),
+                  expectedVersion: Number(enrolled.version),
+                  purpose: "privileged-work",
+                  code: authenticatorTotp(secret, nextCounter)
+                },
+                undefined
+              );
+              for (const q of [
+                { view: "offer", id: organization.id },
+                { view: "offers", requestId: f.id }
+              ]) {
+                const restored = await privateRead(actor.token, q);
+                assert.equal(restored.view, "offers");
+                assert.ok(
+                  JSON.stringify(restored).includes(privateContact),
+                  "Canonical renewed proof restores the previously consented contact projection"
+                );
+              }
+              assert.deepEqual(
+                await db.interchurchHelpOffer.findUniqueOrThrow({
+                  where: { id: organization.id },
+                  include: { agreement: true }
+                }),
+                pairBeforeExpiry,
+                "Reconfirmation must preserve offer, agreement, acknowledgments, contact values and consent versions"
+              );
+            }
+          );
+          // A legitimate change of unrelated authority invalidates the MFA proof
+          // without changing the ministry pair's capability/consent epoch.
+          await db.platformOperatorGrant.create({
+            data: { userId: actor.id, capability: "VIEW_OPERATIONAL_HEALTH" }
+          });
+          await proofTest.test(
+            "changed authority invalidates otherwise fresh proof",
+            () => protectedRead(actor.token)
+          );
+          await personalRead();
+        }
+      );
+    }
+  } finally {
+    if (previousMode === undefined) delete process.env.PRIVILEGED_MFA_MODE;
+    else process.env.PRIVILEGED_MFA_MODE = previousMode;
+  }
+});
 export const terms = () => ({
   duties: "Prepare adult worship microphones. No child contact or supervision.",
   dutyClass: "ADULT_LOGISTICS",
@@ -562,17 +828,22 @@ test("public request versions do not reveal private offer, selection or contact 
       after = page.next;
     }
   };
-  const anonymous = await snapshot(null), responder = await snapshot(f.b.token);
+  const anonymous = await snapshot(null),
+    responder = await snapshot(f.b.token);
   const before = await read(db, f.manager.token, { view: "request", id: f.id });
   const offer = await f.offer();
   const agreement = await confirmed(f, offer.id);
-  await command(db, f.a.token, input("contact", {
-    offerId: offer.id,
-    expectedVersion: agreement.version,
-    termsVersion: agreement.termsVersion,
-    contact: "Private chosen contact",
-    consent: true
-  }));
+  await command(
+    db,
+    f.a.token,
+    input("contact", {
+      offerId: offer.id,
+      expectedVersion: agreement.version,
+      termsVersion: agreement.termsVersion,
+      contact: "Private chosen contact",
+      consent: true
+    })
+  );
   assert.equal(await snapshot(null), anonymous);
   assert.equal(await snapshot(f.b.token), responder);
   const after = await read(db, f.manager.token, { view: "request", id: f.id });
