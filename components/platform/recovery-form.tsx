@@ -172,7 +172,7 @@ export function RecoveryForm({
           </p>
           <p id={passwordHelp} className="text-sm text-gc-muted">
             Use 8 to 128 characters, preferably 15 or more. Avoid common
-            passwords or versions of your account details or God's Churches. You
+            passwords or versions of your account details or God&apos;s Churches. You
             can paste a password or use one your password manager generates.
           </p>
           <label className="block">
