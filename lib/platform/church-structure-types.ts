@@ -2,6 +2,8 @@ import type { ChurchRoleSummary } from "./church-role-library";
 import type { ChurchSummary, DirectoryEntry } from "./portal-types";
 
 export const structureCapabilities = {
+  COMMIT_INTERCHURCH_HELP:
+    "Offer church ministry resources with explicit personal responsibility",
   HOST_CHURCH_WELCOME:
     "Host church introductions, questions and participation totals",
   MANAGE_STRUCTURE: "Manage positions and assignments",
@@ -10,10 +12,13 @@ export const structureCapabilities = {
   PUBLISH_CHURCH_POSTS: "Publish church posts",
   MODERATE_CHURCH_POSTS: "Moderate church posts",
   MANAGE_CHURCH_VOLUNTEERS: "Manage church volunteer roles and rosters",
-  PUBLISH_EXCHANGE_LISTINGS: "Create church Exchange listings and manage your church drafts",
+  PUBLISH_EXCHANGE_LISTINGS:
+    "Create church Exchange listings and manage your church drafts",
   MANAGE_EXCHANGE_LISTINGS: "Publish and manage church Exchange listings",
-  MANAGE_CHURCH_GROUPS: "Manage official church groups and accept group leadership",
-  MANAGE_CHURCH_ASSISTANCE: "Manage church assistance and accept private coordinator duties",
+  MANAGE_CHURCH_GROUPS:
+    "Manage official church groups and accept group leadership",
+  MANAGE_CHURCH_ASSISTANCE:
+    "Manage church assistance and accept private coordinator duties",
   MODERATE_EXCHANGE_LISTINGS: "Review reports about church Exchange listings",
   MANAGE_CHURCH_PROFILE: "Manage the public church profile",
   MANAGE_CHURCH_ACCESS: "Manage church access and review requests",
@@ -63,7 +68,13 @@ export type PositionSummary = {
   }[];
 };
 export type StructureSnapshot = {
-  viewer: { id: string; name: string; username: string; dateFormat: string; timeFormat: string };
+  viewer: {
+    id: string;
+    name: string;
+    username: string;
+    dateFormat: string;
+    timeFormat: string;
+  };
   church: ChurchSummary;
   version: number;
   ownConnectionId: string;

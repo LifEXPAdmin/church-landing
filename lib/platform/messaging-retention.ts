@@ -181,7 +181,26 @@ export async function purgeMessagingCandidate(
     // their normal lifecycle; messages use their participant-retention check.
     if (source && !(await tx.communityReport.count({ where: source }))) {
       if (source.targetType === "PANTRY_REQUEST")
-        await tx.pantryRequest.updateMany({ where: { id: source.targetId, OR: [{ requesterId: null }, { requesterClearedAt: { not: null } }] }, data: { note: "", items: [] } });
+        await tx.pantryRequest.updateMany({
+          where: {
+            id: source.targetId,
+            OR: [{ requesterId: null }, { requesterClearedAt: { not: null } }]
+          },
+          data: { note: "", items: [] }
+        });
+      if (source.targetType === "INTERCHURCH_OFFER") {
+        await tx.interchurchHelpOffer.updateMany({
+          where: { id: source.targetId, responderId: null },
+          data: { terms: {} }
+        });
+        await tx.interchurchHelpAgreement.updateMany({
+          where: {
+            offerId: source.targetId,
+            offer: { responderId: null, coordinatorId: null }
+          },
+          data: { terms: {}, completionNote: "" }
+        });
+      }
       if (source.targetType === "NEED_CONTRIBUTION")
         await tx.exchangeNeedContribution.updateMany({
           where: { id: source.targetId, contributorId: null },

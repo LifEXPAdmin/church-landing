@@ -44,6 +44,7 @@ export function ExchangeNavigation() {
     >
       {[
         ["/platform/exchange", "Browse listings"],
+        ["/platform/exchange/help", "Ministry help requests"],
         ["/platform/exchange/mine", "My listings"],
         ["/platform/exchange/saved", "Saved listings and searches"],
         ["/platform/exchange/new", "Create a listing"],
@@ -295,7 +296,11 @@ export async function ExchangeList({
                   <Link
                     prefetch={false}
                     className="underline"
-                    href={`/platform/exchange/${listing.id}${mine ? "/edit" : ""}?${new URLSearchParams({ returnTo: current })}`}
+                    href={
+                      listing.helpPurpose
+                        ? `/platform/exchange/help/${listing.id}`
+                        : `/platform/exchange/${listing.id}${mine ? "/edit" : ""}?${new URLSearchParams({ returnTo: current })}`
+                    }
                   >
                     {listing.title || "Untitled private draft"}
                   </Link>
@@ -384,7 +389,9 @@ export async function ExchangeEditorPage({
   pantryCategory?: string;
 }) {
   const user = await getCurrentPlatformUser(),
-    path = id ? `/platform/exchange/${id}/edit` : `/platform/exchange/new${pantryCategory ? `?pantryCategory=${encodeURIComponent(pantryCategory)}` : ""}`;
+    path = id
+      ? `/platform/exchange/${id}/edit`
+      : `/platform/exchange/new${pantryCategory ? `?pantryCategory=${encodeURIComponent(pantryCategory)}` : ""}`;
   let content;
   if (!user) content = <ExchangeAccountLinks next={path} />;
   else
@@ -393,10 +400,21 @@ export async function ExchangeEditorPage({
         exchangeContextPage(),
         id ? exchangeListingPage(id, true) : Promise.resolve(null)
       ]);
-      const seed = !id && pantryCategory ? (await pantryPage({ view: "replenish", id: pantryCategory })).replenishmentSeed : undefined;
+      const seed =
+        !id && pantryCategory
+          ? (await pantryPage({ view: "replenish", id: pantryCategory }))
+              .replenishmentSeed
+          : undefined;
       content = (
         <>
-          {seed && <p>Review a new Church Need using only this category’s public name and unit. Choose quantities and details yourself. After publication, return to the hub and deliberately link the active Need. Recipient histories and pickup details are never copied.</p>}
+          {seed && (
+            <p>
+              Review a new Church Need using only this category’s public name
+              and unit. Choose quantities and details yourself. After
+              publication, return to the hub and deliberately link the active
+              Need. Recipient histories and pickup details are never copied.
+            </p>
+          )}
           <ExchangeEditor
             key={`${user.id}:${id ?? "new"}`}
             access={access}
