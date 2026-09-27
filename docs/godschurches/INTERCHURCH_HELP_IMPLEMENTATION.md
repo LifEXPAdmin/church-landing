@@ -98,17 +98,21 @@ adopt updated fields and versions together, preventing silent concurrent overwri
 Agreement acknowledgment, proposed amendments, contact consent and optional push
 notices are distinct deliberate choices.
 
-Twenty-one focused service/compatibility groups pass, including the actual old-client
+Twenty-two focused service/compatibility groups pass, including the actual old-client
 enum failure, preservation of all original columns in 149 existing tables through
 both migrations, no inferred permissions, concurrent selection, private pair/role
 revocation, erasure/export, selected reporting, protected restore, completed history,
-contact/push consent and exact retries. Two-pair current authority resolution uses
+contact/push consent and exact retries. Public request versions follow published
+terms, so private offer, selection and contact activity cannot change the public
+projection; only authorized management reads receive the mutation version.
+Two-pair current authority resolution uses
 13 queries. Pages are bounded at 20 records; private identity names use two batched
 lookups after authorization. There is no polling, new dependency or new scheduler.
 The help routes report 2.62 kB route JavaScript and 166 kB first-load JavaScript in
 the production build; these are measurements, not a claimed baseline improvement.
 
-Built artifact `53ObwwQCDcIAKdf1AJ5xq` passes 14 actual browser groups and an HTTPS
+Final application source `7d6eeb4423eab8bb36e628b99ee8f7e720dddc84`, built as
+`2JP0_vJb1lf7iA3myW76N`, passes 14 actual browser groups and an HTTPS
 boundary group. Coverage includes request creation/publication, private and paid
 organization offers, explicit church delegation, loss of a committed response,
 account switching, HTML/RSC concealment, independent contact consent/withdrawal,
@@ -123,14 +127,20 @@ set before Node began, accessible form labels were separated from control values
 and navigation waits for existing unsaved-history cleanup. Private failure evidence
 is retained. No other worker's files, processes or fixtures were changed.
 
-The broad account/portal/support harness remains active. Its original production
-artifact predates final focused corrections, so the separate final built browser and
-HTTPS checks above are authoritative for this feature's final interface. Its raw
+The broad account/portal/support harness passed all 213 discovered test files,
+synthetic upgrade, backup/restore, fresh migration, development and production
+HTTPS checks. Its repeated phases recorded 1,359 passing assertions, two expected
+skips and zero failures. Its original production artifact predates final focused
+corrections, so this is layered acceptance, not a claim that the entire harness ran
+against the final artifact. The final 22-group service/compatibility run and separate
+built browser and HTTPS checks above cover the final feature source. Its raw
 migration fixture received the terminal-offer migration transactionally before the
 new help tests; separate focused rehearsal verifies fresh additive upgrades.
 
 Real appointment, safeguarding/policy, provider, physical-device and pilot acceptance
 remain open. Later event/shift associations, equipment catalogs and church
 partnerships are separate features; no duplicated calendar or volunteer capacity
-was added. Ready-to-merge status requires the final broad regression receipt and
-committed handoff; local verification alone is not integration or live acceptance.
+was added. Tested commits are ready for integration with the two additive migrations
+and the final compatible source. Integration rebuild, release-owner review and live
+acceptance remain required; no production migration, deployment or real grant was
+performed by this feature builder.
