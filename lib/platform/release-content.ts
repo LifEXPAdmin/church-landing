@@ -156,6 +156,16 @@ export const features: Feature[] = [
   },
   { id: "church-pantry", category: "Churches and community", name: "Church pantry and support hubs", description: "Find public supply guidance and coordinate a private assistance request with a named church coordinator.", steps: "Open Church pantry and support hubs from Exchange or Settings, My church. Review hours, eligibility and categories. An eligible adult selects their own supplies and consents to the named coordinator. Follow My requests to confirm an offered pickup, cancel or clear ended details. An explicitly assigned assistance coordinator manages stock, sessions and private outcomes, with separate Church Needs duties for replenishment.", href: "/platform/pantry", eligibility: "Available when a church publishes a hub, a current coordinator accepts responsibility and report coverage is available. Requests and appointments do not guarantee supplies. Other members and managers do not inherit private histories. No payments, partner referrals or regulated services are offered. Phone alerts require a separate assistance choice and device.", availability: "conditional" },
   {
+    id: "interchurch-ministry-help",
+    category: "Churches and community",
+    name: "Ministry help requests and private offers",
+    description: "Describe a church ministry request, exchange private offers and record agreed work and outcomes.",
+    steps: "Open Ministry help from Exchange. A permitted church manager chooses a named coordinator, proposed duties, dates, compensation and reimbursement before publication. Eligible adults may offer personal help; a church offer requires an explicit current delegation. The named pair reviews terms and separately chooses whether to share contact details. Record cancellation, completion and the request outcome deliberately.",
+    href: "/platform/exchange/help",
+    eligibility: "Current account, adult eligibility, request access and report coverage apply. Church duties require the configured session assurance. Offers are private and do not grant duties or contact access. Child-facing work, payments, equipment loans and real appointments retain their separate gates. Recorded completion is a participant statement, not proof of delivery.",
+    availability: "conditional"
+  },
+  {
     id: "church-needs",
     category: "Churches and community",
     name: "Church Needs and contribution progress",
@@ -1005,6 +1015,14 @@ export const features: Feature[] = [
   }
 ];
 export const releases: ReleaseEntry[] = [
+  {
+    id: "interchurch-ministry-help", version: "2026.09.27.31", date: "2026-09-27",
+    summary: "Churches can describe ministry help and review private offers through named, permitted participants.",
+    added: ["Ministry requests connect proposed duties and dates with private personal or delegated church offers, reviewed agreements and explicit outcomes."],
+    improved: ["Contact sharing requires a separate choice. Current authority and required authenticator confirmation protect private church-duty details."],
+    fixed: ["Private offer activity does not change public request versions. Background updates cannot reopen concealed offer details."],
+    featureIds: ["interchurch-ministry-help"]
+  },
   {
     id: "private-account-credentials", version: "2026.09.27.30", date: "2026-09-27",
     summary: "Password and sign-in email forms protect private entries while account access is checked.",
