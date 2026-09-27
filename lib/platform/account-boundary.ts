@@ -494,7 +494,8 @@ async function processAccountRequest(
     if (operation === "list-sessions") {
       const listing = await listAccountSessions(
         db,
-        requestSessionToken(request)
+        requestSessionToken(request),
+        request.headers.get("x-expected-account")
       );
       return Response.json(
         { ...listing, message: "Active sign-ins loaded.", code: "ACCOUNT_OK" },
@@ -542,7 +543,8 @@ async function processAccountRequest(
       await revokeOtherAccountSessions(
         db,
         requestSessionToken(request),
-        credential
+        credential,
+        request.headers.get("x-expected-account")
       );
       return reply(
         "Other sign-ins have been removed. This sign-in stays active."

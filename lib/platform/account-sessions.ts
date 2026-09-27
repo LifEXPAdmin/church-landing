@@ -113,9 +113,12 @@ export type AccountSessionList = {
 
 export async function listAccountSessions(
   db: PrismaClient,
-  token: unknown
+  token: unknown,
+  expectedOwner?: unknown
 ): Promise<AccountSessionList> {
   return withOwnedSession(db, token, async (tx, current) => {
+    if (expectedOwner != null && expectedOwner !== current.userId)
+      throw new AccountError("session");
     const where = {
       userId: current.userId,
       id: { not: current.id },
@@ -144,9 +147,12 @@ export async function listAccountSessions(
 export async function revokeOtherAccountSessions(
   db: PrismaClient,
   token: unknown,
-  password: unknown
+  password: unknown,
+  expectedOwner?: unknown
 ) {
   return withOwnedSession(db, token, async (tx, current) => {
+    if (expectedOwner != null && expectedOwner !== current.userId)
+      throw new AccountError("session");
     await requireAccountCredential(
       tx,
       current,

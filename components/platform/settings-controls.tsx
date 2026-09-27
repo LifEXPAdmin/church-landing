@@ -72,6 +72,8 @@ export function SettingsControls({
     case "sessions":
       return (
         <AccountSessions
+          key={data.ownerId}
+          owner={data.ownerId}
           confirmationUnavailable={
             canConfirm ? undefined : <SettingsCredentialHelp data={data} />
           }

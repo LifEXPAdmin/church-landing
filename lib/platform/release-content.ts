@@ -1006,6 +1006,14 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "private-active-sign-ins", version: "2026.09.27.29", date: "2026-09-27",
+    summary: "Devices and sessions protects private sign-in details while current account access is checked.",
+    added: [],
+    improved: ["Sign-in labels, dates and password entries leave hidden or offline pages. A fresh account check restores the current list and your retained entry."],
+    fixed: ["Sign-in controls bind requests to the account being reviewed. An uncertain sign-out refreshes only the list, without repeating the change automatically."],
+    featureIds: ["account"]
+  },
+  {
     id: "private-authenticator-recovery", version: "2026.09.27.28", date: "2026-09-27",
     summary: "Authenticator settings protect private setup details and preserve original recovery actions.",
     added: [],

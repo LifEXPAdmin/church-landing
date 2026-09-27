@@ -215,6 +215,32 @@ test("competing revocations serialize and only the winning current session survi
     if (result.status === "rejected") assert.ok(isSessionError(result.reason));
 });
 
+test("session controls reject a changed expected owner inside the owned-session transaction", async () => {
+  const { user, current, other } = await signins();
+  const stranger = await signins();
+  const before = await db.platformSession.findMany({ orderBy: { id: "asc" } });
+  for (const expected of [stranger.user.id, "", 42]) {
+    await assert.rejects(
+      listAccountSessions(db, current, expected),
+      isSessionError
+    );
+    // Correct credentials still cannot authorize a different rendered owner.
+    await assert.rejects(
+      revokeOtherAccountSessions(db, current, password, expected),
+      isSessionError
+    );
+  }
+  assert.deepEqual(
+    await db.platformSession.findMany({ orderBy: { id: "asc" } }),
+    before
+  );
+  assert.equal((await listAccountSessions(db, current, user.id)).otherCount, 1);
+  await revokeOtherAccountSessions(db, current, password, user.id);
+  assert.equal(await readAccountSession(db, other), null);
+  assert.ok(await readAccountSession(db, current));
+  assert.ok(await readAccountSession(db, stranger.current));
+});
+
 test("production HTTPS session controls revoke another login on its next request and retain current access", async () => {
   const user = await owner();
   const login = async (agent: string) => {
@@ -289,12 +315,30 @@ test("production HTTPS session controls revoke another login on its next request
 });
 
 test("HTTPS rejects forged owner/target/origin and anonymous callers without touching sessions", async () => {
-  const { current } = await signins();
+  const { current, user } = await signins();
   const stranger = await signins();
   const before = await db.platformSession.findMany({ orderBy: { id: "asc" } });
   for (const operation of ["list-sessions", "revoke-other-sessions"]) {
     const body = { operation, currentPassword: password };
     const validBody = operation === "list-sessions" ? { operation } : body;
+    assert.equal(
+      (
+        await post(validBody, current, {
+          "X-Expected-Account": stranger.user.id
+        })
+      ).status,
+      401
+    );
+    assert.equal(
+      (await post(validBody, current, { "X-Expected-Account": "" })).status,
+      401
+    );
+    if (operation === "list-sessions")
+      assert.equal(
+        (await post(validBody, current, { "X-Expected-Account": user.id }))
+          .status,
+        200
+      );
     for (const headers of [
       { Origin: "https://wrong.example" },
       { Origin: "" },
