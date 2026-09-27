@@ -1,6 +1,6 @@
 # New-password screening
 
-27 September 2026. Local implementation and service verification; browser,
+27 September 2026. Local implementation, service and built-browser verification;
 combined-release and live acceptance remain pending. This is a scoped control,
 not a security certification or a claim that every breached password is known.
 
@@ -72,7 +72,20 @@ numeric-identifier and short-name comparison gaps. The first service run's
 one failure was a test expecting 401 for the existing change-password ambiguous
 cookie response; that route returns 400 with sign-in-required text. The corrected
 test verifies the actual denial and unchanged account state. No boundary was
-weakened. Browser and actual built HTTPS evidence will be appended after running.
+weakened.
+
+Twelve actual built HTTPS browser groups passed on source `420e3fc`, build
+`lpYVawBSCpVERc364KzkM`, with 1,953 tracked files unchanged. Rejected registration,
+change/add and reset retained their original fields, credential state and grants;
+corrected submissions succeeded. Google-only addition retained its browser and
+server confirmation after rejection, then completed without another provider
+confirmation. Existing common-password sign-in remained compatible. Concealment,
+focus, keyboard Show controls, password-manager guidance, browser-storage absence
+and enlarged 320, 390 and 1280 pixel layouts passed. Screenshots were reviewed.
+There were no page errors, external requests, production writes or real sends.
+Google provider exchange is fictional and does not establish real OAuth acceptance.
+Two prior harness failures (a selector and a successful-navigation response-body
+race) are preserved separately; neither required an application change.
 
 The generator takes an independently reviewed local source file, verifies its
 pinned checksum and deterministically writes the corpus. It never downloads a

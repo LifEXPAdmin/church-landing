@@ -1,11 +1,18 @@
-## New-password screening prepared locally, 27 September 2026 UTC
+## Password safety and resource attachments prepared for a combined release, 27 September 2026 UTC
 
-Registration, change/add and reset now apply local common/context checks before
-credential mutation, preserving existing exact verification. The isolated
-pre-change reproduction and 34 passing policy/account/Google checks are recorded
-in [the password policy report](PASSWORD_POLICY.md). New UI guidance and
-Google confirmation preservation await built-browser/HTTPS acceptance. This is
-not merged or live; current production remains version 2026.09.27.31.
+New-password screening passed 34 focused policy/account/Google checks and twelve
+actual built-browser groups on source `420e3fc`, build `lpYVawBSCpVERc364KzkM`.
+The browser verified rejected and corrected registration, password change,
+reset and Google-confirmed addition, retained private drafts and unchanged old
+password sign-in. Enlarged 320, 390 and 1280 pixel layouts passed; screenshots
+were inspected. No page error, external request, production write or real send
+occurred. See [the password policy report](PASSWORD_POLICY.md).
+
+The tested resource-attachment feature and its two reproduced browser corrections
+are now combined locally with this change. The next candidate is .33 with 118
+migrations. Combined build, regression, protected restoration, main integration,
+production migration and live verification remain pending. Production remains
+verified .31 at source `43839c4`; this paragraph is not a live release claim.
 
 ## Credential privacy and ministry help verified live, 27 September 2026 UTC
 

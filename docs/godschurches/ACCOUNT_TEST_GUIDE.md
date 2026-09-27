@@ -340,3 +340,19 @@ to every thread. Later follows, alert choices and device registration do not
 send earlier replies. Use the isolated notification-settings browser suite for
 the actual Follow → reply API → Activity → exact comment → Mute journey; physical
 phone delivery and keyboard/gesture acceptance require their own device receipt.
+
+## New-password screening
+
+`tests/password-policy.test.ts` checks the pinned finite corpus and contextual
+comparison without changing stored credential bytes. `tests/account-password-policy.test.ts`
+checks registration, change/add and reset rejection boundaries and unchanged
+sessions, grants and credential generations. Keep the existing Google lifecycle
+suite alongside these tests.
+
+`scripts/qa-account-password-policy-browser.mjs` accepts an isolated built HTTPS
+fixture with `browser-env.json` and `test-env.json`. It exercises the actual forms
+and account routes with fictional actors and blocked external traffic. Its
+Google-only case seeds fictional confirmation proof, checks rejection preserves
+that proof in browser and database, then corrects the password without another
+confirmation. It does not establish real provider acceptance. Retain the
+screenshots and failed attempts separately from the successful result.

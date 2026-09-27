@@ -14,6 +14,14 @@ export type Feature = {
 };
 export const features: Feature[] = [
   {
+    id: "post-resource-attachments", category: "Posts and conversations", name: "Existing resources in posts",
+    description: "Add up to three existing listings, events or volunteer opportunities to a post.",
+    steps: "Open the post composer, add a resource page link and check its current details. Save your draft or publish to a compatible audience. Remove a card to leave the source unchanged.",
+    href: "/platform/feed",
+    eligibility: "Requires current publishing access and permission to each source. A card does not grant access. Readers see only currently permitted details; unavailable sources are omitted. Media and fundraising attachments are not available yet.",
+    availability: "available"
+  },
+  {
     id: "calendar-display", category: "Events and calendars", name: "Saved calendar display",
     description: "Choose your week start, Agenda or Month view, and a fixed or device-following viewing time zone.",
     steps: "Open Settings, Calendar, Saved calendar display. Save your choices for future sessions. Temporary calendar view controls can override them for the current page.",
@@ -1015,6 +1023,14 @@ export const features: Feature[] = [
   }
 ];
 export const releases: ReleaseEntry[] = [
+  {
+    id: "post-resource-attachments", version: "2026.09.27.33", date: "2026-09-27",
+    summary: "Posts can include existing listings, events and volunteer opportunities with current access checks.",
+    added: ["Add up to three resource cards using their page links. Drafts, scheduled posts and versioned edits retain your choices."],
+    improved: ["Cards show current source details only to permitted readers and clear while the page is hidden or offline."],
+    fixed: ["Removing a card protects unsaved edits. Reconnecting checks current access before cards return."],
+    featureIds: ["post-resource-attachments"]
+  },
   {
     id: "new-password-screening", version: "2026.09.27.32", date: "2026-09-27",
     summary: "New passwords are checked for common choices and predictable versions of account details.",
