@@ -120,7 +120,9 @@ hashes matched. Verification receipts are maintained with the private handoff.
   hydration verification and runtime-trace checks passed. The final build
   checked 242 traces, 59,479 entries and 601 server JavaScript files. A bounded
   final independent static review reported no new blocker. Source security
-  is checked from the staged repository separately from the clean build snapshot.
+  passed from the staged repository separately from the clean build snapshot:
+  1,975 tracked files, 936 authored files and 548 locked packages, no findings.
+  Hosted CI for application commit `ebc3eb0` also passed.
 
 The library returns at most twenty items using a shared SQL permission predicate
 before pagination/counting and a bounded projection query. No provider fan-out
@@ -130,8 +132,9 @@ writes, migrations, deployments and main-branch updates by this builder: zero.
 The following remain separate acceptance gates:
 
 - Normalized Scripture parsing, ranges and overlap search need the reviewed
-  versioned registry from their owning task. Metadata discovery is usable, but
-  the full search task remains partial until that prerequisite is implemented.
+  versioned registry from their owning task. The separate metadata-search task
+  is implemented; the broader media feature remains partial until Scripture
+  discovery is implemented and accepted.
 - Media-specific moderation and rights-investigation authority has not been
   accepted or mapped. Generic post/report operator powers are not source access
   or takedown authority. Publisher commands cannot clear moderation restrictions.
