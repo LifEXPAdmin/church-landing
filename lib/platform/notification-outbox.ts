@@ -23,6 +23,12 @@ import {
 } from "./notification-preferences";
 import { notificationSource } from "./notification-source";
 import { revokePushSubscriptions } from "./push-subscriptions";
+import {
+  accountSessionDeadline,
+  accountSessionIsActive,
+  activeAccountSessionWhere,
+  inactiveAccountSessionWhere
+} from "./account-session-policy";
 type Tx = Prisma.TransactionClient;
 export const NOTIFICATION_PREVIEW = "You have new activity on God’s Churches.";
 const DAY = 86400000;
@@ -111,6 +117,7 @@ export async function enqueueNotification(
       ownerId: event.recipientId,
       revokedAt: null,
       expiresAt: { gt: now },
+      session: { is: activeAccountSessionWhere(now) },
       ...(sourceCreatedAt ? { createdAt: { lt: sourceCreatedAt } } : {}),
       ...(onlyDeviceId ? { id: onlyDeviceId } : {})
     },
@@ -184,6 +191,9 @@ export async function deliverNotification(
   socialTransport: SocialEmailTransport = sendSocialEmail
 ): Promise<PushWorkResult> {
   const claim = await notificationWrite(db, async (tx) => {
+    // The permission gate may have blocked. Never admit an idle session using
+    // the earlier caller timestamp; retain future test/scheduler clock input.
+    const sessionNow = new Date(Math.max(now.getTime(), Date.now()));
     const row = await tx.notificationDelivery.findUnique({
       where: { id },
       include: {
@@ -191,7 +201,13 @@ export async function deliverNotification(
         owner: { select: { credentialVersion: true, email: true } },
         subscription: {
           include: {
-            session: { select: { credentialVersion: true, expiresAt: true } },
+            session: {
+              select: {
+                credentialVersion: true,
+                expiresAt: true,
+                idleExpiresAt: true
+              }
+            },
             owner: { select: { credentialVersion: true } }
           }
         }
@@ -206,7 +222,13 @@ export async function deliverNotification(
       (["FEEDBACK_CASE", "FEEDBACK_IDEA"].includes(row.event.kind)
         ? "feedback"
         : null);
-    if (sub && sub.expiresAt <= now && !sub.revokedAt)
+    if (
+      sub &&
+      !sub.revokedAt &&
+      (sub.expiresAt <= now ||
+        !sub.session ||
+        !accountSessionIsActive(sub.session, sessionNow))
+    )
       await revokePushSubscriptions(tx, { id: sub.id }, now);
     const finish = async (outcome: "CANCELLED" | "FAILED") => {
       await tx.notificationDelivery.update({
@@ -232,7 +254,7 @@ export async function deliverNotification(
           sub.expiresAt <= now ||
           sub.version !== row.subscriptionVersion ||
           !sub.session ||
-          sub.session.expiresAt <= now ||
+          !accountSessionIsActive(sub.session, sessionNow) ||
           sub.session.credentialVersion !== sub.owner.credentialVersion ||
           !sub.endpoint ||
           !sub.p256dh ||
@@ -332,6 +354,10 @@ export async function deliverNotification(
             }
           : null,
       subscriptionId: sub?.id ?? null,
+      sessionDeadline:
+        !email && sub?.session
+          ? accountSessionDeadline(sub.session).getTime()
+          : null,
       payload: {
         deliveryId: id,
         tag: notificationGroupTag(row.ownerId, source.group)
@@ -340,7 +366,14 @@ export async function deliverNotification(
         0,
         Math.min(
           300,
-          Math.floor((row.expiresAt.getTime() - now.getTime()) / 1000)
+          Math.floor((row.expiresAt.getTime() - now.getTime()) / 1000),
+          !email && sub?.session
+            ? Math.floor(
+                (accountSessionDeadline(sub.session).getTime() -
+                  sessionNow.getTime()) /
+                  1000
+              )
+            : 300
         )
       ),
       attempt,
@@ -348,15 +381,32 @@ export async function deliverNotification(
     };
   });
   if (claim.done !== undefined) return claim;
+  // Admission may precede expiry while its transaction/commit finishes. An
+  // already-expired browser session must not submit even a zero-TTL push.
+  // Email remains account-owned and has its separate durable lifetime.
+  const remainingSessionSeconds =
+    claim.sessionDeadline == null
+      ? null
+      : Math.floor(
+          (claim.sessionDeadline - Math.max(Date.now(), now.getTime())) / 1000
+        );
+  const idleBeforeDispatch =
+    remainingSessionSeconds != null && remainingSessionSeconds <= 0;
   let status = 0;
   try {
-    status = claim.socialIntent
-      ? await socialTransport(claim.socialIntent)
-      : claim.emailIntent
-        ? await emailTransport(claim.emailIntent)
-        : claim.subscription
-          ? await transport(claim.subscription, claim.payload, claim.ttl)
-          : 400;
+    status = idleBeforeDispatch
+      ? 0
+      : claim.socialIntent
+        ? await socialTransport(claim.socialIntent)
+        : claim.emailIntent
+          ? await emailTransport(claim.emailIntent)
+          : claim.subscription
+            ? await transport(
+                claim.subscription,
+                claim.payload,
+                Math.min(claim.ttl, remainingSessionSeconds ?? claim.ttl)
+              )
+            : 400;
   } catch {
     /* Diagnostics must not retain a provider exception with endpoint/key material. */
   }
@@ -372,6 +422,7 @@ export async function deliverNotification(
         !claim.emailIntent &&
         (status === 404 || status === 410);
     const retry =
+      !idleBeforeDispatch &&
       !accepted &&
       !expired &&
       (status === 0 || status === 408 || status === 429 || status >= 500) &&
@@ -380,17 +431,19 @@ export async function deliverNotification(
     await tx.pushDeliveryAttempt.update({
       where: { deliveryId_attempt: { deliveryId: id, attempt: claim.attempt } },
       data: {
-        outcome: accepted
-          ? "ACCEPTED"
-          : expired
-            ? "EXPIRED"
-            : retry
-              ? "RETRY"
-              : "FAILED",
+        outcome: idleBeforeDispatch
+          ? "EXPIRED"
+          : accepted
+            ? "ACCEPTED"
+            : expired
+              ? "EXPIRED"
+              : retry
+                ? "RETRY"
+                : "FAILED",
         statusCode: status >= 100 && status <= 599 ? status : null
       }
     });
-    if (expired && claim.subscriptionId)
+    if ((expired || idleBeforeDispatch) && claim.subscriptionId)
       await revokePushSubscriptions(tx, { id: claim.subscriptionId }, finished);
     if (retry) {
       const afterSeconds = Math.min(3600, 30 * 2 ** (claim.attempt - 1));
@@ -408,11 +461,20 @@ export async function deliverNotification(
     if (!expired)
       await tx.notificationDelivery.update({
         where: { id },
-        data: terminal(finished, accepted ? "ACCEPTED" : "FAILED")
+        data: terminal(
+          finished,
+          idleBeforeDispatch ? "CANCELLED" : accepted ? "ACCEPTED" : "FAILED"
+        )
       });
     return {
       done: true,
-      outcome: accepted ? "accepted" : expired ? "cancelled" : "failed"
+      outcome: idleBeforeDispatch
+        ? "cancelled"
+        : accepted
+          ? "accepted"
+          : expired
+            ? "cancelled"
+            : "failed"
     };
   });
 }
@@ -461,7 +523,13 @@ export function openNotification(
 export async function cleanNotificationRecords(tx: Tx, now = new Date()) {
   const revoked = await revokePushSubscriptions(
     tx,
-    { expiresAt: { lte: now } },
+    {
+      OR: [
+        { expiresAt: { lte: now } },
+        { session: { is: null } },
+        { session: { is: inactiveAccountSessionWhere(now) } }
+      ]
+    },
     now
   );
   await tx.notificationDelivery.updateMany({

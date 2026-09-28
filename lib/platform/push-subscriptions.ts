@@ -6,6 +6,7 @@ import { eligibleWhere, expected, PortalError } from "./portal-policy";
 import { postField, postId } from "./post-input";
 import { socialCommand, socialInput } from "./social-operations";
 import { pushAvailable, pushServerConfig } from "./push-config";
+import { inactiveAccountSessionWhere } from "./account-session-policy";
 
 type Tx = Prisma.TransactionClient;
 export async function requireNotificationActor(tx: Tx, ownerId: string) {
@@ -135,9 +136,14 @@ export function readPushSubscriptions(db: PrismaClient, token: unknown) {
     token,
     async (tx, session) => {
       await requireNotificationActor(tx, session.userId);
+      const now = new Date();
       await revokePushSubscriptions(tx, {
         ownerId: session.userId,
-        expiresAt: { lte: new Date() }
+        OR: [
+          { expiresAt: { lte: now } },
+          { session: { is: null } },
+          { session: { is: inactiveAccountSessionWhere(now) } }
+        ]
       });
       return {
         ownerId: session.userId,

@@ -9,38 +9,7 @@
 ALTER TYPE "CommunityReportTarget" ADD VALUE 'ARTIST';
 ALTER TYPE "CommunityReportTarget" ADD VALUE 'ARTIST_RELEASE';
 
--- DropForeignKey
-ALTER TABLE "AdminAuthenticator" DROP CONSTRAINT "AdminAuthenticator_userId_fkey";
-
--- DropForeignKey
-ALTER TABLE "PlatformMetricActivityDay" DROP CONSTRAINT "PlatformMetricActivityDay_version_fkey";
-
--- DropForeignKey
-ALTER TABLE "PlatformMetricLifecycleDay" DROP CONSTRAINT "PlatformMetricLifecycleDay_version_fkey";
-
--- DropIndex
-DROP INDEX "MediaCatalogItem_topics_gin";
-
--- AlterTable
-ALTER TABLE "ChurchWelcomeThread" ALTER COLUMN "updatedAt" DROP DEFAULT;
-
--- AlterTable
-ALTER TABLE "CommunityReport" ALTER COLUMN "reviewDueAt" SET DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') + interval '30 days';
-
--- AlterTable
-ALTER TABLE "FeedbackIdea" ALTER COLUMN "createdAt" SET DEFAULT CURRENT_TIMESTAMP;
-
--- AlterTable
-ALTER TABLE "FeedbackIdeaEvent" ALTER COLUMN "createdAt" SET DEFAULT CURRENT_TIMESTAMP;
-
--- AlterTable
-ALTER TABLE "FeedbackIdeaSubscription" ALTER COLUMN "createdAt" SET DEFAULT CURRENT_TIMESTAMP;
-
--- AlterTable
-ALTER TABLE "FeedbackIdeaVote" ALTER COLUMN "createdAt" SET DEFAULT CURRENT_TIMESTAMP;
-
--- AlterTable
-ALTER TABLE "FeedbackWeeklyReview" ALTER COLUMN "createdAt" SET DEFAULT CURRENT_TIMESTAMP;
+-- Preserve existing unrelated indexes, UTC defaults and foreign-key actions.
 
 -- AlterTable
 ALTER TABLE "SocialRelationship" ADD COLUMN     "artistId" TEXT,
@@ -181,15 +150,6 @@ CREATE INDEX "ArtistAudit_artistId_createdAt_idx" ON "ArtistAudit"("artistId", "
 
 -- CreateIndex
 CREATE UNIQUE INDEX "SocialRelationship_ownerId_artistId_key" ON "SocialRelationship"("ownerId", "artistId");
-
--- AddForeignKey
-ALTER TABLE "PlatformMetricLifecycleDay" ADD CONSTRAINT "PlatformMetricLifecycleDay_version_fkey" FOREIGN KEY ("version") REFERENCES "PlatformMetricConfiguration"("version") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "PlatformMetricActivityDay" ADD CONSTRAINT "PlatformMetricActivityDay_version_fkey" FOREIGN KEY ("version") REFERENCES "PlatformMetricConfiguration"("version") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "AdminAuthenticator" ADD CONSTRAINT "AdminAuthenticator_userId_fkey" FOREIGN KEY ("userId") REFERENCES "PlatformUser"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "SocialRelationship" ADD CONSTRAINT "SocialRelationship_artistId_fkey" FOREIGN KEY ("artistId") REFERENCES "ArtistProfile"("id") ON DELETE CASCADE ON UPDATE CASCADE;

@@ -1,4 +1,8 @@
 import { newFounderWelcomeAt } from "./founder-config";
+import {
+  accountSessionIsActive,
+  initialAccountIdleExpiry
+} from "./account-session-policy";
 import { Prisma, PlatformRole, type PrismaClient } from "@prisma/client";
 import { SESSION_SECONDS } from "./accounts";
 import { AccountError } from "./account-error";
@@ -160,6 +164,7 @@ async function session(tx: Tx, userId: string, userAgent: string | null) {
       tokenHash: hashSessionToken(token),
       credentialVersion: user.credentialVersion,
       expiresAt: new Date(Date.now() + SESSION_SECONDS * 1000),
+      idleExpiresAt: initialAccountIdleExpiry(),
       userAgent: userAgent?.slice(0, 300) ?? null
     }
   });
@@ -250,7 +255,8 @@ export async function finishGoogleAttempt(
               id: true,
               userId: true,
               credentialVersion: true,
-              expiresAt: true
+              expiresAt: true,
+              idleExpiresAt: true
             }
           })
         : null;
@@ -260,7 +266,7 @@ export async function finishGoogleAttempt(
         current.userId !== pending.linkUserId ||
         current.credentialVersion !== pending.credentialVersion ||
         current.credentialVersion !== owner.credentialVersion ||
-        current.expiresAt <= new Date()
+        !accountSessionIsActive(current)
       )
         throw new GoogleAccountError();
       if (pending.reauthPurpose) {

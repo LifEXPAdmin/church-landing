@@ -5,6 +5,8 @@ import { publicReleaseId } from "@/lib/platform/install-policy";
 import { InstallationProvider } from "@/components/platform/installation-help";
 import type { Metadata } from "next";
 import { DraftWorkspaceProvider } from "@/components/platform/draft-workspace-provider";
+import { SessionActivity } from "@/components/platform/session-activity";
+import { getCurrentPlatformUser } from "@/lib/platform/session";
 
 // Keep font-relative platform controls in step with supported OS text settings.
 export const metadata: Metadata = {
@@ -12,12 +14,13 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false }
 };
 
-export default function PlatformLayout({
+export default async function PlatformLayout({
   children
 }: {
   children: React.ReactNode;
 }) {
   const release = publicReleaseId(process.env.VERCEL_GIT_COMMIT_SHA);
+  const owner = (await getCurrentPlatformUser())?.id ?? null;
   return (
     <div
       className="platform-design"
@@ -33,6 +36,7 @@ export default function PlatformLayout({
               version: releaseMetadata(release)?.version ?? null
             }}
           >
+            <SessionActivity owner={owner} />
             <UpdateNotice release={release}>{children}</UpdateNotice>
           </LoadedReleaseProvider>
         </DraftWorkspaceProvider>

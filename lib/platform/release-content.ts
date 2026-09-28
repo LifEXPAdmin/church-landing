@@ -14,6 +14,14 @@ export type Feature = {
 };
 export const features: Feature[] = [
   {
+    id: "artist-releases", category: "Media and learning", name: "Artist profiles and music releases",
+    description: "Browse published artist profiles, follow artists and open their chosen external listening links deliberately.",
+    steps: "Open Music from Menu. Eligible adults can prepare an artist profile, accept responsibility for its content, invite scoped editors and publish reviewed release metadata. Event appearances need the actual organizer's separate approval.",
+    href: "/platform/music",
+    eligibility: "Artist and release publication require current eligibility, explicit rights assertions and available reporting. Supplied credits do not establish identity, endorsement or consent. Listening links open only when chosen. Native audio, payments, royalties, release announcements and support providers are not enabled.",
+    availability: "available"
+  },
+  {
     id: "media-playlists", category: "Media and learning", name: "Saved media and ordered playlists",
     description: "Keep private saved media and organize permitted recordings into finite personal or church playlists.",
     steps: "Open Saved media or Playlists from Menu. Save a currently available recording, or create a playlist draft, add recordings and move them into order. Review the audience before publishing. Unsaving or removing a playlist leaves its source recordings unchanged.",
@@ -1039,6 +1047,14 @@ export const features: Feature[] = [
   }
 ];
 export const releases: ReleaseEntry[] = [
+  {
+    id: "artist-releases-and-session-inactivity", version: "2026.09.28.39", date: "2026-09-28",
+    summary: "Explore artist profiles and external music releases, with clearer protection for inactive sign-ins.",
+    added: ["Create a useful artist profile, invite explicitly scoped editors, publish reviewed release links, follow artists and request organizer-approved event appearances."],
+    improved: ["Sign-ins expire after about 30 minutes without interaction and always within their original 30-day maximum. The page warns before expiry and keeps local entries for same-account sign-in recovery. Older sign-ins adopt inactivity protection when you interact with the updated website."],
+    fixed: ["Background polling cannot keep a sign-in alive. Expired sign-ins cannot change passwords, finish account linking or receive further phone alerts through that sign-in; fresh sign-in and device setup may be needed. Uncertain saved changes retain their original recovery request."],
+    featureIds: ["artist-releases", "account"]
+  },
   {
     id: "media-topics-and-script-policy", version: "2026.09.28.38", date: "2026-09-28",
     summary: "Explore publisher-selected media topics with visible search filters and stronger browser script controls.",

@@ -29,6 +29,32 @@ export function accountSessionIsActive(
   return accountSessionDeadline(session).getTime() > now.getTime();
 }
 
+/** Same lifetime predicate for bounded database lists and background admission. */
+export function activeAccountSessionWhere(now = new Date()) {
+  return {
+    expiresAt: { gt: now },
+    OR: [
+      { idleExpiresAt: { gt: now } },
+      ...(now.getTime() < Date.parse(LEGACY_IDLE_ENDS_AT)
+        ? [{ idleExpiresAt: null }]
+        : [])
+    ]
+  };
+}
+
+// Explicit complement: SQL NOT does not classify a nullable deadline as expired.
+export function inactiveAccountSessionWhere(now = new Date()) {
+  return {
+    OR: [
+      { expiresAt: { lte: now } },
+      { idleExpiresAt: { lte: now } },
+      ...(now.getTime() >= Date.parse(LEGACY_IDLE_ENDS_AT)
+        ? [{ idleExpiresAt: null }]
+        : [])
+    ]
+  };
+}
+
 export function initialAccountIdleExpiry(now = new Date()) {
   return new Date(now.getTime() + ACCOUNT_IDLE_SECONDS * 1000);
 }

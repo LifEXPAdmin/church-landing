@@ -256,8 +256,9 @@ export function AccountForm({
         <>
           <p id={id("password-help")} className="text-sm text-gc-muted">
             Use 8 to 128 characters, preferably 15 or more. Avoid common
-            passwords or versions of your account details or God&apos;s Churches. You
-            can paste a password or use one your password manager generates.
+            passwords or versions of your account details or God&apos;s
+            Churches. You can paste a password or use one your password manager
+            generates.
           </p>
           <PasswordField
             id={id("confirmation")}
@@ -279,8 +280,9 @@ export function AccountForm({
       )}
       {operation === "login" && (
         <p className="text-sm text-gc-muted">
-          On your own device, your sign-in can last up to 30 days. Sign out when
-          using a shared device.
+          Sign in again after about 30 minutes without interacting with the
+          website, or after 30 days at most. Sign out when using a shared
+          device.
         </p>
       )}
       <p

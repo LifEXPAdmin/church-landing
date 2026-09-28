@@ -392,7 +392,7 @@ model PlatformMetricLifecycleDay {
   reason String
   method String
   count Int
-  configuration PlatformMetricConfiguration @relation(fields: [version], references: [version], onDelete: Restrict)
+  configuration PlatformMetricConfiguration @relation(fields: [version], references: [version], onDelete: Restrict, onUpdate: NoAction)
   @@id([version, day, fromState, toState, reason, method])
 }
 
@@ -423,7 +423,7 @@ model PlatformMetricActivityDay {
   lastAt DateTime
   device String @default("UNKNOWN")
   browser String @default("UNKNOWN")
-  configuration PlatformMetricConfiguration @relation(fields: [version], references: [version], onDelete: Restrict)
+  configuration PlatformMetricConfiguration @relation(fields: [version], references: [version], onDelete: Restrict, onUpdate: NoAction)
   user PlatformUser @relation(fields: [userId], references: [id], onDelete: Cascade)
   @@id([userId, version, day])
   @@index([version, day, userId])
@@ -532,6 +532,7 @@ model PlatformSession {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
   expiresAt DateTime
+  idleExpiresAt DateTime? @default(dbgenerated("((CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text) + '00:30:00'::interval)"))
   tokenHash String   @unique
   userId    String
   userAgent String?
@@ -542,6 +543,7 @@ model PlatformSession {
 
   @@index([userId])
   @@index([expiresAt])
+  @@index([idleExpiresAt])
 }
 
 enum AccountGrantPurpose {
@@ -1404,7 +1406,7 @@ model FeedbackWeeklyReview {
   tryNext String @default("")
   checkNext String @default("")
   buildUrl String @default("")
-  createdAt DateTime @default(now())
+  createdAt DateTime @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)"))
   updatedAt DateTime @updatedAt
   user PlatformUser @relation(fields: [userId], references: [id], onDelete: Cascade)
   @@unique([userId, week, zone])
@@ -1455,7 +1457,7 @@ model FeedbackIdea {
   publishedAt DateTime?
   withdrawnAt DateTime?
   mergedIntoId String?
-  createdAt DateTime @default(now())
+  createdAt DateTime @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)"))
   updatedAt DateTime @updatedAt
   source FeedbackSubmission @relation(fields: [sourceCaseId], references: [caseId], onDelete: Restrict, onUpdate: NoAction)
   reviewedGrant PlatformOperatorGrant @relation(fields: [reviewedGrantId], references: [id], onDelete: Restrict)
@@ -1472,7 +1474,7 @@ model FeedbackIdeaVote {
   userId String
   active Boolean @default(true)
   version Int @default(1)
-  createdAt DateTime @default(now())
+  createdAt DateTime @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)"))
   updatedAt DateTime @updatedAt
   idea FeedbackIdea @relation(fields: [ideaId], references: [id], onDelete: Cascade)
   user PlatformUser @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -1487,7 +1489,7 @@ model FeedbackIdeaSubscription {
   inAppSince DateTime?
   emailSince DateTime?
   pushSince DateTime?
-  createdAt DateTime @default(now())
+  createdAt DateTime @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)"))
   updatedAt DateTime @updatedAt
   idea FeedbackIdea @relation(fields: [ideaId], references: [id], onDelete: Cascade)
   user PlatformUser @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -1510,7 +1512,7 @@ model FeedbackIdeaEvent {
   releaseId String?
   fromMergedIntoId String?
   toMergedIntoId String?
-  createdAt DateTime @default(now())
+  createdAt DateTime @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)"))
   idea FeedbackIdea @relation(fields: [ideaId], references: [id], onDelete: Restrict)
   actor PlatformUser @relation(fields: [actorId], references: [id], onDelete: Restrict)
   operatorGrant PlatformOperatorGrant @relation(fields: [operatorGrantId], references: [id], onDelete: Restrict)
@@ -2255,7 +2257,7 @@ model ChurchWelcomeThread {
   purpose String
   handled Boolean @default(false)
   version Int @default(1)
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime @default(now()) @updatedAt
   post PlatformPost @relation(fields: [postId], references: [id], onDelete: Cascade)
   church Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
   @@index([churchId, handled, postId])
@@ -2850,7 +2852,7 @@ model AdminAuthenticator {
   expiresAt DateTime
   lastCounter BigInt @default(-1)
   recoveryHashes String[] @default([])
-  user PlatformUser @relation(fields:[userId],references:[id],onDelete:Cascade)
+  user PlatformUser @relation(fields:[userId],references:[id],onDelete:Cascade,onUpdate:NoAction)
 }
 
 // A challenge is bound to one real database session and current role/factor
@@ -3618,6 +3620,7 @@ model MediaCatalogItem {
   @@index([state, audience, publishedAt, id])
   @@index([ownerId, state, updatedAt])
   @@index([ownerChurchId, state, updatedAt])
+  @@index([topics], type: Gin, map: "MediaCatalogItem_topics_gin")
 }
 
 model MediaCatalogRights {

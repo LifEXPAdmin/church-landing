@@ -3,12 +3,18 @@ import { AccountError } from "./account-error";
 import { requireAccountCredential } from "./account-credential";
 import { hashSessionToken, validToken } from "./auth";
 import { bindPrivilegedSession } from "./privileged-session";
+import {
+  accountSessionDeadline,
+  accountSessionIsActive,
+  activeAccountSessionWhere
+} from "./account-session-policy";
 
 const sessionSelect = {
   id: true,
   userId: true,
   createdAt: true,
   expiresAt: true,
+  idleExpiresAt: true,
   userAgent: true,
   credentialVersion: true,
   user: {
@@ -61,7 +67,7 @@ export async function withOwnedSession<T>(
         !current ||
         current.user.suspendedAt ||
         current.user.deactivatedAt ||
-        current.expiresAt <= new Date() ||
+        !accountSessionIsActive(current) ||
         current.credentialVersion !== current.user.credentialVersion
       )
         throw new AccountError("session");
@@ -122,12 +128,17 @@ export async function listAccountSessions(
     const where = {
       userId: current.userId,
       id: { not: current.id },
-      expiresAt: { gt: new Date() },
+      ...activeAccountSessionWhere(),
       credentialVersion: current.credentialVersion
     };
     const others = await tx.platformSession.findMany({
       where,
-      select: { createdAt: true, expiresAt: true, userAgent: true },
+      select: {
+        createdAt: true,
+        expiresAt: true,
+        idleExpiresAt: true,
+        userAgent: true
+      },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       take: 20
     });
@@ -137,7 +148,7 @@ export async function listAccountSessions(
         isCurrent: index === 0,
         label: approximateLabel(session.userAgent),
         createdAt: session.createdAt.toISOString(),
-        expiresAt: session.expiresAt.toISOString()
+        expiresAt: accountSessionDeadline(session).toISOString()
       })),
       otherCount
     };

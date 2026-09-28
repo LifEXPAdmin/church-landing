@@ -198,6 +198,12 @@ export function AccountSessions({
       aria-busy={pending}
     >
       <h2 id="active-sign-ins-title">Active sign-ins</h2>
+      <p className="text-sm text-gc-muted">
+        New sign-ins expire after about 30 minutes without interaction, with a
+        30-day maximum. Older sign-ins adopt the idle limit when you interact
+        with the updated website. Expiry times can move with activity, within
+        the original maximum.
+      </p>
       <p className="text-gc-muted">
         Review your sign-ins and remove access on other browsers. Browser and
         device labels are approximate; dates show when a sign-in started and

@@ -130,10 +130,15 @@ separate demo does not create accounts or save its fictional information.
    the page. Your saved bio should still be there. Optional fields start empty.
    Other signed-in members can view your profile. Your name and username identify
    public posts/comments; do not put private contact details in your bio.
-6. Open a new tab, then close and reopen your browser. On a normal browser profile
-   that retains cookies, you should still be signed in. A session lasts up to
-   30 days, not forever. Private mode, clearing cookies, or browser policies can
-   sign you out sooner.
+6. Open a new tab, then close and reopen your browser promptly. On a normal browser
+   profile that retains cookies, a still-valid session should remain signed in.
+   The prepared inactivity release requires sign-in again after about 30 minutes
+   without interaction, and always within the original 30-day maximum. Confirm
+   its live acceptance in the session lifetime policy before testing that change.
+   Private mode, clearing cookies, or browser policies can sign you out sooner.
+   An expired page keeps local entries for same-account sign-in in another tab
+   and an explicit recheck. Phone alerts tied to an expired sign-in need fresh
+   sign-in and device setup; email and in-app choices remain separate.
 7. Select **Log out**. Open Sign in and let your password manager fill the saved
    email and password. Sign in again and check your profile. Never send your
    password, cookies, API keys, or an unredacted password-manager screenshot here.

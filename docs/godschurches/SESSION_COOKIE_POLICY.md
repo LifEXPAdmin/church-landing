@@ -9,7 +9,9 @@ HTTPS sign-in issues `__Host-church_platform_session`, with `Secure`, `HttpOnly`
 `SameSite=Lax`, `Path=/`, no `Domain` and the existing 30-day maximum age.
 Local HTTP development retains `church_platform_session`. Session token entropy,
 hashing, absolute database expiry, credential versions and proof binding stay
-unchanged. This change does not introduce an idle-timeout policy.
+unchanged. That cookie release did not introduce an idle-timeout policy. The
+separately prepared [inactivity policy](SESSION_LIFETIME_POLICY.md) preserves this
+absolute ceiling and cookie-selection contract; see its current acceptance state.
 
 Password login and Google signup/returning login share the issuer. HTTPS issuance
 also expires the old host-only cookie. Explicit logout clears both names and

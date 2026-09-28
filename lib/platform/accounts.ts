@@ -1,5 +1,9 @@
 import { newFounderWelcomeAt } from "./founder-config";
 import {
+  accountSessionIsActive,
+  initialAccountIdleExpiry
+} from "./account-session-policy";
+import {
   bindPrivilegedSession,
   clearPrivilegedSession
 } from "./privileged-session";
@@ -199,6 +203,7 @@ export async function issueAuthenticatedSession(
         tokenHash: hashSessionToken(token),
         credentialVersion: current.credentialVersion,
         expiresAt: new Date(Date.now() + SESSION_SECONDS * 1000),
+        idleExpiresAt: initialAccountIdleExpiry(),
         userAgent: userAgent?.slice(0, 300) ?? null
       }
     });
@@ -234,6 +239,7 @@ export async function readAccountSession(
       userId: true,
       credentialVersion: true,
       expiresAt: true,
+      idleExpiresAt: true,
       user: {
         select: {
           id: true,
@@ -269,7 +275,7 @@ export async function readAccountSession(
     !session ||
     session.user.suspendedAt ||
     session.user.deactivatedAt ||
-    session.expiresAt <= new Date() ||
+    !accountSessionIsActive(session) ||
     session.credentialVersion !== session.user.credentialVersion
   )
     return null;
@@ -576,7 +582,7 @@ export async function changeAccountPassword(
       !session ||
       session.user.suspendedAt ||
       session.user.deactivatedAt ||
-      session.expiresAt <= new Date() ||
+      !accountSessionIsActive(session) ||
       session.credentialVersion !== session.user.credentialVersion
     )
       throw new AccountError("session");

@@ -3,10 +3,27 @@
 ## Preparation status, 28 September 2026 UTC
 
 This is an implementation checkpoint, not a live-policy announcement. The shared
-pure lifetime calculation and seven boundary tests are prepared. Database,
-issuance, authorization, activity transport, interface, recovery and release
-acceptance remain open. Existing live sessions still use their fixed 30-day
-absolute expiry.
+policy, additive migration, issuance, five authorization gates, activity endpoint,
+retained-owner notice and notification cleanup are implemented locally. Seven pure
+deadline checks, eleven real-database activity/authorization checks and four
+notification checks pass. All 121 combined service checks pass on the corrected migration. An earlier
+four-check failure was resolved by correcting only a fixture journal path.
+Browser, recovery and release acceptance remain open. Existing live sessions still use their fixed 30-day absolute expiry.
+
+A subsequent schema audit reproduced unrelated generated artist migration drift:
+a removed topic-search index, five reverted UTC defaults, a removed welcome-thread
+default and changed foreign-key update actions. Integration removes those statements
+and aligns the Prisma declarations with the existing contracts. The original
+handoff and initial fixture are preserved. The corrected baseline upgrade passes:
+all 559 prior indexes, 302 foreign keys and 1,824 column defaults are unchanged.
+
+The initial combined artist and inactivity upgrade from migration 121 to 123 preserved
+all existing fields and rows in the 160 original fixture tables, 58 populated.
+A separate rolled-back migration rehearsal also preserved all 550 original session
+rows and verified UTC defaults under both UTC and Pacific/Auckland database time.
+The first notification run exposed an unsupported attempt-outcome value. The fix
+uses the existing EXPIRED diagnostic and CANCELLED delivery result; its rerun
+passed without loosening the database constraint.
 
 The provisional engineering default is 30 minutes of inactivity. An owner
 preference question is pending; this document does not record owner acceptance.
@@ -72,6 +89,10 @@ reauthentication may recover the original receipt through the existing authority
 and fingerprint checks. It cannot inherit the old session's privileged proof.
 Account replacement, MFA challenge, network failure and business conflict remain
 distinct. Do not globally unmount retained work or automatically retry commands.
+Phone subscriptions remain tied to their original sign-in. Idle expiry cancels
+further phone delivery through that session, including reminders waiting through
+quiet hours. Fresh sign-in and deliberate device setup may be needed. In-app
+activity and independently consented account-owned email retain their own rules.
 
 ## Verification and recovery gates
 
@@ -80,6 +101,10 @@ transactions, issuance defaults, legacy adoption, exact boundary and tolerance,
 concurrent activity versus revocation, account replacement, passive polling,
 background delivery and lost-response recovery followed by same-owner sign-in.
 Review narrow and enlarged layouts and privacy concealment in the browser.
+The client uses elapsed monotonic and wall time conservatively: either can shorten
+the server-derived display budget, and neither may restore already elapsed time.
+A frozen monotonic-clock calculation was reproduced and corrected before release;
+physical device sleep remains a separate acceptance observation.
 
 Schema compatibility does not make an older application a safe fallback: it
 ignores the new idle deadline and could revive idle-expired tokens. Prefer a
