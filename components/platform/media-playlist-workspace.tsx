@@ -256,7 +256,8 @@ function PlaylistWorkspace({
       if (
         e instanceof SocialClientError &&
         e.status < 500 &&
-        e.status !== 401
+        e.status !== 401 &&
+        !uncertain
       ) {
         pendingWrites.delete(scope);
         setUncertain(null);
@@ -266,6 +267,8 @@ function PlaylistWorkspace({
           reload();
         }
       } else {
+        // A denial before receipt lookup cannot disprove an earlier commit.
+        // Preserve the original body until the original owner reconciles it.
         setUncertain(body);
         setMessage(
           "This change could not be confirmed. Return to this account and retry the same change to check its result."

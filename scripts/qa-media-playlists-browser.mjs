@@ -166,9 +166,74 @@ try {
   assert.ok(
     (await page.locator("body").innerText()).includes("Save or discard")
   );
+  const createBodies = [];
+  let createLost = false;
+  const lostCreate = async (route) => {
+    if (route.request().method() !== "POST" || createLost)
+      return route.continue();
+    createLost = true;
+    createBodies.push(route.request().postData());
+    await route.fetch();
+    return route.abort("failed");
+  };
+  await page.route("**/api/platform/media-playlists", lostCreate);
   await page
     .getByRole("button", { name: "Create playlist", exact: true })
     .click();
+  await page
+    .getByRole("button", { name: "Retry same change", exact: true })
+    .waitFor();
+  await page.unroute("**/api/platform/media-playlists", lostCreate);
+  for (const status of [429, 404]) {
+    let deniedRetry = false;
+    const denial = async (route) => {
+      if (route.request().method() !== "POST") return route.continue();
+      deniedRetry = true;
+      createBodies.push(route.request().postData());
+      return route.fulfill({
+        status,
+        headers: {
+          "content-type": "application/json",
+          "cache-control": "no-store",
+          "retry-after": "1"
+        },
+        body: JSON.stringify({ message: "Fictional temporary retry denial" })
+      });
+    };
+    await page.route("**/api/platform/media-playlists", denial);
+    await page
+      .getByRole("button", { name: "Retry same change", exact: true })
+      .click();
+    await wait(() => deniedRetry);
+    await wait(
+      async () =>
+        !(await page
+          .getByRole("button", { name: "Retry same change", exact: true })
+          .count()) ||
+        !(await page
+          .getByRole("button", { name: "Retry same change", exact: true })
+          .isDisabled())
+    );
+    assert.equal(
+      await page
+        .getByRole("button", { name: "Retry same change", exact: true })
+        .count(),
+      1,
+      "Uncertain receipt must survive a later denial"
+    );
+    assert.equal(
+      await page
+        .getByRole("button", { name: "Create playlist", exact: true })
+        .isDisabled(),
+      true
+    );
+    await page.unroute("**/api/platform/media-playlists", denial);
+  }
+  assert.equal(new Set(createBodies).size, 1);
+  await page
+    .getByRole("button", { name: "Retry same change", exact: true })
+    .click();
+
   await wait(async () => !!(await row()));
   let p = await row();
   await page.waitForURL("**/playlists/" + p.id + "?edit=1");
@@ -177,6 +242,13 @@ try {
   assert.equal(await details().inputValue(), title);
   assert.equal(p.state, "DRAFT");
   assert.equal(p.audience, "PRIVATE");
+  assert.equal(
+    await db.mediaPlaylist.count({ where: { ownerId: actor.id, title } }),
+    1
+  );
+  ok(
+    "committed create survives lost response, rate limit and access denial with one immutable retry key"
+  );
   ok(
     "create private draft with unsaved-navigation protection and confirmed hydration"
   );
@@ -501,6 +573,176 @@ try {
   );
   ok(
     "committed removal with lost response remains retryable after editor reads deny it"
+  );
+  const church = await db.church.create({
+    data: {
+      slug: randomUUID(),
+      name: "Fictional playlist browser church",
+      summary: "Isolated delegation",
+      communityListed: true
+    }
+  });
+  await db.churchConnection.createMany({
+    data: [actor, other].map((user) => ({
+      userId: user.id,
+      churchId: church.id,
+      state: "APPROVED"
+    }))
+  });
+  const claim = await db.churchClaim.create({
+    data: {
+      ownerId: actor.id,
+      requestKey: randomUUID(),
+      churchId: church.id,
+      kind: "INITIAL",
+      authority: {},
+      profile: {},
+      status: "APPROVED",
+      approvedAt: new Date(),
+      activatedAt: new Date()
+    }
+  });
+  await db.churchCapabilityGrant.createMany({
+    data: [
+      {
+        userId: actor.id,
+        churchId: church.id,
+        capability: "MANAGE_CHURCH_ACCESS",
+        sourceClaimId: claim.id
+      },
+      {
+        userId: actor.id,
+        churchId: church.id,
+        capability: "MANAGE_CHURCH_MEDIA"
+      },
+      { userId: other.id, churchId: church.id, capability: "EDIT_CHURCH_MEDIA" }
+    ]
+  });
+  process.env.PRIVILEGED_MFA_MODE = "enforce";
+  const { privilegedAuthenticatorCommand } =
+    await import("../lib/platform/privileged-auth.ts");
+  const { openAuthenticator, authenticatorTotp } =
+    await import("../lib/platform/admin-authenticator-crypto.ts");
+  const prove = async (user) => {
+    await privilegedAuthenticatorCommand(
+      db,
+      user.token,
+      { operation: "mfa-start", requestKey: randomUUID(), expectedVersion: 0 },
+      user.password
+    );
+    const factor = await db.adminAuthenticator.findUniqueOrThrow({
+        where: { userId: user.id }
+      }),
+      secret = openAuthenticator(user.id, factor.secretCiphertext),
+      counter = BigInt(Math.floor(Date.now() / 30000));
+    const enrolled = await privilegedAuthenticatorCommand(
+      db,
+      user.token,
+      {
+        operation: "mfa-confirm",
+        requestKey: randomUUID(),
+        expectedVersion: factor.version,
+        code: authenticatorTotp(secret, counter - 1n)
+      },
+      undefined
+    );
+    await privilegedAuthenticatorCommand(
+      db,
+      user.token,
+      {
+        operation: "mfa-challenge",
+        requestKey: randomUUID(),
+        expectedVersion: Number(enrolled.version),
+        purpose: "privileged-work",
+        code: authenticatorTotp(secret, counter)
+      },
+      undefined
+    );
+  };
+  await prove(actor);
+  await go("/platform/media/playlists");
+  await details().fill("Fictional manager collection");
+  await page.getByLabel("Playlist owner").selectOption(church.id);
+  assert.equal(
+    await page.getByLabel("Playlist audience").inputValue(),
+    "CHURCH"
+  );
+  await page
+    .getByRole("button", { name: "Create playlist", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Publish playlist", exact: true })
+    .waitFor();
+  await page
+    .getByRole("button", { name: "Publish playlist", exact: true })
+    .click();
+  await wait(
+    async () =>
+      (await db.mediaPlaylist.count({
+        where: { ownerChurchId: church.id, state: "PUBLISHED" }
+      })) === 1
+  );
+  await db.churchCapabilityGrant.updateMany({
+    where: {
+      userId: actor.id,
+      churchId: church.id,
+      capability: "MANAGE_CHURCH_MEDIA"
+    },
+    data: { revokedAt: new Date() }
+  });
+  await focus();
+  await wait(async () => (await details().count()) === 0);
+  ok(
+    "current church manager creates and publishes with session proof; revocation conceals management"
+  );
+  await prove(other);
+  await signIn(other);
+  await go("/platform/media/playlists");
+  await details().fill("Fictional editor draft");
+  await page.getByLabel("Playlist owner").selectOption(church.id);
+  await page
+    .getByRole("button", { name: "Create playlist", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Save details", exact: true })
+    .waitFor();
+  assert.equal(
+    await page
+      .getByRole("button", { name: "Publish playlist", exact: true })
+      .count(),
+    0
+  );
+  await page
+    .getByLabel("Description", { exact: true })
+    .fill("Current delegated draft edit");
+  await page.getByRole("button", { name: "Save details", exact: true }).click();
+  await wait(
+    async () =>
+      (await db.mediaPlaylist.count({
+        where: {
+          ownerChurchId: church.id,
+          createdById: other.id,
+          description: "Current delegated draft edit",
+          state: "DRAFT"
+        }
+      })) === 1
+  );
+  await db.churchCapabilityGrant.updateMany({
+    where: {
+      userId: other.id,
+      churchId: church.id,
+      capability: "EDIT_CHURCH_MEDIA"
+    },
+    data: { revokedAt: new Date() }
+  });
+  await focus();
+  await wait(async () => (await details().count()) === 0);
+  assert.equal(
+    await db.mediaPlaylist.count({ where: { ownerChurchId: church.id } }),
+    2
+  );
+  ok(
+    "delegated editor can edit only a private draft, cannot publish, and loses access without deleting church work"
   );
   assert.deepEqual(errors, []);
   writeFileSync(
