@@ -9,6 +9,7 @@ import {
 } from "react";
 import { Ellipsis } from "lucide-react";
 import { createPortal } from "react-dom";
+import { usePrivatePostConcealed } from "./private-post-workspace";
 import { useReadVisibility } from "./read-visibility";
 
 /** A small nonmodal action surface. The owning control keeps its retry state. */
@@ -31,6 +32,7 @@ export function ActionPopover({
     button = useRef<HTMLButtonElement>(null),
     panel = useRef<HTMLDivElement>(null);
   const sourceVisible = useReadVisibility();
+  const concealed = usePrivatePostConcealed();
   const change = useRef(onOpenChange);
   const [target, setTarget] = useState<Element | null>(null);
   const [position, setPosition] = useState({
@@ -141,6 +143,7 @@ export function ActionPopover({
         opener.focus({ preventScroll: true });
     };
   }, [open, sourceVisible, target]);
+  if (concealed) return null;
   return (
     <>
       <button

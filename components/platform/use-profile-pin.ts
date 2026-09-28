@@ -1,4 +1,9 @@
 "use client";
+import {
+  usePrivatePostWorkspace,
+  usePrivatePostRecovery
+} from "./private-post-workspace";
+
 import { useCallback, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { socialRequest, SocialClientError } from "@/lib/platform/social-client";
@@ -19,6 +24,7 @@ export function useProfilePin(
   owner: string,
   eligible: boolean
 ) {
+  const privateScope = usePrivatePostWorkspace();
   const router = useRouter(),
     controller = useDraftController();
   const [state, setState] = useState<PinState | null>(null),
@@ -33,13 +39,20 @@ export function useProfilePin(
   };
   const retryOriginal = useCallback(() => retryRef.current(), []);
   usePrivateRecovery(recoveryId, !!pending, busy, retryOriginal);
+  usePrivatePostRecovery(!!pending, busy, retryOriginal);
   useUnsavedSocialWork(
     { dirty: false, saving: !!pending, conflict: false },
     () => setMessage("Confirm your pending profile pin before leaving.")
   );
   const path = `/api/platform/profile-pin?postId=${encodeURIComponent(postId)}`;
   async function load() {
-    if (!eligible || flight.current || pending) return;
+    if (
+      !eligible ||
+      flight.current ||
+      pending ||
+      (privateScope && privateScope.accessVersion() == null)
+    )
+      return;
     flight.current = true;
     setBusy(true);
     setState(null);
@@ -59,7 +72,13 @@ export function useProfilePin(
     }
   }
   async function send(retry?: string) {
-    if (!eligible || flight.current || (!retry && !state)) return;
+    if (
+      !eligible ||
+      flight.current ||
+      (!retry && !state) ||
+      (privateScope && privateScope.accessVersion() == null)
+    )
+      return;
     if (!retry) {
       const work = controller.getSnapshot();
       if (
@@ -97,13 +116,15 @@ export function useProfilePin(
       setPending(null);
       // The write is confirmed even if the following status read is unavailable.
       // Refresh placement now; a failed read must not retain the old profile.
-      router.refresh();
+      if (privateScope) privateScope.refresh();
+      else router.refresh();
       const current = await socialRequest<PinState>(path, undefined, owner);
       setState(current.data);
       setMessage(result.data.message);
     } catch (error) {
       const status = error instanceof SocialClientError ? error.status : 503;
-      if ([400, 401, 403, 404, 409, 429].includes(status)) setPending(null);
+      if (!privateScope && [400, 401, 403, 404, 409, 429].includes(status))
+        setPending(null);
       setState(null);
       setMessage(
         error instanceof Error

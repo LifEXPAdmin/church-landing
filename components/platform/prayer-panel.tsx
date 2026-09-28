@@ -1,6 +1,11 @@
 "use client";
 import Link from "next/link";
 import {
+  usePrivatePostWorkspace,
+  usePrivatePostConcealed,
+  usePrivatePostRecovery
+} from "./private-post-workspace";
+import {
   useCallback,
   useEffect,
   useId,
@@ -30,6 +35,10 @@ export default function PrayerPanel({
   commentId?: string | null;
   onClose: () => void;
 }) {
+  const privateScope = usePrivatePostWorkspace(),
+    concealed = usePrivatePostConcealed();
+  const privateAccess = privateScope?.accessVersion;
+  const privateOwner = !!privateScope;
   const title = useId(),
     dialog = useRef<HTMLDialogElement>(null),
     sequence = useRef(0),
@@ -54,27 +63,36 @@ export default function PrayerPanel({
         : "Publish or discard your unsent prayer update before leaving."
     );
   useUnsavedSocialWork(
-    { dirty: !!content, saving: !!pending, conflict: false },
+    {
+      dirty: !!content || (privateOwner && accepted),
+      saving: !!pending,
+      conflict: false
+    },
     block,
     true
   );
   const path = `/api/platform/prayers?${new URLSearchParams({ postId, ...(commentId ? { commentId } : {}) })}`;
-  const failed = useCallback((error: unknown) => {
-    const status = error instanceof SocialClientError ? error.status : 503;
-    if (status === 401) {
-      setContent("");
-      setPending(null);
-      setPublished(null);
-      setSignedOut(true);
-    }
-    setMessage(
-      error instanceof SocialClientError
-        ? error.message
-        : "Your prayer choices could not be checked. Reconnect and try again."
-    );
-    return status;
-  }, []);
+  const failed = useCallback(
+    (error: unknown) => {
+      const status = error instanceof SocialClientError ? error.status : 503;
+      if (status === 401 && !privateOwner) {
+        setContent("");
+        setPending(null);
+        setPublished(null);
+        setSignedOut(true);
+      }
+      setMessage(
+        error instanceof SocialClientError
+          ? error.message
+          : "Your prayer choices could not be checked. Reconnect and try again."
+      );
+      return status;
+    },
+    [privateOwner]
+  );
   const refresh = useCallback(async () => {
+    const access = privateAccess?.();
+    if (privateAccess && access == null) return;
     const seq = ++sequence.current;
     if (dialog.current)
       restoreView.current = {
@@ -91,13 +109,18 @@ export default function PrayerPanel({
         undefined,
         owner
       );
-      if (sequence.current !== seq) return;
+      if (
+        sequence.current !== seq ||
+        (privateAccess && privateAccess() !== access)
+      )
+        return;
+      setSignedOut(false);
       setState(result.data);
       setMessage("Your current prayer choices are ready.");
     } catch (error) {
       if (sequence.current === seq) failed(error);
     }
-  }, [path, owner, failed]);
+  }, [path, owner, failed, privateAccess]);
   useLayoutEffect(() => {
     if (!state || !restoreView.current || !dialog.current) return;
     const restore = restoreView.current;
@@ -107,6 +130,7 @@ export default function PrayerPanel({
     dialog.current.scrollTop = restore.scroll;
   }, [state]);
   useEffect(() => {
+    if (concealed) return;
     const node = dialog.current!;
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -115,9 +139,15 @@ export default function PrayerPanel({
       node.close();
       document.body.style.overflow = previous;
     };
-  }, []);
+  }, [concealed]);
   useEffect(() => {
     const counter = sequence;
+    if (concealed) {
+      counter.current++;
+      setState(null);
+      setUpdates(null);
+      return;
+    }
     const check = () => {
       if (!flight.current && document.visibilityState !== "hidden")
         void refresh();
@@ -145,9 +175,9 @@ export default function PrayerPanel({
       window.removeEventListener("pageshow", check);
       document.removeEventListener("visibilitychange", visibility);
     };
-  }, [refresh]);
+  }, [refresh, concealed]);
   async function send(body: string) {
-    if (flight.current) return;
+    if (flight.current || (privateAccess && privateAccess() == null)) return;
     flight.current = true;
     setBusy(true);
     setPending(body);
@@ -172,7 +202,8 @@ export default function PrayerPanel({
       window.dispatchEvent(new Event("gc-prayers-changed"));
     } catch (error) {
       const status = failed(error);
-      if ([400, 401, 403, 404, 409, 429].includes(status)) setPending(null);
+      if (!privateOwner && [400, 401, 403, 404, 409, 429].includes(status))
+        setPending(null);
       setState(null);
       setUpdates(null);
     } finally {
@@ -194,7 +225,7 @@ export default function PrayerPanel({
     );
   }
   async function loadUpdates(after?: string) {
-    if (flight.current) return;
+    if (flight.current || (privateAccess && privateAccess() == null)) return;
     flight.current = true;
     setBusy(true);
     const seq = ++sequence.current;
@@ -231,7 +262,11 @@ export default function PrayerPanel({
     if (content || pending) block();
     else onClose();
   }
+  usePrivatePostRecovery(!!pending, busy, () => {
+    if (pending) void send(pending).then(() => privateScope?.refresh());
+  });
   const disabled = busy || !!pending;
+  if (concealed) return null;
   return (
     <dialog
       ref={dialog}

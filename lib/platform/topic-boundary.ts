@@ -4,6 +4,7 @@ import { readBody, requestSessionToken } from "./account-boundary";
 import { readAccountSession } from "./accounts";
 import { allowWorkspaceAttempt } from "./account-limits";
 import { PortalError } from "./portal-policy";
+import { topicFollowingStream } from "./topic-following-stream";
 import { workspaceError, workspaceHeaders } from "./post-workspace-boundary";
 import {
   listTopics,
@@ -36,6 +37,14 @@ export async function handleTopicRequest(db: PrismaClient, request: Request) {
       );
     if (request.method === "GET") {
       const view = q.get("view") ?? "list";
+      if (view === "following-stream")
+        return Response.json(
+          await topicFollowingStream(db, token, {
+            before: q.get("before"),
+            cursor: q.get("cursor")
+          }),
+          { headers }
+        );
       const result =
         view === "eligibility"
           ? await topicEligibility(db, token)

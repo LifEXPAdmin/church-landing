@@ -12,7 +12,8 @@ const fields = (content: string) => ({
 });
 function fixture(
   handler: (body: string) => Promise<unknown>,
-  items: unknown[] = []
+  items: unknown[] = [],
+  retainUncertain = false
 ) {
   let id = 0;
   const transport: CommentTransport = async <T>(_path: string, body?: string) =>
@@ -21,7 +22,9 @@ function fixture(
     transport,
     "post",
     "reply",
-    () => `uuid-${++id}`
+    () => `00000000-0000-4000-8000-${String(++id).padStart(12, "0")}` as const,
+    undefined,
+    retainUncertain
   );
 }
 test("late hydration uses the empty server state after a private comment draft loads", async () => {
@@ -193,7 +196,7 @@ test("a consumed or discarded explicit resume ID cannot restore a different targ
     async <T>() => ({ items: [] }) as T,
     "post",
     null,
-    () => "fresh-id",
+    () => "00000000-0000-4000-8000-000000000999",
     "discarded-id"
   );
   await c.start();
@@ -267,4 +270,364 @@ test("discard cannot clear an uncertain comment request; a rejected conflicting 
   assert.equal(c.getSnapshot().ready, false);
   assert.equal(c.getSnapshot().version, 0);
   c.dispose();
+});
+
+const savedPrivateDraft = (content = "Saved private reply") => ({
+  id: "private-draft",
+  version: 7,
+  postId: "post",
+  replyToId: "reply",
+  ...fields(content)
+});
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((done) => {
+    resolve = done;
+  });
+  return { promise, resolve };
+}
+
+test("private concealed save retains exact original bytes through 503, edits and 429", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const bodies: string[] = [],
+    original = {
+      content: "Original private reply\r\n  with exact spaces  ",
+      mentionIds: ["first-person", "second-person"],
+      authorChurchId: "original-church"
+    },
+    newer = {
+      content: "Newer unsaved words",
+      mentionIds: ["different-person"],
+      authorChurchId: null
+    };
+  const c = fixture(
+    async (body) => {
+      bodies.push(body);
+      if (bodies.length === 1)
+        throw new SocialClientError(503, "Response lost");
+      if (bodies.length === 2) throw new SocialClientError(429, "Wait", 60);
+      return { id: "private-draft", version: 8, message: "saved" };
+    },
+    [savedPrivateDraft()],
+    true
+  );
+  try {
+    await c.start();
+    c.change(original);
+    assert.equal(await c.save(), false);
+    assert.deepEqual(JSON.parse(bodies[0]), {
+      operation: "draft-save",
+      mutationId: "00000000-0000-4000-8000-000000000001",
+      postId: "post",
+      replyToId: "reply",
+      ...original,
+      draftId: "private-draft",
+      expectedVersion: 7
+    });
+    c.change(newer);
+    c.visibility(true);
+    c.change(fields("A concealed edit must be ignored"));
+    assert.equal(await c.save(), false);
+    assert.equal(await c.retry(), false);
+    assert.equal(await c.send(), false);
+    assert.equal(bodies.length, 1);
+    assert.equal(await c.retryOriginal(), false);
+    assert.equal(c.getSnapshot().retry, true);
+    assert.equal(c.getSnapshot().version, 7);
+    assert.equal(c.discardChanges(), false);
+    t.mock.timers.tick(60000);
+    await Promise.resolve();
+    assert.equal(
+      bodies.length,
+      2,
+      "Cooldown and concealment cannot retry automatically"
+    );
+    assert.equal(await c.retryOriginal(), true);
+    assert.deepEqual(bodies, [bodies[0], bodies[0], bodies[0]]);
+    assert.deepEqual(c.getSnapshot().fields, newer);
+    assert.equal(c.getSnapshot().dirty, true);
+    assert.equal(c.getSnapshot().hidden, true);
+    assert.equal(c.getSnapshot().version, 8);
+    assert.equal(c.getSnapshot().retry, false);
+    assert.equal(await c.retryOriginal(), false);
+    assert.equal(
+      bodies.length,
+      3,
+      "Original recovery cannot create a new save for newer edits"
+    );
+  } finally {
+    c.dispose();
+  }
+});
+
+test("private hidden controls and original recovery with no pending request never send", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const bodies: string[] = [];
+  const c = fixture(
+    async (body) => {
+      bodies.push(body);
+      return { id: "private-draft", version: 8, message: "saved" };
+    },
+    [savedPrivateDraft()],
+    true
+  );
+  try {
+    assert.equal(await c.retryOriginal(), false);
+    await c.start();
+    assert.equal(await c.retryOriginal(), false);
+    c.visibility(true);
+    assert.equal(
+      await c.send(),
+      false,
+      "Even an acknowledged draft cannot publish while hidden"
+    );
+    assert.equal(await c.retry(), false);
+    assert.equal(await c.retryOriginal(), false);
+    c.visibility(false);
+    c.change(fields("Retained unsaved changes"));
+    assert.equal(await c.retryOriginal(), false);
+    c.visibility(true);
+    assert.equal(await c.save(), false);
+    assert.equal(await c.send(), false);
+    t.mock.timers.tick(60000);
+    await Promise.resolve();
+    assert.deepEqual(bodies, []);
+    assert.equal(c.getSnapshot().dirty, true);
+    assert.equal(c.getSnapshot().fields.content, "Retained unsaved changes");
+    assert.equal(c.getSnapshot().version, 7);
+  } finally {
+    c.dispose();
+  }
+});
+
+test("private concealed publication keeps its original draft version, key and fields after 503 and 429", async () => {
+  const bodies: string[] = [],
+    saved = savedPrivateDraft("Original publication\r\n  exact words  ");
+  const c = fixture(
+    async (body) => {
+      bodies.push(body);
+      if (bodies.length === 1)
+        throw new SocialClientError(503, "Response lost");
+      if (bodies.length === 2) throw new SocialClientError(429, "Wait", 60);
+      return { id: "accepted-comment", version: 1, message: "sent" };
+    },
+    [saved],
+    true
+  );
+  try {
+    await c.start();
+    assert.equal(await c.send(), false);
+    assert.deepEqual(JSON.parse(bodies[0]), {
+      operation: "create",
+      mutationId: "00000000-0000-4000-8000-000000000001",
+      postId: "post",
+      replyToId: "reply",
+      ...fields(saved.content),
+      draftId: "private-draft",
+      draftVersion: 7
+    });
+    c.change(fields("An uncertain publication cannot be replaced"));
+    assert.equal(c.getSnapshot().fields.content, saved.content);
+    c.visibility(true);
+    assert.equal(await c.retryOriginal(), false);
+    assert.equal(c.getSnapshot().sending, true);
+    assert.equal(c.getSnapshot().retry, true);
+    assert.equal(await c.retryOriginal(), true);
+    assert.deepEqual(bodies, [bodies[0], bodies[0], bodies[0]]);
+    assert.equal(c.getSnapshot().hidden, true);
+    assert.equal(c.getSnapshot().createdId, "accepted-comment");
+    assert.equal(c.getSnapshot().retry, false);
+    assert.equal(await c.retryOriginal(), false);
+    c.visibility(false);
+    assert.equal(c.getSnapshot().createdId, "accepted-comment");
+    assert.equal(await c.send(), false);
+    assert.equal(bodies.length, 3);
+  } finally {
+    c.dispose();
+  }
+});
+
+test("a publication accepted after concealment retains its receipt without another request", async () => {
+  const accepted = deferred<{ id: string; version: number; message: string }>(),
+    dispatched = deferred<void>(),
+    bodies: string[] = [];
+  const c = fixture(
+    async (body) => {
+      bodies.push(body);
+      dispatched.resolve();
+      return accepted.promise;
+    },
+    [savedPrivateDraft()],
+    true
+  );
+  try {
+    await c.start();
+    const sending = c.send();
+    await dispatched.promise;
+    c.visibility(true);
+    assert.equal(
+      await c.retryOriginal(),
+      false,
+      "An in-flight original cannot be duplicated"
+    );
+    accepted.resolve({ id: "late-comment", version: 1, message: "sent" });
+    assert.equal(await sending, true);
+    assert.equal(c.getSnapshot().createdId, "late-comment");
+    assert.equal(c.getSnapshot().hidden, true);
+    assert.equal(c.getSnapshot().busy, false);
+    assert.equal(c.getSnapshot().sending, false);
+    assert.equal(await c.retryOriginal(), false);
+    assert.equal(bodies.length, 1);
+    c.visibility(false);
+    assert.equal(c.getSnapshot().createdId, "late-comment");
+    assert.equal(await c.send(), false);
+    assert.equal(bodies.length, 1);
+  } finally {
+    c.dispose();
+  }
+});
+
+test("a late concealed save acknowledges only its captured fields and preserves newer edits", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const accepted = deferred<{ id: string; version: number; message: string }>(),
+    bodies: string[] = [];
+  const c = fixture(
+    async (body) => {
+      bodies.push(body);
+      return accepted.promise;
+    },
+    [savedPrivateDraft()],
+    true
+  );
+  try {
+    await c.start();
+    c.change(fields("Captured draft fields"));
+    const saving = c.save();
+    const newer = {
+      content: "Newer fields",
+      mentionIds: [],
+      authorChurchId: null
+    };
+    c.change(newer);
+    c.visibility(true);
+    accepted.resolve({ id: "private-draft", version: 8, message: "saved" });
+    assert.equal(await saving, true);
+    assert.equal(c.getSnapshot().hidden, true);
+    assert.equal(c.getSnapshot().version, 8);
+    assert.deepEqual(c.getSnapshot().fields, newer);
+    assert.equal(c.getSnapshot().dirty, true);
+    assert.equal(c.getSnapshot().retry, false);
+    assert.equal(await c.retryOriginal(), false);
+    t.mock.timers.tick(60000);
+    await Promise.resolve();
+    assert.equal(bodies.length, 1);
+    assert.equal(JSON.parse(bodies[0]).content, "Captured draft fields");
+    assert.equal(JSON.parse(bodies[0]).expectedVersion, 7);
+  } finally {
+    c.dispose();
+  }
+});
+
+test("accepted private original recovery clears a prior conflict for subsequent deliberate work", async () => {
+  const bodies: string[] = [];
+  const c = fixture(
+    async (body) => {
+      bodies.push(body);
+      if (bodies.length === 1)
+        throw new SocialClientError(409, "Changed elsewhere");
+      return {
+        id: "private-draft",
+        version: bodies.length + 6,
+        message: "saved"
+      };
+    },
+    [savedPrivateDraft()],
+    true
+  );
+  try {
+    await c.start();
+    c.change(fields("Original save"));
+    assert.equal(await c.save(), false);
+    assert.equal(c.getSnapshot().conflict, true);
+    assert.equal(c.getSnapshot().retry, true);
+    c.visibility(true);
+    assert.equal(await c.retry(), false);
+    assert.equal(await c.retryOriginal(), true);
+    assert.equal(bodies[0], bodies[1]);
+    assert.equal(c.getSnapshot().retry, false);
+    assert.equal(c.getSnapshot().conflict, false);
+    c.visibility(false);
+    c.change(fields("A new deliberate save"));
+    assert.equal(await c.save(), true);
+    assert.notEqual(
+      JSON.parse(bodies[2]).mutationId,
+      JSON.parse(bodies[0]).mutationId
+    );
+    assert.equal(JSON.parse(bodies[2]).expectedVersion, 8);
+    assert.equal(JSON.parse(bodies[2]).content, "A new deliberate save");
+  } finally {
+    c.dispose();
+  }
+});
+
+test("reviewing a newer copy cannot replace a private unresolved original request", async () => {
+  const bodies: string[] = [],
+    saved = savedPrivateDraft(),
+    items = [saved];
+  const c = fixture(
+    async (body) => {
+      bodies.push(body);
+      if (bodies.length === 1)
+        throw new SocialClientError(503, "Response lost");
+      return { id: "private-draft", version: 8, message: "saved" };
+    },
+    items,
+    true
+  );
+  try {
+    await c.start();
+    c.change(fields("Original uncertain save"));
+    assert.equal(await c.save(), false);
+    items[0] = { ...savedPrivateDraft("Other tab's saved copy"), version: 9 };
+    await c.review();
+    assert.equal(c.getSnapshot().latest?.version, 9);
+    c.useLatest();
+    assert.equal(c.getSnapshot().retry, true);
+    assert.equal(c.getSnapshot().version, 7);
+    assert.equal(c.getSnapshot().fields.content, "Original uncertain save");
+    c.visibility(true);
+    assert.equal(await c.retryOriginal(), true);
+    assert.equal(bodies[0], bodies[1]);
+  } finally {
+    c.dispose();
+  }
+});
+
+test("non-private controllers retain their existing 429 correction behavior", async () => {
+  const bodies: string[] = [];
+  const c = fixture(async (body) => {
+    bodies.push(body);
+    if (bodies.length === 1) throw new SocialClientError(503, "Response lost");
+    if (bodies.length === 2) throw new SocialClientError(429, "Wait", 60);
+    return { id: "draft", version: 1, message: "saved" };
+  });
+  try {
+    await c.start();
+    c.change(fields("Original words"));
+    assert.equal(await c.save(), false);
+    c.change(fields("Corrected words"));
+    assert.equal(await c.retry(), false);
+    assert.equal(bodies[0], bodies[1]);
+    assert.equal(c.getSnapshot().retry, false);
+    assert.equal(await c.retryOriginal(), false);
+    assert.equal(await c.retry(), true);
+    assert.notEqual(
+      JSON.parse(bodies[2]).mutationId,
+      JSON.parse(bodies[0]).mutationId
+    );
+    assert.equal(JSON.parse(bodies[2]).content, "Corrected words");
+    assert.equal(JSON.parse(bodies[2]).expectedVersion, 0);
+  } finally {
+    c.dispose();
+  }
 });

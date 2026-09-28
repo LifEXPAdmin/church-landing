@@ -1,4 +1,10 @@
 "use client";
+import {
+  usePrivatePostWorkspace,
+  usePrivatePostConcealed,
+  usePrivatePostRecovery
+} from "./private-post-workspace";
+
 import { RegionalTime } from "@/components/platform/regional-presentation";
 import Link from "next/link";
 import { Ellipsis, UserPlus, VolumeX, Ban, Bell } from "lucide-react";
@@ -44,6 +50,11 @@ export function RelationshipControls({
   menuLabel?: string;
   reportTarget?: { type: CommunityReportTarget; id: string; label: string };
 }) {
+  const privateScope = usePrivatePostWorkspace(),
+    concealed = usePrivatePostConcealed();
+  const privateOwner = privateScope?.owner,
+    privateAccess = privateScope?.accessVersion,
+    privateRefresh = privateScope?.refresh;
   const [open, setOpen] = useState(false),
     [owner, setOwner] = useState<string | null | undefined>(),
     [data, setData] = useState<RelationshipStatus | null>(null),
@@ -53,7 +64,8 @@ export function RelationshipControls({
   const [pending, setPending] = useState<string | null>(null),
     [conflict, setConflict] = useState(false);
   const generation = useRef(0),
-    inFlight = useRef(false);
+    inFlight = useRef(false),
+    mutationInFlight = useRef(false);
   const { controller } = useDraftWorkspace();
   const router = useRouter();
   const ownerRef = useRef<string | null | undefined>(undefined);
@@ -62,18 +74,19 @@ export function RelationshipControls({
     () => setMessage("Resolve the pending relationship change before leaving.")
   );
   const load = useCallback(async () => {
-    if (inFlight.current) return;
+    if (inFlight.current || (privateAccess && privateAccess() == null)) return;
     inFlight.current = true;
     setBusy(true);
     setHidden(true);
     const seq = ++generation.current;
     try {
-      const actor = await currentSocialOwner();
+      const actor = privateOwner ?? (await currentSocialOwner());
       if (seq !== generation.current) return;
       if (ownerRef.current !== undefined && ownerRef.current !== actor) {
         setPending(null);
         setConflict(false);
-        router.refresh();
+        if (privateRefresh) privateRefresh();
+        else router.refresh();
       }
       ownerRef.current = actor;
       setOwner(actor);
@@ -107,15 +120,17 @@ export function RelationshipControls({
         setBusy(false);
       }
     }
-  }, [kind, targetId, router]);
+  }, [kind, targetId, router, privateOwner, privateAccess, privateRefresh]);
   useEffect(() => {
-    if (!open) return;
+    if (!open || concealed) return;
     void load();
     const conceal = () => {
       generation.current++;
       setHidden(true);
-      inFlight.current = false;
-      setBusy(false);
+      if (!mutationInFlight.current) {
+        inFlight.current = false;
+        setBusy(false);
+      }
     };
     const restore = () => {
       if (document.visibilityState !== "hidden") void load();
@@ -131,7 +146,7 @@ export function RelationshipControls({
       window.removeEventListener("focus", restore);
       document.removeEventListener("visibilitychange", visibility);
     };
-  }, [open, load]);
+  }, [open, load, concealed]);
   function safeToChange() {
     const s = controller.getSnapshot();
     if (
@@ -151,24 +166,38 @@ export function RelationshipControls({
     }
     return true;
   }
-  async function send(body: string) {
-    if (inFlight.current || hidden || !owner) return;
+  async function send(body: string, recovery = false) {
+    if (
+      inFlight.current ||
+      mutationInFlight.current ||
+      (hidden && !recovery) ||
+      !(privateOwner ?? owner) ||
+      (privateAccess && privateAccess() == null)
+    )
+      return;
     inFlight.current = true;
     setBusy(true);
+    mutationInFlight.current = true;
     setPending(body);
     setMessage("Saving relationship choice…");
     try {
-      await socialRequest("/api/platform/relationships", body, owner);
+      await socialRequest(
+        "/api/platform/relationships",
+        body,
+        privateOwner ?? owner
+      );
       setPending(null);
       setData(null);
       setHidden(true);
       setOpen(false);
       window.dispatchEvent(new Event("social-relationships-changed"));
       // Next refresh replaces its route/prefetch cache while retaining unrelated client drafts.
-      router.refresh();
+      if (privateRefresh) privateRefresh();
+      else router.refresh();
     } catch (e) {
       const status = e instanceof SocialClientError ? e.status : 503;
-      if ([400, 401, 403, 404, 409, 429].includes(status)) setPending(null);
+      if (!privateOwner && [400, 401, 403, 404, 409, 429].includes(status))
+        setPending(null);
       if ([401, 403, 404, 409].includes(status)) setConflict(true);
       setMessage(
         e instanceof Error
@@ -176,6 +205,7 @@ export function RelationshipControls({
           : "The response was lost. Retry the same intended change."
       );
     } finally {
+      mutationInFlight.current = false;
       inFlight.current = false;
       setBusy(false);
     }
@@ -210,6 +240,9 @@ export function RelationshipControls({
       })
     );
   }
+  usePrivatePostRecovery(!!pending, busy, () => {
+    if (pending) void send(pending, true);
+  });
   const snoozed =
     data?.snoozedUntil && Date.parse(data.snoozedUntil) > Date.now();
   const choices = open && (

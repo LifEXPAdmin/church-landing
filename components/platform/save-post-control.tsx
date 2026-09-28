@@ -1,4 +1,10 @@
 "use client";
+import {
+  usePrivatePostWorkspace,
+  usePrivatePostConcealed,
+  usePrivatePostRecovery
+} from "./private-post-workspace";
+
 import Link from "next/link";
 import { Bookmark, AlertCircle } from "lucide-react";
 import { ActionPopover } from "./action-popover";
@@ -20,6 +26,11 @@ export function SavePostControl({
   accountId: string | null;
 }) {
   const router = useRouter();
+  const privateScope = usePrivatePostWorkspace(),
+    concealed = usePrivatePostConcealed();
+  const privateOwner = privateScope?.owner,
+    privateAccess = privateScope?.accessVersion,
+    privateRefresh = privateScope?.refresh;
   const [active, setActive] = useState(false),
     [recovery, setRecovery] = useState(false),
     [failed, setFailed] = useState(false),
@@ -32,20 +43,21 @@ export function SavePostControl({
   const root = useRef<HTMLDivElement>(null);
   const actorRef = useRef<string | null | undefined>(undefined),
     generation = useRef(0),
-    inFlight = useRef(false);
+    inFlight = useRef(false),
+    mutationInFlight = useRef(false);
   useUnsavedSocialWork(
     { dirty: false, saving: !!pending, conflict: false },
     () => setMessage("Resolve the pending save before leaving.")
   );
   const load = useCallback(async () => {
-    if (inFlight.current) return;
+    if (inFlight.current || (privateAccess && privateAccess() == null)) return;
     inFlight.current = true;
     setBusy(true);
     setReady(false);
     setFailed(false);
     const seq = ++generation.current;
     try {
-      const actor = await currentSocialOwner();
+      const actor = privateOwner ?? (await currentSocialOwner());
       if (seq !== generation.current) return;
       if (actorRef.current !== undefined && actorRef.current !== actor) {
         setPending(null);
@@ -90,7 +102,7 @@ export function SavePostControl({
         setBusy(false);
       }
     }
-  }, [postId, router]);
+  }, [postId, router, privateOwner, privateAccess]);
   useEffect(() => {
     if (!accountId || active || !root.current) return;
     const observer = new IntersectionObserver((entries) => {
@@ -103,12 +115,14 @@ export function SavePostControl({
     return () => observer.disconnect();
   }, [accountId, active]);
   useEffect(() => {
-    if (!active) return;
+    if (!active || (privateOwner && concealed)) return;
     void load();
     const conceal = () => {
       generation.current++;
-      inFlight.current = false;
-      setBusy(false);
+      if (!mutationInFlight.current) {
+        inFlight.current = false;
+        setBusy(false);
+      }
       setReady(false);
     };
     const restore = () => {
@@ -125,17 +139,29 @@ export function SavePostControl({
       window.removeEventListener("focus", restore);
       document.removeEventListener("visibilitychange", visibility);
     };
-  }, [active, load]);
-  async function send(body: string) {
-    if (inFlight.current || !ready || !owner) return;
+  }, [active, load, privateOwner, concealed]);
+  async function send(body: string, recovery = false) {
+    if (
+      inFlight.current ||
+      mutationInFlight.current ||
+      (!ready && !recovery) ||
+      !(privateOwner ?? owner) ||
+      (privateAccess && privateAccess() == null)
+    )
+      return;
     inFlight.current = true;
     setBusy(true);
+    mutationInFlight.current = true;
     setPending(body);
     setFailed(false);
     setMessage("Saving your bookmark…");
     const seq = generation.current;
     try {
-      await socialRequest("/api/platform/post-workspace", body, owner);
+      await socialRequest(
+        "/api/platform/post-workspace",
+        body,
+        privateOwner ?? owner
+      );
       if (seq !== generation.current) return;
       setPending(null);
       inFlight.current = false;
@@ -158,9 +184,13 @@ export function SavePostControl({
         setFailed(true);
         setRecovery(true);
         const status = e instanceof SocialClientError ? e.status : 503;
-        if ([400, 401, 403, 404, 409, 429].includes(status)) setPending(null);
+        if (!privateOwner && [400, 401, 403, 404, 409, 429].includes(status))
+          setPending(null);
         if ([401, 403, 404, 409].includes(status)) setReady(false);
-        if ([401, 403, 404].includes(status)) router.refresh();
+        if ([401, 403, 404].includes(status)) {
+          if (privateRefresh) privateRefresh();
+          else router.refresh();
+        }
         setMessage(
           e instanceof Error
             ? e.message
@@ -168,12 +198,17 @@ export function SavePostControl({
         );
       }
     } finally {
-      if (seq === generation.current) {
+      mutationInFlight.current = false;
+      if (seq === generation.current || privateOwner) {
         inFlight.current = false;
         setBusy(false);
       }
     }
   }
+  usePrivatePostRecovery(!!pending, busy, () => {
+    if (pending) void send(pending, true).then(() => privateRefresh?.());
+  });
+  if (concealed) return <div ref={root} />;
   return (
     <div ref={root} className="gc-bookmark-control">
       {!accountId || owner === null ? (

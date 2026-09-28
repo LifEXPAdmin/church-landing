@@ -3,11 +3,15 @@ import { flushSync } from "react-dom";
 import { settlePhotoNavigation } from "./use-photo-back-guard";
 import { RegionalEventTime, RegionalWallTime } from "./regional-presentation";
 import {
+  createContext,
+  useContext,
   useEffect,
   useId,
+  useLayoutEffect,
   useRef,
   useState,
   useTransition,
+  type ChangeEvent,
   type ReactNode
 } from "react";
 import { useRouter } from "next/navigation";
@@ -18,20 +22,38 @@ import { accountEntryHref } from "@/lib/platform/account-entry";
 import { portalInputClass, portalButtonClass } from "./portal-action-form";
 import { useUnsavedSocialWork } from "./use-unsaved-social-work";
 import { LocalEventTime } from "./local-event-time";
+import { socialRequest, SocialClientError } from "@/lib/platform/social-client";
+import { usePrivatePostRecovery } from "./private-post-workspace";
+
+export type PrivateParticipationAccess = {
+  owner: string;
+  visible: boolean;
+  beforeWrite: (operation: string) => Promise<() => void>;
+  refresh: () => void;
+  registerWork: (id: string, work: boolean, busy?: boolean) => void;
+};
+export const PrivateParticipation = createContext<PrivateParticipationAccess | null>(null);
+function ParticipationPresentation({ children }: { children: ReactNode }) {
+  const access = useContext(PrivateParticipation);
+  return access && !access.visible ? null : children;
+}
 
 function ParticipationForm({
   payload,
   fields,
   children,
   label,
-  disabled = false
+  disabled = false,
+  onDiscard
 }: {
   payload: Record<string, unknown>;
   fields?: (form: FormData) => Record<string, unknown>;
   children?: ReactNode;
   label: string;
   disabled?: boolean;
+  onDiscard?: () => void;
 }) {
+  const access = useContext(PrivateParticipation), workId = useId();
   const router = useRouter(),
     resultRef = useRef<HTMLParagraphElement>(null),
     inFlight = useRef(false),
@@ -40,6 +62,7 @@ function ParticipationForm({
   const [dirty, setDirty] = useState(false);
   const [pending, setPending] = useState(false),
     [refreshing, refresh] = useTransition();
+  const [originalBody, setOriginalBody] = useState<string | null>(null);
   const [result, setResult] = useState<{
     message: string;
     failed: boolean;
@@ -48,7 +71,7 @@ function ParticipationForm({
     if (result) resultRef.current?.focus();
   }, [result]);
   useUnsavedSocialWork(
-    { dirty, saving: pending, conflict: false },
+    { dirty, saving: pending || !!originalBody, conflict: false },
     () =>
       setResult({
         message:
@@ -57,6 +80,49 @@ function ParticipationForm({
       }),
     true
   );
+  const registerWork = access?.registerWork;
+  useLayoutEffect(() => {
+    registerWork?.(workId, dirty || pending || !!originalBody, pending);
+    return () => registerWork?.(workId, false);
+  }, [registerWork, workId, dirty, pending, originalBody]);
+  async function sendOriginal(body: string) {
+    if (!access || inFlight.current) return;
+    inFlight.current = true;
+    flushSync(() => {
+      setPending(true);
+      setOriginalBody(body);
+    });
+    try {
+      const guard = await access.beforeWrite(String(JSON.parse(body).operation));
+      const response = await socialRequest<{ message: string }>(
+        "/api/platform/participation", body, access.owner, "POST", guard
+      );
+      flushSync(() => {
+        setDirty(false);
+        setOriginalBody(null);
+        setResult({ message: response.data.message, failed: false });
+        setPending(false);
+      });
+      access.refresh();
+    } catch (error) {
+      // These commands use state/version checks, not SocialOperation receipts.
+      // Keep the original values until an explicit check, retry or local discard.
+      if (error instanceof SocialClientError && error.status === 400)
+        setOriginalBody(null);
+      setResult({
+        message: error instanceof SocialClientError
+          ? `${error.message} Check current participation before deciding whether to retry. An earlier submission may already have completed.`
+          : "The response was interrupted. An earlier submission may already have completed. Check current participation, or retry the original values under current permission and version checks.",
+        failed: true
+      });
+    } finally {
+      inFlight.current = false;
+      setPending(false);
+    }
+  }
+  usePrivatePostRecovery(!!access && !!originalBody, pending,
+    () => { if (originalBody) void sendOriginal(originalBody); });
+  if (access && !access.visible) return null;
   return (
     <form
       className="space-y-3"
@@ -70,6 +136,11 @@ function ParticipationForm({
         inFlight.current = true;
         setPending(true);
         const form = new FormData(e.currentTarget);
+        if (access) {
+          inFlight.current = false;
+          void sendOriginal(originalBody ?? JSON.stringify({ ...payload, ...fields?.(form) }));
+          return;
+        }
         try {
           const response = await fetch("/api/platform/participation", {
             method: "POST",
@@ -118,7 +189,7 @@ function ParticipationForm({
       }}
     >
       <fieldset
-        disabled={pending || refreshing || created || disabled}
+        disabled={pending || refreshing || created || disabled || !!originalBody}
         className="min-w-0 space-y-3"
       >
         {children}
@@ -150,11 +221,33 @@ function ParticipationForm({
           Add another role
         </button>
       )}
-      {dirty && !pending && !refreshing && (
+      {access && originalBody && !pending && (
+        <>
+          <button type="button" className={portalButtonClass}
+            onClick={() => void sendOriginal(originalBody)}>
+            Retry original participation request
+          </button>
+          <button type="button" className={portalButtonClass} onClick={access.refresh}>
+            Check current participation
+          </button>
+        </>
+      )}
+      {(dirty || !!originalBody) && !pending && !refreshing && (
         <button
           type="button"
           className={portalButtonClass}
           onClick={(e) => {
+            if (access) {
+              if (!window.confirm("Discard these local participation entries and check saved state? An earlier submission may already have completed. This does not undo it or submit a replacement.")) return;
+              flushSync(() => {
+                setDirty(false);
+                setOriginalBody(null);
+                setResult(null);
+                onDiscard?.();
+              });
+              access.refresh();
+              return;
+            }
             e.currentTarget.form?.reset();
             setDirty(false);
             setResult(null);
@@ -494,6 +587,14 @@ export function PostParticipationControls({
   defaultClose: string;
 }) {
   const poll = view.poll;
+  const privateAccess = useContext(PrivateParticipation);
+  const concealed = !!privateAccess && !privateAccess.visible;
+  const voteIdentity = `${poll?.id ?? ""}:${poll?.version ?? 0}:${poll?.ballot?.version ?? 0}`;
+  const [voteDraft, setVoteDraft] = useState({
+    identity: voteIdentity, optionIds: poll?.ballot?.optionIds ?? []
+  });
+  if (privateAccess && voteDraft.identity !== voteIdentity)
+    setVoteDraft({ identity: voteIdentity, optionIds: poll?.ballot?.optionIds ?? [] });
   return (
     <section
       className="my-5 space-y-5 border-y border-gc-divider py-5"
@@ -501,6 +602,7 @@ export function PostParticipationControls({
     >
       {poll && (
         <section className="space-y-3" aria-label="Poll">
+          <ParticipationPresentation>
           <h3 className="font-semibold">{poll.question}</h3>
           <p className="text-sm text-gc-muted">
             {poll.closed ? (
@@ -516,6 +618,7 @@ export function PostParticipationControls({
               ? "Multiple choices per ballot."
               : "One choice per ballot."}
           </p>
+          </ParticipationPresentation>
           {view.eligible && !poll.closed ? (
             <ParticipationForm
               label={poll.ballot ? "Save changed vote" : "Submit vote"}
@@ -526,6 +629,7 @@ export function PostParticipationControls({
                 expectedVersion: poll.ballot?.version ?? 0
               }}
               fields={(form) => ({ optionIds: form.getAll("optionIds") })}
+              onDiscard={() => setVoteDraft({ identity: voteIdentity, optionIds: poll.ballot?.optionIds ?? [] })}
             >
               <fieldset key={poll.ballot?.version ?? 0} className="min-w-0">
                 <legend className="sr-only">{poll.question}</legend>
@@ -538,7 +642,17 @@ export function PostParticipationControls({
                       type={poll.multiple ? "checkbox" : "radio"}
                       name="optionIds"
                       value={o.id}
-                      defaultChecked={poll.ballot?.optionIds.includes(o.id)}
+                      {...(privateAccess ? {
+                        checked: voteDraft.optionIds.includes(o.id),
+                        onChange: (event: ChangeEvent<HTMLInputElement>) => setVoteDraft({
+                          identity: voteIdentity,
+                          optionIds: poll.multiple
+                            ? event.target.checked
+                              ? [...voteDraft.optionIds.filter(id => id !== o.id), o.id]
+                              : voteDraft.optionIds.filter(id => id !== o.id)
+                            : [o.id]
+                        })
+                      } : { defaultChecked: poll.ballot?.optionIds.includes(o.id) })}
                       className="h-6 w-6 shrink-0 accent-gc-action"
                     />
                     <PollResult
@@ -555,6 +669,7 @@ export function PostParticipationControls({
               </p>
             </ParticipationForm>
           ) : (
+            <ParticipationPresentation>
             <ul className="space-y-2">
               {poll.options.map((o) => (
                 <li key={o.id}>
@@ -566,7 +681,9 @@ export function PostParticipationControls({
                 </li>
               ))}
             </ul>
+            </ParticipationPresentation>
           )}
+          <ParticipationPresentation>
           {!poll.total && (
             <p className="text-sm text-gc-muted">No votes yet.</p>
           )}
@@ -576,6 +693,7 @@ export function PostParticipationControls({
               add up to more than 100%.
             </p>
           )}
+          </ParticipationPresentation>
           {manage && view.canEdit && !poll.closed && (
             <ParticipationForm
               label="Close voting"
@@ -588,6 +706,7 @@ export function PostParticipationControls({
           )}
         </section>
       )}
+      <ParticipationPresentation>
       {(poll || view.slots.length > 0) && !view.eligible && (
         <p className="text-sm">
           {view.signedIn ? (
@@ -630,8 +749,10 @@ export function PostParticipationControls({
           )}
         </section>
       )}
+      </ParticipationPresentation>
       {view.slots.length > 0 && view.event && (
         <section className="space-y-4" aria-label="Volunteer roles">
+          <ParticipationPresentation>
           <h3 className="font-semibold">Volunteer for {view.event.title}</h3>
           <p className="text-sm text-gc-muted">
             Choose a role to help. A volunteer signup is separate from your
@@ -642,13 +763,15 @@ export function PostParticipationControls({
               This event is canceled. No new places can be reserved.
             </p>
           )}
+          </ParticipationPresentation>
           {view.slots.map((slot) => (
             <section
               key={slot.id}
-              id={`volunteer-${slot.id}`}
+              id={concealed ? undefined : `volunteer-${slot.id}`}
               className="space-y-3 rounded-lg border border-gc-divider p-4"
-              aria-label={slot.role}
+              aria-label={concealed ? undefined : slot.role}
             >
+              <ParticipationPresentation>
               <h4 className="font-semibold">{slot.role}</h4>
               {slot.shift && <>
                 <EventTime event={{ ...view.event!, ...slot.shift }} />
@@ -661,8 +784,10 @@ export function PostParticipationControls({
                   ? "Closed to new signups"
                   : `${Math.max(0, slot.capacity - slot.filled)} available`}
               </p>
+              </ParticipationPresentation>
               {slot.signup?.state === "ACTIVE" ? (
                 <>
+                  <ParticipationPresentation>
                   <p className="text-gc-action">Your place is reserved.</p>
                   {slot.signup.detailsChanged && (
                     <p role="status">
@@ -670,6 +795,7 @@ export function PostParticipationControls({
                       current event details.
                     </p>
                   )}
+                  </ParticipationPresentation>
                   <ParticipationForm
                     label="Cancel my signup"
                     payload={{
@@ -702,12 +828,14 @@ export function PostParticipationControls({
               )}
             </section>
           ))}
+          <ParticipationPresentation>
           <Link
             className="inline-flex min-h-11 items-center underline"
             href="/platform/commitments"
           >
             My commitments
           </Link>
+          </ParticipationPresentation>
         </section>
       )}
       {manage && view.canEdit && (!poll || (!poll.locked && !poll.closed)) && (

@@ -6,6 +6,10 @@ import {
   useState,
   useSyncExternalStore
 } from "react";
+import {
+  usePrivatePostWorkspace,
+  usePrivatePostRecovery
+} from "./private-post-workspace";
 import { CommentDraftController } from "@/lib/platform/comment-draft-controller";
 import { socialRequest } from "@/lib/platform/social-client";
 import {
@@ -37,6 +41,8 @@ function OpenCommentComposer({
   onSent: () => void;
   onClose: () => void;
 }) {
+  const privateScope = usePrivatePostWorkspace();
+  const privateOwner = !!privateScope;
   const controller = useMemo(
     () =>
       new CommentDraftController(
@@ -45,9 +51,10 @@ function OpenCommentComposer({
         postId,
         replyToId,
         undefined,
-        draftId
+        draftId,
+        privateOwner
       ),
-    [postId, owner, replyToId, draftId]
+    [postId, owner, replyToId, draftId, privateOwner]
   );
   const state = useSyncExternalStore(
     controller.subscribe,
@@ -99,11 +106,28 @@ function OpenCommentComposer({
   useUnsavedSocialWork(
     {
       dirty: state.dirty,
-      saving: state.busy || state.retry,
+      saving: state.busy || state.retry || (privateOwner && !!state.createdId),
       conflict: state.conflict
     },
     () => setCloseChoice(true)
   );
+  const finish = (seq: number | null | undefined) => {
+    if (!privateScope || (seq != null && privateScope.accessVersion() === seq))
+      onSent();
+  };
+  usePrivatePostRecovery(state.retry || !!state.createdId, state.busy, () => {
+    const seq = privateScope?.accessVersion();
+    if (seq == null) return;
+    if (state.createdId) {
+      finish(seq);
+      privateScope?.refresh();
+      return;
+    }
+    void controller.retryOriginal().then((ok) => {
+      if (ok && controller.getSnapshot().createdId) finish(seq);
+      privateScope?.refresh();
+    });
+  });
   const disabled = !state.ready || state.sending || !!state.createdId;
   if (hidden) return null;
   if (unavailable)
@@ -170,8 +194,9 @@ function OpenCommentComposer({
         className="h-full min-h-0"
         onSubmit={(e) => {
           e.preventDefault();
+          const seq = privateScope?.accessVersion();
           void controller.send().then((sent) => {
-            if (sent) onSent();
+            if (sent) finish(seq);
           });
         }}
       >
@@ -355,9 +380,12 @@ function OpenCommentComposer({
                 className="gc-button gc-button-quiet"
                 disabled={state.busy}
                 onClick={() =>
-                  void controller.retry().then((ok) => {
-                    if (ok && controller.getSnapshot().createdId) onSent();
-                  })
+                  (() => {
+                    const seq = privateScope?.accessVersion();
+                    void controller.retry().then((ok) => {
+                      if (ok && controller.getSnapshot().createdId) finish(seq);
+                    });
+                  })()
                 }
               >
                 Retry same request

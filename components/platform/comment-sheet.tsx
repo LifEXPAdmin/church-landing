@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { MessageCircle } from "lucide-react";
 import { CommentThread } from "./comment-thread";
 import { useDraftWorkspace } from "./draft-workspace-provider";
+import { usePrivatePostConcealed } from "./private-post-workspace";
 import { useReadVisibility } from "./read-visibility";
 export function CommentSheet({
   postId,
@@ -19,6 +20,7 @@ export function CommentSheet({
     opener = useRef<HTMLButtonElement>(null);
   const { controller } = useDraftWorkspace();
   const sourceVisible = useReadVisibility();
+  const concealed = usePrivatePostConcealed();
   useEffect(() => {
     if (!open || !sourceVisible) return;
     const node = dialog.current!,
@@ -43,24 +45,26 @@ export function CommentSheet({
   }
   return (
     <>
-      <button
-        ref={opener}
-        type="button"
-        className={compact ? "gc-post-action" : "gc-button gc-button-quiet"}
-        aria-label={compact ? `Comment, ${count} comments` : undefined}
-        aria-haspopup="dialog"
-        onClick={() => setOpen(true)}
-      >
-        <MessageCircle aria-hidden="true" />
-        {compact ? (
-          <>
-            <span className="gc-post-action-label">Comment</span>
-            <span>{count}</span>
-          </>
-        ) : (
-          `Discussion (${count})`
-        )}
-      </button>
+      {!concealed && (
+        <button
+          ref={opener}
+          type="button"
+          className={compact ? "gc-post-action" : "gc-button gc-button-quiet"}
+          aria-label={compact ? `Comment, ${count} comments` : undefined}
+          aria-haspopup="dialog"
+          onClick={() => setOpen(true)}
+        >
+          <MessageCircle aria-hidden="true" />
+          {compact ? (
+            <>
+              <span className="gc-post-action-label">Comment</span>
+              <span>{count}</span>
+            </>
+          ) : (
+            `Discussion (${count})`
+          )}
+        </button>
+      )}
       {open && (
         <dialog
           ref={dialog}
@@ -73,17 +77,21 @@ export function CommentSheet({
           }}
           className="m-auto max-h-[90dvh] w-[calc(100%_-_1rem)] max-w-3xl overscroll-contain rounded-xl border border-gc-divider bg-gc-surface p-4 text-gc-text backdrop:bg-black/50"
         >
-          <header className="mb-4 flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-xl">Post discussion</h2>
-            <button
-              type="button"
-              className="gc-button gc-button-quiet"
-              onClick={close}
-            >
-              Close discussion
-            </button>
-          </header>
-          <p role="status">{notice}</p>
+          {!concealed && (
+            <>
+              <header className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                <h2 className="text-xl">Post discussion</h2>
+                <button
+                  type="button"
+                  className="gc-button gc-button-quiet"
+                  onClick={close}
+                >
+                  Close discussion
+                </button>
+              </header>
+              <p role="status">{notice}</p>
+            </>
+          )}
           <CommentThread postId={postId} />
         </dialog>
       )}

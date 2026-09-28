@@ -1,4 +1,8 @@
 "use client";
+import {
+  usePrivatePostWorkspace,
+  usePrivatePostRecovery
+} from "./private-post-workspace";
 import { useRef, useState } from "react";
 import {
   SocialClientError,
@@ -22,6 +26,8 @@ export function CommentActions({
   hidden: boolean;
   onDone: () => void;
 }) {
+  const privateScope = usePrivatePostWorkspace();
+  const [accepted, setAccepted] = useState(false);
   const [content, setContent] = useState(row.content ?? ""),
     [mentionIds, setMentionIds] = useState(row.mentions.map((m) => m.id));
   const [message, setMessage] = useState(""),
@@ -36,8 +42,21 @@ export function CommentActions({
   useUnsavedSocialWork({ dirty, saving: busy || !!pending, conflict }, () =>
     setMessage("Save your edit or explicitly discard it before leaving.")
   );
-  async function send(body: string) {
-    if (inFlight.current || hidden) return;
+  usePrivatePostRecovery(!!pending || accepted, busy, () => {
+    if (privateScope?.accessVersion() == null) return;
+    if (accepted) {
+      onDone();
+      privateScope.refresh();
+    } else if (pending) void send(pending, true);
+  });
+  async function send(body: string, recovery = false) {
+    if (
+      inFlight.current ||
+      (hidden && !recovery) ||
+      (privateScope && privateScope.accessVersion() == null)
+    )
+      return;
+    const seq = privateScope?.accessVersion();
     inFlight.current = true;
     setBusy(true);
     setPending(body);
@@ -45,10 +64,13 @@ export function CommentActions({
     try {
       await socialRequest("/api/platform/comments", body, owner);
       setPending(null);
-      onDone();
+      setAccepted(true);
+      if (!privateScope || privateScope.accessVersion() === seq) onDone();
+      privateScope?.refresh();
     } catch (e) {
       const status = e instanceof SocialClientError ? e.status : 503;
-      if ([400, 401, 403, 404, 409, 429].includes(status)) setPending(null);
+      if (!privateScope && [400, 401, 403, 404, 409, 429].includes(status))
+        setPending(null);
       if ([401, 403, 404, 409].includes(status)) setConflict(true);
       setMessage(
         e instanceof Error

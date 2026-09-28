@@ -1,6 +1,10 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Share2, Copy } from "lucide-react";
+import {
+  usePrivatePostWorkspace,
+  usePrivatePostConcealed
+} from "./private-post-workspace";
 import { ActionPopover } from "./action-popover";
 import { socialRequest } from "@/lib/platform/social-client";
 type Preview = {
@@ -22,6 +26,10 @@ export function PublicShareControls({
   showSiteQr?: boolean;
   compact?: boolean;
 }) {
+  const privateScope = usePrivatePostWorkspace(),
+    concealed = usePrivatePostConcealed();
+  const privateOwner = privateScope?.owner,
+    privateAccess = privateScope?.accessVersion;
   const [open, setOpen] = useState(showSiteQr && kind === "site"),
     [preview, setPreview] = useState<Preview | null>(null),
     [busy, setBusy] = useState(false),
@@ -41,9 +49,9 @@ export function PublicShareControls({
         title: "God’s Churches",
         description: "Faith and community."
       };
-    const r = await socialRequest<Preview>(path);
+    const r = await socialRequest<Preview>(path, undefined, privateOwner);
     return r.data;
-  }, [path, kind, siteUrl]);
+  }, [path, kind, siteUrl, privateOwner]);
   const load = useCallback(async () => {
     if (inFlight.current) return;
     inFlight.current = true;
@@ -75,7 +83,7 @@ export function PublicShareControls({
     }
   }, [read]);
   useEffect(() => {
-    if (!open) return;
+    if (!open || concealed) return;
     void load();
     const conceal = () => {
       generation.current++;
@@ -100,9 +108,10 @@ export function PublicShareControls({
       window.removeEventListener("social-relationships-changed", restore);
       document.removeEventListener("visibilitychange", visibility);
     };
-  }, [open, load]);
+  }, [open, load, concealed]);
   async function act(action: "copy" | "share" | "qr") {
-    if (inFlight.current) return;
+    const access = privateAccess?.();
+    if (inFlight.current || (privateAccess && access == null)) return;
     inFlight.current = true;
     setBusy(true);
     setMessage("Checking the public link…");
@@ -113,7 +122,11 @@ export function PublicShareControls({
     const seq = ++generation.current;
     try {
       const p = await read();
-      if (seq !== generation.current) return;
+      if (
+        seq !== generation.current ||
+        (privateAccess && privateAccess() !== access)
+      )
+        return;
       setPreview(p);
       if (!p.available) {
         setQr(null);

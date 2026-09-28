@@ -1,4 +1,10 @@
 "use client";
+import {
+  usePrivatePostWorkspace,
+  usePrivatePostConcealed,
+  usePrivatePostRecovery
+} from "./private-post-workspace";
+
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -32,7 +38,12 @@ export function RepostControl({
   ownEntry?: { id: string; version: number };
   undoOnly?: boolean;
 }) {
+  const privateScope = usePrivatePostWorkspace();
+  const privateAccess = privateScope?.accessVersion;
+  const privateRefresh = privateScope?.refresh;
+  const concealed = usePrivatePostConcealed();
   const router = useRouter();
+  const [acceptedQuote, setAcceptedQuote] = useState<string | null>(null);
   const [open, setOpen] = useState(false),
     [options, setOptions] = useState<Options | null>(null),
     [churches, setChurches] = useState<PostComposerOptions["churches"]>([]),
@@ -47,14 +58,20 @@ export function RepostControl({
   const generation = useRef(0),
     inFlight = useRef(false);
   useUnsavedSocialWork(
-    { dirty: false, saving: !!pending, conflict: false },
+    { dirty: false, saving: !!pending || !!acceptedQuote, conflict: false },
     () => {
       setOpen(true);
       setMessage("Confirm the pending action before leaving.");
     }
   );
   const load = useCallback(async () => {
-    if (!accountId || inFlight.current || undoOnly) return;
+    if (
+      !accountId ||
+      inFlight.current ||
+      undoOnly ||
+      (privateAccess && privateAccess() == null)
+    )
+      return;
     const seq = ++generation.current;
     setOptions(null);
     setBusy(true);
@@ -95,9 +112,9 @@ export function RepostControl({
     } finally {
       if (seq === generation.current) setBusy(false);
     }
-  }, [accountId, postId, destination, undoOnly]);
+  }, [accountId, postId, destination, undoOnly, privateAccess]);
   useEffect(() => {
-    if (!open) return;
+    if (!open || concealed) return;
     void load();
     const hide = () => {
       generation.current++;
@@ -122,9 +139,15 @@ export function RepostControl({
       window.removeEventListener("offline", hide);
       document.removeEventListener("visibilitychange", visibility);
     };
-  }, [open, load]);
+  }, [open, load, concealed]);
   async function send(work: NonNullable<typeof pending>) {
-    if (inFlight.current || !accountId) return;
+    if (
+      inFlight.current ||
+      !accountId ||
+      (privateAccess && privateAccess() == null)
+    )
+      return;
+    const seq = privateAccess?.();
     inFlight.current = true;
     setBusy(true);
     setPending(work);
@@ -138,23 +161,29 @@ export function RepostControl({
       setPending(null);
       setMessage(r.data.message);
       setOptions(null);
-      if (work.quoteId) {
+      if (work.quoteId && privateAccess && privateAccess() !== seq) {
+        setAcceptedQuote(work.quoteId);
+      } else if (work.quoteId) {
         setOpen(false);
         router.push(
           `/platform/drafts?resume=${encodeURIComponent(work.quoteId)}`
         );
       } else {
-        router.refresh();
+        if (privateRefresh) privateRefresh();
+        else router.refresh();
       }
     } catch (e) {
       if (
         e instanceof SocialClientError &&
         [400, 401, 403, 404, 409, 429].includes(e.status)
       ) {
-        setPending(null);
+        if (!privateScope) setPending(null);
         setOptions(null);
         if (e.status === 401) setOpen(false);
-        if ([401, 403, 404, 409].includes(e.status)) router.refresh();
+        if ([401, 403, 404, 409].includes(e.status)) {
+          if (privateRefresh) privateRefresh();
+          else router.refresh();
+        }
       }
       setMessage(
         e instanceof Error
@@ -219,6 +248,15 @@ export function RepostControl({
         })
       });
   }
+  const continueQuote = () => {
+    if (!acceptedQuote || (privateAccess && privateAccess() == null)) return;
+    setAcceptedQuote(null);
+    router.push(`/platform/drafts?resume=${encodeURIComponent(acceptedQuote)}`);
+  };
+  usePrivatePostRecovery(!!pending || !!acceptedQuote, busy, () => {
+    if (acceptedQuote) continueQuote();
+    else if (pending) void send(pending);
+  });
   return (
     <ActionPopover
       label={undoOnly ? "Undo repost" : "Repost choices"}
@@ -234,6 +272,11 @@ export function RepostControl({
         </>
       }
     >
+      {acceptedQuote && (
+        <button type="button" className="gc-button" onClick={continueQuote}>
+          Open prepared quote
+        </button>
+      )}
       {!accountId ? (
         <Link
           className="gc-button gc-button-quiet"

@@ -1,0 +1,447 @@
+import type { FeedMode } from "@/lib/platform/feed-options";
+import type { DiscoveryExplanation } from "@/lib/platform/discovery-ranking";
+import { DiscoveryPostExplanation } from "./discovery-post-explanation";
+import { RepostControl } from "./repost-control";
+import {
+  RepostSourceBoundary,
+  PostReadBoundary
+} from "./repost-source-boundary";
+import { SourcePreview } from "./quote-source-preview";
+import { AuthorAvatar } from "./author-avatar";
+import { PostPhotos } from "./post-photos";
+import { PostResourceCards } from "./post-resource-cards";
+import { PublicShareControls } from "./public-share-controls";
+import { SavePostControl } from "./save-post-control";
+import { PostMoreMenu } from "./post-more-menu";
+import { CommentSheet } from "./comment-sheet";
+import { CommentThread } from "./comment-thread";
+import type { PostView } from "@/lib/platform/post-reads";
+import { PostLink } from "./post-link";
+import { PostLikeControl } from "./post-like-control";
+import { PrayerControl } from "./prayer-workspace";
+import { accountEntryHref } from "@/lib/platform/account-entry";
+import Link from "next/link";
+import { discoveryLanguageLabel } from "@/lib/platform/discovery-options";
+import { Heart, Globe, MessageCircle } from "lucide-react";
+import { postTypeLabels } from "@/lib/platform/format";
+import { RegionalTime } from "./regional-presentation";
+import type { ReactNode } from "react";
+import { PostText } from "./post-text";
+import { PostContentNote } from "./post-content-note";
+import { postPreviewText } from "@/lib/platform/post-options";
+
+export interface PostCardProps {
+  concealed?: boolean;
+  participation?: ReactNode;
+  feedMode?: FeedMode;
+  feedKey?: string;
+  discoveryExplanation?: DiscoveryExplanation;
+  post: PostView;
+  currentUserId?: string;
+  redirectTo?: string;
+  fullDiscussion?: boolean;
+  moreCommentsHref?: string;
+  commentId?: string;
+  repostContext?: { entryId: string; entryVersion: number };
+}
+export function PostCardContent(props: PostCardProps) {
+  const { post, currentUserId, repostContext } = props;
+  return repostContext ? (
+    <RepostSourceBoundary
+      entryId={repostContext.entryId}
+      entryVersion={repostContext.entryVersion}
+      sourceVersion={post.version}
+      accountId={currentUserId ?? null}
+      commentCount={post.commentCount}
+      likeCount={post.likeCount}
+      preserveMounted
+    >
+      <PostCardBody {...props} />
+    </RepostSourceBoundary>
+  ) : (
+    <PostReadBoundary
+      enabled
+      feedMode={props.feedMode}
+      feedKey={props.feedKey}
+      postId={post.id}
+      version={post.version}
+      accountId={currentUserId ?? null}
+      commentCount={post.commentCount}
+      likeCount={post.likeCount}
+    >
+      {props.discoveryExplanation && (
+        <DiscoveryPostExplanation
+          value={props.discoveryExplanation}
+          owner={currentUserId ?? null}
+        />
+      )}
+      <PostCardBody {...props} />
+    </PostReadBoundary>
+  );
+}
+function PostCardBody({
+  concealed = false,
+  participation,
+  post,
+  currentUserId,
+  redirectTo = "/platform",
+  fullDiscussion = false,
+  commentId,
+  repostContext
+}: PostCardProps) {
+  if (post.repost?.kind === "PLAIN") {
+    const source = post.repost.source;
+    return (
+      <section
+        aria-label={concealed ? undefined : `Reposted by ${post.author.name}`}
+        className="min-w-0"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gc-border px-4 py-2 text-sm text-gc-muted">
+          {!concealed && (
+            <span>
+              <Link
+                className="font-semibold underline"
+                href={
+                  post.author.churchId
+                    ? `/platform/churches/${post.author.churchId}`
+                    : `/platform/profile/${post.author.username}`
+                }
+              >
+                {post.author.name}
+              </Link>{" "}
+              reposted ·{" "}
+              <time dateTime={new Date(post.createdAt).toISOString()}>
+                <RegionalTime
+                  value={post.createdAt}
+                  locale="en"
+                  options={{
+                    month: "short",
+                    day: "numeric",
+                    hour: "numeric",
+                    minute: "2-digit"
+                  }}
+                />
+              </time>
+              {post.audience === "CHURCH" ? " · Church members" : ""}
+            </span>
+          )}
+          {(!post.repost.canUndo ||
+            (!post.author.churchId && currentUserId === post.author.id)) && (
+            <PostMoreMenu
+              postId={post.id}
+              name={post.author.name}
+              kind={post.author.churchId ? "church" : "person"}
+              targetId={post.author.churchId ?? post.author.id}
+              own={currentUserId === post.author.id}
+              canEdit={false}
+              canWithdraw={false}
+            />
+          )}
+          {post.repost.canUndo && (
+            <RepostControl
+              postId={source?.id ?? post.id}
+              accountId={currentUserId ?? null}
+              ownEntry={{ id: post.id, version: post.version }}
+              undoOnly
+            />
+          )}
+        </div>
+        {source ? (
+          <PostCardContent
+            concealed={concealed}
+            participation={participation}
+            post={{ ...source, repost: null }}
+            currentUserId={currentUserId}
+            redirectTo={redirectTo}
+            fullDiscussion={fullDiscussion}
+            commentId={commentId}
+            repostContext={{ entryId: post.id, entryVersion: post.version }}
+          />
+        ) : (
+          <RepostSourceBoundary
+            entryId={post.id}
+            entryVersion={post.version}
+            sourceVersion={null}
+            accountId={currentUserId ?? null}
+          >
+            {null}
+          </RepostSourceBoundary>
+        )}
+      </section>
+    );
+  }
+  const count = post.commentCount;
+  const previewOnly = !!post.contentNote && !fullDiscussion;
+  return (
+    <>
+      <article
+        className="gc-post"
+        aria-label={concealed ? undefined : `Post by ${post.author.name}`}
+      >
+        {repostContext ? (
+          !concealed && (
+            <SourcePreview source={post} accountId={currentUserId ?? null} />
+          )
+        ) : (
+          <>
+            <header className="gc-post-header">
+              {!concealed && (
+                <Link
+                  href={
+                    post.author.churchId
+                      ? `/platform/churches/${post.author.churchId}`
+                      : `/platform/profile/${post.author.username}`
+                  }
+                  className="gc-post-author"
+                >
+                  <AuthorAvatar
+                    id={post.author.id}
+                    name={post.author.name}
+                    owner={post.author.churchId ? null : currentUserId}
+                  />
+                  <span>
+                    <strong>{post.author.name}</strong>
+                    <span className="gc-post-handle">
+                      {post.author.churchId
+                        ? "Church"
+                        : `@${post.author.username}`}
+                    </span>
+                  </span>
+                </Link>
+              )}
+              <PostMoreMenu
+                postId={post.id}
+                name={post.author.name}
+                kind={post.author.churchId ? "church" : "person"}
+                targetId={post.author.churchId ?? post.author.id}
+                own={currentUserId === post.author.id}
+                canEdit={post.canEdit}
+                canWithdraw={post.canWithdraw}
+                canModerate={post.canModerate}
+              />
+            </header>
+            {!concealed && (
+              <>
+                <div className="gc-post-meta">
+                  <time dateTime={new Date(post.createdAt).toISOString()}>
+                    <RegionalTime
+                      value={post.createdAt}
+                      locale="en"
+                      options={{
+                        month: "short",
+                        day: "numeric",
+                        hour: "numeric",
+                        minute: "2-digit"
+                      }}
+                    />
+                  </time>
+                  <span>
+                    <Globe aria-hidden="true" />
+                    {post.audience === "GROUP"
+                      ? "Private group members"
+                      : post.audience === "PUBLIC"
+                        ? "Public"
+                        : "Church members"}
+                  </span>
+                  <span className="gc-post-type">
+                    {postTypeLabels[post.type]}
+                  </span>
+                  {post.editedAt && <span>Edited</span>}
+                  {post.pinned && <span>Pinned notice</span>}
+                </div>
+                {post.topics.length > 0 && (
+                  <p className="text-sm text-gc-muted">
+                    Topics: {post.topics.join(", ")}
+                  </p>
+                )}
+                {post.discovery && (
+                  <p className="text-sm text-gc-muted">
+                    Author-selected:{" "}
+                    {post.discovery.language
+                      ? `language ${discoveryLanguageLabel(post.discovery.language)}`
+                      : "unclassified language"}{" "}
+                    · {post.discovery.denomination ?? "unclassified tradition"}
+                    {post.discovery.locality
+                      ? ` · broad locality ${post.discovery.locality}`
+                      : ""}
+                  </p>
+                )}
+                {post.topicCommunity && (
+                  <Link
+                    className="inline-flex min-h-11 items-center text-gc-accent underline"
+                    href={`/platform/topics/${post.topicCommunity.slug}`}
+                  >
+                    {post.topicCommunity.name}
+                  </Link>
+                )}
+                {post.topicCommunity &&
+                  currentUserId &&
+                  !post.canReply &&
+                  !post.discussionClosed && (
+                    <p className="text-sm text-gc-muted">
+                      Open this topic to review its rules and your participation
+                      access.
+                    </p>
+                  )}
+                {post.need && (
+                  <Link
+                    prefetch={false}
+                    className="inline-flex min-h-11 items-center underline"
+                    href={`/platform/exchange/${post.need.listingId}/needs`}
+                  >
+                    Open need actions and current progress
+                  </Link>
+                )}
+                {post.eventOccurrenceId && (
+                  <Link
+                    className="inline-flex min-h-11 items-center text-gc-accent underline"
+                    href={`/platform/events/${post.eventOccurrenceId}`}
+                  >
+                    View event details and RSVP
+                  </Link>
+                )}
+                <PostContentNote note={post.contentNote} />
+                {previewOnly ? (
+                  <p className="whitespace-pre-wrap break-words">
+                    {postPreviewText(post)}
+                  </p>
+                ) : (
+                  <>
+                    <PostText content={post.content} />
+                    {post.mentions.length > 0 && (
+                      <p className="text-sm text-gc-muted">
+                        Mentioned:{" "}
+                        {post.mentions.map((person, index) => (
+                          <span key={person.id}>
+                            {index > 0 ? ", " : ""}
+                            <Link
+                              className="underline"
+                              href={`/platform/profile/${person.username}`}
+                            >
+                              {person.name}
+                            </Link>
+                          </span>
+                        ))}
+                      </p>
+                    )}
+                    <PostLink {...post} />
+                    <PostResourceCards
+                      key={`${currentUserId ?? "guest"}:${post.id}:${post.version}`}
+                      postId={post.id}
+                      version={post.version}
+                      owner={currentUserId ?? null}
+                    />
+                    {post.photoCount > 0 && (
+                      <PostPhotos
+                        postId={post.id}
+                        accountId={currentUserId ?? null}
+                      />
+                    )}
+                    {post.scripture && (
+                      <p className="gc-scripture">
+                        <span>Scripture reference</span>
+                        {post.scripture}
+                      </p>
+                    )}
+                  </>
+                )}
+              </>
+            )}
+          </>
+        )}
+        {!concealed && !previewOnly && post.repost?.kind === "QUOTE" && (
+          <RepostSourceBoundary
+            entryId={post.id}
+            entryVersion={post.version}
+            sourceVersion={post.repost.source?.version ?? null}
+            accountId={currentUserId ?? null}
+          >
+            {post.repost.source && (
+              <SourcePreview
+                source={post.repost.source}
+                accountId={currentUserId ?? null}
+              />
+            )}
+          </RepostSourceBoundary>
+        )}
+        <div className="gc-post-actions" aria-label="Post actions">
+          {fullDiscussion ? (
+            !concealed && (
+              <Link
+                className="gc-post-action"
+                href={`#discussion-${post.id}`}
+                aria-label={`Comment, ${count} comments`}
+              >
+                <MessageCircle aria-hidden="true" />
+                <span className="gc-post-action-label">Comment</span>
+                <span>{count}</span>
+              </Link>
+            )
+          ) : (
+            <CommentSheet postId={post.id} count={count} compact />
+          )}
+
+          {currentUserId ? (
+            <PostLikeControl
+              key={`${currentUserId}-${post.id}`}
+              postId={post.id}
+              owner={currentUserId}
+              initial={{
+                liked: post.liked,
+                version: post.likeVersion,
+                count: post.likeCount
+              }}
+            />
+          ) : (
+            !concealed && (
+              <Link
+                className="gc-post-action"
+                aria-label="Sign in to like this post"
+                href={accountEntryHref(
+                  "join",
+                  `/platform/posts/${post.id}`,
+                  "like"
+                )}
+              >
+                <Heart aria-hidden="true" />
+                <span className="gc-post-action-label">Like</span>
+                <span className="gc-reaction-count">{post.likeCount}</span>
+              </Link>
+            )
+          )}
+          {!concealed && (
+            <PrayerControl postId={post.id} owner={currentUserId ?? null} />
+          )}
+          <RepostControl postId={post.id} accountId={currentUserId ?? null} />
+          <SavePostControl postId={post.id} accountId={currentUserId ?? null} />
+          <PublicShareControls kind="post" id={post.id} compact />
+        </div>
+        {!previewOnly &&
+          !repostContext &&
+          (post.hasParticipation ||
+            !!post.eventOccurrenceId ||
+            (fullDiscussion && (post.canEdit || post.canOrganize))) &&
+          participation}
+        {!concealed && (!fullDiscussion || repostContext) && (
+          <Link
+            className="inline-flex min-h-11 items-center text-sm text-gc-accent underline"
+            href={`/platform/posts/${post.id}`}
+          >
+            {repostContext
+              ? "View original post and comments"
+              : "View post and comments"}
+          </Link>
+        )}
+        {fullDiscussion && (
+          <div id={`discussion-${post.id}`} className="scroll-mt-4">
+            <CommentThread
+              postId={post.id}
+              commentId={commentId}
+              initiallyClosed={post.discussionClosed}
+            />
+          </div>
+        )}
+      </article>
+    </>
+  );
+}

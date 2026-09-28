@@ -16,7 +16,7 @@ const headers = {
   "Cache-Control": "private, no-store, max-age=0",
   "Referrer-Policy": "no-referrer",
   "X-Robots-Tag": "noindex, nofollow",
-  Vary: "Cookie"
+  Vary: "Cookie, X-Expected-Account"
 };
 export async function handleParticipationRequest(
   db: PrismaClient,
@@ -26,6 +26,12 @@ export async function handleParticipationRequest(
   try {
     const token = requestSessionToken(request),
       url = new URL(request.url);
+    const expectedOwner = request.headers.get("x-expected-account");
+    const checkedActor = expectedOwner
+      ? await readAccountSession(db, token)
+      : null;
+    if (expectedOwner && checkedActor?.id !== expectedOwner)
+      throw new PortalError(401, "Your sign-in changed. Reload before continuing.");
     if (request.method === "GET") {
       const result =
         url.searchParams.get("view") === "roster"
@@ -61,7 +67,7 @@ export async function handleParticipationRequest(
     }
     if (typeof input.operation !== "string" || input.operation.length > 30)
       throw new PortalError(400, "Choose a participation action.");
-    const actor = await readAccountSession(db, token);
+    const actor = checkedActor ?? await readAccountSession(db, token);
     if (!actor) throw new PortalError(401, "Sign in to continue.");
     const ip = process.env.VERCEL
       ? (request.headers.get("x-real-ip") ?? "unknown").slice(0, 64)

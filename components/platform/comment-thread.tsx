@@ -17,10 +17,18 @@ import { CommentComposer } from "./comment-composer";
 import { CommentActions } from "./comment-actions";
 import { reportEntryHref } from "@/lib/platform/community-report-types";
 import { useUnsavedSocialWork } from "./use-unsaved-social-work";
+import {
+  usePrivatePostWorkspace,
+  usePrivatePostRecovery
+} from "./private-post-workspace";
 import { useReadVisibility } from "./read-visibility";
 import { PrayerControl } from "./prayer-workspace";
 import { prayerUpdateLabels } from "@/lib/platform/prayer-types";
-import { GroupReadProgress, groupReadPage, type GroupReadPage } from "./group-read-progress";
+import {
+  GroupReadProgress,
+  groupReadPage,
+  type GroupReadPage
+} from "./group-read-progress";
 
 export function CommentThread({
   postId,
@@ -32,17 +40,22 @@ export function CommentThread({
   initiallyClosed?: boolean;
 }) {
   const sourceVisible = useReadVisibility();
+  const privateScope = usePrivatePostWorkspace();
+  const fixedOwner = privateScope?.owner;
+  const visibleNow = useRef(sourceVisible);
+  visibleNow.current = sourceVisible;
   const [sort, setSort] = useState<"oldest" | "newest">("oldest");
   const [data, setData] = useState<CommentThreadPage | null>(null);
-  const [readPages,setReadPages] = useState<GroupReadPage[]>([]);
+  const [readPages, setReadPages] = useState<GroupReadPage[]>([]);
   const [replies, setReplies] = useState<
     Record<string, { items: CommentItem[]; nextCursor: string | null }>
   >({});
   const [context, setContext] = useState<CommentThreadPage | null>(null);
-  const [owner, setOwner] = useState<string | null | undefined>(undefined);
-  const [hidden, setHidden] = useState(true),
+  const [owner, setOwner] = useState<string | null | undefined>(fixedOwner);
+  const [readHidden, setHidden] = useState(true),
     [pending, setPending] = useState(false),
     [error, setError] = useState("");
+  const hidden = readHidden || !sourceVisible;
   const [reply, setReply] = useState<CommentItem | null>(null);
   const [editing, setEditing] = useState<CommentItem | null>(null);
   const [composerEpoch, setComposerEpoch] = useState(0);
@@ -60,7 +73,7 @@ export function CommentThread({
     busy = useRef(false);
   const load = useCallback(
     async (after?: string, rootId?: string) => {
-      if (busy.current) return;
+      if (busy.current || (fixedOwner && !visibleNow.current)) return;
       busy.current = true;
       const seq = ++sequence.current;
       setPending(true);
@@ -83,7 +96,7 @@ export function CommentThread({
         const result = await socialRequest<CommentThreadPage>(
           `/api/platform/comments?${q}`,
           undefined,
-          after || rootId ? owner : undefined
+          fixedOwner ?? (after || rootId ? owner : undefined)
         );
         if (seq !== sequence.current) return;
         if (owner !== undefined && owner !== result.owner) {
@@ -93,7 +106,8 @@ export function CommentThread({
         }
         setOwner(result.owner);
         const readPage = groupReadPage(result.data);
-        if (readPage) setReadPages(previous => [...previous.slice(-24),readPage]);
+        if (readPage)
+          setReadPages((previous) => [...previous.slice(-24), readPage]);
         if (rootId)
           setReplies((previous) => ({
             ...previous,
@@ -123,7 +137,8 @@ export function CommentThread({
             if (seq !== sequence.current) return;
             setContext(linked.data);
             const linkedPage = groupReadPage(linked.data);
-            if (linkedPage) setReadPages(previous => [...previous.slice(-24),linkedPage]);
+            if (linkedPage)
+              setReadPages((previous) => [...previous.slice(-24), linkedPage]);
             if (linked.data.root)
               setReplies((previous) => ({
                 ...previous,
@@ -163,7 +178,7 @@ export function CommentThread({
         }
       }
     },
-    [postId, sort, commentId, owner]
+    [postId, sort, commentId, owner, fixedOwner]
   );
   const loadRef = useRef(load);
   loadRef.current = load;
@@ -227,18 +242,30 @@ export function CommentThread({
       element?.scrollIntoView({ block: "nearest" });
     }
   }, [context, hidden]);
-  async function act(body: string, label: string) {
-    if (mutationBusy.current || hidden || !owner) return;
+  usePrivatePostRecovery(!!mutation, mutating, () => {
+    if (mutation && privateScope?.accessVersion() !== null)
+      void act(mutation.body, mutation.label, true);
+  });
+  async function act(body: string, label: string, recovery = false) {
+    if (
+      mutationBusy.current ||
+      (hidden && !recovery) ||
+      !owner ||
+      (recovery && privateScope?.accessVersion() == null)
+    )
+      return;
     mutationBusy.current = true;
     setMutating(true);
     setMutation({ body, label });
     try {
       await socialRequest("/api/platform/comments", body, owner);
       setMutation(null);
-      await load();
+      if (privateScope) privateScope.refresh();
+      else await load();
     } catch (e) {
       const status = e instanceof SocialClientError ? e.status : 503;
-      if ([400, 401, 403, 404, 409, 429].includes(status)) setMutation(null);
+      if (!privateScope && [400, 401, 403, 404, 409, 429].includes(status))
+        setMutation(null);
       setError(
         e instanceof Error
           ? e.message
@@ -380,7 +407,10 @@ export function CommentThread({
                 {prayerUpdateLabels[row.prayerUpdateKind]}
               </p>
             )}
-            <p data-group-comment-content={row.id} className="whitespace-pre-wrap break-words text-[length:var(--gc-reader-size)] leading-relaxed">
+            <p
+              data-group-comment-content={row.id}
+              className="whitespace-pre-wrap break-words text-[length:var(--gc-reader-size)] leading-relaxed"
+            >
               {row.content}
             </p>
             <Link
@@ -464,13 +494,18 @@ export function CommentThread({
       aria-label="Full discussion"
       className="space-y-4"
       data-comment-thread
-      data-post-id={postId}
+      data-post-id={hidden && privateScope ? undefined : postId}
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-2xl" data-group-read-heading>
           Discussion{data && !hidden ? ` · ${data.visibleCount}` : ""}
         </h2>
-        <GroupReadProgress postId={postId} owner={owner} pages={readPages} visible={sourceVisible && !hidden}/>
+        <GroupReadProgress
+          postId={postId}
+          owner={owner}
+          pages={readPages}
+          visible={sourceVisible && !hidden}
+        />
         <label>
           Comment order{" "}
           <select
@@ -637,7 +672,7 @@ export function CommentThread({
           }}
         />
       )}
-      {(data?.discussionClosed ?? initiallyClosed) && (
+      {!hidden && (data?.discussionClosed ?? initiallyClosed) && (
         <p>This discussion is closed. You can still read its comments.</p>
       )}
       {hidden || !data ? (

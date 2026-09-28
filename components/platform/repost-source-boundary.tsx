@@ -10,6 +10,7 @@ import type { FeedMode } from "@/lib/platform/feed-options";
 import { useRouter } from "next/navigation";
 import { socialRequest } from "@/lib/platform/social-client";
 import { currentPostAvailability } from "@/lib/platform/post-availability-client";
+import { usePrivatePostWorkspace } from "./private-post-workspace";
 import { ReadVisibility, useReadVisibility } from "./read-visibility";
 /** Retained server content is concealed on loss of focus/access and refreshed by version. */
 export function RepostSourceBoundary({
@@ -42,11 +43,15 @@ export function RepostSourceBoundary({
     activeReader = useRef(false),
     generation = useRef(0);
   const parentVisible = useReadVisibility();
+  const privateScope = usePrivatePostWorkspace();
+  const privateRefresh = privateScope?.refresh;
+  const parentNow = useRef(parentVisible);
+  parentNow.current = parentVisible;
   const [active, setActive] = useState(false),
     [visible, setVisible] = useState(originalPost || sourceVersion !== null),
     [message, setMessage] = useState("Original post unavailable.");
   const check = useCallback(async () => {
-    if (document.visibilityState === "hidden") return;
+    if (document.visibilityState === "hidden" || !!privateRefresh) return;
     const seq = ++generation.current;
     try {
       const r = originalPost
@@ -72,7 +77,8 @@ export function RepostSourceBoundary({
             undefined,
             accountId
           );
-      if (seq !== generation.current) return;
+      if (seq !== generation.current || (privateRefresh && !parentNow.current))
+        return;
       const match =
         r.data.available &&
         r.data.entryVersion === entryVersion &&
@@ -81,7 +87,8 @@ export function RepostSourceBoundary({
         (likeCount === undefined || r.data.likeCount === likeCount);
       setVisible(match);
       setMessage("Original post unavailable.");
-      if (r.data.available && !match) {
+      if (!match && privateRefresh) privateRefresh();
+      else if (r.data.available && !match) {
         setMessage("Refreshing the original post…");
         router.refresh();
       }
@@ -89,6 +96,7 @@ export function RepostSourceBoundary({
       if (seq === generation.current) {
         setVisible(false);
         setMessage("Reconnect to check the original post.");
+        privateRefresh?.();
       }
     }
   }, [
@@ -101,21 +109,28 @@ export function RepostSourceBoundary({
     likeCount,
     feedMode,
     feedKey,
-    router
+    router,
+    privateRefresh
   ]);
   useEffect(() => {
-    if (!root.current) return;
+    if (privateRefresh || !root.current) return;
     const observer = new IntersectionObserver((entries) =>
       setActive(entries.some((e) => e.isIntersecting))
     );
     observer.observe(root.current);
     return () => observer.disconnect();
-  }, []);
+  }, [privateRefresh]);
   useEffect(() => {
+    if (privateRefresh) return;
     activeReader.current = active;
-    if (active) void check();
-  }, [active, check]);
+    if (active && (!privateRefresh || parentVisible)) void check();
+    if (privateRefresh && !parentVisible) {
+      generation.current++;
+      setVisible(false);
+    }
+  }, [active, check, parentVisible, privateRefresh]);
   useEffect(() => {
+    if (privateRefresh) return;
     const hide = () => {
       generation.current++;
       setVisible(false);
@@ -146,7 +161,15 @@ export function RepostSourceBoundary({
       window.removeEventListener("social-relationships-changed", restore);
       document.removeEventListener("visibilitychange", visibility);
     };
-  }, [check]);
+  }, [check, privateRefresh]);
+  // The private stream owns one bounded current selection/source read. Running
+  // another per-card refresh owner would duplicate reads and can form a loop.
+  if (privateRefresh)
+    return originalPost || sourceVersion !== null ? (
+      children
+    ) : parentVisible ? (
+      <p>Original post unavailable.</p>
+    ) : null;
   return (
     <div ref={root}>
       {!visible && (

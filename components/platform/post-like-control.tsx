@@ -1,4 +1,10 @@
 "use client";
+import {
+  usePrivatePostWorkspace,
+  usePrivatePostConcealed,
+  usePrivatePostRecovery
+} from "./private-post-workspace";
+
 import { Heart } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -16,6 +22,8 @@ export function PostLikeControl({
   initial: LikeState;
 }) {
   const router = useRouter();
+  const privateScope = usePrivatePostWorkspace(),
+    concealed = usePrivatePostConcealed();
   const [state, setState] = useState(initial),
     [busy, setBusy] = useState(false),
     [pending, setPending] = useState<string | null>(null),
@@ -44,7 +52,11 @@ export function PostLikeControl({
     () => setMessage("Confirm your pending Like choice before leaving.")
   );
   async function send(body?: string) {
-    if (flight.current) return;
+    if (
+      flight.current ||
+      (privateScope && privateScope.accessVersion() == null)
+    )
+      return;
     flight.current = true;
     setBusy(true);
     if (body) setPending(body);
@@ -65,19 +77,27 @@ export function PostLikeControl({
       );
     } catch (error) {
       const status = error instanceof SocialClientError ? error.status : 503;
-      if ([400, 401, 403, 404, 409, 429].includes(status)) setPending(null);
+      if (!privateScope && [400, 401, 403, 404, 409, 429].includes(status))
+        setPending(null);
       setRefreshNeeded(true);
       setMessage(
         error instanceof SocialClientError
           ? error.message
           : "The response was lost. Retry the same Like choice, or refresh its status if the change was confirmed."
       );
-      if ([401, 403, 404].includes(status)) router.refresh();
+      if ([401, 403, 404].includes(status)) {
+        if (privateScope) privateScope.refresh();
+        else router.refresh();
+      }
     } finally {
       flight.current = false;
       setBusy(false);
     }
   }
+  usePrivatePostRecovery(!!pending, busy, () => {
+    if (pending) void send(pending).then(() => privateScope?.refresh());
+  });
+  if (concealed) return null;
   return (
     <div>
       <button

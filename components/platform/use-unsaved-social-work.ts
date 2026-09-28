@@ -1,5 +1,6 @@
 "use client";
-import { useEffect, useId, useRef } from "react";
+import { useEffect, useId, useLayoutEffect, useRef } from "react";
+import { usePrivatePostWorkspace } from "./private-post-workspace";
 import { usePhotoBackGuard } from "./use-photo-back-guard";
 import { useDraftWorkspace } from "./draft-workspace-provider";
 export function useUnsavedSocialWork(
@@ -13,6 +14,11 @@ export function useUnsavedSocialWork(
   notice.current = onBlocked;
   const { dirty, saving, conflict } = work;
   const blocked = dirty || saving || conflict;
+  const register = usePrivatePostWorkspace()?.registerWork;
+  useLayoutEffect(() => {
+    register?.(key, blocked);
+    return () => register?.(key, false);
+  }, [register, key, blocked]);
   usePhotoBackGuard(protectBack && blocked, onBlocked);
   useEffect(() => {
     controller.setExternalWork(key, { dirty, saving, conflict });

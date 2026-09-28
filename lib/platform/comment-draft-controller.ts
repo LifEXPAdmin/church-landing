@@ -23,6 +23,7 @@ export class CommentDraftController {
   private replyToId: string | null;
   private uuid: () => string;
   private resumeId: string | undefined;
+  private retainUncertain: boolean;
   private timer: ReturnType<typeof setTimeout> | undefined;
   private listeners = new Set<() => void>();
   private pending: {
@@ -56,13 +57,15 @@ export class CommentDraftController {
     postId: string,
     replyToId: string | null = null,
     uuid = () => crypto.randomUUID(),
-    resumeId?: string
+    resumeId?: string,
+    retainUncertain = false
   ) {
     this.transport = transport;
     this.postId = postId;
     this.replyToId = replyToId;
     this.uuid = uuid;
     this.resumeId = resumeId;
+    this.retainUncertain = retainUncertain;
   }
   getSnapshot = () => this.state;
   getServerSnapshot = () => this.serverState;
@@ -171,12 +174,15 @@ export class CommentDraftController {
     });
     this.schedule();
   };
-  private async request(kind: "draft-save" | "create") {
+  private async request(
+    kind: "draft-save" | "create",
+    confirmOriginal = false
+  ) {
     if (
       this.inFlight ||
       !this.state.ready ||
-      this.state.hidden ||
-      this.state.conflict ||
+      (this.state.hidden && !(confirmOriginal && this.pending)) ||
+      (this.state.conflict && !(confirmOriginal && this.pending)) ||
       this.state.createdId
     )
       return false;
@@ -230,6 +236,7 @@ export class CommentDraftController {
         this.set({
           version: r.version,
           dirty,
+          conflict: false,
           retry: false,
           message: dirty ? "New changes are not saved yet." : "Saved privately."
         });
@@ -237,6 +244,7 @@ export class CommentDraftController {
         this.set({
           createdId: r.id,
           dirty: false,
+          conflict: false,
           retry: false,
           message: "Comment sent."
         });
@@ -244,7 +252,11 @@ export class CommentDraftController {
     } catch (e) {
       if (seq !== this.sequence) return false;
       const status = e instanceof SocialClientError ? e.status : 503;
-      if ([400, 401, 403, 404, 409, 429].includes(status)) this.pending = null;
+      if (
+        !this.retainUncertain &&
+        [400, 401, 403, 404, 409, 429].includes(status)
+      )
+        this.pending = null;
       this.set({
         failed: true,
         retry: !!this.pending,
@@ -269,6 +281,12 @@ export class CommentDraftController {
     return this.request("draft-save");
   };
   retry = () => this.request(this.pending?.kind ?? "draft-save");
+  // The private reader must confirm current owner/access before this call. It
+  // can only resend already captured bytes, never create or rebase a command.
+  retryOriginal = () =>
+    this.pending
+      ? this.request(this.pending.kind, true)
+      : Promise.resolve(false);
   send = async () => {
     if (this.inFlight || this.pending || this.state.conflict) return false;
     const length = this.state.fields.content
@@ -333,7 +351,13 @@ export class CommentDraftController {
   };
   useLatest = () => {
     const row = this.state.latest;
-    if (!row || this.inFlight || this.state.hidden) return;
+    if (
+      !row ||
+      this.inFlight ||
+      this.state.hidden ||
+      (this.retainUncertain && this.pending)
+    )
+      return;
     this.stop();
     this.pending = null;
     const fields = {
