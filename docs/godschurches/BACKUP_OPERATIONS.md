@@ -1,3 +1,55 @@
+## Scripture search and playlists verified live, 28 September 2026 UTC
+
+Scripture search .36 and saved media/playlists .37 are **implemented, tested,
+merged and verified live** in one **2026.09.28.37** deployment. Source
+`994aec9210dc4da4190efaaefadd05fea5b391a5` is READY and independently canonical
+as `dpl_5dCSrCgnUyZ2bDeKcfJqTC1LLQWf`, serving `godschurches.com` at
+**02:25:48 UTC**. This acceptance supersedes earlier local-only checkpoints.
+
+The exact combined build `JIQhYFXQSJJsVeRKg3zym` took 42.547 seconds and retained
+all 2,030 tracked source hashes. Exact-source CI, TypeScript and scoped lint,
+copy and security gates passed. Final verification passed **154 service groups,
+60 browser groups and eight HTTPS groups**, including both enforced church MFA
+checks. Eight mobile/enlarged-text captures were reviewed. The initial legacy
+post-card fixture lacked an authenticator and was correctly denied by the
+enforced server. Its failed receipt is preserved; the unchanged suite passed
+13 groups in its intended off mode. Enforced-MFA evidence remains separate.
+
+A reproduced accepted-save/lost-response/later-unsave conflict now has a warned
+**Stop retrying and reload** control. Cancel preserves the exact pending request;
+confirmation clears local pending work and reads current state. It neither
+undoes a saved change nor automatically creates a new command. Four actual
+browser groups verify the warning, cancel, reconciliation and deliberate retry.
+
+Production passed **127 page/browser/API checks and six health checks**. No
+browser errors, blocked mutation attempts, scoped runtime error/fatal rows,
+production application test writes, recipient sends or new queue probes occurred.
+All 156 original-table/column fingerprints remained unchanged at **02:26:59 UTC**.
+
+Migration `20260928005500_media_scripture` and migration
+`20260928010000_media_playlists` applied at **02:22:47 UTC**. All 121 source,
+production and installed checksums match; there are 160 application tables. The
+four new tables were initially empty, with no inferred Scripture tags or grants.
+Encrypted protected 119-to-121 recovery preserved all original fingerprints and
+completed stable frozen-journal replay with zero provider mutations or unresolved
+controls. Five combined fictional tests verify actual media/playlist/save
+dispatch, stale/missing controls, account export and verified account erasure.
+
+The installed 121 registry preceded activation. Separate ordinary 121-to-121
+recovery restored all 160 tables and removed temporary plaintext. Actual nightly
+run 26 to 27 passed with **115 backup sets preserved**, zero expiry candidates,
+removals or issues. Retain the full .37/schema121 artifact as the compatible
+fallback. Prior .35 cannot clear Scripture tags or replay playlist/save controls;
+no schema downgrade, production restore or universal incident readiness is claimed.
+
+Provider preview retry, embedded playback, trustworthy progress/resume and real
+rights, operator, policy, physical-device and pilot acceptance remain open.
+Topic pathways are separate builder work. Large builds remain serialized; only
+verified inactive caches were removed, preserving source, all non-cache runtime
+hashes, fixtures, archives, backups and acceptance evidence. The reviewed mentor
+consent definition is integrated separately as documentation, with runtime and
+paid-work/credential/policy gates open and no additional deployment.
+
 ## Password safety and post resource cards verified live, 27 September 2026 UTC
 
 Password screening .32 and current listing/event/volunteer post cards .33 are
