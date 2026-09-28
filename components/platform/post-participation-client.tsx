@@ -145,6 +145,7 @@ export function PostParticipationClient({
           value={{
             owner: originalOwner,
             visible,
+            canRecover: !scope?.concealed && parentVisible && accessVersion !== null,
             beforeWrite,
             refresh,
             registerWork

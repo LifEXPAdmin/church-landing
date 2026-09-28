@@ -360,11 +360,125 @@ test("participation boundary rejects forged origins and actors, limits body size
   const success = await invoke(input);
   assert.equal(success.status, 200);
   assert.match(success.headers.get("Cache-Control")!, /no-store/);
-  assert.equal(success.headers.get("Vary"), "Cookie");
+  assert.equal(success.headers.get("Vary"), "Cookie, X-Expected-Account");
   const absent = await handleParticipationRequest(
     db,
     new Request(origin + "/api/platform/participation?postId=" + f.post.id)
   );
   assert.equal(absent.status, 404);
   assert.ok(!(await absent.text()).includes(f.occurrence.title));
+});
+test("participation expected-owner checks conceal reads and prevent new or changed ballots after an account switch", async () => {
+  const f = await seedParticipation(db);
+  await f.poll();
+  const poll = (await getPostParticipation(db, f.lee.token, f.post.id)).poll!;
+  const slot = await f.slot();
+  const origin = process.env.ACCOUNT_ORIGIN!;
+  let scheduled = 0;
+  const invoke = (
+    method: "GET" | "POST",
+    token: string,
+    expectedOwner: string,
+    payload?: unknown,
+    query = "postId=" + f.post.id
+  ) =>
+    handleParticipationRequest(
+      db,
+      new Request(origin + "/api/platform/participation?" + query, {
+        method,
+        headers: {
+          Origin: origin,
+          Cookie: sessionCookieFixtureName() + "=" + token,
+          "Content-Type": "application/json",
+          "X-Expected-Account": expectedOwner
+        },
+        ...(method === "POST" ? { body: JSON.stringify(payload) } : {})
+      }),
+      () => {
+        scheduled++;
+      }
+    );
+  const assertPrivateHeaders = (response: Response) => {
+    assert.equal(response.headers.get("Vary"), "Cookie, X-Expected-Account");
+    assert.match(response.headers.get("Cache-Control")!, /private, no-store/);
+    assert.equal(response.headers.get("Set-Cookie"), null);
+  };
+  const assertMismatch = async (response: Response) => {
+    assert.equal(response.status, 401);
+    assertPrivateHeaders(response);
+    assert.deepEqual(await response.json(), {
+      message: "Your sign-in changed. Reload before continuing."
+    });
+  };
+  const snapshot = () =>
+    Promise.all([
+      db.postPoll.findUniqueOrThrow({ where: { id: poll.id } }),
+      db.postPollBallot.findMany({
+        where: { pollId: poll.id },
+        orderBy: { id: "asc" }
+      }),
+      db.postAudit.findMany({
+        where: { postId: f.post.id },
+        orderBy: { id: "asc" }
+      })
+    ]);
+  const vote = {
+    operation: "vote",
+    postId: f.post.id,
+    pollVersion: poll.version,
+    expectedVersion: 0,
+    optionIds: [poll.options[0].id]
+  };
+  const before = await snapshot();
+  for (const token of [f.lee.token, ""]) {
+    await assertMismatch(await invoke("GET", token, f.val.id));
+    await assertMismatch(await invoke("POST", token, f.val.id, vote));
+  }
+  const rosterQuery = "view=roster&slotId=" + slot.id;
+  await assertMismatch(
+    await invoke("GET", f.ada.token, f.val.id, undefined, rosterQuery)
+  );
+  assert.deepEqual(await snapshot(), before);
+  assert.equal(scheduled, 0);
+
+  const read = await invoke("GET", f.lee.token, f.lee.id);
+  assert.equal(read.status, 200);
+  assertPrivateHeaders(read);
+  const view = await read.json();
+  assert.equal(view.postId, f.post.id);
+  assert.equal(view.poll.id, poll.id);
+  assert.equal(view.poll.ballot, null);
+  const roster = await invoke("GET", f.ada.token, f.ada.id, undefined, rosterQuery);
+  assert.equal(roster.status, 200);
+  assertPrivateHeaders(roster);
+  assert.equal((await roster.json()).role, "Welcome neighbors");
+  assert.deepEqual(await snapshot(), before);
+  assert.equal(scheduled, 0);
+
+  const accepted = await invoke("POST", f.lee.token, f.lee.id, vote);
+  assert.equal(accepted.status, 200);
+  assertPrivateHeaders(accepted);
+  assert.equal((await accepted.json()).version, 1);
+  const saved = await snapshot();
+  assert.equal(saved[1].length, 1);
+  assert.equal(saved[1][0].userId, f.lee.id);
+  assert.deepEqual(saved[1][0].optionIds, vote.optionIds);
+  assert.equal(scheduled, 1);
+
+  await assertMismatch(await invoke("GET", f.lee.token, f.val.id));
+  await assertMismatch(
+    await invoke("POST", f.lee.token, f.val.id, {
+      ...vote,
+      expectedVersion: 1,
+      optionIds: [poll.options[1].id]
+    })
+  );
+  assert.deepEqual(await snapshot(), saved);
+  assert.equal(scheduled, 1);
+  const confirmed = await invoke("GET", f.lee.token, f.lee.id);
+  assert.equal(confirmed.status, 200);
+  assert.deepEqual((await confirmed.json()).poll.ballot, {
+    optionIds: vote.optionIds,
+    version: 1
+  });
 });

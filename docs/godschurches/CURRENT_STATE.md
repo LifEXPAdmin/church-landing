@@ -1,3 +1,21 @@
+## Topic management and followed discussion batch prepared, 28 September 2026 UTC
+
+The next compatible batch combines locally accepted Topic management with the
+implemented followed-stream privacy boundary. Production remains verified .41;
+this batch is **not merged or live**. Followed selections no longer enter initial
+HTML/RSC. Current-account reads feed bounded pages while existing comment,
+bookmark, poll and prayer controllers retain local work in memory.
+
+Ten followed-stream browser groups passed on `d6831d1`, including real native
+blur, actual account-changing RSC, retained comments, changed follow selections,
+20+1 pagination and delayed share checks. The service run passed 49 of 50 groups;
+the remaining assertion expected the former cache header. Its replacement also
+checks wrong-owner GET/POST rejection. Separate action QA reproduced a lost-vote
+response followed by a real cooldown leaving no reachable retry. The correction
+keeps generic original-request recovery available while obsolete choices remain
+concealed. The changed candidate still needs its final build and regression gates.
+[Security acceptance](ACCOUNT_SECURITY_ACCEPTANCE.md) records the exact limits.
+
 ## Topic management privacy locally verified, 28 September 2026 UTC
 
 Application `27892b075d0a93d77dc851608fcf1218d86ca6e1` is implemented and locally

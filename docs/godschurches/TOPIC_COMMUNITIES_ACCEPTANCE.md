@@ -1,3 +1,16 @@
+## Management and followed-stream privacy batch pending, 28 September 2026 UTC
+
+Management is locally accepted at `27892b0` plus its verification checkpoint.
+Followed-stream privacy is implemented and has ten passing browser groups at
+`d6831d1`; selection and permitted rows share the existing canonical read
+transaction before bounded 20+1 paging. Full interaction controllers retain their
+original account across RSC refresh. Concealed DOM and initial responses omit
+private followed selections. A subsequently reproduced uncertain-vote retry gap
+has a focused correction awaiting final candidate tests. Both features await one
+compatible integrated release; production remains .41. See
+[security acceptance](ACCOUNT_SECURITY_ACCEPTANCE.md) for actual evidence and
+unmet gates rather than treating planned release notes as publication proof.
+
 # Topic communities acceptance
 
 ## Topic management privacy locally verified, 28 September 2026 UTC

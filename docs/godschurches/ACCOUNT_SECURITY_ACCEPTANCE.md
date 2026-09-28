@@ -1,3 +1,42 @@
+## Followed Topic stream implementation and reproduced recovery gap, 28 September 2026 UTC
+
+This slice is implemented, with final candidate verification still pending. It
+is **not merged or live**. Before editing, the management candidate `27892b0`
+reproduced selected Topic/post data in initial HTML and concealed DOM. The new
+account-bound, private no-store stream endpoint reuses the canonical read
+transaction and filters before its bounded 20+1 cursor. A fixed original owner
+retains existing interaction controllers above the shell; the private presentation
+physically omits post/author/selection details during concealment. Changed
+snapshots do not rebase dirty work or an uncertain original request.
+
+On `d6831d1`, ten browser groups passed: initial-response and physical-DOM
+privacy; actual A-to-B-to-A RSC draft retention; trusted native tab blur; changed
+follow selection with preserved complete comment text; stale held reads;
+320-pixel enlarged text and canceled native leave warning; byte-identical comment
+receipt recovery through a lost response and 429 with one effect; late accepted
+comment continuation without another POST; actual 20+1 older/latest navigation;
+and suppressed late clipboard/QR side effects. The exact-source build and CI
+passed. Initial QA failures were a synthetic pagehide without pageshow (which
+leaves Next Flight aborted), route cleanup ordering, an incorrect Prisma counter
+name, and toggling a still-loading restored popover. Corrections retained failure
+receipts and did not change application source for those results.
+
+Separate action QA passed controlled poll and PrayerPanel draft concealment,
+including account refresh and held prayer reads. It then reproduced a real gap:
+an accepted vote with lost acknowledgment, followed by a real owner-scoped 429,
+retained the original body but concealed its only retry control. The new generic
+local recovery preserves those bytes and checks current participation/owner again
+before dispatch; it never displays obsolete choices. Participation continues to
+use existing state/version rules, not a new receipt ledger. Original comment and
+bookmark requests retain their established receipt semantics.
+
+The service run was 49 of 50, with one old Vary-header expectation; test changes
+add explicit mismatched-owner read/write and no-effect evidence. These updates
+and the poll fix require final candidate execution before local acceptance. No
+schema, dependency, persistent browser storage or production data change is
+introduced. Existing real-device/provider/operator and wider security gates stay
+open. Production remains verified .41.
+
 ## Topic management privacy locally verified, 28 September 2026 UTC
 
 Unchanged .41 reproduced private member serialization into initial HTML, concealed

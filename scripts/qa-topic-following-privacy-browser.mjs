@@ -98,27 +98,15 @@ const signIn = async (actor) => {
       }
     ]);
 };
-const go = async (path) => {
-  const r = await page.goto(config.origin + path);
-  assert.equal(r.status(), 200);
-};
-
 const { registerAccount, loginAccount } =
   await import("../lib/platform/accounts.ts");
 const { ADULT_POLICY } = await import("../lib/platform/portal-types.ts");
-const { privilegedAuthenticatorCommand } =
-  await import("../lib/platform/privileged-auth.ts");
-const { openAuthenticator, authenticatorTotp } =
-  await import("../lib/platform/admin-authenticator-crypto.ts");
 const routeErrors = [],
   scenarios = [],
   actors = [];
 const pendingRouteReleases = new Set();
 const button = (name) => page.getByRole("button", { name, exact: true });
 const topicUrl = (url) => url.pathname === "/api/platform/topics";
-const identityUrl = (url) =>
-  url.pathname === "/api/platform/profile" &&
-  url.searchParams.get("view") === "identity";
 const poll = async (read, expected) => {
   for (let i = 0; i < 200; i++) {
     const value = await read();
@@ -156,61 +144,6 @@ async function actor(label) {
   );
   actors.push(made.id);
   return { id: made.id, token, password };
-}
-async function challenge(a) {
-  process.env.PRIVILEGED_MFA_MODE = "enforce";
-  let factor = await db.adminAuthenticator.findUnique({
-    where: { userId: a.id }
-  });
-  if (!factor) {
-    await privilegedAuthenticatorCommand(
-      db,
-      a.token,
-      { operation: "mfa-start", requestKey: randomUUID(), expectedVersion: 0 },
-      a.password
-    );
-    factor = await db.adminAuthenticator.findUniqueOrThrow({
-      where: { userId: a.id }
-    });
-    const secret = openAuthenticator(a.id, factor.secretCiphertext),
-      counter = BigInt(Math.floor(Date.now() / 30000));
-    await privilegedAuthenticatorCommand(db, a.token, {
-      operation: "mfa-confirm",
-      requestKey: randomUUID(),
-      expectedVersion: factor.version,
-      code: authenticatorTotp(secret, counter - 1n)
-    });
-    factor = await db.adminAuthenticator.findUniqueOrThrow({
-      where: { userId: a.id }
-    });
-  }
-  const current = BigInt(Math.floor(Date.now() / 30000)),
-    counter = current > factor.lastCounter ? current : factor.lastCounter + 1n;
-  assert.ok(
-    counter <= current + 1n,
-    "Use only a currently valid fictional authenticator code"
-  );
-  await privilegedAuthenticatorCommand(db, a.token, {
-    operation: "mfa-challenge",
-    requestKey: randomUUID(),
-    expectedVersion: factor.version,
-    purpose: "change-access",
-    code: authenticatorTotp(
-      openAuthenticator(a.id, factor.secretCiphertext),
-      counter
-    )
-  });
-}
-async function intercept(handler) {
-  await page.route(topicUrl, async (route) => {
-    if (route.request().method() !== "POST") return route.fallback();
-    try {
-      await handler(route);
-    } catch (error) {
-      routeErrors.push(error.message);
-      await route.abort().catch(() => {});
-    }
-  });
 }
 async function forwarded(route) {
   const request = route.request(),
@@ -266,6 +199,22 @@ async function forwarded(route) {
 const pulse = (name) =>
   page.evaluate((n) => window.dispatchEvent(new Event(n)), name);
 async function refreshAs(owner) {
+  writeFileSync(
+    output + "/before-refresh-" + owner.id + ".json",
+    JSON.stringify(
+      await page.evaluate(() => ({
+        documentId: window.__followingDocument,
+        historyKeys: Object.keys(history.state ?? {}),
+        photoWork: history.state?.gcPhotoWork ?? null,
+        href: location.href,
+        openForms: Array.from(
+          document.querySelectorAll("form[aria-label]")
+        ).map((n) => n.getAttribute("aria-label"))
+      })),
+      null,
+      2
+    )
+  );
   await signIn(owner);
   const completed = Promise.withResolvers();
   const requests = [];
@@ -276,6 +225,12 @@ async function refreshAs(owner) {
       method: r.method()
     });
   page.on("request", observe);
+  const navigations = [];
+  const navigated = (frame) => {
+    if (frame === page.mainFrame())
+      navigations.push({ at: new Date().toISOString(), url: frame.url() });
+  };
+  page.on("framenavigated", navigated);
   let handled = false;
   let phase = "awaiting RSC request";
   const match = (u) => u.pathname === managementPath;
@@ -334,18 +289,24 @@ async function refreshAs(owner) {
     writeFileSync(
       output + "/refresh-" + owner.id + ".json",
       JSON.stringify(
-        { at: new Date().toISOString(), phase, requests, url: page.url() },
+        {
+          at: new Date().toISOString(),
+          phase,
+          requests,
+          navigations,
+          url: page.url()
+        },
         null,
         2
       )
     );
     page.off("request", observe);
+    page.off("framenavigated", navigated);
     await page.unroute(match, handler);
   }
 }
 const { topicCommand } = await import("../lib/platform/topic-communities.ts");
 const { postCommand } = await import("../lib/platform/post-commands.ts");
-const { commentCommand } = await import("../lib/platform/comment-commands.ts");
 const managementPath = "/platform/topics/following";
 let privateMarkers = [];
 const streamUrl = (u) =>
@@ -432,8 +393,8 @@ async function openComposer() {
     .click();
   await commentText().waitFor();
 }
-async function returnVisible() {
-  await pulse("focus");
+async function returnVisible(event = "focus") {
+  await pulse(event);
   await main
     .getByRole("article", { name: /Post by/ })
     .filter({ hasText: current.content })
@@ -446,7 +407,7 @@ try {
     await absent();
     await pulse("online");
     await absent();
-    await returnVisible();
+    await returnVisible(event === "pagehide" ? "pageshow" : "focus");
   }
   ok(
     "Selected topic and post are absent from initial HTML and physically removed on blur, pagehide and offline; passive online does not reveal them"
@@ -474,12 +435,60 @@ try {
   ok(
     "Full comment draft/controller survives concealment and actual same-document A-to-B-to-A RSC refresh without serialized selected data"
   );
+  assert.equal(process.env.TOPIC_PRIVACY_HEADFUL, "1");
+  const otherTab = await context.newPage(),
+    foreground = await context.newCDPSession(page),
+    background = await context.newCDPSession(otherTab);
+  try {
+    await foreground.send("Emulation.setFocusEmulationEnabled", { enabled: false });
+    await background.send("Emulation.setFocusEmulationEnabled", { enabled: false });
+    await page.bringToFront();
+    await page.waitForFunction(() => document.hasFocus());
+    await commentText().waitFor();
+    await page.evaluate(() => {
+      window.__followingNativeBlur = 0;
+      window.addEventListener("blur", (event) => {
+        if (event.isTrusted) window.__followingNativeBlur++;
+      });
+    });
+    await otherTab.bringToFront();
+    await page.waitForFunction(() => !document.hasFocus(), undefined, { polling: 100 });
+    assert.ok(await page.evaluate(() => window.__followingNativeBlur > 0));
+    await absent([draft]);
+    await page.bringToFront();
+    await commentText().waitFor();
+    assert.equal(await commentText().inputValue(), draft);
+  } finally {
+    await foreground.send("Emulation.setFocusEmulationEnabled", { enabled: true });
+    await foreground.detach();
+    await background.detach();
+    await otherTab.close();
+  }
+  ok("Trusted native tab blur conceals selected posts and complete comment drafts; foreground return restores the original text");
+  await db.topicMembership.update({
+    where: { communityId_userId: { communityId: current.topic.id, userId: current.a.id } },
+    data: { following: false }
+  });
+  await pulse("focus");
+  await absent([draft]);
+  await main.getByText(/These followed topics or their posts changed/).waitFor();
+  await db.topicMembership.update({
+    where: { communityId_userId: { communityId: current.topic.id, userId: current.a.id } },
+    data: { following: true }
+  });
+  await returnVisible();
+  await commentText().waitFor();
+  assert.equal(await commentText().inputValue(), draft);
+  ok("An actual changed following selection conceals the frozen dirty controller and restores its complete draft only when the original selection is current again");
   let releaseRead, enteredRead;
   const entered = new Promise((r) => (enteredRead = r)),
     held = new Promise((r) => (releaseRead = r));
+  pendingRouteReleases.add(releaseRead);
+  const readReleased = Promise.withResolvers();
   const hold = async (route) => {
     await held;
     await route.continue();
+    readReleased.resolve();
   };
   await pulse("blur");
   await page.route(streamUrl, async (route) => {
@@ -491,10 +500,11 @@ try {
   await absent([draft]);
   await pulse("pagehide");
   releaseRead();
+  await readReleased.promise;
   await page.unroute(streamUrl);
   await page.waitForTimeout(350);
   await absent([draft]);
-  await returnVisible();
+  await returnVisible("pageshow");
   assert.equal(await commentText().inputValue(), draft);
   ok(
     "Held successful stream read cannot reveal selected content or a draft after a newer concealment"
@@ -565,7 +575,7 @@ try {
     .waitFor();
   await poll(
     () =>
-      db.platformComment.count({
+      db.platformPostComment.count({
         where: { postId: current.post.id, content: text }
       }),
     1
@@ -581,7 +591,7 @@ try {
   await returnVisible();
   assert.ok(bodies.every((b) => b === bodies[0]));
   assert.equal(
-    await db.platformComment.count({
+    await db.platformPostComment.count({
       where: { postId: current.post.id, content: text }
     }),
     1
@@ -603,6 +613,7 @@ try {
   let releaseAck, ackEntered;
   const ackHeld = new Promise((r) => (releaseAck = r)),
     ackReady = new Promise((r) => (ackEntered = r));
+  pendingRouteReleases.add(releaseAck);
   let createPosts = 0;
   await page.route(commentUrl, async (route) => {
     if (
@@ -630,7 +641,7 @@ try {
   await returnVisible();
   assert.equal(createPosts, 1);
   assert.equal(
-    await db.platformComment.count({
+    await db.platformPostComment.count({
       where: { postId: current.post.id, content: late }
     }),
     1
@@ -639,6 +650,105 @@ try {
   ok(
     "Late accepted comment receipt stays protected through concealment and continues without another POST"
   );
+  await setup("paging");
+  const publishedAt = new Date();
+  await db.platformPost.update({ where: { id: current.post.id }, data: { publishedAt } });
+  await db.platformPost.createMany({ data: Array.from({ length: 20 }, (_, i) => ({
+    id: `followed_paging_${current.tag}_${String(i).padStart(2, "0")}`,
+    authorId: current.a.id,
+    topicCommunityId: current.topic.id,
+    content: `Fictional followed paging ${current.tag} ${i}`,
+    publishedAt
+  })) });
+  await page.reload();
+  await poll(() => main.getByRole("article", { name: /Post by/ }).count(), 20);
+  const firstIds = await main.locator('article.gc-post a[href^="/platform/posts/"]').evaluateAll((rows) => rows.map((row) => row.getAttribute("href")));
+  await main.getByRole("link", { name: "Older topic posts", exact: true }).click();
+  await poll(() => main.getByRole("article", { name: /Post by/ }).count(), 1);
+  const olderIds = await main.locator('article.gc-post a[href^="/platform/posts/"]').evaluateAll((rows) => rows.map((row) => row.getAttribute("href")));
+  assert.equal(new Set([...firstIds, ...olderIds]).size, 21);
+  await main.getByRole("link", { name: "Latest topic posts", exact: true }).click();
+  await poll(() => main.getByRole("article", { name: /Post by/ }).count(), 20);
+  assert.deepEqual(await main.locator('article.gc-post a[href^="/platform/posts/"]').evaluateAll((rows) => rows.map((row) => row.getAttribute("href"))), firstIds);
+  ok("Real older/latest links preserve bounded 20+1 equal-time pagination with no duplicate or missing posts");
+  await setup("share");
+  await page.evaluate(() => {
+    window.__followingShares = [];
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: async (value) => window.__followingShares.push(["copy", value]) } });
+    Object.defineProperty(navigator, "share", { configurable: true, value: async (value) => window.__followingShares.push(["share", value]) });
+  });
+  // Mount after the harmless native-share spy is installed.
+  await pulse("blur");
+  await returnVisible();
+  const shareUrl = (u) => u.pathname === "/api/platform/share-preview" && u.searchParams.get("id") === current.post.id;
+  for (const label of ["Copy link", "Show QR code"]) {
+    if ((await button("Share post").getAttribute("aria-expanded")) !== "true") await button("Share post").click();
+    await button(label).waitFor();
+    const ready = Promise.withResolvers(), release = Promise.withResolvers(), finished = Promise.withResolvers();
+    pendingRouteReleases.add(release.resolve);
+    let handled = false;
+    await page.route(shareUrl, async (route) => {
+      if (handled) return route.fallback();
+      handled = true;
+      const actual = await forwarded(route);
+      assert.equal(actual.status, 200);
+      ready.resolve();
+      await release.promise;
+      await route.fulfill(actual);
+      finished.resolve();
+    });
+    await button(label).click();
+    await ready.promise;
+    await pulse("offline");
+    await absent();
+    release.resolve();
+    await finished.promise;
+    await page.unroute(shareUrl);
+    await page.waitForTimeout(150);
+    await absent();
+    assert.deepEqual(await page.evaluate(() => window.__followingShares), []);
+    assert.equal(await page.getByRole("dialog", { name: /QR/ }).count(), 0);
+    await returnVisible();
+  }
+  ok("Held successful share checks released after offline cannot copy a link or reveal a QR dialog");
+  await setup("bookmark");
+  const bookmarkReady = Promise.withResolvers(), bookmarkRelease = Promise.withResolvers(), bookmarkFinished = Promise.withResolvers();
+  pendingRouteReleases.add(bookmarkRelease.resolve);
+  const bookmarkBodies = [];
+  const workspaceUrl = (u) => u.pathname === "/api/platform/post-workspace";
+  await page.route(workspaceUrl, async (route) => {
+    if (route.request().method() !== "POST") return route.fallback();
+    bookmarkBodies.push(route.request().postData());
+    const actual = await forwarded(route);
+    assert.equal(actual.status, 200);
+    if (bookmarkBodies.length === 1) {
+      bookmarkReady.resolve();
+      await bookmarkRelease.promise;
+    }
+    await route.fulfill(actual);
+    bookmarkFinished.resolve();
+  });
+  await button("Bookmark").click();
+  await bookmarkReady.promise;
+  await pulse("blur");
+  await absent();
+  await returnVisible();
+  assert.equal(await button("Bookmark").isDisabled(), true);
+  assert.equal(bookmarkBodies.length, 1);
+  assert.equal(await db.savedPostItem.count({ where: { ownerId: current.a.id, postId: current.post.id } }), 1);
+  bookmarkRelease.resolve();
+  await bookmarkFinished.promise;
+  await button("Bookmark recovery").waitFor();
+  await button("Bookmark recovery").click();
+  await button("Refresh saved status").click();
+  await poll(() => button("Retry same save choice").isEnabled(), true);
+  await button("Retry same save choice").click();
+  await poll(() => Promise.resolve(bookmarkBodies.length), 2);
+  assert.equal(bookmarkBodies[1], bookmarkBodies[0]);
+  await poll(() => button("Remove bookmark").isEnabled(), true);
+  assert.equal(await db.savedPostItem.count({ where: { ownerId: current.a.id, postId: current.post.id } }), 1);
+  await page.unroute(workspaceUrl);
+  ok("A held committed bookmark remains busy across concealment and recovers the exact original request without a second saved item");
   assert.deepEqual(errors, []);
   assert.deepEqual(external, []);
   assert.deepEqual(routeErrors, []);

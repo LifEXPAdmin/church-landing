@@ -1,3 +1,13 @@
+## Prepared Topic management and followed-stream batch, 28 September 2026 UTC
+
+The prepared .42 batch is **not merged or live**. It combines locally accepted
+management privacy with followed-stream privacy and a reproduced participation
+recovery correction. Final candidate build, meaningful interaction regressions,
+current recovery compatibility/freshness, integration and live verification are
+still required. No migration or new dependency is proposed. The current .41
+artifact and fallback remain preserved. Release notes are candidate metadata;
+they do not establish deployment. See [security acceptance](ACCOUNT_SECURITY_ACCEPTANCE.md).
+
 ## Topic management privacy locally verified, 28 September 2026 UTC
 
 Application `27892b075d0a93d77dc851608fcf1218d86ca6e1` is implemented and locally

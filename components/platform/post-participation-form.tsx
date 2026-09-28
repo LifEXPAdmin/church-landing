@@ -28,6 +28,7 @@ import { usePrivatePostRecovery } from "./private-post-workspace";
 export type PrivateParticipationAccess = {
   owner: string;
   visible: boolean;
+  canRecover: boolean;
   beforeWrite: (operation: string) => Promise<() => void>;
   refresh: () => void;
   registerWork: (id: string, work: boolean, busy?: boolean) => void;
@@ -122,7 +123,23 @@ function ParticipationForm({
   }
   usePrivatePostRecovery(!!access && !!originalBody, pending,
     () => { if (originalBody) void sendOriginal(originalBody); });
-  if (access && !access.visible) return null;
+  // A changed ballot may conceal its old choices while the current stream is
+  // still authorized. Keep the original request reachable without restoring
+  // stale fields. Every deliberate retry still reads current participation.
+  const recovery = access && originalBody && access.canRecover && (
+    <div className="space-y-2" aria-label="Original participation request">
+      <p>Check current participation before retrying. An earlier submission may already have completed.</p>
+      {!access.visible && result?.failed && <p role="alert">{result.message}</p>}
+      <button type="button" className={portalButtonClass} disabled={pending}
+        onClick={() => void sendOriginal(originalBody)}>
+        {pending ? "Confirming original participation request…" : "Retry original participation request"}
+      </button>
+      <button type="button" className={portalButtonClass} disabled={pending} onClick={access.refresh}>
+        Check current participation
+      </button>
+    </div>
+  );
+  if (access && !access.visible) return recovery;
   return (
     <form
       className="space-y-3"
@@ -221,17 +238,7 @@ function ParticipationForm({
           Add another role
         </button>
       )}
-      {access && originalBody && !pending && (
-        <>
-          <button type="button" className={portalButtonClass}
-            onClick={() => void sendOriginal(originalBody)}>
-            Retry original participation request
-          </button>
-          <button type="button" className={portalButtonClass} onClick={access.refresh}>
-            Check current participation
-          </button>
-        </>
-      )}
+      {recovery}
       {(dirty || !!originalBody) && !pending && !refreshing && (
         <button
           type="button"

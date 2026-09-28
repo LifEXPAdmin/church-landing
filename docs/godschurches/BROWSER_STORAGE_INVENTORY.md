@@ -1,3 +1,15 @@
+## Followed Topic interaction ownership, 28 September 2026 UTC
+
+The prepared followed-stream privacy slice retains the original account,
+selection snapshot and existing interaction controllers only in mounted memory.
+It adds no localStorage, sessionStorage, IndexedDB, cookie or service-worker store.
+Concealment removes selected post details and private form fields from DOM while
+retaining complete local work. Changed snapshots keep that work concealed until
+current access and deliberate recovery or warned reload resolve it. Original
+requests retain their established server permission/version and receipt contracts.
+The candidate is not merged/live; final acceptance remains pending in
+[security acceptance](ACCOUNT_SECURITY_ACCEPTANCE.md).
+
 ## Topic management memory locally verified, 28 September 2026 UTC
 
 Application `27892b0` removes management data from initial HTML/RSC and concealed

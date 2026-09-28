@@ -1048,6 +1048,14 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "private-topic-management-and-followed-posts", version: "2026.09.28.42", date: "2026-09-28",
+    summary: "Keep topic management and followed discussions private while preserving work during access changes.",
+    added: [],
+    improved: ["Topic management and followed posts load after checking your current account. Private details leave the screen during access changes, while complete local drafts remain available when your original access returns.", "Uncertain comments, bookmarks and participation changes retain their original request for deliberate recovery. A changed poll keeps its retry available without restoring outdated choices."],
+    fixed: ["Delayed reads and share checks cannot reveal concealed discussions or open a sharing action after access changes. Followed discussions keep bounded older and latest page links."],
+    featureIds: ["topic-communities", "account", "polls"]
+  },
+  {
     id: "private-topic-creation-and-choices", version: "2026.09.28.41", date: "2026-09-28",
     summary: "Keep new topic drafts and personal topic lists private during access changes.",
     added: [],
