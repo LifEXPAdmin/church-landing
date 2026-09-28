@@ -1,5 +1,5 @@
 "use client";
-import { useId } from "react";
+import { useId, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type {
@@ -11,7 +11,21 @@ import { TopicActionForm } from "./topic-action-form";
 import { PostComposer } from "./post-composer";
 import { portalInputClass } from "./portal-action-form";
 
-function IdentityFields({ value }: { value?: TopicView["community"] }) {
+type IdentityDraft = {
+  name: string;
+  slug: string;
+  description: string;
+  rules: string;
+};
+function IdentityFields({
+  value,
+  draft,
+  onDraft
+}: {
+  value?: TopicView["community"];
+  draft?: IdentityDraft;
+  onDraft?: (key: keyof IdentityDraft, value: string) => void;
+}) {
   const id = useId();
   return (
     <>
@@ -24,7 +38,9 @@ function IdentityFields({ value }: { value?: TopicView["community"] }) {
         name="name"
         required
         minLength={3}
-        defaultValue={value?.name ?? ""}
+        defaultValue={draft ? undefined : (value?.name ?? "")}
+        value={draft?.name}
+        onChange={(event) => onDraft?.("name", event.target.value)}
         aria-describedby={`${id}-name-help`}
       />
       <p id={`${id}-name-help`} className="text-sm text-gc-muted">
@@ -39,6 +55,8 @@ function IdentityFields({ value }: { value?: TopicView["community"] }) {
             className={portalInputClass}
             id={`${id}-slug`}
             name="slug"
+            value={draft?.slug}
+            onChange={(event) => onDraft?.("slug", event.target.value)}
             required
             minLength={3}
             pattern="[a-z0-9]+(-[a-z0-9]+)*"
@@ -62,7 +80,9 @@ function IdentityFields({ value }: { value?: TopicView["community"] }) {
         required
         minLength={3}
         rows={3}
-        defaultValue={value?.description ?? ""}
+        defaultValue={draft ? undefined : (value?.description ?? "")}
+        value={draft?.description}
+        onChange={(event) => onDraft?.("description", event.target.value)}
         aria-describedby={`${id}-description-help`}
       />
       <p id={`${id}-description-help`} className="text-sm text-gc-muted">
@@ -78,7 +98,9 @@ function IdentityFields({ value }: { value?: TopicView["community"] }) {
         required
         minLength={3}
         rows={6}
-        defaultValue={value?.rules ?? ""}
+        defaultValue={draft ? undefined : (value?.rules ?? "")}
+        value={draft?.rules}
+        onChange={(event) => onDraft?.("rules", event.target.value)}
         aria-describedby={`${id}-rules-help`}
       />
       <p id={`${id}-rules-help`} className="text-sm text-gc-muted">
@@ -93,11 +115,28 @@ const identity = (data: FormData) => ({
   description: data.get("description"),
   rules: data.get("rules")
 });
-export function TopicCreateForm({ owner }: { owner: string }) {
+export function TopicCreateForm({
+  owner,
+  concealed,
+  accessVersion
+}: {
+  owner: string;
+  concealed?: boolean;
+  accessVersion?: () => number | null;
+}) {
   const router = useRouter();
+  const [draft, setDraft] = useState<IdentityDraft>({
+    name: "",
+    slug: "",
+    description: "",
+    rules: ""
+  });
+  const [acceptedRules, setAcceptedRules] = useState(false);
   return (
     <TopicActionForm
       owner={owner}
+      concealed={concealed}
+      accessVersion={accessVersion}
       payload={{ operation: "create" }}
       label="Create public topic"
       fields={(data) => ({
@@ -107,9 +146,20 @@ export function TopicCreateForm({ owner }: { owner: string }) {
       })}
       onDone={(_, request) => router.push(topicHref(String(request.slug)))}
     >
-      <IdentityFields />
+      <IdentityFields
+        draft={draft}
+        onDraft={(key, value) =>
+          setDraft((current) => ({ ...current, [key]: value }))
+        }
+      />
       <label className="flex min-h-11 items-start gap-2">
-        <input type="checkbox" name="acceptedRules" required />
+        <input
+          type="checkbox"
+          name="acceptedRules"
+          required
+          checked={acceptedRules}
+          onChange={(event) => setAcceptedRules(event.target.checked)}
+        />
         <span>
           I understand the topic, its posts and its rules will be public. I
           accept responsibility for managing this community.

@@ -27,7 +27,9 @@ export function TopicActionForm({
   label,
   children,
   fields,
-  onDone
+  onDone,
+  concealed = false,
+  accessVersion
 }: {
   owner: string;
   payload: Record<string, unknown>;
@@ -35,6 +37,8 @@ export function TopicActionForm({
   children?: ReactNode;
   fields?: (data: FormData) => Record<string, unknown>;
   onDone?: (receipt: Receipt, request: Record<string, unknown>) => void;
+  concealed?: boolean;
+  accessVersion?: () => number | null;
 }) {
   const router = useRouter(),
     id = useId(),
@@ -91,6 +95,8 @@ export function TopicActionForm({
       ),
     true
   );
+  // The controller and immutable request stay mounted; private controls do not.
+  if (concealed) return null;
   return (
     <form
       ref={form}
@@ -103,7 +109,9 @@ export function TopicActionForm({
       }}
       onSubmit={async (event) => {
         event.preventDefault();
+        const accessAtStart = accessVersion?.();
         if (
+          accessAtStart === null ||
           flight.current ||
           busy ||
           (conflict && !pending) ||
@@ -159,6 +167,14 @@ export function TopicActionForm({
           });
           await settlePhotoNavigation();
           if (!mounted.current) return;
+          const continuationAllowed = () =>
+            !accessVersion || accessVersion() === accessAtStart;
+          if (!continuationAllowed()) {
+            setMessage(
+              "Your topic change was saved. Recheck current access, then continue after the saved change."
+            );
+            return;
+          }
           const currentOwner = await currentSocialOwner();
           if (!mounted.current) return;
           if (currentOwner !== originalOwner)
@@ -166,6 +182,12 @@ export function TopicActionForm({
               401,
               "Your topic change was saved. Return to the original account to continue, or reload current information."
             );
+          if (!continuationAllowed()) {
+            setMessage(
+              "Your topic change was saved. Recheck current access, then continue after the saved change."
+            );
+            return;
+          }
           setPending(null);
           setSaved(true);
           if (onDone) onDone(data, JSON.parse(body));
