@@ -88,6 +88,7 @@ export function reviewReportScope(authority: ReportReviewAuthority) {
   const currentTopic = Prisma.sql`CASE WHEN r."targetType" = 'TOPIC' THEN r."targetId" ELSE p."topicCommunityId" END`;
   const currentGroup = Prisma.sql`CASE WHEN r."targetType" = 'GROUP' THEN r."targetId" ELSE p."groupId" END`;
   return Prisma.sql`${original}
+      AND (r."targetType" NOT IN ('ARTIST','ARTIST_RELEASE') OR (${authority.global} AND r."scopeChurchId" IS NULL AND r."scopeTopicId" IS NULL AND r."scopeGroupId" IS NULL))
       AND (${authority.global} OR ${currentGroup} IS NULL OR ${authority.groups.length ? Prisma.sql`${currentGroup} IN (${Prisma.join(authority.groups)})` : Prisma.sql`FALSE`})
       AND (${authority.global} OR ${currentTopic} IS NULL OR ${
         authority.topics.length

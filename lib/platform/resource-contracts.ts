@@ -5,6 +5,8 @@ const reserved = <const T extends string>(contract: T) =>
   Object.freeze({ state: "reserved" as const, contract });
 
 export const resourceContracts = Object.freeze({
+  artist: implemented("artist-policy/artist-commands/artist-boundary"),
+  artistRelease: implemented("artist-policy/artist-commands/artist-boundary"),
   post: implemented("post-access/post-commands/post-workspace"),
   church: implemented("portal/church-permissions/church-claims"),
   eventOccurrence: implemented("calendar-access/calendar-commands"),
@@ -18,11 +20,19 @@ export const resourceContracts = Object.freeze({
     "exchange-policy/exchange-listings/exchange-boundary"
   ),
   pantryHub: implemented("pantry-policy/pantry-commands/pantry-boundary"),
-  exchangeInquiry: implemented("exchange-handoff-policy/exchange-handoffs/exchange-handoff-lifecycle"),
+  exchangeInquiry: implemented(
+    "exchange-handoff-policy/exchange-handoffs/exchange-handoff-lifecycle"
+  ),
   gatherGroup: implemented("group-policy/group-commands/group-boundary"),
-  mediaCatalogItem: implemented("media-catalog-policy/media-catalog-commands/media-catalog-boundary"),
-  mediaPlaylist: implemented("media-playlist-policy/media-playlist-commands/media-playlist-boundary"),
-  savedMedia: implemented("media-playlist-policy/media-playlist-commands/media-playlist-boundary"),
+  mediaCatalogItem: implemented(
+    "media-catalog-policy/media-catalog-commands/media-catalog-boundary"
+  ),
+  mediaPlaylist: implemented(
+    "media-playlist-policy/media-playlist-commands/media-playlist-boundary"
+  ),
+  savedMedia: implemented(
+    "media-playlist-policy/media-playlist-commands/media-playlist-boundary"
+  ),
   volunteerOpportunity: implemented(
     "volunteer-policy/volunteer-commands/volunteer-boundary"
   ),

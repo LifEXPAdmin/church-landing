@@ -157,7 +157,6 @@ export async function recordContentDecisionActivity(
     )
       continue;
     if (
-      decision.authorChurchId &&
       !(await tx.communityReportDecision.count({
         where: {
           AND: [

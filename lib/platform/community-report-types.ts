@@ -1,4 +1,6 @@
 export const communityReportTargets = [
+  "ARTIST",
+  "ARTIST_RELEASE",
   "INTERCHURCH_OFFER",
   "GROUP",
   "PANTRY_REQUEST",
@@ -18,6 +20,8 @@ export const communityReportTargets = [
 ] as const;
 export type CommunityReportTarget = (typeof communityReportTargets)[number];
 export const communityReportTargetLabels = {
+  ARTIST: "artist representation",
+  ARTIST_RELEASE: "music release and publication rights",
   INTERCHURCH_OFFER: "private ministry help offer and agreement",
   GROUP: "Gather group",
   PANTRY_REQUEST: "private assistance request",
@@ -44,7 +48,7 @@ export const communityReportReasons = {
   PRIVACY: "Private information shared without permission",
   SAFETY: "Threats or a safety concern",
   IMPERSONATION: "Impersonation or disputed representation",
-  OTHER: "Something else"
+  OTHER: "Another concern, including publication rights"
 } as const;
 export type CommunityReportReason = keyof typeof communityReportReasons;
 export const communityReportStatusLabels = {

@@ -1,3 +1,4 @@
+import { replayArtistControl } from "./artist-retention";
 import { replayMediaControl } from "./media-catalog-retention";
 import { replayPlaylistControl } from "./media-playlist-retention";
 import { randomUUID } from "node:crypto";
@@ -42,6 +43,9 @@ export type RetentionControlEntry = {
     | "EXCHANGE_VISIBILITY"
     | "EXCHANGE_FAVORITE"
     | "EXCHANGE_SAVED_SEARCH"
+    | "ARTIST"
+    | "ARTIST_RELEASE"
+    | "ARTIST_FOLLOW"
     | "MEDIA_CATALOG"
     | "MEDIA_PLAYLIST"
     | "MEDIA_SAVE"
@@ -123,6 +127,9 @@ function validate(value: unknown): RetentionControlEntry {
       "EXCHANGE_VISIBILITY",
       "EXCHANGE_FAVORITE",
       "EXCHANGE_SAVED_SEARCH",
+      "ARTIST",
+      "ARTIST_RELEASE",
+      "ARTIST_FOLLOW",
       "MEDIA_CATALOG",
       "MEDIA_PLAYLIST",
       "MEDIA_SAVE",
@@ -474,6 +481,9 @@ export async function recordDiscoveryControl(
     | "EXCHANGE_VISIBILITY"
     | "EXCHANGE_FAVORITE"
     | "EXCHANGE_SAVED_SEARCH"
+    | "ARTIST"
+    | "ARTIST_RELEASE"
+    | "ARTIST_FOLLOW"
     | "MEDIA_CATALOG"
     | "MEDIA_PLAYLIST"
     | "MEDIA_SAVE"
@@ -544,6 +554,9 @@ export function recordContentControl(
   decision: CommunityReportDecision
 ) {
   if (decision.fromVisibility === decision.toVisibility) return;
+  // Artist decisions atomically record their canonical source control above.
+  if (report.targetType === "ARTIST" || report.targetType === "ARTIST_RELEASE")
+    return;
   return record(tx, {
     id: randomUUID(),
     kind:
@@ -1427,16 +1440,52 @@ export async function replayRetentionControls(
           });
           continue;
         }
+        if (
+          entry.kind === "ARTIST" ||
+          entry.kind === "ARTIST_RELEASE" ||
+          entry.kind === "ARTIST_FOLLOW"
+        ) {
+          await replayArtistControl(
+            tx,
+            entry.kind,
+            entry.sourceId,
+            entry.version,
+            new Date(entry.recordedAt)
+          );
+          await record(tx, entry);
+          await tx.retentionControl.updateMany({
+            where: { id: entry.id, journaledAt: null },
+            data: { journaledAt: new Date() }
+          });
+          continue;
+        }
         if (entry.kind === "MEDIA_CATALOG") {
-          await replayMediaControl(tx,entry.sourceId,entry.version,new Date(entry.recordedAt));
-          await record(tx,entry);
-          await tx.retentionControl.updateMany({where:{id:entry.id,journaledAt:null},data:{journaledAt:new Date()}});
+          await replayMediaControl(
+            tx,
+            entry.sourceId,
+            entry.version,
+            new Date(entry.recordedAt)
+          );
+          await record(tx, entry);
+          await tx.retentionControl.updateMany({
+            where: { id: entry.id, journaledAt: null },
+            data: { journaledAt: new Date() }
+          });
           continue;
         }
         if (entry.kind === "MEDIA_PLAYLIST" || entry.kind === "MEDIA_SAVE") {
-          await replayPlaylistControl(tx,entry.kind,entry.sourceId,entry.version,new Date(entry.recordedAt));
-          await record(tx,entry);
-          await tx.retentionControl.updateMany({where:{id:entry.id,journaledAt:null},data:{journaledAt:new Date()}});
+          await replayPlaylistControl(
+            tx,
+            entry.kind,
+            entry.sourceId,
+            entry.version,
+            new Date(entry.recordedAt)
+          );
+          await record(tx, entry);
+          await tx.retentionControl.updateMany({
+            where: { id: entry.id, journaledAt: null },
+            data: { journaledAt: new Date() }
+          });
           continue;
         }
         if (entry.kind === "INTERCHURCH_HELP") {

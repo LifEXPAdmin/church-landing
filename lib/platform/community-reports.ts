@@ -1,3 +1,5 @@
+import { artistPublicId } from "./artist-policy";
+import { artistReleasePublic } from "./artist-reads";
 import { helpOfferEvidence } from "./interchurch-help-retention";
 import { currentHelpOffer } from "./interchurch-help-policy";
 import {
@@ -125,6 +127,40 @@ async function targetIn(
 ): Promise<Target | null> {
   const type = targetType(kind),
     id = postId(value);
+  if (type === "ARTIST" || type === "ARTIST_RELEASE") {
+    if (type === "ARTIST") {
+      if (!(await artistPublicId(tx, context, id))) return null;
+      const row = await tx.artistProfile.findUniqueOrThrow({
+        where: { id },
+        select: { version: true, name: true }
+      });
+      return {
+        type,
+        id,
+        version: row.version,
+        contextVersion: 0,
+        scopeChurchId: null,
+        source: { label: row.name, href: `/platform/music/${id}` }
+      };
+    }
+    const row = await artistReleasePublic(tx, context, id);
+    if (!row || !row.artistId) return null;
+    const artist = await tx.artistProfile.findUniqueOrThrow({
+      where: { id: row.artistId },
+      select: { version: true }
+    });
+    return {
+      type,
+      id,
+      version: row.version,
+      contextVersion: artist.version,
+      scopeChurchId: null,
+      source: {
+        label: row.title,
+        href: `/platform/music/${row.artistId}#release-${id}`
+      }
+    };
+  }
   if (type === "PANTRY_REQUEST") {
     const row = await tx.pantryRequest.findUnique({
       where: { id },
@@ -573,6 +609,11 @@ export async function communityReportIntakeAvailable(
     reportLimit() === null
   )
     return false;
+  if (
+    ["ARTIST", "ARTIST_RELEASE"].includes(targetType ?? "") &&
+    (scopeChurchId || scopeTopicId || scopeGroupId)
+  )
+    return false;
   if (scopeGroupId && targetType !== "GROUP") {
     const group = await tx.gatherGroup.findUnique({
       where: { id: scopeGroupId }
@@ -835,6 +876,61 @@ export function readCommunityReports(
       let selectedIdea;
       let selectedListing;
       let selectedHandoff;
+      if (report.targetType === "ARTIST") {
+        const row = await tx.artistProfile.findUnique({
+          where: { id: report.targetId },
+          select: {
+            name: true,
+            biography: true,
+            churchCredit: true,
+            credits: true,
+            version: true,
+            createdAt: true,
+            recoveryRequired: true
+          }
+        });
+        if (row && !row.recoveryRequired)
+          selectedHandoff = {
+            type: report.targetType,
+            content: JSON.stringify({
+              name: row.name,
+              biography: row.biography,
+              churchCredit: row.churchCredit,
+              credits: row.credits
+            }),
+            version: row.version,
+            createdAt: row.createdAt
+          };
+      }
+      if (report.targetType === "ARTIST_RELEASE") {
+        const row = await tx.artistRelease.findUnique({
+          where: { id: report.targetId },
+          select: {
+            title: true,
+            description: true,
+            tracks: true,
+            links: true,
+            credits: true,
+            version: true,
+            createdAt: true,
+            recoveryRequired: true
+          }
+        });
+        if (row && !row.recoveryRequired)
+          selectedHandoff = {
+            type: report.targetType,
+            content: JSON.stringify({
+              title: row.title,
+              description: row.description,
+              tracks: row.tracks,
+              links: row.links,
+              credits: row.credits
+            }),
+            version: row.version,
+            createdAt: row.createdAt
+          };
+      }
+
       if (report.targetType === "PANTRY_REQUEST") {
         const row = await tx.pantryRequest.findUnique({
           where: { id: report.targetId },

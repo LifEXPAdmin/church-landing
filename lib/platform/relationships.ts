@@ -1,3 +1,9 @@
+import {
+  artistPublicId,
+  requireArtistActor,
+  artistUnavailable
+} from "./artist-policy";
+import { postContext } from "./post-access";
 import { recordDiscoveryControl } from "./retention-controls";
 import { protectDiscoveryRecovery } from "./discovery-recovery";
 import { pruneFollowingLists } from "./following-list-revocation";
@@ -78,6 +84,62 @@ export async function relationshipCommand(
           id: ownerId,
           version: saved.version,
           message: "Privacy choices saved."
+        };
+      }
+      if (input.kind === "artist") {
+        if (input.operation !== "follow")
+          throw new PortalError(
+            400,
+            "Artist following does not enable personal contact, bells or editing."
+          );
+        const c = await postContext(tx, ownerId);
+        requireArtistActor(c);
+        const artistId = postId(input.targetId),
+          on = desired(input.desired);
+        const row = await tx.socialRelationship.findUnique({
+          where: { ownerId_artistId: { ownerId, artistId } }
+        });
+        if (on && !(await artistPublicId(tx, c, artistId)))
+          throw artistUnavailable();
+        if (!on && !row) throw artistUnavailable();
+        expected(input.expectedVersion, row?.version ?? 0);
+        if (
+          !row &&
+          (await tx.socialRelationship.count({ where: { ownerId } })) >= 2000
+        )
+          throw new PortalError(
+            409,
+            "These social settings need a size review."
+          );
+        if (on && !row?.followingArtist)
+          await requireSocialActivity(tx, ownerId, "follow");
+        const saved = await tx.socialRelationship.upsert({
+          where: { ownerId_artistId: { ownerId, artistId } },
+          create: {
+            ownerId,
+            artistId,
+            followingArtist: on,
+            followingSince: on ? new Date() : null
+          },
+          update: {
+            followingArtist: on,
+            followingSince: on ? (row?.followingSince ?? new Date()) : null,
+            version: { increment: 1 }
+          }
+        });
+        await recordDiscoveryControl(
+          tx,
+          "ARTIST_FOLLOW",
+          ownerId,
+          saved.id,
+          saved.version
+        );
+        return {
+          id: saved.id,
+          version: saved.version,
+          message: on
+            ? "Artist followed privately. This does not enable notifications or personal contact."
+            : "Artist unfollowed."
         };
       }
       const keys = target(input.kind, input.targetId);
@@ -305,6 +367,31 @@ export async function relationshipCommand(
     },
     async (_tx, ownerId) => {
       actingOwner = ownerId;
+      if (input.kind === "artist") {
+        const c = await postContext(_tx, ownerId);
+        requireArtistActor(c);
+        const artistId = postId(input.targetId);
+        if (input.desired === true && !(await artistPublicId(_tx, c, artistId)))
+          throw artistUnavailable();
+        const prior = await _tx.socialOperation.findUnique({
+          where: {
+            ownerId_key: {
+              ownerId,
+              key: `relationships:${String(input.mutationId)}`
+            }
+          }
+        });
+        if (prior) {
+          const row = await _tx.socialRelationship.findUnique({
+            where: { ownerId_artistId: { ownerId, artistId } }
+          });
+          if (!row || row.followingArtist !== input.desired)
+            throw new PortalError(
+              409,
+              "Your follow choice changed after this receipt. Reload its current state."
+            );
+        }
+      }
     }
   );
   if (
@@ -364,6 +451,22 @@ export function readRelationships(
       });
       if (query.view === "privacy") {
         return socialPrivacyIn(tx, ownerId);
+      }
+      if (query.kind === "artist") {
+        if (query.view !== "status")
+          throw new PortalError(400, "Choose the artist follow status.");
+        const c = await postContext(tx, ownerId);
+        requireArtistActor(c);
+        const artistId = postId(query.targetId);
+        if (!(await artistPublicId(tx, c, artistId))) throw artistUnavailable();
+        const row = await tx.socialRelationship.findUnique({
+          where: { ownerId_artistId: { ownerId, artistId } }
+        });
+        return {
+          id: row?.id ?? null,
+          version: row?.version ?? 0,
+          following: row?.followingArtist ?? false
+        };
       }
       if (query.view === "status") {
         const keys = target(query.kind, query.targetId);
@@ -455,6 +558,7 @@ export function readRelationships(
       const rows = await tx.socialRelationship.findMany({
         where: {
           ownerId,
+          artistId: null,
           ...(after ? { id: { gt: after } } : {}),
           ...(search
             ? {

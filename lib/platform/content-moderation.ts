@@ -27,6 +27,50 @@ import {
 // Call only after the shared pinned/current report-scope authorization succeeds.
 // No author/audience changes, source copies, or arbitrary source IDs are accepted.
 export async function contentReviewSource(tx: PostTx, report: CommunityReport) {
+  if (report.targetType === "ARTIST") {
+    const row = await tx.artistProfile.findUnique({
+      where: { id: report.targetId }
+    });
+    return (
+      row && {
+        id: row.id,
+        authorId: row.stewardId,
+        authorChurchId: null,
+        version: row.version,
+        moderationState: row.moderationState,
+        type: "ARTIST" as const,
+        contextVersion: 0,
+        authorWithdrawn:
+          row.state !== "PUBLISHED" || !!row.removedAt || row.recoveryRequired
+      }
+    );
+  }
+  if (report.targetType === "ARTIST_RELEASE") {
+    const row = await tx.artistRelease.findUnique({
+      where: { id: report.targetId },
+      include: { artist: true }
+    });
+    return (
+      row && {
+        id: row.id,
+        authorId: row.artist?.stewardId ?? null,
+        authorChurchId: null,
+        version: row.version,
+        moderationState: row.moderationState,
+        type: "ARTIST_RELEASE" as const,
+        contextVersion: row.artist?.version ?? 0,
+        authorWithdrawn:
+          row.state !== "PUBLISHED" ||
+          !!row.removedAt ||
+          row.recoveryRequired ||
+          !row.artist ||
+          row.artist.state !== "PUBLISHED" ||
+          !!row.artist.removedAt ||
+          row.artist.recoveryRequired
+      }
+    );
+  }
+
   if (report.targetType === "EXCHANGE_LISTING") {
     const listing = await tx.exchangeListing.findUnique({
       where: { id: report.targetId },
@@ -229,7 +273,31 @@ export async function moderateReportedContent(
     version: { increment: 1 }
   };
   if (changed) {
-    if (source.type === "POST")
+    if (source.type === "ARTIST") {
+      const row = await tx.artistProfile.update({
+        where: { id: source.id },
+        data: { ...data, controlVersion: { increment: 1 } }
+      });
+      await recordDiscoveryControl(
+        tx,
+        "ARTIST",
+        actorId,
+        row.id,
+        row.controlVersion
+      );
+    } else if (source.type === "ARTIST_RELEASE") {
+      const row = await tx.artistRelease.update({
+        where: { id: source.id },
+        data: { ...data, controlVersion: { increment: 1 } }
+      });
+      await recordDiscoveryControl(
+        tx,
+        "ARTIST_RELEASE",
+        actorId,
+        row.id,
+        row.controlVersion
+      );
+    } else if (source.type === "POST")
       await tx.platformPost.update({ where: { id: source.id }, data });
     else if (source.type === "GROUP") {
       await tx.gatherGroup.update({ where: { id: source.id }, data });
@@ -302,10 +370,41 @@ export async function authorDecisionWhere(
   context: PostContext
 ): Promise<Prisma.CommunityReportDecisionWhereInput> {
   const exchange = await exchangeAuthority(tx, context);
+  const artists = await tx.artistProfile.findMany({
+    where: {
+      stewardId: context.actorId ?? "",
+      steward: { suspendedAt: null, deactivatedAt: null }
+    },
+    select: { id: true }
+  });
+  const releases = await tx.artistRelease.findMany({
+    where: { artistId: { in: artists.map((x) => x.id) } },
+    select: { id: true }
+  });
   return {
     action: { not: null },
     OR: [
-      { authorId: context.actorId ?? "", authorChurchId: null },
+      {
+        authorId: context.actorId ?? "",
+        authorChurchId: null,
+        report: { targetType: { notIn: ["ARTIST", "ARTIST_RELEASE"] } }
+      },
+      {
+        authorId: context.actorId ?? "",
+        authorChurchId: null,
+        report: {
+          OR: [
+            {
+              targetType: "ARTIST",
+              targetId: { in: artists.map((x) => x.id) }
+            },
+            {
+              targetType: "ARTIST_RELEASE",
+              targetId: { in: releases.map((x) => x.id) }
+            }
+          ]
+        }
+      },
       {
         authorChurchId: { in: [...context.publishers] },
         report: { targetType: { not: "EXCHANGE_LISTING" } }
@@ -379,7 +478,32 @@ export async function readContentNotices(
         { authorChurchId: { in: [...context.publishers] } }
       ]
     };
-    if (report.targetType === "EXCHANGE_LISTING") {
+    if (report.targetType === "ARTIST") {
+      const source = await tx.artistProfile.findFirst({
+        where: { id: report.targetId, stewardId: context.actorId ?? "" },
+        select: { id: true, name: true, version: true, removedAt: true }
+      });
+      if (source)
+        ownSource = {
+          href: `/platform/music/${source.id}/edit`,
+          content: source.removedAt ? "" : source.name,
+          version: source.version
+        };
+    } else if (report.targetType === "ARTIST_RELEASE") {
+      const source = await tx.artistRelease.findFirst({
+        where: {
+          id: report.targetId,
+          artist: { stewardId: context.actorId ?? "" }
+        },
+        select: { artistId: true, title: true, version: true, removedAt: true }
+      });
+      if (source)
+        ownSource = {
+          href: `/platform/music/${source.artistId}/edit`,
+          content: source.removedAt ? "" : source.title,
+          version: source.version
+        };
+    } else if (report.targetType === "EXCHANGE_LISTING") {
       const source = await tx.exchangeListing.findFirst({
         where: {
           AND: [

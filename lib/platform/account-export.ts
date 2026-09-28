@@ -1,3 +1,4 @@
+import { exportArtists } from "./artist-retention";
 import { exportMedia } from "./media-catalog-retention";
 import { exportMediaPlaylists } from "./media-playlist-retention";
 import { exportHelp } from "./interchurch-help-retention";
@@ -631,8 +632,9 @@ export async function downloadAccountExport(
       });
     }
     const collections = {
-      ...(await exportMediaPlaylists(tx,userId,MAX_ROWS)),
-      personalMedia: await exportMedia(tx,userId,MAX_ROWS),
+      ...(await exportMediaPlaylists(tx, userId, MAX_ROWS)),
+      ...(await exportArtists(tx, userId, MAX_ROWS)),
+      personalMedia: await exportMedia(tx, userId, MAX_ROWS),
       interchurchHelp: await exportHelp(tx, userId, MAX_ROWS),
       exchangeInquiries,
       assistanceRequests: await tx.pantryRequest
@@ -1003,6 +1005,8 @@ export async function downloadAccountExport(
       socialRelationships: await tx.socialRelationship.findMany({
         where: { ownerId: userId },
         select: {
+          artistId: true,
+          followingArtist: true,
           targetUserId: true,
           churchId: true,
           authorBellSince: true,
