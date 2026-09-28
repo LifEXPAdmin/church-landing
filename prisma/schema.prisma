@@ -213,6 +213,10 @@ enum PlatformPostType {
 }
 
 model PlatformUser {
+  ownedMediaPlaylists MediaPlaylist[] @relation("PlaylistPersonalOwner")
+  createdMediaPlaylists MediaPlaylist[] @relation("PlaylistCreator")
+  mediaPlaylistEvents MediaPlaylistEvent[]
+  savedMedia MediaSavedItem[]
   ownedCatalogItems MediaCatalogItem[] @relation("CatalogPersonalOwner")
   createdCatalogItems MediaCatalogItem[] @relation("CatalogCreator")
   catalogRights MediaCatalogRights[]
@@ -802,6 +806,7 @@ enum DirectoryAudience {
 }
 
 model Church {
+  mediaPlaylists MediaPlaylist[]
   catalogItems MediaCatalogItem[]
   gatherGroups GatherGroup[]
   pantryHub PantryHub?
@@ -3562,6 +3567,8 @@ model InterchurchHelpEvent {
 
 
 model MediaCatalogItem {
+  playlistEntries MediaPlaylistEntry[]
+  savedBy MediaSavedItem[]
   id String @id @default(cuid())
   version Int @default(1)
   controlVersion Int @default(1)
@@ -3631,4 +3638,71 @@ model MediaCatalogEvent {
   version Int
   createdAt DateTime @default(now())
   @@index([itemId, createdAt])
+}
+
+model MediaPlaylist {
+  id String @id @default(cuid())
+  version Int @default(1)
+  controlVersion Int @default(1)
+  ownerId String?
+  ownerChurchId String?
+  createdById String?
+  owner PlatformUser? @relation("PlaylistPersonalOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  ownerChurch Church? @relation(fields: [ownerChurchId], references: [id], onDelete: SetNull)
+  createdBy PlatformUser? @relation("PlaylistCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  title String @default("")
+  description String @default("")
+  audience String @default("PRIVATE")
+  state String @default("DRAFT")
+  recoveryRequired Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  publishedAt DateTime?
+  removedAt DateTime?
+  entries MediaPlaylistEntry[]
+  events MediaPlaylistEvent[]
+  @@index([ownerId, removedAt, updatedAt, id])
+  @@index([ownerChurchId, removedAt, updatedAt, id])
+  @@index([state, audience, publishedAt, id])
+}
+
+model MediaPlaylistEntry {
+  id String @id @default(cuid())
+  playlistId String
+  mediaId String?
+  position Int
+  playlist MediaPlaylist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  media MediaCatalogItem? @relation(fields: [mediaId], references: [id], onDelete: SetNull)
+  @@unique([playlistId, mediaId])
+  @@index([playlistId, position, id])
+  @@index([mediaId])
+}
+
+model MediaSavedItem {
+  id String @id @default(cuid())
+  userId String?
+  mediaId String?
+  user PlatformUser? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  media MediaCatalogItem? @relation(fields: [mediaId], references: [id], onDelete: SetNull)
+  version Int @default(1)
+  controlVersion Int @default(1)
+  removedAt DateTime?
+  recoveryRequired Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@unique([userId, mediaId])
+  @@index([userId, removedAt, createdAt, id])
+  @@index([mediaId])
+}
+
+model MediaPlaylistEvent {
+  id String @id @default(cuid())
+  playlistId String
+  actorId String?
+  playlist MediaPlaylist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  actor PlatformUser? @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  action String
+  version Int
+  createdAt DateTime @default(now())
+  @@index([playlistId, createdAt])
 }
