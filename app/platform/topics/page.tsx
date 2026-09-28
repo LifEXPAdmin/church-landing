@@ -1,8 +1,8 @@
 import { discoveryMetadata } from "@/lib/platform/discovery-metadata";
 import type { PublicQuery } from "@/lib/indexing-policy";
-import Link from "next/link";
 import { PlatformShell } from "@/components/platform/platform-shell";
-import { PrivateSnapshotGuard } from "@/components/platform/private-snapshot-guard";
+import { TopicPrivateCatalogue } from "@/components/platform/topic-private-catalogue";
+import { TopicCatalogue } from "@/components/platform/topic-catalogue";
 import { TopicReadBoundary } from "@/components/platform/topic-read-boundary";
 import {
   TopicAccountLinks,
@@ -12,7 +12,6 @@ import {
 } from "@/components/platform/topic-page-ui";
 import { getCurrentPlatformUser } from "@/lib/platform/session";
 import { topicListPage } from "@/lib/platform/topic-session";
-import { topicHref } from "@/lib/platform/topic-types";
 
 export const dynamic = "force-dynamic";
 export async function generateMetadata({
@@ -49,80 +48,31 @@ export default async function TopicDiscoveryPage({
   let content;
   if (!user && (query.mine || query.owned))
     content = <TopicAccountLinks next={path} />;
-  else {
+  else if (user && (query.mine || query.owned)) {
+    const readUrl = `/api/platform/topics?${new URLSearchParams({ ...Object.fromEntries(url), ...(query.after ? { after: query.after } : {}) })}`;
+    content = (
+      <TopicPrivateCatalogue
+        key={`${user.id}:${readUrl}`}
+        owner={user.id}
+        url={readUrl}
+        query={query}
+        path={path}
+      />
+    );
+  } else {
     try {
       const result = await topicListPage(query);
       const readUrl = `/api/platform/topics?${new URLSearchParams({ ...Object.fromEntries(url), ...(query.after ? { after: query.after } : {}) })}`;
-      const rows = (
-        <div className="space-y-4">
-          {query.after && (
-            <a className="gc-button gc-button-quiet" href={path}>
-              First topic page
-            </a>
-          )}
-          {!result.topics.length && (
-            <p>
-              {query.q
-                ? "No topics match this search."
-                : query.owned
-                  ? "You do not own any topics yet."
-                  : query.mine
-                    ? "You have not joined or followed a public topic yet."
-                    : "No public topics yet. Create a community around a topic you care about."}
-            </p>
-          )}
-          <ul className="grid gap-4 sm:grid-cols-2">
-            {result.topics.map((topic) => (
-              <li
-                key={topic.id}
-                className="min-w-0 space-y-3 rounded-xl border border-gc-divider bg-gc-surface p-5"
-              >
-                <h2 className="break-words text-2xl">
-                  <Link
-                    prefetch={false}
-                    className="underline"
-                    href={`${topicHref(topic.slug)}${query.owned ? "/manage" : ""}`}
-                  >
-                    {topic.name}
-                  </Link>
-                </h2>
-                <p className="whitespace-pre-wrap break-words text-gc-muted">
-                  {topic.description}
-                </p>
-              </li>
-            ))}
-          </ul>
-          {result.after && (
-            <a
-              className="gc-button gc-button-quiet"
-              href={`/platform/topics?${new URLSearchParams({ ...Object.fromEntries(url), after: result.after })}`}
-            >
-              More topics
-            </a>
-          )}
-        </div>
+      content = (
+        <TopicReadBoundary
+          key={user?.id ?? "guest"}
+          owner={user?.id ?? null}
+          url={readUrl}
+          checksum={topicChecksum(result)}
+        >
+          <TopicCatalogue result={result} query={query} path={path} />
+        </TopicReadBoundary>
       );
-      content =
-        user && (query.mine || query.owned) ? (
-          <PrivateSnapshotGuard
-            key={user.id}
-            owner={user.id}
-            url={readUrl}
-            checksum={topicChecksum(result)}
-            label="topic choices"
-          >
-            {rows}
-          </PrivateSnapshotGuard>
-        ) : (
-          <TopicReadBoundary
-            key={user?.id ?? "guest"}
-            owner={user?.id ?? null}
-            url={readUrl}
-            checksum={topicChecksum(result)}
-          >
-            {rows}
-          </TopicReadBoundary>
-        );
     } catch (error) {
       content = <TopicUnavailable error={error} href={path} />;
     }

@@ -52,7 +52,7 @@ export function PrivateReadSnapshot<T>({
         ),
         (b) => b.toString(16).padStart(2, "0")
       ).join("");
-      if (seq !== generation.current) return;
+      if (seq !== generation.current || !active.current) return;
       if (checksum.current !== null && checksum.current !== digest) {
         setNotice(changedNotice);
       } else {
@@ -90,6 +90,11 @@ export function PrivateReadSnapshot<T>({
         void load();
       }
     };
+    // Background connectivity or relationship updates do not establish that
+    // this private page is foreground again. Focus or an explicit recheck does.
+    const refresh = () => {
+      if (active.current) void load();
+    };
     const visibility = () =>
       document.visibilityState === "hidden" ? hide() : resume();
     resume();
@@ -97,9 +102,9 @@ export function PrivateReadSnapshot<T>({
     window.addEventListener("pagehide", hide);
     window.addEventListener("offline", hide);
     window.addEventListener("focus", resume);
-    window.addEventListener("online", resume);
+    window.addEventListener("online", refresh);
     window.addEventListener("pageshow", resume);
-    window.addEventListener("social-relationships-changed", resume);
+    window.addEventListener("social-relationships-changed", refresh);
     document.addEventListener("visibilitychange", visibility);
     return () => {
       hide();
@@ -107,9 +112,9 @@ export function PrivateReadSnapshot<T>({
       window.removeEventListener("pagehide", hide);
       window.removeEventListener("offline", hide);
       window.removeEventListener("focus", resume);
-      window.removeEventListener("online", resume);
+      window.removeEventListener("online", refresh);
       window.removeEventListener("pageshow", resume);
-      window.removeEventListener("social-relationships-changed", resume);
+      window.removeEventListener("social-relationships-changed", refresh);
       document.removeEventListener("visibilitychange", visibility);
     };
   }, [load, label]);
