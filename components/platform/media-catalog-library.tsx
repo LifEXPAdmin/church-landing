@@ -1,5 +1,8 @@
 "use client";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { MediaTopicLinks } from "./media-topic-links";
+import { mediaTopicSuggestions } from "@/lib/platform/media-topic-options";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { socialRequest } from "@/lib/platform/social-client";
 import { useReadVisibility } from "./read-visibility";
@@ -171,8 +174,38 @@ export function MediaLibrary({
   owner: string | null;
   studio?: boolean;
 }) {
-  const [query, setQuery] = useState(""),
-    [page, setPage] = useState(0);
+  const search = useSearchParams(),
+    router = useRouter();
+  const [studioPage, setStudioPage] = useState(0);
+  const filters = new URLSearchParams();
+  if (!studio)
+    for (const name of [
+      "q",
+      "format",
+      "speaker",
+      "series",
+      "topic",
+      "referenceSystem",
+      "scripture"
+    ]) {
+      const value = search.get(name);
+      if (value) filters.set(name, value);
+    }
+  const query = filters.size ? "&" + filters.toString() : "";
+  const requestedPage = Number(search.get("page") ?? 0);
+  const page = studio
+    ? studioPage
+    : Number.isInteger(requestedPage) &&
+        requestedPage >= 0 &&
+        requestedPage <= 999
+      ? requestedPage
+      : 0;
+  const setPage = (value: number) => {
+    if (studio) return setStudioPage(value);
+    const params = new URLSearchParams(filters);
+    if (value) params.set("page", String(value));
+    router.push(`/platform/media${params.size ? "?" + params.toString() : ""}`);
+  };
   const { data, error, reload } = useMediaRead<{
     items: (MediaPublic & StudioRow)[];
     total: number;
@@ -202,98 +235,142 @@ export function MediaLibrary({
           Create media draft
         </Link>
       ) : (
-        <form
-          aria-label="Search media"
-          className="grid gap-3 rounded-xl border p-4 sm:grid-cols-2"
-          onSubmit={(e) => {
-            e.preventDefault();
-            const params = new URLSearchParams();
-            new FormData(e.currentTarget).forEach((v, k) => {
-              if (String(v).trim()) params.set(k, String(v).trim());
-            });
-            setPage(0);
-            setQuery(params.size ? "&" + params.toString() : "");
-          }}
-        >
-          <label>
-            Keywords
-            <input
-              className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-base text-slate-900"
-              name="q"
-              maxLength={160}
-              placeholder="Title or description"
-            />
-          </label>
-          <label>
-            Format
-            <select
-              className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-base text-slate-900"
-              name="format"
+        <>
+          <section
+            aria-label="Explore topics"
+            className="space-y-2 rounded-xl border p-4"
+          >
+            <h2 className="text-xl font-semibold">Explore a topic</h2>
+            <p>
+              Browse optional publisher-selected labels. These are topics in
+              recordings, not an assessment of you. Choosing one starts a new
+              search.
+            </p>
+            <MediaTopicLinks topics={mediaTopicSuggestions} />
+          </section>
+          <form
+            key={query}
+            aria-label="Search media"
+            className="grid gap-3 rounded-xl border p-4 sm:grid-cols-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              const params = new URLSearchParams();
+              new FormData(e.currentTarget).forEach((v, k) => {
+                if (String(v).trim()) params.set(k, String(v).trim());
+              });
+              router.push(
+                `/platform/media${params.size ? "?" + params.toString() : ""}`
+              );
+            }}
+          >
+            <label>
+              Keywords
+              <input
+                className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-base text-slate-900"
+                name="q"
+                defaultValue={filters.get("q") ?? ""}
+                maxLength={160}
+                placeholder="Title or description"
+              />
+            </label>
+            <label>
+              Format
+              <select
+                className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-base text-slate-900"
+                name="format"
+                defaultValue={filters.get("format") ?? ""}
+              >
+                <option value="">All formats</option>
+                {Object.entries(mediaFormatNames).map(([id, label]) => (
+                  <option key={id} value={id}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Speaker name
+              <input
+                className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-base text-slate-900"
+                name="speaker"
+                defaultValue={filters.get("speaker") ?? ""}
+                maxLength={120}
+              />
+            </label>
+            <label>
+              Series
+              <input
+                className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-base text-slate-900"
+                name="series"
+                defaultValue={filters.get("series") ?? ""}
+                maxLength={160}
+              />
+            </label>
+            <label>
+              Topic
+              <input
+                className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-base text-slate-900"
+                name="topic"
+                defaultValue={filters.get("topic") ?? ""}
+                maxLength={40}
+              />
+            </label>
+            <label>
+              Scripture reference system
+              <select
+                name="referenceSystem"
+                defaultValue={filters.get("referenceSystem") ?? ""}
+                className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-base text-slate-900"
+              >
+                <option value="">Choose for passage search</option>
+                {scriptureSystems.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Scripture passage
+              <input
+                name="scripture"
+                defaultValue={filters.get("scripture") ?? ""}
+                maxLength={4000}
+                placeholder="John 3:16-18"
+                className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-base text-slate-900"
+              />
+            </label>
+            <p className="text-sm sm:col-span-2">
+              Passage search matches overlapping publisher-supplied tags in the
+              chosen reference system. For multiple passages, use full book
+              names separated by semicolons.
+            </p>
+            <button className="gc-button self-end" type="submit">
+              Search media
+            </button>
+            <Link
+              prefetch={false}
+              href="/platform/media"
+              className="min-h-11 py-2 underline"
             >
-              <option value="">All formats</option>
-              {Object.entries(mediaFormatNames).map(([id, label]) => (
-                <option key={id} value={id}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Speaker name
-            <input
-              className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-base text-slate-900"
-              name="speaker"
-              maxLength={120}
-            />
-          </label>
-          <label>
-            Series
-            <input
-              className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-base text-slate-900"
-              name="series"
-              maxLength={160}
-            />
-          </label>
-          <label>
-            Topic
-            <input
-              className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-base text-slate-900"
-              name="topic"
-              maxLength={40}
-            />
-          </label>
-          <label>
-            Scripture reference system
-            <select
-              name="referenceSystem"
-              className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-base text-slate-900"
+              Clear filters
+            </Link>
+          </form>
+          {filters.size > 0 && (
+            <p
+              aria-label="Applied media filters"
+              className="break-words text-sm"
             >
-              <option value="">Choose for passage search</option>
-              {scriptureSystems.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Scripture passage
-            <input
-              name="scripture"
-              maxLength={4000}
-              placeholder="John 3:16-18"
-              className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-base text-slate-900"
-            />
-          </label>
-          <p className="text-sm sm:col-span-2">
-            Passage search matches overlapping publisher-supplied tags in the
-            chosen reference system. For multiple passages, use full book names
-            separated by semicolons.
-          </p>
-          <button className="gc-button self-end" type="submit">
-            Search media
-          </button>
-        </form>
+              Applied filters:{" "}
+              {Array.from(filters.entries())
+                .map(
+                  ([key, value]) =>
+                    `${({ q: "Keywords", format: "Format", speaker: "Speaker", series: "Series", topic: "Topic", referenceSystem: "Reference system", scripture: "Passage" } as Record<string, string>)[key]}: ${value}`
+                )
+                .join("; ")}
+            </p>
+          )}
+        </>
       )}
       {!data ? (
         <MediaReadNotice error={error} reload={reload} />
@@ -335,6 +412,15 @@ export function MediaLibrary({
                       {item.description.slice(0, 220)}
                     </p>
                   )}
+                  {!studio && item.topics.length > 0 && (
+                    <section
+                      aria-label="Publisher topics"
+                      className="mt-3 space-y-2"
+                    >
+                      <p className="text-sm">Publisher-selected topics</p>
+                      <MediaTopicLinks topics={item.topics} />
+                    </section>
+                  )}
                   <p className="mt-3 text-sm">
                     {item.ownerChurch?.name ??
                       (studio
@@ -348,19 +434,19 @@ export function MediaLibrary({
               ))}
             </div>
           )}
-          <div className="flex gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <button
-              className="gc-button gc-button-quiet"
+              className="gc-button gc-button-quiet whitespace-nowrap"
               disabled={page === 0}
-              onClick={() => setPage((p) => p - 1)}
+              onClick={() => setPage(page - 1)}
             >
               Previous
             </button>
-            <span className="py-2">Page {page + 1}</span>
+            <span className="whitespace-nowrap py-2">Page {page + 1}</span>
             <button
-              className="gc-button gc-button-quiet"
+              className="gc-button gc-button-quiet whitespace-nowrap"
               disabled={(page + 1) * 20 >= data.total || page >= 999}
-              onClick={() => setPage((p) => p + 1)}
+              onClick={() => setPage(page + 1)}
             >
               Next
             </button>
