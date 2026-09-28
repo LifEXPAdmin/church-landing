@@ -16,10 +16,12 @@ import { ReadVisibility, useReadVisibility } from "./read-visibility";
 // A guest has no draft yet; the first authenticated tree becomes its owner.
 export function TopicCreateScope({
   owner,
-  children
+  children,
+  workLabel = "topic draft"
 }: {
   owner: string | null;
   children: ReactNode;
+  workLabel?: string;
 }) {
   const [original, setOriginal] = useState({ owner, children });
   const previousOwner = useRef(owner);
@@ -35,7 +37,7 @@ export function TopicCreateScope({
     <>
       {original.owner && owner !== original.owner && (
         <p role="status" className="m-4 rounded-xl border p-4">
-          This topic draft belongs to the account that opened it. Return to that
+          This {workLabel} belongs to the account that opened it. Return to that
           account to continue, or reload to start with the current account.
         </p>
       )}

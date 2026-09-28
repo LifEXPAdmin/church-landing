@@ -212,6 +212,21 @@ test("production HTTPS topic controls require current identity and explicit cons
   assert.equal(hidden.available, false);
   assert.equal(JSON.stringify(hidden).includes(String(body.name)), false);
   const management = await (await req(path + "/manage", owner.token)).text();
-  assert.ok(management.includes("Reopen this topic"));
-  assert.ok(management.includes("Management history"));
+  assert.equal(management.includes("Reopen this topic"), false);
+  assert.equal(management.includes("Management history"), false);
+  assert.equal(management.includes(String(body.name)), false);
+  assert.equal(management.includes(String(body.rules)), false);
+  assert.ok(management.includes("Checking current topic management access"));
+  const privateManagement = await req(
+    `/api/platform/topics?view=management&slug=${body.slug}`,
+    owner.token,
+    undefined,
+    { "x-expected-account": owner.id }
+  );
+  assert.equal(privateManagement.status, 200);
+  const current = await privateManagement.json();
+  assert.equal(current.view.community.lifecycle, "ARCHIVED");
+  assert.equal(current.view.viewer.isOwner, true);
+  assert.equal(current.members, null);
+  assert.ok(current.history.entries.length > 0);
 });

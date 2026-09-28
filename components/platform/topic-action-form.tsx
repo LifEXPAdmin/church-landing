@@ -1,6 +1,7 @@
 "use client";
 import {
   useCallback,
+  useContext,
   useEffect,
   useLayoutEffect,
   useId,
@@ -18,6 +19,8 @@ import {
 import { useUnsavedSocialWork } from "./use-unsaved-social-work";
 import { usePrivateRecovery } from "./private-snapshot-guard";
 import { settlePhotoNavigation } from "./use-photo-back-guard";
+
+import { TopicFormWorkspace } from "./topic-form-workspace";
 
 type Receipt = { id: string; version: number; message: string };
 /** Topic forms keep one immutable request until its outcome is confirmed. */
@@ -40,6 +43,9 @@ export function TopicActionForm({
   concealed?: boolean;
   accessVersion?: () => number | null;
 }) {
+  const workspace = useContext(TopicFormWorkspace);
+  const checkAccess = accessVersion ?? workspace?.accessVersion;
+  const presentationConcealed = concealed || !!workspace?.concealed;
   const router = useRouter(),
     id = useId(),
     form = useRef<HTMLFormElement>(null),
@@ -85,7 +91,22 @@ export function TopicActionForm({
     setConflict(false);
     setDirty(false);
   }, [key, pending, busy, dirty, saved]);
-  const retry = useCallback(() => form.current?.requestSubmit(), []);
+  const recover = useRef<() => void>(() => {});
+  const directRecovery = !!workspace;
+  const retry = useCallback(() => {
+    if (directRecovery) recover.current();
+    else form.current?.requestSubmit();
+  }, [directRecovery]);
+  const register = workspace?.register;
+  useLayoutEffect(() => {
+    register?.(id, {
+      protectedWork: dirty || !!pending || busy || conflict,
+      pending: !!pending,
+      busy: busy || cooldown > 0,
+      retry
+    });
+    return () => register?.(id, null);
+  }, [register, id, dirty, pending, busy, conflict, cooldown, retry]);
   usePrivateRecovery(id, !!pending, busy || cooldown > 0, retry);
   useUnsavedSocialWork(
     { dirty, saving: !confirmed && (busy || !!pending), conflict },
@@ -95,8 +116,140 @@ export function TopicActionForm({
       ),
     true
   );
+  const send = async (body: string) => {
+    const accessAtStart = checkAccess?.();
+    if (
+      accessAtStart === null ||
+      flight.current ||
+      busy ||
+      (conflict && !pending) ||
+      saved ||
+      Date.now() < retryAt
+    )
+      return;
+    flight.current = true;
+    setBusy(true);
+    setPending(body);
+    setMessage("");
+    try {
+      let data = accepted.current;
+      if (!data) {
+        data = (
+          await socialRequest<Receipt>(
+            "/api/platform/topics",
+            body,
+            originalOwner,
+            "POST",
+            () => {
+              attempts.current++;
+            }
+          )
+        ).data;
+      }
+      if (!mounted.current) return;
+      if (
+        !data ||
+        typeof data.id !== "string" ||
+        !Number.isInteger(data.version) ||
+        typeof data.message !== "string"
+      )
+        throw new SocialClientError(
+          503,
+          "The result could not be confirmed. Retry the same topic request."
+        );
+      // Clearing protected work removes its same-address Back entry.
+      // Finish that traversal before navigating or refreshing the route.
+      accepted.current = data;
+      flushSync(() => {
+        setDirty(false);
+        setConfirmed(true);
+        setConflict(false);
+        setMessage(data.message);
+      });
+      await settlePhotoNavigation();
+      if (!mounted.current) return;
+      const continuationAllowed = () =>
+        !checkAccess || checkAccess() === accessAtStart;
+      if (!continuationAllowed()) {
+        setMessage(
+          "Your topic change was saved. Recheck current access, then continue after the saved change."
+        );
+        return;
+      }
+      const currentOwner = await currentSocialOwner();
+      if (!mounted.current) return;
+      if (currentOwner !== originalOwner)
+        throw new SocialClientError(
+          401,
+          "Your topic change was saved. Return to the original account to continue, or reload current information."
+        );
+      if (!continuationAllowed()) {
+        setMessage(
+          "Your topic change was saved. Recheck current access, then continue after the saved change."
+        );
+        return;
+      }
+      setPending(null);
+      setSaved(true);
+      if (onDone) onDone(data, JSON.parse(body));
+      else if (workspace) workspace.saved();
+      else router.refresh();
+    } catch (error) {
+      if (!mounted.current) return;
+      if (
+        error instanceof SocialClientError &&
+        !error.needsAuthenticator &&
+        error.status === 400 &&
+        error.code === "TOPIC_INPUT_REJECTED" &&
+        attempts.current === 1 &&
+        !accepted.current
+      ) {
+        setPending(null);
+        setConflict(false);
+        attempts.current = 0;
+      }
+      if (error instanceof SocialClientError) {
+        if ([401, 403, 404].includes(error.status))
+          workspace?.denied(accessAtStart);
+        if (
+          !accepted.current &&
+          !error.needsAuthenticator &&
+          [403, 404, 409].includes(error.status)
+        )
+          setConflict(true);
+        if (
+          error.status === 429 &&
+          Number.isSafeInteger(error.retryAfter) &&
+          error.retryAfter! > 0 &&
+          error.retryAfter! <= 86400
+        ) {
+          const time = Date.now();
+          setNow(time);
+          setRetryAt(time + error.retryAfter! * 1000);
+        }
+      }
+      setMessage(
+        error instanceof SocialClientError &&
+          error.status === 401 &&
+          !accepted.current
+          ? "Your sign-in changed. Return to the original account to retry this same topic request, or stop retrying and reload."
+          : error instanceof Error
+            ? error.message
+            : "The response was lost. Retry the same topic request."
+      );
+    } finally {
+      flight.current = false;
+      if (mounted.current) setBusy(false);
+    }
+  };
+  recover.current = () => {
+    // A concealed workspace may confirm only its immutable original request.
+    // It never reads removed controls or constructs a new command.
+    if (pending && workspace && workspace.accessVersion() !== null)
+      void send(pending);
+  };
   // The controller and immutable request stay mounted; private controls do not.
-  if (concealed) return null;
+  if (presentationConcealed) return null;
   return (
     <form
       ref={form}
@@ -107,18 +260,9 @@ export function TopicActionForm({
         setDirty(true);
         setSaved(false);
       }}
-      onSubmit={async (event) => {
+      onSubmit={(event) => {
         event.preventDefault();
-        const accessAtStart = accessVersion?.();
-        if (
-          accessAtStart === null ||
-          flight.current ||
-          busy ||
-          (conflict && !pending) ||
-          saved ||
-          Date.now() < retryAt
-        )
-          return;
+        if (presentationConcealed) return;
         const body =
           pending ??
           JSON.stringify({
@@ -126,117 +270,7 @@ export function TopicActionForm({
             ...fields?.(new FormData(event.currentTarget)),
             mutationId: crypto.randomUUID()
           });
-        flight.current = true;
-        setBusy(true);
-        setPending(body);
-        setMessage("");
-        try {
-          let data = accepted.current;
-          if (!data) {
-            data = (
-              await socialRequest<Receipt>(
-                "/api/platform/topics",
-                body,
-                originalOwner,
-                "POST",
-                () => {
-                  attempts.current++;
-                }
-              )
-            ).data;
-          }
-          if (!mounted.current) return;
-          if (
-            !data ||
-            typeof data.id !== "string" ||
-            !Number.isInteger(data.version) ||
-            typeof data.message !== "string"
-          )
-            throw new SocialClientError(
-              503,
-              "The result could not be confirmed. Retry the same topic request."
-            );
-          // Clearing protected work removes its same-address Back entry.
-          // Finish that traversal before navigating or refreshing the route.
-          accepted.current = data;
-          flushSync(() => {
-            setDirty(false);
-            setConfirmed(true);
-            setConflict(false);
-            setMessage(data.message);
-          });
-          await settlePhotoNavigation();
-          if (!mounted.current) return;
-          const continuationAllowed = () =>
-            !accessVersion || accessVersion() === accessAtStart;
-          if (!continuationAllowed()) {
-            setMessage(
-              "Your topic change was saved. Recheck current access, then continue after the saved change."
-            );
-            return;
-          }
-          const currentOwner = await currentSocialOwner();
-          if (!mounted.current) return;
-          if (currentOwner !== originalOwner)
-            throw new SocialClientError(
-              401,
-              "Your topic change was saved. Return to the original account to continue, or reload current information."
-            );
-          if (!continuationAllowed()) {
-            setMessage(
-              "Your topic change was saved. Recheck current access, then continue after the saved change."
-            );
-            return;
-          }
-          setPending(null);
-          setSaved(true);
-          if (onDone) onDone(data, JSON.parse(body));
-          else router.refresh();
-        } catch (error) {
-          if (!mounted.current) return;
-          if (
-            error instanceof SocialClientError &&
-            !error.needsAuthenticator &&
-            error.status === 400 &&
-            error.code === "TOPIC_INPUT_REJECTED" &&
-            attempts.current === 1 &&
-            !accepted.current
-          ) {
-            setPending(null);
-            setConflict(false);
-            attempts.current = 0;
-          }
-          if (error instanceof SocialClientError) {
-            if (
-              !accepted.current &&
-              !error.needsAuthenticator &&
-              [403, 404, 409].includes(error.status)
-            )
-              setConflict(true);
-            if (
-              error.status === 429 &&
-              Number.isSafeInteger(error.retryAfter) &&
-              error.retryAfter! > 0 &&
-              error.retryAfter! <= 86400
-            ) {
-              const time = Date.now();
-              setNow(time);
-              setRetryAt(time + error.retryAfter! * 1000);
-            }
-          }
-          setMessage(
-            error instanceof SocialClientError &&
-              error.status === 401 &&
-              !accepted.current
-              ? "Your sign-in changed. Return to the original account to retry this same topic request, or stop retrying and reload."
-              : error instanceof Error
-                ? error.message
-                : "The response was lost. Retry the same topic request."
-          );
-        } finally {
-          flight.current = false;
-          if (mounted.current) setBusy(false);
-        }
+        void send(body);
       }}
     >
       <fieldset

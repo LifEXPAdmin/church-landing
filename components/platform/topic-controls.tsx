@@ -340,39 +340,82 @@ type Members = Awaited<ReturnType<typeof readTopicMembers>>;
 export function TopicManagement({
   view,
   members,
-  owner
+  owner,
+  concealed = false
 }: {
   view: TopicView;
   members: Members | null;
   owner: string;
+  concealed?: boolean;
 }) {
   const { community: topic, viewer } = view,
     reasonId = useId();
+  const [draft, setDraft] = useState<IdentityDraft>({
+    name: topic.name,
+    slug: topic.slug,
+    description: topic.description,
+    rules: topic.rules
+  });
+  const [archiveConsent, setArchiveConsent] = useState(false);
+  const [memberDrafts, setMemberDrafts] = useState<
+    Record<
+      string,
+      {
+        role: string;
+        roleConsent: boolean;
+        reason: string;
+        restrictionConsent: boolean;
+      }
+    >
+  >({});
+  const memberDraft = (id: string) =>
+    memberDrafts[id] ?? {
+      role: "MODERATOR",
+      roleConsent: false,
+      reason: "",
+      restrictionConsent: false
+    };
+  const changeMember = (
+    id: string,
+    update: Partial<ReturnType<typeof memberDraft>>
+  ) =>
+    setMemberDrafts((current) => ({
+      ...current,
+      [id]: { ...memberDraft(id), ...update }
+    }));
+  // Keep controller positions and disclosure state stable. Only presentation
+  // leaves the DOM; no hidden member links, reasons, private IDs or input values.
   return (
     <div className="space-y-6">
-      <p className="text-sm text-gc-muted">
-        These powers apply to this topic. Reported content uses the shared
-        review system; authors retain ownership of their words.
-      </p>
-      <Link
-        prefetch={false}
-        className="gc-button gc-button-quiet"
-        href="/platform/reports/review"
-      >
-        Review reported content
-      </Link>
-      {topic.recoveryRequired && (
-        <p role="status">
-          Protected recovery requires current ownership verification. Older
-          permissions cannot be reused.
-        </p>
+      {!concealed && (
+        <>
+          <p className="text-sm text-gc-muted">
+            These powers apply to this topic. Reported content uses the shared
+            review system; authors retain ownership of their words.
+          </p>
+          <Link
+            prefetch={false}
+            className="gc-button gc-button-quiet"
+            href="/platform/reports/review"
+          >
+            Review reported content
+          </Link>
+          {topic.recoveryRequired && (
+            <p role="status">
+              Protected recovery requires current ownership verification. Older
+              permissions cannot be reused.
+            </p>
+          )}
+        </>
       )}
       {!topic.recoveryRequired && viewer.isOwner && (
         <>
           <details>
-            <summary className="min-h-11 cursor-pointer py-3 font-semibold">
-              Edit topic details and rules
-            </summary>
+            {!concealed && (
+              <summary className="min-h-11 cursor-pointer py-3 font-semibold">
+                Edit topic details and rules
+              </summary>
+            )}
             <TopicActionForm
               owner={owner}
               label="Save topic details"
@@ -383,15 +426,23 @@ export function TopicManagement({
               }}
               fields={identity}
             >
-              <IdentityFields value={topic} />
+              <IdentityFields
+                value={topic}
+                draft={draft}
+                onDraft={(key, value) =>
+                  setDraft((current) => ({ ...current, [key]: value }))
+                }
+              />
             </TopicActionForm>
           </details>
           <details>
-            <summary className="min-h-11 cursor-pointer py-3 font-semibold">
-              {topic.lifecycle === "ACTIVE"
-                ? "Archive this topic"
-                : "Reopen this topic"}
-            </summary>
+            {!concealed && (
+              <summary className="min-h-11 cursor-pointer py-3 font-semibold">
+                {topic.lifecycle === "ACTIVE"
+                  ? "Archive this topic"
+                  : "Reopen this topic"}
+              </summary>
+            )}
             <TopicActionForm
               owner={owner}
               label={
@@ -411,7 +462,13 @@ export function TopicManagement({
                 restrictions.
               </p>
               <label className="flex min-h-11 items-start gap-2">
-                <input name="confirmed" type="checkbox" required />
+                <input
+                  name="confirmed"
+                  type="checkbox"
+                  required
+                  checked={archiveConsent}
+                  onChange={(event) => setArchiveConsent(event.target.checked)}
+                />
                 <span>I confirm this topic visibility change.</span>
               </label>
             </TopicActionForm>
@@ -419,177 +476,230 @@ export function TopicManagement({
         </>
       )}
       {members && (
-        <section className="space-y-4" aria-label="Topic members">
-          <h2 className="text-2xl">Topic members</h2>
-          <p>
-            Members’ private following choices and contact information are not
-            listed.
-          </p>
-          {!members.members.length && <p>No eligible members on this page.</p>}
-          {members.members.map((member) => (
-            <article
-              key={member.id}
-              className="space-y-3 rounded-xl border border-gc-divider p-4"
-            >
-              <h3 className="text-xl">
-                <Link
-                  prefetch={false}
-                  className="underline"
-                  href={`/platform/profile/${member.user.username}`}
-                >
-                  {member.user.name}
-                </Link>
-              </h3>
+        <section
+          className="space-y-4"
+          aria-label={concealed ? undefined : "Topic members"}
+        >
+          {!concealed && (
+            <>
+              <h2 className="text-2xl">Topic members</h2>
               <p>
-                {member.userId === members.communityOwnerId
-                  ? "Owner"
-                  : member.moderator
-                    ? "Moderator"
-                    : member.restrictedAt
-                      ? "Restricted"
-                      : "Member"}
-                {member.pendingRole
-                  ? ` · ${member.pendingRole === "OWNER" ? "Ownership" : "Moderator"} offer pending`
-                  : ""}
+                Members’ private following choices and contact information are
+                not listed.
               </p>
-              {member.userId !== owner &&
-                member.userId !== members.communityOwnerId && (
+              {!members.members.length && (
+                <p>No eligible members on this page.</p>
+              )}
+            </>
+          )}
+          {members.members.map((member) => {
+            const local = memberDraft(member.id);
+            return (
+              <article
+                key={member.id}
+                className={
+                  concealed
+                    ? undefined
+                    : "space-y-3 rounded-xl border border-gc-divider p-4"
+                }
+              >
+                {!concealed && (
                   <>
-                    {viewer.isOwner &&
-                      member.joined &&
-                      !member.restrictedAt && (
+                    <h3 className="text-xl">
+                      <Link
+                        prefetch={false}
+                        className="underline"
+                        href={`/platform/profile/${member.user.username}`}
+                      >
+                        {member.user.name}
+                      </Link>
+                    </h3>
+                    <p>
+                      {member.userId === members.communityOwnerId
+                        ? "Owner"
+                        : member.moderator
+                          ? "Moderator"
+                          : member.restrictedAt
+                            ? "Restricted"
+                            : "Member"}
+                      {member.pendingRole
+                        ? ` · ${member.pendingRole === "OWNER" ? "Ownership" : "Moderator"} offer pending`
+                        : ""}
+                    </p>
+                  </>
+                )}
+                {member.userId !== owner &&
+                  member.userId !== members.communityOwnerId && (
+                    <>
+                      {viewer.isOwner &&
+                        member.joined &&
+                        !member.restrictedAt && (
+                          <details>
+                            {!concealed && (
+                              <summary className="min-h-11 cursor-pointer py-3">
+                                Role and ownership offers
+                              </summary>
+                            )}
+                            <TopicActionForm
+                              owner={owner}
+                              label="Offer topic role"
+                              payload={{
+                                operation: "offer-role",
+                                communityId: topic.id,
+                                targetId: member.userId,
+                                expectedVersion: member.version
+                              }}
+                              fields={(data) => ({ role: data.get("role") })}
+                            >
+                              <label
+                                className="block font-semibold"
+                                htmlFor={`${reasonId}-${member.id}-role`}
+                              >
+                                Role to offer
+                              </label>
+                              <select
+                                id={`${reasonId}-${member.id}-role`}
+                                name="role"
+                                className={portalInputClass}
+                                value={local.role}
+                                onChange={(event) =>
+                                  changeMember(member.id, {
+                                    role: event.target.value
+                                  })
+                                }
+                              >
+                                <option value="MODERATOR">Moderator</option>
+                                <option value="OWNER">Owner</option>
+                              </select>
+                              <p>
+                                Only explicit acceptance grants the role.
+                                Accepting ownership removes your management role
+                                and cancels other outstanding offers.
+                              </p>
+                              <label className="flex min-h-11 items-start gap-2">
+                                <input
+                                  type="checkbox"
+                                  required
+                                  checked={local.roleConsent}
+                                  onChange={(event) =>
+                                    changeMember(member.id, {
+                                      roleConsent: event.target.checked
+                                    })
+                                  }
+                                />
+                                <span>
+                                  I intend to offer this responsibility to this
+                                  member.
+                                </span>
+                              </label>
+                            </TopicActionForm>
+                          </details>
+                        )}
+                      {viewer.isOwner && member.pendingRole && (
+                        <TopicActionForm
+                          owner={owner}
+                          label="Cancel role offer"
+                          payload={{
+                            operation: "cancel-role",
+                            communityId: topic.id,
+                            targetId: member.userId,
+                            expectedVersion: member.version
+                          }}
+                        />
+                      )}
+                      {viewer.isOwner && member.moderator && (
+                        <TopicActionForm
+                          owner={owner}
+                          label="Revoke moderator role"
+                          payload={{
+                            operation: "revoke-role",
+                            communityId: topic.id,
+                            targetId: member.userId,
+                            expectedVersion: member.version
+                          }}
+                        />
+                      )}
+                      {!member.moderator && (
                         <details>
-                          <summary className="min-h-11 cursor-pointer py-3">
-                            Role and ownership offers
-                          </summary>
+                          {!concealed && (
+                            <summary className="min-h-11 cursor-pointer py-3">
+                              {member.restrictedAt
+                                ? "Review participation restriction"
+                                : "Restrict participation"}
+                            </summary>
+                          )}
                           <TopicActionForm
                             owner={owner}
-                            label="Offer topic role"
+                            label={
+                              member.restrictedAt
+                                ? "Lift participation restriction"
+                                : "Restrict this member"
+                            }
                             payload={{
-                              operation: "offer-role",
+                              operation: "restrict",
                               communityId: topic.id,
                               targetId: member.userId,
-                              expectedVersion: member.version
+                              expectedVersion: member.version,
+                              desired: !member.restrictedAt
                             }}
-                            fields={(data) => ({ role: data.get("role") })}
+                            fields={(data) => ({ reason: data.get("reason") })}
                           >
+                            <p>
+                              A restriction prevents participation and hides
+                              this member’s posts and comments in this topic. It
+                              grants no account-wide powers.
+                            </p>
                             <label
                               className="block font-semibold"
-                              htmlFor={`${reasonId}-${member.id}-role`}
+                              htmlFor={`${reasonId}-${member.id}`}
                             >
-                              Role to offer
+                              Reason
                             </label>
                             <select
-                              id={`${reasonId}-${member.id}-role`}
-                              name="role"
+                              id={`${reasonId}-${member.id}`}
                               className={portalInputClass}
+                              name="reason"
+                              required
+                              value={local.reason}
+                              onChange={(event) =>
+                                changeMember(member.id, {
+                                  reason: event.target.value
+                                })
+                              }
                             >
-                              <option value="MODERATOR">Moderator</option>
-                              <option value="OWNER">Owner</option>
+                              <option value="" disabled>
+                                Choose a reason
+                              </option>
+                              {Object.entries(topicRestrictionReasons).map(
+                                ([key, label]) => (
+                                  <option key={key} value={key}>
+                                    {label}
+                                  </option>
+                                )
+                              )}
                             </select>
-                            <p>
-                              Only explicit acceptance grants the role.
-                              Accepting ownership removes your management role
-                              and cancels other outstanding offers.
-                            </p>
                             <label className="flex min-h-11 items-start gap-2">
-                              <input type="checkbox" required />
-                              <span>
-                                I intend to offer this responsibility to this
-                                member.
-                              </span>
+                              <input
+                                type="checkbox"
+                                required
+                                checked={local.restrictionConsent}
+                                onChange={(event) =>
+                                  changeMember(member.id, {
+                                    restrictionConsent: event.target.checked
+                                  })
+                                }
+                              />
+                              <span>I confirm this participation change.</span>
                             </label>
                           </TopicActionForm>
                         </details>
                       )}
-                    {viewer.isOwner && member.pendingRole && (
-                      <TopicActionForm
-                        owner={owner}
-                        label="Cancel role offer"
-                        payload={{
-                          operation: "cancel-role",
-                          communityId: topic.id,
-                          targetId: member.userId,
-                          expectedVersion: member.version
-                        }}
-                      />
-                    )}
-                    {viewer.isOwner && member.moderator && (
-                      <TopicActionForm
-                        owner={owner}
-                        label="Revoke moderator role"
-                        payload={{
-                          operation: "revoke-role",
-                          communityId: topic.id,
-                          targetId: member.userId,
-                          expectedVersion: member.version
-                        }}
-                      />
-                    )}
-                    {!member.moderator && (
-                      <details>
-                        <summary className="min-h-11 cursor-pointer py-3">
-                          {member.restrictedAt
-                            ? "Review participation restriction"
-                            : "Restrict participation"}
-                        </summary>
-                        <TopicActionForm
-                          owner={owner}
-                          label={
-                            member.restrictedAt
-                              ? "Lift participation restriction"
-                              : "Restrict this member"
-                          }
-                          payload={{
-                            operation: "restrict",
-                            communityId: topic.id,
-                            targetId: member.userId,
-                            expectedVersion: member.version,
-                            desired: !member.restrictedAt
-                          }}
-                          fields={(data) => ({ reason: data.get("reason") })}
-                        >
-                          <p>
-                            A restriction prevents participation and hides this
-                            member’s posts and comments in this topic. It grants
-                            no account-wide powers.
-                          </p>
-                          <label
-                            className="block font-semibold"
-                            htmlFor={`${reasonId}-${member.id}`}
-                          >
-                            Reason
-                          </label>
-                          <select
-                            id={`${reasonId}-${member.id}`}
-                            className={portalInputClass}
-                            name="reason"
-                            required
-                            defaultValue=""
-                          >
-                            <option value="" disabled>
-                              Choose a reason
-                            </option>
-                            {Object.entries(topicRestrictionReasons).map(
-                              ([key, label]) => (
-                                <option key={key} value={key}>
-                                  {label}
-                                </option>
-                              )
-                            )}
-                          </select>
-                          <label className="flex min-h-11 items-start gap-2">
-                            <input type="checkbox" required />
-                            <span>I confirm this participation change.</span>
-                          </label>
-                        </TopicActionForm>
-                      </details>
-                    )}
-                  </>
-                )}
-            </article>
-          ))}
-          {members.after && (
+                    </>
+                  )}
+              </article>
+            );
+          })}
+          {!concealed && members.after && (
             <a
               className="gc-button gc-button-quiet"
               href={`${topicHref(topic.slug)}/manage?after=${encodeURIComponent(members.after)}`}
