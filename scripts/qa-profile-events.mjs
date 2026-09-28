@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { createRequire } from "node:module";
 import { execFileSync } from "node:child_process";
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { sessionCookieFixtureName } from "./session-cookie-fixture.mjs";
 const fixtureDir = process.argv[2];
 assert.ok(fixtureDir, "Pass the isolated fixture directory");
@@ -107,6 +107,41 @@ let receipt;
 try {
   const f = await profileEventsFixture(db),
     source = await f.create(false, "PUBLIC");
+  // The production-mode fixture enforces MFA for the assigned calendar duties.
+  // Prove this fictional session through the real enrollment/challenge service.
+  process.env.PRIVILEGED_MFA_MODE = "enforce";
+  const { privilegedAuthenticatorCommand } =
+    await import("../lib/platform/privileged-auth.ts");
+  const { openAuthenticator, authenticatorTotp } =
+    await import("../lib/platform/admin-authenticator-crypto.ts");
+  await privilegedAuthenticatorCommand(
+    db,
+    f.owner.token,
+    { operation: "mfa-start", requestKey: randomUUID(), expectedVersion: 0 },
+    f.owner.password
+  );
+  const factor = await db.adminAuthenticator.findUniqueOrThrow({
+      where: { userId: f.owner.id }
+    }),
+    secret = openAuthenticator(f.owner.id, factor.secretCiphertext),
+    counter = BigInt(Math.floor(Date.now() / 30000));
+  const enrolled = await privilegedAuthenticatorCommand(
+    db,
+    f.owner.token,
+    {
+      operation: "mfa-confirm",
+      requestKey: randomUUID(),
+      expectedVersion: factor.version,
+      code: authenticatorTotp(secret, counter - 1n)
+    }
+  );
+  await privilegedAuthenticatorCommand(db, f.owner.token, {
+    operation: "mfa-challenge",
+    requestKey: randomUUID(),
+    expectedVersion: Number(enrolled.version),
+    purpose: "privileged-work",
+    code: authenticatorTotp(secret, counter)
+  });
   const path = "/platform/profile/" + f.owner.username;
   // The exact link format emitted by CalendarAgenda and LocalEventTime.
   const link =
@@ -275,7 +310,8 @@ try {
       source.occurrence.id
     );
     await page.unroute("**/api/platform/account");
-    await submit(path);
+    await button("Retry original save").click();
+    await page.waitForURL("**" + path);
     assert.equal(
       (await getProfileEditor(db, f.owner.token)).presentation.modules
         .calendarOccurrenceId,

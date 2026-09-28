@@ -440,6 +440,7 @@ try {
     .waitFor();
   assert.equal(
     await page
+      .getByRole("region", { name: "Latest saved version", exact: true })
       .getByText("Retained story after uncertain save", { exact: true })
       .count(),
     1

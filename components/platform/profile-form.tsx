@@ -389,11 +389,13 @@ export function ProfileForm({
       className="mx-auto max-w-3xl space-y-5 rounded-xl border border-gc-divider bg-gc-surface p-5 text-gc-text sm:p-8"
       aria-busy={pending}
       ref={form}
-      onInputCapture={() => {
+      // Run after child handlers so the first controlled edit survives the
+      // parent's transition to dirty. Capture-phase updates restore old values.
+      onInput={() => {
         captureDraft();
         onDirty(true);
       }}
-      onChangeCapture={() => {
+      onChange={() => {
         captureDraft();
         onDirty(true);
       }}

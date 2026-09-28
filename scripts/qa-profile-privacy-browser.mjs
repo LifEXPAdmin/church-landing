@@ -1366,6 +1366,138 @@ async function chooserTransitionCase(replacement) {
   await finish(s);
 }
 
+async function firstControlledEditCase(replacement) {
+  for (const control of ["event", "role", "palette"]) {
+    // Each input is the first edit in an independent mounted editor. Filling a
+    // different field first would hide the capture-phase controlled-value bug.
+    const s = await newCase(`first${control}`, replacement);
+    const selector =
+      control === "event"
+        ? "#profile-event-link"
+        : control === "role"
+          ? "#profile-role"
+          : "#profile-palette";
+    const occurrenceId = `fictional-first-${randomUUID()}`;
+    const value =
+      control === "event"
+        ? `${config.origin}/platform/events/${occurrenceId}?timeZone=America%2FChicago`
+        : control === "role"
+          ? "EXPLORING_FAITH"
+          : "warm";
+    const field = s.page.locator(selector);
+    assert.equal(
+      await field.inputValue(),
+      control === "event" ? "" : control === "role" ? "BELIEVER" : "sage"
+    );
+    if (control === "event") await field.fill(value);
+    else await field.selectOption(value);
+    assert.equal(
+      await field.inputValue(),
+      value,
+      `${control}: first edit survives its own input event`
+    );
+    await s.page.evaluate(
+      () =>
+        new Promise((resolve) => {
+          requestAnimationFrame(() => requestAnimationFrame(resolve));
+        })
+    );
+    assert.equal(
+      await field.inputValue(),
+      value,
+      `${control}: first edit survives the resulting render`
+    );
+    if (control === "event") {
+      let reads = 0;
+      const match = (url) =>
+        url.pathname === "/api/platform/profile" &&
+        url.searchParams.get("view") === "event-choice";
+      const handler = async (route) => {
+        const request = route.request(),
+          url = new URL(request.url());
+        assert.equal(request.method(), "GET");
+        assert.equal(request.headers()["x-expected-account"], s.owner.id);
+        assert.equal(
+          url.searchParams.get("occurrenceId"),
+          occurrenceId,
+          "The actual event read must use the first typed link, not the old empty state"
+        );
+        reads++;
+        await route.fulfill({
+          status: 404,
+          contentType: "application/json",
+          body: JSON.stringify({
+            message: "This fictional first-edit event is unavailable."
+          })
+        });
+      };
+      await s.page.route(match, handler);
+      await button(s.page, "Check original event").click();
+      await s.page
+        .getByRole("status")
+        .filter({ hasText: "This fictional first-edit event is unavailable." })
+        .waitFor();
+      assert.equal(reads, 1);
+      assert.equal(await field.inputValue(), value);
+      assert.equal(await button(s.page, "Use this event").count(), 0);
+      assert.equal(s.details.writes.length, 0);
+      await s.page.unroute(match, handler);
+      s.details.observations.push({
+        stage: "first controlled event input",
+        eventReads: reads,
+        noWarmupEdit: true,
+        valueSha256: hash(value)
+      });
+    } else {
+      let sent;
+      const handler = async (route) => {
+        if (route.request().method() !== "POST") return route.fallback();
+        sent = route.request().postDataJSON();
+        await route.fulfill({
+          status: 503,
+          contentType: "application/json",
+          body: JSON.stringify({
+            message: "Fictional first-edit save response unavailable."
+          })
+        });
+      };
+      await s.page.route(accountWrite, handler);
+      await submitStatus(s, "Save profile", 503);
+      assert.equal(sent.operation, "update-profile");
+      assert.equal(
+        sent[control],
+        value,
+        `${control}: submitted original payload contains the first selected value`
+      );
+      assert.equal(sent.expectedVersion, s.details.before.profileVersion);
+      assert.equal(
+        sent.expectedLocationVersion,
+        s.details.before.locationVersion
+      );
+      assert.equal(await field.inputValue(), value);
+      assert.equal(s.details.writes.length, 1);
+      assert.equal(s.details.writes[0].owner, s.owner.id);
+      await s.page.unroute(accountWrite, handler);
+      s.details.observations.push({
+        stage: `first controlled ${control} input`,
+        noWarmupEdit: true,
+        saveAttempts: 1,
+        expectedVersion: sent.expectedVersion,
+        valueSha256: hash(value)
+      });
+    }
+    assert.deepEqual(
+      await savedState(s.owner),
+      s.details.before,
+      "Controlled-input verification creates no saved change"
+    );
+    await finish(s);
+  }
+  ok(
+    "First-edit event link, participation and palette survive input/render without warm-up or retry; lookup and original save payloads use those exact values and versions"
+  );
+}
+
 try {
   browser = await chromium.launch({
     headless: !headful,
@@ -1395,6 +1527,7 @@ try {
   await validationCase(replacement, "uncertain");
   await photoCase(replacement);
   await chooserTransitionCase(replacement);
+  await firstControlledEditCase(replacement);
   assert.deepEqual(receipt.routeErrors, []);
   assert.deepEqual(receipt.pageErrors, []);
   assert.deepEqual(
