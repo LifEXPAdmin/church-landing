@@ -206,8 +206,14 @@ const pulse = (name) =>
   page.evaluate((n) => window.dispatchEvent(new Event(n)), name);
 const { topicCommand } = await import("../lib/platform/topic-communities.ts");
 const main = page.getByRole("main");
-const writes = [];
+const writes = [],
+  catalogueReads = [];
 page.on("request", (request) => {
+  if (
+    new URL(request.url()).pathname === "/api/platform/topics" &&
+    request.method() === "GET"
+  )
+    catalogueReads.push(request.url());
   if (
     new URL(request.url()).pathname === "/api/platform/topics" &&
     request.method() !== "GET"
@@ -241,28 +247,68 @@ async function resume(name) {
 }
 async function refreshAs(owner, forbidden) {
   await signIn(owner);
-  const response = page.waitForResponse(
-    (r) =>
-      new URL(r.url()).pathname === "/platform/topics" &&
-      r.request().headers().rsc === "1"
-  );
-  await page.evaluate(() => window.next.router.refresh());
-  const r = await response;
-  assert.equal(r.status(), 200);
-  const body = await r.text();
-  for (const marker of forbidden) assert.equal(body.includes(marker), false);
-  scenarios.push({
-    name: "actual-owner-rsc",
-    owner: owner.id,
-    bytes: body.length,
-    sha256: createHash("sha256").update(body).digest("hex")
-  });
+  const completed = Promise.withResolvers();
+  const match = (url) => url.pathname === "/platform/topics";
+  let handled = false;
+  const handler = async (route) => {
+    if (handled || route.request().headers().rsc !== "1")
+      return route.fallback();
+    handled = true;
+    try {
+      const response = await forwarded(route);
+      assert.equal(response.status, 200);
+      assert.match(response.headers["content-type"], /text\/x-component/);
+      const body = response.body.toString("utf8");
+      assert.ok(body.includes(owner.id));
+      for (const marker of forbidden)
+        assert.equal(body.includes(marker), false);
+      await route.fulfill(response);
+      completed.resolve({
+        name: "actual-owner-rsc",
+        owner: owner.id,
+        bytes: response.body.length,
+        sha256: createHash("sha256").update(response.body).digest("hex")
+      });
+    } catch (error) {
+      routeErrors.push(error.message);
+      await route.abort();
+      completed.reject(error);
+    }
+  };
+  await page.route(match, handler);
+  let timer;
+  try {
+    await page.evaluate(() => window.next.router.refresh());
+    scenarios.push(
+      await Promise.race([
+        completed.promise,
+        new Promise((_, reject) => {
+          timer = setTimeout(
+            () => reject(Error("Catalogue RSC refresh did not settle")),
+            25000
+          );
+        })
+      ])
+    );
+  } finally {
+    clearTimeout(timer);
+    await page.unroute(match, handler);
+  }
 }
 try {
   const a = await actor("catalogue"),
     b = await actor("other"),
     first = await topic(a, "owner"),
-    second = await topic(b, "other");
+    second = await topic(b, "other"),
+    archived = await topic(a, "archived");
+  await topicCommand(db, a.token, {
+    operation: "archive",
+    mutationId: randomUUID(),
+    communityId: archived.id,
+    expectedVersion: archived.version,
+    desired: true,
+    confirmed: true
+  });
   await topicCommand(db, a.token, {
     operation: "follow",
     mutationId: randomUUID(),
@@ -276,8 +322,12 @@ try {
     for (const headers of [{}, { RSC: "1" }]) {
       const r = await context.request.get(config.origin + path, { headers });
       assert.equal(r.status(), 200);
+      assert.match(
+        r.headers()["content-type"],
+        headers.RSC ? /text\/x-component/ : /text\/html/
+      );
       const body = await r.text();
-      for (const marker of [first.name, second.name])
+      for (const marker of [first.name, second.name, archived.name])
         assert.equal(
           body.includes(marker),
           false,
@@ -288,6 +338,8 @@ try {
     await link(first.name).waitFor();
     if (mode === "mine") await link(second.name).waitFor();
     else await absent(second.name);
+    if (mode === "owned") await link(archived.name).waitFor();
+    else await absent(archived.name);
     assert.ok(
       (await link(first.name).getAttribute("href")).endsWith(
         mode === "owned" ? "/manage" : first.slug
@@ -297,10 +349,17 @@ try {
       await pulse(event);
       await absent(first.name);
       await absent(second.name);
+      const readsBefore = catalogueReads.length;
       await pulse("online");
       await pulse("social-relationships-changed");
       await page.waitForTimeout(150);
+      assert.equal(
+        catalogueReads.length,
+        readsBefore,
+        "Passive hints cannot dispatch a catalogue read while concealed"
+      );
       await absent(first.name);
+      await absent(archived.name);
       if (event === "pagehide") {
         await pulse("pageshow");
         await link(first.name).waitFor();
@@ -310,6 +369,16 @@ try {
       `${mode} associations are absent from initial HTML/RSC and concealed DOM; passive background hints cannot restore them`
     );
   }
+  await go("/platform/topics?mine=1&owned=1");
+  await link(first.name).waitFor();
+  await absent(second.name);
+  await link(archived.name).waitFor();
+  assert.equal(await main.locator("h2 a").count(), 2);
+  ok(
+    "Owned lists include archived topics; combined filters preserve the existing owned-plus-membership intersection"
+  );
+  await go("/platform/topics?owned=1");
+  await link(first.name).waitFor();
   await pulse("blur");
   await absent(first.name);
   let identityAttempts = 0;
@@ -325,9 +394,10 @@ try {
     .getByRole("button", { name: "Recheck current access", exact: true })
     .click();
   await poll(() => identityAttempts > 0, true);
-  await main
+  await page
     .getByRole("status")
     .filter({ hasText: "Your sign-in could not be checked" })
+    .first()
     .waitFor();
   await absent(first.name);
   await page.unroute(identityUrl, unavailable);
@@ -383,10 +453,10 @@ try {
 
   const documentId = randomUUID();
   await page.evaluate((v) => (window.__catalogueDocument = v), documentId);
-  await refreshAs(b, [first.name, second.name]);
+  await refreshAs(b, [first.name, second.name, archived.name]);
   await link(second.name).waitFor();
   await absent(first.name);
-  await refreshAs(a, [first.name, second.name]);
+  await refreshAs(a, [first.name, second.name, archived.name]);
   await link(first.name).waitFor();
   await absent(second.name);
   assert.equal(
@@ -478,6 +548,30 @@ try {
       await page.evaluate(
         () => document.documentElement.scrollWidth <= innerWidth + 1
       )
+    );
+    const searchBox = main.getByRole("searchbox", {
+      name: "Search topics",
+      exact: true
+    });
+    const searchBounds = await searchBox.boundingBox();
+    assert.ok(
+      searchBounds && searchBounds.width >= Math.min(160, width - 64),
+      "The search input must remain usable with narrow or enlarged text"
+    );
+    await searchBox.fill(prefix);
+    await main
+      .getByRole("button", { name: "Search topics", exact: true })
+      .click();
+    await main
+      .getByRole("link", { name: "More topics", exact: true })
+      .waitFor();
+    assert.equal(new URL(page.url()).searchParams.get("owned"), "1");
+    assert.equal(new URL(page.url()).searchParams.get("q"), prefix);
+    assert.deepEqual(await main.locator("h2 a").allTextContents(), firstPage);
+    // Native search replaces the document, so reapply the enlarged-text setting.
+    await page.evaluate(
+      (s) => (document.documentElement.style.fontSize = s),
+      size
     );
     await page.screenshot({
       path: output + `/catalogue-${width}-${size.replace("%", "")}.png`,

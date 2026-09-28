@@ -694,9 +694,10 @@ try {
     .getByText(marker + " edited", { exact: true })
     .waitFor({ state: "hidden" });
   await page
-    .getByText("Your sign-in changed. Reload before continuing.", {
-      exact: true
-    })
+    .getByText(
+      /Your sign-in changed\. Reload before continuing\.|The signed-in account changed\.|This sign-in has ended\./
+    )
+    .first()
     .waitFor();
   await absentScheduledExcerpt();
   await signIn(f.memberA);

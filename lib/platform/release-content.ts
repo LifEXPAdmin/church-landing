@@ -1048,6 +1048,14 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "private-topic-creation-and-choices", version: "2026.09.28.41", date: "2026-09-28",
+    summary: "Keep new topic drafts and personal topic lists private during access changes.",
+    added: [],
+    improved: ["New topic fields and rule consent stay in memory when the page conceals them. Return to the original account to review your draft and deliberately continue a saved or uncertain request.", "My topic choices and Topics I own load after a current-account check. They disappear when access becomes uncertain, and changed lists require an explicit reload."],
+    fixed: ["Background connection updates cannot reveal a concealed private topic list. Topic search keeps its input usable on narrow screens with enlarged text."],
+    featureIds: ["topic-communities", "account"]
+  },
+  {
     id: "profile-privacy-and-topic-recovery", version: "2026.09.28.40", date: "2026-09-28",
     summary: "Keep profile edits private during access checks and recover uncertain topic changes without losing the original request.",
     added: [],

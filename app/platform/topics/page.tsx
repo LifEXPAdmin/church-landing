@@ -97,13 +97,13 @@ export default async function TopicDiscoveryPage({
         <TopicNavigation />
         <form
           action="/platform/topics"
-          className="flex flex-wrap items-end gap-3"
+          className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end"
           role="search"
           aria-label="Search topic communities"
         >
           {query.mine && <input type="hidden" name="mine" value="1" />}
           {query.owned && <input type="hidden" name="owned" value="1" />}
-          <label className="min-w-0 flex-1 space-y-2">
+          <label className="w-full min-w-0 space-y-2 sm:flex-1 sm:basis-64">
             <span className="block font-semibold">Search topics</span>
             <input
               name="q"
@@ -112,7 +112,7 @@ export default async function TopicDiscoveryPage({
               className="w-full rounded-lg border border-gc-divider bg-gc-surface p-3"
             />
           </label>
-          <button className="gc-button" type="submit">
+          <button className="gc-button w-full sm:w-auto" type="submit">
             Search topics
           </button>
         </form>

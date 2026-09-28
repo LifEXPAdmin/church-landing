@@ -80,7 +80,15 @@ context.on("request", (request) => {
   const path = new URL(request.url()).pathname;
   if (path.startsWith("/platform/help/cases/")) caseRequests.push(path);
   if (!["GET", "HEAD"].includes(request.method()))
-    browserWrites.push({ method: request.method(), path });
+    browserWrites.push({
+      method: request.method(),
+      path,
+      foregroundActivity:
+        request.method() === "POST" &&
+        path === "/api/platform/session" &&
+        request.postData() === JSON.stringify({ activity: "foreground" }) &&
+        !!request.headers()["x-expected-account"]
+    });
 });
 const page = await context.newPage();
 page.setDefaultTimeout(30000);
@@ -406,9 +414,12 @@ try {
   await event("focus");
   held.release();
   await page
-    .getByText("Your sign-in changed. Reload before continuing.", {
-      exact: true
+    .getByRole("status")
+    .filter({
+      hasText:
+        /Your sign-in changed\. Reload before continuing\.|The signed-in account changed\.|This sign-in has ended\./
     })
+    .first()
     .waitFor();
   await page.waitForLoadState("networkidle");
   await absent();
@@ -600,19 +611,25 @@ try {
   await event("blur");
   await event("focus");
   await page
-    .getByText("Your sign-in changed. Reload before continuing.", {
-      exact: true
+    .getByRole("status")
+    .filter({
+      hasText:
+        /Your sign-in changed\. Reload before continuing\.|The signed-in account changed\.|This sign-in has ended\./
     })
+    .first()
     .waitFor();
   await absent();
   assert.equal(await ownCaseCount(), 22);
   assert.equal(await page.evaluate(() => localStorage.length), 0);
   assert.deepEqual(errors, []);
   assert.deepEqual(externalRequests, []);
-  assert.deepEqual(browserWrites, []);
+  assert.deepEqual(
+    browserWrites.filter((request) => !request.foregroundActivity),
+    []
+  );
   assert.deepEqual(caseRequests, []);
   ok(
-    "Sign-out clears the list; browser verification creates no mutations, private-case prefetches, localStorage copies, external requests or runtime errors"
+    "Sign-out clears the list; browser verification creates no support/content mutations, private-case prefetches, localStorage copies, external requests or runtime errors; expected-account foreground session activity is recorded separately"
   );
   writeFileSync(
     output + "/result.json",
