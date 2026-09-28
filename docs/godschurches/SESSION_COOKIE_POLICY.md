@@ -1,6 +1,9 @@
 # Ordinary session cookie policy
 
-Prepared 27 September 2026. Local implementation, release acceptance pending.
+Implemented 27 September and verified live 28 September 2026 UTC in the combined
+2026.09.27.35 batch. Serving source `0af8462131ca12ff262b5ebc4b3ee54c5f5d6455`,
+deployment `dpl_LHkzTEtKWDtc8xKTz1fs9GJzNb3C`, independently canonical at
+00:34:46 UTC. The fixed compatibility limit below still applies.
 
 HTTPS sign-in issues `__Host-church_platform_session`, with `Secure`, `HttpOnly`,
 `SameSite=Lax`, `Path=/`, no `Domain` and the existing 30-day maximum age.

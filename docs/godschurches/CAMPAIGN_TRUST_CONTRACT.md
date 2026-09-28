@@ -257,3 +257,7 @@ access, and this contract makes no legal or tax eligibility determination.
   distinguishes gross amount, fees, net balance effect, currency and pending versus
   available status. This is an example of why a future adapter must define its
   exact source semantics, not selection of Stripe or evidence of beneficiary receipt.
+
+An organizer may voluntarily unpublish or pause their own publication under current
+source authority. That editorial pause is distinct from a reviewer protection hold;
+organizer actions cannot clear, weaken or bypass a reviewer hold.
