@@ -339,14 +339,25 @@ try {
     })
     .waitFor();
   let droppedFollow = false;
+  // The saved join receipt appears before the route refresh has supplied its
+  // new membership version. Exercise a lost accepted follow, not a stale form.
+  await page.getByRole("form", { name: "Join this topic", exact: true })
+    .waitFor({ state: "detached" });
+  await page.getByRole("button", { name: "Start a topic discussion", exact: true })
+    .waitFor();
+  const followBodies = [];
   await page.route("**/api/platform/topics", async (route) => {
+    if (route.request().method() === "POST" && route.request().postDataJSON()?.operation === "follow")
+      followBodies.push(route.request().postData());
     if (
       route.request().method() === "POST" &&
       route.request().postDataJSON()?.operation === "follow" &&
       !droppedFollow
     ) {
       droppedFollow = true;
-      await route.fetch();
+      const committed = await route.fetch();
+      assert.equal(committed.status(), 200, "Only discard a confirmed accepted follow response");
+      assert.equal(await memberVersion(member, topic.id), 2);
       await route.abort("failed");
     } else await route.continue();
   });
@@ -359,6 +370,9 @@ try {
     .waitFor();
   await page.unroute("**/api/platform/topics");
   assert.equal(droppedFollow, true);
+  assert.equal(followBodies.length, 2);
+  assert.equal(followBodies[1], followBodies[0]);
+  writeFileSync(output + "/lost-follow-proof.json", JSON.stringify({ firstStatus: 200, followBodies, membershipVersion: 2 }, null, 2));
   assert.equal(await memberVersion(member, topic.id), 2);
   ok(
     "A committed follow with a lost response retries the same request without another membership version"
