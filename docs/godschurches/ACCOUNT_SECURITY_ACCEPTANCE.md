@@ -1,3 +1,63 @@
+## Script policy and media topics verified live, 28 September 2026 UTC
+
+The request-bound script policy and publisher-selected topic pathways are
+**implemented, tested, merged and verified live** as **2026.09.28.38**. One
+production deployment, `dpl_DzH3gpUwTDGHCmqtMHgCCfeuqfzm`, is READY and
+independently canonical on `godschurches.com`, serving source
+`37188c62bca7080b1c352b8cebc58b3761c2a4c1` at **03:22:22 UTC**.
+
+The exact build `WHns6A3RZWW7BruzsBhkV` passed in 45.733 seconds with all
+2,041 tracked hashes unchanged, along with exact-source CI `36371943257`.
+Final verification passed **49 service groups, 115 browser groups, eight HTTPS
+groups and three development pages**. This includes 35 CSP groups, both actual
+browser report formats, enforced MFA, session/credential recovery, image editor
+and viewer, topic pagination, Scripture and saved-media regressions. Google
+transport remained fictional; this does not establish real provider acceptance.
+
+Production passed **137 page/browser/API checks and six health checks**, with
+zero browser/CSP errors, blocked mutation attempts, scoped runtime error/fatal
+rows or CSP diagnostic rows. All **160 production-table fingerprints remained
+unchanged at 03:23:33 UTC**. There are 121 matching source, installed and
+production migration checksums; zero new or pending migrations, application test
+writes, recipient sends or new queue probes.
+
+The applicability audit retains the actual protected recovery at 02:21 UTC,
+ordinary recovery at 02:26 UTC and successful nightly run 27. Recovery owners,
+dependencies, generated clients, encrypted archives and checksums are unchanged;
+no new restore or registry installation was required or claimed. The complete
+.38 artifact is retained. A .37 fallback is schema/session compatible but would
+remove the new script policy and topic interface. Nightly status remains run 27,
+not running, last exit zero. No production restore or general incident readiness
+is claimed.
+
+A harmless simulated-markup baseline executed inline/external scripts, event
+handlers and trusted-script evaluation on unchanged .37; it did not identify an
+application injection path. The final policy blocks those four probes, overwrites
+spoofed nonce/policy headers and preserves framework navigation, structured data,
+MFA QR codes, photos and the notification worker. Reproduced missing namespace
+404 coverage was repaired before publication. Reports retain only allowlisted
+enums/numbers within a shared, independent bounded admission budget.
+
+Twenty-one formerly prerendered routes now render per request; ten formerly
+shared-cache routes are private/no-store. Static asset caching remains separate.
+The bounded local comparison was median 2 ms before and 4 ms after, not a
+production performance or cost prediction. Style attributes remain permitted;
+script evaluation is development-only. No general provider iframe/script access
+was enabled. Narrow and enlarged topic and photo captures were reviewed.
+
+Failed attempts remain preserved. The MFA fixture initially had enforcement off;
+the same build passed with the required fixture setting. The Google harness first
+used the wrong local hostname; its intended fictional host passed. The legacy
+photo test awaited a button before its lazy gallery entered the viewport. Actual
+geometry showed y=1,031.8 with an 844-pixel viewport; scrolling the existing
+container made all five groups pass without an application change. The permanent
+QA correction is a later test-only change, not another deployed application.
+
+The broader security review remains open for ordinary idle-session policy,
+remaining classified storage/provider coverage and actual owner/device gates.
+Topic pathways are accepted; embedded playback, trusted progress, provider rights,
+operator policy and physical-device/pilot acceptance remain separate open work.
+
 ## Request-bound script policy prepared, 28 September 2026 UTC
 
 The isolated unchanged .37 build reproduced a defense gap with harmless
@@ -1058,7 +1118,7 @@ that every clause of the associated requirement has passed.
 | V7.5.1, V7.5.2, V7.5.3; V6.3.4, V6.4.3 | `account-credential.ts`, `account-email-change.ts` and `privileged-auth-policy.ts` bind sensitive confirmation to the account, session, purpose and current credential/authority generation. `account-email-change.test.ts`, `account-export.test.ts` and `privileged-authentication.test.ts` cover substitution, expiry and recovery. Actual MFA enforcement is a separate open gate. |
 | V9.2.1, V9.2.3; V10.1.2, V10.2.1, V10.5.1, V10.5.2 | `google-provider.ts`, `google-accounts.ts` and `google-boundary.ts` use the maintained verifier, fixed issuer/audience, issuer-plus-subject identity, nonce, state, PKCE and a one-use browser-bound attempt. Recent confirmation is purpose-bound, not second-factor assurance. `google-accounts.test.ts`, `google-boundary.test.ts` and the fresh session suite cover replay, wrong account/browser, linking and the ambiguous-cookie edge. Real Google acceptance is separate. |
 | V3.3.2, V3.3.4; V3.5.1, V3.5.2, V3.5.3 | Ordinary sessions use host-only, HttpOnly, SameSite=Lax cookies with Secure in HTTPS configuration. Account/social HTTP boundaries require the configured origin, appropriate mutation methods, bounded input and expected-account binding. `account-http.test.ts`, `portal-http.test.ts` and `google-boundary.test.ts` exercise origin/account denial and private response handling. Cookie-prefix limitations remain below. |
-| V3.4.3, V3.4.4, V3.4.6 | `next.config.ts` installs the global framing, object/base and MIME-sniffing response policy. `scripts/qa-account-security-headers.mjs` verifies ordinary pages, guest private/API responses, a 404, the manifest and actual cross-origin framing. Ten checks also pass on the final serving-source build; the complete CSP requirement is partial. |
+| V3.4.3, V3.4.4, V3.4.6, V3.4.7 | Middleware and `lib/security/content-security-policy.ts` enforce per-response nonces and strict script execution, retaining framing/object/base/MIME controls. `qa-script-csp-browser.mjs` passes 35 groups including injected-script denial, actual legacy/modern report delivery and document/404 coverage; thirteen reporting tests cover bounded, privacy-preserving admission. .38 live browser/header checks pass. Inline styles remain permitted and this scoped evidence is not full certification. |
 | V8.1.1, V8.1.2; V8.2.1, V8.2.2, V8.2.3; V8.3.1, V8.3.2; V8.4.1 | Existing account, church, Support and audience contracts define separate permissions. `admin-authority.ts`, `post-access.ts`, `calendar-access.ts` and `account-read.ts` enforce current grants, owner/object/field scope and serialized revocation in the trusted service. `portal-service.test.ts`, `portal-http.test.ts`, `calendar-http.test.ts`, `post-read-concurrency.test.ts` and `membership-revocation.test.ts` cover cross-account/church reads and concurrent authority loss. This is a selected inventory, not a proof for every endpoint. |
 | V14.2.2, V14.2.6, V14.3.2 | Explicit DTOs exclude credential/private fields. `community-search.ts` applies current source predicates; `feed-reads.ts` rehydrates bounded ID snapshots through current permissions. Private HTTP/media responses use no-store. `community-search.test.ts`, `profiles-http.test.ts`, `post-availability.test.ts` and `media-http.test.ts` cover search, field projection, revocation and cache headers. Public church publication is distinct from private setup drafts; `communityListed` is provenance, not a visibility grant. |
 | V5.2.1, V5.2.2, V5.3.1, V5.3.2, V5.4.1, V5.4.2; V14.2.8 | `media-processing.ts` bounds bytes/pixels, checks image content, rejects unsupported animation and re-encodes derivatives without embedded private metadata. `media-storage.ts` uses private generated keys; `media-boundary.ts` rechecks access and fixes safe response filenames. `media-processing.test.ts`, `media-boundary.test.ts` and `media.test.ts` cover disguised/truncated files, streaming limits, metadata and revoked delivery. This does not establish antivirus scanning. |
@@ -1095,13 +1155,15 @@ provider/browser storage classification or legal data-access fulfillment.
 
 ## Partial requirements and retained recovery
 
-**CSP and cookies:** V3.4.3 remains partial because the policy does not restrict
-script execution through an allowlist, nonce or hash. A complete nonce policy,
-resource compatibility and violation reporting remain unverified; V3.4.7 is not
-claimed. The ordinary `church_platform_session` cookie remains unprefixed, so
-V3.3.1 and V3.3.3 are not fully met despite HTTPS Secure and host-only attributes.
-Rejecting duplicate cookies fixes principal ambiguity; it does not implement
-the prefix requirements. Google cookies have their separate secure host prefix.
+**CSP and cookies:** the .38 acceptance above supersedes the framing-only CSP
+gap. Request-specific nonces and strict script execution, compatibility and both
+bounded reporting formats are verified within the documented scope. Inline style
+attributes remain allowed; no complete ASVS certification is asserted. The .35
+cookie transition writes `__Host-church_platform_session` on HTTPS. Legacy
+`church_platform_session` compatibility ends 29 October 2026 at 00:00 UTC, with
+its residual sibling-domain risk documented in [session cookie policy](SESSION_COOKIE_POLICY.md).
+Duplicate/conflicting credentials remain rejected; Google cookies retain their
+separate secure host prefix.
 
 **Password/session policy:** version .33 supersedes the earlier length-only
 new-password gap. Registration, change/add and reset now use offline common and

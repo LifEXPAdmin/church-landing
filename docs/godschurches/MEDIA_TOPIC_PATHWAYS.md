@@ -1,5 +1,43 @@
 # Publisher-selected media topic pathways
 
+## Script policy and media topics verified live, 28 September 2026 UTC
+
+The request-bound script policy and publisher-selected topic pathways are
+**implemented, tested, merged and verified live** as **2026.09.28.38**. One
+production deployment, `dpl_DzH3gpUwTDGHCmqtMHgCCfeuqfzm`, is READY and
+independently canonical on `godschurches.com`, serving source
+`37188c62bca7080b1c352b8cebc58b3761c2a4c1` at **03:22:22 UTC**.
+
+The exact build `WHns6A3RZWW7BruzsBhkV` passed in 45.733 seconds with all
+2,041 tracked hashes unchanged, along with exact-source CI `36371943257`.
+Final verification passed **49 service groups, 115 browser groups, eight HTTPS
+groups and three development pages**. This includes 35 CSP groups, both actual
+browser report formats, enforced MFA, session/credential recovery, image editor
+and viewer, topic pagination, Scripture and saved-media regressions. Google
+transport remained fictional; this does not establish real provider acceptance.
+
+Production passed **137 page/browser/API checks and six health checks**, with
+zero browser/CSP errors, blocked mutation attempts, scoped runtime error/fatal
+rows or CSP diagnostic rows. All **160 production-table fingerprints remained
+unchanged at 03:23:33 UTC**. There are 121 matching source, installed and
+production migration checksums; zero new or pending migrations, application test
+writes, recipient sends or new queue probes.
+
+The applicability audit retains the actual protected recovery at 02:21 UTC,
+ordinary recovery at 02:26 UTC and successful nightly run 27. Recovery owners,
+dependencies, generated clients, encrypted archives and checksums are unchanged;
+no new restore or registry installation was required or claimed. The complete
+.38 artifact is retained. A .37 fallback is schema/session compatible but would
+remove the new script policy and topic interface. Nightly status remains run 27,
+not running, last exit zero. No production restore or general incident readiness
+is claimed.
+
+Integration preserves the original builder attribution below. The combined
+release adds an actual 20-plus-one filtered pagination regression, bringing the
+topic browser suite to ten groups. Live Hope navigation opens the visible editable
+topic filter, with no automatic playback or private-interest persistence. The
+historical handoff below is superseded by this integrated/live acceptance.
+
 ## Tested handoff
 
 September 28, 2026 UTC. Application commit

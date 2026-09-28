@@ -335,6 +335,10 @@ try {
   await go("/platform?post=" + one.id + "&mode=pages");
   const feedUrl = page.url();
   const feedPost = page.locator(`[data-post="${one.id}"]`);
+  // The gallery creates its photo buttons only after it enters the viewport.
+  await feedPost
+    .getByLabel("Post photos", { exact: true })
+    .scrollIntoViewIfNeeded();
   await feedPost
     .getByRole("button", { name: "Open photo 1 of 2", exact: true })
     .click();
