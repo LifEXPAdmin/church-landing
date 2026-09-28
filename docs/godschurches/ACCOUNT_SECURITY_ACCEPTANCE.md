@@ -1,3 +1,47 @@
+## Topic management and followed discussions verified live, 28 September 2026 UTC
+
+Version **2026.09.28.42** is implemented, tested, merged and verified live.
+One deployment, `dpl_AvCTpvuYQNAQsRJpbTJq6pwXD5WG`, is READY and canonical on
+`godschurches.com`, serving source `7e6ed64cded8d19b1de4442265c18047df2298d9`
+at **11:06:53 UTC**. Management drafts and followed-discussion interactions retain
+their original account and requests while removing private initial-response and
+concealed DOM content. Current access, MFA, permission and version checks remain
+in force. A reproduced lost-vote response followed by a real cooldown now retains
+reachable original-request recovery without displaying obsolete choices.
+
+All **109 browser groups and 51 service/HTTPS groups** pass against the exact
+application source. Management, creation and original recovery use enforced
+fictional MFA. Build `vjm1gv-iB6SSfZgVuo0n9` passed in **45.925 seconds** with all
+**2,100 tracked files unchanged**. Application CI `36411229071` and main CI
+`36413323163` passed. Two explicit test-only overlays correct synchronization:
+joined membership must arrive before losing an accepted follow response, and an
+accepted reopen reply is deliberately held across a current-access refresh before
+cached continuation. Both prove one effect; no application workaround was needed.
+Their follow-up commits and these reports require no additional deployment.
+
+All **180 live page/API/browser checks plus five release/health checks** pass.
+All **165 current-column production fingerprints remained unchanged at 11:08:31
+UTC**. All **123 migration checksums** match, with no new or applied migration.
+Browser/CSP errors, blocked mutation/external attempts, scoped runtime error/fatal/
+CSP rows, production test writes, recipient sends and queue probes were zero.
+Authenticated functional acceptance uses isolated fictional fixtures. Live guest
+checks do not establish actual device, provider delivery or operator acceptance.
+
+The actual .41 protected restore/replay at **08:55:59 UTC**, installed ordinary
+restore at **08:59:14 UTC** and actual nightly run at **08:59:15 UTC** remain
+separately attributed. A pinned review verifies unchanged schema, storage and
+recovery owners, 155 critical source files, installed actors and retained backups.
+Their original expiry remains **12:55:59 UTC**; this is compatible reuse, not a new
+rehearsal. The full .42 artifact and .41 fallback are preserved. A .41 fallback
+would lose these privacy and recovery fixes while preserving schema compatibility.
+
+No dependency or persistent browser store was added. Compared with the prior
+release, summed local gzip route assets increase by **29,654 bytes** for followed
+discussions and **6,306 bytes** for management, including shared chunks. These
+are bundle costs, not measured latency or hosted capacity. Broad cosmetic work,
+physical-device acceptance and remaining security/provider/operator gates stay
+open. This receipt supersedes the local-only batch entries below.
+
 ## Followed Topic stream implementation and reproduced recovery gap, 28 September 2026 UTC
 
 This slice is implemented, with final candidate verification still pending. It

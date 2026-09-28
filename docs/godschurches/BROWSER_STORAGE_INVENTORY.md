@@ -1,3 +1,17 @@
+## Management and followed-discussion memory verified live, 28 September 2026 UTC
+
+Version .42/source `7e6ed64` is implemented, tested, merged and verified live in
+`dpl_AvCTpvuYQNAQsRJpbTJq6pwXD5WG`. Private management snapshots, complete draft
+fields and original commands remain only in their mounted original-account
+owners. Followed discussion selections and existing comment, bookmark, poll and
+prayer controllers use the same removable-presentation boundary. Stale reads or
+changed snapshots cannot reveal or silently rebase protected work. Deliberate
+recovery reuses original bytes or an accepted receipt under current authority.
+No Web Storage, IndexedDB, cookie or service-worker store was added. Concealment
+does not claim JavaScript heap erasure or deletion of user-downloaded copies.
+[Security acceptance](ACCOUNT_SECURITY_ACCEPTANCE.md) records the 109 browser,
+51 service/HTTPS and 185 live/health checks, QA-only corrections and open gates.
+
 ## Followed Topic interaction ownership, 28 September 2026 UTC
 
 The prepared followed-stream privacy slice retains the original account,
@@ -506,7 +520,7 @@ HttpOnly. No cookie Domain attribute is supplied by these owners.
 
 | Cookie and owner | Data and sensitivity | Bound and clearing behavior |
 | --- | --- | --- |
-| `__Host-church_platform_session` on HTTPS; legacy `church_platform_session`; `lib/platform/account-boundary.ts`, `accounts.ts`, `account-cookies.ts` | Opaque authentication capability. Server stores a token hash and checks current session/account state. | 30-day cookie and absolute lifetime; no ordinary idle timeout. New HTTPS credentials use the secure host prefix. Bounded legacy compatibility ends 29 October 2026 at 00:00 UTC without background promotion or extending expiry. Session-ending responses expire both names; revocation and credential/account changes invalidate server authority. Duplicate/conflicting credentials are rejected. See `SESSION_COOKIE_POLICY.md` for residual legacy risk. |
+| `__Host-church_platform_session` on HTTPS; legacy `church_platform_session`; `lib/platform/account-boundary.ts`, `accounts.ts`, `account-cookies.ts` | Opaque authentication capability. Server stores a token hash and checks current session/account state. | 30-day cookie and absolute ceiling, with the provisional approximately 30-minute idle deadline documented in `SESSION_LIFETIME_POLICY.md`. New HTTPS credentials use the secure host prefix. Bounded legacy compatibility ends 29 October 2026 at 00:00 UTC without background promotion or extending expiry. Session-ending responses expire both names; revocation and credential/account changes invalidate server authority. Duplicate/conflicting credentials are rejected. See `SESSION_COOKIE_POLICY.md` for residual legacy risk. |
 | `__Host-gc_google_browser`, `signup`, `reactivate`, `recent`, `email` suffixes; `lib/platform/google-cookies.ts`, `google-boundary.ts` | Opaque browser binding, pending account-flow or purpose-bound confirmation credentials. The insecure configuration omits `__Host-`. | Default 600 seconds; recent confirmation is 300 seconds. Flow-specific success/replacement expires selected cookies; a successful account session-ending response clears all five. Server checks scope, expiry and consumption independently. |
 | `__Host-gc_signup_completion`; `lib/platform/signup-completion.ts` | Signed time/presentation proof for the completion screen. Neither a session nor verification/consent authority. Insecure configuration omits the prefix. | 24 hours. Parser also rejects future or expired proofs. Replaced by another registration result or browser expiry; no explicit logout deletion was found. |
 | `godschurches_reading`; `components/platform/reading-preferences.tsx`, `lib/platform/reading-preferences.ts` | Appearance, reading layout/size, reduced motion/data and hidden reaction-count choices. No account identifier. | Path=/platform; 365 days, SameSite=Lax and Secure on HTTPS. Save/reset overwrites preferences. Browser-wide preference, not cleared on account switch; blocked storage leaves explicit unsaved state. |

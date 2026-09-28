@@ -1,3 +1,23 @@
+## Topic management and followed discussions verified live, 28 September 2026 UTC
+
+Version **2026.09.28.42**, source `7e6ed64cded8d19b1de4442265c18047df2298d9`,
+is implemented, tested, merged and READY/canonical in
+`dpl_AvCTpvuYQNAQsRJpbTJq6pwXD5WG` at **11:06:53 UTC**. The completed batch
+protects management drafts and followed-discussion data while preserving original
+requests, current authority and deliberate uncertain-result recovery.
+
+All **109 browser and 51 service/HTTPS groups**, the exact-source build and both
+source/main CI pass. Two recorded QA-only synchronization corrections leave the
+application unchanged. All **180 live checks plus five health/release checks**
+pass. All 165 production table fingerprints remained unchanged at **11:08:31 UTC**;
+123 migrations match with zero new migrations, production test writes or sends.
+Compatible actual recovery retains its original **12:55:59 UTC** expiry and actor
+attribution. [Security acceptance](ACCOUNT_SECURITY_ACCEPTANCE.md) records the
+exact evidence, measured bundle costs and fallback limits. Reports and QA-only
+follow-ups do not require another deployment. Broader security and real owner,
+provider, device, operator and pilot gates remain open. Prior local-only entries
+below are superseded for this completed batch.
+
 ## Topic management and followed discussion batch prepared, 28 September 2026 UTC
 
 The next compatible batch combines locally accepted Topic management with the
