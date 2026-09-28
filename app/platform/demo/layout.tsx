@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 
 import { DemoShell } from "@/components/platform/demo-shell";
 
-export const dynamic = "error";
+// The fictional, read-only content stays independent of accounts and databases.
+// Its document now renders per request to carry the root script policy nonce.
 export const metadata: Metadata = {
   title: {
     absolute: "Church portal demo | God’s Churches",

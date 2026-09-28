@@ -56,8 +56,9 @@ const nextConfig: NextConfig = {
       {
         source: "/:path*",
         headers: [
-          // No current page is an embeddable widget. Keep this response policy
-          // independent of indexing and private-route cache rules.
+          // Baseline for non-document/API/static responses. Middleware adds
+          // the request-bound script policy to every document, including RSC,
+          // prefetch, errors and admin denials; asset caching stays independent.
           {
             key: "Content-Security-Policy",
             value: "frame-ancestors 'none'; object-src 'none'; base-uri 'none'"

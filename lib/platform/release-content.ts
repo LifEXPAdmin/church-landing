@@ -1040,6 +1040,14 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "media-topics-and-script-policy", version: "2026.09.28.38", date: "2026-09-28",
+    summary: "Explore publisher-selected media topics with visible search filters and stronger browser script controls.",
+    added: ["Choose optional recording topics such as grief, hope, marriage or prayer. Topic links open editable media filters without creating a personal classification."],
+    improved: ["Media filters remain visible through reload, Back and pagination. Publishers can select suggested labels or enter their own."],
+    fixed: ["Pages restrict scripts to those authorized for the current document. Unauthorized inline scripts and event handlers are blocked while existing account, media and notification controls remain available."],
+    featureIds: ["media-catalog"]
+  },
+  {
     id: "saved-media-and-playlists", version: "2026.09.28.37", date: "2026-09-28",
     summary: "Save media privately and organize permitted recordings into ordered personal and church playlists.",
     added: ["Create a playlist draft, choose its audience, add current recordings and use keyboard ordering before deliberately publishing. Private saved media stays separate from playlist membership."],

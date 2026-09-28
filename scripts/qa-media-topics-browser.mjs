@@ -343,6 +343,43 @@ try {
   ok(
     "explicit guessed private topic returns zero authorized matches and no hidden-source cards"
   );
+  const pageTopic = "Pages " + suffix.slice(0, 8);
+  for (let index = 0; index < 21; index++)
+    await create({
+      title: `Fictional pagination ${suffix} ${index}`,
+      topics: [pageTopic]
+    });
+  const pageFilters = new URLSearchParams({
+    topic: pageTopic,
+    format: "SERMON",
+    q: `Fictional pagination ${suffix}`
+  });
+  await go("/platform/media?" + pageFilters);
+  await page.getByText("21 items available", { exact: true }).waitFor();
+  const resultLinks = page.getByRole("link", {
+    name: new RegExp(`^Fictional pagination ${suffix} `)
+  });
+  await wait(async () => (await resultLinks.count()) === 20);
+  const firstPage = await resultLinks.allTextContents();
+  await page.getByRole("button", { name: "Next", exact: true }).click();
+  await page.getByText("Page 2", { exact: true }).waitFor();
+  await wait(async () => (await resultLinks.count()) === 1);
+  for (const [key, value] of pageFilters)
+    assert.equal(new URL(page.url()).searchParams.get(key), value);
+  assert.ok(!firstPage.includes(await resultLinks.innerText()));
+  assert.equal(
+    await page.getByRole("button", { name: "Next", exact: true }).isDisabled(),
+    true
+  );
+  await page.getByRole("button", { name: "Previous", exact: true }).click();
+  await page.getByText("Page 1", { exact: true }).waitFor();
+  await wait(async () => (await resultLinks.count()) === 20);
+  assert.deepEqual(await resultLinks.allTextContents(), firstPage);
+  for (const [key, value] of pageFilters)
+    assert.equal(new URL(page.url()).searchParams.get(key), value);
+  ok(
+    "populated 20+1 pagination preserves combined filters and returns the original current results"
+  );
   await go("/platform/media?topic=" + encodeURIComponent(tag));
   await page.getByRole("link", { name: title, exact: true }).waitFor();
   await page.setViewportSize({ width: 320, height: 740 });

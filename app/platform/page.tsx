@@ -8,6 +8,8 @@ import {
   type PublicQuery
 } from "@/lib/indexing-policy";
 import { serializeStructuredData } from "@/lib/platform/public-structured-data";
+import { headers } from "next/headers";
+import { CSP_NONCE_HEADER } from "@/lib/security/content-security-policy";
 
 export async function generateMetadata({
   searchParams
@@ -29,14 +31,16 @@ export async function generateMetadata({
 }
 export const dynamic = "force-dynamic";
 
-export default function PlatformPage({
+export default async function PlatformPage({
   searchParams
 }: {
   searchParams: Promise<FeedParams>;
 }) {
+  const nonce = (await headers()).get(CSP_NONCE_HEADER) ?? undefined;
   return (
     <>
       <script
+        nonce={nonce}
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: serializeStructuredData({

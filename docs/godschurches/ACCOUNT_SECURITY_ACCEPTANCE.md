@@ -1,3 +1,40 @@
+## Request-bound script policy prepared, 28 September 2026 UTC
+
+The isolated unchanged .37 build reproduced a defense gap with harmless
+parser-inserted inline and same-origin external scripts, an event handler and
+evaluation from a trusted script. All four markers executed under the existing
+framing-only policy. This tests simulated injected markup; it does not establish
+an application injection path or compromise. The first harness attempt failed
+certificate verification; configuring the existing local certificate authority
+made the unchanged reproduction pass without disabling TLS verification.
+
+Middleware now generates a fresh 192-bit random nonce and overwrites untrusted
+incoming nonce and policy headers. Next receives the same policy that the browser
+enforces, covering its framework, Flight, streaming and authored structured-data
+scripts. Production disallows inline event handlers and script evaluation.
+Development alone permits the framework's evaluation and WebSocket refresh.
+Existing style attributes, same-origin requests, data/blob images and the
+same-origin notification worker have explicit compatibility directives. There is
+no general third-party script or embedded-player permission.
+
+Every document renders per request and uses private/no-store caching. Twenty-one
+previously prerendered routes, including the fictional read-only demo and 404,
+therefore lose static HTML rendering; the demo's data and disabled actions remain
+fictional. Ten of those routes previously sent shared-cache headers. Static
+assets retain their own caching. This adds rendering work; no claim of unchanged
+production cost or faster responses is made. A bounded local before/after check
+and actual browser compatibility are required before release.
+
+The same-origin diagnostic endpoint accepts bounded legacy and modern reports,
+with a streamed body limit, timeout, small batch and independent shared budget.
+It logs only allowlisted diagnostic enums and bounded numbers. Document/source
+URLs, queries, referrers, samples, original policies/nonces and identities are
+discarded. It neither consumes authentication budgets nor stores client keys.
+Four policy checks and thirteen report checks, including actual shared-database
+concurrency and preservation of authentication rows, pass locally. Final combined
+build, browser, integrated and live acceptance remain open. The wider security
+review and actual owner/provider/device gates remain open.
+
 ## Session isolation and media catalog verified live, 28 September 2026 UTC
 
 The host-bound session transition and curated media catalog with post cards are

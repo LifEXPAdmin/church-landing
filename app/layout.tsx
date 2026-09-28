@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import { Cormorant_Garamond, Source_Sans_3 } from "next/font/google";
 
 import "./globals.css";
@@ -72,11 +73,14 @@ export const metadata: Metadata = {
   }
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Framework scripts need the middleware nonce for this exact document.
+  // Awaiting the request prevents build-time HTML with missing/stale nonces.
+  await connection();
   return (
     <html lang="en">
       <body className={cn(headingFont.variable, bodyFont.variable)}>
