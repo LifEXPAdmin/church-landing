@@ -1,7 +1,9 @@
 import test, { before, after, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
-import { PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
+import { mediaReadableSql } from "../lib/platform/media-catalog-policy";
+import { postContext } from "../lib/platform/post-access";
 import {
   assertPortalTestDatabase,
   createPortalActor,
@@ -595,4 +597,58 @@ test("metadata filters and pagination count only current readable items", async 
   assert.equal((await read(db, null, q)).items?.length, 1);
   q.set("topic", "unmatched");
   assert.equal((await read(db, null, q)).total, 0);
+});
+
+test("publication and rights expiry use UTC timestamps across database session time zones", async () => {
+  const now = new Date();
+  const visible = (await published()).r;
+  const future = (await published()).r;
+  const expired = (await published()).r;
+  const boundary = (await published()).r;
+  const ids = [visible.id, future.id, expired.id, boundary.id];
+  for (const row of [visible, future, expired, boundary]) {
+    await db.mediaCatalogItem.update({
+      where: { id: row.id },
+      data: {
+        publishedAt: new Date(
+          now.getTime() + (row.id === future.id ? 3600000 : -60000)
+        )
+      }
+    });
+    await db.mediaCatalogRights.update({
+      where: { itemId: row.id },
+      data: {
+        expiresAt: new Date(
+          now.getTime() +
+            (row.id === expired.id
+              ? -60000
+              : row.id === boundary.id
+                ? 0
+                : 3600000)
+        )
+      }
+    });
+  }
+  for (const zone of ["UTC", "America/Chicago", "Asia/Tokyo"]) {
+    await db.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT set_config('TimeZone', ${zone}, true)`;
+      const context = await postContext(tx, null);
+      const rows = await tx.$queryRaw<{ id: string }[]>(Prisma.sql`
+        SELECT m.id FROM "MediaCatalogItem" m
+        WHERE m.id IN (${Prisma.join(ids)}) AND (${mediaReadableSql(context, now)})`);
+      assert.deepEqual(
+        rows.map((row) => row.id),
+        [visible.id],
+        zone + ": published, unexpired item only"
+      );
+      const exported = (await exportMedia(tx, owner.id, 1000)).filter((row) =>
+        ids.includes(row.id)
+      );
+      assert.deepEqual(
+        exported.map((row) => row.id).sort(),
+        [visible.id, future.id].sort(),
+        zone + ": expired rights remain absent from personal export"
+      );
+    });
+  }
 });

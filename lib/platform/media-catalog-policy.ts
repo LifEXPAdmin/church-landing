@@ -89,11 +89,14 @@ const ids = (column: Prisma.Sql, values: string[]) =>
     : Prisma.sql`FALSE`;
 /** Identical permission predicate for list, count, search and detail. No provider calls. */
 export function mediaReadableSql(c: PostContext, now = new Date()) {
+  // Prisma DateTime columns store UTC without a time zone. Bind canonical UTC
+  // text as that same SQL type, independently of this connection's TimeZone.
+  const utc = now.toISOString();
   return Prisma.sql`m.state='PUBLISHED' AND m."removedAt" IS NULL AND NOT m."recoveryRequired"
     AND m."moderationState"='VISIBLE' AND m."sourceState"='ATTESTED' AND m."sourceUrl" IS NOT NULL
-    AND m."publishedAt" IS NOT NULL AND m."publishedAt"<=${now}
+    AND m."publishedAt" IS NOT NULL AND m."publishedAt"<=${utc}::timestamp
     AND EXISTS (SELECT 1 FROM "MediaCatalogRights" r WHERE r."itemId"=m.id AND r."revokedAt" IS NULL
-      AND (r."expiresAt" IS NULL OR r."expiresAt">${now}) AND r.policy=${MEDIA_POLICY} AND r.fingerprint=m.acknowledgment)
+      AND (r."expiresAt" IS NULL OR r."expiresAt">${utc}::timestamp) AND r.policy=${MEDIA_POLICY} AND r.fingerprint=m.acknowledgment)
     AND ((m."ownerChurchId" IS NULL AND m."ownerId" IS NOT NULL
       AND EXISTS (SELECT 1 FROM "PlatformUser" u WHERE u.id=m."ownerId" AND u."suspendedAt" IS NULL
         AND u."deactivatedAt" IS NULL AND u."emailVerifiedAt" IS NOT NULL AND u."adultAcknowledgedAt" IS NOT NULL AND u."adultPolicyVersion"=${ADULT_POLICY})

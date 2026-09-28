@@ -29,7 +29,7 @@ export async function exportMedia(tx: PostTx, userId: string, limit: number) {
     AND NOT m."recoveryRequired" AND m."moderationState"='VISIBLE'
     AND ((m.state='DRAFT' AND m."sourceState"='REVIEW_NEEDED') OR
       (m."sourceState"='ATTESTED' AND EXISTS(SELECT 1 FROM "MediaCatalogRights" r WHERE r."itemId"=m.id
-        AND r."revokedAt" IS NULL AND (r."expiresAt" IS NULL OR r."expiresAt">${new Date()})
+        AND r."revokedAt" IS NULL AND (r."expiresAt" IS NULL OR r."expiresAt">${new Date().toISOString()}::timestamp)
         AND r.policy=${MEDIA_POLICY} AND r.fingerprint=m.acknowledgment))) ORDER BY m.id LIMIT ${limit + 1}`);
   return tx.mediaCatalogItem.findMany({
     where: { id: { in: ids.map((r) => r.id) } },

@@ -1,3 +1,16 @@
+## Combined verification correction, 28 September 2026 UTC
+
+The receiving release candidate reproduced a database time-zone defect absent
+from the original UTC fixture: raw Date parameters were compared as zoned values
+against UTC timestamp columns. This concealed newly published items on a
+non-UTC connection and could misclassify rights expiry. Publication and export
+predicates now bind canonical UTC text as timestamp, following the existing
+application convention. A regression exercises published, future, expired and
+exact-expiry cases in UTC, America/Chicago and Asia/Tokyo. The corrected media,
+post-card and account/session suites pass 42 groups; the final combined build,
+browser, protected recovery and live checks remain pending. Original failed
+checks and fixture corrections are retained. No production data or grants changed.
+
 # Media library and publishing
 
 27 September 2026. Isolated implementation for integration review. This report
