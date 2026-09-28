@@ -1,9 +1,54 @@
 "use client";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode
+} from "react";
 import type { ProfileEditorView } from "@/lib/platform/profiles";
 import { socialRequest } from "@/lib/platform/social-client";
 import { ProfileEditor } from "./profile-editor";
 import { ReadVisibility, useReadVisibility } from "./read-visibility";
+
+// The shell has account-keyed providers. Retain this page's original server
+// tree so an account-changing refresh cannot destroy the mounted draft owners.
+export function ProfileEditorScope({
+  owner,
+  children
+}: {
+  owner: string | null;
+  children: ReactNode;
+}) {
+  const [original] = useState({ owner, children });
+  const previousOwner = useRef(owner);
+  const parentVisible = useReadVisibility();
+  useLayoutEffect(() => {
+    if (previousOwner.current === owner) return;
+    previousOwner.current = owner;
+    // Reuse the existing conceal/recheck boundary. These signals only read;
+    // they never resume an uncertain write or adopt a newer profile version.
+    window.dispatchEvent(new Event("blur"));
+    if (owner === original.owner) window.dispatchEvent(new Event("focus"));
+  }, [owner, original.owner]);
+  return (
+    <>
+      {owner !== original.owner && (
+        <p role="status" className="m-4 rounded-xl border p-4">
+          This profile editor belongs to the account that opened it. Return to
+          that account to continue your draft, or reload to open the current
+          profile.
+        </p>
+      )}
+      <ReadVisibility.Provider
+        value={parentVisible && owner === original.owner}
+      >
+        {original.children}
+      </ReadVisibility.Provider>
+    </>
+  );
+}
 
 // Load private fields only after the account boundary confirms the current owner.
 // Once mounted, the editor owns its draft; a focus check must not replace it.

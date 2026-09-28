@@ -242,12 +242,22 @@ async function newCase(name, replacement, { open = true, photo = false } = {}) {
     serviceWorkers: "block"
   });
   contexts.add(context);
-  await context.route("**/*", async (route) => {
-    const url = new URL(route.request().url());
-    if (url.origin === config.origin) return route.continue();
-    receipt.blockedExternal.push({ origin: url.origin, path: url.pathname });
-    await route.abort("blockedbyclient");
-  });
+  await context.route(
+    (url) => url.origin !== config.origin,
+    async (route) => {
+      const url = new URL(route.request().url());
+      try {
+        receipt.blockedExternal.push({
+          origin: url.origin,
+          path: url.pathname
+        });
+        await route.abort("blockedbyclient");
+      } catch (error) {
+        receipt.routeErrors.push(clean(error.message));
+        persist();
+      }
+    }
+  );
   const page = await context.newPage();
   currentPage = page;
   page.setDefaultTimeout(15000);
@@ -352,7 +362,9 @@ async function absent(s, stage, extra = []) {
     () =>
       !document.querySelector(
         "#profile-location, #profile-bio, #profile-event-link, #avatar-zoom, #latest-profile-heading"
-      )
+      ),
+    undefined,
+    { polling: 100 }
   );
   const markers = [...s.markers, ...extra];
   const state = await s.page.evaluate((markers) => {
@@ -413,6 +425,8 @@ async function finish(s) {
   s.details.after = await savedState(s.owner);
   s.details.completedAt = new Date().toISOString();
   persist();
+  await s.page.unrouteAll({ behavior: "wait" });
+  await s.context.unrouteAll({ behavior: "wait" });
   await s.context.close();
   contexts.delete(s.context);
 }
@@ -614,15 +628,48 @@ async function retentionCase(replacement) {
     await s.page.bringToFront();
     await s.page.locator("#profile-bio").focus();
     assert.equal(await s.page.evaluate(() => document.hasFocus()), true);
+    await s.page.evaluate(() => {
+      window.__profileNativeBlur = 0;
+      window.addEventListener("blur", (event) => {
+        if (event.isTrusted) window.__profileNativeBlur++;
+      });
+    });
     const away = await s.context.newPage();
-    await away.goto("about:blank");
-    await away.bringToFront();
-    await s.page.waitForFunction(() => !document.hasFocus());
-    await absent(s, "native background-tab blur");
-    await s.page.bringToFront();
-    await assertDraft(s);
-    await away.close();
-    s.details.nativeBlurVerified = true;
+    const foreground = await s.context.newCDPSession(s.page);
+    const background = await s.context.newCDPSession(away);
+    try {
+      // Playwright normally makes every page appear focused. Disable that
+      // override so actual tab activation, rather than a synthetic event, blurs.
+      await foreground.send("Emulation.setFocusEmulationEnabled", {
+        enabled: false
+      });
+      await background.send("Emulation.setFocusEmulationEnabled", {
+        enabled: false
+      });
+      await s.page.bringToFront();
+      await s.page.waitForFunction(() => document.hasFocus());
+      await assertDraft(s);
+      await s.page.evaluate(() => {
+        window.__profileNativeBlur = 0;
+      });
+      await away.bringToFront();
+      await s.page.waitForFunction(() => !document.hasFocus(), undefined, {
+        polling: 100
+      });
+      assert.ok(await s.page.evaluate(() => window.__profileNativeBlur > 0));
+      await absent(s, "native background-tab blur");
+      await s.page.bringToFront();
+      await assertDraft(s);
+      s.details.nativeBlurVerified = true;
+    } finally {
+      await foreground.send("Emulation.setFocusEmulationEnabled", {
+        enabled: true
+      });
+      await foreground.detach();
+      await background.detach();
+      await away.close();
+      await s.page.bringToFront();
+    }
   } else {
     await pulse(s.page, "blur");
     await absent(s, "synthetic blur");
@@ -751,16 +798,19 @@ async function ownerRefreshCase(replacement) {
       }
     };
     await s.page.route(match, handler);
-    // Await the new guard's owner-bound read as well as the RSC transport. This
-    // avoids accepting the temporary concealment while React applies refresh.
-    const currentRead = s.page.waitForResponse((response) => {
-      const url = new URL(response.url());
-      return (
-        url.pathname === "/api/platform/profile" &&
-        url.searchParams.get("view") === "identity" &&
-        response.request().headers()["x-expected-account"] === owner.id
-      );
-    });
+    // A replacement tree must keep the original scope concealed. Returning to
+    // the original account also requires a fresh owner-bound access read.
+    const currentRead =
+      owner.id === s.owner.id
+        ? s.page.waitForResponse((response) => {
+            const url = new URL(response.url());
+            return (
+              url.pathname === "/api/platform/profile" &&
+              url.searchParams.get("view") === "identity" &&
+              response.request().headers()["x-expected-account"] === owner.id
+            );
+          })
+        : null;
     await s.page.evaluate(() => {
       if (typeof window.next?.router?.refresh !== "function")
         throw new Error("Installed Next router.refresh is unavailable");
@@ -768,15 +818,16 @@ async function ownerRefreshCase(replacement) {
     });
     const result = await bounded(completed.promise);
     assert.ok(!result.failure, result.failure);
-    assert.equal((await currentRead).status(), 200);
+    if (currentRead) assert.equal((await currentRead).status(), 200);
     await s.page.unroute(match, handler);
-    await s.page
-      .locator("#platform-content")
-      .getByRole("button", {
-        name: "Recheck current access",
-        exact: true
-      })
-      .waitFor({ state: "hidden" });
+    if (owner.id !== s.owner.id)
+      await s.page
+        .getByText(
+          "This profile editor belongs to the account that opened it. Return to that account to continue your draft, or reload to open the current profile.",
+          { exact: true }
+        )
+        .waitFor();
+    else await s.page.locator("#profile-location").waitFor();
     assert.equal(
       await s.page.evaluate(() => window.__profilePrivacyDocument),
       documentId,
@@ -1370,6 +1421,7 @@ try {
 } catch (error) {
   receipt.outcome = "failed";
   receipt.failure = clean(error.message);
+  receipt.failureStack = clean(error.stack);
   receipt.passedGroups = receipt.passed.length;
   receipt.completedAt = new Date().toISOString();
   if (currentPage && !currentPage.isClosed()) {
@@ -1395,7 +1447,12 @@ try {
       persist();
     }
   }
-  for (const context of contexts) await context.close();
+  for (const context of contexts) {
+    for (const page of context.pages())
+      await page.unrouteAll({ behavior: "wait" });
+    await context.unrouteAll({ behavior: "wait" });
+    await context.close();
+  }
   await browser?.close();
   await db.$disconnect();
 }

@@ -132,10 +132,8 @@ test("actual profile HTML/RSC/API gate guest details, media and previews while m
     assert.match(preview, /Visitor preview/);
   }
   const editor = await (await get("/platform/profile/me", a.token)).text();
-  assert.match(editor.replace(/<!--[\s\S]*?-->/g, ""), /Choose avatar/);
-  assert.match(editor, /Cover background/);
-  assert.match(editor, /Pinned introduction/);
-  for (const marker of [a.email, a.token, "storagePrefix", "fingerprint"])
+  assert.match(editor, /Checking current account access/);
+  for (const marker of [...forbidden, "storagePrefix", "fingerprint"])
     assert.ok(!editor.includes(marker));
   await db.platformSession.deleteMany({ where: { userId: a.id } });
   assert.equal((await get("/api/platform/profile", a.token)).status, 401);

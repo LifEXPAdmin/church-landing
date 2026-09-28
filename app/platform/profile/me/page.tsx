@@ -3,7 +3,10 @@ import { photoLibraryEnabled } from "@/lib/platform/personal-photo-policy";
 import type { Metadata } from "next";
 import { GuestAccountPrompt } from "@/components/platform/guest-account-prompt";
 import { PlatformShell } from "@/components/platform/platform-shell";
-import { ProfilePrivateWorkspace } from "@/components/platform/profile-private-workspace";
+import {
+  ProfileEditorScope,
+  ProfilePrivateWorkspace
+} from "@/components/platform/profile-private-workspace";
 import { getCurrentPlatformUser } from "@/lib/platform/session";
 import { accountReasons } from "@/lib/platform/account-entry";
 import { createHash } from "node:crypto";
@@ -41,26 +44,28 @@ export default async function EditProfilePage({
     redirect(
       `/platform/profile/${encodeURIComponent(user.username)}?tab=photos`
     );
-  if (!user)
-    return (
-      <PlatformShell user={null}>
-        <GuestAccountPrompt next={next} reason="profile" />
-      </PlatformShell>
-    );
   return (
-    <PlatformShell user={user}>
-      <section className="container-shell py-8 sm:py-10">
-        <PrivateSnapshotGuard
-          owner={user.id}
-          url="/api/platform/profile?view=identity"
-          checksum={createHash("sha256")
-            .update(JSON.stringify({ id: user.id }))
-            .digest("hex")}
-          label="account"
-        >
-          <ProfilePrivateWorkspace owner={user.id} focus={focus} />
-        </PrivateSnapshotGuard>
-      </section>
-    </PlatformShell>
+    <ProfileEditorScope owner={user?.id ?? null}>
+      {!user ? (
+        <PlatformShell user={null}>
+          <GuestAccountPrompt next={next} reason="profile" />
+        </PlatformShell>
+      ) : (
+        <PlatformShell user={user}>
+          <section className="container-shell py-8 sm:py-10">
+            <PrivateSnapshotGuard
+              owner={user.id}
+              url="/api/platform/profile?view=identity"
+              checksum={createHash("sha256")
+                .update(JSON.stringify({ id: user.id }))
+                .digest("hex")}
+              label="account"
+            >
+              <ProfilePrivateWorkspace owner={user.id} focus={focus} />
+            </PrivateSnapshotGuard>
+          </section>
+        </PlatformShell>
+      )}
+    </ProfileEditorScope>
   );
 }
