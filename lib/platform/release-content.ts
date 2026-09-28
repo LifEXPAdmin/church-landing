@@ -15,10 +15,10 @@ export type Feature = {
 export const features: Feature[] = [
   {
     id: "media-catalog", category: "Media and learning", name: "Media library and publishing studio",
-    description: "Discover permitted media by title, speaker, series, topic, language and format, and prepare your own reviewed source links.",
-    steps: "Open Media to browse or search. In My media, create a private draft, review its source and sharing rights, then publish or unpublish deliberately. Open source only when you choose to visit its provider.",
+    description: "Discover permitted media by title, speaker, series, topic, language, format and overlapping Scripture passages, and prepare your own reviewed source links.",
+    steps: "Open Media to browse or search. For passage search, explicitly choose a supported numbering system and enter a passage. In My media, create a private draft, optionally add Scripture tags, review its source and sharing rights, then publish or unpublish deliberately. Open source only when you choose to visit its provider.",
     href: "/platform/media",
-    eligibility: "Publishing requires an eligible verified adult account and a current rights acknowledgment. Church publishing requires an explicit media duty and current church authority. The library rechecks audience, membership, blocks, rights and source status. Native uploads, embedded playback, transcripts and Scripture-reference search are not available yet.",
+    eligibility: "Publishing requires an eligible verified adult account and a current rights acknowledgment. Church publishing requires an explicit media duty and current church authority. The library rechecks audience, membership, blocks, rights and source status. Passage tags are publisher-supplied; different numbering systems stay separate. Native uploads, embedded playback and transcripts are not available yet.",
     availability: "available"
   },
   {
@@ -1031,6 +1031,14 @@ export const features: Feature[] = [
   }
 ];
 export const releases: ReleaseEntry[] = [
+  {
+    id: "media-scripture-search", version: "2026.09.28.36", date: "2026-09-28",
+    summary: "Find permitted media by overlapping Scripture passages in an explicitly selected numbering system.",
+    added: ["Publishers can add validated passage tags, review their normalized ranges and correct invalid or ambiguous references before saving."],
+    improved: ["Passage search combines with existing media filters and checks current access before results and counts. Book names and numbering systems remain distinct."],
+    fixed: ["Unrelated media edits preserve original passage text. Private editor fields leave the page while access is being checked, and keyboard focus stays above the mobile navigation."],
+    featureIds: ["media-catalog"]
+  },
   {
     id: "media-library-and-post-cards", version: "2026.09.27.35", date: "2026-09-27",
     summary: "Browse the media library, publish reviewed source links and attach permitted media to posts.",

@@ -63,6 +63,6 @@ h4 {
   }
 
   #platform-content :is(a, button, input, select, textarea, [tabindex]) {
-    scroll-margin-block: 1rem;
+    scroll-margin-block: 1rem calc(var(--gc-navigation-height, 10rem) + 1rem);
   }
 }

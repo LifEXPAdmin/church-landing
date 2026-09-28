@@ -12,6 +12,8 @@ import { mediaText } from "./media-catalog-input";
 import { mediaFormats } from "./media-catalog-options";
 import { postId } from "./post-input";
 import { PortalError } from "./portal-policy";
+import { normalizeScripture } from "./media-scripture";
+import { SCRIPTURE_REGISTRY_VERSION } from "./scripture-registry";
 import type { PostContext, PostTx } from "./post-access";
 export const mediaPublicSelect = {
   id: true,
@@ -28,6 +30,7 @@ export const mediaPublicSelect = {
   series: true,
   sequence: true,
   topics: true,
+  scriptureRanges: true,
   recordedOn: true,
   details: true,
   sourceUrl: true,
@@ -66,6 +69,8 @@ export function mediaCatalogRead(
     "series",
     "topic",
     "church",
+    "scripture",
+    "referenceSystem",
     "page"
   ];
   if (
@@ -176,6 +181,29 @@ export function mediaCatalogRead(
     )
       throw new PortalError(400, "Choose a supported media format.");
     const clauses = [mediaReadableSql(c)];
+    const scripture = mediaText(
+      query.get("scripture"),
+      4000,
+      "Scripture search"
+    );
+    if (scripture) {
+      const ranges = normalizeScripture([
+        {
+          referenceSystemId: query.get("referenceSystem"),
+          referenceVersion: SCRIPTURE_REGISTRY_VERSION,
+          originals: [scripture]
+        }
+      ]);
+      const overlaps = ranges.map(
+        (r) => Prisma.sql`(s->>'referenceSystemId'=${r.referenceSystemId}
+        AND s->>'referenceVersion'=${r.referenceVersion} AND s->>'bookId'=${r.bookId}
+        AND jsonb_typeof(s->'startKey')='number' AND jsonb_typeof(s->'endKey')='number'
+        AND s->'startKey'<=${String(r.endKey)}::jsonb AND s->'endKey'>=${String(r.startKey)}::jsonb)`
+      );
+      clauses.push(
+        Prisma.sql`EXISTS (SELECT 1 FROM jsonb_array_elements(m."scriptureRanges") s WHERE ${Prisma.join(overlaps, " OR ")})`
+      );
+    }
     const contains = (value: string) => `%${value.replace(/[\\%_]/g, "\\$&")}%`;
     if (q)
       clauses.push(

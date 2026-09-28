@@ -3,6 +3,7 @@ import { discoveryLanguage } from "./discovery-options";
 import { PortalError } from "./portal-policy";
 import { socialInput } from "./social-operations";
 import { catalogSource } from "./media-catalog-sources";
+import { normalizeScripture } from "./media-scripture";
 import {
   MEDIA_POLICY,
   mediaFormats,
@@ -90,6 +91,7 @@ export function mediaFields(value: unknown) {
       "series",
       "sequence",
       "topics",
+      "scriptureRanges",
       "recordedOn",
       "details",
       "sourceUrl",
@@ -178,6 +180,7 @@ export function mediaFields(value: unknown) {
     series: mediaText(v.series, 160, "series"),
     sequence: number(v.sequence, 100000, "series sequence"),
     topics: list(v.topics, 12, 40, "topics"),
+    scriptureRanges: normalizeScripture(v.scriptureRanges),
     recordedOn: date(v.recordedOn, "recorded date"),
     details,
     sourceUrl: source?.url ?? null,
