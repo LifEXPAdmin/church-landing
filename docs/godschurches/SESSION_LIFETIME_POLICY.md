@@ -1,0 +1,98 @@
+# Ordinary session inactivity policy
+
+## Preparation status, 28 September 2026 UTC
+
+This is an implementation checkpoint, not a live-policy announcement. The shared
+pure lifetime calculation and seven boundary tests are prepared. Database,
+issuance, authorization, activity transport, interface, recovery and release
+acceptance remain open. Existing live sessions still use their fixed 30-day
+absolute expiry.
+
+The provisional engineering default is 30 minutes of inactivity. An owner
+preference question is pending; this document does not record owner acceptance.
+The original absolute 30-day ceiling remains unchanged. The duration is a product
+risk decision, not a universal requirement of ASVS.
+
+## Activity and lifetime contract
+
+New sessions receive a separate idle deadline. The absolute expiry never moves.
+The server rejects a session at either deadline, including exact equality.
+Server time is evaluated after blocking account locks. No supplied client clock,
+timestamp or duration is authoritative.
+
+Only the explicit foreground-activity request may move the idle deadline. The
+browser emits it for deliberate interaction on a visible, focused platform page.
+An open tab, background polling, prefetch, service-worker activity, push delivery,
+deferred email and passive session checks do not qualify. This is an authenticated
+client activity signal, not proof that a human is present; a stolen valid token
+can also generate requests. Absolute expiry and revocation remain necessary.
+
+Writes are limited to approximately once per active minute. The server records a
+deadline 31 minutes ahead on a qualifying update and suppresses updates while
+more than 30 minutes remain. This gives 30 to 31 minutes after the last qualifying
+interaction, bounded by absolute expiry. New sign-in initially receives exactly
+30 minutes. The interface must describe this as about 30 minutes and use the
+server's actual deadline rather than independently promising an exact duration.
+
+Validation is pure. In particular, account read transactions explicitly prohibit
+writes. Activity takes the existing account lock, rereads current credentials,
+account state and both deadlines, checks the expected account, and conditionally
+updates an existing eligible session. It never upserts, revives expired tokens,
+extends absolute expiry or renews a recent-authentication proof. A delayed denial
+must not clear a newer login cookie.
+
+## Existing-session transition
+
+Existing rows have no trustworthy last-interaction time. Do not fabricate one.
+The prepared design adds a nullable idle deadline. Existing null rows retain
+their existing absolute expiry, with a fixed outer transition limit of
+29 October 2026 at 00:00 UTC. The first explicit foreground-activity request
+adopts the new idle deadline. Newly inserted rows receive an idle deadline by
+database default as well as the application's issuance path, including inserts
+by a temporarily older application during deployment.
+
+This is a bounded legacy exception, not evidence that every existing session
+already meets the idle policy. The release must precede the fixed cutoff and
+verify that all current sessions fit within the documented interval. Do not move
+the cutoff forward automatically. The sign-in and active-sign-in interfaces must
+explain the new behavior before adoption. No production backfill has been run.
+
+## Authorization and retained work
+
+All five independent session gates must use the same predicate: ordinary account
+reads, owned commands, password change, Google linking/reconfirmation callbacks,
+and final push admission. Session listing and push-device eligibility must apply
+the same deadline. A Google round trip that began before expiry is not authority
+to finish after expiry. Background work never renews a browser session. Durable
+account-owned work, such as scheduled publication, keeps its separate lifetime.
+
+Expiry must conceal private presentation while preserving mounted command owners,
+dirty entries and the exact bytes/key of an uncertain request. Same-account
+reauthentication may recover the original receipt through the existing authority
+and fingerprint checks. It cannot inherit the old session's privileged proof.
+Account replacement, MFA challenge, network failure and business conflict remain
+distinct. Do not globally unmount retained work or automatically retry commands.
+
+## Verification and recovery gates
+
+Before release, verify real API/SSR denial, all direct gates, pure read-only
+transactions, issuance defaults, legacy adoption, exact boundary and tolerance,
+concurrent activity versus revocation, account replacement, passive polling,
+background delivery and lost-response recovery followed by same-owner sign-in.
+Review narrow and enlarged layouts and privacy concealment in the browser.
+
+Schema compatibility does not make an older application a safe fallback: it
+ignores the new idle deadline and could revive idle-expired tokens. Prefer a
+retained idle-aware application artifact. Any fallback to pre-policy code needs
+an explicit session-revocation recovery step and verification that old tokens
+remain denied. Exercise that recovery only in an isolated fixture before using
+the existing production release/incident process. No old-code rollback is
+authorized or represented as tested by this preparation checkpoint.
+
+## References
+
+[ASVS 5.0 session management](https://raw.githubusercontent.com/OWASP/ASVS/v5.0.0/5.0/en/0x16-V7-Session-Management.md)
+requires documented risk-based lifetime decisions and enforcement. The
+[OWASP session-management guidance](https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html)
+distinguishes server-enforced idle and absolute expiration. These sources inform
+the design; they do not establish product-owner acceptance or a compliance claim.
