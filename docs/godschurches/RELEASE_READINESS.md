@@ -1,3 +1,44 @@
+## Profile privacy and Topic recovery verified live, 28 September 2026 UTC
+
+Version **2026.09.28.40** is implemented, tested, merged and verified live.
+One production deployment, `dpl_7W9DsGLe4kJUca6atcz3We1iCmnV`, is READY and
+canonical on `godschurches.com`, serving source
+`4a540cfeea2b5e86f4c83b60272fa2360bf80879` at **07:31:04 UTC**. Profile editors
+conceal private controls while preserving drafts and selected photos. Topic
+forms retain the exact original request through uncertain replies, cooldown and
+current permission/version denials, with deliberate retry or warned abandonment.
+
+The final build `12oE2RMYYyciqUhUpDDCn` passed in **43.403 seconds**, retaining
+all **2,085 tracked hashes**; exact-source CI `36390500479` passed. Combined
+acceptance covers **107 browser groups, 63 service groups and five HTTPS groups**.
+Of these, 26 feature browser groups, 36 CSP checks and 67 service/HTTPS groups
+ran on the final source. The remaining 45 browser groups and one HTTPS group
+are explicitly reused from the source-compatible candidate; only Topic recovery
+wording, release notes, documentation and QA changed afterward.
+
+All **165 live page/API/browser checks plus five initial release/health checks**
+passed. Browser/CSP errors, blocked mutation attempts, scoped runtime error/fatal
+rows and CSP diagnostic rows were zero. All **165 current-column production
+table fingerprints remained unchanged at 07:32:36 UTC**. Source, production and
+installed recovery still match all **123 migrations**. There were no new
+migrations, application test writes, recipient sends or queue probes.
+
+Recovery evidence was reused within its original validity window after exact
+source, generated-client, archive, actor and compiled-artifact checks. Protected
+121-to-123 replay remains the actual 04:39 receipt; installed 123-to-123 recovery
+remains the actual 05:10 receipt. Read-only nightly verification still shows run
+28, exit zero, 118 sets and no removals/issues. No restore or maintenance run was
+repeated. The preflight initially compared generated Prisma output with source
+formatting; the corrected gate pins the byte-identical prior accepted generated
+schema. The failed gate is retained, and no generated or application file changed.
+
+The full .40 artifact is retained. Prior .39 is schema/session compatible but
+would remove these fixes; .38 remains incompatible. Wider Topic DOM/SSR privacy
+and account-changing remount survival remain the next reproduction scope.
+Broader security and actual owner/provider/device/pilot acceptance remain open.
+Earlier local checkpoints below retain their dated evidence; this section records
+their completed .40 integration and live acceptance.
+
 ## Profile privacy and Topic recovery batch prepared, 28 September 2026 UTC
 
 The completed profile privacy work and Topic original-request recovery are

@@ -1,3 +1,13 @@
+## Profile and Topic memory boundaries verified live, 28 September 2026 UTC
+
+The .40 batch is implemented, tested, merged and verified live as `4a540cf` in
+`dpl_7W9DsGLe4kJUca6atcz3We1iCmnV`. Profile drafts, selected files and uncertain
+save requests remain in memory behind current-owner checks. Mounted Topic forms
+retain immutable original request bytes, mutation key and versions until accepted
+or deliberately abandoned. No new persistent browser store was added. Wider
+Topic DOM/SSR and account-remount privacy remain open; [security acceptance](ACCOUNT_SECURITY_ACCEPTANCE.md)
+records exact verification and unchanged production data.
+
 ## Topic original recovery memory, 28 September 2026 UTC
 
 Locally verified source `c650e12` keeps the original account, serialized command,

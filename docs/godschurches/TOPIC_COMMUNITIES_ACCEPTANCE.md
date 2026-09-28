@@ -1,5 +1,18 @@
 # Topic communities acceptance
 
+## Original-request recovery verified live, 28 September 2026 UTC
+
+Version .40, source `4a540cfeea2b5e86f4c83b60272fa2360bf80879`, is implemented,
+tested, merged and verified live in READY/canonical deployment
+`dpl_7W9DsGLe4kJUca6atcz3We1iCmnV` at 07:31:04 UTC. The combined profile/Topic
+release passed 107 browser, 63 service and five HTTPS groups with exact source
+reuse recorded in [security acceptance](ACCOUNT_SECURITY_ACCEPTANCE.md).
+All 165 live checks plus five release/health checks passed; all 165 production
+fingerprints stayed unchanged. There were zero new migrations, application test
+writes, sends or queue probes. Broader Topic DOM/SSR concealment and account
+remount survival remain open for reproduction; the mounted original-request
+contract is the completed scope.
+
 ## Original-request recovery update, 28 September 2026 UTC
 
 The .40 candidate is locally verified, not merged or live. Mounted Topic forms
