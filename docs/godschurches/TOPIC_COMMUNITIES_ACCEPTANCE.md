@@ -1,5 +1,21 @@
 # Topic communities acceptance
 
+## Original-request recovery update, 28 September 2026 UTC
+
+The .40 candidate is locally verified, not merged or live. Mounted Topic forms
+retain immutable original requests across uncertain replies, cooldown, account
+replacement and version/permission denials. Retry rechecks current authority and
+never changes versions or keys. Only an explicitly classified first dispatched
+precommit rejection permits correction. Warned stop/reload clears local recovery
+and does not undo saved changes. Confirmed receipts recheck the original account
+before navigation; unmounted forms cannot redirect a later page.
+
+Eight focused browser groups, 22 service groups and exact-source build/CI pass
+on `c650e12`. [Security acceptance](ACCOUNT_SECURITY_ACCEPTANCE.md) records the
+before-change reproduction, tests and scope. Broader Topic DOM/SSR privacy and
+account-changing remount survival are not closed by this update. Earlier release
+receipts below remain historical evidence for their original scope.
+
 September 15, 2026 UTC · released and verified live
 
 Product **2026.09.14.18**, serving **55c53f49c5aee39a0d07e48248c0d3f7e7bf8dde**,

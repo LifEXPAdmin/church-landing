@@ -268,16 +268,19 @@ try {
   );
   await go(`/platform/topics/second-${tag}`);
   await page
+    .getByRole("main")
     .getByText(`Second topic public discussion ${tag}`, { exact: true })
     .waitFor();
   await page
     .getByRole("link", { name: "View post and comments", exact: true })
     .click();
   await page
+    .getByRole("main")
     .getByText(`Second topic public reply ${tag}`, { exact: true })
     .waitFor();
   await go(`/platform/topics/${slug}`);
   await page
+    .getByRole("region", { name: "Topic discussions", exact: true })
     .getByText(
       "No public discussions on this page yet. Join and accept the rules to start one.",
       { exact: true }
@@ -296,6 +299,7 @@ try {
     .getByRole("heading", { name, exact: true })
     .waitFor({ state: "hidden" });
   await page
+    .getByRole("main")
     .getByText(
       "Current topic access could not be confirmed. Reconnect and check again.",
       { exact: true }
@@ -318,6 +322,7 @@ try {
   await signIn(member);
   await go(`/platform/topics/${slug}`);
   await page
+    .getByRole("main")
     .getByLabel("I have read and accept the community rules shown above.", {
       exact: true
     })
@@ -328,6 +333,7 @@ try {
     .focus();
   await page.keyboard.press("Enter");
   await page
+    .getByRole("main")
     .getByText("You have joined and accepted the current rules.", {
       exact: true
     })
@@ -403,10 +409,12 @@ try {
   });
   await go(`/platform/topics/${slug}`);
   await page
+    .getByRole("main")
     .getByText(`Fictional browser discussion ${tag}`, { exact: true })
     .waitFor();
   await go("/platform/topics/following");
   await page
+    .getByRole("main")
     .getByText(`Fictional browser discussion ${tag}`, { exact: true })
     .waitFor();
   ok(
@@ -452,6 +460,7 @@ try {
   await signIn(member);
   await go(`/platform/topics/${slug}`);
   await page
+    .getByRole("main")
     .getByLabel("I agree to take on these responsibilities.", { exact: true })
     .check();
   await clickForm("Accept moderator role");
@@ -488,8 +497,12 @@ try {
   );
   await signIn(owner);
   await go(`/platform/topics/${slug}/manage`);
-  await page.getByText("Edit topic details and rules", { exact: true }).click();
   await page
+    .getByRole("main")
+    .getByText("Edit topic details and rules", { exact: true })
+    .click();
+  await page
+    .getByRole("main")
     .getByLabel("Community rules", { exact: true })
     .fill("Changed rules require fresh consent. Protect privacy.");
   const concurrent = await db.topicCommunity.findUniqueOrThrow({
@@ -509,12 +522,15 @@ try {
   await clickForm("Save topic details");
   await page
     .getByRole("button", {
-      name: "Discard local entries and reload current controls",
+      name: "Stop retrying and reload current information",
       exact: true
     })
     .waitFor();
   assert.equal(
-    await page.getByLabel("Community rules", { exact: true }).inputValue(),
+    await page
+      .getByRole("main")
+      .getByLabel("Community rules", { exact: true })
+      .inputValue(),
     "Changed rules require fresh consent. Protect privacy."
   );
   assert.equal(
@@ -525,12 +541,16 @@ try {
   page.once("dialog", (dialog) => dialog.accept());
   await page
     .getByRole("button", {
-      name: "Discard local entries and reload current controls",
+      name: "Stop retrying and reload current information",
       exact: true
     })
     .click();
-  await page.getByText("Edit topic details and rules", { exact: true }).click();
   await page
+    .getByRole("main")
+    .getByText("Edit topic details and rules", { exact: true })
+    .click();
+  await page
+    .getByRole("main")
     .getByLabel("Community rules", { exact: true })
     .fill("Changed rules require fresh consent. Protect privacy.");
   ok(
@@ -640,6 +660,7 @@ try {
   await page.setViewportSize({ width: 390, height: 844 });
   await go(`/platform/topics?q=missing-${tag}`);
   await page
+    .getByRole("main")
     .getByText("No topics match this search.", { exact: true })
     .waitFor();
   await page

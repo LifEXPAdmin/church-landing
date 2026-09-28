@@ -105,6 +105,7 @@ const { openAuthenticator, authenticatorTotp } =
 const routeErrors = [],
   scenarios = [],
   actors = [];
+const pendingRouteReleases = new Set();
 const button = (name) => page.getByRole("button", { name, exact: true });
 const topicUrl = (url) => url.pathname === "/api/platform/topics";
 const identityUrl = (url) =>
@@ -120,7 +121,7 @@ const poll = async (read, expected) => {
 };
 async function actor(label) {
   const tag = randomUUID().replaceAll("-", "").slice(0, 10),
-    username = "tr_" + label + "_" + tag,
+    username = "tr_" + label.slice(0, 8) + "_" + tag,
     password = "Fictional-only-" + randomUUID();
   const made = await registerAccount(db, {
     name: "Fictional topic " + label + " " + tag,
@@ -394,24 +395,53 @@ try {
   ({ form, slug } = await formFor(validation));
   await form.getByLabel("Community name", { exact: true }).fill("x".repeat(81));
   const corrected = [];
-  let preflightFailure = true;
-  await page.route(identityUrl, async (route) => {
-    if (preflightFailure) {
-      preflightFailure = false;
-      await route.fulfill({
-        status: 503,
-        json: { message: "Fictional preflight failure" }
-      });
-    } else await route.fallback();
+  await form.evaluate((element) => {
+    const originalFetch = window.fetch;
+    let wrappedFetch;
+    const cleanup = () => {
+      element.removeEventListener("submit", onSubmit, true);
+      if (window.fetch === wrappedFetch) window.fetch = originalFetch;
+      delete window.__topicPreflightCleanup;
+    };
+    const onSubmit = () => {
+      wrappedFetch = function (input, init) {
+        const url = new URL(
+          input instanceof Request ? input.url : String(input),
+          location.href
+        );
+        if (
+          url.pathname === "/api/platform/profile" &&
+          url.searchParams.get("view") === "identity"
+        ) {
+          cleanup();
+          window.__topicPreflightFailures++;
+          return Promise.resolve(
+            new Response(
+              JSON.stringify({ message: "Fictional preflight failure" }),
+              { status: 503, headers: { "Content-Type": "application/json" } }
+            )
+          );
+        }
+        return originalFetch.call(this, input, init);
+      };
+      window.fetch = wrappedFetch;
+    };
+    window.__topicPreflightFailures = 0;
+    window.__topicPreflightCleanup = cleanup;
+    element.addEventListener("submit", onSubmit, { capture: true, once: true });
   });
   await intercept(async (route) => {
     corrected.push(route.request().postData());
     await route.fallback();
   });
-  await start(form);
-  await waitMessage("Your sign-in could not be checked");
-  assert.equal(corrected.length, 0);
-  await page.unroute(identityUrl);
+  try {
+    await start(form);
+    await waitMessage("Your sign-in could not be checked");
+    assert.equal(corrected.length, 0);
+    assert.equal(await page.evaluate(() => window.__topicPreflightFailures), 1);
+  } finally {
+    await page.evaluate(() => window.__topicPreflightCleanup?.());
+  }
   const rejected = page.waitForResponse(
     (r) =>
       new URL(r.url()).pathname === "/api/platform/topics" &&
@@ -520,6 +550,7 @@ try {
   await waitMessage("Fictional uncertain follow");
   await topicCommand(db, member.token, {
     operation: "join",
+    desired: true,
     mutationId: randomUUID(),
     communityId: created.id,
     expectedVersion: 0,
@@ -533,12 +564,12 @@ try {
   );
   await retry();
   assert.equal((await responsePromise).status(), 409);
-  assert.equal(await button("Retry the same topic request").isEnabled(), true);
+  await poll(() => button("Retry the same topic request").isEnabled(), true);
   await db.topicMembership.update({
     where: {
       communityId_userId: { communityId: created.id, userId: member.id }
     },
-    data: { restrictedAt: new Date(), restrictionReason: "OTHER" }
+    data: { restrictedAt: new Date(), restrictionReason: "RULES" }
   });
   responsePromise = page.waitForResponse(
     (r) =>
@@ -558,7 +589,7 @@ try {
     0
   );
   await cancelStop();
-  assert.equal(await button("Retry the same topic request").isEnabled(), true);
+  await poll(() => button("Retry the same topic request").isEnabled(), true);
   page.once("dialog", async (d) => {
     assert.match(d.message(), /does not undo saved changes/);
     await d.accept();
@@ -630,6 +661,128 @@ try {
   ok(
     "Accepted receipt survives the navigation identity gap and continues only for the original account without a second POST"
   );
+  // Keep this document alive while the confirmed form's final identity read is held.
+  // A full document navigation would destroy the stale callback and miss the bug.
+  const departed = await actor("departed");
+  await challenge(departed);
+  ({ form, slug } = await formFor(departed));
+  const documentMarker = randomUUID();
+  await page.evaluate((marker) => {
+    window.__topicRecoveryDocument = marker;
+  }, documentMarker);
+  let departedCommitted = false,
+    departedPosts = 0,
+    heldRequest,
+    identityReady = false,
+    identityHandled = false,
+    releaseFinalIdentity;
+  const finalIdentityHold = new Promise((resolve) => {
+    releaseFinalIdentity = resolve;
+  });
+  pendingRouteReleases.add(releaseFinalIdentity);
+  await intercept(async (route) => {
+    departedPosts++;
+    const response = await route.fetch();
+    assert.ok([200, 202].includes(response.status()), await response.text());
+    departedCommitted = true;
+    await route.fulfill({ response });
+  });
+  await page.route(identityUrl, async (route) => {
+    if (
+      !departedCommitted ||
+      heldRequest ||
+      (await button("Continue after saved topic change").count()) !== 1
+    )
+      return route.fallback();
+    heldRequest = route.request();
+    try {
+      const response = await route.fetch({ timeout: 10000 });
+      assert.equal(response.status(), 200);
+      assert.equal((await response.json()).id, departed.id);
+      identityReady = true;
+      await finalIdentityHold;
+      await route.fulfill({ response });
+    } catch (error) {
+      routeErrors.push(error.message);
+      await route.abort().catch(() => {});
+    } finally {
+      identityHandled = true;
+    }
+  });
+  try {
+    await start(form);
+    await poll(() => identityReady, true);
+    assert.equal(departedPosts, 1);
+    assert.equal(await form.getAttribute("aria-busy"), "true");
+    const settings = page
+      .getByRole("banner")
+      .getByRole("link", { name: "Settings", exact: true });
+    assert.equal(await settings.getAttribute("href"), "/platform/settings");
+    await settings.click();
+    await page.waitForURL(config.origin + "/platform/settings", {
+      waitUntil: "commit"
+    });
+    await form.waitFor({ state: "detached" });
+    assert.equal(
+      await page.locator('form[aria-label="Create public topic"]').count(),
+      0
+    );
+    assert.equal(
+      await page.evaluate(() => window.__topicRecoveryDocument),
+      documentMarker,
+      "The actual Next Link must retain the document while unmounting the topic form"
+    );
+    const unexpectedTopicReads = [];
+    const observeTopicRead = (request) => {
+      if (new URL(request.url()).pathname === "/platform/topics/" + slug)
+        unexpectedTopicReads.push(request.method());
+    };
+    page.on("request", observeTopicRead);
+    try {
+      const finished = page.waitForEvent("requestfinished", {
+        predicate: (request) => request === heldRequest,
+        timeout: 10000
+      });
+      releaseFinalIdentity();
+      await finished;
+      await poll(() => identityHandled, true);
+      // Observe the completed response's promise continuation and any router push.
+      await page.waitForTimeout(500);
+      assert.equal(new URL(page.url()).pathname, "/platform/settings");
+      assert.equal(await form.count(), 0);
+      assert.equal(
+        await page.evaluate(() => window.__topicRecoveryDocument),
+        documentMarker
+      );
+      assert.deepEqual(unexpectedTopicReads, []);
+      assert.equal(departedPosts, 1);
+    } finally {
+      page.off("request", observeTopicRead);
+    }
+    const departedCounts = await counts(departed, slug);
+    assert.deepEqual(departedCounts, {
+      topics: 1,
+      createdAudits: 1,
+      receipts: 1
+    });
+    scenarios.push({
+      name: "unmounted-confirmed-navigation",
+      clientLink: "/platform/settings",
+      sameDocument: true,
+      formUnmountedBeforeIdentityRelease: true,
+      posts: departedPosts,
+      counts: departedCounts
+    });
+    ok(
+      "A held same-owner identity response after real client navigation cannot hijack the destination or repeat a confirmed topic save"
+    );
+  } finally {
+    releaseFinalIdentity();
+    if (heldRequest) await poll(() => identityHandled, true);
+    pendingRouteReleases.delete(releaseFinalIdentity);
+    await page.unroute(identityUrl);
+    await page.unroute(topicUrl);
+  }
   assert.deepEqual(errors, []);
   assert.deepEqual(external, []);
   assert.deepEqual(routeErrors, []);
@@ -686,6 +839,8 @@ try {
   );
   throw error;
 } finally {
+  for (const release of pendingRouteReleases) release();
+  await page.evaluate(() => window.__topicPreflightCleanup?.()).catch(() => {});
   await page.unrouteAll({ behavior: "wait" }).catch(() => {});
   await context.close();
   await browser.close();

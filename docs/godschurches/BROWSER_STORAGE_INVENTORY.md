@@ -1,3 +1,14 @@
+## Topic original recovery memory, 28 September 2026 UTC
+
+Locally verified source `c650e12` keeps the original account, serialized command,
+mutation key, versions and accepted receipt only in the mounted Topic form.
+Cooldown, uncertainty and current permission denials do not replace those bytes.
+Warned reload clears local recovery without undoing saved work. No persistent
+browser storage or new dependency was added. This bounded repair does not resolve
+wider Topic private fields retained in hidden DOM or serialized snapshots, nor
+survival across an account-changing component remount. Those privacy gates remain
+open. The combined profile/Topic batch is prepared, not merged or live.
+
 ## Profile editor memory and concealment, 28 September 2026 UTC
 
 Source `c338b0d` is locally verified, not merged or live. Private saved profile

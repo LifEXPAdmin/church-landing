@@ -203,9 +203,13 @@ export function TopicActionForm({
             }
           }
           setMessage(
-            error instanceof Error
-              ? error.message
-              : "The response was lost. Retry the same topic request."
+            error instanceof SocialClientError &&
+              error.status === 401 &&
+              !accepted.current
+              ? "Your sign-in changed. Return to the original account to retry this same topic request, or stop retrying and reload."
+              : error instanceof Error
+                ? error.message
+                : "The response was lost. Retry the same topic request."
           );
         } finally {
           flight.current = false;

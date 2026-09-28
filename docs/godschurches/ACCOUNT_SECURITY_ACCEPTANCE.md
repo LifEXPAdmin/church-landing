@@ -1,3 +1,56 @@
+## Topic original-request recovery locally verified, 28 September 2026 UTC
+
+Application `c650e128bf719ca82f01180237b04e14c3f18da2` combines the completed
+profile privacy work below with Topic recovery. It is **not merged or live**.
+On unchanged `c338b0d`, a real fictional create committed and lost its reply.
+A later HTTP429 removed the original retry control; the next click generated a
+new mutation key. The database still contained exactly one topic, CREATED audit
+and receipt. Atomic server replay was already correct.
+
+The mounted form now retains its original owner, request bytes, mutation key and
+versions through cooldown, unavailable responses, identity changes and current
+permission/version denials. Deliberate retry never rebases the request or bypasses
+current authority. A warned stop/reload discards only local recovery and does not
+undo saved changes. Valid cooldown metadata disables retries without submitting
+automatically. A confirmed receipt survives navigation settlement, requires the
+original current account, and cannot redirect after the form has unmounted.
+
+Only the first actual dispatched command's explicitly classified precommit
+HTTP400 rejection unlocks correction. Failed identity preflight does not count as
+a command attempt. Generic identity errors, later classified errors after an
+uncertain attempt and post-commit maintenance failures cannot prove rollback.
+The narrow Topic boundary classification applies only to parsing or a rejected
+atomic transaction; post-commit journal failure still returns an accepted receipt.
+
+All **eight new browser groups and 22 service groups** pass. The browser suite
+uses the real production-mode server with fictional enforced MFA, actual database
+commits/replays and explicitly identified injected transport errors. It verifies
+one effect, real409/403 enforcement, correction, cancel/confirmed reload, current
+account continuation and same-document navigation before a held identity reply.
+390px and 320px enlarged-text screenshots were inspected; controls remain
+keyboard reachable. Nine new service groups cover response provenance, rollback,
+replay, permissions and post-commit journal failure; thirteen existing Topic
+groups pass. All 51 profile browser groups also pass on this combined candidate.
+The 12-group legacy Topic suite and its HTTPS boundary check pass in their
+original isolated MFA-off contract; the new eight-group suite passed with MFA
+enforced. Legacy text/label assertions now target the actual main content rather
+than hidden stream templates. Its stale-edit assertion uses the new warned
+stop/reload control. These harness corrections preserve the required outcomes.
+
+Build `dGi_h0j4oCQxL76jb7XoX` passed in **42.483 seconds**, preserving all **2,085
+tracked source hashes**; types, lint, copy/security gates and CI `36389117429`
+pass. Subsequent changes in the browser harness correct test targeting, required
+fictional command fields, response-settlement waits and username limits; all
+failed attempts remain in private evidence. No application fix was hidden in
+those harness changes. A mistaken photo-suite filename is also preserved as a
+runner failure, never counted as a pass.
+
+The prepared .40 batch adds user-facing release notes and final combined gates.
+Production remains .39/`7fb9da5`, with no production migration, test write or send.
+The schema and recovery code are unchanged. Wider Topic DOM/SSR concealment,
+account-changing remount behavior and owner/provider/device/pilot gates remain
+open; these tests establish original recovery only while its form is mounted.
+
 ## Profile editor privacy locally verified, 28 September 2026 UTC
 
 Application `c338b0d9326766abd89ca5118745403fee2b5f98` is implemented and

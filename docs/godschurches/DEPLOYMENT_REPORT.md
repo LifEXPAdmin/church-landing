@@ -1,3 +1,19 @@
+## Profile privacy and Topic recovery batch prepared, 28 September 2026 UTC
+
+The completed profile privacy work and Topic original-request recovery are
+combined locally in application `c650e12`. Topic recovery passes eight new browser
+groups and 22 service groups; all 51 profile browser groups, the 12-group legacy
+Topic browser suite and its HTTPS boundary check also pass. Build `dGi_h0j4oCQxL76jb7XoX` passed in 42.483 seconds with
+2,085 unchanged tracked hashes, and CI `36389117429` passed. The retained profile
+acceptance and [security report](ACCOUNT_SECURITY_ACCEPTANCE.md) preserve exact
+scope, source reuse, fixture corrections and open gates.
+
+Version .40 is prepared for final combined checks and one meaningful publication.
+It is **not merged or live**. Production remains .39/`7fb9da5`; all 123 migrations
+are unchanged. No production migration, test write, send or deployment occurred
+for this prepared batch. Broader Topic private DOM/SSR and real owner/provider/
+device acceptance remain open.
+
 ## Profile editor privacy locally verified, 28 September 2026 UTC
 
 Application `c338b0d9326766abd89ca5118745403fee2b5f98` is implemented and

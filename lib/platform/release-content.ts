@@ -1048,6 +1048,14 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "profile-privacy-and-topic-recovery", version: "2026.09.28.40", date: "2026-09-28",
+    summary: "Keep profile edits private during access checks and recover uncertain topic changes without losing the original request.",
+    added: [],
+    improved: ["Profile fields and photos leave the screen while current access is uncertain. Returning to the original account restores local edits, selected photos, event choices and appearance settings for review."],
+    fixed: ["The first profile event, participation or color choice now stays selected. Uncertain profile and topic saves retain their original request through temporary failures. Topic cooldowns show when a deliberate retry is available, and stopping recovery warns that a change may already be saved."],
+    featureIds: ["profile", "profile-photos", "profile-selected-event", "topic-communities"]
+  },
+  {
     id: "artist-releases-and-session-inactivity", version: "2026.09.28.39", date: "2026-09-28",
     summary: "Explore artist profiles and external music releases, with clearer protection for inactive sign-ins.",
     added: ["Create a useful artist profile, invite explicitly scoped editors, publish reviewed release links, follow artists and request organizer-approved event appearances."],
