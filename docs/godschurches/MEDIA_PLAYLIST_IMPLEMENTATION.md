@@ -1,5 +1,37 @@
 # Saved media and ordered playlists
 
+## Tested handoff, 28 September 2026 UTC
+
+The candidate is tested and ready for release-owner integration. Application
+commit `99c764c1ec8c3f0ac5d12bb8123fa797fd373d68` follows implementation commit
+`0036456ac7ea832e63fd2ee9e7533a3b69bb6ab5`. The separately reviewed Scripture
+checkpoint is a dependency, not a new change attributed to this feature.
+The following final evidence supersedes the earlier pending checkpoints below:
+
+- Production build `_t4TpBxJ6zAUW-NYI4Se_` passed, with all 1,220 application
+  source hashes matching the tested snapshot. Hydration, 246 runtime traces,
+  source and built-secret checks passed. No package dependency was added.
+- All 15 actual Chrome production-browser groups passed with no page errors or
+  provider requests, including uncertain creates across later denials, private
+  account changes, keyboard pagination and current church manager/editor proof.
+- All 89 combined service/API groups passed with no failures or skips. This
+  includes all three playlist HTTPS groups with enforced church MFA, catalog,
+  Scripture, media cards, account export, retention controls and maintenance,
+  actual protected restoration, navigation and resource-owner regressions.
+- The populated migration, 161-table actual restore, 121 matching migration
+  checksums, old-client probe and newer playlist/save removal replay passed as
+  described below. The final sparse-page payload was 17,397 bytes in 11 queries.
+- Exact application-source CI [36367240249](https://github.com/LifEXPAdmin/church-landing/actions/runs/36367240249) passed.
+  Focused lint, TypeScript, copy and source-security checks also passed.
+
+Migration 121 SHA256 is
+`102307db910767972db07752908dbefb6879fba0ad0286a4b8938cbcc6415e51`.
+The tested runtime, original failed receipts and final evidence are preserved
+privately. Integration, combined release verification, production migration and
+live checks remain with the designated release owner. This builder made zero
+main-branch changes, production migrations, deployments or real provider sends.
+Playback progress, supported-player and real operator/policy acceptance remain open.
+
 ## Candidate scope
 
 This isolated candidate implements private saved media and finite personal and
