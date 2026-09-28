@@ -1,3 +1,48 @@
+## Topic creation privacy locally verified, 28 September 2026 UTC
+
+Application `3daddc635c932f9fae4230a7ed839ed307a16745` is implemented and
+locally tested, **not merged or live**. On unchanged .40 source, four defects
+were reproduced: concealed inputs retained private text in DOM, an actual
+account-changing server refresh discarded the draft, a held accepted reply
+navigated while concealed, and a queued access read revealed controls after blur.
+
+Creation now reads eligibility after hydration and omits private form controls
+from initial HTML. The original controller survives account-changing server
+refreshes above the account-keyed shell. Concealment removes controls while draft
+fields, consent, immutable request bytes and accepted receipt remain in memory.
+An access generation prevents stale reads and late replies from revealing or
+navigating. Returning to the original account requires fresh access; uncertain
+saves retain their original request and require deliberate retry with current
+authority. Warned reload explains that clearing local work cannot undo a save.
+
+All **29 browser groups, 22 service groups and one production-mode HTTPS group**
+passed. Nine new groups cover complete-field restoration, actual native tab blur,
+unavailable identity, same-document A-to-B-to-A server refresh, queued reads,
+keyboard warnings, 320px and 390px widths, 200 percent text, account denial, late
+accepted continuation and real committed lost-reply replay with one topic, audit
+and receipt. The existing eight recovery and 12 Topic interface groups also pass.
+New privacy and recovery suites use enforced fictional MFA; the legacy Topic
+suite uses its existing isolated MFA-off contract. Physical-device acceptance is
+not implied. Browser errors, external requests and route-handler errors are zero.
+
+Build `BsQ_DIuKjNhTbj_4Q8kNP` passed in **45.251 seconds**, retaining all
+**2,087 tracked source hashes**. Exact application-source CI `36394070310` passed.
+Only the new QA script changed after that build. Its corrections pair synthetic
+pagehide with pageshow, use actual native focus evidence and existing Topic
+navigation warnings, bound refresh waits, and renew the consumed fictional MFA
+proof before retry. Failed runs are retained and are not passing evidence.
+The installed framework confirmed why an unmatched synthetic pagehide forced a
+full reload; no application workaround was added. A focused account denial also
+passed without the additional callback proposed during review.
+
+The creation route retains 19 JavaScript files. Summed local gzip sizes increase
+from 213,573 to 215,342 bytes, including shared files. This is a 1,769-byte bundle
+cost, not a network latency or capacity claim. No dependency, migration, persistent
+browser store or background worker was added. Production remains .40; this slice
+made no production writes, sends or deployments. Management and private Topic
+list DOM/SSR privacy remain the next reproduction scope. Wider security and real
+owner/provider/device acceptance remain open.
+
 ## Profile privacy and Topic recovery verified live, 28 September 2026 UTC
 
 Version **2026.09.28.40** is implemented, tested, merged and verified live.

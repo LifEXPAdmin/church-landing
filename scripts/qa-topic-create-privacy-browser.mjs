@@ -75,6 +75,14 @@ page.on("pageerror", (error) => errors.push(error.message));
 const ok = (message) => {
   results.push(message);
   console.log("PASS " + message);
+  writeFileSync(
+    output + "/progress.json",
+    JSON.stringify(
+      { at: new Date().toISOString(), results, scenarios },
+      null,
+      2
+    )
+  );
 };
 const signIn = async (actor) => {
   await context.clearCookies();
@@ -98,7 +106,6 @@ const go = async (path) => {
 const { registerAccount, loginAccount } =
   await import("../lib/platform/accounts.ts");
 const { ADULT_POLICY } = await import("../lib/platform/portal-types.ts");
-const { topicCommand } = await import("../lib/platform/topic-communities.ts");
 const { privilegedAuthenticatorCommand } =
   await import("../lib/platform/privileged-auth.ts");
 const { openAuthenticator, authenticatorTotp } =
@@ -231,9 +238,6 @@ async function retry() {
   if (await direct.isVisible()) await direct.click();
   else await button("Confirm original request").click();
 }
-async function waitMessage(text) {
-  await page.getByRole("status").filter({ hasText: text }).first().waitFor();
-}
 async function intercept(handler) {
   await page.route(topicUrl, async (route) => {
     if (route.request().method() !== "POST") return route.fallback();
@@ -264,14 +268,6 @@ async function saved(slug) {
   });
   await page.getByRole("heading", { level: 1 }).waitFor();
 }
-async function cancelStop() {
-  page.once("dialog", async (dialog) => {
-    assert.match(dialog.message(), /may already be saved/);
-    await dialog.dismiss();
-  });
-  await button("Stop retrying and reload current information").click();
-}
-
 async function forwarded(route) {
   const request = route.request(),
     url = new URL(request.url());
@@ -346,12 +342,22 @@ async function resume() {
 async function refreshAs(owner) {
   await signIn(owner);
   const completed = Promise.withResolvers();
+  const requests = [];
+  const observe = (r) =>
+    requests.push({
+      path: new URL(r.url()).pathname,
+      rsc: r.headers().rsc ?? null,
+      method: r.method()
+    });
+  page.on("request", observe);
   let handled = false;
+  let phase = "awaiting RSC request";
   const match = (u) => u.pathname === "/platform/topics/new";
   const handler = async (route) => {
     if (handled || route.request().headers().rsc !== "1")
       return route.fallback();
     handled = true;
+    phase = "forwarding RSC";
     try {
       const r = await forwarded(route);
       assert.equal(r.status, 200);
@@ -360,7 +366,9 @@ async function refreshAs(owner) {
         r.body.toString("utf8").includes(owner.id),
         "RSC must identify the actual cookie owner"
       );
+      phase = "fulfilling RSC";
       await route.fulfill(r);
+      phase = "RSC fulfilled";
       completed.resolve({
         owner: owner.id,
         bytes: r.body.length,
@@ -379,9 +387,27 @@ async function refreshAs(owner) {
         throw Error("Actual Next router required");
       window.next.router.refresh();
     });
-    const receipt = await completed.promise;
+    let timer;
+    const receipt = await Promise.race([
+      completed.promise,
+      new Promise((_, reject) => {
+        timer = setTimeout(
+          () => reject(Error("Account refresh did not settle: " + phase)),
+          25000
+        );
+      })
+    ]).finally(() => clearTimeout(timer));
     scenarios.push({ name: "actual-owner-rsc", ...receipt });
   } finally {
+    writeFileSync(
+      output + "/refresh-" + owner.id + ".json",
+      JSON.stringify(
+        { at: new Date().toISOString(), phase, requests, url: page.url() },
+        null,
+        2
+      )
+    );
+    page.off("request", observe);
     await page.unroute(match, handler);
   }
 }
@@ -402,27 +428,65 @@ try {
   for (const event of ["blur", "pagehide", "offline"]) {
     await pulse(event);
     await absent();
-    await resume();
+    if (event === "pagehide") {
+      // A restored document receives pageshow. Next also uses that event to
+      // renew the navigation request controller aborted by pagehide.
+      await pulse("pageshow");
+      await page.locator(formSelector).waitFor();
+    } else await resume();
     assert.deepEqual(await values(), draft);
   }
   ok(
     "Initial HTML excludes private create controls; text, rules, address and acceptance survive blur, pagehide and offline with zero concealed form elements"
   );
   if (process.env.TOPIC_PRIVACY_HEADFUL === "1") {
-    const background = await context.newPage();
-    await background.goto("about:blank");
-    await background.bringToFront();
-    await poll(() => page.evaluate(() => document.visibilityState), "hidden");
-    await absent();
     await page.bringToFront();
-    await page.locator(formSelector).waitFor();
-    assert.deepEqual(await values(), draft);
-    await background.close();
-    scenarios.push({
-      name: "native-browser-tab-concealment",
-      passed: true,
-      physicalDevice: false
+    await page.getByLabel("Community name", { exact: true }).focus();
+    await page.evaluate(() => {
+      window.__topicNativeBlur = 0;
+      window.addEventListener("blur", (event) => {
+        if (event.isTrusted) window.__topicNativeBlur++;
+      });
     });
+    const away = await context.newPage();
+    const foreground = await context.newCDPSession(page);
+    const background = await context.newCDPSession(away);
+    try {
+      await foreground.send("Emulation.setFocusEmulationEnabled", {
+        enabled: false
+      });
+      await background.send("Emulation.setFocusEmulationEnabled", {
+        enabled: false
+      });
+      await page.bringToFront();
+      await page.waitForFunction(() => document.hasFocus());
+      await page.locator(formSelector).waitFor();
+      await page.evaluate(() => {
+        window.__topicNativeBlur = 0;
+      });
+      await away.bringToFront();
+      await page.waitForFunction(() => !document.hasFocus(), undefined, {
+        polling: 100
+      });
+      assert.ok(await page.evaluate(() => window.__topicNativeBlur > 0));
+      await absent();
+      await page.bringToFront();
+      await page.locator(formSelector).waitFor();
+      assert.deepEqual(await values(), draft);
+      scenarios.push({
+        name: "native-browser-tab-concealment",
+        passed: true,
+        physicalDevice: false
+      });
+    } finally {
+      await foreground.send("Emulation.setFocusEmulationEnabled", {
+        enabled: true
+      });
+      await foreground.detach();
+      await background.detach();
+      await away.close();
+      await page.bringToFront();
+    }
   }
   await pulse("blur");
   await absent();
@@ -557,9 +621,13 @@ try {
     .focus();
   await page.keyboard.press("Enter");
   await page
-    .getByRole("dialog", { name: "Keep your unsaved changes?", exact: true })
+    .getByRole("status")
+    .filter({
+      hasText:
+        "Finish, retry or discard these local topic entries before leaving."
+    })
     .waitFor();
-  await button("Keep editing").click();
+  assert.equal(new URL(page.url()).pathname, "/platform/topics/new");
   assert.deepEqual(await values(), draft);
   await pulse("blur");
   await absent();
@@ -588,7 +656,9 @@ try {
   };
   page.on("request", focusedObserver);
   await signIn(b);
-  await start(form);
+  // Exercise the submit-time identity check before a pointer gesture's separate
+  // session check can conceal the form. This is an explicitly synthetic submit.
+  await page.locator(formSelector).evaluate((node) => node.requestSubmit());
   await absent();
   assert.equal(focusedPosts, 0);
   await signIn(focused);
@@ -681,6 +751,14 @@ try {
   await intercept(async (route) => {
     bodies.push(route.request().postData());
     const r = await forwarded(route);
+    scenarios.push({
+      name: "uncertain-create-response",
+      attempt: bodies.length,
+      status: r.status,
+      requestSha256: createHash("sha256")
+        .update(route.request().postData())
+        .digest("hex")
+    });
     assert.ok([200, 202].includes(r.status));
     if (!lost) {
       lost = true;
@@ -713,6 +791,9 @@ try {
     uncertainDoc
   );
   assert.equal(bodies.length, 1);
+  // The first committed privileged command consumed its proof. Recovery still
+  // requires fresh current authority before replaying the immutable request.
+  await challenge(uncertain);
   await retry();
   await saved(slug);
   assert.equal(bodies.length, 2);
@@ -781,7 +862,15 @@ try {
         actors,
         errors,
         external,
-        routeErrors
+        routeErrors,
+        browserState: {
+          url: page.url(),
+          text: await page
+            .getByRole("main")
+            .innerText()
+            .catch(() => "unavailable"),
+          fields: await values().catch(() => [])
+        }
       },
       null,
       2

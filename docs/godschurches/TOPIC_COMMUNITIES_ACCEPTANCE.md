@@ -1,5 +1,19 @@
 # Topic communities acceptance
 
+## Creation privacy locally verified, 28 September 2026 UTC
+
+Topic creation source `3daddc6` is implemented and tested, **not merged or live**.
+Draft fields, public-rule consent and original save requests survive concealment
+and actual account-changing server refreshes. Private inputs leave DOM and are
+not present in initial HTML. Late replies require current access and deliberate
+continuation; lost replies replay one immutable request with one saved effect.
+
+All 29 browser, 22 service and one HTTPS groups pass, including the existing
+creation, joining, follow, management and canonical-post interfaces. Exact build
+and CI pass. [Security acceptance](ACCOUNT_SECURITY_ACCEPTANCE.md) records
+reproductions, fixture corrections, measured bundle cost and remaining gates.
+Management and private-list privacy remain open. Production remains .40.
+
 ## Original-request recovery verified live, 28 September 2026 UTC
 
 Version .40, source `4a540cfeea2b5e86f4c83b60272fa2360bf80879`, is implemented,

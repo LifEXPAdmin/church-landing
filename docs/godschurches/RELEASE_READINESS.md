@@ -1,3 +1,14 @@
+## Topic creation privacy prepared, 28 September 2026 UTC
+
+Application `3daddc6` is implemented and locally tested, **not merged or live**.
+The creation privacy slice passes 29 browser, 22 service and one HTTPS groups,
+production build and exact-source CI. [Security acceptance](ACCOUNT_SECURITY_ACCEPTANCE.md)
+records unchanged-source build evidence and subsequent QA-only corrections.
+It adds no migration or dependency and will join a completed compatible batch.
+Production remains .40/`4a540cf`; no intermediate deployment occurred. Management
+and private-list privacy, final combined release checks and live acceptance remain
+open. Existing recovery evidence must be checked at its actual validity time.
+
 ## Profile privacy and Topic recovery verified live, 28 September 2026 UTC
 
 Version **2026.09.28.40** is implemented, tested, merged and verified live.

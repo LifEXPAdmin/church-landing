@@ -1,3 +1,14 @@
+## Topic creation memory boundary, 28 September 2026 UTC
+
+Locally tested source `3daddc6` removes concealed creation inputs and keeps private
+controls out of initial HTML. The complete draft, original owner, immutable save
+request and accepted receipt stay in mounted memory across account-changing
+server refreshes. Rechecks never rebase an uncertain request. Warned reload clears
+local work and does not undo saved changes. No persistent store or new dependency
+was added. The 29 browser groups and supporting gates are recorded in
+[security acceptance](ACCOUNT_SECURITY_ACCEPTANCE.md). This slice is not merged
+or live; management and private-list privacy remain open.
+
 ## Profile and Topic memory boundaries verified live, 28 September 2026 UTC
 
 The .40 batch is implemented, tested, merged and verified live as `4a540cf` in

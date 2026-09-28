@@ -1,3 +1,16 @@
+## Topic creation privacy locally verified, 28 September 2026 UTC
+
+Application `3daddc6` completes the locally tested Topic creation privacy slice.
+All 29 browser, 22 service and one HTTPS groups pass, as do exact-source build and
+CI. Private inputs disappear while concealed; full drafts and immutable requests
+survive account-changing refresh and safe retry. [Security acceptance](ACCOUNT_SECURITY_ACCEPTANCE.md)
+records the four reproductions, exact evidence, test corrections and scope.
+
+This work is **not merged or live** and awaits a compatible completed batch.
+Production remains .40/`4a540cf`. No production migration, test write, send or
+intermediate deployment occurred. Next: reproduce management and private Topic
+list privacy boundaries. Wider security and owner/provider/device gates stay open.
+
 ## Profile privacy and Topic recovery verified live, 28 September 2026 UTC
 
 Version **2026.09.28.40** is implemented, tested, merged and verified live.
