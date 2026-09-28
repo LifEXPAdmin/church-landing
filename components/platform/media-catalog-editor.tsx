@@ -16,6 +16,21 @@ import { catalogSource } from "@/lib/platform/media-catalog-sources";
 import { socialRequest, SocialClientError } from "@/lib/platform/social-client";
 import { useUnsavedSocialWork } from "./use-unsaved-social-work";
 import type { MediaFields } from "@/lib/platform/media-catalog-input";
+import {
+  normalizeScripture,
+  scriptureLabel
+} from "@/lib/platform/media-scripture";
+import {
+  SCRIPTURE_REGISTRY_VERSION,
+  scriptureSystems,
+  scriptureBooks
+} from "@/lib/platform/scripture-registry";
+type ScriptureDraft = {
+  systemId: string;
+  text: string;
+  originals?: string[];
+  referenceVersion?: string;
+};
 const empty: MediaFields = {
   title: "",
   description: "",
@@ -29,6 +44,7 @@ const empty: MediaFields = {
   series: "",
   sequence: null,
   topics: [],
+  scriptureRanges: [],
   recordedOn: null,
   details: null,
   sourceUrl: null,
@@ -60,6 +76,7 @@ export function MediaEditor({
 }) {
   const [activeId, setActiveId] = useState(id),
     [f, setFields] = useState<MediaFields>(empty),
+    [scriptureDrafts, setScriptureDrafts] = useState<ScriptureDraft[]>([]),
     [church, setChurch] = useState<string | null>(null),
     [version, setVersion] = useState(0),
     [state, setState] = useState("DRAFT"),
@@ -85,6 +102,14 @@ export function MediaEditor({
   const conflict = !!(data?.item && loaded && data.item.version !== version),
     concealed = owner !== originalOwner.current || !data || !loaded || removed;
   function load(item?: Item) {
+    setScriptureDrafts(
+      (item?.scriptureRanges ?? []).map((r) => ({
+        systemId: r.referenceSystemId,
+        text: r.originals.join(";"),
+        originals: r.originals,
+        referenceVersion: r.referenceVersion
+      }))
+    );
     if (item) {
       setFields(
         Object.fromEntries(
@@ -124,6 +149,26 @@ export function MediaEditor({
     setAck(false);
     setRightsReviewed(false);
   };
+  const changeScripture = (next: ScriptureDraft[]) => {
+    setScriptureDrafts(next);
+    change({});
+  };
+  let scriptureRanges: MediaFields["scriptureRanges"] = [],
+    scriptureProblem = "";
+  try {
+    scriptureRanges = normalizeScripture(
+      scriptureDrafts
+        .filter((r) => r.text.trim() || r.systemId)
+        .map((r) => ({
+          referenceSystemId: r.systemId,
+          referenceVersion: r.referenceVersion ?? SCRIPTURE_REGISTRY_VERSION,
+          originals: r.originals ?? [r.text]
+        }))
+    );
+  } catch (e) {
+    scriptureProblem =
+      e instanceof Error ? e.message : "Check the Scripture references.";
+  }
   let source: ReturnType<typeof catalogSource> = null,
     sourceProblem = "";
   try {
@@ -146,6 +191,10 @@ export function MediaEditor({
         setMessage(sourceProblem);
         return;
       }
+      if (["save", "publish"].includes(operation) && scriptureProblem) {
+        setMessage(scriptureProblem);
+        return;
+      }
       if (["save", "publish"].includes(operation) && source && !ack) {
         setMessage(
           "Acknowledge the displayed source and audience before saving."
@@ -163,6 +212,7 @@ export function MediaEditor({
         Object.assign(payload, {
           fields: {
             ...f,
+            scriptureRanges,
             languageIds: f.languageIds.filter((x) => x.trim()),
             speakers: f.speakers.filter((x) => x.trim()),
             topics: f.topics.filter((x) => x.trim()),
@@ -266,9 +316,11 @@ export function MediaEditor({
       {concealed && !removed && (
         <MediaReadNotice error={error} reload={reload} />
       )}
-      <p role="status" className="whitespace-pre-wrap">
-        {message}
-      </p>
+      {(!concealed || removed) && (
+        <p role="status" className="whitespace-pre-wrap">
+          {message}
+        </p>
+      )}
       {retry && (
         <button
           className="gc-button"
@@ -285,8 +337,8 @@ export function MediaEditor({
             Return to publishing studio
           </Link>
         </p>
-      ) : (
-        <div hidden={concealed}>
+      ) : !concealed ? (
+        <div>
           {conflict && (
             <p role="alert" className="rounded-xl border p-4">
               The saved item changed. Your unsent entries are preserved. Discard
@@ -351,6 +403,123 @@ export function MediaEditor({
                   onChange={(e) => change({ description: e.target.value })}
                 />
               </label>
+              <section
+                aria-label="Scripture tags"
+                className="space-y-3 rounded-lg border p-4"
+              >
+                <h2 className="text-lg font-semibold">Scripture passages</h2>
+                <p>
+                  Optional publisher-supplied tags. Choose the numbering used by
+                  the recording. Systems are searched separately; no translation
+                  or reading history is collected.
+                </p>
+                <p>
+                  Use full book names, such as John 3:16-18 or 1 John 3.
+                  Separate passages with semicolons.
+                </p>
+                {scriptureDrafts.map((r, index) => (
+                  <div key={index} className="space-y-2 rounded-lg border p-3">
+                    <label className="block">
+                      Reference system {index + 1}
+                      <select
+                        className={fieldClass}
+                        value={r.systemId}
+                        onChange={(e) =>
+                          changeScripture(
+                            scriptureDrafts.map((v, i) =>
+                              i === index
+                                ? {
+                                    ...v,
+                                    systemId: e.target.value,
+                                    referenceVersion: SCRIPTURE_REGISTRY_VERSION
+                                  }
+                                : v
+                            )
+                          )
+                        }
+                      >
+                        <option value="">Choose explicitly</option>
+                        {scriptureSystems.map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {s.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="block">
+                      Passage text {index + 1}
+                      <textarea
+                        className={fieldClass}
+                        value={r.text}
+                        maxLength={4000}
+                        rows={2}
+                        onChange={(e) =>
+                          changeScripture(
+                            scriptureDrafts.map((v, i) =>
+                              i === index
+                                ? {
+                                    ...v,
+                                    text: e.target.value,
+                                    originals: undefined,
+                                    referenceVersion: SCRIPTURE_REGISTRY_VERSION
+                                  }
+                                : v
+                            )
+                          )
+                        }
+                      />
+                    </label>
+                    {r.systemId && (
+                      <details>
+                        <summary>Supported book names and IDs</summary>
+                        <p className="mt-2">
+                          {scriptureBooks(r.systemId)
+                            .map((b) => `${b.name} (${b.id})`)
+                            .join(", ")}
+                        </p>
+                      </details>
+                    )}
+                    <button
+                      type="button"
+                      className="gc-button gc-button-quiet"
+                      onClick={() =>
+                        changeScripture(
+                          scriptureDrafts.filter((_, i) => i !== index)
+                        )
+                      }
+                    >
+                      Remove passage entry {index + 1}
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  className="gc-button gc-button-quiet"
+                  disabled={scriptureDrafts.length >= 20}
+                  onClick={() =>
+                    changeScripture([
+                      ...scriptureDrafts,
+                      { systemId: "", text: "" }
+                    ])
+                  }
+                >
+                  Add Scripture passage
+                </button>
+                {scriptureProblem ? (
+                  <p role="alert">{scriptureProblem}</p>
+                ) : (
+                  scriptureRanges.length > 0 && (
+                    <div aria-label="Normalized Scripture tags">
+                      <p>Searchable passages:</p>
+                      <ul className="list-disc pl-5">
+                        {scriptureRanges.map((r, i) => (
+                          <li key={i}>{scriptureLabel(r)}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )
+                )}
+              </section>
               <div className="grid gap-4 sm:grid-cols-2">
                 <label>
                   Format
@@ -790,7 +959,7 @@ export function MediaEditor({
             </fieldset>
           </form>
         </div>
-      )}
+      ) : null}
     </section>
   );
 }

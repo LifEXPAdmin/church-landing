@@ -1,5 +1,23 @@
 ## Session isolation and media catalog verified live, 28 September 2026 UTC
 
+## Scripture passage search local checkpoint, 28 September 2026 UTC
+
+The next media increment implements explicit, versioned Scripture tags and
+permission-filtered overlap search. It is locally verified, not merged or live.
+Production remains .35 at source `0af8462131ca12ff262b5ebc4b3ee54c5f5d6455`.
+
+All 32 parser/media service groups and nine actual HTTPS development-browser
+groups pass. Reproduced original-input drift and concealed DOM retention are
+repaired; original requests survive uncertain saves and account changes. Four
+320-pixel keyboard captures at normal/doubled text sizes verified the measured
+navigation focus margin. No production application writes or external sends.
+
+Additive migration `20260928005500_media_scripture` was applied only to isolated
+fixtures and preserved 205 prior media fingerprints. Build, combined integration,
+compatible recovery and live acceptance remain open. The previous .35 recovery
+adapter cannot clear this new field and is not an activated-tag fallback.
+See [the implementation and evidence limits](MEDIA_SCRIPTURE_SEARCH.md).
+
 The host-bound session transition and curated media catalog with post cards are
 **implemented, tested, merged and verified live** in one **2026.09.27.35** batch.
 Source `0af8462131ca12ff262b5ebc4b3ee54c5f5d6455` is READY and independently

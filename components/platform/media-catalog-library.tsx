@@ -5,6 +5,7 @@ import { socialRequest } from "@/lib/platform/social-client";
 import { useReadVisibility } from "./read-visibility";
 import { mediaFormatNames } from "@/lib/platform/media-catalog-options";
 import type { MediaPublic } from "@/lib/platform/media-catalog-reads";
+import { scriptureSystems } from "@/lib/platform/scripture-registry";
 export function useMediaRead<T>(url: string, owner: string | null) {
   const parent = useReadVisibility(),
     [snapshot, setSnapshot] = useState<{
@@ -261,6 +262,34 @@ export function MediaLibrary({
               maxLength={40}
             />
           </label>
+          <label>
+            Scripture reference system
+            <select
+              name="referenceSystem"
+              className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-base text-slate-900"
+            >
+              <option value="">Choose for passage search</option>
+              {scriptureSystems.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Scripture passage
+            <input
+              name="scripture"
+              maxLength={4000}
+              placeholder="John 3:16-18"
+              className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-base text-slate-900"
+            />
+          </label>
+          <p className="text-sm sm:col-span-2">
+            Passage search matches overlapping publisher-supplied tags in the
+            chosen reference system. For multiple passages, use full book names
+            separated by semicolons.
+          </p>
           <button className="gc-button self-end" type="submit">
             Search media
           </button>

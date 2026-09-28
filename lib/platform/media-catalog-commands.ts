@@ -101,6 +101,20 @@ export function mediaCatalogCommand(
         const fields = mediaFields(input.fields);
         if (
           row &&
+          Array.isArray(row.scriptureRanges) &&
+          row.scriptureRanges.length &&
+          !(
+            input.fields &&
+            typeof input.fields === "object" &&
+            Object.hasOwn(input.fields, "scriptureRanges")
+          )
+        )
+          throw new PortalError(
+            409,
+            "This media has Scripture tags. Reload the current editor before saving so those tags are preserved."
+          );
+        if (
+          row &&
           row.format !== fields.format &&
           !(
             input.fields &&
@@ -221,6 +235,7 @@ export function mediaCatalogCommand(
             series: "",
             sequence: null,
             topics: [],
+            scriptureRanges: [],
             languageIds: [],
             details: Prisma.JsonNull,
             attribution: "",

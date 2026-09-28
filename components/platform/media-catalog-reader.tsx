@@ -3,6 +3,10 @@ import { useEffect, useRef, useState } from "react";
 import { socialRequest } from "@/lib/platform/social-client";
 import type { MediaPublic } from "@/lib/platform/media-catalog-reads";
 import {
+  scriptureLabel,
+  type ScriptureRange
+} from "@/lib/platform/media-scripture";
+import {
   MediaNavigation,
   MediaReadNotice,
   useMediaRead
@@ -62,6 +66,23 @@ export function MediaReader({
             </p>
           </header>
           <p className="whitespace-pre-wrap">{item.description}</p>
+          {Array.isArray(item.scriptureRanges) &&
+            item.scriptureRanges.length > 0 && (
+              <section aria-label="Scripture passages">
+                <h2 className="text-lg font-semibold">Scripture passages</h2>
+                <p className="text-sm">
+                  Publisher-supplied tags; numbering systems are not
+                  automatically converted.
+                </p>
+                <ul className="mt-2 list-disc pl-5">
+                  {(item.scriptureRanges as unknown as ScriptureRange[]).map(
+                    (r, i) => (
+                      <li key={i}>{scriptureLabel(r)}</li>
+                    )
+                  )}
+                </ul>
+              </section>
+            )}
           <dl className="grid gap-3 sm:grid-cols-2">
             {[
               [
