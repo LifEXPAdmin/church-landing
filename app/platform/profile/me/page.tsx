@@ -3,11 +3,9 @@ import { photoLibraryEnabled } from "@/lib/platform/personal-photo-policy";
 import type { Metadata } from "next";
 import { GuestAccountPrompt } from "@/components/platform/guest-account-prompt";
 import { PlatformShell } from "@/components/platform/platform-shell";
-import { ProfileEditor } from "@/components/platform/profile-editor";
-import { readProfileEditor } from "@/lib/platform/profile-session";
+import { ProfilePrivateWorkspace } from "@/components/platform/profile-private-workspace";
 import { getCurrentPlatformUser } from "@/lib/platform/session";
 import { accountReasons } from "@/lib/platform/account-entry";
-import { PortalError } from "@/lib/platform/portal";
 import { createHash } from "node:crypto";
 import { PrivateSnapshotGuard } from "@/components/platform/private-snapshot-guard";
 export async function generateMetadata(): Promise<Metadata> {
@@ -49,30 +47,18 @@ export default async function EditProfilePage({
         <GuestAccountPrompt next={next} reason="profile" />
       </PlatformShell>
     );
-  let profile;
-  try {
-    profile = await readProfileEditor();
-  } catch (error) {
-    if (error instanceof PortalError && error.status === 401)
-      return (
-        <PlatformShell user={null}>
-          <GuestAccountPrompt next={next} reason="profile" />
-        </PlatformShell>
-      );
-    throw error;
-  }
   return (
     <PlatformShell user={user}>
       <section className="container-shell py-8 sm:py-10">
         <PrivateSnapshotGuard
-          owner={profile.id}
+          owner={user.id}
           url="/api/platform/profile?view=identity"
           checksum={createHash("sha256")
-            .update(JSON.stringify({ id: profile.id }))
+            .update(JSON.stringify({ id: user.id }))
             .digest("hex")}
           label="account"
         >
-          <ProfileEditor profile={profile} focus={focus} />
+          <ProfilePrivateWorkspace owner={user.id} focus={focus} />
         </PrivateSnapshotGuard>
       </section>
     </PlatformShell>

@@ -420,7 +420,9 @@ try {
     (await row(owner)).modules.testimony,
     "Retained story after uncertain save"
   );
-  await submit();
+  await page
+    .getByRole("button", { name: "Retry original save", exact: true })
+    .click();
   await page
     .getByRole("button", { name: "Review latest saved profile", exact: true })
     .waitFor();

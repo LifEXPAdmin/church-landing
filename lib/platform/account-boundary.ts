@@ -739,7 +739,14 @@ async function processAccountRequest(
             : 400,
         error.code === "password-unsafe"
           ? { "X-Account-Code": "ACCOUNT_PASSWORD_UNSAFE" }
-          : {}
+          : operation === "update-profile" &&
+              (error.code === "profile" ||
+                error.code === "profile-event" ||
+                error.code === "profile-disclosure")
+            ? // These failures precede a committed profile edit. Session errors
+              // can occur after commit, so a generic 400 is not this assurance.
+              { "X-Account-Code": "ACCOUNT_PROFILE_VALIDATION" }
+            : {}
       );
     }
     // Avoid serializing errors that may contain SQL parameters, credential material, or contacts.

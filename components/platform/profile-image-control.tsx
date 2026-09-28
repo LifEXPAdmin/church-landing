@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { accountInputClass } from "./account-form";
 import { ProfileImage } from "./profile-image";
+import { useReadVisibility } from "./read-visibility";
 import { socialRequest, SocialClientError } from "@/lib/platform/social-client";
 import type { ImageView } from "@/lib/platform/media";
 import {
@@ -25,7 +26,8 @@ export function ProfileImageControl({
   onState,
   onSaved,
   churchId,
-  retainsHistory = false
+  retainsHistory = false,
+  removeWhenHidden = false
 }: {
   initial: ImageView | null;
   userId: string;
@@ -33,13 +35,42 @@ export function ProfileImageControl({
   kind: "avatar" | "cover";
   available: boolean;
   retainsHistory?: boolean;
+  removeWhenHidden?: boolean;
   churchId?: string;
   onSaved?: () => void;
   disabled: boolean;
   onState: (kind: "avatar" | "cover", state: State) => void;
 }) {
+  const sourceVisible = useReadVisibility();
+  const visible = !removeWhenHidden || sourceVisible;
+  const privateAccess = useRef(visible),
+    accessGeneration = useRef(0);
+  privateAccess.current = visible;
+  useEffect(() => {
+    if (!removeWhenHidden) return;
+    privateAccess.current = sourceVisible;
+    const hide = () => {
+      privateAccess.current = false;
+      accessGeneration.current++;
+    };
+    const visibility = () => {
+      if (document.visibilityState === "hidden") hide();
+    };
+    if (!sourceVisible) hide();
+    window.addEventListener("blur", hide);
+    window.addEventListener("pagehide", hide);
+    window.addEventListener("offline", hide);
+    document.addEventListener("visibilitychange", visibility);
+    return () => {
+      hide();
+      window.removeEventListener("blur", hide);
+      window.removeEventListener("pagehide", hide);
+      window.removeEventListener("offline", hide);
+      document.removeEventListener("visibilitychange", visibility);
+    };
+  }, [removeWhenHidden, sourceVisible]);
   const [accessLost, setAccessLost] = useState(false);
-  const disabled = externallyDisabled || accessLost;
+  const disabled = externallyDisabled || accessLost || !visible;
   const [saved, setSaved] = useState(initial),
     [file, setFile] = useState<File | null>(null);
   const [source, setSource] = useState(""),
@@ -80,12 +111,23 @@ export function ProfileImageControl({
     : "/api/platform/profile";
   const slot = churchId && kind === "avatar" ? "logo" : kind;
   async function currentImage() {
+    const seq = accessGeneration.current;
+    if (!privateAccess.current)
+      throw new SocialClientError(
+        503,
+        "Return to your profile and check current access before confirming the photo."
+      );
     const latest = await socialRequest<{
       avatar?: ImageView | null;
       logo?: ImageView | null;
       cover?: ImageView | null;
       canManage?: boolean;
     }>(endpoint, undefined, userId);
+    if (!privateAccess.current || seq !== accessGeneration.current)
+      throw new SocialClientError(
+        503,
+        "Current photo access changed. Your selected photo and original upload are retained."
+      );
     if (churchId && !latest.data.canManage) {
       setAccessLost(true);
       throw new SocialClientError(
@@ -173,7 +215,8 @@ export function ProfileImageControl({
     }
   }
   async function adjust() {
-    if (!saved || lock.current) return;
+    if (!saved || lock.current || !privateAccess.current) return;
+    const seq = accessGeneration.current;
     lock.current = true;
     setBusy(true);
     setMessage("Loading your original photo…");
@@ -183,8 +226,11 @@ export function ProfileImageControl({
       });
       if (!response.ok)
         throw new Error("Your photo could not be loaded. Try again.");
+      const bytes = await response.blob();
+      if (!privateAccess.current || seq !== accessGeneration.current)
+        throw Error("Return to your profile and check photo access again.");
       await choose(
-        new File([await response.blob()], "profile.webp", {
+        new File([bytes], "profile.webp", {
           type: "image/webp"
         }),
         saved.crop ?? centeredCrop,
@@ -278,7 +324,11 @@ export function ProfileImageControl({
           setConflict(xhr.status === 409);
         }
       } catch (error) {
-        if (error instanceof SocialClientError && error.status === 401) {
+        if (
+          !removeWhenHidden &&
+          error instanceof SocialClientError &&
+          error.status === 401
+        ) {
           setSaved(null);
           await reset();
         }
@@ -393,6 +443,7 @@ export function ProfileImageControl({
           kind={kind}
           accountId={userId}
           profileId={churchId ?? userId}
+          removeWhenHidden={removeWhenHidden}
           imageLabel={
             churchId
               ? kind === "avatar"
@@ -402,228 +453,239 @@ export function ProfileImageControl({
           }
         />
       </div>
-      {!available && (
-        <p className="text-sm text-gc-muted">
-          Photo uploads are not available yet. Your saved images are unchanged.
-        </p>
+      {available && (
+        <label
+          className="gc-profile-file-label"
+          hidden={!visible}
+          inert={!visible}
+          style={{ display: visible ? undefined : "none" }}
+        >
+          Choose {control}
+          <input
+            ref={input}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            disabled={externallyDisabled || accessLost || busy || preparing}
+            onChange={(e) => {
+              const selected = e.currentTarget.files?.[0];
+              // Keep the chooser target mounted across blur, but keep filenames
+              // and FileList out of the DOM. The original editor owns the File.
+              e.currentTarget.value = "";
+              if (selected)
+                void choose(selected).catch(() =>
+                  setMessage("This file could not be opened. Choose it again.")
+                );
+            }}
+          />
+        </label>
       )}
-      <div className="flex flex-wrap gap-3">
-        {available && (
-          <label className="gc-profile-file-label">
-            Choose {control}
-            <input
-              ref={input}
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              disabled={disabled || busy || preparing}
-              onChange={(e) => {
-                const selected = e.currentTarget.files?.[0];
-                if (selected)
-                  void choose(selected).catch(() =>
-                    setMessage(
-                      "This file could not be opened. Choose it again."
-                    )
-                  );
-              }}
-            />
-          </label>
-        )}
-        {saved && available && !file && (
-          <button
-            type="button"
-            className="gc-profile-text-button"
-            disabled={disabled || busy}
-            onClick={() => void adjust()}
-          >
-            Adjust {control} crop
-          </button>
-        )}
-        {saved && !file && (
-          <button
-            type="button"
-            className="gc-profile-text-button"
-            disabled={disabled || busy}
-            onClick={() => setRemoveConfirm(true)}
-          >
-            Remove {control}
-          </button>
-        )}
-      </div>
-      {removeConfirm && (
-        <div className="gc-profile-confirm">
-          <p>Remove this {control}? You can choose another photo later.</p>
-          <div className="flex flex-wrap gap-3">
-            <button
-              type="button"
-              className="gc-profile-text-button"
-              disabled={busy || disabled}
-              onClick={() => void remove()}
-            >
-              Confirm remove {control}
-            </button>
-            <button
-              type="button"
-              className="gc-profile-text-button"
-              disabled={busy}
-              onClick={() => setRemoveConfirm(false)}
-            >
-              Keep photo
-            </button>
-          </div>
-        </div>
-      )}
-      {file && (
-        <div className="space-y-4">
-          <p className="break-words text-sm">Selected: {file.name}</p>
-          <div
-            className={`gc-image-crop-preview gc-image-crop-${kind}`}
-            style={{ aspectRatio: aspect }}
-            aria-label={`${title} crop preview`}
-          >
-            {source && (
-              <img
-                key={source}
-                src={source}
-                alt="Selected photo crop preview"
-                draggable={false}
-                onLoad={(e) =>
-                  setDimensions({
-                    width: e.currentTarget.naturalWidth,
-                    height: e.currentTarget.naturalHeight
-                  })
-                }
-                onError={() => {
-                  setMessage(
-                    "This image could not be opened. Choose a different JPEG, PNG or WebP."
-                  );
-                  setDimensions({ width: 0, height: 0 });
-                }}
-                style={
-                  rect
-                    ? {
-                        position: "absolute",
-                        maxWidth: "none",
-                        width: `${(dimensions.width / rect.width) * 100}%`,
-                        height: `${(dimensions.height / rect.height) * 100}%`,
-                        left: `${(-rect.left / rect.width) * 100}%`,
-                        top: `${(-rect.top / rect.height) * 100}%`
-                      }
-                    : { width: "100%" }
-                }
-              />
-            )}
-          </div>
-          <p className="text-sm text-gc-muted">
-            Use the sliders to zoom and position your photo. The preview shows
-            the saved crop.
-          </p>
-          {(
-            [
-              ["zoom", "Zoom", 1, 4, 0.05],
-              ["x", "Horizontal position", 0, 1, 0.01],
-              ["y", "Vertical position", 0, 1, 0.01]
-            ] as const
-          ).map(([key, label, min, max, step]) => (
-            <label
-              key={key}
-              className="block text-sm"
-              htmlFor={`${kind}-${key}`}
-            >
-              {label}
-              {key === "zoom" ? `: ${crop.zoom.toFixed(2)}×` : ""}
-              <input
-                id={`${kind}-${key}`}
-                type="range"
-                className="gc-profile-range"
-                min={min}
-                max={max}
-                step={step}
-                value={crop[key]}
-                disabled={disabled || busy}
-                onChange={(e) =>
-                  setCrop((previous) => ({
-                    ...previous,
-                    [key]: Number(e.target.value)
-                  }))
-                }
-              />
-            </label>
-          ))}
-          <label className="block" htmlFor={`${kind}-alt`}>
-            Photo description (optional)
-            <input
-              id={`${kind}-alt`}
-              className={accountInputClass}
-              value={alt}
-              maxLength={300}
-              disabled={disabled || busy}
-              onChange={(e) => setAlt(e.target.value)}
-            />
-          </label>
-          <p className="text-sm text-gc-muted">
-            A short description helps people using a screen reader. Up to 300
-            characters.
-          </p>
-          {busy && (
-            <progress
-              className="w-full"
-              max={100}
-              value={progress ?? undefined}
-              aria-label={`${title} upload progress`}
-            />
+      {visible && (
+        <>
+          {!available && (
+            <p className="text-sm text-gc-muted">
+              Photo uploads are not available yet. Your saved images are
+              unchanged.
+            </p>
           )}
           <div className="flex flex-wrap gap-3">
-            <Button
-              type="button"
-              disabled={disabled || busy || !dimensions.width}
-              onClick={upload}
-            >
-              Save {control}
-            </Button>
-            {!busy && (
+            {saved && available && !file && (
               <button
                 type="button"
                 className="gc-profile-text-button"
-                disabled={disabled}
-                onClick={async () => {
-                  await reset();
-                  setMessage(
-                    "Selected photo discarded. Your saved photo is unchanged."
-                  );
-                }}
+                disabled={disabled || busy}
+                onClick={() => void adjust()}
               >
-                Discard selected photo
+                Adjust {control} crop
               </button>
             )}
-            {busy && request.current && (
+            {saved && !file && (
               <button
                 type="button"
                 className="gc-profile-text-button"
-                onClick={() => request.current?.abort()}
+                disabled={disabled || busy}
+                onClick={() => setRemoveConfirm(true)}
               >
-                Stop upload
+                Remove {control}
               </button>
             )}
           </div>
-        </div>
-      )}
-      <p
-        ref={feedback}
-        tabIndex={-1}
-        role="status"
-        className="break-words text-sm"
-      >
-        {message}
-      </p>
-      {conflict && (
-        <button
-          type="button"
-          className="gc-profile-text-button"
-          disabled={disabled || busy}
-          onClick={() => void reviewLatest()}
-        >
-          Review latest saved {control}
-        </button>
+          {removeConfirm && (
+            <div className="gc-profile-confirm">
+              <p>Remove this {control}? You can choose another photo later.</p>
+              <div className="flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  className="gc-profile-text-button"
+                  disabled={busy || disabled}
+                  onClick={() => void remove()}
+                >
+                  Confirm remove {control}
+                </button>
+                <button
+                  type="button"
+                  className="gc-profile-text-button"
+                  disabled={busy}
+                  onClick={() => setRemoveConfirm(false)}
+                >
+                  Keep photo
+                </button>
+              </div>
+            </div>
+          )}
+          {file && (
+            <div className="space-y-4">
+              <p className="break-words text-sm">Selected: {file.name}</p>
+              <div
+                className={`gc-image-crop-preview gc-image-crop-${kind}`}
+                style={{ aspectRatio: aspect }}
+                aria-label={`${title} crop preview`}
+              >
+                {source && (
+                  <img
+                    key={source}
+                    src={source}
+                    alt="Selected photo crop preview"
+                    draggable={false}
+                    onLoad={(e) =>
+                      setDimensions({
+                        width: e.currentTarget.naturalWidth,
+                        height: e.currentTarget.naturalHeight
+                      })
+                    }
+                    onError={() => {
+                      setMessage(
+                        "This image could not be opened. Choose a different JPEG, PNG or WebP."
+                      );
+                      setDimensions({ width: 0, height: 0 });
+                    }}
+                    style={
+                      rect
+                        ? {
+                            position: "absolute",
+                            maxWidth: "none",
+                            width: `${(dimensions.width / rect.width) * 100}%`,
+                            height: `${(dimensions.height / rect.height) * 100}%`,
+                            left: `${(-rect.left / rect.width) * 100}%`,
+                            top: `${(-rect.top / rect.height) * 100}%`
+                          }
+                        : { width: "100%" }
+                    }
+                  />
+                )}
+              </div>
+              <p className="text-sm text-gc-muted">
+                Use the sliders to zoom and position your photo. The preview
+                shows the saved crop.
+              </p>
+              {(
+                [
+                  ["zoom", "Zoom", 1, 4, 0.05],
+                  ["x", "Horizontal position", 0, 1, 0.01],
+                  ["y", "Vertical position", 0, 1, 0.01]
+                ] as const
+              ).map(([key, label, min, max, step]) => (
+                <label
+                  key={key}
+                  className="block text-sm"
+                  htmlFor={`${kind}-${key}`}
+                >
+                  {label}
+                  {key === "zoom" ? `: ${crop.zoom.toFixed(2)}×` : ""}
+                  <input
+                    id={`${kind}-${key}`}
+                    type="range"
+                    className="gc-profile-range"
+                    min={min}
+                    max={max}
+                    step={step}
+                    value={crop[key]}
+                    disabled={disabled || busy}
+                    onChange={(e) =>
+                      setCrop((previous) => ({
+                        ...previous,
+                        [key]: Number(e.target.value)
+                      }))
+                    }
+                  />
+                </label>
+              ))}
+              <label className="block" htmlFor={`${kind}-alt`}>
+                Photo description (optional)
+                <input
+                  id={`${kind}-alt`}
+                  className={accountInputClass}
+                  value={alt}
+                  maxLength={300}
+                  disabled={disabled || busy}
+                  onChange={(e) => setAlt(e.target.value)}
+                />
+              </label>
+              <p className="text-sm text-gc-muted">
+                A short description helps people using a screen reader. Up to
+                300 characters.
+              </p>
+              {busy && (
+                <progress
+                  className="w-full"
+                  max={100}
+                  value={progress ?? undefined}
+                  aria-label={`${title} upload progress`}
+                />
+              )}
+              <div className="flex flex-wrap gap-3">
+                <Button
+                  type="button"
+                  disabled={disabled || busy || !dimensions.width}
+                  onClick={upload}
+                >
+                  Save {control}
+                </Button>
+                {!busy && (
+                  <button
+                    type="button"
+                    className="gc-profile-text-button"
+                    disabled={disabled}
+                    onClick={async () => {
+                      await reset();
+                      setMessage(
+                        "Selected photo discarded. Your saved photo is unchanged."
+                      );
+                    }}
+                  >
+                    Discard selected photo
+                  </button>
+                )}
+                {busy && request.current && (
+                  <button
+                    type="button"
+                    className="gc-profile-text-button"
+                    onClick={() => request.current?.abort()}
+                  >
+                    Stop upload
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+          <p
+            ref={feedback}
+            tabIndex={-1}
+            role="status"
+            className="break-words text-sm"
+          >
+            {message}
+          </p>
+          {conflict && (
+            <button
+              type="button"
+              className="gc-profile-text-button"
+              disabled={disabled || busy}
+              onClick={() => void reviewLatest()}
+            >
+              Review latest saved {control}
+            </button>
+          )}
+        </>
       )}
     </section>
   );

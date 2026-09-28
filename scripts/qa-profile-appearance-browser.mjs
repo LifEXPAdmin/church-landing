@@ -331,7 +331,9 @@ try {
     (await getProfileEditor(db, owner.token)).presentation.palette,
     "blue"
   );
-  await submit();
+  await page
+    .getByRole("button", { name: "Retry original save", exact: true })
+    .click();
   await page
     .getByRole("button", { name: "Review latest saved profile", exact: true })
     .click();

@@ -91,9 +91,9 @@ export function ProfileEditor({
     };
   }, []);
   useEffect(() => {
-    if (leave) dialog.current?.showModal();
+    if (leave && visible) dialog.current?.showModal();
     else dialog.current?.close();
-  }, [leave]);
+  }, [leave, visible]);
   return (
     <div className="gc-profile-editor space-y-6">
       <Link
@@ -121,7 +121,7 @@ export function ProfileEditor({
           members. Each photo saves separately. Your unsaved text stays here
           while you edit a photo.
         </p>
-        {profile.photoLibraryEnabled && (
+        {visible && profile.photoLibraryEnabled && (
           <a
             className="gc-profile-text-button"
             href={`/platform/profile/${encodeURIComponent(profile.username)}?tab=photos`}
@@ -139,6 +139,7 @@ export function ProfileEditor({
               kind={kind}
               available={profile.imagesAvailable}
               retainsHistory={profile.photoLibraryEnabled}
+              removeWhenHidden
               disabled={textBusy}
               onState={onImageState}
             />

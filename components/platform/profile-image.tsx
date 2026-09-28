@@ -4,6 +4,7 @@ import { useReadingPreferences } from "./reading-preferences";
 import { useState } from "react";
 import { Expand } from "lucide-react";
 import { PhotoViewer } from "./photo-viewer";
+import { useReadVisibility } from "./read-visibility";
 import type { ImageView } from "@/lib/platform/media";
 import { profileInitials } from "@/lib/platform/profile-style";
 export function ProfileImage({
@@ -12,7 +13,8 @@ export function ProfileImage({
   kind,
   accountId,
   profileId,
-  imageLabel
+  imageLabel,
+  removeWhenHidden = false
 }: {
   image: ImageView | null;
   name: string;
@@ -20,14 +22,17 @@ export function ProfileImage({
   accountId?: string | null;
   profileId: string;
   imageLabel?: string;
+  removeWhenHidden?: boolean;
 }) {
   const { preferences } = useReadingPreferences();
+  const sourceVisible = useReadVisibility();
+  const visible = !removeWhenHidden || sourceVisible;
   const [failed, setFailed] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const className =
     kind === "avatar" ? "gc-profile-avatar" : "gc-profile-cover-image";
   if (!image || failed === image.id)
-    return (
+    return visible ? (
       <div className={className + " gc-profile-image-fallback"}>
         {kind === "avatar" && (
           <span aria-hidden="true">{profileInitials(name)}</span>
@@ -42,7 +47,7 @@ export function ProfileImage({
           </button>
         )}
       </div>
-    );
+    ) : null;
   const small =
       image.variants[
         kind === "avatar" || preferences.reduceData ? "thumb" : "medium"
@@ -50,47 +55,50 @@ export function ProfileImage({
     large = image.variants.medium;
   return (
     <>
-      <button
-        type="button"
-        className={className + " gc-profile-photo-open"}
-        aria-haspopup="dialog"
-        aria-label={`Enlarge ${name}’s ${imageLabel ?? (kind === "avatar" ? "profile photo" : "cover photo")}`}
-        onClick={() => setOpen(true)}
-      >
-        <img
-          className="h-full w-full object-cover"
-          src={small.url}
-          srcSet={
-            preferences.reduceData || small.width === large.width
-              ? undefined
-              : `${small.url} ${small.width}w, ${large.url} ${large.width}w`
-          }
-          sizes={
-            kind === "avatar" ? "128px" : "(min-width: 1280px) 1152px, 100vw"
-          }
-          width={small.width}
-          height={small.height}
-          alt={
-            image.alt ||
-            (imageLabel
-              ? `${name} ${imageLabel}`
-              : kind === "avatar"
-                ? `${name}'s avatar`
-                : `${name}'s cover photo`)
-          }
-          loading={kind === "avatar" ? "eager" : "lazy"}
-          decoding="async"
-          onError={() => setFailed(image.id)}
-        />
-        <span className="gc-profile-photo-affordance">
-          <Expand aria-hidden="true" size={18} />
-        </span>
-      </button>
+      {visible && (
+        <button
+          type="button"
+          className={className + " gc-profile-photo-open"}
+          aria-haspopup="dialog"
+          aria-label={`Enlarge ${name}’s ${imageLabel ?? (kind === "avatar" ? "profile photo" : "cover photo")}`}
+          onClick={() => setOpen(true)}
+        >
+          <img
+            className="h-full w-full object-cover"
+            src={small.url}
+            srcSet={
+              preferences.reduceData || small.width === large.width
+                ? undefined
+                : `${small.url} ${small.width}w, ${large.url} ${large.width}w`
+            }
+            sizes={
+              kind === "avatar" ? "128px" : "(min-width: 1280px) 1152px, 100vw"
+            }
+            width={small.width}
+            height={small.height}
+            alt={
+              image.alt ||
+              (imageLabel
+                ? `${name} ${imageLabel}`
+                : kind === "avatar"
+                  ? `${name}'s avatar`
+                  : `${name}'s cover photo`)
+            }
+            loading={kind === "avatar" ? "eager" : "lazy"}
+            decoding="async"
+            onError={() => setFailed(image.id)}
+          />
+          <span className="gc-profile-photo-affordance">
+            <Expand aria-hidden="true" size={18} />
+          </span>
+        </button>
+      )}
       {open && (
         <PhotoViewer
           source={`/api/platform/images?${new URLSearchParams({ purpose: image.purpose, targetId: profileId })}`}
           accountId={accountId}
           initialId={image.id}
+          removeWhenHidden={removeWhenHidden}
           onClose={() => setOpen(false)}
         />
       )}

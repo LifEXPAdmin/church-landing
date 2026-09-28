@@ -37,13 +37,19 @@ export function ProfileEventPicker({
     };
     if (!visible) clear();
     window.addEventListener("blur", clear);
+    window.addEventListener("pagehide", clear);
+    window.addEventListener("offline", clear);
     window.addEventListener("social-relationships-changed", clear);
     return () => {
       counter.current++;
       window.removeEventListener("blur", clear);
+      window.removeEventListener("pagehide", clear);
+      window.removeEventListener("offline", clear);
       window.removeEventListener("social-relationships-changed", clear);
     };
   }, [visible]);
+  // Retain the typed link and selection in this mounted owner, not hidden DOM.
+  if (!visible) return null;
   return (
     <fieldset className="min-w-0 space-y-3" disabled={disabled || pending}>
       <legend className="text-2xl">Selected event (optional)</legend>

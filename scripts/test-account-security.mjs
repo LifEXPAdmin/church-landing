@@ -1161,6 +1161,7 @@ try {
   if (portalTests) await runTests("tests/media-boundary.test.ts");
   if (portalTests) await runTests("tests/profile-style.test.ts");
   if (portalTests) await runTests("tests/profiles.test.ts");
+  if (portalTests) await runTests("tests/profile-save-response.test.ts");
   if (supportTests) await runTests("tests/support-service.test.ts");
   run(join(pg, "pg_dump"), [
     database,
