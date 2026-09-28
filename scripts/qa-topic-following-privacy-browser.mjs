@@ -728,6 +728,7 @@ try {
     await route.fulfill(actual);
     bookmarkFinished.resolve();
   });
+  await button("Bookmark").scrollIntoViewIfNeeded();
   await button("Bookmark").click();
   await bookmarkReady.promise;
   await pulse("blur");
@@ -741,6 +742,8 @@ try {
   await button("Bookmark recovery").waitFor();
   await button("Bookmark recovery").click();
   await button("Refresh saved status").click();
+  await poll(() => button("Bookmark recovery").getAttribute("aria-expanded"), "false");
+  await button("Bookmark recovery").click();
   await poll(() => button("Retry same save choice").isEnabled(), true);
   await button("Retry same save choice").click();
   await poll(() => Promise.resolve(bookmarkBodies.length), 2);
