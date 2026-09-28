@@ -3,8 +3,9 @@
 ## Local implementation, 28 September 2026 UTC
 
 The media editor, detail reader and library share validated Scripture tags on the
-existing canonical catalog record. This feature is in local verification. It is
-not yet merged or verified live. The current production release remains .35.
+existing canonical catalog record. The feature checkpoint `d458ebeb` passed local
+and immutable production-build verification. Combined integration and live
+acceptance remain open. The current production release remains .35.
 
 Publishers explicitly select a reference system and supply one or more passages.
 The interface preserves correction text, explains malformed or ambiguous book
@@ -57,11 +58,12 @@ Personal export includes authorized supplied tags; removal, erasure and stale
 protected replay clear them. Church metadata remains owned by its existing
 church policy. Shared account-export/erasure owners call the same media adapter.
 
-After tags are activated, any fallback application and installed recovery owner
-must clear this new field during erasure and replay. The earlier .35 media
-adapter alone is not that compatible fallback. Production migration, recovery
-registration, exact-source build/CI, combined release and live readback remain
-required before acceptance.
+After tags are activated, any fallback application and protected application
+replay owner must clear this new field during erasure and replay. The earlier .35
+media adapter alone is not that compatible fallback. Ordinary installed SQL
+backup/restore preserves the field; it does not execute application replay and
+needs the current migration registry separately. Production migration, protected
+and installed recovery, combined release and live readback remain required.
 
 ## Local verification checkpoint
 
@@ -92,5 +94,9 @@ A suspected oversized-request retry trap was disproved: an actual 36,701-byte
 POST returned HTTP 400, kept entries editable and wrote no media record. No
 speculative error-handling change was made. Failed harness selector attempts and
 all reproductions remain in private evidence. TypeScript, scoped lint, copy and
-source-security checks pass. Exact-source production build, built-browser,
-integration, protected/installed recovery and verified-live gates remain open.
+source-security checks pass. Exact-source production build `Pf5OmaPTZzdHVaniPx9Gc`
+and hosted CI passed for `d458ebeb`. The same nine browser groups passed against
+that immutable build, along with four HTTPS regression groups. The enforce-only
+MFA case was skipped by the off-mode fixture and stays in the combined batch
+gate. Integration, protected/installed recovery and verified-live gates remain
+open. No production performance improvement is inferred from local chunk sizes.

@@ -1,3 +1,28 @@
+## Scripture and playlist batch preparation, 28 September 2026 UTC
+
+Scripture search checkpoint `d458ebeb` passed 32 service/parser groups, nine
+actual development-browser groups, nine immutable production-build browser groups
+and four HTTPS groups. Its exact-source build and hosted CI passed. The enforce-only
+MFA check was skipped in the off-mode fixture and remains a combined release gate.
+Saved media and playlists passed the independent builder’s 89 regression and 15
+production-browser groups; A1 combined the tested commits on the release branch.
+The combined release will include .36 and .37 in one deployment after its gates.
+
+Current production remains **.35**, source
+`0af8462131ca12ff262b5ebc4b3ee54c5f5d6455`, with 119 migrations. The tested
+Scripture checkpoint and local batch preparation are not yet integrated or live.
+Five combined retention tests passed against the assembled source, covering the
+actual protected dispatcher, reverse/stale/missing controls, account export and
+verified account erasure. Review strengthened the erasure checks to require new
+controls at the actual incremented versions; final-source verification remains.
+A reproduced lost-save/later-unsave conflict now has a warned local stop-retrying
+action, with a dedicated browser regression being verified before source freeze.
+
+A1 alone owns integration and deployment. Large builds remain serialized with the
+builder. Only verified inactive compilation caches were removed; all non-cache
+runtime hashes, source, fixtures, backups and acceptance evidence were preserved.
+The combined migration, compatible recovery and live acceptance gates remain open.
+
 ## Session isolation and media catalog verified live, 28 September 2026 UTC
 
 ## Scripture passage search local checkpoint, 28 September 2026 UTC

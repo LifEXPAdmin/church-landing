@@ -14,6 +14,14 @@ export type Feature = {
 };
 export const features: Feature[] = [
   {
+    id: "media-playlists", category: "Media and learning", name: "Saved media and ordered playlists",
+    description: "Keep private saved media and organize permitted recordings into finite personal or church playlists.",
+    steps: "Open Saved media or Playlists from Menu. Save a currently available recording, or create a playlist draft, add recordings and move them into order. Review the audience before publishing. Unsaving or removing a playlist leaves its source recordings unchanged.",
+    href: "/platform/media/playlists",
+    eligibility: "Requires an eligible verified adult account to manage personal saves and playlists. Church editing and publication require the current named media duty and privileged session proof. Each reader must still have access to each recording. Unavailable private references can be removed without revealing their source. Embedded playback, progress, resume positions and automatic continuation are not available yet.",
+    availability: "available"
+  },
+  {
     id: "media-catalog", category: "Media and learning", name: "Media library and publishing studio",
     description: "Discover permitted media by title, speaker, series, topic, language, format and overlapping Scripture passages, and prepare your own reviewed source links.",
     steps: "Open Media to browse or search. For passage search, explicitly choose a supported numbering system and enter a passage. In My media, create a private draft, optionally add Scripture tags, review its source and sharing rights, then publish or unpublish deliberately. Open source only when you choose to visit its provider.",
@@ -1031,6 +1039,14 @@ export const features: Feature[] = [
   }
 ];
 export const releases: ReleaseEntry[] = [
+  {
+    id: "saved-media-and-playlists", version: "2026.09.28.37", date: "2026-09-28",
+    summary: "Save media privately and organize permitted recordings into ordered personal and church playlists.",
+    added: ["Create a playlist draft, choose its audience, add current recordings and use keyboard ordering before deliberately publishing. Private saved media stays separate from playlist membership."],
+    improved: ["Playlist readers see only currently permitted sources, with filtered counts and continuous positions. Personal export and account erasure include saved media and playlist organization while preserving church-owned work."],
+    fixed: ["Uncertain saves retain their original retry request through temporary denial. Hidden or unauthorized pages conceal private entries, and expired sources reveal no copied metadata."],
+    featureIds: ["media-playlists", "media-catalog"]
+  },
   {
     id: "media-scripture-search", version: "2026.09.28.36", date: "2026-09-28",
     summary: "Find permitted media by overlapping Scripture passages in an explicitly selected numbering system.",

@@ -290,6 +290,35 @@ function PlaylistWorkspace({
       })
     );
   };
+  const stopRetrying = () => {
+    if (busy || !uncertain) return;
+    if (
+      !window.confirm(
+        "The earlier change may already have completed. Stop retrying and discard the local pending changes? This does not undo saved changes. Review the current state before making another change."
+      )
+    )
+      return;
+    // An explicit local abandonment is not a claim that the server write failed.
+    // Clear only this account/route's pending request; never issue a replacement.
+    pendingWrites.delete(scope);
+    setUncertain(null);
+    dirty.current = false;
+    baseVersion.current = null;
+    focusedEntry.current = null;
+    setTitle("");
+    setDescription("");
+    setAudience("PRIVATE");
+    setChurch("");
+    setConflict(false);
+    setPickerOpen(false);
+    setSearch("");
+    setCursor(null);
+    setAnchor(null);
+    setMessage(
+      "Stopped retrying. The earlier change may have completed. Review the current saved state before making another change."
+    );
+    reload();
+  };
   const editField = () => {
     dirty.current = true;
   };
@@ -398,9 +427,17 @@ function PlaylistWorkspace({
           >
             Retry same change
           </button>
+          <button
+            className="gc-button gc-button-quiet ml-3"
+            disabled={busy}
+            onClick={stopRetrying}
+          >
+            Stop retrying and reload
+          </button>
           <p className="mt-2 text-sm">
-            Other changes stay paused until this result is confirmed. Your
-            entered values are retained.
+            Other changes stay paused until this result is confirmed or you
+            deliberately stop retrying. Your entered values are retained until
+            then. Stopping does not undo a change that already completed.
           </p>
         </div>
       )}

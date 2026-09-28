@@ -145,3 +145,27 @@ same-key recovery and exactly one playlist, plus actual manager and delegated
 editor screens with current session proof and revocation. The corrected personal
 MFA fixture includes the required explicit audience; all three HTTPS groups pass.
 The corrected production candidate remains pending at this checkpoint.
+
+### Combined release review
+
+A1 combined the three tested B1 commits with the Scripture search checkpoint.
+Additional real account export/erasure and protected-dispatch tests cover all
+three media control kinds, missing records and reverse-version replay.
+
+An actual browser reproduction found a second uncertain-save case: the source
+was saved successfully but its response was lost; a separate authenticated session
+then unsaved it, so the original retry correctly returned a permanent conflict.
+The old interface kept every change and navigation paused without a local escape.
+The interface now offers an explicit, warned stop-retrying action. Cancel retains
+the original request; acceptance discards only this account/route's local pending
+values and reloads current state. It never undoes a committed write, silently
+issues a replacement, or claims the original request failed. Final combined
+browser and release acceptance remain separate gates.
+
+The dedicated development-browser regression passed four groups: the actual
+permanent conflict, canceled warning with an unchanged request, accepted local
+abandonment with zero POSTs, and a subsequent deliberate save using a new key
+and one canonical saved row. Both 320-pixel focused controls were inspected.
+There were no external requests or page errors; the sole failed request was the
+intentionally dropped successful response. Final immutable-build verification,
+protected recovery, migration, integration and live acceptance remain open.
