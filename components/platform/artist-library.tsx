@@ -4,7 +4,13 @@ import { flushSync } from "react-dom";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useMediaRead } from "./media-catalog-library";
-import { socialRequest, SocialClientError } from "@/lib/platform/social-client";
+import { settlePhotoNavigation } from "./use-photo-back-guard";
+import type { ArtistContinuation } from "./artist-editor-workspace";
+import {
+  currentSocialOwner,
+  socialRequest,
+  SocialClientError
+} from "@/lib/platform/social-client";
 import { artistRoles, type ArtistItem } from "@/lib/platform/artist-types";
 import { DiscoveryPlacePicker } from "./discovery-place-picker";
 export const artistFieldClass =
@@ -56,14 +62,29 @@ export function useArtistWrite(
     r: { id: string; version: number; message: string },
     body: Record<string, unknown>
   ) => void,
-  endpoint = "/api/platform/artists"
+  endpoint = "/api/platform/artists",
+  access?: ArtistContinuation
 ) {
   const key = `${owner}:${endpoint}:${scope}`,
     [uncertain, setUncertain] = useState<string | null>(
       pending.get(key) ?? null
     ),
     [busy, setBusy] = useState(false),
-    [message, setMessage] = useState("");
+    [message, setMessage] = useState(""),
+    [confirmed, setConfirmed] = useState(false),
+    [retryAt, setRetryAt] = useState(0),
+    [clock, setClock] = useState(0);
+  const accepted = useRef<{
+    id: string;
+    version: number;
+    message: string;
+  } | null>(null);
+  const cooling = retryAt > clock;
+  useEffect(() => {
+    if (!cooling) return;
+    const timer = window.setTimeout(() => setClock(Date.now()), 1000);
+    return () => window.clearTimeout(timer);
+  }, [cooling, clock]);
   const lock = useRef(false),
     live = useRef(true);
   useEffect(() => {
@@ -72,30 +93,78 @@ export function useArtistWrite(
       live.current = false;
     };
   }, []);
-  async function submit(body: string) {
-    if (lock.current || !owner) return;
+  async function submit(body: string, recovery = false) {
+    const ticket = access?.current(recovery);
+    if (
+      lock.current ||
+      !owner ||
+      (access && ticket === null) ||
+      Date.now() < retryAt
+    )
+      return;
     lock.current = true;
     setBusy(true);
     setMessage("");
     pending.set(key, body);
+    if (access) setUncertain(body);
+    const allowed = () => !access || access.current(recovery) === ticket;
     try {
-      const r = await socialRequest<{
-        id: string;
-        version: number;
-        message: string;
-      }>(endpoint, body, owner);
-      pending.delete(key);
-      if (live.current) {
-        flushSync(() => {
-          setBusy(false);
-          setUncertain(null);
-        });
-        setMessage(r.data.message);
-        onSaved(r.data, JSON.parse(body));
+      const data =
+        accepted.current ??
+        (
+          await socialRequest<{
+            id: string;
+            version: number;
+            message: string;
+          }>(endpoint, body, owner)
+        ).data;
+      if (!live.current) return;
+      if (access) {
+        if (
+          !data ||
+          typeof data.id !== "string" ||
+          !Number.isInteger(data.version) ||
+          typeof data.message !== "string"
+        )
+          throw new SocialClientError(
+            503,
+            "The saved artist change could not be confirmed. Retry the exact change."
+          );
+        accepted.current = data;
+        if (!allowed()) {
+          setMessage(
+            "Your change was saved. Return to the original account and deliberately continue after the saved change."
+          );
+          return;
+        }
+        flushSync(() => setConfirmed(true));
+        await settlePhotoNavigation();
+        if (!live.current) return;
+        if (
+          !allowed() ||
+          (await currentSocialOwner()) !== owner ||
+          !allowed()
+        ) {
+          setMessage(
+            "Your change was saved. Recheck the original account, then continue after the saved change."
+          );
+          return;
+        }
       }
+      pending.delete(key);
+      flushSync(() => {
+        setBusy(false);
+        setUncertain(null);
+        setConfirmed(false);
+        setMessage(data.message);
+        if (access) onSaved(data, JSON.parse(body));
+      });
+      if (!access) onSaved(data, JSON.parse(body));
+      accepted.current = null;
     } catch (e) {
       if (live.current) {
         if (
+          !access &&
           e instanceof SocialClientError &&
           e.status < 500 &&
           e.status !== 401 &&
@@ -107,8 +176,15 @@ export function useArtistWrite(
         } else {
           setUncertain(body);
           setMessage(
-            "This change could not be confirmed. Retry the exact change to check its result."
+            access && e instanceof Error
+              ? e.message
+              : "This change could not be confirmed. Retry the exact change to check its result."
           );
+          if (access && e instanceof SocialClientError && e.retryAfter) {
+            const now = Date.now();
+            setClock(now);
+            setRetryAt(now + e.retryAfter * 1000);
+          }
         }
       }
     } finally {
@@ -117,7 +193,8 @@ export function useArtistWrite(
     }
   }
   function act(body: Record<string, unknown>) {
-    if (busy || uncertain) return;
+    if (busy || uncertain || (access && access.current() === null)) return;
+    setConfirmed(false);
     void submit(JSON.stringify({ ...body, mutationId: crypto.randomUUID() }));
   }
   function abandon() {
@@ -129,6 +206,9 @@ export function useArtistWrite(
     )
       return;
     pending.delete(key);
+    accepted.current = null;
+    setConfirmed(false);
+    setRetryAt(0);
     setUncertain(null);
     setMessage("Local retry discarded. Review the current saved state.");
     onSaved({ id: "", version: 0, message: "" }, { operation: "abandon" });
@@ -137,10 +217,17 @@ export function useArtistWrite(
     act,
     busy,
     uncertain,
+    confirmed,
     message,
     controls: (
       <div className="space-y-3" aria-live="polite">
-        {message && <p role="status">{message}</p>}
+        {message && (
+          <p role="status">
+            {access && !access.visible
+              ? "Your local change is retained. Return to the original account and recheck access to continue."
+              : message}
+          </p>
+        )}
         {uncertain && (
           <div className="rounded-xl border border-amber-400 p-4">
             <p>
@@ -150,10 +237,16 @@ export function useArtistWrite(
             <div className="mt-3 flex flex-wrap gap-3">
               <button
                 className="gc-button"
-                disabled={busy}
-                onClick={() => void submit(uncertain)}
+                disabled={
+                  busy || cooling || (access && access.current(true) === null)
+                }
+                onClick={() => void submit(uncertain, true)}
               >
-                Retry exact change
+                {cooling
+                  ? "Wait before retrying"
+                  : accepted.current
+                    ? "Continue after saved artist change"
+                    : "Retry exact change"}
               </button>
               <button
                 className="gc-button-secondary"

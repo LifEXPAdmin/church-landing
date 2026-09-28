@@ -1,3 +1,26 @@
+## Artist privacy repair paused at owner request, 28 September 2026 UTC
+
+The next artist repair is saved on `codex/artist-draft-privacy`, based on report
+commit `320396d496433611fa008a1a1f3148379195dd52`. It is unfinished: **not browser
+verified, not built, not merged and not live**. Production remains the verified
+`.42` release recorded below. Work is paused to preserve the owner's usage budget.
+
+Before edits, isolated browser reproductions on unchanged `.42` demonstrated
+complete artist draft loss across an actual account A-to-B-to-A refresh and an
+accepted create response navigating while the document was concealed. The saved
+implementation adds original-owner editor scope, foreground continuation checks,
+retained place/delegate/release fields and explicit accepted-response recovery.
+TypeScript, scoped ESLint and whitespace checks passed; these static checks do
+not prove that the repair works in the browser.
+
+Resume with a focused review of the shared write hook and nested synchronous
+state updates. Add and run the new browser cases for actual account replacement,
+concealment, passive online events, one-effect accepted continuation, exact
+lost-response retry, ordered release fields and sibling/delegate retention. The
+new QA script has not been written. Then run relevant existing regressions,
+build and release gates before considering integration or a completed batch.
+No production migration, test write, send or deployment belongs to this WIP.
+
 ## Topic management and followed discussions verified live, 28 September 2026 UTC
 
 Version **2026.09.28.42**, source `7e6ed64cded8d19b1de4442265c18047df2298d9`,
