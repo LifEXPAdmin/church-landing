@@ -1,5 +1,34 @@
 # Publisher-selected media topic pathways
 
+## Tested handoff
+
+September 28, 2026 UTC. Application commit
+`7b04ab7df71e46658e3f42f855e2a407d4b93574` passed exact-source CI
+`36369068802` and immutable production build `CGkLG3P4tsmLLJqMM4U5H`.
+All 1,222 application-source hashes match the tested snapshot. The built interface
+passed all thirty-one browser groups (nine topic, thirteen catalog, nine Scripture)
+and three HTTPS groups with privileged MFA enforced, zero failures/skips. The
+thirty-two service groups and development receipts below remain valid for the
+unchanged service source. Production screenshots at 390 pixels and 320 pixels
+with enlarged text were inspected; pagination remains readable without overflow.
+
+Built hydration, runtime traces (246 traces, 61,001 entries, 610 server JavaScript
+files) and security checks passed. All 349 public build files were checked against
+three supplied fixture secrets with no findings. Source checks covered 2,030
+tracked files, 953 authored files and 548 locked packages. Copy checks passed on
+960 files and 76,667 authored fragments. No schema, authorization, export/erasure,
+dependency or provider changes are introduced. Topic browsing made zero writes
+and zero provider requests; the catalog regression separately exercised exactly
+one deliberate external-source action. No browser errors occurred.
+
+The build was staggered with the integration owner. The tested runtime, hashes,
+logs, screenshots and fixture remain privately preserved; the owned app server
+is stopped and the build reservation released. Two verified inactive worker caches
+were removed, preserving all 1,538 prior non-cache runtime files byte-identically.
+This is ready for integration, not a deployment or operator acceptance receipt.
+Only the feature commits should be integrated; their inherited base is historical
+and does not replace the integration owner's newer recovery or retry corrections.
+
 ## Implementation checkpoint
 
 September 28, 2026 UTC. The reviewed base is
