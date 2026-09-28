@@ -22,7 +22,14 @@ export const contentVisibilityLabels = {
   REMOVED: "Removed from community view"
 } as const;
 export type ContentSourceReview = {
-  type: "POST" | "COMMENT" | "TOPIC" | "GROUP" | "EXCHANGE_LISTING";
+  type:
+    | "ARTIST"
+    | "ARTIST_RELEASE"
+    | "POST"
+    | "COMMENT"
+    | "TOPIC"
+    | "GROUP"
+    | "EXCHANGE_LISTING";
   version: number;
   contextVersion: number;
   visibility: keyof typeof contentVisibilityLabels;
@@ -30,7 +37,14 @@ export type ContentSourceReview = {
 };
 export type ContentDecisionNotice = {
   id: string;
-  type: "POST" | "COMMENT" | "TOPIC" | "GROUP" | "EXCHANGE_LISTING";
+  type:
+    | "ARTIST"
+    | "ARTIST_RELEASE"
+    | "POST"
+    | "COMMENT"
+    | "TOPIC"
+    | "GROUP"
+    | "EXCHANGE_LISTING";
   action: ContentReviewAction;
   reason: ContentDecisionReason;
   visibility: keyof typeof contentVisibilityLabels;

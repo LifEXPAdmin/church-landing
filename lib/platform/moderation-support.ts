@@ -45,14 +45,20 @@ export async function supportVisibilityScope(
     assigned && checkedReviewAuthority
       ? checkedReviewAuthority
       : await reportReviewAuthority(tx, context!);
-  const ordinaryOwner = grant && assured
-    ? Prisma.sql`s."ownerGrantId" = ${grant.id} AND s."ownerGrantVersion" = ${grant.version}`
-    : Prisma.sql`FALSE`;
+  const ordinaryOwner =
+    grant && assured
+      ? Prisma.sql`s."ownerGrantId" = ${grant.id} AND s."ownerGrantVersion" = ${grant.version}`
+      : Prisma.sql`FALSE`;
   const ordinary = assigned
     ? ordinaryOwner
     : Prisma.sql`s."requesterId" = ${actor.id} OR (${ordinaryOwner}) OR (${actor.eligible && assured} AND EXISTS (SELECT 1 FROM "SupportCoordinatorShare" share JOIN "ChurchContactAssignment" a ON a.id=share."appointmentId" WHERE share."caseId"=s.id AND share."revokedAt" IS NULL AND a."userId"=${actor.id}))`;
-  const exchangeManagers = context ? (await exchangeAuthority(tx, context)).managers : [];
-  const author = Prisma.sql`d."authorId" = ${actor.id} AND d."authorChurchId" IS NULL
+  const exchangeManagers = context
+    ? (await exchangeAuthority(tx, context)).managers
+    : [];
+  const author = Prisma.sql`(d."authorId" = ${actor.id} AND d."authorChurchId" IS NULL
+    AND (r."targetType" NOT IN ('ARTIST','ARTIST_RELEASE') OR
+      (r."targetType"='ARTIST' AND EXISTS(SELECT 1 FROM "ArtistProfile" ap WHERE ap.id=r."targetId" AND ap."stewardId"=${actor.id})) OR
+      (r."targetType"='ARTIST_RELEASE' AND EXISTS(SELECT 1 FROM "ArtistRelease" ar JOIN "ArtistProfile" ap ON ap.id=ar."artistId" WHERE ar.id=r."targetId" AND ap."stewardId"=${actor.id}))))
     OR ${context?.publishers.size ? Prisma.sql`(r."targetType" <> 'EXCHANGE_LISTING' AND d."authorChurchId" IN (${Prisma.join([...context.publishers])}))` : Prisma.sql`FALSE`}
     OR ${exchangeManagers.length ? Prisma.sql`(r."targetType" = 'EXCHANGE_LISTING' AND d."authorChurchId" IN (${Prisma.join(exchangeManagers)}))` : Prisma.sql`FALSE`}`;
   const reviewer = Prisma.sql`${actor.eligible} AND d."actorId"=${actor.id} AND (${reviewReportScope(authority)})`;
@@ -68,7 +74,12 @@ export async function visibleSupportIds(
   tx: PostTx,
   actor: SupportActor,
   grant: { id: string; version: number } | null,
-  options: { id?: string; page?: number; assigned?: boolean; feedbackOnly?: boolean } = {}
+  options: {
+    id?: string;
+    page?: number;
+    assigned?: boolean;
+    feedbackOnly?: boolean;
+  } = {}
 ) {
   const scope = await supportVisibilityScope(
     tx,
@@ -120,7 +131,9 @@ export async function contentAppealOffer(
 ) {
   const context = await postContext(tx, actorId);
   const decision = await tx.communityReportDecision.findFirst({
-    where: { AND: [{ id: postId(decisionId) }, await authorDecisionWhere(tx, context)] },
+    where: {
+      AND: [{ id: postId(decisionId) }, await authorDecisionWhere(tx, context)]
+    },
     select: decisionFields
   });
   if (
@@ -208,7 +221,9 @@ export async function contentSupportAccess(
   const requester =
     row.requesterId === actorId &&
     !!(await tx.communityReportDecision.findFirst({
-      where: { AND: [{ id: decision.id }, await authorDecisionWhere(tx, context)] },
+      where: {
+        AND: [{ id: decision.id }, await authorDecisionWhere(tx, context)]
+      },
       select: { id: true }
     }));
   const reviewer = await activeContentReviewer(tx, decision);

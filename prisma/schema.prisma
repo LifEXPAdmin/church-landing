@@ -213,6 +213,8 @@ enum PlatformPostType {
 }
 
 model PlatformUser {
+  artistStewardships ArtistProfile[]
+  artistDelegations ArtistDelegate[]
   ownedMediaPlaylists MediaPlaylist[] @relation("PlaylistPersonalOwner")
   createdMediaPlaylists MediaPlaylist[] @relation("PlaylistCreator")
   mediaPlaylistEvents MediaPlaylistEvent[]
@@ -619,6 +621,8 @@ enum OperatorCapability {
 }
 
 enum CommunityReportTarget {
+  ARTIST
+  ARTIST_RELEASE
   INTERCHURCH_OFFER
   GROUP
   PANTRY_REQUEST
@@ -3204,6 +3208,10 @@ model AdultConversationState {
 }
 
 model SocialRelationship {
+  artistId String?
+  followingArtist Boolean @default(false)
+  artist ArtistProfile? @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  @@unique([ownerId, artistId])
   followingSince DateTime?
   authorBellSince DateTime?
   authorBellVersion Int @default(0)
@@ -3705,4 +3713,116 @@ model MediaPlaylistEvent {
   version Int
   createdAt DateTime @default(now())
   @@index([playlistId, createdAt])
+}
+
+
+// Artist stewardship, credit and publication are separate from personal identity.
+model ArtistProfile {
+  id String @id @default(cuid())
+  stewardId String?
+  steward PlatformUser? @relation(fields: [stewardId], references: [id], onDelete: SetNull)
+  version Int @default(1)
+  controlVersion Int @default(1)
+  presentation String @default("PERSON")
+  name String @default("")
+  biography String @default("")
+  roles String[] @default([])
+  genres String[] @default([])
+  countryId String?
+  townId String?
+  churchCredit String @default("")
+  credits Json @default("[]")
+  state String @default("DRAFT")
+  moderationState ContentModerationState @default(VISIBLE)
+  recoveryRequired Boolean @default(false)
+  fingerprint String?
+  rightsFingerprint String?
+  rightsPolicy String?
+  rightsBasis String?
+  rightsActorId String?
+  rightsAssertedAt DateTime?
+  rightsExpiresAt DateTime?
+  removedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  publishedAt DateTime?
+  delegates ArtistDelegate[]
+  releases ArtistRelease[]
+  associations ArtistEventAssociation[]
+  followers SocialRelationship[]
+  events ArtistAudit[]
+  @@index([stewardId, state, updatedAt])
+  @@index([state, updatedAt, id])
+}
+model ArtistRelease {
+  id String @id @default(cuid())
+  artistId String?
+  artist ArtistProfile? @relation(fields: [artistId], references: [id], onDelete: Restrict)
+  version Int @default(1)
+  controlVersion Int @default(1)
+  kind String @default("SINGLE")
+  title String @default("")
+  description String @default("")
+  releaseDate String?
+  tracks Json @default("[]")
+  credits Json @default("[]")
+  links Json @default("[]")
+  state String @default("DRAFT")
+  moderationState ContentModerationState @default(VISIBLE)
+  recoveryRequired Boolean @default(false)
+  fingerprint String?
+  rightsFingerprint String?
+  rightsPolicy String?
+  rightsBasis String?
+  rightsActorId String?
+  rightsAssertedAt DateTime?
+  rightsExpiresAt DateTime?
+  removedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  publishedAt DateTime?
+  @@index([artistId, state, updatedAt])
+}
+model ArtistDelegate {
+  id String @id @default(cuid())
+  artistId String
+  artist ArtistProfile @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  accountId String
+  account PlatformUser @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  capabilities String[]
+  version Int @default(1)
+  state String @default("PENDING")
+  expiresAt DateTime
+  acceptedAt DateTime?
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+  @@unique([artistId, accountId])
+  @@index([accountId, state])
+}
+// Both artist and canonical event owners explicitly approve this reference.
+model ArtistEventAssociation {
+  id String @id @default(cuid())
+  artistId String
+  artist ArtistProfile @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  occurrenceId String
+  version Int @default(1)
+  proposedById String?
+  acceptedById String?
+  acceptedAt DateTime?
+  revokedAt DateTime?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  @@unique([artistId, occurrenceId])
+  @@index([occurrenceId, revokedAt])
+}
+model ArtistAudit {
+  id String @id @default(cuid())
+  artistId String
+  artist ArtistProfile @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  actorId String?
+  resourceId String
+  action String
+  version Int
+  createdAt DateTime @default(now())
+  @@index([artistId, createdAt])
 }

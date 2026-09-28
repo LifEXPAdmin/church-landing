@@ -1,3 +1,4 @@
+import { quarantineArtists } from "./artist-retention";
 import { Prisma, type PrismaClient } from "@prisma/client";
 import { clearRestoredMeasurements } from "./platform-measurement";
 import { createSessionToken, hashSessionToken } from "./auth";
@@ -150,6 +151,7 @@ export async function quarantineRestoredAccess(db: PrismaClient) {
       } });
       await tx.privilegedSessionProof.deleteMany({});
       await tx.privilegedSecurityNotice.deleteMany({});
+      const artistsQuarantined = await quarantineArtists(tx, now);
       const measurementsRetired = await clearRestoredMeasurements(tx);
       const topicRoles = await tx.topicMembership.updateMany({
         where: { OR: [{ moderator: true }, { pendingRole: { not: null } }] },
@@ -204,6 +206,7 @@ export async function quarantineRestoredAccess(db: PrismaClient) {
         googleAssociations: googleAssociations.count,
         topicsNeedingOwnershipReview: topics.count,
         measurementsRetired,
+        artistsQuarantined,
         elevatedGrants:
           operators.count +
           churchCapabilities.count +

@@ -1,3 +1,4 @@
+import { purgeArtistEvidence } from "./artist-retention";
 import { Prisma, type PrismaClient } from "@prisma/client";
 import { emptyPostDiscovery } from "./post-options";
 import {
@@ -180,6 +181,7 @@ export async function purgeMessagingCandidate(
     // selected report expires. Active accounts and shared church content retain
     // their normal lifecycle; messages use their participant-retention check.
     if (source && !(await tx.communityReport.count({ where: source }))) {
+      await purgeArtistEvidence(tx, source.targetType, source.targetId);
       if (source.targetType === "PANTRY_REQUEST")
         await tx.pantryRequest.updateMany({
           where: {

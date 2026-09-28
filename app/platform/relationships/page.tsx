@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Metadata } from "next";
 import { PlatformShell } from "@/components/platform/platform-shell";
 import { GuestAccountPrompt } from "@/components/platform/guest-account-prompt";
@@ -28,6 +29,13 @@ export default async function RelationshipsPage({
         <section className="container-shell py-10">
           <div className="mx-auto max-w-2xl space-y-5">
             <h1 className="text-4xl">Your connections</h1>
+            <Link
+              href="/platform/music/following"
+              prefetch={false}
+              className="inline-flex min-h-11 items-center underline"
+            >
+              Followed artists
+            </Link>
             <RelationshipLibrary
               key={`${user.id}-${view}-${after ?? "first"}-${search}`}
               owner={user.id}

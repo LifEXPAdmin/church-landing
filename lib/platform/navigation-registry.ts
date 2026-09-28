@@ -11,10 +11,58 @@ type Destination = {
   resource?: ResourceKind;
 };
 export const navigationRegistry = {
-  media: {href:"/platform/media",title:"Media library",description:"Browse sermons, podcasts, testimonies, services and teaching.",icon:"book",resource:"mediaCatalogItem",prefetch:false},
-  mediaStudio: {href:"/platform/media/studio",title:"Publishing studio",description:"Create private media drafts and review publication.",icon:"file",resource:"mediaCatalogItem",prefetch:false},
-  mediaPlaylists: {href:"/platform/media/playlists",title:"Media playlists",description:"Organize finite playlists with each recording's current audience.",icon:"book",resource:"mediaPlaylist",prefetch:false},
-  savedMedia: {href:"/platform/media/saved",title:"Saved media",description:"Keep recordings privately without changing their audience.",icon:"book",resource:"savedMedia",prefetch:false},
+  music: {
+    href: "/platform/music",
+    title: "Artists and music",
+    description:
+      "Discover artist profiles and publisher-supplied external releases.",
+    icon: "book",
+    resource: "artist",
+    prefetch: false
+  },
+  artistStudio: {
+    href: "/platform/music/studio",
+    title: "Artist studio",
+    description:
+      "Manage artist profiles, editor permissions and release drafts.",
+    icon: "file",
+    resource: "artist",
+    prefetch: false
+  },
+  media: {
+    href: "/platform/media",
+    title: "Media library",
+    description:
+      "Browse sermons, podcasts, testimonies, services and teaching.",
+    icon: "book",
+    resource: "mediaCatalogItem",
+    prefetch: false
+  },
+  mediaStudio: {
+    href: "/platform/media/studio",
+    title: "Publishing studio",
+    description: "Create private media drafts and review publication.",
+    icon: "file",
+    resource: "mediaCatalogItem",
+    prefetch: false
+  },
+  mediaPlaylists: {
+    href: "/platform/media/playlists",
+    title: "Media playlists",
+    description:
+      "Organize finite playlists with each recording's current audience.",
+    icon: "book",
+    resource: "mediaPlaylist",
+    prefetch: false
+  },
+  savedMedia: {
+    href: "/platform/media/saved",
+    title: "Saved media",
+    description: "Keep recordings privately without changing their audience.",
+    icon: "book",
+    resource: "savedMedia",
+    prefetch: false
+  },
   home: {
     href: "/platform",
     title: "Home",
@@ -308,6 +356,8 @@ const menuGroups = [
       { id: "drafts", signedIn: true },
       { id: "mediaStudio", signedIn: true },
       { id: "savedMedia", signedIn: true },
+      { id: "music" },
+      { id: "artistStudio", signedIn: true },
       { id: "mediaPlaylists" },
       { id: "prayers", signedIn: true },
       { id: "calendars" },
