@@ -1,3 +1,20 @@
+## Profile editor memory and concealment, 28 September 2026 UTC
+
+Source `c338b0d` is locally verified, not merged or live. Private saved profile
+fields no longer enter initial editor HTML/RSC. After a current-owner read, draft
+values, selected File/crop, original save bytes and reviewed versions remain only
+in their mounted React owners. Concealment removes private controls, photo URLs,
+review values and notices from presentation. The stable hidden file input has an
+empty value/FileList after selection; the private File survives in memory until
+the user finishes or discards it. No Web Storage, IndexedDB or service-worker cache
+was added. Leaving/reloading still has the established unsaved-work warning.
+
+Account-changing server refreshes cannot replace or reveal the original draft.
+Actual native blur, 18 privacy/recovery browser groups and the related profile/photo
+regressions pass. Controlled chooser automation does not prove physical OS-dialog
+acceptance. See [security acceptance](ACCOUNT_SECURITY_ACCEPTANCE.md). Production
+remains .39, and broader storage/privacy classification stays open.
+
 ## Current session policy, 28 September 2026 UTC
 
 Version .39 adds ordinary idle expiry, as recorded in

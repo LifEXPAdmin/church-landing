@@ -1,3 +1,19 @@
+## Profile editor privacy locally verified, 28 September 2026 UTC
+
+Application `c338b0d9326766abd89ca5118745403fee2b5f98` is implemented and
+locally verified, **not merged or live**. Private profile controls disappear
+while access is uncertain, retaining drafts, selected photos and exact original
+save requests for deliberate recovery. The first controlled edit now survives
+its form's transition to dirty.
+
+Verification passed **51 browser groups, 41 service groups and four HTTPS
+groups**. The exact production build `r4LqkiNNYhvWpoD1ffXDI` passed in
+42.237 seconds with 2,083 tracked hashes unchanged; CI `36386457727` passed.
+[Security acceptance](ACCOUNT_SECURITY_ACCEPTANCE.md) records source reuse,
+reproductions, fixture corrections and limits. This completed feature awaits
+the next compatible batch. Production remains .39/`7fb9da5`; no production
+migration, test write, recipient send or deployment occurred for this feature.
+
 ## Artist releases and inactivity protection verified live, 28 September 2026 UTC
 
 Version **2026.09.28.39** is implemented, tested, merged and verified live.

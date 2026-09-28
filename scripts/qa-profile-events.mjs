@@ -62,9 +62,7 @@ const external = [],
   errors = [],
   results = [],
   startedAt = new Date().toISOString();
-await context.route("**/*", (route) => {
-  if (new URL(route.request().url()).origin === config.origin)
-    return route.continue();
+await context.route((url) => url.origin !== config.origin, (route) => {
   external.push(route.request().url());
   return route.abort();
 });
@@ -205,7 +203,14 @@ try {
       .click();
     const linkedResult = await linkedResponse;
     assert.equal(linkedResult.status(), 200, await linkedResult.text());
-    await (await refreshedGroup).finished();
+    const refreshedResponse = await refreshedGroup;
+    assert.equal(refreshedResponse.status(), 200);
+    // Assert the accepted action and current rendered reference. The framework
+    // stream may stay open after its response headers and client receipt arrive.
+    await form
+      .getByRole("status")
+      .filter({ hasText: "Event linked. Its existing audience" })
+      .waitFor();
     await page.waitForFunction(() => !window.history.state?.gcPhotoWork);
     const linked = await db.gatherGroupEventLink.findUniqueOrThrow({
       where: {
@@ -216,6 +221,10 @@ try {
       }
     });
     assert.equal(linked.active, true);
+    await go("/platform/groups/" + f.group.slug + "/events");
+    await page
+      .getByRole("link", { name: source.event.title, exact: true })
+      .waitFor();
     ok("Copied calendar URL links the original event to the group");
     await go("/platform/profile/me");
     const initial = await getProfileEditor(db, f.owner.token);

@@ -1,3 +1,55 @@
+## Profile editor privacy locally verified, 28 September 2026 UTC
+
+Application `c338b0d9326766abd89ca5118745403fee2b5f98` is implemented and
+locally verified, **not merged or live**. The unchanged prior production source
+first reproduced private saved fields and dirty controls retained after blur or
+account replacement, late review responses restoring concealed details and
+late accepted saves navigating away. Additional actual browser reproductions
+found draft loss during an A-to-B-to-A server refresh, selected-file loss when a
+chooser returned after blur, and the first event-link edit reverting to empty.
+
+The editor now fetches private fields after current-account verification instead
+of serializing them in its initial HTML/RSC. Original draft owners remain mounted
+across account-changing refreshes. Concealment removes private controls, review
+values and photo presentation while retaining input values, selected File/crop,
+event selection, appearance, ordering and original versions in memory. Returning
+to the original account requires a current read; it neither saves nor rebases.
+Bubbling form bookkeeping preserves the first controlled event, participation
+and palette edit. No persistent browser storage or dependency was added.
+
+Uncertain saves retain their exact request through rate limits, failed responses
+and account changes. A delayed accepted reply requires explicit Continue after
+original-account confirmation. Stop retrying requires a warning and subsequent
+saved-version review. Only a first-attempt, explicitly tagged profile validation
+rejection unlocks corrections; an unmarked HTTP400 or a tagged rejection after
+an uncertain attempt cannot prove rollback. A real-database regression commits
+a profile, revokes the session before the final read and verifies this distinction.
+
+Verification passed **51 browser groups, 41 service groups and four HTTPS groups**.
+All browser groups ran against production build `r4LqkiNNYhvWpoD1ffXDI`, source
+`c338b0d`, with enforced fictional MFA. The build passed in **42.237 seconds**,
+including types/lint and copy/security checks; all **2,083 tracked hashes** remained
+unchanged, and exact-source CI `36386457727` passed. A later event QA-only change
+was checked against the unchanged application hashes. Applicable service/HTTPS
+evidence from `5eb2431` is retained: only client form event handlers and browser
+QA changed afterward. Legacy crop behavior passed with photo history disabled;
+nine separate service groups and actual photo UI passed with history enabled.
+
+The new 18-group suite includes native background-tab blur, actual account-changing
+server refreshes, held read/write replies, exact retries, first-edit payloads,
+320/390-pixel keyboard and enlarged-text layouts, and viewer/history cleanup.
+The controlled chooser checks do not establish physical operating-system dialog
+acceptance. Existing settings, appearance, optional sections, event-source access,
+viewer, cropping and history regressions also pass. Earlier failures remain in
+private evidence. The event fixture now proves its own MFA session and uses the
+explicit original-save retry. Its post-link check asserts the accepted receipt,
+history cleanup and current rendered group reference instead of waiting indefinitely
+for a full RSC stream. Broader client-navigation behavior is not declared resolved.
+
+Production remains **.39/`7fb9da5`**. No schema, production migration, application
+test write, recipient send or deployment changed. This feature awaits the next
+compatible batch; wider security, owner/provider/device and pilot gates remain open.
+
 ## Artist releases and inactivity protection verified live, 28 September 2026 UTC
 
 Version **2026.09.28.39** is implemented, tested, merged and verified live.
