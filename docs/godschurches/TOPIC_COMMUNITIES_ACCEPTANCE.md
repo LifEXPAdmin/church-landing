@@ -1,5 +1,22 @@
 # Topic communities acceptance
 
+## Topic management privacy locally verified, 28 September 2026 UTC
+
+Application `27892b075d0a93d77dc851608fcf1218d86ca6e1` is implemented and locally
+tested, **not merged or live**. Management data no longer enters initial HTML/RSC
+or concealed DOM. Complete drafts, consent and original requests survive actual
+account-changing refreshes. Changed snapshots retain dirty sibling controllers;
+only deliberate recovery can confirm an existing immutable request. Current
+identity, MFA, permissions and version checks remain authoritative.
+
+All **77 browser groups, 22 service groups and one HTTPS group** pass, along with
+build `4qZw7aHB-vS0B7TbPPqRI` and exact application-source CI `36403653444`.
+[Security acceptance](ACCOUNT_SECURITY_ACCEPTANCE.md) records the reproductions,
+QA-only corrections and measured costs. Production remains verified .41/`9dd48b8`.
+No new migration, production write, send or intermediate deployment occurred.
+Next reproduce followed-stream privacy and prepare a compatible completed batch.
+Broader security and actual owner/provider/device acceptance remain open.
+
 ## Topic creation and private catalogues verified live, 28 September 2026 UTC
 
 Version **2026.09.28.41** is implemented, tested, merged and verified live.

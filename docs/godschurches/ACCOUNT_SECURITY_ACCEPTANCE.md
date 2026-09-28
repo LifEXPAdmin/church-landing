@@ -1,3 +1,53 @@
+## Topic management privacy locally verified, 28 September 2026 UTC
+
+Unchanged .41 reproduced private member serialization into initial HTML, concealed
+DOM retaining private draft values and member links, and actual same-document
+A-to-B-to-A server refresh replacing drafts with saved defaults. Application
+`27892b075d0a93d77dc851608fcf1218d86ca6e1` repairs this bounded management slice.
+It is **implemented and locally tested, not merged or live**.
+
+The existing management endpoint loads after hydration with current-owner checks.
+The original account tree remains above the account-keyed shell. Controlled text,
+selects, consent and disclosure state survive concealment; private presentation
+is physically removed. A current-generation read gates reveal and continuation.
+Dirty, pending, busy or conflicted sibling forms prevent snapshot replacement.
+Direct concealed recovery uses only existing immutable bytes or an accepted
+receipt, never removed controls or a newly constructed command. Current denials
+invalidate access; stale replies cannot reveal or navigate. No service, permission,
+MFA or replay contract changed.
+
+All **77 browser groups** pass: 12 new management, nine creation privacy, eight
+original recovery, 12 existing Topic interfaces and 36 CSP checks. New coverage
+includes native trusted tab blur, private RSC absence, complete draft restoration,
+actual account refresh, queued reads, lost committed replies with cooldown and one
+effect, late accepted continuation without another POST, dirty siblings, two
+pending commands surviving member removal, real member 20/1 and independent history
+20/2 paging, archived reopening, hidden/recovery states, moderators and guests.
+The relevant **22 service groups and one production-mode HTTPS group** also pass.
+New management/creation/recovery checks enforce fictional MFA. Existing legacy
+Topic/HTTPS checks retain their isolated MFA-off contract. Physical-device and
+real-provider acceptance are separate. Browser, external-request and route errors
+are zero in accepted receipts.
+
+Build `4qZw7aHB-vS0B7TbPPqRI` passed in **45.215 seconds**, with all **2,093 tracked
+source hashes unchanged**. Exact application-source CI `36403653444` passed. Only
+the management QA script changed afterward; all runtime source and all **1,527
+non-cache compiled hashes** remain identical. Test corrections enrolled/renewed
+real fictional MFA for current version authority, used the established native
+focus harness, restored a mistakenly removed test helper, scoped hydration
+selectors and waited for the correct recovery-state controls. A renewed archived
+owner can satisfy an already-running read, so the test now requests foreground
+validation without assuming the notice remains mounted. Every failed attempt is
+retained and excluded from acceptance.
+
+Summed local gzip route JavaScript increases from 213,343 to 217,270 bytes across
+19 files, including shared chunks: **3,927 bytes**. This is not a latency or hosted
+capacity claim. No dependency, persistent browser store, service or migration was
+added. Source remains at 123 migrations. Production .41 is unchanged; no production
+write, recipient send or deployment occurred. Followed-stream privacy and broader
+security/owner/provider/device/operator gates remain open. Final combined release
+acceptance will be completed for the compatible batch.
+
 ## Topic creation and private catalogues verified live, 28 September 2026 UTC
 
 Version **2026.09.28.41** is implemented, tested, merged and verified live.

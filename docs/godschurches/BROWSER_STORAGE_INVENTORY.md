@@ -1,3 +1,15 @@
+## Topic management memory locally verified, 28 September 2026 UTC
+
+Application `27892b0` removes management data from initial HTML/RSC and concealed
+DOM while retaining original account, private snapshot, complete controlled drafts,
+consent, immutable requests and accepted receipts in mounted memory. Dirty siblings
+prevent automatic version/target replacement. Current authorization permits only
+explicit original recovery when a changed snapshot remains concealed. Reload warns
+that clearing local work does not undo saved changes. No persistent browser store
+was added. [Security acceptance](ACCOUNT_SECURITY_ACCEPTANCE.md) records 77 browser,
+22 service and one HTTPS groups. This slice is not merged or live; followed-stream
+and broader owner/device gates remain open.
+
 ## Topic creation and private catalogue memory verified live, 28 September 2026 UTC
 
 Version .41/source `9dd48b8` is implemented, tested, merged and verified live in

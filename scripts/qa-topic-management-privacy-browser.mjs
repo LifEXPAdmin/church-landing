@@ -201,43 +201,6 @@ async function challenge(a) {
     )
   });
 }
-async function formFor(a) {
-  await signIn(a);
-  await go("/platform/topics/new");
-  const form = page.getByRole("form", {
-    name: "Create public topic",
-    exact: true
-  });
-  const tag = randomUUID().slice(0, 8),
-    slug = "retry-" + tag;
-  await form
-    .getByLabel("Community name", { exact: true })
-    .fill("Fictional retry " + tag);
-  await form.getByLabel("Topic address", { exact: true }).fill(slug);
-  await form
-    .getByLabel("What is this community about?", { exact: true })
-    .fill("Fictional original request recovery.");
-  await form
-    .getByLabel("Community rules", { exact: true })
-    .fill("Respect one another and protect private information.");
-  await form
-    .getByLabel(
-      "I understand the topic, its posts and its rules will be public. I accept responsibility for managing this community.",
-      { exact: true }
-    )
-    .check();
-  return { form, slug };
-}
-async function start(form) {
-  await form
-    .getByRole("button", { name: "Create public topic", exact: true })
-    .click();
-}
-async function retry() {
-  const direct = button("Retry the same topic request");
-  if (await direct.isVisible()) await direct.click();
-  else await button("Confirm original request").click();
-}
 async function intercept(handler) {
   await page.route(topicUrl, async (route) => {
     if (route.request().method() !== "POST") return route.fallback();
@@ -248,25 +211,6 @@ async function intercept(handler) {
       await route.abort().catch(() => {});
     }
   });
-}
-async function counts(a, slug) {
-  const topic = await db.topicCommunity.findUniqueOrThrow({ where: { slug } });
-  assert.equal(topic.ownerId, a.id);
-  return {
-    topics: await db.topicCommunity.count({ where: { ownerId: a.id } }),
-    createdAudits: await db.topicAudit.count({
-      where: { communityId: topic.id, action: "CREATED" }
-    }),
-    receipts: await db.socialOperation.count({
-      where: { ownerId: a.id, key: { startsWith: "topic:" } }
-    })
-  };
-}
-async function saved(slug) {
-  await page.waitForURL(config.origin + "/platform/topics/" + slug, {
-    waitUntil: "commit"
-  });
-  await page.getByRole("heading", { level: 1 }).waitFor();
 }
 async function forwarded(route) {
   const request = route.request(),
@@ -321,24 +265,6 @@ async function forwarded(route) {
 }
 const pulse = (name) =>
   page.evaluate((n) => window.dispatchEvent(new Event(n)), name);
-const formSelector = 'form[aria-label="Create public topic"]';
-const values = () =>
-  page
-    .locator(formSelector + " input," + formSelector + " textarea")
-    .evaluateAll((es) =>
-      es.map((e) => ({ name: e.name, value: e.value, checked: e.checked }))
-    );
-async function absent() {
-  await poll(() => page.locator(formSelector).count(), 0);
-  assert.equal(await page.locator('textarea,input[name="slug"]').count(), 0);
-}
-async function resume() {
-  await page
-    .getByRole("main")
-    .getByRole("button", { name: "Recheck current access", exact: true })
-    .click();
-  await page.locator(formSelector).waitFor();
-}
 async function refreshAs(owner) {
   await signIn(owner);
   const completed = Promise.withResolvers();
@@ -366,6 +292,12 @@ async function refreshAs(owner) {
         r.body.toString("utf8").includes(owner.id),
         "RSC must identify the actual cookie owner"
       );
+      for (const marker of privateMarkers)
+        assert.equal(
+          r.body.toString("utf8").includes(marker),
+          false,
+          "Private management data must not enter RSC"
+        );
       phase = "fulfilling RSC";
       await route.fulfill(r);
       phase = "RSC fulfilled";
@@ -413,6 +345,7 @@ async function refreshAs(owner) {
 }
 const { topicCommand } = await import("../lib/platform/topic-communities.ts");
 let managementPath;
+let privateMarkers = [];
 const main = page.getByRole("main");
 const edit = () =>
   main.getByRole("form", { name: "Save topic details", exact: true });
@@ -426,7 +359,7 @@ page.on("request", (request) => {
   )
     topicPosts++;
 });
-async function setup(label) {
+async function setup(label, state) {
   process.env.PRIVILEGED_MFA_MODE = "off";
   const a = await actor(label),
     m = await actor(label + "member"),
@@ -449,10 +382,31 @@ async function setup(label) {
     rulesVersion: 1,
     acceptedRules: true
   });
+  if (state === "ARCHIVED")
+    await db.topicCommunity.update({
+      where: { id: topic.id },
+      data: { lifecycle: "ARCHIVED", version: { increment: 1 } }
+    });
+  if (state === "HIDDEN")
+    await db.topicCommunity.update({
+      where: { id: topic.id },
+      data: { moderationState: "HIDDEN", version: { increment: 1 } }
+    });
+  if (state === "RECOVERY")
+    await db.topicCommunity.update({
+      where: { id: topic.id },
+      data: { recoveryRequired: true, version: { increment: 1 } }
+    });
+  if (state === "MODERATOR")
+    await db.topicMembership.update({
+      where: { communityId_userId: { communityId: topic.id, userId: m.id } },
+      data: { moderator: true, version: { increment: 1 } }
+    });
   const member = await db.platformUser.findUniqueOrThrow({
     where: { id: m.id }
   });
   managementPath = "/platform/topics/manage-" + tag + "/manage";
+  privateMarkers = [member.name, "Private management " + tag];
   await challenge(a);
   await signIn(a);
   const response = await page.goto(config.origin + managementPath);
@@ -460,8 +414,16 @@ async function setup(label) {
   const html = await response.text();
   assert.equal(html.includes(member.name), false);
   assert.equal(html.includes("Private management " + tag), false);
-  await main.getByText("Edit topic details and rules", { exact: true }).click();
-  await edit().waitFor();
+  if (state === "RECOVERY")
+    await main
+      .getByText(/Protected recovery requires current ownership verification/)
+      .waitFor();
+  else {
+    await main
+      .getByText("Edit topic details and rules", { exact: true })
+      .click();
+    await edit().waitFor();
+  }
   return { a, m, member, topic, tag };
 }
 async function draft(tag) {
@@ -605,6 +567,46 @@ try {
   ok(
     "Held management reads and passive online hints cannot reveal concealed data or drop drafts"
   );
+  assert.equal(process.env.TOPIC_PRIVACY_HEADFUL, "1");
+  const otherTab = await context.newPage(),
+    foreground = await context.newCDPSession(page),
+    background = await context.newCDPSession(otherTab);
+  try {
+    await foreground.send("Emulation.setFocusEmulationEnabled", {
+      enabled: false
+    });
+    await background.send("Emulation.setFocusEmulationEnabled", {
+      enabled: false
+    });
+    await page.bringToFront();
+    await page.waitForFunction(() => document.hasFocus());
+    await edit().waitFor();
+    await page.evaluate(() => {
+      window.__topicNativeBlur = 0;
+      window.addEventListener("blur", (e) => {
+        if (e.isTrusted) window.__topicNativeBlur++;
+      });
+    });
+    await otherTab.bringToFront();
+    await page.waitForFunction(() => !document.hasFocus(), undefined, {
+      polling: 100
+    });
+    assert.ok(await page.evaluate(() => window.__topicNativeBlur > 0));
+    await privateAbsent(first.member.name);
+    await page.bringToFront();
+    await edit().waitFor();
+    assert.deepEqual(await fieldValues(), expected);
+  } finally {
+    await foreground.send("Emulation.setFocusEmulationEnabled", {
+      enabled: true
+    });
+    await foreground.detach();
+    await background.detach();
+    await otherTab.close();
+  }
+  ok(
+    "Actual native tab blur removes private management DOM and foreground return restores complete drafts"
+  );
   for (const width of [390, 320]) {
     await page.setViewportSize({ width, height: 900 });
     await page.evaluate(
@@ -670,7 +672,14 @@ try {
     .waitFor();
   assert.ok(committed);
   await pulse("blur");
+  const deniedManagement = page.waitForResponse(
+    (r) => managementUrl(new URL(r.url())) && r.status() === 403
+  );
   await pulse("focus");
+  await deniedManagement;
+  await privateAbsent(uncertain.member.name);
+  await challenge(uncertain.a);
+  await recheck();
   await main
     .getByRole("button", { name: "Confirm original request", exact: true })
     .waitFor();
@@ -692,7 +701,6 @@ try {
         .isEnabled(),
     true
   );
-  await challenge(uncertain.a);
   await originalRetry();
   await main
     .getByRole("heading", {
@@ -744,6 +752,7 @@ try {
   await page.waitForTimeout(300);
   await privateAbsent(late.member.name);
   assert.equal(latePosts, 1);
+  await challenge(late.a);
   await pulse("focus");
   await main
     .getByRole("button", { name: "Confirm original request", exact: true })
@@ -785,6 +794,243 @@ try {
   ok(
     "A successful sibling form preserves the frozen workspace and conceals changed authority/history rather than silently rebasing dirty forms"
   );
+  const multiple = await setup("multiple");
+  await draft(multiple.tag);
+  const originalBodies = new Map(),
+    attemptsByOperation = new Map();
+  await intercept(async (route) => {
+    const body = route.request().postData(),
+      request = JSON.parse(body);
+    const count = (attemptsByOperation.get(request.operation) ?? 0) + 1;
+    attemptsByOperation.set(request.operation, count);
+    if (count === 1) {
+      originalBodies.set(request.operation, body);
+      await route.fulfill({
+        status: 503,
+        json: { message: "Fictional pending " + request.operation }
+      });
+    } else {
+      assert.equal(body, originalBodies.get(request.operation));
+      await route.fallback();
+    }
+  });
+  await main
+    .getByRole("form", { name: "Offer topic role", exact: true })
+    .getByRole("button", { name: "Offer topic role", exact: true })
+    .click();
+  await main
+    .getByText("Fictional pending offer-role", { exact: true })
+    .waitFor();
+  await main
+    .getByRole("form", { name: "Restrict this member", exact: true })
+    .getByRole("button", { name: "Restrict this member", exact: true })
+    .click();
+  await main.getByText("Fictional pending restrict", { exact: true }).waitFor();
+  await db.topicMembership.update({
+    where: {
+      communityId_userId: {
+        communityId: multiple.topic.id,
+        userId: multiple.m.id
+      }
+    },
+    data: { joined: false, version: { increment: 1 } }
+  });
+  await pulse("blur");
+  await pulse("focus");
+  await poll(
+    () =>
+      main
+        .getByRole("button", { name: "Confirm original request", exact: true })
+        .count(),
+    2
+  );
+  await privateAbsent(multiple.member.name);
+  const firstDenial = page.waitForResponse(
+    (r) => topicUrl(new URL(r.url())) && r.request().method() === "POST"
+  );
+  await main
+    .getByRole("button", { name: "Confirm original request", exact: true })
+    .nth(0)
+    .click();
+  assert.ok([403, 409].includes((await firstDenial).status()));
+  await recheck();
+  await poll(
+    () =>
+      main
+        .getByRole("button", { name: "Confirm original request", exact: true })
+        .count(),
+    2
+  );
+  const secondDenial = page.waitForResponse(
+    (r) => topicUrl(new URL(r.url())) && r.request().method() === "POST"
+  );
+  await main
+    .getByRole("button", { name: "Confirm original request", exact: true })
+    .nth(0)
+    .click();
+  assert.ok([403, 409].includes((await secondDenial).status()));
+  for (const body of originalBodies.values())
+    assert.equal(
+      await db.socialOperation.count({
+        where: {
+          ownerId: multiple.a.id,
+          key: "topic:" + JSON.parse(body).mutationId
+        }
+      }),
+      0
+    );
+  assert.deepEqual([...attemptsByOperation.values()], [2, 2]);
+  await page.unroute(topicUrl);
+  ok(
+    "Two pending member forms survive removal from the current list, retain distinct exact commands and receive current authority/version denials without a saved effect"
+  );
+  const pages = await setup("paging");
+  // Unique fictional actors and history belong only to this isolated community.
+  for (let i = 0; i < 19; i++) {
+    const u = await actor("page" + i);
+    await db.topicMembership.create({
+      data: {
+        communityId: pages.topic.id,
+        userId: u.id,
+        joined: true,
+        rulesVersion: 1
+      }
+    });
+  }
+  await db.topicAudit.createMany({
+    data: Array.from({ length: 21 }, (_, i) => ({
+      communityId: pages.topic.id,
+      actorId: pages.a.id,
+      action: "EDITED",
+      version: i + 10
+    }))
+  });
+  await page.reload();
+  await main
+    .getByRole("heading", { name: "Topic members", exact: true })
+    .waitFor();
+  const memberRegion = main.getByRole("region", {
+    name: "Topic members",
+    exact: true
+  });
+  const idsFirst = await memberRegion
+    .locator("h3 a")
+    .evaluateAll((es) => es.map((e) => e.getAttribute("href")));
+  assert.equal(idsFirst.length, 20);
+  await main
+    .getByRole("link", { name: "More topic members", exact: true })
+    .click();
+  await poll(() => memberRegion.locator("h3 a").count(), 1);
+  const idsNext = await memberRegion
+    .locator("h3 a")
+    .evaluateAll((es) => es.map((e) => e.getAttribute("href")));
+  assert.equal(
+    idsNext.some((id) => idsFirst.includes(id)),
+    false
+  );
+  await main
+    .getByRole("link", { name: "First member page", exact: true })
+    .click();
+  await poll(() => memberRegion.locator("h3 a").count(), 20);
+  const history = main.getByRole("region", {
+    name: "Topic management history",
+    exact: true
+  });
+  assert.equal(await history.locator("li").count(), 20);
+  await main
+    .getByRole("link", { name: "Older management history", exact: true })
+    .click();
+  await poll(() => history.locator("li").count(), 2);
+  assert.equal(await memberRegion.locator("h3 a").count(), 20);
+  await main.getByRole("link", { name: "Latest history", exact: true }).click();
+  await poll(() => history.locator("li").count(), 20);
+  ok(
+    "Actual member20+1 and independent history20+2 paging remain bounded and return to the correct first pages"
+  );
+  const archived = await setup("archived", "ARCHIVED");
+  assert.equal(
+    await main
+      .getByRole("region", { name: "Topic members", exact: true })
+      .count(),
+    0
+  );
+  await main
+    .getByRole("heading", { name: "Management history", exact: true })
+    .waitFor();
+  await main.getByText("Reopen this topic", { exact: true }).click();
+  await main
+    .getByLabel("I confirm this topic visibility change.", { exact: true })
+    .check();
+  await main.getByRole("button", { name: "Reopen topic", exact: true }).click();
+  await poll(
+    async () =>
+      (
+        await db.topicCommunity.findUniqueOrThrow({
+          where: { id: archived.topic.id }
+        })
+      ).lifecycle,
+    "ACTIVE"
+  );
+  await challenge(archived.a);
+  await pulse("focus");
+  await main.getByText("Archive this topic", { exact: true }).waitFor();
+  await setup("hidden", "HIDDEN");
+  await main
+    .getByText("Topic visibility is restricted by moderation", { exact: false })
+    .waitFor();
+  assert.equal(
+    await main
+      .getByRole("region", { name: "Topic members", exact: true })
+      .count(),
+    0
+  );
+  await main
+    .getByRole("heading", { name: "Management history", exact: true })
+    .waitFor();
+  await setup("recovery", "RECOVERY");
+  assert.equal(await main.locator("form").count(), 0);
+  assert.equal(
+    await main
+      .getByRole("region", { name: "Topic members", exact: true })
+      .count(),
+    0
+  );
+  assert.equal(
+    await main
+      .getByRole("heading", { name: "Management history", exact: true })
+      .count(),
+    0
+  );
+  ok(
+    "Archived owners can reopen after current verification; hidden and protected-recovery views retain their distinct controls, member and history boundaries"
+  );
+  const moderator = await setup("moderator", "MODERATOR");
+  await challenge(moderator.m);
+  await signIn(moderator.m);
+  await go(managementPath);
+  await main
+    .getByRole("heading", { name: "Topic members", exact: true })
+    .waitFor();
+  await main
+    .getByRole("heading", { name: "Management history", exact: true })
+    .waitFor();
+  assert.equal(
+    await main
+      .getByText("Edit topic details and rules", { exact: true })
+      .count(),
+    0
+  );
+  assert.equal(
+    await main.getByText("Archive this topic", { exact: true }).count(),
+    0
+  );
+  await signIn(null);
+  await go(managementPath);
+  assert.equal(await main.locator("form").count(), 0);
+  assert.equal((await page.content()).includes(moderator.member.name), false);
+  ok(
+    "Current moderators receive scoped management without owner controls; guests see account entry with no private payload or mutation"
+  );
   assert.equal(errors.length, 0);
   assert.equal(external.length, 0);
   assert.equal(routeErrors.length, 0);
@@ -806,6 +1052,8 @@ try {
   writeFileSync(output + "/receipt.json", JSON.stringify(receipt, null, 2));
   console.log(JSON.stringify({ output, groups: results.length }));
 } catch (error) {
+  writeFileSync(output + "/failure-dom.html", await page.content());
+  await page.screenshot({ path: output + "/failure.png" }).catch(() => {});
   writeFileSync(
     output + "/failure.json",
     JSON.stringify(
