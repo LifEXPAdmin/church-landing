@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useArtistContinuation } from "./artist-editor-workspace";
 import { ArtistCredits, ArtistRights, rightsInput } from "./artist-editor";
 import { artistFieldClass, useArtistWrite } from "./artist-library";
 import { useUnsavedSocialWork } from "./use-unsaved-social-work";
@@ -60,6 +61,7 @@ export function ArtistReleaseEditor({
     [basis, setBasis] = useState("OWN_WORK"),
     [expiry, setExpiry] = useState(""),
     [guardNotice, setGuardNotice] = useState("");
+  const access = useArtistContinuation(visible);
   const write = useArtistWrite(
     owner,
     `release:${artistId}:${item?.id ?? "new"}`,
@@ -73,18 +75,31 @@ export function ArtistReleaseEditor({
         body.operation === "abandon"
       )
         onClose();
-    }
+    },
+    "/api/platform/artists",
+    access
   );
   const conflict = !!item && item.version !== version;
   useEffect(() => {
-    if (!dirty && !write.uncertain && item && item.version !== version) {
+    if (
+      !dirty &&
+      !write.uncertain &&
+      !write.busy &&
+      !write.confirmed &&
+      item &&
+      item.version !== version
+    ) {
       setF(initial(item));
       setVersion(item.version);
       setConfirmed(false);
     }
-  }, [item, dirty, write.uncertain, version]);
+  }, [item, dirty, write.uncertain, write.busy, write.confirmed, version]);
   useUnsavedSocialWork(
-    { dirty, saving: write.busy || !!write.uncertain, conflict },
+    {
+      dirty: dirty && !write.confirmed,
+      saving: !write.confirmed && (write.busy || !!write.uncertain),
+      conflict: conflict && !write.confirmed
+    },
     () =>
       setGuardNotice(
         "Save this release or close its editor and confirm discarding unsent edits before leaving."
@@ -124,7 +139,7 @@ export function ArtistReleaseEditor({
       tracks: f.tracks.map((t, j) => (i === j ? { ...t, ...patch } : t))
     });
   // Keep local unsent fields in memory while the current-access read conceals the DOM.
-  if (!visible)
+  if (!access.visible)
     return (
       <section
         aria-label="Pending release change"
@@ -363,11 +378,20 @@ export function ArtistReleaseEditor({
           />
           <ArtistRights
             confirmed={confirmed}
-            setConfirmed={setConfirmed}
+            setConfirmed={(value) => {
+              setConfirmed(value);
+              setDirty(true);
+            }}
             basis={basis}
-            setBasis={setBasis}
+            setBasis={(value) => {
+              setBasis(value);
+              setDirty(true);
+            }}
             expiry={expiry}
-            setExpiry={setExpiry}
+            setExpiry={(value) => {
+              setExpiry(value);
+              setDirty(true);
+            }}
           />
           <div className="flex flex-wrap gap-3">
             <button

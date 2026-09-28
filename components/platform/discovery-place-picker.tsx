@@ -9,6 +9,8 @@ export function DiscoveryPlacePicker({
   onCountry,
   onPlace,
   onManualChange,
+  queryValue,
+  onQueryChange,
   disabled = false
 }: {
   country: string | null;
@@ -16,15 +18,19 @@ export function DiscoveryPlacePicker({
   onCountry: (country: string | null) => void;
   onPlace: (id: number | null) => void;
   onManualChange?: () => void;
+  queryValue?: string;
+  onQueryChange?: (value: string) => void;
   disabled?: boolean;
 }) {
   const id = useId(),
     generation = useRef(0);
-  const [query, setQuery] = useState(""),
+  const [localQuery, setLocalQuery] = useState(""),
     [places, setPlaces] = useState<Place[]>([]),
     [selected, setSelected] = useState<Place | null>(null),
     [message, setMessage] = useState(""),
     [busy, setBusy] = useState(false);
+  const query = queryValue ?? localQuery,
+    setQuery = onQueryChange ?? setLocalQuery;
   useEffect(() => {
     const seq = ++generation.current;
     setPlaces([]);
