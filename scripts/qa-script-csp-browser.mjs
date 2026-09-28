@@ -61,9 +61,10 @@ try {
       request.method() === "POST"
     ) {
       reports.push(request.postDataJSON());
-      // The dedicated report-route tests exercise delivery. Do not write even
-      // limiter rows during this markup-only reproduction.
-      return route.fulfill({ status: 204 });
+      // Allow only this diagnostic POST to the isolated handler. Modern browser
+      // reporting can bypass page interception, so the owned HTTPS proxy also
+      // records sanitized delivery metadata, never the report body.
+      return route.continue();
     }
     if (!["GET", "HEAD"].includes(request.method())) {
       blockedRequests.push({ kind: "mutation", method: request.method() });
@@ -84,6 +85,18 @@ try {
         <button id="fictional-csp-event" onclick="window.__cspEvent = true">Fictional event sentinel</button>`;
       return route.fulfill({
         response,
+        ...(url.searchParams.get("fictional-report") === "legacy"
+          ? {
+              headers: {
+                ...response.headers(),
+                "content-security-policy": policy.replace(
+                  /; report-to csp\b/,
+                  ""
+                ),
+                "reporting-endpoints": ""
+              }
+            }
+          : {}),
         body: (await response.text()).replace("</body>", markup + "</body>")
       });
     }
@@ -132,6 +145,12 @@ try {
     policy
   });
   if (!reproduce) {
+    // Exercise older report-uri senders with the same enforced restrictions.
+    // Only reporting transport selection changes in this fictional response.
+    await page.goto(config.origin + "/about?fictional-report=legacy", {
+      waitUntil: "networkidle"
+    });
+    await page.locator("#fictional-csp-event").click();
     await context.close();
     const clean = await browser.newContext({
       extraHTTPHeaders: {
@@ -165,6 +184,10 @@ try {
     const nonces = new Set();
     for (const path of [
       ...config.publicRoutes,
+      "/images/fictional-missing-csp.png",
+      "/brand/fictional-missing-csp.png",
+      "/api/fictional-missing-csp",
+      "/_next/fictional-missing-csp",
       "/platform/login",
       "/platform/media",
       "/about",
@@ -250,6 +273,22 @@ try {
       check:
         "Same-origin notification worker registration without subscription or permission prompt"
     });
+    for (const path of [
+      "/hero.jpg",
+      "/brand/search-icon.png",
+      "/notification-worker.js"
+    ]) {
+      const response = await clean.request.get(config.origin + path);
+      assert.equal(response.status(), 200);
+      assert.ok(
+        !/no-store/.test(response.headers()["cache-control"] ?? ""),
+        `${path} retains ordinary asset caching`
+      );
+    }
+    checks.push({
+      check:
+        "Root and namespaced image and worker asset caches remain independent of document nonces"
+    });
     for (const authorization of [
       undefined,
       "Basic !!!",
@@ -273,6 +312,29 @@ try {
     assert.deepEqual(cleanPolicyErrors, []);
     assert.deepEqual(cleanMutations, []);
     await clean.close();
+    const deliveries = readFileSync(
+      fixture + "/csp-report-delivery.ndjson",
+      "utf8"
+    )
+      .trim()
+      .split("\n")
+      .filter(Boolean)
+      .map((line) => JSON.parse(line));
+    for (const contentType of [
+      "application/csp-report",
+      "application/reports+json"
+    ])
+      assert.ok(
+        deliveries.some(
+          (row) => row.status === 204 && row.contentType === contentType
+        ),
+        `Actual browser ${contentType} delivery must reach the sanitized handler`
+      );
+    checks.push({
+      check: "Actual legacy and Reporting-Endpoints browser delivery",
+      diagnosticRequests: deliveries.length,
+      accepted: deliveries.filter((row) => row.status === 204).length
+    });
   }
   assert.deepEqual(errors, []);
   assert.deepEqual(blockedRequests, []);

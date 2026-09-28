@@ -61,7 +61,7 @@ const nextConfig: NextConfig = {
           // prefetch, errors and admin denials; asset caching stays independent.
           {
             key: "Content-Security-Policy",
-            value: "frame-ancestors 'none'; object-src 'none'; base-uri 'none'"
+            value: "script-src 'none'; frame-ancestors 'none'; object-src 'none'; base-uri 'none'"
           },
           { key: "X-Frame-Options", value: "DENY" },
           { key: "X-Content-Type-Options", value: "nosniff" }

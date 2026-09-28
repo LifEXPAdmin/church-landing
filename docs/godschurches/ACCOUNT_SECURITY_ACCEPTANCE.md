@@ -35,6 +35,18 @@ concurrency and preservation of authentication rows, pass locally. Final combine
 build, browser, integrated and live acceptance remain open. The wider security
 review and actual owner/provider/device gates remain open.
 
+The initial exact-source production build passed 29 browser groups, including
+all 21 former static routes, four blocked script probes, client navigation,
+worker registration and malformed admin credentials. Ten topic browser groups
+also passed, including populated 20-plus-one filtered pagination. Review then
+reproduced missing image/brand/API paths returning HTML 404s outside the middleware
+matcher. The corrected matcher covers those fallbacks; compiled static assets
+retain a deny-script baseline. Root images and API data keep their cache policies,
+while fallback HTML remains dynamic/no-store. The failed coverage receipt and
+first successful build remain preserved; final corrected-build verification is
+still required. Browser reporting is checked at the owned HTTPS proxy because
+modern browser delivery may bypass page request interception.
+
 ## Session isolation and media catalog verified live, 28 September 2026 UTC
 
 The host-bound session transition and curated media catalog with post cards are

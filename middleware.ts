@@ -66,16 +66,22 @@ export function middleware(request: NextRequest) {
     denied ?? NextResponse.next({ request: { headers: forwarded } });
   response.headers.set("Content-Security-Policy", policy);
   response.headers.set("Reporting-Endpoints", `csp="${CSP_REPORT_ENDPOINT}"`);
-  // A cached document cannot share a nonce with another request. Static assets
-  // are excluded below and retain their normal immutable/cache behavior.
-  response.headers.set("Cache-Control", "private, no-store, max-age=0");
+  // Preserve caches for API data and filename-like assets (including root hero
+  // images). If these paths fall through to an HTML 404, the root's dynamic
+  // render itself supplies no-store, and still receives this request's nonce.
+  const dataOrAsset =
+    path.startsWith("/api/") ||
+    /\.(?:avif|css|gif|ico|jpe?g|js|json|png|svg|txt|webmanifest|webp|woff2?|xml)$/i.test(
+      path
+    );
+  if (!dataOrAsset)
+    response.headers.set("Cache-Control", "private, no-store, max-age=0");
   return response;
 }
 
 export const config = {
-  // Do not skip prefetch or RSC: their server render must use a trusted policy
-  // too. Exclude only API responses and known non-document asset namespaces.
-  matcher: [
-    "/((?!api/|api$|_next/|images/|brand/|favicon\\.ico$|manifest\\.webmanifest$|robots\\.txt$|sitemap\\.xml$|notification-worker\\.js$).*)"
-  ]
+  // Missing API/asset paths can render HTML 404s, so they need a nonce too.
+  // Next handles missing compiled chunks with a plain-text response. Do not
+  // skip prefetch or RSC: their render must use a trusted policy as well.
+  matcher: ["/((?!_next/static/|_next/image(?:/|$)).*)"]
 };
