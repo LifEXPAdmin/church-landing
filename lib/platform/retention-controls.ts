@@ -1,4 +1,5 @@
 import { replayMediaControl } from "./media-catalog-retention";
+import { replayPlaylistControl } from "./media-playlist-retention";
 import { randomUUID } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
 import { emptyFeedback } from "./feedback-policy";
@@ -42,6 +43,8 @@ export type RetentionControlEntry = {
     | "EXCHANGE_FAVORITE"
     | "EXCHANGE_SAVED_SEARCH"
     | "MEDIA_CATALOG"
+    | "MEDIA_PLAYLIST"
+    | "MEDIA_SAVE"
     | "INTERCHURCH_HELP"
     | "EXCHANGE_NEED"
     | "VOLUNTEER_OPPORTUNITY"
@@ -121,6 +124,8 @@ function validate(value: unknown): RetentionControlEntry {
       "EXCHANGE_FAVORITE",
       "EXCHANGE_SAVED_SEARCH",
       "MEDIA_CATALOG",
+      "MEDIA_PLAYLIST",
+      "MEDIA_SAVE",
       "INTERCHURCH_HELP",
       "EXCHANGE_NEED",
       "VOLUNTEER_OPPORTUNITY",
@@ -470,6 +475,8 @@ export async function recordDiscoveryControl(
     | "EXCHANGE_FAVORITE"
     | "EXCHANGE_SAVED_SEARCH"
     | "MEDIA_CATALOG"
+    | "MEDIA_PLAYLIST"
+    | "MEDIA_SAVE"
     | "INTERCHURCH_HELP"
     | "EXCHANGE_NEED"
     | "VOLUNTEER_OPPORTUNITY"
@@ -1422,6 +1429,12 @@ export async function replayRetentionControls(
         }
         if (entry.kind === "MEDIA_CATALOG") {
           await replayMediaControl(tx,entry.sourceId,entry.version,new Date(entry.recordedAt));
+          await record(tx,entry);
+          await tx.retentionControl.updateMany({where:{id:entry.id,journaledAt:null},data:{journaledAt:new Date()}});
+          continue;
+        }
+        if (entry.kind === "MEDIA_PLAYLIST" || entry.kind === "MEDIA_SAVE") {
+          await replayPlaylistControl(tx,entry.kind,entry.sourceId,entry.version,new Date(entry.recordedAt));
           await record(tx,entry);
           await tx.retentionControl.updateMany({where:{id:entry.id,journaledAt:null},data:{journaledAt:new Date()}});
           continue;
