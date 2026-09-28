@@ -1147,6 +1147,7 @@ try {
   if (portalTests) await runTests("tests/social-foundations.test.ts");
   if (portalTests) await runTests("tests/prayer.test.ts");
   if (portalTests) await runTests("tests/topic-communities.test.ts");
+  if (portalTests) await runTests("tests/topic-response-recovery.test.ts");
   if (portalTests) await runTests("tests/gallery-sharing.test.ts");
   if (portalTests) await runTests("tests/install-policy.test.ts");
   if (portalTests) await runTests("tests/post-participation.test.ts");

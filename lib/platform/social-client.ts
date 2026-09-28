@@ -4,11 +4,19 @@ export class SocialClientError extends Error {
   status: number;
   retryAfter?: number;
   needsAuthenticator: boolean;
-  constructor(status: number, message: string, retryAfter?: number, needsAuthenticator = false) {
+  code?: string;
+  constructor(
+    status: number,
+    message: string,
+    retryAfter?: number,
+    needsAuthenticator = false,
+    code?: string
+  ) {
     super(message);
     this.status = status;
     this.retryAfter = retryAfter;
     this.needsAuthenticator = needsAuthenticator;
+    this.code = code;
   }
 }
 export async function currentSocialOwner(): Promise<string | null> {
@@ -35,7 +43,8 @@ export async function socialRequest<T>(
   path: string,
   body?: string,
   expectedOwner?: string | null,
-  method: "POST" | "DELETE" = "POST"
+  method: "POST" | "DELETE" = "POST",
+  onDispatch?: () => void
 ): Promise<{ owner: string | null; data: T }> {
   const owner = await currentSocialOwner();
   if (
@@ -46,6 +55,7 @@ export async function socialRequest<T>(
       401,
       "Your sign-in changed. Reload before continuing."
     );
+  onDispatch?.();
   const response = await fetch(path, {
     method: body ? method : "GET",
     cache: "no-store",
@@ -63,7 +73,8 @@ export async function socialRequest<T>(
       "Your sign-in changed. Reload before continuing."
     );
   if (!response.ok) {
-    const needsAuthenticator = response.status === 403 && announcePrivilegedChallenge(data);
+    const needsAuthenticator =
+      response.status === 403 && announcePrivilegedChallenge(data);
     throw new SocialClientError(
       response.status,
       data.message ??
@@ -72,7 +83,8 @@ export async function socialRequest<T>(
         /^\d+$/.test(response.headers.get("retry-after") ?? "")
         ? Number(response.headers.get("retry-after"))
         : undefined,
-      needsAuthenticator
+      needsAuthenticator,
+      typeof data.code === "string" ? data.code : undefined
     );
   }
   return { owner, data };

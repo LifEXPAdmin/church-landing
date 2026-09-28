@@ -1,6 +1,7 @@
 "use client";
 import {
   useCallback,
+  useEffect,
   useLayoutEffect,
   useId,
   useRef,
@@ -38,14 +39,33 @@ export function TopicActionForm({
   const router = useRouter(),
     id = useId(),
     form = useRef<HTMLFormElement>(null),
+    mounted = useRef(true),
     flight = useRef(false);
-  const base = useRef(payload),
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+  const originalOwner = useRef(owner).current,
+    attempts = useRef(0),
+    accepted = useRef<Receipt | null>(null),
+    base = useRef(payload),
     [dirty, setDirty] = useState(false),
     [pending, setPending] = useState<string | null>(null),
     [busy, setBusy] = useState(false),
     [saved, setSaved] = useState(false),
+    [confirmed, setConfirmed] = useState(false),
     [conflict, setConflict] = useState(false),
+    [retryAt, setRetryAt] = useState(0),
+    [now, setNow] = useState(0),
     [message, setMessage] = useState("");
+  const cooldown = Math.max(0, Math.ceil((retryAt - now) / 1000));
+  useEffect(() => {
+    if (!cooldown) return;
+    const timer = window.setTimeout(() => setNow(Date.now()), 1000);
+    return () => window.clearTimeout(timer);
+  }, [cooldown]);
   const key = JSON.stringify(payload),
     previous = useRef(key);
   useLayoutEffect(() => {
@@ -55,13 +75,16 @@ export function TopicActionForm({
     base.current = JSON.parse(key);
     form.current?.reset();
     setSaved(false);
+    setConfirmed(false);
+    accepted.current = null;
+    attempts.current = 0;
     setConflict(false);
     setDirty(false);
   }, [key, pending, busy, dirty, saved]);
   const retry = useCallback(() => form.current?.requestSubmit(), []);
-  usePrivateRecovery(id, !!pending, busy, retry);
+  usePrivateRecovery(id, !!pending, busy || cooldown > 0, retry);
   useUnsavedSocialWork(
-    { dirty, saving: busy || !!pending, conflict },
+    { dirty, saving: !confirmed && (busy || !!pending), conflict },
     () =>
       setMessage(
         "Finish, retry or discard these local topic entries before leaving."
@@ -80,7 +103,14 @@ export function TopicActionForm({
       }}
       onSubmit={async (event) => {
         event.preventDefault();
-        if (flight.current || busy || conflict || saved) return;
+        if (
+          flight.current ||
+          busy ||
+          (conflict && !pending) ||
+          saved ||
+          Date.now() < retryAt
+        )
+          return;
         const body =
           pending ??
           JSON.stringify({
@@ -93,11 +123,21 @@ export function TopicActionForm({
         setPending(body);
         setMessage("");
         try {
-          const { data } = await socialRequest<Receipt>(
-            "/api/platform/topics",
-            body,
-            owner
-          );
+          let data = accepted.current;
+          if (!data) {
+            data = (
+              await socialRequest<Receipt>(
+                "/api/platform/topics",
+                body,
+                originalOwner,
+                "POST",
+                () => {
+                  attempts.current++;
+                }
+              )
+            ).data;
+          }
+          if (!mounted.current) return;
           if (
             !data ||
             typeof data.id !== "string" ||
@@ -110,33 +150,56 @@ export function TopicActionForm({
             );
           // Clearing protected work removes its same-address Back entry.
           // Finish that traversal before navigating or refreshing the route.
+          accepted.current = data;
           flushSync(() => {
-            setPending(null);
             setDirty(false);
-            setBusy(false);
-            setSaved(true);
+            setConfirmed(true);
             setConflict(false);
             setMessage(data.message);
           });
           await settlePhotoNavigation();
+          if (!mounted.current) return;
+          const currentOwner = await currentSocialOwner();
+          if (!mounted.current) return;
+          if (currentOwner !== originalOwner)
+            throw new SocialClientError(
+              401,
+              "Your topic change was saved. Return to the original account to continue, or reload current information."
+            );
+          setPending(null);
+          setSaved(true);
           if (onDone) onDone(data, JSON.parse(body));
           else router.refresh();
         } catch (error) {
+          if (!mounted.current) return;
           if (
             error instanceof SocialClientError &&
             !error.needsAuthenticator &&
-            [400, 403, 404, 409, 429].includes(error.status)
+            error.status === 400 &&
+            error.code === "TOPIC_INPUT_REJECTED" &&
+            attempts.current === 1 &&
+            !accepted.current
           ) {
             setPending(null);
-            if ([403, 404, 409].includes(error.status)) setConflict(true);
+            setConflict(false);
+            attempts.current = 0;
           }
-          if (error instanceof SocialClientError && error.status === 401) {
-            const current = await currentSocialOwner().catch(() => undefined);
-            if (current && current !== owner) {
-              form.current?.reset();
-              setPending(null);
-              setDirty(false);
+          if (error instanceof SocialClientError) {
+            if (
+              !accepted.current &&
+              !error.needsAuthenticator &&
+              [403, 404, 409].includes(error.status)
+            )
               setConflict(true);
+            if (
+              error.status === 429 &&
+              Number.isSafeInteger(error.retryAfter) &&
+              error.retryAfter! > 0 &&
+              error.retryAfter! <= 86400
+            ) {
+              const time = Date.now();
+              setNow(time);
+              setRetryAt(time + error.retryAfter! * 1000);
             }
           }
           setMessage(
@@ -146,7 +209,7 @@ export function TopicActionForm({
           );
         } finally {
           flight.current = false;
-          setBusy(false);
+          if (mounted.current) setBusy(false);
         }
       }}
     >
@@ -157,12 +220,24 @@ export function TopicActionForm({
         {children}
       </fieldset>
       <p role="status">{busy ? "Confirming this topic change…" : message}</p>
+      {cooldown > 0 && (
+        <p className="text-sm text-gc-muted">
+          Retry the original request in {cooldown} seconds. Your entries are
+          retained.
+        </p>
+      )}
       <button
         className="gc-button"
         type="submit"
-        disabled={busy || saved || conflict}
+        disabled={busy || cooldown > 0 || saved || (conflict && !pending)}
       >
-        {pending ? "Retry the same topic request" : saved ? "Saved" : label}
+        {confirmed && pending
+          ? "Continue after saved topic change"
+          : pending
+            ? "Retry the same topic request"
+            : saved
+              ? "Saved"
+              : label}
       </button>
       {conflict && (
         <p className="text-sm text-gc-muted">
@@ -170,12 +245,21 @@ export function TopicActionForm({
           changed. Review the current topic before trying another change.
         </p>
       )}
-      {(conflict || dirty) && !pending && !busy && (
+      {(conflict || dirty || pending) && !busy && (
         <button
           type="button"
           className="gc-button gc-button-quiet"
           onClick={async () => {
+            if (
+              !confirm(
+                pending
+                  ? "Stop retrying and reload current information? This request may already be saved. Reloading clears only your local entries and does not undo saved changes."
+                  : "Discard these local topic entries and reload current information?"
+              )
+            )
+              return;
             flushSync(() => {
+              setPending(null);
               setDirty(false);
               setConflict(false);
               form.current?.reset();
@@ -184,7 +268,9 @@ export function TopicActionForm({
             window.location.reload();
           }}
         >
-          Discard local entries and reload current controls
+          {pending
+            ? "Stop retrying and reload current information"
+            : "Discard local entries and reload current controls"}
         </button>
       )}
     </form>

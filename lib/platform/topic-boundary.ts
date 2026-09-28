@@ -104,16 +104,31 @@ export async function handleTopicRequest(db: PrismaClient, request: Request) {
         "Too many changes. Keep your entries and retry in fifteen minutes.",
         900
       );
-    let input: Record<string, unknown>;
+    let result: Awaited<ReturnType<typeof topicCommand>>;
     try {
-      input = await readBody(request, 32768);
-    } catch {
-      throw new PortalError(
-        400,
-        "Check the topic entries. Nothing has been shortened."
-      );
+      let input: Record<string, unknown>;
+      try {
+        input = await readBody(request, 32768);
+      } catch {
+        throw new PortalError(
+          400,
+          "Check the topic entries. Nothing has been shortened."
+        );
+      }
+      result = await topicCommand(db, token, input);
+    } catch (error) {
+      // Only parsing or a rejected atomic command can prove no write committed.
+      // Identity reads and post-commit work must never carry this classification.
+      if (error instanceof PortalError && error.status === 400)
+        return Response.json(
+          { message: error.message, code: "TOPIC_INPUT_REJECTED" },
+          {
+            status: 400,
+            headers: { ...headers, "X-Topic-Code": "TOPIC_INPUT_REJECTED" }
+          }
+        );
+      throw error;
     }
-    const result = await topicCommand(db, token, input);
     let protectedRecovery = false;
     try {
       const controls = await journalRetentionControls(
