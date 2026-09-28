@@ -360,7 +360,11 @@ test(
       operation: "create",
       mutationId: randomUUID(),
       ownerChurchId: null,
-      fields: { title: "Personal MFA-independent draft" }
+      fields: {
+        title: "Personal MFA-independent draft",
+        description: "",
+        audience: "PRIVATE"
+      }
     });
     assert.equal(personal.status, 200);
   }

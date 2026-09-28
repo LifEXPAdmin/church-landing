@@ -101,3 +101,15 @@ successful clean recovery run. The first broader run encountered its stopped HTT
 server and a PostgreSQL-incompatible URL query parameter; it is not a passing
 regression receipt. Final built verification and integration acceptance must be
 recorded below before this candidate is marked ready.
+
+### Uncertain-receipt correction
+
+Final review reproduced an additional browser edge case: a committed create whose
+response was lost could discard its retry key after a later rate limit or access
+denial. The client now preserves an already uncertain immutable request through
+such denials, because they can occur before receipt lookup. The expanded browser
+suite passed 15 development groups, including lost create, 429 then 404 denial,
+same-key recovery and exactly one playlist, plus actual manager and delegated
+editor screens with current session proof and revocation. The corrected personal
+MFA fixture includes the required explicit audience; all three HTTPS groups pass.
+The corrected production candidate remains pending at this checkpoint.
