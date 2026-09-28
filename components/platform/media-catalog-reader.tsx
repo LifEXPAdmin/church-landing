@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { socialRequest } from "@/lib/platform/social-client";
 import type { MediaPublic } from "@/lib/platform/media-catalog-reads";
+import { MediaTopicLinks } from "./media-topic-links";
 import {
   scriptureLabel,
   type ScriptureRange
@@ -104,7 +105,6 @@ export function MediaReader({
                   : "Unknown"
               ],
               ["Languages", item.languageIds.join(", ")],
-              ["Topics", item.topics.join(", ")],
               ["Attribution", item.attribution],
               ...Object.entries(
                 (item.details ?? {}) as Record<string, string | number | null>
@@ -130,6 +130,18 @@ export function MediaReader({
                 </div>
               ))}
           </dl>
+          {item.topics.length > 0 && (
+            <section aria-label="Publisher topics" className="space-y-2">
+              <h2 className="text-lg font-semibold">
+                Publisher-selected topics
+              </h2>
+              <p>
+                These labels describe the recording. Choose a topic to browse
+                related media.
+              </p>
+              <MediaTopicLinks topics={item.topics} />
+            </section>
+          )}
           <div className="rounded-xl border p-[16px]">
             <h2 className="text-lg font-semibold">
               Open on {item.sourceProvider}

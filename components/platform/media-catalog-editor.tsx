@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { mediaTopicSuggestions } from "@/lib/platform/media-topic-options";
 import {
   MediaNavigation,
   MediaReadNotice,
@@ -673,6 +674,43 @@ export function MediaEditor({
                   Optional catalog details
                 </summary>
                 <div className="mt-3 grid gap-4 sm:grid-cols-2">
+                  <section
+                    aria-label="Optional topic suggestions"
+                    className="space-y-2 sm:col-span-2"
+                  >
+                    <h2 className="font-semibold">Optional topic labels</h2>
+                    <p>
+                      Choose labels that describe this recording, or enter your
+                      own below. Topics do not describe a listener or diagnose a
+                      condition. Up to 12 topics.
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {mediaTopicSuggestions.map((topic) => (
+                        <button
+                          key={topic}
+                          type="button"
+                          className="gc-button gc-button-quiet"
+                          disabled={
+                            f.topics.filter((t) => t.trim()).length >= 12 ||
+                            f.topics.some(
+                              (t) =>
+                                t.trim().toLowerCase() === topic.toLowerCase()
+                            )
+                          }
+                          onClick={() =>
+                            change({
+                              topics: [
+                                ...f.topics.filter((t) => t.trim()),
+                                topic
+                              ]
+                            })
+                          }
+                        >
+                          Add {topic}
+                        </button>
+                      ))}
+                    </div>
+                  </section>
                   {(
                     [
                       ["speakers", "Speaker names, one per line", 10, 120],
@@ -689,6 +727,7 @@ export function MediaEditor({
                       {label}
                       <textarea
                         className={fieldClass}
+                        aria-label={label}
                         value={f[key].join("\n")}
                         maxLength={count * (max + 1)}
                         onChange={(e) =>
