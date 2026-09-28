@@ -1,3 +1,13 @@
+## Current session policy, 28 September 2026 UTC
+
+Version .39 adds ordinary idle expiry, as recorded in
+[session lifetime policy](SESSION_LIFETIME_POLICY.md). Older statements below that
+ordinary sessions have no idle timeout are historical. The activity client adds
+no persistent browser storage; it retains the server deadline and account owner
+in memory. Expiry conceals retained work without unmounting pending command owners.
+This does not establish complete DOM cleanup, a new private-storage limit or
+physical-device acceptance. The profile editor remains in the open privacy review.
+
 ## Credential privacy and ministry help verified live, 27 September 2026 UTC
 
 Credential privacy .30 and interchurch ministry help .31 are **implemented,

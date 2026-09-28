@@ -1,9 +1,30 @@
 # Artist profiles and external music releases
 
-Implementation checkpoint: 28 September 2026. This feature branch implements the
-first public artist projection defined by `ARTIST_RELEASE_CONTRACT.md`. Integration,
-production migration, live acceptance and actual operator policy activation belong
-to the release owner. This document is not production acceptance evidence.
+## Integrated and verified live, 28 September 2026 UTC
+
+The accepted first public projection in `ARTIST_RELEASE_CONTRACT.md` is live in
+.39, source `7fb9da581f5cafd3166707001e1c9f97464cf83e`, READY/canonical deployment
+`dpl_3L37rY2JGRDXJ88ZuYv2rprq7jzF`. Combined acceptance passed 160 service groups,
+70 browser groups and 12 HTTPS groups, including all 18 artist browser groups and
+five artist HTTPS groups with enforced fictional MFA. Live checks were read-only;
+no real music, identity link, listening provider or rights assertion was created.
+
+Integration removed unrelated generated migration drift before production and
+kept the original handoff intact. The accepted artist migration SHA256 is
+`e884bb28e7930eec448b2633fb230dce77479e6ec950f64ee2f7332f266b7d75`.
+This supersedes the original branch checksum recorded below. Production and the
+installed recovery registry match all 123 migrations. Protected 121-to-123 replay
+and ordinary 123-to-123 encrypted restore passed; actual nightly run 28 exited
+zero with no removals or issues. See [release evidence](DEPLOYMENT_REPORT.md).
+
+The six first-version engineering scopes are accepted. Optional subject-linked
+credits remain unavailable until their consent adapter exists; supplied plaintext
+credits grant no authority. Artwork keeps the accepted text fallback. Real rights,
+operator/provider policy and post-restore reappointment remain separate human
+gates. Announcements, payments and support destinations are not enabled.
+
+The isolated verification below preserves the original builder's attribution and
+evidence; it is superseded by the combined acceptance above for release identity.
 
 ## Usable first version
 

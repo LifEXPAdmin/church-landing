@@ -1,6 +1,31 @@
 # Ordinary session inactivity policy
 
-## Preparation status, 28 September 2026 UTC
+## Verified live, 28 September 2026 UTC
+
+The policy is implemented, tested, merged and verified live in .39, source
+`7fb9da581f5cafd3166707001e1c9f97464cf83e`, deployment
+`dpl_3L37rY2JGRDXJ88ZuYv2rprq7jzF`. The combined release passed 160 service,
+70 browser and 12 HTTPS groups. Session-specific browser acceptance includes
+trusted foreground activity, passive-read purity, frozen-clock expiry, native
+blur, cross-account denial, dirty-work retention and an accepted Admin request
+whose lost response is recovered with identical bytes after same-owner sign-in.
+Seven session HTTPS groups cover actual login/cookies, deadline enforcement,
+origin and owner boundaries, API/SSR denial and refusal to revive expiry.
+Physical device sleep and an actual 30-minute wait were not observed.
+
+Migration 123 applied at 04:57:36 UTC with the existing five sessions still null
+and their original absolute deadlines unchanged. Protected 121-to-123 recovery
+and ordinary 123-to-123 recovery passed separately. The retained .39 artifact is
+the compatible recovery candidate; older .38 ignored idle expiry in an isolated
+reproduction. Explicit isolated revocation made both deny the old token, but no
+production rollback or revocation is authorized by that experiment.
+
+The engineering default remains provisional: about 30 minutes, with the original
+30-day absolute ceiling. The owner-duration question remains unanswered. This
+release establishes implementation and scoped verification, not owner risk
+acceptance or complete ASVS compliance. See [release evidence](DEPLOYMENT_REPORT.md).
+
+## Historical preparation status, 28 September 2026 UTC
 
 This is an implementation checkpoint, not a live-policy announcement. The shared
 policy, additive migration, issuance, five authorization gates, activity endpoint,

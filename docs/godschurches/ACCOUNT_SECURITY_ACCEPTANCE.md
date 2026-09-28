@@ -1,3 +1,52 @@
+## Artist releases and inactivity protection verified live, 28 September 2026 UTC
+
+Version **2026.09.28.39** is implemented, tested, merged and verified live.
+One production deployment, `dpl_3L37rY2JGRDXJ88ZuYv2rprq7jzF`, is READY and
+canonical on `godschurches.com`, serving application source
+`7fb9da581f5cafd3166707001e1c9f97464cf83e` at **05:02:08 UTC**. It combines
+artist profiles, scoped delegates, external releases, discovery, follows and
+organizer-approved event links with ordinary session inactivity protection.
+
+The exact build `OsgdPcUjfn7hxD7s1RCgZ` passed in 46.348 seconds with all
+2,080 tracked hashes unchanged; exact-source CI `36377513325` passed.
+Combined verification passed **160 service groups, 70 browser groups and
+12 HTTPS groups**. Live acceptance passed **152 page/API/browser checks plus
+five initial release/health checks**, with zero browser or CSP errors, blocked
+mutation attempts, scoped runtime error/fatal rows or CSP diagnostic rows.
+All **160 original-column production fingerprints remained unchanged at
+05:04:09 UTC**. There were zero application test writes, recipient sends or
+new queue probes. Actual provider delivery was not newly verified.
+
+Production migrations 122 and 123 applied at **04:57:36 UTC**; all source,
+production and installed recovery checksums match, with 165 application tables.
+The five new artist tables were empty. Existing session idle deadlines remained
+null, and absolute expiry stayed unchanged. Unrelated generated artist migration
+drift was removed before production. A pre-migration comparison stopped before
+writes on five equivalent CHECK expressions; actual local PostgreSQL reparse
+proved equivalence before the guarded migration proceeded.
+
+Encrypted protected 121-to-123 recovery passed at **04:39 UTC**, preserving the
+160 original fingerprints and completing frozen-journal replay. Separate
+installed 123-to-123 recovery restored all 165 tables at **05:10 UTC** and removed
+temporary plaintext. Actual nightly maintenance advanced **27 to 28**, exited
+zero with **118 sets, zero removals and no issues**. The wrapper then rejected a
+legitimate retention-index update. Read-only continuation proved exactly three
+new ledger records, authenticated all 118 current sets and accepted the existing
+run without repeating restore or maintenance. The old full manifest/key hash map
+was held only in memory; no complete historical byte comparison is claimed.
+Failed attempts and their evidence remain preserved. Two verified inactive
+webpack caches freed about 1.4 GiB; source, fixtures, backups and acceptance
+artifacts were retained.
+
+The full .39 artifact is retained. Earlier .38 code ignores idle deadlines and
+artist controls, so it is not an accepted rollback target. No production restore,
+general incident readiness or human/provider acceptance is claimed.
+[Session policy](SESSION_LIFETIME_POLICY.md) and
+[artist implementation](ARTIST_RELEASE_IMPLEMENTATION.md) record their scoped
+contracts. The broader security review stays open; profile-editor privacy and
+retained-save recovery are the next independent investigation. Actual owner MFA,
+provider/device, rights-review and pilot gates remain separate.
+
 ## Script policy and media topics verified live, 28 September 2026 UTC
 
 The request-bound script policy and publisher-selected topic pathways are
@@ -1170,9 +1219,11 @@ new-password gap. Registration, change/add and reset now use offline common and
 contextual checks with a pinned finite historical compromised-password subset.
 See [the password policy](PASSWORD_POLICY.md) for V6.1.2, V6.2.4 and V6.2.11 evidence
 and the bounded V6.2.12 scope; ongoing comprehensive breach detection remains
-unclaimed. Ordinary sessions have a fixed 30-day lifetime, without an implemented
-idle timeout. V7.1.1 and V7.3.1 remain open; the existence of an absolute expiry
-alone does not establish the risk justification required by V7.3.2. Existing
+unclaimed. Version .39 adds server-enforced inactivity expiry to the unchanged
+30-day absolute ceiling. [Session lifetime policy](SESSION_LIFETIME_POLICY.md)
+records activity, legacy transition, isolated recovery and browser/API evidence.
+The approximately 30-minute engineering default remains provisional; risk
+justification and owner acceptance required by V7.3.2 remain open. Existing
 rate limits and generic errors are not complete credential-stuffing or timing
 analysis evidence.
 
