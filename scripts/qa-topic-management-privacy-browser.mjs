@@ -961,7 +961,23 @@ try {
   await main
     .getByLabel("I confirm this topic visibility change.", { exact: true })
     .check();
+  // Hold the accepted reply so an authority refresh cannot accidentally race
+  // ahead of the deliberate continuation this scenario must exercise.
+  const reopened = Promise.withResolvers(),
+    deliverReopen = Promise.withResolvers(),
+    reopenDelivered = Promise.withResolvers();
+  pendingRouteReleases.add(deliverReopen.resolve);
+  const postsBeforeReopen = topicPosts;
+  await intercept(async (route) => {
+    const response = await forwarded(route);
+    assert.equal(response.status, 200);
+    reopened.resolve();
+    await deliverReopen.promise;
+    await route.fulfill(response);
+    reopenDelivered.resolve();
+  });
   await main.getByRole("button", { name: "Reopen topic", exact: true }).click();
+  await reopened.promise;
   await poll(
     async () =>
       (
@@ -971,9 +987,23 @@ try {
       ).lifecycle,
     "ACTIVE"
   );
+  await pulse("blur");
+  await privateAbsent(archived.member.name);
   await challenge(archived.a);
   await pulse("focus");
+  await main.getByText(/This topic management information or its access changed/).waitFor();
+  deliverReopen.resolve();
+  await reopenDelivered.promise;
+  await poll(() => main.getByRole("button", {
+    name: "Confirm original request", exact: true
+  }).isEnabled(), true);
+  await originalRetry();
   await main.getByText("Archive this topic", { exact: true }).waitFor();
+  assert.equal(topicPosts, postsBeforeReopen + 1);
+  assert.equal(await db.topicAudit.count({
+    where: { communityId: archived.topic.id, action: "LIFECYCLE" }
+  }), 1);
+  await page.unroute(topicUrl);
   await setup("hidden", "HIDDEN");
   await main
     .getByText("Topic visibility is restricted by moderation", { exact: false })
