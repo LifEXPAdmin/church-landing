@@ -1,3 +1,16 @@
+## Topic creation and private catalogue memory verified live, 28 September 2026 UTC
+
+Version .41/source `9dd48b8` is implemented, tested, merged and verified live in
+READY/canonical deployment `dpl_8TcDWSEzhQU2pg3ptYW2m4hY3Bvd`. Complete creation
+drafts, consent, immutable request bytes and accepted receipts remain only in
+mounted memory across concealment and account-changing refresh. Private catalogue
+snapshots load after hydration and current-owner checks; passive connectivity
+updates cannot reveal concealed content. No persistent browser store was added.
+The exact-source 101 browser, 22 service and one HTTPS groups, 177 live checks,
+unchanged production data and fresh recovery are recorded in
+[security acceptance](ACCOUNT_SECURITY_ACCEPTANCE.md). Management and followed-stream
+privacy and broader owner/device acceptance remain open.
+
 ## Topic creation memory boundary, 28 September 2026 UTC
 
 Locally tested source `3daddc6` removes concealed creation inputs and keeps private

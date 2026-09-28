@@ -1,3 +1,43 @@
+## Topic creation and private catalogues verified live, 28 September 2026 UTC
+
+Version **2026.09.28.41** is implemented, tested, merged and verified live.
+One deployment, `dpl_8TcDWSEzhQU2pg3ptYW2m4hY3Bvd`, is READY and canonical on
+`godschurches.com`, serving source `9dd48b830143ad2832473063892fd72630f972b1`
+at **09:05:40 UTC**. Creation retains complete drafts and original requests in
+memory while removing concealed controls. Private joined/owned catalogues now
+load after current-owner checks, omit private associations from initial HTML,
+and stay concealed until a deliberate foreground return or recheck. Public and
+private catalogue presentation share the same bounded pagination. Narrow search
+controls remain usable with enlarged text.
+
+All **101 browser groups, 22 service groups and one HTTPS group** passed on this
+exact source, including creation/recovery with enforced fictional MFA, existing
+Topic interfaces, private catalogues, Support, scheduling and 36 CSP checks.
+Build `mlfq_gfGmbQc_9F_ju_jS` passed in **44.893 seconds** with all **2,090 tracked
+hashes unchanged**; exact-source CI `36399040283` passed. All **177 live
+page/API/browser checks plus five release/health checks** passed. Browser/CSP
+errors, blocked mutation/external requests and scoped runtime error/fatal/CSP
+rows were zero. All **165 current-column production fingerprints stayed unchanged
+at 09:07:22 UTC**. All **123 migration checksums** match; there were no new or
+applied migrations, production application test writes, recipient sends or queue
+probes. Authenticated acceptance used isolated fictional fixtures; read-only live
+checks do not imply real-device or provider-delivery acceptance.
+
+Fresh actual protected 123-to-123 restore/replay passed at **08:55:59 UTC** with
+all 165 tables preserved before quarantine, replay complete and traffic disabled.
+Separate installed ordinary recovery passed at **08:59:14 UTC**; actual nightly
+advanced 28 to 29 and passed at **08:59:15 UTC**, with no removals or issues. Full
+before/after archive, key and manifest maps prove old bytes and ages unchanged;
+the retention index contains only the expected additions. Existing installed
+actor attribution stays intact. No production restore or migration was run.
+These receipts retain their actual freshness limit, **12:55:59 UTC**. The full
+.41 artifact and previous .40 fallback remain preserved. Fallback would remove
+these fixes. No report-only deployment is required.
+
+Topic management and followed-stream privacy remain open, along with broader
+security and actual owner/provider/device/operator/pilot acceptance. Historical
+local-only entries below are superseded for this batch's completed release gates.
+
 ## Topic creation privacy locally verified, 28 September 2026 UTC
 
 Application `3daddc6` completes the locally tested Topic creation privacy slice.
