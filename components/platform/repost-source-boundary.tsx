@@ -45,8 +45,6 @@ export function RepostSourceBoundary({
   const parentVisible = useReadVisibility();
   const privateScope = usePrivatePostWorkspace();
   const privateRefresh = privateScope?.refresh;
-  const parentNow = useRef(parentVisible);
-  parentNow.current = parentVisible;
   const [active, setActive] = useState(false),
     [visible, setVisible] = useState(originalPost || sourceVersion !== null),
     [message, setMessage] = useState("Original post unavailable.");
@@ -77,8 +75,7 @@ export function RepostSourceBoundary({
             undefined,
             accountId
           );
-      if (seq !== generation.current || (privateRefresh && !parentNow.current))
-        return;
+      if (seq !== generation.current) return;
       const match =
         r.data.available &&
         r.data.entryVersion === entryVersion &&
@@ -87,8 +84,7 @@ export function RepostSourceBoundary({
         (likeCount === undefined || r.data.likeCount === likeCount);
       setVisible(match);
       setMessage("Original post unavailable.");
-      if (!match && privateRefresh) privateRefresh();
-      else if (r.data.available && !match) {
+      if (r.data.available && !match) {
         setMessage("Refreshing the original post…");
         router.refresh();
       }
@@ -96,7 +92,6 @@ export function RepostSourceBoundary({
       if (seq === generation.current) {
         setVisible(false);
         setMessage("Reconnect to check the original post.");
-        privateRefresh?.();
       }
     }
   }, [
@@ -123,11 +118,7 @@ export function RepostSourceBoundary({
   useEffect(() => {
     if (privateRefresh) return;
     activeReader.current = active;
-    if (active && (!privateRefresh || parentVisible)) void check();
-    if (privateRefresh && !parentVisible) {
-      generation.current++;
-      setVisible(false);
-    }
+    if (active) void check();
   }, [active, check, parentVisible, privateRefresh]);
   useEffect(() => {
     if (privateRefresh) return;
