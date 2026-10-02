@@ -34,7 +34,9 @@ const der = execFileSync("openssl", ["pkey", "-pubin", "-outform", "DER"], {
 const browser = await chromium.launch({
   headless: true,
   executablePath:
-    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    process.env.ARTIST_BUNDLED_CHROMIUM === "1"
+      ? undefined
+      : "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
   args: [
     "--ignore-certificate-errors-spki-list=" +
       createHash("sha256").update(der).digest("base64"),
