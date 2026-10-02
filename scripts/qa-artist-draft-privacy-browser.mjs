@@ -150,10 +150,26 @@ async function statusAction(label, operation, model, id, scope = page) {
 }
 async function refreshAs(actor) {
   await signIn(actor);
+  const pathname = new URL(page.url()).pathname;
+  let currentOwnerResponse;
+  // Buffer the real refresh before delivery: Chromium can discard a streamed
+  // RSC response body after React consumes it, even without document navigation.
+  const observeRefresh = async (route) => {
+    if (
+      route.request().headers().rsc !== "1" ||
+      new URL(route.request().url()).pathname !== pathname
+    )
+      return route.fallback();
+    const actual = await route.fetch();
+    const body = await actual.body();
+    currentOwnerResponse = body.toString("utf8");
+    await route.fulfill({ response: actual, body });
+  };
+  await page.route("**/*", observeRefresh);
   const response = page.waitForResponse(
     (r) =>
       r.request().headers().rsc === "1" &&
-      new URL(r.url()).pathname === new URL(page.url()).pathname
+      new URL(r.url()).pathname === pathname
   );
   await page.evaluate(() => {
     if (typeof window.next?.router?.refresh !== "function")
@@ -161,9 +177,10 @@ async function refreshAs(actor) {
     window.next.router.refresh();
   });
   const actual = await response;
+  await page.unroute("**/*", observeRefresh);
   assert.equal(actual.status(), 200);
   assert.ok(
-    (await actual.text()).includes(actor.id),
+    currentOwnerResponse?.includes(actor.id),
     "RSC identifies the current cookie owner"
   );
 }
@@ -455,11 +472,15 @@ try {
   assert.ok(page.url().endsWith("/platform/music/new"));
   assert.equal(await field("Artist name").count(), 0);
   await focus();
+  await field("Artist name").waitFor();
+  assert.equal(await field("Artist name").inputValue(), newName);
   await button("Continue after saved artist change").click();
   await poll(
     () => page.url().endsWith(`/platform/music/${acceptedId}/edit`),
     true
   );
+  await field("Artist name").waitFor();
+  assert.equal(await field("Artist name").inputValue(), newName);
   assert.equal(posts.length, beforeCreate + 1);
   assert.equal(
     await db.artistProfile.count({
