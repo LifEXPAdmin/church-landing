@@ -14,7 +14,7 @@ Object.assign(
 const origin = process.env.ACCOUNT_ORIGIN;
 assert.match(origin, /^https:\/\/127\.0\.0\.1:\d+$/);
 const { PrismaClient } = await import("@prisma/client");
-const { createPortalActor, assertPortalTestDatabase } =
+const { createPortalActor, assertPortalTestDatabase, seedOperatorGrants } =
   await import("../tests/seed-portal.ts");
 const { artistCommand } = await import("../lib/platform/artist-commands.ts");
 const { ARTIST_POLICY } = await import("../lib/platform/artist-types.ts");
@@ -135,6 +135,8 @@ async function refreshAs(actor) {
 try {
   const owner = await createPortalActor(db, "draftowner"),
     other = await createPortalActor(db, "draftother");
+  const reviewer = await createPortalActor(db, "draftreview");
+  await seedOperatorGrants(db, reviewer, ["REVIEW_COMMUNITY_REPORTS"]);
   const fields = {
     name: "Fictional retained artist " + randomUUID(),
     biography: "Saved biography",
@@ -161,7 +163,7 @@ try {
     description: "Saved release",
     releaseDate: null,
     credits: [],
-    links: [],
+    links: ["https://open.spotify.com/album/1234567890123456789012"],
     tracks: [
       {
         id: randomUUID(),
@@ -292,6 +294,8 @@ try {
   ok(
     "profile unpublish and withdrawal retain unsent metadata, reset confirmation and preserve the leave guard"
   );
+  await button("Discard unsent edits").click();
+  await poll(() => field("Event page link").isEnabled(), true);
 
   const eventDraft = origin + "/platform/events/fictional-unsent-event";
   await field("Event page link").fill(eventDraft);

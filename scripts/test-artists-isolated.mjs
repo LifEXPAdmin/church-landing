@@ -70,6 +70,7 @@ const env = {
   AUTH_RATE_LIMIT_SECRET: randomBytes(32).toString("hex"),
   PRIVILEGED_MFA_MODE: "off",
   SOCIAL_EMAIL_ENABLED: "false",
+  COMMUNITY_REPORTS_ENABLED: "true",
   ACCOUNT_GOOGLE_ENABLED: "false",
   CHURCH_CLAIM_REVIEW_ENABLED: "true",
   CHURCH_CLAIM_POLICY_VERSION: "manual-review-v1",
