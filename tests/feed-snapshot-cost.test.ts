@@ -6,7 +6,10 @@ import { cpus } from "node:os";
 import { PrismaClient, type Prisma } from "@prisma/client";
 import { assertPortalTestDatabase, createPortalActor } from "./seed-portal";
 import { readFeed } from "../lib/platform/feed-reads";
-import { defaultDiscoveryPreferences } from "../lib/platform/discovery-options";
+import {
+  defaultDiscoveryPreferences,
+  denominationKey
+} from "../lib/platform/discovery-options";
 
 // Explicit hosted measurement of saved-set reads, not a production load test.
 // Ordinary test invocations do not allocate this fixture.
@@ -29,7 +32,7 @@ test(
       const reader = await createPortalActor(db, "scanreader");
       const author = await createPortalActor(db, "scanauthor");
       authorId = author.id;
-      const marker = "Fictional snapshot cost " + randomUUID();
+      const marker = denominationKey("Fictional snapshot cost " + randomUUID());
       const prefs = defaultDiscoveryPreferences();
       prefs.filters.denominations = [marker];
       await db.socialPreferences.create({

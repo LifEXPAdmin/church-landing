@@ -30,8 +30,7 @@ const profile =
           "discovery-options",
           "discovery-feeds",
           "discovery-device",
-          "four-feeds",
-          "feed-snapshot-cost"
+          "four-feeds"
         ],
         browsers: ["qa-discovery-browser", "qa-four-feeds-browser"],
         https: ["discovery-http", "four-feeds-http"]
@@ -301,6 +300,15 @@ try {
     JSON.stringify({ origin, database, certificate: cert }),
     { mode: 0o600 }
   );
+  // Run the capacity-bound fixture before other suites create public Like
+  // candidates. Its cleanup withdraws only its own author's fictional posts.
+  if (suite === "discovery")
+    await run(process.execPath, [
+      "--import",
+      "./tests/register.mjs",
+      "--test",
+      "tests/feed-snapshot-cost.test.ts"
+    ]);
   await run(process.execPath, [
     "--import",
     "./tests/register.mjs",
