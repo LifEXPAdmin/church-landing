@@ -594,6 +594,14 @@ try {
     await db.socialPreferences.count({ where: { ownerId: c.id } }),
     0
   );
+  // Wait for the session reader's completed account-change check. The recheck
+  // button also exists during a pending check, before its concealment event.
+  await page
+    .getByText(
+      "The signed-in account changed. This tab keeps its original account and entries. Reload before using a different account.",
+      { exact: true }
+    )
+    .waitFor();
   await signIn(a);
   await resume();
   await form()

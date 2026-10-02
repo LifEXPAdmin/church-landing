@@ -30,7 +30,8 @@ const profile =
           "discovery-options",
           "discovery-feeds",
           "discovery-device",
-          "four-feeds"
+          "four-feeds",
+          "feed-snapshot-cost"
         ],
         browsers: ["qa-discovery-browser", "qa-four-feeds-browser"],
         https: ["discovery-http", "four-feeds-http"]
@@ -89,6 +90,8 @@ const env = {
   HOME: process.env.HOME,
   TMPDIR: process.env.RUNNER_TEMP,
   CI: "1",
+  GITHUB_ACTIONS: process.env.GITHUB_ACTIONS,
+  FEED_SNAPSHOT_MEASUREMENT: suite === "discovery" ? "1" : "0",
   NEXT_TELEMETRY_DISABLED: "1",
   VERCEL_GIT_COMMIT_SHA: source,
   NODE_ENV: "test",

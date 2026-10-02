@@ -1,5 +1,37 @@
 # Resource budgets for enabled modules
 
+## Discovery ordering measurement, 2 October 2026 UTC
+
+The exact-order optimization in candidate
+`b626ba8564a53c7572b3fae68196578764a0518f` replaces repeated remaining-list scans
+with per-author queues and a heap. It retains the earliest eligible candidate,
+the prior-19-post author window, church identity grouping and the earliest-row
+fallback when every remaining author is blocked. At most six author heads can
+be blocked in that window. Ranking stages, permission checks and cursor formats
+are unchanged.
+
+On Apple M4 and Node 22.23.2, `scripts/benchmark-discovery-variety.mjs` compares
+the frozen historical implementation with the candidate using one warmup and
+nine alternating timed pairs per size and pattern. It checks exact output object
+identity before timing and records all samples, source and dirty state. The
+recorded checkout was clean. Seven ordering tests cover boundary and fallback
+cases, duplicate entries, church/person namespaces and 150 seeded sequences.
+
+| 10,000-post pattern | Historical median ms | Candidate median ms |
+| --- | ---: | ---: |
+| One author | 825.892 | 0.730 |
+| Five author groups | 680.137 | 1.272 |
+| Round-robin 100 authors | 10.240 | 1.338 |
+| All distinct authors | 10.413 | 2.216 |
+
+These are isolated CPU microbenchmarks. They do not measure database access,
+request latency, client rendering or production capacity. Full remaining-snapshot
+permission scans remain a separate investigation. The dense resource workload
+below has not been rerun against this candidate. Application build and runtime
+verification are in progress; this candidate is not integrated or live.
+
+## Historical dense workload, 18 September 2026 UTC
+
 Measured September 18, 2026 UTC against the application code in the verified
 2026.09.18.8 release. This is an initial engineering budget and measured local
 workload, not a user-capacity promise or a hosted service-level agreement.
@@ -202,6 +234,34 @@ to fewer than 1,000 calls and 256 MiB of response bodies. Retain failed attempts
 and initial set-creation evidence; do not disable application guards to complete
 a load test. Raw query parameters, actor credentials and detailed receipts remain
 private.
+
+### Current candidate identity contract
+
+The measurement helper now requires a clean checkout and an explicit private
+`measurement-candidate.json` beside `resource-fixture.json` before the service
+phase. Record the verified candidate rather than copying the historical release:
+
+```json
+{
+  "schema": 1,
+  "sourceSha": "<full 40-character checkout and serving commit>",
+  "productVersion": "<verified YYYY.MM.DD.N product version>",
+  "buildId": "<exact .next/BUILD_ID>",
+  "fixtureSha256": "<SHA-256 of the exact resource-fixture.json bytes>"
+}
+```
+
+The placeholders are instructions, not an accepted receipt. The helper rejects
+source, build and fixture mismatches, binds saved cursors and service/HTTP
+receipts to the same candidate, and checks the serving release SHA, product SHA
+and product version before and after HTTP measurement. `server-ready.json` must
+match the local HTTPS origin, candidate runtime source and recorded build ID.
+This checks receipt consistency; the readiness file is not an independent build
+attestation, and the fixture metadata digest is not a database snapshot digest.
+Preserve previous receipts and use a new owned fixture directory when changing
+candidates. Fifteen focused guard tests reject mismatched or missing identity.
+
+### Historical acceptance
 
 Fresh acceptance: fixture guards and migrations, 220 successful serial service
 observations, 50 initial feed reads, all 920 HTTPS reads, ten read-only query plans,

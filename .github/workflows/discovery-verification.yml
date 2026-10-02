@@ -13,6 +13,7 @@ on:
       - scripts/qa-resource-budgets.mjs
       - lib/platform/discovery*.ts
       - tests/discovery*.test.*
+      - tests/feed-snapshot-cost.test.ts
       - tests/resource-budget-identity.test.mjs
 
 permissions:
@@ -61,7 +62,8 @@ jobs:
             .account-test/discovery-hosted-*/discovery-browser-*/*.png
             .account-test/discovery-hosted-*/four-feeds-browser/*.png
             .account-test/discovery-hosted-*/discovery-browser-*/results.json
-            .account-test/discovery-hosted-*/four-feeds-browser/results.json
+            .account-test/discovery-hosted-*/discovery-browser-*/failure.json
+            .account-test/discovery-hosted-*/four-feeds-browser/RESULT.json
           include-hidden-files: true
           if-no-files-found: ignore
           retention-days: 7
