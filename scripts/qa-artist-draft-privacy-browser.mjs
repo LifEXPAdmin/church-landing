@@ -80,7 +80,9 @@ const button = (name, scope = page) =>
 const field = (name, scope = page) =>
   name === "Biography"
     ? scope.getByRole("textbox", { name, exact: true })
-    : scope.getByLabel(name, { exact: true });
+    : name === "Permission basis"
+      ? scope.getByRole("combobox", { name, exact: true })
+      : scope.getByLabel(name, { exact: true });
 const profileValues = () =>
   page
     .locator("form")
@@ -351,6 +353,26 @@ try {
   await field("Edit profile descriptions").check();
   await button("Propose editor permissions").click();
   await button("Review current permissions and keep entries").waitFor();
+  await page.setViewportSize({ width: 320, height: 844 });
+  await page.evaluate(() => {
+    document.documentElement.style.fontSize = "200%";
+  });
+  assert.ok(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth
+    )
+  );
+  const reviewBounds = await button(
+    "Review current permissions and keep entries"
+  ).boundingBox();
+  assert.ok(
+    reviewBounds && reviewBounds.width <= 320 && reviewBounds.height >= 44
+  );
+  await page.evaluate(() => {
+    document.documentElement.style.fontSize = "";
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  ok("permission review remains reachable at 320 pixels with enlarged text");
   const beforeReview = posts.length;
   await button("Review current permissions and keep entries").click();
   assert.equal(await field("Event page link").inputValue(), eventDraft);
