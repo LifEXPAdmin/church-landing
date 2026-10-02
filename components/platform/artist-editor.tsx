@@ -392,7 +392,7 @@ export function ArtistEditor({
             >
               <fieldset
                 disabled={write.busy || !!write.uncertain || conflict}
-                className="space-y-4"
+                className="min-w-0 space-y-4"
               >
                 <label className="block">
                   Artist name
@@ -429,7 +429,7 @@ export function ArtistEditor({
                     onChange={(e) => change({ biography: e.target.value })}
                   />
                 </label>
-                <fieldset className="grid gap-2 sm:grid-cols-2">
+                <fieldset className="grid min-w-0 gap-2 sm:grid-cols-2">
                   <legend>Artist roles</legend>
                   {artistRoles.map((role) => (
                     <label
