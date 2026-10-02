@@ -7,6 +7,7 @@ on:
     paths:
       - .github/workflows/artist-verification.yml
       - scripts/test-artists-isolated.mjs
+      - scripts/test-platform-isolated.mjs
       - scripts/qa-artist*.mjs
       - components/platform/artist-*.tsx
       - tests/artist*.test.*
