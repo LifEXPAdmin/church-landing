@@ -1,19 +1,47 @@
-## Artist draft recovery continuation, 2 October 2026 UTC
+## Artist draft recovery verified in isolation, 2 October 2026 UTC
 
-The preserved artist privacy candidate now keeps first definitive validation
-failures editable without replacing uncertain requests. Status-only unpublish
-and permission withdrawal retain unsent profile/release metadata and navigation
-protection, adopt only the accepted version, and still detect newer remote edits.
-Permission changes can be explicitly reviewed while retaining sibling entries;
-revoked controls stay concealed and retained entries can be explicitly discarded.
+Candidate `80f5d9ff1b786500849e63518bbf53de0c6355dd` is tested and ready
+for release-owner integration. It is not merged or live. The original account
+retains its profile, release, place and permission/event drafts across actual
+account replacement and concealment. First definitive validation failures stay
+editable; uncertain commands retain their original bytes. Unpublish and permission
+withdrawal retain unsent metadata and leave protection. Changed permissions can
+be deliberately reviewed without losing sibling entries or exposing revoked controls.
 
-Seventeen focused tests execute the real component and hook source with a
-deterministic hook harness. The preserved candidate fails ten of those tests;
-the repaired source passes all seventeen. The combined local guard suite passes
-72 tests, and scoped lint, source security, copy and whitespace checks pass.
-The harness is not a React DOM, browser, network or database test. Hosted CI and
-the original full browser/service/HTTPS/build/release gates remain open. This
-continuation is not merged or live and includes no production writes or sends.
+[Hosted runtime verification](https://github.com/LifEXPAdmin/church-landing/actions/runs/37074826160)
+passes 25 service/restore cases, a production build, eight new privacy/recovery
+browser groups, 18 existing artist browser groups and five enforced-MFA HTTPS
+cases, with no skipped service or HTTPS cases. Build `54ESW4JwAQJ25n67jrHBu`
+served the exact candidate identity before both browser and HTTPS checks.
+Browser cases use MFA off and synthetic focus/blur events; the separate HTTPS
+suite enforces session-bound authenticator proof. These do not establish physical
+device or provider acceptance. External listening attempts are intercepted.
+
+The new browser cases verify complete same-document A-to-B-to-A draft restoration,
+passive-online concealment, successful status-only commands preserving metadata,
+ordered release tracks, sibling permission review and one-effect accepted-create
+continuation. A reproduced 501-pixel form overflow at a 320-pixel viewport was
+repaired by allowing native fieldsets to shrink. The unchanged enlarged-text
+assertion now passes, and the saved 320-pixel/200-percent screenshot was reviewed.
+The new browser reports zero page errors or external requests.
+
+[Source CI](https://github.com/LifEXPAdmin/church-landing/actions/runs/37074825974)
+passes 83 guard cases, copy, generated Prisma client, project types, dependency
+audit, signatures, static analysis and secret scanning. This includes 17 focused
+component/hook cases; the preserved baseline failed ten of them. Audit reports
+zero vulnerabilities and lint has zero errors with 39 existing warnings.
+The deterministic hook harness alone is not browser acceptance. The private
+hashed receipt for all five evidence categories passed the consistency gate
+against the clean candidate at 22:58:14 UTC.
+
+Runtime verification uses an owned hosted runner, a fresh loopback fictional
+database, generated local TLS material and disabled production-mode delivery.
+All 123 existing migrations applied only to that fictional database. There are no
+schema changes, production connections, migrations, writes, sends or deployments
+in this continuation. Screenshots and result summaries are retained separately
+from fixture secrets. Documentation follow-ups do not change the tested
+application. The release owner must verify the combined candidate and production
+identity before live acceptance; broader security/operator gates remain open.
 
 ## Artist privacy repair paused at owner request, 28 September 2026 UTC
 

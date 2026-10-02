@@ -1,18 +1,21 @@
-## Artist draft recovery continuation, 2 October 2026 UTC
+## Artist draft recovery ready for integration, 2 October 2026 UTC
 
-The preserved artist privacy work now repairs first-validation recovery,
-unsent metadata retention after unpublish/permission withdrawal, and deliberate
-permission review without discarding sibling entries. Navigation guards remain
-active for metadata omitted from a successful status-only command. Exact pending
-requests and current account, permission and version checks remain authoritative.
+Artist candidate `80f5d9ff1b786500849e63518bbf53de0c6355dd` passes 83 source
+guards, 25 service/restore cases, 26 browser groups, five enforced-MFA HTTPS cases
+and production build `54ESW4JwAQJ25n67jrHBu`. The browser now verifies actual
+account A-to-B-to-A draft retention, concealed saved-response continuation without
+a duplicate write, status-only metadata retention, sibling permission review and
+ordered release fields. A reproduced enlarged-text overflow was repaired and the
+320-pixel screenshot reviewed. [Security acceptance](ACCOUNT_SECURITY_ACCEPTANCE.md)
+records exact runs, scope, evidence and limitations.
 
-The candidate passes 17 focused source-executing component/hook cases, including
-ten failures reproduced on the preserved baseline, plus the existing 55 local
-guard cases. Scoped lint, source security, copy and whitespace checks pass. This
-small deterministic harness does not establish browser or database acceptance.
-Hosted CI and full service/HTTPS/browser/build/release verification remain open;
-the candidate is not merged or live. The dated production receipt below is
-historical and has not been refreshed by this coding continuation.
+The isolated hosted runner allows this work without local build storage. It uses
+fictional data and no production connection or delivery credentials. Browser
+checks use MFA off; the separate HTTPS suite enforces MFA. No production changes
+or deployment occurred. This candidate is ready for the designated release owner
+to integrate and verify as a combined batch; it is not merged or live. Broader
+security, provider, physical-device and operator acceptance stays open. The
+production receipt below remains historical and was not refreshed in this run.
 
 ## Artist privacy repair paused at owner request, 28 September 2026 UTC
 
