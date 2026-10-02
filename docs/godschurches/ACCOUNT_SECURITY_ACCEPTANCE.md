@@ -1,3 +1,71 @@
+## Artist draft recovery verified in isolation, 2 October 2026 UTC
+
+Candidate `80f5d9ff1b786500849e63518bbf53de0c6355dd` is tested and ready
+for release-owner integration. It is not merged or live. The original account
+retains its profile, release, place and permission/event drafts across actual
+account replacement and concealment. First definitive validation failures stay
+editable; uncertain commands retain their original bytes. Unpublish and permission
+withdrawal retain unsent metadata and leave protection. Changed permissions can
+be deliberately reviewed without losing sibling entries or exposing revoked controls.
+
+[Hosted runtime verification](https://github.com/LifEXPAdmin/church-landing/actions/runs/37074826160)
+passes 25 service/restore cases, a production build, eight new privacy/recovery
+browser groups, 18 existing artist browser groups and five enforced-MFA HTTPS
+cases, with no skipped service or HTTPS cases. Build `54ESW4JwAQJ25n67jrHBu`
+served the exact candidate identity before both browser and HTTPS checks.
+Browser cases use MFA off and synthetic focus/blur events; the separate HTTPS
+suite enforces session-bound authenticator proof. These do not establish physical
+device or provider acceptance. External listening attempts are intercepted.
+
+The new browser cases verify complete same-document A-to-B-to-A draft restoration,
+passive-online concealment, successful status-only commands preserving metadata,
+ordered release tracks, sibling permission review and one-effect accepted-create
+continuation. A reproduced 501-pixel form overflow at a 320-pixel viewport was
+repaired by allowing native fieldsets to shrink. The unchanged enlarged-text
+assertion now passes, and the saved 320-pixel/200-percent screenshot was reviewed.
+The new browser reports zero page errors or external requests.
+
+[Source CI](https://github.com/LifEXPAdmin/church-landing/actions/runs/37074825974)
+passes 83 guard cases, copy, generated Prisma client, project types, dependency
+audit, signatures, static analysis and secret scanning. This includes 17 focused
+component/hook cases; the preserved baseline failed ten of them. Audit reports
+zero vulnerabilities and lint has zero errors with 39 existing warnings.
+The deterministic hook harness alone is not browser acceptance. The private
+hashed receipt for all five evidence categories passed the consistency gate
+against the clean candidate at 22:58:14 UTC.
+
+Runtime verification uses an owned hosted runner, a fresh loopback fictional
+database, generated local TLS material and disabled production-mode delivery.
+All 123 existing migrations applied only to that fictional database. There are no
+schema changes, production connections, migrations, writes, sends or deployments
+in this continuation. Screenshots and result summaries are retained separately
+from fixture secrets. Documentation follow-ups do not change the tested
+application. The release owner must verify the combined candidate and production
+identity before live acceptance; broader security/operator gates remain open.
+
+## Artist privacy repair paused at owner request, 28 September 2026 UTC
+
+The next artist repair is saved on `codex/artist-draft-privacy`, based on report
+commit `320396d496433611fa008a1a1f3148379195dd52`. It is unfinished: **not browser
+verified, not built, not merged and not live**. Production remains the verified
+`.42` release recorded below. Work is paused to preserve the owner's usage budget.
+
+Before edits, isolated browser reproductions on unchanged `.42` demonstrated
+complete artist draft loss across an actual account A-to-B-to-A refresh and an
+accepted create response navigating while the document was concealed. The saved
+implementation adds original-owner editor scope, foreground continuation checks,
+retained place/delegate/release fields and explicit accepted-response recovery.
+TypeScript, scoped ESLint and whitespace checks passed; these static checks do
+not prove that the repair works in the browser.
+
+Resume with a focused review of the shared write hook and nested synchronous
+state updates. Add and run the new browser cases for actual account replacement,
+concealment, passive online events, one-effect accepted continuation, exact
+lost-response retry, ordered release fields and sibling/delegate retention. The
+new QA script has not been written. Then run relevant existing regressions,
+build and release gates before considering integration or a completed batch.
+No production migration, test write, send or deployment belongs to this WIP.
+
 ## Topic management and followed discussions verified live, 28 September 2026 UTC
 
 Version **2026.09.28.42** is implemented, tested, merged and verified live.

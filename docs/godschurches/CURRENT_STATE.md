@@ -1,3 +1,45 @@
+## Artist draft recovery ready for integration, 2 October 2026 UTC
+
+Artist candidate `80f5d9ff1b786500849e63518bbf53de0c6355dd` passes 83 source
+guards, 25 service/restore cases, 26 browser groups, five enforced-MFA HTTPS cases
+and production build `54ESW4JwAQJ25n67jrHBu`. The browser now verifies actual
+account A-to-B-to-A draft retention, concealed saved-response continuation without
+a duplicate write, status-only metadata retention, sibling permission review and
+ordered release fields. A reproduced enlarged-text overflow was repaired and the
+320-pixel screenshot reviewed. [Security acceptance](ACCOUNT_SECURITY_ACCEPTANCE.md)
+records exact runs, scope, evidence and limitations.
+
+The isolated hosted runner allows this work without local build storage. It uses
+fictional data and no production connection or delivery credentials. Browser
+checks use MFA off; the separate HTTPS suite enforces MFA. No production changes
+or deployment occurred. This candidate is ready for the designated release owner
+to integrate and verify as a combined batch; it is not merged or live. Broader
+security, provider, physical-device and operator acceptance stays open. The
+production receipt below remains historical and was not refreshed in this run.
+
+## Artist privacy repair paused at owner request, 28 September 2026 UTC
+
+The next artist repair is saved on `codex/artist-draft-privacy`, based on report
+commit `320396d496433611fa008a1a1f3148379195dd52`. It is unfinished: **not browser
+verified, not built, not merged and not live**. Production remains the verified
+`.42` release recorded below. Work is paused to preserve the owner's usage budget.
+
+Before edits, isolated browser reproductions on unchanged `.42` demonstrated
+complete artist draft loss across an actual account A-to-B-to-A refresh and an
+accepted create response navigating while the document was concealed. The saved
+implementation adds original-owner editor scope, foreground continuation checks,
+retained place/delegate/release fields and explicit accepted-response recovery.
+TypeScript, scoped ESLint and whitespace checks passed; these static checks do
+not prove that the repair works in the browser.
+
+Resume with a focused review of the shared write hook and nested synchronous
+state updates. Add and run the new browser cases for actual account replacement,
+concealment, passive online events, one-effect accepted continuation, exact
+lost-response retry, ordered release fields and sibling/delegate retention. The
+new QA script has not been written. Then run relevant existing regressions,
+build and release gates before considering integration or a completed batch.
+No production migration, test write, send or deployment belongs to this WIP.
+
 ## Topic management and followed discussions verified live, 28 September 2026 UTC
 
 Version **2026.09.28.42**, source `7e6ed64cded8d19b1de4442265c18047df2298d9`,

@@ -1,6 +1,8 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useArtistContinuation } from "./artist-editor-workspace";
+import { useUnsavedSocialWork } from "./use-unsaved-social-work";
 import { useMediaRead } from "./media-catalog-library";
 import {
   ArtistNavigation,
@@ -21,26 +23,143 @@ const capabilityLabels = {
 export function ArtistDelegates({
   owner,
   id,
-  data,
+  data: currentData,
   reload,
+  visible = true,
   disabled
 }: {
   owner: string;
   id: string;
   data: ArtistEditorView;
   reload: () => void;
+  visible?: boolean;
   disabled: boolean;
 }) {
-  const [accountId, setAccountId] = useState(""),
+  const [data, setData] = useState(currentData),
+    [guardNotice, setGuardNotice] = useState(""),
+    [accountId, setAccountId] = useState(""),
     [capabilities, setCapabilities] = useState<string[]>([]),
     [eventUrl, setEventUrl] = useState(""),
     [eventError, setEventError] = useState("");
-  const write = useArtistWrite(owner, `delegates:${id}`, () => reload());
+  const access = useArtistContinuation(visible);
+  const write = useArtistWrite(
+    owner,
+    `delegates:${id}`,
+    (_receipt, body) => {
+      if (body.operation === "invite") {
+        setAccountId("");
+        setCapabilities([]);
+      }
+      if (body.operation === "propose-event") {
+        setEventUrl("");
+        setEventError("");
+      }
+      reload();
+    },
+    "/api/platform/artists",
+    access
+  );
+  const dirty = !!accountId || capabilities.length > 0 || !!eventUrl,
+    protectedWork = dirty || write.busy || !!write.uncertain,
+    changed =
+      JSON.stringify([
+        data.permissions,
+        data.ownDelegate,
+        data.delegates,
+        data.associations
+      ]) !==
+      JSON.stringify([
+        currentData.permissions,
+        currentData.ownDelegate,
+        currentData.delegates,
+        currentData.associations
+      ]);
+  useEffect(() => {
+    if (!protectedWork) setData(currentData);
+  }, [currentData, protectedWork]);
+  useUnsavedSocialWork(
+    {
+      dirty,
+      saving: !write.confirmed && (write.busy || !!write.uncertain),
+      conflict: changed && protectedWork
+    },
+    () =>
+      setGuardNotice(
+        "Finish or explicitly discard your local permission and event entries before leaving."
+      ),
+    true
+  );
   const locked = disabled || write.busy || !!write.uncertain;
+  function discardEntries() {
+    if (
+      write.busy ||
+      write.uncertain ||
+      !window.confirm(
+        "Discard unsent permission and event entries? This does not undo saved changes."
+      )
+    )
+      return;
+    setAccountId("");
+    setCapabilities([]);
+    setEventUrl("");
+    setEventError("");
+    setGuardNotice("");
+  }
+  if (!access.visible || (changed && protectedWork))
+    return (
+      <section
+        aria-label="Retained artist permissions"
+        className="space-y-3 rounded-xl border p-4"
+      >
+        <p>
+          Permission and event details are concealed. Local entries and original
+          requests are retained while current access and changes are reviewed.
+        </p>
+        {write.controls}
+        {access.visible && changed && dirty && (
+          <button
+            className="gc-button-secondary"
+            disabled={locked || access.current() === null}
+            onClick={() => {
+              if (locked || access.current() === null) return;
+              setData(currentData);
+              setGuardNotice("");
+            }}
+          >
+            Review current permissions and keep entries
+          </button>
+        )}
+        {dirty && (
+          <button
+            className="gc-button-secondary"
+            disabled={write.busy || !!write.uncertain}
+            onClick={discardEntries}
+          >
+            Discard concealed permission entries
+          </button>
+        )}
+      </section>
+    );
   return (
     <section className="space-y-4 border-t pt-5">
       <h2 className="text-2xl font-semibold">Editor permissions and events</h2>
+      {guardNotice && dirty && <p role="status">{guardNotice}</p>}
       {write.controls}
+      {dirty && !data.permissions.steward && (
+        <div className="space-y-3">
+          <p>
+            Your current permissions do not allow editing these entries. Your
+            local entries are retained until you explicitly discard them.
+          </p>
+          <button
+            className="gc-button-secondary"
+            disabled={write.busy || !!write.uncertain}
+            onClick={discardEntries}
+          >
+            Discard concealed permission entries
+          </button>
+        </div>
+      )}
       {!data.permissions.steward && data.ownDelegate?.state === "ACCEPTED" && (
         <button
           className="gc-button-secondary"

@@ -1,7 +1,7 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
-import { settlePhotoNavigation } from "./use-photo-back-guard";
+import { useArtistContinuation } from "./artist-editor-workspace";
 import Link from "next/link";
 import { useMediaRead } from "./media-catalog-library";
 import {
@@ -187,6 +187,7 @@ export function ArtistEditor({
       owner
     ),
     [fields, setFields] = useState<ArtistFields>(emptyArtist),
+    [placeQuery, setPlaceQuery] = useState(""),
     [version, setVersion] = useState<number | null>(null),
     [dirty, setDirty] = useState(false),
     [confirmed, setConfirmed] = useState(false),
@@ -197,17 +198,28 @@ export function ArtistEditor({
     [releaseSnapshot, setReleaseSnapshot] = useState<ReleaseItem | undefined>(),
     [removed, setRemoved] = useState(false),
     [guardNotice, setGuardNotice] = useState("");
+  const access = useArtistContinuation(!!data && version !== null && !removed);
+  const delegateSnapshot = useRef<ArtistEditorView | null>(null);
+  if (data) delegateSnapshot.current = data;
   const write = useArtistWrite(
     owner,
     `editor:${id ?? "new"}`,
-    async (receipt, body) => {
+    (receipt, body) => {
       flushSync(() => {
-        setDirty(false);
-        setVersion(null);
+        if (
+          body.operation === "unpublish" ||
+          body.operation === "withdraw-rights"
+        ) {
+          // These commands change publication only. Keep unsent metadata and
+          // adopt only this receipt's version, so later remote edits conflict.
+          setVersion(receipt.version);
+        } else {
+          setDirty(false);
+          setVersion(null);
+        }
         setConfirmed(false);
       });
       if (body.operation === "create") {
-        await settlePhotoNavigation();
         window.location.assign(`/platform/music/${receipt.id}/edit`);
         return;
       }
@@ -216,7 +228,9 @@ export function ArtistEditor({
         return;
       }
       reload();
-    }
+    },
+    "/api/platform/artists",
+    access
   );
   const artist = data?.artist,
     permissions = id
@@ -236,6 +250,7 @@ export function ArtistEditor({
             ) as ArtistFields)
           : emptyArtist)
     );
+    setPlaceQuery("");
     setVersion(artist?.version ?? 0);
     setDirty(!!retained);
     setConfirmed(false);
@@ -244,7 +259,11 @@ export function ArtistEditor({
     if (data && version === null && !dirty) load();
   }, [data, version, dirty, load]);
   useUnsavedSocialWork(
-    { dirty, saving: write.busy || !!write.uncertain, conflict },
+    {
+      dirty: dirty && !write.confirmed,
+      saving: !write.confirmed && (write.busy || !!write.uncertain),
+      conflict: conflict && !write.confirmed
+    },
     () =>
       setGuardNotice(
         "Save or explicitly discard your profile edits before leaving."
@@ -274,7 +293,7 @@ export function ArtistEditor({
         : {})
     });
   }
-  const hidden = !data || version === null || removed;
+  const hidden = !data || version === null || removed || !access.visible;
   return (
     <section className="space-y-5">
       <ArtistNavigation />
@@ -315,7 +334,13 @@ export function ArtistEditor({
           This artist was removed. Its public page and releases are unavailable.
         </p>
       ) : hidden ? (
-        <ArtistReadNotice error={error} reload={reload} />
+        <ArtistReadNotice
+          error={error}
+          reload={() => {
+            access.resume();
+            reload();
+          }}
+        />
       ) : (
         <>
           {id && (
@@ -367,7 +392,7 @@ export function ArtistEditor({
             >
               <fieldset
                 disabled={write.busy || !!write.uncertain || conflict}
-                className="space-y-4"
+                className="min-w-0 space-y-4"
               >
                 <label className="block">
                   Artist name
@@ -404,7 +429,7 @@ export function ArtistEditor({
                     onChange={(e) => change({ biography: e.target.value })}
                   />
                 </label>
-                <fieldset className="grid gap-2 sm:grid-cols-2">
+                <fieldset className="grid min-w-0 gap-2 sm:grid-cols-2">
                   <legend>Artist roles</legend>
                   {artistRoles.map((role) => (
                     <label
@@ -438,6 +463,11 @@ export function ArtistEditor({
                   />
                 </label>
                 <DiscoveryPlacePicker
+                  queryValue={placeQuery}
+                  onQueryChange={(value) => {
+                    setPlaceQuery(value);
+                    setDirty(true);
+                  }}
                   country={fields.countryId}
                   placeId={fields.townId ? Number(fields.townId) : null}
                   onCountry={(countryId) => change({ countryId, townId: null })}
@@ -468,7 +498,10 @@ export function ArtistEditor({
                       type="checkbox"
                       className="mt-1"
                       checked={representation}
-                      onChange={(e) => setRepresentation(e.target.checked)}
+                      onChange={(e) => {
+                        setRepresentation(e.target.checked);
+                        setDirty(true);
+                      }}
                     />
                     <span>
                       I am this artist or currently authorized to maintain this
@@ -478,11 +511,20 @@ export function ArtistEditor({
                 )}
                 <ArtistRights
                   confirmed={confirmed}
-                  setConfirmed={setConfirmed}
+                  setConfirmed={(value) => {
+                    setConfirmed(value);
+                    setDirty(true);
+                  }}
                   basis={basis}
-                  setBasis={setBasis}
+                  setBasis={(value) => {
+                    setBasis(value);
+                    setDirty(true);
+                  }}
                   expiry={expiry}
-                  setExpiry={setExpiry}
+                  setExpiry={(value) => {
+                    setExpiry(value);
+                    setDirty(true);
+                  }}
                 />
                 <div className="flex flex-wrap gap-3">
                   <button
@@ -608,16 +650,17 @@ export function ArtistEditor({
               </ul>
             </section>
           )}
-          {id && data && (
-            <ArtistDelegates
-              owner={owner}
-              id={id}
-              data={data}
-              reload={reload}
-              disabled={dirty || write.busy || !!write.uncertain || !!releaseId}
-            />
-          )}
         </>
+      )}
+      {owner && id && delegateSnapshot.current && (
+        <ArtistDelegates
+          owner={owner}
+          id={id}
+          data={data ?? delegateSnapshot.current}
+          reload={reload}
+          visible={!hidden}
+          disabled={dirty || write.busy || !!write.uncertain || !!releaseId}
+        />
       )}
       {owner && id && releaseId && (
         <ArtistReleaseEditor

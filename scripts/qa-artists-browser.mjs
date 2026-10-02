@@ -34,7 +34,9 @@ const der = execFileSync("openssl", ["pkey", "-pubin", "-outform", "DER"], {
 const browser = await chromium.launch({
   headless: true,
   executablePath:
-    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    process.env.ARTIST_BUNDLED_CHROMIUM === "1"
+      ? undefined
+      : "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
   args: [
     "--ignore-certificate-errors-spki-list=" +
       createHash("sha256").update(der).digest("base64"),
@@ -396,10 +398,17 @@ try {
     "organizer-approved artist performances open the actual canonical event page"
   );
   await go(`/platform/music/${artist.id}`);
+  const blockedProviderNavigation = page.waitForEvent("framenavigated", {
+    predicate: (frame) =>
+      frame === page.mainFrame() && new URL(frame.url()).origin !== origin
+  });
   await page
     .getByRole("button", { name: "Open on Spotify", exact: true })
     .click();
   await wait(async () => providerAttempts === 1);
+  // Wait for the intentionally aborted provider navigation to commit its error
+  // document before returning, or that late navigation can cancel page.goto.
+  await blockedProviderNavigation;
   ok(
     "a deliberate listening action rechecks the current source and makes exactly one provider request"
   );
