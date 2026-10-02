@@ -302,6 +302,10 @@ try {
   );
   assert.equal(posts.length, beforeSwitch);
   assert.deepEqual(await profileValues(), retainedProfile);
+  await page.screenshot({
+    path: output + "/restored-profile.png",
+    fullPage: true
+  });
   ok(
     "actual same-document A-to-B-to-A refresh conceals and restores the complete original draft"
   );
@@ -374,17 +378,29 @@ try {
   await page.evaluate(() => {
     document.documentElement.style.fontSize = "200%";
   });
-  assert.ok(
-    await page.evaluate(
-      () => document.documentElement.scrollWidth <= innerWidth
-    )
-  );
+  const overflow = await page.evaluate(() => ({
+    width: document.documentElement.scrollWidth,
+    viewport: innerWidth,
+    elements: [...document.querySelectorAll("body *")]
+      .map((element) => ({
+        tag: element.tagName,
+        className: element.className,
+        left: element.getBoundingClientRect().left,
+        right: element.getBoundingClientRect().right
+      }))
+      .filter((element) => element.left < 0 || element.right > innerWidth)
+  }));
+  assert.ok(overflow.width <= overflow.viewport, JSON.stringify(overflow));
   const reviewBounds = await button(
     "Review current permissions and keep entries"
   ).boundingBox();
   assert.ok(
     reviewBounds && reviewBounds.width <= 320 && reviewBounds.height >= 44
   );
+  await page.screenshot({
+    path: output + "/permission-review-320.png",
+    fullPage: true
+  });
   await page.evaluate(() => {
     document.documentElement.style.fontSize = "";
   });
@@ -491,6 +507,10 @@ try {
   ok(
     "accepted create stays concealed until deliberate original-owner continuation and never sends a second POST"
   );
+  await page.screenshot({
+    path: output + "/accepted-create.png",
+    fullPage: true
+  });
   assert.deepEqual(errors, []);
   assert.deepEqual(external, []);
   writeFileSync(

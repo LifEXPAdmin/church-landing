@@ -47,3 +47,14 @@ jobs:
           echo "ARTIST_BUNDLED_CHROMIUM=1" >> "$GITHUB_ENV"
       - name: Build and verify fictional artists over local HTTPS
         run: node scripts/test-artists-isolated.mjs
+      - name: Preserve fictional browser results and screenshots
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: artist-browser-${{ github.sha }}
+          path: |
+            .account-test/artist-hosted-*/artist-draft-browser-*/*.png
+            .account-test/artist-hosted-*/artist-draft-browser-*/results.json
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 7
