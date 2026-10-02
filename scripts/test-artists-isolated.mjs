@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { spawn, spawnSync } from "node:child_process";
+import { spawn, spawnSync, execFileSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import {
   mkdirSync,
@@ -28,6 +28,15 @@ assert.ok(
 );
 const pg = process.env.TEST_PG_BIN;
 const root = process.cwd();
+const source = execFileSync("git", ["rev-parse", "HEAD"], {
+  encoding: "utf8"
+}).trim();
+assert.match(source, /^[a-f0-9]{40}$/);
+assert.equal(
+  source,
+  process.env.GITHUB_SHA,
+  "Verify the exact workflow source"
+);
 mkdirSync(".account-test", { recursive: true, mode: 0o700 });
 const fixture = mkdtempSync(resolve(".account-test/artist-hosted-"));
 const cluster = mkdtempSync(join(process.env.RUNNER_TEMP, "artist-postgres-"));
@@ -55,6 +64,7 @@ const env = {
   TMPDIR: process.env.RUNNER_TEMP,
   CI: "1",
   NEXT_TELEMETRY_DISABLED: "1",
+  VERCEL_GIT_COMMIT_SHA: source,
   NODE_ENV: "test",
   DATABASE_URL: database,
   DIRECT_URL: database,
@@ -157,7 +167,42 @@ async function start(mode) {
     }
   );
   for (let i = 0; i < 120; i++) {
-    if (await health()) return;
+    if (await health()) {
+      const identity = await new Promise((done, reject) => {
+        const request = httpsGet(
+          origin + "/api/platform/release",
+          { ca: readFileSync(cert), timeout: 3000 },
+          (response) => {
+            let body = "";
+            response.setEncoding("utf8");
+            response.on("data", (chunk) => {
+              body += chunk;
+            });
+            response.once("error", reject);
+            response.once("end", () => {
+              try {
+                assert.equal(response.statusCode, 200);
+                done(JSON.parse(body));
+              } catch (error) {
+                reject(error);
+              }
+            });
+          }
+        );
+        request.once("error", reject);
+        request.once("timeout", () =>
+          request.destroy(new Error("Serving identity timed out"))
+        );
+      });
+      assert.equal(identity.release, source);
+      console.log(
+        "Verified fictional server source:",
+        identity.release,
+        "MFA mode:",
+        mode
+      );
+      return;
+    }
     if (server.exitCode !== null || server.signalCode !== null)
       throw new Error("Production-mode server exited");
     await new Promise((done) => setTimeout(done, 500));
@@ -298,13 +343,13 @@ try {
   await run(process.execPath, [
     "--import",
     "./tests/register.mjs",
-    "scripts/qa-artists-browser.mjs",
+    "scripts/qa-artist-draft-privacy-browser.mjs",
     fixture
   ]);
   await run(process.execPath, [
     "--import",
     "./tests/register.mjs",
-    "scripts/qa-artist-draft-privacy-browser.mjs",
+    "scripts/qa-artists-browser.mjs",
     fixture
   ]);
   await stop(server);
