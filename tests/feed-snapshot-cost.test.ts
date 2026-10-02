@@ -176,6 +176,69 @@ test(
           where: { id: { in: ids.slice(0, 150) } },
           data: { moderationState: "VISIBLE" }
         });
+        // Looking ahead must not advance past the last returned reference:
+        // posts restored in the gap still belong to the next saved page.
+        await db.platformPost.updateMany({
+          where: { id: { in: ids.slice(30, 180) } },
+          data: { moderationState: "HIDDEN" }
+        });
+        const gap = await readFeed(
+          db,
+          reader.token,
+          { mode, cursor: first.pageCursor },
+          at
+        );
+        assert.deepEqual(
+          gap.posts.map((post) => post.id),
+          ids.slice(0, 30)
+        );
+        assert.ok(gap.nextCursor);
+        await db.platformPost.updateMany({
+          where: { id: { in: ids.slice(30, 180) } },
+          data: { moderationState: "VISIBLE" }
+        });
+        const restored = await readFeed(
+          db,
+          reader.token,
+          { mode, cursor: gap.nextCursor },
+          at
+        );
+        assert.deepEqual(
+          restored.posts.map((post) => post.id),
+          ids.slice(30, 60)
+        );
+        // A full page with an entirely revoked tail has no continuation.
+        await db.platformPost.updateMany({
+          where: { authorId: author.id, id: { notIn: ids.slice(0, 30) } },
+          data: { moderationState: "HIDDEN" }
+        });
+        const last = await readFeed(
+          db,
+          reader.token,
+          { mode, cursor: first.pageCursor },
+          at
+        );
+        assert.deepEqual(
+          last.posts.map((post) => post.id),
+          ids.slice(0, 30)
+        );
+        assert.equal(last.nextCursor, null);
+        await db.platformPost.updateMany({
+          where: { authorId: author.id },
+          data: { moderationState: "HIDDEN" }
+        });
+        const empty = await readFeed(
+          db,
+          reader.token,
+          { mode, cursor: first.pageCursor },
+          at
+        );
+        assert.deepEqual(empty.posts, []);
+        assert.equal(empty.nextCursor, null);
+        await db.platformPost.updateMany({
+          where: { authorId: author.id },
+          data: { moderationState: "VISIBLE" }
+        });
       }
     } finally {
       capture = false;

@@ -12,8 +12,11 @@ on:
       - scripts/resource-budget-identity.mjs
       - scripts/qa-resource-budgets.mjs
       - lib/platform/discovery*.ts
+      - lib/platform/feed-snapshot-page.ts
+      - lib/platform/feed-reads.ts
       - tests/discovery*.test.*
       - tests/feed-snapshot-cost.test.ts
+      - tests/feed-snapshot-page.test.mjs
       - tests/resource-budget-identity.test.mjs
 
 permissions:

@@ -3,6 +3,7 @@ import { gzipSync, gunzipSync } from "node:zlib";
 import { accountConfig } from "./account-config";
 import type { PostContext, PostTx } from "./post-access";
 import { expireFeedSnapshots } from "./feed-snapshot-retention";
+import { readSnapshotPage } from "./feed-snapshot-page";
 import { hydratePostPage } from "./post-reads";
 import { PortalError } from "./portal-policy";
 import {
@@ -309,21 +310,25 @@ export async function readDiscoveryFeedIn(
   const references = snapshot
     ? snapshot.postIds.slice(cursor.offset)
     : cursor.page!;
-  const rows = await readDiscoveryCandidates(
-    tx,
-    context,
-    mode,
-    prefs,
-    place,
-    at,
-    references,
-    following?.where
-  );
-  const available = new Map(rows.map((row) => [row.post.id, row]));
-  const remaining = references.filter((id) => available.has(id)),
-    ids = remaining.slice(0, PAGE);
+  const {
+    ids,
+    rows: available,
+    hasMore
+  } = await readSnapshotPage(references, PAGE, async (chunk) => {
+    const rows = await readDiscoveryCandidates(
+      tx,
+      context,
+      mode,
+      prefs,
+      place,
+      at,
+      chunk,
+      following?.where
+    );
+    return new Map(rows.map((row) => [row.post.id, row]));
+  });
   const next =
-    snapshot && remaining.length > PAGE
+    snapshot && hasMore
       ? cursors.encode({
           ...cursor,
           page: undefined,
