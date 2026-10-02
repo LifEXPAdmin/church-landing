@@ -65,8 +65,16 @@ export function ArtistReleaseEditor({
   const write = useArtistWrite(
     owner,
     `release:${artistId}:${item?.id ?? "new"}`,
-    (_r, body) => {
-      setDirty(false);
+    (receipt, body) => {
+      if (
+        body.operation === "unpublish-release" ||
+        body.operation === "withdraw-release-rights"
+      ) {
+        // Publication changes do not include the local release draft.
+        setVersion(receipt.version);
+      } else {
+        setDirty(false);
+      }
       setConfirmed(false);
       onSaved();
       if (
@@ -87,7 +95,7 @@ export function ArtistReleaseEditor({
       !write.busy &&
       !write.confirmed &&
       item &&
-      item.version !== version
+      item.version > version
     ) {
       setF(initial(item));
       setVersion(item.version);

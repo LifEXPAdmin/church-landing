@@ -1,3 +1,19 @@
+## Artist draft recovery continuation, 2 October 2026 UTC
+
+The preserved artist privacy work now repairs first-validation recovery,
+unsent metadata retention after unpublish/permission withdrawal, and deliberate
+permission review without discarding sibling entries. Navigation guards remain
+active for metadata omitted from a successful status-only command. Exact pending
+requests and current account, permission and version checks remain authoritative.
+
+The candidate passes 17 focused source-executing component/hook cases, including
+ten failures reproduced on the preserved baseline, plus the existing 55 local
+guard cases. Scoped lint, source security, copy and whitespace checks pass. This
+small deterministic harness does not establish browser or database acceptance.
+Hosted CI and full service/HTTPS/browser/build/release verification remain open;
+the candidate is not merged or live. The dated production receipt below is
+historical and has not been refreshed by this coding continuation.
+
 ## Artist privacy repair paused at owner request, 28 September 2026 UTC
 
 The next artist repair is saved on `codex/artist-draft-privacy`, based on report

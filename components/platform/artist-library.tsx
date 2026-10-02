@@ -137,7 +137,9 @@ export function useArtistWrite(
           );
           return;
         }
-        flushSync(() => setConfirmed(true));
+        // Status and permission commands do not save the editor's unsent fields.
+        // Keep their navigation protection through accepted-response recovery.
+        flushSync(() => setConfirmed("fields" in JSON.parse(body)));
         await settlePhotoNavigation();
         if (!live.current) return;
         if (
@@ -164,11 +166,12 @@ export function useArtistWrite(
     } catch (e) {
       if (live.current) {
         if (
-          !access &&
           e instanceof SocialClientError &&
+          (!access || e.status === 400) &&
           e.status < 500 &&
           e.status !== 401 &&
-          !uncertain
+          !uncertain &&
+          !accepted.current
         ) {
           pending.delete(key);
           setUncertain(null);

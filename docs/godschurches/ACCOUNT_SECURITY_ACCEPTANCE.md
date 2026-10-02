@@ -1,3 +1,20 @@
+## Artist draft recovery continuation, 2 October 2026 UTC
+
+The preserved artist privacy candidate now keeps first definitive validation
+failures editable without replacing uncertain requests. Status-only unpublish
+and permission withdrawal retain unsent profile/release metadata and navigation
+protection, adopt only the accepted version, and still detect newer remote edits.
+Permission changes can be explicitly reviewed while retaining sibling entries;
+revoked controls stay concealed and retained entries can be explicitly discarded.
+
+Seventeen focused tests execute the real component and hook source with a
+deterministic hook harness. The preserved candidate fails ten of those tests;
+the repaired source passes all seventeen. The combined local guard suite passes
+72 tests, and scoped lint, source security, copy and whitespace checks pass.
+The harness is not a React DOM, browser, network or database test. Hosted CI and
+the original full browser/service/HTTPS/build/release gates remain open. This
+continuation is not merged or live and includes no production writes or sends.
+
 ## Artist privacy repair paused at owner request, 28 September 2026 UTC
 
 The next artist repair is saved on `codex/artist-draft-privacy`, based on report

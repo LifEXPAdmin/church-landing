@@ -206,8 +206,17 @@ export function ArtistEditor({
     `editor:${id ?? "new"}`,
     (receipt, body) => {
       flushSync(() => {
-        setDirty(false);
-        setVersion(null);
+        if (
+          body.operation === "unpublish" ||
+          body.operation === "withdraw-rights"
+        ) {
+          // These commands change publication only. Keep unsent metadata and
+          // adopt only this receipt's version, so later remote edits conflict.
+          setVersion(receipt.version);
+        } else {
+          setDirty(false);
+          setVersion(null);
+        }
         setConfirmed(false);
       });
       if (body.operation === "create") {

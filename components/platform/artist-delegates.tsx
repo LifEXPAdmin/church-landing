@@ -90,6 +90,21 @@ export function ArtistDelegates({
     true
   );
   const locked = disabled || write.busy || !!write.uncertain;
+  function discardEntries() {
+    if (
+      write.busy ||
+      write.uncertain ||
+      !window.confirm(
+        "Discard unsent permission and event entries? This does not undo saved changes."
+      )
+    )
+      return;
+    setAccountId("");
+    setCapabilities([]);
+    setEventUrl("");
+    setEventError("");
+    setGuardNotice("");
+  }
   if (!access.visible || (changed && protectedWork))
     return (
       <section
@@ -101,23 +116,24 @@ export function ArtistDelegates({
           requests are retained while current access and changes are reviewed.
         </p>
         {write.controls}
+        {access.visible && changed && dirty && (
+          <button
+            className="gc-button-secondary"
+            disabled={locked || access.current() === null}
+            onClick={() => {
+              if (locked || access.current() === null) return;
+              setData(currentData);
+              setGuardNotice("");
+            }}
+          >
+            Review current permissions and keep entries
+          </button>
+        )}
         {dirty && (
           <button
             className="gc-button-secondary"
             disabled={write.busy || !!write.uncertain}
-            onClick={() => {
-              if (
-                !window.confirm(
-                  "Discard unsent permission and event entries? This does not undo saved changes."
-                )
-              )
-                return;
-              setAccountId("");
-              setCapabilities([]);
-              setEventUrl("");
-              setEventError("");
-              setGuardNotice("");
-            }}
+            onClick={discardEntries}
           >
             Discard concealed permission entries
           </button>
@@ -129,6 +145,21 @@ export function ArtistDelegates({
       <h2 className="text-2xl font-semibold">Editor permissions and events</h2>
       {guardNotice && dirty && <p role="status">{guardNotice}</p>}
       {write.controls}
+      {dirty && !data.permissions.steward && (
+        <div className="space-y-3">
+          <p>
+            Your current permissions do not allow editing these entries. Your
+            local entries are retained until you explicitly discard them.
+          </p>
+          <button
+            className="gc-button-secondary"
+            disabled={write.busy || !!write.uncertain}
+            onClick={discardEntries}
+          >
+            Discard concealed permission entries
+          </button>
+        </div>
+      )}
       {!data.permissions.steward && data.ownDelegate?.state === "ACCEPTED" && (
         <button
           className="gc-button-secondary"
