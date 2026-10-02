@@ -32,6 +32,17 @@ that setup failure is not a passing receipt. Clean locked-install Linux CI must
 verify that test, schema generation and whole-project types. No product build,
 database/browser acceptance, provider change or deployment is claimed here.
 
+The first exact-source Linux CI run passed all 66 guard tests, copy validation,
+schema generation and whole-project TypeScript, then correctly failed its
+existing advisory gate. Three locked `brace-expansion` versions were newly
+reported affected. Compatible patches update 1.1.18 to 1.1.21, 2.1.4 to 2.1.7
+and 5.0.9 to 5.0.12, including the transitive production queue dependency.
+The [maintainer advisory](https://github.com/advisories/GHSA-qhr7-859c-m2p7)
+describes the bounded parsing repair. Existing optional-platform metadata and
+all other locked packages are preserved. This is a dependency repair, not a
+claim of a demonstrated application exploit. The new candidate needs its own
+successful CI and normal combined product release checks before deployment.
+
 ### Candidate release evidence
 
 Before product integration/publication, run from the clean candidate checkout:
