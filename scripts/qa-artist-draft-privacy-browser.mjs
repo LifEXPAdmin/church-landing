@@ -77,7 +77,23 @@ const poll = async (fn, expected) => {
 };
 const button = (name, scope = page) =>
   scope.getByRole("button", { name, exact: true });
-const field = (name, scope = page) => scope.getByLabel(name, { exact: true });
+const field = (name, scope = page) =>
+  name === "Biography"
+    ? scope.getByRole("textbox", { name, exact: true })
+    : scope.getByLabel(name, { exact: true });
+const profileValues = () =>
+  page
+    .locator("form")
+    .filter({ has: field("Artist name") })
+    .locator("input,textarea,select")
+    .evaluateAll((elements) =>
+      elements.map((element) => ({
+        tag: element.tagName,
+        type: element.type,
+        value: element.value,
+        checked: element instanceof HTMLInputElement ? element.checked : null
+      }))
+    );
 const focus = () =>
   page.evaluate(() => window.dispatchEvent(new Event("focus")));
 const blur = () => page.evaluate(() => window.dispatchEvent(new Event("blur")));
@@ -224,6 +240,16 @@ try {
   assert.equal(await button("Retry exact change").count(), 0);
   await field("Artist name").fill("UNSENT_PRIVATE_ARTIST_NAME");
   await field("Biography").fill("UNSENT_PRIVATE_BIOGRAPHY");
+  await field("Country").selectOption("US");
+  await field("Find a town or area").fill("UNSENT_TOWN_QUERY");
+  await field("Permission basis").selectOption("CURRENT_PERMISSION");
+  await field("Permission expires at (optional)").fill(
+    new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 16)
+  );
+  await button("Add credit").click();
+  await field("Credit 1 name").fill("UNSENT_CREDIT_NAME");
+  await field("Credit 1 role").fill("UNSENT_CREDIT_ROLE");
+  const retainedProfile = await profileValues();
   ok("first real validation rejection keeps artist fields editable");
 
   const documentId = randomUUID();
@@ -256,6 +282,7 @@ try {
     documentId
   );
   assert.equal(posts.length, beforeSwitch);
+  assert.deepEqual(await profileValues(), retainedProfile);
   ok(
     "actual same-document A-to-B-to-A refresh conceals and restores the complete original draft"
   );
@@ -287,6 +314,7 @@ try {
       "UNSENT_PRIVATE_BIOGRAPHY"
     );
     assert.equal(JSON.parse(posts.at(-1)).fields, undefined);
+    assert.deepEqual(await profileValues(), retainedProfile);
     assert.equal(
       (await db.artistProfile.findUniqueOrThrow({ where: { id: created.id } }))
         .name,
