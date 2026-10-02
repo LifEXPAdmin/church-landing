@@ -13,6 +13,84 @@ release gates; it applies only to branches containing that configuration.
 
 # Source and deployment security acceptance
 
+## Inexpensive CI and candidate receipts, 2 October 2026
+
+The source-security workflow now runs every standalone `tests/*.test.mjs` guard,
+including worker coordination and the release-receipt validator. It also checks
+authored copy, explicitly generates the locked Prisma client, and runs
+`npm run check:types` without incremental output. Client generation does not run
+migrations or require a production database. The locked install still disables
+dependency lifecycle scripts, and the existing advisory, signature, lint and
+redacted secret scans remain. No application dependency or provider setting is
+added. Hosted execution and local verification are recorded separately below.
+
+Local verification of this tooling slice passed 55 source-security, coordination
+and receipt tests, source/copy guards, changed-file lint and diff checks. A bounded
+independent source review found no concrete issue. The first all-guard run could
+not load the existing migration test's `@next/env` in the source-only checkout;
+that setup failure is not a passing receipt. Clean locked-install Linux CI must
+verify that test, schema generation and whole-project types. No product build,
+database/browser acceptance, provider change or deployment is claimed here.
+
+The first exact-source Linux CI run passed all 66 guard tests, copy validation,
+schema generation and whole-project TypeScript, then correctly failed its
+existing advisory gate. Three locked `brace-expansion` versions were newly
+reported affected. Compatible patches update 1.1.18 to 1.1.21, 2.1.4 to 2.1.7
+and 5.0.9 to 5.0.12, including the transitive production queue dependency.
+The [maintainer advisory](https://github.com/advisories/GHSA-qhr7-859c-m2p7)
+describes the bounded parsing repair. Existing optional-platform metadata and
+all other locked packages are preserved. This is a dependency repair, not a
+claim of a demonstrated application exploit. The new candidate needs its own
+successful CI and normal combined product release checks before deployment.
+
+### Candidate release evidence
+
+Before product integration/publication, run from the clean candidate checkout:
+
+```sh
+npm run check:release-evidence -- --candidate <full-commit-sha> --receipt <private-json-path>
+```
+
+The private JSON receipt uses `schema: 1`, `sourceSha` equal to the full candidate
+commit, and a `checks` array with exactly one entry for each kind: `static`,
+`services`, `https`, `build` and `browser`. Each entry contains:
+
+- `kind`, the same `sourceSha`, `status: "passed"`, numeric `exitCode: 0`, and the
+  actual nonempty `command` or recorded command group.
+- Actual `startedAt` and `finishedAt` UTC ISO timestamps, ordered and not in the
+  future. There is no invented expiry for unchanged-source test evidence;
+  recovery/provider evidence keeps its own existing freshness rules.
+- One or more `artifacts`, each with a relative `path` and full lowercase
+  `sha256`. Logs must exist, be nonempty regular files and resolve inside the
+  receipt directory, including through symlinks. Their hashes must still match.
+- For `services`, `https` and `browser`, `environment: "isolated-fictional"`, an
+  integer `passed` greater than zero, and numeric `failed: 0`. Document selected
+  suites, expected skips and exclusions in the retained evidence. An all-skipped
+  suite cannot satisfy the gate.
+- For `build`, the actual `buildId`. Its retained build log must include the
+  existing copy, hydration, trace and build-security results.
+
+Keep receipts and logs private, for example in the ignored `.account-test`
+directory or an approved external task directory. Never fabricate receipt
+fields from unrun checks. Static evidence includes the applicable exact-source
+CI result. Services, HTTPS and browser selection must cover changed behavior and
+affected shared callers; the release owner still reviews that scope. A manifest
+is an index into actual evidence, not a substitute for examining it.
+
+The validator rejects a different HEAD, tracked/staged changes, untracked files,
+missing or repeated categories, mismatched source, failed/skipped checks, invalid
+times, unsuitable fixture declarations and missing/changed/escaping artifacts.
+It rechecks checkout cleanliness after hashing. Success prints only the source,
+category names, artifact count and verification time. Failures print a stable
+code, never receipt values or raw log/file errors.
+
+This is a fail-closed consistency check on operator-supplied evidence, not test
+execution, cryptographic attestation, proof of declared fixture isolation or
+proof that the chosen suites are sufficient. It does not inspect the built
+artifact's internals, deploy, acquire the release lock, enforce repository or
+provider rules, or waive recovery, migration, operator and live acceptance.
+No current product release is certified by the validator's fictional tests.
+
 ## Integrated release acceptance, 26 September 2026 UTC
 
 Engineering is integrated and deployed in **2026.09.26.2**, serving commit

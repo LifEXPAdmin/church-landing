@@ -30,7 +30,13 @@ jobs:
       - name: Verify source boundaries and the migration guard
         run: |
           npm run check:security
-          node --test tests/source-security.test.mjs tests/prisma-deploy.test.mjs
+          node --test tests/*.test.mjs
+      - name: Validate authored website copy
+        run: npm run check:copy
+      - name: Generate the schema client without connecting to a database
+        run: npm run prisma:generate
+      - name: Check project types without build artifacts
+        run: npm run check:types
       - name: Check known dependency advisories
         run: npm audit --audit-level=high
       - name: Verify registry signatures and provenance
