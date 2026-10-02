@@ -108,7 +108,7 @@ async function run(command, args, childEnv = env) {
   });
 }
 async function stop(child) {
-  if (!child || child.exitCode !== null) return;
+  if (!child || child.exitCode !== null || child.signalCode !== null) return;
   await new Promise((done) => {
     const timer = setTimeout(() => child.kill("SIGKILL"), 5000);
     child.once("exit", () => {
@@ -158,7 +158,7 @@ async function start(mode) {
   );
   for (let i = 0; i < 120; i++) {
     if (await health()) return;
-    if (server.exitCode !== null)
+    if (server.exitCode !== null || server.signalCode !== null)
       throw new Error("Production-mode server exited");
     await new Promise((done) => setTimeout(done, 500));
   }

@@ -113,6 +113,23 @@ const confirmRights = (scope = page) =>
     .getByLabel("I reviewed this exact version", { exact: false })
     .first()
     .check();
+async function statusAction(label, operation, model, id, scope = page) {
+  const before = await model.findUniqueOrThrow({ where: { id } });
+  const response = page.waitForResponse(
+    (r) =>
+      new URL(r.url()).pathname === "/api/platform/artists" &&
+      r.request().method() === "POST" &&
+      JSON.parse(r.request().postData()).operation === operation
+  );
+  await button(label, scope).click();
+  const accepted = await response;
+  assert.equal(accepted.status(), 200, operation + " must succeed");
+  const receipt = await accepted.json();
+  assert.equal(receipt.version, before.version + 1);
+  const after = await model.findUniqueOrThrow({ where: { id } });
+  assert.equal(after.version, receipt.version);
+  assert.equal(after.state, "UNPUBLISHED");
+}
 async function refreshAs(actor) {
   await signIn(actor);
   const response = page.waitForResponse(
@@ -255,8 +272,11 @@ try {
   );
   ok("blur removes private controls and passive online cannot resume them");
 
-  for (const label of ["Unpublish artist", "Withdraw profile permission"]) {
-    await button(label).click();
+  for (const [label, operation] of [
+    ["Unpublish artist", "unpublish"],
+    ["Withdraw profile permission", "withdraw-rights"]
+  ]) {
+    await statusAction(label, operation, db.artistProfile, created.id);
     await poll(() => field("Artist name").isEnabled(), true);
     assert.equal(
       await field("Artist name").inputValue(),
@@ -321,8 +341,17 @@ try {
   await field("Release title", editor).fill("UNSENT_RELEASE_TITLE");
   await field("Track 1 title", editor).fill("UNSENT_FIRST_TRACK");
   await field("Track 2 title", editor).fill("UNSENT_SECOND_TRACK");
-  for (const label of ["Unpublish release", "Withdraw release permission"]) {
-    await button(label, editor).click();
+  for (const [label, operation] of [
+    ["Unpublish release", "unpublish-release"],
+    ["Withdraw release permission", "withdraw-release-rights"]
+  ]) {
+    await statusAction(
+      label,
+      operation,
+      db.artistRelease,
+      madeRelease.id,
+      editor
+    );
     await poll(() => field("Release title", editor).isEnabled(), true);
     assert.equal(
       await field("Release title", editor).inputValue(),
