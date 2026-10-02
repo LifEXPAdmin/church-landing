@@ -124,6 +124,17 @@ and environment remain applicable. Keep implemented, tested, merged and live
 status distinct while work waits in the batch. A successful local feature check
 never closes its promised release acceptance.
 
+Before integrating or deploying a product candidate, the release owner runs
+`npm run check:release-evidence -- --candidate <full-commit-sha> --receipt <private-json-path>`
+from its clean checkout. The receipt must identify that exact HEAD and retain
+hashed logs for passing static, isolated service, HTTPS, production build and
+browser checks. Use the [receipt contract](SOURCE_SECURITY_ACCEPTANCE.md#candidate-release-evidence).
+The command checks evidence consistency; it does not run tests, approve scope,
+acquire the release lock or replace migration/recovery and live acceptance.
+Any changed candidate requires new matching evidence. Documentation-only and CI
+changes do not need a product deployment or an invented product-test receipt.
+The command is a local release procedure, not provider-side enforcement.
+
 Automatic Git deployments are disabled by the reviewed `vercel.json` policy.
 Keep independent GitHub source/security CI. The release owner deliberately
 publishes the exact approved batch through the existing guarded release process.
