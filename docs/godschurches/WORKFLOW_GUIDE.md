@@ -1,6 +1,6 @@
 # Godschurches workflow guide
 
-Version 5.1 · Updated 26 September 2026 UTC
+Version 5.2 · Updated 2 October 2026 UTC
 
 This is the repository entry point for work that continues between ChatGPT, Codex,
 the private second brain, and the development workstation. Keep this file's path
@@ -425,6 +425,13 @@ test evidence in their appropriate private systems. The exact page titles above
 allow an authorized assistant to locate the context without publishing it.
 
 ## Change log
+
+- **5.2, 2 October 2026 UTC:** Added the candidate-SHA release evidence command
+  and private hashed-log contract. It checks consistency of recorded static,
+  service, HTTPS, build and browser evidence without replacing scope review,
+  release ownership, recovery or live acceptance. CI independently adds copy,
+  generated-client TypeScript and all standalone guard tests. Adoption on main
+  remains contingent on integration; the private task records actual CI results.
 
 - **5.1, 26 September 2026 UTC:** Adopted local task completion and named release
   batches, deliberate publication, suppressed intermediate Git deployments,
