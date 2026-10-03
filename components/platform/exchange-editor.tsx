@@ -79,9 +79,26 @@ export function ExchangeEditor({
   const [context, setContext] = useState(access),
     [record, setRecord] = useState(initial);
   const [fields, setFields] = useState(
-    initial?.fields ?? { ...emptyExchangeFields(), ...(replenishmentSeed ? { intent: "CHURCH_NEED" as const, title: replenishmentSeed.title, requestedItems: replenishmentSeed.requestedItems, audience: replenishmentSeed.audience, audienceChurchId: replenishmentSeed.audience === "CHURCH" ? replenishmentSeed.churchId : "" } : {}) }
+    initial?.fields ?? {
+      ...emptyExchangeFields(),
+      ...(replenishmentSeed
+        ? {
+            intent: "CHURCH_NEED" as const,
+            title: replenishmentSeed.title,
+            requestedItems: replenishmentSeed.requestedItems,
+            audience: replenishmentSeed.audience,
+            audienceChurchId:
+              replenishmentSeed.audience === "CHURCH"
+                ? replenishmentSeed.churchId
+                : ""
+          }
+        : {})
+    }
   );
-  const [ownerChurchId, setOwnerChurchId] = useState(replenishmentSeed?.churchId ?? "");
+  const [placeQuery, setPlaceQuery] = useState("");
+  const [ownerChurchId, setOwnerChurchId] = useState(
+    replenishmentSeed?.churchId ?? ""
+  );
   const defaultSeed = useRef<Fields | null>(null);
   const [visible, setVisible] = useState(false),
     [changedAccount, setChangedAccount] = useState(false);
@@ -97,9 +114,18 @@ export function ExchangeEditor({
   const [photoWork, setPhotoWork] = useState(false);
   const flight = useRef(false),
     generation = useRef(0),
+    identityGeneration = useRef(0),
+    active = useRef(false),
+    reading = useRef(false),
+    readController = useRef<AbortController | null>(null),
+    queued = useRef(false),
+    latestCheck = useRef<() => Promise<void>>(async () => {}),
+    pendingNavigation = useRef<string | null>(null),
+    navigationRouter = useRef(router),
     recordRef = useRef(record),
     changedRef = useRef(false);
   recordRef.current = record;
+  navigationRouter.current = router;
   const dirty =
     !sameFields(fields, record?.fields ?? emptyExchangeFields()) ||
     (!record && !!ownerChurchId);
@@ -115,6 +141,9 @@ export function ExchangeEditor({
   const clearAccount = useCallback(() => {
     changedRef.current = true;
     generation.current++;
+    identityGeneration.current++;
+    pendingNavigation.current = null;
+    queued.current = false;
     setChangedAccount(true);
     setVisible(false);
     setFields(emptyExchangeFields());
@@ -122,39 +151,89 @@ export function ExchangeEditor({
     setNewer(null);
     setPending(null);
     setOwnerChurchId("");
+    setPlaceQuery("");
     setConflict(false);
     setConfirmed(false);
     setAccessNotice(
       "Your sign-in changed. Private entries were cleared. Reload for your current account."
     );
   }, []);
+  const finishNavigation = useCallback(async (seq: number) => {
+    const destination = pendingNavigation.current;
+    if (!destination) return;
+    await settlePhotoNavigation();
+    if (
+      seq !== generation.current ||
+      !active.current ||
+      changedRef.current ||
+      document.visibilityState === "hidden" ||
+      !navigator.onLine
+    )
+      return;
+    pendingNavigation.current = null;
+    navigationRouter.current.replace(destination);
+  }, []);
   const check = useCallback(async () => {
     if (
-      flight.current ||
+      !active.current ||
       changedRef.current ||
-      document.visibilityState === "hidden"
+      document.visibilityState === "hidden" ||
+      !navigator.onLine
     )
       return;
     const seq = ++generation.current;
+    const identity = ++identityGeneration.current;
+    setVisible(false);
+    setAccessNotice("Checking your current listing access…");
+    if (flight.current || reading.current) {
+      queued.current = true;
+      return;
+    }
+    reading.current = true;
+    queued.current = false;
+    const controller = new AbortController();
+    readController.current = controller;
+    const deadline = setTimeout(() => controller.abort(), 15000);
+    // A concealment invalidates presentation, not a fresh owner confirmation.
+    // SessionActivity may emit blur while this request detects a changed owner.
     try {
       const current = recordRef.current;
       const [ctx, saved] = await Promise.all([
         socialRequest<Context>(
           "/api/platform/exchange?view=context",
           undefined,
-          owner
+          owner,
+          "POST",
+          undefined,
+          controller.signal
         ),
         current
           ? socialRequest<Snapshot>(
               `/api/platform/exchange?view=editor&id=${encodeURIComponent(current.listing.id)}`,
               undefined,
-              owner
+              owner,
+              "POST",
+              undefined,
+              controller.signal
             )
           : Promise.resolve(null)
       ]);
       if (!current && replenishmentSeed) {
-        const source = await socialRequest<PantrySnapshot>(`/api/platform/pantry?view=replenish&id=${encodeURIComponent(replenishmentSeed.categoryId)}`, undefined, owner);
-        if (JSON.stringify(source.data.replenishmentSeed) !== JSON.stringify(replenishmentSeed)) throw new Error("This stock category or your duties changed. Reload to review a current replenishment draft.");
+        const source = await socialRequest<PantrySnapshot>(
+          `/api/platform/pantry?view=replenish&id=${encodeURIComponent(replenishmentSeed.categoryId)}`,
+          undefined,
+          owner,
+          "POST",
+          undefined,
+          controller.signal
+        );
+        if (
+          JSON.stringify(source.data.replenishmentSeed) !==
+          JSON.stringify(replenishmentSeed)
+        )
+          throw new Error(
+            "This stock category or your duties changed. Reload to review a current replenishment draft."
+          );
       }
       if (seq !== generation.current) return;
       setContext(ctx.data);
@@ -168,66 +247,96 @@ export function ExchangeEditor({
           "The saved listing changed. Your local entries are retained. Review the current saved version below before another change."
         );
       }
+      await finishNavigation(seq);
     } catch (error) {
-      if (seq !== generation.current) return;
-      setVisible(false);
-      setAccessNotice(
-        error instanceof Error
-          ? error.message
-          : "Reconnect to check your listing access. Your entries remain here."
-      );
+      if (seq === generation.current) {
+        setVisible(false);
+        setAccessNotice(
+          controller.signal.aborted
+            ? "Your listing access check timed out. Try again. Your entries are retained."
+            : error instanceof Error
+              ? error.message
+              : "Reconnect to check your listing access. Your entries remain here."
+        );
+      }
       if (error instanceof SocialClientError && error.status === 401) {
-        const actual = await currentSocialOwner().catch(() => undefined);
+        const actual = await currentSocialOwner(controller.signal).catch(
+          () => undefined
+        );
         if (
-          seq === generation.current &&
+          identity === identityGeneration.current &&
+          !changedRef.current &&
           actual !== undefined &&
           actual !== owner
         )
           clearAccount();
       }
+    } finally {
+      clearTimeout(deadline);
+      controller.abort();
+      if (readController.current === controller) readController.current = null;
+      reading.current = false;
+      if (
+        queued.current &&
+        active.current &&
+        !flight.current &&
+        !changedRef.current
+      ) {
+        queued.current = false;
+        void latestCheck.current();
+      }
     }
-  }, [owner, clearAccount, replenishmentSeed]);
+  }, [owner, clearAccount, replenishmentSeed, finishNavigation]);
+  latestCheck.current = check;
+  const resume = useCallback(() => {
+    if (document.visibilityState === "hidden" || !navigator.onLine) return;
+    active.current = true;
+    void check();
+  }, [check]);
   useEffect(() => {
+    const identityClock = identityGeneration;
+    const currentRead = readController;
     const hide = () => {
+      active.current = false;
+      queued.current = false;
       generation.current++;
       setVisible(false);
     };
-    const resume = () => {
-      void check();
+    const refresh = () => {
+      if (active.current) void check();
     };
     const visibility = () =>
       document.visibilityState === "hidden" ? hide() : resume();
-    resume();
-    const timer = setInterval(resume, 30000);
-    window.addEventListener("blur", hide);
-    window.addEventListener("offline", hide);
-    for (const event of [
-      "focus",
-      "online",
-      "pageshow",
-      "social-relationships-changed"
-    ])
+    if (document.hasFocus()) resume();
+    else hide();
+    const timer = setInterval(refresh, 30000);
+    for (const event of ["blur", "pagehide", "offline"])
+      window.addEventListener(event, hide);
+    for (const event of ["focus", "pageshow"])
       window.addEventListener(event, resume);
+    for (const event of ["online", "social-relationships-changed"])
+      window.addEventListener(event, refresh);
     document.addEventListener("visibilitychange", visibility);
     return () => {
       hide();
+      identityClock.current++;
+      currentRead.current?.abort();
       clearInterval(timer);
-      window.removeEventListener("blur", hide);
-      window.removeEventListener("offline", hide);
-      for (const event of [
-        "focus",
-        "online",
-        "pageshow",
-        "social-relationships-changed"
-      ])
+      for (const event of ["blur", "pagehide", "offline"])
+        window.removeEventListener(event, hide);
+      for (const event of ["focus", "pageshow"])
         window.removeEventListener(event, resume);
+      for (const event of ["online", "social-relationships-changed"])
+        window.removeEventListener(event, refresh);
       document.removeEventListener("visibilitychange", visibility);
     };
-  }, [check]);
+  }, [check, resume]);
 
   async function send(request: Pending) {
-    if (flight.current || changedRef.current) return false;
-    generation.current++;
+    if (flight.current || changedRef.current || !active.current || !visible)
+      return false;
+    const seq = ++generation.current;
+    const identity = ++identityGeneration.current;
     flight.current = true;
     setBusy(true);
     setPending(request);
@@ -266,6 +375,13 @@ export function ExchangeEditor({
         );
       if (changedRef.current) return false;
       const navigate = id !== recordRef.current?.listing.id;
+      if (navigate)
+        pendingNavigation.current = `/platform/exchange/${encodeURIComponent(id)}/edit`;
+      const canPresent =
+        seq === generation.current &&
+        active.current &&
+        document.visibilityState !== "hidden" &&
+        navigator.onLine;
       flushSync(() => {
         setRecord(data);
         recordRef.current = data;
@@ -276,13 +392,10 @@ export function ExchangeEditor({
         setPending(null);
         setBusy(false);
         setConfirmed(false);
-        setVisible(true);
+        setVisible(canPresent);
         setNotice(result.data.message ?? "Photo removed from the listing.");
       });
-      if (navigate) {
-        await settlePhotoNavigation();
-        router.replace(`/platform/exchange/${encodeURIComponent(id)}/edit`);
-      }
+      if (navigate && canPresent) await finishNavigation(seq);
       return true;
     } catch (error) {
       if (
@@ -296,7 +409,12 @@ export function ExchangeEditor({
       }
       if (error instanceof SocialClientError && error.status === 401) {
         const actual = await currentSocialOwner().catch(() => undefined);
-        if (actual !== undefined && actual !== owner) clearAccount();
+        if (
+          identity === identityGeneration.current &&
+          actual !== undefined &&
+          actual !== owner
+        )
+          clearAccount();
         else setVisible(false);
       }
       setNotice(
@@ -308,6 +426,10 @@ export function ExchangeEditor({
     } finally {
       flight.current = false;
       setBusy(false);
+      if (queued.current && active.current && !changedRef.current) {
+        queued.current = false;
+        void latestCheck.current();
+      }
     }
   }
   async function command(input: Record<string, unknown>) {
@@ -410,6 +532,10 @@ export function ExchangeEditor({
     } finally {
       flight.current = false;
       setBusy(false);
+      if (queued.current && active.current && !changedRef.current) {
+        queued.current = false;
+        void latestCheck.current();
+      }
     }
   }
   const disabled = busy || !!pending || conflict;
@@ -439,10 +565,7 @@ export function ExchangeEditor({
                 : "Your editor is concealed until current access is confirmed. Unsaved entries stay in this tab."}
             </p>
             {!changedAccount && (
-              <button
-                className="gc-button gc-button-quiet"
-                onClick={() => void check()}
-              >
+              <button className="gc-button gc-button-quiet" onClick={resume}>
                 Check current listing access
               </button>
             )}
@@ -464,379 +587,393 @@ export function ExchangeEditor({
             </p>
             <button
               className="gc-button"
-              disabled={busy}
+              disabled={busy || !visible}
               onClick={() => void send(pending)}
             >
               Retry the same listing request
             </button>
           </div>
         )}
-        <div hidden={!visible} inert={!visible} className="space-y-6">
-          {!record && !ownerChurchId && (
-            <section
-              className="space-y-2"
-              aria-label="Apply personal listing defaults"
-            >
-              <button
-                type="button"
-                className="gc-button gc-button-quiet"
-                disabled={disabled}
-                onClick={() => void applyPersonalDefaults()}
-              >
-                Apply my personal defaults
-              </button>
-              <p>
-                Only the listing type, audience and general town are copied.{" "}
-                <Link
-                  prefetch={false}
-                  className="underline"
-                  href="/platform/exchange/defaults"
+        <div className="space-y-6">
+          {visible && (
+            <>
+              {!record && !ownerChurchId && (
+                <section
+                  className="space-y-2"
+                  aria-label="Apply personal listing defaults"
                 >
-                  Review personal defaults
-                </Link>
-                .
-              </p>
-            </section>
-          )}
-
-          {record && (
-            <div className="space-y-2">
-              <p>
-                <strong>{exchangeStateLabels[record.listing.state]}</strong> ·
-                Saved version {record.listing.version}
-              </p>
-              <p>
-                Owned by {church?.name ?? "your account"}. Ownership cannot be
-                transferred in this editor.
-              </p>
-              {record.recoveryRequired && (
-                <p>
-                  This listing needs a fresh publication review after recovery.
-                  It stays private until you deliberately publish it again.
-                </p>
-              )}
-              {record.moderationState !== "VISIBLE" && (
-                <p>
-                  A review restriction remains on this listing. Editing or
-                  changing status does not remove it.{" "}
-                  <Link
-                    href="/platform/reports/decisions"
-                    className="underline"
+                  <button
+                    type="button"
+                    className="gc-button gc-button-quiet"
+                    disabled={disabled}
+                    onClick={() => void applyPersonalDefaults()}
                   >
-                    Read your decision notices
-                  </Link>
-                  .
-                </p>
+                    Apply my personal defaults
+                  </button>
+                  <p>
+                    Only the listing type, audience and general town are copied.{" "}
+                    <Link
+                      prefetch={false}
+                      className="underline"
+                      href="/platform/exchange/defaults"
+                    >
+                      Review personal defaults
+                    </Link>
+                    .
+                  </p>
+                </section>
               )}
-              {state !== "DRAFT" && state !== "ARCHIVED" && (
-                <Link
-                  prefetch={false}
-                  className="underline"
-                  href={`/platform/exchange/${record.listing.id}`}
+
+              {record && (
+                <div className="space-y-2">
+                  <p>
+                    <strong>{exchangeStateLabels[record.listing.state]}</strong>{" "}
+                    · Saved version {record.listing.version}
+                  </p>
+                  <p>
+                    Owned by {church?.name ?? "your account"}. Ownership cannot
+                    be transferred in this editor.
+                  </p>
+                  {record.recoveryRequired && (
+                    <p>
+                      This listing needs a fresh publication review after
+                      recovery. It stays private until you deliberately publish
+                      it again.
+                    </p>
+                  )}
+                  {record.moderationState !== "VISIBLE" && (
+                    <p>
+                      A review restriction remains on this listing. Editing or
+                      changing status does not remove it.{" "}
+                      <Link
+                        href="/platform/reports/decisions"
+                        className="underline"
+                      >
+                        Read your decision notices
+                      </Link>
+                      .
+                    </p>
+                  )}
+                  {state !== "DRAFT" && state !== "ARCHIVED" && (
+                    <Link
+                      prefetch={false}
+                      className="underline"
+                      href={`/platform/exchange/${record.listing.id}`}
+                    >
+                      Read the published listing
+                    </Link>
+                  )}
+                </div>
+              )}
+              {!record && (
+                <label className="block space-y-2" htmlFor={`${fieldId}-owner`}>
+                  <span id={`${fieldId}-owner-label`}>Listing owner</span>
+                  <select
+                    id={`${fieldId}-owner`}
+                    aria-labelledby={`${fieldId}-owner-label`}
+                    className={portalInputClass}
+                    disabled={disabled || photoWork}
+                    value={ownerChurchId}
+                    onChange={(e) => {
+                      const nextOwner = e.target.value;
+                      if (nextOwner && defaultSeed.current) {
+                        const seed = defaultSeed.current,
+                          empty = emptyExchangeFields();
+                        setFields((current) => ({
+                          ...current,
+                          intent:
+                            current.intent === seed.intent
+                              ? empty.intent
+                              : current.intent,
+                          audience:
+                            current.audience === seed.audience
+                              ? empty.audience
+                              : current.audience,
+                          audienceChurchId:
+                            current.audienceChurchId === seed.audienceChurchId
+                              ? empty.audienceChurchId
+                              : current.audienceChurchId,
+                          country:
+                            current.country === seed.country
+                              ? empty.country
+                              : current.country,
+                          placeId:
+                            current.placeId === seed.placeId
+                              ? empty.placeId
+                              : current.placeId
+                        }));
+                        defaultSeed.current = null;
+                        setNotice(
+                          "Personal defaults were removed from this church draft. Review its audience and area deliberately."
+                        );
+                      }
+                      setOwnerChurchId(nextOwner);
+                    }}
+                  >
+                    <option value="">My personal account</option>
+                    {context.churches
+                      .filter((c) => context.publishingChurchIds.includes(c.id))
+                      .map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                    {ownerChurchId &&
+                      !context.publishingChurchIds.includes(ownerChurchId) && (
+                        <option value={ownerChurchId}>
+                          Previous church duty is no longer available
+                        </option>
+                      )}
+                  </select>
+                </label>
+              )}
+              {conflict && (
+                <section
+                  aria-label="Review saved listing changes"
+                  className="space-y-3 rounded-xl border border-gc-divider p-4"
                 >
-                  Read the published listing
-                </Link>
+                  <h2 className="text-xl">Review the current saved listing</h2>
+                  <p>
+                    Your unsaved entries remain below. Refresh the saved version
+                    before deciding which entries to keep.
+                  </p>
+                  <button
+                    className="gc-button gc-button-quiet"
+                    disabled={busy || !!pending}
+                    onClick={resume}
+                  >
+                    Load current saved version
+                  </button>
+                  {newer?.fields && (
+                    <>
+                      <dl className="space-y-2 break-words">
+                        {Object.entries(newer.fields).map(([key, value]) => (
+                          <div key={key}>
+                            <dt className="font-semibold">
+                              {
+                                (
+                                  {
+                                    intent: "Type",
+                                    title: "Title",
+                                    description: "Description",
+                                    category: "Category",
+                                    condition: "Condition",
+                                    currency: "Currency",
+                                    price: "Price",
+                                    country: "Country",
+                                    placeId: "Selected town",
+                                    audience: "Audience",
+                                    audienceChurchId: "Church audience",
+                                    requestedItems: "Requested items",
+                                    neededBy: "Needed by",
+                                    serviceArea: "Service area",
+                                    availability: "Availability",
+                                    qualifications:
+                                      "Self-stated qualifications",
+                                    servicePricing: "Service pricing",
+                                    serviceUnit: "Price unit"
+                                  } as Record<string, string>
+                                )[key]
+                              }
+                            </dt>
+                            <dd className="whitespace-pre-wrap">
+                              {key === "placeId"
+                                ? (newer.listing.placeLabel ?? "Not selected")
+                                : key === "audienceChurchId"
+                                  ? (context.churches.find(
+                                      (c) => c.id === value
+                                    )?.name ??
+                                    (value
+                                      ? "Previous church choice unavailable"
+                                      : "Not selected"))
+                                  : fieldChoiceLabels[key as keyof Fields]?.[
+                                      String(value)
+                                    ] ||
+                                    String(value ?? "Not selected") ||
+                                    "Not entered"}
+                            </dd>
+                          </div>
+                        ))}
+                      </dl>
+                      <div className="flex flex-wrap gap-3">
+                        <button
+                          className="gc-button gc-button-quiet"
+                          disabled={busy || !!pending || photoWork}
+                          onClick={() => {
+                            setRecord(newer);
+                            recordRef.current = newer;
+                            setNewer(null);
+                            setConflict(false);
+                            setConfirmed(false);
+                            setNotice(
+                              "Current saved version reviewed. Your local entries are retained; save them deliberately when ready."
+                            );
+                          }}
+                        >
+                          Keep my entries with this reviewed version
+                        </button>
+                        <button
+                          className="gc-button gc-button-quiet"
+                          disabled={busy || !!pending || photoWork}
+                          onClick={() => {
+                            setRecord(newer);
+                            recordRef.current = newer;
+                            setFields(newer.fields!);
+                            setNewer(null);
+                            setConflict(false);
+                            setConfirmed(false);
+                            setNotice("Current saved entries loaded.");
+                          }}
+                        >
+                          Use current saved entries
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </section>
               )}
-            </div>
-          )}
-          {!record && (
-            <label className="block space-y-2" htmlFor={`${fieldId}-owner`}>
-              <span id={`${fieldId}-owner-label`}>Listing owner</span>
-              <select
-                id={`${fieldId}-owner`}
-                aria-labelledby={`${fieldId}-owner-label`}
-                className={portalInputClass}
-                disabled={disabled || photoWork}
-                value={ownerChurchId}
-                onChange={(e) => {
-                  const nextOwner = e.target.value;
-                  if (nextOwner && defaultSeed.current) {
-                    const seed = defaultSeed.current,
-                      empty = emptyExchangeFields();
-                    setFields((current) => ({
-                      ...current,
-                      intent:
-                        current.intent === seed.intent
-                          ? empty.intent
-                          : current.intent,
-                      audience:
-                        current.audience === seed.audience
-                          ? empty.audience
-                          : current.audience,
-                      audienceChurchId:
-                        current.audienceChurchId === seed.audienceChurchId
-                          ? empty.audienceChurchId
-                          : current.audienceChurchId,
-                      country:
-                        current.country === seed.country
-                          ? empty.country
-                          : current.country,
-                      placeId:
-                        current.placeId === seed.placeId
-                          ? empty.placeId
-                          : current.placeId
-                    }));
-                    defaultSeed.current = null;
-                    setNotice(
-                      "Personal defaults were removed from this church draft. Review its audience and area deliberately."
-                    );
-                  }
-                  setOwnerChurchId(nextOwner);
+              <form
+                aria-label="Listing editor"
+                className="space-y-5"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!photoWork)
+                    void command({
+                      operation: record ? "save" : "create",
+                      schema: EXCHANGE_EDITOR_SCHEMA,
+                      fields,
+                      ...(record
+                        ? policy
+                        : { ownerChurchId: ownerChurchId || null })
+                    });
                 }}
               >
-                <option value="">My personal account</option>
-                {context.churches
-                  .filter((c) => context.publishingChurchIds.includes(c.id))
-                  .map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                {ownerChurchId &&
-                  !context.publishingChurchIds.includes(ownerChurchId) && (
-                    <option value={ownerChurchId}>
-                      Previous church duty is no longer available
-                    </option>
-                  )}
-              </select>
-            </label>
-          )}
-          {conflict && (
-            <section
-              aria-label="Review saved listing changes"
-              className="space-y-3 rounded-xl border border-gc-divider p-4"
-            >
-              <h2 className="text-xl">Review the current saved listing</h2>
-              <p>
-                Your unsaved entries remain below. Refresh the saved version
-                before deciding which entries to keep.
-              </p>
-              <button
-                className="gc-button gc-button-quiet"
-                disabled={busy || !!pending}
-                onClick={() => void check()}
-              >
-                Load current saved version
-              </button>
-              {newer?.fields && (
-                <>
-                  <dl className="space-y-2 break-words">
-                    {Object.entries(newer.fields).map(([key, value]) => (
-                      <div key={key}>
-                        <dt className="font-semibold">
-                          {
-                            (
-                              {
-                                intent: "Type",
-                                title: "Title",
-                                description: "Description",
-                                category: "Category",
-                                condition: "Condition",
-                                currency: "Currency",
-                                price: "Price",
-                                country: "Country",
-                                placeId: "Selected town",
-                                audience: "Audience",
-                                audienceChurchId: "Church audience",
-                                requestedItems: "Requested items",
-                                neededBy: "Needed by",
-                                serviceArea: "Service area",
-                                availability: "Availability",
-                                qualifications: "Self-stated qualifications",
-                                servicePricing: "Service pricing",
-                                serviceUnit: "Price unit"
-                              } as Record<string, string>
-                            )[key]
-                          }
-                        </dt>
-                        <dd className="whitespace-pre-wrap">
-                          {key === "placeId"
-                            ? (newer.listing.placeLabel ?? "Not selected")
-                            : key === "audienceChurchId"
-                              ? (context.churches.find((c) => c.id === value)
-                                  ?.name ??
-                                (value
-                                  ? "Previous church choice unavailable"
-                                  : "Not selected"))
-                              : fieldChoiceLabels[key as keyof Fields]?.[
-                                  String(value)
-                                ] ||
-                                String(value ?? "Not selected") ||
-                                "Not entered"}
-                        </dd>
-                      </div>
-                    ))}
-                  </dl>
+                <ExchangeEditorFields
+                  value={fields}
+                  placeQuery={placeQuery}
+                  onPlaceQueryChange={setPlaceQuery}
+                  onChange={(next) => {
+                    setFields(next);
+                    setConfirmed(false);
+                  }}
+                  churches={audienceChurches}
+                  churchOwned={
+                    !!(record?.listing.ownerChurch?.id || ownerChurchId)
+                  }
+                  disabled={disabled || photoWork || state === "ARCHIVED"}
+                />
+                <label className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    className="mt-1 h-5 w-5 shrink-0"
+                    checked={confirmed}
+                    disabled={disabled || photoWork}
+                    onChange={(e) => setConfirmed(e.target.checked)}
+                  />
+                  <span>
+                    I may publish this listing, have described it honestly, and
+                    have checked the listing and privacy guidance. Required for
+                    publication and changes to a published listing.
+                  </span>
+                </label>
+                <div className="sticky bottom-24 z-10 w-fit max-w-full rounded-xl border border-gc-divider bg-gc-surface p-2 sm:bottom-4">
+                  <button
+                    type="submit"
+                    className="gc-button"
+                    disabled={
+                      disabled ||
+                      photoWork ||
+                      state === "ARCHIVED" ||
+                      (!!record && !dirty) ||
+                      (!!state && state !== "DRAFT" && !confirmed)
+                    }
+                  >
+                    {record
+                      ? state === "DRAFT"
+                        ? "Save private draft"
+                        : "Save listing changes"
+                      : "Save a private draft"}
+                  </button>
+                </div>
+                <p className="text-sm">
+                  Drafts may be incomplete. Saving a new draft does not publish
+                  it. Unsaved entries stay in this tab only.
+                </p>
+              </form>
+              {record && (
+                <section
+                  className="space-y-3"
+                  aria-label="Listing status controls"
+                >
+                  <h2 className="text-2xl">Listing status</h2>
+                  <p>
+                    Finish saving text and photos before changing status.
+                    Reserved and Closed remain readable at the listing address.
+                    Archive removes the listing and its photos from ordinary
+                    reading; your saved record remains in My listings.
+                  </p>
                   <div className="flex flex-wrap gap-3">
+                    {nextStates[record.listing.state]
+                      .filter(
+                        (next) =>
+                          !record.structuredNeed ||
+                          !["RESERVED", "CLOSED"].includes(next)
+                      )
+                      .map((next) => (
+                        <button
+                          key={next}
+                          type="button"
+                          className="gc-button gc-button-quiet"
+                          disabled={
+                            disabled ||
+                            dirty ||
+                            photoWork ||
+                            (next === "ACTIVE" && (!confirmed || !canPublish))
+                          }
+                          onClick={() => {
+                            if (
+                              next !== "ARCHIVED" ||
+                              confirm(
+                                "Archive this listing and hide its photos from ordinary reading? Your saved listing will remain in My listings."
+                              )
+                            )
+                              void command({
+                                operation: "status",
+                                state: next,
+                                ...policy
+                              });
+                          }}
+                        >
+                          {actionLabel(next)}
+                        </button>
+                      ))}
                     <button
-                      className="gc-button gc-button-quiet"
-                      disabled={busy || !!pending || photoWork}
-                      onClick={() => {
-                        setRecord(newer);
-                        recordRef.current = newer;
-                        setNewer(null);
-                        setConflict(false);
-                        setConfirmed(false);
-                        setNotice(
-                          "Current saved version reviewed. Your local entries are retained; save them deliberately when ready."
-                        );
-                      }}
-                    >
-                      Keep my entries with this reviewed version
-                    </button>
-                    <button
-                      className="gc-button gc-button-quiet"
-                      disabled={busy || !!pending || photoWork}
-                      onClick={() => {
-                        setRecord(newer);
-                        recordRef.current = newer;
-                        setFields(newer.fields!);
-                        setNewer(null);
-                        setConflict(false);
-                        setConfirmed(false);
-                        setNotice("Current saved entries loaded.");
-                      }}
-                    >
-                      Use current saved entries
-                    </button>
-                  </div>
-                </>
-              )}
-            </section>
-          )}
-          <form
-            aria-label="Listing editor"
-            className="space-y-5"
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (!photoWork)
-                void command({
-                  operation: record ? "save" : "create",
-                  schema: EXCHANGE_EDITOR_SCHEMA,
-                  fields,
-                  ...(record
-                    ? policy
-                    : { ownerChurchId: ownerChurchId || null })
-                });
-            }}
-          >
-            <ExchangeEditorFields
-              value={fields}
-              onChange={(next) => {
-                setFields(next);
-                setConfirmed(false);
-              }}
-              churches={audienceChurches}
-              churchOwned={!!(record?.listing.ownerChurch?.id || ownerChurchId)}
-              disabled={disabled || photoWork || state === "ARCHIVED"}
-            />
-            <label className="flex items-start gap-3">
-              <input
-                type="checkbox"
-                className="mt-1 h-5 w-5 shrink-0"
-                checked={confirmed}
-                disabled={disabled || photoWork}
-                onChange={(e) => setConfirmed(e.target.checked)}
-              />
-              <span>
-                I may publish this listing, have described it honestly, and have
-                checked the listing and privacy guidance. Required for
-                publication and changes to a published listing.
-              </span>
-            </label>
-            <div className="sticky bottom-24 z-10 w-fit max-w-full rounded-xl border border-gc-divider bg-gc-surface p-2 sm:bottom-4">
-              <button
-                type="submit"
-                className="gc-button"
-                disabled={
-                  disabled ||
-                  photoWork ||
-                  state === "ARCHIVED" ||
-                  (!!record && !dirty) ||
-                  (!!state && state !== "DRAFT" && !confirmed)
-                }
-              >
-                {record
-                  ? state === "DRAFT"
-                    ? "Save private draft"
-                    : "Save listing changes"
-                  : "Save a private draft"}
-              </button>
-            </div>
-            <p className="text-sm">
-              Drafts may be incomplete. Saving a new draft does not publish it.
-              Unsaved entries stay in this tab only.
-            </p>
-          </form>
-          {record && (
-            <section className="space-y-3" aria-label="Listing status controls">
-              <h2 className="text-2xl">Listing status</h2>
-              <p>
-                Finish saving text and photos before changing status. Reserved
-                and Closed remain readable at the listing address. Archive
-                removes the listing and its photos from ordinary reading; your
-                saved record remains in My listings.
-              </p>
-              <div className="flex flex-wrap gap-3">
-                {nextStates[record.listing.state]
-                  .filter(
-                    (next) =>
-                      !record.structuredNeed ||
-                      !["RESERVED", "CLOSED"].includes(next)
-                  )
-                  .map((next) => (
-                    <button
-                      key={next}
                       type="button"
                       className="gc-button gc-button-quiet"
                       disabled={
                         disabled ||
                         dirty ||
                         photoWork ||
-                        (next === "ACTIVE" && (!confirmed || !canPublish))
+                        record.moderationState !== "VISIBLE"
                       }
-                      onClick={() => {
-                        if (
-                          next !== "ARCHIVED" ||
-                          confirm(
-                            "Archive this listing and hide its photos from ordinary reading? Your saved listing will remain in My listings."
-                          )
-                        )
-                          void command({
-                            operation: "status",
-                            state: next,
-                            ...policy
-                          });
-                      }}
+                      onClick={() => void command({ operation: "duplicate" })}
                     >
-                      {actionLabel(next)}
+                      Duplicate into a private draft
                     </button>
-                  ))}
-                <button
-                  type="button"
-                  className="gc-button gc-button-quiet"
-                  disabled={
-                    disabled ||
-                    dirty ||
-                    photoWork ||
-                    record.moderationState !== "VISIBLE"
-                  }
-                  onClick={() => void command({ operation: "duplicate" })}
-                >
-                  Duplicate into a private draft
-                </button>
-              </div>
-              {!canPublish && (
-                <p>
-                  A current church Exchange manager must publish this
-                  church-owned draft.
-                </p>
+                  </div>
+                  {!canPublish && (
+                    <p>
+                      A current church Exchange manager must publish this
+                      church-owned draft.
+                    </p>
+                  )}
+                  <p className="text-sm">
+                    A duplicate keeps the saved audience and listing entries.
+                    Photos, history and review records are not copied.
+                  </p>
+                </section>
               )}
-              <p className="text-sm">
-                A duplicate keeps the saved audience and listing entries.
-                Photos, history and review records are not copied.
-              </p>
-            </section>
+            </>
           )}
           {record ? (
             <ExchangePhotos
@@ -856,9 +993,9 @@ export function ExchangeEditor({
                 })
               }
             />
-          ) : (
+          ) : visible ? (
             <p>Save a private draft first to add up to eight listing photos.</p>
-          )}
+          ) : null}
         </div>
         {(dirty || conflict || pending) &&
           !busy &&

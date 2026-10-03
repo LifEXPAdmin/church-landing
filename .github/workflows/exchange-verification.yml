@@ -3,12 +3,21 @@ name: Exchange isolated verification
 on:
   workflow_dispatch:
   push:
-    branches: [codex/exchange-query-plans-20261003]
+    branches:
+      [
+        codex/exchange-query-plans-20261003,
+        codex/exchange-editor-privacy-20261003
+      ]
     paths:
       - .github/workflows/exchange-verification.yml
       - scripts/test-platform-isolated.mjs
       - scripts/qa-exchange-browser.mjs
       - scripts/qa-exchange-search-browser.mjs
+      - components/platform/exchange-editor.tsx
+      - components/platform/exchange-editor-fields.tsx
+      - components/platform/exchange-photos.tsx
+      - tests/exchange-editor-privacy.test.mjs
+      - lib/platform/social-client.ts
       - lib/platform/exchange-listings.ts
       - tests/exchange-listings.test.ts
 
