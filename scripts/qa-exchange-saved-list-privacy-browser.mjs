@@ -560,7 +560,7 @@ try {
     async () =>
       (await panel
         .locator("button")
-        .filter({ hasText: /^Confirming save…$/ })
+        .filter({ hasText: /^(Confirming save…|Confirm original save)$/ })
         .count()) === 0
   );
   assert.equal(await rows.count(), 0);
@@ -645,8 +645,18 @@ try {
   );
   await exact("Confirm original save").click();
   await waitUntil(
-    async () => (await exact("Confirm original save").count()) === 0
+    async () =>
+      (await panel
+        .locator("button")
+        .filter({ hasText: /^(Confirming save…|Confirm original save)$/ })
+        .count()) === 0
   );
+  await panel
+    .getByText(
+      "The original save is confirmed. Open the first page to review current saved choices.",
+      { exact: true }
+    )
+    .waitFor();
   await clearIntercepts();
   assert.equal(cursorBodies.length, 2);
   assert.equal(cursorBodies[0], cursorBodies[1]);
