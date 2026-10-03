@@ -13,6 +13,83 @@ release gates; it applies only to branches containing that configuration.
 
 # Source and deployment security acceptance
 
+## Personal Exchange defaults privacy, 3 October 2026 UTC
+
+[Draft PR 8](https://github.com/LifEXPAdmin/church-landing/pull/8) stacks on PR7.
+The unchanged application baseline `bd2b66ee2aa62b71e44cde22354fd528d36f03d3`
+reproduced saved private pickup instructions in owner HTML/RSC and retained
+edited textarea values after blur. [Baseline runtime 37099054459](https://github.com/LifEXPAdmin/church-landing/actions/runs/37099054459)
+passed 22 services, 11 browser groups and one HTTPS case with build
+`DmQbWLdUuocWAJ5VCUIKF`. Two browser groups explicitly assert the exposure;
+their passing result is reproduction evidence, not repaired privacy acceptance.
+The screenshot shows concealed presentation while the DOM assertion confirms
+retained values. Two focused form assertions also failed before application edits.
+
+Candidate `6515308422b19c36b2dcd856838d715f18bc0e9e` preserves initial server
+authorization but sends only the owner identity to the defaults client. Private
+fields and church choices initialize after current account-pinned reads. Its
+mounted form and existing private-choice action retain unsaved fields, an
+unselected town query and the original serialized command while private controls
+are physically omitted. No new persistence store, dependency, schema or server
+permission policy is introduced.
+
+A fresh read may update current church availability without remounting local
+entries. An unexpected saved version, changed fields or recovery state conceals
+the form and requires deliberate reload; current authority can still confirm
+an original request. Its own confirmed receipt invalidates older reads and
+permits a clean form only after a read at least as new as the saved version.
+Blur, pagehide and offline suspend presentation; passive online and polling
+cannot reopen it. Failed reads retain local state. Confirmed account replacement
+clears the prior owner. Access reads have an owned 15-second cancellation deadline.
+A queued-identity regression first failed during implementation, then passed after
+newer checks invalidated an older held mismatch confirmation.
+
+All 79 focused local cases pass: 18 defaults, 30 editor, 14 contact and 17 artist.
+Changed-file lint and the source boundary check pass. [Source run 37099686539](https://github.com/LifEXPAdmin/church-landing/actions/runs/37099686539)
+passes all 180 source tests, authored copy and project types, then fails the
+unchanged dependency audit with seven propagated high-severity findings from
+`braces`. Later source-pipeline gates remain skipped. Local copy verification
+was unavailable in the source-only checkout; the hosted copy pass is authoritative.
+
+[First repaired runtime 37099686558](https://github.com/LifEXPAdmin/church-landing/actions/runs/37099686558)
+passes 22 services and production build `FD0LGZGubhtcbn4rRJE9f`. Its first browser
+group verifies that initial owner HTML/RSC omits private defaults. The harness
+then fails with `Route is already handled` while its page fault injection and
+context origin fence share route handling. The process exits before screenshots
+or results are written; only logs are retained. A single persistent dispatcher
+now owns the origin fence and fault rules. [Runtime 37100000960](https://github.com/LifEXPAdmin/church-landing/actions/runs/37100000960)
+on harness candidate `590be14aacb8afd375316211cb2c088772c7bd83` passes 22 services,
+build `I1-PUxa5Iu8_BYwLvinpu`, all 20 browser groups and the listing HTTPS case.
+The new defaults HTTPS case then fails because its recovery fixture tries to
+retain pickup text under a recovery flag, correctly rejected by the database
+shape constraint. The fixture now invokes the existing restrictive restore
+routine; the application remains unchanged from `6515308`.
+
+The 11 defaults browser groups cover first-read denial, physical concealment,
+same-owner field/query retention, failed identity recovery, definitive validation
+rejection, lost and late saves, explicit version adoption and account replacement.
+Four byte-identical attempts across an accepted lost response and injected 429/503
+increment the defaults version once. The nine existing handoff groups also pass.
+390px and 320px enlarged-text screenshots were inspected and overflow checks pass.
+[Final runtime 37100327378](https://github.com/LifEXPAdmin/church-landing/actions/runs/37100327378)
+passes on `77f77d09c394b0f9be34997ce6efc4bceea15310`, with verified serving source
+and build `RNVthdKl_KFfQK40_zphK`: 22 services, all 20 browser groups and both
+HTTPS cases. The defaults HTTPS case verifies private HTML/RSC absence, owner
+and mismatched-account API boundaries, no-store headers and canonical restrictive
+recovery. Public listing and photo behavior also remains verified. Browser result
+files report no page errors, production writes or external sends. Browser MFA is
+off; the existing handoff challenge case injects a response. HTTPS restarts with
+MFA enforcement, without claiming an actual authenticator ceremony.
+
+[Final source run 37100327352](https://github.com/LifEXPAdmin/church-landing/actions/runs/37100327352)
+again passes all 180 tests, copy and types, then fails the existing dependency
+audit. The private runtime manifest retains 11 hashed artifacts totaling
+1,088,937 bytes. Independent final review closed without findings and verified
+all 11 hashes, sizes, test counts and source identities. This remains an isolated
+implementation without a complete release receipt, integration, deployment,
+production write or live acceptance. Designated release ownership and prior
+privacy/performance handoffs remain unchanged.
+
 ## Exchange initial-payload privacy runtime verified, 3 October 2026 UTC
 
 The preceding editor repair still serialized the owner's saved snapshot into
