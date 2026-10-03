@@ -129,6 +129,12 @@ const waitUntil = async (work) => {
   }
   throw Error("Expected saved state was not observed");
 };
+const savedListingSettled = async (message = "Listing changes saved.") => {
+  await page.getByRole("status").filter({ hasText: message }).waitFor();
+  // A committed row precedes the editor's response readback and asynchronous
+  // removal of its unsaved-work history entry. Reload only after both settle.
+  await page.waitForFunction(() => !window.history.state?.gcPhotoWork);
+};
 const fetchIn = (path, body, owner, headers = {}) =>
   page.evaluate(
     async ({ path, body, owner, headers }) => {
@@ -290,6 +296,7 @@ try {
       (await db.exchangeListing.findUniqueOrThrow({ where: { id } }))
         .priceMinor === 1001
   );
+  await savedListingSettled();
   await go(`/platform/exchange/${id}/edit`);
   assert.equal(
     await editor.getByLabel("Amount", { exact: true }).inputValue(),
@@ -453,6 +460,7 @@ try {
       (await db.mediaAsset.findUniqueOrThrow({ where: { id: secondImage.id } }))
         .position === 0
   );
+  await savedListingSettled();
   await go(`/platform/exchange/${id}/edit`);
   const firstPhoto = page.getByRole("button", {
     name: "Open listing photo 1 of 2",
@@ -493,6 +501,7 @@ try {
       (await db.exchangeListing.findUniqueOrThrow({ where: { id } })).state ===
       "ACTIVE"
   );
+  await savedListingSettled("Listing status updated.");
   await signIn(null);
   const publicResponse = await go(`/platform/exchange/${id}`);
   assert.match(publicResponse.headers()["cache-control"], /no-store/);
@@ -591,6 +600,7 @@ try {
       (await db.exchangeListing.findUniqueOrThrow({ where: { id } }))
         .description === "Preserved unsent conflict marker"
   );
+  await savedListingSettled();
   ok(
     "Another owner is denied and a concurrent saved version requires explicit review while retaining unsent entries"
   );
@@ -736,6 +746,7 @@ try {
         })
       ).requestedItems === requested
   );
+  await savedListingSettled();
   await go(`/platform/exchange/${duplicateId}/edit`);
   assert.equal(
     await editor
@@ -755,6 +766,7 @@ try {
         })
       ).state === "ACTIVE"
   );
+  await savedListingSettled("Listing status updated.");
   await signIn(null);
   await go(`/platform/exchange/${duplicateId}`);
   await page.getByText(requested, { exact: true }).waitFor();
@@ -897,6 +909,7 @@ try {
         })
       ).qualifications === qualifications
   );
+  await savedListingSettled();
   let typed = await db.exchangeListing.findUniqueOrThrow({
     where: { id: duplicateId }
   });
@@ -948,6 +961,7 @@ try {
         })
       ).servicePricing === "FREE"
   );
+  await savedListingSettled();
   typed = await db.exchangeListing.findUniqueOrThrow({
     where: { id: duplicateId }
   });
@@ -1086,6 +1100,7 @@ try {
       (await db.exchangeListing.findUniqueOrThrow({ where: { id: needId } }))
         .state === "ACTIVE"
   );
+  await savedListingSettled("Listing status updated.");
   assert.equal(
     (await db.exchangeListing.findUniqueOrThrow({ where: { id: needId } }))
       .ownerChurchId,
