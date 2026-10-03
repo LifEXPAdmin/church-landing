@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { webcrypto } from "node:crypto";
+import { createHash, webcrypto } from "node:crypto";
 import {
   button,
   clientHarness,
@@ -56,10 +56,16 @@ function setup(t) {
     Uint8Array,
     crypto: {
       subtle: {
-        digest: (...args) =>
-          digestHandler
-            ? digestHandler(...args)
-            : webcrypto.subtle.digest(...args)
+        digest: async (...args) => {
+          if (digestHandler) return digestHandler(...args);
+          // Harness settling drains hook/microtask work, not Node's crypto
+          // worker pool. Calculate the real digest synchronously and expose
+          // its Promise contract; delayed checksum cases own their gate below.
+          const [algorithm, bytes] = args;
+          assert.equal(algorithm, "SHA-256");
+          return Uint8Array.from(createHash("sha256").update(bytes).digest())
+            .buffer;
+        }
       }
     },
     setTimeout(callback, delay) {
@@ -187,6 +193,13 @@ test("contact initialization starts without private snapshot props and accepts o
   assert.equal(s.choices()[0].props.contact, s.data.contact);
   assert.equal(s.guard().props.url, endpoint);
   assert.match(s.guard().props.checksum, /^[a-f0-9]{64}$/);
+  // Explicitly await the platform implementation once to verify that the
+  // deterministic fixture preserves the production SHA-256/JSON contract.
+  const expected = await webcrypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(JSON.stringify(s.data))
+  );
+  assert.equal(s.guard().props.checksum, Buffer.from(expected).toString("hex"));
   assert.equal(s.pendingDeadlines, 0);
 });
 

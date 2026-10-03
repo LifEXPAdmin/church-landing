@@ -78,10 +78,14 @@ jobs:
             .account-test/exchange-hosted-*/exchange-browser-*/results.json
             .account-test/exchange-bootstrap-hosted-*/exchange-browser-*/*.png
             .account-test/exchange-bootstrap-hosted-*/exchange-browser-*/results.json
+            .account-test/exchange-bootstrap-hosted-*/exchange-browser-*/failure.txt
             .account-test/exchange-bootstrap-hosted-*/exchange-handoff-browser-*/*.png
             .account-test/exchange-bootstrap-hosted-*/exchange-handoff-browser-*/results.json
+            .account-test/exchange-bootstrap-hosted-*/exchange-handoff-browser-*/failure.txt
             .account-test/exchange-bootstrap-hosted-*/pantry-browser-*/*.png
-            .account-test/exchange-bootstrap-hosted-*/pantry-browser-*/results.json
+            .account-test/exchange-bootstrap-hosted-*/pantry-browser-*/pass.json
+            .account-test/exchange-bootstrap-hosted-*/pantry-browser-*/result.json
+            .account-test/exchange-bootstrap-hosted-*/pantry-browser-*/failure.txt
           include-hidden-files: true
           if-no-files-found: ignore
           retention-days: 7
