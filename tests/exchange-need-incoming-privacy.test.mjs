@@ -81,6 +81,8 @@ function environment(row = contribution()) {
     guard: null,
     recovery: null,
     refreshes: 0,
+    progressRefreshes: 0,
+    progressListings: [],
     identityHandler: null,
     readHandler: null,
     writeHandler: null
@@ -405,6 +407,12 @@ function incomingReader(t, row = contribution({ contributor: null }), after) {
       "./exchange-need-actions": {
         NeedContributionCard: s.actions.NeedContributionCard
       },
+      "./exchange-need-progress": {
+        refreshNeedProgress: async (account, listingId) => {
+          s.state.progressRefreshes++;
+          s.state.progressListings.push([account, listingId]);
+        }
+      },
       "./read-visibility": visibility
     }
   );
@@ -529,6 +537,8 @@ test("an exactly acknowledged incoming receipt refreshes the parent need summary
   });
   await s.h.settle();
   assert.equal(s.state.refreshes, 1);
+  assert.equal(s.state.progressRefreshes, 1);
+  assert.deepEqual(s.state.progressListings, [[owner, needId]]);
   const [updated] = nodes(
     s.h.output,
     (n) => n.type === s.actions.NeedContributionCard
@@ -585,11 +595,46 @@ test("incoming card omits sharing-disabled names and removes private drafts from
   );
 });
 
-test("need progress island adopts refreshed server totals across a guarded snapshot", () => {
-  const h = clientHarness();
-  const { ExchangeNeedProgressProvider, NeedSlotProgress } = h.load(
-    "components/platform/exchange-need-progress.tsx"
-  );
+test("need progress island adopts only the current account and need summary", async () => {
+  const h = clientHarness({
+    window: {},
+    URLSearchParams,
+    AbortController,
+    setTimeout,
+    clearTimeout
+  });
+  let summary = {
+    ownerId: owner,
+    listingId: "listing-a",
+    need: {
+      id: "listing-a",
+      slots: [
+        {
+          id: "slot-a",
+          status: "Covered, receipt pending",
+          target: 10,
+          unit: "parcels",
+          committed: 10,
+          received: 0,
+          privateNote: "Fictional coordinator note",
+          contributor: { name: "Fictional private contributor" }
+        }
+      ]
+    }
+  };
+  const progress = h.load("components/platform/exchange-need-progress.tsx", {
+    "@/lib/platform/social-client": {
+      socialRequest: async (path, body, account) => {
+        assert.equal(
+          path,
+          "/api/platform/exchange?view=need-need&listingId=listing-a"
+        );
+        assert.equal(body, undefined);
+        assert.equal(account, owner);
+        return { owner: account, data: summary };
+      }
+    }
+  });
   let slot = {
     id: "slot-a",
     status: "Covered, receipt pending",
@@ -598,21 +643,32 @@ test("need progress island adopts refreshed server totals across a guarded snaps
     committed: 10,
     received: 0
   };
-  const renderPage = () => {
-    const child = { type: NeedSlotProgress, props: { slot } };
-    const provider = ExchangeNeedProgressProvider({
-      slots: [slot],
-      children: child
-    });
-    const provided = provider.type(provider.props);
-    return provided.type(provided.props);
-  };
-
-  h.mount(renderPage);
+  h.mount(() =>
+    progress.NeedSlotProgress({ owner, listingId: "listing-a", slot })
+  );
   assert.match(textContent(h.output), /Committed: 10\. Received: 0\./);
 
-  slot = { ...slot, received: 5 };
+  summary = {
+    ...summary,
+    need: {
+      ...summary.need,
+      slots: [{ ...summary.need.slots[0], received: 5 }]
+    }
+  };
+  await progress.refreshNeedProgress(owner, "listing-a");
   h.render();
   assert.match(textContent(h.output), /Committed: 10\. Received: 5\./);
   assert.match(textContent(h.output), /Unreceived target: 5 parcels\./);
+  assert.ok(!textContent(h.output).includes("Fictional coordinator note"));
+  assert.ok(!textContent(h.output).includes("Fictional private contributor"));
+
+  summary = { ...summary, ownerId: "another-account" };
+  await assert.rejects(progress.refreshNeedProgress(owner, "listing-a"));
+  h.render();
+  assert.match(textContent(h.output), /Committed: 10\. Received: 5\./);
+
+  summary = { ...summary, ownerId: owner, listingId: "another-listing" };
+  await assert.rejects(progress.refreshNeedProgress(owner, "listing-a"));
+  h.render();
+  assert.match(textContent(h.output), /Committed: 10\. Received: 5\./);
 });

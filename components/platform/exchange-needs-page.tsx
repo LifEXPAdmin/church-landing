@@ -190,7 +190,11 @@ export async function ExchangeNeedsPage({
                       </p>
                       <h2 className="text-2xl">{slot.label}</h2>
                     </header>
-                    <NeedSlotProgress slot={slot} />
+                    <NeedSlotProgress
+                      slot={slot}
+                      owner={user?.id ?? null}
+                      listingId={listingId}
+                    />
                     {slot.closeReason && (
                       <p>Slot closing reason: {slot.closeReason}</p>
                     )}
@@ -434,6 +438,8 @@ export async function ExchangeNeedsPage({
       content = (
         <ExchangeNeedProgressProvider
           key={`${user?.id ?? "guest"}:${need?.id ?? "none"}`}
+          owner={user?.id ?? null}
+          listingId={listingId}
           slots={need?.slots ?? []}
         >
           <>

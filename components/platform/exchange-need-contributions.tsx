@@ -9,6 +9,7 @@ import {
   SocialClientError
 } from "@/lib/platform/social-client";
 import type { PrivateChoiceAccess } from "./use-private-choice-action";
+import { refreshNeedProgress } from "./exchange-need-progress";
 import { NeedContributionCard } from "./exchange-need-actions";
 import { ReadVisibility, useReadVisibility } from "./read-visibility";
 
@@ -226,7 +227,10 @@ export function ExchangeNeedContributions({
       }
       setVisible(true);
       setNotice("");
-      if (incoming && confirmedCommand) router.refresh();
+      if (incoming && confirmedCommand) {
+        void refreshNeedProgress(owner, query.needId).catch(() => {});
+        router.refresh();
+      }
     } catch (error) {
       if (seq === generation.current && active.current)
         setNotice(
