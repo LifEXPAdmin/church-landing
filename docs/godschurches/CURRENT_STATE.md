@@ -1,3 +1,24 @@
+## Measured feed optimization ready for integration, 3 October 2026 UTC
+
+Candidate `890c0f92ad9bb9c84ecdf91d17055c15fe76a725` preserves exact ranked
+ordering using author queues and bounds saved-page eligibility queries without
+skipping revoked or restored references. On the 10,000-reference fixture, query
+parameter volume falls from about 463 KB to 19 KB. Paired CPU measurements and
+the separate, different-host service observations are documented with their
+limits in [resource budgets](RESOURCE_BUDGETS.md).
+
+All 112 source guards, 34 service/measurement cases, 22 browser groups, two
+HTTPS cases and production build `m1oyjnhORwjWb5rWERoaO` pass. The private
+five-category release receipt passes consistency checking on the clean source.
+The benchmark identity guard now requires the actual candidate SHA, product,
+build and fixture metadata digest instead of a historical product constant.
+No production connection, migration, write, send or deployment occurred.
+
+This candidate stacks on the tested artist and CI handoffs below. Designated
+release-owner integration and combined live acceptance remain open. The older
+dense workload and real provider/responder/capacity evidence still need their
+own refresh; this result is not production capacity certification.
+
 ## Artist draft recovery ready for integration, 2 October 2026 UTC
 
 Artist candidate `80f5d9ff1b786500849e63518bbf53de0c6355dd` passes 83 source

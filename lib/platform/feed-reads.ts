@@ -10,6 +10,7 @@ import { discoveryHiddenWhere } from "./discovery-policy";
 import { discoverySources } from "./discovery-sources";
 import { gzipSync, gunzipSync } from "node:zlib";
 import { expireFeedSnapshots } from "./feed-snapshot-retention";
+import { readSnapshotPage } from "./feed-snapshot-page";
 import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import { Prisma, type PrismaClient } from "@prisma/client";
 import { accountConfig } from "./account-config";
@@ -442,31 +443,28 @@ export function readFeed(
             cursor = { at: at.toISOString(), snapshot: snapshot.id, offset: 0 };
           }
           const offset = cursor!.offset ?? 0;
-          // Recheck every remaining reference before slicing so revocations do not
-          // leave artificial holes or reveal removed IDs in a page result.
-          const eligible = await tx.platformPost.findMany({
-            where: {
-              AND: [
-                readable(now),
-                { id: { in: snapshot.postIds.slice(offset) } }
-              ]
-            },
-            select: { id: true }
-          });
-          const allowed = new Set(
-            await legacyVisibleIds(
-              tx,
-              context,
-              eligible.map((row) => row.id),
-              prefs,
-              now
-            )
+          // Recheck current permission through a full page plus lookahead.
+          // Continue past revoked references without moving the saved boundary.
+          const page = await readSnapshotPage(
+            snapshot.postIds.slice(offset),
+            PAGE,
+            async (chunk) => {
+              const eligible = await tx.platformPost.findMany({
+                where: { AND: [readable(now), { id: { in: chunk } }] },
+                select: { id: true }
+              });
+              const allowed = await legacyVisibleIds(
+                tx,
+                context,
+                eligible.map((row) => row.id),
+                prefs,
+                now
+              );
+              return new Map(allowed.map((id) => [id, true]));
+            }
           );
-          const remaining = snapshot.postIds
-            .slice(offset)
-            .filter((id) => allowed.has(id));
-          ids = remaining.slice(0, PAGE);
-          if (remaining.length > PAGE)
+          ids = page.ids;
+          if (page.hasMore)
             next = {
               at: cursor!.at,
               snapshot: cursor!.snapshot,

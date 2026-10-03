@@ -3,7 +3,8 @@ import assert from "node:assert/strict";
 import { readFileSync, writeFileSync, realpathSync, existsSync } from "node:fs";
 import { resolve, sep, join } from "node:path";
 import { cpus, totalmem, loadavg } from "node:os";
-import { spawnSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { gzipSync } from "node:zlib";
 import { PrismaClient } from "@prisma/client";
 import { assertPortalTestDatabase } from "../tests/seed-portal.ts";
@@ -19,6 +20,10 @@ import { getCalendarAgenda } from "../lib/platform/calendar-reads.ts";
 import { readImage } from "../lib/platform/media.ts";
 import { imageStorage } from "../lib/platform/media-storage.ts";
 import { sessionCookieFixtureName } from "./session-cookie-fixture.mjs";
+import {
+  resourceCandidate,
+  resourceServingIdentity
+} from "./resource-budget-identity.mjs";
 
 const dir = realpathSync(resolve(process.argv[2] ?? ""));
 assert.ok(dir.startsWith(realpathSync(".account-test") + sep));
@@ -63,9 +68,14 @@ const summary = (values) => ({
   p95: percentile(values, 0.95),
   max: Math.max(...values)
 });
-const source = spawnSync("git", ["rev-parse", "HEAD"], {
+const source = execFileSync("git", ["rev-parse", "HEAD"], {
   encoding: "utf8"
-}).stdout.trim();
+}).trim();
+assert.equal(
+  execFileSync("git", ["status", "--porcelain"], { encoding: "utf8" }).trim(),
+  "",
+  "RESOURCE_DIRTY_SOURCE"
+);
 const host = {
   cpu: cpus()[0].model,
   logicalCpus: cpus().length,
@@ -87,8 +97,15 @@ try {
   if (phase === "seed") {
     console.log(JSON.stringify(await seedResourceBudgetFixture(db, dir)));
   } else {
-    const fixture = JSON.parse(
-      readFileSync(join(dir, "resource-fixture.json"))
+    const fixtureBytes = readFileSync(join(dir, "resource-fixture.json"));
+    const fixture = JSON.parse(fixtureBytes);
+    const candidate = resourceCandidate(
+      JSON.parse(readFileSync(join(dir, "measurement-candidate.json"))),
+      {
+        source,
+        buildId: readFileSync(".next/BUILD_ID", "utf8").trim(),
+        fixtureSha256: createHash("sha256").update(fixtureBytes).digest("hex")
+      }
     );
     const actor = fixture.actors[0],
       token = actor.token;
@@ -131,12 +148,18 @@ try {
         cursors.push(row);
       }
       save("feed-cursors.json", {
+        candidate,
         createdAt: new Date().toISOString(),
         cursors,
         creation
       });
     }
     const feedSetup = JSON.parse(readFileSync(cursorFile));
+    assert.deepEqual(
+      feedSetup.candidate,
+      candidate,
+      "RESOURCE_CURSOR_CANDIDATE"
+    );
     const calls = [
       {
         name: "feed-latest",
@@ -279,6 +302,7 @@ try {
       }
       save("service-query-events.json", captured);
       save("service-budget.json", {
+        candidate,
         startedAt,
         completedAt: new Date().toISOString(),
         source,
@@ -295,12 +319,25 @@ try {
       });
     } else {
       const ready = JSON.parse(readFileSync(join(dir, "server-ready.json")));
-      assert.equal(ready.origin, config.origin);
-      const identity = await (
-        await fetch(config.origin + "/api/platform/release")
-      ).json();
-      assert.equal(identity.release, ready.runtimeSource);
-      assert.equal(identity.product.version, "2026.09.18.8");
+      assert.deepEqual(
+        JSON.parse(readFileSync(join(dir, "service-budget.json"))).candidate,
+        candidate,
+        "RESOURCE_SERVICE_CANDIDATE"
+      );
+      const verifyServing = async () => {
+        const response = await fetch(config.origin + "/api/platform/release", {
+          redirect: "error",
+          signal: AbortSignal.timeout(15000)
+        });
+        assert.equal(response.status, 200, "RESOURCE_IDENTITY_RESPONSE");
+        resourceServingIdentity(
+          candidate,
+          ready,
+          await response.json(),
+          config.origin
+        );
+      };
+      await verifyServing();
       const paths = [
         [
           "feed-latest",
@@ -456,6 +493,7 @@ try {
         };
         stages.push(stage);
         save("http-budget-progress.json", {
+          candidate,
           startedAt,
           source,
           runtimeSource: ready.runtimeSource,
@@ -468,7 +506,9 @@ try {
           JSON.stringify({ concurrency, peak, elapsedMs, measurements })
         );
       }
+      await verifyServing();
       save("http-budget.json", {
+        candidate,
         startedAt,
         completedAt: new Date().toISOString(),
         source,

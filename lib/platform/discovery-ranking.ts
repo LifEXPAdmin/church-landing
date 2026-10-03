@@ -1,3 +1,5 @@
+import { applyDiscoveryVariety } from "./discovery-variety";
+export { applyDiscoveryVariety } from "./discovery-variety";
 import type { PostContext, PostTx } from "./post-access";
 import type { DiscoveryMode, DiscoveryPreferences } from "./discovery-options";
 import { effectiveDiscoverySort } from "./discovery-options";
@@ -159,29 +161,6 @@ export function chronological(a: DiscoveryCandidate, b: DiscoveryCandidate) {
     +(b.publishedAt ?? 0) - +(a.publishedAt ?? 0) ||
     (b.id === a.id ? 0 : b.id > a.id ? 1 : -1)
   );
-}
-export function applyDiscoveryVariety<T extends { post: DiscoveryCandidate }>(
-  rows: T[]
-): T[] {
-  const pending = [...rows],
-    ordered: T[] = [],
-    recent: string[] = [];
-  const author = (row: T) =>
-    row.post.authorChurchId
-      ? "church:" + row.post.authorChurchId
-      : "person:" + row.post.authorId;
-  while (pending.length) {
-    const counts = new Map<string, number>();
-    recent.forEach((id) => counts.set(id, (counts.get(id) ?? 0) + 1));
-    const alternative = pending.findIndex(
-      (row) => (counts.get(author(row)) ?? 0) < 3
-    );
-    const [chosen] = pending.splice(alternative < 0 ? 0 : alternative, 1);
-    ordered.push(chosen);
-    recent.push(author(chosen));
-    if (recent.length > 19) recent.shift();
-  }
-  return ordered;
 }
 export async function readDiscoveryCandidates(
   tx: PostTx,
