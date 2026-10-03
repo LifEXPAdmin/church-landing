@@ -1,3 +1,23 @@
+## Individual Exchange favorite runtime verified, 3 October 2026 UTC
+
+[Draft PR 14](https://github.com/LifEXPAdmin/church-landing/pull/14) removes the
+private favorite association from listing HTML/RSC and physically omits saved
+state during uncertain access. A retained command owner rejects wrong-target
+and stale-version receipts, preserves exact retries and requires canonical
+readback plus visible acknowledgment before another action. All other listing
+content and permissions remain covered by the enclosing freshness check.
+An unavailable listing stays concealed while a fresh eligible-account check
+permits only confirmation of its retained original request.
+
+Application `c39329331691d7e24cec5fd0db848f119d8098d1` passes 234 focused checks
+and [runtime 37118193013](https://github.com/LifEXPAdmin/church-landing/actions/runs/37118193013),
+build `pYpsO8jbRq1xlTBbQK5CG`: 43 services, 33 browser groups and four HTTPS
+cases. Both hosted source runs pass 335 tests, copy and types, then fail the
+existing seven-high dependency audit; subsequent security steps skip.
+[Security acceptance](SOURCE_SECURITY_ACCEPTANCE.md) preserves reproduction,
+recovery boundaries and 13 hashed runtime artifacts. PR14 stacks on PR13;
+no integration, deployment or release acceptance is claimed.
+
 ## Saved Exchange search editor runtime verified, 3 October 2026 UTC
 
 [Draft PR 13](https://github.com/LifEXPAdmin/church-landing/pull/13) retains
