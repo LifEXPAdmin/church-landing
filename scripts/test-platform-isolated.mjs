@@ -38,7 +38,11 @@ const profile =
           "qa-exchange-inquiry-list-privacy-browser",
           "qa-exchange-handoff-browser"
         ],
-        https: ["exchange-defaults-http", "exchange-http"]
+        https: [
+          "exchange-inquiry-list-http",
+          "exchange-defaults-http",
+          "exchange-http"
+        ]
       }
     : suite === "exchange-defaults"
       ? {

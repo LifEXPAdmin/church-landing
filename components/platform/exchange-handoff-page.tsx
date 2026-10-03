@@ -13,6 +13,7 @@ import {
   ExchangeInquiryForm
 } from "./exchange-handoff-controls";
 import { ExchangeDefaultsEntry } from "./exchange-defaults-entry";
+import { ExchangeInquiryList } from "./exchange-inquiry-list";
 import { RegionalTime } from "./regional-presentation";
 import { getCurrentPlatformUser } from "@/lib/platform/session";
 import {
@@ -120,12 +121,7 @@ export async function ExchangeHandoffsPage({
         inquiry = result.inquiry;
       const params = new URLSearchParams(Object.entries(input));
       params.set("view", `handoff-${view}`);
-      const groups = new Map<string, NonNullable<typeof result.inquiries>>();
-      for (const row of result.inquiries ?? []) {
-        const key = row.listing?.id ?? "unavailable";
-        groups.set(key, [...(groups.get(key) ?? []), row]);
-      }
-      content = (
+      content = id ? (
         <PrivateSnapshotGuard
           owner={user.id}
           url={`/api/platform/exchange?${params}`}
@@ -297,81 +293,16 @@ export async function ExchangeHandoffsPage({
                 )}
               </div>
             </article>
-          ) : (
-            <div className="space-y-5">
-              <nav
-                className="flex flex-wrap gap-4"
-                aria-label="Inquiry direction"
-              >
-                <Link
-                  prefetch={false}
-                  className="inline-flex min-h-11 items-center underline"
-                  href="/platform/exchange/handoffs?view=incoming"
-                  aria-current={view === "incoming" ? "page" : undefined}
-                >
-                  Incoming
-                </Link>
-                <Link
-                  prefetch={false}
-                  className="inline-flex min-h-11 items-center underline"
-                  href="/platform/exchange/handoffs?view=outgoing"
-                  aria-current={view === "outgoing" ? "page" : undefined}
-                >
-                  Outgoing
-                </Link>
-              </nav>
-              <p>
-                {view === "incoming"
-                  ? "Only inquiries addressed to you appear here. Other church managers’ private handoffs are excluded."
-                  : "Your private inquiries and agreed pickups appear here."}{" "}
-                Showing up to 20 records per page.
-              </p>
-              {!result.inquiries?.length && (
-                <p>No retained inquiries in this view.</p>
-              )}
-              {[...groups].map(([key, rows]) => (
-                <section key={key} className="space-y-3">
-                  <h2 className="text-2xl">
-                    {rows[0].listing?.title ?? "Unavailable sources"}
-                  </h2>
-                  <ul className="space-y-3">
-                    {rows.map((row) => (
-                      <li
-                        key={row.id}
-                        className="rounded-xl border border-gc-divider p-4"
-                      >
-                        <Link
-                          prefetch={false}
-                          className="inline-flex min-h-11 items-center font-semibold underline"
-                          href={`/platform/exchange/handoffs/${row.id}`}
-                        >
-                          {
-                            exchangeInquiryStateLabels[
-                              row.state as ExchangeInquiryState
-                            ]
-                          }
-                          {row.person ? `: ${row.person.name}` : ""}
-                        </Link>
-                        <p>
-                          Sent <RegionalTime value={row.createdAt} />
-                        </p>
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-              ))}
-              {result.after && (
-                <Link
-                  prefetch={false}
-                  className="gc-button gc-button-quiet"
-                  href={`/platform/exchange/handoffs?${new URLSearchParams({ view, after: result.after, ...(query.listingId ? { listingId: query.listingId as string } : {}) })}`}
-                >
-                  Older inquiries
-                </Link>
-              )}
-            </div>
-          )}
+          ) : null}
         </PrivateSnapshotGuard>
+      ) : (
+        <ExchangeInquiryList
+          key={`${user.id}:/api/platform/exchange?${params}`}
+          owner={user.id}
+          url={`/api/platform/exchange?${params}`}
+          view={view === "outgoing" ? "outgoing" : "incoming"}
+          listingId={query.listingId as string | undefined}
+        />
       );
     } catch (error) {
       content = <ExchangeUnavailable error={error} href={path} />;
