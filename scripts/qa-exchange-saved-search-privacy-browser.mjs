@@ -254,13 +254,17 @@ try {
     assert.equal(await name.count(), 1);
     assert.equal(await name.inputValue(), unsent);
     assert.equal(await alerts.isChecked(), false);
-    assert.equal(await name.isVisible(), false);
+    assert.equal(
+      await name.isVisible(),
+      event === "pagehide",
+      `Baseline ${event} visibility`
+    );
+    ok(
+      `BASELINE: ${event} retains the unsent name and alert inputs in DOM${event === "pagehide" ? " and leaves them visibly presented" : " while concealing presentation"}`
+    );
     await signal("focus");
     await page.getByLabel("Search name", { exact: true }).waitFor();
   }
-  ok(
-    "BASELINE: unsent edited name and alert choice remain physically in concealed DOM through blur, pagehide and offline"
-  );
   await go("/platform/exchange?" + new URLSearchParams(criteria));
   await page.getByText("Save this search", { exact: true }).click();
   const fresh = page.locator('form[aria-label="Save current search"]');
