@@ -357,6 +357,12 @@ try {
         where: { ownerId: viewer.id, deletedAt: null }
       })) === 0
   );
+  await page
+    .getByText(
+      "No favorite listings on this page. Open an available listing and choose Save favorite.",
+      { exact: true }
+    )
+    .waitFor();
   ok(
     "Favorites confirm a lost successful reply after tab resume once, survive sign-out, stay owner-only and conceal unavailable sources before removal"
   );
@@ -389,6 +395,16 @@ try {
         }
       })) === 1
   );
+  await saveForm
+    .getByRole("status")
+    .filter({ hasText: "Search saved privately. Matching alerts are off." })
+    .waitFor();
+  await waitUntil(
+    async () =>
+      (await saveForm
+        .getByLabel("Search name", { exact: true })
+        .inputValue()) === ""
+  );
   await page
     .getByRole("link", { name: "Manage saved searches", exact: true })
     .click();
@@ -406,6 +422,7 @@ try {
     .getByLabel("Search name", { exact: true })
     .fill("Fictional saved search updated");
   await editForm.getByLabel(alertLabel, { exact: true }).check();
+  const beforeAlertSave = await editForm.elementHandle();
   await editForm
     .getByRole("button", { name: "Update saved search", exact: true })
     .click();
@@ -420,11 +437,21 @@ try {
         }
       })) === 1
   );
+  await waitUntil(
+    async () => !(await beforeAlertSave.evaluate((node) => node.isConnected))
+  );
+  await beforeAlertSave.dispose();
+  await editForm.getByLabel("Search name", { exact: true }).waitFor();
+  assert.equal(
+    await editForm.getByLabel("Search name", { exact: true }).inputValue(),
+    "Fictional saved search updated"
+  );
   await page.getByRole("link", { name: "Clear filters", exact: true }).click();
   await editForm.waitFor();
   assert.ok(new URL(page.url()).searchParams.get("savedSearch"));
   assert.equal(new URL(page.url()).searchParams.has("q"), false);
   await editForm.getByLabel(alertLabel, { exact: true }).uncheck();
+  const beforeAlertRemoval = await editForm.elementHandle();
   await editForm
     .getByRole("button", { name: "Update saved search", exact: true })
     .click();
@@ -434,6 +461,15 @@ try {
         where: { ownerId: viewer.id, alertsSince: null, version: 3 }
       })) === 1
   );
+  await waitUntil(
+    async () => !(await beforeAlertRemoval.evaluate((node) => node.isConnected))
+  );
+  await beforeAlertRemoval.dispose();
+  await editForm.getByLabel("Search name", { exact: true }).waitFor();
+  assert.equal(
+    await editForm.getByLabel(alertLabel, { exact: true }).isChecked(),
+    false
+  );
   await editForm
     .getByLabel("Search name", { exact: true })
     .fill("Unsent private search name");
@@ -442,6 +478,11 @@ try {
     window.dispatchEvent(new Event("blur"));
     window.dispatchEvent(new Event("focus"));
   });
+  await page
+    .getByRole("status")
+    .filter({ hasText: "Your sign-in changed. Reload before continuing." })
+    .first()
+    .waitFor();
   await waitUntil(async () => !(await editForm.isVisible()));
   assert.equal(
     await db.exchangeSavedSearch.count({ where: { ownerId: stranger.id } }),
@@ -463,6 +504,12 @@ try {
     await bounded();
   }
   await page.emulateMedia({ colorScheme: "dark" });
+  assert.equal(
+    await page
+      .locator(".platform-design")
+      .evaluate((node) => getComputedStyle(node).colorScheme),
+    "dark"
+  );
   await page.addStyleTag({ content: "html{font-size:24px!important}" });
   await bounded();
   await page.screenshot({
@@ -478,6 +525,12 @@ try {
         where: { ownerId: viewer.id, deletedAt: null }
       })) === 0
   );
+  await page
+    .getByText(
+      "No named searches on this page. Set your browse filters and choose Save this search.",
+      { exact: true }
+    )
+    .waitFor();
   ok(
     "Named searches default to alerts off; editing filters and explicit consent preserves ownership and versions; removal stops alerts; narrow, dark and enlarged layouts fit"
   );

@@ -679,11 +679,24 @@ try {
 
   await signIn(owner);
   await go(`/platform/exchange/${id}/edit`);
+  await editor
+    .getByLabel("Title (required to publish)", { exact: true })
+    .waitFor();
   await page.setViewportSize({ width: 320, height: 780 });
+  await page.getByLabel("Appearance", { exact: true }).selectOption("dark");
+  await page.locator('.platform-design[data-appearance="dark"]').waitFor();
+  assert.equal(
+    await page
+      .locator(".platform-design")
+      .evaluate((node) => getComputedStyle(node).colorScheme),
+    "dark"
+  );
   await page.evaluate(() => {
     document.documentElement.style.fontSize = "200%";
-    document.documentElement.classList.add("dark");
   });
+  await editor
+    .getByLabel("Title (required to publish)", { exact: true })
+    .waitFor();
   await bounded();
   await page.screenshot({
     path: output + "/editor-320-large-dark.png",
@@ -691,9 +704,12 @@ try {
   });
   await page.evaluate(() => {
     document.documentElement.style.fontSize = "";
-    document.documentElement.classList.remove("dark");
   });
+  await page.getByLabel("Appearance", { exact: true }).selectOption("system");
   await page.setViewportSize({ width: 390, height: 844 });
+  await editor
+    .getByLabel("Title (required to publish)", { exact: true })
+    .waitFor();
   await bounded();
   await page.screenshot({
     path: output + "/editor-mobile.png",
@@ -848,11 +864,28 @@ try {
     .click();
   await page.waitForURL((url) => url.searchParams.get("state") === "ARCHIVED");
   await page
-    .getByText(
-      "No saved listings match these choices. Create a private draft to begin.",
-      { exact: true }
-    )
+    .getByRole("heading", {
+      name: "No saved listings match these filters",
+      exact: true
+    })
     .waitFor();
+  const archived = await fetchIn(
+    `/api/platform/exchange?view=mine&state=ARCHIVED&q=${encodeURIComponent(title)}`
+  );
+  assert.equal(archived.status, 200);
+  assert.equal(archived.body.listings.length, 0);
+  assert.equal(
+    await page
+      .getByRole("link", { name: "Clear listing filters", exact: true })
+      .getAttribute("href"),
+    "/platform/exchange/mine"
+  );
+  assert.equal(
+    await page
+      .getByRole("link", { name: "Create a private draft", exact: true })
+      .getAttribute("href"),
+    "/platform/exchange/new"
+  );
   ok(
     "Wanted fields and calendar dates persist, including the reader's date format; type navigation, literal search, category chips and owned status filters use current authorized rows"
   );
