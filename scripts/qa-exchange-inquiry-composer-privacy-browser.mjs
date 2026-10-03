@@ -140,13 +140,30 @@ const signIn = async (actor) => {
       }
     ]);
 };
-const bounded = async () =>
-  assert.ok(
-    await page.evaluate(
-      () => document.documentElement.scrollWidth <= innerWidth + 1
-    ),
-    "No horizontal page overflow"
-  );
+const layoutFailures = [];
+const bounded = async () => {
+  const layout = await page.evaluate(() => ({
+    viewport: innerWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+    offenders: [...document.querySelectorAll("body *")]
+      .filter(
+        (element) => element.getBoundingClientRect().right > innerWidth + 1
+      )
+      .map((element) => ({
+        tag: element.tagName,
+        className: element.className,
+        text: element.textContent.slice(0, 100),
+        right: element.getBoundingClientRect().right,
+        width: element.getBoundingClientRect().width,
+        whiteSpace: getComputedStyle(element).whiteSpace
+      }))
+      .slice(0, 20)
+  }));
+  if (layout.scrollWidth > layout.viewport + 1) {
+    layoutFailures.push(layout);
+    console.log("LAYOUT DIAGNOSTIC " + JSON.stringify(layout));
+  }
+};
 const waitUntil = async (work) => {
   for (let i = 0; i < 100; i++) {
     if (await work()) return;
@@ -308,7 +325,8 @@ try {
   await page.evaluate(() => {
     document.documentElement.style.fontSize = "";
   });
-  ok("The private composer fits 390px and 320px enlarged text layouts");
+  if (!layoutFailures.length)
+    ok("The private composer fits 390px and 320px enlarged text layouts");
 
   const bodies = [];
   await intercept(endpoint, async (route) => {
@@ -579,6 +597,7 @@ try {
   );
   await clearIntercepts();
   assert.deepEqual(errors, []);
+  assert.deepEqual(layoutFailures, [], "No horizontal page overflow");
   ok("No browser runtime errors in the inquiry composer privacy flow");
 } catch (error) {
   await page
@@ -599,6 +618,7 @@ try {
       {
         results,
         errors,
+        layoutFailures,
         at: new Date().toISOString(),
         productionWrites: 0,
         externalSends: 0
