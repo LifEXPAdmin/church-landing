@@ -269,46 +269,284 @@ try {
     })
   );
   const path = "/platform/exchange/handoffs/" + created.id;
+  const detailRoute = (url) =>
+    url.pathname === "/api/platform/exchange" &&
+    url.searchParams.get("view") === "handoff-detail";
+  const endpoint = config.origin + "/api/platform/exchange";
+  const details = page.locator('section[aria-label="Private handoff details"]');
+  const pickupField = page.getByLabel(
+    "Private pickup instructions (optional)",
+    { exact: false }
+  );
+  const noteField = page.getByLabel("Private explanation (optional)", {
+    exact: false
+  });
+  const read = async (actor = owner) =>
+    (
+      await readExchangeHandoffs(db, actor.token, {
+        view: "detail",
+        id: created.id
+      })
+    ).inquiry;
   await signIn(owner);
+  await intercept(detailRoute, (route) =>
+    route.fulfill({
+      status: 403,
+      contentType: "application/json",
+      body: JSON.stringify({ message: "Injected detail access denial" })
+    })
+  );
   const response = await go(path),
     html = await response.text();
-  await page.getByLabel("Private explanation (optional)").fill(note);
-  assert.ok(html.includes(purpose));
-  assert.ok(html.includes(pickup));
+  assert.ok(!html.includes(purpose));
+  assert.ok(!html.includes(pickup));
   const rsc = await context.request.get(config.origin + path, {
-    headers: { RSC: "1" }
-  });
-  const rscBody = await rsc.text();
-  assert.ok(rscBody.includes(purpose));
-  assert.ok(rscBody.includes(pickup));
+      headers: { RSC: "1" }
+    }),
+    rscBody = await rsc.text();
+  assert.ok(!rscBody.includes(purpose));
+  assert.ok(!rscBody.includes(pickup));
+  await details
+    .getByText("Injected detail access denial", { exact: true })
+    .waitFor();
+  assert.equal(await details.locator("textarea").count(), 0);
+  await clearIntercepts();
+  await details
+    .getByRole("button", { name: "Recheck current access", exact: true })
+    .click();
+  await pickupField.waitFor();
+  await noteField.fill(note);
   ok(
-    "Baseline: owner HTML and RSC serialize private inquiry purpose and pickup text before a current client read"
+    "Private detail HTML/RSC omit purpose and pickup; a denied first read mounts no private controls"
   );
-  await signal("blur");
-  const retained = await page
-    .locator("textarea")
-    .evaluateAll((nodes) => nodes.map((n) => n.value));
-  assert.ok(retained.includes(note));
-  assert.ok(retained.includes(pickup));
-  assert.ok((await page.locator("body").textContent()).includes(purpose));
+  for (const event of ["blur", "pagehide", "offline"]) {
+    await signal(event);
+    assert.equal(await details.locator("textarea").count(), 0);
+    assert.ok(!(await details.textContent()).includes(purpose));
+    assert.ok(!(await details.textContent()).includes(pickup));
+    await signal("social-relationships-changed");
+    await signal("online");
+    assert.equal(await details.locator("textarea").count(), 0);
+    await signal("focus");
+    await noteField.waitFor();
+    assert.equal(await noteField.inputValue(), note);
+  }
+  ok(
+    "Blur, pagehide and offline physically omit saved details and draft inputs; passive events cannot reopen them and current-owner focus restores drafts"
+  );
+  await bounded();
+  await page.screenshot({ path: output + "/detail-390.png", fullPage: true });
+  await page.setViewportSize({ width: 320, height: 800 });
+  await page.evaluate(() => {
+    document.documentElement.style.fontSize = "200%";
+  });
+  await bounded();
   await page.screenshot({
-    path: output + "/baseline-concealed.png",
+    path: output + "/detail-320-200.png",
     fullPage: true
   });
-  ok(
-    "Baseline: blur conceals presentation but retains purpose, pickup text and unsent cancellation note in DOM"
+  await page.evaluate(() => {
+    document.documentElement.style.fontSize = "";
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  const replacement = pickup + " revised";
+  await pickupField.fill(replacement);
+  const before = (await read()).version;
+  await exact("Replace proposed plan").click();
+  await waitUntil(async () => (await read()).version === before + 1);
+  await noteField.waitFor();
+  assert.equal(await noteField.inputValue(), note);
+  await waitUntil(
+    async () => !(await exact("Replace proposed plan").isDisabled())
   );
-  const outgoing = (
-    await readExchangeHandoffs(db, requester.token, {
-      view: "detail",
-      id: created.id
+  assert.equal(await pickupField.inputValue(), replacement);
+  ok(
+    "A confirmed plan replacement re-arms the same action owner and preserves its unsent cancellation note"
+  );
+  // Defaults response held beyond concealment cannot replace the retained draft.
+  let releaseDefault, defaultStarted;
+  const defaultGate = new Promise((resolve) => {
+      releaseDefault = resolve;
+    }),
+    defaultReady = new Promise((resolve) => {
+      defaultStarted = resolve;
+    });
+  await intercept(
+    (url) =>
+      url.pathname === "/api/platform/exchange" &&
+      url.searchParams.get("view") === "defaults",
+    async (route) => {
+      const response = await route.fetch();
+      defaultStarted();
+      await within(defaultGate, "Held default response");
+      await route.fulfill({ response });
+    }
+  );
+  await exact("Copy my private pickup default").click();
+  try {
+    await within(defaultReady, "Default read start");
+    await signal("blur");
+    assert.equal(await details.locator("textarea").count(), 0);
+  } finally {
+    releaseDefault();
+  }
+  await clearIntercepts();
+  await signal("focus");
+  await pickupField.waitFor();
+  assert.equal(await pickupField.inputValue(), replacement);
+  ok(
+    "A defaults read released after concealment cannot overwrite retained pickup text"
+  );
+  const uncertain = replacement + " original uncertain request";
+  await pickupField.fill(uncertain);
+  const bodies = [];
+  let step = 0;
+  await intercept(endpoint, async (route) => {
+    if (route.request().method() !== "POST") return route.continue();
+    const body = route.request().postData();
+    bodies.push(body);
+    step++;
+    if (step === 1) {
+      const response = await route.fetch();
+      assert.equal(response.status(), 200);
+      return route.abort("failed");
+    }
+    if (step === 2)
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          id: owner.id,
+          version: 999,
+          message: "Wrong fictional receipt"
+        })
+      });
+    if (step === 3)
+      return route.fulfill({
+        status: 429,
+        contentType: "application/json",
+        body: JSON.stringify({ message: "Injected bounded retry" })
+      });
+    if (step === 4)
+      return route.fulfill({
+        status: 503,
+        contentType: "application/json",
+        body: JSON.stringify({ message: "Injected unavailable reply" })
+      });
+    return route.continue();
+  });
+  await exact("Replace proposed plan").click();
+  await exact("Confirm original save").waitFor();
+  await signal("blur");
+  await signal("focus");
+  await waitUntil(
+    async () => !(await exact("Confirm original save").isDisabled())
+  );
+  assert.equal(await details.locator("textarea").count(), 0);
+  for (let i = 0; i < 4; i++) {
+    await exact("Confirm original save").click();
+    if (i < 3)
+      await waitUntil(
+        async () =>
+          (await exact("Confirm original save").count()) === 1 &&
+          !(await exact("Confirm original save").isDisabled())
+      );
+  }
+  await noteField.waitFor();
+  assert.equal(await noteField.inputValue(), note);
+  assert.equal(await pickupField.inputValue(), uncertain);
+  await clearIntercepts();
+  assert.equal(bodies.length, 5);
+  assert.ok(bodies.every((body) => body === bodies[0]));
+  const original = JSON.parse(bodies[0]);
+  assert.equal((await read()).version, original.expectedVersion + 1);
+  assert.equal(
+    await db.exchangeInquiryAudit.count({
+      where: {
+        inquiryId: created.id,
+        action: "PLAN",
+        version: original.expectedVersion + 1
+      }
+    }),
+    1
+  );
+  ok(
+    "Lost accepted plan plus changed snapshot, wrong receipt, 429 and 503 recover five byte-identical requests with one plan audit and the sibling draft intact"
+  );
+  // Cancellation acknowledges only its note; retain an unrelated private plan draft.
+  const unsentPlan = uncertain + " UNSENT sibling";
+  await pickupField.fill(unsentPlan);
+  await exact("Cancel handoff").click();
+  await waitUntil(async () => (await read()).state === "CANCELED");
+  await exact("Clear from my history").waitFor();
+  await details
+    .getByText(unsentPlan, { exact: true })
+    .waitFor({ state: "attached" });
+  await page
+    .getByRole("link", { name: "Open current listing", exact: true })
+    .click();
+  await page
+    .getByText("Save or resolve your private choice before leaving.", {
+      exact: true
     })
-  ).inquiry;
-  assert.equal(outgoing.pickupDetails, "");
-  assert.equal(outgoing.purpose, purpose);
+    .waitFor();
+  assert.equal(new URL(page.url()).pathname, path);
+  await exact("Discard unsaved handoff choices").click();
   ok(
-    "Canonical control: unagreed outgoing plan does not disclose private pickup instructions"
+    "Cancellation preserves the unsent sibling plan and navigation guard until deliberate discard"
   );
+  const clearBodies = [];
+  await intercept(endpoint, async (route) => {
+    if (route.request().method() !== "POST") return route.continue();
+    clearBodies.push(route.request().postData());
+    if (clearBodies.length === 1) {
+      const response = await route.fetch();
+      assert.equal(response.status(), 200);
+      return route.abort("failed");
+    }
+    return route.continue();
+  });
+  await exact("Clear from my history").click();
+  await exact("Confirm original save").waitFor();
+  await assert.rejects(
+    () => read(),
+    (error) => error.status === 404
+  );
+  await signal("blur");
+  await signal("focus");
+  await waitUntil(
+    async () => !(await exact("Confirm original save").isDisabled())
+  );
+  assert.equal(await details.locator("textarea").count(), 0);
+  await exact("Confirm original save").click();
+  await details
+    .getByText("This inquiry was cleared from your history.", { exact: true })
+    .waitFor();
+  assert.equal(await exact("Clear from my history").count(), 0);
+  assert.equal(clearBodies.length, 2);
+  assert.equal(clearBodies[0], clearBodies[1]);
+  await clearIntercepts();
+  assert.equal((await read(requester)).state, "CANCELED");
+  ok(
+    "Lost successful history-clear recovers its exact original request after detail 404 and leaves the other participant's history intact"
+  );
+  await signIn(requester);
+  await go(path);
+  await details.getByText(purpose, { exact: true }).waitFor();
+  await signIn(owner);
+  await signal("focus");
+  await details
+    .getByText(
+      "Your sign-in changed. Private entries were cleared. Reload for your current account.",
+      { exact: true }
+    )
+    .waitFor();
+  assert.equal(await details.locator("textarea").count(), 0);
+  assert.ok(!(await details.textContent()).includes(purpose));
+  ok(
+    "Confirmed replacement account clears retained private detail and command ownership"
+  );
+  assert.deepEqual(layoutFailures, []);
   assert.deepEqual(errors, []);
   writeFileSync(
     output + "/results.json",
