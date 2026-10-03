@@ -344,7 +344,7 @@ try {
       lost = true;
       originalBody = route.request().postData();
       const response = await route.fetch({
-        url: config.localOrigin + new URL(route.request().url()).pathname
+        url: localOrigin + new URL(route.request().url()).pathname
       });
       assert.equal(response.status(), 200, await response.text());
       return route.abort("failed");
