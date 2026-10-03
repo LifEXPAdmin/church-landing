@@ -100,7 +100,7 @@ const intercept = async (match, handle) => {
 };
 const clearIntercepts = async () => {
   intercepts = [];
-  await within(Promise.all([...routed]), "Routed inquiry requests");
+  await within(Promise.all([...routed]), "Routed saved-list requests");
   assert.deepEqual(routingErrors, []);
 };
 await context.route("**/*", async (route) => {
@@ -182,7 +182,7 @@ const waitUntil = async (work) => {
     if (await work()) return;
     await new Promise((r) => setTimeout(r, 100));
   }
-  throw Error("Expected current inquiry state was not observed");
+  throw Error("Expected current saved-list state was not observed");
 };
 const exact = (name) => page.getByRole("button", { name, exact: true });
 const signal = (name) =>
@@ -236,45 +236,413 @@ try {
       alerts: false
     })
   );
+  const endpoint = config.origin + "/api/platform/exchange";
+  const listRoute = (url) =>
+    url.pathname === "/api/platform/exchange" &&
+    ["favorites", "searches"].includes(url.searchParams.get("view"));
+  const panel = page.locator('section[aria-label="Saved Exchange choices"]');
+  const rows = panel.locator("li");
+  const searches = () => read(db, owner.token, { view: "searches" });
+  const favorites = () => read(db, owner.token, { view: "favorites" });
   await signIn(owner);
-  for (const [view, marker, id] of [
-    ["searches", searchName, search.id],
-    ["favorites", title, favorite.id]
-  ]) {
-    const path = "/platform/exchange/saved?view=" + view;
-    const response = await go(path),
-      html = await response.text();
-    assert.ok(html.includes(marker));
-    assert.ok(html.includes(id));
-    const rsc = await context.request.get(config.origin + path, {
-        headers: { RSC: "1" }
-      }),
-      text = await rsc.text();
-    assert.ok(text.includes(marker));
-    assert.ok(text.includes(id));
-    await page.getByText(marker, { exact: true }).waitFor();
-    ok(
-      "Baseline: " +
-        view +
-        " HTML and RSC serialize private saved-choice associations before a current client read"
+  await intercept(listRoute, (route) =>
+    route.fulfill({
+      status: 403,
+      contentType: "application/json",
+      body: JSON.stringify({ message: "Injected saved-list access denial" })
+    })
+  );
+  const response = await go("/platform/exchange/saved?view=searches"),
+    html = await response.text();
+  const rsc = await context.request.get(
+      config.origin + "/platform/exchange/saved?view=searches",
+      { headers: { RSC: "1" } }
+    ),
+    rscBody = await rsc.text();
+  for (const text of [html, rscBody]) {
+    assert.ok(!text.includes(searchName));
+    assert.ok(!text.includes(search.id));
+    assert.ok(!text.includes(criteriaText));
+  }
+  await panel
+    .getByText("Injected saved-list access denial", { exact: true })
+    .waitFor();
+  assert.equal(await rows.count(), 0);
+  await clearIntercepts();
+  await panel
+    .getByRole("button", { name: "Recheck current access", exact: true })
+    .click();
+  await panel.getByText(searchName, { exact: true }).waitFor();
+  ok(
+    "Saved-list HTML/RSC omit names, criteria and associations; denied first read mounts no private rows"
+  );
+  for (const event of ["blur", "pagehide", "offline"]) {
+    await signal(event);
+    assert.equal(await rows.count(), 0);
+    assert.ok(!(await panel.textContent()).includes(searchName));
+    assert.equal(await panel.locator('a[href*="savedSearch="]').count(), 0);
+    await signal("social-relationships-changed");
+    await signal("online");
+    assert.equal(await rows.count(), 0);
+    await signal("focus");
+    await panel.getByText(searchName, { exact: true }).waitFor();
+  }
+  await bounded();
+  await page.screenshot({ path: output + "/saved-390.png", fullPage: true });
+  await page.setViewportSize({ width: 320, height: 800 });
+  await page.evaluate(() => {
+    document.documentElement.style.fontSize = "200%";
+  });
+  await bounded();
+  await page.screenshot({
+    path: output + "/saved-320-200.png",
+    fullPage: true
+  });
+  await page.evaluate(() => {
+    document.documentElement.style.fontSize = "";
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  ok(
+    "Concealment physically omits saved choices and private links; current-owner resume restores them and both mobile text sizes fit"
+  );
+  // Three independently versioned rows exercise sequential receipt ownership.
+  for (let i = 0; i < 2; i++)
+    await command(
+      db,
+      owner.token,
+      input("search-save", {
+        searchId: randomUUID(),
+        expectedVersion: 0,
+        schema: EXCHANGE_SAVED_SCHEMA,
+        name: searchName + " " + i,
+        criteria: { q: criteriaText },
+        alerts: false
+      })
+    );
+  await go("/platform/exchange/saved?view=searches");
+  await waitUntil(async () => (await rows.count()) === 3);
+  const beforeRows = (await searches()).searches;
+  await rows
+    .nth(0)
+    .getByRole("button", { name: "Remove search", exact: true })
+    .click();
+  await waitUntil(async () => (await rows.count()) === 2);
+  await waitUntil(
+    async () =>
+      !(await rows
+        .nth(0)
+        .getByRole("button", { name: "Remove search", exact: true })
+        .isDisabled())
+  );
+  let releaseRead,
+    readStarted,
+    holdRead = false;
+  const readGate = new Promise((resolve) => {
+      releaseRead = resolve;
+    }),
+    readReady = new Promise((resolve) => {
+      readStarted = resolve;
+    });
+  await intercept(listRoute, async (route) => {
+    const response = await route.fetch();
+    if (holdRead) {
+      readStarted();
+      await within(readGate, "Second removal readback");
+    }
+    return route.fulfill({ response });
+  });
+  await intercept(endpoint, async (route) => {
+    if (route.request().method() !== "POST") return route.continue();
+    const response = await route.fetch();
+    holdRead = true;
+    return route.fulfill({ response });
+  });
+  await rows
+    .nth(0)
+    .getByRole("button", { name: "Remove search", exact: true })
+    .click();
+  try {
+    await within(readReady, "Second removal receipt readback");
+    assert.equal(await rows.count(), 0);
+    assert.equal((await searches()).searches.length, 1);
+  } finally {
+    releaseRead();
+  }
+  await clearIntercepts();
+  await waitUntil(async () => (await rows.count()) === 1);
+  await waitUntil(async () => !(await exact("Remove search").isDisabled()));
+  for (const row of beforeRows.slice(0, 2))
+    assert.equal(
+      (
+        await db.exchangeSavedSearch.findUniqueOrThrow({
+          where: { id: row.id }
+        })
+      ).version,
+      2
+    );
+  ok(
+    "Two rows with equal receipt version 2 each require their own fresh readback before another removal"
+  );
+  const bodies = [];
+  let step = 0;
+  await intercept(endpoint, async (route) => {
+    if (route.request().method() !== "POST") return route.continue();
+    const body = route.request().postData();
+    bodies.push(body);
+    step++;
+    if (step === 1) {
+      const response = await route.fetch();
+      assert.equal(response.status(), 200);
+      return route.abort("failed");
+    }
+    if (step === 2)
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          id: beforeRows[0].id,
+          version: 2,
+          message: "Wrong target receipt"
+        })
+      });
+    if (step === 3)
+      return route.fulfill({
+        status: 429,
+        contentType: "application/json",
+        body: JSON.stringify({ message: "Injected retry limit" })
+      });
+    if (step === 4)
+      return route.fulfill({
+        status: 503,
+        contentType: "application/json",
+        body: JSON.stringify({ message: "Injected temporary failure" })
+      });
+    return route.continue();
+  });
+  await exact("Remove search").click();
+  await exact("Confirm original save").waitFor();
+  await signal("blur");
+  await signal("focus");
+  await waitUntil(
+    async () => !(await exact("Confirm original save").isDisabled())
+  );
+  assert.equal(await rows.count(), 0);
+  for (let i = 0; i < 4; i++) {
+    await exact("Confirm original save").click();
+    if (i < 3)
+      await waitUntil(
+        async () =>
+          (await exact("Confirm original save").count()) === 1 &&
+          !(await exact("Confirm original save").isDisabled())
+      );
+  }
+  await panel
+    .getByText("No named searches on this page.", { exact: false })
+    .waitFor();
+  await clearIntercepts();
+  assert.equal(bodies.length, 5);
+  assert.ok(bodies.every((body) => body === bodies[0]));
+  const deletedId = JSON.parse(bodies[0]).searchId;
+  assert.equal(
+    (
+      await db.exchangeSavedSearch.findUniqueOrThrow({
+        where: { id: deletedId }
+      })
+    ).version,
+    2
+  );
+  assert.equal((await searches()).searches.length, 0);
+  ok(
+    "Lost search deletion, absent row, wrong-target receipt, 429 and 503 recover five identical requests with one version increment"
+  );
+  // A favorite may be re-added after the accepted removal but before its replay.
+  await go("/platform/exchange/saved?view=favorites");
+  await panel.getByText(title, { exact: true }).waitFor();
+  const favoriteHtml = await (
+    await context.request.get(config.origin + "/platform/exchange/saved")
+  ).text();
+  assert.ok(!favoriteHtml.includes(favorite.id));
+  assert.ok(!favoriteHtml.includes(title));
+  const favoriteBodies = [];
+  await intercept(endpoint, async (route) => {
+    if (route.request().method() !== "POST") return route.continue();
+    favoriteBodies.push(route.request().postData());
+    if (favoriteBodies.length === 1) {
+      const response = await route.fetch();
+      assert.equal(response.status(), 200);
+      return route.abort("failed");
+    }
+    return route.continue();
+  });
+  await exact("Remove favorite").click();
+  await exact("Confirm original save").waitFor();
+  const tombstone = await db.exchangeFavorite.findUniqueOrThrow({
+    where: { id: favorite.id }
+  });
+  await command(
+    db,
+    owner.token,
+    input("favorite-add", {
+      listingId: listing.id,
+      expectedVersion: tombstone.version
+    })
+  );
+  await signal("blur");
+  await signal("focus");
+  await waitUntil(
+    async () => !(await exact("Confirm original save").isDisabled())
+  );
+  assert.equal(await rows.count(), 0);
+  await exact("Confirm original save").click();
+  await panel.getByText(title, { exact: true }).waitFor();
+  await waitUntil(async () => !(await exact("Remove favorite").isDisabled()));
+  await clearIntercepts();
+  assert.equal(favoriteBodies.length, 2);
+  assert.equal(favoriteBodies[0], favoriteBodies[1]);
+  assert.equal((await favorites()).favorites[0].version, 3);
+  ok(
+    "An original favorite removal replays exactly after a separate re-add; the newly authorized version remains available"
+  );
+  // The current source can be redacted while the owned saved reference stays removable.
+  await db.exchangeListing.update({
+    where: { id: listing.id },
+    data: { state: "ARCHIVED", publishedAt: null }
+  });
+  await go("/platform/exchange/saved?view=favorites");
+  await panel.getByText("Listing unavailable", { exact: true }).waitFor();
+  let releaseReply, replyStarted;
+  const replyGate = new Promise((resolve) => {
+      releaseReply = resolve;
+    }),
+    replyReady = new Promise((resolve) => {
+      replyStarted = resolve;
+    });
+  await intercept(endpoint, async (route) => {
+    if (route.request().method() !== "POST") return route.continue();
+    const response = await route.fetch();
+    assert.equal(response.status(), 200);
+    replyStarted();
+    await within(replyGate, "Hidden accepted removal");
+    return route.fulfill({ response });
+  });
+  await exact("Remove favorite").click();
+  try {
+    await within(replyReady, "Accepted removal response");
+    assert.equal(
+      await panel
+        .locator("button")
+        .filter({ hasText: /^Confirming save…$/ })
+        .count(),
+      1
     );
     await signal("blur");
-    assert.ok((await page.locator("body").textContent()).includes(marker));
-    const selector =
-      view === "searches"
-        ? 'a[href*="savedSearch="]'
-        : 'a[href*="/platform/exchange/' + listing.id + '"]';
-    assert.equal(await page.locator(selector).count(), 1);
-    await page.screenshot({
-      path: output + "/baseline-" + view + "-concealed.png",
-      fullPage: true
-    });
-    ok(
-      "Baseline: concealed " +
-        view +
-        " retains private saved-choice text and action links in DOM"
-    );
+    assert.equal(await rows.count(), 0);
+  } finally {
+    releaseReply();
   }
+  await clearIntercepts();
+  await waitUntil(
+    async () =>
+      (await panel
+        .locator("button")
+        .filter({ hasText: /^Confirming save…$/ })
+        .count()) === 0
+  );
+  assert.equal(await rows.count(), 0);
+  await signal("focus");
+  await panel
+    .getByText("No favorite listings on this page.", { exact: false })
+    .waitFor();
+  assert.equal((await favorites()).favorites.length, 0);
+  ok(
+    "Redacted saved references remain removable and a late accepted response cannot reopen concealed content"
+  );
+  // A deleted previous-page anchor must not strand the immutable current-page command.
+  for (let i = 0; i < 21; i++)
+    await command(
+      db,
+      owner.token,
+      input("search-save", {
+        searchId: randomUUID(),
+        expectedVersion: 0,
+        schema: EXCHANGE_SAVED_SCHEMA,
+        name: "Private cursor choice " + i,
+        criteria: { q: criteriaText },
+        alerts: false
+      })
+    );
+  const firstPage = await searches(),
+    anchor = firstPage.searches.find((row) => row.id === firstPage.after);
+  const cursorPath =
+    "/platform/exchange/saved?view=searches&after=" + firstPage.after;
+  await go(cursorPath);
+  await waitUntil(async () => (await rows.count()) === 1);
+  const cursorBodies = [];
+  await intercept(endpoint, async (route) => {
+    if (route.request().method() !== "POST") return route.continue();
+    cursorBodies.push(route.request().postData());
+    if (cursorBodies.length === 1) {
+      const response = await route.fetch();
+      assert.equal(response.status(), 200);
+      return route.abort("failed");
+    }
+    return route.continue();
+  });
+  await exact("Remove search").click();
+  await exact("Confirm original save").waitFor();
+  await command(
+    db,
+    owner.token,
+    input("search-delete", {
+      searchId: anchor.id,
+      expectedVersion: anchor.version
+    })
+  );
+  await signal("blur");
+  await signal("focus");
+  await waitUntil(
+    async () => !(await exact("Confirm original save").isDisabled())
+  );
+  assert.equal(await rows.count(), 0);
+  await panel
+    .getByRole("link", { name: "Open first page", exact: true })
+    .click();
+  await page
+    .getByText("Save or resolve your private choice before leaving.", {
+      exact: true
+    })
+    .waitFor();
+  assert.equal(
+    new URL(page.url()).search,
+    "?view=searches&after=" + firstPage.after
+  );
+  await exact("Confirm original save").click();
+  await waitUntil(
+    async () => (await exact("Confirm original save").count()) === 0
+  );
+  await clearIntercepts();
+  assert.equal(cursorBodies.length, 2);
+  assert.equal(cursorBodies[0], cursorBodies[1]);
+  assert.equal(await rows.count(), 0);
+  await panel
+    .getByRole("link", { name: "Open first page", exact: true })
+    .click();
+  await waitUntil(async () => (await rows.count()) === 19);
+  assert.equal(new URL(page.url()).search, "?view=searches");
+  ok(
+    "Deleted cursor anchor uses first-page authorization only for exact replay, blocks pending navigation and offers deliberate first-page recovery"
+  );
+  const retainedName = (await searches()).searches[0].name;
+  await signIn(other);
+  await signal("focus");
+  await panel
+    .getByText(
+      "Your sign-in changed. Private entries were cleared. Reload for your current account.",
+      { exact: true }
+    )
+    .waitFor();
+  assert.equal(await rows.count(), 0);
+  assert.ok(!(await panel.textContent()).includes(retainedName));
   assert.equal(
     (await read(db, other.token, { view: "searches" })).searches.length,
     0
@@ -284,13 +652,20 @@ try {
     0
   );
   ok(
-    "Canonical control: a different account receives none of the owner's saved favorites or named searches"
+    "Confirmed account replacement clears the retained list/command owner; canonical reads never return another account's choices"
   );
+  assert.deepEqual(layoutFailures, []);
   assert.deepEqual(errors, []);
   writeFileSync(
     output + "/results.json",
     JSON.stringify(
-      { results, errors, productionWrites: 0, externalSends: 0 },
+      {
+        results,
+        errors,
+        layoutFailures,
+        productionWrites: 0,
+        externalSends: 0
+      },
       null,
       2
     )
@@ -310,7 +685,11 @@ try {
   );
   writeFileSync(
     output + "/results.json",
-    JSON.stringify({ results, errors, error: String(error) }, null, 2)
+    JSON.stringify(
+      { results, errors, layoutFailures, error: String(error) },
+      null,
+      2
+    )
   );
   throw error;
 } finally {

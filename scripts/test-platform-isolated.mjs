@@ -47,7 +47,11 @@ const profile =
           "qa-exchange-search-browser",
           "qa-exchange-handoff-detail-privacy-browser"
         ],
-        https: ["exchange-http", "exchange-handoff-detail-http"]
+        https: [
+          "exchange-saved-list-http",
+          "exchange-http",
+          "exchange-handoff-detail-http"
+        ]
       }
     : suite === "exchange-handoff-detail"
       ? {
