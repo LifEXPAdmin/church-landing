@@ -281,7 +281,7 @@ try {
       }
     })
   );
-  const ready = await db.exchangeListing.findUniqueOrThrow({
+  const readyListing = await db.exchangeListing.findUniqueOrThrow({
     where: { id: listing.id }
   });
   await exchangeListingCommand(
@@ -289,7 +289,7 @@ try {
     manager.token,
     input("status", {
       listingId: listing.id,
-      expectedVersion: ready.version,
+      expectedVersion: readyListing.version,
       state: "ACTIVE",
       itemPolicy: EXCHANGE_ITEM_POLICY,
       itemConfirmed: true
@@ -317,11 +317,87 @@ try {
       waitlist: false
     })
   );
+  const loanNote = "Private loan note " + randomUUID();
+  const loanSlot = await command(
+    db,
+    manager.token,
+    input("slot", {
+      needId: configured.id,
+      slotId: randomUUID(),
+      expectedVersion: 0,
+      schema: NEED_SCHEMA,
+      fields: {
+        action: "DONATE",
+        label: "Fictional loan",
+        unit: "items",
+        target: 10,
+        loan: true,
+        returnLocal: date(7),
+        returnTimeZone: "UTC",
+        returnResponsibility: "Fictional contributor collects equipment",
+        volunteerSlotId: null
+      }
+    })
+  );
+  const loan = await command(
+    db,
+    owner.token,
+    input("claim", {
+      needId: configured.id,
+      slotId: loanSlot.id,
+      slotVersion: loanSlot.version,
+      consentVersion: need.consentVersion,
+      id: randomUUID(),
+      expectedVersion: 0,
+      quantity: 2,
+      note: loanNote,
+      price: null,
+      currency: null,
+      shareName: false,
+      loanAccepted: true,
+      waitlist: false
+    })
+  );
+  await command(
+    db,
+    manager.token,
+    input("receive", {
+      id: loan.id,
+      expectedVersion: loan.version,
+      quantity: 2,
+      reason: ""
+    })
+  );
   const path = "/platform/exchange/needs";
   const cards = page.locator('article[aria-label="Your need contribution"]');
+  const offer = cards.filter({ hasText: note }),
+    equipment = cards.filter({ hasText: loanNote });
+  const panel = page.getByRole("region", {
+    name: "My contributions",
+    exact: true
+  });
   const detail = (url) =>
     url.pathname === "/api/platform/exchange" &&
     url.searchParams.get("view") === "need-mine";
+  const endpoint = config.origin + "/api/platform/exchange";
+  const details = () => read(db, owner.token, { view: "mine" });
+  const row = async (id) =>
+    (await details()).contributions.find((r) => r.id === id);
+  const ready = async (button) => {
+    await button.waitFor();
+    await waitUntil(() => button.isEnabled());
+  };
+  const allow = (card) =>
+    card.getByRole("button", {
+      name: "Allow my contributor name to be shown",
+      exact: true
+    });
+  const revoke = (card) =>
+    card.getByRole("button", {
+      name: "Stop showing my contributor name",
+      exact: true
+    });
+  const retry = () => exact("Confirm original save");
   await signIn(owner);
   await intercept(detail, (route) =>
     route.fulfill({
@@ -336,64 +412,312 @@ try {
     rsc = await (
       await context.request.get(config.origin + path, { headers: { RSC: "1" } })
     ).text();
-  for (const body of [html, rsc]) {
-    assert.ok(body.includes(note));
-    assert.ok(body.includes(contribution.id));
-    assert.ok(body.includes(marker));
-  }
-  await page
+  for (const body of [html, rsc])
+    for (const privateValue of [
+      note,
+      loanNote,
+      contribution.id,
+      loan.id,
+      marker
+    ])
+      assert.ok(!body.includes(privateValue));
+  await panel
     .getByText("Injected current contribution access denial", { exact: true })
     .waitFor();
-  assert.equal(await cards.count(), 1);
-  assert.ok((await cards.textContent()).includes(note));
-  assert.equal(await cards.isVisible(), false);
+  assert.equal(await cards.count(), 0);
   ok(
-    "BASELINE: private contribution source, identifier and note reach HTML/RSC and remain in concealed DOM after current access denial"
+    "HTML/RSC omit contribution identifiers, private notes and source titles; denied current access initializes no private cards"
   );
   await clearIntercepts();
   await go(path);
-  await cards.waitFor();
-  const reason = cards.locator("textarea"),
-    unsent = "Private unsent dispute " + randomUUID();
-  await reason.fill(unsent);
-  await page.screenshot({
-    path: output + "/contribution-baseline-390.png",
-    fullPage: true
-  });
+  await ready(allow(offer));
+  await ready(allow(equipment));
+  const unsent = "Private unsent dispute " + randomUUID(),
+    sibling = "Private equipment dispute " + randomUUID();
+  await offer.locator("textarea").fill(unsent);
+  await equipment.locator("textarea").fill(sibling);
+  await equipment
+    .getByLabel("Total equipment actually returned", { exact: true })
+    .fill("1");
   for (const event of ["blur", "pagehide", "offline"]) {
     await signal(event);
-    assert.equal(await cards.count(), 1);
-    assert.ok((await cards.textContent()).includes(note));
-    assert.equal(await reason.inputValue(), unsent);
-    ok(
-      `BASELINE: ${event} retains private note and unsent dispute in DOM, visible=${await cards.isVisible()}`
-    );
+    assert.equal(await cards.count(), 0);
+    assert.equal(await panel.locator("textarea,input").count(), 0);
+    assert.ok(!(await panel.textContent()).includes(note));
+    await signal("online");
+    await signal("social-relationships-changed");
+    assert.equal(await cards.count(), 0);
     await signal("focus");
-    await cards.waitFor();
+    await ready(allow(offer));
+    assert.equal(await offer.locator("textarea").inputValue(), unsent);
+    assert.equal(await equipment.locator("textarea").inputValue(), sibling);
+    assert.equal(
+      await equipment
+        .getByLabel("Total equipment actually returned", { exact: true })
+        .inputValue(),
+      "1"
+    );
   }
-  await signIn(other);
-  const foreign = await (await go(path)).text();
-  assert.ok(!foreign.includes(note));
-  assert.ok(!foreign.includes(contribution.id));
-  await page
+  ok(
+    "Blur, pagehide and offline physically omit notes and unsent fields; passive signals cannot reopen them and current foreground reads restore each draft"
+  );
+  const bodies = [];
+  await intercept(endpoint, async (route) => {
+    if (route.request().method() !== "POST") return route.continue();
+    bodies.push(route.request().postData());
+    if (bodies.length <= 2)
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          id: bodies.length === 1 ? loan.id : contribution.id,
+          version: bodies.length === 1 ? 2 : 1,
+          message: "Injected malformed receipt"
+        })
+      });
+    return route.continue();
+  });
+  await allow(offer).click();
+  await ready(retry());
+  await retry().click();
+  await ready(retry());
+  assert.equal(bodies.length, 2);
+  assert.equal(bodies[0], bodies[1]);
+  assert.equal((await row(contribution.id)).version, 1);
+  await retry().click();
+  await ready(revoke(offer));
+  assert.equal(bodies.length, 3);
+  assert.equal(bodies[0], bodies[2]);
+  assert.equal(await offer.locator("textarea").inputValue(), unsent);
+  assert.equal(await equipment.locator("textarea").inputValue(), sibling);
+  assert.equal(
+    await equipment
+      .getByLabel("Total equipment actually returned", { exact: true })
+      .inputValue(),
+    "1"
+  );
+  await clearIntercepts();
+  ok(
+    "Wrong-target and stale-version receipts retain one immutable request; exact acknowledgement preserves same-card and sibling drafts"
+  );
+  await offer
+    .getByRole("button", { name: "Flag a private dispute", exact: true })
+    .click();
+  await ready(revoke(offer));
+  await waitUntil(
+    async () => (await offer.locator("textarea").inputValue()) === ""
+  );
+  assert.equal((await row(contribution.id)).disputeNote, unsent);
+  const returnButton = equipment.getByRole("button", {
+    name: "Confirm equipment returned to me",
+    exact: true
+  });
+  await returnButton.click();
+  await ready(returnButton);
+  await waitUntil(async () => (await row(loan.id)).returned === 1);
+  assert.equal(await equipment.locator("textarea").inputValue(), sibling);
+  await equipment
+    .getByRole("button", { name: "Flag a private dispute", exact: true })
+    .click();
+  await ready(allow(equipment));
+  await waitUntil(
+    async () => (await equipment.locator("textarea").inputValue()) === ""
+  );
+  assert.equal((await row(loan.id)).disputeNote, sibling);
+  ok(
+    "Sequential attribution, dispute and equipment-return commands use current versions and acknowledge only their own submitted fields"
+  );
+
+  let releaseRead,
+    readStarted,
+    hold = true;
+  const gate = new Promise((resolve) => {
+      releaseRead = resolve;
+    }),
+    started = new Promise((resolve) => {
+      readStarted = resolve;
+    });
+  await intercept(detail, async (route) => {
+    const response = await route.fetch();
+    if (hold) {
+      readStarted();
+      await within(gate, "Contribution readback");
+    }
+    return route.fulfill({ response });
+  });
+  await revoke(offer).click();
+  try {
+    await within(started, "Contribution acknowledgement");
+    assert.equal(await cards.count(), 0);
+    await signal("blur");
+  } finally {
+    hold = false;
+    releaseRead();
+  }
+  await clearIntercepts();
+  assert.equal(await cards.count(), 0);
+  await signal("focus");
+  await ready(allow(offer));
+  ok(
+    "A held canonical read and hidden receipt cannot expose or rearm retained cards until a fresh foreground acknowledgement"
+  );
+
+  const lost = [];
+  await intercept(endpoint, async (route) => {
+    if (route.request().method() !== "POST") return route.continue();
+    lost.push(route.request().postData());
+    if (lost.length === 1) {
+      const response = await route.fetch();
+      assert.equal(response.status(), 200);
+      return route.abort("failed");
+    }
+    return route.continue();
+  });
+  await allow(offer).click();
+  await ready(retry());
+  const committedVersion = (await row(contribution.id)).version;
+  await signal("blur");
+  await signal("focus");
+  await ready(retry());
+  assert.equal(await cards.count(), 0);
+  await retry().click();
+  await ready(revoke(offer));
+  assert.equal(lost.length, 2);
+  assert.equal(lost[0], lost[1]);
+  assert.equal((await row(contribution.id)).version, committedVersion);
+  await clearIntercepts();
+  ok(
+    "A committed request with a lost reply remains concealed after a changed read and replays byte-for-byte exactly once"
+  );
+
+  // Both cards may have an in-flight command. A receipt for one cannot adopt
+  // the changed sibling even when both canonical versions are already visible.
+  let releaseOffer, releaseLoan, offerSent, loanSent;
+  const offerGate = new Promise((resolve) => {
+      releaseOffer = resolve;
+    }),
+    loanGate = new Promise((resolve) => {
+      releaseLoan = resolve;
+    });
+  const offerStarted = new Promise((resolve) => {
+      offerSent = resolve;
+    }),
+    loanStarted = new Promise((resolve) => {
+      loanSent = resolve;
+    });
+  await intercept(endpoint, async (route) => {
+    if (route.request().method() !== "POST") return route.continue();
+    const body = JSON.parse(route.request().postData()),
+      response = await route.fetch();
+    assert.equal(response.status(), 200);
+    if (body.id === contribution.id) {
+      offerSent();
+      await within(offerGate, "Offer receipt");
+    } else {
+      loanSent();
+      await within(loanGate, "Loan receipt");
+    }
+    return route.fulfill({ response });
+  });
+  try {
+    await revoke(offer).click();
+    await within(offerStarted, "Offer command");
+    await allow(equipment).click();
+    await within(loanStarted, "Loan command");
+    releaseOffer();
+    await panel
+      .getByText(
+        "Your contributions changed. The original entries are retained and concealed. Confirm any original request, then reload to review current information.",
+        { exact: true }
+      )
+      .waitFor();
+    assert.equal(await cards.count(), 0);
+    releaseLoan();
+    await ready(allow(offer));
+    await ready(revoke(equipment));
+  } finally {
+    releaseOffer();
+    releaseLoan();
+  }
+  await clearIntercepts();
+  ok(
+    "Concurrent row saves remain concealed until each changed contribution supplies its own exact receipt"
+  );
+
+  const retained = "Never silently replace this dispute " + randomUUID();
+  await offer.locator("textarea").fill(retained);
+  const current = await row(contribution.id);
+  await command(
+    db,
+    owner.token,
+    input("attribution", {
+      id: contribution.id,
+      expectedVersion: current.version,
+      shareName: true
+    })
+  );
+  await signal("social-relationships-changed");
+  await panel
     .getByText(
-      "You have no contributions on this page. Open a current Church need in Exchange to choose help deliberately.",
+      "Your contributions changed. The original entries are retained and concealed. Confirm any original request, then reload to review current information.",
       { exact: true }
     )
     .waitFor();
+  assert.equal(await cards.count(), 0);
+  assert.equal(await panel.locator("textarea").count(), 0);
+  await panel
+    .getByRole("button", { name: "Reload current information", exact: true })
+    .click();
+  await ready(revoke(offer));
+  assert.equal(await offer.locator("textarea").inputValue(), "");
+  ok(
+    "Unconfirmed canonical row changes freeze the entire list and retain drafts until deliberate warned reload"
+  );
+  await bounded();
+  await page.screenshot({
+    path: output + "/contribution-390.png",
+    fullPage: true
+  });
+  await page.setViewportSize({ width: 320, height: 760 });
+  await page.addStyleTag({ content: "html { font-size: 200% !important; }" });
+  await bounded();
+  await page.screenshot({
+    path: output + "/contribution-320-200.png",
+    fullPage: true
+  });
+  assert.deepEqual(layoutFailures, []);
+  ok(
+    "My Needs layout fits 390px and 320px at 200 percent text without horizontal overflow"
+  );
+  await signIn(other);
+  await signal("blur");
+  await signal("focus");
+  await panel
+    .getByText(
+      "Your sign-in changed. Private entries were cleared. Reload for your current account.",
+      { exact: true }
+    )
+    .waitFor();
+  assert.equal(await cards.count(), 0);
+  assert.equal(await panel.locator("textarea,input").count(), 0);
+  const foreign = await (await go(path)).text();
+  for (const privateValue of [note, loanNote, contribution.id, loan.id])
+    assert.ok(!foreign.includes(privateValue));
+  await page.getByText("No contributions yet.", { exact: true }).waitFor();
   assert.equal(
     (await read(db, other.token, { view: "mine" })).contributions.length,
     0
   );
   ok(
-    "CONTROL: current canonical contribution reads and initial page exclude another account's private note"
+    "Confirmed account replacement clears retained drafts and requests; another account receives no private contribution rows"
   );
   assert.deepEqual(errors, []);
   writeFileSync(
     output + "/results.json",
     JSON.stringify(
       {
-        baseline: true,
+        baseline: false,
+        layoutFailures,
         results,
         errors,
         productionWrites: 0,

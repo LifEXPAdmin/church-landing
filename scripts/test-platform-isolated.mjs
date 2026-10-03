@@ -44,7 +44,7 @@ const profile =
           "qa-exchange-need-contribution-privacy-browser",
           "qa-exchange-needs-browser"
         ],
-        https: ["exchange-http"]
+        https: ["exchange-need-contribution-http", "exchange-http"]
       }
     : suite === "exchange-favorite"
       ? {

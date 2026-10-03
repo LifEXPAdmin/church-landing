@@ -1,6 +1,11 @@
 "use client";
 import Link from "next/link";
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import {
+  usePrivateChoiceAction,
+  type PrivateChoiceAccess
+} from "./use-private-choice-action";
+import { useReadVisibility } from "./read-visibility";
 import type {
   NeedContributionView,
   NeedSlotView,
@@ -14,31 +19,103 @@ import { RegionalTime } from "./regional-presentation";
 
 export function NeedContributionCard({
   owner,
-  row
+  row,
+  privacy,
+  acceptedReceipt,
+  onRequest
 }: {
   owner: string;
   row: NeedContributionView;
+  privacy?: PrivateChoiceAccess;
+  acceptedReceipt?: Parameters<PrivateChoiceAccess["onConfirmed"]>[0] | null;
+  onRequest?: (target: { id: string; expectedVersion: number }) => void;
 }) {
+  const visible = useReadVisibility();
   const id = useId(),
     [quantity, setQuantity] = useState(String(row.received)),
     [returned, setReturned] = useState(String(row.returned)),
     [reason, setReason] = useState("");
-  const action = useExchangeAction(
+  const target = useRef<{ id: string; version: number } | null>(null);
+  const dispatching = useRef(false);
+  const submitted = useRef<{
+    operation: string;
+    quantity: string;
+    returned: string;
+    reason: string;
+  } | null>(null);
+  const confirmed = useRef<
+    Parameters<PrivateChoiceAccess["onConfirmed"]>[0] | null
+  >(null);
+  const action = usePrivateChoiceAction(
+    "/api/platform/exchange",
     owner,
     quantity !== String(row.received) ||
       returned !== String(row.returned) ||
       !!reason,
     undefined,
-    true
+    true,
+    privacy
+      ? {
+          ...privacy,
+          preserveDirty: true,
+          expectedReceiptId: () => target.current?.id ?? null,
+          expectedReceiptVersion: () => target.current?.version ?? null,
+          onConfirmed(receipt) {
+            confirmed.current = receipt;
+            privacy.onConfirmed(receipt);
+          }
+        }
+      : undefined
   );
+  const rearm = action.rearm;
+  useEffect(() => {
+    if (
+      !privacy ||
+      !visible ||
+      !acceptedReceipt ||
+      acceptedReceipt !== confirmed.current ||
+      row.id !== acceptedReceipt.id ||
+      row.version !== acceptedReceipt.version ||
+      !rearm(acceptedReceipt.version)
+    )
+      return;
+    const sent = submitted.current;
+    if (sent) {
+      if (sent.operation === "receive")
+        setQuantity((value) =>
+          value === sent.quantity ? String(row.received) : value
+        );
+      if (["confirm-return", "return-loan"].includes(sent.operation))
+        setReturned((value) =>
+          value === sent.returned ? String(row.returned) : value
+        );
+      if (["dispute", "receive", "return-loan"].includes(sent.operation))
+        setReason((value) => (value === sent.reason ? "" : value));
+    }
+    submitted.current = null;
+    confirmed.current = null;
+    target.current = null;
+  }, [privacy, visible, acceptedReceipt, row, rearm]);
   const active = ["COMMITTED", "QUOTED", "WAITLISTED"].includes(row.state);
-  const command = (operation: string, extra: Record<string, unknown> = {}) =>
-    void action.command({
-      operation: `need-${operation}`,
-      id: row.id,
-      expectedVersion: row.version,
-      ...extra
-    });
+  const command = (operation: string, extra: Record<string, unknown> = {}) => {
+    if (action.blocked || dispatching.current) return;
+    dispatching.current = true;
+    target.current = { id: row.id, version: row.version + 1 };
+    submitted.current = { operation, quantity, returned, reason };
+    confirmed.current = null;
+    onRequest?.({ id: row.id, expectedVersion: row.version });
+    void action
+      .command({
+        operation: `need-${operation}`,
+        id: row.id,
+        expectedVersion: row.version,
+        ...extra
+      })
+      .finally(() => {
+        dispatching.current = false;
+      });
+  };
+  if (privacy && !visible) return action.status;
   return (
     <article
       className="space-y-3 rounded-xl border border-gc-divider p-4"
