@@ -364,6 +364,19 @@ try {
     await page.getByLabel("Photo caption", { exact: true }).isVisible(),
     false
   );
+  console.log(
+    "Exchange blur photo privacy baseline: " +
+      JSON.stringify(
+        await page.evaluate(() => ({
+          captionRetained: [
+            ...document.querySelectorAll("input,textarea")
+          ].some((node) => node.value === "Fictional blue item"),
+          alternateTextRetained: [
+            ...document.querySelectorAll("input,textarea")
+          ].some((node) => node.value === "Blue rectangle, synthetic photo")
+        }))
+      )
+  );
   await page.evaluate(() => window.dispatchEvent(new Event("focus")));
   await page.getByLabel("Photo caption", { exact: true }).waitFor();
   assert.equal(
@@ -667,6 +680,85 @@ try {
           })
       );
   };
+  const identityRequestStarted = new Map();
+  const isIdentityRequest = (request) => {
+    const url = new URL(request.url());
+    return (
+      url.pathname === "/api/platform/profile" &&
+      url.searchParams.get("view") === "identity"
+    );
+  };
+  const recordIdentityRequest = (request) => {
+    if (!isIdentityRequest(request)) return;
+    const at = Math.round(performance.now() - accountSwitchStarted);
+    identityRequestStarted.set(request, at);
+    console.log(
+      "Exchange account-switch identity request: " +
+        JSON.stringify({ milliseconds: at })
+    );
+  };
+  const recordProfileResponse = (response) => {
+    if (!isIdentityRequest(response.request())) return;
+    console.log(
+      "Exchange account-switch profile response: " +
+        JSON.stringify({
+          status: response.status(),
+          started: identityRequestStarted.get(response.request()),
+          milliseconds: Math.round(performance.now() - accountSwitchStarted)
+        })
+    );
+  };
+  const recordIdentityFailure = (request) => {
+    if (!isIdentityRequest(request)) return;
+    console.log(
+      "Exchange account-switch identity failure: " +
+        JSON.stringify({
+          started: identityRequestStarted.get(request),
+          milliseconds: Math.round(performance.now() - accountSwitchStarted),
+          error: request.failure()?.errorText
+        })
+    );
+  };
+  await page.evaluate(() => {
+    const events = [];
+    const started = performance.now();
+    const record = (event) =>
+      events.push({
+        event: event.type,
+        milliseconds: Math.round(performance.now() - started),
+        visibility: document.visibilityState,
+        focused: document.hasFocus()
+      });
+    window.gcExchangePrivacyDiagnostic = { events, record };
+    for (const event of ["focus", "blur", "pageshow", "pagehide"])
+      window.addEventListener(event, record);
+    document.addEventListener("visibilitychange", record);
+    record({ type: "started" });
+  });
+  const markerSnapshot = async (stage) => {
+    const state = await page.evaluate(() => {
+      const markers = [...document.querySelectorAll("textarea")].filter(
+        (node) => node.value.includes("PRIVATE ALTERNATE ACCOUNT MARKER")
+      );
+      return {
+        retainedMarkers: markers.length,
+        visibleMarkers: markers.filter((node) => node.checkVisibility()).length,
+        visibility: document.visibilityState,
+        focused: document.hasFocus()
+      };
+    });
+    console.log(
+      "Exchange account-switch marker state: " +
+        JSON.stringify({
+          stage,
+          milliseconds: Math.round(performance.now() - accountSwitchStarted),
+          ...state
+        })
+    );
+  };
+  page.on("request", recordIdentityRequest);
+  page.on("response", recordProfileResponse);
+  page.on("requestfailed", recordIdentityFailure);
   page.on("response", recordIdentityResponse);
   switchStage("settled");
   await editor
@@ -677,6 +769,9 @@ try {
   switchStage("cookies-replaced");
   await page.evaluate(() => window.dispatchEvent(new Event("focus")));
   switchStage("focus-dispatched");
+  await markerSnapshot("after-focus");
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+  await markerSnapshot("one-second-after-focus");
   await page
     .getByText(
       "Your sign-in changed. Private entries were cleared. Reload for your current account.",
@@ -684,6 +779,23 @@ try {
     )
     .waitFor();
   switchStage("identity-cleared");
+  await markerSnapshot("after-clearing");
+  console.log(
+    "Exchange account-switch lifecycle: " +
+      JSON.stringify(
+        await page.evaluate(() => {
+          const { events, record } = window.gcExchangePrivacyDiagnostic;
+          for (const event of ["focus", "blur", "pageshow", "pagehide"])
+            window.removeEventListener(event, record);
+          document.removeEventListener("visibilitychange", record);
+          delete window.gcExchangePrivacyDiagnostic;
+          return events;
+        })
+      )
+  );
+  page.off("request", recordIdentityRequest);
+  page.off("response", recordProfileResponse);
+  page.off("requestfailed", recordIdentityFailure);
   page.off("response", recordIdentityResponse);
   assert.equal(
     await page
