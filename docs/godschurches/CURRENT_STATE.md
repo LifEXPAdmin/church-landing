@@ -1,3 +1,22 @@
+## Current dense measurement complete, 3 October 2026 UTC
+
+Candidate `45159afb34426a8eaef94296f5789b73378435dc` adds a bounded hosted
+resource-measurement profile and passes 118 source guards plus production build
+`YmF69MzAsV80yV-sp19Js`. A fresh fictional 10,000-account, 100,000-post and
+500,000-comment fixture passes 220 measured service reads and all 920 workload
+HTTPS requests. The receipt verifies exact serving source/build and retains
+124,174,838 response-body bytes within enforced stream collection caps.
+[Resource budgets](RESOURCE_BUDGETS.md) records counts, tables and limitations.
+
+The 25-client loopback run shows feed p95 near 1.94 seconds and Exchange p95
+up to 2.26 seconds. It does not meet a one-second target or establish production
+capacity. Exchange query plans are the next measured investigation. Current
+provider consumption is recorded privately; available quotas, PostgreSQL 17,
+external delivery, 100-client capacity and actual responders remain separate gates.
+No production connection, migration, write, send or deployment occurred. The
+candidate stacks on the accepted application below and awaits designated-owner
+integration; this infrastructure run does not replace browser/security acceptance.
+
 ## Measured feed optimization ready for integration, 3 October 2026 UTC
 
 Candidate `890c0f92ad9bb9c84ecdf91d17055c15fe76a725` preserves exact ranked
@@ -16,8 +35,8 @@ No production connection, migration, write, send or deployment occurred.
 
 This candidate stacks on the tested artist and CI handoffs below. Designated
 release-owner integration and combined live acceptance remain open. The older
-dense workload and real provider/responder/capacity evidence still need their
-own refresh; this result is not production capacity certification.
+dense workload is refreshed above. Real provider/responder/capacity acceptance
+remains open; this result is not production capacity certification.
 
 ## Artist draft recovery ready for integration, 2 October 2026 UTC
 
