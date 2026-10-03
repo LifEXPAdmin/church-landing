@@ -79,6 +79,19 @@ const context = await browser.newContext({
 });
 // One dispatcher owns each request. Keep the origin fence mounted while
 // changing fault injections, so page/context routing cannot race for ownership.
+const within = async (promise, label) => {
+  let timer;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise((_, reject) => {
+        timer = setTimeout(() => reject(Error(label + " timed out")), 15000);
+      })
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
+};
 let intercepts = [];
 const routed = new Set(),
   routingErrors = [];
@@ -87,7 +100,7 @@ const intercept = async (match, handle) => {
 };
 const clearIntercepts = async () => {
   intercepts = [];
-  await Promise.all([...routed]);
+  await within(Promise.all([...routed]), "Routed inquiry requests");
   assert.deepEqual(routingErrors, []);
 };
 await context.route("**/*", async (route) => {
@@ -372,9 +385,7 @@ try {
   await composer.getByText(/This listing’s inquiry choices changed/).waitFor();
   assert.equal(await purpose.count(), 0);
   assert.equal(
-    await composer
-      .getByRole("link", { name: "Open your existing inquiry" })
-      .count(),
+    await composer.locator('a[href^="/platform/exchange/handoffs/"]').count(),
     0
   );
   for (let i = 0; i < 4; i++) {
@@ -416,10 +427,9 @@ try {
     assert.ok(!text.includes(localPurpose));
   }
   await go(path);
-  const existing = composer.getByRole("link", {
-    name: "Open your existing inquiry",
-    exact: true
-  });
+  const existing = composer.locator(
+    `a[href="/platform/exchange/handoffs/${original.id}"]`
+  );
   await existing.waitFor();
   assert.equal(
     await existing.getAttribute("href"),
@@ -456,18 +466,26 @@ try {
     });
     assert.equal(response.status(), 200, await response.text());
     accepted();
-    await gate;
+    await within(gate, "Held accepted inquiry reply");
     return route.fulfill({ response });
   });
-  await exact("Send private inquiry").click();
-  await ready;
-  await signal("blur");
-  await waitUntil(async () => (await purpose.count()) === 0);
-  release();
-  await page.waitForTimeout(150);
-  assert.equal(new URL(page.url()).pathname, path);
-  assert.equal(await purpose.count(), 0);
-  await clearIntercepts();
+  const pendingControls = composer.locator("button").filter({
+    hasText: /^(Confirming save…|Confirm original save)$/
+  });
+  try {
+    await exact("Send private inquiry").click();
+    await within(ready, "Accepted inquiry acknowledgement");
+    await signal("blur");
+    await waitUntil(async () => (await purpose.count()) === 0);
+    release();
+    // Observe actual receipt consumption while the command owner stays mounted.
+    await waitUntil(async () => (await pendingControls.count()) === 0);
+    assert.equal(new URL(page.url()).pathname, path);
+    assert.equal(await purpose.count(), 0);
+  } finally {
+    release();
+    await clearIntercepts();
+  }
   await signal("focus");
   await page.waitForURL("**/platform/exchange/handoffs/" + lateBody.id);
   assert.equal(lateWrites, 1);
@@ -588,7 +606,8 @@ try {
   assert.equal(await purpose.count(), 0);
   assert.equal(
     await composer
-      .getByRole("button", { name: "Confirm original save" })
+      .locator("button")
+      .filter({ hasText: /^Confirm original save$/ })
       .count(),
     0
   );
