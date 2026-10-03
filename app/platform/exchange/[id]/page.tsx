@@ -65,7 +65,7 @@ export default async function Page({
         ? `/platform/profile/${listing.owner.username}`
         : null;
     const article = (
-      <article className="space-y-5 break-words">
+      <article className="space-y-5 [overflow-wrap:anywhere]">
         <header className="space-y-3">
           <p className="gc-eyebrow">
             {exchangeIntentLabels[listing.intent]} ·{" "}
