@@ -1,0 +1,549 @@
+import assert from "node:assert/strict";
+import { createHash, randomUUID } from "node:crypto";
+import test from "node:test";
+import {
+  button,
+  clientHarness,
+  input,
+  nodes,
+  textContent
+} from "./fixtures/client-hook-harness.mjs";
+
+const owner = "coordinator-a";
+const needId = "need-a";
+const contribution = (extra = {}) => ({
+  id: "contribution-a",
+  version: 3,
+  state: "COMMITTED",
+  quantity: 5,
+  received: 3,
+  returned: 0,
+  createdAt: "2026-10-01T10:00:00.000Z",
+  endedAt: null,
+  current: true,
+  own: false,
+  needId: "need-a",
+  slotId: "slot-a",
+  listingId: "listing-a",
+  title: "Private contribution title",
+  note: "Private retained contribution note",
+  quoteMinor: 18765,
+  quoteCurrency: "USD",
+  shareName: false,
+  disputed: false,
+  disputeNote: "",
+  loanReturnAt: "2026-10-10T10:00:00.000Z",
+  loanResponsibility: "Private loan terms",
+  contributor: { name: "Private contributor name" },
+  ...extra
+});
+const listPage = (rows = [contribution()]) => ({
+  ownerId: owner,
+  contributions: rows,
+  next: null
+});
+const response = (data, status = 200) => ({
+  ok: status >= 200 && status < 300,
+  status,
+  headers: new Headers(),
+  body: { cancel: async () => {} },
+  json: async () => data
+});
+const receipt = (extra = {}) => ({
+  id: "contribution-a",
+  version: 4,
+  message: "Fictional contribution saved",
+  ...extra
+});
+
+// Execute actual component and command-hook bodies with real pinned transport.
+// Timers and presentation boundaries are controlled; this is not a DOM renderer.
+function environment(row = contribution()) {
+  const window = new EventTarget(),
+    document = new EventTarget();
+  document.visibilityState = "visible";
+  document.hasFocus = () => true;
+  window.location = { reload() {} };
+  const navigator = { onLine: true },
+    deadlines = new Map(),
+    intervals = new Map();
+  let timerId = 0;
+  const requests = [],
+    confirmed = [],
+    dispatched = [];
+  const state = {
+    owner,
+    visible: true,
+    access: true,
+    row,
+    result: listPage([row]),
+    acceptedReceipt: null,
+    guard: null,
+    recovery: null,
+    refreshes: 0,
+    identityHandler: null,
+    readHandler: null,
+    writeHandler: null
+  };
+  const h = clientHarness({
+    window,
+    document,
+    navigator,
+    Error,
+    TypeError,
+    AbortController,
+    URLSearchParams,
+    TextEncoder,
+    Uint8Array,
+    confirm: () => true,
+    crypto: {
+      randomUUID,
+      subtle: {
+        digest: async (algorithm, bytes) => {
+          assert.equal(algorithm, "SHA-256");
+          return Uint8Array.from(createHash("sha256").update(bytes).digest())
+            .buffer;
+        }
+      }
+    },
+    setTimeout(fn, ms) {
+      assert.equal(ms, 15000);
+      deadlines.set(++timerId, fn);
+      return timerId;
+    },
+    clearTimeout(id) {
+      deadlines.delete(id);
+    },
+    setInterval(fn, ms) {
+      assert.equal(ms, 30000);
+      intervals.set(++timerId, fn);
+      return timerId;
+    },
+    clearInterval(id) {
+      intervals.delete(id);
+    },
+    fetch: async (path, options) => {
+      requests.push({ path, ...options });
+      if (path === "/api/platform/profile?view=identity")
+        return state.identityHandler
+          ? state.identityHandler(options)
+          : response({ id: state.owner });
+      assert.equal(options.headers["X-Expected-Account"], owner);
+      assert.equal(options.cache, "no-store");
+      if (options.body) {
+        assert.equal(path, "/api/platform/exchange");
+        if (state.writeHandler) return state.writeHandler(options);
+        const body = JSON.parse(options.body);
+        return response(
+          receipt({ id: body.id, version: body.expectedVersion + 1 })
+        );
+      }
+      const query = new URL(path, "https://fixture.invalid").searchParams;
+      assert.equal(query.get("view"), "need-contributors");
+      assert.equal(query.get("id"), needId);
+      return state.readHandler
+        ? state.readHandler(options, path)
+        : response(state.result);
+    }
+  });
+  const social = h.load("lib/platform/social-client.ts", {
+    "./privileged-auth-navigation": { announcePrivilegedChallenge: () => false }
+  });
+  const hook = h.load("components/platform/use-private-choice-action.tsx", {
+    "./use-photo-back-guard": { settlePhotoNavigation: async () => {} },
+    "next/navigation": {
+      useRouter: () => ({
+        refresh() {
+          state.refreshes++;
+        }
+      })
+    },
+    "@/lib/platform/social-client": social,
+    "./read-visibility": { useReadVisibility: () => state.visible },
+    "./private-snapshot-guard": {
+      usePrivateRecovery(_id, pending, busy, retry, allowed) {
+        state.recovery = pending ? { busy, retry, allowed } : null;
+      }
+    },
+    "./use-unsaved-social-work": {
+      useUnsavedSocialWork(value, _blocked, protectBack) {
+        state.guard = { ...value, protectBack };
+      }
+    }
+  });
+  const controls = h.load("components/platform/exchange-saved-controls.tsx", {
+    "next/link": { default: "a" },
+    "./use-private-choice-action": hook,
+    "./read-visibility": { useReadVisibility: () => state.visible },
+    "@/lib/platform/exchange-options": h.load(
+      "lib/platform/exchange-options.ts"
+    ),
+    "./portal-action-form": { portalInputClass: "" }
+  });
+  const actions = h.load("components/platform/exchange-need-actions.tsx", {
+    "next/link": { default: "a" },
+    "./exchange-saved-controls": controls,
+    "./use-private-choice-action": hook,
+    "./read-visibility": { useReadVisibility: () => state.visible },
+    "@/lib/platform/exchange-need-options": h.load(
+      "lib/platform/exchange-need-options.ts"
+    ),
+    "@/lib/platform/community-report-types": {
+      reportEntryHref: (_type, id) => "/report/" + id
+    },
+    "./portal-action-form": { portalInputClass: "" },
+    "./regional-presentation": { RegionalTime: "time" }
+  });
+  return {
+    h,
+    state,
+    social,
+    hook,
+    actions,
+    document,
+    navigator,
+    deadlines,
+    intervals,
+    requests,
+    confirmed,
+    dispatched,
+    privacy() {
+      return {
+        currentAccess: state.access,
+        onAccessDenied() {
+          state.access = false;
+        },
+        onConfirmed(value) {
+          confirmed.push(value);
+        }
+      };
+    },
+    emit(name) {
+      window.dispatchEvent(new Event(name));
+      h.render();
+    },
+    visible(value) {
+      state.visible = value;
+      h.render();
+    },
+    writes() {
+      return requests.filter((r) => r.body);
+    },
+    reads() {
+      return requests.filter(
+        (r) => !r.body && r.path !== "/api/platform/profile?view=identity"
+      );
+    },
+    expire() {
+      for (const [id, fn] of [...deadlines]) {
+        deadlines.delete(id);
+        fn();
+      }
+      h.render();
+    },
+    poll() {
+      for (const fn of intervals.values()) fn();
+      h.render();
+    }
+  };
+}
+function cardHarness(t, row = contribution(), privacy = true) {
+  const s = environment(row);
+  s.h.mount(() =>
+    s.actions.NeedContributionCard({
+      owner,
+      row: s.state.row,
+      ...(privacy
+        ? {
+            privacy: s.privacy(),
+            acceptedReceipt: s.state.acceptedReceipt,
+            onRequest(target) {
+              s.dispatched.push(target);
+              s.state.acceptedReceipt = null;
+            }
+          }
+        : {})
+    })
+  );
+  t.after(() => s.h.unmount());
+  return {
+    ...s,
+    click(label) {
+      button(s.h.output, label).props.onClick();
+      s.h.render();
+    },
+    field(kind = "textarea") {
+      return nodes(s.h.output, (n) => n.type === kind)[0];
+    },
+    change(kind, value) {
+      this.field(kind).props.onChange({ target: { value } });
+      s.h.render();
+    }
+  };
+}
+
+async function incomingServer(after, account = owner) {
+  const h = clientHarness({ URLSearchParams });
+  const ExchangeNeedContributions = () => null,
+    NeedContributionCard = () => null;
+  const calls = [];
+  const { ExchangeNeedsPage } = h.load(
+    "components/platform/exchange-needs-page.tsx",
+    {
+      "next/link": { default: "a" },
+      "./platform-shell": { PlatformShell: "shell" },
+      "./private-snapshot-guard": { PrivateSnapshotGuard: "guard" },
+      "./topic-read-boundary": { TopicReadBoundary: "public-guard" },
+      "./exchange-page-ui": {
+        ExchangeAccountLinks: "account",
+        ExchangeNavigation: "navigation",
+        ExchangeUnavailable: "unavailable",
+        exchangeChecksum: (value) =>
+          createHash("sha256").update(JSON.stringify(value)).digest("hex")
+      },
+      "./exchange-need-forms": {
+        NeedClaimForm: "claim",
+        NeedSetupForm: "setup",
+        NeedSlotForm: "slot"
+      },
+      "./exchange-need-actions": {
+        NeedContributionCard,
+        NeedOrganizerActions: "organizer",
+        NeedPostLinks: "posts",
+        NeedVolunteerReceipt: "volunteer"
+      },
+      "./exchange-need-contributions": { ExchangeNeedContributions },
+      "./regional-presentation": { RegionalTime: "time" },
+      "@/lib/platform/session": {
+        getCurrentPlatformUser: async () => ({ id: account })
+      },
+      "@/lib/platform/exchange-session": {
+        exchangeNeedPage: async (query) => {
+          calls.push(query);
+          return query.view === "contributors"
+            ? listPage()
+            : {
+                listingId: needId,
+                title: "Public need title",
+                listingState: "ACTIVE",
+                canManage: false,
+                canCoordinate: false,
+                need: null
+              };
+        }
+      },
+      "@/lib/platform/exchange-need-options": h.load(
+        "lib/platform/exchange-need-options.ts"
+      ),
+      "@/lib/platform/portal-policy": { PortalError: class extends Error {} },
+      "@/lib/platform/post-input": { postId: (id) => id }
+    }
+  );
+  const page = await ExchangeNeedsPage({
+    listingId: needId,
+    query: { view: "contributors", ...(after ? { after } : {}) }
+  });
+  const incoming = nodes(
+    page,
+    (n) => typeof n.type === "function" && n.type.name === "IncomingNeeds"
+  );
+  assert.equal(incoming.length, 1);
+  const output = await incoming[0].type(incoming[0].props);
+  assert.equal(nodes(output, (n) => n.type === "unavailable").length, 0);
+  const [entry] = nodes(output, (n) => n.type === ExchangeNeedContributions);
+  assert.ok(entry);
+  return {
+    output,
+    Entry: ExchangeNeedContributions,
+    Card: NeedContributionCard,
+    calls,
+    entry
+  };
+}
+
+test("incoming coordinator bootstrap omits contribution identities, names, notes and quotes", async () => {
+  const { output, entry, calls } = await incomingServer();
+  const serialized = JSON.stringify(output);
+  for (const secret of [
+    "contribution-a",
+    "Private contributor name",
+    "Private retained contribution note",
+    "18765"
+  ])
+    assert.ok(
+      !serialized.includes(secret),
+      `Private incoming bootstrap contains ${secret}`
+    );
+  assert.equal(calls[1].view, "contributors");
+  assert.equal(calls[1].id, needId);
+  assert.equal(entry.props.owner, owner);
+  assert.equal(entry.props.query.view, "incoming");
+  assert.equal(entry.props.query.needId, needId);
+  assert.equal(entry.props.query.path, `/platform/exchange/${needId}/needs`);
+  assert.equal("contributions" in entry.props, false);
+});
+
+function incomingReader(t, row = contribution({ contributor: null }), after) {
+  const s = environment(row);
+  s.state.result = listPage([row]);
+  const visibility = s.h.load("components/platform/read-visibility.ts");
+  const loaded = s.h.load(
+    "components/platform/exchange-need-contributions.tsx",
+    {
+      "next/link": { default: "a" },
+      "@/lib/platform/social-client": s.social,
+      "./exchange-need-actions": {
+        NeedContributionCard: s.actions.NeedContributionCard
+      },
+      "./read-visibility": visibility
+    }
+  );
+  const query = {
+    view: "incoming",
+    needId,
+    path: `/platform/exchange/${needId}/needs`,
+    ...(after ? { after } : {})
+  };
+  s.h.mount(() => loaded.ExchangeNeedContributions({ owner, query }));
+  t.after(() => s.h.unmount());
+  return s;
+}
+
+test("incoming reader requests the current coordinator-only page and admits only its account, need and row projection", async (t) => {
+  const row = contribution({ contributor: null });
+  const s = incomingReader(t, row, "cursor-z");
+  assert.ok(!JSON.stringify(s.h.output).includes(row.id));
+  await s.h.settle();
+  const read = s.reads()[0];
+  assert.ok(read);
+  const url = new URL(read.path, "https://fixture.invalid");
+  assert.equal(url.searchParams.get("view"), "need-contributors");
+  assert.equal(url.searchParams.get("id"), needId);
+  assert.equal(url.searchParams.get("after"), "cursor-z");
+  assert.equal(read.method, "GET");
+  assert.equal(read.headers["X-Expected-Account"], owner);
+  assert.equal(read.cache, "no-store");
+  assert.equal(
+    nodes(s.h.output, (n) => n.type === s.actions.NeedContributionCard).length,
+    1
+  );
+  assert.ok(!textContent(s.h.output).includes("Private contributor name"));
+});
+
+test("incoming reader rejects a different account, another need and unredacted self rows", async (t) => {
+  const row = contribution({ contributor: null });
+  const staleSelf = contribution({
+    own: true,
+    current: false,
+    needId: null,
+    slotId: null,
+    listingId: null,
+    title: "Unavailable need",
+    note: "Private retained contribution note",
+    quoteMinor: null,
+    quoteCurrency: null,
+    shareName: false,
+    disputeNote: "",
+    loanResponsibility: "",
+    contributor: null
+  });
+  const cases = [
+    {
+      page: { ...listPage([row]), ownerId: "coordinator-b" },
+      secret: row.note
+    },
+    {
+      page: listPage([contribution({ contributor: null, needId: "need-b" })]),
+      secret: row.note
+    },
+    { page: listPage([staleSelf]), secret: staleSelf.note }
+  ];
+  for (const { page, secret } of cases) {
+    const s = incomingReader(t, row);
+    s.state.readHandler = async () => response(page);
+    await s.h.settle();
+    assert.equal(
+      nodes(s.h.output, (n) => n.type === s.actions.NeedContributionCard)
+        .length,
+      0
+    );
+    assert.ok(!JSON.stringify(s.h.output).includes(row.id));
+    assert.ok(!textContent(s.h.output).includes(secret));
+  }
+});
+
+test("incoming reader accepts a coordinator's own row only in the canonical redacted form", async (t) => {
+  const row = contribution({
+    own: true,
+    current: false,
+    needId: null,
+    slotId: null,
+    listingId: null,
+    title: "Unavailable need",
+    note: "",
+    quoteMinor: null,
+    quoteCurrency: null,
+    shareName: false,
+    disputeNote: "",
+    loanResponsibility: "",
+    contributor: null
+  });
+  const s = incomingReader(t, row);
+  await s.h.settle();
+  assert.equal(
+    nodes(s.h.output, (n) => n.type === s.actions.NeedContributionCard).length,
+    1
+  );
+  assert.ok(
+    !textContent(s.h.output).includes("Private retained contribution note")
+  );
+});
+
+test("incoming card omits sharing-disabled names and removes private drafts from concealed DOM while retaining the values", async (t) => {
+  const row = contribution({
+    shareName: false,
+    contributor: { name: "Private contributor name" }
+  });
+  const s = cardHarness(t, row, true);
+  assert.ok(!textContent(s.h.output).includes("Private contributor name"));
+  input(
+    s.h.output,
+    "Correction reason, required when reducing a receipt or return"
+  ).props.onChange({
+    target: { value: "Private unsent coordinator correction" }
+  });
+  input(s.h.output, "Total equipment actually returned").props.onChange({
+    target: { value: "1" }
+  });
+  s.h.render();
+  s.visible(false);
+  assert.equal(
+    nodes(s.h.output, (n) => ["textarea", "input"].includes(n.type)).length,
+    0
+  );
+  assert.equal(
+    nodes(
+      s.h.output,
+      (n) =>
+        n.type === "button" &&
+        textContent(n).includes("Record equipment return")
+    ).length,
+    0
+  );
+  assert.ok(
+    !textContent(s.h.output).includes("Private retained contribution note")
+  );
+  assert.ok(!textContent(s.h.output).includes("Private contributor name"));
+  s.visible(true);
+  assert.equal(
+    input(
+      s.h.output,
+      "Correction reason, required when reducing a receipt or return"
+    ).props.value,
+    "Private unsent coordinator correction"
+  );
+  assert.equal(
+    input(s.h.output, "Total equipment actually returned").props.value,
+    "1"
+  );
+});

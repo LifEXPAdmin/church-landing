@@ -68,7 +68,10 @@ export async function ExchangeNeedsPage({
           <ExchangeNeedContributions
             key={`${user.id}:${query.after ?? ""}`}
             owner={user.id}
-            after={query.after ? postId(query.after) : undefined}
+            query={{
+              view: "mine",
+              after: query.after ? postId(query.after) : undefined
+            }}
           />
         );
       }
@@ -515,51 +518,17 @@ async function IncomingNeeds({
     });
     if (!("contributions" in result))
       throw new Error("Contribution projection unavailable");
-    const params = new URLSearchParams({
-      view: "need-contributors",
-      id: needId,
-      ...(after ? { after: postId(after) } : {})
-    });
     return (
-      <PrivateSnapshotGuard
+      <ExchangeNeedContributions
+        key={`${owner}:${needId}:${after ? postId(after) : ""}`}
         owner={owner}
-        url={`/api/platform/exchange?${params}`}
-        checksum={exchangeChecksum(result)}
-        label="incoming private contributions"
-      >
-        <section
-          className="space-y-4"
-          aria-label="Incoming private Needs contributions"
-        >
-          <h2 className="text-2xl">Incoming private contributions</h2>
-          <p>
-            Only contributions addressed to you within your current coordinator
-            appointment appear here.
-          </p>
-          {!result.contributions?.length && (
-            <p>No current private contributions on this page.</p>
-          )}
-          {result.contributions?.map(
-            (row) =>
-              row && (
-                <NeedContributionCard
-                  key={`${row.id}:${row.version}`}
-                  owner={owner}
-                  row={row}
-                />
-              )
-          )}
-          {result.next && (
-            <Link
-              prefetch={false}
-              className="gc-button gc-button-quiet"
-              href={`${path}?view=contributors&after=${encodeURIComponent(result.next)}`}
-            >
-              More incoming contributions
-            </Link>
-          )}
-        </section>
-      </PrivateSnapshotGuard>
+        query={{
+          view: "incoming",
+          needId,
+          path,
+          after: after ? postId(after) : undefined
+        }}
+      />
     );
   } catch (error) {
     return <ExchangeUnavailable error={error} href={path} />;

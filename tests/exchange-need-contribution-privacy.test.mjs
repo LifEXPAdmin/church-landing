@@ -357,9 +357,10 @@ test("standalone My Needs bootstrap omits private contribution rows, notes and q
   assert.equal(entries[0].props.owner, owner);
   assert.ok(
     Object.keys(entries[0].props).every((key) =>
-      ["owner", "after"].includes(key)
+      ["owner", "query"].includes(key)
     )
   );
+  assert.equal(entries[0].props.query.view, "mine");
 });
 
 test("concealment physically removes saved notes and unsent dispute/return values", (t) => {
@@ -580,9 +581,8 @@ function ownerHarness(t, setup, after) {
       }
     }
   );
-  s.h.mount(() =>
-    ExchangeNeedContributions({ owner, ...(after ? { after } : {}) })
-  );
+  const query = { view: "mine", ...(after ? { after } : {}) };
+  s.h.mount(() => ExchangeNeedContributions({ owner, query }));
   t.after(() => s.h.unmount());
   return {
     ...s,
@@ -924,14 +924,14 @@ test("server bootstrap keys retained owners by both account and canonical cursor
   const other = await serverPage(undefined, "other-owner");
   const entry = (value) =>
     nodes(value.output, (n) => n.type === value.Entry)[0];
-  assert.equal(entry(next).props.after, "cursor-b");
+  assert.equal(entry(next).props.query.after, "cursor-b");
   assert.notEqual(entry(first).key, entry(next).key);
   assert.notEqual(entry(first).key, entry(other).key);
   for (const result of [first, next, other]) {
     assert.ok(!JSON.stringify(result.output).includes("contribution-a"));
     assert.ok(
       Object.keys(entry(result).props).every((key) =>
-        ["owner", "after"].includes(key)
+        ["owner", "query"].includes(key)
       )
     );
   }

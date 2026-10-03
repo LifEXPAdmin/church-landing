@@ -122,7 +122,9 @@ export function NeedContributionCard({
       aria-label={row.own ? "Your need contribution" : "Private contribution"}
     >
       <h3 className="text-xl">{row.title}</h3>
-      {row.contributor && <p>Contributor: {row.contributor.name}</p>}
+      {row.shareName && row.contributor && (
+        <p>Contributor: {row.contributor.name}</p>
+      )}
       <p>
         {needContributionLabels[
           row.state as keyof typeof needContributionLabels

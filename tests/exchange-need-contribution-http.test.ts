@@ -251,6 +251,30 @@ test("My Needs bootstrap omits private rows while pinned reads, exact replay, re
   const current = await pinned(f.owner.token, f.owner.id);
   assert.equal(current.status, 200);
   privateResponse(current);
+  const incomingPath = `/api/platform/exchange?view=need-contributors&id=${f.need.id}`;
+  const incomingDefault = await req(incomingPath, f.manager.token, {
+    "x-expected-account": f.manager.id
+  });
+  assert.equal(incomingDefault.status, 200);
+  privateResponse(incomingDefault);
+  const incomingData = await incomingDefault.json();
+  assert.equal(incomingData.ownerId, f.manager.id);
+  const privateIncomingQuote = incomingData.contributions.find(
+    (row: { id: string }) => row.id === f.quote.id
+  );
+  assert.ok(privateIncomingQuote);
+  assert.equal(privateIncomingQuote.current, true);
+  assert.equal(privateIncomingQuote.own, false);
+  assert.equal(privateIncomingQuote.note, f.note);
+  assert.equal(privateIncomingQuote.contributor, null);
+  const otherCoordinatorRead = await req(incomingPath, f.other.token, {
+    "x-expected-account": f.other.id
+  });
+  assert.equal(otherCoordinatorRead.status, 404);
+  privateResponse(otherCoordinatorRead);
+  const deniedIncoming = await otherCoordinatorRead.text();
+  assert.ok(!deniedIncoming.includes(f.quote.id));
+  assert.ok(!deniedIncoming.includes(f.note));
   const canonical = await read(db, f.owner.token, { view: "mine" });
   const data = await current.json();
   assert.deepEqual(data, canonical);
@@ -347,6 +371,15 @@ test("My Needs bootstrap omits private rows while pinned reads, exact replay, re
   );
   assert.equal(ineligible.status, 403);
   privateResponse(ineligible);
+  const namedIncoming = await req(incomingPath, f.manager.token, {
+    "x-expected-account": f.manager.id
+  });
+  assert.equal(namedIncoming.status, 200);
+  privateResponse(namedIncoming);
+  const namedRow = (await namedIncoming.json()).contributions.find(
+    (row: { id: string }) => row.id === f.quote.id
+  );
+  assert.equal(namedRow?.contributor?.name, f.owner.name);
 
   // My Needs remains a personal surface, while coordinator mutations still
   // demand session-bound privileged proof in the enforce-mode server.

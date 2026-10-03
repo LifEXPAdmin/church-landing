@@ -77,47 +77,10 @@ const context = await browser.newContext({
 });
 // One dispatcher owns each request. Keep the origin fence mounted while
 // changing fault injections, so page/context routing cannot race for ownership.
-const within = async (promise, label) => {
-  let timer;
-  try {
-    return await Promise.race([
-      promise,
-      new Promise((_, reject) => {
-        timer = setTimeout(() => reject(Error(label + " timed out")), 15000);
-      })
-    ]);
-  } finally {
-    clearTimeout(timer);
-  }
-};
-let intercepts = [];
-const routed = new Set(),
-  routingErrors = [];
-const intercept = async (match, handle) => {
-  intercepts.push({ match, handle });
-};
-const clearIntercepts = async () => {
-  intercepts = [];
-  await within(Promise.all([...routed]), "Routed contribution requests");
-  assert.deepEqual(routingErrors, []);
-};
 await context.route("**/*", async (route) => {
   const url = new URL(route.request().url());
   if (url.origin !== config.origin) return route.abort();
-  const rule = [...intercepts]
-    .reverse()
-    .find(({ match }) =>
-      typeof match === "string" ? url.href === match : match(url)
-    );
-  if (!rule) return route.continue();
-  const pending = Promise.resolve()
-    .then(() => rule.handle(route))
-    .catch((error) => {
-      routingErrors.push(error.message);
-    });
-  routed.add(pending);
-  await pending;
-  routed.delete(pending);
+  await route.continue();
 });
 const page = await context.newPage(),
   errors = [],
@@ -127,11 +90,6 @@ mkdirSync(output, { recursive: true });
 page.on("pageerror", (e) =>
   errors.push({ path: new URL(page.url()).pathname, message: e.message })
 );
-const dialogs = [];
-page.on("dialog", (dialog) => {
-  dialogs.push(dialog.message());
-  return dialog.accept();
-});
 const ok = (message) => {
   results.push(message);
   console.log("PASS " + message);
@@ -186,14 +144,11 @@ const waitUntil = async (work) => {
   }
   throw Error("Expected current contribution state was not observed");
 };
-const exact = (name) => page.getByRole("button", { name, exact: true });
 const signal = (name) =>
   page.evaluate((name) => window.dispatchEvent(new Event(name)), name);
 try {
   const { exchangeNeedCommand: command } =
     await import("../lib/platform/exchange-need-commands.ts");
-  const { readExchangeNeeds: read } =
-    await import("../lib/platform/exchange-need-reads.ts");
   const { exchangeListingCommand } =
     await import("../lib/platform/exchange-listings.ts");
   const { EXCHANGE_ITEM_POLICY } =
@@ -381,13 +336,13 @@ try {
     await context.request.get(config.origin + path, { headers: { RSC: "1" } })
   ).text();
   for (const body of [html, rsc])
-    for (const marker of [note, loanNote, contribution.id, loan.id])
+    for (const marker of [note, loanNote, contribution.id, loan.id, owner.name])
       assert.ok(
-        body.includes(marker),
-        "Baseline exposes incoming contribution in HTML/RSC"
+        !body.includes(marker),
+        "Incoming contribution leaked into the initial HTML/RSC"
       );
   ok(
-    "Baseline reproduces coordinator contribution notes and identifiers serialized into HTML/RSC"
+    "Coordinator incoming HTML and RSC omit contribution IDs, notes and nonshared contributor names"
   );
   const receive = equipment.getByRole("button", {
     name: "Record actual receipt",
@@ -395,21 +350,90 @@ try {
   });
   await receive.waitFor();
   await waitUntil(() => receive.isEnabled());
+  assert.equal(await cards.count(), 2);
+  assert.equal(await page.getByText(owner.name, { exact: true }).count(), 0);
+  await bounded();
+  assert.deepEqual(layoutFailures, []);
   const unsent = "Private retained correction " + randomUUID();
   await equipment.locator("textarea").fill(unsent);
   await equipment
     .getByLabel("Total equipment actually returned", { exact: true })
     .fill("1");
   await signal("blur");
-  assert.equal(await cards.count(), 2);
+  await waitUntil(async () => (await cards.count()) === 0);
   assert.equal(await equipment.isVisible(), false);
-  assert.equal(await equipment.locator("textarea").inputValue(), unsent);
-  assert.ok((await equipment.textContent()).includes(loanNote));
+  assert.equal(
+    await page
+      .locator('section[aria-label="Incoming private contributions"] textarea')
+      .count(),
+    0
+  );
+  assert.equal(
+    await page
+      .locator('section[aria-label="Incoming private contributions"] input')
+      .count(),
+    0
+  );
+  for (const marker of [note, loanNote, contribution.id, loan.id, unsent])
+    assert.ok(!(await page.locator("body").innerText()).includes(marker));
   ok(
-    "Baseline reproduces private notes and unsent correction inputs retained in concealed DOM"
+    "Blur physically removes incoming notes and unsent correction/return controls"
+  );
+  await signal("focus");
+  await waitUntil(
+    async () => (await cards.count()) === 2 && (await equipment.isVisible())
+  );
+  assert.equal(await equipment.locator("textarea").inputValue(), unsent);
+  assert.equal(
+    await equipment
+      .getByLabel("Total equipment actually returned", { exact: true })
+      .inputValue(),
+    "1"
+  );
+  assert.ok((await equipment.textContent()).includes(loanNote));
+  assert.equal(await page.getByText(owner.name, { exact: true }).count(), 0);
+  ok(
+    "A current coordinator read restores its retained correction and return drafts"
+  );
+  await signIn(other);
+  await signal("focus");
+  await waitUntil(
+    async () =>
+      (await cards.count()) === 0 &&
+      (await page
+        .getByText(
+          "Your sign-in changed. Private entries were cleared. Reload for your current account.",
+          { exact: true }
+        )
+        .count()) === 1
+  );
+  for (const marker of [note, loanNote, contribution.id, loan.id, unsent])
+    assert.ok(!(await page.locator("body").innerText()).includes(marker));
+  ok(
+    "Confirmed account replacement clears the prior coordinator's contribution owners"
+  );
+  await signIn(manager);
+  await go(path);
+  await waitUntil(async () => (await cards.count()) === 2);
+  // Change only the isolated fixture database to model an appointment ending;
+  // all browser reads still go through the canonical HTTPS endpoint.
+  await db.exchangeNeed.update({
+    where: { id: need.id },
+    data: {
+      coordinatorId: null,
+      coordinatorKey: null,
+      consentVersion: { increment: 1 }
+    }
+  });
+  await signal("focus");
+  await waitUntil(async () => (await cards.count()) === 0);
+  for (const marker of [note, loanNote, contribution.id, loan.id])
+    assert.ok(!(await page.locator("body").innerText()).includes(marker));
+  ok(
+    "Revoking the current coordinator appointment conceals private contributions after recheck"
   );
   await page.screenshot({
-    path: output + "/baseline-incoming-concealed.png",
+    path: output + "/incoming-concealed-after-revocation.png",
     fullPage: true
   });
   assert.deepEqual(errors, []);
@@ -417,7 +441,7 @@ try {
     output + "/results.json",
     JSON.stringify(
       {
-        baseline: true,
+        baseline: false,
         results,
         errors,
         productionWrites: 0,
