@@ -391,6 +391,10 @@ try {
   );
 
   const withdrawn = [];
+  let releaseReplay;
+  const replayGate = new Promise((resolve) => {
+    releaseReplay = resolve;
+  });
   await intercept(endpoint, async (route) => {
     if (route.request().method() !== "POST") return route.continue();
     withdrawn.push(route.request().postData());
@@ -399,6 +403,7 @@ try {
       assert.equal(response.status(), 200);
       return route.abort("failed");
     }
+    await within(replayGate, "Withdrawn favorite replay");
     return route.continue();
   });
   await remove().click();
@@ -412,9 +417,21 @@ try {
   const outerRetry = exact("Confirm original request");
   await ready(outerRetry);
   assert.equal(await stateButton.count(), 0);
+  const pendingRecovery = page.locator("button").filter({
+    hasText:
+      /^(?:Confirm original request|Confirming original request…|Confirm original save|Confirming save…)$/
+  });
   await outerRetry.click();
+  try {
+    await exact("Confirming original request…").waitFor();
+    await waitUntil(async () => withdrawn.length === 2);
+    // A busy label is still a pending request, including the hidden leaf.
+    assert.ok((await pendingRecovery.count()) >= 2);
+  } finally {
+    releaseReplay();
+  }
   await waitUntil(
-    async () => withdrawn.length === 2 && (await outerRetry.count()) === 0
+    async () => withdrawn.length === 2 && (await pendingRecovery.count()) === 0
   );
   await clearIntercepts();
   assert.equal(withdrawn[0], withdrawn[1]);
