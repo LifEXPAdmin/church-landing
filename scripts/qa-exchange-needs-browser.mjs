@@ -3,6 +3,7 @@ import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { createRequire } from "node:module";
 import { execFileSync } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
+import { gunzipSync } from "node:zlib";
 import { sessionCookieFixtureName } from "./session-cookie-fixture.mjs";
 const fixtureDir = process.argv[2];
 assert.ok(fixtureDir, "Pass the existing isolated Exchange preview directory");
@@ -530,12 +531,16 @@ try {
       if (!isRscRequest(route.request())) return route.continue();
       const response = await route.fetch();
       const body = await response.body();
-      const bodyText = body.toString("utf8");
+      const contentEncoding = response.headers()["content-encoding"] ?? null;
+      const bodyText =
+        contentEncoding === "gzip"
+          ? gunzipSync(body).toString("utf8")
+          : body.toString("utf8");
       rscTrace.push({
         event: "needs-rsc-payload",
         status: response.status(),
         contentType: response.headers()["content-type"] ?? null,
-        contentEncoding: response.headers()["content-encoding"] ?? null,
+        contentEncoding,
         bodyBytes: body.length,
         hasSlotLabel: bodyText.includes("Food parcels"),
         hasReceivedLabel: bodyText.includes("Received"),
