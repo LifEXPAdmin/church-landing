@@ -12,7 +12,7 @@ import {
   ExchangeHandoffActions,
   ExchangeInquiryForm
 } from "./exchange-handoff-controls";
-import { ExchangeDefaultsForm } from "./exchange-defaults-form";
+import { ExchangeDefaultsEntry } from "./exchange-defaults-entry";
 import { RegionalTime } from "./regional-presentation";
 import { getCurrentPlatformUser } from "@/lib/platform/session";
 import {
@@ -398,20 +398,10 @@ export async function ExchangeDefaultsPage() {
   if (!user) content = <ExchangeAccountLinks next={path} />;
   else
     try {
-      const result = await exchangeDefaultsPage();
-      content = (
-        <PrivateSnapshotGuard
-          owner={user.id}
-          url="/api/platform/exchange?view=defaults"
-          checksum={exchangeChecksum(result)}
-          label="personal listing defaults"
-        >
-          <ExchangeDefaultsForm
-            key={`${user.id}:${result.version}`}
-            initial={result}
-          />
-        </PrivateSnapshotGuard>
-      );
+      // Keep initial authorization and its recovery affordances without
+      // serializing private fields or church choices into HTML/RSC.
+      await exchangeDefaultsPage();
+      content = <ExchangeDefaultsEntry key={user.id} owner={user.id} />;
     } catch (error) {
       content = <ExchangeUnavailable error={error} href={path} />;
     }

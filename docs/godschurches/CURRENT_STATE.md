@@ -1,3 +1,23 @@
+## Personal Exchange defaults privacy runtime verified, 3 October 2026 UTC
+
+[Draft PR 8](https://github.com/LifEXPAdmin/church-landing/pull/8) removes saved
+personal defaults from initial HTML/RSC and physically omits private controls
+during unconfirmed access. It preserves the existing private-choice command
+owner, unsaved fields and typed town query, and requires deliberate adoption
+of unexpected saved changes. Current reads use a bounded deadline; confirmed
+account replacement clears the previous owner's entries.
+
+Application source `6515308422b19c36b2dcd856838d715f18bc0e9e` is unchanged by
+subsequent routing and recovery-fixture test repairs. Final candidate
+`77f77d09c394b0f9be34997ce6efc4bceea15310` passes [runtime 37100327378](https://github.com/LifEXPAdmin/church-landing/actions/runs/37100327378),
+build `RNVthdKl_KFfQK40_zphK`: 22 service tests, 20 browser groups and two HTTPS
+cases. All 79 focused local cases and 180 hosted source tests, copy and types
+pass. The existing dependency audit remains blocked. [Security acceptance](SOURCE_SECURITY_ACCEPTANCE.md)
+records reproduction, failed harness attempts and final evidence. Independent
+final review closed without findings and verified all 11 artifact hashes and
+sizes. No integration, deployment or live acceptance is claimed; designated
+release ownership remains.
+
 ## Exchange private bootstrap runtime verified, 3 October 2026 UTC
 
 [Draft PR 7](https://github.com/LifEXPAdmin/church-landing/pull/7) removes saved
