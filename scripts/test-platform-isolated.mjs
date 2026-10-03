@@ -23,7 +23,8 @@ assert.ok(
     "resources",
     "exchange-plans",
     "exchange-services",
-    "exchange"
+    "exchange",
+    "exchange-bootstrap"
   ].includes(suite),
   "Choose a declared isolated suite"
 );
@@ -45,16 +46,29 @@ const profile =
           browsers: ["qa-discovery-browser", "qa-four-feeds-browser"],
           https: ["discovery-http", "four-feeds-http"]
         }
-      : ["exchange-services", "exchange"].includes(suite)
+      : ["exchange-services", "exchange", "exchange-bootstrap"].includes(suite)
         ? {
             services: [
               "exchange-input",
               "exchange-listings",
               "exchange-needs",
               "interchurch-help",
-              "interchurch-help-compatibility"
+              "interchurch-help-compatibility",
+              ...(suite === "exchange-bootstrap"
+                ? [
+                    "pantry-support",
+                    "exchange-handoff-input",
+                    "exchange-handoffs"
+                  ]
+                : [])
             ],
-            browsers: ["qa-exchange-browser", "qa-exchange-search-browser"],
+            browsers: [
+              "qa-exchange-browser",
+              "qa-exchange-search-browser",
+              ...(suite === "exchange-bootstrap"
+                ? ["qa-exchange-handoff-browser", "qa-pantry-browser"]
+                : [])
+            ],
             https: ["exchange-http"]
           }
         : { services: [], browsers: [], https: [] };

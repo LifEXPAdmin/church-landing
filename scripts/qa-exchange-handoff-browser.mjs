@@ -9,28 +9,36 @@ assert.ok(fixtureDir, "Pass the existing isolated Exchange preview directory");
 const config = JSON.parse(
   readFileSync(fixtureDir + "/browser-env.json", "utf8")
 );
-assert.match(config.origin, /^https:\/\/(?:exchange-fixture\.example\.test|127\.0\.0\.1):\d+$/);
-assert.match(config.localOrigin, /^https:\/\/127\.0\.0\.1:\d+$/);
+assert.match(
+  config.origin,
+  /^https:\/\/(?:exchange-fixture\.example\.test|127\.0\.0\.1):\d+$/
+);
+const localOrigin = config.localOrigin ?? config.origin;
+assert.match(localOrigin, /^https:\/\/127\.0\.0\.1:\d+$/);
 assert.equal(new URL(config.database).hostname, "127.0.0.1");
 Object.assign(process.env, {
   DATABASE_URL: config.database,
   DIRECT_URL: config.database,
-  ACCOUNT_ORIGIN: config.localOrigin,
-  NEXT_PUBLIC_SITE_URL: config.localOrigin,
+  ACCOUNT_ORIGIN: localOrigin,
+  NEXT_PUBLIC_SITE_URL: localOrigin,
   ACCOUNT_TEST_ISOLATED: "1",
   ACCOUNT_DELIVERY_MODE: "test-sink",
-  ACCOUNT_TEST_SINK_DIR: process.cwd() + "/" + fixtureDir + "/sink",
-  AUTH_RATE_LIMIT_SECRET: "medium-fixture-only-secret-".repeat(3),
+  ACCOUNT_TEST_SINK_DIR:
+    process.env.ACCOUNT_TEST_SINK_DIR ?? fixtureDir + "/sink",
+  AUTH_RATE_LIMIT_SECRET:
+    process.env.AUTH_RATE_LIMIT_SECRET ??
+    "medium-fixture-only-secret-".repeat(3),
   NODE_ENV: "test",
   VERCEL: "",
-  PRIVILEGED_MFA_MODE: "enroll",
+  PRIVILEGED_MFA_MODE: process.env.PRIVILEGED_MFA_MODE ?? "enroll",
   COMMUNITY_REPORTS_ENABLED: "true",
   BLOB_READ_WRITE_TOKEN: "",
   RESEND_API_KEY: "",
   MAILERLITE_API_KEY: "",
   MEDIA_STORAGE_MODE: "local-test",
-  RETENTION_TEST_DIR: process.cwd() + "/" + fixtureDir + "/retention",
-  MEDIA_TEST_DIR: process.cwd() + "/" + fixtureDir + "/images"
+  RETENTION_TEST_DIR:
+    process.env.RETENTION_TEST_DIR ?? fixtureDir + "/retention",
+  MEDIA_TEST_DIR: process.env.MEDIA_TEST_DIR ?? fixtureDir + "/images"
 });
 const { PrismaClient } = await import("@prisma/client");
 const { createPortalActor, assertPortalTestDatabase, seedOperatorGrants } =
@@ -77,7 +85,7 @@ await context.route("**/*", (route) =>
 const page = await context.newPage(),
   errors = [],
   results = [],
-  output = fixtureDir + "/exchange-browser-" + Date.now();
+  output = fixtureDir + "/exchange-handoff-browser-" + Date.now();
 mkdirSync(output, { recursive: true });
 page.on("pageerror", (e) =>
   errors.push({ path: new URL(page.url()).pathname, message: e.message })
@@ -257,7 +265,21 @@ try {
     "Private defaults save only for their owner and seed a new draft deliberately without pickup text, publication or inquiry consent"
   );
 
+  await db.exchangeListing.update({
+    where: { id: listing.id },
+    data: { state: "DRAFT", publishedAt: null }
+  });
   await go(`/platform/exchange/${listing.id}/edit`);
+  await state("Private inquiries are off for this listing.");
+  assert.equal(await exact("Enable inquiries with me as receiver").count(), 0);
+  await page
+    .getByRole("checkbox", { name: /I may publish this listing/ })
+    .check();
+  await exact("Publish as active").click();
+  await page
+    .getByRole("status")
+    .filter({ hasText: "Listing status updated." })
+    .waitFor();
   await page
     .getByLabel(
       "I volunteer as the receiving adult and understand that replacing the receiver ends existing handoffs.",
@@ -266,6 +288,50 @@ try {
     .check();
   await exact("Enable inquiries with me as receiver").click();
   await state("You are this listing’s named receiving adult.");
+  // A client-owned bootstrap must accept a confirmed version and allow the next
+  // action, while an uncertain request keeps exactly its original body/key.
+  let droppedContact = false;
+  const contactBodies = [];
+  await page.route("**/api/platform/exchange", async (route) => {
+    if (route.request().method() !== "POST") return route.continue();
+    const body = route.request().postData();
+    if (JSON.parse(body).operation !== "handoff-contact")
+      return route.continue();
+    contactBodies.push(body);
+    if (!droppedContact) {
+      droppedContact = true;
+      const accepted = await route.fetch();
+      assert.ok([200, 202].includes(accepted.status()));
+      return route.abort("failed");
+    }
+    assert.equal(body, contactBodies[0]);
+    return route.continue();
+  });
+  try {
+    await exact("Turn off inquiries and end handoffs").click();
+    await exact("Confirm original save").waitFor();
+    await page.evaluate(() => window.dispatchEvent(new Event("blur")));
+    await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+    // The guard sees the accepted new version but keeps the original command
+    // available through its recovery control until that receipt is confirmed.
+    await exact("Confirm original request").waitFor();
+    await exact("Confirm original request").click();
+    await state("Private inquiries are off for this listing.");
+    assert.equal(contactBodies.length, 2);
+  } finally {
+    await page.unroute("**/api/platform/exchange");
+  }
+  await page
+    .getByLabel(
+      "I volunteer as the receiving adult and understand that replacing the receiver ends existing handoffs.",
+      { exact: false }
+    )
+    .check();
+  await exact("Enable inquiries with me as receiver").click();
+  await state("You are this listing’s named receiving adult.");
+  ok(
+    "Contact bootstrap refreshes confirmed consent and retains one exact lost-response request across concealment before allowing the next action"
+  );
   await bounded();
   await signIn(requester);
   await go(`/platform/exchange/${listing.id}`);

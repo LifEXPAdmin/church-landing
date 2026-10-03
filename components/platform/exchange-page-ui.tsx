@@ -1,7 +1,6 @@
 import { pantryPage } from "@/lib/platform/pantry-session";
 import { PrivilegedAuthenticationError } from "@/lib/platform/privileged-auth-policy";
 import { privilegedChallengeHref } from "@/lib/platform/privileged-auth-navigation";
-import { ExchangeContactRegion } from "./exchange-handoff-page";
 import { createHash } from "node:crypto";
 import Link from "next/link";
 import { PlatformShell } from "./platform-shell";
@@ -396,7 +395,9 @@ export async function ExchangeEditorPage({
   if (!user) content = <ExchangeAccountLinks next={path} />;
   else
     try {
-      const [access, initial] = await Promise.all([
+      // Retain server authorization and recovery affordances without serializing
+      // private editor snapshots into HTML or the client component payload.
+      await Promise.all([
         exchangeContextPage(),
         id ? exchangeListingPage(id, true) : Promise.resolve(null)
       ]);
@@ -416,23 +417,11 @@ export async function ExchangeEditorPage({
             </p>
           )}
           <ExchangeEditor
-            key={`${user.id}:${id ?? "new"}`}
-            access={access}
-            initial={initial}
-            replenishmentSeed={seed}
+            key={`${user.id}:${id ?? "new"}:${pantryCategory ?? ""}`}
+            owner={user.id}
+            listingId={id}
+            pantryCategory={!id ? pantryCategory : undefined}
           />
-          {id && initial?.listing.intent === "CHURCH_NEED" && (
-            <Link
-              prefetch={false}
-              className="gc-button"
-              href={`/platform/exchange/${id}/needs`}
-            >
-              Configure need actions and commitments
-            </Link>
-          )}
-          {id && !initial?.structuredNeed && (
-            <ExchangeContactRegion owner={user.id} listingId={id} />
-          )}
         </>
       );
     } catch (error) {
