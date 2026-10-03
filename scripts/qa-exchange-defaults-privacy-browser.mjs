@@ -119,12 +119,26 @@ const bounded = async () =>
     ),
     "No horizontal page overflow"
   );
+const waitUntil = async (work) => {
+  for (let i = 0; i < 100; i++) {
+    if (await work()) return;
+    await new Promise((r) => setTimeout(r, 100));
+  }
+  throw Error("Expected current defaults state was not observed");
+};
+const exact = (name) => page.getByRole("button", { name, exact: true });
+const signal = (name) =>
+  page.evaluate((name) => window.dispatchEvent(new Event(name)), name);
+const defaultsRoute = (url) =>
+  url.pathname === "/api/platform/exchange" &&
+  url.searchParams.get("view") === "defaults";
 try {
   const { exchangeDefaultsCommand } =
     await import("../lib/platform/exchange-defaults.ts");
   const { EXCHANGE_DEFAULTS_SCHEMA, emptyExchangeDefaults } =
     await import("../lib/platform/exchange-handoff-options.ts");
   const owner = await createPortalActor(db, "defaultsprivacyowner");
+  const other = await createPortalActor(db, "defaultsprivacyother");
   const marker = "Fictional private defaults " + randomUUID();
   await exchangeDefaultsCommand(db, owner.token, {
     operation: "defaults-save",
@@ -133,6 +147,8 @@ try {
     schema: EXCHANGE_DEFAULTS_SCHEMA,
     fields: { ...emptyExchangeDefaults(), pickupDetails: marker }
   });
+  const saved = () =>
+    db.exchangeDefaults.findUniqueOrThrow({ where: { ownerId: owner.id } });
   await signIn(owner);
   for (const headers of [{}, { RSC: "1" }]) {
     const response = await context.request.get(
@@ -142,38 +158,261 @@ try {
     assert.equal(response.status(), 200);
     assert.match(response.headers()["cache-control"], /no-store/);
     assert.ok(
-      (await response.text()).includes(marker),
-      "Baseline exposes private saved defaults in initial HTML/RSC"
+      !(await response.text()).includes(marker),
+      "Initial HTML/RSC must omit private defaults"
     );
   }
-  ok(
-    "REPRODUCTION: saved pickup marker is present in authorized initial HTML and RSC"
+  ok("Initial owner HTML and RSC omit the saved private pickup marker");
+  await page.route(defaultsRoute, (route) =>
+    route.fulfill({
+      status: 403,
+      contentType: "application/json",
+      body: JSON.stringify({ message: "Injected defaults access denial" })
+    })
   );
   await go("/platform/exchange/defaults");
   const pickup = page.getByLabel(
     "Reusable private pickup instructions (optional)",
     { exact: false }
   );
+  await page
+    .getByText("Injected defaults access denial", { exact: true })
+    .waitFor();
+  assert.equal(await pickup.count(), 0);
+  assert.ok(
+    !(await page.locator("script").allTextContents()).join("").includes(marker)
+  );
+  await page.unrouteAll({ behavior: "wait" });
+  await exact("Recheck current access").click();
   await pickup.waitFor();
   assert.equal(await pickup.inputValue(), marker);
-  await pickup.fill(marker + " unsaved");
-  await page.evaluate(() => window.dispatchEvent(new Event("blur")));
-  await page.waitForTimeout(100);
-  assert.equal(
-    await pickup.count(),
-    1,
-    "Baseline keeps private textarea mounted after blur"
+  ok(
+    "Denied first read never presents a private form and a current retry initializes saved defaults"
   );
+  await pickup.fill(marker + " unsaved");
+  await page.getByLabel("Country", { exact: true }).selectOption("US");
+  const town = page.getByLabel("Find a town or area", { exact: true });
+  await town.fill("Unselected private town");
+  for (const event of ["blur", "pagehide", "offline"]) {
+    await signal(event);
+    await waitUntil(async () => (await pickup.count()) === 0);
+    assert.equal(await town.count(), 0);
+    await signal("online");
+    await signal("social-relationships-changed");
+    await page.waitForTimeout(100);
+    assert.equal(await pickup.count(), 0);
+    await signal("focus");
+    await pickup.waitFor();
+    assert.equal(await pickup.inputValue(), marker + " unsaved");
+    assert.equal(await town.inputValue(), "Unselected private town");
+  }
+  ok(
+    "Blur, pagehide and offline remove private fields; same-owner return retains pickup and unselected town text"
+  );
+  await page.route(
+    (url) =>
+      url.pathname === "/api/platform/profile" &&
+      url.searchParams.get("view") === "identity",
+    (route) =>
+      route.fulfill({
+        status: 503,
+        contentType: "application/json",
+        body: JSON.stringify({ message: "Injected identity outage" })
+      })
+  );
+  await signal("focus");
+  await waitUntil(async () => (await pickup.count()) === 0);
+  await page
+    .getByText("Your sign-in could not be checked. Reconnect and try again.", {
+      exact: true
+    })
+    .first()
+    .waitFor();
+  await page.unrouteAll({ behavior: "wait" });
+  await exact("Recheck current access").click();
+  await pickup.waitFor();
   assert.equal(await pickup.inputValue(), marker + " unsaved");
   ok(
-    "REPRODUCTION: saved and unsaved pickup instructions remain in DOM after blur"
+    "Failed identity read conceals private fields and retains local entries for a successful retry"
   );
-  await page.screenshot({
-    path: output + "/baseline-concealed.png",
-    fullPage: true
+  const endpoint = config.origin + "/api/platform/exchange";
+  // Definitive validation failure clears only this rejected command.
+  let rejectedBody;
+  await page.route(endpoint, async (route) => {
+    if (route.request().method() !== "POST") return route.continue();
+    rejectedBody = route.request().postData();
+    await route.fulfill({
+      status: 400,
+      contentType: "application/json",
+      body: JSON.stringify({
+        message: "Injected defaults validation rejection"
+      })
+    });
+  });
+  await exact("Save personal defaults").click();
+  await page
+    .getByText("Injected defaults validation rejection", { exact: true })
+    .waitFor();
+  assert.equal(await exact("Confirm original save").count(), 0);
+  assert.equal(await pickup.inputValue(), marker + " unsaved");
+  await page.unrouteAll({ behavior: "wait" });
+  ok(
+    "Definitive validation rejection preserves editable entries without an uncertain retry"
+  );
+  const before = (await saved()).version,
+    bodies = [];
+  let attempt = 0;
+  await page.route(endpoint, async (route) => {
+    if (route.request().method() !== "POST") return route.continue();
+    bodies.push(route.request().postData());
+    attempt++;
+    if (attempt === 1) {
+      const result = await route.fetch();
+      assert.ok([200, 202].includes(result.status()));
+      await route.abort("failed");
+    } else if (attempt === 2) {
+      await route.fulfill({
+        status: 429,
+        headers: { "retry-after": "1" },
+        contentType: "application/json",
+        body: JSON.stringify({ message: "Injected defaults cooldown" })
+      });
+    } else if (attempt === 3) {
+      await route.fulfill({
+        status: 503,
+        contentType: "application/json",
+        body: JSON.stringify({ message: "Injected defaults retry outage" })
+      });
+    } else await route.continue();
+  });
+  await exact("Save personal defaults").click();
+  await exact("Confirm original save").waitFor();
+  assert.notEqual(
+    JSON.parse(rejectedBody).mutationId,
+    JSON.parse(bodies[0]).mutationId
+  );
+  await signal("blur");
+  await waitUntil(async () => (await pickup.count()) === 0);
+  assert.equal(await exact("Confirm original save").isEnabled(), false);
+  await signal("focus");
+  await page
+    .getByText(
+      "Your saved defaults changed. Your local entries are retained and concealed. Confirm any original save, then reload to review current choices.",
+      { exact: true }
+    )
+    .waitFor();
+  assert.equal(await pickup.count(), 0);
+  for (let i = 0; i < 3; i++) {
+    await exact("Confirm original save").click();
+    if (i < 2)
+      await waitUntil(
+        async () =>
+          attempt === i + 2 &&
+          (await exact("Confirm original save").isEnabled())
+      );
+  }
+  await pickup.waitFor();
+  await waitUntil(
+    async () => await exact("Save personal defaults").isEnabled()
+  );
+  assert.equal(await pickup.inputValue(), marker + " unsaved");
+  assert.equal(await town.inputValue(), "");
+  assert.equal(bodies.length, 4);
+  assert.equal(new Set(bodies).size, 1);
+  assert.equal((await saved()).version, before + 1);
+  assert.equal((await saved()).pickupDetails, marker + " unsaved");
+  await page.unrouteAll({ behavior: "wait" });
+  ok(
+    "Lost accepted save survives concealment and 429/503; four byte-identical attempts increment defaults once"
+  );
+  let release, accepted;
+  const gate = new Promise((done) => {
+      release = done;
+    }),
+    ready = new Promise((done) => {
+      accepted = done;
+    });
+  const lateBefore = (await saved()).version;
+  let lateWrites = 0;
+  await page.route(endpoint, async (route) => {
+    if (route.request().method() !== "POST") return route.continue();
+    lateWrites++;
+    const result = await route.fetch();
+    assert.ok([200, 202].includes(result.status()));
+    accepted();
+    await gate;
+    await route.fulfill({ response: result });
+  });
+  await pickup.fill(marker + " late confirmation");
+  await exact("Save personal defaults").click();
+  await ready;
+  await signal("blur");
+  await waitUntil(async () => (await pickup.count()) === 0);
+  release();
+  await page.waitForTimeout(150);
+  assert.equal(await pickup.count(), 0);
+  await page.unrouteAll({ behavior: "wait" });
+  await signal("focus");
+  await pickup.waitFor();
+  await waitUntil(
+    async () => await exact("Save personal defaults").isEnabled()
+  );
+  assert.equal(await pickup.inputValue(), marker + " late confirmation");
+  assert.equal(lateWrites, 1);
+  assert.equal((await saved()).version, lateBefore + 1);
+  ok(
+    "A late confirmed save cannot reopen a concealed form and resumes once after current owner return"
+  );
+  await pickup.fill(marker + " local conflict");
+  await db.exchangeDefaults.update({
+    where: { ownerId: owner.id },
+    data: { pickupDetails: marker + " newer saved", version: { increment: 1 } }
+  });
+  await signal("focus");
+  await page
+    .getByText(
+      "Your saved defaults changed. Your local entries are retained and concealed. Confirm any original save, then reload to review current choices.",
+      { exact: true }
+    )
+    .waitFor();
+  assert.equal(await pickup.count(), 0);
+  assert.equal(await exact("Confirm original save").count(), 0);
+  await exact("Reload current information").click();
+  await pickup.waitFor();
+  assert.equal(await pickup.inputValue(), marker + " newer saved");
+  ok(
+    "A separately changed saved version requires deliberate reload before replacing local entries"
+  );
+  await pickup.fill(marker + " account change");
+  await signIn(other);
+  await signal("focus");
+  await page
+    .getByText(
+      "Your sign-in changed. Private entries were cleared. Reload for your current account.",
+      { exact: true }
+    )
+    .waitFor();
+  assert.equal(await pickup.count(), 0);
+  ok(
+    "Confirmed account replacement clears the previous account's private defaults owner"
+  );
+  await signIn(owner);
+  await go("/platform/exchange/defaults");
+  await pickup.waitFor();
+  await bounded();
+  await page.screenshot({ path: output + "/defaults-390.png", fullPage: true });
+  await page.setViewportSize({ width: 320, height: 844 });
+  await page.evaluate(() => {
+    document.documentElement.style.fontSize = "200%";
   });
   await bounded();
+  await page.screenshot({
+    path: output + "/defaults-320-200.png",
+    fullPage: true
+  });
+  ok("Private defaults fit 390px and 320px enlarged text layouts");
   assert.deepEqual(errors, []);
+  ok("No browser runtime errors in the personal defaults privacy flow");
 } catch (error) {
   await page
     .screenshot({ path: output + "/failure.png", fullPage: true })

@@ -37,7 +37,7 @@ const profile =
           "qa-exchange-defaults-privacy-browser",
           "qa-exchange-handoff-browser"
         ],
-        https: ["exchange-http"]
+        https: ["exchange-defaults-http", "exchange-http"]
       }
     : suite === "artists"
       ? {
