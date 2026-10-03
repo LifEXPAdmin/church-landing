@@ -7,10 +7,8 @@ import { PlatformShell } from "./platform-shell";
 import { PrivateSnapshotGuard } from "./private-snapshot-guard";
 import { TopicReadBoundary } from "./topic-read-boundary";
 import { ExchangeEditor } from "./exchange-editor";
-import {
-  ExchangeSaveSearchForm,
-  ExchangeSavedItems
-} from "./exchange-saved-controls";
+import { ExchangeSaveSearchForm } from "./exchange-saved-controls";
+import { ExchangeSavedList } from "./exchange-saved-list";
 import { postId } from "@/lib/platform/post-input";
 import { ExchangeSearchPosition } from "./exchange-search-position";
 import { exchangeReturnHref } from "@/lib/platform/exchange-navigation";
@@ -510,25 +508,19 @@ export async function ExchangeSavedPage({ query }: { query: ExchangeQuery }) {
           "Choose favorite listings or named searches."
         );
       const view = query.view === "searches" ? "searches" : "favorites";
-      const result = await exchangeSavedPage({ view, after: query.after });
+      await exchangeSavedPage({ view, after: query.after });
       const params = new URLSearchParams({
         view,
         ...(query.after ? { after: postId(query.after) } : {})
       });
       content = (
-        <PrivateSnapshotGuard
+        <ExchangeSavedList
+          key={`${user.id}:/api/platform/exchange?${params}`}
           owner={user.id}
           url={`/api/platform/exchange?${params}`}
-          checksum={exchangeChecksum(result)}
-          label="saved Exchange choices"
-        >
-          <ExchangeSavedItems
-            owner={user.id}
-            result={result}
-            view={view}
-            returnHref={`${path}?${params}`}
-          />
-        </PrivateSnapshotGuard>
+          view={view}
+          returnHref={`${path}?${params}`}
+        />
       );
     } catch (error) {
       content = <ExchangeUnavailable error={error} href={path} />;

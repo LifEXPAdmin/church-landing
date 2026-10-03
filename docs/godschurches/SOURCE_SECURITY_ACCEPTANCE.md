@@ -13,6 +13,118 @@ release gates; it applies only to branches containing that configuration.
 
 # Source and deployment security acceptance
 
+## Saved Exchange choices, 3 October 2026 UTC
+
+Unchanged application `1793e5628015b7c7fedcc4788be2df07d8882fc3` passes [baseline
+runtime 37110544895](https://github.com/LifEXPAdmin/church-landing/actions/runs/37110544895),
+build `0yguPkefvhij1e_gKaAtG`: 65 service tests, 21 browser groups and two HTTPS
+cases. Five deliberate baseline groups reproduce private saved-search names,
+criteria associations, favorite identifiers and private links in HTML/RSC and
+concealed DOM; canonical reads exclude another account's choices. This is
+reproduction evidence. Ten hashed artifacts total 1,750,021 bytes. Baseline
+source checks pass 250 tests, copy and types before the existing audit fails.
+Ten focused source tests also fail against that unchanged application; early
+assertions prevent some later assertions from running, so this does not isolate
+every subsequent regression individually.
+
+Candidate `4bc17847c97c2bd17b87aa6a7bf88c54479d679c` preserves canonical server
+saved-page authorization and error handling but passes only account/view/query
+identifiers into the new client owner. Private rows initialize through a current
+account-pinned read with coalescing, a 15-second owned deadline and separate
+presentation/identity generations. Blur, pagehide and offline remove private
+rows and links from DOM. Passive events cannot reopen a concealed page. Confirmed
+account replacement clears the retained page and command owner. Unexpected
+projection changes remain concealed for deliberate review.
+
+The existing list-wide private-choice hook remains mounted through concealment
+and row disappearance. A synchronous dispatch guard pins the original row before
+React state commits. Exact target receipts establish command success, and each
+new command requires that same consumed receipt object to be accepted after a
+fresh canonical read. Per-row numeric versions alone cannot authorize reuse:
+two separate rows can both return version two. A concurrent favorite re-add is
+adopted at its current canonical version after the exact old removal is confirmed.
+
+If a previous-page anchor disappears, a current account-pinned first-page read
+can authorize only the retained original replay. It never replaces the frozen
+page or re-arms a new action. Pending navigation remains guarded, and deliberate
+first-page navigation becomes available after the original receipt is resolved.
+Saved references to unavailable listings retain canonical redaction and removal.
+Standalone listing favorite controls and saved-search editing forms are outside
+this bounded list change. Server policy is unchanged.
+
+All 173 focused local source-executing checks pass, including 24 new saved-list
+cases. Scoped lint, formatting, source-boundary and whitespace checks pass.
+[Source 37111646327](https://github.com/LifEXPAdmin/church-landing/actions/runs/37111646327)
+passes 274 tests, authored copy and project types, then fails the unchanged
+seven-high dependency audit; later security steps are skipped. [Runtime
+37111646280](https://github.com/LifEXPAdmin/church-landing/actions/runs/37111646280)
+passes 65 service tests and six new browser groups with build
+`KlsLhYuP-nfmx1SfHDGdG`, then stops at a stale-cursor navigation assertion. The
+navigation guard correctly keeps the original page, but the test expects the
+unredacted guard message while private presentation intentionally replaces it.
+HTTPS and later browser suites are not reached; five failure artifacts total
+500,127 bytes. The corrected assertion verifies retained retry status and the
+unchanged cursor URL before exact replay and first-page recovery.
+
+A further focused reproduction on `4bc1784` shows that a stale same-target
+receipt at version two can falsely confirm a later removal submitted at version
+three. This is malformed-response recovery evidence, not evidence the canonical
+server emits that receipt. Canonical removal increments exactly once, including
+immutable replay. Correction `c5104bfdc6de1ce9c00af6f77c3447d7f03365f2` adds an
+optional shared-hook receipt-version matcher and pins the expected increment in
+the saved-list owner. Existing callers keep their receipt contracts. The new
+regression rejects the stale receipt, retains identical pending bytes, and then
+accepts version four. All 174 focused cases pass. Browser coverage adds the
+same stale-version injection before a redacted favorite's real removal.
+[Source 37112105225](https://github.com/LifEXPAdmin/church-landing/actions/runs/37112105225)
+passes 275 tests, copy and types before the unchanged audit fails. [Runtime
+37112105228](https://github.com/LifEXPAdmin/church-landing/actions/runs/37112105228)
+stops before build/browser/HTTPS at one unchanged service fixture, with 64 of 65
+services passing. The named church receiver test sends the previous TOTP counter
+just before a 30-second rollover; verification correctly rejects that code when
+it becomes two steps old. A deterministic probe of the actual verifier reproduces
+this boundary and confirms that current-then-next counters work on both sides
+while replay of a used counter remains rejected.
+
+Test-only candidate `c282d3bc228b0bef2e03355ad5fd9bb26fed95fb` adjusts the two
+matching MFA fixtures in the exercised service suite. Real verifier and session
+proof enforcement stay enabled; production authentication code is unchanged.
+The existing unrelated formatting warning in the handoff test is preserved.
+[Source 37112539158](https://github.com/LifEXPAdmin/church-landing/actions/runs/37112539158)
+passes 275 tests, copy and types before the unchanged audit fails. [Runtime
+37112539159](https://github.com/LifEXPAdmin/church-landing/actions/runs/37112539159)
+passes all 65 services and six new browser groups, including stale-version receipt
+rejection, with build `KdGkQoaS2y13I41IkZEcD`. The cursor test then mistakes the
+busy retry label for completion and removes its route injection before dispatch.
+Five failure artifacts total 501,144 bytes; later suites and HTTPS are not reached.
+Test-only `28d52ec0e23e05a3e8b35fee2da2a8d6b28acca5` waits for both pending labels
+to disappear and the explicit parent receipt acknowledgement before proceeding.
+[Final runtime 37112905308](https://github.com/LifEXPAdmin/church-landing/actions/runs/37112905308)
+passes 65 services, 24 browser groups (eight saved-list, eight existing search,
+eight prior handoff detail) and three HTTPS cases, with build
+`Q7GhjhtVBsK7Wkm1sSDyr`. Server source identity was verified under browser MFA
+off and HTTPS MFA enforce. The new HTTPS case exercises no-store HTML/RSC
+omission, owner pins, cross-account/guest rejection, canonical 20+1 pagination,
+removed-anchor conflict, source redaction and immutable removal replay.
+
+Ten final hashed artifacts total 1,994,639 bytes. Browser error arrays are empty;
+saved-list layout failures are empty. Saved-list 390px and 320px/200% screenshots
+were inspected. Global recovery banners remain from the synthetic offline event;
+the saved-list current-owner read succeeds independently and its rows fit.
+[Source 37112905337](https://github.com/LifEXPAdmin/church-landing/actions/runs/37112905337)
+and [37112907865](https://github.com/LifEXPAdmin/church-landing/actions/runs/37112907865)
+pass 275 tests, copy and types, then fail the unchanged audit; later security
+gates are skipped. Independent final review closed without actionable findings
+against the implementation, contracts, tests, reports and runtime evidence. It
+verified all ten final artifact hashes/sizes, exact source/build identity, test
+counts and preserved failure evidence without running another suite.
+
+The client retains bounded canonical pagination,
+refreshes only while active at the existing 30-second interval, and adds no
+runtime dependency or background worker. No performance improvement is claimed.
+No dependency, schema or server authorization changes; no production migrations,
+writes, external sends, integration, deployment or live acceptance.
+
 ## Private Exchange handoff detail, 3 October 2026 UTC
 
 Unchanged application `da759bca71975908c951a803bdc5358b1ae38863` passes [baseline
