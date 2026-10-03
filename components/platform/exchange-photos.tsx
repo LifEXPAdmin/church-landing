@@ -53,6 +53,7 @@ export function ExchangePhotos({
     [active, setActive] = useState(0);
   const uid = useId();
   const generation = useRef(0),
+    foreground = useRef(false),
     busy = useRef(false);
   const source = `/api/platform/exchange?view=gallery&id=${encodeURIComponent(listingId)}`;
   useUnsavedSocialWork(
@@ -63,9 +64,22 @@ export function ExchangePhotos({
   useEffect(() => {
     onPending?.(uploads || !!editing || acting);
   }, [onPending, uploads, editing, acting]);
+  const hide = useCallback(() => {
+    foreground.current = false;
+    generation.current++;
+    setVisible(false);
+  }, []);
   const load = useCallback(async () => {
-    if (!sourceVisible || document.visibilityState === "hidden") return;
+    if (
+      !foreground.current ||
+      !sourceVisible ||
+      document.visibilityState === "hidden" ||
+      !navigator.onLine
+    )
+      return;
     const seq = ++generation.current;
+    setVisible(false);
+    setMessage("Checking listing photos…");
     try {
       const result = await socialRequest<Gallery>(source, undefined, accountId);
       if (seq !== generation.current) return;
@@ -75,7 +89,8 @@ export function ExchangePhotos({
     } catch (error) {
       if (seq !== generation.current) return;
       setVisible(false);
-      setGallery(null);
+      // Keep the mounted upload controller and exact pending command privately.
+      // A failed read cannot discard uncertain work or present its old gallery.
       setMessage(
         error instanceof Error
           ? error.message
@@ -98,37 +113,46 @@ export function ExchangePhotos({
     setEditing(null);
   }, [version]);
   useEffect(() => {
-    void load();
-  }, [version, load]);
-  useEffect(() => {
-    const hide = () => {
-      generation.current++;
-      setVisible(false);
-    };
     const resume = () => {
+      if (
+        !sourceVisible ||
+        document.visibilityState === "hidden" ||
+        !navigator.onLine
+      )
+        return;
+      foreground.current = true;
       void load();
+    };
+    const refresh = () => {
+      if (foreground.current) void load();
     };
     const visibility = () =>
       document.visibilityState === "hidden" ? hide() : resume();
-    if (!sourceVisible) hide();
-    const timer = setInterval(resume, 30000);
-    window.addEventListener("blur", hide);
-    window.addEventListener("offline", hide);
-    for (const event of ["focus", "online", "social-relationships-changed"])
+    if (sourceVisible && document.hasFocus()) resume();
+    else hide();
+    const timer = setInterval(refresh, 30000);
+    for (const event of ["blur", "pagehide", "offline"])
+      window.addEventListener(event, hide);
+    for (const event of ["focus", "pageshow"])
       window.addEventListener(event, resume);
+    for (const event of ["online", "social-relationships-changed"])
+      window.addEventListener(event, refresh);
     document.addEventListener("visibilitychange", visibility);
     return () => {
       hide();
       clearInterval(timer);
-      window.removeEventListener("blur", hide);
-      window.removeEventListener("offline", hide);
-      for (const event of ["focus", "online", "social-relationships-changed"])
+      for (const event of ["blur", "pagehide", "offline"])
+        window.removeEventListener(event, hide);
+      for (const event of ["focus", "pageshow"])
         window.removeEventListener(event, resume);
+      for (const event of ["online", "social-relationships-changed"])
+        window.removeEventListener(event, refresh);
       document.removeEventListener("visibilitychange", visibility);
     };
-  }, [load, sourceVisible]);
+  }, [load, sourceVisible, version, hide]);
+  const present = visible && sourceVisible;
   const canEdit = management && gallery?.canManage && !!accountId;
-  const locked = disabled || acting || uploads || !visible;
+  const locked = disabled || acting || uploads || !present;
   async function act(work: () => Promise<boolean>) {
     if (busy.current || locked) return;
     busy.current = true;
@@ -147,27 +171,28 @@ export function ExchangePhotos({
     <section className="space-y-4" aria-label="Listing photos">
       <h2 className="text-2xl">
         Listing photos
-        {gallery && visible
+        {gallery && present
           ? ` (${gallery.images.length} / ${gallery.limit})`
           : ""}
       </h2>
       <p role="status">{message}</p>
-      {!visible && (
+      {!present && (
         <button
           className="gc-button gc-button-quiet"
           type="button"
-          onClick={() => void load()}
+          onClick={() => {
+            if (sourceVisible) {
+              foreground.current = true;
+              void load();
+            }
+          }}
         >
           Check listing photos
         </button>
       )}
-      <div
-        hidden={!visible || !sourceVisible}
-        inert={!visible || !sourceVisible}
-        className="space-y-4"
-      >
-        {!gallery?.images.length && <p>No listing photos yet.</p>}
-        {!!gallery?.images.length && preferences.reduceData && (
+      <div className="space-y-4">
+        {present && !gallery?.images.length && <p>No listing photos yet.</p>}
+        {present && !!gallery?.images.length && preferences.reduceData && (
           <div className="flex flex-wrap items-center gap-3">
             <button
               className="gc-button gc-button-quiet"
@@ -190,183 +215,190 @@ export function ExchangePhotos({
           </div>
         )}
         <ol className="grid min-w-0 gap-4 sm:grid-cols-2">
-          {gallery?.images.map(
-            (image, index) =>
-              (!preferences.reduceData ||
-                index === Math.min(active, gallery.images.length - 1)) && (
-                <li
-                  key={image.id}
-                  className="min-w-0 space-y-3 rounded-xl border border-gc-divider p-3"
-                >
-                  <button
-                    type="button"
-                    aria-label={`Open listing photo ${index + 1} of ${gallery.images.length}`}
-                    aria-haspopup="dialog"
-                    className="block w-full"
-                    onClick={() => setSelected(image.id)}
+          {present &&
+            gallery?.images.map(
+              (image, index) =>
+                (!preferences.reduceData ||
+                  index === Math.min(active, gallery.images.length - 1)) && (
+                  <li
+                    key={image.id}
+                    className="min-w-0 space-y-3 rounded-xl border border-gc-divider p-3"
                   >
-                    <img
-                      src={image.variants.thumb.url}
-                      width={image.variants.thumb.width}
-                      height={image.variants.thumb.height}
-                      alt={image.alt || `Listing photo ${index + 1}`}
-                      className="max-h-60 w-full rounded-lg object-contain"
-                      loading="lazy"
-                      decoding="async"
-                      onError={(e) => {
-                        e.currentTarget.style.visibility = "hidden";
-                      }}
-                    />
-                  </button>
-                  <p className="whitespace-pre-wrap break-words">
-                    {image.caption}
-                  </p>
-                  {canEdit && (
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        className="gc-button gc-button-quiet"
-                        type="button"
-                        disabled={locked || !!editing}
-                        onClick={() =>
-                          setEditing({
-                            id: image.id,
-                            version: image.version,
-                            caption: image.caption ?? "",
-                            alt: image.alt ?? ""
-                          })
-                        }
-                      >
-                        Edit photo {index + 1} description
-                      </button>
-                      {[-1, 1].map((delta) => (
-                        <button
-                          key={delta}
-                          type="button"
-                          className="gc-button gc-button-quiet"
-                          disabled={
-                            locked ||
-                            !!editing ||
-                            index + delta < 0 ||
-                            index + delta >= gallery.images.length ||
-                            !!gallery.pendingUploads
-                          }
-                          onClick={() => {
-                            const images = gallery.images.map((i) => ({
-                              id: i.id,
-                              version: i.version
-                            }));
-                            [images[index], images[index + delta]] = [
-                              images[index + delta],
-                              images[index]
-                            ];
-                            void act(() =>
-                              onCommand!({ operation: "photo-order", images })
-                            );
-                          }}
-                          aria-label={`Move photo ${index + 1} ${delta < 0 ? "earlier" : "later"}`}
-                        >
-                          {delta < 0 ? "Move earlier" : "Move later"}
-                        </button>
-                      ))}
-                      <button
-                        className="gc-button gc-button-quiet"
-                        type="button"
-                        disabled={locked || !!editing}
-                        onClick={() => {
-                          if (
-                            confirm(
-                              "Remove this listing photo? It will no longer be available through this listing."
-                            )
-                          )
-                            void act(() => onRemove!(image.id, image.version));
-                        }}
-                      >
-                        Remove photo {index + 1}
-                      </button>
-                    </div>
-                  )}
-                  {editing?.id === image.id && (
-                    <form
-                      className="space-y-3"
-                      aria-label={`Edit photo ${index + 1} description`}
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        void act(() =>
-                          onCommand!({
-                            operation: "photo-metadata",
-                            imageId: editing.id,
-                            imageVersion: editing.version,
-                            caption: editing.caption,
-                            alt: editing.alt
-                          })
-                        );
-                      }}
+                    <button
+                      type="button"
+                      aria-label={`Open listing photo ${index + 1} of ${gallery.images.length}`}
+                      aria-haspopup="dialog"
+                      className="block w-full"
+                      onClick={() => setSelected(image.id)}
                     >
-                      <label className="block space-y-2">
-                        <span id={`${uid}-caption-label`}>Photo caption</span>
-                        <textarea
-                          aria-labelledby={`${uid}-caption-label`}
-                          className={portalInputClass}
-                          maxLength={500}
-                          value={editing.caption}
-                          disabled={locked}
-                          onChange={(e) =>
-                            setEditing({ ...editing, caption: e.target.value })
-                          }
-                        />
-                      </label>
-                      <label className="block space-y-2">
-                        <span id={`${uid}-alt-label`}>Alternative text</span>
-                        <input
-                          aria-labelledby={`${uid}-alt-label`}
-                          className={portalInputClass}
-                          maxLength={300}
-                          value={editing.alt}
-                          disabled={locked}
-                          onChange={(e) =>
-                            setEditing({ ...editing, alt: e.target.value })
-                          }
-                        />
-                      </label>
-                      <p className="text-sm">
-                        Describe what the photo shows without phone numbers,
-                        email, exact addresses or private details.
-                      </p>
-                      <div className="flex flex-wrap gap-3">
+                      <img
+                        src={image.variants.thumb.url}
+                        width={image.variants.thumb.width}
+                        height={image.variants.thumb.height}
+                        alt={image.alt || `Listing photo ${index + 1}`}
+                        className="max-h-60 w-full rounded-lg object-contain"
+                        loading="lazy"
+                        decoding="async"
+                        onError={(e) => {
+                          e.currentTarget.style.visibility = "hidden";
+                        }}
+                      />
+                    </button>
+                    <p className="whitespace-pre-wrap break-words">
+                      {image.caption}
+                    </p>
+                    {canEdit && (
+                      <div className="flex flex-wrap gap-2">
                         <button
-                          type="submit"
-                          className="gc-button"
-                          disabled={locked}
-                        >
-                          Save photo description
-                        </button>
-                        <button
-                          type="button"
                           className="gc-button gc-button-quiet"
-                          disabled={acting || uploads}
-                          onClick={() => setEditing(null)}
+                          type="button"
+                          disabled={locked || !!editing}
+                          onClick={() =>
+                            setEditing({
+                              id: image.id,
+                              version: image.version,
+                              caption: image.caption ?? "",
+                              alt: image.alt ?? ""
+                            })
+                          }
                         >
-                          Cancel photo description
+                          Edit photo {index + 1} description
+                        </button>
+                        {[-1, 1].map((delta) => (
+                          <button
+                            key={delta}
+                            type="button"
+                            className="gc-button gc-button-quiet"
+                            disabled={
+                              locked ||
+                              !!editing ||
+                              index + delta < 0 ||
+                              index + delta >= gallery.images.length ||
+                              !!gallery.pendingUploads
+                            }
+                            onClick={() => {
+                              const images = gallery.images.map((i) => ({
+                                id: i.id,
+                                version: i.version
+                              }));
+                              [images[index], images[index + delta]] = [
+                                images[index + delta],
+                                images[index]
+                              ];
+                              void act(() =>
+                                onCommand!({ operation: "photo-order", images })
+                              );
+                            }}
+                            aria-label={`Move photo ${index + 1} ${delta < 0 ? "earlier" : "later"}`}
+                          >
+                            {delta < 0 ? "Move earlier" : "Move later"}
+                          </button>
+                        ))}
+                        <button
+                          className="gc-button gc-button-quiet"
+                          type="button"
+                          disabled={locked || !!editing}
+                          onClick={() => {
+                            if (
+                              confirm(
+                                "Remove this listing photo? It will no longer be available through this listing."
+                              )
+                            )
+                              void act(() =>
+                                onRemove!(image.id, image.version)
+                              );
+                          }}
+                        >
+                          Remove photo {index + 1}
                         </button>
                       </div>
-                    </form>
-                  )}
-                </li>
-              )
-          )}
+                    )}
+                    {editing?.id === image.id && (
+                      <form
+                        className="space-y-3"
+                        aria-label={`Edit photo ${index + 1} description`}
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          void act(() =>
+                            onCommand!({
+                              operation: "photo-metadata",
+                              imageId: editing.id,
+                              imageVersion: editing.version,
+                              caption: editing.caption,
+                              alt: editing.alt
+                            })
+                          );
+                        }}
+                      >
+                        <label className="block space-y-2">
+                          <span id={`${uid}-caption-label`}>Photo caption</span>
+                          <textarea
+                            aria-labelledby={`${uid}-caption-label`}
+                            className={portalInputClass}
+                            maxLength={500}
+                            value={editing.caption}
+                            disabled={locked}
+                            onChange={(e) =>
+                              setEditing({
+                                ...editing,
+                                caption: e.target.value
+                              })
+                            }
+                          />
+                        </label>
+                        <label className="block space-y-2">
+                          <span id={`${uid}-alt-label`}>Alternative text</span>
+                          <input
+                            aria-labelledby={`${uid}-alt-label`}
+                            className={portalInputClass}
+                            maxLength={300}
+                            value={editing.alt}
+                            disabled={locked}
+                            onChange={(e) =>
+                              setEditing({ ...editing, alt: e.target.value })
+                            }
+                          />
+                        </label>
+                        <p className="text-sm">
+                          Describe what the photo shows without phone numbers,
+                          email, exact addresses or private details.
+                        </p>
+                        <div className="flex flex-wrap gap-3">
+                          <button
+                            type="submit"
+                            className="gc-button"
+                            disabled={locked}
+                          >
+                            Save photo description
+                          </button>
+                          <button
+                            type="button"
+                            className="gc-button gc-button-quiet"
+                            disabled={acting || uploads}
+                            onClick={() => setEditing(null)}
+                          >
+                            Cancel photo description
+                          </button>
+                        </div>
+                      </form>
+                    )}
+                  </li>
+                )
+            )}
         </ol>
         {canEdit && (
           <fieldset
             disabled={disabled || acting || !!editing}
             className="min-w-0 space-y-3"
           >
-            {disabled && (
+            {present && disabled && (
               <p>Save or resolve the listing entries before changing photos.</p>
             )}
             <PhotoUploadManager
               ownerId={accountId!}
               targetId={listingId}
               purpose="EXCHANGE_PHOTO"
+              privacy={{ visible: present, onAccessDenied: hide }}
               available={gallery!.imagesAvailable}
               remaining={Math.max(
                 0,
@@ -380,7 +412,7 @@ export function ExchangePhotos({
                 await load();
               }}
             />
-            {!!gallery!.pendingUploads && (
+            {present && !!gallery!.pendingUploads && (
               <p>
                 A server upload is still pending. Retry its original file from
                 the tab where you selected it, or wait for the interrupted
@@ -389,14 +421,14 @@ export function ExchangePhotos({
             )}
           </fieldset>
         )}
-        {management && !canEdit && gallery && (
+        {present && management && !canEdit && gallery && (
           <p>
             This gallery is read-only. Reopen an archived listing as a private
             draft before changing its photos.
           </p>
         )}
       </div>
-      {selected && visible && sourceVisible && (
+      {selected && present && (
         <PhotoViewer
           source={source}
           accountId={accountId}

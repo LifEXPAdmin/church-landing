@@ -19,6 +19,10 @@ export function clientHarness(globals = {}) {
   const same = (a, b) =>
     a && b && a.length === b.length && a.every((v, i) => Object.is(v, b[i]));
   const react = {
+    useId() {
+      const i = cursor++;
+      return (slots[i] ??= `:test-${i}:`);
+    },
     useState(initial) {
       const i = cursor++;
       if (!(i in slots))

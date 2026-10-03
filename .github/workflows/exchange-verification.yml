@@ -14,6 +14,8 @@ on:
       - scripts/qa-exchange-browser.mjs
       - scripts/qa-exchange-search-browser.mjs
       - components/platform/exchange-editor.tsx
+      - components/platform/exchange-editor-fields.tsx
+      - components/platform/exchange-photos.tsx
       - tests/exchange-editor-privacy.test.mjs
       - lib/platform/exchange-listings.ts
       - tests/exchange-listings.test.ts
