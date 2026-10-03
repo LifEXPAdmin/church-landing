@@ -13,6 +13,69 @@ release gates; it applies only to branches containing that configuration.
 
 # Source and deployment security acceptance
 
+## Exchange editor privacy and recovery, 3 October 2026 UTC
+
+The unchanged baseline `b399140ea7628b71f23ae1ad8b48dc850129dc39` retained
+private editor fields and photo-caption/alternative-text values in the DOM after
+blur. In the account-switch browser observation, the marker remained visible at
+35 ms, was hidden but retained at 1,037 ms, and was cleared at 29,574 ms. The
+global session guard's synthetic blur invalidated the editor's fresh identity
+confirmation, leaving the next poll to clear it. This was not a demonstrated
+30-second visible exposure. Fourteen of seventeen focused parent-editor cases
+failed against the retained baseline source.
+
+The repair removes private field and photo presentation while access is
+unconfirmed, retaining the original controller's draft, selected files and exact
+uncertain command privately. Identity confirmation has its own generation, so
+concealment cannot discard a valid changed-owner result. Overlapping access
+requests coalesce, obsolete confirmations cannot clear a newer check, and a
+mutation finishing while concealed cannot restore fields or navigate. A later
+verified foreground check resumes a saved creation once. Unselected town text
+and queued personal-default continuations retain their original state. Passive
+online events and polling cannot reopen an editor that was blurred.
+
+Independent review also reproduced an indefinitely stalled identity/data read
+blocking subsequent retries. Candidate `d6419532ddb7c95771dd87cce22c87a3f1b501e2`
+adds a 15-second owned access-read deadline and cancellation through the existing
+transport's pre/post identity checks, data reads and replenishment check. It
+cancels outstanding sibling reads and unmount work. Existing mutation callers
+do not use this cancellation. Three additional regressions fail against
+`277ba88`; all 21 Exchange and 17 artist recovery tests pass with the repair.
+These focused hook tests are not a browser substitute.
+
+Final runtime source `b03105b078cf8d91ead18de8a69229dc17b6d90d` passes
+[hosted runtime 37094012583](https://github.com/LifEXPAdmin/church-landing/actions/runs/37094012583),
+build `Ze_PFo6JpW52PXV7CdGTA`: 97 service cases, 19 listing and eight search browser
+groups, and one HTTPS API/HTML/RSC/photo-access case. The browser confirms
+selected file/caption retention through a failed gallery read, private fields
+absent during a held identity check, and exactly one accepted save after blur.
+After account replacement, private markers were absent at the first 23 ms
+observation and clearing was confirmed at 1,029 ms. These are observations from
+one fictional run, not general latency guarantees. Exact serving source was
+verified with browser MFA mode off and HTTPS mode enforce; an actual MFA
+challenge is not claimed. All 139 exact-source guards, copy and types pass;
+changed-file lint also passes. The complete source-security job fails at its
+unchanged dependency audit, skipping subsequent signature, whole-project lint
+and secret checks. No complete release receipt is issued.
+
+Earlier failed attempts remain recorded. A held identity route was released
+without waiting for its handler, and the second photo selection raced the prior
+metadata receipt/gallery refresh. The browser harness now waits for released
+route handlers, completed photo work and an enabled visible upload control,
+then acknowledges the selected file before saving. The original privacy and
+one-effect retry assertions remain. These are test-sequencing repairs; the
+second-upload failure alone did not establish a product file-retention defect.
+
+The original owner's saved snapshot is still present in initial authorized
+HTML/RSC. Removing that serialized bootstrap payload is a separate open privacy
+gate; this repair addresses live editor presentation and recovery. Broader
+Exchange readers and inquiry controls retain their own acceptance boundaries.
+The current source audit also remains blocked by
+[GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm), affecting
+`braces <=3.0.3`; no patched release was listed at the recorded check. Passing
+guards, copy and types do not constitute a complete source-security receipt.
+There is no integration, deployment, production write or external send claim.
+
 ## Inexpensive CI and candidate receipts, 2 October 2026
 
 The source-security workflow now runs every standalone `tests/*.test.mjs` guard,
