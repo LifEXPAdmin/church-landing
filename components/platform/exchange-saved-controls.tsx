@@ -5,7 +5,7 @@ import {
   type PrivateChoiceAccess
 } from "./use-private-choice-action";
 import { useReadVisibility } from "./read-visibility";
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import {
   EXCHANGE_SAVED_SCHEMA,
   exchangeDisplayPrice,
@@ -76,31 +76,88 @@ export function ExchangeFavoriteButton({
 export function ExchangeSaveSearchForm({
   owner,
   query,
-  existing
+  existing,
+  privacy,
+  acceptedReceipt,
+  onRequest
 }: {
   owner: string;
   query: ExchangeSearchQuery;
   existing?: Search;
+  privacy: PrivateChoiceAccess;
+  acceptedReceipt?: Parameters<PrivateChoiceAccess["onConfirmed"]>[0] | null;
+  onRequest?: (target: { id: string; expectedVersion: number }) => void;
 }) {
+  const visible = useReadVisibility();
   const id = useId(),
     [name, setName] = useState(existing?.name ?? ""),
-    [alerts, setAlerts] = useState(existing?.alerts ?? false);
+    [alerts, setAlerts] = useState(existing?.alerts ?? false),
+    [expanded, setExpanded] = useState(!!existing);
+  const [baseline, setBaseline] = useState({
+    name: existing?.name ?? "",
+    alerts: existing?.alerts ?? false,
+    version: existing?.version ?? 0
+  });
   const searchId = useRef<string | null>(existing?.id ?? null);
+  const targetVersion = useRef<number | null>(null),
+    dispatching = useRef(false);
+  const submitted = useRef<{ name: string; alerts: boolean } | null>(null);
+  const confirmed = useRef<
+    Parameters<PrivateChoiceAccess["onConfirmed"]>[0] | null
+  >(null);
   const criteria = Object.fromEntries(exchangeSearchParams(query));
-  const dirty =
-    name !== (existing?.name ?? "") || alerts !== (existing?.alerts ?? false);
-  const onSaved = useCallback(() => {
-    if (!existing) {
-      setName("");
-      setAlerts(false);
-      searchId.current = null;
+  const dirty = name !== baseline.name || alerts !== baseline.alerts;
+  const command = usePrivateChoiceAction(
+    endpoint,
+    owner,
+    dirty,
+    undefined,
+    true,
+    {
+      ...privacy,
+      preserveDirty: true,
+      expectedReceiptId: () => searchId.current,
+      expectedReceiptVersion: () => targetVersion.current,
+      onConfirmed(receipt) {
+        confirmed.current = receipt;
+        privacy.onConfirmed(receipt);
+      }
     }
-  }, [existing]);
-  const command = useExchangeAction(owner, dirty, onSaved);
+  );
+  const rearm = command.rearm;
+  useEffect(() => {
+    if (
+      !visible ||
+      !acceptedReceipt ||
+      acceptedReceipt !== confirmed.current ||
+      (existing &&
+        (existing.id !== acceptedReceipt.id ||
+          existing.version !== acceptedReceipt.version)) ||
+      !rearm(acceptedReceipt.version)
+    )
+      return;
+    const next = {
+      name: existing?.name ?? "",
+      alerts: existing?.alerts ?? false,
+      version: existing?.version ?? 0
+    };
+    const sent = submitted.current;
+    if (sent) {
+      setName((value) => (value === sent.name ? next.name : value));
+      setAlerts((value) => (value === sent.alerts ? next.alerts : value));
+    }
+    setBaseline(next);
+    if (!existing) searchId.current = null;
+    confirmed.current = null;
+    submitted.current = null;
+    targetVersion.current = null;
+  }, [acceptedReceipt, existing, rearm, visible]);
+  if (!visible) return command.status;
   return (
     <details
       className="space-y-3 rounded-xl border border-gc-divider p-4"
-      open={!!existing}
+      open={expanded}
+      onToggle={(event) => setExpanded(event.currentTarget.open)}
     >
       <summary className="min-h-11 cursor-pointer py-2 font-semibold">
         {existing ? "Update this saved search" : "Save this search"}
@@ -110,16 +167,29 @@ export function ExchangeSaveSearchForm({
         aria-label={existing ? "Update saved search" : "Save current search"}
         onSubmit={(event) => {
           event.preventDefault();
+          if (command.blocked || dispatching.current) return;
+          dispatching.current = true;
           if (!searchId.current) searchId.current = crypto.randomUUID();
-          void command.command({
-            operation: "search-save",
-            searchId: searchId.current,
-            expectedVersion: existing?.version ?? 0,
-            schema: EXCHANGE_SAVED_SCHEMA,
-            name,
-            criteria,
-            alerts
+          targetVersion.current = baseline.version + 1;
+          confirmed.current = null;
+          submitted.current = { name, alerts };
+          onRequest?.({
+            id: searchId.current,
+            expectedVersion: baseline.version
           });
+          void command
+            .command({
+              operation: "search-save",
+              searchId: searchId.current,
+              expectedVersion: baseline.version,
+              schema: EXCHANGE_SAVED_SCHEMA,
+              name,
+              criteria,
+              alerts
+            })
+            .finally(() => {
+              dispatching.current = false;
+            });
         }}
       >
         <fieldset disabled={command.blocked} className="min-w-0 space-y-3">

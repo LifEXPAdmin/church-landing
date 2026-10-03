@@ -211,71 +211,365 @@ try {
   const editor = page.locator('form[aria-label="Update saved search"]');
   const name = editor.locator('input[type="text"], input:not([type])');
   const alerts = editor.locator('input[type="checkbox"]');
+  const panel = page.locator('section[aria-label="Saved search editor"]');
+  const endpoint = config.origin + "/api/platform/exchange";
+  const detailRoute = (url) =>
+    url.pathname === "/api/platform/exchange" &&
+    url.searchParams.get("view") === "search";
+  const fail = (route, status, message) =>
+    route.fulfill({
+      status,
+      contentType: "application/json",
+      body: JSON.stringify({ message })
+    });
+  const submit = () =>
+    editor.getByRole("button", { name: "Update saved search", exact: true });
+  const ready = async (form = editor) => {
+    await form.getByLabel("Search name", { exact: true }).waitFor();
+    await waitUntil(
+      async () => !(await form.locator('button[type="submit"]').isDisabled())
+    );
+  };
+  const retry = () =>
+    panel.getByRole("button", { name: "Confirm original save", exact: true });
+  const retryReady = async () => {
+    await retry().waitFor();
+    await waitUntil(async () => !(await retry().isDisabled()));
+  };
+  const details = () =>
+    read(db, owner.token, { view: "search", searchId: saved.id });
   await signIn(owner);
-  await intercept(
-    (url) =>
-      url.pathname === "/api/platform/exchange" &&
-      url.searchParams.get("view") === "search",
-    (route) =>
-      route.fulfill({
-        status: 403,
-        contentType: "application/json",
-        body: JSON.stringify({
-          message: "Injected current search access denial"
-        })
-      })
+  await intercept(detailRoute, (route) =>
+    fail(route, 403, "Injected current search access denial")
   );
   const html = await (await go(path)).text();
   const rsc = await (
     await context.request.get(config.origin + path, { headers: { RSC: "1" } })
   ).text();
-  for (const text of [html, rsc]) assert.ok(text.includes(searchName));
-  await page
+  for (const text of [html, rsc]) assert.ok(!text.includes(searchName));
+  await panel
     .getByText("Injected current search access denial", { exact: true })
     .waitFor();
-  assert.equal(await name.count(), 1);
+  assert.equal(await name.count(), 0);
+  assert.equal(await alerts.count(), 0);
+  await clearIntercepts();
+  await panel
+    .getByRole("button", { name: "Recheck current access", exact: true })
+    .click();
+  await ready();
   assert.equal(await name.inputValue(), searchName);
   assert.equal(await alerts.isChecked(), true);
-  assert.equal(await name.isVisible(), false);
   ok(
-    "BASELINE: saved-search name and alert choice are serialized in HTML/RSC and retained in DOM despite a denied first current read"
+    "Saved-search HTML/RSC omit the saved row; denied first current read mounts no private inputs"
   );
-  await clearIntercepts();
-  await go(path);
-  await page.getByLabel("Search name", { exact: true }).waitFor();
   await name.fill(unsent);
   await alerts.uncheck();
-  await page.screenshot({
-    path: output + "/saved-search-baseline-390.png",
-    fullPage: true
-  });
   for (const event of ["blur", "pagehide", "offline"]) {
     await signal(event);
-    assert.equal(await name.count(), 1);
+    assert.equal(await panel.locator("input").count(), 0);
+    assert.ok(!(await panel.textContent()).includes(unsent));
+    await signal("social-relationships-changed");
+    await signal("online");
+    assert.equal(await panel.locator("input").count(), 0);
+    await signal("focus");
+    await ready();
     assert.equal(await name.inputValue(), unsent);
     assert.equal(await alerts.isChecked(), false);
-    assert.equal(
-      await name.isVisible(),
-      event === "pagehide",
-      `Baseline ${event} visibility`
-    );
-    ok(
-      `BASELINE: ${event} retains the unsent name and alert inputs in DOM${event === "pagehide" ? " and leaves them visibly presented" : " while concealing presentation"}`
-    );
-    await signal("focus");
-    await page.getByLabel("Search name", { exact: true }).waitFor();
   }
-  await go("/platform/exchange?" + new URLSearchParams(criteria));
+  await bounded();
+  await page.screenshot({
+    path: output + "/saved-search-390.png",
+    fullPage: true
+  });
+  await page.setViewportSize({ width: 320, height: 800 });
+  await page.evaluate(() => {
+    document.documentElement.style.fontSize = "200%";
+  });
+  await bounded();
+  await page.screenshot({
+    path: output + "/saved-search-320-200.png",
+    fullPage: true
+  });
+  await page.evaluate(() => {
+    document.documentElement.style.fontSize = "";
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  ok(
+    "Blur, pagehide and offline physically omit unsent fields; only current-owner resume restores them, including mobile enlarged text"
+  );
+
+  const bodies = [];
+  await intercept(endpoint, async (route) => {
+    if (route.request().method() !== "POST") return route.continue();
+    const body = route.request().postData();
+    bodies.push(body);
+    const sent = JSON.parse(body);
+    if (bodies.length === 1) {
+      const response = await route.fetch();
+      assert.equal(response.status(), 200);
+      return route.abort("failed");
+    }
+    if (bodies.length === 2 || bodies.length === 3)
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          id: bodies.length === 2 ? randomUUID() : sent.searchId,
+          version:
+            bodies.length === 3
+              ? sent.expectedVersion
+              : sent.expectedVersion + 1,
+          message: "Injected incorrect receipt"
+        })
+      });
+    if (bodies.length === 4) return fail(route, 429, "Injected retry limit");
+    if (bodies.length === 5)
+      return fail(route, 503, "Injected temporary failure");
+    return route.continue();
+  });
+  await submit().click();
+  await retryReady();
+  await signal("blur");
+  await signal("focus");
+  await retryReady();
+  assert.equal(await panel.locator("input").count(), 0);
+  for (let i = 0; i < 5; i++) {
+    await retry().click();
+    if (i < 4) await retryReady();
+  }
+  await ready();
+  await clearIntercepts();
+  assert.equal(bodies.length, 6);
+  assert.ok(bodies.every((body) => body === bodies[0]));
+  assert.equal((await details()).searches[0].version, 2);
+  assert.equal(await name.inputValue(), unsent);
+  assert.equal(await alerts.isChecked(), false);
+  ok(
+    "Lost existing save, changed row, wrong target/version, 429 and 503 preserve six identical requests and one version increment with the retained command"
+  );
+
+  // A newer unrelated edit cannot be adopted on the strength of an older receipt.
+  const laterBodies = [];
+  await intercept(endpoint, async (route) => {
+    if (route.request().method() !== "POST") return route.continue();
+    laterBodies.push(route.request().postData());
+    if (laterBodies.length === 1) {
+      const response = await route.fetch();
+      assert.equal(response.status(), 200);
+      return route.abort("failed");
+    }
+    return route.continue();
+  });
+  await name.fill(unsent + " second");
+  await submit().click();
+  await retryReady();
+  await command(db, owner.token, {
+    operation: "search-save",
+    mutationId: randomUUID(),
+    searchId: saved.id,
+    expectedVersion: 3,
+    schema: EXCHANGE_SAVED_SCHEMA,
+    name: "Changed independently",
+    criteria,
+    alerts: true
+  });
+  await signal("blur");
+  await signal("focus");
+  await retryReady();
+  await retry().click();
+  await panel
+    .getByText(
+      "The original save is confirmed, but this search changed again. Reload to review current information.",
+      { exact: true }
+    )
+    .waitFor();
+  await clearIntercepts();
+  assert.equal(await panel.locator("input").count(), 0);
+  assert.equal(laterBodies.length, 2);
+  assert.equal(laterBodies[0], laterBodies[1]);
+  assert.equal((await details()).searches[0].version, 4);
+  ok(
+    "An exact older receipt cannot rebase the retained editor onto a newer independent version"
+  );
+
+  const newPath = "/platform/exchange?" + new URLSearchParams(criteria);
+  await go(newPath);
   await page.getByText("Save this search", { exact: true }).click();
   const fresh = page.locator('form[aria-label="Save current search"]');
-  const freshName = fresh.locator('input[type="text"], input:not([type])');
+  const freshName = fresh.getByLabel("Search name", { exact: true });
+  const freshAlerts = fresh.locator('input[type="checkbox"]');
+  await ready(fresh);
   await freshName.fill(unsent + " new");
+  await freshAlerts.check();
   await signal("blur");
-  assert.equal(await freshName.count(), 1);
+  assert.equal(await panel.locator("input").count(), 0);
+  await signal("focus");
+  await ready(fresh);
   assert.equal(await freshName.inputValue(), unsent + " new");
-  assert.equal(await freshName.isVisible(), false);
+  assert.equal(await freshAlerts.isChecked(), true);
+  // A definitive 400 leaves a correctable draft, even across a fresh access read.
+  await intercept(endpoint, (route) =>
+    route.request().method() === "POST"
+      ? fail(route, 400, "Injected validation rejection")
+      : route.continue()
+  );
+  await fresh.locator('button[type="submit"]').click();
+  await fresh
+    .getByText("Injected validation rejection", { exact: true })
+    .waitFor();
+  await clearIntercepts();
+  await signal("blur");
+  await signal("focus");
+  await ready(fresh);
+  assert.equal(await freshName.inputValue(), unsent + " new");
   ok(
-    "BASELINE: the new saved-search composer also retains unsent private name in concealed DOM"
+    "New-search fields survive concealment and definitive validation rejection without becoming a missing-row replay trap"
+  );
+
+  let releaseRead,
+    readStarted,
+    holdRead = false;
+  const readGate = new Promise((resolve) => {
+    releaseRead = resolve;
+  });
+  const readReady = new Promise((resolve) => {
+    readStarted = resolve;
+  });
+  const newBodies = [];
+  await intercept(detailRoute, async (route) => {
+    const response = await route.fetch();
+    if (holdRead) {
+      readStarted();
+      await within(readGate, "New search readback");
+    }
+    return route.fulfill({ response });
+  });
+  await intercept(endpoint, async (route) => {
+    if (route.request().method() !== "POST") return route.continue();
+    newBodies.push(route.request().postData());
+    const response = await route.fetch();
+    assert.equal(response.status(), 200);
+    holdRead = true;
+    return route.fulfill({ response });
+  });
+  await fresh.locator('button[type="submit"]').click();
+  try {
+    await within(readReady, "New search canonical acknowledgment");
+    assert.equal(await panel.locator("input").count(), 0);
+    await signal("blur");
+  } finally {
+    releaseRead();
+  }
+  await clearIntercepts();
+  assert.equal(await panel.locator("input").count(), 0);
+  await signal("focus");
+  await ready(fresh);
+  await waitUntil(async () => (await freshName.inputValue()) === "");
+  assert.equal(await freshAlerts.isChecked(), false);
+  const firstNew = JSON.parse(newBodies[0]);
+  await freshName.fill("Another saved search");
+  await fresh.locator('button[type="submit"]').click();
+  await waitUntil(
+    async () =>
+      (await freshName.count()) === 1 && (await freshName.inputValue()) === ""
+  );
+  await ready(fresh);
+  const currentSearches = (await read(db, owner.token, { view: "searches" }))
+    .searches;
+  const secondNew = currentSearches.find(
+    (row) => row.name === "Another saved search"
+  );
+  assert.ok(secondNew && secondNew.id !== firstNew.searchId);
+  assert.equal(secondNew.version, 1);
+  assert.equal(
+    currentSearches.find((row) => row.id === firstNew.searchId).version,
+    1
+  );
+  ok(
+    "A held readback and hidden receipt cannot reset the new draft; visible exact acknowledgment permits a distinct second version-one search"
+  );
+
+  // Remove a newly saved row before the lost response can be confirmed.
+  const removedBodies = [];
+  await intercept(endpoint, async (route) => {
+    if (route.request().method() !== "POST") return route.continue();
+    removedBodies.push(route.request().postData());
+    if (removedBodies.length === 1) {
+      const response = await route.fetch();
+      assert.equal(response.status(), 200);
+      return route.abort("failed");
+    }
+    return route.continue();
+  });
+  await freshName.fill("Removed before confirmation");
+  await fresh.locator('button[type="submit"]').click();
+  await retryReady();
+  const removedBody = JSON.parse(removedBodies[0]);
+  await command(db, owner.token, {
+    operation: "search-delete",
+    mutationId: randomUUID(),
+    searchId: removedBody.searchId,
+    expectedVersion: 1
+  });
+  await signal("blur");
+  await signal("focus");
+  await retryReady();
+  assert.equal(await panel.locator("input").count(), 0);
+  const retainedUrl = page.url();
+  await panel
+    .getByRole("link", { name: "Open current named searches", exact: true })
+    .click();
+  assert.equal(page.url(), retainedUrl);
+  await retry().click();
+  await panel
+    .getByText(
+      "The original save is confirmed, but this search is now unavailable. Open your current named searches.",
+      { exact: true }
+    )
+    .waitFor();
+  await clearIntercepts();
+  assert.equal(await panel.locator("input").count(), 0);
+  assert.equal(removedBodies.length, 2);
+  assert.equal(removedBodies[0], removedBodies[1]);
+  assert.equal(
+    (
+      await db.exchangeSavedSearch.findUniqueOrThrow({
+        where: { id: removedBody.searchId }
+      })
+    ).version,
+    2
+  );
+  await panel
+    .getByRole("button", { name: "Open current named searches", exact: true })
+    .click();
+  await page.waitForURL("**/platform/exchange/saved?view=searches");
+  await page
+    .getByRole("heading", { name: "Another saved search", exact: true })
+    .waitFor();
+  ok(
+    "A missing minted row grants only pinned-actor exact replay, blocks departure while unresolved and never revives a deleted search"
+  );
+
+  await go(path);
+  await ready();
+  await name.fill(unsent + " account switch");
+  await signIn(other);
+  await signal("blur");
+  await signal("focus");
+  await waitUntil(async () => (await panel.locator("input").count()) === 0);
+  await panel
+    .getByText(
+      "Your sign-in changed. Private entries were cleared. Reload for your current account.",
+      { exact: true }
+    )
+    .waitFor({ state: "attached" });
+  assert.ok(!(await panel.textContent()).includes(unsent));
+  assert.equal(
+    await db.exchangeSavedSearch.count({ where: { ownerId: other.id } }),
+    0
+  );
+  ok(
+    "Confirmed account replacement clears the retained editor and never transfers unsent fields"
   );
   await signIn(other);
   const foreign = await (await go(path)).text();
@@ -298,11 +592,12 @@ try {
     "CONTROL: canonical search detail and rendered editor exclude another account's named search"
   );
   assert.deepEqual(errors, []);
+  assert.deepEqual(layoutFailures, []);
   writeFileSync(
     output + "/results.json",
     JSON.stringify(
       {
-        baseline: true,
+        layoutFailures,
         results,
         errors,
         productionWrites: 0,

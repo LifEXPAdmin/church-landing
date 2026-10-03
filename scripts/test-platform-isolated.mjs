@@ -43,7 +43,11 @@ const profile =
           "qa-exchange-search-browser",
           "qa-exchange-saved-list-privacy-browser"
         ],
-        https: ["exchange-saved-list-http", "exchange-http"]
+        https: [
+          "exchange-saved-search-http",
+          "exchange-saved-list-http",
+          "exchange-http"
+        ]
       }
     : suite === "exchange-saved-list"
       ? {
