@@ -406,6 +406,7 @@ try {
   // Complete that acknowledgement before leaving its guarded editor.
   await waitUntil(async () => (await exact("Publish as active").count()) === 0);
   await waitUntil(() => exact("Archive listing").isEnabled());
+  await page.waitForFunction(() => !history.state?.gcPhotoWork);
   await go(path);
   await page
     .getByRole("heading", { name: "Food parcels", exact: true })
@@ -677,6 +678,15 @@ try {
         })
       ).returned === 1
   );
+  await waitUntil(() =>
+    loanOwn
+      .getByRole("button", {
+        name: "Confirm equipment returned to me",
+        exact: true
+      })
+      .isEnabled()
+  );
+  await page.waitForFunction(() => !history.state?.gcPhotoWork);
   ok(
     "Equipment terms require explicit agreement; partial closing preserves the outstanding return until its actual confirmation"
   );
