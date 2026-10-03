@@ -684,10 +684,12 @@ try {
     .waitFor();
   await page.setViewportSize({ width: 320, height: 780 });
   await page.locator("#quick-appearance").selectOption("dark");
-  await page.locator('.platform-design[data-appearance="dark"]').waitFor();
+  await page
+    .locator('.platform-design[data-reader-size][data-appearance="dark"]')
+    .waitFor();
   assert.equal(
     await page
-      .locator(".platform-design")
+      .locator(".platform-design[data-reader-size]")
       .evaluate((node) => getComputedStyle(node).colorScheme),
     "dark"
   );

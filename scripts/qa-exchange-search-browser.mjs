@@ -506,7 +506,7 @@ try {
   await page.emulateMedia({ colorScheme: "dark" });
   assert.equal(
     await page
-      .locator(".platform-design")
+      .locator(".platform-design[data-reader-size]")
       .evaluate((node) => getComputedStyle(node).colorScheme),
     "dark"
   );
