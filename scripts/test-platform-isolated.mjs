@@ -17,7 +17,13 @@ import { join, resolve } from "node:path";
 
 const suite = process.argv[2] ?? "artists";
 assert.ok(
-  ["artists", "discovery", "resources", "exchange-plans"].includes(suite),
+  [
+    "artists",
+    "discovery",
+    "resources",
+    "exchange-plans",
+    "exchange-services"
+  ].includes(suite),
   "Choose a declared isolated suite"
 );
 const profile =
@@ -38,7 +44,19 @@ const profile =
           browsers: ["qa-discovery-browser", "qa-four-feeds-browser"],
           https: ["discovery-http", "four-feeds-http"]
         }
-      : { services: [], browsers: [], https: [] };
+      : suite === "exchange-services"
+        ? {
+            services: [
+              "exchange-input",
+              "exchange-listings",
+              "exchange-needs",
+              "interchurch-help",
+              "interchurch-help-compatibility"
+            ],
+            browsers: [],
+            https: []
+          }
+        : { services: [], browsers: [], https: [] };
 // This runner deliberately cannot start large artifacts on a local workstation.
 assert.equal(
   process.env.GITHUB_ACTIONS,
@@ -483,16 +501,18 @@ try {
       "tests/exchange-prepared-plans.ts",
       fixture
     ]);
-  } else {
+  } else if (suite !== "exchange-services") {
     await verifyBuiltApplication();
   }
   sync("git", ["diff", "--exit-code"]);
   console.log(
     suite === "exchange-plans"
       ? "PASS: current fictional Exchange service and prepared-plan measurements only; no build, browser, HTTPS or production acceptance."
-      : suite === "resources"
-        ? "PASS: fictional dense resource service and loopback HTTPS measurements. No production connection or delivery credentials; not production capacity acceptance."
-        : `PASS: fictional ${suite} services, production build, browser and enforced-MFA HTTPS checks. No production connection or delivery credentials.`
+      : suite === "exchange-services"
+        ? "PASS: fictional Exchange input, listing, Needs and interchurch compatibility service regressions only."
+        : suite === "resources"
+          ? "PASS: fictional dense resource service and loopback HTTPS measurements. No production connection or delivery credentials; not production capacity acceptance."
+          : `PASS: fictional ${suite} services, production build, browser and enforced-MFA HTTPS checks. No production connection or delivery credentials.`
   );
 } finally {
   await stop(server);

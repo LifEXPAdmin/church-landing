@@ -10,10 +10,12 @@ import {
 } from "node:fs";
 import { join, resolve, sep } from "node:path";
 import { cpus } from "node:os";
+import { pathToFileURL } from "node:url";
 import { PrismaClient, type Prisma } from "@prisma/client";
 import { assertPortalTestDatabase } from "./seed-portal";
 import { listExchangeListings } from "../lib/platform/exchange-listings";
 import type { ExchangeSearchQuery } from "../lib/platform/exchange-options";
+import { exchangeSearchCursor } from "../lib/platform/exchange-search";
 
 assert.equal(process.env.GITHUB_ACTIONS, "true");
 assert.equal(process.env.ACCOUNT_TEST_ISOLATED, "1");
@@ -41,6 +43,20 @@ const fixture = JSON.parse(fixtureBytes.toString());
 const digest = (value: string | Buffer) =>
   createHash("sha256").update(value).digest("hex");
 const raw = mkdtempSync(join(dir, "exchange-private-"));
+// Keep the accepted baseline's original relative imports. This generated file
+// exists only in the owned runner checkout, after the clean-source check, and
+// is excluded from artifact paths. It is never a production build input.
+const baselineSource = "6d81eb56f088062de5726cfaef8f45464ffdd6b9";
+const baselinePath = resolve(
+  `lib/platform/.exchange-baseline-${process.pid}.ts`
+);
+const baselineBytes = execFileSync("git", [
+  "show",
+  `${baselineSource}:lib/platform/exchange-listings.ts`
+]);
+writeFileSync(baselinePath, baselineBytes, { flag: "wx", mode: 0o600 });
+const baselineList = (await import(pathToFileURL(baselinePath).href))
+  .listExchangeListings as typeof listExchangeListings;
 const literal = (value: unknown): string => {
   if (value === null) return "NULL";
   if (Array.isArray(value))
@@ -199,6 +215,8 @@ const shapes: Array<{
 ];
 const receipt = {
   source,
+  baselineSource,
+  baselineModuleSha256: digest(baselineBytes),
   fixtureSha256: digest(fixtureBytes),
   startedAt: new Date().toISOString(),
   host: {
@@ -210,10 +228,11 @@ const receipt = {
   databaseVersion: "",
   measurements: [] as unknown[],
   limitations:
-    "Fresh client per shape; default pool limit unmeasured. Serial canonical service and separate repeated prepared SQL. Warm fixture on PostgreSQL 16; not HTTP, browser, production capacity or an application change. No new indexes or planner overrides in application code."
+    "Fresh baseline and candidate clients per shape; default pool limit unmeasured. Alternating paired canonical service reads and separate repeated prepared SQL. Warm fixture on PostgreSQL 16; not HTTP, browser or production capacity. Baseline module loaded from its exact Git commit with otherwise unchanged dependencies. No new indexes or planner overrides in application code."
 };
 for (const shape of shapes) {
   const db = new PrismaClient({ log: [{ emit: "event", level: "query" }] });
+  const baselineDb = new PrismaClient();
   let events: Prisma.QueryEvent[] = [];
   let capturing = false;
   db.$on("query", (event) => {
@@ -227,8 +246,12 @@ for (const shape of shapes) {
     receipt.databaseVersion = version[0].version;
     const token = shape.guest ? null : fixture.actors[0].token;
     const query = { ...shape.query };
+    query.after = exchangeSearchCursor(
+      shape.guest ? null : fixture.actors[0].id,
+      query
+    ).encode({ at: new Date().toISOString(), anchor: null });
     if (shape.second) {
-      const first = await listExchangeListings(db, token, query);
+      const first = await baselineList(baselineDb, token, query);
       assert.ok(first.after);
       query.after = first.after;
     }
@@ -236,12 +259,24 @@ for (const shape of shapes) {
       listing: Prisma.QueryEvent | undefined;
     const samples = [];
     for (let n = 0; n < 9; n++) {
+      const baselineRead = async () => {
+        const start = performance.now();
+        const value = await baselineList(baselineDb, token, query);
+        return { value, milliseconds: performance.now() - start };
+      };
+      const before = n % 2 === 0 ? await baselineRead() : null;
       events = [];
       capturing = true;
       const start = performance.now();
       const value = await listExchangeListings(db, token, query);
       const milliseconds = performance.now() - start;
       capturing = false;
+      const baseline = before ?? (await baselineRead());
+      assert.deepEqual(
+        value,
+        baseline.value,
+        `${shape.name}: full projection and signed cursors match original query`
+      );
       assert.equal(value.listings.length, shape.expected);
       const current = digest(JSON.stringify(value.listings));
       if (n)
@@ -254,13 +289,20 @@ for (const shape of shapes) {
       listing = events.find(
         (event) =>
           event.query.includes('FROM "public"."ExchangeListing"') &&
-          event.query.includes("ORDER BY")
+          event.query.includes("ORDER BY") &&
+          event.query.split(" FROM ")[0].includes('"helpPurpose"')
       );
-      assert.ok(listing, `Capture canonical ${shape.name} listing query`);
+      // An empty cheap candidate set correctly avoids an authorization query.
+      assert.ok(
+        listing || value.listings.length === 0,
+        `Capture canonical ${shape.name} listing query`
+      );
       samples.push({
         iteration: n + 1,
         warmup: n === 0,
         milliseconds,
+        baselineMilliseconds: baseline.milliseconds,
+        baselineFirst: before !== null,
         statements: events.length,
         sqlMilliseconds: events.reduce((sum, event) => sum + event.duration, 0),
         statementsByShape: events.map((event) => ({
@@ -271,15 +313,14 @@ for (const shape of shapes) {
         }))
       });
     }
-    assert.ok(listing);
     receipt.measurements.push({
       name: shape.name,
       expectedRows: shape.expected,
       projectionSha256: projection,
-      querySha256: digest(listing.query),
-      parameterBytes: Buffer.byteLength(listing.params),
+      querySha256: listing ? digest(listing.query) : null,
+      parameterBytes: listing ? Buffer.byteLength(listing.params) : 0,
       samples,
-      plans: explain(listing, shape.name)
+      plans: listing ? explain(listing, shape.name) : []
     });
     writeFileSync(
       join(dir, "exchange-plans-progress.json"),
@@ -287,10 +328,11 @@ for (const shape of shapes) {
       { mode: 0o600 }
     );
     console.log(
-      `Measured ${shape.name}: 9 canonical calls and 24 prepared-plan executions`
+      `Measured ${shape.name}: 9 exact baseline/candidate pairs and ${listing ? 24 : 0} prepared-plan executions`
     );
   } finally {
     await db.$disconnect();
+    await baselineDb.$disconnect();
   }
 }
 writeFileSync(
@@ -303,5 +345,5 @@ writeFileSync(
   { flag: "wx", mode: 0o600 }
 );
 console.log(
-  "PASS: 72 canonical calls plus one second-page setup read, and 192 prepared-plan executions; aggregate evidence excludes SQL, parameters and credentials."
+  "PASS: 72 exact baseline/candidate pairs plus one second-page setup read; at most 192 prepared-plan executions. Aggregate evidence excludes SQL, parameters and credentials."
 );

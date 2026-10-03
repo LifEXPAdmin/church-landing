@@ -20,6 +20,30 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  services:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install locked application dependencies
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm run prisma:generate
+      - name: Locate runner-only PostgreSQL tooling
+        shell: bash
+        run: |
+          set -euo pipefail
+          pg_bin="$(pg_config --bindir)"
+          test -x "$pg_bin/initdb"
+          echo "TEST_PG_BIN=$pg_bin" >> "$GITHUB_ENV"
+      - name: Verify fictional Exchange boundaries and compatibility
+        run: node scripts/test-platform-isolated.mjs exchange-services
   measure:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -27,6 +51,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          fetch-depth: 20
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
