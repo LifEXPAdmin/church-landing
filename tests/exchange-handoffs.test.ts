@@ -922,7 +922,9 @@ test("a church receiver is a named adult; other managers cannot see the inquiry 
         operation: "mfa-confirm",
         requestKey: randomUUID(),
         expectedVersion: factor.version,
-        code: authenticatorTotp(secret, counter - BigInt(1))
+        // Current then next counter stays valid across a 30-second rollover.
+        // Real verification and one-use counter enforcement remain enabled.
+        code: authenticatorTotp(secret, counter)
       },
       undefined
     );
@@ -935,7 +937,7 @@ test("a church receiver is a named adult; other managers cannot see the inquiry 
         requestKey: randomUUID(),
         expectedVersion: enrolled.version,
         purpose: "privileged-work",
-        code: authenticatorTotp(secret, counter)
+        code: authenticatorTotp(secret, counter + BigInt(1))
       },
       undefined
     );
