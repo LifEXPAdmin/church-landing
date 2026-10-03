@@ -11,6 +11,7 @@ import { useUnsavedSocialWork } from "./use-unsaved-social-work";
 type ChoiceReceipt = { id: string; version: number; message: string };
 export type PrivateChoiceAccess = {
   currentAccess: boolean;
+  preserveDirty?: boolean;
   expectedReceiptId?: () => string | null;
   onAccessDenied: () => void;
   onConfirmed: (receipt: ChoiceReceipt) => void;
@@ -36,6 +37,7 @@ export function usePrivateChoiceAction(
   const latest = useRef({ privacy, onSaved });
   latest.current = { privacy, onSaved };
   const flight = useRef(false);
+  const confirmedVersion = useRef<number | null>(null);
   useEffect(() => {
     if (confirmation && privacy?.currentAccess) setSaved(true);
   }, [confirmation, privacy?.currentAccess]);
@@ -95,7 +97,10 @@ export function usePrivateChoiceAction(
           setBusy(false);
           setConflict(false);
           if (protectBack && !latest.current.privacy) setSaved(true);
-          if (latest.current.privacy) setConfirmation(data);
+          if (latest.current.privacy) {
+            confirmedVersion.current = data.version;
+            setConfirmation(data);
+          }
           setMessage(data.message);
         });
         if (latest.current.privacy) return true;
@@ -139,7 +144,7 @@ export function usePrivateChoiceAction(
   usePrivateRecovery("private-choice-" + id, !!pending, busy, retry);
   useUnsavedSocialWork(
     {
-      dirty: dirty && !saved,
+      dirty: dirty && (!saved || !!privacy?.preserveDirty),
       saving: busy || !!pending || (!!confirmation && !saved),
       conflict
     },
@@ -147,6 +152,23 @@ export function usePrivateChoiceAction(
     protectBack
   );
   return {
+    // Only the retained owner can re-arm after consuming this exact receipt
+    // and adopting a freshly authorized snapshot. Existing one-shot callers
+    // keep their saved latch unless they explicitly use this method.
+    rearm(version: number) {
+      if (
+        !privacy?.currentAccess ||
+        flight.current ||
+        pending ||
+        confirmation ||
+        !saved ||
+        confirmedVersion.current !== version
+      )
+        return false;
+      confirmedVersion.current = null;
+      setSaved(false);
+      return true;
+    },
     blocked:
       !visible ||
       (privacy && !privacy.currentAccess) ||

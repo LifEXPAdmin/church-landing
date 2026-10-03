@@ -10,12 +10,17 @@ on:
         codex/exchange-editor-bootstrap-20261003,
         codex/exchange-defaults-privacy-20261003,
         codex/exchange-inquiry-list-privacy-20261003,
-        codex/exchange-inquiry-composer-privacy-20261003
+        codex/exchange-inquiry-composer-privacy-20261003,
+        codex/exchange-handoff-detail-privacy-20261003
       ]
     paths:
       - .github/workflows/exchange-verification.yml
       - app/platform/exchange/**/page.tsx
       - scripts/test-platform-isolated.mjs
+      - scripts/qa-exchange-handoff-detail-privacy-browser.mjs
+      - components/platform/exchange-handoff-detail.tsx
+      - tests/exchange-handoff-detail-privacy.test.mjs
+      - tests/exchange-handoff-detail-http.test.ts
       - scripts/qa-exchange-inquiry-composer-privacy-browser.mjs
       - components/platform/exchange-inquiry-composer.tsx
       - components/platform/use-private-choice-action.tsx
@@ -86,7 +91,7 @@ jobs:
           chromium_path="$(node -e "console.log(require(process.argv[1]).chromium.executablePath())" "$RUNNER_TEMP/exchange-browser/node_modules/playwright")"
           echo "CHROMIUM_PATH=$chromium_path" >> "$GITHUB_ENV"
       - name: Build and verify fictional Exchange over local HTTPS
-        run: node scripts/test-platform-isolated.mjs ${{ github.ref_name == 'codex/exchange-inquiry-composer-privacy-20261003' && 'exchange-inquiry-composer' || github.ref_name == 'codex/exchange-inquiry-list-privacy-20261003' && 'exchange-inquiry-list' || github.ref_name == 'codex/exchange-defaults-privacy-20261003' && 'exchange-defaults' || github.ref_name == 'codex/exchange-editor-bootstrap-20261003' && 'exchange-bootstrap' || 'exchange' }}
+        run: node scripts/test-platform-isolated.mjs ${{ github.ref_name == 'codex/exchange-handoff-detail-privacy-20261003' && 'exchange-handoff-detail' || github.ref_name == 'codex/exchange-inquiry-composer-privacy-20261003' && 'exchange-inquiry-composer' || github.ref_name == 'codex/exchange-inquiry-list-privacy-20261003' && 'exchange-inquiry-list' || github.ref_name == 'codex/exchange-defaults-privacy-20261003' && 'exchange-defaults' || github.ref_name == 'codex/exchange-editor-bootstrap-20261003' && 'exchange-bootstrap' || 'exchange' }}
       - name: Preserve fictional browser results and screenshots
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -126,6 +131,9 @@ jobs:
             .account-test/exchange-inquiry-composer-hosted-*/exchange-handoff-browser-*/*.png
             .account-test/exchange-inquiry-composer-hosted-*/exchange-handoff-browser-*/results.json
             .account-test/exchange-inquiry-composer-hosted-*/exchange-handoff-browser-*/failure.txt
+            .account-test/exchange-handoff-detail-hosted-*/*-browser-*/*.png
+            .account-test/exchange-handoff-detail-hosted-*/*-browser-*/results.json
+            .account-test/exchange-handoff-detail-hosted-*/*-browser-*/failure.txt
           include-hidden-files: true
           if-no-files-found: ignore
           retention-days: 7

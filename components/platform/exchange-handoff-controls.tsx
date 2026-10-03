@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useCallback, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import type { ExchangeHandoffView } from "@/lib/platform/exchange-handoffs";
 import type { readExchangeDefaults } from "@/lib/platform/exchange-defaults";
 import {
@@ -257,10 +257,18 @@ function localValue(instant: string | null, zone: string | null) {
 
 export function ExchangeHandoffActions({
   owner,
-  inquiry
+  inquiry,
+  privacy,
+  acceptedVersion,
+  onRequest,
+  cleared = false
 }: {
   owner: string;
   inquiry: Inquiry;
+  privacy: PrivateChoiceAccess;
+  acceptedVersion?: number;
+  onRequest?: (operation: string) => void;
+  cleared?: boolean;
 }) {
   const id = useId(),
     visible = useReadVisibility();
@@ -271,37 +279,197 @@ export function ExchangeHandoffActions({
     pickupDetails: inquiry.pickupDetails
   };
   const [plan, setPlan] = useState(initial),
-    [agree, setAgree] = useState(false),
+    [agree, setAgree] = useState<number | null>(null),
     [reason, setReason] = useState<ExchangeCancellationReason>("CHANGED_PLANS"),
     [note, setNote] = useState("");
   const [defaultsNotice, setDefaultsNotice] = useState(""),
     [loadingDefaults, setLoadingDefaults] = useState(false);
+  const [baseline, setBaseline] = useState(initial);
+  const planDirty = JSON.stringify(plan) !== JSON.stringify(baseline);
   const dirty =
-    JSON.stringify(plan) !== JSON.stringify(initial) ||
-    agree ||
-    !!note ||
-    reason !== "CHANGED_PLANS";
-  const action = useExchangeAction(owner, dirty, undefined, true);
+    planDirty || agree !== null || !!note || reason !== "CHANGED_PLANS";
+  const submitted = useRef<{
+    operation: string;
+    plan: typeof plan;
+    agree: number | null;
+    reason: ExchangeCancellationReason;
+    note: string;
+  } | null>(null);
+  const confirmed = useRef<number | null>(null);
+  const latest = useRef({
+    plan,
+    agree,
+    reason,
+    note,
+    visible,
+    currentAccess: privacy.currentAccess
+  });
+  latest.current = {
+    plan,
+    agree,
+    reason,
+    note,
+    visible,
+    currentAccess: privacy.currentAccess
+  };
+  const copyGeneration = useRef(0),
+    copyController = useRef<AbortController | null>(null);
+  const invalidateCopy = useCallback(() => {
+    copyGeneration.current++;
+    copyController.current?.abort();
+    copyController.current = null;
+    setLoadingDefaults(false);
+  }, []);
+  useEffect(() => {
+    invalidateCopy();
+    return invalidateCopy;
+  }, [visible, privacy.currentAccess, inquiry, invalidateCopy]);
+  const action = usePrivateChoiceAction(
+    "/api/platform/exchange",
+    owner,
+    dirty,
+    undefined,
+    true,
+    {
+      ...privacy,
+      preserveDirty: true,
+      expectedReceiptId: () => inquiry.id,
+      onConfirmed(receipt) {
+        const sent = submitted.current;
+        if (!sent) return;
+        invalidateCopy();
+        if (["select", "plan"].includes(sent.operation)) setBaseline(sent.plan);
+        if (sent.operation === "confirm" && latest.current.agree === sent.agree)
+          setAgree(null);
+        if (sent.operation === "cancel") {
+          if (latest.current.reason === sent.reason) setReason("CHANGED_PLANS");
+          if (latest.current.note === sent.note) setNote("");
+        }
+        confirmed.current = receipt.version;
+        privacy.onConfirmed(receipt);
+      }
+    }
+  );
+  const rearm = action.rearm;
+  useEffect(() => {
+    if (
+      confirmed.current !== null &&
+      acceptedVersion === confirmed.current &&
+      rearm(confirmed.current)
+    ) {
+      confirmed.current = null;
+      submitted.current = null;
+    }
+  }, [acceptedVersion, rearm]);
+  const adopted = useRef(inquiry);
+  // Only clean fields follow a newly authorized snapshot. Dirty siblings retain
+  // their own baseline and agreement always stays bound to its original plan.
+  useEffect(() => {
+    if (adopted.current === inquiry) return;
+    adopted.current = inquiry;
+    const fresh = {
+      startLocal: localValue(inquiry.windowStart, inquiry.timeZone),
+      endLocal: localValue(inquiry.windowEnd, inquiry.timeZone),
+      timeZone: inquiry.timeZone ?? "UTC",
+      pickupDetails: inquiry.pickupDetails
+    };
+    if (!planDirty && JSON.stringify(baseline) !== JSON.stringify(fresh)) {
+      setPlan(fresh);
+      setBaseline(fresh);
+    }
+  }, [inquiry, planDirty, baseline]);
   const canPlan =
+    !cleared &&
     inquiry.available &&
     inquiry.side === "incoming" &&
     ["INQUIRED", "SELECTED"].includes(inquiry.state);
   const held =
-    inquiry.available && ["SELECTED", "RESERVED"].includes(inquiry.state);
-  const command = (operation: string, extra: Record<string, unknown> = {}) =>
-    action.command({
+    !cleared &&
+    inquiry.available &&
+    ["SELECTED", "RESERVED"].includes(inquiry.state);
+  const command = (operation: string, extra: Record<string, unknown> = {}) => {
+    if (action.blocked) return;
+    invalidateCopy();
+    submitted.current = { operation, plan, agree, reason, note };
+    onRequest?.(operation);
+    return action.command({
       operation: `handoff-${operation}`,
       id: inquiry.id,
       expectedVersion: inquiry.version,
       ...extra
     });
+  };
   const discard = () => {
+    invalidateCopy();
     setPlan(initial);
-    setAgree(false);
+    setBaseline(initial);
+    setAgree(null);
     setReason("CHANGED_PLANS");
     setNote("");
     setDefaultsNotice("");
   };
+  const copyDefaults = async () => {
+    if (!visible || action.blocked) return;
+    invalidateCopy();
+    const seq = copyGeneration.current,
+      request = new AbortController();
+    copyController.current = request;
+    const deadline = setTimeout(() => request.abort(), 15000);
+    const pickupAtStart = plan.pickupDetails;
+    setLoadingDefaults(true);
+    try {
+      const { data } = await socialRequest<
+        Awaited<ReturnType<typeof readExchangeDefaults>>
+      >(
+        "/api/platform/exchange?view=defaults",
+        undefined,
+        owner,
+        "POST",
+        undefined,
+        request.signal
+      );
+      if (
+        request.signal.aborted ||
+        seq !== copyGeneration.current ||
+        !latest.current.visible ||
+        !latest.current.currentAccess ||
+        latest.current.plan.pickupDetails !== pickupAtStart
+      )
+        return;
+      if (
+        data.ownerId !== owner ||
+        typeof data.fields?.pickupDetails !== "string" ||
+        typeof data.recoveryRequired !== "boolean"
+      )
+        throw Error("Your private defaults could not be confirmed.");
+      if (data.recoveryRequired)
+        setDefaultsNotice("Review your recovered defaults before using them.");
+      else {
+        setPlan((previous) => ({
+          ...previous,
+          pickupDetails: data.fields.pickupDetails
+        }));
+        setDefaultsNotice(
+          "Copied your private default. Review it for this handoff before proposing the plan."
+        );
+      }
+    } catch (error) {
+      if (seq === copyGeneration.current && latest.current.visible)
+        setDefaultsNotice(
+          request.signal.aborted
+            ? "Your private defaults check timed out. Try again."
+            : error instanceof Error
+              ? error.message
+              : "Your private defaults could not be checked."
+        );
+    } finally {
+      clearTimeout(deadline);
+      request.abort();
+      if (copyController.current === request) copyController.current = null;
+      if (seq === copyGeneration.current) setLoadingDefaults(false);
+    }
+  };
+  if (!visible) return action.status;
   return (
     <div className="space-y-5">
       {canPlan && (
@@ -343,9 +511,10 @@ export function ExchangeHandoffActions({
                   required
                   className={portalInputClass}
                   value={plan[field]}
-                  onChange={(e) =>
-                    setPlan({ ...plan, [field]: e.target.value })
-                  }
+                  onChange={(e) => {
+                    invalidateCopy();
+                    setPlan({ ...plan, [field]: e.target.value });
+                  }}
                 />
               </label>
             ))}
@@ -357,7 +526,10 @@ export function ExchangeHandoffActions({
                 maxLength={100}
                 className={portalInputClass}
                 value={plan.timeZone}
-                onChange={(e) => setPlan({ ...plan, timeZone: e.target.value })}
+                onChange={(e) => {
+                  invalidateCopy();
+                  setPlan({ ...plan, timeZone: e.target.value });
+                }}
               />
             </label>
             <p className="text-sm text-gc-muted">
@@ -373,43 +545,16 @@ export function ExchangeHandoffActions({
                 maxLength={2000}
                 className={portalInputClass}
                 value={plan.pickupDetails}
-                onChange={(e) =>
-                  setPlan({ ...plan, pickupDetails: e.target.value })
-                }
+                onChange={(e) => {
+                  invalidateCopy();
+                  setPlan({ ...plan, pickupDetails: e.target.value });
+                }}
               />
             </label>
             <button
               type="button"
               className="gc-button gc-button-quiet"
-              onClick={async () => {
-                if (!visible) return;
-                setLoadingDefaults(true);
-                try {
-                  const { data } = await socialRequest<
-                    Awaited<ReturnType<typeof readExchangeDefaults>>
-                  >("/api/platform/exchange?view=defaults", undefined, owner);
-                  if (!data.recoveryRequired) {
-                    setPlan((previous) => ({
-                      ...previous,
-                      pickupDetails: data.fields.pickupDetails
-                    }));
-                    setDefaultsNotice(
-                      "Copied your private default. Review it for this handoff before proposing the plan."
-                    );
-                  } else
-                    setDefaultsNotice(
-                      "Review your recovered defaults before using them."
-                    );
-                } catch (error) {
-                  setDefaultsNotice(
-                    error instanceof Error
-                      ? error.message
-                      : "Your private defaults could not be checked."
-                  );
-                } finally {
-                  setLoadingDefaults(false);
-                }
-              }}
+              onClick={() => void copyDefaults()}
             >
               Copy my private pickup default
             </button>
@@ -422,7 +567,8 @@ export function ExchangeHandoffActions({
           </fieldset>
         </form>
       )}
-      {inquiry.available &&
+      {!cleared &&
+        inquiry.available &&
         inquiry.state === "SELECTED" &&
         inquiry.side === "outgoing" && (
           <section className="space-y-3" aria-label="Confirm pickup agreement">
@@ -436,16 +582,18 @@ export function ExchangeHandoffActions({
               <input
                 type="checkbox"
                 className="mt-1"
-                checked={agree}
+                checked={agree === inquiry.planVersion}
                 disabled={action.blocked}
-                onChange={(e) => setAgree(e.target.checked)}
+                onChange={(e) =>
+                  setAgree(e.target.checked ? inquiry.planVersion : null)
+                }
               />
               I agree to this exact pickup window and understand its expiry.
             </label>
             <button
               type="button"
               className="gc-button"
-              disabled={action.blocked || !agree}
+              disabled={action.blocked || agree !== inquiry.planVersion}
               onClick={() =>
                 void command("confirm", { planVersion: inquiry.planVersion })
               }
@@ -454,7 +602,7 @@ export function ExchangeHandoffActions({
             </button>
           </section>
         )}
-      {inquiry.available && inquiry.state === "INQUIRED" && (
+      {!cleared && inquiry.available && inquiry.state === "INQUIRED" && (
         <button
           type="button"
           className="gc-button gc-button-quiet"
@@ -540,7 +688,7 @@ export function ExchangeHandoffActions({
           </fieldset>
         </section>
       )}
-      {inquiry.canClear && (
+      {!cleared && inquiry.canClear && (
         <button
           type="button"
           className="gc-button gc-button-quiet"
@@ -556,6 +704,37 @@ export function ExchangeHandoffActions({
         >
           Clear from my history
         </button>
+      )}
+      {dirty && (!canPlan || !held || cleared) && (
+        <details className="space-y-3 rounded-xl border p-4">
+          <summary className="min-h-11 cursor-pointer">
+            Review retained unsent choices
+          </summary>
+          <p>
+            These local choices have not been submitted. Discard them
+            deliberately when they are no longer needed.
+          </p>
+          {planDirty && !canPlan && (
+            <div>
+              <p>
+                {plan.startLocal} to {plan.endLocal} ({plan.timeZone})
+              </p>
+              <p className="whitespace-pre-wrap">{plan.pickupDetails}</p>
+            </div>
+          )}
+          {!held && (note || reason !== "CHANGED_PLANS") && (
+            <div>
+              <p>{exchangeCancellationReasons[reason]}</p>
+              <p className="whitespace-pre-wrap">{note}</p>
+            </div>
+          )}
+          {agree !== null && (
+            <p>
+              Your unsent agreement was for pickup plan {agree}. It does not
+              apply to a replacement plan.
+            </p>
+          )}
+        </details>
       )}
       {dirty && (
         <button

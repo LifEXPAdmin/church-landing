@@ -427,6 +427,18 @@ try {
   await page
     .getByRole("link", { name: "Confirm in another tab", exact: true })
     .waitFor();
+  const privateDetail = page.locator(
+    'section[aria-label="Private handoff details"]'
+  );
+  await waitUntil(
+    async () => (await privateDetail.locator("textarea").count()) === 0
+  );
+  await privateDetail
+    .getByRole("button", { name: "Recheck current access", exact: true })
+    .click();
+  await page
+    .getByLabel("Private pickup instructions (optional)", { exact: false })
+    .waitFor();
   assert.equal(
     await page
       .getByLabel("Private pickup instructions (optional)", { exact: false })
