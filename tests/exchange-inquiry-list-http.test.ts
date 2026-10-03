@@ -162,6 +162,10 @@ test("private inquiry lists omit server payloads and preserve current-account pa
     const actual = await page.json();
     assert.deepEqual(actual, first);
     assert.ok(!JSON.stringify(actual).includes(purpose));
+    assert.ok(
+      actual.after,
+      "The first 20-row page must expose its seek cursor"
+    );
     const next = await req(endpoint(view, actual.after), actor.token, {
       "x-expected-account": actor.id
     });
