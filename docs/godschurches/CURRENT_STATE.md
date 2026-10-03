@@ -1,3 +1,29 @@
+## My Needs contribution privacy runtime verified, 3 October 2026 UTC
+
+[Draft PR15](https://github.com/LifEXPAdmin/church-landing/pull/15) retains
+canonical server authorization while omitting contribution rows from initial
+HTML/RSC. A bounded current page read initializes retained card owners;
+concealed private articles, links and inputs are physically absent. Exact
+per-row receipts and canonical versions are required before changed rows can
+be presented or another command sent. Unsent sibling dispute and equipment-return
+entries survive other confirmed actions. Unexpected row/order/page changes
+remain concealed until deliberate recovery.
+
+Application `009efd2bef92d1c110deb3eff4ad4e9fb9ee092c` passes 267 focused checks.
+Final test candidate `22f22650e92e0c49101151942a0a7251e4db596c` passes
+[runtime 37122595014](https://github.com/LifEXPAdmin/church-landing/actions/runs/37122595014),
+build `uRbfHWiPxg8LTlGXVX6gd`: 18 services, 20 browser groups and two HTTPS
+cases, including own-only reads/replay, source redaction, outstanding loan
+returns and current coordinator MFA. Exact serving source is verified in both
+MFA modes. Source checks pass 368 tests, copy and types before the existing
+seven-high advisory audit fails; subsequent security steps skip.
+[Security acceptance](SOURCE_SECURITY_ACCEPTANCE.md) preserves baseline exposure,
+failed fixture attempts, strengthened browser completion checks and eight hashed
+final artifacts totaling 1,597,456 bytes. Application code is unchanged across
+the test corrections. PR15 stacks on PR14; final review closure is recorded in
+the existing private task handoff. No integration, deployment or release
+acceptance is claimed.
+
 ## Individual Exchange favorite runtime verified, 3 October 2026 UTC
 
 [Draft PR 14](https://github.com/LifEXPAdmin/church-landing/pull/14) removes the

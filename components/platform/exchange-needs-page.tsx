@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { PlatformShell } from "./platform-shell";
+import { ExchangeNeedContributions } from "./exchange-need-contributions";
 import { PrivateSnapshotGuard } from "./private-snapshot-guard";
 import { TopicReadBoundary } from "./topic-read-boundary";
 import {
@@ -57,10 +58,6 @@ export async function ExchangeNeedsPage({
     if (!listingId) {
       if (!user) content = <ExchangeAccountLinks next={path} />;
       else {
-        const params = {
-          view: "need-mine",
-          ...(query.after ? { after: postId(query.after) } : {})
-        };
         const result = await exchangeNeedPage({
           view: "mine",
           after: query.after
@@ -68,46 +65,11 @@ export async function ExchangeNeedsPage({
         if (!("contributions" in result))
           throw new Error("Contribution projection unavailable");
         content = (
-          <PrivateSnapshotGuard
+          <ExchangeNeedContributions
+            key={`${user.id}:${query.after ?? ""}`}
             owner={user.id}
-            url={`/api/platform/exchange?${new URLSearchParams(params)}`}
-            checksum={exchangeChecksum(result)}
-            label="your Needs contributions"
-          >
-            <div className="space-y-4">
-              <h1 className="text-4xl">My Needs contributions</h1>
-              <p>
-                Your promises, private quotes, receipts and outstanding
-                equipment returns. Current source details remain subject to
-                access checks.
-              </p>
-              {!result.contributions?.length && (
-                <p>
-                  You have no contributions on this page. Open a current Church
-                  need in Exchange to choose help deliberately.
-                </p>
-              )}
-              {result.contributions?.map(
-                (row) =>
-                  row && (
-                    <NeedContributionCard
-                      key={`${row.id}:${row.version}`}
-                      owner={user.id}
-                      row={row}
-                    />
-                  )
-              )}
-              {result.next && (
-                <Link
-                  prefetch={false}
-                  className="gc-button gc-button-quiet"
-                  href={`${path}?after=${encodeURIComponent(result.next)}`}
-                >
-                  More contributions
-                </Link>
-              )}
-            </div>
-          </PrivateSnapshotGuard>
+            after={query.after ? postId(query.after) : undefined}
+          />
         );
       }
     } else {
