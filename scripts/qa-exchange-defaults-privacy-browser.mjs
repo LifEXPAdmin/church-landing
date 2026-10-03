@@ -75,11 +75,37 @@ const context = await browser.newContext({
   viewport: { width: 390, height: 844 },
   hasTouch: true
 });
-await context.route("**/*", (route) =>
-  new URL(route.request().url()).origin === config.origin
-    ? route.continue()
-    : route.abort()
-);
+// One dispatcher owns each request. Keep the origin fence mounted while
+// changing fault injections, so page/context routing cannot race for ownership.
+let intercepts = [];
+const routed = new Set(),
+  routingErrors = [];
+const intercept = async (match, handle) => {
+  intercepts.push({ match, handle });
+};
+const clearIntercepts = async () => {
+  intercepts = [];
+  await Promise.all([...routed]);
+  assert.deepEqual(routingErrors, []);
+};
+await context.route("**/*", async (route) => {
+  const url = new URL(route.request().url());
+  if (url.origin !== config.origin) return route.abort();
+  const rule = [...intercepts]
+    .reverse()
+    .find(({ match }) =>
+      typeof match === "string" ? url.href === match : match(url)
+    );
+  if (!rule) return route.continue();
+  const pending = Promise.resolve()
+    .then(() => rule.handle(route))
+    .catch((error) => {
+      routingErrors.push(error.message);
+    });
+  routed.add(pending);
+  await pending;
+  routed.delete(pending);
+});
 const page = await context.newPage(),
   errors = [],
   results = [],
@@ -163,7 +189,7 @@ try {
     );
   }
   ok("Initial owner HTML and RSC omit the saved private pickup marker");
-  await page.route(defaultsRoute, (route) =>
+  await intercept(defaultsRoute, (route) =>
     route.fulfill({
       status: 403,
       contentType: "application/json",
@@ -182,7 +208,7 @@ try {
   assert.ok(
     !(await page.locator("script").allTextContents()).join("").includes(marker)
   );
-  await page.unrouteAll({ behavior: "wait" });
+  await clearIntercepts();
   await exact("Recheck current access").click();
   await pickup.waitFor();
   assert.equal(await pickup.inputValue(), marker);
@@ -209,7 +235,7 @@ try {
   ok(
     "Blur, pagehide and offline remove private fields; same-owner return retains pickup and unselected town text"
   );
-  await page.route(
+  await intercept(
     (url) =>
       url.pathname === "/api/platform/profile" &&
       url.searchParams.get("view") === "identity",
@@ -228,7 +254,7 @@ try {
     })
     .first()
     .waitFor();
-  await page.unrouteAll({ behavior: "wait" });
+  await clearIntercepts();
   await exact("Recheck current access").click();
   await pickup.waitFor();
   assert.equal(await pickup.inputValue(), marker + " unsaved");
@@ -238,7 +264,7 @@ try {
   const endpoint = config.origin + "/api/platform/exchange";
   // Definitive validation failure clears only this rejected command.
   let rejectedBody;
-  await page.route(endpoint, async (route) => {
+  await intercept(endpoint, async (route) => {
     if (route.request().method() !== "POST") return route.continue();
     rejectedBody = route.request().postData();
     await route.fulfill({
@@ -255,14 +281,14 @@ try {
     .waitFor();
   assert.equal(await exact("Confirm original save").count(), 0);
   assert.equal(await pickup.inputValue(), marker + " unsaved");
-  await page.unrouteAll({ behavior: "wait" });
+  await clearIntercepts();
   ok(
     "Definitive validation rejection preserves editable entries without an uncertain retry"
   );
   const before = (await saved()).version,
     bodies = [];
   let attempt = 0;
-  await page.route(endpoint, async (route) => {
+  await intercept(endpoint, async (route) => {
     if (route.request().method() !== "POST") return route.continue();
     bodies.push(route.request().postData());
     attempt++;
@@ -321,7 +347,7 @@ try {
   assert.equal(new Set(bodies).size, 1);
   assert.equal((await saved()).version, before + 1);
   assert.equal((await saved()).pickupDetails, marker + " unsaved");
-  await page.unrouteAll({ behavior: "wait" });
+  await clearIntercepts();
   ok(
     "Lost accepted save survives concealment and 429/503; four byte-identical attempts increment defaults once"
   );
@@ -334,7 +360,7 @@ try {
     });
   const lateBefore = (await saved()).version;
   let lateWrites = 0;
-  await page.route(endpoint, async (route) => {
+  await intercept(endpoint, async (route) => {
     if (route.request().method() !== "POST") return route.continue();
     lateWrites++;
     const result = await route.fetch();
@@ -351,7 +377,7 @@ try {
   release();
   await page.waitForTimeout(150);
   assert.equal(await pickup.count(), 0);
-  await page.unrouteAll({ behavior: "wait" });
+  await clearIntercepts();
   await signal("focus");
   await pickup.waitFor();
   await waitUntil(
@@ -411,6 +437,7 @@ try {
     fullPage: true
   });
   ok("Private defaults fit 390px and 320px enlarged text layouts");
+  await clearIntercepts();
   assert.deepEqual(errors, []);
   ok("No browser runtime errors in the personal defaults privacy flow");
 } catch (error) {
