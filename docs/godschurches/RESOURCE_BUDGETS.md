@@ -1,5 +1,73 @@
 # Resource budgets for enabled modules
 
+## Saved feed pages verified in isolation, 3 October 2026 UTC
+
+Candidate `890c0f92ad9bb9c84ecdf91d17055c15fe76a725` preserves saved page order
+while rechecking current eligibility in increasing windows. It stops when 30
+eligible rows and one continuation are known, or the saved set is exhausted.
+The first window has 120 references and later windows grow to at most 1,920.
+Long revoked prefixes still fill the page. The cursor stays immediately after
+the last returned reference, so a restored gap is not skipped by lookahead.
+The same permission transaction, current source/hidden/repost filters and
+expired-page fallback remain in use for discovery and legacy saved feeds.
+
+The hosted fixture contains 10,000 fictional posts and 10,000 Likes. Each
+Public/Weekly size uses one warmup and seven measured reads of a real signed
+page cursor. Seeding and initial ranking are excluded. The 100/1,000/10,000
+reference sets share that same database. All reads assert the exact 30-row
+order and continuation. Additional cases cover long revoked prefixes, restored
+gaps, exactly 30 remaining rows and complete revocation. Seven pure paging
+tests also cover sparse/duplicate reference equivalence and read failures.
+
+| Saved references | Public median ms | Weekly median ms |
+| --- | ---: | ---: |
+| 100 | 115.727 | 85.528 |
+| 1,000 | 127.999 | 118.128 |
+| 10,000 | 133.478 | 123.819 |
+
+On baseline `6650d3a01fa3a4a609b9a8c43767163f19bce3f3`, the 10,000-reference
+case sent all 10,000 IDs to the eligibility query. The candidate sends 120 in
+this common eligible-page case. Across all queries in the read, fixture-ID
+occurrences fall from 10,270 to 390 and serialized query parameters from about
+463 KB to 19 KB. Ordinary SELECT counts remain 21 Public and 20 Weekly, with
+an occasional additional maintenance read. Parameter counts are not rows
+visited by the database or bytes transmitted over the network.
+
+The baseline used AMD EPYC 9V45; this candidate used AMD EPYC 7763. Both used
+Node 24.21.0 and PostgreSQL 16 on separate GitHub runners. Baseline 10,000-row
+medians were 1,311.643 ms Public and 1,205.595 ms Weekly. These observations
+are not a controlled latency speedup comparison across the different hosts.
+Seven-sample p95 is just the maximum, not a production tail estimate. Sparse
+revocation can require additional queries. The dense workload below, real
+provider headroom, production PostgreSQL 17 and 100-client hosted capacity
+remain separate acceptance gates.
+
+### Candidate verification
+
+[Source CI 37080713248](https://github.com/LifEXPAdmin/church-landing/actions/runs/37080713248)
+passes 112 guards, copy, generated-client types, advisory audit, provenance,
+lint and redacted history scanning. The 29 new pure checks cover ordering,
+paging and resource-candidate identity. [Hosted runtime 37080713094, attempt 2](https://github.com/LifEXPAdmin/church-landing/actions/runs/37080713094/attempts/2)
+passes 34 service/measurement cases, 22 browser groups, two HTTPS cases and
+production build `m1oyjnhORwjWb5rWERoaO`. Both server phases verify the exact
+serving SHA. Browser checks use MFA off; HTTPS uses enforce mode without
+exercising an MFA challenge. Narrow and enlarged-text screenshots were inspected.
+No physical-device acceptance is claimed.
+
+Preserved failures explain the QA corrections: await completed account-change
+concealment before restoring the original account; await rendered page IDs after
+navigation; normalize the isolated denomination fixture and run it before other
+fixtures. Assertions retain exact order and access behavior. The first attempt
+on the final source passed services but the unchanged Google Fonts loader failed
+to parse a returned font URL. The same-source retry passed without a font change.
+
+Private logs, all measurement samples, screenshots and the five-category receipt
+are retained. The release-evidence consistency checker passed on the clean
+candidate at 00:18:51 UTC. The shared hosted runner retains the artist profile
+and adds discovery verification without large workstation artifacts. This is
+ready for designated release-owner integration review, not merged or live.
+No production connection, migration, write, send or deployment occurred.
+
 ## Discovery ordering measurement, 2 October 2026 UTC
 
 The exact-order optimization in candidate
@@ -25,10 +93,10 @@ cases, duplicate entries, church/person namespaces and 150 seeded sequences.
 | All distinct authors | 10.413 | 2.216 |
 
 These are isolated CPU microbenchmarks. They do not measure database access,
-request latency, client rendering or production capacity. Full remaining-snapshot
-permission scans remain a separate investigation. The dense resource workload
-below has not been rerun against this candidate. Application build and runtime
-verification are in progress; this candidate is not integrated or live.
+request latency, client rendering or production capacity. The saved-page
+investigation and later runtime acceptance appear above. The dense resource
+workload below has not been rerun against this candidate. It is not integrated
+or live.
 
 ## Historical dense workload, 18 September 2026 UTC
 
