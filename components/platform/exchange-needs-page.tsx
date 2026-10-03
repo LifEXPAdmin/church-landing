@@ -191,7 +191,16 @@ export async function ExchangeNeedsPage({
                       <h2 className="text-2xl">{slot.label}</h2>
                     </header>
                     <NeedSlotProgress
-                      slot={slot}
+                      slot={{
+                        id: slot.id,
+                        status: slot.status,
+                        target: slot.target,
+                        unit: slot.unit,
+                        committed: slot.committed,
+                        received: slot.received,
+                        returned: slot.returned,
+                        loan: slot.loan
+                      }}
                       owner={user?.id ?? null}
                       listingId={listingId}
                     />
@@ -200,10 +209,6 @@ export async function ExchangeNeedsPage({
                     )}
                     {slot.loan && (
                       <div className="space-y-2">
-                        <p>
-                          Equipment loan. Returned: {slot.returned} of{" "}
-                          {slot.received ?? 0} received.
-                        </p>
                         {slot.returnAt && (
                           <p>
                             Return by <RegionalTime value={slot.returnAt} /> (
@@ -440,7 +445,17 @@ export async function ExchangeNeedsPage({
           key={`${user?.id ?? "guest"}:${need?.id ?? "none"}`}
           owner={user?.id ?? null}
           listingId={listingId}
-          slots={need?.slots ?? []}
+          slots={(need?.slots ?? []).map(
+            ({ id, status, target, unit, committed, received, returned }) => ({
+              id,
+              status,
+              target,
+              unit,
+              committed,
+              received,
+              returned
+            })
+          )}
         >
           <>
             {user ? (

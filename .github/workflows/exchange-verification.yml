@@ -22,7 +22,9 @@ on:
       - tests/exchange-need-incoming-privacy.test.mjs
       - tests/exchange-need-incoming-http.test.ts
       - scripts/qa-exchange-need-incoming-privacy-browser.mjs
+      - scripts/qa-exchange-need-progress-client.mjs
       - components/platform/exchange-needs-page.tsx
+      - components/platform/exchange-need-progress.tsx
       - components/platform/exchange-need-actions.tsx
       - components/platform/exchange-need-contributions.tsx
       - tests/exchange-need-contribution-privacy.test.mjs

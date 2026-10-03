@@ -581,7 +581,7 @@ function ownerHarness(t, setup, after) {
       "next/navigation": { useRouter: () => router },
       "@/lib/platform/social-client": s.social,
       "./exchange-need-actions": { NeedContributionCard },
-      "./exchange-need-progress": { refreshNeedProgress: async () => {} },
+      "./exchange-need-progress": { useNeedProgressRefresh: () => null },
       "./read-visibility": {
         ReadVisibility: { Provider: "visibility" },
         useReadVisibility: () => s.state.visible

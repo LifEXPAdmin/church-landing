@@ -563,6 +563,15 @@ async function verifyBuiltApplication() {
   }
 }
 try {
+  if (suite === "need-incoming") {
+    const progressFixture = mkdtempSync(
+      join(fixture, "need-progress-browser-")
+    );
+    await run(process.execPath, [
+      "scripts/qa-exchange-need-progress-client.mjs",
+      join(progressFixture, "results.json")
+    ]);
+  }
   const config = join(fixture, "localhost-cert.cnf");
   writeFileSync(
     config,

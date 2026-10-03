@@ -284,7 +284,7 @@ function cardHarness(t, row = contribution(), privacy = true) {
   };
 }
 
-async function incomingServer(after, account = owner) {
+async function incomingServer(after, account = owner, need = null) {
   const h = clientHarness({ URLSearchParams });
   const ExchangeNeedContributions = () => null,
     NeedContributionCard = () => null;
@@ -334,7 +334,7 @@ async function incomingServer(after, account = owner) {
                 listingState: "ACTIVE",
                 canManage: false,
                 canCoordinate: false,
-                need: null
+                need
               };
         }
       },
@@ -359,6 +359,7 @@ async function incomingServer(after, account = owner) {
   const [entry] = nodes(output, (n) => n.type === ExchangeNeedContributions);
   assert.ok(entry);
   return {
+    page,
     output,
     Entry: ExchangeNeedContributions,
     Card: NeedContributionCard,
@@ -389,6 +390,67 @@ test("incoming coordinator bootstrap omits contribution identities, names, notes
   assert.equal("contributions" in entry.props, false);
 });
 
+test("progress client props contain only public counters, not the complete slot", async () => {
+  const { page } = await incomingServer(undefined, owner, {
+    id: needId,
+    version: 1,
+    open: true,
+    coordinatorCurrent: true,
+    names: [],
+    updates: [],
+    contributions: [],
+    slots: [
+      {
+        id: "slot-a",
+        action: "DONATE",
+        label: "Food parcels",
+        status: "Open",
+        target: 10,
+        unit: "parcels",
+        committed: 5,
+        received: 2,
+        returned: 0,
+        loan: false,
+        volunteer: { signup: { id: "private-signup-marker" } }
+      }
+    ]
+  });
+  const [provider] = nodes(
+    page,
+    (node) =>
+      typeof node.type === "function" &&
+      node.type.name === "ExchangeNeedProgressProvider"
+  );
+  const [counter] = nodes(page, (node) => node.type === "progress");
+  assert.ok(
+    provider && counter,
+    "The actual need page renders both progress boundaries"
+  );
+  const fields = [
+    "id",
+    "status",
+    "target",
+    "unit",
+    "committed",
+    "received",
+    "returned"
+  ];
+  assert.deepEqual(
+    Object.keys(provider.props.slots[0]).sort(),
+    [...fields].sort()
+  );
+  assert.deepEqual(
+    Object.keys(counter.props.slot).sort(),
+    [...fields, "loan"].sort()
+  );
+  assert.ok(
+    !JSON.stringify(provider.props.slots).includes("private-signup-marker")
+  );
+  assert.ok(
+    !JSON.stringify(counter.props.slot).includes("private-signup-marker")
+  );
+});
+
 function incomingReader(t, row = contribution({ contributor: null }), after) {
   const s = environment(row);
   s.state.result = listPage([row]);
@@ -398,6 +460,10 @@ function incomingReader(t, row = contribution({ contributor: null }), after) {
     }
   };
   const visibility = s.h.load("components/platform/read-visibility.ts");
+  const refreshProgress = async () => {
+    s.state.progressRefreshes++;
+    s.state.progressListings.push([owner, needId]);
+  };
   const loaded = s.h.load(
     "components/platform/exchange-need-contributions.tsx",
     {
@@ -408,9 +474,10 @@ function incomingReader(t, row = contribution({ contributor: null }), after) {
         NeedContributionCard: s.actions.NeedContributionCard
       },
       "./exchange-need-progress": {
-        refreshNeedProgress: async (account, listingId) => {
-          s.state.progressRefreshes++;
-          s.state.progressListings.push([account, listingId]);
+        useNeedProgressRefresh: (account, listingId) => {
+          assert.equal(account, owner);
+          assert.equal(listingId, needId);
+          return refreshProgress;
         }
       },
       "./read-visibility": visibility
@@ -595,7 +662,7 @@ test("incoming card omits sharing-disabled names and removes private drafts from
   );
 });
 
-test("need progress island adopts only the current account and need summary", async () => {
+test("need progress island adopts only the current account and need summary", async (t) => {
   const h = clientHarness({
     window: {},
     URLSearchParams,
@@ -616,6 +683,7 @@ test("need progress island adopts only the current account and need summary", as
           unit: "parcels",
           committed: 10,
           received: 0,
+          returned: 0,
           privateNote: "Fictional coordinator note",
           contributor: { name: "Fictional private contributor" }
         }
@@ -641,11 +709,23 @@ test("need progress island adopts only the current account and need summary", as
     target: 10,
     unit: "parcels",
     committed: 10,
-    received: 0
+    received: 0,
+    returned: 0
   };
-  h.mount(() =>
-    progress.NeedSlotProgress({ owner, listingId: "listing-a", slot })
-  );
+  let refresh;
+  h.mount(() => {
+    const provider = progress.ExchangeNeedProgressProvider({
+      owner,
+      listingId: "listing-a",
+      slots: [slot],
+      children: null
+    });
+    const context = provider.type(provider.props);
+    context.type(context.props);
+    refresh = progress.useNeedProgressRefresh(owner, "listing-a");
+    return progress.NeedSlotProgress({ owner, listingId: "listing-a", slot });
+  });
+  t.after(() => h.unmount());
   assert.match(textContent(h.output), /Committed: 10\. Received: 0\./);
 
   summary = {
@@ -655,7 +735,7 @@ test("need progress island adopts only the current account and need summary", as
       slots: [{ ...summary.need.slots[0], received: 5 }]
     }
   };
-  await progress.refreshNeedProgress(owner, "listing-a");
+  await refresh();
   h.render();
   assert.match(textContent(h.output), /Committed: 10\. Received: 5\./);
   assert.match(textContent(h.output), /Unreceived target: 5 parcels\./);
@@ -663,12 +743,12 @@ test("need progress island adopts only the current account and need summary", as
   assert.ok(!textContent(h.output).includes("Fictional private contributor"));
 
   summary = { ...summary, ownerId: "another-account" };
-  await assert.rejects(progress.refreshNeedProgress(owner, "listing-a"));
+  await assert.rejects(refresh());
   h.render();
   assert.match(textContent(h.output), /Committed: 10\. Received: 5\./);
 
   summary = { ...summary, ownerId: owner, listingId: "another-listing" };
-  await assert.rejects(progress.refreshNeedProgress(owner, "listing-a"));
+  await assert.rejects(refresh());
   h.render();
   assert.match(textContent(h.output), /Committed: 10\. Received: 5\./);
 });

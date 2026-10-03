@@ -13,6 +13,50 @@ release gates; it applies only to branches containing that configuration.
 
 # Source and deployment security acceptance
 
+## Incoming Needs progress local correction, 3 October 2026 UTC
+
+The incoming privacy candidate removes private contribution rows from initial
+server props and retains the existing account-pinned coordinator read and exact
+per-row receipt contract. The last remote candidate, `3900972`, still fails
+[runtime 37131880186](https://github.com/LifEXPAdmin/church-landing/actions/runs/37131880186):
+the build and incoming privacy cases pass, but the legacy Needs journey waits for
+a parent received total of five while the visible total remains zero. The fresh
+API/RSC projection contains five. No passing full runtime is claimed for the
+current incoming candidate.
+
+An actual React development-runtime fixture in Chrome reproduced two additional
+defects in local `8a914dd`: a delayed server render rolled back a freshly read
+total, and a read from an unmounted page could change the next visit's total.
+The repair replaces the browser-wide snapshot/listener maps with a page-owned
+context. Account or listing replacement creates a new owner; unmount and a newer
+read abort the prior request and clear its deadline. Only the current request
+may adopt a validated account/listing projection. Receipt corrections may reduce
+counts. Canonical client totals take precedence over later server props for that
+visit, and equipment-return counts use the same projection. A fresh visit starts
+from its own server snapshot. Progress props contain only public counter fields,
+excluding the full slot's volunteer-signup and other unrelated data.
+
+`node scripts/qa-exchange-need-progress-client.mjs` passes six component-browser
+groups: frozen-child updates and downward corrections; delayed server props;
+unmount and a late response; overlapping requests and wrong-scope responses;
+account replacement; and coherent equipment receipt/return totals. Assertions
+wait for request settlement and React rendering before observing unchanged
+values. Chrome reports no page or React errors. The fixture bundles only the
+actual component and existing React runtime in memory, blocks external requests
+and uses controlled transport. It does not run the Next application or database.
+The existing `need-incoming` hosted profile now runs this check before expensive
+setup and retains its source/harness hashes with the other fictional results.
+
+The two focused contribution/incoming suites pass 41 tests, including the
+server-to-client progress projection boundary. Full TypeScript, scoped ESLint,
+formatting and authored-copy checks pass. Final component and harness hashes are
+recorded in the private Session Log. No new hosted workflow, dependency install,
+integration, migration, deployment or production write occurred in this local
+correction. The exact candidate still needs its full production build, service,
+HTTPS and application-browser acceptance; these component checks do not establish
+that the prior legacy timeout is resolved. The existing dependency audit remains
+a separate release blocker and has not been weakened or bypassed.
+
 ## My Needs contribution privacy, 3 October 2026 UTC
 
 Unchanged application `dca4efcd6e6d5409b548ca796ea0a95644ec4659` reproduces

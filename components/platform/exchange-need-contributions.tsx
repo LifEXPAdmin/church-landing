@@ -9,7 +9,7 @@ import {
   SocialClientError
 } from "@/lib/platform/social-client";
 import type { PrivateChoiceAccess } from "./use-private-choice-action";
-import { refreshNeedProgress } from "./exchange-need-progress";
+import { useNeedProgressRefresh } from "./exchange-need-progress";
 import { NeedContributionCard } from "./exchange-need-actions";
 import { ReadVisibility, useReadVisibility } from "./read-visibility";
 
@@ -110,6 +110,10 @@ export function ExchangeNeedContributions({
   query: ContributionsQuery;
 }) {
   const incoming = query.view === "incoming";
+  const refreshNeedProgress = useNeedProgressRefresh(
+    owner,
+    incoming ? query.needId : null
+  );
   const router = useRouter();
   const parentVisible = useReadVisibility();
   const snapshot = useRef<Snapshot | null>(null);
@@ -228,7 +232,7 @@ export function ExchangeNeedContributions({
       setVisible(true);
       setNotice("");
       if (incoming && confirmedCommand) {
-        void refreshNeedProgress(owner, query.needId).catch(() => {});
+        void refreshNeedProgress?.().catch(() => {});
         router.refresh();
       }
     } catch (error) {
@@ -262,7 +266,7 @@ export function ExchangeNeedContributions({
         void latest.current();
       }
     }
-  }, [owner, query, incoming, clearAccount, router]);
+  }, [owner, query, incoming, clearAccount, router, refreshNeedProgress]);
   latest.current = load;
   const recheck = useCallback(() => {
     if (

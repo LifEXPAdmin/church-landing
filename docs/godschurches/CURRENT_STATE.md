@@ -1,3 +1,22 @@
+## Incoming Needs progress correction locally verified, 3 October 2026 UTC
+
+The incoming contribution candidate now owns its public progress state per page,
+account and listing. A fresh canonical read after an exact receipt updates
+received, outstanding and equipment-return counts, including counters beneath
+retained recovery children. Leaving the page cancels its request. A late server
+render cannot replace the freshly acknowledged totals, and progress props omit
+unrelated slot and volunteer-signup fields.
+
+Six actual React/Chrome component scenarios and 41 focused privacy checks pass,
+along with project TypeScript, scoped lint and authored-copy checks. The small
+component preflight is now part of the incoming hosted profile before database
+setup and the product build. It uses controlled transport and does not replace
+the complete application, service or HTTPS checks. The last remote candidate
+still has a failed legacy Needs browser result; the current correction is local,
+unpushed and not ready for integration or release. The independent dependency
+audit blocker remains. [Security acceptance](SOURCE_SECURITY_ACCEPTANCE.md)
+records the reproduced failures, correction and exact verification limits.
+
 ## My Needs contribution privacy runtime verified, 3 October 2026 UTC
 
 [Draft PR15](https://github.com/LifEXPAdmin/church-landing/pull/15) retains
