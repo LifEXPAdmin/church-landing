@@ -552,6 +552,14 @@ try {
     where: { exchangeListingId: id, status: "READY" }
   });
   assert.equal(image.alt, "Blue rectangle, synthetic photo");
+  // The committed metadata row can precede the form's receipt and gallery
+  // refresh. File-input automation can target a still-disabled fieldset.
+  await savedListingSettled();
+  const choosePhotos = page.getByLabel("Choose photos", { exact: true });
+  await waitUntil(
+    async () =>
+      (await choosePhotos.isVisible()) && (await choosePhotos.isEnabled())
+  );
   ok(
     "Actual local photo upload, caption and alternative text use the listing gallery; blur conceals and preserves unsent photo edits"
   );
@@ -579,7 +587,7 @@ try {
     assert.deepEqual(request.postDataBuffer(), uploadBytes);
     return route.continue();
   });
-  await page.getByLabel("Choose photos", { exact: true }).setInputFiles({
+  await choosePhotos.setInputFiles({
     name: "fictional-second-item.png",
     mimeType: "image/png",
     buffer: await sharp({
@@ -588,6 +596,12 @@ try {
       .png()
       .toBuffer()
   });
+  await page
+    .getByRole("listitem", {
+      name: "Upload fictional-second-item.png",
+      exact: true
+    })
+    .waitFor();
   await page.getByRole("button", { name: "Save photo", exact: true }).click();
   const retryPhoto = page.getByRole("button", {
     name: "Retry same upload",
