@@ -268,6 +268,9 @@ for (const view of ["favorites", "searches"])
         "./private-snapshot-guard": { PrivateSnapshotGuard: "guard" },
         "./topic-read-boundary": { TopicReadBoundary: "boundary" },
         "./exchange-editor": { ExchangeEditor: "editor" },
+        "./exchange-saved-search-entry": {
+          ExchangeSearchSaveEntry: () => null
+        },
         "./exchange-saved-controls": {
           ExchangeSavedItems,
           ExchangeSaveSearchForm: "form"

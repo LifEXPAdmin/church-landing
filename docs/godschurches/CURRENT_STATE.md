@@ -1,3 +1,23 @@
+## Saved Exchange search editor runtime verified, 3 October 2026 UTC
+
+[Draft PR 13](https://github.com/LifEXPAdmin/church-landing/pull/13) retains
+canonical server authorization while removing saved-search rows from initial
+HTML/RSC and private input controls from concealed DOM. The mounted draft owner
+retains exact uncertain requests, requires matching receipt/readback before
+another save, preserves independently changed fields and supports deliberate
+recovery after confirmed deletion. Validation rejection remains correctable.
+
+Application `2b45d84e940de93160c4f4abb3067533d771b953` passes 201 focused local
+checks. Final test candidate `9ae3253dcf687b3172a3d0ef05da2ffe5b32786c` passes
+[runtime 37115834684](https://github.com/LifEXPAdmin/church-landing/actions/runs/37115834684),
+build `J1KgXcRx_LfnjfnzN2cav`: 43 services, 25 browser groups and three HTTPS
+cases. Hosted source checks pass 302 tests, copy and types, then fail the
+existing dependency audit. [Security acceptance](SOURCE_SECURITY_ACCEPTANCE.md)
+preserves reproduction, the repaired HTTP type assertion and ten hashed final
+runtime artifacts. Independent final review closed without actionable findings and verified all ten
+artifact hashes and sizes. PR13 stacks on PR12;
+no integration, deployment or release acceptance is claimed.
+
 ## Saved Exchange choices runtime verified, 3 October 2026 UTC
 
 [Draft PR 12](https://github.com/LifEXPAdmin/church-landing/pull/12) keeps canonical

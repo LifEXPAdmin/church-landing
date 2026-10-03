@@ -422,7 +422,6 @@ try {
     .getByLabel("Search name", { exact: true })
     .fill("Fictional saved search updated");
   await editForm.getByLabel(alertLabel, { exact: true }).check();
-  const beforeAlertSave = await editForm.elementHandle();
   await editForm
     .getByRole("button", { name: "Update saved search", exact: true })
     .click();
@@ -438,9 +437,11 @@ try {
       })) === 1
   );
   await waitUntil(
-    async () => !(await beforeAlertSave.evaluate((node) => node.isConnected))
+    async () =>
+      !(await editForm
+        .getByRole("button", { name: "Update saved search", exact: true })
+        .isDisabled())
   );
-  await beforeAlertSave.dispose();
   await editForm.getByLabel("Search name", { exact: true }).waitFor();
   assert.equal(
     await editForm.getByLabel("Search name", { exact: true }).inputValue(),
@@ -451,7 +452,6 @@ try {
   assert.ok(new URL(page.url()).searchParams.get("savedSearch"));
   assert.equal(new URL(page.url()).searchParams.has("q"), false);
   await editForm.getByLabel(alertLabel, { exact: true }).uncheck();
-  const beforeAlertRemoval = await editForm.elementHandle();
   await editForm
     .getByRole("button", { name: "Update saved search", exact: true })
     .click();
@@ -462,9 +462,11 @@ try {
       })) === 1
   );
   await waitUntil(
-    async () => !(await beforeAlertRemoval.evaluate((node) => node.isConnected))
+    async () =>
+      !(await editForm
+        .getByRole("button", { name: "Update saved search", exact: true })
+        .isDisabled())
   );
-  await beforeAlertRemoval.dispose();
   await editForm.getByLabel("Search name", { exact: true }).waitFor();
   assert.equal(
     await editForm.getByLabel(alertLabel, { exact: true }).isChecked(),

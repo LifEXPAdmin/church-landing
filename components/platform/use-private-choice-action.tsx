@@ -15,6 +15,7 @@ export type PrivateChoiceAccess = {
   expectedReceiptId?: () => string | null;
   expectedReceiptVersion?: () => number | null;
   onAccessDenied: () => void;
+  onValidationRejected?: () => void;
   onConfirmed: (receipt: ChoiceReceipt) => void;
 };
 
@@ -122,6 +123,8 @@ export function usePrivateChoiceAction(
         ) {
           setPending(null);
           setConflict([403, 404, 409].includes(error.status));
+          if (error.status === 400)
+            latest.current.privacy?.onValidationRejected?.();
         }
         if (error instanceof SocialClientError) {
           if (latest.current.privacy && [401, 403, 404].includes(error.status))

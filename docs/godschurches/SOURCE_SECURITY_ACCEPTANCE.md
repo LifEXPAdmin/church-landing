@@ -13,6 +13,86 @@ release gates; it applies only to branches containing that configuration.
 
 # Source and deployment security acceptance
 
+## Saved Exchange search editor, 3 October 2026 UTC
+
+Unchanged application `fd8736a929d49db96f687aae9321cdc1bfe58e5c` passes baseline
+runtime 37114592362, build `wwpRgUcXQLG01nveQBX2F`: 43 service tests, 22 browser
+groups and two HTTPS cases. Five deliberate exposure groups reproduce saved
+names/alert choices in HTML/RSC and concealed DOM, including pagehide leaving
+unsent fields visibly presented; one control confirms canonical cross-account
+denial. Nine source-executing tests also fail against unchanged application
+`c6fd82904c8e48bbd34759051a3b900a46f3eb08`. Early assertions limit which later
+conditions were individually reproduced. An earlier browser attempt on c6fd829
+stopped at an insufficiently identified lifecycle visibility assertion; both
+attempts are preserved. The complete baseline has nine hashed artifacts totaling
+1,274,931 bytes; the earlier attempt has four totaling 310,213 bytes.
+
+Canonical server authorization and error handling remain in place. The client
+receives account, current route criteria and optional selected-search identifier,
+then initializes private fields from a current account-pinned canonical read.
+One retained form/command owner physically omits fields on blur, pagehide,
+offline or uncertain access. Separate identity/presentation generations,
+coalescing, 15-second owned deadlines and active-only polling bound the reads.
+New forms use a bounded actor check and ignore unrelated saved-search rows.
+Confirmed account replacement clears the retained owner and private entries.
+
+Each command pins its target and expected receipt version synchronously. A lost,
+wrong-target, stale-version, rate-limited or temporarily unavailable response
+retains the same body and mutation identifier. A canonical row appearing or
+changing cannot replace the command receipt. Exact fresh readback accepts only
+the confirmed version, and visible acknowledgment consumes that exact receipt
+object before another save. New saves reset submitted fields and mint a new
+identifier; existing saves adopt the accepted version while preserving fields
+changed independently after submission. A newer unrelated canonical version
+stays concealed for deliberate review.
+
+A missing selected or newly minted row allows only original replay after a
+current eligible-actor read. Confirmed disappearance never revives a blank
+editor or re-arms a new write. Pending navigation remains guarded; after exact
+confirmation a warned recovery action can discard retained local entries and
+open current named searches. A coupled test reproduced definitive validation
+rejection stranding a new draft on resume. An optional shared-hook rejection
+callback clears only that rejected target and restores the actor-level read;
+uncertain failures and conflict behavior are unchanged. Form expansion survives
+physical concealment. No dependencies, schema or server authorization changed.
+
+Application candidate `2b45d84e940de93160c4f4abb3067533d771b953` passes 201 focused
+local checks, including 27 new cases. Scoped application/HTTP lint, formatting,
+source boundaries and whitespace checks pass. The broad local source suite
+cannot import `@next/env` in this source-only checkout; no dependency install was
+attempted. Hosted source run 37115458299 passes all 302 source tests and authored
+copy, then catches a missing optional-result assertion in the new HTTP test.
+Later security steps do not run. The test correction explicitly asserts that
+the canonical detail read contains search rows; application source is unchanged.
+
+[Runtime 37115458301](https://github.com/LifEXPAdmin/church-landing/actions/runs/37115458301)
+passes 43 service tests, 25 browser groups (nine editor, eight search and eight
+saved-list) and three HTTPS tests with build `5i4Q0FiUpgFTEXC6FTI8M`. The harness
+verifies the exact checkout and serving source under browser MFA-off and HTTPS
+MFA-enforced modes. Browser coverage includes six identical retries through
+incorrect receipts and outages, hidden/held readback, two independent version-one
+saves, newer-version refusal, deleted-row replay and confirmed recovery navigation.
+HTTPS verifies current ownership, private bootstrap omission, canonical saved
+criteria, changed-fingerprint refusal and immutable create/update replay after
+deletion without changing the tombstone. Ten hashed artifacts total 1,774,366
+bytes. The 390px and 320px/200% screenshots fit measured width; global synthetic
+offline recovery notices remain visible while the module's pinned read succeeds.
+This is scoped layout evidence, not a claim that the entire page is clear of
+recovery notices or that a physical device was tested.
+
+Test-only `9ae3253dcf687b3172a3d0ef05da2ffe5b32786c` adds the missing canonical-row
+assertion. [Final runtime 37115834684](https://github.com/LifEXPAdmin/church-landing/actions/runs/37115834684)
+passes the same 43 services, 25 browser groups and three HTTPS tests with build
+`J1KgXcRx_LfnjfnzN2cav`. Exact checkout and serving SHA are verified in both modes.
+All ten final artifact sizes and hashes are preserved, totaling 1,766,230 bytes.
+Hosted source runs 37115834673 and 37115836351 pass 302 tests, copy and types,
+then fail the unchanged seven-high dependency audit; later security gates skip.
+Independent final review closed without actionable findings and verified all ten
+artifact hashes and sizes.
+[Draft PR 13](https://github.com/LifEXPAdmin/church-landing/pull/13) stacks on PR12.
+No integration, deployment, production migration/write, external send or release
+acceptance is claimed. The existing dependency gate remains open.
+
 ## Saved Exchange choices, 3 October 2026 UTC
 
 Unchanged application `1793e5628015b7c7fedcc4788be2df07d8882fc3` passes [baseline
