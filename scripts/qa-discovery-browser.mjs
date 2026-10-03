@@ -543,10 +543,17 @@ try {
     .getByRole("link", { name: /^Read (?:more|older) posts$/, exact: true })
     .click();
   await page.waitForFunction((url) => location.href !== url, firstUrl);
-  assert.deepEqual(
-    await getIds(),
-    posts.slice(30, 37).map((p) => p.id)
+  const secondPageIds = posts.slice(30, 37).map((p) => p.id);
+  await page.waitForFunction(
+    (ids) =>
+      JSON.stringify(
+        [...document.querySelectorAll(".gc-feed [data-post]")].map(
+          (n) => n.dataset.post
+        )
+      ) === JSON.stringify(ids),
+    secondPageIds
   );
+  assert.deepEqual(await getIds(), secondPageIds);
   await page.goBack();
   await page.waitForFunction(
     (ids) =>
