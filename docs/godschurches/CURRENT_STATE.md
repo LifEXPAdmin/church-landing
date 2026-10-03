@@ -1,3 +1,23 @@
+## Saved Exchange choices runtime verified, 3 October 2026 UTC
+
+[Draft PR 12](https://github.com/LifEXPAdmin/church-landing/pull/12) keeps canonical
+server authorization while removing private saved-search/favorite rows from
+initial HTML/RSC and concealed DOM. One mounted command owner retains exact
+removal retries, rejects wrong-target and stale-version receipts, and requires
+fresh canonical readback before another removal. A deleted pagination anchor
+allows only original-request replay followed by deliberate first-page recovery.
+
+Application `c5104bfdc6de1ce9c00af6f77c3447d7f03365f2` passes 174 focused local
+checks. Final candidate `28d52ec0e23e05a3e8b35fee2da2a8d6b28acca5` passes [runtime
+37112905308](https://github.com/LifEXPAdmin/church-landing/actions/runs/37112905308),
+build `Q7GhjhtVBsK7Wkm1sSDyr`: 65 services, 24 browser groups and three HTTPS
+cases. Hosted source checks pass 275 tests, copy and types, then fail the existing
+dependency audit. [Security acceptance](SOURCE_SECURITY_ACCEPTANCE.md) preserves
+reproduction, fixture/test repairs and ten hashed final artifacts. Independent
+final review closed without actionable findings and verified all ten artifact
+hashes and sizes. PR12 stacks on PR11; no integration, deployment or live
+acceptance is claimed.
+
 ## Private Exchange handoff detail runtime verified, 3 October 2026 UTC
 
 [Draft PR 11](https://github.com/LifEXPAdmin/church-landing/pull/11) keeps the
