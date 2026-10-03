@@ -80,12 +80,36 @@ await context.route("**/*", (route) =>
 context.setDefaultTimeout(15000);
 const page = await context.newPage(),
   errors = [],
+  rscTrace = [],
+  incomingRefreshTraceStart = { value: 0 },
   results = [],
   output = fixtureDir + "/needs-browser-" + Date.now();
 mkdirSync(output, { recursive: true });
 page.on("pageerror", (e) =>
   errors.push({ path: new URL(page.url()).pathname, message: e.message })
 );
+const isRscRequest = (request) => {
+  const headers = request.headers();
+  return headers.rsc === "1" || new URL(request.url()).searchParams.has("_rsc");
+};
+page.on("request", (request) => {
+  if (!isRscRequest(request)) return;
+  rscTrace.push({
+    event: "request",
+    method: request.method(),
+    path: new URL(request.url()).pathname
+  });
+});
+page.on("response", (response) => {
+  if (!isRscRequest(response.request())) return;
+  const headers = response.headers();
+  rscTrace.push({
+    event: "response",
+    status: response.status(),
+    path: new URL(response.url()).pathname,
+    cache: headers["x-nextjs-cache"] ?? null
+  });
+});
 page.on("dialog", (dialog) => dialog.accept());
 const ok = (message) => {
   results.push(message);
@@ -494,6 +518,7 @@ try {
 
   await signIn(manager);
   await go(path + "?view=contributors");
+  incomingRefreshTraceStart.value = rscTrace.length;
   const incoming = page
     .getByRole("article", { name: "Private contribution", exact: true })
     .filter({ hasText: privateNote });
@@ -879,6 +904,9 @@ try {
       {
         results,
         errors,
+        incomingReceiptRefreshTrace: rscTrace.slice(
+          incomingRefreshTraceStart.value
+        ),
         at: new Date().toISOString(),
         productionWrites: 0,
         externalSends: 0
