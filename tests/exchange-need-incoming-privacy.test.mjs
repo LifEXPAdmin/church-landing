@@ -313,6 +313,10 @@ async function incomingServer(after, account = owner) {
         NeedVolunteerReceipt: "volunteer"
       },
       "./exchange-need-contributions": { ExchangeNeedContributions },
+      "./exchange-need-progress": {
+        ExchangeNeedProgressProvider: ({ children }) => children,
+        NeedSlotProgress: "progress"
+      },
       "./regional-presentation": { RegionalTime: "time" },
       "@/lib/platform/session": {
         getCurrentPlatformUser: async () => ({ id: account })
@@ -579,4 +583,36 @@ test("incoming card omits sharing-disabled names and removes private drafts from
     input(s.h.output, "Total equipment actually returned").props.value,
     "1"
   );
+});
+
+test("need progress island adopts refreshed server totals across a guarded snapshot", () => {
+  const h = clientHarness();
+  const { ExchangeNeedProgressProvider, NeedSlotProgress } = h.load(
+    "components/platform/exchange-need-progress.tsx"
+  );
+  let slot = {
+    id: "slot-a",
+    status: "Covered, receipt pending",
+    target: 10,
+    unit: "parcels",
+    committed: 10,
+    received: 0
+  };
+  const renderPage = () => {
+    const child = { type: NeedSlotProgress, props: { slot } };
+    const provider = ExchangeNeedProgressProvider({
+      slots: [slot],
+      children: child
+    });
+    const provided = provider.type(provider.props);
+    return provided.type(provided.props);
+  };
+
+  h.mount(renderPage);
+  assert.match(textContent(h.output), /Committed: 10\. Received: 0\./);
+
+  slot = { ...slot, received: 5 };
+  h.render();
+  assert.match(textContent(h.output), /Committed: 10\. Received: 5\./);
+  assert.match(textContent(h.output), /Unreceived target: 5 parcels\./);
 });

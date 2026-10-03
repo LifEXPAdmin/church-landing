@@ -319,6 +319,10 @@ async function serverPage(after, account = owner) {
         NeedVolunteerReceipt: "volunteer"
       },
       "./exchange-need-contributions": { ExchangeNeedContributions },
+      "./exchange-need-progress": {
+        ExchangeNeedProgressProvider: ({ children }) => children,
+        NeedSlotProgress: "progress"
+      },
       "./regional-presentation": { RegionalTime: "time" },
       "@/lib/platform/session": {
         getCurrentPlatformUser: async () => ({ id: account })

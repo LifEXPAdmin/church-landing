@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { PlatformShell } from "./platform-shell";
 import { ExchangeNeedContributions } from "./exchange-need-contributions";
+import {
+  ExchangeNeedProgressProvider,
+  NeedSlotProgress
+} from "./exchange-need-progress";
 import { PrivateSnapshotGuard } from "./private-snapshot-guard";
 import { TopicReadBoundary } from "./topic-read-boundary";
 import {
@@ -186,24 +190,7 @@ export async function ExchangeNeedsPage({
                       </p>
                       <h2 className="text-2xl">{slot.label}</h2>
                     </header>
-                    <p>
-                      {slot.status}. Target: {slot.target} {slot.unit}.{" "}
-                      {slot.committed !== null && (
-                        <>
-                          Committed: {slot.committed}. Received: {slot.received}
-                          .
-                        </>
-                      )}
-                    </p>
-                    {slot.received !== null && (
-                      <p>
-                        Unreceived target:{" "}
-                        {Math.max(0, slot.target - slot.received)} {slot.unit}.
-                        Uncommitted:{" "}
-                        {Math.max(0, slot.target - (slot.committed ?? 0))}{" "}
-                        {slot.unit}.
-                      </p>
-                    )}
+                    <NeedSlotProgress slot={slot} />
                     {slot.closeReason && (
                       <p>Slot closing reason: {slot.closeReason}</p>
                     )}
@@ -445,43 +432,48 @@ export async function ExchangeNeedsPage({
           : {})
       });
       content = (
-        <>
-          {user ? (
-            <PrivateSnapshotGuard
-              owner={user.id}
-              url={`/api/platform/exchange?${readQuery}`}
-              checksum={exchangeChecksum(result)}
-              label="need actions and progress"
-            >
-              {article}
-            </PrivateSnapshotGuard>
-          ) : (
-            <TopicReadBoundary
-              owner={null}
-              url={`/api/platform/exchange?${readQuery}`}
-              checksum={exchangeChecksum(result)}
-              label="need progress"
-            >
-              {article}
-            </TopicReadBoundary>
-          )}
-          {user && query.view === "contributors" && (
-            <IncomingNeeds
-              owner={user.id}
-              needId={listingId}
-              after={query.after}
-              path={path}
-            />
-          )}
-          {user && query.volunteers && (
-            <VolunteerNeeds
-              owner={user.id}
-              slotId={postId(query.volunteers)}
-              after={query.after}
-              path={path}
-            />
-          )}
-        </>
+        <ExchangeNeedProgressProvider
+          key={`${user?.id ?? "guest"}:${need?.id ?? "none"}`}
+          slots={need?.slots ?? []}
+        >
+          <>
+            {user ? (
+              <PrivateSnapshotGuard
+                owner={user.id}
+                url={`/api/platform/exchange?${readQuery}`}
+                checksum={exchangeChecksum(result)}
+                label="need actions and progress"
+              >
+                {article}
+              </PrivateSnapshotGuard>
+            ) : (
+              <TopicReadBoundary
+                owner={null}
+                url={`/api/platform/exchange?${readQuery}`}
+                checksum={exchangeChecksum(result)}
+                label="need progress"
+              >
+                {article}
+              </TopicReadBoundary>
+            )}
+            {user && query.view === "contributors" && (
+              <IncomingNeeds
+                owner={user.id}
+                needId={listingId}
+                after={query.after}
+                path={path}
+              />
+            )}
+            {user && query.volunteers && (
+              <VolunteerNeeds
+                owner={user.id}
+                slotId={postId(query.volunteers)}
+                after={query.after}
+                path={path}
+              />
+            )}
+          </>
+        </ExchangeNeedProgressProvider>
       );
     }
   } catch (error) {
