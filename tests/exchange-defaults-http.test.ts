@@ -9,6 +9,10 @@ import {
   EXCHANGE_DEFAULTS_SCHEMA,
   emptyExchangeDefaults
 } from "../lib/platform/exchange-handoff-options";
+import {
+  replayRetentionControls,
+  type RetentionControlEntry
+} from "../lib/platform/retention-controls";
 const db = new PrismaClient(),
   origin = process.env.ACCOUNT_ORIGIN!;
 assert.match(origin, /^https:\/\/127\.0\.0\.1:\d+$/);
@@ -74,10 +78,15 @@ test("personal defaults omit private values from HTML/RSC and require the curren
   });
   assert.equal(own.status, 200);
   assert.ok(!(await own.text()).includes(marker));
-  await db.exchangeDefaults.update({
-    where: { ownerId: owner.id },
-    data: { recoveryRequired: true }
+  // Exercise the existing restrictive restore rather than constructing a row
+  // forbidden by the database shape constraint (recovery clears pickup text).
+  const control = await db.retentionControl.findFirstOrThrow({
+    where: { kind: "EXCHANGE_DEFAULTS", sourceId: owner.id }
   });
+  await db.exchangeDefaults.delete({ where: { ownerId: owner.id } });
+  await replayRetentionControls(db, [
+    control.payload as unknown as RetentionControlEntry
+  ]);
   const recovered = await req(endpoint, owner.token, {
     "x-expected-account": owner.id
   });
