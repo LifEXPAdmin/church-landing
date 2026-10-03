@@ -8,11 +8,17 @@ on:
         codex/exchange-query-plans-20261003,
         codex/exchange-editor-privacy-20261003,
         codex/exchange-editor-bootstrap-20261003,
-        codex/exchange-defaults-privacy-20261003
+        codex/exchange-defaults-privacy-20261003,
+        codex/exchange-inquiry-list-privacy-20261003
       ]
     paths:
       - .github/workflows/exchange-verification.yml
       - scripts/test-platform-isolated.mjs
+      - scripts/qa-exchange-inquiry-list-privacy-browser.mjs
+      - components/platform/exchange-inquiry-list.tsx
+      - components/platform/private-read-snapshot.tsx
+      - tests/private-read-snapshot.test.mjs
+      - tests/exchange-inquiry-list-http.test.ts
       - scripts/qa-exchange-defaults-privacy-browser.mjs
       - components/platform/exchange-defaults-form.tsx
       - components/platform/exchange-defaults-entry.tsx
@@ -73,7 +79,7 @@ jobs:
           chromium_path="$(node -e "console.log(require(process.argv[1]).chromium.executablePath())" "$RUNNER_TEMP/exchange-browser/node_modules/playwright")"
           echo "CHROMIUM_PATH=$chromium_path" >> "$GITHUB_ENV"
       - name: Build and verify fictional Exchange over local HTTPS
-        run: node scripts/test-platform-isolated.mjs ${{ github.ref_name == 'codex/exchange-defaults-privacy-20261003' && 'exchange-defaults' || github.ref_name == 'codex/exchange-editor-bootstrap-20261003' && 'exchange-bootstrap' || 'exchange' }}
+        run: node scripts/test-platform-isolated.mjs ${{ github.ref_name == 'codex/exchange-inquiry-list-privacy-20261003' && 'exchange-inquiry-list' || github.ref_name == 'codex/exchange-defaults-privacy-20261003' && 'exchange-defaults' || github.ref_name == 'codex/exchange-editor-bootstrap-20261003' && 'exchange-bootstrap' || 'exchange' }}
       - name: Preserve fictional browser results and screenshots
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -98,6 +104,12 @@ jobs:
             .account-test/exchange-defaults-hosted-*/exchange-handoff-browser-*/*.png
             .account-test/exchange-defaults-hosted-*/exchange-handoff-browser-*/results.json
             .account-test/exchange-defaults-hosted-*/exchange-handoff-browser-*/failure.txt
+            .account-test/exchange-inquiry-list-hosted-*/exchange-inquiry-list-browser-*/*.png
+            .account-test/exchange-inquiry-list-hosted-*/exchange-inquiry-list-browser-*/results.json
+            .account-test/exchange-inquiry-list-hosted-*/exchange-inquiry-list-browser-*/failure.txt
+            .account-test/exchange-inquiry-list-hosted-*/exchange-handoff-browser-*/*.png
+            .account-test/exchange-inquiry-list-hosted-*/exchange-handoff-browser-*/results.json
+            .account-test/exchange-inquiry-list-hosted-*/exchange-handoff-browser-*/failure.txt
           include-hidden-files: true
           if-no-files-found: ignore
           retention-days: 7

@@ -25,65 +25,75 @@ assert.ok(
     "exchange-services",
     "exchange",
     "exchange-bootstrap",
-    "exchange-defaults"
+    "exchange-defaults",
+    "exchange-inquiry-list"
   ].includes(suite),
   "Choose a declared isolated suite"
 );
 const profile =
-  suite === "exchange-defaults"
+  suite === "exchange-inquiry-list"
     ? {
         services: ["exchange-handoff-input", "exchange-handoffs"],
         browsers: [
-          "qa-exchange-defaults-privacy-browser",
+          "qa-exchange-inquiry-list-privacy-browser",
           "qa-exchange-handoff-browser"
         ],
         https: ["exchange-defaults-http", "exchange-http"]
       }
-    : suite === "artists"
+    : suite === "exchange-defaults"
       ? {
-          services: ["artist-input", "artists", "artist-recovery"],
-          browsers: ["qa-artist-draft-privacy-browser", "qa-artists-browser"],
-          https: ["artists-http"]
+          services: ["exchange-handoff-input", "exchange-handoffs"],
+          browsers: [
+            "qa-exchange-defaults-privacy-browser",
+            "qa-exchange-handoff-browser"
+          ],
+          https: ["exchange-defaults-http", "exchange-http"]
         }
-      : suite === "discovery"
+      : suite === "artists"
         ? {
-            services: [
-              "discovery-options",
-              "discovery-feeds",
-              "discovery-device",
-              "four-feeds"
-            ],
-            browsers: ["qa-discovery-browser", "qa-four-feeds-browser"],
-            https: ["discovery-http", "four-feeds-http"]
+            services: ["artist-input", "artists", "artist-recovery"],
+            browsers: ["qa-artist-draft-privacy-browser", "qa-artists-browser"],
+            https: ["artists-http"]
           }
-        : ["exchange-services", "exchange", "exchange-bootstrap"].includes(
-              suite
-            )
+        : suite === "discovery"
           ? {
               services: [
-                "exchange-input",
-                "exchange-listings",
-                "exchange-needs",
-                "interchurch-help",
-                "interchurch-help-compatibility",
-                ...(suite === "exchange-bootstrap"
-                  ? [
-                      "pantry-support",
-                      "exchange-handoff-input",
-                      "exchange-handoffs"
-                    ]
-                  : [])
+                "discovery-options",
+                "discovery-feeds",
+                "discovery-device",
+                "four-feeds"
               ],
-              browsers: [
-                "qa-exchange-browser",
-                "qa-exchange-search-browser",
-                ...(suite === "exchange-bootstrap"
-                  ? ["qa-exchange-handoff-browser", "qa-pantry-browser"]
-                  : [])
-              ],
-              https: ["exchange-http"]
+              browsers: ["qa-discovery-browser", "qa-four-feeds-browser"],
+              https: ["discovery-http", "four-feeds-http"]
             }
-          : { services: [], browsers: [], https: [] };
+          : ["exchange-services", "exchange", "exchange-bootstrap"].includes(
+                suite
+              )
+            ? {
+                services: [
+                  "exchange-input",
+                  "exchange-listings",
+                  "exchange-needs",
+                  "interchurch-help",
+                  "interchurch-help-compatibility",
+                  ...(suite === "exchange-bootstrap"
+                    ? [
+                        "pantry-support",
+                        "exchange-handoff-input",
+                        "exchange-handoffs"
+                      ]
+                    : [])
+                ],
+                browsers: [
+                  "qa-exchange-browser",
+                  "qa-exchange-search-browser",
+                  ...(suite === "exchange-bootstrap"
+                    ? ["qa-exchange-handoff-browser", "qa-pantry-browser"]
+                    : [])
+                ],
+                https: ["exchange-http"]
+              }
+            : { services: [], browsers: [], https: [] };
 // This runner deliberately cannot start large artifacts on a local workstation.
 assert.equal(
   process.env.GITHUB_ACTIONS,
