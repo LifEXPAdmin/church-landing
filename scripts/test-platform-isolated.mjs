@@ -41,6 +41,7 @@ const profile =
           "qa-exchange-handoff-browser"
         ],
         https: [
+          "exchange-inquiry-composer-http",
           "exchange-inquiry-list-http",
           "exchange-defaults-http",
           "exchange-http"

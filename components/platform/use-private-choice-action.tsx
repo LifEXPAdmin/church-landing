@@ -11,6 +11,7 @@ import { useUnsavedSocialWork } from "./use-unsaved-social-work";
 type ChoiceReceipt = { id: string; version: number; message: string };
 export type PrivateChoiceAccess = {
   currentAccess: boolean;
+  expectedReceiptId?: () => string | null;
   onAccessDenied: () => void;
   onConfirmed: (receipt: ChoiceReceipt) => void;
 };
@@ -75,11 +76,15 @@ export function usePrivateChoiceAction(
           version: number;
           message: string;
         }>(endpoint, body, owner);
+        const access = latest.current.privacy;
+        const expectedId = access?.expectedReceiptId
+          ? access.expectedReceiptId()
+          : owner;
         if (
           typeof data.id !== "string" ||
           !Number.isInteger(data.version) ||
           typeof data.message !== "string" ||
-          (latest.current.privacy && data.id !== owner)
+          (access && (!expectedId || data.id !== expectedId))
         )
           throw new SocialClientError(
             503,
