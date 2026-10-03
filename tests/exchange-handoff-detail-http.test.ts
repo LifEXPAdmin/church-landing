@@ -152,6 +152,7 @@ test("handoff detail bootstrap omits private body while current participant read
       })
     );
     assert.equal(data.ownerId, actor.id);
+    assert.ok(data.inquiry);
     assert.equal(data.inquiry.purpose, purpose);
     assert.equal(
       data.inquiry.pickupDetails,

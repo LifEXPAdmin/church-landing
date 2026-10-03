@@ -410,6 +410,70 @@ test("confirmed plan replacement preserves a dirty cancellation sibling and allo
   assert.notEqual(bodies[0].mutationId, bodies[1].mutationId);
 });
 
+test("a confirmed plan retains its submitted inputs before refreshed props and can submit the next plan after acceptance", async (t) => {
+  const s = actionHarness(t);
+  const fields = {
+    "Window begins": "2026-10-04T14:00",
+    "Window ends": "2026-10-04T15:00",
+    "Time zone": "UTC",
+    [pickupLabel]: "First submitted private instructions"
+  };
+  for (const [label, value] of Object.entries(fields)) s.change(label, value);
+  s.change(noteLabel, "Retained cancellation sibling");
+  s.submitPlan();
+  await s.h.settle();
+  assert.equal(s.confirmed.length, 1);
+  assert.equal(s.state.inquiry.version, 3, "Readback has not arrived yet");
+  assert.equal(s.state.acceptedVersion, undefined);
+  for (const [label, value] of Object.entries(fields))
+    assert.equal(input(s.h.output, label).props.value, value);
+  assert.equal(
+    input(s.h.output, noteLabel).props.value,
+    "Retained cancellation sibling"
+  );
+  assert.equal(s.state.guard.dirty, true);
+  s.submitPlan();
+  await s.h.settle();
+  assert.equal(s.writes().length, 1, "Receipt alone cannot unlock a new plan");
+
+  s.adopt(
+    inquiry({
+      version: 4,
+      planVersion: 2,
+      windowStart: "2026-10-04T14:00:00.000Z",
+      windowEnd: "2026-10-04T15:00:00.000Z",
+      pickupDetails: fields[pickupLabel]
+    })
+  );
+  await s.h.settle();
+  for (const [label, value] of Object.entries(fields))
+    assert.equal(input(s.h.output, label).props.value, value);
+  s.change(pickupLabel, "Second submitted private instructions");
+  s.state.receiptVersion = 5;
+  s.submitPlan();
+  await s.h.settle();
+  const bodies = s.writes().map((request) => JSON.parse(request.body));
+  assert.equal(bodies.length, 2);
+  assert.deepEqual(
+    bodies.map((body) => body.operation),
+    ["handoff-plan", "handoff-plan"]
+  );
+  assert.equal(bodies[1].expectedVersion, 4);
+  assert.notEqual(bodies[0].mutationId, bodies[1].mutationId);
+  assert.deepEqual(bodies[1].plan, {
+    startLocal: "2026-10-04T14:00",
+    endLocal: "2026-10-04T15:00",
+    timeZone: "UTC",
+    pickupDetails: "Second submitted private instructions"
+  });
+  assert.equal(s.confirmed.length, 2);
+  assert.equal(
+    input(s.h.output, noteLabel).props.value,
+    "Retained cancellation sibling"
+  );
+  assert.equal(s.state.guard.dirty, true);
+});
+
 test("confirmed completion keeps an unsent cancellation draft guarded after controls disappear", async (t) => {
   const s = actionHarness(t, { state: "RESERVED", pickupReportable: true });
   s.change(noteLabel, "Completion must not acknowledge this note");
@@ -711,7 +775,7 @@ test("an unsolicited changed inquiry stays concealed without rebasing retained a
   assert.equal(s.actions().props.acceptedVersion, undefined);
 });
 
-test("same-version expiry or source redaction cannot silently replace the retained command snapshot", async (t) => {
+test("same-version source redaction cannot silently replace the retained command snapshot", async (t) => {
   const s = detailHarness(t);
   await s.h.settle();
   const original = s.actions().props.inquiry;
@@ -727,6 +791,23 @@ test("same-version expiry or source redaction cannot silently replace the retain
   assert.equal(s.visible(), false);
   assert.equal(s.actions().props.inquiry, original);
   assert.equal(s.actions().props.privacy.currentAccess, true);
+});
+
+test("same-version virtual expiry conceals the retained snapshot without acknowledging any command", async (t) => {
+  const s = detailHarness(t);
+  await s.h.settle();
+  const original = s.actions();
+  s.state.inquiry = inquiry({ state: "EXPIRED", canClear: true });
+  assert.equal(s.state.inquiry.version, original.props.inquiry.version);
+  s.emit("focus");
+  await s.h.settle();
+  assert.equal(s.visible(), false);
+  assert.ok(!textContent(s.h.output).includes("Private fixture"));
+  assert.equal(s.actions().key, original.key);
+  assert.equal(s.actions().props.inquiry, original.props.inquiry);
+  assert.equal(s.actions().props.privacy.currentAccess, true);
+  assert.equal(s.actions().props.acceptedVersion, undefined);
+  assert.equal(s.writes().length, 0);
 });
 
 test("a redacted terminal inquiry still initializes the participant's permitted clear action", async (t) => {
@@ -760,6 +841,8 @@ test("a confirmed command cannot rearm until an authorized snapshot reaches its 
     message: "Saved"
   });
   await s.h.settle();
+  assert.equal(s.visible(), false);
+  assert.ok(!textContent(s.h.output).includes("Private fixture"));
   assert.equal(s.actions().props.acceptedVersion, undefined);
   assert.equal(s.actions().props.inquiry.version, 3);
   s.state.inquiry = inquiry({

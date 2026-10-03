@@ -13,6 +13,76 @@ release gates; it applies only to branches containing that configuration.
 
 # Source and deployment security acceptance
 
+## Private Exchange handoff detail, 3 October 2026 UTC
+
+Unchanged application `da759bca71975908c951a803bdc5358b1ae38863` passes [baseline
+runtime 37108397782](https://github.com/LifEXPAdmin/church-landing/actions/runs/37108397782),
+build `djgX1m8GRmo1agGv0n7yX`: 22 service tests, 34 browser groups and four HTTPS
+cases. Three groups deliberately confirm owner purpose/pickup text in initial
+HTML/RSC, private saved and unsent fields retained in concealed DOM, and canonical
+redaction of pickup instructions before the requesting participant agrees. This
+is reproduction evidence. Eleven hashed artifacts total 1,634,944 bytes.
+[Baseline source 37108397786](https://github.com/LifEXPAdmin/church-landing/actions/runs/37108397786)
+passes 223 tests, copy and types, then fails the existing dependency audit.
+
+Application `43187227373fae40f20adccf2c617832d8145a48` retains the server's
+canonical authorization/error path but passes only owner and inquiry identifiers
+to a client detail owner. Current account-pinned reads initialize private content,
+with coalescing, a 15-second owned deadline and separate presentation/identity
+generations. Unexpected changes remain concealed for deliberate review. Virtual
+state changes are compared through the complete projection, not merely version.
+Confirmed account replacement clears the previous owner's entries.
+
+One mounted action owner retains plan, cancellation and agreement drafts, exact
+pending bodies and receipts. Concealment omits private DOM. A successful action
+acknowledges only its submitted field group; dirty siblings keep their navigation
+guard. Agreement remains tied to the original plan version. An opt-in shared-hook
+re-arm requires the exact consumed receipt, current access and no pending or
+in-flight command. The detail owner supplies acceptance only after an authorized
+snapshot reaches the confirmed version. Unsent choices made irrelevant by a
+terminal state remain reviewable until deliberately discarded.
+
+A lost successful history-clear can correctly make detail GET return 404. Only
+the retained original clear receives a retry after a fresh original-owner check;
+the canonical command still authorizes the exact replay. Confirmed clear shows
+a terminal acknowledgement without discarding unrelated drafts. Redacted source
+availability does not replace canonical participant/history authorization.
+Defaults copying owns a 15-second cancellation deadline, validates owner and
+field shape, and is invalidated by concealment, newer edits/copies, accepted
+transitions, discard or unmount.
+
+All 147 focused local source-executing checks pass, including 25 new detail,
+action and hook regressions. The first unchanged-source subset had 11 failures
+and two passes. Scoped lint, formatting, source-boundary and whitespace checks
+pass. [Source 37109131151](https://github.com/LifEXPAdmin/church-landing/actions/runs/37109131151)
+passes 248 tests and authored copy, then fails types because the new HTTPS test
+reads an optional inquiry without an explicit existence assertion. Audit and
+later gates were not reached in that run. This is a test typing defect; its
+correction is test-only. [Runtime 37109131131](https://github.com/LifEXPAdmin/church-landing/actions/runs/37109131131)
+passes the exact application candidate: 22 services, 39 browser groups (eight
+detail, 11 composer, 11 defaults, nine handoff) and five HTTPS cases; build
+`GvToxFWks1-nUy42ymGdY`. Browser and HTTPS server identities were verified with
+MFA mode off and enforce respectively. The browser authenticator challenge is
+injected, not a real authenticator ceremony. No browser errors or layout failures;
+390px and 320px/200% screenshots were visually inspected. Twelve hashed artifacts
+total 2,500,211 bytes.
+
+The detail browser checks initial HTML/RSC omission, denied initialization,
+blur/pagehide/offline removal, retained same-owner drafts, successful plan reuse
+with a dirty cancellation sibling, delayed defaults invalidation, five identical
+plan requests through lost acceptance/wrong receipt/429/503 with one audit,
+terminal unsent-plan retention and navigation guarding, two identical clear
+requests through canonical detail 404, participant-local history and account
+replacement clearing. HTTPS covers canonical pinned no-store detail reads,
+unagreed/agreed pickup redaction, owner/other/guest denials, cancellation bootstrap
+omission and exact clear replay. Two further focused cases verify submitted plan
+retention before readback/sequential reuse and same-version virtual expiry;
+149 local cases now pass. A separately preserved exact-baseline rerun has 12
+failures and two passes; it does not isolate an uncommitted intermediate state.
+Final source checks and independent final review remain open.
+No dependency, schema or server authorization changes; no production migrations,
+writes, external sends, integration, deployment or live acceptance.
+
 ## Private Exchange inquiry composer, 3 October 2026 UTC
 
 Unchanged application baseline `1da087f33204be918d66373f7fc43eb5c634fbc0`
