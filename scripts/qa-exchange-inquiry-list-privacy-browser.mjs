@@ -373,7 +373,8 @@ try {
   );
   await signal("social-relationships-changed");
   await waitUntil(async () => (await rows().count()) === 0);
-  await page
+  await exact("Recheck current access")
+    .locator("..")
     .getByRole("status")
     .filter({ hasText: "Your sign-in could not be checked" })
     .waitFor();
