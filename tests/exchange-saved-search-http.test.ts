@@ -120,6 +120,7 @@ test("saved-search HTML/RSC omit private editor values while current reads and e
     await read(db, owner.token, { view: "search", searchId })
   );
   assert.equal(data.ownerId, owner.id);
+  assert.ok(data.searches);
   assert.equal(data.searches.length, 1);
   assert.equal(data.searches[0].name, name);
   assert.equal(data.searches[0].alerts, true);
