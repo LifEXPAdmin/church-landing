@@ -202,7 +202,8 @@ try {
     await go(path);
     const link = page.getByRole("link", {
       name: "Inquiry sent: " + person.name,
-      exact: true
+      exact: true,
+      includeHidden: true
     });
     await link.waitFor();
     await page.evaluate(() => window.dispatchEvent(new Event("blur")));
