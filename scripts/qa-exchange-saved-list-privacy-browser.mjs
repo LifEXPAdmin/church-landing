@@ -511,6 +511,7 @@ try {
   await go("/platform/exchange/saved?view=favorites");
   await panel.getByText("Listing unavailable", { exact: true }).waitFor();
   let releaseReply, replyStarted;
+  const laterFavoriteBodies = [];
   const replyGate = new Promise((resolve) => {
       releaseReply = resolve;
     }),
@@ -519,6 +520,17 @@ try {
     });
   await intercept(endpoint, async (route) => {
     if (route.request().method() !== "POST") return route.continue();
+    laterFavoriteBodies.push(route.request().postData());
+    if (laterFavoriteBodies.length === 1)
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          id: favorite.id,
+          version: 2,
+          message: "Stale earlier removal receipt"
+        })
+      });
     const response = await route.fetch();
     assert.equal(response.status(), 200);
     replyStarted();
@@ -526,6 +538,9 @@ try {
     return route.fulfill({ response });
   });
   await exact("Remove favorite").click();
+  await exact("Confirm original save").waitFor();
+  assert.equal((await favorites()).favorites[0].version, 3);
+  await exact("Confirm original save").click();
   try {
     await within(replyReady, "Accepted removal response");
     assert.equal(
@@ -554,8 +569,18 @@ try {
     .getByText("No favorite listings on this page.", { exact: false })
     .waitFor();
   assert.equal((await favorites()).favorites.length, 0);
+  assert.equal(laterFavoriteBodies.length, 2);
+  assert.equal(laterFavoriteBodies[0], laterFavoriteBodies[1]);
+  assert.equal(
+    (
+      await db.exchangeFavorite.findUniqueOrThrow({
+        where: { id: favorite.id }
+      })
+    ).version,
+    4
+  );
   ok(
-    "Redacted saved references remain removable and a late accepted response cannot reopen concealed content"
+    "A stale same-favorite receipt cannot clear its newer request; redacted references remain removable and late acceptance cannot reopen concealed content"
   );
   // A deleted previous-page anchor must not strand the immutable current-page command.
   for (let i = 0; i < 21; i++)
@@ -607,11 +632,13 @@ try {
   await panel
     .getByRole("link", { name: "Open first page", exact: true })
     .click();
-  await page
-    .getByText("Save or resolve your private choice before leaving.", {
-      exact: true
-    })
+  await panel
+    .getByText(
+      "Your local choices and any original save are retained. Recheck current access before continuing.",
+      { exact: true }
+    )
     .waitFor();
+  assert.equal(await exact("Confirm original save").count(), 1);
   assert.equal(
     new URL(page.url()).search,
     "?view=searches&after=" + firstPage.after

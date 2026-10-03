@@ -201,6 +201,7 @@ export function ExchangeSavedItems({
 }) {
   const visible = useReadVisibility();
   const target = useRef<string | null>(null),
+    targetVersion = useRef<number | null>(null),
     dispatching = useRef(false);
   const confirmed = useRef<
     Parameters<PrivateChoiceAccess["onConfirmed"]>[0] | null
@@ -214,6 +215,7 @@ export function ExchangeSavedItems({
     {
       ...privacy,
       expectedReceiptId: () => target.current,
+      expectedReceiptVersion: () => targetVersion.current,
       onConfirmed(receipt) {
         confirmed.current = receipt;
         privacy.onConfirmed(receipt);
@@ -231,6 +233,7 @@ export function ExchangeSavedItems({
     ) {
       confirmed.current = null;
       target.current = null;
+      targetVersion.current = null;
     }
   }, [acceptedReceipt, rearm]);
   const command = {
@@ -238,9 +241,17 @@ export function ExchangeSavedItems({
     async command(value: Record<string, unknown>) {
       if (action.blocked || dispatching.current) return false;
       const id = value.favoriteId ?? value.searchId;
-      if (typeof id !== "string" || !id) return false;
+      if (
+        typeof id !== "string" ||
+        !id ||
+        typeof value.expectedVersion !== "number" ||
+        !Number.isInteger(value.expectedVersion) ||
+        value.expectedVersion < 0
+      )
+        return false;
       dispatching.current = true;
       target.current = id;
+      targetVersion.current = value.expectedVersion + 1;
       onRequest?.();
       try {
         return await action.command(value);

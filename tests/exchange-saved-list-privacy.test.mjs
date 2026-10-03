@@ -413,6 +413,42 @@ test("equal per-row versions require each exact consumed receipt object before t
   );
 });
 
+test("an older same-target receipt cannot confirm a newer removal or consume its exact retry", async (t) => {
+  const s = itemsHarness(t);
+  s.state.result = listPage("favorites", ["a"]);
+  s.state.result.favorites[0].version = 3;
+  s.h.render();
+  s.state.writeHandler = () => {
+    throw new TypeError("Fictional accepted reply lost");
+  };
+  s.removeButtons()[0].props.onClick();
+  await s.h.settle();
+  const original = s.writes()[0].body;
+  assert.equal(JSON.parse(original).expectedVersion, 3);
+  assert.equal(s.state.guard.saving, true);
+  s.rows([]);
+  s.state.writeHandler = () =>
+    response({ id: "favorite-a", version: 2, message: "Older removal" });
+  button(s.h.output, "Confirm original save").props.onClick();
+  await s.h.settle();
+  assert.equal(
+    s.confirmed.length,
+    0,
+    "A matching target ID cannot validate an older command's receipt"
+  );
+  assert.equal(s.state.guard.saving, true);
+  assert.equal(s.writes().length, 2);
+  assert.equal(s.writes()[1].body, original);
+  s.state.writeHandler = null;
+  button(s.h.output, "Confirm original save").props.onClick();
+  await s.h.settle();
+  assert.equal(s.writes().length, 3);
+  assert.ok(s.writes().every((request) => request.body === original));
+  assert.equal(s.confirmed.length, 1);
+  assert.equal(s.confirmed[0].id, "favorite-a");
+  assert.equal(s.confirmed[0].version, 4);
+});
+
 test("definitive validation rejection permits a fresh target without leaving the dispatch latch stuck", async (t) => {
   const s = itemsHarness(t);
   s.state.writeHandler = () =>
