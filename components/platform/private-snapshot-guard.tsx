@@ -12,7 +12,7 @@ import {
 import { socialRequest } from "@/lib/platform/social-client";
 import { ReadVisibility, useReadVisibility } from "./read-visibility";
 
-type PendingRecovery = { retry: () => void; busy: boolean };
+type PendingRecovery = { retry: () => void; busy: boolean; allowed?: boolean };
 const RecoveryContext = createContext<
   ((id: string, recovery: PendingRecovery | null) => void) | null
 >(null);
@@ -20,13 +20,14 @@ export function usePrivateRecovery(
   id: string,
   pending: boolean,
   busy: boolean,
-  retry: () => void
+  retry: () => void,
+  allowed?: boolean
 ) {
   const register = useContext(RecoveryContext);
   useLayoutEffect(() => {
-    register?.(id, pending ? { retry, busy } : null);
+    register?.(id, pending ? { retry, busy, allowed } : null);
     return () => register?.(id, null);
-  }, [register, id, pending, busy, retry]);
+  }, [register, id, pending, busy, retry, allowed]);
 }
 
 // Keep form state mounted but concealed while rechecking. A changed version
@@ -36,12 +37,16 @@ export function PrivateSnapshotGuard({
   url,
   checksum,
   label = "private information",
+  project,
+  recoverWithoutSnapshot = false,
   children
 }: {
   owner: string;
   url: string;
   checksum: string;
   label?: string;
+  project?: (data: unknown) => unknown;
+  recoverWithoutSnapshot?: boolean;
   children: ReactNode;
 }) {
   const parentVisible = useReadVisibility();
@@ -93,7 +98,7 @@ export function PrivateSnapshotGuard({
       const { data } = await socialRequest<unknown>(url, undefined, owner);
       const digest = await crypto.subtle.digest(
         "SHA-256",
-        new TextEncoder().encode(JSON.stringify(data))
+        new TextEncoder().encode(JSON.stringify(project ? project(data) : data))
       );
       if (seq !== generation.current) return;
       setCurrentAccess(true);
@@ -125,7 +130,7 @@ export function PrivateSnapshotGuard({
         void latestCheck.current();
       }
     }
-  }, [owner, url, confirmedChecksum, label]);
+  }, [owner, url, confirmedChecksum, label, project]);
   latestCheck.current = check;
   useEffect(() => {
     active.current = true;
@@ -165,8 +170,13 @@ export function PrivateSnapshotGuard({
       {!visible && (
         <div className="space-y-3 rounded-xl border p-4">
           <p role="status">{notice || `Checking current ${label} access…`}</p>
-          {currentAccess &&
-            Object.entries(recoveries).map(([id, recovery]) => (
+          {Object.entries(recoveries)
+            .filter(
+              ([, recovery]) =>
+                currentAccess ||
+                (recoverWithoutSnapshot && recovery.allowed === true)
+            )
+            .map(([id, recovery]) => (
               <button
                 key={id}
                 type="button"

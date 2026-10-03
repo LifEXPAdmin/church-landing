@@ -304,7 +304,7 @@ try {
     window.dispatchEvent(new Event("focus"));
   });
   await page
-    .getByRole("button", { name: "Confirm original request", exact: true })
+    .getByRole("button", { name: "Confirm original save", exact: true })
     .click();
   await page
     .getByRole("button", { name: "Remove favorite", exact: true })

@@ -5,9 +5,12 @@ import Link from "next/link";
 import { exchangeReturnHref } from "@/lib/platform/exchange-navigation";
 import { PlatformShell } from "@/components/platform/platform-shell";
 import { TopicReadBoundary } from "@/components/platform/topic-read-boundary";
-import { PrivateSnapshotGuard } from "@/components/platform/private-snapshot-guard";
 import { RelationshipControls } from "@/components/platform/relationship-controls";
-import { ExchangeFavoriteButton } from "@/components/platform/exchange-saved-controls";
+import {
+  ExchangeFavoriteEntry,
+  ExchangeListingGuard
+} from "@/components/platform/exchange-favorite-entry";
+import { exchangeListingSnapshot } from "@/lib/platform/exchange-listing-snapshot";
 import { ExchangePhotos } from "@/components/platform/exchange-photos";
 import { RegionalWallTime } from "@/components/platform/regional-presentation";
 import {
@@ -207,10 +210,10 @@ export default async function Page({
           )}
         </section>
         {user && result.canSave && (
-          <ExchangeFavoriteButton
+          <ExchangeFavoriteEntry
+            key={`${user.id}:${listing.id}`}
             owner={user.id}
             listingId={listing.id}
-            favorite={result.favorite}
           />
         )}
         {result.canManage && (
@@ -226,14 +229,14 @@ export default async function Page({
     );
     const readUrl = `/api/platform/exchange?view=listing&id=${encodeURIComponent(id)}`;
     content = user ? (
-      <PrivateSnapshotGuard
+      <ExchangeListingGuard
         owner={user.id}
         url={readUrl}
-        checksum={exchangeChecksum(result)}
+        checksum={exchangeChecksum(exchangeListingSnapshot(result))}
         label="listing"
       >
         {article}
-      </PrivateSnapshotGuard>
+      </ExchangeListingGuard>
     ) : (
       <TopicReadBoundary
         owner={null}
