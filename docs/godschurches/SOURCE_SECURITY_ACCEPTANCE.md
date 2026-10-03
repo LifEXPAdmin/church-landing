@@ -80,8 +80,22 @@ and PR run 37118231226 pass 335 source tests, copy checks and project types, the
 fail the existing seven-high dependency audit. Registry signature/provenance,
 full hosted lint and secret-scan steps skip after that failure and are not
 claimed as passing. [Draft PR14](https://github.com/LifEXPAdmin/church-landing/pull/14)
-stacks on PR13. Final review is recorded separately in the existing private task
-handoff. No integration, production migration, deployment, production writes,
+stacks on PR13. Final review found a QA completion race in the withdrawn-listing
+scenario: the outer retry label disappeared when it became busy, before the
+browser had necessarily consumed the replay receipt. Earlier runtime success is
+preserved with this limit. Test-only candidate
+`7aadb81af4bebdf604759bc7b0812394c5dfeafa` holds the second response, proves the
+visible outer and hidden leaf pending controls still exist, then waits for every
+pending/busy label to disappear after release. Application source is unchanged.
+
+[Final runtime 37118986385](https://github.com/LifEXPAdmin/church-landing/actions/runs/37118986385)
+passes the full 43-service, 33-browser-group and four-HTTPS profile, including
+that strengthened assertion. Build `uSsZ76VpFW_qc2DBrci2O` serves exact candidate
+7aadb81 in both MFA modes. Thirteen final artifacts total 2,353,236 bytes; both
+final mobile captures were inspected with the same scoped-layout limitation.
+Final source runs 37118986454 and 37118989412 pass 335 tests, copy and types, then
+fail the unchanged audit with subsequent security steps skipped. Final review
+closure is recorded separately in the existing private task handoff. No integration, production migration, deployment, production writes,
 external sends or release acceptance is claimed. Designated release ownership
 and the separate church-binding candidate remain preserved.
 
