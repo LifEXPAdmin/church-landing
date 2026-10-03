@@ -1,3 +1,28 @@
+## Private Exchange inquiry composer runtime verified, 3 October 2026 UTC
+
+[Draft PR 10](https://github.com/LifEXPAdmin/church-landing/pull/10) removes the
+requester's private active-inquiry association from initial listing HTML/RSC and
+physically omits purpose/receiver controls during unconfirmed access. The mounted
+owner retains unsent purpose and exact original requests. Changed targets cannot
+rebase uncertain commands or substitute for their receipts; confirmed navigation
+waits for current foreground and parent visibility. A measured enlarged-text
+listing overflow is repaired locally for long owner details and contact links.
+
+Core privacy source `6f7cfd19e97351702ce0aaff13a8828d5e18dcec` and layout source
+`dffbda0fd395d4be783d8421cce990906fd5f510` pass 122 focused local checks. Candidate
+`3eed8992a37f8a392caa6395b6fc2b8fd9e67b44` passes [runtime 37106508631](https://github.com/LifEXPAdmin/church-landing/actions/runs/37106508631),
+build `7l11D3WgkZhcm95TKUomu`: 22 services, 31 browser groups and four HTTPS cases.
+Hosted source checks pass 223 tests, copy and types, then fail the existing audit.
+[Security acceptance](SOURCE_SECURITY_ACCEPTANCE.md) preserves reproduction,
+failed attempts, measured layout repair and hashed runtime evidence. Test-only
+`498207dd169dc81e2d14159a64565c429f8e4419` strengthens raw-DOM and receipt-settlement
+assertions and passes [final runtime 37106941347](https://github.com/LifEXPAdmin/church-landing/actions/runs/37106941347),
+build `gz5FitH3v4_L8wKephfJk`, with the same 22/31/4 checks and 122 focused cases.
+Its source checks pass 223 tests, copy and types, then fail the existing audit.
+Independent final review closed without findings and verified all 12 final
+artifact hashes and sizes. PR10 stacks on PR9.
+No integration, deployment, live acceptance or complete release receipt is claimed.
+
 ## Private Exchange inquiry list runtime verified, 3 October 2026 UTC
 
 The inquiry list now retains server authorization while omitting participant

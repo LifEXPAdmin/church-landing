@@ -8,10 +8,8 @@ import {
   exchangeChecksum,
   type ExchangeQuery
 } from "./exchange-page-ui";
-import {
-  ExchangeHandoffActions,
-  ExchangeInquiryForm
-} from "./exchange-handoff-controls";
+import { ExchangeHandoffActions } from "./exchange-handoff-controls";
+import { ExchangeInquiryComposer } from "./exchange-inquiry-composer";
 import { ExchangeDefaultsEntry } from "./exchange-defaults-entry";
 import { ExchangeInquiryList } from "./exchange-inquiry-list";
 import { RegionalTime } from "./regional-presentation";
@@ -38,30 +36,13 @@ export async function ExchangeInquiryEntry({
   listingId: string;
 }) {
   try {
-    const result = await exchangeHandoffPage({ view: "target", listingId });
+    await exchangeHandoffPage({ view: "target", listingId });
     return (
-      <PrivateSnapshotGuard
+      <ExchangeInquiryComposer
+        key={`${owner}:${listingId}`}
         owner={owner}
-        url={`/api/platform/exchange?${new URLSearchParams({ view: "handoff-target", listingId })}`}
-        checksum={exchangeChecksum(result)}
-        label="inquiry access"
-      >
-        <section className="space-y-3" aria-label="Listing inquiry">
-          <h2 className="text-2xl">Ask about this listing</h2>
-          {result.target ? (
-            <ExchangeInquiryForm
-              key={`${listingId}:${result.target.contactVersion}`}
-              owner={owner}
-              target={result.target}
-            />
-          ) : (
-            <p>
-              A private inquiry is not currently available to this account. The
-              receiving adult’s listing and contact choices determine access.
-            </p>
-          )}
-        </section>
-      </PrivateSnapshotGuard>
+        listingId={listingId}
+      />
     );
   } catch (error) {
     return (

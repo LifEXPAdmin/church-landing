@@ -1,7 +1,6 @@
 "use client";
 import Link from "next/link";
 import { useCallback, useId, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import type { ExchangeHandoffView } from "@/lib/platform/exchange-handoffs";
 import type { readExchangeDefaults } from "@/lib/platform/exchange-defaults";
 import {
@@ -12,6 +11,10 @@ import {
 import { socialRequest } from "@/lib/platform/social-client";
 import { useReadVisibility } from "./read-visibility";
 import { useExchangeAction } from "./exchange-saved-controls";
+import {
+  usePrivateChoiceAction,
+  type PrivateChoiceAccess
+} from "./use-private-choice-action";
 import { portalInputClass } from "./portal-action-form";
 
 type Inquiry = NonNullable<ExchangeHandoffView["inquiry"]>;
@@ -20,23 +23,27 @@ type Contact = NonNullable<ExchangeHandoffView["contact"]>;
 
 export function ExchangeInquiryForm({
   owner,
-  target
+  target,
+  privacy
 }: {
   owner: string;
   target: Target;
+  privacy: PrivateChoiceAccess;
 }) {
-  const [purpose, setPurpose] = useState(""),
-    id = useId(),
-    reference = useRef<string | null>(null),
-    router = useRouter();
-  const saved = useCallback(
-    (receipt: { id: string }) => {
-      setPurpose("");
-      router.push(`/platform/exchange/handoffs/${receipt.id}`);
-    },
-    [router]
+  const [purpose, setPurpose] = useState("");
+  const id = useId(),
+    reference = useRef<string | null>(null);
+  const visible = useReadVisibility();
+  const action = usePrivateChoiceAction(
+    "/api/platform/exchange",
+    owner,
+    !!purpose,
+    undefined,
+    true,
+    { ...privacy, expectedReceiptId: () => reference.current }
   );
-  const action = useExchangeAction(owner, !!purpose, saved, true);
+  // Keep the command owner mounted, but remove private values from the DOM.
+  if (!visible) return action.status;
   if (target.activeId)
     return (
       <Link

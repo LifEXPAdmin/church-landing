@@ -354,8 +354,15 @@ try {
   });
   await exact("Send private inquiry").click();
   await exact("Confirm original save").waitFor();
+  const acceptedTarget = (
+    await readExchangeHandoffs(db, requester.token, {
+      view: "target",
+      listingId: listing.id
+    })
+  ).target;
+  assert.equal(acceptedTarget.activeId, JSON.parse(originalBody).id);
   await resume();
-  await exact("Confirm original request").click();
+  await exact("Confirm original save").click();
   await page.waitForURL("**/platform/exchange/handoffs/*");
   await state("Inquiry sent");
   await page.unroute("**/api/platform/exchange");
