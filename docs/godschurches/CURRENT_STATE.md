@@ -15,8 +15,12 @@ bootstrap and retained-DOM exposures. Application
 assertion missing from the new HTTPS test. [Runtime 37109131131](https://github.com/LifEXPAdmin/church-landing/actions/runs/37109131131)
 passes 22 services, 39 browser groups and five HTTPS cases with build
 `GvToxFWks1-nUy42ymGdY`. Two additional focused regressions bring the local
-check set to 149 cases; the test typing correction is awaiting hosted checks.
-Final review remains open. [Security acceptance](SOURCE_SECURITY_ACCEPTANCE.md)
+check set to 149 cases. Final candidate `40d11527e857775507cc090b30a72f0a8e9d525a`
+passes [runtime 37109492543](https://github.com/LifEXPAdmin/church-landing/actions/runs/37109492543),
+build `VP97nnyjk6oEjbUwDgQFU`, with the same 22/39/5 checks. Hosted source runs
+pass 250 tests, copy and types, then fail the unchanged dependency audit.
+Independent final review closed without actionable findings and verified all
+12 final artifact hashes and sizes. [Security acceptance](SOURCE_SECURITY_ACCEPTANCE.md)
 records exact evidence.
 PR11 stacks on PR10. No integration, deployment or live acceptance is claimed.
 

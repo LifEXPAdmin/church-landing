@@ -79,7 +79,16 @@ omission and exact clear replay. Two further focused cases verify submitted plan
 retention before readback/sequential reuse and same-version virtual expiry;
 149 local cases now pass. A separately preserved exact-baseline rerun has 12
 failures and two passes; it does not isolate an uncommitted intermediate state.
-Final source checks and independent final review remain open.
+Final candidate `40d11527e857775507cc090b30a72f0a8e9d525a` passes [runtime
+37109492543](https://github.com/LifEXPAdmin/church-landing/actions/runs/37109492543),
+build `VP97nnyjk6oEjbUwDgQFU`, with the same 22 services, 39 browser groups and
+five HTTPS cases. Application code is unchanged from `4318722`. Twelve final
+artifacts total 2,462,986 bytes. Source runs [37109492561](https://github.com/LifEXPAdmin/church-landing/actions/runs/37109492561)
+and [37109494905](https://github.com/LifEXPAdmin/church-landing/actions/runs/37109494905)
+pass 250 tests, copy and types, then fail the unchanged dependency audit; later
+security steps are skipped. Independent final review closed without actionable
+findings after inspecting the source/contracts/tests/reports and verifying all
+12 final artifact hashes and sizes.
 No dependency, schema or server authorization changes; no production migrations,
 writes, external sends, integration, deployment or live acceptance.
 
