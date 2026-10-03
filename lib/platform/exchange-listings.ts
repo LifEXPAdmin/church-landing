@@ -805,11 +805,8 @@ export function listExchangeListings(
     const codec = exchangeSearchCursor(context.actorId, query),
       page = codec.decode(query.after),
       at = new Date(page.at);
-    const where: Prisma.ExchangeListingWhereInput = {
+    const searchWhere: Prisma.ExchangeListingWhereInput = {
       AND: [
-        query.mine
-          ? exchangeManagementWhere(context, authority)
-          : exchangeDiscoveryWhere(context),
         exchangeSearchWhere(query),
         {
           updatedAt: { lte: at },
@@ -822,6 +819,14 @@ export function listExchangeListings(
         ...(bands
           ? [{ placeId: { in: bands.flatMap((band) => band.placeIds) } }]
           : [])
+      ]
+    };
+    const where: Prisma.ExchangeListingWhereInput = {
+      AND: [
+        query.mine
+          ? exchangeManagementWhere(context, authority)
+          : exchangeDiscoveryWhere(context),
+        searchWhere
       ]
     };
     if (page.anchor) {
@@ -872,18 +877,70 @@ export function listExchangeListings(
       if (band && !band.placeIds.length) continue;
       const continued =
         page.anchor && (!band || band.radiusKm === page.anchor.band);
-      const batch = await tx.exchangeListing.findMany({
+      const continuation = [
+        ...(band ? [{ placeId: { in: band.placeIds } }] : []),
+        ...(continued ? [exchangeSearchAfter(query, page.anchor!)] : [])
+      ];
+      const read = {
         where: {
-          AND: [
-            where,
-            ...(band ? [{ placeId: { in: band.placeIds } }] : []),
-            ...(continued ? [exchangeSearchAfter(query, page.anchor!)] : [])
-          ]
+          AND: [where, ...continuation]
         },
         select: cardSelect,
         orderBy,
         take: EXCHANGE_PAGE_SIZE + 1 - rows.length
-      });
+      };
+      let batch: Prisma.ExchangeListingGetPayload<{
+        select: typeof cardSelect;
+      }>[];
+      if (query.mine) {
+        batch = await tx.exchangeListing.findMany(read);
+      } else {
+        // Narrow expensive authorization joins using an ordered superset of
+        // candidates. These IDs never leave this permission transaction.
+        const candidates = await tx.exchangeListing.findMany({
+          where: { AND: [searchWhere, ...continuation] },
+          select: {
+            id: true,
+            publishedAt: true,
+            updatedAt: true,
+            priceMinor: true
+          },
+          orderBy,
+          take: 120
+        });
+        batch = candidates.length
+          ? await tx.exchangeListing.findMany({
+              ...read,
+              where: {
+                AND: [
+                  read.where,
+                  { id: { in: candidates.map((row) => row.id) } }
+                ]
+              }
+            })
+          : [];
+        // A full candidate window is not an authorized page boundary. If it
+        // did not fill this page, search the entire remaining suffix with the
+        // original policy. This bounds added queries without truncating hidden
+        // prefixes. The internal boundary may itself be unauthorized.
+        if (batch.length < read.take && candidates.length === 120) {
+          const lastCandidate = candidates[candidates.length - 1];
+          const afterCandidate = exchangeSearchAfter(query, {
+            id: lastCandidate.id,
+            publishedAt: lastCandidate.publishedAt?.toISOString() ?? null,
+            updatedAt: lastCandidate.updatedAt.toISOString(),
+            priceMinor: lastCandidate.priceMinor,
+            band: band?.radiusKm ?? null
+          });
+          batch.push(
+            ...(await tx.exchangeListing.findMany({
+              ...read,
+              where: { AND: [read.where, afterCandidate] },
+              take: read.take - batch.length
+            }))
+          );
+        }
+      }
       rows.push(
         ...batch.map((row) => ({
           ...row,
