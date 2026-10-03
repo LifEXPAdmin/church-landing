@@ -683,7 +683,7 @@ try {
     .getByLabel("Title (required to publish)", { exact: true })
     .waitFor();
   await page.setViewportSize({ width: 320, height: 780 });
-  await page.getByLabel("Appearance", { exact: true }).selectOption("dark");
+  await page.locator("#quick-appearance").selectOption("dark");
   await page.locator('.platform-design[data-appearance="dark"]').waitFor();
   assert.equal(
     await page
@@ -705,7 +705,7 @@ try {
   await page.evaluate(() => {
     document.documentElement.style.fontSize = "";
   });
-  await page.getByLabel("Appearance", { exact: true }).selectOption("system");
+  await page.locator("#quick-appearance").selectOption("system");
   await page.setViewportSize({ width: 390, height: 844 });
   await editor
     .getByLabel("Title (required to publish)", { exact: true })
