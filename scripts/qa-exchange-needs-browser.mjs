@@ -711,6 +711,9 @@ try {
     }),
     0
   );
+  await volunteers
+    .getByText("Your event signup is active.", { exact: true })
+    .waitFor();
   await page.waitForFunction(() => !history.state?.gcPhotoWork);
   await signIn(manager);
   await go(path + "?volunteers=" + (await slotRow("Event helpers")).id);
@@ -813,6 +816,10 @@ try {
   await go("/platform/settings/exchange");
   await page.getByRole("link", { name: /My Needs contributions/ }).waitFor();
   await go("/platform/exchange/needs");
+  await page
+    .getByRole("article", { name: "Your need contribution", exact: true })
+    .first()
+    .waitFor();
   for (const width of [1348, 390, 320]) {
     await page.setViewportSize({ width, height: 926 });
     await bounded();
