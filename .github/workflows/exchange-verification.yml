@@ -14,6 +14,7 @@ on:
       ]
     paths:
       - .github/workflows/exchange-verification.yml
+      - app/platform/exchange/**/page.tsx
       - scripts/test-platform-isolated.mjs
       - scripts/qa-exchange-inquiry-composer-privacy-browser.mjs
       - components/platform/exchange-inquiry-composer.tsx
