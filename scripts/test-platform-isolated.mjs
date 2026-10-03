@@ -28,115 +28,131 @@ assert.ok(
     "exchange-defaults",
     "exchange-inquiry-list",
     "exchange-inquiry-composer",
-    "exchange-handoff-detail"
+    "exchange-handoff-detail",
+    "exchange-saved-list"
   ].includes(suite),
   "Choose a declared isolated suite"
 );
 const profile =
-  suite === "exchange-handoff-detail"
+  suite === "exchange-saved-list"
     ? {
-        services: ["exchange-handoff-input", "exchange-handoffs"],
-        browsers: [
-          "qa-exchange-handoff-detail-privacy-browser",
-          "qa-exchange-inquiry-composer-privacy-browser",
-          "qa-exchange-defaults-privacy-browser",
-          "qa-exchange-handoff-browser"
+        services: [
+          "exchange-input",
+          "exchange-listings",
+          "exchange-handoff-input",
+          "exchange-handoffs"
         ],
-        https: [
-          "exchange-handoff-detail-http",
-          "exchange-inquiry-composer-http",
-          "exchange-inquiry-list-http",
-          "exchange-defaults-http",
-          "exchange-http"
-        ]
+        browsers: [
+          "qa-exchange-saved-list-privacy-browser",
+          "qa-exchange-search-browser",
+          "qa-exchange-handoff-detail-privacy-browser"
+        ],
+        https: ["exchange-http", "exchange-handoff-detail-http"]
       }
-    : suite === "exchange-inquiry-composer"
+    : suite === "exchange-handoff-detail"
       ? {
           services: ["exchange-handoff-input", "exchange-handoffs"],
           browsers: [
+            "qa-exchange-handoff-detail-privacy-browser",
             "qa-exchange-inquiry-composer-privacy-browser",
             "qa-exchange-defaults-privacy-browser",
             "qa-exchange-handoff-browser"
           ],
           https: [
+            "exchange-handoff-detail-http",
             "exchange-inquiry-composer-http",
             "exchange-inquiry-list-http",
             "exchange-defaults-http",
             "exchange-http"
           ]
         }
-      : suite === "exchange-inquiry-list"
+      : suite === "exchange-inquiry-composer"
         ? {
             services: ["exchange-handoff-input", "exchange-handoffs"],
             browsers: [
-              "qa-exchange-inquiry-list-privacy-browser",
+              "qa-exchange-inquiry-composer-privacy-browser",
+              "qa-exchange-defaults-privacy-browser",
               "qa-exchange-handoff-browser"
             ],
             https: [
+              "exchange-inquiry-composer-http",
               "exchange-inquiry-list-http",
               "exchange-defaults-http",
               "exchange-http"
             ]
           }
-        : suite === "exchange-defaults"
+        : suite === "exchange-inquiry-list"
           ? {
               services: ["exchange-handoff-input", "exchange-handoffs"],
               browsers: [
-                "qa-exchange-defaults-privacy-browser",
+                "qa-exchange-inquiry-list-privacy-browser",
                 "qa-exchange-handoff-browser"
               ],
-              https: ["exchange-defaults-http", "exchange-http"]
+              https: [
+                "exchange-inquiry-list-http",
+                "exchange-defaults-http",
+                "exchange-http"
+              ]
             }
-          : suite === "artists"
+          : suite === "exchange-defaults"
             ? {
-                services: ["artist-input", "artists", "artist-recovery"],
+                services: ["exchange-handoff-input", "exchange-handoffs"],
                 browsers: [
-                  "qa-artist-draft-privacy-browser",
-                  "qa-artists-browser"
+                  "qa-exchange-defaults-privacy-browser",
+                  "qa-exchange-handoff-browser"
                 ],
-                https: ["artists-http"]
+                https: ["exchange-defaults-http", "exchange-http"]
               }
-            : suite === "discovery"
+            : suite === "artists"
               ? {
-                  services: [
-                    "discovery-options",
-                    "discovery-feeds",
-                    "discovery-device",
-                    "four-feeds"
+                  services: ["artist-input", "artists", "artist-recovery"],
+                  browsers: [
+                    "qa-artist-draft-privacy-browser",
+                    "qa-artists-browser"
                   ],
-                  browsers: ["qa-discovery-browser", "qa-four-feeds-browser"],
-                  https: ["discovery-http", "four-feeds-http"]
+                  https: ["artists-http"]
                 }
-              : [
-                    "exchange-services",
-                    "exchange",
-                    "exchange-bootstrap"
-                  ].includes(suite)
+              : suite === "discovery"
                 ? {
                     services: [
-                      "exchange-input",
-                      "exchange-listings",
-                      "exchange-needs",
-                      "interchurch-help",
-                      "interchurch-help-compatibility",
-                      ...(suite === "exchange-bootstrap"
-                        ? [
-                            "pantry-support",
-                            "exchange-handoff-input",
-                            "exchange-handoffs"
-                          ]
-                        : [])
+                      "discovery-options",
+                      "discovery-feeds",
+                      "discovery-device",
+                      "four-feeds"
                     ],
-                    browsers: [
-                      "qa-exchange-browser",
-                      "qa-exchange-search-browser",
-                      ...(suite === "exchange-bootstrap"
-                        ? ["qa-exchange-handoff-browser", "qa-pantry-browser"]
-                        : [])
-                    ],
-                    https: ["exchange-http"]
+                    browsers: ["qa-discovery-browser", "qa-four-feeds-browser"],
+                    https: ["discovery-http", "four-feeds-http"]
                   }
-                : { services: [], browsers: [], https: [] };
+                : [
+                      "exchange-services",
+                      "exchange",
+                      "exchange-bootstrap"
+                    ].includes(suite)
+                  ? {
+                      services: [
+                        "exchange-input",
+                        "exchange-listings",
+                        "exchange-needs",
+                        "interchurch-help",
+                        "interchurch-help-compatibility",
+                        ...(suite === "exchange-bootstrap"
+                          ? [
+                              "pantry-support",
+                              "exchange-handoff-input",
+                              "exchange-handoffs"
+                            ]
+                          : [])
+                      ],
+                      browsers: [
+                        "qa-exchange-browser",
+                        "qa-exchange-search-browser",
+                        ...(suite === "exchange-bootstrap"
+                          ? ["qa-exchange-handoff-browser", "qa-pantry-browser"]
+                          : [])
+                      ],
+                      https: ["exchange-http"]
+                    }
+                  : { services: [], browsers: [], https: [] };
 // This runner deliberately cannot start large artifacts on a local workstation.
 assert.equal(
   process.env.GITHUB_ACTIONS,
