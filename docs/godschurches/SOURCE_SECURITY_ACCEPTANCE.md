@@ -13,6 +13,100 @@ release gates; it applies only to branches containing that configuration.
 
 # Source and deployment security acceptance
 
+## My Needs contribution privacy, 3 October 2026 UTC
+
+Unchanged application `dca4efcd6e6d5409b548ca796ea0a95644ec4659` reproduces
+contribution identifiers, private notes and source titles in initial HTML/RSC
+and retained private DOM after access concealment. Four source-executing baseline
+failures cover serialization, concealed unsent fields, wrong-target receipt
+consumption and stale-version receipt consumption. Their source/test hashes and
+early-assertion limits are retained. [Baseline runtime 37120030156](https://github.com/LifEXPAdmin/church-landing/actions/runs/37120030156)
+passes 18 service tests and five browser reproduction/control groups, build
+`F6g3h9i-VyKpha4k9Ncob`. The legacy Needs browser then stops before its journey
+because its fixture expects a missing `localOrigin`; HTTPS does not run. Two
+hashed baseline artifacts total 131,371 bytes. Source run 37120030126 passes
+335 tests, copy and types before the existing dependency audit fails.
+
+The standalone My Needs page retains canonical server authorization but sends
+only the account and page cursor to its client owner. One bounded canonical
+`need-mine` read supplies up to 20 contributions. The list retains stable row
+owners across concealment, uses separate identity/presentation generations,
+coalesces reads, aborts owned reads after 15 seconds and polls only while active.
+Blur, pagehide and offline physically remove private articles, links and inputs;
+passive events cannot reopen them. Confirmed account replacement clears retained
+rows, requests and unsent fields. Coordinator, inline and volunteer surfaces keep
+their existing behavior and are not claimed repaired by this slice.
+
+Each card pins the original row and expected receipt version before dispatch.
+Malformed replies and lost responses preserve the exact body and mutation ID.
+The page requires the exact receipt for every changed row, then a current read
+at that receipt's version. Unexpected row order, membership or cursor changes
+freeze the entire presentation. A receipt for one card cannot authorize a changed
+sibling. The leaf requires that same receipt object, visible current authority
+and canonical acknowledgment before another command. Only fields submitted by
+that operation are reset; unrelated dispute and equipment-return entries remain.
+A fresh actor read can permit only an original retry while changed rows remain
+concealed. Deliberate warned reload is required for unrelated canonical changes.
+No schema, dependencies or server authorization changed.
+
+Application `009efd2bef92d1c110deb3eff4ad4e9fb9ee092c` passes 267 focused checks,
+including 33 contribution cases, plus scoped lint, formatting, source boundaries
+and whitespace checks. [Runtime 37121135931](https://github.com/LifEXPAdmin/church-landing/actions/runs/37121135931)
+passes 18 service tests, all ten new privacy browser groups and two legacy Needs
+groups, build `qhFXuZGvROpoiibu-7vGz`. Legacy navigation then aborts because its
+fixture leaves the listing editor after the database commit but before browser
+acknowledgment. HTTPS is not reached. Seven hashed artifacts total 1,097,297
+bytes. Both privacy captures were inspected at 390px and 320px/200% text and
+measure within viewport width, with no privacy-browser errors. Global skip-link
+and fixed navigation presentation remain in the captures; these are scoped
+layout checks, not physical-device or clean whole-page acceptance.
+
+Source run 37121135933 passes 368 tests and copy checks, then catches union
+narrowing and compiler-target BigInt errors in the new HTTPS test. No application
+type error is reported. Test-only candidate
+`923d1b7cbaf994671210bb0e13e0f4835518ceb5` corrects those assertions, uses the
+canonical non-disclosing 404 for unproven coordinator duties, keeps real TOTP
+verification across counter rollover, waits for browser publishing acknowledgment
+and adds explicit guarded-departure/reload-warning checks. Application code is
+unchanged. Source run 37121539669 passes 368 tests, copy and types, then fails the
+existing seven-high advisory audit; later security steps skip. Runtime 37121539706 passes 18 services, all ten privacy groups and six legacy
+Needs groups, build `evIyjY8-KNJc23dPvzxA6`, before another premature fixture
+navigation after equipment-return commit; HTTPS is not reached. Test-only
+`b67136db6e65ebdd1cf5f1a7d6dc071450d04017` waits for the visible card to re-arm
+and for the navigation guard to settle before departure. [Runtime 37121901831](https://github.com/LifEXPAdmin/church-landing/actions/runs/37121901831)
+passes the complete profile: 18 services, 20 browser groups (ten privacy and
+ten legacy Needs), and two HTTPS tests. Build `B753wpNCC0if_KWiVUcJK` serves
+exact candidate b67136d under browser MFA-off and HTTPS MFA-enforced modes.
+HTTPS verifies no-store headers, account pins and own-only paging, immutable
+attribution/dispute/return replay, non-disclosing source redaction, retained
+loan obligations and current actor/coordinator MFA gates. Source run
+37121901912 passes 368 tests, copy and types before the unchanged audit failure.
+
+Test-only `c40102493dd0284ab40ba95d3fac7537424409be` strengthens the legacy
+journey to await visible volunteer signup acknowledgment before switching
+accounts and initialized contribution cards before screenshots. Runtime
+37122155418 passes 18 services, ten privacy groups and two legacy groups,
+build `GflYyCpGBq3rDn6V4jBZv`, before the earlier post-link database-only
+transition hits the same navigation race. Its new assertions and HTTPS are
+not reached. Test-only `22f22650e92e0c49101151942a0a7251e4db596c` audits
+the remaining transitions and waits for visible canonical post-link, accepted
+quote, received-loan and closing-reason results plus guard settlement. Source
+c401024 passes 368 tests, copy and types before the unchanged audit failure.
+[Final runtime 37122595014](https://github.com/LifEXPAdmin/church-landing/actions/runs/37122595014)
+passes all 18 services, 20 browser groups and two HTTPS cases. Build
+`uRbfHWiPxg8LTlGXVX6gd` serves exact candidate 22f2265 in both MFA modes.
+Eight final hashed artifacts total 1,597,456 bytes; both privacy captures and
+the narrow legacy contribution capture were inspected with the same scoped
+layout limitation. Browser errors and privacy layout failures are empty.
+[Source run 37122594987](https://github.com/LifEXPAdmin/church-landing/actions/runs/37122594987)
+passes 368 tests, copy and types before the unchanged seven-high audit failure.
+Registry signature/provenance, full hosted lint and secret-scan steps skip and
+are not claimed as passing. [Draft PR15](https://github.com/LifEXPAdmin/church-landing/pull/15)
+stacks on PR14. Final review closure is recorded separately in the existing
+private task handoff. No integration, deployment, production
+writes, external sends or release acceptance is claimed. Designated release
+ownership and the separate church-binding candidate remain preserved.
+
 ## Individual Exchange listing favorite, 3 October 2026 UTC
 
 The unchanged application at `402be4f75614df61a26f70cc8271d7d8689f8566` reproduces
