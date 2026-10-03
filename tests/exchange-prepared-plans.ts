@@ -62,6 +62,8 @@ function planSummary(value: Record<string, unknown>): Record<string, unknown> {
     "Index Name",
     "Join Type",
     "Strategy",
+    "Startup Cost",
+    "Total Cost",
     "Plan Rows",
     "Actual Rows",
     "Actual Loops",
@@ -102,7 +104,7 @@ function explain(event: Prisma.QueryEvent, name: string) {
       script += `EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) EXECUTE exchange_diagnostic(${parameters});\n`;
       script += `\\o ${literal(join(raw, `${name}-${mode}-${n}-counts.json`))}\n`;
       script +=
-        "SELECT json_build_object('custom',custom_plans,'generic',generic_plans) FROM pg_prepared_statements WHERE name='exchange_diagnostic';\n";
+        "SELECT json_build_object('custom',custom_plans,'generic',generic_plans,'jit',current_setting('jit'),'jitAboveCost',current_setting('jit_above_cost'),'jitInlineAboveCost',current_setting('jit_inline_above_cost'),'jitOptimizeAboveCost',current_setting('jit_optimize_above_cost')) FROM pg_prepared_statements WHERE name='exchange_diagnostic';\n";
     }
     script += "\\o\nDEALLOCATE exchange_diagnostic;\n";
   }
@@ -123,6 +125,21 @@ function explain(event: Prisma.QueryEvent, name: string) {
         iteration: n + 1,
         milliseconds: plan["Execution Time"],
         planningMilliseconds: plan["Planning Time"],
+        jit: plan.JIT
+          ? {
+              functions: plan.JIT.Functions,
+              options: Object.fromEntries(
+                Object.entries(plan.JIT.Options ?? {}).filter(
+                  ([, value]) => typeof value === "boolean"
+                )
+              ),
+              timing: Object.fromEntries(
+                Object.entries(plan.JIT.Timing ?? {}).filter(
+                  ([, value]) => typeof value === "number"
+                )
+              )
+            }
+          : null,
         counters: JSON.parse(
           readFileSync(join(raw, `${name}-${mode}-${n}-counts.json`), "utf8")
         ),
