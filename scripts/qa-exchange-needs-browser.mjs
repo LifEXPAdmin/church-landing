@@ -386,6 +386,8 @@ try {
       (await db.platformPost.findUniqueOrThrow({ where: { id: needPost.id } }))
         .exchangeNeedId === listing.id
   );
+  await exact("Remove this need link").waitFor();
+  await page.waitForFunction(() => !history.state?.gcPhotoWork);
   ok(
     "Independent publisher and volunteer duty revocation conceal retained picker content; restored current authority links the existing Need post to canonical slots"
   );
@@ -586,6 +588,12 @@ try {
     ).received,
     0
   );
+  await page
+    .getByRole("article", { name: "Private contribution", exact: true })
+    .filter({ hasText: "Fictional paid sourcing" })
+    .getByText("Committed. Promised 3. Received 0.", { exact: true })
+    .waitFor();
+  await page.waitForFunction(() => !history.state?.gcPhotoWork);
   ok(
     "Organizer confirms partial receipts, contributor cancellation reopens only unreceived quantity and paid quotes require deliberate acceptance"
   );
@@ -635,6 +643,10 @@ try {
         })
       ).received === 1
   );
+  await loanIncoming
+    .getByText("Committed. Promised 1. Received 1.", { exact: true })
+    .waitFor();
+  await page.waitForFunction(() => !history.state?.gcPhotoWork);
   const closing = page.getByRole("region", {
     name: "Close Loaned equipment",
     exact: true
@@ -648,6 +660,13 @@ try {
     .getByRole("button", { name: "Close this slot", exact: true })
     .click();
   await waitUntil(async () => !!(await slotRow("Loaned equipment")).closedAt);
+  await page
+    .getByText(
+      "Slot closing reason: One loan received; the other item is no longer needed.",
+      { exact: true }
+    )
+    .waitFor();
+  await page.waitForFunction(() => !history.state?.gcPhotoWork);
   assert.equal(
     (
       await db.exchangeNeedContribution.findUniqueOrThrow({
