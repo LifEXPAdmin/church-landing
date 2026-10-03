@@ -402,6 +402,10 @@ try {
         })
       ).state === "ACTIVE"
   );
+  // The committed database row can precede the browser's canonical readback.
+  // Complete that acknowledgement before leaving its guarded editor.
+  await waitUntil(async () => (await exact("Publish as active").count()) === 0);
+  await waitUntil(() => exact("Archive listing").isEnabled());
   await go(path);
   await page
     .getByRole("heading", { name: "Food parcels", exact: true })

@@ -254,7 +254,7 @@ test("My Needs bootstrap omits private rows while pinned reads, exact replay, re
   const canonical = await read(db, f.owner.token, { view: "mine" });
   const data = await current.json();
   assert.deepEqual(data, canonical);
-  assert.ok(canonical.contributions);
+  assert.ok("contributions" in canonical && canonical.contributions);
   assert.deepEqual(
     canonical.contributions.map((row) => row.id).sort(),
     [f.quote.id, f.loan.id].sort()
@@ -272,7 +272,7 @@ test("My Needs bootstrap omits private rows while pinned reads, exact replay, re
     after: anchor
   });
   assert.deepEqual(await paged.json(), pagedCanonical);
-  assert.ok(pagedCanonical.contributions);
+  assert.ok("contributions" in pagedCanonical && pagedCanonical.contributions);
   assert.equal(pagedCanonical.contributions.length, 1);
   assert.notEqual(pagedCanonical.contributions[0].id, anchor);
   for (const [token, pin, status] of [
@@ -359,9 +359,12 @@ test("My Needs bootstrap omits private rows while pinned reads, exact replay, re
     })
   );
   const locked = await post(f.manager.token, f.manager.id, receiveBody);
-  assert.equal(locked.status, 403);
+  assert.equal(locked.status, 404);
   privateResponse(locked);
-  assert.equal((await locked.json()).authenticatorPurpose, "privileged-work");
+  assert.equal(
+    (await locked.json()).message,
+    "This need is unavailable to your current account or duties."
+  );
   assert.equal(
     (
       await db.exchangeNeedContribution.findUniqueOrThrow({
@@ -379,7 +382,8 @@ test("My Needs bootstrap omits private rows while pinned reads, exact replay, re
   const factor = await db.adminAuthenticator.findUniqueOrThrow({
     where: { userId: f.manager.id }
   });
-  const secret = openAuthenticator(f.manager.id, factor.secretCiphertext);
+  const secret = openAuthenticator(f.manager.id, factor.secretCiphertext),
+    enrolledCounter = BigInt(Math.floor(Date.now() / 30000));
   const enrolled = await privilegedAuthenticatorCommand(
     db,
     f.manager.token,
@@ -387,13 +391,11 @@ test("My Needs bootstrap omits private rows while pinned reads, exact replay, re
       operation: "mfa-confirm",
       requestKey: randomUUID(),
       expectedVersion: factor.version,
-      code: authenticatorTotp(
-        secret,
-        BigInt(Math.floor(Date.now() / 30000)) - 1n
-      )
+      code: authenticatorTotp(secret, enrolledCounter)
     },
     undefined
   );
+  const currentCounter = BigInt(Math.floor(Date.now() / 30000));
   await privilegedAuthenticatorCommand(
     db,
     f.manager.token,
@@ -402,7 +404,12 @@ test("My Needs bootstrap omits private rows while pinned reads, exact replay, re
       requestKey: randomUUID(),
       expectedVersion: Number(enrolled.version),
       purpose: "privileged-work",
-      code: authenticatorTotp(secret, BigInt(Math.floor(Date.now() / 30000)))
+      code: authenticatorTotp(
+        secret,
+        currentCounter > enrolledCounter
+          ? currentCounter
+          : enrolledCounter + BigInt(1)
+      )
     },
     undefined
   );
@@ -418,11 +425,11 @@ test("My Needs bootstrap omits private rows while pinned reads, exact replay, re
     "Fictional second Needs coordinator browser"
   );
   const unprovenReplay = await post(secondToken, f.manager.id, receiveBody);
-  assert.equal(unprovenReplay.status, 403);
+  assert.equal(unprovenReplay.status, 404);
   privateResponse(unprovenReplay);
   assert.equal(
-    (await unprovenReplay.json()).authenticatorPurpose,
-    "privileged-work"
+    (await unprovenReplay.json()).message,
+    "This need is unavailable to your current account or duties."
   );
 
   // Withdraw only this owned fictional source. A private read must redact its
@@ -444,7 +451,9 @@ test("My Needs bootstrap omits private rows while pinned reads, exact replay, re
   privateResponse(redacted);
   const redactedCanonical = await read(db, f.owner.token, { view: "mine" });
   assert.deepEqual(await redacted.json(), redactedCanonical);
-  assert.ok(redactedCanonical.contributions);
+  assert.ok(
+    "contributions" in redactedCanonical && redactedCanonical.contributions
+  );
   assert.equal(redactedCanonical.contributions.length, 2);
   for (const row of redactedCanonical.contributions) {
     assert.equal(row.current, false);

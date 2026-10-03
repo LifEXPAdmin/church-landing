@@ -127,7 +127,11 @@ mkdirSync(output, { recursive: true });
 page.on("pageerror", (e) =>
   errors.push({ path: new URL(page.url()).pathname, message: e.message })
 );
-page.on("dialog", (dialog) => dialog.accept());
+const dialogs = [];
+page.on("dialog", (dialog) => {
+  dialogs.push(dialog.message());
+  return dialog.accept();
+});
 const ok = (message) => {
   results.push(message);
   console.log("PASS " + message);
@@ -575,6 +579,11 @@ try {
   });
   await allow(offer).click();
   await ready(retry());
+  const beforeDeparture = page.url();
+  await page
+    .getByRole("link", { name: "Browse listings", exact: true })
+    .click();
+  assert.equal(page.url(), beforeDeparture);
   const committedVersion = (await row(contribution.id)).version;
   await signal("blur");
   await signal("focus");
@@ -670,6 +679,11 @@ try {
     .click();
   await ready(revoke(offer));
   assert.equal(await offer.locator("textarea").inputValue(), "");
+  assert.ok(
+    dialogs.includes(
+      "Reload current contributions and discard retained entries and requests? An unconfirmed request may already be received."
+    )
+  );
   ok(
     "Unconfirmed canonical row changes freeze the entire list and retain drafts until deliberate warned reload"
   );
