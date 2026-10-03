@@ -81,6 +81,7 @@ context.setDefaultTimeout(15000);
 const page = await context.newPage(),
   errors = [],
   rscTrace = [],
+  rscBodyReads = [],
   incomingRefreshTraceStart = { value: 0 },
   results = [],
   output = fixtureDir + "/needs-browser-" + Date.now();
@@ -103,12 +104,29 @@ page.on("request", (request) => {
 page.on("response", (response) => {
   if (!isRscRequest(response.request())) return;
   const headers = response.headers();
+  const path = new URL(response.url()).pathname;
   rscTrace.push({
     event: "response",
     status: response.status(),
-    path: new URL(response.url()).pathname,
+    path,
     cache: headers["x-nextjs-cache"] ?? null
   });
+  if (/^\/platform\/exchange\/[^/]+\/needs$/.test(path))
+    rscBodyReads.push(
+      response
+        .text()
+        .then((body) => {
+          rscTrace.push({
+            event: "needs-rsc-payload",
+            status: response.status(),
+            receivedTotals: Array.from(
+              body.matchAll(/Received:\s*(\d+)/g),
+              ([, value]) => Number(value)
+            )
+          });
+        })
+        .catch(() => {})
+    );
 });
 page.on("dialog", (dialog) => dialog.accept());
 const ok = (message) => {
@@ -898,6 +916,7 @@ try {
   );
   throw error;
 } finally {
+  await Promise.allSettled(rscBodyReads);
   writeFileSync(
     output + "/results.json",
     JSON.stringify(
