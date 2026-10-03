@@ -81,7 +81,6 @@ context.setDefaultTimeout(15000);
 const page = await context.newPage(),
   errors = [],
   rscTrace = [],
-  rscBodyReads = [],
   incomingRefreshTraceStart = { value: 0 },
   results = [],
   output = fixtureDir + "/needs-browser-" + Date.now();
@@ -111,32 +110,6 @@ page.on("response", (response) => {
     path,
     cache: headers["x-nextjs-cache"] ?? null
   });
-  if (/^\/platform\/exchange\/[^/]+\/needs$/.test(path))
-    rscBodyReads.push(
-      response
-        .text()
-        .then((body) => {
-          rscTrace.push({
-            event: "needs-rsc-payload",
-            status: response.status(),
-            contentType: headers["content-type"] ?? null,
-            receivedTotals: Array.from(
-              body.matchAll(/Received:\s*(\d+)/g),
-              ([, value]) => Number(value)
-            )
-          });
-        })
-        .catch((error) => {
-          rscTrace.push({
-            event: "needs-rsc-body-error",
-            name: error instanceof Error ? error.name : "UnknownError",
-            message:
-              error instanceof Error
-                ? error.message.slice(0, 200)
-                : "The RSC response body could not be read."
-          });
-        })
-    );
 });
 page.on("dialog", (dialog) => dialog.accept());
 const ok = (message) => {
@@ -547,6 +520,24 @@ try {
   await signIn(manager);
   await go(path + "?view=contributors");
   incomingRefreshTraceStart.value = rscTrace.length;
+  await page.route(
+    (url) => url.origin === config.origin && url.pathname === path,
+    async (route) => {
+      if (!isRscRequest(route.request())) return route.continue();
+      const response = await route.fetch();
+      const body = await response.body();
+      rscTrace.push({
+        event: "needs-rsc-payload",
+        status: response.status(),
+        contentType: response.headers()["content-type"] ?? null,
+        receivedTotals: Array.from(
+          body.toString("utf8").matchAll(/Received:\s*(\d+)/g),
+          ([, value]) => Number(value)
+        )
+      });
+      await route.fulfill({ response, body });
+    }
+  );
   const incoming = page
     .getByRole("article", { name: "Private contribution", exact: true })
     .filter({ hasText: privateNote });
@@ -926,7 +917,6 @@ try {
   );
   throw error;
 } finally {
-  await Promise.allSettled(rscBodyReads);
   writeFileSync(
     output + "/results.json",
     JSON.stringify(
