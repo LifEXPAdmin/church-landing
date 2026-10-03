@@ -119,13 +119,23 @@ page.on("response", (response) => {
           rscTrace.push({
             event: "needs-rsc-payload",
             status: response.status(),
+            contentType: headers["content-type"] ?? null,
             receivedTotals: Array.from(
               body.matchAll(/Received:\s*(\d+)/g),
               ([, value]) => Number(value)
             )
           });
         })
-        .catch(() => {})
+        .catch((error) => {
+          rscTrace.push({
+            event: "needs-rsc-body-error",
+            name: error instanceof Error ? error.name : "UnknownError",
+            message:
+              error instanceof Error
+                ? error.message.slice(0, 200)
+                : "The RSC response body could not be read."
+          });
+        })
     );
 });
 page.on("dialog", (dialog) => dialog.accept());
