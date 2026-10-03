@@ -203,7 +203,7 @@ try {
       dropped = true;
       firstBody = route.request().postData();
       const received = await route.fetch({
-        url: config.localOrigin + new URL(route.request().url()).pathname
+        url: localOrigin + new URL(route.request().url()).pathname
       });
       assert.ok([200, 202].includes(received.status()), await received.text());
       await route.abort("failed");
@@ -394,7 +394,7 @@ try {
       uploadDetails = request.headers()["x-image-details"];
       uploadBytes = request.postDataBuffer();
       const received = await route.fetch({
-        url: config.localOrigin + new URL(request.url()).pathname
+        url: localOrigin + new URL(request.url()).pathname
       });
       assert.ok(
         [200, 201, 202].includes(received.status()),
