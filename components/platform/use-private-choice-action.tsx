@@ -147,7 +147,13 @@ export function usePrivateChoiceAction(
   const retry = useCallback(() => {
     if (pending) void send(pending);
   }, [pending, send]);
-  usePrivateRecovery("private-choice-" + id, !!pending, busy, retry);
+  usePrivateRecovery(
+    "private-choice-" + id,
+    !!pending,
+    busy,
+    retry,
+    privacy?.currentAccess
+  );
   useUnsavedSocialWork(
     {
       dirty: dirty && (!saved || !!privacy?.preserveDirty),

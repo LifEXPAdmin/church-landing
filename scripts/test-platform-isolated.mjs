@@ -46,6 +46,7 @@ const profile =
           "qa-exchange-saved-list-privacy-browser"
         ],
         https: [
+          "exchange-favorite-http",
           "exchange-saved-search-http",
           "exchange-saved-list-http",
           "exchange-http"

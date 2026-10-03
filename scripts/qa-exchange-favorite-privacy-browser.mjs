@@ -217,115 +217,273 @@ try {
     expectedVersion: 0
   });
   const path = `/platform/exchange/${listing.id}`;
-  const remove = page
-    .locator("button")
-    .filter({ hasText: /^Remove favorite$/ });
+  const panel = page.locator('section[aria-label="Private listing favorite"]');
+  const stateButton = panel.locator("button[aria-pressed]");
+  const remove = () => exact("Remove favorite"),
+    save = () => exact("Save favorite");
+  const ready = async (button) => {
+    await button.waitFor();
+    await waitUntil(async () => !(await button.isDisabled()));
+  };
+  const retry = () => exact("Confirm original save");
+  const details = () =>
+    read(db, owner.token, { view: "favorite", listingId: listing.id });
+  const endpoint = config.origin + "/api/platform/exchange";
+  const favoriteRoute = (url) =>
+    url.pathname === "/api/platform/exchange" &&
+    url.searchParams.get("view") === "favorite";
   await signIn(owner);
-  await intercept(
-    (url) =>
-      url.pathname === "/api/platform/exchange" &&
-      url.searchParams.get("view") === "listing",
-    (route) =>
-      route.fulfill({
-        status: 403,
-        contentType: "application/json",
-        body: JSON.stringify({
-          message: "Injected current listing access denial"
-        })
+  await intercept(favoriteRoute, (route) =>
+    route.fulfill({
+      status: 403,
+      contentType: "application/json",
+      body: JSON.stringify({
+        message: "Injected current favorite access denial"
       })
+    })
   );
   const html = await (await go(path)).text();
   const rsc = await (
     await context.request.get(config.origin + path, { headers: { RSC: "1" } })
   ).text();
-  for (const body of [html, rsc]) assert.ok(body.includes(favorite.id));
-  await page
-    .getByText("Injected current listing access denial", { exact: true })
+  for (const body of [html, rsc]) assert.ok(!body.includes(favorite.id));
+  await panel
+    .getByText("Injected current favorite access denial", { exact: true })
     .waitFor();
-  assert.equal(await remove.count(), 1);
-  assert.equal(await remove.getAttribute("aria-pressed"), "true");
-  assert.equal(await remove.isVisible(), false);
+  assert.equal(await stateButton.count(), 0);
   ok(
-    "BASELINE: private favorite association is serialized in HTML/RSC and retained in concealed DOM despite denied current listing access"
+    "HTML/RSC omit the favorite association and denied canonical access leaves no saved-state button in the DOM"
   );
   await clearIntercepts();
   await go(path);
-  await remove.waitFor();
-  await page.screenshot({
-    path: output + "/favorite-baseline-390.png",
-    fullPage: true
-  });
+  await ready(remove());
   for (const event of ["blur", "pagehide", "offline"]) {
     await signal(event);
-    assert.equal(await remove.count(), 1);
-    assert.equal(await remove.getAttribute("aria-pressed"), "true");
-    const visible = await remove.isVisible();
-    ok(
-      `BASELINE: ${event} retains private favorite state in DOM, visible=${visible}`
-    );
+    assert.equal(await stateButton.count(), 0);
+    await signal("online");
+    await signal("social-relationships-changed");
+    assert.equal(await stateButton.count(), 0);
     await signal("focus");
-    await remove.waitFor();
+    await ready(remove());
+    assert.equal(await remove().getAttribute("aria-pressed"), "true");
   }
+  ok(
+    "Blur, pagehide and offline physically omit favorite state; passive events cannot reopen it"
+  );
+  await bounded();
+  await page.screenshot({ path: output + "/favorite-390.png", fullPage: true });
+
   const bodies = [];
-  await intercept(config.origin + "/api/platform/exchange", async (route) => {
+  await intercept(endpoint, async (route) => {
     if (route.request().method() !== "POST") return route.continue();
     bodies.push(route.request().postData());
-    return route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({
-        id: randomUUID(),
-        version: 999,
-        message: "Injected wrong favorite receipt"
-      })
-    });
+    if (bodies.length <= 2)
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          id: bodies.length === 1 ? randomUUID() : favorite.id,
+          version: bodies.length === 1 ? 2 : 1,
+          message: "Injected malformed receipt"
+        })
+      });
+    return route.continue();
   });
-  await remove.click();
-  await page
-    .getByText("Injected wrong favorite receipt", { exact: true })
-    .waitFor();
-  await waitUntil(async () => !(await remove.isDisabled()));
-  assert.equal(bodies.length, 1);
-  assert.equal(
-    await page
-      .getByRole("button", { name: "Confirm original save", exact: true })
-      .count(),
-    0
-  );
-  assert.equal(
-    (await read(db, owner.token, { view: "favorite", listingId: listing.id }))
-      .favorite.version,
-    1
-  );
-  assert.equal(await remove.getAttribute("aria-pressed"), "true");
+  await remove().click();
+  await ready(retry());
+  await retry().click();
+  await ready(retry());
+  assert.equal(bodies.length, 2);
+  assert.equal(bodies[0], bodies[1]);
+  assert.equal((await details()).favorite.version, 1);
+  await retry().click();
+  await ready(save());
+  assert.equal(bodies.length, 3);
+  assert.equal(bodies[0], bodies[2]);
+  assert.equal((await details()).favorite.version, 2);
   await clearIntercepts();
   ok(
-    "BASELINE: a wrong-target/version response discards the original pending favorite request without a canonical write"
+    "Wrong-target and stale-version responses retain one exact request until its genuine receipt and canonical readback"
   );
-  await signIn(other);
-  const foreign = await (await go(path)).text();
-  assert.ok(!foreign.includes(favorite.id));
+
+  const lost = [];
+  await intercept(endpoint, async (route) => {
+    if (route.request().method() !== "POST") return route.continue();
+    lost.push(route.request().postData());
+    if (lost.length === 1) {
+      const response = await route.fetch();
+      assert.equal(response.status(), 200);
+      return route.abort("failed");
+    }
+    return route.continue();
+  });
+  await save().click();
+  await ready(retry());
+  const beforeDeparture = page.url();
   await page
-    .getByRole("button", { name: "Save favorite", exact: true })
-    .waitFor();
-  assert.equal(
-    (await read(db, other.token, { view: "favorite", listingId: listing.id }))
-      .favorite,
-    null
+    .getByRole("link", { name: "Return to listing results", exact: true })
+    .click();
+  assert.equal(page.url(), beforeDeparture);
+  await command(db, owner.token, {
+    operation: "favorite-remove",
+    mutationId: randomUUID(),
+    favoriteId: favorite.id,
+    expectedVersion: 3
+  });
+  await command(db, owner.token, {
+    operation: "favorite-add",
+    mutationId: randomUUID(),
+    listingId: listing.id,
+    expectedVersion: 4
+  });
+  await signal("blur");
+  await signal("focus");
+  await ready(retry());
+  assert.equal(await stateButton.count(), 0);
+  await retry().click();
+  await ready(remove());
+  assert.equal(lost.length, 2);
+  assert.equal(lost[0], lost[1]);
+  assert.equal((await details()).favorite.version, 5);
+  await remove().click();
+  await ready(save());
+  assert.equal(JSON.parse(lost[2]).expectedVersion, 5);
+  assert.equal((await details()).favorite.version, 6);
+  await clearIntercepts();
+  ok(
+    "A lost save blocks departure and replays its exact body; only its receipt permits adopting a newer favorite and a version-six removal"
   );
+
+  // Keep canonical acknowledgement in flight across concealment, then allow a fresh read.
+  let releaseRead,
+    readStarted,
+    hold = true;
+  const gate = new Promise((resolve) => {
+      releaseRead = resolve;
+    }),
+    started = new Promise((resolve) => {
+      readStarted = resolve;
+    });
+  await intercept(favoriteRoute, async (route) => {
+    const response = await route.fetch();
+    if (hold) {
+      readStarted();
+      await within(gate, "Favorite readback");
+    }
+    return route.fulfill({ response });
+  });
+  await save().click();
+  try {
+    await within(started, "Favorite acknowledgement");
+    assert.equal(await stateButton.count(), 0);
+    await signal("blur");
+  } finally {
+    hold = false;
+    releaseRead();
+  }
+  await clearIntercepts();
+  assert.equal(await stateButton.count(), 0);
+  await signal("focus");
+  await ready(remove());
+  assert.equal((await details()).favorite.version, 7);
+  ok(
+    "A held canonical read and hidden receipt cannot expose or rearm favorite state before a fresh visible acknowledgement"
+  );
+
+  const withdrawn = [];
+  await intercept(endpoint, async (route) => {
+    if (route.request().method() !== "POST") return route.continue();
+    withdrawn.push(route.request().postData());
+    if (withdrawn.length === 1) {
+      const response = await route.fetch();
+      assert.equal(response.status(), 200);
+      return route.abort("failed");
+    }
+    return route.continue();
+  });
+  await remove().click();
+  await ready(retry());
+  await db.exchangeListing.update({
+    where: { id: listing.id },
+    data: { state: "DRAFT", publishedAt: null, version: { increment: 1 } }
+  });
+  await signal("blur");
+  await signal("focus");
+  const outerRetry = exact("Confirm original request");
+  await ready(outerRetry);
+  assert.equal(await stateButton.count(), 0);
+  await outerRetry.click();
+  await waitUntil(
+    async () => withdrawn.length === 2 && (await outerRetry.count()) === 0
+  );
+  await clearIntercepts();
+  assert.equal(withdrawn[0], withdrawn[1]);
+  assert.deepEqual((await details()).favorite, {
+    id: favorite.id,
+    version: 8,
+    saved: false
+  });
+  assert.equal(await stateButton.count(), 0);
+  ok(
+    "A withdrawn listing stays concealed while a current eligible account can confirm only its retained original request"
+  );
+
+  await db.exchangeListing.update({
+    where: { id: listing.id },
+    data: {
+      state: "ACTIVE",
+      publishedAt: new Date(),
+      version: { increment: 1 }
+    }
+  });
+  await go(path);
+  await ready(save());
+  await signIn(other);
+  await signal("blur");
+  await signal("focus");
+  await panel
+    .getByText(
+      "Your sign-in changed. Private choices were cleared. Reload for your current account.",
+      { exact: true }
+    )
+    .waitFor({ state: "attached" });
+  assert.equal(await stateButton.count(), 0);
   assert.equal(
     await db.exchangeFavorite.count({ where: { ownerId: other.id } }),
     0
   );
   ok(
-    "CONTROL: canonical favorite state and rendered listing exclude another account's saved association"
+    "Confirmed account replacement clears favorite ownership and never transfers the original choice"
+  );
+  const foreign = await (await go(path)).text();
+  assert.ok(!foreign.includes(favorite.id));
+  await ready(save());
+  assert.equal(
+    (await read(db, other.token, { view: "favorite", listingId: listing.id }))
+      .favorite,
+    null
+  );
+  await bounded();
+  await page.setViewportSize({ width: 320, height: 844 });
+  await page.evaluate(() => {
+    document.documentElement.style.fontSize = "200%";
+  });
+  await bounded();
+  await page.screenshot({
+    path: output + "/favorite-320-200.png",
+    fullPage: true
+  });
+  assert.deepEqual(layoutFailures, []);
+  ok(
+    "Another account starts unsaved without writes; favorite controls fit 390px and 320px with 200 percent text"
   );
   assert.deepEqual(errors, []);
   writeFileSync(
     output + "/results.json",
     JSON.stringify(
       {
-        baseline: true,
+        baseline: false,
+        layoutFailures,
         results,
         errors,
         productionWrites: 0,
