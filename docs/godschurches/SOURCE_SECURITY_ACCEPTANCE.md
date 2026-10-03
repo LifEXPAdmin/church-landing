@@ -59,9 +59,10 @@ unchanged dependency audit, skipping subsequent signature, whole-project lint
 and secret checks. No complete release receipt is issued.
 
 Earlier failed attempts remain recorded. A held identity route was released
-without waiting for its handler, and the second photo selection raced the prior
-metadata receipt/gallery refresh. The browser harness now waits for released
-route handlers, completed photo work and an enabled visible upload control,
+without waiting for its handler. The second-photo step timed out before the
+selected file was acknowledged; the harness now waits for the prior metadata
+receipt/gallery refresh. It also waits for released route handlers, completed
+photo work and an enabled visible upload control,
 then acknowledges the selected file before saving. The original privacy and
 one-effect retry assertions remain. These are test-sequencing repairs; the
 second-upload failure alone did not establish a product file-retention defect.
