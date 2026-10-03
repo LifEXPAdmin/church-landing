@@ -19,11 +19,16 @@ export class SocialClientError extends Error {
     this.code = code;
   }
 }
-export async function currentSocialOwner(): Promise<string | null> {
+export async function currentSocialOwner(
+  signal?: AbortSignal
+): Promise<string | null> {
+  signal?.throwIfAborted();
   const response = await fetch("/api/platform/profile?view=identity", {
     cache: "no-store",
-    credentials: "same-origin"
+    credentials: "same-origin",
+    ...(signal ? { signal } : {})
   });
+  signal?.throwIfAborted();
   if (!response.ok) {
     // Identity denials have no payload to use. Release the unread stream before
     // continuing guest reads or reporting a failure.
@@ -35,6 +40,7 @@ export async function currentSocialOwner(): Promise<string | null> {
     );
   }
   const body = await response.json();
+  signal?.throwIfAborted();
   if (typeof body.id !== "string")
     throw new SocialClientError(503, "Your sign-in could not be checked.");
   return body.id;
@@ -44,9 +50,10 @@ export async function socialRequest<T>(
   body?: string,
   expectedOwner?: string | null,
   method: "POST" | "DELETE" = "POST",
-  onDispatch?: () => void
+  onDispatch?: () => void,
+  signal?: AbortSignal
 ): Promise<{ owner: string | null; data: T }> {
-  const owner = await currentSocialOwner();
+  const owner = await currentSocialOwner(signal);
   if (
     (expectedOwner !== undefined && owner !== expectedOwner) ||
     (body && !owner)
@@ -60,6 +67,7 @@ export async function socialRequest<T>(
     method: body ? method : "GET",
     cache: "no-store",
     credentials: "same-origin",
+    ...(signal ? { signal } : {}),
     headers: {
       ...(body ? { "Content-Type": "application/json" } : {}),
       ...(expectedOwner ? { "X-Expected-Account": expectedOwner } : {})
@@ -67,7 +75,7 @@ export async function socialRequest<T>(
     ...(body ? { body } : {})
   });
   const data = await response.json();
-  if ((await currentSocialOwner()) !== owner)
+  if ((await currentSocialOwner(signal)) !== owner)
     throw new SocialClientError(
       401,
       "Your sign-in changed. Reload before continuing."

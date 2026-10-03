@@ -117,6 +117,7 @@ export function ExchangeEditor({
     identityGeneration = useRef(0),
     active = useRef(false),
     reading = useRef(false),
+    readController = useRef<AbortController | null>(null),
     queued = useRef(false),
     latestCheck = useRef<() => Promise<void>>(async () => {}),
     pendingNavigation = useRef<string | null>(null),
@@ -190,6 +191,9 @@ export function ExchangeEditor({
     }
     reading.current = true;
     queued.current = false;
+    const controller = new AbortController();
+    readController.current = controller;
+    const deadline = setTimeout(() => controller.abort(), 15000);
     // A concealment invalidates presentation, not a fresh owner confirmation.
     // SessionActivity may emit blur while this request detects a changed owner.
     try {
@@ -198,13 +202,19 @@ export function ExchangeEditor({
         socialRequest<Context>(
           "/api/platform/exchange?view=context",
           undefined,
-          owner
+          owner,
+          "POST",
+          undefined,
+          controller.signal
         ),
         current
           ? socialRequest<Snapshot>(
               `/api/platform/exchange?view=editor&id=${encodeURIComponent(current.listing.id)}`,
               undefined,
-              owner
+              owner,
+              "POST",
+              undefined,
+              controller.signal
             )
           : Promise.resolve(null)
       ]);
@@ -212,7 +222,10 @@ export function ExchangeEditor({
         const source = await socialRequest<PantrySnapshot>(
           `/api/platform/pantry?view=replenish&id=${encodeURIComponent(replenishmentSeed.categoryId)}`,
           undefined,
-          owner
+          owner,
+          "POST",
+          undefined,
+          controller.signal
         );
         if (
           JSON.stringify(source.data.replenishmentSeed) !==
@@ -239,13 +252,17 @@ export function ExchangeEditor({
       if (seq === generation.current) {
         setVisible(false);
         setAccessNotice(
-          error instanceof Error
-            ? error.message
-            : "Reconnect to check your listing access. Your entries remain here."
+          controller.signal.aborted
+            ? "Your listing access check timed out. Try again. Your entries are retained."
+            : error instanceof Error
+              ? error.message
+              : "Reconnect to check your listing access. Your entries remain here."
         );
       }
       if (error instanceof SocialClientError && error.status === 401) {
-        const actual = await currentSocialOwner().catch(() => undefined);
+        const actual = await currentSocialOwner(controller.signal).catch(
+          () => undefined
+        );
         if (
           identity === identityGeneration.current &&
           !changedRef.current &&
@@ -255,6 +272,9 @@ export function ExchangeEditor({
           clearAccount();
       }
     } finally {
+      clearTimeout(deadline);
+      controller.abort();
+      if (readController.current === controller) readController.current = null;
       reading.current = false;
       if (
         queued.current &&
@@ -275,6 +295,7 @@ export function ExchangeEditor({
   }, [check]);
   useEffect(() => {
     const identityClock = identityGeneration;
+    const currentRead = readController;
     const hide = () => {
       active.current = false;
       queued.current = false;
@@ -299,6 +320,7 @@ export function ExchangeEditor({
     return () => {
       hide();
       identityClock.current++;
+      currentRead.current?.abort();
       clearInterval(timer);
       for (const event of ["blur", "pagehide", "offline"])
         window.removeEventListener(event, hide);

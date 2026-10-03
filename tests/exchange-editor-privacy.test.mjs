@@ -29,32 +29,73 @@ const response = (data, status = 200) => ({
   json: async () => data
 });
 
+function stalledReads() {
+  const pending = [];
+  const hold = (options = {}) =>
+    new Promise((resolve, reject) => {
+      const read = { signal: options.signal, aborted: false, settled: false };
+      const finish = (settle, value) => {
+        read.settled = true;
+        read.signal?.removeEventListener("abort", abort);
+        settle(value);
+      };
+      const abort = () => {
+        read.aborted = true;
+        finish(
+          reject,
+          read.signal.reason ?? new DOMException("Aborted", "AbortError")
+        );
+      };
+      read.resolve = (value) => finish(resolve, value);
+      pending.push(read);
+      if (read.signal?.aborted) abort();
+      else read.signal?.addEventListener("abort", abort, { once: true });
+    });
+  return { pending, hold };
+}
+
 function setup(t, { fresh = false } = {}) {
   const window = new EventTarget(),
     document = new EventTarget();
   let focused = true,
     owner = "owner-a",
-    identityHandler = null;
+    identityHandler = null,
+    readHandler = null;
   document.visibilityState = "visible";
   document.hasFocus = () => focused;
   window.location = { origin: "https://example.test", reload: noop };
   window.confirm = () => true;
-  window.setTimeout = setTimeout;
-  window.clearTimeout = clearTimeout;
   const timers = new Map(),
+    accessDeadlines = new Map(),
     requests = [],
     navigations = [],
     guards = [];
   let timerId = 0,
     mutationHandler,
     defaultsHandler;
+  // Only the owned access-read deadline is virtual. Other component timeouts
+  // retain their normal behavior, and polling requires an explicit tick below.
+  const schedule = (fn, delay, ...args) => {
+    if (delay !== 15_000) return setTimeout(fn, delay, ...args);
+    const id = ++timerId;
+    accessDeadlines.set(id, () => fn(...args));
+    return id;
+  };
+  const unschedule = (id) => {
+    if (!accessDeadlines.delete(id)) clearTimeout(id);
+  };
+  window.setTimeout = schedule;
+  window.clearTimeout = unschedule;
   const globals = {
     window,
     document,
     navigator: { onLine: true },
     confirm: () => true,
-    setTimeout,
-    clearTimeout,
+    AbortController,
+    AbortSignal,
+    DOMException,
+    setTimeout: schedule,
+    clearTimeout: unschedule,
     setInterval: (fn, delay) => {
       timers.set(++timerId, { fn, delay });
       return timerId;
@@ -63,10 +104,13 @@ function setup(t, { fresh = false } = {}) {
     fetch: async (path, options) => {
       requests.push({ path, ...options });
       if (path === "/api/platform/profile?view=identity")
-        return identityHandler ? identityHandler() : response({ id: owner });
+        return identityHandler
+          ? identityHandler(options)
+          : response({ id: owner });
       if (options?.body) return mutationHandler(path, options);
       if (path === "/api/platform/exchange?view=defaults")
         return defaultsHandler();
+      if (readHandler) return readHandler(path, options);
       if (path === "/api/platform/exchange?view=context")
         return response(access);
       if (path.startsWith("/api/platform/exchange?view=editor&id="))
@@ -176,6 +220,9 @@ function setup(t, { fresh = false } = {}) {
     set identityHandler(value) {
       identityHandler = value;
     },
+    set readHandler(value) {
+      readHandler = value;
+    },
     set mutationHandler(value) {
       mutationHandler = value;
     },
@@ -204,6 +251,16 @@ function setup(t, { fresh = false } = {}) {
       for (const timer of timers.values())
         if (timer.delay === delay) timer.fn();
       h.render();
+    },
+    expireAccessDeadline() {
+      for (const [id, callback] of [...accessDeadlines]) {
+        accessDeadlines.delete(id);
+        callback();
+      }
+      h.render();
+    },
+    get pendingAccessDeadlines() {
+      return accessDeadlines.size;
     },
     edit(label, value) {
       input(dom(), label).props.onChange({ target: { value } });
@@ -588,4 +645,108 @@ test("focus during a held personal-defaults read rechecks access after settlemen
   assert.equal(input(s.dom(), titleLabel).props.value, draftTitle);
   assert.equal(input(s.dom(), descriptionLabel).props.value, draftDescription);
   assert.equal(s.guards.at(-1).dirty, true);
+});
+
+for (const phase of ["identity", "Exchange data"]) {
+  test(`stalled ${phase} reads abort at the deadline and allow a fresh retry without losing the draft`, async (t) => {
+    const s = await dirtyEditor(t);
+    const stalled = stalledReads();
+    if (phase === "identity") s.identityHandler = stalled.hold;
+    else
+      s.readHandler = (path, options) => {
+        const promise = stalled.hold(options);
+        stalled.pending.at(-1).path = path;
+        return promise;
+      };
+    s.event("focus");
+    await s.h.settle();
+    assert.equal(
+      stalled.pending.length,
+      2,
+      "Both access-read branches are held"
+    );
+    assert.equal(s.visible, false);
+    assertPrivateAbsent(s, draftTitle, draftDescription);
+    assert.equal(
+      stalled.pending.some((read) => read.aborted),
+      false
+    );
+    s.identityHandler = null;
+    s.readHandler = null;
+    s.expireAccessDeadline();
+    await s.h.settle();
+    assert.equal(
+      stalled.pending.every((read) => read.aborted && read.settled),
+      true,
+      "The deadline must cancel the actual fetches, not abandon accumulating requests"
+    );
+    assert.equal(s.visible, false);
+    assert.equal(s.guards.at(-1).dirty, true);
+    assert.equal(s.pendingAccessDeadlines, 0);
+    const beforeRetry = s.requests.length;
+    button(s.dom(), "Check current listing access").props.onClick();
+    s.h.render();
+    await s.h.settle();
+    assert.ok(
+      s.requests.length > beforeRetry,
+      "Manual retry must issue fresh access reads"
+    );
+    assert.equal(s.visible, true);
+    assert.equal(input(s.dom(), titleLabel).props.value, draftTitle);
+    assert.equal(
+      input(s.dom(), descriptionLabel).props.value,
+      draftDescription
+    );
+    assert.equal(
+      s.pendingAccessDeadlines,
+      0,
+      "Successful reads release their deadlines"
+    );
+    // A late completion attempted by the old transport cannot restore an old
+    // owner or introduce a stale saved-version conflict after the fresh retry.
+    for (const read of stalled.pending)
+      read.resolve(
+        response(
+          phase === "identity"
+            ? { id: "owner-b" }
+            : read.path.includes("view=context")
+              ? {
+                  ownerId: "owner-a",
+                  churches: [],
+                  publishingChurchIds: [],
+                  managingChurchIds: []
+                }
+              : {
+                  ...s.saved,
+                  listing: { ...s.saved.listing, version: 99 },
+                  fields: { ...s.saved.fields, title: "Stale private response" }
+                }
+        )
+      );
+    await s.h.settle();
+    assert.equal(s.visible, true);
+    assert.equal(s.guards.at(-1).dirty, true);
+    assert.equal(s.guards.at(-1).conflict, false);
+    assert.equal(input(s.dom(), titleLabel).props.value, draftTitle);
+    assert.equal(
+      input(s.dom(), descriptionLabel).props.value,
+      draftDescription
+    );
+  });
+}
+
+test("unmount aborts held access reads and releases their deadline", async (t) => {
+  const s = await dirtyEditor(t);
+  const stalled = stalledReads();
+  s.identityHandler = stalled.hold;
+  s.event("focus");
+  await s.h.settle();
+  assert.equal(stalled.pending.length, 2);
+  s.h.unmount();
+  await s.h.settle();
+  assert.equal(
+    stalled.pending.every((read) => read.aborted && read.settled),
+    true
+  );
+  assert.equal(s.pendingAccessDeadlines, 0);
 });

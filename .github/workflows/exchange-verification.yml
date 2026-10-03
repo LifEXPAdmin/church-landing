@@ -17,6 +17,7 @@ on:
       - components/platform/exchange-editor-fields.tsx
       - components/platform/exchange-photos.tsx
       - tests/exchange-editor-privacy.test.mjs
+      - lib/platform/social-client.ts
       - lib/platform/exchange-listings.ts
       - tests/exchange-listings.test.ts
 
