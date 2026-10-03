@@ -641,21 +641,50 @@ try {
       .state,
     "DRAFT"
   );
+  await savedListingSettled("Listing status updated.");
   ok(
     "Duplicate starts a private draft without copied photos; archive and explicit private reopening preserve the owned record"
   );
 
+  const accountSwitchStarted = performance.now();
+  const switchStage = (name) =>
+    console.log(
+      `Exchange account-switch stage ${name}: ${Math.round(performance.now() - accountSwitchStarted)} ms`
+    );
+  const recordIdentityResponse = (response) => {
+    const url = new URL(response.url());
+    const view = url.searchParams.get("view");
+    if (
+      url.pathname === "/api/platform/exchange" &&
+      ["context", "editor"].includes(view)
+    )
+      console.log(
+        "Exchange account-switch identity response: " +
+          JSON.stringify({
+            view,
+            status: response.status(),
+            milliseconds: Math.round(performance.now() - accountSwitchStarted)
+          })
+      );
+  };
+  page.on("response", recordIdentityResponse);
+  switchStage("settled");
   await editor
     .getByLabel("Description (required to publish)", { exact: true })
     .fill("PRIVATE ALTERNATE ACCOUNT MARKER");
+  switchStage("marker-entered");
   await signIn(other);
+  switchStage("cookies-replaced");
   await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  switchStage("focus-dispatched");
   await page
     .getByText(
       "Your sign-in changed. Private entries were cleared. Reload for your current account.",
       { exact: true }
     )
     .waitFor();
+  switchStage("identity-cleared");
+  page.off("response", recordIdentityResponse);
   assert.equal(
     await page
       .getByRole("textbox")
@@ -1041,11 +1070,20 @@ try {
       .version,
     typedCurrent.listing.version
   );
+  await editor
+    .getByLabel("Service pricing (required to publish)", { exact: true })
+    .waitFor();
   await page.setViewportSize({ width: 320, height: 780 });
+  await page.locator("#quick-appearance").selectOption("dark");
+  await page
+    .locator('.platform-design[data-reader-size][data-appearance="dark"]')
+    .waitFor();
   await page.evaluate(() => {
     document.documentElement.style.fontSize = "200%";
-    document.documentElement.classList.add("dark");
   });
+  await editor
+    .getByLabel("Service pricing (required to publish)", { exact: true })
+    .waitFor();
   await bounded();
   await page.screenshot({
     path: output + "/service-editor-320-large-dark.png",
@@ -1056,8 +1094,8 @@ try {
   );
   await page.evaluate(() => {
     document.documentElement.style.fontSize = "";
-    document.documentElement.classList.remove("dark");
   });
+  await page.locator("#quick-appearance").selectOption("system");
   await page.setViewportSize({ width: 390, height: 844 });
   const church = await db.church.create({
     data: {

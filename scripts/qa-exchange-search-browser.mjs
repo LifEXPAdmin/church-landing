@@ -608,9 +608,22 @@ try {
     "Empty searches explain recovery, failed access rechecks conceal stale rows and retry, and a 120-character unbroken title fits enlarged 320px results without a photo"
   );
   const settingsWrites = [];
+  let sessionActivityWrites = 0;
   const recordSettingsWrite = (request) => {
+    const path = new URL(request.url()).pathname;
+    // Normal foreground activity extends the current session, not preferences.
+    // Keep every other write, including unexpected session bodies, in the gate.
+    if (
+      path === "/api/platform/session" &&
+      request.method() === "POST" &&
+      request.postData() === '{"activity":"foreground"}' &&
+      request.headers()["x-expected-account"] === viewer.id
+    ) {
+      sessionActivityWrites++;
+      return;
+    }
     if (!["GET", "HEAD", "OPTIONS"].includes(request.method()))
-      settingsWrites.push(new URL(request.url()).pathname);
+      settingsWrites.push(path);
   };
   page.on("request", recordSettingsWrite);
   await go("/platform/settings/exchange");
@@ -679,6 +692,9 @@ try {
   await page.locator("#setting-exchange-saved").waitFor();
   assert.deepEqual(settingsWrites, []);
   page.off("request", recordSettingsWrite);
+  console.log(
+    `Observed ${sessionActivityWrites} authenticated foreground session requests and no preference writes`
+  );
   ok(
     "Settings finds current Exchange controls, preserves separate contact and alert owners, conceals failed reads, fits enlarged mobile text and adds no financial form or preference write"
   );
