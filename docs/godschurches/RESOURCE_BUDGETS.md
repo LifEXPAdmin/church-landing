@@ -1,5 +1,108 @@
 # Resource budgets for enabled modules
 
+## Current dense workload, 3 October 2026 UTC
+
+Candidate `45159afb34426a8eaef94296f5789b73378435dc` passes the isolated
+dense measurement on [run 37082673236](https://github.com/LifEXPAdmin/church-landing/actions/runs/37082673236).
+The actual serving source, product `2026.09.28.42`, production build
+`YmF69MzAsV80yV-sp19Js` and fixture metadata digest agree with the candidate
+receipt. The digest identifies the fixture metadata, not a database snapshot.
+Source CI passes 118 guards, types, copy, audit, provenance, lint and redacted
+history scanning. This adds measurement infrastructure and evidence to the
+accepted application below; it is not integrated or live.
+
+The fresh fictional database contains 10,000 accounts, 100,000 posts, 500,000
+comments, 50,000 follows, 23,000 relationship-policy rows, 12,000 listings,
+1,000 groups and 5,001 events/occurrences. All 100 existing normalized fixture
+images were byte-verified without overwriting them. Four variants per image
+occupy 131,406,400 bytes. Database size was 407,387,159 bytes. This is fresh
+fixture preparation, not recovery acceptance.
+
+The runner used an Intel Xeon Platinum 8573C, four logical CPUs, about 15.6 GiB
+memory, Node 24.21.0 and PostgreSQL 16.15. This runner leaves Prisma's pool
+settings at their defaults; the effective connection limit was not measured.
+HTTPS uses trusted loopback, no artificial latency, no bandwidth shaping and
+no think time. Images come from the isolated filesystem. MFA is off for this
+measurement; no browser, MFA challenge or physical-device check was run here.
+The earlier application browser/security receipts retain their own exact sources.
+
+### Service observations
+
+There are 20 serial measured reads per path after one warmup, or 220 measured
+reads and 11 warmups. Fifty initial Latest/Following reads across 25 actors are
+separate setup measurements. Existing Following reads reuse signed per-account
+cursors with current access checks. The service measurement window was
+00:40:52 to 00:41:13 UTC; setup occurred before that window.
+
+| Path | p50 ms | p95 ms | Maximum SELECTs | Maximum projection bytes | Store reads |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| feed-latest | 151.9 | 155.4 | 20 | 33,599 | 0 |
+| feed-following | 134.2 | 137.5 | 22 | 41,193 | 0 |
+| search-posts | 46.5 | 59.2 | 13 | 4,751 | 0 |
+| search-people | 19.9 | 21.2 | 13 | 3,076 | 0 |
+| exchange-newest | 257.3 | 263.0 | 16 | 14,403 | 0 |
+| exchange-price | 256.6 | 260.0 | 15 | 14,318 | 0 |
+| exchange-detail | 26.4 | 28.8 | 18 | 1,188 | 0 |
+| groups | 24.0 | 25.3 | 17 | 12,274 | 0 |
+| calendar-200 | 42.0 | 45.5 | 21 | 123,560 | 0 |
+| image-thumb | 60.8 | 101.4 | 26 | 21,064 | 1 |
+| image-medium | 61.2 | 64.2 | 26 | 351,408 | 1 |
+
+Initial Latest creation has median 152.8 ms and p95 192.5 ms; Following creation
+has median 726.9 ms and p95 802.1 ms. Projection bytes exclude full HTML and
+browser resources. SELECT counts include permission/lock reads; occasional
+maintenance can add a statement. These samples do not establish production tails.
+
+### Complete HTTPS observations
+
+All 920 workload requests returned 200 with expected content. Twenty warmups
+precede three 300-request stages with 30 observations per path at 1, 5 and 25
+clients. All 900 measured responses also retain no-store headers. Feed HTML
+checks a fictional-post marker; JSON checks expected row counts, while images
+check content type. Browser JavaScript, paint, subresources, uploads and writes
+are outside this workload.
+
+| Path | 1 client p95 ms | 5 clients p95 ms | 25 clients p95 ms | Largest response bytes |
+| --- | ---: | ---: | ---: | ---: |
+| feed-latest | 218.2 | 565.8 | 1,940.0 | 388,124 |
+| feed-following | 291.5 | 513.2 | 1,942.0 | 416,768 |
+| search-posts | 62.1 | 160.6 | 974.2 | 4,751 |
+| search-people | 30.5 | 85.7 | 867.9 | 3,076 |
+| exchange-newest | 272.2 | 409.8 | 2,110.4 | 14,403 |
+| exchange-price | 272.4 | 421.9 | 2,259.0 | 14,318 |
+| groups | 39.7 | 131.0 | 1,854.5 | 12,288 |
+| calendar-200 | 51.8 | 363.9 | 1,101.2 | 123,560 |
+| image-thumb | 69.1 | 454.6 | 2,027.6 | 21,064 |
+| image-medium | 69.3 | 448.6 | 1,762.8 | 351,408 |
+
+The stages achieved 8.33, 18.94 and 17.25 requests/second respectively, with
+peak in-flight counts matching their intended concurrency. HTTP measurement
+ran from 00:41:14 to 00:42:26 UTC and collected 124,174,838 response-body bytes.
+Server readiness and release identity reads are outside workload counters.
+Database statistics show zero rollbacks/deadlocks and no additional temporary
+bytes across HTTP measurement. Those cumulative counters do not isolate query
+plans or identify the cause of the higher latency.
+
+The harness caps workload requests at 1,000, each collected response at 8 MiB,
+and total collected response bodies at 256 MiB. A streaming reader reserves
+bytes across concurrent responses before retaining each chunk; exceeding a cap
+aborts sibling requests. These are collected-body limits, not wire/TLS limits.
+Six focused tests cover exact boundaries, oversize and concurrent cancellation,
+stream failures, empty bodies and invalid configuration. Only aggregate JSON
+measurements are uploaded; actors, cookies, databases and build output are excluded.
+
+### Interpretation and remaining gates
+
+Several paths exceed one second at 25 clients in this loopback run. Exchange
+listing reads are also relatively expensive serially, so their current query
+plans are the next bounded investigation. This does not establish a regression
+against September's different hardware, PostgreSQL version and fixture. The
+previous price-index repair is already present and must not be reimplemented.
+Production-equivalent PostgreSQL 17, external delivery, actual provider headroom,
+the 100-client target and responder acceptance remain open. No production
+connection, migration, write, send or provider workload occurred. Build-time
+dependency and font downloads are distinct from the measured application workload.
+
 ## Saved feed pages verified in isolation, 3 October 2026 UTC
 
 Candidate `890c0f92ad9bb9c84ecdf91d17055c15fe76a725` preserves saved page order

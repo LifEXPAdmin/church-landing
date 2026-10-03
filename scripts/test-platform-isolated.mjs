@@ -1,12 +1,14 @@
 import assert from "node:assert/strict";
 import { spawn, spawnSync, execFileSync } from "node:child_process";
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
   writeFileSync,
-  readdirSync
+  readdirSync,
+  copyFileSync,
+  constants
 } from "node:fs";
 import { createServer } from "node:net";
 import { createServer as createHttpsServer, get as httpsGet } from "node:https";
@@ -15,7 +17,7 @@ import { join, resolve } from "node:path";
 
 const suite = process.argv[2] ?? "artists";
 assert.ok(
-  ["artists", "discovery"].includes(suite),
+  ["artists", "discovery", "resources"].includes(suite),
   "Choose a declared isolated suite"
 );
 const profile =
@@ -25,16 +27,18 @@ const profile =
         browsers: ["qa-artist-draft-privacy-browser", "qa-artists-browser"],
         https: ["artists-http"]
       }
-    : {
-        services: [
-          "discovery-options",
-          "discovery-feeds",
-          "discovery-device",
-          "four-feeds"
-        ],
-        browsers: ["qa-discovery-browser", "qa-four-feeds-browser"],
-        https: ["discovery-http", "four-feeds-http"]
-      };
+    : suite === "discovery"
+      ? {
+          services: [
+            "discovery-options",
+            "discovery-feeds",
+            "discovery-device",
+            "four-feeds"
+          ],
+          browsers: ["qa-discovery-browser", "qa-four-feeds-browser"],
+          https: ["discovery-http", "four-feeds-http"]
+        }
+      : { services: [], browsers: [], https: [] };
 // This runner deliberately cannot start large artifacts on a local workstation.
 assert.equal(
   process.env.GITHUB_ACTIONS,
@@ -61,9 +65,7 @@ assert.equal(
 );
 mkdirSync(".account-test", { recursive: true, mode: 0o700 });
 const fixture = mkdtempSync(
-  resolve(
-    `.account-test/${suite === "artists" ? "artist" : "discovery"}-hosted-`
-  )
+  resolve(`.account-test/${suite === "artists" ? "artist" : suite}-hosted-`)
 );
 const cluster = mkdtempSync(join(process.env.RUNNER_TEMP, "artist-postgres-"));
 const freePort = async () => {
@@ -118,6 +120,12 @@ const env = {
   ARTIST_BUNDLED_CHROMIUM: "1",
   NODE_EXTRA_CA_CERTS: cert
 };
+if (suite === "resources")
+  Object.assign(env, {
+    CAPACITY_FIXTURE_DIR: fixture,
+    CAPACITY_STAIRCASE: "1",
+    PERSONAL_PHOTO_LIBRARY_ENABLED: "true"
+  });
 let server,
   proxy,
   databaseStarted = false;
@@ -230,7 +238,7 @@ async function start(mode) {
         "MFA mode:",
         mode
       );
-      return;
+      return identity;
     }
     if (server.exitCode !== null || server.signalCode !== null)
       throw new Error("Production-mode server exited");
@@ -309,13 +317,33 @@ try {
       "--test",
       "tests/feed-snapshot-cost.test.ts"
     ]);
-  await run(process.execPath, [
-    "--import",
-    "./tests/register.mjs",
-    "--test",
-    "--test-concurrency=1",
-    ...profile.services.map((name) => `tests/${name}.test.ts`)
-  ]);
+  if (suite === "resources") {
+    await run(process.execPath, [
+      "--import",
+      "./tests/register.mjs",
+      "tests/seed-capacity.ts"
+    ]);
+    copyFileSync(
+      join(fixture, "actors.json"),
+      join(fixture, "dense-actors.json"),
+      constants.COPYFILE_EXCL
+    );
+    await run(process.execPath, [
+      "--import",
+      "./tests/register.mjs",
+      "scripts/qa-resource-budgets.mjs",
+      fixture,
+      "seed"
+    ]);
+  } else {
+    await run(process.execPath, [
+      "--import",
+      "./tests/register.mjs",
+      "--test",
+      "--test-concurrency=1",
+      ...profile.services.map((name) => `tests/${name}.test.ts`)
+    ]);
+  }
   await run("npm", ["run", "build"], {
     ...env,
     NODE_ENV: "production",
@@ -380,31 +408,77 @@ try {
     proxy.once("error", reject);
     proxy.listen(tlsPort, "127.0.0.1", done);
   });
-  await start("off");
-  for (const name of profile.browsers) {
-    await run(process.execPath, [
-      "--import",
-      "./tests/register.mjs",
-      `scripts/${name}.mjs`,
-      fixture
-    ]);
+  const identity = await start("off");
+  if (suite === "resources") {
+    const product = JSON.parse(
+      execFileSync(
+        process.execPath,
+        [
+          "--import",
+          "./tests/register.mjs",
+          "--input-type=module",
+          "-e",
+          'import {releaseMetadata} from "./lib/platform/release-content.ts"; process.stdout.write(JSON.stringify(releaseMetadata(process.env.VERCEL_GIT_COMMIT_SHA)));'
+        ],
+        { cwd: root, env, encoding: "utf8" }
+      )
+    );
+    assert.equal(identity.product.version, product.version);
+    assert.equal(identity.product.build, source);
+    const buildId = readFileSync(".next/BUILD_ID", "utf8").trim();
+    const candidate = {
+      schema: 1,
+      sourceSha: source,
+      productVersion: product.version,
+      buildId,
+      fixtureSha256: createHash("sha256")
+        .update(readFileSync(join(fixture, "resource-fixture.json")))
+        .digest("hex")
+    };
+    for (const [name, value] of [
+      ["measurement-candidate.json", candidate],
+      ["server-ready.json", { origin, runtimeSource: source, buildId }]
+    ])
+      writeFileSync(join(fixture, name), JSON.stringify(value, null, 2), {
+        mode: 0o600,
+        flag: "wx"
+      });
+    for (const phase of ["service", "http"])
+      await run(process.execPath, [
+        "--import",
+        "./tests/register.mjs",
+        "scripts/qa-resource-budgets.mjs",
+        fixture,
+        phase
+      ]);
+  } else {
+    for (const name of profile.browsers) {
+      await run(process.execPath, [
+        "--import",
+        "./tests/register.mjs",
+        `scripts/${name}.mjs`,
+        fixture
+      ]);
+    }
+    await stop(server);
+    await start("enforce");
+    await run(
+      process.execPath,
+      [
+        "--import",
+        "./tests/register.mjs",
+        "--test",
+        "--test-concurrency=1",
+        ...profile.https.map((name) => `tests/${name}.test.ts`)
+      ],
+      { ...env, PRIVILEGED_MFA_MODE: "enforce", ARTIST_HTTP_MFA_ENFORCED: "1" }
+    );
   }
-  await stop(server);
-  await start("enforce");
-  await run(
-    process.execPath,
-    [
-      "--import",
-      "./tests/register.mjs",
-      "--test",
-      "--test-concurrency=1",
-      ...profile.https.map((name) => `tests/${name}.test.ts`)
-    ],
-    { ...env, PRIVILEGED_MFA_MODE: "enforce", ARTIST_HTTP_MFA_ENFORCED: "1" }
-  );
   sync("git", ["diff", "--exit-code"]);
   console.log(
-    `PASS: fictional ${suite} services, production build, browser and enforced-MFA HTTPS checks. No production connection or delivery credentials.`
+    suite === "resources"
+      ? "PASS: fictional dense resource service and loopback HTTPS measurements. No production connection or delivery credentials; not production capacity acceptance."
+      : `PASS: fictional ${suite} services, production build, browser and enforced-MFA HTTPS checks. No production connection or delivery credentials.`
   );
 } finally {
   await stop(server);

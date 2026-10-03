@@ -140,9 +140,9 @@ export async function seedResourceBudgetFixture(db: PrismaClient, dir: string) {
       });
     }
   }
-  // Reconstruct synthetic image bytes in this clone, not a backup restoration.
-  // Original historical artifacts remain untouched. Every measured asset gets
-  // current normalized derivatives and a matching manifest before measurement.
+  // Verify seeded synthetic bytes, reconstructing only missing derivatives in
+  // this isolated fixture. This is not backup restoration. Existing bytes must
+  // match current normalization and are never overwritten by this preparation.
   const pixels = Buffer.alloc(1024 * 768 * 3);
   let random = 0x5a1ad;
   for (let i = 0; i < pixels.length; i++) {
@@ -166,7 +166,8 @@ export async function seedResourceBudgetFixture(db: PrismaClient, dir: string) {
   });
   assert.equal(assets.length, 100);
   const processed = new Map<string, Awaited<ReturnType<typeof processImage>>>();
-  let storedBytes = 0;
+  let storedBytes = 0,
+    reconstructedImages = 0;
   for (const asset of assets) {
     const aspect = imageAspect(asset.purpose);
     const crop = asset.crop ?? centeredCrop;
@@ -179,14 +180,22 @@ export async function seedResourceBudgetFixture(db: PrismaClient, dir: string) {
       );
       processed.set(key, image);
     }
+    let reconstructed = false;
     for (const variant of IMAGE_VARIANTS) {
-      await store.put(
-        `${asset.storagePrefix}/${variant}.webp`,
-        image.files[variant],
-        signal
-      );
+      const path = `${asset.storagePrefix}/${variant}.webp`;
+      const existing = await store.get(path, signal);
+      if (existing === null) {
+        await store.put(path, image.files[variant], signal);
+        reconstructed = true;
+      } else {
+        assert.ok(
+          existing.equals(image.files[variant]),
+          "Preserve existing fixture images; normalized bytes must match"
+        );
+      }
       storedBytes += image.files[variant].length;
     }
+    if (reconstructed) reconstructedImages++;
     await db.mediaAsset.update({
       where: { id: asset.id },
       data: { variants: image.manifest as unknown as Prisma.InputJsonValue }
@@ -223,7 +232,9 @@ export async function seedResourceBudgetFixture(db: PrismaClient, dir: string) {
       occurrences: await db.calendarOccurrence.count(),
       follows: await db.platformFollow.count(),
       relationshipPolicies: await db.socialRelationship.count(),
-      reconstructedImages: assets.length,
+      normalizedImages: assets.length,
+      reconstructedImages,
+      verifiedExistingImages: assets.length - reconstructedImages,
       storedImageBytes: storedBytes
     },
     originalPreserved: true,
