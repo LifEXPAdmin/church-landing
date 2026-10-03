@@ -376,10 +376,12 @@ try {
 
   await signIn(owner);
   await go("/platform/exchange/handoffs?view=incoming");
+  const incomingInquiry = page.locator(
+    `a[href='/platform/exchange/handoffs/${inquiry.id}']`
+  );
+  await incomingInquiry.waitFor();
   assert.equal(await page.getByText(purpose, { exact: true }).count(), 0);
-  await page
-    .locator(`a[href='/platform/exchange/handoffs/${inquiry.id}']`)
-    .click();
+  await incomingInquiry.click();
   await state(purpose);
   const windowPlan = plan();
   await page

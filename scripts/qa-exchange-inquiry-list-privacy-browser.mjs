@@ -484,14 +484,35 @@ try {
   await rows().first().waitFor();
   await signIn(reviewer);
   await signal("social-relationships-changed");
-  await page
-    .getByText("Your sign-in changed. Reload before continuing.", {
-      exact: true
-    })
-    .waitFor();
+  const readerMismatch = exact("Recheck current access")
+    .locator("..")
+    .getByRole("status")
+    .filter({ hasText: "Your sign-in changed. Reload before continuing." });
+  const sessionMismatch = page.getByRole("status").filter({
+    hasText:
+      "The signed-in account changed. This tab keeps its original account and entries."
+  });
+  // The session owner may confirm replacement first and broadcast blur. In
+  // either order the list must disappear; no particular error wins the race.
+  await waitUntil(
+    async () =>
+      (await readerMismatch.isVisible()) || (await sessionMismatch.isVisible())
+  );
   assert.equal(await rows().count(), 0);
+  const identityCheck = page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return (
+      url.origin === config.origin &&
+      url.pathname === "/api/platform/profile" &&
+      url.searchParams.get("view") === "identity"
+    );
+  });
   await exact("Recheck current access").click();
-  await page.waitForTimeout(100);
+  assert.equal((await (await identityCheck).json()).id, reviewer.id);
+  await waitUntil(
+    async () =>
+      (await readerMismatch.isVisible()) || (await sessionMismatch.isVisible())
+  );
   assert.equal(await rows().count(), 0);
   ok(
     "Empty incoming view and direction navigation work; account replacement cannot restore another participant list"
