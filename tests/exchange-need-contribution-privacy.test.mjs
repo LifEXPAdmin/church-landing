@@ -568,11 +568,13 @@ test("legacy contribution callers retain their existing command and refresh beha
 function ownerHarness(t, setup, after) {
   const s = environment();
   setup?.(s);
-  const NeedContributionCard = () => null;
+  const NeedContributionCard = () => null,
+    router = { refresh() {} };
   const { ExchangeNeedContributions } = s.h.load(
     "components/platform/exchange-need-contributions.tsx",
     {
       "next/link": { default: "a" },
+      "next/navigation": { useRouter: () => router },
       "@/lib/platform/social-client": s.social,
       "./exchange-need-actions": { NeedContributionCard },
       "./read-visibility": {

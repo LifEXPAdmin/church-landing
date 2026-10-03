@@ -386,11 +386,17 @@ test("incoming coordinator bootstrap omits contribution identities, names, notes
 function incomingReader(t, row = contribution({ contributor: null }), after) {
   const s = environment(row);
   s.state.result = listPage([row]);
+  const router = {
+    refresh() {
+      s.state.refreshes++;
+    }
+  };
   const visibility = s.h.load("components/platform/read-visibility.ts");
   const loaded = s.h.load(
     "components/platform/exchange-need-contributions.tsx",
     {
       "next/link": { default: "a" },
+      "next/navigation": { useRouter: () => router },
       "@/lib/platform/social-client": s.social,
       "./exchange-need-actions": {
         NeedContributionCard: s.actions.NeedContributionCard
@@ -497,6 +503,33 @@ test("incoming reader accepts a coordinator's own row only in the canonical reda
   assert.ok(
     !textContent(s.h.output).includes("Private retained contribution note")
   );
+});
+
+test("an exactly acknowledged incoming receipt refreshes the parent need summary", async (t) => {
+  const row = contribution({ contributor: null });
+  const s = incomingReader(t, row);
+  await s.h.settle();
+  assert.equal(s.state.refreshes, 0);
+  const [card] = nodes(
+    s.h.output,
+    (n) => n.type === s.actions.NeedContributionCard
+  );
+  s.state.result = listPage([
+    contribution({ ...row, version: 4, received: 5 })
+  ]);
+  card.props.onRequest({ id: row.id, expectedVersion: row.version });
+  card.props.privacy.onConfirmed({
+    id: row.id,
+    version: 4,
+    message: "Receipt accepted"
+  });
+  await s.h.settle();
+  assert.equal(s.state.refreshes, 1);
+  const [updated] = nodes(
+    s.h.output,
+    (n) => n.type === s.actions.NeedContributionCard
+  );
+  assert.equal(updated.props.row.received, 5);
 });
 
 test("incoming card omits sharing-disabled names and removes private drafts from concealed DOM while retaining the values", async (t) => {

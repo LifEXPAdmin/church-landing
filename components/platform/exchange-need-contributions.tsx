@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { NeedContributionView } from "@/lib/platform/exchange-need-reads";
 import {
   currentSocialOwner,
@@ -108,6 +109,7 @@ export function ExchangeNeedContributions({
   query: ContributionsQuery;
 }) {
   const incoming = query.view === "incoming";
+  const router = useRouter();
   const parentVisible = useReadVisibility();
   const snapshot = useRef<Snapshot | null>(null);
   const originals = useRef(new Map<string, Target>());
@@ -215,7 +217,8 @@ export function ExchangeNeedContributions({
       }
       snapshot.current = data;
       setPage(data);
-      if (receipts.current.size) {
+      const confirmedCommand = receipts.current.size > 0;
+      if (confirmedCommand) {
         const confirmed = new Map(receipts.current);
         setAccepted((previous) => new Map([...previous, ...confirmed]));
         for (const id of confirmed.keys()) originals.current.delete(id);
@@ -223,6 +226,7 @@ export function ExchangeNeedContributions({
       }
       setVisible(true);
       setNotice("");
+      if (incoming && confirmedCommand) router.refresh();
     } catch (error) {
       if (seq === generation.current && active.current)
         setNotice(
@@ -254,7 +258,7 @@ export function ExchangeNeedContributions({
         void latest.current();
       }
     }
-  }, [owner, query, incoming, clearAccount]);
+  }, [owner, query, incoming, clearAccount, router]);
   latest.current = load;
   const recheck = useCallback(() => {
     if (
