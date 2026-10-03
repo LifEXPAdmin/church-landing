@@ -1,5 +1,123 @@
 # Measured resource query plans and bounded traversal
 
+## Current Exchange repair, 3 October 2026 UTC
+
+The current fictional workload reproduces the slow generic authorization join
+despite the earlier price index. The diagnostic baseline
+`6d81eb56f088062de5726cfaef8f45464ffdd6b9` uses the existing canonical service,
+schema and permission predicates. Broad newest and price queries switch from
+five custom plans to generic plans; the generic Church join rejects about
+1.2 million row combinations for 12,000 listings. No JIT compilation appears in
+these plans, although the server enables JIT above its configured cost threshold.
+The separate SQL probe's prepared-plan counters are not application connection
+counters.
+
+Application change `c8cdca51b303522e8768ae7c9dab8b5a7c47b337` first reads an
+ordered window of at most 120 candidate IDs using the existing search, distance,
+cutoff and continuation conditions. It then applies every existing authorization
+predicate to those IDs. An insufficient full window falls back once to the
+canonical authorized query strictly after the window's last candidate. A short
+window proves exhaustion. Hidden prefixes therefore cannot truncate a page or
+end pagination early. Owned listings keep the original query. Nearest ordering
+applies this procedure independently within each distance band.
+
+The external cursor still uses the last returned listing, and incoming anchors
+retain full authorization revalidation. The internal candidate boundary is never
+exposed as a cursor. There are no new indexes, migrations, dependencies, global
+planner overrides or weakened permissions. The common path adds one SQL read;
+fallback can add another within a band.
+
+### Alternating paired measurements
+
+Run `37086108270` on candidate
+`e9708e364057d63d2621967212a2509c3464f986` alternates the original and candidate
+canonical services on the same fresh fictional fixture. All 72 pairs compare
+the complete response and signed cursors successfully. Each of eight shapes has
+one warmup and eight measured calls with fresh clients per shape. The following
+medians use calls six through nine, when the original broad queries exhibit
+their repeated-call slowdown. They are not HTTP tail-latency measurements.
+
+| Query | Baseline median ms | Candidate median ms |
+| --- | ---: | ---: |
+| Newest | 299.249 | 46.594 |
+| Price low | 303.672 | 34.768 |
+| Price high | 299.595 | 35.442 |
+| Selective text | 54.958 | 55.354 |
+| No text match | 50.455 | 48.411 |
+| Guest newest | 176.781 | 25.180 |
+| Owned listings | 25.470 | 26.144 |
+| Second page | 311.417 | 46.033 |
+
+The host was an AMD EPYC 9V74 runner with four logical CPUs, Node 24.21.0 and
+PostgreSQL 16.15. The fixture includes 10,000 accounts, 100,000 posts, 500,000
+comments, 12,000 listings and 23,000 relationship policies. Measurements ran
+from 01:30:15 to 01:30:30 UTC. A previous paired run on the same CPU model also
+matched every response and showed broad-query improvement. Selective and owned
+reads show little benefit; no universal improvement is claimed. The default
+connection-pool limit was not measured. These serial warm-fixture observations
+do not establish PostgreSQL 17, provider latency or concurrent production capacity.
+
+### Current bounded HTTPS workload
+
+The unchanged resource profile passes on source
+`38f61587813c1fa442363bc085007c51ee752a6b`, run `37087676431`, build
+`BI6SIaGnCfIKKSzCZ30dr`. All 220 measured service reads and 920 workload HTTPS
+requests pass; the latter include 20 warmups and 900 measured responses.
+Collection totals 124,171,264 response-body bytes under the existing caps.
+The workload runs on a four-CPU Intel Xeon 6973P-C runner with about 16 GB RAM,
+Node 24.21.0, PostgreSQL 16.15, local image storage and MFA off. The receipt
+matches exact source, build and fixture digest. Service measurements span
+01:55:48 to 01:55:58 UTC; HTTPS spans 01:55:58 to 01:56:35 UTC.
+
+| Concurrent clients | Requests/second | Newest Exchange p95 ms | Price Exchange p95 ms | Latest feed p95 ms | Following feed p95 ms |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 1 | 17.16 | 42.73 | 33.23 | 170.25 | 201.29 |
+| 5 | 33.53 | 107.20 | 96.44 | 348.64 | 322.12 |
+| 25 | 35.07 | 855.92 | 903.03 | 1,033.67 | 1,031.86 |
+
+Each path has 30 measured observations at each concurrency level, within the
+unchanged ten-path mix. The earlier workload used an Intel Xeon Platinum 8573C;
+this comparison is not a controlled before/after HTTP speedup. Feed p95 still
+exceeds one second at 25 clients. Loopback traffic without think time or network
+shaping, default pool size unmeasured, and local image delivery do not certify
+provider headroom, 100-client capacity or physical-device acceptance.
+
+### Verification and release gates
+
+All 97 Exchange service cases pass on `fb613b1`, including compatibility,
+hidden windows at 119/120/121 entries, a long hidden prefix, all-hidden results,
+20/21 visible boundaries, complete pagination, varied prices and nearest bands.
+Full run `37089319853` passes on source
+`fb613b1664433cd0f173a35a501cb8a9e59eded3`, build
+`CXMpwc5UiSg2TsppRxLiQ`: 97 service cases, 16 listing and eight search browser
+groups, and one HTTPS case covering API, HTML/RSC and photo access. The runner
+verifies that exact serving source before both browser checks with MFA off and
+the HTTPS case with MFA enforcement configured. This is not proof of an actual
+MFA challenge. Corrected browser checks await saved responses and history cleanup,
+use current empty-state wording and verify visible dark enlarged-text editors.
+Settings observed one expected authenticated foreground-session request and no
+preference writes.
+
+The account-switch case eventually clears private editor values, but its new
+stage timings show 29.6 seconds from focus to clearing, even after save settlement.
+Immediate concealment for that scenario is not established. The cause needs a
+separate reproduced privacy investigation before closing that acceptance gate.
+All 118 source guards, copy and TypeScript checks pass. The failed dependency
+audit below prevents downstream CI signature, lint and secret checks from running;
+changed files pass local lint. No all-pass release receipt is issued.
+
+The unchanged source security gate now fails on newly published
+[GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm), affecting
+`braces <=3.0.3`. As checked on 3 October, the advisory lists no patched version.
+The affected dependency paths in the lockfile are development tooling through
+Tailwind and Next ESLint. This is distinct from the earlier repaired
+`brace-expansion` advisory. Earlier zero-advisory receipts are historical;
+current release clearance requires a compatible verified fix. No audit bypass
+or forced major upgrade was applied. This candidate is not release-ready,
+integrated or live. No production connection, migration, write or send occurred.
+
+## Historical September investigation
+
 September 18, 2026. Local investigation on the fictional fixture described in
 [resource budgets](RESOURCE_BUDGETS.md), using the unchanged 2026.09.18.8 runtime.
 The evidence below supports one listing index. After the shared schema slot
