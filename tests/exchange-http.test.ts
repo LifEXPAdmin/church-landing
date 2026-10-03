@@ -136,8 +136,32 @@ test("production HTTPS listing API, HTML/RSC and all photo variants share curren
     }
     const owned = await req(editor, owner.token, undefined, headers);
     assert.match(owned.headers.get("cache-control")!, /no-store/);
-    assert.ok((await owned.text()).includes(marker));
+    const payload = await owned.text();
+    assert.ok(
+      !payload.includes(marker),
+      "Editor bootstrap must omit private saved fields"
+    );
+    assert.ok(
+      !payload.includes("listingVersion"),
+      "Contact snapshots are read after initialization"
+    );
   }
+  const editorRead = await req(
+    `/api/platform/exchange?view=editor&id=${row.id}`,
+    owner.token,
+    undefined,
+    { "x-expected-account": owner.id }
+  );
+  assert.equal(editorRead.status, 200);
+  assert.equal((await editorRead.json()).fields.title, marker);
+  const mismatchedRead = await req(
+    `/api/platform/exchange?view=editor&id=${row.id}`,
+    owner.token,
+    undefined,
+    { "x-expected-account": stranger.id }
+  );
+  assert.equal(mismatchedRead.status, 401);
+  assert.ok(!(await mismatchedRead.text()).includes(marker));
   assert.equal(
     (
       await req(
@@ -224,5 +248,10 @@ test("production HTTPS listing API, HTML/RSC and all photo variants share curren
       (await req(`/api/platform/images/${image.id}/${variant}`)).status,
       404
     );
-  assert.ok((await (await req(editor, owner.token)).text()).includes(marker));
+  for (const headers of [{}, { RSC: "1" }] as Record<string, string>[])
+    assert.ok(
+      !(
+        await (await req(editor, owner.token, undefined, headers)).text()
+      ).includes(marker)
+    );
 });

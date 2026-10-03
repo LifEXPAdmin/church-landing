@@ -10,27 +10,32 @@ const config = JSON.parse(
   readFileSync(fixtureDir + "/browser-env.json", "utf8")
 );
 assert.match(config.origin, /^https:\/\/127\.0\.0\.1:\d+$/);
-assert.match(config.localOrigin, /^https:\/\/127\.0\.0\.1:\d+$/);
+const localOrigin = config.localOrigin ?? config.origin;
+assert.match(localOrigin, /^https:\/\/127\.0\.0\.1:\d+$/);
 assert.equal(new URL(config.database).hostname, "127.0.0.1");
 Object.assign(process.env, {
   DATABASE_URL: config.database,
   DIRECT_URL: config.database,
-  ACCOUNT_ORIGIN: config.localOrigin,
-  NEXT_PUBLIC_SITE_URL: config.localOrigin,
+  ACCOUNT_ORIGIN: localOrigin,
+  NEXT_PUBLIC_SITE_URL: localOrigin,
   ACCOUNT_TEST_ISOLATED: "1",
   ACCOUNT_DELIVERY_MODE: "test-sink",
-  ACCOUNT_TEST_SINK_DIR: process.cwd() + "/" + fixtureDir + "/sink",
-  AUTH_RATE_LIMIT_SECRET: "medium-fixture-only-secret-".repeat(3),
+  ACCOUNT_TEST_SINK_DIR:
+    process.env.ACCOUNT_TEST_SINK_DIR ?? fixtureDir + "/sink",
+  AUTH_RATE_LIMIT_SECRET:
+    process.env.AUTH_RATE_LIMIT_SECRET ??
+    "medium-fixture-only-secret-".repeat(3),
   NODE_ENV: "test",
   VERCEL: "",
-  PRIVILEGED_MFA_MODE: "enroll",
+  PRIVILEGED_MFA_MODE: process.env.PRIVILEGED_MFA_MODE ?? "enroll",
   COMMUNITY_REPORTS_ENABLED: "true",
   BLOB_READ_WRITE_TOKEN: "",
   RESEND_API_KEY: "",
   MAILERLITE_API_KEY: "",
   MEDIA_STORAGE_MODE: "local-test",
-  RETENTION_TEST_DIR: process.cwd() + "/" + fixtureDir + "/retention",
-  MEDIA_TEST_DIR: process.cwd() + "/" + fixtureDir + "/images"
+  RETENTION_TEST_DIR:
+    process.env.RETENTION_TEST_DIR ?? fixtureDir + "/retention",
+  MEDIA_TEST_DIR: process.env.MEDIA_TEST_DIR ?? fixtureDir + "/images"
 });
 const { PrismaClient } = await import("@prisma/client");
 const { createPortalActor, assertPortalTestDatabase, seedOperatorGrants } =
@@ -68,7 +73,7 @@ const context = await browser.newContext({
   hasTouch: true
 });
 await context.route("**/*", (route) =>
-  new URL(route.request().url()).hostname === "127.0.0.1"
+  new URL(route.request().url()).origin === config.origin
     ? route.continue()
     : route.abort()
 );
@@ -175,10 +180,18 @@ try {
     .getByRole("link", { name: "Sign in", exact: true })
     .waitFor();
   assert.ok(!(await page.locator("main").innerText()).includes(marker));
-  await page.locator("main").getByRole("link", { name: "Sign in", exact: true }).click();
+  await page
+    .locator("main")
+    .getByRole("link", { name: "Sign in", exact: true })
+    .click();
   await page.waitForURL((url) => url.pathname === "/platform/login");
-  assert.equal(new URL(page.url()).searchParams.get("next"), "/platform/pantry/mine");
-  ok("Guest private entry conceals assistance records and sign-in retains the intended destination");
+  assert.equal(
+    new URL(page.url()).searchParams.get("next"),
+    "/platform/pantry/mine"
+  );
+  ok(
+    "Guest private entry conceals assistance records and sign-in retains the intended destination"
+  );
   await signIn(manager);
   await go(base + "/manage");
   const hub = form("Save hub and intake choices");
@@ -489,6 +502,15 @@ try {
     "Food parcels (parcels)"
   );
   const editorText = await page.locator("main").innerText();
+  assert.equal(
+    await page.evaluate(() =>
+      [...document.querySelectorAll("script")].some((node) =>
+        node.textContent.includes("Food parcels replenishment")
+      )
+    ),
+    false,
+    "Pantry seed values must not be serialized into initial editor scripts"
+  );
   for (const hidden of [
     "Fictional private practical note",
     "Fictional chosen contact",
