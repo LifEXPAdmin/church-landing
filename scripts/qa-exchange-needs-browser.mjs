@@ -94,10 +94,14 @@ const isRscRequest = (request) => {
 };
 page.on("request", (request) => {
   if (!isRscRequest(request)) return;
+  const headers = request.headers();
   rscTrace.push({
     event: "request",
     method: request.method(),
-    path: new URL(request.url()).pathname
+    path: new URL(request.url()).pathname,
+    prefetch: headers["next-router-prefetch"] === "1",
+    segmentPrefetch: headers["next-router-segment-prefetch"] === "1",
+    nextUrl: headers["next-url"] ?? null
   });
 });
 page.on("response", (response) => {
@@ -526,12 +530,17 @@ try {
       if (!isRscRequest(route.request())) return route.continue();
       const response = await route.fetch();
       const body = await response.body();
+      const bodyText = body.toString("utf8");
       rscTrace.push({
         event: "needs-rsc-payload",
         status: response.status(),
         contentType: response.headers()["content-type"] ?? null,
+        contentEncoding: response.headers()["content-encoding"] ?? null,
+        bodyBytes: body.length,
+        hasSlotLabel: bodyText.includes("Food parcels"),
+        hasReceivedLabel: bodyText.includes("Received"),
         receivedTotals: Array.from(
-          body.toString("utf8").matchAll(/Received:\s*(\d+)/g),
+          bodyText.matchAll(/Received:\s*(\d+)/g),
           ([, value]) => Number(value)
         )
       });
