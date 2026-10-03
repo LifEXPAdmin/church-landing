@@ -442,6 +442,63 @@ try {
     mimeType: "image/png",
     buffer: bytes
   });
+  const selectedCaption = "PRIVATE SELECTED UPLOAD CAPTION";
+  await page.getByLabel("Caption", { exact: true }).fill(selectedCaption);
+  const galleryRoute = (url) =>
+    url.pathname === "/api/platform/exchange" &&
+    url.searchParams.get("view") === "gallery";
+  await page.route(galleryRoute, (route) =>
+    route.fulfill({
+      status: 503,
+      contentType: "application/json",
+      body: JSON.stringify({ message: "Fictional gallery check unavailable" })
+    })
+  );
+  try {
+    await page.evaluate(() => window.dispatchEvent(new Event("blur")));
+    await page.waitForFunction(
+      (marker) =>
+        ![...document.querySelectorAll("textarea")].some(
+          (node) => node.value === marker
+        ),
+      selectedCaption,
+      { timeout: 2000 }
+    );
+    assert.equal(
+      await page.getByText("fictional-item.png", { exact: true }).count(),
+      0
+    );
+    await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+    await page
+      .getByText("Fictional gallery check unavailable", { exact: true })
+      .waitFor();
+    assert.equal(
+      await page.getByText("fictional-item.png", { exact: true }).count(),
+      0
+    );
+    assert.equal(
+      await page
+        .locator("textarea")
+        .evaluateAll(
+          (nodes, marker) => nodes.some((node) => node.value === marker),
+          selectedCaption
+        ),
+      false
+    );
+  } finally {
+    await page.unroute(galleryRoute);
+  }
+  await page
+    .getByRole("button", { name: "Check listing photos", exact: true })
+    .click();
+  await page.getByText("fictional-item.png", { exact: true }).waitFor();
+  assert.equal(
+    await page.getByLabel("Caption", { exact: true }).inputValue(),
+    selectedCaption
+  );
+  ok(
+    "A selected file and caption survive blur and a failed gallery check while their DOM presentation stays absent"
+  );
   await page.getByRole("button", { name: "Save photo", exact: true }).click();
   await page
     .getByRole("button", { name: "Edit photo 1 description", exact: true })
@@ -785,7 +842,9 @@ try {
     );
   } finally {
     releaseIdentity();
-    await page.unroute("**/api/platform/profile?view=identity", holdIdentity);
+    // Let released handlers finish before removing the page's temporary routes.
+    // The context's local-origin restriction remains installed.
+    await page.unrouteAll({ behavior: "wait" });
   }
   await editor
     .getByLabel("Description (required to publish)", { exact: true })
