@@ -212,11 +212,14 @@ try {
     url.pathname === "/api/platform/exchange" &&
     url.searchParams.get("view") === "handoff-target";
   const endpoint = config.origin + "/api/platform/exchange";
-  const purpose = page.getByLabel("Brief purpose", { exact: true });
-  const composer = page.getByRole("region", {
-    name: "Listing inquiry",
-    exact: true
-  });
+  // Read the actual textarea node: a remounted controlled textarea can include
+  // its initial value in Playwright's wrapping-label text matcher.
+  const purpose = page.locator(
+    'form[aria-label="Send a private inquiry"] textarea'
+  );
+  // Inspect the retained owner even when the outer listing guard conceals it.
+  // Accessibility locators exclude hidden regions and can make DOM assertions vacuous.
+  const composer = page.locator('section[aria-label="Listing inquiry"]');
   const localPurpose = "Fictional private purpose " + randomUUID();
   const readTarget = async (actor) =>
     (
@@ -282,7 +285,7 @@ try {
     .getByText("Your sign-in could not be checked. Reconnect and try again.", {
       exact: true
     })
-    .waitFor();
+    .waitFor({ state: "attached" });
   await clearIntercepts();
   await signal("focus");
   await purpose.waitFor();
@@ -558,12 +561,12 @@ try {
   // Leave the previous user's owner mounted while replacing the authenticated account.
   await signIn(requester);
   await signal("focus");
-  await page
+  await composer
     .getByText(
       "Your sign-in changed. Private entries were cleared. Reload for your current account.",
       { exact: true }
     )
-    .waitFor();
+    .waitFor({ state: "attached" });
   assert.equal(await purpose.count(), 0);
   assert.equal(
     await composer
