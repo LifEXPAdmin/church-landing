@@ -22,7 +22,8 @@ assert.ok(
     "discovery",
     "resources",
     "exchange-plans",
-    "exchange-services"
+    "exchange-services",
+    "exchange"
   ].includes(suite),
   "Choose a declared isolated suite"
 );
@@ -44,7 +45,7 @@ const profile =
           browsers: ["qa-discovery-browser", "qa-four-feeds-browser"],
           https: ["discovery-http", "four-feeds-http"]
         }
-      : suite === "exchange-services"
+      : ["exchange-services", "exchange"].includes(suite)
         ? {
             services: [
               "exchange-input",
@@ -53,8 +54,8 @@ const profile =
               "interchurch-help",
               "interchurch-help-compatibility"
             ],
-            browsers: [],
-            https: []
+            browsers: ["qa-exchange-browser", "qa-exchange-search-browser"],
+            https: ["exchange-http"]
           }
         : { services: [], browsers: [], https: [] };
 // This runner deliberately cannot start large artifacts on a local workstation.

@@ -10,27 +10,34 @@ assert.ok(fixtureDir, "Pass the existing isolated Exchange preview directory");
 const config = JSON.parse(
   readFileSync(fixtureDir + "/browser-env.json", "utf8")
 );
-assert.match(config.origin, /^https:\/\/(?:exchange-fixture\.example\.test|127\.0\.0\.1):\d+$/);
-assert.match(config.localOrigin, /^https:\/\/127\.0\.0\.1:\d+$/);
+assert.match(
+  config.origin,
+  /^https:\/\/(?:exchange-fixture\.example\.test|127\.0\.0\.1):\d+$/
+);
+const localOrigin = config.localOrigin ?? config.origin;
+assert.match(localOrigin, /^https:\/\/127\.0\.0\.1:\d+$/);
 assert.equal(new URL(config.database).hostname, "127.0.0.1");
 Object.assign(process.env, {
   DATABASE_URL: config.database,
   DIRECT_URL: config.database,
-  ACCOUNT_ORIGIN: config.localOrigin,
-  NEXT_PUBLIC_SITE_URL: config.localOrigin,
+  ACCOUNT_ORIGIN: localOrigin,
+  NEXT_PUBLIC_SITE_URL: localOrigin,
   ACCOUNT_TEST_ISOLATED: "1",
   ACCOUNT_DELIVERY_MODE: "test-sink",
-  ACCOUNT_TEST_SINK_DIR: process.cwd() + "/" + fixtureDir + "/sink",
-  AUTH_RATE_LIMIT_SECRET: "medium-fixture-only-secret-".repeat(3),
+  ACCOUNT_TEST_SINK_DIR:
+    process.env.ACCOUNT_TEST_SINK_DIR ?? fixtureDir + "/sink",
+  AUTH_RATE_LIMIT_SECRET:
+    process.env.AUTH_RATE_LIMIT_SECRET ??
+    "medium-fixture-only-secret-".repeat(3),
   NODE_ENV: "test",
   VERCEL: "",
-  PRIVILEGED_MFA_MODE: "enroll",
+  PRIVILEGED_MFA_MODE: process.env.PRIVILEGED_MFA_MODE ?? "enroll",
   COMMUNITY_REPORTS_ENABLED: "true",
   BLOB_READ_WRITE_TOKEN: "",
   RESEND_API_KEY: "",
   MAILERLITE_API_KEY: "",
   MEDIA_STORAGE_MODE: "local-test",
-  MEDIA_TEST_DIR: process.cwd() + "/" + fixtureDir + "/images"
+  MEDIA_TEST_DIR: process.env.MEDIA_TEST_DIR ?? fixtureDir + "/images"
 });
 const { PrismaClient } = await import("@prisma/client");
 const { createPortalActor, assertPortalTestDatabase, seedOperatorGrants } =

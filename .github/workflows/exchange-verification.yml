@@ -1,0 +1,63 @@
+name: Exchange isolated verification
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [codex/exchange-query-plans-20261003]
+    paths:
+      - .github/workflows/exchange-verification.yml
+      - scripts/test-platform-isolated.mjs
+      - scripts/qa-exchange-browser.mjs
+      - scripts/qa-exchange-search-browser.mjs
+      - lib/platform/exchange-listings.ts
+      - tests/exchange-listings.test.ts
+
+permissions:
+  contents: read
+
+concurrency:
+  group: exchange-isolated-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install locked application dependencies
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm run prisma:generate
+      - name: Prepare runner-only browser and PostgreSQL tooling
+        shell: bash
+        run: |
+          set -euo pipefail
+          pg_bin="$(pg_config --bindir)"
+          test -x "$pg_bin/initdb"
+          echo "TEST_PG_BIN=$pg_bin" >> "$GITHUB_ENV"
+          npm install --prefix "$RUNNER_TEMP/exchange-browser" --ignore-scripts --no-audit --no-fund playwright@1.62.1
+          node "$RUNNER_TEMP/exchange-browser/node_modules/playwright/cli.js" install --with-deps chromium
+          echo "PLAYWRIGHT_MODULE=$RUNNER_TEMP/exchange-browser/node_modules/playwright/package.json" >> "$GITHUB_ENV"
+          chromium_path="$(node -e "console.log(require(process.argv[1]).chromium.executablePath())" "$RUNNER_TEMP/exchange-browser/node_modules/playwright")"
+          echo "CHROMIUM_PATH=$chromium_path" >> "$GITHUB_ENV"
+      - name: Build and verify fictional Exchange over local HTTPS
+        run: node scripts/test-platform-isolated.mjs exchange
+      - name: Preserve fictional browser results and screenshots
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: exchange-browser-${{ github.sha }}
+          path: |
+            .account-test/exchange-hosted-*/exchange-browser-*/*.png
+            .account-test/exchange-hosted-*/exchange-browser-*/results.json
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 7

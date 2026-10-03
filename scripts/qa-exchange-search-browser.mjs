@@ -9,27 +9,34 @@ assert.ok(fixtureDir, "Pass the existing isolated Exchange preview directory");
 const config = JSON.parse(
   readFileSync(fixtureDir + "/browser-env.json", "utf8")
 );
-assert.match(config.origin, /^https:\/\/(?:exchange-fixture\.example\.test|127\.0\.0\.1):\d+$/);
-assert.match(config.localOrigin, /^https:\/\/127\.0\.0\.1:\d+$/);
+assert.match(
+  config.origin,
+  /^https:\/\/(?:exchange-fixture\.example\.test|127\.0\.0\.1):\d+$/
+);
+const localOrigin = config.localOrigin ?? config.origin;
+assert.match(localOrigin, /^https:\/\/127\.0\.0\.1:\d+$/);
 assert.equal(new URL(config.database).hostname, "127.0.0.1");
 Object.assign(process.env, {
   DATABASE_URL: config.database,
   DIRECT_URL: config.database,
-  ACCOUNT_ORIGIN: config.localOrigin,
-  NEXT_PUBLIC_SITE_URL: config.localOrigin,
+  ACCOUNT_ORIGIN: localOrigin,
+  NEXT_PUBLIC_SITE_URL: localOrigin,
   ACCOUNT_TEST_ISOLATED: "1",
   ACCOUNT_DELIVERY_MODE: "test-sink",
-  ACCOUNT_TEST_SINK_DIR: process.cwd() + "/" + fixtureDir + "/sink",
-  AUTH_RATE_LIMIT_SECRET: "medium-fixture-only-secret-".repeat(3),
+  ACCOUNT_TEST_SINK_DIR:
+    process.env.ACCOUNT_TEST_SINK_DIR ?? fixtureDir + "/sink",
+  AUTH_RATE_LIMIT_SECRET:
+    process.env.AUTH_RATE_LIMIT_SECRET ??
+    "medium-fixture-only-secret-".repeat(3),
   NODE_ENV: "test",
   VERCEL: "",
-  PRIVILEGED_MFA_MODE: "enroll",
+  PRIVILEGED_MFA_MODE: process.env.PRIVILEGED_MFA_MODE ?? "enroll",
   COMMUNITY_REPORTS_ENABLED: "true",
   BLOB_READ_WRITE_TOKEN: "",
   RESEND_API_KEY: "",
   MAILERLITE_API_KEY: "",
   MEDIA_STORAGE_MODE: "local-test",
-  MEDIA_TEST_DIR: process.cwd() + "/" + fixtureDir + "/images"
+  MEDIA_TEST_DIR: process.env.MEDIA_TEST_DIR ?? fixtureDir + "/images"
 });
 const { PrismaClient } = await import("@prisma/client");
 const { createPortalActor, assertPortalTestDatabase, seedOperatorGrants } =
@@ -476,10 +483,7 @@ try {
   );
   await go("/platform/exchange?q=NoMatchingFixture" + randomUUID());
   await page
-    .getByText(
-      "No listings match these filters",
-      { exact: true }
-    )
+    .getByText("No listings match these filters", { exact: true })
     .waitFor();
   await go("/platform/exchange?q=" + encodeURIComponent(marker));
   const currentCard = page.getByRole("link", {
@@ -563,35 +567,68 @@ try {
     ["setting-exchange-area", "/platform/exchange/new"],
     ["setting-exchange-saved", "/platform/exchange/saved"],
     ["related-privacy-messages", "/platform/settings/privacy/messages"],
-    ["related-notifications-availability", "/platform/settings/notifications/availability"]
-  ]) assert.equal(await page.locator("#" + id).getAttribute("href"), href);
+    [
+      "related-notifications-availability",
+      "/platform/settings/notifications/availability"
+    ]
+  ])
+    assert.equal(await page.locator("#" + id).getAttribute("href"), href);
   assert.match(await page.locator("main").innerText(), /One approved church/);
-  assert.match(await page.locator("main").innerText(), /Keep exact pickup instructions out of published text/);
-  assert.equal(await page.locator('input[autocomplete^="cc-"],input[name*="bank"],input[name*="address"]').count(), 0);
+  assert.match(
+    await page.locator("main").innerText(),
+    /Keep exact pickup instructions out of published text/
+  );
+  assert.equal(
+    await page
+      .locator(
+        'input[autocomplete^="cc-"],input[name*="bank"],input[name*="address"]'
+      )
+      .count(),
+    0
+  );
   await page.addStyleTag({ content: "html{font-size:24px!important}" });
   await bounded();
-  await page.screenshot({ path: output + "/exchange-settings-mobile.png", fullPage: true });
-  await page.route("**/api/platform/settings", (route) => route.fulfill({
-    status: 503, contentType: "application/json",
-    body: JSON.stringify({ message: "Fictional settings temporarily unavailable" })
-  }));
+  await page.screenshot({
+    path: output + "/exchange-settings-mobile.png",
+    fullPage: true
+  });
+  await page.route("**/api/platform/settings", (route) =>
+    route.fulfill({
+      status: 503,
+      contentType: "application/json",
+      body: JSON.stringify({
+        message: "Fictional settings temporarily unavailable"
+      })
+    })
+  );
   await page.evaluate(() => {
     window.dispatchEvent(new Event("blur"));
     window.dispatchEvent(new Event("focus"));
   });
-  await page.getByText("Fictional settings temporarily unavailable", { exact: true }).waitFor();
-  assert.equal(await page.locator("#setting-exchange-saved").isVisible(), false);
+  await page
+    .getByText("Fictional settings temporarily unavailable", { exact: true })
+    .waitFor();
+  assert.equal(
+    await page.locator("#setting-exchange-saved").isVisible(),
+    false
+  );
   await page.unroute("**/api/platform/settings");
-  await page.getByRole("button", { name: "Retry settings", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Retry settings", exact: true })
+    .click();
   await page.locator("#setting-exchange-saved").waitFor();
   await page.locator("#setting-exchange-saved").click();
   await page.waitForURL("**/platform/exchange/saved");
-  await page.getByRole("heading", { name: "Saved listings and searches", exact: true }).waitFor();
+  await page
+    .getByRole("heading", { name: "Saved listings and searches", exact: true })
+    .waitFor();
   await go("/platform/settings?q=saved%20search");
   await page.locator("#setting-exchange-saved").waitFor();
   assert.deepEqual(settingsWrites, []);
   page.off("request", recordSettingsWrite);
-  ok("Settings finds current Exchange controls, preserves separate contact and alert owners, conceals failed reads, fits enlarged mobile text and adds no financial form or preference write");
+  ok(
+    "Settings finds current Exchange controls, preserves separate contact and alert owners, conceals failed reads, fits enlarged mobile text and adds no financial form or preference write"
+  );
   assert.deepEqual(errors, []);
   ok("No browser errors in saved-search and favorite flows");
 } catch (error) {

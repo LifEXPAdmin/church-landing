@@ -1636,7 +1636,11 @@ test("ordered discovery windows preserve hidden boundaries, exhaustion and price
   void ignoredId;
   void ignoredCreated;
   void ignoredUpdated;
-  const scenarios = [
+  const scenarios: Array<{
+    count: number;
+    visible: number[];
+    varied?: boolean;
+  }> = [
     { count: 119, visible: [118] },
     { count: 119, visible: [] },
     { count: 120, visible: [] },
@@ -1644,7 +1648,12 @@ test("ordered discovery windows preserve hidden boundaries, exhaustion and price
     { count: 121, visible: [120] },
     { count: 121, visible: [...Array.from({ length: 20 }, (_, i) => i), 120] },
     { count: 261, visible: Array.from({ length: 21 }, (_, i) => 240 + i) },
-    { count: 200, visible: Array.from({ length: 41 }, (_, i) => i) }
+    { count: 200, visible: Array.from({ length: 41 }, (_, i) => i) },
+    {
+      count: 261,
+      visible: Array.from({ length: 21 }, (_, i) => 120 + i),
+      varied: true
+    }
   ];
   for (const scenario of scenarios) {
     const marker = "Fictional ordered window " + randomUUID();
@@ -1654,6 +1663,7 @@ test("ordered discovery windows preserve hidden boundaries, exhaustion and price
       ...source,
       id: prefix + String(scenario.count - index).padStart(4, "0"),
       title: marker,
+      priceMinor: scenario.varied ? index + 1 : source.priceMinor,
       publishedAt: at,
       updatedAt: at,
       moderationState: scenario.visible.includes(index)
@@ -1661,16 +1671,24 @@ test("ordered discovery windows preserve hidden boundaries, exhaustion and price
         : ("HIDDEN" as const)
     }));
     await db.exchangeListing.createMany({ data: records });
-    const expected = records
-      .filter((row) => row.moderationState === "VISIBLE")
-      .map((row) => row.id);
     for (const sort of ["newest", "price-low", "price-high"] as const) {
+      const expected = records
+        .filter((row) => row.moderationState === "VISIBLE")
+        .sort((a, b) => {
+          const price =
+            sort === "newest"
+              ? 0
+              : (a.priceMinor! - b.priceMinor!) *
+                (sort === "price-low" ? 1 : -1);
+          return price || (a.id < b.id ? 1 : a.id > b.id ? -1 : 0);
+        })
+        .map((row) => row.id);
       const query = {
         q: marker,
         sort,
         ...(sort === "newest"
           ? {}
-          : { currency: "USD", basis: "item" as const })
+          : { currency: "USD" as const, basis: "item" as const })
       };
       const found: string[] = [];
       let after: string | undefined;
@@ -1995,7 +2013,14 @@ test("approximate nearest paging crosses authorized distance bands without candi
     sort: "newest",
     radiusKm: 10
   });
-  assert.ok(newest.listings.every((row) => row.distanceBandKm === 10));
+  assert.deepEqual(newest.listings, []);
+  const nextBand = await list(db, viewer.token, {
+    ...query,
+    sort: "newest",
+    radiusKm: 25
+  });
+  assert.ok(nextBand.listings.length > 0);
+  assert.ok(nextBand.listings.every((row) => row.distanceBandKm === 25));
 });
 
 test("favorite references are owned, exact retries do not duplicate them, and removed or inaccessible sources never leak content", async () => {
