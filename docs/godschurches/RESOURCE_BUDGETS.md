@@ -1,5 +1,69 @@
 # Resource budgets for enabled modules
 
+## Immutable failure evidence, 4 October 2026 UTC
+
+The measurement harness previously overwrote `http-budget-progress.json` after
+each successful stage. Its first rejected concurrent request ended the stage
+before sibling requests settled, and failed-stage samples never reached a
+receipt. A fictional-stream reproduction of the actual harness completed 920
+calls but overwrote progress twice. A controlled stream failure after dispatch
+328 left 330 attempted calls, 34,569 retained bytes and seven validated samples
+in the current stage; the only surviving receipt recorded 320 calls and 34,112
+bytes. These small fake responses reproduce evidence loss, not application
+latency or capacity.
+
+Each service or HTTP invocation now creates a new `resource-receipts` attempt
+directory. Started, stage and terminal JSON files use exclusive creation.
+Concurrent HTTP workers stop scheduling on shared cancellation and all settle
+before stage/failure counters are serialized. Failed requests retain numeric
+status, delivered and retained byte counts, elapsed time, body-completion and
+validation flags, and a fixed failure phase. Empty validated groups have zero
+counts and null statistics. Completed stages remain available when final serving
+identity, database statistics or database disconnection fails. Terminal success
+is published only after successful cleanup.
+
+The HTTP workload is still 20 warmups and three 300-call stages at concurrency
+1, 5 and 25. The former defensive 1,000-call guard is tightened to the intended
+920 calls; before/after serving-identity probes are separately counted. Retained
+body limits remain 256 MiB total and 8 MiB per response. `totalBytes` retains its
+collected-body meaning. `totalReceivedBytes` counts chunks delivered to the body
+reader, including an unretained crossing chunk; it is not transport-level wire
+usage. Actual attempted warmup/measured counts are separate from the planned
+workload and validated sample counts. Existing status, expected content/count,
+cache, image type and source/build/fixture identity checks remain mandatory.
+
+Service groups likewise preserve failed warmups and partial measured samples,
+with unset response sizes represented as null. Query capture always stops on
+failure. The fixed `service-budget.json` remains an immutable HTTP prerequisite;
+an existing service receipt rejects a repeated service phase before cursor or
+service calls. A new service measurement requires a fresh fixture. HTTP attempts
+can retain independent results in the same fixture directory without replacing
+old receipts. Fixture/cursor files also use exclusive creation where written by
+this harness. Configuration and clean-source preflight precede attempt creation;
+those refusals do not promise a receipt.
+
+The artifact workflow explicitly selects started/stage/complete/failed receipts
+and the existing candidate/service prerequisite. It excludes raw query events,
+actor credentials and cursor data. Failure receipts and CLI initialization and
+measurement errors use fixed codes, never raw exceptions, assertion inputs,
+response bodies, paths or header values. The boundary starts after static module
+loading; Node dependency-loader failures precede it. Configuration/provider
+guards still run before Prisma construction and measurement attempts. The
+original exception is preserved internally through cancellation, evidence-write
+failure and cleanup. Existing files are never replaced to repair a collision.
+
+Verification for this correction uses the real orchestration and reader with
+fictional streams and small internal files. All 31 receipt/harness regressions
+pass, including a successful 11-warmup/220-sample service phase feeding the
+920-call HTTP phase, immutable retries, partial failure and cleanup ordering,
+the rejected 921st call, and canaries in every forbidden provider credential,
+database mismatch, malformed configuration and filesystem/source errors. These
+tests execute the actual measurement and CLI initialization functions with
+fictional boundaries. They do not run the database,
+application server, browser, hosted workflow or a capacity experiment. The dated
+measurements below remain historical evidence; integration, an authorized real
+runtime check, provider headroom and production-capacity acceptance remain open.
+
 ## Current dense workload, 3 October 2026 UTC
 
 Candidate `45159afb34426a8eaef94296f5789b73378435dc` passes the isolated

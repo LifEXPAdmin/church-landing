@@ -10,9 +10,11 @@ on:
       - scripts/qa-resource-budgets.mjs
       - scripts/resource-budget-identity.mjs
       - scripts/resource-response-budget.mjs
+      - scripts/resource-measurement-receipts.mjs
       - tests/seed-capacity.ts
       - tests/resource-budget-fixture.ts
       - tests/resource-response-budget.test.mjs
+      - tests/resource-measurement-receipts.test.mjs
 
 permissions:
   contents: read
@@ -54,8 +56,10 @@ jobs:
           path: |
             .account-test/resources-hosted-*/measurement-candidate.json
             .account-test/resources-hosted-*/service-budget.json
-            .account-test/resources-hosted-*/http-budget.json
-            .account-test/resources-hosted-*/http-budget-progress.json
+            .account-test/resources-hosted-*/resource-receipts/*/started.json
+            .account-test/resources-hosted-*/resource-receipts/*/stage-*.json
+            .account-test/resources-hosted-*/resource-receipts/*/complete.json
+            .account-test/resources-hosted-*/resource-receipts/*/failed.json
           include-hidden-files: true
           if-no-files-found: ignore
           retention-days: 7
