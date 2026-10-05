@@ -1,3 +1,21 @@
+## Opt-in recent searches prepared, 5 October 2026
+
+`godschurches:recent-searches:v1:<encoded-account-id>` is a new optional
+localStorage key. It stores format, owner ID, enabled preference and at most 20
+query/category/timestamp entries, with queries bounded to 200 characters. It is
+off until explicitly enabled. There are no resource payloads or access grants.
+The UI verifies current identity before using the matching account key and
+conceals history on account/lifecycle changes. Different tabs observe clear and
+opt-out through storage events. Actions read current storage rather than merging
+an old rendered list. Results-page reads never record a query.
+
+Display excludes queries older than 30 days; later actions rewrite the filtered
+set. Expired raw entries may remain until an action, clear, opt-out or browser
+storage cleanup. Turning history off removes the complete key. Browser storage
+access can reveal its contents; this is not encrypted storage or cross-device
+history. Storage errors do not stop Search. The source is prepared, not live.
+See [recent-search behavior and verification](RECENT_SEARCHES.md).
+
 ## Management and followed-discussion memory verified live, 28 September 2026 UTC
 
 Version .42/source `7e6ed64` is implemented, tested, merged and verified live in

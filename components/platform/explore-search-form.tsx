@@ -6,17 +6,20 @@ import {
 } from "@/lib/platform/search-navigation";
 import { POST_TOPICS } from "@/lib/platform/post-options";
 import { SearchChurchFilter } from "./search-church-filter";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Search } from "lucide-react";
 import { churchDiscoveryHref } from "@/lib/platform/church-search";
+import { RecentSearches, useRecentSearches } from "./recent-searches";
 
 export function ExploreSearchForm({
+  owner = null,
   query,
   category = "posts",
   topic,
   churchId,
   after
 }: {
+  owner?: string | null;
   query: string;
   category?: SearchCategory;
   topic?: string;
@@ -28,9 +31,36 @@ export function ExploreSearchForm({
   const [selectedTopic, setSelectedTopic] = useState(topic ?? "");
   const [selectedChurch, setSelectedChurch] = useState(churchId ?? "");
   const [filtersOpen, setFiltersOpen] = useState(Boolean(topic || churchId));
+  const history = useRecentSearches(owner);
+  const submitting = useRef(false);
   // Keyed by the server query so Back and new searches restore their own input.
   return (
-    <form action="/platform/search" method="get" role="search" className="mt-6">
+    <form
+      action="/platform/search"
+      method="get"
+      role="search"
+      className="mt-6"
+      onSubmit={async (event) => {
+        if (!owner || !history.state?.enabled) return;
+        event.preventDefault();
+        if (submitting.current) return;
+        submitting.current = true;
+        const form = event.currentTarget;
+        const destination = new URL(form.action);
+        const fields = new URLSearchParams();
+        new FormData(form).forEach((entry, name) => {
+          if (typeof entry === "string") fields.append(name, entry);
+        });
+        destination.search = fields.toString();
+        // Recording is optional: storage/sign-in failures must not break Search.
+        await Promise.race([
+          history.run({ action: "record", q: value, kind }),
+          new Promise<void>((resolve) => window.setTimeout(resolve, 1500))
+        ]);
+        submitting.current = false;
+        window.location.assign(destination.href);
+      }}
+    >
       <label htmlFor="explore-search" className="block font-semibold">
         Search the community
       </label>
@@ -157,6 +187,7 @@ export function ExploreSearchForm({
       <p className="text-sm text-gc-muted">
         Church search uses the first 100 characters.
       </p>
+      {owner && <RecentSearches history={history} />}
     </form>
   );
 }

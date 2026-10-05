@@ -53,7 +53,8 @@ export default async function PlatformSearchPage({
             Explore topic communities
           </Link>
           <ExploreSearchForm
-            key={JSON.stringify(query)}
+            key={`${user?.id ?? "guest"}:${JSON.stringify(query)}`}
+            owner={user?.id ?? null}
             query={query.q}
             category={query.kind}
             topic={query.topic}
