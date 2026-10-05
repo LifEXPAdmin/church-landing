@@ -5,12 +5,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { socialRequest, SocialClientError } from "@/lib/platform/social-client";
 import { useUnsavedSocialWork } from "./use-unsaved-social-work";
 import { PostContentNote } from "./post-content-note";
+import type { PostResourceCard } from "@/lib/platform/post-resource-attachments";
 type Collection = { id: string; version: number; name: string };
 type Saved = {
   id: string;
   version: number;
   collectionId: string | null;
   available: boolean;
+  resource?: PostResourceCard;
   post?: {
     id: string;
     excerpt: string;
@@ -187,7 +189,7 @@ export function SavedLibrary({
       await refresh();
       setMessage(
         command.operation === "delete-collection"
-          ? "Collection deleted. Saved posts are now unfiled."
+          ? "Collection deleted. Bookmarks are now unfiled."
           : "Private changes saved."
       );
     } catch (e) {
@@ -231,10 +233,10 @@ export function SavedLibrary({
     ? collections?.items.find((c) => c.id === editing.id)
     : null;
   return (
-    <section aria-label="Private saved posts" className="space-y-4">
+    <section aria-label="Private bookmarks" className="space-y-4">
       <p>
-        Collections are private to your account. Saved posts remain subject to
-        their current audience and availability.
+        Bookmarks are private. Saving an item does not change its permissions,
+        reserve it, sign you up or download it.
       </p>
       <p role="status">{message}</p>
       <button
@@ -250,7 +252,7 @@ export function SavedLibrary({
         <>
           <form
             aria-label="Collection name"
-            className="space-y-2 rounded border p-3"
+            className="space-y-2 rounded border p-3 max-[359px]:px-[12px]"
             onSubmit={(e) => {
               e.preventDefault();
               command(
@@ -343,7 +345,7 @@ export function SavedLibrary({
               Retry same private change
             </button>
           )}
-          <nav aria-label="Saved post views" className="flex flex-wrap gap-2">
+          <nav aria-label="Bookmark views" className="flex flex-wrap gap-2">
             <Link
               prefetch={false}
               className="gc-button gc-button-quiet"
@@ -370,7 +372,7 @@ export function SavedLibrary({
               >
                 <Link
                   prefetch={false}
-                  className="min-w-0 flex-1 break-words underline"
+                  className="min-w-0 basis-full break-words underline"
                   href={`/platform/saved?collectionId=${encodeURIComponent(c.id)}`}
                 >
                   {c.name}
@@ -394,7 +396,7 @@ export function SavedLibrary({
                   onClick={() => {
                     if (
                       window.confirm(
-                        "Delete this collection? Its saved posts move to Unfiled; the source posts are unchanged."
+                        "Delete this collection? Its bookmarks move to Unfiled; the original items are unchanged."
                       )
                     )
                       command("delete-collection", {
@@ -421,7 +423,7 @@ export function SavedLibrary({
           <section aria-label="Saved items" className="space-y-3">
             <h2 className="text-2xl">
               {collectionId === "unfiled"
-                ? "Unfiled posts"
+                ? "Unfiled bookmarks"
                 : collectionId
                   ? (collections?.items.find((c) => c.id === collectionId)
                       ?.name ?? "Selected collection")
@@ -465,7 +467,7 @@ function SavedItem({
 }) {
   const [destination, setDestination] = useState(row.collectionId ?? "");
   return (
-    <article data-saved-id={row.id} className="space-y-3 rounded border p-3">
+    <article data-saved-id={row.id} className="space-y-3 rounded border p-3 max-[359px]:px-[12px]">
       {row.available && row.post ? (
         <>
           <p className="text-sm text-gc-muted">{row.post.type.toLowerCase()}</p>
@@ -475,13 +477,32 @@ function SavedItem({
             Open saved post
           </Link>
         </>
+      ) : row.available && row.resource ? (
+        <>
+          <p className="text-sm text-gc-muted">
+            {
+              {
+                eventOccurrence: "Event",
+                exchangeListing: "Listing",
+                mediaCatalogItem: "Media",
+                volunteerOpportunity: "Volunteer opportunity"
+              }[row.resource.kind]
+            }
+            {" · "}
+            {row.resource.state}
+          </p>
+          <p className="break-words">{row.resource.title}</p>
+          <Link prefetch={false} className="underline" href={row.resource.href}>
+            Open bookmarked item
+          </Link>
+        </>
       ) : (
-        <p>Saved post unavailable</p>
+        <p>Bookmarked item unavailable</p>
       )}
       <label className="block">
         Collection
         <select
-          aria-label="Saved post collection"
+          aria-label="Bookmark collection"
           className="ml-2 max-w-full rounded border p-2"
           disabled={disabled}
           value={destination}
@@ -505,6 +526,7 @@ function SavedItem({
         <button
           type="button"
           className="gc-button gc-button-quiet"
+          aria-label="Move bookmark"
           disabled={disabled || destination === (row.collectionId ?? "")}
           onClick={() =>
             command("move-item", {
@@ -514,17 +536,18 @@ function SavedItem({
             })
           }
         >
-          Move saved post
+          Move
         </button>
         <button
           type="button"
           className="gc-button gc-button-quiet"
+          aria-label="Remove bookmark"
           disabled={disabled}
           onClick={() =>
             command("remove-item", { id: row.id, expectedVersion: row.version })
           }
         >
-          Remove saved post
+          Remove
         </button>
       </div>
     </article>

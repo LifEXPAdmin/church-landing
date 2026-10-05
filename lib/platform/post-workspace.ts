@@ -1,9 +1,13 @@
 import { groupPostDestination } from "./group-post-policy";
 import {
   postResourceReferences,
+  resourceKey,
   type PostResourceReference
 } from "./post-resource-input";
-import { validatePostResourcesIn } from "./post-resource-attachments";
+import {
+  resolvePostResourcesIn,
+  validatePostResourcesIn
+} from "./post-resource-attachments";
 import { requireGroupParticipation } from "./group-policy";
 import { personMentionIds } from "./person-mentions";
 import { postInteractionIdIn } from "./post-reads";
@@ -232,6 +236,8 @@ export function readPostWorkspace(
     view: string;
     id?: unknown;
     postId?: unknown;
+    resourceKind?: unknown;
+    resourceId?: unknown;
     collectionId?: unknown;
     after?: unknown;
   }
@@ -306,6 +312,26 @@ export function readPostWorkspace(
             ...paging
           })
         );
+      if (query.view === "saved-resource-status") {
+        const reference = postResourceReferences([
+          { kind: query.resourceKind, id: query.resourceId }
+        ])[0];
+        const visible = await resolvePostResourcesIn(tx, draftContext, [
+          reference
+        ]);
+        if (!visible.has(resourceKey(reference)))
+          throw new PortalError(404, "Resource unavailable.");
+        return {
+          item: await tx.savedPostItem.findFirst({
+            where: {
+              ownerId,
+              resourceKind: reference.kind,
+              resourceId: reference.id
+            },
+            select: { id: true, version: true, collectionId: true }
+          })
+        };
+      }
       if (query.view === "saved-status") {
         const requested = postId(query.postId);
         const entry = await tx.platformPost.findUnique({
@@ -347,7 +373,18 @@ export function readPostWorkspace(
         },
         ...paging
       });
-      const context = await postContext(tx, ownerId);
+      const context = draftContext;
+      const references = rows.flatMap((row) => {
+        if (!row.resourceKind || !row.resourceId || row.postId) return [];
+        try {
+          return postResourceReferences([
+            { kind: row.resourceKind, id: row.resourceId }
+          ]);
+        } catch {
+          return [];
+        }
+      });
+      const resources = await resolvePostResourcesIn(tx, context, references);
       const visible = await tx.platformPost.findMany({
         where: {
           AND: [
@@ -367,11 +404,16 @@ export function readPostWorkspace(
       return page(
         rows.map((row) => {
           const post = visible.find((p) => p.id === row.postId);
+          const resource =
+            !row.postId && row.resourceKind && row.resourceId
+              ? resources.get(`${row.resourceKind}:${row.resourceId}`)
+              : undefined;
           return {
             id: row.id,
             version: row.version,
             collectionId: row.collectionId,
-            available: !!post,
+            available: !!post || !!resource,
+            ...(resource ? { resource } : {}),
             ...(post
               ? {
                   post: {
@@ -422,6 +464,7 @@ export async function postWorkspaceCommand(
           "payload",
           "name",
           "postId",
+          "resource",
           "collectionId",
           "linkReceipt",
           "keepLinkPreview"
@@ -442,11 +485,17 @@ export async function postWorkspaceCommand(
       "rename-collection",
       "delete-collection",
       "save-item",
+      "save-resource",
       "move-item",
       "remove-item"
     ].includes(String(op))
   )
     throw new PortalError(400, "Choose a supported workspace action.");
+  if (
+    (op === "save-resource" && input.postId !== undefined) ||
+    (op !== "save-resource" && input.resource !== undefined)
+  )
+    throw new PortalError(400, "Use one supported bookmark reference.");
   const mutationId = key(input.mutationId),
     digest = fingerprint(input);
   const checkTopicReceipt = async (
@@ -454,6 +503,16 @@ export async function postWorkspaceCommand(
     ownerId: string,
     result: Receipt
   ) => {
+    if (op === "save-resource") {
+      const reference = postResourceReferences([input.resource])[0];
+      const visible = await resolvePostResourcesIn(
+        tx,
+        await postContext(tx, ownerId),
+        [reference]
+      );
+      if (!visible.has(resourceKey(reference)))
+        throw new PortalError(404, "Resource unavailable.");
+    }
     if (op === "save-draft") {
       const payload = privateDraftPayload(input.payload);
       requireGroupParticipation(
@@ -768,7 +827,51 @@ export async function postWorkspaceCommand(
             : key(input.collectionId);
         if (collectionId && op !== "remove-item")
           await ownedCollection(tx, ownerId, collectionId);
-        if (op === "save-item") {
+        if (op === "save-resource") {
+          const reference = postResourceReferences([input.resource])[0];
+          const visible = await resolvePostResourcesIn(
+            tx,
+            await postContext(tx, ownerId),
+            [reference]
+          );
+          if (!visible.has(resourceKey(reference)))
+            throw new PortalError(404, "Resource unavailable.");
+          const row = await tx.savedPostItem.findUnique({
+            where: {
+              ownerId_resourceKind_resourceId: {
+                ownerId,
+                resourceKind: reference.kind,
+                resourceId: reference.id
+              }
+            }
+          });
+          expected(input.expectedVersion, row?.version ?? 0);
+          if (row && row.collectionId !== collectionId)
+            throw new PortalError(
+              409,
+              "This resource is already bookmarked. Use Move to change its collection."
+            );
+          if (
+            !row &&
+            (await tx.savedPostItem.count({ where: { ownerId } })) >= 2000
+          )
+            throw new PortalError(409, "Keep up to 2,000 bookmarks.");
+          const saved =
+            row ??
+            (await tx.savedPostItem.create({
+              data: {
+                ownerId,
+                resourceKind: reference.kind,
+                resourceId: reference.id,
+                collectionId
+              }
+            }));
+          result = {
+            id: saved.id,
+            version: saved.version,
+            message: "Resource bookmarked privately."
+          };
+        } else if (op === "save-item") {
           const context = await postContext(tx, ownerId);
           const id = await postInteractionIdIn(
             tx,
@@ -796,7 +899,7 @@ export async function postWorkspaceCommand(
             !row &&
             (await tx.savedPostItem.count({ where: { ownerId } })) >= 2000
           )
-            throw new PortalError(409, "Keep up to 2,000 saved posts.");
+            throw new PortalError(409, "Keep up to 2,000 bookmarks.");
           const saved =
             row ??
             (await tx.savedPostItem.create({

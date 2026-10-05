@@ -1,5 +1,6 @@
 import { RegionalEventTime, RegionalWallTime } from "./regional-presentation";
 import { PublicShareControls } from "./public-share-controls";
+import { SavePostControl } from "./save-post-control";
 import Link from "next/link";
 import { readPost } from "@/lib/platform/post-session";
 import { CommentThread } from "./comment-thread";
@@ -117,6 +118,14 @@ export async function CalendarEventPage({
               </a>
             )}
             <PublicShareControls kind="event" id={event.id} />
+            {event.access !== "BUSY" && (
+              <SavePostControl
+                key={`${user?.id ?? "guest"}:${event.id}`}
+                postId={event.id}
+                resourceKind="eventOccurrence"
+                accountId={user?.id ?? null}
+              />
+            )}
             {privateData && (
               <Link
                 className={portalLinkClass}

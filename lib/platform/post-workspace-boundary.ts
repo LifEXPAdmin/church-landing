@@ -59,6 +59,8 @@ export async function handlePostWorkspaceRequest(
           view: q.get("view") ?? "drafts",
           id: q.get("id"),
           postId: q.get("postId"),
+          resourceKind: q.get("resourceKind"),
+          resourceId: q.get("resourceId"),
           collectionId: q.get("collectionId"),
           after: q.get("after")
         }),

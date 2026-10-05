@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { PlatformShell } from "./platform-shell";
+import { SavePostControl } from "./save-post-control";
 import { PrivateSnapshotGuard } from "./private-snapshot-guard";
 import { TopicReadBoundary } from "./topic-read-boundary";
 import { RegionalTime } from "./regional-presentation";
@@ -360,6 +361,12 @@ export async function VolunteerPage({
         body = (
           <div className="space-y-5">
             <Opportunity row={result.opportunity} detail />
+            <SavePostControl
+              key={`${result.ownerId ?? "guest"}:${result.opportunity.id}`}
+              postId={result.opportunity.id}
+              resourceKind="volunteerOpportunity"
+              accountId={result.ownerId ?? null}
+            />
             <div className="flex flex-wrap gap-4">
               {result.canEdit && (
                 <Link

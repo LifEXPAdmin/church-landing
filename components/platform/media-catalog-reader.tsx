@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { socialRequest } from "@/lib/platform/social-client";
 import type { MediaPublic } from "@/lib/platform/media-catalog-reads";
 import { MediaTopicLinks } from "./media-topic-links";
+import { SavePostControl } from "./save-post-control";
 import {
   scriptureLabel,
   type ScriptureRange
@@ -66,6 +67,12 @@ export function MediaReader({
               {item.ownerChurch?.name ?? item.owner?.name ?? "Publisher"}
             </p>
           </header>
+          <SavePostControl
+            key={`${owner ?? "guest"}:${item.id}`}
+            postId={item.id}
+            resourceKind="mediaCatalogItem"
+            accountId={owner}
+          />
           <p className="whitespace-pre-wrap">{item.description}</p>
           {Array.isArray(item.scriptureRanges) &&
             item.scriptureRanges.length > 0 && (

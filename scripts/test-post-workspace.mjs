@@ -129,8 +129,13 @@ try {
       ],
       url
     );
+  // Keep an existing bookmark and collection intact through the additive migration.
+  sql(["-c", `INSERT INTO "SavedPostCollection" (id,"ownerId",name,"updatedAt") VALUES ('fixture-retained-collection','fixture-upgrade','Retained collection',CURRENT_TIMESTAMP); INSERT INTO "SavedPostItem" (id,"ownerId","postId","collectionId","updatedAt") VALUES ('fixture-retained-bookmark','fixture-upgrade','fixture-retained-post','fixture-retained-collection',CURRENT_TIMESTAMP)`]);
+  const bookmarkBefore = sql(["-Atc", `SELECT (to_jsonb(t) - ARRAY['resourceKind','resourceId'])::text FROM "SavedPostItem" t WHERE id='fixture-retained-bookmark'`]).trim();
   const prior = fingerprint();
   sql(["-f", `prisma/migrations/${migrations.at(-1)}/migration.sql`]);
+  if (bookmarkBefore !== sql(["-Atc", `SELECT (to_jsonb(t) - ARRAY['resourceKind','resourceId'])::text FROM "SavedPostItem" t WHERE id='fixture-retained-bookmark'`]).trim())
+    throw Error("Additive migration changed existing bookmark data");
   if (prior !== fingerprint())
     throw Error(
       "Additive migration changed existing account/post/Exchange data"
@@ -145,7 +150,9 @@ try {
   console.log(
     `PASS: ${migrations.length} migrations and populated upgrade preservation`
   );
-  const files = process.argv.includes("--following-lists")
+  const files = process.argv.includes("--saved-resources")
+    ? ["tests/saved-resources.test.ts", "tests/post-workspace.test.ts", "tests/post-resource-attachments.test.ts"]
+    : process.argv.includes("--following-lists")
     ? ["tests/following-lists.test.ts", "tests/discovery-feeds.test.ts", "tests/four-feeds.test.ts"]
     : process.argv.includes("--exchange-handoffs")
     ? ["tests/exchange-handoff-input.test.ts", "tests/exchange-handoffs.test.ts", "tests/notification-consumer.test.ts"]

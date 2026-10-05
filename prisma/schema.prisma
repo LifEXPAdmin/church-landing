@@ -2973,6 +2973,8 @@ model SavedPostItem {
   id String @id @default(cuid())
   ownerId String
   postId String?
+  resourceKind String?
+  resourceId String?
   collectionId String?
   version Int @default(1)
   createdAt DateTime @default(now())
@@ -2981,6 +2983,7 @@ model SavedPostItem {
   post PlatformPost? @relation(fields: [postId], references: [id], onDelete: SetNull)
   collection SavedPostCollection? @relation(fields: [ownerId, collectionId], references: [ownerId, id], onDelete: Restrict)
   @@unique([ownerId, postId])
+  @@unique([ownerId, resourceKind, resourceId])
   @@index([ownerId, collectionId, id])
 }
 

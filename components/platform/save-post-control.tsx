@@ -17,13 +17,16 @@ import {
 } from "@/lib/platform/social-client";
 import { accountEntryHref } from "@/lib/platform/account-entry";
 import { useUnsavedSocialWork } from "./use-unsaved-social-work";
+import type { PostResourceKind } from "@/lib/platform/post-resource-input";
 type Item = { id: string; version: number; collectionId: string | null };
 export function SavePostControl({
   postId,
-  accountId
+  accountId,
+  resourceKind
 }: {
   postId: string;
   accountId: string | null;
+  resourceKind?: PostResourceKind;
 }) {
   const router = useRouter();
   const privateScope = usePrivatePostWorkspace(),
@@ -71,7 +74,15 @@ export function SavePostControl({
         return;
       }
       const r = await socialRequest<{ item: Item | null }>(
-        `/api/platform/post-workspace?view=saved-status&postId=${encodeURIComponent(postId)}`,
+        `/api/platform/post-workspace?${new URLSearchParams(
+          resourceKind
+            ? {
+                view: "saved-resource-status",
+                resourceKind,
+                resourceId: postId
+              }
+            : { view: "saved-status", postId }
+        )}`,
         undefined,
         actor
       );
@@ -102,7 +113,7 @@ export function SavePostControl({
         setBusy(false);
       }
     }
-  }, [postId, router, privateOwner, privateAccess]);
+  }, [postId, resourceKind, router, privateOwner, privateAccess]);
   useEffect(() => {
     if (!accountId || active || !root.current) return;
     const observer = new IntersectionObserver((entries) => {
@@ -214,10 +225,14 @@ export function SavePostControl({
       {!accountId || owner === null ? (
         <Link
           className="gc-post-action"
-          aria-label="Sign in to bookmark this post"
+          aria-label={
+            resourceKind
+              ? "Sign in to bookmark this resource"
+              : "Sign in to bookmark this post"
+          }
           href={accountEntryHref(
             "join",
-            `/platform/posts/${postId}`,
+            `/platform/${resourceKind ? { eventOccurrence: "events", exchangeListing: "exchange", mediaCatalogItem: "media", volunteerOpportunity: "serve" }[resourceKind] : "posts"}/${postId}`,
             "account"
           )}
         >
@@ -235,10 +250,18 @@ export function SavePostControl({
           onClick={() =>
             void send(
               JSON.stringify({
-                operation: item ? "remove-item" : "save-item",
+                operation: item
+                  ? "remove-item"
+                  : resourceKind
+                    ? "save-resource"
+                    : "save-item",
                 mutationId: crypto.randomUUID(),
                 expectedVersion: item?.version ?? 0,
-                ...(item ? { id: item.id } : { postId })
+                ...(item
+                  ? { id: item.id }
+                  : resourceKind
+                    ? { resource: { kind: resourceKind, id: postId } }
+                    : { postId })
               })
             )
           }
