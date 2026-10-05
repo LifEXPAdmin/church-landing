@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { ImageView } from "@/lib/platform/media";
 import { socialRequest } from "@/lib/platform/social-client";
 import { useReadVisibility } from "./read-visibility";
+import { useReadingPreferences } from "./reading-preferences";
 
 export function PhotoViewer({
   source,
@@ -22,6 +23,8 @@ export function PhotoViewer({
   removeWhenHidden?: boolean;
 }) {
   const sourceVisible = useReadVisibility();
+  const { preferences } = useReadingPreferences();
+  const [largerPhoto, setLargerPhoto] = useState(false);
   const titleId = useId(),
     dialog = useRef<HTMLDialogElement>(null);
   const closeRef = useRef(onClose),
@@ -38,6 +41,7 @@ export function PhotoViewer({
     setImages([]);
     setStatus("Checking photo access…");
     setFailed(null);
+    setLargerPhoto(false);
     try {
       const result = await socialRequest<{ images: ImageView[] }>(
         source,
@@ -122,10 +126,12 @@ export function PhotoViewer({
       setSelected(next.id);
       setZoom(1);
       setFailed(null);
+      setLargerPhoto(false);
     }
   }
   const touch = useRef<{ x: number; y: number } | null>(null);
-  const variant = image?.variants.large;
+  const smallPreview = preferences.reduceData && !largerPhoto;
+  const variant = image?.variants[smallPreview ? "thumb" : "large"];
   // Support keeps the viewer controller and its single history entry mounted
   // while removing private media presentation during current-access checks.
   if (removeWhenHidden && !sourceVisible) return null;
@@ -166,6 +172,30 @@ export function PhotoViewer({
             ? "This photo is no longer available."
             : `Photo ${index + 1} of ${images.length}`)}
       </p>
+      {image && preferences.reduceData && (
+        <div className="flex flex-wrap items-center gap-3">
+          <p className="text-sm">
+            {smallPreview
+              ? "Data saver is showing a small preview."
+              : "You selected the larger photo."}
+          </p>
+          {smallPreview && failed !== image.id && (
+            <button
+              type="button"
+              className="gc-button gc-button-quiet"
+              onClick={() => setLargerPhoto(true)}
+            >
+              Load larger photo
+            </button>
+          )}
+          {smallPreview && image.variants.large?.bytes > 0 && (
+            <span className="text-sm text-gc-muted">
+              About {Math.max(1, Math.ceil(image.variants.large.bytes / 1024))}{" "}
+              KB
+            </span>
+          )}
+        </div>
+      )}
       {image && variant && failed !== image.id ? (
         <figure className="min-w-0 space-y-3">
           <div

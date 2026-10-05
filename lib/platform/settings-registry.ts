@@ -207,7 +207,7 @@ export const settingsRegistry: readonly SettingRegistration[] = Object.freeze([
   ),
   entry(
     "media.quality", "media", "Quality and data use",
-    "Data saver loads smaller photos on supported pages until you choose to open them. It applies to this browser. Opening a larger photo can use more data. Video quality choices are not available yet.",
+    "Data saver loads smaller previews, including in the photo viewer. Choose Load larger photo when you need more detail. It applies to this browser. Video quality choices are not available yet.",
     ["bandwidth", "data saver", "photo quality", "mobile data"],
     { href: "/platform/settings/media" },
     linked("reading-preferences.ts browser-local reduceData"),
