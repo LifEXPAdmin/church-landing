@@ -242,7 +242,14 @@ export function listVolunteerOpportunities(
         recoveryRequired: false,
         closedAt: null,
         ...(query.after ? { id: { gt: postId(query.after) } } : {}),
-        ...(q ? { title: { contains: q, mode: "insensitive" } } : {}),
+        ...(q
+          ? {
+              title: {
+                contains: q.replace(/[\\%_]/g, "\\$&"),
+                mode: "insensitive"
+              }
+            }
+          : {}),
         post: {
           AND: [
             postReadableWhere(context),

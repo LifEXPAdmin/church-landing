@@ -176,10 +176,30 @@ export function listGroups(
           ? [
               {
                 OR: [
-                  { name: { contains: q, mode: "insensitive" as const } },
-                  { purpose: { contains: q, mode: "insensitive" as const } },
-                  { area: { contains: q, mode: "insensitive" as const } },
-                  { topic: { contains: q, mode: "insensitive" as const } }
+                  {
+                    name: {
+                      contains: q.replace(/[\\%_]/g, "\\$&"),
+                      mode: "insensitive" as const
+                    }
+                  },
+                  {
+                    purpose: {
+                      contains: q.replace(/[\\%_]/g, "\\$&"),
+                      mode: "insensitive" as const
+                    }
+                  },
+                  {
+                    area: {
+                      contains: q.replace(/[\\%_]/g, "\\$&"),
+                      mode: "insensitive" as const
+                    }
+                  },
+                  {
+                    topic: {
+                      contains: q.replace(/[\\%_]/g, "\\$&"),
+                      mode: "insensitive" as const
+                    }
+                  }
                 ]
               }
             ]
