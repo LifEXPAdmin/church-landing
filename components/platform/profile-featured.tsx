@@ -239,7 +239,7 @@ export function ProfileFeaturedResources({
   );
   return (
     <div ref={root} className="min-h-px" data-profile-featured="reader">
-      {visible && (
+      {visible && (cards.length > 0 || !!notice) && (
         <section
           className="gc-profile-section"
           aria-labelledby="profile-featured-heading"

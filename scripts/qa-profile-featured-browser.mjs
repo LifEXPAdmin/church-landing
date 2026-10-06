@@ -3,6 +3,7 @@ import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { createRequire } from "node:module";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
+import { resolve } from "node:path";
 import { sessionCookieFixtureName } from "./session-cookie-fixture.mjs";
 const fixture = process.argv[2];
 assert.ok(fixture);
@@ -16,13 +17,13 @@ Object.assign(process.env, {
   NEXT_PUBLIC_SITE_URL: config.origin,
   ACCOUNT_TEST_ISOLATED: "1",
   ACCOUNT_DELIVERY_MODE: "test-sink",
-  ACCOUNT_TEST_SINK_DIR: process.cwd() + "/" + fixture + "/sink",
+  ACCOUNT_TEST_SINK_DIR: resolve(fixture, "sink"),
   NODE_ENV: "test",
   VERCEL: "",
   PRIVILEGED_MFA_MODE: "off"
 });
 const { PrismaClient } = await import("@prisma/client");
-const { featuredFixture } =
+const { featuredFixture, saveFeatured } =
   await import("../tests/profile-featured-fixture.ts");
 const { getProfileEditor } = await import("../lib/platform/profiles.ts");
 const db = new PrismaClient();
@@ -97,6 +98,44 @@ const picker = () =>
     exact: true
   });
 const reader = () => page.locator('[data-profile-featured="reader"]');
+const openEmptyReader = async () => {
+  let resourceResponse;
+  const currentIdentity = page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    if (
+      url.pathname === "/api/platform/profile" &&
+      url.searchParams.get("view") === "featured-resources" &&
+      url.searchParams.get("username") === f.owner.username
+    )
+      resourceResponse = response;
+    return (
+      !!resourceResponse &&
+      url.pathname === "/api/platform/profile" &&
+      url.searchParams.get("view") === "identity" &&
+      response.status() === 200
+    );
+  });
+  await go("/platform/profile/" + f.owner.username);
+  await reader().scrollIntoViewIfNeeded();
+  await currentIdentity;
+  assert.equal(resourceResponse.status(), 200);
+  assert.deepEqual((await resourceResponse.json()).resources, []);
+  await page.evaluate(
+    () =>
+      new Promise((done) =>
+        requestAnimationFrame(() => requestAnimationFrame(done))
+      )
+  );
+  assert.equal(
+    await reader()
+      .getByRole("heading", {
+        name: "Featured resources",
+        exact: true
+      })
+      .count(),
+    0
+  );
+};
 const waitFor = async (work) => {
   for (let i = 0; i < 100; i++) {
     if (await work()) return;
@@ -128,6 +167,7 @@ const nativeOtherWindow = async () => {
 };
 try {
   await signIn(f.owner);
+  await openEmptyReader();
   await go("/platform/profile/me");
   await picker().waitFor();
   await picker().scrollIntoViewIfNeeded();
@@ -251,6 +291,32 @@ try {
   ok(
     "Different-member and generic member preview omit inaccessible church resource titles and links"
   );
+  await saveFeatured(db, f.owner, [f.references[1]]);
+  await signIn(f.outsider);
+  await openEmptyReader();
+  await db.platformPost.update({
+    where: { id: f.post.id },
+    data: { audience: "PUBLIC" }
+  });
+  await page.evaluate(() =>
+    window.dispatchEvent(new Event("social-relationships-changed"))
+  );
+  await reader()
+    .getByRole("link", { name: f.opportunity.title, exact: true })
+    .waitFor();
+  await db.platformPost.update({
+    where: { id: f.post.id },
+    data: { audience: "CHURCH" }
+  });
+  await saveFeatured(db, f.owner, [
+    f.references[0],
+    f.references[2],
+    f.references[1]
+  ]);
+  ok(
+    "Empty and fully inaccessible collections stay hidden; a newly permitted source appears on a fresh current read"
+  );
+
   await signIn(f.member);
   await go("/platform/profile/" + f.owner.username);
   await reader().scrollIntoViewIfNeeded();
@@ -356,7 +422,7 @@ try {
     path: output + "/editor-320-enlarged.png",
     fullPage: true
   });
-  await page.screenshot({path:output+"/editor-320-viewport.png"});
+  await page.screenshot({ path: output + "/editor-320-viewport.png" });
   ok("Featured controls fit a 320-pixel enlarged-text viewport");
   assert.deepEqual(errors, []);
   assert.deepEqual(external, []);
