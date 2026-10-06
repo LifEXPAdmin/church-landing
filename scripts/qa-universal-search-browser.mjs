@@ -252,6 +252,88 @@ try {
     acceptedRules: true,
     leaderDisclosure: true
   });
+  // Reproduce the anonymous ABA boundary using a real response, not mocked data.
+  await page.goto("about:blank");
+  await context.clearCookies();
+  await go(query("listings", privateListing.title));
+  await resultsRegion()
+    .getByText("No matching listings available to you.", { exact: true })
+    .waitFor();
+  let intercepted = false;
+  const raceRoute = async (route) => {
+    if (intercepted) return route.continue();
+    intercepted = true;
+    await context.addCookies([
+      {
+        name: sessionCookieFixtureName(config.origin),
+        value: reader.token,
+        url: config.origin,
+        secure: true,
+        httpOnly: true,
+        sameSite: "Lax"
+      }
+    ]);
+    const reply = await route.fetch({
+      headers: {
+        ...route.request().headers(),
+        cookie: `${sessionCookieFixtureName(config.origin)}=${reader.token}`
+      }
+    });
+    const payload = await reply.json();
+    assert.ok(
+      payload.items.some((item) => item.id === privateListing.id),
+      "The held real response exercises the private reader"
+    );
+    await context.clearCookies();
+    await route.fulfill({ response: reply });
+  };
+  await page.route("**/api/platform/search?**", raceRoute);
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await page.waitForFunction(() => {
+    const region = document.querySelector('[aria-label="Search results"]');
+    return region && !region.textContent.includes("Loading");
+  });
+  // Wait for both identity reads and held response settlement, with a bounded UI check.
+  await page.waitForFunction(
+    () =>
+      document.querySelector("[data-search-id]") ||
+      document.querySelector('[role="alert"]')
+  );
+  const anonymousPrivateVisible =
+    (await page.locator(`[data-search-id="${privateListing.id}"]`).count()) > 0;
+  await page.unroute("**/api/platform/search?**", raceRoute);
+  await go(query("listings", marker) + "&q=unused");
+  await page.waitForFunction(
+    () =>
+      document.querySelector("[data-search-id]") ||
+      document.querySelector('[role="alert"]')
+  );
+  const duplicateQueryBrowsed =
+    (await page.locator("[data-search-id]").count()) > 0;
+  writeFileSync(
+    output + "/account-url-boundary.json",
+    JSON.stringify(
+      {
+        anonymousPrivateVisible,
+        duplicateQueryBrowsed,
+        intercepted,
+        source: process.env.VERCEL_GIT_COMMIT_SHA
+      },
+      null,
+      2
+    )
+  );
+  assert.equal(
+    anonymousPrivateVisible,
+    false,
+    "Guest to signed-in reader to guest must not show the reader's private response"
+  );
+  assert.equal(
+    duplicateQueryBrowsed,
+    false,
+    "Ambiguous URL must not turn into a browse query"
+  );
+  ok("Anonymous ABA response and ambiguous page URL stay concealed");
   await signIn(other);
   const response = await go(query("listings", marker));
   assert.ok(
