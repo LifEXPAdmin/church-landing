@@ -464,8 +464,8 @@ try {
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await page.waitForURL(config.origin + mediaPath);
   const unavailableBody = await (await unavailableRead).json();
-  assert.equal(typeof unavailableBody.error, "string");
-  await page.getByText(unavailableBody.error, { exact: true }).waitFor();
+  assert.equal(typeof unavailableBody.message, "string");
+  await page.getByText(unavailableBody.message, { exact: true }).waitFor();
   assert.equal(
     await page
       .getByRole("heading", { name: fields.title, exact: true })
