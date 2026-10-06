@@ -51,4 +51,7 @@ require visible, online, focused state before dispatch and before settling; pass
 background hints cannot restore history. The native two-window regression is
 `scripts/qa-recent-search-foreground-browser.mjs` with `RECENT_FOREGROUND_HEADED=1`
 and an isolated HTTPS fixture directory. Playwright's forced-focus emulation is
-disabled for that check. Final browser acceptance is pending.
+disabled for that check. This native regression, all 11 new-resource and eight legacy search production
+browser groups, and all nine original recent-search component groups pass on
+application `91fdaa3`. The full build and 28 database/input/storage checks also pass.
+The feature remains a tested local handoff pending the combined release gates.

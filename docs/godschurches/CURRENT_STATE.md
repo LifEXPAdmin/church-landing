@@ -1,3 +1,24 @@
+## Universal resource search and recent-history follow-through locally verified, 6 October 2026 UTC
+
+Application `91fdaa351f7969b60ff2d0718afc6b5bf2bcad0e` extends Explore with listings,
+media, volunteer opportunities and listed groups through current canonical readers.
+Signed continuation preserves source permissions and filters; minimal cards carry
+actual reader identity, and the page/API share strict unambiguous input validation.
+Literal wildcard matching and native unfocused-window history refresh are repaired.
+
+The full production build `_f2p_aCP9yReEqDSAI0FU`, 28 database/input/storage checks,
+124-migration populated upgrade and workspace dump/restore, 11 new-resource browser
+groups, native two-window history acceptance, eight legacy-search browser groups
+and nine recent-search component groups pass locally. QA-only capture follow-ups
+leave application code unchanged. [Search acceptance](UNIVERSAL_SEARCH.md) gives
+scope, reproductions and limits. No new feature dependency or schema change.
+
+This branch starts from the tested saved-resource/recent-search foundation and is
+ready for integration. It is not merged or live. Existing source-security, combined
+release, recovery, base migration and canonical deployment gates remain open.
+Production writes and sends were zero. Other prepared work stays in its original
+branches for release reconciliation; this entry does not assert its integration.
+
 ## Topic management and followed discussions verified live, 28 September 2026 UTC
 
 Version **2026.09.28.42**, source `7e6ed64cded8d19b1de4442265c18047df2298d9`,
