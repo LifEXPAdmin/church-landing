@@ -10,6 +10,8 @@ import {
 } from "./seed-portal";
 import {
   communitySearch as search,
+  parseCommunitySearchInput,
+  searchUrlInput,
   type CommunitySearchInput
 } from "../lib/platform/community-search";
 import {
@@ -153,7 +155,13 @@ async function explore(
   actor: PortalActor | null = null,
   rest: CommunitySearchInput = {}
 ) {
-  return search(db, actor?.token, { kind, q, ...rest }, actor?.id);
+  const page = await search(db, actor?.token, { kind, q, ...rest }, actor?.id);
+  assert.equal(
+    page.ownerId,
+    actor?.id ?? null,
+    "Response identifies the actual resource read owner"
+  );
+  return page;
 }
 function minimal(
   result: Awaited<ReturnType<typeof search>>,
@@ -800,5 +808,45 @@ test("resource input rejects incompatible geography and native query limits with
     () =>
       explore("listings", "fictional", null, { country: "US", radiusKm: "10" }),
     400
+  );
+});
+
+test("page and API parse the same unambiguous full search URL", () => {
+  const parse = (text: string) =>
+    parseCommunitySearchInput(searchUrlInput(new URLSearchParams(text)));
+  for (const text of [
+    "kind=listings&q=one&q=two",
+    "kind=listings&kind=media",
+    "kind=unknown",
+    "kind=listings&unknown=value",
+    new URLSearchParams({
+      kind: "listings",
+      q: "x".repeat(120) + " ".repeat(80) + "suffix"
+    }).toString()
+  ])
+    assert.throws(
+      () => parse(text),
+      (error: unknown) => error instanceof PortalError && error.status === 400
+    );
+  const after = "a".repeat(500);
+  assert.deepEqual(
+    parse(
+      new URLSearchParams({
+        kind: "listings",
+        q: "books",
+        country: "US",
+        placeId: "4887398",
+        radiusKm: "25",
+        after
+      }).toString()
+    ),
+    {
+      kind: "listings",
+      q: "books",
+      country: "US",
+      placeId: "4887398",
+      radiusKm: "25",
+      after
+    }
   );
 });

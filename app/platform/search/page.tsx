@@ -5,9 +5,11 @@ import { CommunitySearchResults } from "@/components/platform/community-search-r
 import { PlatformShell } from "@/components/platform/platform-shell";
 import { getCurrentPlatformUser } from "@/lib/platform/session";
 import {
-  searchCategories,
-  type SearchCategory
-} from "@/lib/platform/search-navigation";
+  parseCommunitySearchInput,
+  searchUrlInput
+} from "@/lib/platform/community-search";
+import { PortalError } from "@/lib/platform/portal-policy";
+import type { SearchNavigation } from "@/lib/platform/search-navigation";
 export const metadata: Metadata = {
   title: { absolute: "Explore | God’s Churches" },
   description:
@@ -17,39 +19,26 @@ export const dynamic = "force-dynamic";
 export default async function PlatformSearchPage({
   searchParams
 }: {
-  searchParams: Promise<{
-    q?: string;
-    kind?: string;
-    after?: string;
-    topic?: string;
-    churchId?: string;
-    country?: string;
-    placeId?: string;
-    radiusKm?: string;
-  }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const user = await getCurrentPlatformUser(),
     p = await searchParams;
-  const query = {
-    q: typeof p.q === "string" ? p.q.trim().slice(0, 200) : "",
-    kind: searchCategories.includes(p.kind as SearchCategory)
-      ? (p.kind as SearchCategory)
-      : ("posts" as const),
-    ...(typeof p.after === "string" ? { after: p.after.slice(0, 4001) } : {}),
-    ...(typeof p.topic === "string" ? { topic: p.topic.slice(0, 100) } : {}),
-    ...(typeof p.churchId === "string"
-      ? { churchId: p.churchId.slice(0, 101) }
-      : {}),
-    ...(typeof p.country === "string"
-      ? { country: p.country.slice(0, 3) }
-      : {}),
-    ...(typeof p.placeId === "string"
-      ? { placeId: p.placeId.slice(0, 10) }
-      : {}),
-    ...(typeof p.radiusKm === "string"
-      ? { radiusKm: p.radiusKm.slice(0, 4) }
-      : {})
-  };
+  let query: SearchNavigation = { q: "", kind: "posts" },
+    inputError = "";
+  try {
+    const parameters = new URLSearchParams();
+    for (const [key, value] of Object.entries(p))
+      for (const item of Array.isArray(value)
+        ? value
+        : value === undefined
+          ? []
+          : [value])
+        parameters.append(key, item);
+    query = parseCommunitySearchInput(searchUrlInput(parameters));
+  } catch (error) {
+    if (!(error instanceof PortalError)) throw error;
+    inputError = error.message;
+  }
   return (
     <PlatformShell user={user}>
       <section className="container-shell space-y-6 py-8 sm:py-10">
@@ -77,11 +66,20 @@ export default async function PlatformSearchPage({
             radiusKm={query.radiusKm}
           />
         </div>
-        <CommunitySearchResults
-          key={`${user?.id ?? "guest"}:${JSON.stringify(query)}`}
-          owner={user?.id ?? null}
-          query={query}
-        />
+        {inputError ? (
+          <p role="alert">
+            {inputError}{" "}
+            <Link href="/platform/search" className="underline">
+              Restart search
+            </Link>
+          </p>
+        ) : (
+          <CommunitySearchResults
+            key={`${user?.id ?? "guest"}:${JSON.stringify(query)}`}
+            owner={user?.id ?? null}
+            query={query}
+          />
+        )}
       </section>
     </PlatformShell>
   );

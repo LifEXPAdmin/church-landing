@@ -30,6 +30,7 @@ type Result = Base & {
   filter?: { kind: "posts"; topic: string };
 };
 type Page = {
+  ownerId: string | null;
   kind: string;
   query: string;
   items: Result[];
@@ -95,6 +96,11 @@ export function CommunitySearchResults({
           );
         })
       ]);
+      if (r.data.ownerId !== owner)
+        throw new SocialClientError(
+          401,
+          "Your sign-in changed. Reload before continuing."
+        );
       if (current === seq.current && active.current) setData(r.data);
     } catch (e) {
       if (current === seq.current) {

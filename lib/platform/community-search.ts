@@ -10,8 +10,10 @@ import {
   searchCategories,
   searchChurchFilter,
   searchQueryLimit,
-  type SearchCategory
+  type SearchCategory,
+  type SearchNavigation
 } from "./search-navigation";
+import { parseExchangeListQuery } from "./exchange-input";
 import { searchResourceModule } from "./universal-search";
 
 export const SEARCH_KINDS = searchCategories;
@@ -27,12 +29,30 @@ export type CommunitySearchInput = {
   placeId?: unknown;
   radiusKm?: unknown;
 };
-export function communitySearch(
-  db: PrismaClient,
-  token: unknown,
-  input: CommunitySearchInput,
-  expectedAccount?: string
-) {
+export function searchUrlInput(
+  parameters: URLSearchParams
+): CommunitySearchInput {
+  const allowed = [
+    "q",
+    "kind",
+    "after",
+    "topic",
+    "churchId",
+    "country",
+    "placeId",
+    "radiusKm"
+  ];
+  if (
+    [...parameters.keys()].some(
+      (key) => !allowed.includes(key) || parameters.getAll(key).length !== 1
+    )
+  )
+    throw new PortalError(400, "Use each supported search filter once.");
+  return Object.fromEntries(parameters);
+}
+export function parseCommunitySearchInput(
+  input: CommunitySearchInput
+): SearchNavigation {
   const kind = input.kind ?? "posts";
   if (!SEARCH_KINDS.includes(kind as SearchKind))
     throw new PortalError(400, "Choose a supported search category.");
@@ -63,21 +83,31 @@ export function communitySearch(
       throw new PortalError(400, "Use local filters with listing searches.");
     location[key] = input[key];
   }
+  if (
+    input.after != null &&
+    (typeof input.after !== "string" || input.after.length > 4000)
+  )
+    throw new PortalError(400, "Use the current search page.");
+  if (kind === "listings") parseExchangeListQuery({ q, ...location });
+  return {
+    kind: kind as SearchKind,
+    q,
+    ...(topic ? { topic: topic as string } : {}),
+    ...(churchId ? { churchId } : {}),
+    ...location,
+    ...(input.after ? { after: input.after as string } : {})
+  };
+}
+export function communitySearch(
+  db: PrismaClient,
+  token: unknown,
+  input: CommunitySearchInput,
+  expectedAccount?: string
+) {
+  const query = parseCommunitySearchInput(input),
+    { kind, q, topic, churchId } = query;
   if (["listings", "media", "opportunities", "groups"].includes(String(kind))) {
-    if (input.after != null && typeof input.after !== "string")
-      throw new PortalError(400, "Use the current search page.");
-    return searchResourceModule(
-      db,
-      token,
-      {
-        q,
-        kind: kind as SearchCategory,
-        ...(churchId ? { churchId } : {}),
-        ...location,
-        ...(input.after ? { after: input.after as string } : {})
-      },
-      expectedAccount
-    );
+    return searchResourceModule(db, token, query, expectedAccount);
   }
   const signature = createHash("sha256")
     .update(JSON.stringify([kind, q, topic, churchId]))
@@ -100,18 +130,6 @@ export function communitySearch(
       );
     }
   }
-  const page = <T extends { id: string }>(rows: T[]) => ({
-    kind,
-    query: q,
-    items: rows.slice(0, SEARCH_PAGE_SIZE),
-    nextCursor:
-      rows.length > SEARCH_PAGE_SIZE
-        ? Buffer.from(
-            JSON.stringify({ signature, id: rows[SEARCH_PAGE_SIZE - 1].id })
-          ).toString("base64url")
-        : null
-  });
-  if (!q && !topic) return Promise.resolve(page([]));
   // Prisma contains uses LIKE: escape wildcard characters so user text stays literal.
   const contains = {
     contains: q.replace(/[\\%_]/g, "\\$&"),
@@ -128,6 +146,19 @@ export function communitySearch(
         401,
         "Your sign-in changed. Reload before continuing."
       );
+    const page = <T extends { id: string }>(rows: T[]) => ({
+      ownerId: context.actorId,
+      kind,
+      query: q,
+      items: rows.slice(0, SEARCH_PAGE_SIZE),
+      nextCursor:
+        rows.length > SEARCH_PAGE_SIZE
+          ? Buffer.from(
+              JSON.stringify({ signature, id: rows[SEARCH_PAGE_SIZE - 1].id })
+            ).toString("base64url")
+          : null
+    });
+    if (!q && !topic) return page([]);
     if (kind === "posts") {
       const rows = await tx.platformPost.findMany({
         where: {

@@ -77,11 +77,13 @@ export async function searchResourceModule(
       );
   };
   const page = <T>(
+    ownerId: string | null,
     items: T[],
     cursor: string | null,
     order: string,
     limitReached = false
   ) => ({
+    ownerId,
     kind: query.kind,
     query: query.q,
     items,
@@ -104,6 +106,7 @@ export async function searchResourceModule(
     );
     account(result.viewerId);
     return page(
+      result.viewerId,
       result.listings.map((row) => ({
         id: row.id,
         label: row.title,
@@ -136,6 +139,7 @@ export async function searchResourceModule(
       throw new PortalError(503, "Search could not be loaded. Try again.");
     const more = (result.page + 1) * 20 < result.total;
     return page(
+      result.actorId,
       result.items.map((row) => ({
         id: row.id,
         label: row.title,
@@ -155,6 +159,7 @@ export async function searchResourceModule(
     });
     account(result.viewerId);
     return page(
+      result.viewerId,
       result.groups.map((row) => ({
         id: row.id,
         label: row.name,
@@ -175,6 +180,7 @@ export async function searchResourceModule(
   });
   account(result.ownerId);
   return page(
+    result.ownerId,
     result.items.map((row) => ({
       id: row.id,
       label: row.title,
