@@ -1,4 +1,14 @@
-## Universal resource search and recent-history follow-through locally verified, 6 October 2026 UTC
+## Featured profile resources locally verified, 6 October 2026 UTC
+
+Application `7f9f28e` / build `cU-Nl090FdcOne2jnv9GH` adds up to six ordered
+listing, opportunity and media references to the versioned profile editor. Current
+source permissions govern each displayed card; profile pinning and calendar behavior
+remain reused. The candidate passed 32 registered checks, six final HTTPS checks,
+13 controlled component cases and 20 production-browser groups. No new schema or
+provider activation. [PROFILE_FEATURED_REPORT.md](PROFILE_FEATURED_REPORT.md) records
+exact evidence scopes, failed attempts, corrections and rollback compatibility.
+Owned runtimes are stopped. This is a local handoff; combined release and dependency
+security gates remain open, and no production deployment is claimed.
 
 ## Guest resource account-entry continuation, 6 October 2026
 
@@ -11,6 +21,8 @@ application `c461fd5` / build `RK3cF7UWibib-5BUJH1GV` passed 50 registered check
 8 HTTPS and 4 metadata checks, and 20 browser groups. All owned runtimes stopped.
 This is a local handoff, with full business scope and release gates still open.
 
+
+## Universal resource search and recent-history follow-through locally verified, 6 October 2026 UTC
 
 Application `91fdaa351f7969b60ff2d0718afc6b5bf2bcad0e` extends Explore with listings,
 media, volunteer opportunities and listed groups through current canonical readers.

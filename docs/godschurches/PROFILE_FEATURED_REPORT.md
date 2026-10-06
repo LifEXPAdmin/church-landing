@@ -1,15 +1,82 @@
 # Featured profile resources
 
-October 6, 2026 UTC. Local implementation candidate, not merged or live.
+October 6, 2026 UTC. Locally verified and ready for integration. Not merged or live.
+Application `7f9f28e6bddf65778f5c57752d9b143a35251978`, production build
+`cU-Nl090FdcOne2jnv9GH`. Browser QA follow-through is `cc4e207`; its only differences
+from that application are the two profile browser scripts.
 
-The existing profile editor now prepares a bounded ordered collection of listings,
-opportunities and media. The canonical post pin and calendar reference are reused.
-Current owner validation, member-specific projection, generic member preview and
-source lifecycle rechecks are implemented through existing permission services.
+## Behavior and boundaries
 
-Acceptance is in progress. Input, service, HTTP, browser, recovery and independent
-review results will be recorded after the final candidate passes. Provider playback,
-physical-device acceptance and the held dependency investigation are separate gates.
-The combined release owner must reconcile this candidate with other tested slices,
-verify compatible decoding and recovery, run release checks and verify the canonical
-serving build before marking the feature live.
+Members can check, add, reorder and remove up to six listing, opportunity or media
+references in the existing profile editor, then save the collection explicitly.
+The canonical post pin and selected calendar event retain their existing behavior.
+Only references enter profile JSON. Newly added choices require current eligible
+owner access in the same versioned save transaction. Omission by older editors
+preserves saved choices; explicit empty collections remove them. Existing unavailable
+choices can be retained, reordered or removed without blocking other profile edits.
+
+Each viewer read rechecks profile access, the current selection and canonical source
+permissions. Generic member preview assumes no owner or church grants. Visitor
+preview remains identity-only. Member HTML/RSC omit raw featured IDs and copied
+source metadata. Current client cards contain only permitted narrow projections.
+No hidden-reference counts or per-item private placeholders are exposed.
+
+Visible focused cards refresh at a bounded 30-second interval. Blur, offline,
+identity or route changes, failed reads and the 10-second request deadline conceal
+them. Accepted cards are bound synchronously to viewer, profile ID, username,
+presentation version and preview identity. An independently settled abort prevents
+stalled transport from holding expired cards or preventing a fresh retry. Browser
+throttling still means this is not instantaneous revocation or process-memory erasure.
+
+The mounted editor retains unsubmitted link text and selected references on
+concealment. Immutable save retries and deliberate version review preserve uncertain
+writes. Featuring resources changes no source audience, participation or provider
+configuration. Existing opaque module recovery, export and erasure remain the owners.
+
+## Verification
+
+- 32 registered input, real PostgreSQL, profile module/recovery, calendar, pin and
+  saved-resource checks passed at `73434e4`. All 124 populated migrations and an
+  actual workspace dump/restore passed. Subsequent application changes were the
+  equivalent raw-reference omission and client cancellation hardening, covered by
+  final HTTP, component and browser checks.
+- Six production HTTPS checks passed at the final application: strict current-account
+  API validation and caching, guest/member/preview HTML/RSC boundaries, existing
+  profile conflicts and calendar audience/write behavior.
+- Thirteen actual-component controlled-hook checks passed: four pre-effect identity
+  changes plus nine profile-ID, held-response, foreground, deadline and coalescing
+  cases. These model lifecycle and transport behavior; they are separate from native
+  browser acceptance. A deliberately noncooperative transport reproduced the deadline
+  robustness gap before the fix.
+- Twenty production-browser groups passed with zero page errors: seven featured
+  resource flows, eight existing module flows and five profile/settings/photo flows.
+  They cover actual add/order/save, current audience previews, focused withdrawal,
+  native two-window foreground changes, offline/resume, retained link/selection,
+  committed-but-lost save with identical retry bytes, explicit conflict review,
+  upload retry preservation and 320-pixel enlarged-text layout. The featured runner
+  observed zero external requests. The viewport capture was visually inspected.
+- Production build, types, changed-source lint, copy, hydration, runtime traces,
+  source-security and diff checks passed. Build lint retains existing repository
+  warnings. Runtime trace verification inspected 256 traces, 63,523 entries and
+  633 server JavaScript files without private fixtures or environment files.
+
+The first focus attempts retained failed evidence: headless automation did not
+produce a native focus change. A headed browser with forced focus disabled supplied
+that acceptance. The older profile browser expectations also needed the new explicit
+empty collection field. The corrected QA rerun used the same verified application
+build and completed all twenty groups. All owned browsers, server and fictional
+databases were closed afterward.
+
+## Integration and remaining acceptance
+
+No new migration, dependency or provider configuration. Keep the decoder,
+omission-preserving writer and editor together: an older strict decoder is not a
+compatible rollback after a featured collection is saved. The existing protected
+module recovery contract applies.
+
+No main push, production migration, application-row write, recipient send or deployment
+was performed. The designated release owner must reconcile compatible prepared work,
+resolve the held dependency-security gate, verify the combined release and confirm
+the canonical serving build before closing this feature. Media playback/provider and
+physical-device acceptance remain separate. Final independent handoff review is
+recorded with the private evidence receipt.
