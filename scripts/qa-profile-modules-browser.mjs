@@ -255,6 +255,7 @@ try {
     .getByRole("heading", { name: "My testimony", exact: true })
     .waitFor();
   assert.deepEqual((await row(owner)).modules, {
+    featuredResources: [],
     testimony,
     order: ["links", "skills", "testimony"],
     skills: ["Listening", "Gardening"],
@@ -533,6 +534,7 @@ try {
   await submit();
   await page.waitForURL("**" + path);
   assert.deepEqual((await row(owner)).modules, {
+    featuredResources: [],
     testimony: "",
     skills: [],
     links: [],
