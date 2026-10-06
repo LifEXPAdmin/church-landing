@@ -356,6 +356,7 @@ try {
     path: output + "/editor-320-enlarged.png",
     fullPage: true
   });
+  await page.screenshot({path:output+"/editor-320-viewport.png"});
   ok("Featured controls fit a 320-pixel enlarged-text viewport");
   assert.deepEqual(errors, []);
   assert.deepEqual(external, []);
