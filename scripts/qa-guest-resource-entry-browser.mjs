@@ -454,12 +454,18 @@ try {
     .click();
   await page.getByLabel("Email", { exact: true }).fill(reader.email);
   await page.getByLabel("Password", { exact: true }).fill(reader.password);
+  const unavailableRead = page.waitForResponse(
+    (response) =>
+      response.url() ===
+        config.origin +
+          "/api/platform/media-catalog?view=detail&id=" +
+          media.id && response.status() === 404
+  );
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await page.waitForURL(config.origin + mediaPath);
-  await page
-    .getByRole("button", { name: /Reload|Check again/i })
-    .first()
-    .waitFor();
+  const unavailableBody = await (await unavailableRead).json();
+  assert.equal(typeof unavailableBody.error, "string");
+  await page.getByText(unavailableBody.error, { exact: true }).waitFor();
   assert.equal(
     await page
       .getByRole("heading", { name: fields.title, exact: true })
