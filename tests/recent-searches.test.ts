@@ -113,3 +113,19 @@ test("corrupt data fails closed and storage failures are not reported as success
     )
   );
 });
+
+test("new resource categories keep separate history and remove only the selected search", () => {
+  const s = store();
+  change(s, "a", { action: "enable" }, 1);
+  for (const kind of ["listings", "media", "opportunities", "groups"] as const)
+    change(s, "a", { action: "record", q: "Community", kind }, 2);
+  assert.equal(read(s, "a", 3).items.length, 4);
+  change(s, "a", { action: "remove", q: "Community", kind: "groups" }, 4);
+  assert.deepEqual(
+    read(s, "a", 5).items.map((item) => item.kind),
+    ["opportunities", "media", "listings"]
+  );
+  assert.deepEqual(read(s, "b", 5), { enabled: false, items: [] });
+  change(s, "a", { action: "clear" }, 6);
+  assert.deepEqual(read(s, "a", 7), { enabled: true, items: [] });
+});

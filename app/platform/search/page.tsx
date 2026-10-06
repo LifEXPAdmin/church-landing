@@ -11,7 +11,7 @@ import {
 export const metadata: Metadata = {
   title: { absolute: "Explore | God’s Churches" },
   description:
-    "Find community posts, author labels, churches, events and topics you can view."
+    "Find community posts, churches, events, listings, media and volunteer opportunities you can view."
 };
 export const dynamic = "force-dynamic";
 export default async function PlatformSearchPage({
@@ -23,6 +23,9 @@ export default async function PlatformSearchPage({
     after?: string;
     topic?: string;
     churchId?: string;
+    country?: string;
+    placeId?: string;
+    radiusKm?: string;
   }>;
 }) {
   const user = await getCurrentPlatformUser(),
@@ -32,10 +35,19 @@ export default async function PlatformSearchPage({
     kind: searchCategories.includes(p.kind as SearchCategory)
       ? (p.kind as SearchCategory)
       : ("posts" as const),
-    ...(typeof p.after === "string" ? { after: p.after.slice(0, 257) } : {}),
+    ...(typeof p.after === "string" ? { after: p.after.slice(0, 4001) } : {}),
     ...(typeof p.topic === "string" ? { topic: p.topic.slice(0, 100) } : {}),
     ...(typeof p.churchId === "string"
       ? { churchId: p.churchId.slice(0, 101) }
+      : {}),
+    ...(typeof p.country === "string"
+      ? { country: p.country.slice(0, 3) }
+      : {}),
+    ...(typeof p.placeId === "string"
+      ? { placeId: p.placeId.slice(0, 10) }
+      : {}),
+    ...(typeof p.radiusKm === "string"
+      ? { radiusKm: p.radiusKm.slice(0, 4) }
       : {})
   };
   return (
@@ -60,6 +72,9 @@ export default async function PlatformSearchPage({
             topic={query.topic}
             churchId={query.churchId}
             after={query.after}
+            country={query.country}
+            placeId={query.placeId}
+            radiusKm={query.radiusKm}
           />
         </div>
         <CommunitySearchResults

@@ -2,6 +2,9 @@
 
 import {
   searchCategories,
+  searchQueryLimit,
+  searchCategoryLabel,
+  searchChurchFilter,
   type SearchCategory
 } from "@/lib/platform/search-navigation";
 import { POST_TOPICS } from "@/lib/platform/post-options";
@@ -10,6 +13,8 @@ import { useRef, useState } from "react";
 import { Search } from "lucide-react";
 import { churchDiscoveryHref } from "@/lib/platform/church-search";
 import { RecentSearches, useRecentSearches } from "./recent-searches";
+import { DiscoveryPlacePicker } from "./discovery-place-picker";
+import { DISCOVERY_RADII } from "@/lib/platform/discovery-options";
 
 export function ExploreSearchForm({
   owner = null,
@@ -17,7 +22,10 @@ export function ExploreSearchForm({
   category = "posts",
   topic,
   churchId,
-  after
+  after,
+  country,
+  placeId,
+  radiusKm
 }: {
   owner?: string | null;
   query: string;
@@ -25,12 +33,20 @@ export function ExploreSearchForm({
   topic?: string;
   churchId?: string;
   after?: string;
+  country?: string;
+  placeId?: string;
+  radiusKm?: string;
 }) {
   const [kind, setKind] = useState<SearchCategory>(category);
   const [value, setValue] = useState(query);
   const [selectedTopic, setSelectedTopic] = useState(topic ?? "");
   const [selectedChurch, setSelectedChurch] = useState(churchId ?? "");
-  const [filtersOpen, setFiltersOpen] = useState(Boolean(topic || churchId));
+  const [selectedCountry, setSelectedCountry] = useState(country ?? "");
+  const [selectedPlace, setSelectedPlace] = useState(placeId ?? "");
+  const [selectedRadius, setSelectedRadius] = useState(radiusKm ?? "");
+  const [filtersOpen, setFiltersOpen] = useState(
+    Boolean(topic || churchId || country || placeId || radiusKm)
+  );
   const history = useRecentSearches(owner);
   const submitting = useRef(false);
   // Keyed by the server query so Back and new searches restore their own input.
@@ -73,13 +89,13 @@ export function ExploreSearchForm({
         <select
           name="kind"
           aria-label="Search category"
-          className="ml-3 rounded border border-gc-divider bg-gc-canvas p-2"
+          className="block max-w-full rounded border border-gc-divider bg-gc-canvas p-2"
           value={kind}
           onChange={(e) => setKind(e.target.value as SearchCategory)}
         >
           {searchCategories.map((c) => (
             <option key={c} value={c}>
-              {c[0].toUpperCase() + c.slice(1)}
+              {searchCategoryLabel(c)}
             </option>
           ))}
         </select>
@@ -112,13 +128,54 @@ export function ExploreSearchForm({
               </select>
             </label>
           )}
-          {["posts", "events"].includes(kind) ? (
+          {searchChurchFilter(kind) ? (
             <SearchChurchFilter
               value={selectedChurch}
               onChange={setSelectedChurch}
             />
-          ) : (
+          ) : kind !== "listings" ? (
             <p>No additional filters for this category.</p>
+          ) : null}
+          {kind === "listings" && (
+            <div className="space-y-3">
+              <p>
+                Limit listings to a country or named town. Distance uses the
+                town center, not a person&apos;s address.
+              </p>
+              <DiscoveryPlacePicker
+                country={selectedCountry || null}
+                placeId={selectedPlace ? Number(selectedPlace) : null}
+                onCountry={(next) => {
+                  setSelectedCountry(next ?? "");
+                  setSelectedPlace("");
+                  setSelectedRadius("");
+                }}
+                onPlace={(next) => {
+                  setSelectedPlace(next === null ? "" : String(next));
+                  setSelectedRadius("");
+                }}
+              />
+              <input type="hidden" name="country" value={selectedCountry} />
+              <input type="hidden" name="placeId" value={selectedPlace} />
+              <label className="block">
+                Approximate distance
+                <select
+                  name="radiusKm"
+                  aria-label="Approximate listing distance"
+                  className="block max-w-full rounded border border-gc-divider bg-gc-canvas p-2"
+                  value={selectedRadius}
+                  disabled={!selectedPlace}
+                  onChange={(e) => setSelectedRadius(e.target.value)}
+                >
+                  <option value="">Selected town only</option>
+                  {DISCOVERY_RADII.map((radius) => (
+                    <option key={radius} value={radius}>
+                      Within {radius} km of town center
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
           )}
           <button
             type="button"
@@ -126,6 +183,9 @@ export function ExploreSearchForm({
             onClick={() => {
               setSelectedTopic("");
               setSelectedChurch("");
+              setSelectedCountry("");
+              setSelectedPlace("");
+              setSelectedRadius("");
             }}
           >
             Clear search filters
@@ -140,7 +200,8 @@ export function ExploreSearchForm({
           id="explore-search"
           name="q"
           type="search"
-          maxLength={200}
+          maxLength={searchQueryLimit(kind)}
+          minLength={kind === "listings" ? 2 : undefined}
           value={value}
           onChange={(event) => setValue(event.target.value)}
           aria-describedby="explore-search-hint"
@@ -151,6 +212,11 @@ export function ExploreSearchForm({
           <Search aria-hidden="true" /> Search
         </button>
       </div>
+      <p className="mt-2 text-sm text-gc-muted">
+        Up to {searchQueryLimit(kind)} characters for{" "}
+        {searchCategoryLabel(kind).toLowerCase()}. Filters apply to the selected
+        category.
+      </p>
       <a
         className="mt-4 inline-flex min-h-11 items-center text-gc-accent underline"
         href={churchDiscoveryHref(value)}
@@ -165,14 +231,23 @@ export function ExploreSearchForm({
           params.set("kind", kind);
           if (selectedTopic && kind === "posts")
             params.set("topic", selectedTopic);
-          if (selectedChurch && ["posts", "events"].includes(kind))
+          if (selectedChurch && searchChurchFilter(kind))
             params.set("churchId", selectedChurch);
+          if (kind === "listings") {
+            if (selectedCountry) params.set("country", selectedCountry);
+            if (selectedPlace) params.set("placeId", selectedPlace);
+            if (selectedPlace && selectedRadius)
+              params.set("radiusKm", selectedRadius);
+          }
           if (
             after &&
             query === value.trim() &&
             kind === category &&
             selectedTopic === (topic ?? "") &&
-            selectedChurch === (churchId ?? "")
+            selectedChurch === (churchId ?? "") &&
+            selectedCountry === (country ?? "") &&
+            selectedPlace === (placeId ?? "") &&
+            selectedRadius === (radiusKm ?? "")
           )
             params.set("after", after);
           window.history.replaceState(

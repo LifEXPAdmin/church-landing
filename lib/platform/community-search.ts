@@ -6,14 +6,15 @@ import { postId } from "./post-input";
 import { communityAuthorSelect } from "./public-profile";
 import { POST_TOPICS, postPreviewText } from "./post-options";
 import { PortalError } from "./portal-policy";
+import {
+  searchCategories,
+  searchChurchFilter,
+  searchQueryLimit,
+  type SearchCategory
+} from "./search-navigation";
+import { searchResourceModule } from "./universal-search";
 
-export const SEARCH_KINDS = [
-  "posts",
-  "people",
-  "churches",
-  "events",
-  "topics"
-] as const;
+export const SEARCH_KINDS = searchCategories;
 export type SearchKind = (typeof SEARCH_KINDS)[number];
 export const SEARCH_PAGE_SIZE = 20;
 export type CommunitySearchInput = {
@@ -22,11 +23,15 @@ export type CommunitySearchInput = {
   after?: unknown;
   topic?: unknown;
   churchId?: unknown;
+  country?: unknown;
+  placeId?: unknown;
+  radiusKm?: unknown;
 };
 export function communitySearch(
   db: PrismaClient,
   token: unknown,
-  input: CommunitySearchInput
+  input: CommunitySearchInput,
+  expectedAccount?: string
 ) {
   const kind = input.kind ?? "posts";
   if (!SEARCH_KINDS.includes(kind as SearchKind))
@@ -36,15 +41,44 @@ export function communitySearch(
   const q = ((input.q ?? "") as string).trim();
   if (q.length > 200)
     throw new PortalError(400, "Search with at most 200 characters.");
+  if (q.length > searchQueryLimit(kind as SearchCategory))
+    throw new PortalError(
+      400,
+      `Search this category with at most ${searchQueryLimit(kind as SearchCategory)} characters.`
+    );
   const topic = input.topic || undefined,
     churchId = input.churchId ? postId(input.churchId) : undefined;
   if (topic && !POST_TOPICS.includes(topic as (typeof POST_TOPICS)[number]))
     throw new PortalError(400, "Choose a supported topic.");
   if (
     (topic && kind !== "posts") ||
-    (churchId && !["posts", "events"].includes(String(kind)))
+    (churchId && !searchChurchFilter(kind as SearchCategory))
   )
     throw new PortalError(400, "This filter does not apply to that category.");
+  const location: { country?: string; placeId?: string; radiusKm?: string } =
+    {};
+  for (const key of ["country", "placeId", "radiusKm"] as const) {
+    if (input[key] == null || input[key] === "") continue;
+    if (kind !== "listings" || typeof input[key] !== "string")
+      throw new PortalError(400, "Use local filters with listing searches.");
+    location[key] = input[key];
+  }
+  if (["listings", "media", "opportunities", "groups"].includes(String(kind))) {
+    if (input.after != null && typeof input.after !== "string")
+      throw new PortalError(400, "Use the current search page.");
+    return searchResourceModule(
+      db,
+      token,
+      {
+        q,
+        kind: kind as SearchCategory,
+        ...(churchId ? { churchId } : {}),
+        ...location,
+        ...(input.after ? { after: input.after as string } : {})
+      },
+      expectedAccount
+    );
+  }
   const signature = createHash("sha256")
     .update(JSON.stringify([kind, q, topic, churchId]))
     .digest("hex")
@@ -89,6 +123,11 @@ export function communitySearch(
   };
   const cursorWhere = after ? { id: { gt: after } } : {};
   return withPostRead(db, token, async (tx, context) => {
+    if (expectedAccount !== undefined && expectedAccount !== context.actorId)
+      throw new PortalError(
+        401,
+        "Your sign-in changed. Reload before continuing."
+      );
     if (kind === "posts") {
       const rows = await tx.platformPost.findMany({
         where: {
